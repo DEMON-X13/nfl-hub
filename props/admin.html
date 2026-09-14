@@ -1431,15 +1431,23 @@ function renderGame(){
       html+='</div>';
     }
   }
-  const keepY=$('gameModal').scrollTop;
+  /* keep the reader's place across the re-render. If a row was just tapped, pin that
+     row to the same spot on screen (collapsing a player above it would otherwise shift it). */
+  const modal=$('gameModal'); const keepY=modal.scrollTop;
+  const pinned=renderGame.anchor&&$('gameView').querySelector('[data-open="'+renderGame.anchor+'"]');
+  const pinTop=pinned?pinned.getBoundingClientRect().top:null;
+  renderGame.anchor=null;
   $('gameView').innerHTML=html;
-  $('gameModal').scrollTop=keepY;
+  modal.scrollTop=keepY;
+  if(pinTop!=null){ const nb=$('gameView').querySelector('[data-open="'+pinned.dataset.open+'"]'); if(nb) modal.scrollTop+=nb.getBoundingClientRect().top-pinTop; }
   $('backBtn').addEventListener('click',closeGame);
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
   $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.dataset.open;
-    if(S.ui.open[id]) delete S.ui.open[id]; else S.ui.open[id]=true;
+    /* one player open at a time: opening a player closes whoever else was open */
+    S.ui.open=S.ui.open[id]?{}:{[id]:true};
+    renderGame.anchor=id;
     save(); renderGame(); }));
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
