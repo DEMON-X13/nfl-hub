@@ -2118,12 +2118,5 @@ $('oddsClear').addEventListener('click',()=>{
 });
 
 </script>
-<script>
-/* public page: no Weekly Update or Backup tab; the data is baked in */
-window.VIEWER=true;
-document.addEventListener('DOMContentLoaded',()=>{
-  for(const t of ['week','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
-});
-</script>
 </body>
 </html>

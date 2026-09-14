@@ -54,7 +54,9 @@ lockfile so the job can install it. `props/build/weekly.py` downloads the five
 nflverse files, pulls prop prices from the-odds-api (needs the `ODDS_API_KEY`
 repository secret; about 7 credits a game, 500 free a month), rebuilds the
 payload, bakes stats, injuries and prices into the page, assembles it and runs
-the 27,000-check audit. The workflow copies the result to `props/index.html`.
+the 27,000-check audit. `props/build/publish.js` then writes `props/index.html`
+(public: Games, Parlay Builder, Track Record, How It Works) and `props/admin.html`
+(every tab, including Weekly Update and Backup).
 `raw/feat.pkl` (43MB, the fitted feature table for 2019-2025) is committed so
 the job does not rebuild it. Visitors' parlays and bets stay in their browser.
 
