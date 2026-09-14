@@ -2,8 +2,16 @@ name: Update sites
 
 on:
   schedule:
-    # every 6 hours; grading is idempotent so extra runs are harmless
-    - cron: "15 */6 * * *"
+    # Three windows, in UTC (Eastern is UTC-4 in season). nflverse publishes the
+    # stats files overnight after games, so each window has a morning run and an
+    # afternoon catch-up in case the file was late. Runs that find nothing new
+    # commit nothing. This job downloads only free nflverse files: no credits.
+    - cron: "0 11 * * 5"    # Friday 7am ET: Thursday night game
+    - cron: "0 17 * * 5"    # Friday 1pm ET: catch-up
+    - cron: "0 11 * * 1"    # Monday 7am ET: Sunday games
+    - cron: "0 17 * * 1"    # Monday 1pm ET: catch-up
+    - cron: "0 11 * * 2"    # Tuesday 7am ET: Monday night game, week rolls over
+    - cron: "0 17 * * 2"    # Tuesday 1pm ET: catch-up
   workflow_dispatch:
     inputs:
       rebuild:

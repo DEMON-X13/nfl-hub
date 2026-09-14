@@ -49,11 +49,14 @@ node betting/tools/smoke.js             # viewer check
 
 ## The job
 
-`.github/workflows/update.yml` runs every six hours and on demand (with a
-"rebuild" switch that replays the betting season from the preseason board,
-for the next time a model correction ships). It commits only if something
-changed. nflverse publishes the stats files the night after games, so the
-sites lag results by hours.
+`.github/workflows/update.yml` runs three windows a week, Friday, Monday and
+Tuesday mornings (Eastern) with an afternoon catch-up each, covering the
+Thursday, Sunday and Monday games, and on demand (with a "rebuild" switch that
+replays the betting season from the preseason board, for the next time a model
+correction ships). It commits only if something changed. nflverse publishes
+the stats files overnight after games. This job downloads free nflverse files
+only; when the prop model and news tracker join, each gets its own workflow
+and schedule so any pull that spends API credits runs only when it should.
 
 ## Shipping a model change to the betting site
 
