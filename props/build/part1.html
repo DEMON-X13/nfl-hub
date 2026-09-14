@@ -162,10 +162,12 @@ body.modal-open{overflow:hidden}
 .conf.high{background:var(--pick-soft);color:var(--pick)} .conf.med{background:#FCF1D6;color:#8A5E05}
 .conf.low{background:#E9EDF1;color:var(--ink-2)}
 @media(max-width:760px){
-  .plrbtn{grid-template-columns:1fr 26px;padding:11px 12px}
-  .plrbtn .who{font-size:18px}
-  .plrbtn .sum{grid-column:1;text-align:left;margin-top:3px}
-  .plrbtn .arrow{grid-row:1/3;align-self:center}
+  .plrbtn{grid-template-columns:minmax(0,1fr) 26px;grid-template-rows:auto auto;padding:11px 12px}
+  /* explicit placement: without it the arrow (pinned to two rows) takes column 1 and the name lands in the arrow column */
+  .plrbtn .who{grid-column:1;grid-row:1;font-size:18px;min-width:0;overflow-wrap:anywhere}
+  .plrbtn .who span{display:inline-block}
+  .plrbtn .sum{grid-column:1;grid-row:2;text-align:left;margin-top:3px;min-width:0}
+  .plrbtn .arrow{grid-column:2;grid-row:1/3;align-self:center}
   .plrbody{padding:0 12px 12px}
   .rungs .barcell{display:none}
   .rungs .thr{width:74px;font-size:16px}
