@@ -1308,7 +1308,7 @@ function renderGame(){
     <label class="muted"><input type="checkbox" id="allCb" ${showAll?'checked':''}> Include backups</label>
   </div>`;
   if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
-  if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}"><b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`:(fin?'Final.':'In progress.')}</b> <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.':'Player stats land with the Tuesday upload; until then each player shows only what was projected.'}${hasScore(g)?'':' Pull in scores on the Weekly Update tab for the final score.'}</span></div>`;
+  if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}"><b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`:(fin?'Final.':'In progress.')}</b> <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.':'Player stats land with the Tuesday upload; until then each player shows only what was projected.'}${hasScore(g)?'':' The final score appears after the next refresh.'}</span></div>`;
   html+=`
   <div class="card">
     <h2 style="display:flex;align-items:center;gap:10px">${tag(g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}</h2>

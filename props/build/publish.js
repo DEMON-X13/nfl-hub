@@ -32,6 +32,7 @@ const PUBLIC_TEXT = [
   ["Pull them again on the Weekly Update tab before kickoff; expected points are the biggest single input to every projection.",
    "They are refreshed twice a week; expected points are the biggest single input to every projection."],
   ["Load a roster and depth chart on the Weekly Update tab.", "Rosters and depth charts are refreshed twice a week."],
+  [" Pull in scores on the Weekly Update tab for the final score.", " The final score appears after the next refresh."],
 ];
 let pub = html.replace('</body>', TRIM + '</body>');
 for (const [from, to] of PUBLIC_TEXT) { if (!pub.includes(from)) throw new Error('public text not found: ' + from.slice(0, 40)); pub = pub.split(from).join(to); }
