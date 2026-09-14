@@ -214,6 +214,13 @@ body.modal-open{overflow:hidden}
 .bigp .hero{background:var(--ink);border-color:var(--ink)}
 .bigp .hero b,.bigp .hero span{color:#fff}
 .bigp .hero span{color:#B9C5D4}
+/* the parlay card: what it pays sits under the legs behind a divider, then the actions behind another */
+.pays{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.pays h3{margin:0 0 12px}
+.pays .bar{margin:0 0 4px}
+.pays .bigp{grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 0}
+.pays .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+@media(max-width:900px){ .pays .bigp{grid-template-columns:1fr 1fr} }
 .payout{font-family:var(--display);font-size:34px;font-weight:700;color:var(--pick)}
 
 .rungs .fairodds{width:82px;font-variant-numeric:tabular-nums;font-weight:600}

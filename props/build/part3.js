@@ -796,8 +796,8 @@ function renderParlay(){
   html+=`</tbody></table>`;
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
   /* what it pays, inside the same card, then the two actions as buttons only */
-  html+=`<h3>What it pays</h3>
-    <div class="bar" style="margin:0 0 14px">
+  html+=`<div class="pays"><h3>What it pays</h3>
+    <div class="bar">
       <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?S.bookPrice:''}" style="width:110px"></label>
       <span class="muted">${allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.'}</span>
@@ -809,7 +809,7 @@ function renderParlay(){
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
     </div>`;
   const canSave=wks.length===1&&(realPrice||estPrice);
-  html+=`<div class="bar" style="margin:14px 0 0"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div>`;
+  html+=`<div class="actions"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div></div>`;
   html+=`</div>`;
 
   /* the pairs table goes below the save bar and the saved parlays */
