@@ -181,6 +181,11 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tbtn small{display:block;font-family:var(--body);font-size:9px;font-weight:500;margin-top:5px;opacity:.8;letter-spacing:.01em}
 .tbtn .ttag{font-size:13px;padding:5px 6px;min-width:46px}
 .myside .ttag{font-size:15px;padding:7px 9px;min-width:58px}
+.myside .tw{position:relative;display:inline-flex}
+.myside .res{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid currentColor;font-size:11px;font-weight:800;line-height:13px;text-align:center;font-family:var(--body);box-shadow:0 1px 2px rgba(15,27,45,.2)}
+.myside.away .res{left:-9px} .myside.home .res{right:-9px}
+.myside .res.ok{color:var(--pick)} .myside .res.bad{color:var(--miss)}
+.mybody,.mybody>.myside{overflow:visible}
 .vs .who{font-size:12px;line-height:1.35;color:var(--ink-2);text-align:right}
 .vs .who .mymargin{color:var(--muted)}
 .vs .who b{color:var(--ink)}
@@ -313,6 +318,8 @@ th.sortable:hover{color:var(--ink)}
 <section id="tab-mine" hidden>
   <div class="bar minebar">
     <label>Week <select id="myWeekSel"></select></label>
+    <span class="rec" id="myWeekRec" title="Your record for the selected week"></span>
+    <span class="rec" id="mySeasonRec" title="Your record for the season"></span>
     <span class="muted" id="myWeekStatus"></span>
   </div>
   <div id="myGames"></div>
@@ -365,6 +372,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.32</td><td>My Picks: a tick or cross badge on the winner's tag shows whether your pick hit, and your week and season records sit beside the week dropdown.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.31</td><td>AI Picks: the model's record for the selected week and for the season sits beside the week dropdown.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.30</td><td>AI Picks: the tick/cross is a small badge on the corner of the winner's tag, so the team pair sits in the same spot on every row.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.29</td><td>AI Picks: the team pair stays centred; the tick/cross slot is reserved on both sides of every row.</td></tr>
@@ -472,7 +480,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.31 \u00b7 2026-09-14';
+const APP_BUILD='v1.32 \u00b7 2026-09-14';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1020,10 +1028,20 @@ function renderAdjust(){
     if(ev){ ev.ended=true; ev.endedWeek=currentWeekDefault(); save(); renderAll(); } }));
 }
 
+/* my W-L (W-L-T once a tie exists) over graded games where I made a pick */
+function myRecordLine(filter){
+  const rows=Object.values(S.processed).filter(r=>r.myPick&&filter(r));
+  const w=rows.filter(r=>r.myCorrect===true).length, l=rows.filter(r=>r.myCorrect===false).length, t=rows.filter(r=>r.myCorrect===null).length;
+  return `${w}\u2013${l}${t?'\u2013'+t:''}`;
+}
+function renderMyRecords(w){
+  $('myWeekRec').innerHTML=`Week ${w} <b>${myRecordLine(r=>+r.week===w)}</b>`;
+  $('mySeasonRec').innerHTML=`Season <b>${myRecordLine(()=>true)}</b>`;
+}
 function renderMine(){
   const sel=$('myWeekSel'); const weeks=[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b); const cur=sel.value?+sel.value:currentWeekDefault();
   sel.innerHTML=weeks.map(w=>`<option value="${w}" ${w===cur?'selected':''}>${w>18?'Playoffs '+(w-18):'Week '+w}</option>`).join('');
-  const w=+sel.value; const games=S.schedule.filter(g=>+g.week===w).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
+  const w=+sel.value; renderMyRecords(w); const games=S.schedule.filter(g=>+g.week===w).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
   const unpicked=games.filter(g=>g.result==null&&!S.myPicks[g.game_id]).length;
   $('myWeekStatus').textContent=games.every(g=>g.result!=null)?'Week is final.':unpicked?`${unpicked} game${unpicked===1?'':'s'} still need your pick. Tap a team.`:'All picked. Picks stay editable until the game is graded.';
   if(w>currentWeekDefault()){ $('myWeekStatus').textContent=`Opens after Week ${currentWeekDefault()} is graded.`; $('myGames').innerHTML=`<div class="empty">Week ${w} picks open once the current week's results are uploaded, so you and the model call games from the same starting point.</div>`; }
@@ -1035,7 +1053,9 @@ function renderMine(){
     const dot=tm=>{ const on=mine===tm;
       const cls=['pickdot',on?'on':'',winner&&winner===tm?'win':'',winner&&winner!==tm&&winner!=='TIE'?'lose':''].join(' ');
       return `<button class="${cls}" data-my="${g.game_id}" data-team="${tm}" ${done?'disabled':''} role="radio" aria-checked="${on}" aria-label="Pick ${tm}" title="Pick ${tm}"></button>`; };
-    const side=tm=>`<div class="myside${pr.pick===tm?' mp':''}">${tag(tm,tagColor(tm),pr.pick===tm,'mini')}<b>${TEAM_NAMES[tm]||tm}</b><small>${tm===g.home_team?'home':'away'}</small></div>`;
+    /* tick or cross on the winner's tag: did MY pick win? nothing for no pick, a tie or an ungraded game */
+    const mark=tm=>(done&&mine&&winner===tm&&done.myCorrect!==null)?`<span class="res ${done.myCorrect?'ok':'bad'}" title="${done.myCorrect?'Your pick hit':'Your pick missed'}">${done.myCorrect?'\u2713':'\u2717'}</span>`:'';
+    const side=tm=>`<div class="myside ${tm===g.home_team?'home':'away'}${pr.pick===tm?' mp':''}"><span class="tw">${tag(tm,tagColor(tm),pr.pick===tm,'mini')}${mark(tm)}</span><b>${TEAM_NAMES[tm]||tm}</b><small>${tm===g.home_team?'home':'away'}</small></div>`;
     const R=26, C=2*Math.PI*R, homeLen=C*ph/100;
     const donut=`<svg class="donut" viewBox="0 0 64 64" role="img" aria-label="${g.away_team} ${pa}%, ${g.home_team} ${ph}%">
       <circle cx="32" cy="32" r="${R}" fill="none" stroke="${tagBg(tagColor(g.away_team))}" stroke-width="11"/>
