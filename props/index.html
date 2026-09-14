@@ -219,6 +219,7 @@ body.modal-open{overflow:hidden}
 .pays h3{margin:0 0 12px}
 .pays .bar{margin:0 0 4px}
 .pays .bigp{grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 0}
+.pays .tierbig.high{color:var(--pick)} .pays .tierbig.med{color:#8A5E05} .pays .tierbig.low{color:var(--ink-2)}
 .pays .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 @media(max-width:900px){ .pays .bigp{grid-template-columns:1fr 1fr} }
 .payout{font-family:var(--display);font-size:34px;font-weight:700;color:var(--pick)}
@@ -1998,8 +1999,8 @@ function renderParlay(){
     <div class="bigp">
       <div class="box hero"><b>${(pr.corr*100).toFixed(1)}%</b><span>chance all ${legs.length} land</span></div>
       <div class="box"><b>${fmtML(fairML)}</b><span>fair price for that chance</span></div>
-      <div class="box"><b>${(realPrice||estPrice)?fmtML(decToML(useDec)):'not set'}</b><span>${realPrice?'price you’re getting':(estPrice?'estimated book price':'your book’s price, type it in above')}</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
+      <div class="box"><b class="tierbig ${confTier(pr.corr)[0]}">${confTier(pr.corr)[1]}</b><span>confidence all ${legs.length} land</span></div>
     </div>`;
   const canSave=wks.length===1&&(realPrice||estPrice);
   html+=`<div class="actions"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div></div>`;

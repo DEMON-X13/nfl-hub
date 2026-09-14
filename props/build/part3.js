@@ -805,8 +805,8 @@ function renderParlay(){
     <div class="bigp">
       <div class="box hero"><b>${(pr.corr*100).toFixed(1)}%</b><span>chance all ${legs.length} land</span></div>
       <div class="box"><b>${fmtML(fairML)}</b><span>fair price for that chance</span></div>
-      <div class="box"><b>${(realPrice||estPrice)?fmtML(decToML(useDec)):'not set'}</b><span>${realPrice?'price you’re getting':(estPrice?'estimated book price':'your book’s price, type it in above')}</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
+      <div class="box"><b class="tierbig ${confTier(pr.corr)[0]}">${confTier(pr.corr)[1]}</b><span>confidence all ${legs.length} land</span></div>
     </div>`;
   const canSave=wks.length===1&&(realPrice||estPrice);
   html+=`<div class="actions"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div></div>`;
