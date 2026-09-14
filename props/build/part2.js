@@ -36,11 +36,12 @@ const DEFMAP={attempts:'d_pass_att',completions:'d_pass_att',passing_yards:'d_pa
  fg_att:'d_pass_yds',fg_made:'d_pass_yds',kick_pts:'d_tds'};
 const TCOLS=['t_pass_att','t_carries','t_plays','t_pass_yds','t_rush_yds','t_targets','t_tds','t_fg_att','t_pat_att'];
 const DCOLS=['d_pass_yds','d_rush_yds','d_pass_att','d_carries','d_tds'];
+/* projected but not offered as a bet: targets still drives usage ranking and receptions */
+const NO_BET=new Set(['targets']);
 const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards'],
- /* targets is projected (it drives usage and receptions) but is not offered as a bet */
- RB:['carries','rushing_yards','receptions','receiving_yards','scrim_yards','any_td'],
- WR:['receptions','receiving_yards','any_td'],
- TE:['receptions','receiving_yards','any_td'],
+ RB:['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
+ WR:['targets','receptions','receiving_yards','any_td'],
+ TE:['targets','receptions','receiving_yards','any_td'],
  K:['fg_att','fg_made','kick_pts']};
 const A5=2/6, A3=2/4, A6=2/7, A8=2/9;   /* ewma alphas for spans 5,3,6,8 */
 
@@ -254,6 +255,7 @@ function propsForGame(g){
       const gp=pl.gp+pl.base_gp;
       const row={pl,team,opp,ctx,thin:gp<3,lines:[]};
       for(const stat of (GRP_STATS[pl.grp]||[])){
+        if(NO_BET.has(stat)) continue;
         const m=MKT[stat]; if(!m) continue;
         const pr=project(pl,stat,opp,ctx); if(!pr) continue;
         const o=(S.odds[g.id]&&S.odds[g.id][pl.id]&&S.odds[g.id][pl.id][stat])||null;
@@ -467,6 +469,7 @@ function rosterFor(g,showAll){
 function statLines(x){
   const out=[];
   for(const stat of (GRP_STATS[x.pl.grp]||[])){
+    if(NO_BET.has(stat)) continue;
     const m=MKT[stat]; if(!m) continue;
     const pr=project(x.pl,stat,x.opp,x.ctx); if(!pr) continue;
     if(m.prob){ out.push({stat,m,prob:true,p:pr.p}); continue; }
