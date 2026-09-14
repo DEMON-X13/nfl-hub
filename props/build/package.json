@@ -1,0 +1,9 @@
+{
+  "name": "prop-model-build",
+  "private": true,
+  "description": "build-time dependencies for audit.js (run: npm install, then node audit.js)",
+  "devDependencies": {
+    "jsdom": "^26.0.0",
+    "papaparse": "^5.4.1"
+  }
+}

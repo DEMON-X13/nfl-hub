@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prop Model</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg:#E9EDF1; --panel:#FFFFFF; --ink:#132238; --ink-2:#4A5B72; --line:#CBD3DC;
+  --pick:#1F6F4A; --pick-soft:#DCEFE3; --gold:#C98B0F; --miss:#B23A32; --miss-soft:#F5DEDC;
+  --away:#3F5F8F; --home:#1F6F4A; --muted:#7A8798;
+  --display:"Barlow Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+header{background:var(--ink);color:#fff;padding:18px 24px 0}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand h1{font-family:var(--display);font-weight:700;font-size:38px;letter-spacing:.5px;margin:0;line-height:1}
+.brand .sub{color:#B9C5D4;font-size:13px}
+nav{display:flex;gap:2px;margin-top:14px;overflow-x:auto}
+nav button{background:transparent;border:0;color:#B9C5D4;padding:10px 14px;font-family:var(--display);font-size:18px;font-weight:600;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav button:hover{color:#fff}
+nav button[aria-selected=true]{color:#fff;border-bottom-color:var(--gold)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+main{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
+section[hidden]{display:none}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.bar .grow{flex:1}
+select,input[type=number],input[type=text]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+input[type=number]{width:90px}
+.btn{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:500;text-decoration:none;display:inline-block}
+.btn.quiet{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--miss)}
+.btn.go{background:var(--pick)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn:hover{filter:brightness(1.08)}
+.stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.stat b{font-family:var(--display);font-size:30px;font-weight:700;display:block;line-height:1}
+.stat span{color:var(--ink-2);font-size:12px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-weight:600;color:var(--ink-2);font-size:12px;background:#F3F5F8}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+.card h2{font-family:var(--display);font-size:24px;font-weight:600;margin:0 0 8px}
+.card h3{font-family:var(--display);font-size:19px;font-weight:600;margin:16px 0 6px}
+.card ul{margin:8px 0 0;padding:0 6px 0 22px} .card li{margin:6px 0;line-height:1.5}
+.muted{color:var(--ink-2)}
+.empty{padding:40px;text-align:center;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.delta.up{color:var(--pick)} .delta.down{color:var(--miss)}
+.ttag{display:inline-block;font-family:var(--display);font-size:13px;font-weight:600;line-height:1;padding:5px 7px;border-radius:5px;border:1.5px solid;letter-spacing:.02em;box-shadow:0 1px 1px rgba(11,22,42,.14)}
+.ttag.mini{font-size:12px;padding:4px 6px;vertical-align:-1px}
+/* game rows */
+.gamehead,.game{display:grid;grid-template-columns:120px 175px 1fr 138px 78px 78px 26px;gap:14px;align-items:center}
+.gamehead{padding:0 14px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gamehead .c{text-align:center} .gamehead .r{text-align:right}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:8px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
+.game:hover{border-color:var(--ink)}
+.game>div{min-width:0}
+.game .when{color:var(--ink-2);font-size:12px;line-height:1.35}
+.game .when b{color:var(--ink);font-weight:600;display:block;font-size:13px;margin-bottom:5px}
+.game .when .pill{margin-top:1px}
+.matchup{font-family:var(--display);font-size:23px;font-weight:600;display:flex;align-items:center;gap:8px;line-height:1;white-space:nowrap}
+.matchup .at{color:var(--ink-2);font-size:13px;font-family:var(--body);font-weight:400}
+.tot{text-align:center;line-height:1.2}
+.tot b{display:block;color:var(--ink);font-weight:700;font-family:var(--display);font-size:26px;letter-spacing:.5px;margin-bottom:3px}
+.tot small{display:block;font-size:11px;color:var(--ink-2);line-height:1.3}
+.edgecount{text-align:center;font-family:var(--display);font-size:22px;font-weight:700}
+.edgecount small{display:block;font-family:var(--body);font-size:11px;font-weight:500;color:var(--ink-2)}
+.chev{text-align:right;color:var(--muted);font-size:20px}
+/* prop tables */
+.plr{font-weight:600}
+.plr small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
+.side{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:#E3E8EE;color:var(--ink-2)}
+.side.over{background:var(--pick-soft);color:var(--pick)}
+.side.under{background:#E7EDF6;color:var(--away)}
+.side.pass{background:#EEF1F4;color:var(--muted)}
+.edge{font-variant-numeric:tabular-nums;font-weight:600}
+.edge.good{color:var(--pick)} .edge.bad{color:var(--miss)} .edge.flat{color:var(--ink-2);font-weight:400}
+.teamhdr{font-family:var(--display);font-size:21px;font-weight:600;margin:18px 0 8px;display:flex;align-items:center;gap:10px}
+.pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#E3E8EE;color:var(--ink-2)}
+.pill.warn{background:#FCF1D6;color:#8A5E05}
+.pill.ok{background:var(--pick-soft);color:var(--pick)}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:14px;max-height:280px;overflow:auto;font-size:13px}
+.log div{padding:3px 0;border-bottom:1px solid #F0F2F5}
+.log .ok{color:var(--pick)} .log .warn{color:#8A5E05} .log .err{color:var(--miss)}
+.bkline{width:100%;height:130px;display:block}
+.totrow td{border-top:2px solid var(--ink-2);padding-top:8px;font-weight:600}
+.dist{display:block;width:100%;height:44px}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(19,34,56,.48);overflow-y:auto;padding:28px 16px;display:flex;align-items:flex-start;justify-content:center}
+.modal[hidden]{display:none}   /* display:flex above would otherwise beat the hidden attribute */
+.modal-panel{background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.35);width:100%;max-width:1100px;padding:16px 18px 24px;min-height:200px}
+body.modal-open{overflow:hidden}
+@media(max-width:760px){ .modal{padding:0} .modal-panel{border-radius:0;border:0;min-height:100%;padding:12px 12px 24px} }
+@media(max-width:900px){
+  .gamehead{display:none}
+  /* one card per game, laid out explicitly so nothing lands in the wrong cell */
+  .game{grid-template-columns:1fr 1fr auto;gap:6px 10px;padding:13px 14px}
+  .game .when{grid-column:1/3;grid-row:1;display:flex;gap:8px;align-items:baseline}
+  .game .when b{display:inline;font-size:13px}
+  .game .winner{grid-column:3;grid-row:1/3;align-self:center;padding-left:6px}
+  .matchup{grid-column:1/3;grid-row:2;font-size:25px}
+  .lead{grid-column:1/-1;grid-row:3;justify-self:stretch;margin-top:4px;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+  .lead div{grid-template-columns:34px 1fr auto}
+  .game .tot{grid-column:1;grid-row:4;text-align:left}
+  .game .tot b{font-size:21px}
+  .game .totpts{grid-column:2;grid-row:4;text-align:left}
+  .game .totpts b{font-size:21px}
+  .game .chev{display:none}
+  .two{grid-template-columns:1fr}
+  main{padding:14px} header{padding:14px 14px 0}
+  table{font-size:13px} th,td{padding:7px 6px}
+  .brand h1{font-size:30px}
+  .stat-strip{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.plrbtn{display:grid;grid-template-columns:1fr auto 34px;gap:14px;align-items:center;width:100%;text-align:left;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:11px 14px;margin-bottom:6px;cursor:pointer;font:inherit;color:inherit}
+.plrbtn:hover{border-color:var(--ink)}
+.plrbtn[aria-expanded=true]{border-color:var(--ink);border-bottom-color:transparent;
+  border-radius:8px 8px 0 0;margin-bottom:0;padding-bottom:12px}
+.plrbtn .who{font-family:var(--display);font-size:20px;font-weight:600;line-height:1.1}
+.plrbtn .who span{font-family:var(--body);font-size:12px;font-weight:500;color:var(--ink-2);margin-left:8px}
+.plrbtn .sum{font-size:12px;color:var(--ink-2);text-align:right;line-height:1.4}
+.finchip{display:inline-block;font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.06em;
+  line-height:1;padding:4px 8px;border-radius:5px;margin-right:10px;vertical-align:1px;
+  background:#CFE0F4;color:#1E3D66;border:1px solid #9DBBDC}
+.finchip.live{background:#FCF1D6;color:#8A5E05;border-color:#E8D49A}
+.plrbtn .sum b{color:var(--ink);font-family:var(--display);font-size:16px;font-weight:700}
+.plrbtn .arrow{text-align:right;color:var(--muted);font-size:18px}
+.plrbody{border:1px solid var(--ink);border-top:0;border-radius:0 0 8px 8px;background:var(--panel);
+  padding:0 14px 14px;margin:0 0 10px}
+.plrbody>:first-child{margin-top:0}
+/* a hairline inside the card marks the split, so the outer border stays unbroken */
+.plrbody::before{content:"";display:block;height:1px;background:var(--line);margin:0 -14px 12px}
+.statblk{margin-top:14px}
+.plrbody .statblk:first-of-type{margin-top:0}
+.statblk h4{font-family:var(--display);font-size:17px;font-weight:600;margin:0 0 6px;color:var(--ink);
+  display:flex;align-items:baseline;gap:10px}
+.statblk h4 em{font-style:normal;font-size:12px;font-family:var(--body);font-weight:400;color:var(--ink-2)}
+.rungs{width:100%;border:0;background:transparent}
+.rungs td{border-bottom:1px solid #EDF0F3;padding:6px 8px}
+.rungs tr:last-child td{border-bottom:0}
+.rungs .thr{font-family:var(--display);font-size:17px;font-weight:600;width:110px}
+.rungs .barcell{width:46%}
+.bar-track{background:#E7EBF0;border-radius:4px;height:14px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+.bar-fill.high{background:var(--pick)} .bar-fill.med{background:var(--gold)} .bar-fill.low{background:#93A2B4}
+.pct{font-family:var(--display);font-size:18px;font-weight:700;text-align:right;width:64px;font-variant-numeric:tabular-nums}
+.conf{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:999px;width:52px;text-align:center}
+.conf.high{background:var(--pick-soft);color:var(--pick)} .conf.med{background:#FCF1D6;color:#8A5E05}
+.conf.low{background:#E9EDF1;color:var(--ink-2)}
+@media(max-width:760px){
+  .plrbtn{grid-template-columns:1fr 26px;padding:11px 12px}
+  .plrbtn .who{font-size:18px}
+  .plrbtn .sum{grid-column:1;text-align:left;margin-top:3px}
+  .plrbtn .arrow{grid-row:1/3;align-self:center}
+  .plrbody{padding:0 12px 12px}
+  .rungs .barcell{display:none}
+  .rungs .thr{width:74px;font-size:16px}
+  .rungs .pct{width:52px;font-size:16px}
+  .rungs td{padding:7px 4px}
+  .conf{width:44px;font-size:10px;padding:3px 6px}
+  /* wide tables scroll rather than squash */
+  #parlayBody table,#accTable table,#modelValidation table,#modelSeason table,#marketList table,#trackBody table{display:block;overflow-x:auto;white-space:nowrap}
+  .bigp{grid-template-columns:1fr 1fr}
+  .bigp b{font-size:24px}
+  .bar{gap:8px}
+  .bar label{font-size:13px}
+}
+
+.lead{display:grid;gap:3px;font-size:12px;line-height:1.3;min-width:0;justify-self:center}
+.lead div{display:grid;grid-template-columns:34px minmax(0,132px) auto;align-items:baseline;gap:8px;white-space:nowrap}
+.lead .cat{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.lead .nm{color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.lead .v{color:var(--ink);font-family:var(--display);font-weight:700;font-size:15px}
+.lead .v em{font-style:normal;font-family:var(--body);font-size:11px;font-weight:500;color:var(--ink-2);margin-left:3px}
+.lead .va{margin-left:7px;padding-left:7px;border-left:1px solid var(--line);font-weight:700}
+.lead .va em{font-style:normal;font-family:var(--body);font-size:11px;font-weight:500;margin-left:3px;opacity:.75}
+.lead .va.over{color:var(--pick)} .lead .va.exact{color:#5E35B1}
+.lead .va.near{color:var(--gold)} .lead .va.far{color:var(--miss)}
+.lead .va.pend{color:var(--muted);font-weight:500}
+.totpts{text-align:center;line-height:1.2}
+.totpts b{display:block;font-family:var(--display);font-size:24px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.totpts small{display:block;font-size:11px;color:var(--ink-2)}
+.totpts.assumed b{color:var(--muted)}
+
+
+.winner{text-align:center;line-height:1.2}
+.winner small{display:block;font-size:11px;color:var(--ink-2);margin-top:4px}
+.winner .none{font-family:var(--display);font-size:22px;font-weight:700;color:var(--muted)}
+
+.rungs td.pick{width:34px;padding-left:0}
+.rungs input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:var(--pick)}
+.rungs tr.on td{background:#F2F9F5}
+.legrow td{vertical-align:middle}
+.bigp{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:0 0 14px}
+.bigp .box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.bigp b{display:block;font-family:var(--display);font-size:29px;font-weight:700;line-height:1}
+.bigp span{color:var(--ink-2);font-size:12px}
+.bigp .hero{background:var(--ink);border-color:var(--ink)}
+.bigp .hero b,.bigp .hero span{color:#fff}
+.bigp .hero span{color:#B9C5D4}
+.payout{font-family:var(--display);font-size:34px;font-weight:700;color:var(--pick)}
+
+.rungs .fairodds{width:82px;font-variant-numeric:tabular-nums;font-weight:600}
+.rungs .fairodds em{font-style:normal;font-size:10px;font-weight:500;color:var(--muted);margin-left:4px}
+.rungs .book{width:64px;color:var(--pick);font-weight:600;font-variant-numeric:tabular-nums}
+@media(max-width:760px){ .rungs .fairodds em{display:none} .rungs .fairodds{width:56px} }
+
+.rungs .est{width:84px;font-variant-numeric:tabular-nums;font-weight:600}
+.rungs .est em{font-style:normal;font-size:10px;font-weight:500;color:var(--muted);margin-left:4px}
+.rungs .est .mkt{font-size:11px;font-weight:600;color:var(--ink-2)}
+.rungs .book.real{color:var(--pick);font-weight:700}
+.rungs .book.real em{font-style:normal;margin-left:3px;font-size:12px}
+.rungs tr.mainline td{background:#F7F9FB}
+.rungs tr.mainline .thr{font-size:15px}
+.statblk h4 em.mline{margin-left:auto;color:var(--pick);font-weight:600}
+@media(max-width:760px){ .rungs .est em{display:none} .rungs .est{width:58px} .statblk h4 em.mline{margin-left:8px} }
+
+.game.locked{background:#F6F8FA}
+.game.final{background:#CFE0F4;border-color:#9DBBDC}
+.game.final:hover{border-color:var(--away)}
+.game.final .pill.ok{background:#B7D0EC;color:#1E3D66}
+.game.final .when b,.game.final .tot b,.game.final .totpts b{color:#0E2340}
+.game.final .lead .va.near{color:#7A5204}
+.game.final .lead .va.far{color:#9E2F28}
+.game.final .lead .va.exact{color:#4E2A96}
+.game.final .muted,.game.final .lead .cat,.game.final .tot small,.game.final .totpts small{color:#4A5B72}
+.res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
+.res.win{color:var(--pick)} .res.loss{color:var(--miss)}
+.rungs tr.hit td{background:#EEF7F1} .rungs tr.miss td{background:#FBF0EF}
+.statblk h4 em.actual{color:var(--ink);font-weight:700;background:#EEF1F4;padding:2px 8px;border-radius:5px}
+.pill.bad{background:var(--miss-soft);color:var(--miss)}
+.savedp{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+
+/* stat tiles on a finished game */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px;margin-top:0}
+.tile{background:#FAFBFC;border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:2px}
+.tile .tl{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.tile .tv{font-family:var(--display);font-size:27px;font-weight:700;line-height:1.05}
+.tile .tv.over{color:var(--pick)} .tile .tv.exact{color:#5E35B1}
+.tile .tv.near{color:var(--gold)} .tile .tv.far{color:var(--miss)}
+.tile .tv.pend{color:var(--muted);font-size:20px}
+.tile .tp{font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .td{font-weight:700}
+.tile .td.over{color:var(--pick)} .tile .td.exact{color:#5E35B1}
+.tile .td.near{color:var(--gold)} .tile .td.far{color:var(--miss)}
+.tile .tb{margin-top:auto;padding-top:5px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .tb.none{color:var(--muted);font-style:italic}
+.side-res{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:999px}
+.side-res.over{background:var(--pick-soft);color:var(--pick)}
+.side-res.under{background:#E7EDF6;color:var(--away)}
+.side-res.push{background:#EEF1F4;color:var(--muted)}
+.recaplegend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 2px 0;font-size:11px;color:var(--ink-2)}
+.recaplegend span{display:flex;align-items:center;gap:5px}
+.recaplegend i{width:9px;height:9px;border-radius:2px;display:inline-block;font-style:normal}
+/* saved parlays */
+.sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.sp-title{font-family:var(--display);font-size:20px;font-weight:700}
+.sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
+.sp-money div{background:#F7F9FB;border:1px solid var(--line);border-radius:7px;padding:7px 10px}
+.sp-money b{display:block;font-family:var(--display);font-size:21px;font-weight:700;line-height:1.1}
+.sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.sp-money .win b{color:var(--pick)} .sp-money .lose b{color:var(--miss)}
+.sp-leg{display:grid;grid-template-columns:22px 1fr auto auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid #EDF0F3;font-size:13px}
+.sp-leg .nm{font-weight:600} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
+.sp-leg .rs{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;text-align:right}
+@media(max-width:760px){ .tiles{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))} .tile .tv{font-size:23px} .sp-leg{grid-template-columns:20px 1fr auto;gap:7px} .sp-leg .rs{grid-column:2/-1;text-align:left} }
+
+.tot small.act,.totpts small.act,.winner small.act{display:block;margin-top:4px;font-size:12px;font-weight:700;
+  color:var(--away);letter-spacing:.01em}
+.winner small.act.right{color:var(--pick)} .winner small.act.wrong{color:var(--miss)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Prop Model</h1>
+    <span class="sub" id="buildTag"></span>
+    <span class="sub grow" id="saveState" style="margin-left:auto"></span>
+  </div>
+  <nav role="tablist" id="tabs">
+    <button role="tab" data-tab="slate" aria-selected="true">Games</button>
+    <button role="tab" data-tab="parlay">Parlay Builder</button>
+    <button role="tab" data-tab="track">Track Record</button>
+    <button role="tab" data-tab="week">Weekly Update</button>
+    <button role="tab" data-tab="model">How It Works</button>
+    <button role="tab" data-tab="backup">Backup</button>
+  </nav>
+</header>
+<main>
+
+<section id="tab-slate">
+  <p id="rebuildNote" class="card" style="border-left:4px solid var(--gold);margin-bottom:14px" hidden></p>
+  <div id="slateView">
+    <div class="bar">
+      <label>Week <select id="weekSel"></select></label>
+      <span class="grow"></span>
+    </div>
+    <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
+    <div class="gamehead">
+      <div>Kickoff</div><div>Matchup</div><div class="c">Biggest projections</div>
+      <div class="c">Expected score</div><div class="c">Total pt</div><div class="c">Winner</div><div></div>
+    </div>
+    <div id="gamesList"></div>
+  </div>
+  <div id="gameModal" class="modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-label="Game detail">
+      <div id="gameView"></div>
+    </div>
+  </div>
+</section>
+
+<section id="tab-parlay" hidden>
+  <div id="parlayBody"></div>
+</section>
+
+<section id="tab-track" hidden>
+  <div class="card">
+    <h2>Track record</h2>
+    <p class="muted" style="margin:0 0 10px">Every threshold, book line and touchdown chance the app showed before kickoff, checked against what happened. The numbers are the ones frozen at grade time, so they can't drift toward the result. Fills in on its own each time you upload a week.</p>
+    <div class="bar" style="margin:0 0 12px">
+      <label>Market <select id="trackMarket"><option value="all">All markets</option></select></label>
+      <label>Line type <select id="trackKind"><option value="all">All lines</option><option value="rung">Thresholds (20+, 30+ ...)</option><option value="main">Book main lines</option><option value="td">Anytime touchdown</option></select></label>
+    </div>
+    <div id="trackBody"><p class="muted">Nothing graded yet. Once a week's player stats are uploaded, every projection from that week is scored here.</p></div>
+  </div>
+</section>
+
+<section id="tab-week" hidden>
+  <div class="card">
+    <h2>Get this week's numbers</h2>
+    <p class="muted" style="margin:0 0 12px">If the weekly build runs for you (Thursday and Saturday mornings), everything below is already built into this file: scores, lines, injuries, prices and last week's stats are applied the moment it opens, and the log below says what came in. The buttons stay for a manual top-up between builds.</p>
+    <div class="bar" style="margin:0 0 10px">
+      <button class="btn go" id="fetchGames">1. Pull in scores and schedule</button>
+      <span class="muted" id="gamesStatus">No download needed.</span>
+    </div>
+    <p class="muted" style="margin:0 0 6px"><b>2. Download these four.</b> Each opens in a new tab and saves straight to your downloads.</p>
+    <div class="bar" style="margin:0 0 12px">
+      <a class="btn quiet" id="statsLink" href="https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv" target="_blank" rel="noopener">Player stats</a>
+      <a class="btn quiet" id="rosLink" href="https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_2026.csv" target="_blank" rel="noopener">Rosters</a>
+      <a class="btn quiet" id="injLink" href="https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv" target="_blank" rel="noopener">Injury report</a>
+      <a class="btn quiet" id="dcLink" href="https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2026.csv" target="_blank" rel="noopener">Depth charts</a>
+      <span class="muted">Depth charts are about 50MB, the rest are small.</span>
+    </div>
+    <div class="bar" style="margin:0 0 14px">
+      <input type="file" id="allFiles" accept=".csv" multiple hidden>
+      <button class="btn go" id="upAll">3. Upload them back</button>
+      <span class="muted">Pick all four at once. The app works out which is which.</span>
+    </div>
+    <h3 style="margin:18px 0 6px">Prices for the 10+, 20+, 30+ lines</h3>
+    <p class="muted" style="margin:0 0 10px">The main lines (over/under 264.5 and the like) are already built in for the week, with real prices. The threshold lines are shown with an estimated price, because no free source publishes those. If you want the real ones from your own sportsbook, this is how: download a sheet, type the prices in, upload it back. Anything you fill in replaces the estimate on that line and in the Parlay Builder.</p>
+    <div class="bar" style="margin:0 0 8px">
+      <label>Week <select id="oddsWeekSel"></select></label>
+      <button class="btn quiet" id="oddsLegs">Sheet for just my parlay</button>
+      <button class="btn quiet" id="oddsTemplate">Sheet for the whole week</button>
+    </div>
+    <div class="bar" style="margin:0">
+      <input type="file" id="oddsFile" accept=".csv" hidden>
+      <button class="btn go" id="oddsUpload">Upload prices</button>
+      <button class="btn quiet" id="oddsClear">Clear prices</button>
+      <span class="muted" id="oddsStatus"></span>
+    </div>
+    <p class="muted" style="margin:8px 0 0;font-size:12px">"Just my parlay" is the practical one: a handful of rows for the lines you've ticked. The whole-week sheet is several thousand rows and exists for completeness.</p>
+    <div class="log" id="log"><div class="muted" data-placeholder>Nothing uploaded yet. Projections are running off how everyone finished 2025.</div></div>
+  </div>
+  <div class="card">
+    <h2>What each file does</h2>
+    <ul>
+      <li><b>Player stats</b> is the one that matters. Every player's form, every team's volume and every defense update from it. It only exists once games have been played, so before Week 1 that link returns "not found", which is expected.</li>
+      <li><b>Rosters</b> keep everyone on the right team. The 2026 offseason is already built in, so Week 1 is correct out of the box, but signings and cuts happen all season and this is what catches them.</li>
+      <li><b>Injury report</b> pulls anyone ruled out or doubtful off this week's game pages so you aren't looking at a player who isn't dressing.</li>
+      <li><b>Depth charts</b> set who counts as the starter, so a game page shows QB1 and RB1 rather than whoever happened to touch the ball most last season. It's the big file, and it changes slowly, so every few weeks is enough.</li>
+      <li><b>Price sheet</b> is optional. Columns are <code>game_id, player, market, threshold, odds</code>, with odds in American form like -115 or +260. The threshold matches the numbers on the game pages, so a row reading <code>250, -120</code> means your book pays -120 on 250 or more. Open it in Excel or Numbers, fill the odds column, save as CSV.</li>
+      <li>Re-uploading is safe. Weeks already counted are skipped.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="tab-model" hidden>
+  <div class="card">
+    <h2>What this app does</h2>
+    <p class="muted" style="margin:0 0 10px">For every starter and rotation player in a game, it projects what they will do, then works out the chance of clearing each threshold: 20 or more pass attempts, 50 or more rushing yards, 6 or more catches, and so on. Each line gets its own percentage and a Low, Med or High rating.</p>
+    <h3>How a projection is built</h3>
+    <ul>
+      <li><b>The player's own recent form</b> carries the most weight: a five-game and a three-game weighted average, their career rate, and last season's rate. The career and last-season numbers are pulled toward the league average when a player has barely any history, so one big game in limited action doesn't blow up his projection.</li>
+      <li><b>Team volume</b>, because a receiver's targets depend on how much his offense throws.</li>
+      <li><b>The opponent</b>, both overall and what they specifically give up to that position.</li>
+      <li><b>Game context</b>: the points each team is expected to score, home or away, and how lopsided the game looks. Where a sportsbook has posted a line, that is used, because the market predicts scoring better than we do (7.25 points of average error against our 7.60 on the 2025 season). Where no line exists yet, which is most of the season this far out, the game is built from our own team ratings instead of assuming an average game. Those weeks are marked.</li>
+    </ul>
+    <h3>Why the percentages aren't what you'd guess</h3>
+    <ul>
+      <li>A projection is an average, and averages sit above a typical night. A receiver projected for 60 yards clears 60 well under half the time, because his quiet games are near zero and his big ones are huge, which drags the average up.</li>
+      <li>So the app doesn't assume a neat bell curve. It carries the real shape of each stat's outcomes, measured across seven seasons, and reads the chance of clearing a number straight off that. This is why you'll see a player projected for 60 yards sitting under 50% to hit 60 or more, and it's the correct answer.</li>
+      <li><b>High</b> is 70% or better, <b>Med</b> is 45 to 70%, <b>Low</b> is under 45%.</li>
+    </ul>
+    <h3>Two different questions on every line</h3>
+    <ul>
+      <li><b>The percentage answers "will it happen?"</b> That is the model's own view, tested against seven seasons of results. Checked on established starters in 2025, it is unbiased: predicted averages match real averages within a few percent on every stat, and the chance of clearing its own median comes out at 47 to 51%.</li>
+      <li><b>The estimated price answers "what would a sportsbook charge?"</b> That is a different question, because the market disagrees with the model. In Week 1 the market sat about 5 points higher than the model on every main line. So the price estimate starts from where the market is, not where the model is.</li>
+      <li>The gap between those two is the whole point. If the model says 55% and the book's price implies 48%, that is the disagreement worth looking at. Whether the model or the market is right is the open question this app cannot yet answer, because it has never been scored against real prices.</li>
+    </ul>
+    <h3>How the estimated price is built</h3>
+    <ul>
+      <li><b>Where a real line is baked in</b> (the "book line" shown beside the stat), the model's distribution is shifted until it agrees with the market at that number, with the bookmaker's cut stripped out first. Then the chance of each rung is read off the shifted distribution.</li>
+      <li><b>Where no line exists</b>, the projection is nudged by the average gap measured against the market in the most recent week with lines: roughly 3% on pass attempts, 6% on passing yards, 9% on rushing and receiving yards, 14% on receptions.</li>
+      <li><b>Then the cut is added.</b> Main lines run about 6.5% total hold, which is the -114/-114 you see everywhere. Alternate ladders run far higher, and the longer the shot the more they take. The shape of that curve is an assumption, not a measurement, because no free source publishes alternate prices to measure it against. The margin setting on each game page lets you make it lighter or heavier if your book runs differently.</li>
+      <li><b>Reliability falls off in the tails.</b> A few points of error barely moves a coin-flip price and wildly moves a longshot: 8% is +1150, 3% is +3233. Near the projection the estimate is worth using. At 300+ passing yards it is a rough direction.</li>
+      <li>Every price is labelled: <b>real</b> is a sportsbook's actual number, <b>est.</b> is this estimate, <b>fair</b> is the model's chance with no cut at all.</li>
+    </ul>
+    <div id="modelValidation"></div>
+    <div id="modelSeason"></div>
+    <h3>What it can't do</h3>
+    <ul>
+      <li><b>It has never been checked against a sportsbook.</b> Old betting lines aren't published anywhere free, so everything below is the model against what players actually did. Whether these percentages beat a real book is a harder question and this hasn't answered it.</li>
+      <li><b>Kickers are a coin flip.</b> Across seven seasons the model is no better at field goals than guessing the league average. Kicker numbers are shown but treat them as noise.</li>
+      <li><b>It doesn't know about news.</b> A snap-count change, a new coordinator or a player working through something all move the picture before they show up in the stats.</li>
+      <li><b>It only sees starters and the main rotation.</b> Deep backups are hidden because projecting them from almost no history produces nonsense.</li>
+      <li><b>Rookies aren't in it.</b> Anyone who has never played an NFL game has nothing to project from, so first-year players are missing entirely until they've played three games. If a rookie is starting somewhere, you'll notice a name absent rather than a wrong number.</li>
+      <li><b>Rosters are a snapshot.</b> Teams are baked in from the 2026 roster as of the build date, with anyone released or on reserve already removed. Upload a fresh roster each week and it stays current through the season.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="tab-backup" hidden>
+  <div class="card">
+    <h2>What's changed</h2>
+    <p class="muted" style="margin:0 0 10px">A running log of fixes and features, most recent first. If something looks off, check here before assuming it's new. Bold entries are bugs that were producing wrong numbers rather than just looking wrong.</p>
+    <div style="max-height:420px;overflow-y:auto;padding-right:6px">
+    <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v28</td><td>A game now opens in a window over the games list instead of replacing it. Close it with the button, the Escape key, or a click outside; the list underneath keeps its place and any legs you ticked show there straight away.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v27</td><td><b>Added the Track Record tab.</b> Every threshold, book line and touchdown chance shown before kickoff is scored against the result and grouped by confidence band, by the percentage the model said, by week, by market, and for your locked parlays. The chances are frozen at grade time alongside the projections, so a played game is scored on exactly what it showed. Older graded weeks are scored from their frozen projection with the same tables. Each table carries a noise margin so a thin sample is not read as a trend.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v19</td><td>The header of an expanded player had a rounded corner on one side and a square one on the other, with its border cut across the join. Caused by a typo, <code>border-bottom-radius</code>, which is not a real CSS property so browsers ignored it silently. Swept the rest of the stylesheet for the same mistake.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v18</td><td>The week selector opened on week 2 because it picked the first week you hadn't uploaded stats for, and you had uploaded week 1's. It now reads the schedule: the current week is the earliest one still holding an unplayed game. Weeks after that stay closed, since a projection built on form from games that haven't happened would look authoritative and be stale. Finished-game stats moved from a table to tiles, with colour on the numbers rather than the row. Saved parlays gained a proper money panel: staked, price, payout, profit, chance, result, plus a running total across every ticket.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v17</td><td>A played game read STARTED forever because nothing marked it finished. Games are now final once a score is in, or four hours after kickoff. Pulled the real result in, so week 1 shows NE 10 at SEA 13. Finished games drop the betting ladders entirely and show projected against actual instead.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v16</td><td>Games lock at kickoff: no checkboxes, no adding legs, unsaved legs from a started game drop out of the builder. Added save and lock for parlays, which freezes legs, stake and price and moves the ticket to a Saved section that grades itself when stats arrive. <b>Fixed a real error found while testing:</b> a finished game's projection was being recomputed after that week's results were folded in, so it drifted toward the answer. Projections are now frozen before grading, so a recap shows what the model actually said beforehand.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v15</td><td>The price sheet download built a link that was never attached to the page, which Chrome tolerates and Safari silently drops. Fixed, along with the same pattern on the backup export. Added a sheet covering just your parlay legs, since the full-week version is nearly five thousand rows.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v14</td><td>Ran a full audit across every game, player and threshold in the season, 26,800 checks. It found three real bugs. <b>The anytime-touchdown cap had silently switched off</b> during a data rebuild, which had been holding backup running backs down from absurd numbers. <b>Market anchoring failed on 40 of 303 lines</b>, because the search assumed model and market were within twice each other, and Jacksonville's lead back differs by 2.6 times. <b>The outcome distribution jumped at its internal tier boundaries</b>, which would also have made odds twitch as a projection drifted. All fixed; the build now refuses to produce a file with any required piece missing.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v13</td><td>Added estimated sportsbook prices to every threshold. Where a real line exists the distribution is shifted to agree with the market at that number, vig stripped first; elsewhere the average measured gap is applied. Then a bookmaker's cut goes on top, adjustable light, typical or heavy. Baked in 303 real Week 1 lines with both prices, and made the main line itself bettable on both sides.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v12</td><td>Every threshold now shows what its chance is worth as a price, labelled fair since it carries no bookmaker margin.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v11</td><td>The home page was unreadable on a phone. The game row is a seven-column grid and the mobile rule only told two of those seven where to go, so the rest landed wherever; the projections column was also being hidden by a leftover rule. Every cell is now placed explicitly as a stacked card.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v10</td><td>Wired in the team model from the other project. Tested our own points model first and it lost to the betting market, 7.60 average error against 7.25, so the market is used wherever a line exists and our models only fill the 172 games without one. Those weeks previously assumed a flat league-average game.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v9</td><td>Added the Parlay Builder with checkboxes on every projection. One pick per player per stat, enforced by how legs are stored, so choosing 30+ after 20+ replaces it. <b>Corrected a misleading display:</b> the first version showed an expected return even with no real odds loaded, computed from the model's own margin-free prices, which made every parlay look profitable. It now refuses to compute one until a real price is entered.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v8</td><td>Filled the empty space on the games list with the three biggest projections per game, plus total points and the winner.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v7</td><td>Team tags took the colours from the other project, including the rule that falls through to a team's secondary colour when the primary is too dark to read as anything but navy.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v6</td><td><b>Players from the wrong teams.</b> The saved copy in your browser was overriding the newly baked-in rosters, because the version check only looked at whether the model had changed, not the roster data. Roster data now carries its own stamp, and uploading a roster removes players no longer on one instead of only adding and moving.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v5</td><td>Baked in the 2026 rosters and depth charts: 97 players changed teams, 97 more were released or retired and dropped. Depth charts set who counts as a starter, so pages show QB1 and RB1 rather than whoever touched the ball most last season, and name the starters who can't be projected because they have no NFL history.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v4</td><td>Rebuilt around collapsible players and threshold ladders. Removed the betting tabs. <b>Fixed backups appearing as starters</b>, including Mac Jones alongside Purdy: players are now ranked by projected usage within their position and only the starter and main rotation show.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v3</td><td>Reworked what the app flags. The earlier version measured edge against the de-vigged line, which tells you where you disagree with a sportsbook but not whether you'd profit. It now measures against the price you actually pay, cut included. Also fixed the odds template writing market names its own parser rejected, so those rows were silently dropped.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v2</td><td>Added correlated parlay pricing after measuring how every pair of markets moves together across 2019 to 2024. Multiplying legs is off by 14 points on the strongest pairs.</td></tr>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1</td><td>Built the projection model from 124,000 player-games, 2019 to 2025. <b>The first version was badly wrong about probability:</b> it assumed a bell curve around each projection and said 50% where the real rate was 44%, because player stats are right-skewed. Replaced with the measured shape of each stat's outcomes. <b>A second bug had backup running backs at 76% to score</b>, from an unshrunk career rate: one touchdown in two games looked elite. Fixed with shrinkage toward the league average plus a cap tied to expected touches.</td></tr>
+    </tbody></table>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Backup and reset</h2>
+    <p id="buildNote" class="muted" style="margin:0 0 10px"></p>
+    <div class="bar" style="margin:0">
+      <button class="btn quiet" id="exportBtn">Export backup</button>
+      <button class="btn quiet" id="importBtn">Import backup</button>
+      <input type="file" id="importInput" accept=".json" hidden>
+      <span class="grow"></span>
+      <button class="btn danger" id="resetBtn">Reset to preseason</button>
+    </div>
+    <ul>
+      <li><b>Export backup</b> saves everything to a file: player form, team numbers and every week you've loaded. It otherwise lives only in this browser, so clearing site data would wipe it.</li>
+      <li><b>Import backup</b> restores one of those, or moves your season to another computer.</li>
+      <li><b>Reset to preseason</b> throws away every week you've uploaded and rebuilds from the 2025 baseline.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+<script>

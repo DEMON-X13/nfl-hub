@@ -7,7 +7,7 @@ the results. GitHub Pages serves the repo root:
 | Path | What | Source |
 |---|---|---|
 | `betting/` | X NFL Betting Model, public viewer (`index.html`) and full app (`admin.html`) | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
-| `props/` | Prop Model | (phase 2) |
+| `props/` | Prop Model, one page (`index.html`) with the week's data baked in | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker | (phase 3) |
 
 ## Betting site
@@ -47,7 +47,22 @@ node betting/tools/build.js             # index.html + admin.html
 node betting/tools/smoke.js             # viewer check
 ```
 
-## The job
+## Prop model
+
+`props/` is the prop model package as it was, plus `requirements.txt` and a
+lockfile so the job can install it. `props/build/weekly.py` downloads the five
+nflverse files, pulls prop prices from the-odds-api (needs the `ODDS_API_KEY`
+repository secret; about 7 credits a game, 500 free a month), rebuilds the
+payload, bakes stats, injuries and prices into the page, assembles it and runs
+the 27,000-check audit. The workflow copies the result to `props/index.html`.
+`raw/feat.pkl` (43MB, the fitted feature table for 2019-2025) is committed so
+the job does not rebuild it. Visitors' parlays and bets stay in their browser.
+
+Its workflow, `.github/workflows/props.yml`, runs Thursday and Saturday at
+10am Eastern only, because those two runs are the ones that spend credits. The
+betting job never touches the key.
+
+## The betting job
 
 `.github/workflows/update.yml` runs three windows a week, Friday, Monday and
 Tuesday mornings (Eastern) with an afternoon catch-up each, covering the

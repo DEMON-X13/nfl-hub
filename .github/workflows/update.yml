@@ -49,5 +49,6 @@ jobs:
           git add betting/state.json betting/index.html betting/admin.html
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "betting: update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase
             git push
           fi

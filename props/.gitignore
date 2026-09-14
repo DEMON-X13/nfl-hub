@@ -1,0 +1,7 @@
+raw/*.csv
+raw/*.pkl
+!raw/fake_wk1.csv
+!raw/feat.pkl
+build/node_modules/
+app/app.js
+.env
