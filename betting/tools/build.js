@@ -58,8 +58,20 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 `;
 
+const ADMIN = `<script>
+/* admin only: a link straight to the job's Run workflow page, the manual refresh */
+document.addEventListener('DOMContentLoaded',()=>{
+  const st=document.getElementById('saveState'); if(!st) return;
+  const a=document.createElement('a'); a.className='sub'; a.target='_blank'; a.rel='noopener';
+  a.href='https://github.com/DEMON-X13/nfl-hub/actions/workflows/update.yml';
+  a.title='Opens GitHub Actions. Press Run workflow to download the latest files, grade, and republish now.';
+  a.textContent='Refresh site now \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
+  st.insertAdjacentElement('afterend',a);
+});
+</script>
+`;
 const anchor = '<script>\nconst MODEL = ';
 if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
 fs.writeFileSync(path.join(ROOT, 'betting', 'index.html'), html.replace(anchor, HOOK + TRIM + anchor));
-fs.writeFileSync(path.join(ROOT, 'betting', 'admin.html'), html.replace(anchor, HOOK + anchor));
+fs.writeFileSync(path.join(ROOT, 'betting', 'admin.html'), html.replace(anchor, HOOK + ADMIN + anchor));
 console.log('built betting/index.html (viewer) and betting/admin.html (all tabs, same published season) from', path.relative(ROOT, APP));

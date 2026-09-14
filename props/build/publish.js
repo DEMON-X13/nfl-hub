@@ -37,5 +37,17 @@ const PUBLIC_TEXT = [
 let pub = html.replace('</body>', TRIM + '</body>');
 for (const [from, to] of PUBLIC_TEXT) { if (!pub.includes(from)) throw new Error('public text not found: ' + from.slice(0, 40)); pub = pub.split(from).join(to); }
 fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), pub);
-fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), html);
+const ADMIN = `<script>
+/* admin only: a link straight to the job's Run workflow page, the manual refresh */
+document.addEventListener('DOMContentLoaded',()=>{
+  const st=document.getElementById('saveState'); if(!st) return;
+  const a=document.createElement('a'); a.className='sub'; a.target='_blank'; a.rel='noopener';
+  a.href='https://github.com/DEMON-X13/nfl-hub/actions/workflows/props.yml';
+  a.title='Opens GitHub Actions. Press Run workflow to pull lines and prices, bake, and republish now (tick skip the price pull to spend no credits).';
+  a.textContent='Refresh site now \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
+  st.insertAdjacentElement('afterend',a);
+});
+</script>
+`;
+fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), html.replace('</body>', ADMIN + '</body>'));
 console.log('published props/index.html (public, 4 tabs) and props/admin.html (all tabs)');
