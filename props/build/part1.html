@@ -219,8 +219,14 @@ body.modal-open{overflow:hidden}
 .pays h3{margin:0 0 12px}
 .pays .bar{margin:0 0 4px}
 .pays .bigp{grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 0}
-.pays .tierbig.high{color:var(--pick)} .pays .tierbig.med{color:#8A5E05} .pays .tierbig.low{color:var(--ink-2)}
-.pays .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.pays .bigp .box{padding:10px 12px}
+.pays .bigp b{font-size:23px}
+.pays .bigp span{font-size:11px}
+/* the confidence box is colour-coded like the leg tags */
+.pays .box.tier.high{background:var(--pick-soft);border-color:var(--pick)} .pays .box.tier.high b,.pays .box.tier.high span{color:var(--pick)}
+.pays .box.tier.med{background:#FCF1D6;border-color:#E3C77A} .pays .box.tier.med b,.pays .box.tier.med span{color:#8A5E05}
+.pays .box.tier.low{background:#E9EDF1;border-color:#C9D1DB} .pays .box.tier.low b,.pays .box.tier.low span{color:var(--ink-2)}
+.pays .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}
 @media(max-width:900px){ .pays .bigp{grid-template-columns:1fr 1fr} }
 .payout{font-family:var(--display);font-size:34px;font-weight:700;color:var(--pick)}
 
