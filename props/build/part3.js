@@ -245,16 +245,26 @@ function renderGame(){
       for(const l of lines){
         if(l.prob){
           const [c,lbl]=confTier(l.p);
-          const tk=legKey(g.id,x.pl.id,'any_td'), ton=!!S.parlay[tk];
+          const tk=legKey(g.id,x.pl.id,'any_td'), tcur=S.parlay[tk]; const ton=!!tcur&&(tcur.k||1)<2, ton2=!!tcur&&tcur.k===2;
           const tod=oddsFor(g.id,x.pl.id,'any_td',1);
+          const p2=tdPlus(l.p,2), [c2,lbl2]=confTier(p2);
+          const ta=(locked&&haveStats)?actualFor(g.w,x.pl.id):null;
+          const tmark=hit=>hit==null?'<span class="res">\u2013</span>':(hit?'<span class="res win">\u2713</span>':'<span class="res loss">\u2717</span>');
           html+=`<div class="statblk"><h4>Touchdown</h4>
             <table class="rungs"><tr class="${ton?'on':''}">
-            <td class="pick">${locked?(()=>{const a=(haveStats?actualFor(g.w,x.pl.id):null); return a?(a.any_td>=1?'<span class="res win">\u2713</span>':'<span class="res loss">\u2717</span>'):'<span class="res">\u2013</span>';})():`<input type="checkbox" ${ton?'checked':''} data-leg="${tk}" data-k="1" data-side="over" aria-label="Add ${esc(x.pl.n)} to score a touchdown">`}</td>
+            <td class="pick">${locked?tmark(ta?ta.any_td>=1:null):`<input type="checkbox" ${ton?'checked':''} data-leg="${tk}" data-k="1" data-side="over" aria-label="Add ${esc(x.pl.n)} to score a touchdown">`}</td>
             <td class="thr">Scores one</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${(l.p*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(l.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
             <td class="num est">${fmtML(bookPrice(l.p))}<em>est.</em></td>
-            <td class="num book real">${tod!=null?fmtML(tod):''}</td></tr></table></div>`;
+            <td class="num book real">${tod!=null?fmtML(tod):''}</td></tr>
+            <tr class="${ton2?'on':''}">
+            <td class="pick">${locked?tmark(ta&&ta.tds!=null?ta.tds>=2:null):`<input type="checkbox" ${ton2?'checked':''} data-leg="${tk}" data-k="2" data-side="over" aria-label="Add ${esc(x.pl.n)} to score two or more touchdowns">`}</td>
+            <td class="thr">Scores two or more</td>
+            <td class="barcell"><div class="bar-track"><div class="bar-fill ${c2}" style="width:${Math.max(2,p2*100).toFixed(0)}%"></div></div></td>
+            <td class="pct">${(p2*100).toFixed(0)}%</td><td><span class="conf ${c2}">${lbl2}</span></td>
+            <td class="num est">${fmtML(bookPrice(p2))}<em>est.</em></td>
+            <td class="num book real"></td></tr></table></div>`;
           continue;
         }
         const lk=legKey(g.id,x.pl.id,l.stat), cur=S.parlay[lk];
@@ -337,7 +347,8 @@ function rowStats(r){
     receptions:g('receptions'),targets:g('targets'),receiving_yards:g('receiving_yards'),
     receiving_tds:g('receiving_tds'),fg_att:g('fg_att'),fg_made:g('fg_made'),pat_made:g('pat_made'),pat_att:g('pat_att')};
   o.scrim_yards=o.rushing_yards+o.receiving_yards;
-  o.any_td=(o.rushing_tds+o.receiving_tds)>=1?1:0;
+  o.tds=o.rushing_tds+o.receiving_tds;   /* count, for the 2+ line */
+  o.any_td=o.tds>=1?1:0;
   o.kick_pts=3*(g('fg_made_0_19')+g('fg_made_20_29')+g('fg_made_30_39'))+4*g('fg_made_40_49')+5*(g('fg_made_50_59')+g('fg_made_60_'))+o.pat_made;
   return o;
 }
@@ -720,7 +731,7 @@ function toggleLeg(key,k,g,side,main){
   const pr=project(pl,stat,opp,ctx); if(!pr) return;
   const m=MKT[stat];
   let p,label,price=null,src='est';
-  if(m.prob){ p=pr.p; label='Scores a touchdown'; price=bookPrice(p); }
+  if(m.prob){ const kk=k>=2?k:1; p=kk>=2?tdPlus(pr.p,kk):pr.p; label=kk>=2?`Scores ${kk}+ touchdowns`:'Scores a touchdown'; price=bookPrice(p); k=kk; }
   else if(main){
     const L=marketLine(game.w,pid,stat); if(!L) return;
     const pO=pOver(pl.grp,stat,pr.mu,L.line);

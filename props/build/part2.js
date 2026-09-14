@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v29 \u00b7 2026-09-14';
+const APP_BUILD='app v30 \u00b7 2026-09-14';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -166,6 +166,8 @@ function gameBet(g,team,kind){
   const pH=1-gbNorm((g.sp-mu)/MARGIN_SD);      /* home covers when its margin beats the spread */
   return {p:isHome?pH:1-pH,line:isHome?-g.sp:g.sp,mu:isHome?mu:-mu};
 }
+/* chance of k or more touchdowns from the any-time chance p, touchdowns treated as Poisson */
+function tdPlus(p,k){ const lam=-Math.log(Math.max(1e-9,1-Math.min(p,1-1e-9))); let s=0,t=1; for(let i=0;i<k;i++){ s+=t; t*=lam/(i+1); } return Math.max(0,Math.min(1,1-Math.exp(-lam)*s)); }
 function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'); }
 function settleGameLeg(l){
   const g=S.sched.find(x=>x.id===l.gid); if(!g||!hasScore(g)) return null;
@@ -627,7 +629,7 @@ function settleLeg(l){
   if(isGameLeg(l)) return settleGameLeg(l);
   const a=actualFor(l.week,l.pid); if(!a) return null;
   const v=a[l.stat]; if(v==null) return null;
-  if(l.stat==='any_td') return v>=1?'win':'loss';
+  if(l.stat==='any_td'){ const k=l.k||1; if(k>=2){ if(a.tds==null) return null; return a.tds>=k?'win':'loss'; } return v>=1?'win':'loss'; }
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
   return v>=l.k?'win':'loss';
 }
