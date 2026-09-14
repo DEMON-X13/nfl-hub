@@ -20,8 +20,13 @@ the results. GitHub Pages serves the repo root:
 - Gate: the app's embedded model numbers must equal
   `betting/tools/reference_models.json`, the numbers the research harness
   exported. A mismatch aborts the publish.
-- `betting/tools/build.js` makes `index.html` (viewer) and `admin.html` (full
-  app) from the one app file. The viewer removes the Downloads, Upload,
+- `betting/tools/build.js` makes `index.html` (viewer) and `admin.html` (every
+  tab) from the one app file. Both load the same published season; the admin
+  page adds Record & Bets, Downloads, Upload and Backup. Picks, bankroll and
+  bets are kept in the browser under one key shared by the two pages, so a
+  pick made on either shows on both. Uploads on admin grade for that session
+  only; the job's published state wins on the next load. To carry picks over
+  from a local copy of the app, use Import backup on the admin page. The viewer removes the Downloads, Upload,
   Record & Bets and Backup tabs, loads `state.json`, and keeps the visitor's own
   picks, bankroll, bets and any odds they load in their browser only. Picks are
   graded against the published results. Moneylines from nflverse are published

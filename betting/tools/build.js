@@ -2,11 +2,13 @@
  *
  *   node betting/tools/build.js
  *
- *   betting/index.html   the public viewer: AI Picks, My Picks, Power Ratings.
- *                        Loads betting/state.json (published by update.js) and
- *                        keeps only the visitor's own picks in their browser.
- *   betting/admin.html   the full app, unchanged (Downloads, Upload, Record & Bets,
- *                        Bank Roll, Backup). Its state lives in the browser as before.
+ *   betting/index.html   the public viewer: AI Picks, My Picks, Bank Roll, Power Ratings.
+ *   betting/admin.html   every tab, on the same published season.
+ *
+ * Both pages load betting/state.json (written by update.js) as the season and keep
+ * only this browser's own picks, bankroll, bets and self-loaded odds in local
+ * storage, under one key shared by the two pages. Uploads on the admin page grade
+ * for the session only; the job's published state wins on the next load.
  */
 'use strict';
 const fs = require('fs');
@@ -15,13 +17,12 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const APP = path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html');
 const html = fs.readFileSync(APP, 'utf8');
 
-const VIEWER = `<script>
-/* viewer mode: the published season comes from state.json; only this visitor's picks are kept locally */
+const HOOK = `<script>
+/* published mode: the season comes from state.json (written by the update job); this browser keeps only its own picks, bankroll, bets and odds */
 (function(){
-  /* the visitor's own things: picks, bankroll, bets, and any odds they fetched or uploaded themselves */
   const MINE='x_nfl_viewer_picks_2026';
   const loadMine=()=>{ try{ const v=JSON.parse(localStorage.getItem(MINE)||'{}'); return v.myPicks||v.bank||v.bets?v:{myPicks:v}; }catch(e){ return {}; } };
-  window.VIEWER=true;
+  window.PUBLISHED=true;
   window.storage={
     async get(key){
       const r=await fetch('state.json',{cache:'no-store'}); if(!r.ok) throw new Error('state.json '+r.status);
@@ -41,18 +42,24 @@ const VIEWER = `<script>
       localStorage.setItem(MINE,JSON.stringify({myPicks:S.myPicks||{},bank:S.bank||null,bets:S.bets||{},odds:own})); }catch(e){} return true; }
   };
   document.addEventListener('DOMContentLoaded',()=>{
-    for(const t of ['upload','record','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
-    /* moneylines come published with the state; the fetch/upload/clear card is admin-only */
-    const ml=[...document.querySelectorAll('#tab-bank .card h2')].find(h=>h.textContent.trim()==='Moneylines'); if(ml&&ml.closest('.card')) ml.closest('.card').remove();
-    const bar=document.querySelector('#tabs'); if(bar&&window.__published){ /* stamp added after boot below */ }
     setTimeout(()=>{ const el=document.getElementById('saveState'); if(el&&window.__published){ const d=new Date(window.__published); el.textContent='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } },600);
   });
 })();
 </script>
 `;
 
-const viewer = html.replace('<script>\nconst MODEL = ', VIEWER + '<script>\nconst MODEL = ');
-if (viewer === html) throw new Error('could not find the main script start to inject the viewer block');
-fs.writeFileSync(path.join(ROOT, 'betting', 'index.html'), viewer);
-fs.writeFileSync(path.join(ROOT, 'betting', 'admin.html'), html);
-console.log('built betting/index.html (viewer) and betting/admin.html (full app) from', path.relative(ROOT, APP));
+const TRIM = `<script>
+/* viewer only: no Downloads, Upload, Record & Bets or Backup, and no odds fetch/upload card */
+window.VIEWER=true;
+document.addEventListener('DOMContentLoaded',()=>{
+  for(const t of ['upload','record','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
+  const ml=[...document.querySelectorAll('#tab-bank .card h2')].find(h=>h.textContent.trim()==='Moneylines'); if(ml&&ml.closest('.card')) ml.closest('.card').remove();
+});
+</script>
+`;
+
+const anchor = '<script>\nconst MODEL = ';
+if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
+fs.writeFileSync(path.join(ROOT, 'betting', 'index.html'), html.replace(anchor, HOOK + TRIM + anchor));
+fs.writeFileSync(path.join(ROOT, 'betting', 'admin.html'), html.replace(anchor, HOOK + anchor));
+console.log('built betting/index.html (viewer) and betting/admin.html (all tabs, same published season) from', path.relative(ROOT, APP));

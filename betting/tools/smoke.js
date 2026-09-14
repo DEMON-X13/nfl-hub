@@ -63,6 +63,20 @@ function load(picks) {
   await sleep(500);
   check(stamp && /^Updated /.test(stamp.textContent), 'page shows the publish time instead of an autosave note');
 
-  console.log(fails ? `${fails} check(s) failed` : `viewer smoke test passed (${graded.length} graded games in the published state)`);
+  // 3. admin page: same published season, every tab, private things from the same store
+  const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
+  const a = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html',
+    beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
+      w2.confirm = () => true; w2.alert = () => {}; w2.scrollTo = () => {};
+      w2.localStorage.setItem('x_nfl_viewer_picks_2026', JSON.stringify({ myPicks: { [first]: loser }, bank: { start: 250, lastAmt: 20, filter: 'all', weeks: {} }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } })); } });
+  await sleep(600);
+  const SA = a.window.eval('S'); const da = a.window.document;
+  check(Object.keys(SA.processed).length === graded.length, 'admin: published season loaded');
+  check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,record,ratings,upload,backup', 'admin: every tab present');
+  check(!!da.getElementById('oddsFetch'), 'admin: moneylines card kept');
+  check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.start === 250, 'admin: picks, bets and bankroll come from the same browser store as the viewer');
+  check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
+
+  console.log(fails ? `${fails} check(s) failed` : `viewer + admin smoke test passed (${graded.length} graded games in the published state)`);
   process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
