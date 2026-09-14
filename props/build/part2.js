@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v28 \u00b7 2026-09-13';
+const APP_BUILD='app v29 \u00b7 2026-09-14';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -147,6 +147,31 @@ function gameCtx(g,team){
     :(isHome?-modelMargin(g):modelMargin(g));
   return {home:isHome?1:0, sprd:clip(teamSpread/7,-3,3), implied, src,
     imp:clip((implied-PAY.norm.implied_mean)/(PAY.norm.implied_sd||1),-3,3), hasLine:sp!=null&&tot!=null};
+}
+
+/* ---------- game bets: a team to win, a team to cover ----------
+   Home margin ~ Normal(mu, MARGIN_SD). mu is our rating-based margin pulled halfway to the
+   posted spread when there is one (the market knows things our ratings do not). 13.5 points
+   is the long-run spread of NFL margins around the line. Both are assumptions, not fitted here. */
+const MARGIN_SD=13.5;
+function gbErf(x){ const t=1/(1+0.3275911*Math.abs(x)); const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return x<0?-y:y; }
+function gbNorm(z){ return 0.5*(1+gbErf(z/Math.SQRT2)); }
+function gameMu(g){ const m=modelMargin(g); return (g.sp!=null&&isFinite(g.sp))?(m+g.sp)/2:m; }
+/* kind 'ml': chance the team wins. kind 'ats': chance it covers; line is the team's own
+   spread as a book shows it (negative when favoured). null when no spread is posted. */
+function gameBet(g,team,kind){
+  const isHome=team===g.h; const mu=gameMu(g);
+  if(kind==='ml'){ const pH=gbNorm(mu/MARGIN_SD); return {p:isHome?pH:1-pH,line:null,mu:isHome?mu:-mu}; }
+  if(g.sp==null||!isFinite(g.sp)) return null;
+  const pH=1-gbNorm((g.sp-mu)/MARGIN_SD);      /* home covers when its margin beats the spread */
+  return {p:isHome?pH:1-pH,line:isHome?-g.sp:g.sp,mu:isHome?mu:-mu};
+}
+function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'); }
+function settleGameLeg(l){
+  const g=S.sched.find(x=>x.id===l.gid); if(!g||!hasScore(g)) return null;
+  const margin=l.team===g.h?g.hs-g.as:g.as-g.hs;
+  const v=l.stat==='ml'?margin:margin+l.k;   /* l.k is the team's spread line */
+  return v>0?'win':(v<0?'loss':'push');
 }
 
 /* ---------- feature vector, must match the training order ---------- */
@@ -303,6 +328,8 @@ function countEdges(g){
 /* ---------- correlated parlays: gaussian copula over the shipped pair table ---------- */
 function legRho(a,b){
   if(a.gid!==b.gid) return 0;
+  /* game legs: unrelated to player legs (not measured); two from the same game are strongly related */
+  if(isGameLeg(a)||isGameLeg(b)){ if(!(isGameLeg(a)&&isGameLeg(b))) return 0; const same=a.team===b.team; return a.stat===b.stat?(same?0.95:-0.95):(same?0.75:-0.75); }
   const ka=a.grp+':'+a.stat, kb=b.grp+':'+b.stat;
   const rel=a.pid===b.pid?'self':(a.team===b.team?'team':'opp');
   const [k1,k2]=ka<kb?[ka,kb]:[kb,ka];
@@ -597,6 +624,7 @@ function gameFinal(g){ if(hasScore(g)) return true; const k=kickoff(g); return !
 function actualFor(week,pid){ return (S.actuals&&S.actuals[String(week)]&&S.actuals[String(week)][pid])||null; }
 /* did a leg land? null while the stats for that week haven't been loaded */
 function settleLeg(l){
+  if(isGameLeg(l)) return settleGameLeg(l);
   const a=actualFor(l.week,l.pid); if(!a) return null;
   const v=a[l.stat]; if(v==null) return null;
   if(l.stat==='any_td') return v>=1?'win':'loss';

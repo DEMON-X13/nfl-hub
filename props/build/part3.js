@@ -139,6 +139,33 @@ function actualSummary(x,lines,week){
     bits.push(`<b>${num(a[s],0)}</b> ${l.m.short||s} <span class="muted">(proj ${num(l.mu,l.mu<10?1:0)})</span>`); if(bits.length>=3) break; }
   return bits.join(' &nbsp;\u00b7&nbsp; ');
 }
+/* the Game bets card at the top of a game: both teams, to win and to cover */
+function gameBetsCard(g,locked){
+  const rows=[g.a,g.h].map(team=>{
+    const ml=gameBet(g,team,'ml'), ats=gameBet(g,team,'ats'); const isHome=team===g.h;
+    const bookML=isHome?g.mlh:g.mla, bookSP=isHome?g.sph:g.spa;
+    const kML=legKey(g.id,'team:'+team,'ml'), kATS=legKey(g.id,'team:'+team,'ats');
+    const onML=!!S.parlay[kML], onATS=!!S.parlay[kATS];
+    const mark=r=>r==null?'<span class="res">–</span>':(r==='win'?'<span class="res win">✓</span>':(r==='loss'?'<span class="res loss">✗</span>':'<span class="res">push</span>'));
+    const rML=locked?settleGameLeg({gid:g.id,team,stat:'ml',k:0}):null;
+    const rATS=(locked&&ats)?settleGameLeg({gid:g.id,team,stat:'ats',k:ats.line}):null;
+    const row=(kind,b,on,key,book,res,label)=>{ const [c,lbl]=confTier(b.p);
+      return `<tr class="${on?'on':''}${res==='win'?' hit':(res==='loss'?' miss':'')}">
+        <td class="pick">${locked?mark(res):`<input type="checkbox" ${on?'checked':''} data-leg="${key}" data-k="${b.line==null?0:b.line}" data-side="over" aria-label="Add ${TEAM_NAMES[team]||team} ${label.toLowerCase()}">`}</td>
+        <td class="thr">${label}</td>
+        <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${Math.max(2,b.p*100).toFixed(0)}%"></div></div></td>
+        <td class="pct">${(b.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
+        <td class="num est">${fmtML(bookPrice(b.p))}<em>est.</em></td>
+        <td class="num book real">${book!=null&&isFinite(book)?fmtML(book):''}</td></tr>`; };
+    let h=`<div class="statblk"><h4>${tag(team)} ${TEAM_NAMES[team]||team} <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em class="mline">book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="rungs">`;
+    h+=row('ml',ml,onML,kML,bookML,rML,'To win');
+    if(ats) h+=row('ats',ats,onATS,kATS,bookSP,rATS,`To cover ${ats.line>0?'+':''}${ats.line}`);
+    return h+'</table></div>';
+  }).join('');
+  return `<div class="card"><h2>Game bets</h2>
+    <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line and the spread.':'A team to win, or to cover the spread. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. A game leg is priced as unrelated to player legs, because that relationship has not been measured here.</p>
+    ${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
+}
 function renderGame(){
   const g=S.sched.find(x=>x.id===S.ui.game);
   if(!g){ S.ui.game=null; renderSlate(); return; }
@@ -165,6 +192,7 @@ function renderGame(){
     <p class="muted" style="margin:0">${d.day} ${d.t}${g.sp!=null?` \u00b7 ${g.sp>0?g.h+' favoured by '+g.sp:g.a+' favoured by '+Math.abs(g.sp)}`:` \u00b7 ${modelMargin(g)>0?g.h:g.a} favoured by ${Math.abs(modelMargin(g)).toFixed(1)} on our numbers`}${gameCtx(g,g.h).src==='market'?` \u00b7 ${g.tot} points expected between them`:` \u00b7 no betting line posted yet, so the game is built from our own team ratings (${(gameCtx(g,g.a).implied+gameCtx(g,g.h).implied).toFixed(0)} points expected)`}</p>
     <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t.'}</p>
   </div>`;
+  html+=gameBetsCard(g,locked);
   for(const team of [g.a,g.h]){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
@@ -619,6 +647,7 @@ $('fetchGames').addEventListener('click',async()=>{
       g.d=row.gameday||g.d; g.t=row.gametime||g.t;
       const sp=parseFloat(row.spread_line), tot=parseFloat(row.total_line);
       g.sp=isFinite(sp)?sp:g.sp; g.tot=isFinite(tot)?tot:g.tot;
+      for(const [f,c] of [['mla','away_moneyline'],['mlh','home_moneyline'],['spa','away_spread_odds'],['sph','home_spread_odds']]){ const v=parseFloat(row[c]); if(isFinite(v)) g[f]=v; }
       const hs=parseFloat(row.home_score), as_=parseFloat(row.away_score);
       if(isFinite(hs)&&isFinite(as_)){ g.hs=hs; g.as=as_; } upd++;
     }
@@ -676,6 +705,15 @@ function toggleLeg(key,k,g,side,main){
   if(cur&&cur.k===k&&cur.side===side&&!!cur.main===!!main){ delete S.parlay[key]; save(); renderGame(); renderParlay(); return; }
   const [gid,pid,stat]=key.split('|');
   const game=g||S.sched.find(x=>x.id===gid);
+  if(stat==='ml'||stat==='ats'){
+    if(!game) return; const team=pid.replace(/^team:/,''); const b=gameBet(game,team,stat); if(!b) return;
+    const isHome=team===game.h, opp=isHome?game.a:game.h;
+    const book=stat==='ml'?(isHome?game.mlh:game.mla):(isHome?game.sph:game.spa);
+    const label=stat==='ml'?'To win':`To cover ${b.line>0?'+':''}${b.line}`;
+    S.parlay[key]={gid,pid,stat,k:b.line==null?0:b.line,side:'over',main:false,p:b.p,price:(book!=null&&isFinite(book))?book:bookPrice(b.p),src:(book!=null&&isFinite(book))?'real':'est',
+      mu:null,name:TEAM_NAMES[team]||team,pos:'Game',grp:'TEAM',team,opp,week:game.w,label};
+    save(); renderGame(); renderParlay(); return;
+  }
   const pl=S.players[pid]; if(!pl||!game) return;
   const team=pl.team, opp=(game.h===team)?game.a:game.h;
   const ctx=gameCtx(game,team);
@@ -699,6 +737,7 @@ function toggleLeg(key,k,g,side,main){
   save(); renderGame(); renderParlay();
 }
 function legPrice(l){
+  if(isGameLeg(l)) return l.price!=null?{ml:l.price,src:l.src||'est'}:{ml:probToAmerican(l.p),src:'fair'};
   const book=l.main?null:oddsFor(l.gid,l.pid,l.stat,l.k);
   if(book!=null) return {ml:book,src:'real'};
   if(l.price!=null) return {ml:l.price,src:l.src||'est'};
@@ -718,6 +757,7 @@ function renderParlay(){
       <ul style="margin:0">
         <li>You can pick <b>one line per stat per player</b>. Ticking 30+ pass attempts after 20+ replaces it rather than adding both, because a player can't be over two different numbers as separate bets.</li>
         <li>Different stats for the same player are fine, and so are players from different games.</li>
+        <li>Each game also offers <b>a team to win</b> and <b>a team to cover the spread</b>, at the top of the game. They go in like any other leg.</li>
         <li>Prices come from the sheet you upload on the Weekly Update tab. Anything you haven't priced is shown at the model's own fair odds instead.</li>
       </ul></div>`+renderSaved();
     wireSaved();
@@ -953,7 +993,7 @@ function applyBaked(){
   buildNorm();   /* price matching projects every player, which needs the league averages ready */
   const byId=Object.fromEntries(S.sched.map(g=>[g.id,g]));
   for(const p of PAY.sched){ const g=byId[p.id]; if(!g) continue;
-    for(const k of ['d','t','sp','tot','hs','as']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
+    for(const k of ['d','t','sp','tot','hs','as','mla','mlh','spa','sph']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
   /* the build pulled lines when it ran, so the freshness note counts from then */
   if(PAY.baked_at){ const t=Date.parse(PAY.baked_at); if(isFinite(t)&&!(S.gamesFetched>t)) S.gamesFetched=t; }
   if(PAY.injuries&&PAY.injuries.length) done.inj=ingestInjuries(PAY.injuries).out;
