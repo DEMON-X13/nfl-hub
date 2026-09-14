@@ -24,6 +24,17 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 `;
 if (!html.includes('</body>')) throw new Error('no </body> in the app');
-fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), html.replace('</body>', TRIM + '</body>'));
+// wording on the public page: the data is pulled by the job, not uploaded by the reader
+const PUBLIC_TEXT = [
+  ["Prices come from the sheet you upload on the Weekly Update tab. Anything you haven't priced is shown at the model's own fair odds instead.",
+   "Prices are pulled from the odds market twice a week. Anything without a market price is shown at the model's own fair odds instead."],
+  ["pull scores and lines on the Weekly Update tab before kickoff.", "lines are refreshed twice a week."],
+  ["Pull them again on the Weekly Update tab before kickoff; expected points are the biggest single input to every projection.",
+   "They are refreshed twice a week; expected points are the biggest single input to every projection."],
+  ["Load a roster and depth chart on the Weekly Update tab.", "Rosters and depth charts are refreshed twice a week."],
+];
+let pub = html.replace('</body>', TRIM + '</body>');
+for (const [from, to] of PUBLIC_TEXT) { if (!pub.includes(from)) throw new Error('public text not found: ' + from.slice(0, 40)); pub = pub.split(from).join(to); }
+fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), pub);
 fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), html);
 console.log('published props/index.html (public, 4 tabs) and props/admin.html (all tabs)');

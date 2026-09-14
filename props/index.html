@@ -1215,8 +1215,8 @@ function renderSlate(){
       const age=S.gamesFetched?(Date.now()-S.gamesFetched)/864e5:null; const stale=open&&soon&&(age==null||age>3);
       ln.hidden=!stale;
       ln.textContent=!stale?'':(age==null
-        ?'Spreads and totals have not been pulled in this browser yet. Expected points are the biggest single input to every projection, so pull scores and lines on the Weekly Update tab before kickoff.'
-        :`Spreads and totals were last pulled ${age.toFixed(0)} day${age>=1.5?'s':''} ago. Pull them again on the Weekly Update tab before kickoff; expected points are the biggest single input to every projection.`); } }
+        ?'Spreads and totals have not been pulled in this browser yet. Expected points are the biggest single input to every projection, so lines are refreshed twice a week.'
+        :`Spreads and totals were last pulled ${age.toFixed(0)} day${age>=1.5?'s':''} ago. They are refreshed twice a week; expected points are the biggest single input to every projection.`); } }
   if(!open){
     $('gamesList').innerHTML=`<div class="empty" style="text-align:left;padding:26px 30px">
       <b style="font-family:var(--display);font-size:22px;display:block;margin-bottom:8px">Week ${w} isn't open yet</b>
@@ -1319,7 +1319,7 @@ function renderGame(){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
     if(t.gaps&&t.gaps.length) html+=`<p class="muted" style="margin:-2px 0 8px">Not shown: ${t.gaps.map(x=>`<b>${esc(x.name)}</b> (${x.slot}, ${x.why})`).join(', ')}.</p>`;
-    if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Load a roster and depth chart on the Weekly Update tab.</div>'; continue; }
+    if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Rosters and depth charts are refreshed twice a week.</div>'; continue; }
     for(const x of t.players){
       const lines=statLines(x);
       if(!lines.length) continue;
@@ -1858,7 +1858,7 @@ function renderParlay(){
       <ul style="margin:0">
         <li>You can pick <b>one line per stat per player</b>. Ticking 30+ pass attempts after 20+ replaces it rather than adding both, because a player can't be over two different numbers as separate bets.</li>
         <li>Different stats for the same player are fine, and so are players from different games.</li>
-        <li>Prices come from the sheet you upload on the Weekly Update tab. Anything you haven't priced is shown at the model's own fair odds instead.</li>
+        <li>Prices are pulled from the odds market twice a week. Anything without a market price is shown at the model's own fair odds instead.</li>
       </ul></div>`+renderSaved();
     wireSaved();
     return;
