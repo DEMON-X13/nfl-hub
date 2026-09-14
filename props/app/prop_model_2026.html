@@ -1981,12 +1981,8 @@ function renderParlay(){
   });
   html+=`</tbody></table>`;
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
-  /* the two actions sit under the legs, buttons only */
-  const canSave=wks.length===1&&(realPrice||estPrice);
-  html+=`<div class="bar" style="margin:14px 0 0"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div>`;
-  html+=`</div>`;
-
-  html+=`<div class="card"><h2>What it pays</h2>
+  /* what it pays, inside the same card, then the two actions as buttons only */
+  html+=`<h3>What it pays</h3>
     <div class="bar" style="margin:0 0 14px">
       <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?S.bookPrice:''}" style="width:110px"></label>
@@ -1995,23 +1991,11 @@ function renderParlay(){
     <div class="bigp">
       <div class="box hero"><b>${(pr.corr*100).toFixed(1)}%</b><span>chance all ${legs.length} land</span></div>
       <div class="box"><b>${fmtML(fairML)}</b><span>fair price for that chance</span></div>
-      <div class="box"><b>${(realPrice||estPrice)?fmtML(decToML(useDec)):'not set'}</b><span>${realPrice?'price you\u2019re getting':(estPrice?'estimated book price':'your book\u2019s price, type it in above')}</span></div>
+      <div class="box"><b>${(realPrice||estPrice)?fmtML(decToML(useDec)):'not set'}</b><span>${realPrice?'price you’re getting':(estPrice?'estimated book price':'your book’s price, type it in above')}</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
-    </div>
-    <table><tbody>
-      <tr><td>Chance if the legs were unrelated, which is how a book prices them</td><td class="num">${(pr.indep*100).toFixed(1)}% \u00b7 ${fmtML(indepML)}</td></tr>
-      <tr><td>Chance allowing for how the legs actually move together</td><td class="num"><b>${(pr.corr*100).toFixed(1)}% \u00b7 ${fmtML(fairML)}</b></td></tr>
-      <tr><td>Expected return on a $${stake.toFixed(2)} stake</td>
-        <td class="num ${ev==null?'muted':(ev>=0?'delta up':'delta down')}">${ev==null
-          ?'type your book\u2019s price to find out'
-          :`<b>${ev>=0?'+':'\u2212'}$${Math.abs(ev).toFixed(2)}</b>`}</td></tr>
-    </tbody></table>
-    ${realPrice?'':(estPrice?'<p class="muted" style="margin:10px 0 0">Some legs are priced from estimates rather than a real sportsbook. The estimate includes a typical bookmaker cut, so it is in the right ballpark, but a real book can differ, especially on longshot legs. Type your book\u2019s actual parlay price above to replace it.</p>':'<p class="muted" style="margin:10px 0 0">Nothing here is priced from a real sportsbook yet. Type your book\u2019s number in and the line above will tell you whether what they are offering beats what it is worth.</p>')}
-    <p class="muted" style="margin:10px 0 0">${pr.corr>pr.indep
-      ? 'These legs help each other, so the real chance is better than the multiplied one. If your book prices it by multiplying, that gap is in your favour.'
-      : (pr.corr<pr.indep ? 'These legs pull against each other, so the real chance is worse than the multiplied one. A book pricing this by multiplying is charging you too little chance, not too much.'
-      : 'Nothing here is related, so this prices like an ordinary parlay.')}</p>`;
-  if(pr.shrunk) html+=`<p class="muted" style="margin:8px 0 0">Some correlations had to be softened to fit together, so the figure is slightly conservative.</p>`;
+    </div>`;
+  const canSave=wks.length===1&&(realPrice||estPrice);
+  html+=`<div class="bar" style="margin:14px 0 0"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div>`;
   html+=`</div>`;
 
   /* the pairs table goes below the save bar and the saved parlays */
