@@ -39,7 +39,7 @@ const FILES = {
   [`injuries_${SEASON}.csv`]: `https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_${SEASON}.csv`,
   [`depth_charts_${SEASON}.csv`]: `https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_${SEASON}.csv`,
 };
-const PRIVATE = ['bets', 'bank', 'odds', 'myPicks', 'lastBackup', 'lastBackupHow'];
+const PRIVATE = ['bets', 'bank', 'myPicks', 'lastBackup', 'lastBackupHow'];   // odds are public (nflverse moneylines), published for the Bank Roll tab
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -135,6 +135,12 @@ async function main() {
   const files = present.map(n => { const txt = fs.readFileSync(path.join(DATA, n), 'utf8'); const f = new w.File([txt], n); f.text = async () => txt; return f; });
   await w.handleAnyFiles(files);
   await sleep(8000);                       // the depth chart streams; give it time
+  // moneylines from games.csv, the same way the app's Fetch moneylines button does it
+  { const rows = Papa.parse(fs.readFileSync(path.join(DATA, 'games.csv'), 'utf8'), { header: true, skipEmptyLines: true }).data;
+    const st0 = S(); const known = new Set(st0.schedule.map(g => g.game_id)); st0.odds = st0.odds || {}; let n = 0;
+    for (const row of rows) { if (!known.has(row.game_id)) continue; const a = parseFloat(row.away_moneyline), h = parseFloat(row.home_moneyline);
+      if (!isFinite(a) && !isFinite(h)) continue; st0.odds[row.game_id] = { away: isFinite(a) ? a : null, home: isFinite(h) ? h : null, src: 'nflverse' }; n++; }
+    log(`moneylines: ${n} games`); }
   w.eval('renderAll()');
   const st = S();
   const after = Object.keys(st.processed).length;

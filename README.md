@@ -15,16 +15,17 @@ the results. GitHub Pages serves the repo root:
 - `betting/tools/update.js` runs the real app headlessly (jsdom), starting from
   the last published `betting/state.json`, feeds it the six nflverse files
   (games, team stats, player stats, roster, injury report, depth chart), and
-  writes the new state with the private parts stripped (bets, bankroll, odds,
+  writes the new state with the private parts stripped (bets, bankroll,
   the owner's picks). Idempotent: a second run with no new data changes nothing.
 - Gate: the app's embedded model numbers must equal
   `betting/tools/reference_models.json`, the numbers the research harness
   exported. A mismatch aborts the publish.
 - `betting/tools/build.js` makes `index.html` (viewer) and `admin.html` (full
   app) from the one app file. The viewer removes the Downloads, Upload,
-  Record & Bets, Bank Roll and Backup tabs, loads `state.json`, and keeps only
-  the visitor's own picks in their browser, graded against the published
-  results. Nothing a visitor does can change what anyone else sees; only a
+  Record & Bets and Backup tabs, loads `state.json`, and keeps the visitor's own
+  picks, bankroll, bets and any odds they load in their browser only. Picks are
+  graded against the published results. Moneylines from nflverse are published
+  with the state so the Bank Roll tab works without a fetch. Nothing a visitor does can change what anyone else sees; only a
   commit to this repo changes the site.
 - `betting/events.json`: manual team news the job cannot infer (resting
   starters). One entry per line, applied once by id:

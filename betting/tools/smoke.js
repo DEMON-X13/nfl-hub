@@ -41,19 +41,22 @@ function load(picks) {
   const w = dom.window, d = w.document; const S = w.eval('S');
   check(errors.length === 0, 'no runtime errors: ' + errors.join('; '));
   check(Object.keys(S.processed).length === graded.length, `published season loaded (${Object.keys(S.processed).length} graded)`);
-  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,ratings', 'only AI Picks, My Picks and Power Ratings tabs remain');
+  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,ratings', 'AI Picks, My Picks, Bank Roll and Power Ratings tabs remain');
+  check(Object.keys(S.odds || {}).length > 0, 'published moneylines are available to the Bank Roll tab');
   check(Object.keys(S.myPicks).length === 0 && Object.values(S.processed).every(p => p.myPick === null), 'a new visitor has no picks and inherits none of the owner\'s');
   check(!d.getElementById('recordStats') || d.getElementById('tab-record').hidden, 'record tab is not shown');
   // the visitor picks the loser of the first graded game; save() should persist only picks
-  S.myPicks[first] = loser; w.eval('save()'); await sleep(400);
+  S.myPicks[first] = loser; S.bank.start = 250; S.bets[1] = { staked: 20, returned: 35, note: 'visitor' }; w.eval('save()'); await sleep(400);
   const stored = JSON.parse(w.localStorage.getItem('x_nfl_viewer_picks_2026') || '{}');
-  check(stored[first] === loser, 'visitor pick saved to their own storage');
+  check(stored.myPicks && stored.myPicks[first] === loser, 'visitor pick saved to their own storage');
+  check(stored.bank && stored.bank.start === 250 && stored.bets && stored.bets[1].returned === 35, 'visitor bankroll and bets saved to their own storage');
   check(w.localStorage.getItem('x_nfl_betting_model_2026_v1') === null, 'the full state is never written to the visitor\'s storage');
 
   // 2. returning visitor: pick graded against the published result
-  const r2 = load({ [first]: loser }); await sleep(300);
+  const r2 = load({ myPicks: { [first]: loser }, bank: { start: 250, lastAmt: 20, filter: 'all', weeks: {} }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } }); await sleep(300);
   const S2 = r2.dom.window.eval('S');
   check(S2.processed[first].myPick === loser && S2.processed[first].myCorrect === (winner ? false : null), 'returning visitor: pick restored and graded as a miss');
+  check(S2.bank.start === 250 && S2.bets[1] && S2.bets[1].returned === 35, 'returning visitor: bankroll and bets restored');
   check(r2.errors.length === 0, 'returning visitor: no runtime errors');
   const stamp = r2.dom.window.document.getElementById('saveState');
   await sleep(500);
