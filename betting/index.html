@@ -440,6 +440,8 @@ th.sortable:hover{color:var(--ink)}
   };
   document.addEventListener('DOMContentLoaded',()=>{
     for(const t of ['upload','record','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
+    /* moneylines come published with the state; the fetch/upload/clear card is admin-only */
+    const ml=[...document.querySelectorAll('#tab-bank .card h2')].find(h=>h.textContent.trim()==='Moneylines'); if(ml&&ml.closest('.card')) ml.closest('.card').remove();
     const bar=document.querySelector('#tabs'); if(bar&&window.__published){ /* stamp added after boot below */ }
     setTimeout(()=>{ const el=document.getElementById('saveState'); if(el&&window.__published){ const d=new Date(window.__published); el.textContent='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } },600);
   });

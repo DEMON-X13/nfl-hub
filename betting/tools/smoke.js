@@ -43,6 +43,7 @@ function load(picks) {
   check(Object.keys(S.processed).length === graded.length, `published season loaded (${Object.keys(S.processed).length} graded)`);
   check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,ratings', 'AI Picks, My Picks, Bank Roll and Power Ratings tabs remain');
   check(Object.keys(S.odds || {}).length > 0, 'published moneylines are available to the Bank Roll tab');
+  check(!d.getElementById('oddsFetch') && !d.getElementById('oddsFileBtn') && !d.getElementById('oddsClear'), 'Bank Roll: odds fetch/upload/clear card removed for visitors');
   check(Object.keys(S.myPicks).length === 0 && Object.values(S.processed).every(p => p.myPick === null), 'a new visitor has no picks and inherits none of the owner\'s');
   check(!d.getElementById('recordStats') || d.getElementById('tab-record').hidden, 'record tab is not shown');
   // the visitor picks the loser of the first graded game; save() should persist only picks
