@@ -48,6 +48,8 @@ section[hidden]{display:none}
 /* ---------- controls ---------- */
 .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
 .bar .grow{flex:1}
+.bar .rec{display:inline-flex;align-items:baseline;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 11px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
+.bar .rec b{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}
 select,input[type=number],input[type=text]{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:8px 11px;box-shadow:inset 0 1px 2px rgba(15,27,45,.04);transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
 select:hover,input[type=number]:hover,input[type=text]:hover{border-color:#B9C4D2}
 select:focus,input[type=number]:focus,input[type=text]:focus{border-color:var(--ink);box-shadow:var(--ring)}
@@ -266,6 +268,8 @@ th.sortable:hover{color:var(--ink)}
 <section id="tab-picks">
   <div class="bar">
     <label>Week <select id="weekSel"></select></label>
+    <span class="rec" id="weekRec" title="Model record for the selected week"></span>
+    <span class="rec" id="seasonRec" title="Model record for the season"></span>
     <span class="grow"></span>
   </div>
   <div id="gamesList"></div>
@@ -361,6 +365,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.31</td><td>AI Picks: the model's record for the selected week and for the season sits beside the week dropdown.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.30</td><td>AI Picks: the tick/cross is a small badge on the corner of the winner's tag, so the team pair sits in the same spot on every row.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.29</td><td>AI Picks: the team pair stays centred; the tick/cross slot is reserved on both sides of every row.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.28</td><td>AI Picks: a green tick or red cross sits beside the winner of every finished game, showing whether the model's pick hit.</td></tr>
@@ -459,7 +464,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.30 \u00b7 2026-09-14';
+const APP_BUILD='v1.31 \u00b7 2026-09-14';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -788,8 +793,18 @@ function fmtDate(g){ if(!g.gameday) return ''; const d=new Date(g.gameday+'T12:0
 function currentWeekDefault(){ const weeks=[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b); for(const w of weeks){ if(S.schedule.some(g=>+g.week===w&&g.result==null)) return w; } return weeks.at(-1); }
 function renderWeekOptions(){ const sel=$('weekSel'); const weeks=[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b); const cur=sel.value?+sel.value:currentWeekDefault();
   sel.innerHTML=weeks.map(w=>`<option value="${w}" ${w===cur?'selected':''}>${w>18?'Playoffs '+(w-18):'Week '+w}</option>`).join(''); }
+/* W-L (W-L-T once a tie exists) over graded games; a filter picks the week or the season */
+function recordLine(filter){
+  const rows=Object.values(S.processed).filter(filter);
+  const w=rows.filter(r=>r.correct===true).length, l=rows.filter(r=>r.correct===false).length, t=rows.filter(r=>r.correct===null).length;
+  return `${w}\u2013${l}${t?'\u2013'+t:''}`;
+}
+function renderRecords(w){
+  $('weekRec').innerHTML=`Week ${w} <b>${recordLine(r=>+r.week===w)}</b>`;
+  $('seasonRec').innerHTML=`Season <b>${recordLine(()=>true)}</b>`;
+}
 function renderPicks(){
-  const w=+$('weekSel').value; const games=S.schedule.filter(g=>+g.week===w).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
+  const w=+$('weekSel').value; renderRecords(w); const games=S.schedule.filter(g=>+g.week===w).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
   const list=$('gamesList'); if(!games.length){ list.innerHTML='<div class="empty">No games scheduled for this week yet.</div>'; return; }
   let graded=0,correct=0,high=0,flagged=0;
   const cur=currentWeekDefault(); const future=w>cur;
