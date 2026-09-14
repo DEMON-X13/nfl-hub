@@ -37,9 +37,10 @@ const DEFMAP={attempts:'d_pass_att',completions:'d_pass_att',passing_yards:'d_pa
 const TCOLS=['t_pass_att','t_carries','t_plays','t_pass_yds','t_rush_yds','t_targets','t_tds','t_fg_att','t_pat_att'];
 const DCOLS=['d_pass_yds','d_rush_yds','d_pass_att','d_carries','d_tds'];
 const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards'],
- RB:['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
- WR:['targets','receptions','receiving_yards','any_td'],
- TE:['targets','receptions','receiving_yards','any_td'],
+ /* targets is projected (it drives usage and receptions) but is not offered as a bet */
+ RB:['carries','rushing_yards','receptions','receiving_yards','scrim_yards','any_td'],
+ WR:['receptions','receiving_yards','any_td'],
+ TE:['receptions','receiving_yards','any_td'],
  K:['fg_att','fg_made','kick_pts']};
 const A5=2/6, A3=2/4, A6=2/7, A8=2/9;   /* ewma alphas for spans 5,3,6,8 */
 
@@ -477,7 +478,7 @@ function statLines(x){
   return out;
 }
 const HEADLINE={QB:['passing_yards','passing_tds','attempts'],RB:['rushing_yards','carries','receptions'],
-  WR:['receiving_yards','receptions','targets'],TE:['receiving_yards','receptions','targets'],K:['kick_pts','fg_made']};
+  WR:['receiving_yards','receptions'],TE:['receiving_yards','receptions'],K:['kick_pts','fg_made']};
 
 /* the three biggest projections in a game, one per category, for the games list */
 function gameHeadline(g){
