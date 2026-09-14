@@ -1981,6 +1981,9 @@ function renderParlay(){
   });
   html+=`</tbody></table>`;
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
+  /* the two actions sit under the legs, buttons only */
+  const canSave=wks.length===1&&(realPrice||estPrice);
+  html+=`<div class="bar" style="margin:14px 0 0"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><span class="grow"></span><button class="btn quiet" id="pClear">Clear the builder</button></div>`;
   html+=`</div>`;
 
   html+=`<div class="card"><h2>What it pays</h2>
@@ -2024,12 +2027,6 @@ function renderParlay(){
       }).join('')+`</tbody></table>
       <p class="muted" style="margin:10px 0 0">Measured across 2019 to 2024. A quarterback throwing for a lot and his receiver catching a lot is the same afternoon described twice, which is why stacking them is worth more than a book's multiplied price suggests.</p></div>`;
   }
-  const canSave=wks.length===1&&(realPrice||estPrice);
-  html+=`<div class="card"><div class="bar" style="margin:0">
-    <button class="btn go" id="pSave" ${canSave?'':'disabled'}>Save and lock this parlay</button>
-    <span class="muted">${canSave?'Locks the legs, stake and price as they are now and moves it to Saved. The builder clears so you can start another.':(wks.length>1?'Legs must all be from the same week to save.':'Set a price first.')}</span>
-    <span class="grow"></span>
-    <button class="btn quiet" id="pClear">Clear the builder</button></div></div>`;
   html+=renderSaved();
   html+=pairsHtml;
   el.innerHTML=html;
