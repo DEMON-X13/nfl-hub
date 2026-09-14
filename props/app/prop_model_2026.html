@@ -1983,7 +1983,7 @@ function renderParlay(){
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
   /* the two actions sit under the legs, buttons only */
   const canSave=wks.length===1&&(realPrice||estPrice);
-  html+=`<div class="bar" style="margin:14px 0 0"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><span class="grow"></span><button class="btn quiet" id="pClear">Clear the builder</button></div>`;
+  html+=`<div class="bar" style="margin:14px 0 0"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div>`;
   html+=`</div>`;
 
   html+=`<div class="card"><h2>What it pays</h2>
