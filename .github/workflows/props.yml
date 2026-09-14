@@ -32,7 +32,7 @@ jobs:
       - run: pip install -r props/requirements.txt
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm ci
         working-directory: props/build
       - name: Weekly refresh (downloads, prices, bake, assemble, audit)
