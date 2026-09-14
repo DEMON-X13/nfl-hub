@@ -99,6 +99,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .matchup{font-family:var(--display);display:flex;align-items:center;justify-content:center;gap:6px;line-height:1;white-space:nowrap;overflow:hidden;min-width:0}
 .matchup .ttag{font-size:13px}
 .matchup .at{color:var(--muted);font-size:11px;font-family:var(--body);font-weight:500;letter-spacing:.02em;flex:none}
+.matchup .res{flex:none;font-size:15px;font-weight:800;line-height:1;width:14px;text-align:center}
+.matchup .res.ok{color:var(--pick)} .matchup .res.bad{color:var(--miss)}
 .ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
 .ttag.win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
 .ttag.mini{font-size:12px;padding:4px 5px;min-width:40px;vertical-align:-1px}
@@ -356,6 +358,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.28</td><td>AI Picks: a green tick or red cross sits beside the winner of every finished game, showing whether the model's pick hit.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.27</td><td>AI Picks: finished games are no longer greyed out; they keep the winner and score line in green or red.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.26</td><td>Power Ratings: the Elo, Elo change, Off and Def columns are centred and the explanatory paragraph above the table is gone.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.25</td><td>Power Ratings: the rank change is a small tag tucked beside the rank number, and the Elo change has its own named column.</td></tr>
@@ -422,7 +425,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.27 \u00b7 2026-09-12';
+const APP_BUILD='v1.28 \u00b7 2026-09-14';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -772,13 +775,16 @@ function renderPicks(){
     const newsHtml='';
     const newsTip=news.length?` title="${news.join(' | ').replace(/"/g,'&quot;').replace(/<[^>]*>/g,'')}"`:'';
     let resultHtml='<b class="sc pend">0 : 0</b>';
+    /* tick or cross on the winner's side of the matchup: did the model's pick win? */
+    let markA='',markH='';
     if(g.result!=null){ const winner=g.result>0?g.home_team:g.result<0?g.away_team:null;
+      if(done&&winner&&done.correct!==null){ const mk=`<span class="res ${done.correct?'ok':'bad'}" title="${done.correct?'Pick hit':'Pick missed'}">${done.correct?'✓':'✗'}</span>`; if(winner===g.away_team) markA=mk; else markH=mk; }
       const line=winner?`${winner} won ${g.away_score}\u2013${g.home_score}`:`Tie ${g.away_score}\u2013${g.home_score}`;
       if(done){ graded++; if(done.correct) correct++; resultHtml=`<span class="mwin ${done.correct===null?'tie':done.correct?'ok':'bad'}">${line}</span>${done.correct===null?'':`<span class="muted">${done.correct?'Pick hit':'Pick missed'}</span>`}`; }
       else resultHtml=`<span class="mwin tie">${line}</span><span class="muted">Awaiting stats</span>`; }
     return `<div class="game${g.result!=null?' played':''}">
       <div class="when"><b>${day}</b>${time}</div>
-      <div class="matchup"${newsTip}>${tag(g.away_team,tagColor(g.away_team),pr.pick===g.away_team,'mini')}<span class="at">at</span>${tag(g.home_team,tagColor(g.home_team),pr.pick===g.home_team,'mini')}</div>
+      <div class="matchup"${newsTip}>${markA}${tag(g.away_team,tagColor(g.away_team),pr.pick===g.away_team,'mini')}<span class="at">at</span>${tag(g.home_team,tagColor(g.home_team),pr.pick===g.home_team,'mini')}${markH}</div>
       <div class="probrow" aria-label="${g.away_team} ${pa}%, ${g.home_team} ${ph}%">
         <span class="tlab${pr.pick===g.away_team?' win':''}">${g.away_team}</span>
         <div class="prob"><div class="a" style="width:${pa}%;background:${pa>=ph?PROB_HI:PROB_LO};color:#0B162A"><span class="${pr.pick===g.away_team?'w':''}">${pa>=14?pa+'%':''}</span></div><div class="h" style="width:${ph}%;background:${ph>pa?PROB_HI:PROB_LO};color:#0B162A"><span class="${pr.pick===g.home_team?'w':''}">${ph>=14?ph+'%':''}</span></div></div>
