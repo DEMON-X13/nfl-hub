@@ -1,0 +1,13 @@
+{
+  "name": "nfl-hub-betting-tools",
+  "private": true,
+  "description": "Headless updater and page builder for the betting site",
+  "scripts": {
+    "update": "node update.js",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "jsdom": "^30.0.1",
+    "papaparse": "^5.4.1"
+  }
+}
