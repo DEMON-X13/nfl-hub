@@ -8,7 +8,7 @@ the results. GitHub Pages serves the repo root:
 |---|---|---|
 | `betting/` | X NFL Betting Model, public viewer (`index.html`) and full app (`admin.html`) | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model, one page (`index.html`) with the week's data baked in | `props/` is the prop model package; its own `weekly.py` does the refresh |
-| `news/` | Season Tracker | (phase 3) |
+| `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
 
 ## Betting site
 
@@ -61,6 +61,17 @@ the job does not rebuild it. Visitors' parlays and bets stay in their browser.
 Its workflow, `.github/workflows/props.yml`, runs Thursday and Saturday at
 10am Eastern only, because those two runs are the ones that spend credits. The
 betting job never touches the key.
+
+## Season tracker
+
+`news/` is the tracker as it was. `tools/run-auto.js` works out the current
+week from the nflverse schedule and runs `tools/pull-week.js`, which refreshes
+`data/results.js` (scores, records) and `data/stats2026.js` (the stat bars)
+from ESPN and TeamRankings, drafts `data/weekN.js` if it does not exist, and
+writes the reading pack to `tools/out/`. The narrative half of a week is still
+written by a person: the draft is not shown until it is added to
+`data/weeks.js` and `index.html` (see `HANDOFF.md`). Free sources, no credits.
+Workflow `.github/workflows/news.yml`: Friday, Monday and Tuesday, 8am Eastern.
 
 ## The betting job
 

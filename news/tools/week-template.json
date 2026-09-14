@@ -1,0 +1,1420 @@
+{
+  "id": "wk2",
+  "label": "Week 2",
+  "type": "recap",
+  "status": "live",
+  "dates": "",
+  "headline": "",
+  "intro": "",
+  "games": [],
+  "teams": {
+    "NE": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "BUF": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "NYJ": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "MIA": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "BAL": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "PIT": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "CIN": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "CLE": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "JAX": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "HOU": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "IND": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "TEN": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "DEN": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "LAC": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "KC": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "LV": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "PHI": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "DAL": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "WAS": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "NYG": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "CHI": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "GB": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "MIN": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "DET": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "TB": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "CAR": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "ATL": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "NO": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "LAR": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "SEA": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "SF": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    },
+    "ARI": {
+      "headline": "",
+      "matchup": [],
+      "last": [],
+      "strengths": [],
+      "weaknesses": [],
+      "keys": [],
+      "stats": {
+        "ppg": null,
+        "pa": null,
+        "ypp": null,
+        "yppa": null,
+        "to": null,
+        "sk": null,
+        "ska": null,
+        "third": null,
+        "rz": null,
+        "expl": null
+      },
+      "ranks": {
+        "overall": {
+          "rank": null,
+          "prev": null
+        },
+        "offense": {
+          "rank": null,
+          "prev": null
+        },
+        "defense": {
+          "rank": null,
+          "prev": null
+        },
+        "ppg": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        },
+        "turnover": {
+          "rank": null,
+          "prev": null,
+          "val": null
+        }
+      }
+    }
+  }
+}

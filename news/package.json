@@ -1,0 +1,6 @@
+{
+  "name": "nfl-hub-news",
+  "private": true,
+  "description": "Season tracker: weekly pull (ESPN, TeamRankings) and smoke test",
+  "dependencies": { "jsdom": "^30.0.1" }
+}
