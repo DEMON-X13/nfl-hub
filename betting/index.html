@@ -358,6 +358,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.29</td><td>AI Picks: the team pair stays centred; the tick/cross slot is reserved on both sides of every row.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.28</td><td>AI Picks: a green tick or red cross sits beside the winner of every finished game, showing whether the model's pick hit.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.27</td><td>AI Picks: finished games are no longer greyed out; they keep the winner and score line in green or red.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.26</td><td>Power Ratings: the Elo, Elo change, Off and Def columns are centred and the explanatory paragraph above the table is gone.</td></tr>
@@ -462,7 +463,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.28 \u00b7 2026-09-14';
+const APP_BUILD='v1.29 \u00b7 2026-09-14';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -813,7 +814,8 @@ function renderPicks(){
     const newsTip=news.length?` title="${news.join(' | ').replace(/"/g,'&quot;').replace(/<[^>]*>/g,'')}"`:'';
     let resultHtml='<b class="sc pend">0 : 0</b>';
     /* tick or cross on the winner's side of the matchup: did the model's pick win? */
-    let markA='',markH='';
+    /* res slot on both sides so the team pair stays centred whether or not a mark shows */
+    let markA='<span class="res"></span>',markH='<span class="res"></span>';
     if(g.result!=null){ const winner=g.result>0?g.home_team:g.result<0?g.away_team:null;
       if(done&&winner&&done.correct!==null){ const mk=`<span class="res ${done.correct?'ok':'bad'}" title="${done.correct?'Pick hit':'Pick missed'}">${done.correct?'✓':'✗'}</span>`; if(winner===g.away_team) markA=mk; else markH=mk; }
       const line=winner?`${winner} won ${g.away_score}\u2013${g.home_score}`:`Tie ${g.away_score}\u2013${g.home_score}`;
