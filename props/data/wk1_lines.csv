@@ -29,8 +29,8 @@ passing_yards,Jayden Daniels,201.5,-112,-112
 passing_yards,Jalen Hurts,209.5,-111,-113
 passing_yards,Dak Prescott,260.5,-115,-114
 passing_yards,Jaxson Dart,211.5,-113,-111
-passing_yards,Patrick Mahomes,223.5,-112,-112
-passing_yards,Bo Nix,227.5,-114,-114
+passing_yards,Patrick Mahomes,223.5,-113,-113
+passing_yards,Bo Nix,227.5,-113,-113
 passing_tds,Sam Darnold,1.5,105,-137
 passing_tds,Drake Maye,1.5,134,-175
 passing_tds,Matthew Stafford,1.5,-146,112
@@ -136,7 +136,7 @@ rushing_yards,D'Andre Swift,69.5,-114,-114
 rushing_yards,Omarion Hampton,67.5,-111,-113
 rushing_yards,De'Von Achane,66.5,-114,-112
 rushing_yards,Breece Hall,64.5,-115,-111
-rushing_yards,Kenneth Walker III,59.5,-114,-114
+rushing_yards,Kenneth Walker III,63.5,-113,-113
 rushing_yards,Christian McCaffrey,60.5,-110,-118
 rushing_yards,Quinshon Judkins,59.5,-117,-112
 rushing_yards,Chase Brown,58.5,-114,-112
@@ -152,7 +152,7 @@ rushing_yards,MarShawn Lloyd,51.5,-114,-112
 rushing_yards,Cam Skattebo,50.5,-107,-127
 rushing_yards,Bhayshul Tuten,50.5,-114,-112
 rushing_yards,Rico Dowdle,49.5,-114,-112
-rushing_yards,J.K. Dobbins,49.5,-109,-111
+rushing_yards,J.K. Dobbins,49.5,-109,-110
 rushing_yards,Jordan Mason,44.5,-113,-114
 rushing_yards,Jacory Merritt,42.5,-112,-117
 rushing_yards,Jaylen Warren,40.5,-113,-114
@@ -163,7 +163,7 @@ rushing_yards,Aaron Jones,29.5,-115,-111
 rushing_yards,Rachaad White,23.5,-113,-114
 rushing_yards,Kenneth Gainwell,21.5,-116,-113
 rushing_yards,Tyjae Spears,21.5,-110,-118
-rushing_yards,RJ Harvey,18.5,-113,-110
+rushing_yards,RJ Harvey,17.5,-110,-110
 rushing_yards,Samaje Perine,19.5,-114,-113
 rushing_yards,George Holani,19.5,-115,-111
 rushing_yards,TreVeyon Henderson,18.5,-112,-112
@@ -257,14 +257,14 @@ receiving_yards,Drake London,63.5,-112,-115
 receiving_yards,Garrett Wilson,61.5,-113,-114
 receiving_yards,Tee Higgins,61.5,-115,-113
 receiving_yards,Malik Nabers,60.5,-112,-116
-receiving_yards,Rashee Rice,55.5,-114,-114
+receiving_yards,Rashee Rice,51.5,-113,-113
 receiving_yards,Jameson Williams,58.5,-114,-115
 receiving_yards,Trey McBride,58.5,-114,-115
 receiving_yards,Tetairoa McMillan,58.5,-114,-114
 receiving_yards,Christian Watson,56.5,-114,-110
 receiving_yards,Luther Burden,55.5,-116,-114
 receiving_yards,Emeka Egbuka,54.5,-114,-115
-receiving_yards,Jaylen Waddle,53.5,-114,-114
+receiving_yards,Jaylen Waddle,58.5,-113,-113
 receiving_yards,Parker Washington,53.5,-110,-114
 receiving_yards,Ladd McConkey,52.5,-113,-117
 receiving_yards,Terry McLaurin,51.5,-115,-114
@@ -318,16 +318,20 @@ receptions,Josh Downs,4.5,118,-154
 receptions,Kyle Pitts,4.5,112,-145
 receptions,George Kittle,3.5,-152,117
 receptions,Mark Andrews,3.5,119,-155
-receiving_yards,Courtland Sutton,43.5,-114,-117
-receiving_yards,Travis Kelce,41.5,-111,-111
-receiving_yards,Xavier Worthy,35.5,-114,-114
-receiving_yards,Pat Bryant,24.5,-109,-112
-receiving_yards,Evan Engram,22.5,-113,-109
-receiving_yards,Tyquan Thornton,20.5,-115,-115
-receiving_yards,Kenneth Walker III,17.5,-114,-114
-receiving_yards,RJ Harvey,16.5,-109,-114
-receiving_yards,Noah Gray,9.5,-114,-114
-receiving_yards,Adam Trautman,7.5,-102,-108
-receiving_yards,J.K. Dobbins,3.5,-114,-111
-rushing_yards,Bo Nix,15.5,-114,-112
-rushing_yards,Patrick Mahomes,13.5,-114,-114
+receiving_yards,Courtland Sutton,42.5,-111,-113
+receiving_yards,Travis Kelce,42.5,-113,-113
+receiving_yards,Xavier Worthy,36.5,-109,-110
+receiving_yards,Pat Bryant,26.5,-113,-113
+receiving_yards,Evan Engram,22.5,-113,-113
+receiving_yards,Tyquan Thornton,20.5,-112,-112
+receiving_yards,Kenneth Walker III,20.5,-113,-113
+receiving_yards,RJ Harvey,17.5,-115,-115
+receiving_yards,Noah Gray,8.5,-113,-113
+receiving_yards,Adam Trautman,3.5,-110,-113
+receiving_yards,J.K. Dobbins,3.5,-106,-116
+rushing_yards,Bo Nix,17.5,-113,-113
+rushing_yards,Patrick Mahomes,13.5,-113,-113
+receiving_yards,Marvin Mims Jr.,10.5,-113,-113
+receiving_yards,Cyrus Allen,9.5,-113,-113
+rushing_yards,Emmett Johnson,13.5,-114,-114
+rushing_yards,Xavier Worthy,0.5,120,-149

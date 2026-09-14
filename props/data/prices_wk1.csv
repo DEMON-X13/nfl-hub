@@ -1,15 +1,15 @@
 game_id,player,market,threshold,odds
-2026_01_DEN_KC,Adam Trautman,any_td,1,950
+2026_01_DEN_KC,Adam Trautman,any_td,1,1050
 2026_01_DEN_KC,Adam Trautman,receiving_yards,8,-102
-2026_01_DEN_KC,Adam Trautman,receiving_yards,15,171
+2026_01_DEN_KC,Adam Trautman,receiving_yards,15,333
 2026_01_DEN_KC,Adam Trautman,receiving_yards,18,136
-2026_01_DEN_KC,Adam Trautman,receiving_yards,20,285
-2026_01_DEN_KC,Adam Trautman,receiving_yards,25,377
+2026_01_DEN_KC,Adam Trautman,receiving_yards,20,490
+2026_01_DEN_KC,Adam Trautman,receiving_yards,25,710
 2026_01_DEN_KC,Adam Trautman,receiving_yards,28,200
 2026_01_DEN_KC,Adam Trautman,receiving_yards,38,300
-2026_01_DEN_KC,Adam Trautman,receiving_yards,40,1020
+2026_01_DEN_KC,Adam Trautman,receiving_yards,40,2100
 2026_01_DEN_KC,Adam Trautman,receiving_yards,48,450
-2026_01_DEN_KC,Adam Trautman,receiving_yards,50,1780
+2026_01_DEN_KC,Adam Trautman,receiving_yards,50,3300
 2026_01_DEN_KC,Adam Trautman,receiving_yards,58,700
 2026_01_DEN_KC,Adam Trautman,receiving_yards,60,2800
 2026_01_DEN_KC,Adam Trautman,receiving_yards,68,1150
@@ -20,96 +20,96 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Adam Trautman,receptions,4,1580
 2026_01_DEN_KC,Adam Trautman,receptions,5,1350
 2026_01_DEN_KC,Adam Trautman,receptions,6,3200
-2026_01_DEN_KC,Bo Nix,any_td,1,550
-2026_01_DEN_KC,Bo Nix,passing_yards,150,-1000
-2026_01_DEN_KC,Bo Nix,passing_yards,160,-1020
-2026_01_DEN_KC,Bo Nix,passing_yards,170,-690
-2026_01_DEN_KC,Bo Nix,passing_yards,175,-450
-2026_01_DEN_KC,Bo Nix,passing_yards,180,-480
-2026_01_DEN_KC,Bo Nix,passing_yards,190,-344
-2026_01_DEN_KC,Bo Nix,passing_yards,200,-235
+2026_01_DEN_KC,Bo Nix,any_td,1,480
+2026_01_DEN_KC,Bo Nix,passing_yards,150,-1100
+2026_01_DEN_KC,Bo Nix,passing_yards,160,-850
+2026_01_DEN_KC,Bo Nix,passing_yards,170,-587
+2026_01_DEN_KC,Bo Nix,passing_yards,175,-470
+2026_01_DEN_KC,Bo Nix,passing_yards,180,-417
+2026_01_DEN_KC,Bo Nix,passing_yards,190,-302
+2026_01_DEN_KC,Bo Nix,passing_yards,200,-225
 2026_01_DEN_KC,Bo Nix,passing_yards,206,-204
-2026_01_DEN_KC,Bo Nix,passing_yards,210,-188
+2026_01_DEN_KC,Bo Nix,passing_yards,210,-168
 2026_01_DEN_KC,Bo Nix,passing_yards,216,-154
-2026_01_DEN_KC,Bo Nix,passing_yards,220,-142
-2026_01_DEN_KC,Bo Nix,passing_yards,225,-125
-2026_01_DEN_KC,Bo Nix,passing_yards,226,-116
+2026_01_DEN_KC,Bo Nix,passing_yards,220,-129
+2026_01_DEN_KC,Bo Nix,passing_yards,225,-110
+2026_01_DEN_KC,Bo Nix,passing_yards,226,-125
 2026_01_DEN_KC,Bo Nix,passing_yards,229,-111
-2026_01_DEN_KC,Bo Nix,passing_yards,230,-108
+2026_01_DEN_KC,Bo Nix,passing_yards,230,101
 2026_01_DEN_KC,Bo Nix,passing_yards,236,106
-2026_01_DEN_KC,Bo Nix,passing_yards,240,120
+2026_01_DEN_KC,Bo Nix,passing_yards,240,131
 2026_01_DEN_KC,Bo Nix,passing_yards,246,129
-2026_01_DEN_KC,Bo Nix,passing_yards,250,155
+2026_01_DEN_KC,Bo Nix,passing_yards,250,175
 2026_01_DEN_KC,Bo Nix,passing_yards,256,158
-2026_01_DEN_KC,Bo Nix,passing_yards,260,200
+2026_01_DEN_KC,Bo Nix,passing_yards,260,218
 2026_01_DEN_KC,Bo Nix,passing_yards,266,194
-2026_01_DEN_KC,Bo Nix,passing_yards,270,255
-2026_01_DEN_KC,Bo Nix,passing_yards,275,280
+2026_01_DEN_KC,Bo Nix,passing_yards,270,280
+2026_01_DEN_KC,Bo Nix,passing_yards,275,325
 2026_01_DEN_KC,Bo Nix,passing_yards,276,240
-2026_01_DEN_KC,Bo Nix,passing_yards,280,332
+2026_01_DEN_KC,Bo Nix,passing_yards,280,360
 2026_01_DEN_KC,Bo Nix,passing_yards,286,290
-2026_01_DEN_KC,Bo Nix,passing_yards,290,429
+2026_01_DEN_KC,Bo Nix,passing_yards,290,467
 2026_01_DEN_KC,Bo Nix,passing_yards,296,360
-2026_01_DEN_KC,Bo Nix,passing_yards,300,551
+2026_01_DEN_KC,Bo Nix,passing_yards,300,600
 2026_01_DEN_KC,Bo Nix,passing_yards,306,450
-2026_01_DEN_KC,Bo Nix,passing_yards,310,710
+2026_01_DEN_KC,Bo Nix,passing_yards,310,760
 2026_01_DEN_KC,Bo Nix,passing_yards,316,550
-2026_01_DEN_KC,Bo Nix,passing_yards,320,910
-2026_01_DEN_KC,Bo Nix,passing_yards,325,750
+2026_01_DEN_KC,Bo Nix,passing_yards,320,1000
+2026_01_DEN_KC,Bo Nix,passing_yards,325,800
 2026_01_DEN_KC,Bo Nix,passing_yards,326,700
-2026_01_DEN_KC,Bo Nix,passing_yards,330,1200
+2026_01_DEN_KC,Bo Nix,passing_yards,330,1300
 2026_01_DEN_KC,Bo Nix,passing_yards,336,875
-2026_01_DEN_KC,Bo Nix,passing_yards,340,1520
+2026_01_DEN_KC,Bo Nix,passing_yards,340,1680
 2026_01_DEN_KC,Bo Nix,passing_yards,346,1100
-2026_01_DEN_KC,Bo Nix,passing_yards,350,1960
+2026_01_DEN_KC,Bo Nix,passing_yards,350,2100
 2026_01_DEN_KC,Bo Nix,passing_yards,356,1400
-2026_01_DEN_KC,Bo Nix,passing_yards,360,2500
+2026_01_DEN_KC,Bo Nix,passing_yards,360,2700
 2026_01_DEN_KC,Bo Nix,passing_yards,366,1850
-2026_01_DEN_KC,Bo Nix,passing_yards,370,3100
+2026_01_DEN_KC,Bo Nix,passing_yards,370,3400
 2026_01_DEN_KC,Bo Nix,passing_yards,380,3800
-2026_01_DEN_KC,Bo Nix,rushing_yards,5,-700
-2026_01_DEN_KC,Bo Nix,rushing_yards,10,-249
-2026_01_DEN_KC,Bo Nix,rushing_yards,15,-130
-2026_01_DEN_KC,Bo Nix,rushing_yards,16,-114
-2026_01_DEN_KC,Bo Nix,rushing_yards,17,-108
-2026_01_DEN_KC,Bo Nix,rushing_yards,20,138
-2026_01_DEN_KC,Bo Nix,rushing_yards,25,225
+2026_01_DEN_KC,Bo Nix,rushing_yards,5,-1000
+2026_01_DEN_KC,Bo Nix,rushing_yards,10,-294
+2026_01_DEN_KC,Bo Nix,rushing_yards,15,-166
+2026_01_DEN_KC,Bo Nix,rushing_yards,16,-121
+2026_01_DEN_KC,Bo Nix,rushing_yards,17,-135
+2026_01_DEN_KC,Bo Nix,rushing_yards,20,123
+2026_01_DEN_KC,Bo Nix,rushing_yards,25,182
 2026_01_DEN_KC,Bo Nix,rushing_yards,26,137
-2026_01_DEN_KC,Bo Nix,rushing_yards,30,350
+2026_01_DEN_KC,Bo Nix,rushing_yards,30,280
 2026_01_DEN_KC,Bo Nix,rushing_yards,36,210
-2026_01_DEN_KC,Bo Nix,rushing_yards,40,750
+2026_01_DEN_KC,Bo Nix,rushing_yards,40,580
 2026_01_DEN_KC,Bo Nix,rushing_yards,46,340
-2026_01_DEN_KC,Bo Nix,rushing_yards,50,1280
+2026_01_DEN_KC,Bo Nix,rushing_yards,50,1100
 2026_01_DEN_KC,Bo Nix,rushing_yards,56,550
-2026_01_DEN_KC,Bo Nix,rushing_yards,60,2100
+2026_01_DEN_KC,Bo Nix,rushing_yards,60,1760
 2026_01_DEN_KC,Bo Nix,rushing_yards,66,900
-2026_01_DEN_KC,Bo Nix,rushing_yards,70,3500
+2026_01_DEN_KC,Bo Nix,rushing_yards,70,2800
 2026_01_DEN_KC,Bo Nix,rushing_yards,76,1550
 2026_01_DEN_KC,Bo Nix,rushing_yards,86,2800
-2026_01_DEN_KC,Brashard Smith,any_td,1,1050
-2026_01_DEN_KC,Courtland Sutton,any_td,1,240
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,15,-870
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,20,-590
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,25,-351
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,30,-265
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,33,-220
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,40,-133
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,43,-114
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,50,128
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,53,135
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,60,200
+2026_01_DEN_KC,Brashard Smith,any_td,1,1200
+2026_01_DEN_KC,Courtland Sutton,any_td,1,270
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,15,-810
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,20,-480
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,25,-330
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,30,-225
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,33,-210
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,40,-124
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,43,-111
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,50,133
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,53,145
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,60,209
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,63,169
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,70,316
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,70,328
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,73,240
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,80,487
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,80,504
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,83,330
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,90,760
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,90,770
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,93,475
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,100,1160
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,100,1140
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,103,675
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,110,1700
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,110,1640
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,113,1000
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,120,2400
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,120,2300
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,123,1450
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,130,3300
 2026_01_DEN_KC,Courtland Sutton,receptions,2,-1540
@@ -121,20 +121,20 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Courtland Sutton,receptions,8,990
 2026_01_DEN_KC,Courtland Sutton,receptions,9,1740
 2026_01_DEN_KC,Courtland Sutton,receptions,10,2700
-2026_01_DEN_KC,Cyrus Allen,any_td,1,1200
-2026_01_DEN_KC,Dallen Bentley,any_td,1,2900
-2026_01_DEN_KC,Denver Broncos D/ST,any_td,1,600
-2026_01_DEN_KC,Denver Broncos Defense,any_td,1,650
-2026_01_DEN_KC,Emmett Johnson,any_td,1,600
-2026_01_DEN_KC,Evan Engram,any_td,1,475
-2026_01_DEN_KC,Evan Engram,receiving_yards,5,-1100
+2026_01_DEN_KC,Cyrus Allen,any_td,1,1000
+2026_01_DEN_KC,Dallen Bentley,any_td,1,1700
+2026_01_DEN_KC,Denver Broncos D/ST,any_td,1,550
+2026_01_DEN_KC,Denver Broncos Defense,any_td,1,700
+2026_01_DEN_KC,Emmett Johnson,any_td,1,700
+2026_01_DEN_KC,Evan Engram,any_td,1,500
+2026_01_DEN_KC,Evan Engram,receiving_yards,5,-1200
 2026_01_DEN_KC,Evan Engram,receiving_yards,10,-450
 2026_01_DEN_KC,Evan Engram,receiving_yards,13,-303
-2026_01_DEN_KC,Evan Engram,receiving_yards,15,-231
-2026_01_DEN_KC,Evan Engram,receiving_yards,20,-143
+2026_01_DEN_KC,Evan Engram,receiving_yards,15,-235
+2026_01_DEN_KC,Evan Engram,receiving_yards,20,-136
 2026_01_DEN_KC,Evan Engram,receiving_yards,23,-113
-2026_01_DEN_KC,Evan Engram,receiving_yards,25,102
-2026_01_DEN_KC,Evan Engram,receiving_yards,30,154
+2026_01_DEN_KC,Evan Engram,receiving_yards,25,104
+2026_01_DEN_KC,Evan Engram,receiving_yards,30,160
 2026_01_DEN_KC,Evan Engram,receiving_yards,33,138
 2026_01_DEN_KC,Evan Engram,receiving_yards,40,300
 2026_01_DEN_KC,Evan Engram,receiving_yards,43,220
@@ -142,11 +142,11 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Evan Engram,receiving_yards,53,350
 2026_01_DEN_KC,Evan Engram,receiving_yards,60,880
 2026_01_DEN_KC,Evan Engram,receiving_yards,63,575
-2026_01_DEN_KC,Evan Engram,receiving_yards,70,1340
+2026_01_DEN_KC,Evan Engram,receiving_yards,70,1280
 2026_01_DEN_KC,Evan Engram,receiving_yards,73,1000
-2026_01_DEN_KC,Evan Engram,receiving_yards,80,2100
+2026_01_DEN_KC,Evan Engram,receiving_yards,80,1920
 2026_01_DEN_KC,Evan Engram,receiving_yards,83,1700
-2026_01_DEN_KC,Evan Engram,receiving_yards,90,3100
+2026_01_DEN_KC,Evan Engram,receiving_yards,90,2900
 2026_01_DEN_KC,Evan Engram,receiving_yards,93,3100
 2026_01_DEN_KC,Evan Engram,receptions,2,-400
 2026_01_DEN_KC,Evan Engram,receptions,3,-132
@@ -156,68 +156,68 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Evan Engram,receptions,7,1620
 2026_01_DEN_KC,Evan Engram,receptions,8,2700
 2026_01_DEN_KC,J.K. Dobbins,any_td,1,175
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,5,102
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,10,210
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,14,128
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,15,380
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,5,104
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,10,220
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,14,129
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,15,370
 2026_01_DEN_KC,J.K. Dobbins,receiving_yards,20,580
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,24,188
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,25,960
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,34,280
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,40,2800
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,44,425
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,54,625
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,64,950
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,74,1550
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,84,2500
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,20,-1450
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,25,-750
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,30,-435
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,40,-215
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,24,187
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,25,850
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,34,270
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,40,1780
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,44,400
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,54,600
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,64,900
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,74,1400
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,84,2200
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,20,-1060
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,25,-640
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,30,-415
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,40,-204
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,50,-109
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,52,-109
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,60,160
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,70,270
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,80,440
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,90,600
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,100,940
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,110,1400
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,120,2100
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,125,1500
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,130,2900
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,70,265
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,80,430
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,90,553
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,100,830
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,110,1180
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,120,1680
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,125,1400
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,130,2400
 2026_01_DEN_KC,Jake Briningstool,any_td,1,2200
-2026_01_DEN_KC,Jalen Royals,any_td,1,1300
-2026_01_DEN_KC,Jared Wiley,any_td,1,1800
-2026_01_DEN_KC,Jaylen Waddle,any_td,1,235
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,15,-1520
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,20,-1200
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,25,-620
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,30,-455
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,40,-235
+2026_01_DEN_KC,Jalen Royals,any_td,1,1700
+2026_01_DEN_KC,Jared Wiley,any_td,1,1900
+2026_01_DEN_KC,Jaylen Waddle,any_td,1,210
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,15,-1220
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,20,-1600
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,25,-592
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,30,-530
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,40,-263
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,44,-227
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,50,-136
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,50,-159
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,54,-114
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,57,-112
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,60,117
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,57,-117
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,60,100
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,64,122
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,70,178
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,70,148
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,74,168
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,80,260
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,80,215
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,84,230
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,90,375
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,90,310
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,94,320
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,100,550
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,100,440
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,104,450
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,110,700
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,110,580
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,114,650
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,120,980
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,120,680
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,124,950
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,125,1100
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,130,1360
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,125,880
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,130,940
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,134,1350
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,140,1880
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,150,2600
-2026_01_DEN_KC,Jaylen Waddle,receiving_yards,160,3300
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,140,1220
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,150,1700
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,160,2300
 2026_01_DEN_KC,Jaylen Waddle,receptions,3,-670
 2026_01_DEN_KC,Jaylen Waddle,receptions,4,-260
 2026_01_DEN_KC,Jaylen Waddle,receptions,5,-112
@@ -228,28 +228,28 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Jaylen Waddle,receptions,10,2800
 2026_01_DEN_KC,Jaylen Waddle,receptions,11,2700
 2026_01_DEN_KC,Jonah Coleman,any_td,1,800
-2026_01_DEN_KC,Kansas City Chiefs D/ST,any_td,1,525
-2026_01_DEN_KC,Kansas City Chiefs Defense,any_td,1,800
+2026_01_DEN_KC,Kansas City Chiefs D/ST,any_td,1,500
+2026_01_DEN_KC,Kansas City Chiefs Defense,any_td,1,850
 2026_01_DEN_KC,Kenneth Walker III,any_td,1,-115
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,5,-670
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,10,-280
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,15,-145
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,5,-1000
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,10,-380
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,15,-210
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,17,-115
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,19,-114
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,20,104
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,25,175
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,20,-125
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,25,122
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,29,140
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,30,225
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,30,174
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,39,220
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,40,519
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,40,350
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,49,360
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,50,930
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,50,600
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,59,600
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,60,1600
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,60,1020
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,69,1000
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,70,2500
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,70,1620
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,79,1750
-2026_01_DEN_KC,Kenneth Walker III,receiving_yards,80,3500
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,80,2400
 2026_01_DEN_KC,Kenneth Walker III,receiving_yards,89,3200
 2026_01_DEN_KC,Kenneth Walker III,receptions,2,-550
 2026_01_DEN_KC,Kenneth Walker III,receptions,3,-188
@@ -259,164 +259,164 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Kenneth Walker III,receptions,7,1160
 2026_01_DEN_KC,Kenneth Walker III,receptions,8,2200
 2026_01_DEN_KC,Kenneth Walker III,receptions,9,2600
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,25,-1800
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,30,-900
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,40,-390
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,25,-2100
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,30,-1160
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,40,-470
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,41,-455
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,50,-205
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,50,-244
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,51,-222
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,60,-114
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,60,-139
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,61,-116
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,62,-111
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,70,142
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,70,123
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,71,125
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,80,220
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,80,195
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,81,181
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,90,350
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,90,310
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,91,260
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,100,515
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,100,417
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,101,390
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,110,780
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,110,610
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,111,575
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,120,1180
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,120,900
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,121,875
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,125,1000
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,130,1740
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,125,950
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,130,1300
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,131,1350
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,140,2500
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,140,1880
 2026_01_DEN_KC,Kenneth Walker III,rushing_yards,141,2200
-2026_01_DEN_KC,Kenneth Walker III,rushing_yards,150,3500
-2026_01_DEN_KC,Lil'Jordan Humphrey,any_td,1,1700
-2026_01_DEN_KC,Marvin Mims Jr.,any_td,1,1050
-2026_01_DEN_KC,Nate Adkins,any_td,1,2200
-2026_01_DEN_KC,Nikko Remigio,any_td,1,3500
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,150,2500
+2026_01_DEN_KC,Lil'Jordan Humphrey,any_td,1,1400
+2026_01_DEN_KC,Marvin Mims Jr.,any_td,1,850
+2026_01_DEN_KC,Nate Adkins,any_td,1,2400
+2026_01_DEN_KC,Nikko Remigio,any_td,1,3000
 2026_01_DEN_KC,Noah Gray,any_td,1,1000
-2026_01_DEN_KC,Noah Gray,receiving_yards,5,-240
-2026_01_DEN_KC,Noah Gray,receiving_yards,10,-114
-2026_01_DEN_KC,Noah Gray,receiving_yards,11,-114
-2026_01_DEN_KC,Noah Gray,receiving_yards,15,154
-2026_01_DEN_KC,Noah Gray,receiving_yards,20,235
-2026_01_DEN_KC,Noah Gray,receiving_yards,25,360
-2026_01_DEN_KC,Noah Gray,receiving_yards,30,520
-2026_01_DEN_KC,Noah Gray,receiving_yards,40,920
-2026_01_DEN_KC,Noah Gray,receiving_yards,50,1380
-2026_01_DEN_KC,Noah Gray,receiving_yards,60,2200
-2026_01_DEN_KC,Noah Gray,receiving_yards,70,3400
+2026_01_DEN_KC,Noah Gray,receiving_yards,5,-200
+2026_01_DEN_KC,Noah Gray,receiving_yards,10,102
+2026_01_DEN_KC,Noah Gray,receiving_yards,11,-110
+2026_01_DEN_KC,Noah Gray,receiving_yards,15,178
+2026_01_DEN_KC,Noah Gray,receiving_yards,20,270
+2026_01_DEN_KC,Noah Gray,receiving_yards,25,400
+2026_01_DEN_KC,Noah Gray,receiving_yards,30,580
+2026_01_DEN_KC,Noah Gray,receiving_yards,40,660
+2026_01_DEN_KC,Noah Gray,receiving_yards,50,1160
+2026_01_DEN_KC,Noah Gray,receiving_yards,60,1880
+2026_01_DEN_KC,Noah Gray,receiving_yards,70,2900
 2026_01_DEN_KC,Noah Gray,receiving_yards,80,2100
-2026_01_DEN_KC,Noah Gray,receiving_yards,90,3700
+2026_01_DEN_KC,Noah Gray,receiving_yards,90,3600
 2026_01_DEN_KC,Noah Gray,receptions,1,-380
 2026_01_DEN_KC,Noah Gray,receptions,2,140
 2026_01_DEN_KC,Noah Gray,receptions,3,446
 2026_01_DEN_KC,Noah Gray,receptions,4,1240
 2026_01_DEN_KC,Noah Gray,receptions,5,2600
 2026_01_DEN_KC,Noah Gray,receptions,6,3200
-2026_01_DEN_KC,Pat Bryant,any_td,1,440
+2026_01_DEN_KC,Pat Bryant,any_td,1,475
 2026_01_DEN_KC,Pat Bryant,receiving_yards,5,-1100
 2026_01_DEN_KC,Pat Bryant,receiving_yards,10,-470
-2026_01_DEN_KC,Pat Bryant,receiving_yards,15,-237
-2026_01_DEN_KC,Pat Bryant,receiving_yards,20,-165
-2026_01_DEN_KC,Pat Bryant,receiving_yards,25,-109
-2026_01_DEN_KC,Pat Bryant,receiving_yards,30,124
+2026_01_DEN_KC,Pat Bryant,receiving_yards,15,-266
+2026_01_DEN_KC,Pat Bryant,receiving_yards,20,-159
+2026_01_DEN_KC,Pat Bryant,receiving_yards,25,-120
+2026_01_DEN_KC,Pat Bryant,receiving_yards,30,128
 2026_01_DEN_KC,Pat Bryant,receiving_yards,35,141
-2026_01_DEN_KC,Pat Bryant,receiving_yards,40,227
+2026_01_DEN_KC,Pat Bryant,receiving_yards,40,230
 2026_01_DEN_KC,Pat Bryant,receiving_yards,45,230
-2026_01_DEN_KC,Pat Bryant,receiving_yards,50,387
+2026_01_DEN_KC,Pat Bryant,receiving_yards,50,390
 2026_01_DEN_KC,Pat Bryant,receiving_yards,55,370
-2026_01_DEN_KC,Pat Bryant,receiving_yards,60,640
+2026_01_DEN_KC,Pat Bryant,receiving_yards,60,559
 2026_01_DEN_KC,Pat Bryant,receiving_yards,65,625
-2026_01_DEN_KC,Pat Bryant,receiving_yards,70,1020
-2026_01_DEN_KC,Pat Bryant,receiving_yards,75,1050
-2026_01_DEN_KC,Pat Bryant,receiving_yards,80,1620
+2026_01_DEN_KC,Pat Bryant,receiving_yards,70,870
+2026_01_DEN_KC,Pat Bryant,receiving_yards,75,950
+2026_01_DEN_KC,Pat Bryant,receiving_yards,80,1360
 2026_01_DEN_KC,Pat Bryant,receiving_yards,85,1900
-2026_01_DEN_KC,Pat Bryant,receiving_yards,90,2500
+2026_01_DEN_KC,Pat Bryant,receiving_yards,90,2100
 2026_01_DEN_KC,Pat Bryant,receiving_yards,95,3500
-2026_01_DEN_KC,Pat Bryant,receiving_yards,100,3600
+2026_01_DEN_KC,Pat Bryant,receiving_yards,100,3200
 2026_01_DEN_KC,Pat Bryant,receptions,2,-270
 2026_01_DEN_KC,Pat Bryant,receptions,3,108
 2026_01_DEN_KC,Pat Bryant,receptions,4,272
 2026_01_DEN_KC,Pat Bryant,receptions,5,650
 2026_01_DEN_KC,Pat Bryant,receptions,6,1360
 2026_01_DEN_KC,Pat Bryant,receptions,7,2600
-2026_01_DEN_KC,Patrick Mahomes,any_td,1,650
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,150,-850
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,160,-850
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,170,-581
+2026_01_DEN_KC,Patrick Mahomes,any_td,1,700
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,150,-900
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,160,-860
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,170,-586
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,175,-400
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,180,-405
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,190,-291
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,180,-413
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,190,-304
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,200,-210
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,205,-204
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,210,-166
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,210,-171
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,215,-152
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,220,-125
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,224,-112
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,220,-130
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,224,-113
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,225,-112
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,230,104
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,230,100
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,235,108
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,240,135
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,240,130
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,245,133
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,250,174
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,250,170
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,255,163
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,260,226
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,260,219
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,265,200
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,270,293
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,275,280
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,280,381
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,270,279
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,275,320
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,280,360
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,285,300
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,290,502
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,290,463
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,295,370
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,300,650
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,300,600
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,305,475
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,310,810
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,310,770
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,315,575
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,320,1040
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,325,850
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,330,1340
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,320,1000
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,325,800
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,330,1280
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,335,950
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,340,1780
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,340,1640
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,345,1200
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,350,2200
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,350,2100
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,355,1500
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,360,2700
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,360,2600
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,365,2000
-2026_01_DEN_KC,Patrick Mahomes,passing_yards,370,3400
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,5,-490
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,10,-200
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,14,-114
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,15,100
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,20,174
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,370,3300
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,5,-500
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,10,-210
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,14,-113
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,15,-102
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,20,178
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,24,138
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,25,280
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,30,410
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,30,430
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,34,220
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,40,880
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,44,340
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,50,1760
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,50,1620
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,54,550
-2026_01_DEN_KC,Patrick Mahomes,rushing_yards,60,3100
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,60,2900
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,64,900
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,74,1550
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,84,2800
-2026_01_DEN_KC,RJ Harvey,any_td,1,300
-2026_01_DEN_KC,RJ Harvey,receiving_yards,5,-650
-2026_01_DEN_KC,RJ Harvey,receiving_yards,10,-260
-2026_01_DEN_KC,RJ Harvey,receiving_yards,15,-133
-2026_01_DEN_KC,RJ Harvey,receiving_yards,17,-109
-2026_01_DEN_KC,RJ Harvey,receiving_yards,20,135
-2026_01_DEN_KC,RJ Harvey,receiving_yards,25,174
-2026_01_DEN_KC,RJ Harvey,receiving_yards,27,140
-2026_01_DEN_KC,RJ Harvey,receiving_yards,30,300
+2026_01_DEN_KC,RJ Harvey,any_td,1,360
+2026_01_DEN_KC,RJ Harvey,receiving_yards,5,-580
+2026_01_DEN_KC,RJ Harvey,receiving_yards,10,-250
+2026_01_DEN_KC,RJ Harvey,receiving_yards,15,-117
+2026_01_DEN_KC,RJ Harvey,receiving_yards,17,-110
+2026_01_DEN_KC,RJ Harvey,receiving_yards,20,140
+2026_01_DEN_KC,RJ Harvey,receiving_yards,25,178
+2026_01_DEN_KC,RJ Harvey,receiving_yards,27,137
+2026_01_DEN_KC,RJ Harvey,receiving_yards,30,325
 2026_01_DEN_KC,RJ Harvey,receiving_yards,37,220
-2026_01_DEN_KC,RJ Harvey,receiving_yards,40,470
-2026_01_DEN_KC,RJ Harvey,receiving_yards,47,350
-2026_01_DEN_KC,RJ Harvey,receiving_yards,50,850
-2026_01_DEN_KC,RJ Harvey,receiving_yards,57,575
+2026_01_DEN_KC,RJ Harvey,receiving_yards,40,490
+2026_01_DEN_KC,RJ Harvey,receiving_yards,47,340
+2026_01_DEN_KC,RJ Harvey,receiving_yards,50,880
+2026_01_DEN_KC,RJ Harvey,receiving_yards,57,550
 2026_01_DEN_KC,RJ Harvey,receiving_yards,60,1220
 2026_01_DEN_KC,RJ Harvey,receiving_yards,67,950
-2026_01_DEN_KC,RJ Harvey,receiving_yards,70,1860
-2026_01_DEN_KC,RJ Harvey,receiving_yards,77,1700
+2026_01_DEN_KC,RJ Harvey,receiving_yards,70,1840
+2026_01_DEN_KC,RJ Harvey,receiving_yards,77,1600
 2026_01_DEN_KC,RJ Harvey,receiving_yards,80,2800
-2026_01_DEN_KC,RJ Harvey,receiving_yards,87,3100
+2026_01_DEN_KC,RJ Harvey,receiving_yards,87,2900
 2026_01_DEN_KC,RJ Harvey,receiving_yards,90,4000
 2026_01_DEN_KC,RJ Harvey,receptions,2,-273
 2026_01_DEN_KC,RJ Harvey,receptions,3,-105
@@ -426,53 +426,53 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,RJ Harvey,receptions,7,1850
 2026_01_DEN_KC,RJ Harvey,receptions,8,4100
 2026_01_DEN_KC,RJ Harvey,rushing_yards,5,-1200
-2026_01_DEN_KC,RJ Harvey,rushing_yards,10,-313
-2026_01_DEN_KC,RJ Harvey,rushing_yards,15,-173
+2026_01_DEN_KC,RJ Harvey,rushing_yards,10,-274
+2026_01_DEN_KC,RJ Harvey,rushing_yards,15,-150
 2026_01_DEN_KC,RJ Harvey,rushing_yards,19,-113
-2026_01_DEN_KC,RJ Harvey,rushing_yards,20,-102
-2026_01_DEN_KC,RJ Harvey,rushing_yards,25,158
+2026_01_DEN_KC,RJ Harvey,rushing_yards,20,110
+2026_01_DEN_KC,RJ Harvey,rushing_yards,25,167
 2026_01_DEN_KC,RJ Harvey,rushing_yards,29,138
-2026_01_DEN_KC,RJ Harvey,rushing_yards,30,230
+2026_01_DEN_KC,RJ Harvey,rushing_yards,30,270
 2026_01_DEN_KC,RJ Harvey,rushing_yards,39,220
-2026_01_DEN_KC,RJ Harvey,rushing_yards,40,450
+2026_01_DEN_KC,RJ Harvey,rushing_yards,40,493
 2026_01_DEN_KC,RJ Harvey,rushing_yards,49,360
-2026_01_DEN_KC,RJ Harvey,rushing_yards,50,800
+2026_01_DEN_KC,RJ Harvey,rushing_yards,50,880
 2026_01_DEN_KC,RJ Harvey,rushing_yards,59,600
-2026_01_DEN_KC,RJ Harvey,rushing_yards,60,1260
+2026_01_DEN_KC,RJ Harvey,rushing_yards,60,1460
 2026_01_DEN_KC,RJ Harvey,rushing_yards,69,1000
-2026_01_DEN_KC,RJ Harvey,rushing_yards,70,1920
+2026_01_DEN_KC,RJ Harvey,rushing_yards,70,2200
 2026_01_DEN_KC,RJ Harvey,rushing_yards,79,1800
-2026_01_DEN_KC,RJ Harvey,rushing_yards,80,2700
+2026_01_DEN_KC,RJ Harvey,rushing_yards,80,3200
 2026_01_DEN_KC,RJ Harvey,rushing_yards,89,3400
 2026_01_DEN_KC,RJ Harvey,rushing_yards,90,3700
-2026_01_DEN_KC,Rashee Rice,any_td,1,175
-2026_01_DEN_KC,Rashee Rice,receiving_yards,15,-2800
-2026_01_DEN_KC,Rashee Rice,receiving_yards,20,-1800
-2026_01_DEN_KC,Rashee Rice,receiving_yards,25,-840
-2026_01_DEN_KC,Rashee Rice,receiving_yards,30,-580
-2026_01_DEN_KC,Rashee Rice,receiving_yards,40,-275
+2026_01_DEN_KC,Rashee Rice,any_td,1,170
+2026_01_DEN_KC,Rashee Rice,receiving_yards,15,-1880
+2026_01_DEN_KC,Rashee Rice,receiving_yards,20,-1200
+2026_01_DEN_KC,Rashee Rice,receiving_yards,25,-670
+2026_01_DEN_KC,Rashee Rice,receiving_yards,30,-440
+2026_01_DEN_KC,Rashee Rice,receiving_yards,40,-220
 2026_01_DEN_KC,Rashee Rice,receiving_yards,47,-190
-2026_01_DEN_KC,Rashee Rice,receiving_yards,50,-158
+2026_01_DEN_KC,Rashee Rice,receiving_yards,50,-124
 2026_01_DEN_KC,Rashee Rice,receiving_yards,57,-111
-2026_01_DEN_KC,Rashee Rice,receiving_yards,60,106
+2026_01_DEN_KC,Rashee Rice,receiving_yards,60,132
 2026_01_DEN_KC,Rashee Rice,receiving_yards,67,135
-2026_01_DEN_KC,Rashee Rice,receiving_yards,70,168
+2026_01_DEN_KC,Rashee Rice,receiving_yards,70,205
 2026_01_DEN_KC,Rashee Rice,receiving_yards,77,154
-2026_01_DEN_KC,Rashee Rice,receiving_yards,80,250
+2026_01_DEN_KC,Rashee Rice,receiving_yards,80,310
 2026_01_DEN_KC,Rashee Rice,receiving_yards,87,200
-2026_01_DEN_KC,Rashee Rice,receiving_yards,90,380
+2026_01_DEN_KC,Rashee Rice,receiving_yards,90,446
 2026_01_DEN_KC,Rashee Rice,receiving_yards,97,270
-2026_01_DEN_KC,Rashee Rice,receiving_yards,100,575
+2026_01_DEN_KC,Rashee Rice,receiving_yards,100,680
 2026_01_DEN_KC,Rashee Rice,receiving_yards,107,360
-2026_01_DEN_KC,Rashee Rice,receiving_yards,110,830
+2026_01_DEN_KC,Rashee Rice,receiving_yards,110,1020
 2026_01_DEN_KC,Rashee Rice,receiving_yards,117,475
-2026_01_DEN_KC,Rashee Rice,receiving_yards,120,1220
-2026_01_DEN_KC,Rashee Rice,receiving_yards,125,1200
+2026_01_DEN_KC,Rashee Rice,receiving_yards,120,1500
+2026_01_DEN_KC,Rashee Rice,receiving_yards,125,1400
 2026_01_DEN_KC,Rashee Rice,receiving_yards,127,650
-2026_01_DEN_KC,Rashee Rice,receiving_yards,130,1800
+2026_01_DEN_KC,Rashee Rice,receiving_yards,130,2100
 2026_01_DEN_KC,Rashee Rice,receiving_yards,137,900
-2026_01_DEN_KC,Rashee Rice,receiving_yards,140,2500
-2026_01_DEN_KC,Rashee Rice,receiving_yards,150,3300
+2026_01_DEN_KC,Rashee Rice,receiving_yards,140,2900
+2026_01_DEN_KC,Rashee Rice,receiving_yards,150,3800
 2026_01_DEN_KC,Rashee Rice,receptions,3,-1460
 2026_01_DEN_KC,Rashee Rice,receptions,4,-477
 2026_01_DEN_KC,Rashee Rice,receptions,5,-201
@@ -483,31 +483,31 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Rashee Rice,receptions,10,1120
 2026_01_DEN_KC,Rashee Rice,receptions,11,1880
 2026_01_DEN_KC,Rashee Rice,receptions,12,2700
-2026_01_DEN_KC,Travis Kelce,any_td,1,230
-2026_01_DEN_KC,Travis Kelce,receiving_yards,15,-850
+2026_01_DEN_KC,Travis Kelce,any_td,1,220
+2026_01_DEN_KC,Travis Kelce,receiving_yards,15,-700
 2026_01_DEN_KC,Travis Kelce,receiving_yards,20,-600
-2026_01_DEN_KC,Travis Kelce,receiving_yards,25,-333
+2026_01_DEN_KC,Travis Kelce,receiving_yards,25,-303
 2026_01_DEN_KC,Travis Kelce,receiving_yards,30,-270
 2026_01_DEN_KC,Travis Kelce,receiving_yards,32,-210
-2026_01_DEN_KC,Travis Kelce,receiving_yards,40,-125
+2026_01_DEN_KC,Travis Kelce,receiving_yards,40,-122
 2026_01_DEN_KC,Travis Kelce,receiving_yards,42,-111
-2026_01_DEN_KC,Travis Kelce,receiving_yards,50,137
+2026_01_DEN_KC,Travis Kelce,receiving_yards,50,140
 2026_01_DEN_KC,Travis Kelce,receiving_yards,52,145
-2026_01_DEN_KC,Travis Kelce,receiving_yards,60,228
+2026_01_DEN_KC,Travis Kelce,receiving_yards,60,223
 2026_01_DEN_KC,Travis Kelce,receiving_yards,62,192
-2026_01_DEN_KC,Travis Kelce,receiving_yards,70,360
+2026_01_DEN_KC,Travis Kelce,receiving_yards,70,344
 2026_01_DEN_KC,Travis Kelce,receiving_yards,72,290
-2026_01_DEN_KC,Travis Kelce,receiving_yards,80,568
+2026_01_DEN_KC,Travis Kelce,receiving_yards,80,515
 2026_01_DEN_KC,Travis Kelce,receiving_yards,82,425
-2026_01_DEN_KC,Travis Kelce,receiving_yards,90,880
+2026_01_DEN_KC,Travis Kelce,receiving_yards,90,770
 2026_01_DEN_KC,Travis Kelce,receiving_yards,92,675
-2026_01_DEN_KC,Travis Kelce,receiving_yards,100,1340
+2026_01_DEN_KC,Travis Kelce,receiving_yards,100,1160
 2026_01_DEN_KC,Travis Kelce,receiving_yards,102,1050
-2026_01_DEN_KC,Travis Kelce,receiving_yards,110,1960
+2026_01_DEN_KC,Travis Kelce,receiving_yards,110,1760
 2026_01_DEN_KC,Travis Kelce,receiving_yards,112,1700
-2026_01_DEN_KC,Travis Kelce,receiving_yards,120,2900
+2026_01_DEN_KC,Travis Kelce,receiving_yards,120,2400
 2026_01_DEN_KC,Travis Kelce,receiving_yards,122,2900
-2026_01_DEN_KC,Travis Kelce,receiving_yards,130,4000
+2026_01_DEN_KC,Travis Kelce,receiving_yards,130,3300
 2026_01_DEN_KC,Travis Kelce,receptions,2,-1520
 2026_01_DEN_KC,Travis Kelce,receptions,3,-396
 2026_01_DEN_KC,Travis Kelce,receptions,4,-150
@@ -516,55 +516,55 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Travis Kelce,receptions,7,574
 2026_01_DEN_KC,Travis Kelce,receptions,8,1120
 2026_01_DEN_KC,Travis Kelce,receptions,9,2000
-2026_01_DEN_KC,Troy Franklin,any_td,1,1350
+2026_01_DEN_KC,Troy Franklin,any_td,1,1300
 2026_01_DEN_KC,Tyler Badie,any_td,1,700
-2026_01_DEN_KC,Tyquan Thornton,any_td,1,600
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,5,-400
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,10,-245
+2026_01_DEN_KC,Tyquan Thornton,any_td,1,700
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,5,-330
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,10,-230
 2026_01_DEN_KC,Tyquan Thornton,receiving_yards,15,-158
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,20,-109
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,25,125
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,30,158
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,40,250
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,50,390
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,60,580
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,70,800
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,80,1100
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,90,1600
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,100,2600
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,110,2600
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,120,3400
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,20,-103
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,25,120
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,30,165
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,40,260
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,50,400
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,60,520
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,70,750
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,80,920
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,90,1280
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,100,1650
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,110,2000
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,120,2700
 2026_01_DEN_KC,Tyquan Thornton,receptions,1,-470
 2026_01_DEN_KC,Tyquan Thornton,receptions,2,120
 2026_01_DEN_KC,Tyquan Thornton,receptions,3,384
 2026_01_DEN_KC,Tyquan Thornton,receptions,4,1100
 2026_01_DEN_KC,Tyquan Thornton,receptions,5,2400
 2026_01_DEN_KC,Tyquan Thornton,receptions,6,2800
-2026_01_DEN_KC,Xavier Worthy,any_td,1,320
+2026_01_DEN_KC,Xavier Worthy,any_td,1,360
 2026_01_DEN_KC,Xavier Worthy,receiving_yards,10,-1100
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,15,-573
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,15,-395
 2026_01_DEN_KC,Xavier Worthy,receiving_yards,20,-350
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,25,-240
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,27,-217
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,30,-168
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,37,-110
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,25,-205
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,27,-208
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,30,-172
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,37,-109
 2026_01_DEN_KC,Xavier Worthy,receiving_yards,40,110
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,47,150
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,47,145
 2026_01_DEN_KC,Xavier Worthy,receiving_yards,50,182
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,57,163
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,60,296
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,67,220
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,70,476
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,77,310
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,80,740
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,87,425
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,90,1140
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,97,600
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,100,1800
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,107,850
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,110,2600
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,117,1250
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,120,3700
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,57,167
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,60,290
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,67,230
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,70,450
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,77,320
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,80,640
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,87,450
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,90,920
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,97,625
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,100,1280
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,107,900
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,110,1600
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,117,1350
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,120,2200
 2026_01_DEN_KC,Xavier Worthy,receptions,2,-700
 2026_01_DEN_KC,Xavier Worthy,receptions,3,-219
 2026_01_DEN_KC,Xavier Worthy,receptions,4,120
@@ -576,17 +576,17 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Bo Nix,passing_yards,199,-250
 2026_01_DEN_KC,Bo Nix,passing_yards,209,-190
 2026_01_DEN_KC,Bo Nix,passing_yards,219,-145
-2026_01_DEN_KC,Bo Nix,passing_yards,228,-114
+2026_01_DEN_KC,Bo Nix,passing_yards,228,-113
 2026_01_DEN_KC,Bo Nix,passing_yards,239,110
 2026_01_DEN_KC,Bo Nix,passing_yards,249,140
 2026_01_DEN_KC,Bo Nix,passing_yards,259,175
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,38,-160
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,38,-150
 2026_01_DEN_KC,Courtland Sutton,receiving_yards,44,-114
-2026_01_DEN_KC,Courtland Sutton,receiving_yards,48,110
-2026_01_DEN_KC,J.K. Dobbins,receiving_yards,4,-114
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,48,115
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,4,-106
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,42,-220
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,47,-160
-2026_01_DEN_KC,J.K. Dobbins,rushing_yards,49,-117
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,49,-118
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,57,115
 2026_01_DEN_KC,J.K. Dobbins,rushing_yards,62,150
 2026_01_DEN_KC,Jaylen Waddle,receiving_yards,47,-190
@@ -608,14 +608,298 @@ game_id,player,market,threshold,odds
 2026_01_DEN_KC,Patrick Mahomes,passing_yards,254,175
 2026_01_DEN_KC,Patrick Mahomes,rushing_yards,16,-110
 2026_01_DEN_KC,RJ Harvey,receiving_yards,16,-110
-2026_01_DEN_KC,Rashee Rice,receiving_yards,52,-145
+2026_01_DEN_KC,Rashee Rice,receiving_yards,52,-113
 2026_01_DEN_KC,Rashee Rice,receiving_yards,56,-114
-2026_01_DEN_KC,Rashee Rice,receiving_yards,58,-117
+2026_01_DEN_KC,Rashee Rice,receiving_yards,58,110
 2026_01_DEN_KC,Rashee Rice,receiving_yards,62,110
 2026_01_DEN_KC,Travis Kelce,receiving_yards,37,-150
-2026_01_DEN_KC,Travis Kelce,receiving_yards,43,-114
+2026_01_DEN_KC,Travis Kelce,receiving_yards,43,-113
 2026_01_DEN_KC,Travis Kelce,receiving_yards,47,115
-2026_01_DEN_KC,Tyquan Thornton,receiving_yards,21,-115
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,32,-160
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,36,-114
-2026_01_DEN_KC,Xavier Worthy,receiving_yards,42,115
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,21,-112
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,32,-165
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,36,-113
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,42,110
+2026_01_DEN_KC,Adam Prentice,any_td,1,2000
+2026_01_DEN_KC,Adam Trautman,receiving_yards,4,-110
+2026_01_DEN_KC,Adam Trautman,receiving_yards,5,-108
+2026_01_DEN_KC,Adam Trautman,receiving_yards,6,108
+2026_01_DEN_KC,Adam Trautman,receiving_yards,10,178
+2026_01_DEN_KC,Adam Trautman,receiving_yards,16,129
+2026_01_DEN_KC,Adam Trautman,receiving_yards,26,188
+2026_01_DEN_KC,Adam Trautman,receiving_yards,30,920
+2026_01_DEN_KC,Adam Trautman,receiving_yards,36,280
+2026_01_DEN_KC,Adam Trautman,receiving_yards,46,400
+2026_01_DEN_KC,Adam Trautman,receiving_yards,56,625
+2026_01_DEN_KC,Adam Trautman,receiving_yards,66,950
+2026_01_DEN_KC,Adam Trautman,receiving_yards,75,2000
+2026_01_DEN_KC,Adam Trautman,receiving_yards,76,1500
+2026_01_DEN_KC,Adam Trautman,receiving_yards,86,2400
+2026_01_DEN_KC,Adam Trautman,receiving_yards,100,2000
+2026_01_DEN_KC,Adam Trautman,receiving_yards,125,2000
+2026_01_DEN_KC,Ben VanSumeren,any_td,1,3500
+2026_01_DEN_KC,Bo Nix,passing_yards,195,-250
+2026_01_DEN_KC,Bo Nix,passing_yards,205,-190
+2026_01_DEN_KC,Bo Nix,passing_yards,207,-196
+2026_01_DEN_KC,Bo Nix,passing_yards,215,-145
+2026_01_DEN_KC,Bo Nix,passing_yards,217,-149
+2026_01_DEN_KC,Bo Nix,passing_yards,224,-115
+2026_01_DEN_KC,Bo Nix,passing_yards,227,-114
+2026_01_DEN_KC,Bo Nix,passing_yards,235,110
+2026_01_DEN_KC,Bo Nix,passing_yards,237,108
+2026_01_DEN_KC,Bo Nix,passing_yards,245,140
+2026_01_DEN_KC,Bo Nix,passing_yards,247,132
+2026_01_DEN_KC,Bo Nix,passing_yards,255,175
+2026_01_DEN_KC,Bo Nix,passing_yards,257,161
+2026_01_DEN_KC,Bo Nix,passing_yards,267,197
+2026_01_DEN_KC,Bo Nix,passing_yards,277,240
+2026_01_DEN_KC,Bo Nix,passing_yards,287,300
+2026_01_DEN_KC,Bo Nix,passing_yards,297,360
+2026_01_DEN_KC,Bo Nix,passing_yards,307,450
+2026_01_DEN_KC,Bo Nix,passing_yards,317,550
+2026_01_DEN_KC,Bo Nix,passing_yards,327,700
+2026_01_DEN_KC,Bo Nix,passing_yards,337,875
+2026_01_DEN_KC,Bo Nix,passing_yards,347,1100
+2026_01_DEN_KC,Bo Nix,passing_yards,357,1450
+2026_01_DEN_KC,Bo Nix,passing_yards,367,1850
+2026_01_DEN_KC,Bo Nix,rushing_yards,18,-113
+2026_01_DEN_KC,Bo Nix,rushing_yards,19,-111
+2026_01_DEN_KC,Bo Nix,rushing_yards,75,1500
+2026_01_DEN_KC,Bo Nix,rushing_yards,80,2100
+2026_01_DEN_KC,Bo Nix,rushing_yards,90,4000
+2026_01_DEN_KC,Bo Nix,rushing_yards,100,1850
+2026_01_DEN_KC,Bo Nix,rushing_yards,125,1850
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,32,-238
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,41,-118
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,42,-119
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,52,119
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,62,165
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,72,230
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,75,340
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,82,320
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,92,450
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,102,650
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,112,950
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,122,1400
+2026_01_DEN_KC,Courtland Sutton,receiving_yards,125,1450
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,5,-215
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,10,-113
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,11,-116
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,15,142
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,20,205
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,21,134
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,25,290
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,30,390
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,31,210
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,40,780
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,41,330
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,50,1380
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,51,525
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,60,2400
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,61,875
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,70,3700
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,71,1500
+2026_01_DEN_KC,Cyrus Allen,receiving_yards,81,2700
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,5,-400
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,10,-168
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,13,-113
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,14,-114
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,15,110
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,16,-108
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,20,178
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,24,138
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,25,265
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,30,370
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,34,220
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,40,640
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,44,340
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,50,990
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,54,550
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,60,1620
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,64,900
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,70,2400
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,74,1550
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,75,1500
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,80,3200
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,84,2800
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,100,1600
+2026_01_DEN_KC,Emmett Johnson,rushing_yards,125,1600
+2026_01_DEN_KC,Evan Engram,receiving_yards,14,-286
+2026_01_DEN_KC,Evan Engram,receiving_yards,22,-117
+2026_01_DEN_KC,Evan Engram,receiving_yards,24,-108
+2026_01_DEN_KC,Evan Engram,receiving_yards,34,141
+2026_01_DEN_KC,Evan Engram,receiving_yards,44,230
+2026_01_DEN_KC,Evan Engram,receiving_yards,54,370
+2026_01_DEN_KC,Evan Engram,receiving_yards,64,600
+2026_01_DEN_KC,Evan Engram,receiving_yards,74,1050
+2026_01_DEN_KC,Evan Engram,receiving_yards,75,1200
+2026_01_DEN_KC,Evan Engram,receiving_yards,84,1850
+2026_01_DEN_KC,Evan Engram,receiving_yards,94,3400
+2026_01_DEN_KC,Evan Engram,receiving_yards,100,1900
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,50,2800
+2026_01_DEN_KC,J.K. Dobbins,receiving_yards,60,3800
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,15,-2200
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,45,-160
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,55,115
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,75,270
+2026_01_DEN_KC,J.K. Dobbins,rushing_yards,140,3300
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,49,-213
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,55,-145
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,56,-130
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,59,-113
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,65,110
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,69,124
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,75,165
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,79,174
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,89,250
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,99,350
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,109,500
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,119,725
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,129,1100
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,139,1650
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,170,2900
+2026_01_DEN_KC,Jaylen Waddle,receiving_yards,180,3600
+2026_01_DEN_KC,Jonah Coleman,receiving_yards,25,1050
+2026_01_DEN_KC,Jonah Coleman,receiving_yards,50,2000
+2026_01_DEN_KC,Jonah Coleman,receiving_yards,75,2000
+2026_01_DEN_KC,Jonah Coleman,receiving_yards,100,2000
+2026_01_DEN_KC,Justin Fields,any_td,1,750
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,12,-286
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,21,-113
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,22,-112
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,32,141
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,42,230
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,52,370
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,62,600
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,72,1050
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,75,1500
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,82,1850
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,90,3600
+2026_01_DEN_KC,Kenneth Walker III,receiving_yards,92,3500
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,45,-400
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,55,-190
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,64,-113
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,65,-109
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,75,150
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,85,189
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,95,280
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,105,425
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,115,625
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,135,1550
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,145,2500
+2026_01_DEN_KC,Kenneth Walker III,rushing_yards,160,3300
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,5,-230
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,10,-115
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,11,-113
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,12,-110
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,15,128
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,20,215
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,22,126
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,25,265
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,30,360
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,32,178
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,40,630
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,42,250
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,50,900
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,52,360
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,60,1420
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,62,525
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,70,2200
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,72,775
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,75,1550
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,80,3400
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,82,1150
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,92,1750
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,100,2000
+2026_01_DEN_KC,Marvin Mims Jr.,receiving_yards,125,2000
+2026_01_DEN_KC,Noah Gray,receiving_yards,9,-113
+2026_01_DEN_KC,Noah Gray,receiving_yards,75,1800
+2026_01_DEN_KC,Pat Bryant,receiving_yards,17,-244
+2026_01_DEN_KC,Pat Bryant,receiving_yards,24,-117
+2026_01_DEN_KC,Pat Bryant,receiving_yards,26,-115
+2026_01_DEN_KC,Pat Bryant,receiving_yards,27,-113
+2026_01_DEN_KC,Pat Bryant,receiving_yards,37,130
+2026_01_DEN_KC,Pat Bryant,receiving_yards,47,191
+2026_01_DEN_KC,Pat Bryant,receiving_yards,57,280
+2026_01_DEN_KC,Pat Bryant,receiving_yards,67,425
+2026_01_DEN_KC,Pat Bryant,receiving_yards,77,650
+2026_01_DEN_KC,Pat Bryant,receiving_yards,87,1000
+2026_01_DEN_KC,Pat Bryant,receiving_yards,97,1600
+2026_01_DEN_KC,Pat Bryant,receiving_yards,107,2600
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,196,-250
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,206,-190
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,216,-145
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,226,-111
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,236,110
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,246,140
+2026_01_DEN_KC,Patrick Mahomes,passing_yards,256,175
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,35,220
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,45,360
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,55,575
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,65,1000
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,75,1750
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,85,3200
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,100,2000
+2026_01_DEN_KC,Patrick Mahomes,rushing_yards,125,2000
+2026_01_DEN_KC,RJ Harvey,receiving_yards,18,-115
+2026_01_DEN_KC,RJ Harvey,receiving_yards,75,1500
+2026_01_DEN_KC,RJ Harvey,rushing_yards,18,-110
+2026_01_DEN_KC,RJ Harvey,rushing_yards,28,142
+2026_01_DEN_KC,RJ Harvey,rushing_yards,38,230
+2026_01_DEN_KC,RJ Harvey,rushing_yards,48,370
+2026_01_DEN_KC,RJ Harvey,rushing_yards,58,625
+2026_01_DEN_KC,RJ Harvey,rushing_yards,68,1100
+2026_01_DEN_KC,RJ Harvey,rushing_yards,75,1450
+2026_01_DEN_KC,RJ Harvey,rushing_yards,78,2000
+2026_01_DEN_KC,RJ Harvey,rushing_yards,88,3700
+2026_01_DEN_KC,RJ Harvey,rushing_yards,100,1900
+2026_01_DEN_KC,Rashee Rice,receiving_yards,43,-190
+2026_01_DEN_KC,Rashee Rice,receiving_yards,48,-145
+2026_01_DEN_KC,Rashee Rice,receiving_yards,53,-113
+2026_01_DEN_KC,Rashee Rice,receiving_yards,63,135
+2026_01_DEN_KC,Rashee Rice,receiving_yards,73,151
+2026_01_DEN_KC,Rashee Rice,receiving_yards,75,220
+2026_01_DEN_KC,Rashee Rice,receiving_yards,83,198
+2026_01_DEN_KC,Rashee Rice,receiving_yards,93,260
+2026_01_DEN_KC,Rashee Rice,receiving_yards,103,340
+2026_01_DEN_KC,Rashee Rice,receiving_yards,113,450
+2026_01_DEN_KC,Rashee Rice,receiving_yards,123,600
+2026_01_DEN_KC,Rashee Rice,receiving_yards,133,825
+2026_01_DEN_KC,Travis Kelce,receiving_yards,31,-220
+2026_01_DEN_KC,Travis Kelce,receiving_yards,34,-233
+2026_01_DEN_KC,Travis Kelce,receiving_yards,36,-160
+2026_01_DEN_KC,Travis Kelce,receiving_yards,41,-114
+2026_01_DEN_KC,Travis Kelce,receiving_yards,44,-113
+2026_01_DEN_KC,Travis Kelce,receiving_yards,46,110
+2026_01_DEN_KC,Travis Kelce,receiving_yards,51,140
+2026_01_DEN_KC,Travis Kelce,receiving_yards,54,132
+2026_01_DEN_KC,Travis Kelce,receiving_yards,64,198
+2026_01_DEN_KC,Travis Kelce,receiving_yards,74,300
+2026_01_DEN_KC,Travis Kelce,receiving_yards,75,340
+2026_01_DEN_KC,Travis Kelce,receiving_yards,84,450
+2026_01_DEN_KC,Travis Kelce,receiving_yards,94,725
+2026_01_DEN_KC,Travis Kelce,receiving_yards,104,1150
+2026_01_DEN_KC,Travis Kelce,receiving_yards,114,1900
+2026_01_DEN_KC,Travis Kelce,receiving_yards,124,3200
+2026_01_DEN_KC,Travis Kelce,receiving_yards,125,1500
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,11,-270
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,18,-111
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,31,130
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,41,191
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,51,280
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,61,425
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,71,650
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,75,950
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,81,1000
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,91,1600
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,101,2600
+2026_01_DEN_KC,Tyquan Thornton,receiving_yards,130,3500
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,75,425
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,125,1600
+2026_01_DEN_KC,Xavier Worthy,receiving_yards,130,3100
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,1,120
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,5,194
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,10,350
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,11,220
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,21,500
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,31,1200
+2026_01_DEN_KC,Xavier Worthy,rushing_yards,41,3200
