@@ -47,7 +47,9 @@ function renderWeekOptions(){
     sel.value=cur;
   }
 }
-function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); } m.scrollTop=0; }
+/* scroll to the top only when the overlay is first opened; a re-render (expanding a player,
+   changing a setting) keeps the reader where they were */
+function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
 function renderSlate(){
@@ -275,7 +277,9 @@ function renderGame(){
       html+='</div>';
     }
   }
+  const keepY=$('gameModal').scrollTop;
   $('gameView').innerHTML=html;
+  $('gameModal').scrollTop=keepY;
   $('backBtn').addEventListener('click',closeGame);
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
