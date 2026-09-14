@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       no_odds:
-        description: "Skip the price pull (spends no credits)"
+        description: "Skip the price pull (spends no credits). Untick to pull fresh prices, about 7 credits a game."
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: write
