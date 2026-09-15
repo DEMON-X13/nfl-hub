@@ -67,7 +67,11 @@ dom.window.addEventListener('load', () => {
 
   click('.slot[data-game="DEN-KC"]');
   check('a second game opens', ov.classList.contains('on') && d.getElementById('ovtitle').textContent.includes('Kansas City Chiefs'));
-  check('unplayed teams are 0-0', [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ') === '0-0 0-0');
+  // records follow the results file, worked out here independently of the page: 0-0 before anyone plays, then whatever the season says
+  { const R = w.eval('typeof RESULTS === "undefined" ? {} : RESULTS');
+    const rec = ab => { let W = 0, L = 0, T = 0; for (const [k, [as, hs]] of Object.entries(R)) { const [aw, hm] = k.split(':')[1].split('-'); if (aw !== ab && hm !== ab) continue; const mine = hm === ab ? hs : as, theirs = hm === ab ? as : hs; if (mine > theirs) W++; else if (mine < theirs) L++; else T++; } return W + '-' + L + (T ? '-' + T : ''); };
+    const want = rec('DEN') + ' ' + rec('KC'), got = [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ');
+    check('team records match the results file', got === want, got + ' vs ' + want); }
   click('#ovx');
   check('X closes overlay', !ov.classList.contains('on'));
 
