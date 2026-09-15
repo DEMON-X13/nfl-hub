@@ -61,5 +61,9 @@ const RESULTS = {
  "wk1:DAL-NYG": [
   20,
   28
+ ],
+ "wk1:DEN-KC": [
+  10,
+  31
  ]
 };
