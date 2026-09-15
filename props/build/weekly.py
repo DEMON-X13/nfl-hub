@@ -116,7 +116,7 @@ def main():
             if not m: continue
             with open(os.path.join(DATA,fn),newline='',encoding='utf-8') as f: prices[m.group(1)]=list(csv.DictReader(f))
         pay['prices']=prices
-        pay['baked_at']=datetime.datetime.now().isoformat(timespec='minutes')
+        pay['baked_at']=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='minutes')   # UTC with offset, so the page shows the right local time
         json.dump(pay,open(pp,'w',encoding='utf-8'),separators=(',',':'),ensure_ascii=False)
         if skipped_live: say(f"  not baked (no final score yet): {', '.join(sorted(skipped_live))}")
         say(f"  baked in: stats for weeks {', '.join(sorted(stats,key=int)) or 'none yet'} ({sum(len(v) for v in stats.values())} player-games), {len(inj)} injury rows for week {week}, prices for weeks {', '.join(sorted(prices,key=int)) or 'none'}")

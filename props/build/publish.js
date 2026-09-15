@@ -20,7 +20,17 @@ const TRIM = `<script>
 window.VIEWER=true;
 document.addEventListener('DOMContentLoaded',()=>{
   for(const t of ['week','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
+  const bt=document.getElementById('buildTag'); if(bt) bt.remove();   /* the betting model's public header carries no build tag */
 });
+/* header note, as on the betting model: when the site's data was last built, not "Autosaved" */
+(function(){
+  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY.baked_at) return;
+    const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
+    const txt='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    const put=()=>{ if(st.textContent!==txt) st.textContent=txt; };
+    put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
+})();
 </script>
 `;
 if (!html.includes('</body>')) throw new Error('no </body> in the app');
@@ -38,6 +48,15 @@ let pub = html.replace('</body>', TRIM + '</body>');
 for (const [from, to] of PUBLIC_TEXT) { if (!pub.includes(from)) throw new Error('public text not found: ' + from.slice(0, 40)); pub = pub.split(from).join(to); }
 fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), pub);
 const ADMIN = `<script>
+/* header note, as on the betting model: when the site's data was last built, not "Autosaved" */
+(function(){
+  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY.baked_at) return;
+    const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
+    const txt='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    const put=()=>{ if(st.textContent!==txt) st.textContent=txt; };
+    put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
+})();
 /* admin only: a link straight to the job's Run workflow page, the manual refresh */
 document.addEventListener('DOMContentLoaded',()=>{
   const st=document.getElementById('saveState'); if(!st) return;
