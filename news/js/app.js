@@ -229,7 +229,7 @@ function openGame(key){
   const statsOf = ab => Object.assign({}, s26(ab) ? BLANK : ZERO, s26(ab) || {}, ((w.teams||{})[ab]||{}).stats || {});
   const sa = statsOf(g.away), sh = statsOf(g.home);
   const through = (typeof STATS26_THROUGH !== "undefined" && STATS26_THROUGH) ? " through " + STATS26_THROUGH : "";
-  const basis = "Average per game across every 2026 game so far" + through;
+  const basis = "2026 season" + through;
   const r1 = v => (v == null || isNaN(v)) ? null : Math.round(v*10)/10;
   const rows = [
     {label:"Point differential", a:(sa.ppg==null||sa.pa==null)?null:r1(sa.ppg - sa.pa), h:(sh.ppg==null||sh.pa==null)?null:r1(sh.ppg - sh.pa), hi:"a", sign:true, note:"per game"},
