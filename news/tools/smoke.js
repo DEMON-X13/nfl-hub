@@ -39,22 +39,30 @@ dom.window.addEventListener('load', () => {
   const g = expr => w.eval(expr);   // top-level const/let live in script scope, not on window
   const ov = d.getElementById('ov');
 
+  // Everything below is derived from whatever week is active, so the test keeps working as weeks are appended.
+  const WK = g('currentWeek()'), T = g('T');
+  const R = g('typeof RESULTS === "undefined" ? {} : RESULTS');
+  const rec = ab => { let W = 0, L = 0, T2 = 0; for (const [k, [as, hs]] of Object.entries(R)) { const [aw, hm] = k.split(':')[1].split('-'); if (aw !== ab && hm !== ab) continue; const mine = hm === ab ? hs : as, theirs = hm === ab ? as : hs; if (mine > theirs) W++; else if (mine < theirs) L++; else T2++; } return W + '-' + L + (T2 ? '-' + T2 : ''); };
+  const gameKey = x => x.away + '-' + x.home;
+  const played = WK.games.filter(x => x.awayScore != null && x.homeScore != null).length;
+  const first = WK.games[0], last = WK.games[WK.games.length - 1];
+
   check('no script errors', errs.length === 0, errs.join(' | ') || 'none');
   check('shows the last week in data/weeks.js', g('ACTIVE') === g('WEEKS[WEEKS.length-1].id') && d.getElementById('barweek').textContent.includes(g('currentWeek().label')), d.getElementById('barweek').textContent);
   check('16 game tiles', n('.slot') === 16, n('.slot'));
   check('no tabs, search, cards, or data tools on the page', n('.wtab') === 0 && !d.getElementById('q') && n('.card') === 0 && !d.getElementById('tools'));
-  // at least the two finals baked into week1.js; more once results.js has been pulled, never more than the slate
-  check('played games show a score', n('.slot .score') >= 2 && n('.slot .score') <= n('.slot'), n('.slot .score'));
+  // one score per game that has a final, none on an upcoming slate, never more than the slate
+  check('played games show a score', n('.slot .score') === played && played <= n('.slot'), n('.slot .score') + ' of ' + n('.slot'));
 
-  click('.slot[data-game="NE-SEA"]');
+  click('.slot[data-game="' + gameKey(first) + '"]');
   const title = d.getElementById('ovtitle') ? d.getElementById('ovtitle').textContent : '';
-  check('game overlay opens', ov.classList.contains('on') && title.includes('New England Patriots') && title.includes('Seattle Seahawks'), title);
+  check('game overlay opens', ov.classList.contains('on') && title.includes(T[first.away].name) && title.includes(T[first.home].name), title);
   check('both teams on one shared grid', n('.duo2 .tb.c1') === 1 && n('.duo2 .tb.c2') === 1 && n('.duo2 .r1') === 2 && n('.duo2 .r3.up') === 2 && n('.duo2 .r4.down') === 2);
   check('every row present for both teams', ['r1','r2','r3','r4','r5'].every(r => n('.duo2 .' + r) === 2) && n('.tbsec.n h5') === 2);
   check('keys to victory is a blue block per team', n('.duo2 .tb .tbsec.info.r5') === 2 && n('.duo2 .tbsec.info li') === 6, n('.duo2 .tbsec.info li') + ' keys');
   check('headlines carry a title for the one-line clamp', n('.tbhd .sub[title]') === 2);
   check('no setup section', ![...d.querySelectorAll('.ovbody .ovsec')].some(e => e.textContent.includes('How the game sets up')));
-  check('record chips show the 2026 record', [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ') === '0-1 1-0' && d.querySelector('.tbhd .chips .pill:not(.big)').textContent.includes('2026'), [...d.querySelectorAll('.tbhd .chips .pill:not(.big)')].map(p => p.textContent).join(' | '));
+  check('record chips show the 2026 record', [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ') === rec(first.away) + ' ' + rec(first.home) && d.querySelector('.tbhd .chips .pill:not(.big)').textContent.includes('2026'), [...d.querySelectorAll('.tbhd .chips .pill:not(.big)')].map(p => p.textContent).join(' | '));
   check('eleven stat rows with divided bars', n('.ovbody .sbar') === 11 && n('.ovbody .sbar .half') === 22, n('.ovbody .sbar') + ' rows');
   check('stat labels in order', [...d.querySelectorAll('.ovbody .sbar .lb')].map(e => e.firstChild.textContent).join('|') === 'Point differential|Points per game|Points allowed|Yards per play|Yards per play allowed|Turnover margin|Sacks|Sacks allowed|Third down rate|Red zone TD rate|Explosive plays');
   // stat values are numbers, never dashes; before the first pull they are all zero, after it they are whatever the season says
@@ -65,12 +73,10 @@ dom.window.addEventListener('load', () => {
   d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   check('Escape closes overlay', !ov.classList.contains('on'));
 
-  click('.slot[data-game="DEN-KC"]');
-  check('a second game opens', ov.classList.contains('on') && d.getElementById('ovtitle').textContent.includes('Kansas City Chiefs'));
+  click('.slot[data-game="' + gameKey(last) + '"]');
+  check('a second game opens', ov.classList.contains('on') && d.getElementById('ovtitle').textContent.includes(T[last.home].name));
   // records follow the results file, worked out here independently of the page: 0-0 before anyone plays, then whatever the season says
-  { const R = w.eval('typeof RESULTS === "undefined" ? {} : RESULTS');
-    const rec = ab => { let W = 0, L = 0, T = 0; for (const [k, [as, hs]] of Object.entries(R)) { const [aw, hm] = k.split(':')[1].split('-'); if (aw !== ab && hm !== ab) continue; const mine = hm === ab ? hs : as, theirs = hm === ab ? as : hs; if (mine > theirs) W++; else if (mine < theirs) L++; else T++; } return W + '-' + L + (T ? '-' + T : ''); };
-    const want = rec('DEN') + ' ' + rec('KC'), got = [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ');
+  { const want = rec(last.away) + ' ' + rec(last.home), got = [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ');
     check('team records match the results file', got === want, got + ' vs ' + want); }
   click('#ovx');
   check('X closes overlay', !ov.classList.contains('on'));

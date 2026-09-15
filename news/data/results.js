@@ -10,6 +10,10 @@ const RESULTS = {
   27,
   7
  ],
+ "wk1:CHI-CAR": [
+  59,
+  37
+ ],
  "wk1:TB-CIN": [
   27,
   33
@@ -18,29 +22,29 @@ const RESULTS = {
   30,
   31
  ],
- "wk1:NYJ-TEN": [
-  23,
-  10
+ "wk1:BUF-HOU": [
+  36,
+  31
  ],
  "wk1:BAL-IND": [
   41,
   23
  ],
- "wk1:ATL-PIT": [
-  13,
-  20
- ],
- "wk1:CHI-CAR": [
-  59,
-  37
- ],
  "wk1:CLE-JAX": [
   10,
   34
  ],
- "wk1:BUF-HOU": [
-  36,
-  31
+ "wk1:ATL-PIT": [
+  13,
+  20
+ ],
+ "wk1:NYJ-TEN": [
+  23,
+  10
+ ],
+ "wk1:ARI-LAC": [
+  26,
+  14
  ],
  "wk1:MIA-LV": [
   13,
@@ -53,10 +57,6 @@ const RESULTS = {
  "wk1:WAS-PHI": [
   22,
   24
- ],
- "wk1:ARI-LAC": [
-  26,
-  14
  ],
  "wk1:DAL-NYG": [
   20,
