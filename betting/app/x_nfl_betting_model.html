@@ -250,6 +250,21 @@ th.sortable:hover{color:var(--ink)}
 .elomv.up{background:var(--pick-soft);color:var(--pick)} .elomv.down{background:var(--miss-soft);color:var(--miss)} .elomv.flat{color:var(--line-2);background:transparent}
 .tierbadge{display:inline-block;width:20px;height:22px;vertical-align:middle;flex:none}
 .tierlegend{display:flex;flex-wrap:wrap;gap:10px 16px;margin:10px 0 0;font-size:12px;color:var(--ink-2)} .tierlegend span{display:inline-flex;align-items:center;gap:4px}
+/* season accuracy legend: main model and you on one row, the rest listed under it */
+.lgdrow{margin:0 0 8px;gap:18px;font-size:12px}
+.lgdrow .toggle{margin-left:auto;font-size:12px;color:var(--ink-2)}
+.lgd{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:7px}
+.lgdlist{display:flex;flex-direction:column;gap:5px;margin:0 0 10px;font-size:12px;color:var(--ink-2)}
+.lgdlist b{color:var(--ink);font-family:var(--display);font-variant-numeric:tabular-nums}
+/* who picked what */
+.pickgrid{margin-top:10px;overflow-x:auto}
+.pickgrid table{min-width:520px}
+.pickgrid th.c,.pickgrid td.c{text-align:center}
+.pickgrid td.gm{white-space:nowrap;font-size:13px}
+.pickgrid td.gm small{display:block;color:var(--muted);font-size:11px;font-weight:500}
+.pickcell{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.pickcell .res{font-weight:800;font-size:12px}
+.pickcell .res.ok{color:var(--pick)} .pickcell .res.bad{color:var(--miss)}
 </style>
 </head>
 <body>
@@ -372,6 +387,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.36</td><td>Record &amp; Bets: Show all models sits beside You, the other models list one per row, the disagreement lines are gone, Vegas is black, and a Show every pick button opens a week by week grid of what each model picked.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.35</td><td>Record &amp; Bets: the Vegas favourite, whoever the closing spread favoured, is tracked under Show all models as a point of reference, in slate dotted.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.34</td><td>Power Ratings: the rank up/down tag sits to the right of the team name instead of beside the rank number.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.33</td><td>Record &amp; Bets: The Joker, a boosted-tree formula on every pre-kickoff variable scored by the site's update job, is tracked alongside the Challenger under Show all models, in red. The model is now labelled Main Model.</td></tr>
@@ -446,7 +462,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.35 \u00b7 2026-09-15';
+const APP_BUILD='v1.36 \u00b7 2026-09-15';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -891,6 +907,31 @@ function renderBets(){
     if(!confirm(`Remove the week ${b.dataset.betdel} bet entry?`)) return;
     delete S.bets[b.dataset.betdel]; save(); renderRecord(); }));
 }
+/* every model's pick for one week, side by side. Graded games come from what was logged;
+   an unplayed week is filled from live predictions, so the grid works before kickoff. */
+function pickGrid(w,showAll){
+  const games=S.schedule.filter(g=>+g.week===w).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
+  if(!games.length) return '<div class="empty">No games that week.</div>';
+  const jok=S.joker||{};
+  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];
+  const cell=(pick,winner,g)=>{ if(!pick) return '<span class="muted">\u2013</span>';
+    const ok=winner?(pick===winner):null;
+    return `<span class="pickcell">${tag(pick,tagColor(pick),true,'mini')}${ok===null?'':`<span class="res ${ok?'ok':'bad'}">${ok?'\u2713':'\u2717'}</span>`}</span>`; };
+  let html='<div class="pickgrid"><table><thead><tr><th>Game</th>'+cols.map(c=>`<th class="c">${c[0]}</th>`).join('')+'</tr></thead><tbody>';
+  for(const g of games){
+    const done=S.processed[g.game_id];
+    const winner=g.result==null?null:(g.result>0?g.home_team:g.result<0?g.away_team:null);
+    const pr=done?{pick:done.pick}:predict(g,S.teams);
+    const prH=done?(done.h||null):(S.teamsH?predict(g,S.teamsH,MODEL_H.pure):null);
+    const jk=(done&&done.joker)||jok[g.game_id]||null;
+    const vg=g.spread_line==null||+g.spread_line===0?null:(+g.spread_line>0?g.home_team:g.away_team);
+    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];
+    const [day,time]=fmtDate(g);
+    html+=`<tr><td class="gm"><b>${g.away_team}</b> at <b>${g.home_team}</b><small>${day} ${time}${winner?` \u00b7 ${winner} won ${g.away_score}\u2013${g.home_score}`:''}</small></td>`
+      +picks.map(p=>`<td class="c">${cell(p,winner,g)}</td>`).join('')+'</tr>';
+  }
+  return html+'</tbody></table></div>';
+}
 function renderRecord(){
   const rows=Object.values(S.processed).filter(r=>r.correct!==null); const el=$('recordTable');
   if(!rows.length){ $('recordStats').innerHTML=''; el.innerHTML='<div class="empty">No graded games yet. Upload a week\'s results and stats to start the record.</div>'; $('modelChart').innerHTML=''; renderBets(); return; }
@@ -929,25 +970,31 @@ function renderRecord(){
     vPts.push({x:w, y:vRunN?100*vRun/vRunN:null, tip:wr.length?`Week ${w} Vegas favourite: ${wc} of ${wr.length} that week, ${(100*vRun/vRunN).toFixed(1)}% season to date`:`Week ${w}: no closing lines`}); });
   const vDis=vRows.filter(r=>vPick(r)!==r.pick); const vDisA=vDis.filter(r=>r.correct).length, vDisV=vDis.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length;
   const showAll=!!S.showAllModels;
-  const legend=anyMine?`<div class="bar" style="margin:0 0 8px;gap:16px;font-size:12px">
-      <span><i style="display:inline-block;width:14px;height:3px;background:#1F6F4A;vertical-align:middle;margin-right:6px"></i>Main Model ${runN?Math.round(100*run/runN):0}%</span>
-      <span><i style="display:inline-block;width:14px;height:3px;background:#C98B0F;vertical-align:middle;margin-right:6px"></i>You ${Math.round(100*mRun/mRunN)}%</span>
-      <span class="muted">${mRun>run*mRunN/runN?'you are ahead on the games you picked':mRun<run*mRunN/runN?'the main model is ahead on those games':'dead even'}</span>
-    </div>`:'';
-  const toggle=`<div class="bar" style="margin:0 0 8px;gap:16px;font-size:12px"><label><input type="checkbox" id="showAllModels" ${showAll?'checked':''}> Show all models</label>
-      ${showAll&&hRunN?`<span><i style="display:inline-block;width:14px;height:3px;background:#3B6FB6;vertical-align:middle;margin-right:6px"></i>Challenger ${Math.round(100*hRun/hRunN)}% (${hRun} of ${hRunN})</span>
-      <span class="muted">Disagreed on ${dis.length} game${dis.length===1?'':'s'}: main model right ${disA}, challenger right ${disH}</span>`:''}
-      ${showAll&&jRunN?`<span><i style="display:inline-block;width:14px;height:3px;background:#C0392B;vertical-align:middle;margin-right:6px"></i>The Joker ${Math.round(100*jRun/jRunN)}% (${jRun} of ${jRunN})</span>
-      <span class="muted">Disagreed on ${jDis.length} game${jDis.length===1?'':'s'}: main model right ${jDisA}, Joker right ${jDisJ}</span>`:''}
-      ${showAll&&vRunN?`<span><i style="display:inline-block;width:14px;height:3px;background:#657386;vertical-align:middle;margin-right:6px"></i>Vegas favourite ${Math.round(100*vRun/vRunN)}% (${vRun} of ${vRunN})</span>
-      <span class="muted">Disagreed on ${vDis.length} game${vDis.length===1?'':'s'}: main model right ${vDisA}, the favourite right ${vDisV}</span>`:''}</div>`;
+  const pickWeek=S.picksWeek&&S.schedule.some(g=>+g.week===+S.picksWeek)?+S.picksWeek:Math.max(...wks);
+  const swatch=(c,dash)=>`<i class="lgd" style="background:${dash?'transparent':c};${dash?`border-top:3px dotted ${c};height:0`:''}"></i>`;
+  const legend=`<div class="bar lgdrow">
+      <span>${swatch('#1F6F4A')}Main Model ${runN?Math.round(100*run/runN):0}%</span>
+      ${anyMine?`<span>${swatch('#C98B0F')}You ${Math.round(100*mRun/mRunN)}%</span>`:''}
+      <label class="toggle"><input type="checkbox" id="showAllModels" ${showAll?'checked':''}> Show all models</label>
+    </div>
+    ${showAll?`<div class="lgdlist">
+      ${hRunN?`<span>${swatch('#3B6FB6',1)}Challenger <b>${Math.round(100*hRun/hRunN)}%</b> <span class="muted">${hRun} of ${hRunN}</span></span>`:''}
+      ${jRunN?`<span>${swatch('#C0392B')}The Joker <b>${Math.round(100*jRun/jRunN)}%</b> <span class="muted">${jRun} of ${jRunN}</span></span>`:''}
+      ${vRunN?`<span>${swatch('#0F1B2D',1)}Vegas <b>${Math.round(100*vRun/vRunN)}%</b> <span class="muted">${vRun} of ${vRunN}</span></span>`:''}
+    </div>`:''}`;
+  const toggle='';
   $('modelChart').innerHTML=`<div class="card"><h2>Season accuracy</h2>
     <p class="muted" style="margin:0 0 8px">Running season accuracy after each week. The gold dashed line is the 63.8% the main model averaged across 2021-2025 in walk-forward testing.</p>
-    ${legend}${toggle}
+    ${legend}
     ${lineChart(accPts,{pct:true,color:'#1F6F4A',ref:63.8,refLabel:'63.8% expected',label:'accuracy by week',
-        extra:[...(anyMine?[{pts:mePts,color:'#C98B0F'}]:[]),...(showAll&&hRunN?[{pts:hPts,color:'#3B6FB6',dash:'6 3'}]:[]),...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#657386',dash:'2 4'}]:[])]})}
-    <p class="muted" style="margin:8px 0 0">Early weeks bounce around on small samples. In testing weeks 1-4 ran 60.4% and weeks 10-14 ran 66.1%, so a slow start is normal.${showAll?' The challenger seeds each team\'s Elo from the preseason betting-market win total instead of carrying last season\'s; it becomes the main model only if it beats this one on the games where they disagree over the full 2026 season.':''}${showAll&&jRunN?' The Joker (red) is a boosted-tree formula fed every pre-kickoff variable: ratings, quarterbacks, the market, weather, coaches, referee and both teams\' recent stat lines. It was frozen after fitting 2019-2025 and ran 63.4% in walk-forward testing, level with the main model, so it is tracked here, not trusted.':''}${showAll&&vRunN?' The Vegas favourite (slate, dotted) is not a model: it is whoever the closing spread made favourite, the bar any model has to clear.':''}</p></div>`;
+        extra:[...(anyMine?[{pts:mePts,color:'#C98B0F'}]:[]),...(showAll&&hRunN?[{pts:hPts,color:'#3B6FB6',dash:'6 3'}]:[]),...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D',dash:'2 4'}]:[])]})}
+    <div class="bar" style="margin:12px 0 0;gap:10px"><button class="btn quiet" id="picksToggle">${S.picksOpen?'Hide every pick':'Show every pick'}</button>
+      ${S.picksOpen?`<label class="muted">Week <select id="picksWeek">${[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b).map(w=>`<option value="${w}" ${w===pickWeek?'selected':''}>${w>18?'Playoffs '+(w-18):'Week '+w}</option>`).join('')}</select></label>`:''}</div>
+    ${S.picksOpen?pickGrid(pickWeek,showAll):''}
+    <p class="muted" style="margin:8px 0 0">Early weeks bounce around on small samples. In testing weeks 1-4 ran 60.4% and weeks 10-14 ran 66.1%, so a slow start is normal.${showAll?' The challenger seeds each team\'s Elo from the preseason betting-market win total instead of carrying last season\'s; it becomes the main model only if it beats this one on the games where they disagree over the full 2026 season.':''}${showAll&&jRunN?' The Joker (red) is a boosted-tree formula fed every pre-kickoff variable: ratings, quarterbacks, the market, weather, coaches, referee and both teams\' recent stat lines. It was frozen after fitting 2019-2025 and ran 63.4% in walk-forward testing, level with the main model, so it is tracked here, not trusted.':''}${showAll&&vRunN?' Vegas (black, dotted) is not a model: it is whoever the closing spread made favourite, the bar any model has to clear.':''}</p></div>`;
   $('showAllModels')?.addEventListener('change',e=>{ S.showAllModels=e.target.checked; save(); renderRecord(); });
+  $('picksToggle')?.addEventListener('click',()=>{ S.picksOpen=!S.picksOpen; save(); renderRecord(); });
+  $('picksWeek')?.addEventListener('change',e=>{ S.picksWeek=+e.target.value; save(); renderRecord(); });
   const weeks=[...new Set(rows.map(r=>+r.week))].sort((a,b)=>a-b);
   let html=`<table><thead><tr><th>Week</th><th class="num">Games</th><th class="num">Main Model</th>${showAll?'<th class="num">Challenger</th>':''}${showAll&&jRunN?'<th class="num">The Joker</th>':''}${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th><th class="num">Margin error</th><th>Main Model misses</th></tr></thead><tbody>`;
   for(const w of weeks){ const wr=rows.filter(r=>+r.week===w); const wc=wr.filter(r=>r.correct).length; const wm=wr.reduce((s,r)=>s+Math.abs(r.margin-r.result),0)/wr.length;
