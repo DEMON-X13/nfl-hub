@@ -106,7 +106,7 @@ a{color:inherit}
 .r1{grid-row:1}.r2{grid-row:2}.r3{grid-row:3}.r4{grid-row:4}.r5{grid-row:5}
 /* ---------- deep dive: collapsed under keys to victory, six unit matchups ---------- */
 .r6{grid-row:6}
-.tbsec.dd{background:var(--surface);border:1px solid var(--line);padding:0}
+.tbsec.dd{background:var(--sunk);border:1px solid var(--line);padding:0}
 .tbsec.dd summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:9px}
 .tbsec.dd summary::-webkit-details-marker{display:none}
 .tbsec.dd summary::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ink-2);flex:0 0 6px}

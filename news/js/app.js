@@ -224,13 +224,15 @@ function openGame(key){
      A team with no games yet shows zeros. */
   const ZERO = {ppg:0, pa:0, ypp:0, yppa:0, to:0, sk:0, ska:0, third:0, rz:0, expl:0};
   const s26 = ab => (typeof STATS26 !== "undefined" && STATS26[ab]) ? STATS26[ab] : null;
-  const statsOf = ab => Object.assign({}, ZERO, s26(ab) || {}, ((w.teams||{})[ab]||{}).stats || {});
+  /* a team with 2026 numbers shows a dash for any stat its sources left blank; a team with none shows zeros */
+  const BLANK = {ppg:null, pa:null, ypp:null, yppa:null, to:null, sk:null, ska:null, third:null, rz:null, expl:null};
+  const statsOf = ab => Object.assign({}, s26(ab) ? BLANK : ZERO, s26(ab) || {}, ((w.teams||{})[ab]||{}).stats || {});
   const sa = statsOf(g.away), sh = statsOf(g.home);
   const through = (typeof STATS26_THROUGH !== "undefined" && STATS26_THROUGH) ? " through " + STATS26_THROUGH : "";
-  const basis = "2026 season" + through + ", per game";
+  const basis = "Average per game across every 2026 game so far" + through;
   const r1 = v => (v == null || isNaN(v)) ? null : Math.round(v*10)/10;
   const rows = [
-    {label:"Point differential", a:r1(sa.ppg - sa.pa), h:r1(sh.ppg - sh.pa), hi:"a", sign:true, note:"per game"},
+    {label:"Point differential", a:(sa.ppg==null||sa.pa==null)?null:r1(sa.ppg - sa.pa), h:(sh.ppg==null||sh.pa==null)?null:r1(sh.ppg - sh.pa), hi:"a", sign:true, note:"per game"},
     {label:"Points per game", a:sa.ppg, h:sh.ppg, hi:"a"},
     {label:"Points allowed", a:sa.pa, h:sh.pa, hi:"lo"},
     {label:"Yards per play", a:sa.ypp, h:sh.ypp, hi:"a"},

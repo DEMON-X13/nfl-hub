@@ -95,7 +95,10 @@ dom.window.addEventListener('load', () => {
   check('stat labels in order', [...d.querySelectorAll('.ovbody .sbar .lb')].map(e => e.firstChild.textContent).join('|') === 'Point differential|Points per game|Points allowed|Yards per play|Yards per play allowed|Turnover margin|Sacks|Sacks allowed|Third down rate|Red zone TD rate|Explosive plays');
   // stat values are numbers, never dashes; before the first pull they are all zero, after it they are whatever the season says
   const svals = [...d.querySelectorAll('.ovbody .sv')].map(e => e.textContent.trim());
-  check('2026 only: numeric stat values, no dashes', svals.length > 0 && svals.every(v => /^[+-]?\d+(\.\d+)?%?$/.test(v)), svals.filter(v => !/^[+-]?\d+(\.\d+)?%?$/.test(v)).join(' '));
+  { const S26 = g('typeof STATS26 === "undefined" ? {} : STATS26');
+    const blanks = [first.away, first.home].reduce((n, t) => n + (S26[t] ? ['ppg','pa','ypp','yppa','to','sk','ska','third','rz','expl'].filter(k => S26[t][k] == null).length : 0), 0);
+    const dashes = svals.filter(v => v === '\u2013').length;
+    check('2026 only: numeric stat values, a dash only where the stat file has none', svals.length > 0 && svals.every(v => v === '\u2013' || /^[+-]?\d+(\.\d+)?%?$/.test(v)) && dashes <= blanks + 2, `${dashes} dashes, ${blanks} blank stats`); }
   const anyStat = svals.some(v => !/^0%?$/.test(v)); const widths = [...d.querySelectorAll('.ovbody .half i')].map(x => x.style.width);
   check(anyStat ? 'bars drawn once stats exist' : 'empty bars when both sides are zero', anyStat ? widths.some(w => w && w !== '0%') : widths.every(w => w === '0%'));
   d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
