@@ -115,7 +115,7 @@ Atlanta Falcons, injuries:
 - Tua Tagovailoa (QB) Questionable, Oblique: questionable
 - Michael Penix Jr. (QB) Questionable, Knee - ACL: questionable
 - Billy Bowman Jr. (CB) Questionable, Achilles: questionable
-- Nick Folk (PK) Active: Folk went 2 for 4 on field-goal attempts and hit his only extra-point try in Sunday's 20-13 loss to the Steelers.
+- Nick Folk (PK) Active: Folk went 2-for-4 on field-goal attempts and hit his only extra-point try in Sunday's 20-13 loss to the Steelers.
 - Olamide Zaccheaus (WR) Active: Zaccheaus caught his sole target for five yards and returned one kickoff for 29 yards in the Falcons' 20-13 loss to the Steelers on Sunday.
 - Zachariah Branch (WR) Active: Branch returned three punts for 33 yards and one kickoff for 30 yards in the Falcons' 20-13 loss to the Steelers on Sunday.
 - Da'Shawn Hand (DT) Out, Quadriceps: Hand suffered a torn quadriceps in Sunday's 20-13 loss to the Steelers, Marc Raimondi of ESPN.com reports.
@@ -248,8 +248,8 @@ Philadelphia Eagles, injuries:
 Philadelphia Eagles, ESPN headlines:
 
 Tennessee Titans, injuries:
-- Chimere Dike (WR) Active: Dike recorded one catch for seven yards, three kick returns for 62 yards and one punt return for -5 yards in Sunday's 23-10 loss to the Jets.
-- Joey Slye (PK) Active: Slye made his only field-goal try and his only extra-point attempt during Sunday's 23-10 loss versus the Jets.
+- Chimere Dike (WR) Active: Dike recorded one catch for seven yards, three kickoff returns for 62 yards and one punt return for minus-5 yards in Sunday's 23-10 loss to the Jets.
+- Joey Slye (PK) Active: Slye made his only field-goal try and his sole extra-point attempt during Sunday's 23-10 loss versus the Jets.
 - Daniel Bellinger (TE) Active: Bellinger caught his sole target for seven yards in Sunday's 23-10 loss to the Jets.
 - Cedric Gray (LB) Questionable, Concussion: Gray (concussion) is trending toward playing in Tennessee's Week 2 matchup with Philadelphia, Jim Wyatt of the Titans' official site reports.
 - Tyjae Spears (RB) Active: Spears rushed three times for 12 yards and caught two of four targets for an additional 12 yards in Sunday's 23-10 loss to the Jets.
@@ -360,7 +360,7 @@ Green Bay Packers, injuries:
 - Warren Brinson (DT) Questionable, Calf: questionable
 - Trey Smack (PK) Active: Smack made all three of his field-goal attempts while missing one of two PATs in Sunday's 39-22 loss to the Vikings.
 - Skyy Moore (WR) Active: Moore failed to catch his only target and returned two punts for 17 yards during Green Bay's loss to the Vikings on Sunday.
-- Kaleb Johnson (RB) Active: Johnson returned two kicks for 52 yards in Sunday's 39-22 loss to the Vikings.
+- Kaleb Johnson (RB) Active: Johnson returned two kickoffs for 52 yards in Sunday's 39-22 loss to the Vikings.
 - Bo Melton (WR) Active: The Packers signed Melton to the active roster Monday.
 - Jonnu Smith (TE) Active: Smith caught two of three targets for 50 yards in Sunday's Week 1 loss to the Vikings.
 - Chris Brooks (RB) Active: Brooks turned seven carries into 29 yards and failed to haul in his lone target during the Packers' 39-22 loss to the Vikings on Sunday.
@@ -617,7 +617,7 @@ Houston Texans, injuries:
 Houston Texans, ESPN headlines:
 
 ### Jacksonville Jaguars at Denver Broncos
-Sun, Sep 20, 4:05 PM ET, CBS, Empower Field at Mile High, Denver. Line: DEN -2.5, O/U 43.5
+Sun, Sep 20, 4:05 PM ET, CBS, Empower Field at Mile High, Denver. Line: DEN -2.5, O/U 44.5
 
 Searches to run:
 - "Jacksonville Jaguars Denver Broncos preview week 2"
@@ -695,8 +695,8 @@ Searches to run:
 - "NFL week 2 picks LV LAC"
 
 Las Vegas Raiders, injuries:
-- Dylan Laube (RB) Active: Laube recorded 2 fair catches on punts, two kick returns for 95 yards and two tackles during Sunday's 27-13 win versus the Dolphins.
-- Ian Thomas (TE) Active: Thomas played 31 offensive snaps in Sunday's 27-13 win over the Dolphins.
+- Dylan Laube (RB) Active: Laube recorded two fair catches on punts, two kickoff returns for 95 yards and two tackles during Sunday's 27-13 win versus the Dolphins.
+- Ian Thomas (TE) Active: Thomas played 31 offensive snaps but did not record any stats in Sunday's 27-13 win over the Dolphins.
 - Jack Bech (WR) Active: Bech caught three of four targets for 23 yards and a touchdown Sunday in a 27-13 win over Miami.
 - Malik Benson (WR) Active: Benson caught one pass (on two targets) for six yards while taking his lone carry for minus-8 yards during the Raiders' 27-13 win over the Dolphins on Sunday. He also returned two punts for 35 yards.
 - Jalen Nailor (WR) Active: Nailor caught three passes (on five targets) for 27 yards during the Raiders' 27-13 win over the Dolphins on Sunday.
@@ -725,7 +725,7 @@ Las Vegas Raiders, ESPN headlines:
 
 Los Angeles Chargers, injuries:
 - Deane Leonard (CB) Questionable, Abdomen: questionable
-- KeAndre Lambert-Smith (WR) Doubtful, Hamstring: Lambert-Smith (hamstring) will miss some time after exiting last Sunday's game against the Cardinals early, Alex Insdorf of BoltBeat.com reports.
+- KeAndre Lambert-Smith (WR) Doubtful, Hamstring: Lambert-Smith (hamstring) will miss some time after exiting Sunday's game against the Cardinals early, Alex Insdorf of BoltBeat.com reports.
 - Elijah Molden (CB) Questionable, Hamstring: Molden (hamstring) did not return to Sunday's game against the Cardinals, Alex Insdorf of BoltBeat.com reports.
 - Derius Davis (WR) Questionable, Undisclosed: Davis (undisclosed) is day-to-day with an injury he suffered during Sunday's 26-14 loss to the Cardinals.
 - Kimani Vidal (RB) Active: Vidal played five snaps (four on offense, one on special teams) and didn't show up on the box score otherwise during the Chargers' 26-14 loss to the Cardinals on Sunday.
@@ -765,7 +765,7 @@ Searches to run:
 Washington Commanders, injuries:
 - Drew Stevens (PK) Active: Stevens missed one of his two field-goal attempts and one of his two PATs in Sunday's 24-22 loss to the Eagles.
 - Ben Sinnott (TE) Active: Sinnott played on 18 offensive snaps and 16 special-teams snaps but did not record a stat in Sunday's 24-22 loss to the Eagles.
-- Jaylin Lane (WR) Active: Lane caught his only target for four yards while returning four punts for 53 yards and three kicks for 95 yards in Sunday's 24-22 loss to the Eagles.
+- Jaylin Lane (WR) Active: Lane caught his only target for four yards while returning four punts for 53 yards and three kickoffs for 95 yards in Sunday's 24-22 loss to the Eagles.
 - Kaytron Allen (RB) Active: Allen turned four carries into 16 yards during the Commanders' 24-22 loss to the Eagles on Sunday.
 - John Bates (TE) Active: Bates caught two of three targets for 13 yards in Sunday's 24-22 loss to the Eagles.
 - Dyami Brown (WR) Active: Brown failed to haul in either of his two targets during the Commanders' 24-22 loss to the Eagles on Sunday.
@@ -800,7 +800,7 @@ Dallas Cowboys, injuries:
 - Hunter Luepke (FB) Active: Luepke turned his only carry into a seven-yard gain during Sunday night's 28-20 loss to New York.
 - Ryan Flournoy (WR) Active: Flournoy caught two of four targets for 22 yards in Sunday night's 28-20 loss to the Giants.
 - Jake Ferguson (TE) Active: Ferguson caught both of his targets for six yards during Sunday night's 28-20 loss to the Giants.
-- DeMarvion Overshown (LB) Questionable, Hamstring: Coach Brian Schottenheimer said Monday that Overshown is expected to miss 1-2 weeks due to the hamstring injury he sustained during Sunday's loss against the Giants, Andrew Siciliano of NFL Network reports.
+- DeMarvion Overshown (LB) Questionable, Hamstring: Coach Brian Schottenheimer said Monday that Overshown is expected to miss 1-to-2 weeks due to the hamstring injury he sustained during Sunday's loss against the Giants, Andrew Siciliano of NFL Network reports.
 - Malik Hooker (S) Doubtful, Forearm: Hooker was diagnosed with a forearm fracture after undergoing tests Monday, Ian Rapoport of NFL Network reports.
 - Brandon Aubrey (PK) Active: Aubrey made just two of three extra-point attempts in Sunday night's 28-20 loss to the Giants.
 - Camden Brown (WR) Active
@@ -863,7 +863,7 @@ Arizona Cardinals, injuries:
 - Garrett Williams (CB) Questionable, Achilles: questionable
 - Dadrion Taylor-Demerson (S) Questionable, Ribs: questionable
 - Isaiah Adams (G) Questionable, Knee: questionable
-- Bam Knight (RB) Active: Knight played three offensive snaps and three special teams snaps in Sunday's 26-14 win over the Chargers.
+- Bam Knight (RB) Active: Knight played three offensive snaps and three special-teams snaps in Sunday's 26-14 win over the Chargers.
 - Kendrick Bourne (WR) Active: Bourne caught all eight of his targets for 75 yards during the Cardinals' 26-14 win over the Chargers on Sunday.
 - Chad Ryland (PK) Active: Ryland converted four of five field-goal attempts and both PATs in Sunday's 26-14 win over the Chargers.
 - Andrew Billings (DT) Active
@@ -1007,7 +1007,7 @@ Kansas City Chiefs, injuries:
 - Patrick Mahomes (QB) Active: Mahomes completed 15 of 27 passes for 184 yards with two touchdowns and one interception while adding seven rushes for 23 yards and another score in the Chiefs' 31-10 win over the Broncos on Monday night. He also recovered two fumbles.
 - Rashee Rice (WR) Active: Rice brought in both targets for 19 yards and a touchdown in the Chiefs' 31-10 win over the Broncos on Monday night.
 - Kenneth Walker III (RB) Active: Walker rushed 23 times for 173 yards and a touchdown and brought in three of six targets for 18 yards and another score in the Chiefs' 31-10 win over the Broncos on Monday night.
-- Cooper McDonald (LB) Questionable, Knee: McDonald (knee) has been ruled out for the remainder of Sunday's game against the Broncos.
+- Cooper McDonald (LB) Questionable, Knee: McDonald (knee) has been ruled out for the remainder of Monday night's game against the Broncos.
 - Mansoor Delane (CB) Questionable, Shoulder: Delane (shoulder) has been ruled out for the remainder of Monday night's game against the Broncos.
 - Garrett Nussmeier (QB) Active: Nussmeier (coach's decision) is inactive as the emergency third quarterback for Monday night's game against the Broncos.
 - Ben VanSumeren (FB) Active: The Chiefs elevated VanSumeren from the practice squad ahead of Monday's game against the Broncos.
