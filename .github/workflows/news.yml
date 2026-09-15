@@ -8,6 +8,10 @@ on:
     - cron: "0 12 * * 1"    # Monday
     - cron: "0 12 * * 2"    # Tuesday
   workflow_dispatch:
+  push:
+    # a change to the tracker's pull code runs it once, so a fix is proven straight away
+    branches: [main]
+    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js"]
 
 permissions:
   contents: write
