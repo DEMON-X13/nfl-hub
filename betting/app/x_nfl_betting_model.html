@@ -218,8 +218,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .wowchart{width:100%;height:auto;display:block}
 .totrow td{border-top:2px solid var(--line-2);padding-top:10px;background:var(--panel-2)}
 #ratingsTable table{table-layout:fixed;width:auto;max-width:100%}
-#ratingsTable th:nth-child(1),#ratingsTable td:nth-child(1){width:66px;white-space:nowrap}
-#ratingsTable th:nth-child(2),#ratingsTable td:nth-child(2){width:168px}
+#ratingsTable th:nth-child(1),#ratingsTable td:nth-child(1){width:40px;white-space:nowrap}
+#ratingsTable th:nth-child(2),#ratingsTable td:nth-child(2){width:194px}
 #ratingsTable th:nth-child(3),#ratingsTable td:nth-child(3){width:98px}
 #ratingsTable th:nth-child(4),#ratingsTable td:nth-child(4){width:90px}
 #ratingsTable th:nth-child(5),#ratingsTable td:nth-child(5){width:100px}
@@ -242,7 +242,7 @@ th.sortable:hover{color:var(--ink)}
 .uploadlog{width:100%;flex-basis:100%;margin-top:6px;line-height:1.6}
 .uploadlog div{padding:1px 0}
 .movecell{padding-left:0;padding-right:0}
-.rankmv{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;font-variant-numeric:tabular-nums;padding:1px 4px;border-radius:999px;line-height:11px;vertical-align:middle;margin-left:4px}
+.rankmv{display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;font-variant-numeric:tabular-nums;padding:1px 4px;border-radius:999px;line-height:11px;vertical-align:middle;margin-left:7px}
 .rankmv i{font-style:normal;font-size:6px;line-height:1}
 .rankmv.flat{display:none}
 .rankmv.up{background:var(--pick-soft);color:var(--pick)} .rankmv.down{background:var(--miss-soft);color:var(--miss)} .rankmv.flat{color:var(--line-2);background:transparent;font-size:12px}
@@ -372,6 +372,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.34</td><td>Power Ratings: the rank up/down tag sits to the right of the team name instead of beside the rank number.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.33</td><td>Record &amp; Bets: The Joker, a boosted-tree formula on every pre-kickoff variable scored by the site's update job, is tracked alongside the Challenger under Show all models, in red. The model is now labelled Main Model.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.32</td><td>My Picks: a tick or cross badge on the winner's tag shows whether your pick hit, and your week and season records sit beside the week dropdown.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.31</td><td>AI Picks: the model's record for the selected week and for the season sits beside the week dropdown.</td></tr>
@@ -444,7 +445,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.33 \u00b7 2026-09-15';
+const APP_BUILD='v1.34 \u00b7 2026-09-15';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -989,7 +990,7 @@ function renderRatings(){
     if(d===0) return '<span class="rankmv flat" title="No change since '+since+'">\u00b7</span>';
     return `<span class="rankmv ${d>0?'up':'down'}" title="${d>0?'Up':'Down'} ${Math.abs(d)} since ${since}"><i>${d>0?'\u25b2':'\u25bc'}</i>${Math.abs(d)}</span>`; };
   $('ratingsTable').innerHTML=TIER_DEFS+'<table><thead><tr><th>#</th><th>Team</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th><th class="num">Adj</th><th class="num">2026 games</th></tr></thead><tbody>'+
-    teams.map((r,i)=>`<tr><td class="muted">${i+1}${mv(r.t,i+1)}</td><td>${tag(r.t,tagColor(r.t),true,'mini')} <span class="muted">${TEAM_NAMES[r.t]||''}</span></td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(r.elo)}<b>${Math.round(r.elo)}</b></span></td><td class="movecell">${eloMv(r.t,r.elo)}</td><td class="num">${r.off>=0?'+':''}${r.off.toFixed(3)}</td><td class="num">${r.def>=0?'+':''}${r.def.toFixed(3)}</td><td class="num ${r.adj>0?'delta up':r.adj<0?'delta down':'muted'}">${r.adj?(r.adj>0?'+':'')+r.adj.toFixed(1):'–'}</td><td class="num">${r.n}</td></tr>`).join('')+'</tbody></table>'+tierLegend()+`<p class="muted" style="margin:8px 0 0">Rank tags and the Elo change column are measured from the board at the ${since||'preseason'}. It updates as the week's games are graded and settles once the week is complete.</p>`;
+    teams.map((r,i)=>`<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(r.t,tagColor(r.t),true,'mini')} <span class="muted">${TEAM_NAMES[r.t]||''}</span>${mv(r.t,i+1)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(r.elo)}<b>${Math.round(r.elo)}</b></span></td><td class="movecell">${eloMv(r.t,r.elo)}</td><td class="num">${r.off>=0?'+':''}${r.off.toFixed(3)}</td><td class="num">${r.def>=0?'+':''}${r.def.toFixed(3)}</td><td class="num ${r.adj>0?'delta up':r.adj<0?'delta down':'muted'}">${r.adj?(r.adj>0?'+':'')+r.adj.toFixed(1):'–'}</td><td class="num">${r.n}</td></tr>`).join('')+'</tbody></table>'+tierLegend()+`<p class="muted" style="margin:8px 0 0">Rank tags and the Elo change column are measured from the board at the ${since||'preseason'}. It updates as the week's games are graded and settles once the week is complete.</p>`;
 }
 function renderAdjust(){
   injStatusLine(); suggestFromInjuries();
