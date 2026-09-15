@@ -277,7 +277,7 @@ Tennessee Titans, injuries:
 Tennessee Titans, ESPN headlines:
 
 ### Pittsburgh Steelers at New England Patriots
-Sun, Sep 20, 1:00 PM ET, CBS, Gillette Stadium, Foxborough. Line: NE -5.5, O/U 41.5
+Sun, Sep 20, 1:00 PM ET, CBS, Gillette Stadium, Foxborough. Line: NE -4.5, O/U 41.5
 
 Searches to run:
 - "Pittsburgh Steelers New England Patriots preview week 2"
@@ -384,6 +384,7 @@ Green Bay Packers, injuries:
 Green Bay Packers, ESPN headlines:
 
 New York Jets, injuries:
+- Minkah Fitzpatrick (S) Doubtful, Groin: doubtful
 - Kene Nwangwu (RB) Questionable, Back: questionable
 - Joseph Ossai (DE) Questionable, Foot: questionable
 - D'Angelo Ponds (CB) Questionable, Calf: questionable
@@ -401,7 +402,6 @@ New York Jets, injuries:
 - Garrett Wilson (WR) Active: Wilson caught six of seven targets for 79 yards in Sunday's 23-10 win over the Titans.
 - Breece Hall (RB) Active: Hall rushed 22 times for 102 yards and a touchdown while catching both of his targets for 16 yards in Sunday's 23-10 win over the Titans.
 - Jarvis Brownlee Jr. (CB) Active: Brownlee (calf) has been cleared to return to Sunday's game against the Titans, Brian Costello of the New York Post reports.
-- Minkah Fitzpatrick (S) Questionable, Groin: Fitzpatrick (groin) is now doubtful to return to Sunday's game against the Titans, Antwan V. Staley of the New York Daily News reports.
 - Blake Grupe (PK) Active: Grupe (coach's decision) is inactive for Sunday's game against the Titans, Amanda Vogt of the Jets' official site reports.
 - Tim Patrick (WR) Injured Reserve, Groin: The Jets placed Patrick (groin) on injured reserve Saturday, Zack Rosenblatt of The Athletic reports.
 - Qwan'tez Stiggers (CB) Active: Stiggers (concussion) was a full participant in Wednesday's practice, Rich Cimini of ESPN.com reports.
@@ -423,10 +423,11 @@ Searches to run:
 - "NFL week 2 picks CLE TB"
 
 Cleveland Browns, injuries:
+- Jaleel McLaughlin (RB) Active: The Browns signed McLaughlin off their practice squad Tuesday.
+- Dylan Sampson (RB) Injured Reserve, Knee: Sampson (knee) was placed on injured reserve Tuesday.
 - Teven Jenkins (G) Questionable, Back: questionable
 - Parker Brailsford (C) Questionable, Thumb: questionable
 - Carson Schwesinger (LB) Active: Schwesinger finished with 10 tackles (three solo), including one for a loss, in Sunday's 34-10 loss to the Jaguars.
-- Dylan Sampson (RB) Out, Knee: Sampson (knee) is expected to miss "significant time," Jeremy Fowler of ESPN.com reports.
 - Andre Szmyt (PK) Active: Szmyt made his only field-goal attempt and extra-point try in Sunday's 34-10 loss to the Jaguars.
 - Raheim Sanders (RB) Active: Sanders caught all three of his targets for 25 yards and added one carry for one yard in Sunday's 34-10 loss to the Jaguars. He also returned three kickoffs for 130 yards.
 - Jerry Jeudy (WR) Active: Jeudy caught two passes (on four targets) for 26 yards during the Browns' 34-10 loss to the Jaguars on Sunday.
@@ -447,7 +448,6 @@ Cleveland Browns, injuries:
 - Isaiah Bond (WR) Active: Bond (concussion) has cleared protocol and is practicing Monday, Scott Petrak of the Elyria Chronicle-Telegram reports.
 - Sam Williams (LB) Active: The Browns are set to sign Williams to their active roster, Jeremy Fowler of ESPN.com reports.
 - Kalia Davis (DT) Injured Reserve, Quadriceps: The Browns placed Davis on injured reserve Tuesday due to a quadriceps injury.
-- Edefuan Ulofoshio (LB) Injured Reserve, Biceps: Ulofoshio (biceps) reverted to the Browns' IR on Monday, per the NFL's transaction log.
 
 Cleveland Browns, ESPN headlines:
 
@@ -588,8 +588,8 @@ Cincinnati Bengals, injuries:
 Cincinnati Bengals, ESPN headlines:
 
 Houston Texans, injuries:
+- Henry To'oTo'o (LB) Injured Reserve, Shoulder: ir
 - Jaylin Noel (WR) Active: Noel recorded two catches for 53 yards and three kickoff returns for 70 yards in Sunday's 36-31 loss to the Bills.
-- Henry To'oTo'o (LB) Questionable, Shoulder: To'oTo'o might end up on injured reserve after hurting his shoulder during Sunday's 36-31 loss to the Bills, Aaron Wilson of KPRC 2 Houston reports.
 - Jake Hummel (LB) Doubtful, Groin: Hummel (groin) is considered week-to-week, Aaron Wilson of KPRC 2 Houston reports.
 - Kayshon Boutte (WR) Active: Boutte caught one of two targets for 21 yards in the Texans' 36-31 loss to the Bills on Sunday.
 - Xavier Hutchinson (WR) Active: Hutchinson caught three passes (on six targets) for 32 yards during the Texans' 36-31 loss to the Bills on Sunday.
@@ -996,6 +996,7 @@ Indianapolis Colts, injuries:
 Indianapolis Colts, ESPN headlines:
 
 Kansas City Chiefs, injuries:
+- Emmett Johnson (RB) Active: Johnson rushed eight times for 24 yards in the Chiefs' 31-10 win over the Broncos on Monday night. He added two catches for 44 yards on two targets.
 - Josh Simmons (OT) Questionable, Back: questionable
 - Chamarri Conner (S) Questionable, Knee: questionable
 - Jared Wiley (TE) Active
@@ -1020,7 +1021,6 @@ Kansas City Chiefs, injuries:
 - Alohi Gilman (S) Active: Gilman (back) is not on the Chiefs' Thursday injury report ahead of the team's Monday night Week 1 clash with the Broncos.
 - Cyrus Allen (WR) Active: Allen is listed as a backup receiver on Kansas City's unofficial depth chart ahead of Monday's season opener versus the Broncos, Charles Goldsmith of AtoZSports.com reports.
 - Brashard Smith (RB) Active: Smith is the third and final running back on the Chiefs' 53-man roster for the 2026 regular season, Matt McMullen of the team's official site reports.
-- Emmett Johnson (RB) Active: Johnson is in line to be Kenneth Walker's backup for the Chiefs this season.
 
 Kansas City Chiefs, ESPN headlines:
 
