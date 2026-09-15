@@ -223,7 +223,7 @@ const WEEK2 = {
     "ARI": {
       "headline": "First win in Los Angeles since 2001",
       "matchup": [
-        "<strong>Arizona is a 4.5 point home underdog to a division rival starting a backup.</strong> The total of 41.5 is among the lowest on the board, and the market still sides with Seattle.",
+        "<strong>Arizona is a 4.5 point home underdog to a division rival starting a backup.</strong> It sits 25th in the power rankings, 24 spots below Seattle, despite a 1-0 start.",
         "<strong>The opener was a 26-14 win at the Chargers.</strong> It was Arizona's first road win in Los Angeles since 2001, built on 393 yards of offense and four <strong>Chad Ryland</strong> field goals.",
         "<strong>The matchup that decides it is Trey McBride against a rebuilt Seattle secondary.</strong> He had 9 catches for 95 yards and a touchdown in Week 1 and the Chargers never found an answer."
       ],
@@ -250,7 +250,7 @@ const WEEK2 = {
     "ATL": {
       "headline": "173 yards from Bijan Robinson, 13 points on the board",
       "matchup": [
-        "<strong>Atlanta is a home underdog to a division rival that just lost by 22.</strong> Carolina is favored by 1.5 to 2.5 points depending on the book, which is the market's verdict on the quarterback situation.",
+        "<strong>Atlanta is a home underdog to a division rival that just lost by 22.</strong> Its clearest edge is at receiver, a receiver group ranked 7th against a Carolina secondary ranked 29th.",
         "<strong>The opener was a 20-13 loss at Pittsburgh.</strong> <strong>Cooper Rush</strong> started for the injured <strong>Tua Tagovailoa</strong>, threw 2 interceptions for 143 yards, and <strong>Nick Folk</strong> missed two field goals.",
         "<strong>Nobody knows who is at quarterback.</strong> <strong>Kevin Stefanski</strong> declined to name a starter Monday, with <strong>Michael Penix Jr.</strong> targeted for Week 2 or 3 and Tagovailoa day to day."
       ],
@@ -277,8 +277,8 @@ const WEEK2 = {
     "BAL": {
       "headline": "506 yards and three Derrick Henry touchdowns",
       "matchup": [
-        "<strong>Baltimore is favored by 8.5 at home.</strong> The number follows a 41 point opener, against a New Orleans team that allowed 31 in its own.",
-        "<strong>The opener was a 41-23 win over Indianapolis.</strong> Baltimore outgained the Colts 506 to 251 and led 31-13 at halftime in <strong>Jesse Minter</strong>'s debut as head coach.",
+        "<strong>Baltimore is favored by 8.5 at home.</strong> Its clearest edge is in coverage, a secondary ranked 18th against New Orleans receivers ranked 32nd.",
+        "<strong>The opener was a 41-23 win at Indianapolis.</strong> Baltimore outgained the Colts 506 to 251 and led 31-13 at halftime in <strong>Jesse Minter</strong>'s debut as head coach.",
         "<strong>What works against them is the receiver room.</strong> <strong>Zay Flowers</strong> is day to day with a hamstring and <strong>Ja'Kobi Lane</strong> is doubtful with a wrist injury that needs more opinions."
       ],
       "strengths": [
@@ -304,7 +304,7 @@ const WEEK2 = {
     "BUF": {
       "headline": "A 96 yard drive to open the year, and Detroit on a short week",
       "matchup": [
-        "<strong>Buffalo is favored by 4.5 at home on a short week.</strong> The 53.5 total is the highest on the Week 2 board, which is the market saying it expects two offenses and little resistance.",
+        "<strong>Buffalo is favored by 4.5 at home on a short week.</strong> Its clearest edge is on the ground, a run game ranked 4th against a Detroit run defense ranked 15th.",
         "<strong>The opener was a 36-31 win at Houston.</strong> It was Buffalo's first road win there since 2006, and it came on a 96 yard drive capped by <strong>Josh Allen</strong>'s 34 yard touchdown to <strong>Joshua Palmer</strong> with 1:36 left.",
         "<strong>What works against them is the defense.</strong> They gave up 31 to Houston and now see a Detroit offense that scored 31 of its own."
       ],
@@ -330,7 +330,7 @@ const WEEK2 = {
     "CAR": {
       "headline": "361 passing yards, and 59 points allowed",
       "matchup": [
-        "<strong>Carolina is favored on the road after losing by 22.</strong> The number sits between 1.5 and 2.5 points depending on the book, a verdict on Atlanta's quarterback more than on Carolina.",
+        "<strong>Carolina is favored on the road after losing by 22.</strong> Its clearest edge is on the ground, a run game ranked 11th against an Atlanta run defense ranked 20th.",
         "<strong>The opener was a 59-37 home loss to Chicago.</strong> It was the highest scoring Week 1 game in NFL history, and Carolina allowed 291 rushing yards on 39 carries.",
         "<strong>The one thing in their favor is the series.</strong> Carolina swept Atlanta last season and gets them without a settled quarterback."
       ],
@@ -357,7 +357,7 @@ const WEEK2 = {
     "CHI": {
       "headline": "Fifty nine points, the most since 1980",
       "matchup": [
-        "<strong>Chicago is a 5.5 point home favorite in its home opener.</strong> The 48.5 total says the market believes some of what it saw in Charlotte.",
+        "<strong>Chicago is a 5.5 point home favorite in its home opener.</strong> Its clearest edge is in coverage, a secondary ranked 17th against Minnesota receivers ranked 25th.",
         "<strong>The opener was a 59-37 win at Carolina.</strong> It was the highest scoring Week 1 game in NFL history and Chicago's biggest points total since 1980.",
         "<strong>The one working against them is regression.</strong> They allowed 37 points and 7.7 yards per play in a game they won by 22."
       ],
@@ -384,7 +384,7 @@ const WEEK2 = {
     "CIN": {
       "headline": "Four takeaways, 24 points off them",
       "matchup": [
-        "<strong>Cincinnati is a 2.5 point road underdog despite winning.</strong> Houston lost and is still favored, which is the market backing the Texans defense over the Week 1 evidence.",
+        "<strong>Cincinnati is a 2.5 point road underdog despite winning.</strong> It sits 17th in the power rankings, 11 spots below Houston, which is why a 1-0 team is getting points.",
         "<strong>The opener was a 33-27 win over Tampa Bay.</strong> The new look defense forced 4 turnovers and Cincinnati scored 24 points off them.",
         "<strong>The angle that decides it is health.</strong> Cincinnati came out of the opener with nothing significant to report while Houston has five players on injured reserve."
       ],
@@ -411,7 +411,7 @@ const WEEK2 = {
     "CLE": {
       "headline": "One third down in eight, and nothing in the red zone",
       "matchup": [
-        "<strong>Cleveland is an 8.5 point road underdog with a 40.5 total.</strong> The market does not expect this offense to score, and Week 1 gave it no reason to.",
+        "<strong>Cleveland is an 8.5 point road underdog with a 40.5 total.</strong> Its clearest edge is the pass rush, a front seven ranked 3rd against a Tampa Bay offensive line ranked 23rd.",
         "<strong>The opener was a 34-10 loss at Jacksonville.</strong> <strong>Todd Monken</strong>'s debut as head coach ended with 5 sacks on <strong>Deshaun Watson</strong>, 1 of 8 on third down and nothing in the red zone.",
         "<strong>Watson is expected to start again.</strong> The Browns confirmed he would be back under center for Week 2."
       ],
@@ -438,7 +438,7 @@ const WEEK2 = {
     "DAL": {
       "headline": "72.7 percent on third down, and 244 yards",
       "matchup": [
-        "<strong>Dallas is favored by 3.5 to 4.5 at home depending on the book.</strong> The 50.5 total is the second highest of the week, and SportsLine's model projects 32-28 Dallas.",
+        "<strong>Dallas is favored by 3.5 to 4.5 at home depending on the book.</strong> Its clearest edge is through the air, a passing offense ranked 3rd against a Washington pass defense ranked 25th.",
         "<strong>The opener was a 28-20 loss at the Giants.</strong> Dallas was outgained 394 to 244 and held the ball for 23:20 against 36:40.",
         "<strong>The history is with them.</strong> Dallas has won eight of the last ten meetings in this series."
       ],
@@ -465,8 +465,8 @@ const WEEK2 = {
     "DEN": {
       "headline": "176 yards, the fewest of the Sean Payton era",
       "matchup": [
-        "<strong>Denver is a 2.5 point home favorite after scoring 10.</strong> The market is buying the altitude and the home field, not the opener.",
-        "<strong>The opener was a 31-10 loss to Kansas City.</strong> Denver's 176 offensive yards were its fewest in a game since <strong>Sean Payton</strong> became head coach in 2023.",
+        "<strong>Denver is a 2.5 point home favorite after scoring 10.</strong> Its clearest edge is the pass rush, a front seven ranked 5th against a Jacksonville offensive line ranked 21st.",
+        "<strong>The opener was a 31-10 loss at Kansas City.</strong> Denver's 176 offensive yards were its fewest in a game since <strong>Sean Payton</strong> became head coach in 2023.",
         "<strong>The panel is split on this one.</strong> The Dimers model favors Denver at home, while other analysts pick Jacksonville and <strong>Trevor Lawrence</strong> to start 2-0."
       ],
       "strengths": [
@@ -492,7 +492,7 @@ const WEEK2 = {
     "DET": {
       "headline": "Up 21-0, then hanging on in overtime",
       "matchup": [
-        "<strong>Detroit is a 4.5 point road underdog on a short week.</strong> The 53.5 total is the highest on the Week 2 board, so the market expects this to be settled in the 30s.",
+        "<strong>Detroit is a 4.5 point road underdog on a short week.</strong> Its clearest edge is up front, an offensive line ranked 4th against a Buffalo pass and run rush ranked 25th.",
         "<strong>The opener was a 31-30 overtime survival.</strong> Detroit led New Orleans 21-0 early in the third quarter, gave the whole lead back, and won when <strong>Tyler Shough</strong>'s two point pass fell incomplete in overtime.",
         "<strong>What works against them is the secondary.</strong> New Orleans threw for 410 yards in that comeback, and <strong>Josh Allen</strong> is a harder problem than Shough."
       ],
@@ -519,7 +519,7 @@ const WEEK2 = {
     "GB": {
       "headline": "Outgained Minnesota by 180 yards and lost by 17",
       "matchup": [
-        "<strong>Green Bay is a 4.5 point road favorite despite losing by 17.</strong> The number has moved toward the Jets since the opener as the injury list grew.",
+        "<strong>Green Bay is a 4.5 point road favorite despite losing by 17.</strong> Its clearest edge is at receiver, a receiver group ranked 2nd against a Jets secondary ranked 30th.",
         "<strong>The opener was a 39-22 loss at Minnesota.</strong> <strong>Jordan Love</strong> was sacked 4 times and turned it over twice, and Green Bay lost while outgaining the Vikings 419 to 239.",
         "<strong>What works against them is the roster.</strong> <strong>Micah Parsons</strong> and <strong>Luke Musgrave</strong> are out, and <strong>Josh Jacobs</strong> remains on the Commissioner's Exempt List."
       ],
@@ -546,7 +546,7 @@ const WEEK2 = {
     "HOU": {
       "headline": "Ahead by one with 6:44 left, then two fumbles",
       "matchup": [
-        "<strong>Houston is a 2.5 point home favorite after losing.</strong> The market still rates the roster above the result.",
+        "<strong>Houston is a 2.5 point home favorite after losing.</strong> Its clearest edge is in coverage, a secondary ranked 4th against Cincinnati receivers ranked 19th.",
         "<strong>The opener was a 36-31 loss to Buffalo.</strong> <strong>Ka'imi Fairbairn</strong>'s 58 yard field goal put Houston up 31-30 with 6:44 left before Buffalo answered with a 96 yard drive.",
         "<strong>The decider is ball security.</strong> <strong>C.J. Stroud</strong> lost two fumbles, both recovered by Buffalo, and Cincinnati forced four turnovers in its own opener."
       ],
@@ -573,8 +573,8 @@ const WEEK2 = {
     "IND": {
       "headline": "A 28.7 passer rating in Daniel Jones' return",
       "matchup": [
-        "<strong>Indianapolis is a 6.5 point road underdog on Sunday night.</strong> Arrowhead follows a game in which the Colts were outgained 506 to 251.",
-        "<strong>The opener was a 41-23 loss at Baltimore.</strong> <strong>Daniel Jones</strong> went 19 of 31 for 166 yards in his first game since tearing an Achilles in December, finishing with a 28.7 passer rating.",
+        "<strong>Indianapolis is a 6.5 point road underdog on Sunday night.</strong> Its secondary ranks 27th and draws Kansas City receivers ranked 4th.",
+        "<strong>The opener was a 41-23 home loss to Baltimore.</strong> <strong>Daniel Jones</strong> went 19 of 31 for 166 yards in his first game since tearing an Achilles in December, finishing with a 28.7 passer rating.",
         "<strong>The one thing that traveled is the run game.</strong> <strong>Jonathan Taylor</strong> scored twice, including a 1 yard touchdown on the opening drive."
       ],
       "strengths": [
@@ -600,7 +600,7 @@ const WEEK2 = {
     "JAX": {
       "headline": "Four touchdowns, a 150.6 rating, and five sacks",
       "matchup": [
-        "<strong>Jacksonville is a 2.5 point road underdog at altitude.</strong> The market favors Denver at home despite the Broncos scoring 10 points in their opener.",
+        "<strong>Jacksonville is a 2.5 point road underdog at altitude.</strong> It sits 5th in the power rankings, and its secondary ranks 1st against Denver receivers ranked 18th.",
         "<strong>The opener was a 34-10 win over Cleveland.</strong> <strong>Trevor Lawrence</strong> went 18 of 23 for 245 yards and 4 touchdowns with no interceptions and a 150.6 passer rating in <strong>Liam Coen</strong>'s offense.",
         "<strong>The panel is split.</strong> The Dimers model favors Denver at home, while other analysts pick Jacksonville and have Lawrence building an early MVP case."
       ],
@@ -627,8 +627,8 @@ const WEEK2 = {
     "KC": {
       "headline": "Mahomes back, and 173 yards from Kenneth Walker III",
       "matchup": [
-        "<strong>Kansas City is a 6.5 point home favorite on Sunday night.</strong> The 47.5 total follows a 31-10 win in which the offense never threw deep.",
-        "<strong>The opener was a 31-10 win at Denver.</strong> <strong>Patrick Mahomes</strong> returned from a torn ACL and went 15 of 27 for 184 yards with 2 touchdowns, an interception and a 15 yard rushing score.",
+        "<strong>Kansas City is a 6.5 point home favorite on Sunday night.</strong> It sits 15th in the power rankings, 9 spots above Indianapolis, with a front seven ranked 6th facing a Colts offensive line ranked 5th.",
+        "<strong>The opener was a 31-10 win over Denver.</strong> <strong>Patrick Mahomes</strong> returned from a torn ACL and went 15 of 27 for 184 yards with 2 touchdowns, an interception and a 15 yard rushing score.",
         "<strong>The matchup that decides it is the run game.</strong> <strong>Kenneth Walker III</strong> went for 173 in his Chiefs debut against a Colts front that allowed 144 to <strong>Derrick Henry</strong>."
       ],
       "strengths": [
@@ -654,7 +654,7 @@ const WEEK2 = {
     "LV": {
       "headline": "34:53 of possession and five sacks",
       "matchup": [
-        "<strong>Las Vegas is a 7 point road underdog in the division.</strong> The number is 7 at most books and 6.5 at BetMGM and Bet365.",
+        "<strong>Las Vegas is a 7 point road underdog in the division.</strong> Its clearest edge is the pass rush, a front seven ranked 4th against a Chargers offensive line ranked 28th.",
         "<strong>The opener was a 27-13 win over Miami.</strong> <strong>Kirk Cousins</strong> opened with a 16 play, 93 yard touchdown drive in <strong>Klint Kubiak</strong>'s first game as head coach.",
         "<strong>Brock Bowers is the swing.</strong> The tight end had a meniscus trim and missed Week 1, and Kubiak called him day to day on Monday."
       ],
@@ -681,7 +681,7 @@ const WEEK2 = {
     "LAC": {
       "headline": "A blocked punt, an interception, and fourth and goal from the 3",
       "matchup": [
-        "<strong>The Chargers are 7 point home favorites after losing at home.</strong> The number is 7 at most books and 6.5 at BetMGM and Bet365.",
+        "<strong>The Chargers are 7 point home favorites after losing at home.</strong> Their clearest edge is also the pass rush, a front seven ranked 10th against a Las Vegas offensive line ranked 32nd.",
         "<strong>The opener was a 26-14 loss to Arizona.</strong> The first three possessions produced a blocked punt, a <strong>Justin Herbert</strong> interception and a turnover on downs from the 3 yard line.",
         "<strong>What works against them is the clock.</strong> Los Angeles held the ball 22:29 and converted a quarter of its third downs, while Las Vegas held it 34:53 in its own opener."
       ],
@@ -708,7 +708,7 @@ const WEEK2 = {
     "LAR": {
       "headline": "Seven points in Melbourne, and Myles Garrett to injured reserve",
       "matchup": [
-        "<strong>The Rams are 7 point home favorites on Monday night.</strong> The 48.5 total is generous for a team that scored 7 points in its opener.",
+        "<strong>The Rams are 7 point home favorites on Monday night.</strong> Their clearest edge is up front, an offensive line ranked 2nd against a Giants pass and run rush ranked 31st.",
         "<strong>The opener was a 27-7 loss to San Francisco at the MCG.</strong> <strong>Matthew Stafford</strong> completed 4 of 11 in the first half and did not finish the game, with the Rams landing in Australia 28 hours before kickoff.",
         "<strong>The Giants arrive with momentum.</strong> New York outgained Dallas 394 to 244 and held the ball for 36:40."
       ],
@@ -735,7 +735,7 @@ const WEEK2 = {
     "MIA": {
       "headline": "Five sacks allowed, two of ten on third down",
       "matchup": [
-        "<strong>Miami is a 13.5 point road underdog, the biggest number on the board.</strong> The 45.5 total says the market expects San Francisco to do nearly all of the scoring.",
+        "<strong>Miami is a 13.5 point road underdog, the biggest number on the board.</strong> Its one clear edge is at receiver, a group ranked 6th against a San Francisco secondary ranked 25th.",
         "<strong>The opener was a 27-13 loss at Las Vegas.</strong> Miami was sacked 5 times, converted 2 of 10 third downs and was outgained 305 to 259.",
         "<strong>The matchup that breaks it is the front.</strong> San Francisco ran for 174 yards against the Rams and has <strong>Nick Bosa</strong> and <strong>Fred Warner</strong> healthy."
       ],
@@ -762,7 +762,7 @@ const WEEK2 = {
     "MIN": {
       "headline": "Thirty nine points on 239 yards",
       "matchup": [
-        "<strong>Minnesota is a 5.5 point road underdog in Chicago's home opener.</strong> Both teams are 1-0 and both won by scoring in bunches.",
+        "<strong>Minnesota is a 5.5 point road underdog in Chicago's home opener.</strong> It sits 7th in the power rankings, 5 spots above Chicago, so the line reflects the quarterback injury more than the roster.",
         "<strong>The opener was a 39-22 win over Green Bay.</strong> Minnesota was outgained 419 to 239 and won anyway, on takeaways and short fields.",
         "<strong>The quarterback is the story.</strong> <strong>Kyler Murray</strong> lasted 11 snaps before a concussion, and it has been reported he is unlikely to play."
       ],
@@ -789,7 +789,7 @@ const WEEK2 = {
     "NE": {
       "headline": "Three fourth quarter interceptions, and A.J. Brown to injured reserve",
       "matchup": [
-        "<strong>New England is a 5.5 point home favorite despite losing.</strong> The 41.5 total is one of the lowest of the week, and analysts have been happy to take the points with Pittsburgh.",
+        "<strong>New England is a 5.5 point home favorite despite losing.</strong> It sits 4th in the power rankings, 10 spots above Pittsburgh, but its offensive line ranks 27th against a Pittsburgh front seven ranked 11th.",
         "<strong>The opener was a 13-10 loss at Seattle.</strong> <strong>Drake Maye</strong> was 23 of 33 for 178 yards with a touchdown and 3 interceptions, all three in the fourth quarter.",
         "<strong>What works against them is the receiver room.</strong> <strong>A.J. Brown</strong> was placed on injured reserve Saturday and is expected to miss about six weeks with a right high ankle sprain."
       ],
@@ -816,7 +816,7 @@ const WEEK2 = {
     "NO": {
       "headline": "Down 21-0, and two yards from winning it",
       "matchup": [
-        "<strong>New Orleans is an 8.5 point road underdog.</strong> Baltimore scored 41 in its opener and the Saints allowed 31 in theirs.",
+        "<strong>New Orleans is an 8.5 point road underdog.</strong> Its run game ranks 31st against a Baltimore run defense ranked 17th, so the offense rests on <strong>Tyler Shough</strong>'s arm.",
         "<strong>The opener was a 31-30 overtime loss at Detroit.</strong> New Orleans trailed 21-0 early in the third, forced overtime, then lost when <strong>Tyler Shough</strong>'s two point pass to <strong>Bryce Lance</strong> fell incomplete.",
         "<strong>The decider is protection.</strong> The Saints allowed 5 sacks in Week 1 and now face a front led by <strong>Trey Hendrickson</strong>."
       ],
@@ -843,7 +843,7 @@ const WEEK2 = {
     "NYG": {
       "headline": "Three touchdowns from Jaxson Dart, and 36:40 of possession",
       "matchup": [
-        "<strong>The Giants are 7 point road underdogs on Monday night.</strong> The 48.5 total is high for a team that won 28-20 with its defense on the field for 23 minutes.",
+        "<strong>The Giants are 7 point road underdogs on Monday night.</strong> Their clearest edge is on the ground, a run game ranked 7th against a Rams run defense ranked 25th.",
         "<strong>The opener was a 28-20 win over Dallas.</strong> It was <strong>John Harbaugh</strong>'s debut as head coach, with New York outgaining the Cowboys 394 to 244.",
         "<strong>The Rams are wounded up front.</strong> <strong>Myles Garrett</strong> is on injured reserve and <strong>Aaron Donald</strong> is still ramping up after two years retired."
       ],
@@ -870,7 +870,7 @@ const WEEK2 = {
     "NYJ": {
       "headline": "Thirty nine minutes of the ball, three sacks, no turnovers",
       "matchup": [
-        "<strong>The Jets are 4.5 point home underdogs despite winning.</strong> The number has moved toward New York since the opener as Green Bay's injury list grew.",
+        "<strong>The Jets are 4.5 point home underdogs despite winning.</strong> They sit 30th in the power rankings, and their secondary, ranked 30th, draws Green Bay receivers ranked 2nd.",
         "<strong>The opener was a 23-10 win at Tennessee.</strong> New York never trailed, led 10-3 at half and held the ball close to 39 minutes under <strong>Aaron Glenn</strong>.",
         "<strong>The matchup that decides it is the rush against a patched Packers line.</strong> <strong>Jordan Love</strong> was sacked 4 times last week and <strong>Aaron Banks</strong> is still limited."
       ],
@@ -897,7 +897,7 @@ const WEEK2 = {
     "PHI": {
       "headline": "A stopped two point try, and a left guard to injured reserve",
       "matchup": [
-        "<strong>Philadelphia is a 7 point road favorite in the lowest total of the week at 39.5.</strong> Tennessee scored 10 points in its opener.",
+        "<strong>Philadelphia is a 7 point road favorite in the lowest total of the week at 39.5.</strong> Its clearest edge is in coverage, a secondary ranked 9th against Tennessee receivers ranked 31st.",
         "<strong>The opener was a 24-22 win over Washington.</strong> The defense stopped a two point conversion with a minute left and <strong>DeVonta Smith</strong> recovered the onside kick.",
         "<strong>The line took a hit.</strong> Left guard <strong>Landon Dickerson</strong> was placed on injured reserve Monday with a knee injury, which Tennessee writers have openly called an opening."
       ],
@@ -924,7 +924,7 @@ const WEEK2 = {
     "PIT": {
       "headline": "A T.J. Watt pick six, and thirteen points from the offense",
       "matchup": [
-        "<strong>Pittsburgh is getting 5.5 points on the road against a team that lost.</strong> Analysts have been happy to take the points in what everyone expects to be a low scoring game.",
+        "<strong>Pittsburgh is getting 5.5 points on the road against a team that lost.</strong> Its clearest edge is the pass rush, a front seven ranked 11th against a New England offensive line ranked 27th.",
         "<strong>The opener was a 20-13 win over Atlanta.</strong> The defense sacked the quarterback 4 times, swatted 6 passes, and <strong>T.J. Watt</strong> returned an interception for a score.",
         "<strong>The break is A.J. Brown.</strong> New England's top target is on injured reserve and expected to miss about six weeks with a high ankle sprain."
       ],
@@ -951,7 +951,7 @@ const WEEK2 = {
     "SF": {
       "headline": "Three touchdowns for Purdy, with Bosa and Warner back",
       "matchup": [
-        "<strong>San Francisco is a 13.5 point home favorite, the biggest number of the week.</strong> The 45.5 total follows a 27-7 win on the other side of the world.",
+        "<strong>San Francisco is a 13.5 point home favorite, the biggest number of the week.</strong> Its clearest edge is through the air, a passing offense ranked 7th against a Miami pass defense ranked 27th.",
         "<strong>The opener was a 27-7 win over the Rams at the MCG.</strong> 100,021 watched, the seventh largest regular season crowd in NFL history.",
         "<strong>The health story is the point.</strong> <strong>Nick Bosa</strong> and <strong>Fred Warner</strong> both played after season ending injuries last year, and both took Player of the Game honors alongside <strong>Brock Purdy</strong>."
       ],
@@ -978,7 +978,7 @@ const WEEK2 = {
     "SEA": {
       "headline": "Thirteen points, three takeaways, and no Sam Darnold",
       "matchup": [
-        "<strong>Seattle is favored by 4.5 on the road without its starting quarterback.</strong> SportsLine has the Seahawks covering in well over 60 percent of simulations, an A rated pick.",
+        "<strong>Seattle is favored by 4.5 on the road without its starting quarterback.</strong> It sits 1st in the power rankings, and its secondary ranks 2nd against Arizona receivers ranked 29th.",
         "<strong>The opener was a 13-10 home win over New England.</strong> Seattle forced 3 <strong>Drake Maye</strong> interceptions in the fourth quarter to hold on.",
         "<strong>Sam Darnold is out.</strong> He hurt a glute on the first drive of the season and is looking at about a four week return, with <strong>Drew Lock</strong> expected to start and <strong>Jalen Milroe</strong> an option."
       ],
@@ -1005,7 +1005,7 @@ const WEEK2 = {
     "TB": {
       "headline": "Four turnovers, and 24 points the other way",
       "matchup": [
-        "<strong>Tampa Bay is an 8.5 point home favorite with a 40.5 total.</strong> SportsLine's model has the Buccaneers covering in well over half of its simulations.",
+        "<strong>Tampa Bay is an 8.5 point home favorite with a 40.5 total.</strong> Its clearest edge is at receiver, a receiver group ranked 8th against a Cleveland secondary ranked 22nd.",
         "<strong>The opener was a 33-27 loss at Cincinnati.</strong> Three straight first half drives ended in fumbles and all three led to Cincinnati touchdowns.",
         "<strong>It is the home opener against the team that drafted Baker Mayfield.</strong> Cleveland took him first overall in 2018, and Mayfield said there is no way to sugarcoat this one."
       ],
@@ -1032,7 +1032,7 @@ const WEEK2 = {
     "TEN": {
       "headline": "Eighty five yards outside of garbage time",
       "matchup": [
-        "<strong>Tennessee is a 7 point home underdog in the lowest total of the week at 39.5.</strong> The market does not expect this offense to score.",
+        "<strong>Tennessee is a 7 point home underdog in the lowest total of the week at 39.5.</strong> It sits 32nd in the power rankings, and its receivers, ranked 31st, face a Philadelphia secondary ranked 9th.",
         "<strong>The opener was a 23-10 home loss to the Jets.</strong> It spoiled <strong>Robert Saleh</strong>'s debut against his former team, with New York holding the ball close to 39 minutes.",
         "<strong>The opening is Philadelphia's line.</strong> Left guard <strong>Landon Dickerson</strong> went on injured reserve Monday with a knee injury, which local writers have called a no excuse opportunity for this defense."
       ],
@@ -1059,7 +1059,7 @@ const WEEK2 = {
     "WAS": {
       "headline": "Two yards from overtime in Philadelphia",
       "matchup": [
-        "<strong>Washington is a road underdog by 3.5 to 4.5 depending on the book.</strong> The 50.5 total is the second highest of the week.",
+        "<strong>Washington is a road underdog by 3.5 to 4.5 depending on the book.</strong> Its clearest edge is on the ground, a run game ranked 6th against a Dallas run defense ranked 26th.",
         "<strong>The opener was a 24-22 loss at Philadelphia.</strong> <strong>Jayden Daniels</strong> found rookie <strong>Antonio Williams</strong> for a 1 yard touchdown with 1:01 left, and the two point try was stopped.",
         "<strong>The history is against them.</strong> Dallas has won eight of the last ten meetings in this series."
       ],
