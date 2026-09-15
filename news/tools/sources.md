@@ -35,6 +35,16 @@ A point goes on the card only if two or more sources make it. If sources split, 
 
 ## 4. What gets written, per game
 
+Week `headline` and `intro` are about the games only. No stadiums, buildings, ceremonies or other off field news.
+The intro names the two or three marquee matchups of the week, picked from the numbers: both teams' power rank
+(`data/ranks2026.js`), how close the spread is, the total, division games, and records. Say why each one matters.
+Quarterback availability that changes a game is fair to mention.
+
+Written automatically, not by hand: player positions after names (from `data/players2026.js`), the rank chip
+(`data/ranks2026.js`, the betting model's Power Ratings rank) and the Deep Dive section under Keys to victory
+(`data/units2026.js`). `tools/context.js` builds all three at the end of every pull.
+
+
 - Game `note`: one line on what the game is.
 - Each team: `headline` (one short line), `matchup` (3 bullets, the game from this team's angle), `strengths` (4 or 5, shown as Positives), `weaknesses` (4 or 5, shown as Negatives), `keys` (3, shown as Keys to victory, phrased as instructions).
 - Every bullet starts with a short bold sentence, then the detail. Names in bold with `<strong>`.

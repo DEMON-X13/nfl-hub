@@ -63,6 +63,34 @@ dom.window.addEventListener('load', () => {
   check('headlines carry a title for the one-line clamp', n('.tbhd .sub[title]') === 2);
   check('no setup section', ![...d.querySelectorAll('.ovbody .ovsec')].some(e => e.textContent.includes('How the game sets up')));
   check('record chips show the 2026 record', [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ') === rec(first.away) + ' ' + rec(first.home) && d.querySelector('.tbhd .chips .pill:not(.big)').textContent.includes('2026'), [...d.querySelectorAll('.tbhd .chips .pill:not(.big)')].map(p => p.textContent).join(' | '));
+  // power rank chip follows data/ranks2026.js (the betting model's Power Ratings board)
+  { const RK = g('typeof RANKS26 === "undefined" ? null : RANKS26');
+    const chips = [...d.querySelectorAll('.tbhd .chips .pill.big b')].map(b => b.textContent);
+    check('rank chip is the power rank', !RK || chips.join(' ') === [first.away, first.home].map(t => RK[t].rank + ['th','st','nd','rd'][(RK[t].rank % 100 - 20) % 10] || '').join(' ') || chips.join(' ') === [first.away, first.home].map(t => String(RK[t].rank) + ((v => ['th','st','nd','rd'][(v - 20) % 10] || ['th','st','nd','rd'][v] || 'th')(RK[t].rank % 100))).join(' '), chips.join(' ')); }
+  // positions after player names, scoped to the two teams, never doubled
+  { const PL = g('typeof PLAYERS26 === "undefined" ? null : PLAYERS26');
+    const text = [...d.querySelectorAll('.duo2 .tbsec li')].map(li => li.textContent).join(' \n ');
+    if (PL) {
+      const names = Object.entries(Object.assign({}, PL[first.home], PL[first.away])).sort((a, b) => b[0].length - a[0].length);
+      const hit = names.find(([nm]) => text.includes(nm));
+      check('player names carry their position', !hit || new RegExp(hit[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "('s)? \\((QB|RB|WR|TE|FB|T|G|C|DE|DT|NT|OLB|ILB|MLB|LB|CB|FS|SS|S|DB|K|P|LS)\\)").test(text), hit ? hit[0] : 'no roster name in this game');
+      check('positions are never doubled', !/\((QB|RB|WR|TE|CB|DE|DT|OLB|ILB|SS|FS|T|G|C)\) \((QB|RB|WR|TE|CB|DE|DT|OLB|ILB|SS|FS|T|G|C)\)/.test(text));
+    } }
+  // Deep Dive: collapsed by default, six unit matchups per team, both open together
+  { const U = g('typeof UNITS26 === "undefined" ? null : UNITS26');
+    if (U && U[first.away] && U[first.home]) {
+      const dds = [...d.querySelectorAll('.duo2 details.dd.r6')];
+      check('deep dive under keys to victory, one per team', dds.length === 2 && dds.every(x => x.previousElementSibling && x.previousElementSibling.classList.contains('r5')), dds.length);
+      check('deep dive starts closed', dds.every(x => !x.open));
+      check('deep dive has six matchups each', dds.every(x => x.querySelectorAll('.ddrow').length === 6) && [...d.querySelectorAll('.dd .ddunit')].slice(0, 6).map(e => e.textContent).join('|') === 'Quarterback|Offensive line|Running backs|Receivers|Pass and run rush|Defensive backs');
+      check('deep dive tags are the five levels', [...d.querySelectorAll('.dd .dtag')].every(e => ['Easy','Favorable','Even','Tough','Very tough'].includes(e.textContent)), [...new Set([...d.querySelectorAll('.dd .dtag')].map(e => e.textContent))].join(','));
+      const qbRank = d.querySelector('.tb.c1 .dd .ddrow .ddvs b').textContent;
+      check('deep dive ranks come from units2026.js', parseInt(qbRank, 10) === U[first.away].qb.rank, qbRank + ' vs ' + U[first.away].qb.rank);
+      dds[0].open = true; dds[0].dispatchEvent(new w.Event('toggle'));
+      check('opening one team opens the other', dds[1].open);
+      dds[1].open = false; dds[1].dispatchEvent(new w.Event('toggle'));
+      check('closing one team closes the other', !dds[0].open);
+    } }
   check('eleven stat rows with divided bars', n('.ovbody .sbar') === 11 && n('.ovbody .sbar .half') === 22, n('.ovbody .sbar') + ' rows');
   check('stat labels in order', [...d.querySelectorAll('.ovbody .sbar .lb')].map(e => e.firstChild.textContent).join('|') === 'Point differential|Points per game|Points allowed|Yards per play|Yards per play allowed|Turnover margin|Sacks|Sacks allowed|Third down rate|Red zone TD rate|Explosive plays');
   // stat values are numbers, never dashes; before the first pull they are all zero, after it they are whatever the season says

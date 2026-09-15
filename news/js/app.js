@@ -21,6 +21,79 @@ function kickOf(g){
   } catch(e){ return { day: g.day, time: g.time }; }
 }
 
+/* ============================ positions ============================ */
+/* "(QB)" after a player's name, from data/players2026.js. The two teams in the game take
+   priority; any other player is matched league wide unless two rosters share the name. A name
+   already followed by "(" is left alone, and a possessive keeps its 's: "Josh Allen's (QB)". */
+const POS_RX = {};
+function posScope(teams){
+  const key = teams.join(",");
+  if (key in POS_RX) return POS_RX[key];
+  if (typeof PLAYERS26 === "undefined") return (POS_RX[key] = null);
+  /* league wide first, dropping any name two players share; then the teams in play win */
+  const map = {};
+  Object.keys(PLAYERS26).forEach(t => Object.entries(PLAYERS26[t] || {}).forEach(([n, p]) => {
+    if (!(n in map)) map[n] = p; else if (map[n] !== p) map[n] = null;
+  }));
+  teams.forEach(t => Object.entries(PLAYERS26[t] || {}).forEach(([n, p]) => { map[n] = p; }));
+  const names = Object.keys(map).filter(n => map[n]).sort((a, b) => b.length - a.length);
+  if (!names.length) return (POS_RX[key] = null);
+  const alt = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const rx = new RegExp("(?<![\\w'.\\-])(" + alt + ")(?![\\w\\-])(?!(?:</strong>)?(?:['’]s)?\\s*\\()((?:</strong>)?)((?:['’]s(?!\\w))?)", "g");
+  return (POS_RX[key] = { rx, map });
+}
+function withPos(html, teams){
+  const s = posScope(teams || []); if (!s || !html) return html;
+  return String(html).replace(s.rx, (m, name, close, poss) => `${name}${close}${poss} (${s.map[name]})`);
+}
+
+/* ============================ power rank ============================ */
+/* The betting site's Power Ratings rank by Elo (data/ranks2026.js), falling back to teams.js. */
+function powerRank(ab){
+  const r = (typeof RANKS26 !== "undefined" && RANKS26[ab]) ? RANKS26[ab] : null;
+  return r ? { rank: r.rank, title: `Power Ratings rank by Elo (${r.elo}), from the betting model${typeof RANKS26_ASOF !== "undefined" && RANKS26_ASOF ? ", as of " + RANKS26_ASOF : ""}`, label: "power rank" }
+           : { rank: T[ab].rank, title: "Preseason rank", label: "rank" };
+}
+
+/* ============================ deep dive ============================ */
+/* Six units from data/units2026.js. Each faces the opposing unit it plays against; the tag says
+   how hard that is, from the gap between the two league ranks (1 is best, 32 worst). */
+function difficulty(mine, theirs){
+  const d = theirs - mine;   // positive: this unit ranks better than what it faces
+  if (d >= 11) return ["easy", "Easy"];
+  if (d >= 4)  return ["fav", "Favorable"];
+  if (d > -4)  return ["even", "Even"];
+  if (d > -11) return ["tough", "Tough"];
+  return ["vtough", "Very tough"];
+}
+function deepDive(ab, opp, row){
+  if (typeof UNITS26 === "undefined" || !UNITS26[ab] || !UNITS26[opp]) return `<div class="tbsec empty ${row}"></div>`;
+  const U = UNITS26[ab], O = UNITS26[opp];
+  const names = list => (list || []).map(p => `${p.n} (${p.pos})`).join(", ");
+  const nums = st => (st || []).map(([label, v, r, unit]) => v == null ? "" : `${v}${unit || ""} ${label} (${ORD(r)})`).filter(Boolean).join(" &middot; ");
+  const units = [
+    ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD],
+    ["Offensive line", "Offensive line", U.ol, `${opp} pass and run rush`, O.front.rank],
+    ["Running backs", "Run game", U.rb, `${opp} run defense`, O.vs.runD],
+    ["Receivers", "Receivers", U.rec, `${opp} defensive backs`, O.db.rank],
+    ["Pass and run rush", "Front seven", U.front, `${opp} offensive line`, O.ol.rank],
+    ["Defensive backs", "Secondary", U.db, `${opp} receivers`, O.rec.rank],
+  ];
+  const rows = units.map(([label, mine, u, vs, vr]) => {
+    const [cls, tag] = difficulty(u.rank, vr);
+    return `<div class="ddrow">
+      <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${cls}">${tag}</span></div>
+      <div class="ddvs">${mine} <b>${ORD(u.rank)}</b> vs ${vs} <b>${ORD(vr)}</b></div>
+      ${u.who && u.who.length ? `<div class="ddwho">${names(u.who)}</div>` : ""}
+      <div class="ddnum">${nums(u.stats)}</div>
+    </div>`;
+  }).join("");
+  const basis = typeof UNITS26_BASIS !== "undefined" ? UNITS26_BASIS : "";
+  return `<details class="tbsec dd ${row}"><summary><span class="ddlbl">Deep Dive</span><span class="ddhint">6 matchups</span></summary>
+    <p class="ddbasis">League ranks from team stats, ${basis}. The tag is how hard the matchup is for this unit, from the gap between its rank and the rank of the unit it faces.</p>
+    ${rows}</details>`;
+}
+
 /* ============================ ranks ============================ */
 /* Preseason fallbacks computed from TEAMS. A week's own "ranks" block overrides these. */
 const BASE = (()=>{
@@ -40,7 +113,7 @@ function rk(ab, w){
   const entry = (w.teams||{})[ab] || {};
   const g = entry.ranks || {};
   return {
-    overall: g.overall || {rank:t.rank},
+    overall: g.overall || {rank:powerRank(ab).rank},
     offense: g.offense || {rank:b.off},
     defense: g.defense || {rank:b.def},
     ppg:     g.ppg     || {rank:b.ppg, val:b.ppgv},
@@ -90,7 +163,7 @@ function renderWeek(w){
   <section class="pagehead">
     <div class="eyebrow ${w.status==="sample"?"sample":""}"><i></i>${w.dates}</div>
     <h2>${w.headline}</h2>
-    <p>${w.intro}</p>
+    <p>${withPos(w.intro, [])}</p>
     ${w.status==="sample" ? `<p class="sampleflag"><strong>Sample data.</strong> Nothing on this tab is real. It exists to show what a played week looks like before one has been played.</p>` : ""}
   </section>
 
@@ -105,7 +178,7 @@ function renderWeek(w){
           <div class="when">${k.day} &middot; ${k.time}</div>
           <div class="vs"><i style="background:${a.color}"></i>${a.ab}<em>at</em><i style="background:${h.color}"></i>${h.ab}${sc}</div>
           <div class="note">${g.tv} &middot; ${g.venue}</div>
-          ${g.note ? `<div class="hook">${g.note}</div>` : ""}
+          ${g.note ? `<div class="hook">${withPos(g.note, [g.away, g.home])}</div>` : ""}
           <div class="more">Full breakdown<span aria-hidden="true">&rsaquo;</span></div>
         </button>`;
       }).join("")}
@@ -131,18 +204,19 @@ function openGame(key){
     const headline = e.headline || (home ? "Home" : "Away");
     const block = (row, label, tone, items) => (!items || !items.length)
       ? `<div class="tbsec empty ${row}"></div>`
-      : `<div class="tbsec ${tone} ${row}"><h5>${label}</h5><ul>${li(items)}</ul></div>`;
+      : `<div class="tbsec ${tone} ${row}"><h5>${label}</h5><ul>${li(items.map(x => withPos(x, [g.away, g.home])))}</ul></div>`;
     const nothing = !(e.matchup||[]).length && !(e.strengths||[]).length && !(e.weaknesses||[]).length;
     return `<div class="tb ${col}" style="--tc:${t.color}">
       <div class="tbhd r1">
         <div class="badge" style="background:${t.color};color:${txt(t.color)}">${t.ab}</div>
         <div class="who"><h4>${t.name}</h4><div class="sub" title="${esc(headline)}">${headline}</div></div>
-        <div class="chips"><span class="pill big"><b>${ORD(t.rank)}</b>rank</span><span class="pill"><b>${record(ab)}</b>2026</span></div>
+        <div class="chips"><span class="pill big" title="${powerRank(ab).title}"><b>${ORD(powerRank(ab).rank)}</b>${powerRank(ab).label}</span><span class="pill"><b>${record(ab)}</b>2026</span></div>
       </div>
       ${block("r2", "Matchup preview", "n", e.matchup)}
       ${block("r3", "Positives", "up", nothing ? ["Nothing loaded for this team yet."] : e.strengths)}
       ${block("r4", "Negatives", "down", e.weaknesses)}
       ${block("r5", "Keys to victory", "info", e.keys)}
+      ${deepDive(ab, home ? g.away : g.home, "r6")}
     </div>`;
   };
 
@@ -197,7 +271,7 @@ function openGame(key){
       <button class="x" id="ovx" aria-label="Close">&times;</button>
     </div>
     <div class="ovbody game">
-      ${g.note ? `<p class="ovnote">${g.note}</p>` : ""}
+      ${g.note ? `<p class="ovnote">${withPos(g.note, [g.away, g.home])}</p>` : ""}
       <div class="duo2">${teamBlock(g.away, "c1")}${teamBlock(g.home, "c2")}</div>
       <div class="ovsec n">Full stat breakdown<span class="ovsub">${basis}</span></div>
       <div class="ovlegend">
@@ -208,6 +282,9 @@ function openGame(key){
       ${rows.map(bar).join("")}
     </div>`;
   const ov = document.getElementById("ov");
+  /* the two Deep Dives open and close together so they stay side by side */
+  const dds = [...document.querySelectorAll("#ovbox details.dd")];
+  dds.forEach(d => d.addEventListener("toggle", () => dds.forEach(x => { if (x !== d && x.open !== d.open) x.open = d.open; })));
   ov.classList.add("on"); ov.scrollTop = 0;
   document.body.style.overflow = "hidden";
   document.getElementById("ovx").addEventListener("click", closeOv);

@@ -104,6 +104,33 @@ a{color:inherit}
 .tb.c1>*{grid-column:1}
 .tb.c2>*{grid-column:2}
 .r1{grid-row:1}.r2{grid-row:2}.r3{grid-row:3}.r4{grid-row:4}.r5{grid-row:5}
+/* ---------- deep dive: collapsed under keys to victory, six unit matchups ---------- */
+.r6{grid-row:6}
+.tbsec.dd{background:var(--surface);border:1px solid var(--line);padding:0}
+.tbsec.dd summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:9px}
+.tbsec.dd summary::-webkit-details-marker{display:none}
+.tbsec.dd summary::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ink-2);flex:0 0 6px}
+.tbsec.dd summary::after{content:"\203A";margin-left:auto;font-size:17px;line-height:1;color:var(--ink-3);transition:transform .15s}
+.tbsec.dd[open] summary::after{transform:rotate(90deg)}
+.tbsec.dd summary:hover .ddlbl{color:var(--ink)}
+.tbsec.dd summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ddlbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.ddhint{font-size:11px;color:var(--ink-3);font-weight:600}
+.ddbasis{font-size:11.5px;line-height:1.45;color:var(--ink-3);margin:0 12px 8px}
+.ddrow{padding:9px 12px 10px;border-top:1px solid var(--line)}
+.ddtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ddunit{font-family:"Space Grotesk","Manrope",sans-serif;font-weight:700;font-size:13.5px;letter-spacing:-.01em}
+.dtag{font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.dtag.easy{background:var(--up-bg);color:var(--up-ink)}
+.dtag.fav{background:#EDF5F0;color:var(--up)}
+.dtag.even{background:var(--sunk-2);color:var(--ink-2)}
+.dtag.tough{background:#F8EEDF;color:#8A5A12}
+.dtag.vtough{background:var(--down-bg);color:var(--down-ink)}
+.ddvs{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.ddvs b{font-family:"Space Grotesk","Manrope",sans-serif;color:var(--ink);font-weight:700}
+.ddvs b sup,.ddnum sup{font-size:8px}
+.ddwho{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.45}
+.ddnum{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.45;font-variant-numeric:tabular-nums}
 .tbhd{display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-s);position:relative;overflow:hidden}
 .tbhd::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--tc)}
 .tbhd .who{flex:1 1 0;min-width:0}
@@ -144,7 +171,7 @@ a{color:inherit}
 .ovlegend{display:flex;gap:15px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3);margin:10px 0 4px;font-weight:600}
 .ovlegend span{display:flex;align-items:center;gap:6px}
 .ovlegend i{width:4px;height:13px;border-radius:1px}
-@media(max-width:720px){.duo2{grid-template-columns:1fr}.tb.c2>*{grid-column:1}.tb.c2 .r1{grid-row:6;margin-top:14px}.tb.c2 .r2{grid-row:7}.tb.c2 .r3{grid-row:8}.tb.c2 .r4{grid-row:9}.tb.c2 .r5{grid-row:10}}
+@media(max-width:720px){.duo2{grid-template-columns:1fr}.tb.c2>*{grid-column:1}.tb.c2 .r1{grid-row:7;margin-top:14px}.tb.c2 .r2{grid-row:8}.tb.c2 .r3{grid-row:9}.tb.c2 .r4{grid-row:10}.tb.c2 .r5{grid-row:11}.tb.c2 .r6{grid-row:12}}
 @media(max-width:560px){.ovbox{border-radius:12px}.ovhd,.ovbody{padding-left:16px;padding-right:16px}.sbar{grid-template-columns:48px 1fr 48px;gap:7px}}
 
 /* ---------- footer, misc ---------- */

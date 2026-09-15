@@ -7,8 +7,8 @@ const WEEK2 = {
   "status": "live",
   "dates": "Thursday, September 17 to Monday, September 21, 2026",
   "updated": "September 15, 2026",
-  "headline": "A new Buffalo stadium, and three teams changing quarterbacks",
-  "intro": "Week 2 opens Thursday with the first regular season game in the new Highmark Stadium, Detroit at Buffalo, both teams 1-0 and the highest total on the board at 53.5. Three offenses arrive unsettled at quarterback: Kyler Murray is in concussion protocol in Minnesota, Sam Darnold is out for Seattle with a glute injury that could cost him four to six weeks, and Atlanta had not named a starter as of Monday. Three games pair 0-1 teams against each other, so by Monday night six clubs will have been sorted into 2-0 or 0-2.",
+  "headline": "Detroit at Buffalo leads a week of top 15 showdowns",
+  "intro": "Thursday night opens with Detroit at Buffalo, two 1-0 teams ranked 13th and 2nd in the power rankings, with the highest total on the board at 53.5. Sunday has two more games between top 15 teams: Jacksonville at Denver, 5th against 10th with Denver favored by only 2.5, and Minnesota at Chicago, a 1-0 division matchup with Chicago laying 5.5. Quarterback news hangs over several games, with Kyler Murray in concussion protocol for Minnesota, Sam Darnold out for Seattle at Arizona, and Atlanta without a named starter as of Monday.",
   "games": [
     {
       "away": "DET",
@@ -19,7 +19,7 @@ const WEEK2 = {
       "tv": "Prime Video",
       "venue": "Highmark Stadium, Orchard Park",
       "line": "BUF -4.5, O/U 53.5",
-      "note": "The first regular season game in the new Highmark Stadium, and both teams arrive 1-0.",
+      "note": "Thursday night between two 1-0 teams, with the highest total on the board at 53.5.",
       "preview": [],
       "keys": []
     },
@@ -302,7 +302,7 @@ const WEEK2 = {
       ]
     },
     "BUF": {
-      "headline": "A new building, and a 96 yard drive to open the year",
+      "headline": "A 96 yard drive to open the year, and Detroit on a short week",
       "matchup": [
         "<strong>Buffalo is favored by 4.5 at home on a short week.</strong> The 53.5 total is the highest on the Week 2 board, which is the market saying it expects two offenses and little resistance.",
         "<strong>The opener was a 36-31 win at Houston.</strong> It was Buffalo's first road win there since 2006, and it came on a 96 yard drive capped by <strong>Josh Allen</strong>'s 34 yard touchdown to <strong>Joshua Palmer</strong> with 1:36 left.",
@@ -312,8 +312,7 @@ const WEEK2 = {
         "<strong>Josh Allen beat Houston four different ways.</strong> He threw for 334 yards with 2 touchdowns and ran for 2 more.",
         "<strong>Greg Rousseau ended the game twice.</strong> He had two strip sacks of <strong>C.J. Stroud</strong>, the second recovered by <strong>Terrel Bernard</strong> to seal it.",
         "<strong>The offense moved at 7.9 yards per play.</strong> That tied Baltimore and Chicago for the best mark of Week 1, with 6 plays of 20 or more yards.",
-        "<strong>They won the turnover battle by two.</strong> A plus 2 margin on the road is how a team survives giving up 31 points.",
-        "<strong>The building is new and full.</strong> Thursday is the first regular season game ever played in the new Highmark Stadium."
+        "<strong>They won the turnover battle by two.</strong> A plus 2 margin on the road is how a team survives giving up 31 points."
       ],
       "weaknesses": [
         "<strong>Two players who sat in Week 1 are still questionable.</strong> Defensive tackle <strong>T.J. Sanders</strong> has a knee issue and third down back <strong>Ty Johnson</strong> was limited on Monday's estimated practice report with a hamstring.",

@@ -226,5 +226,7 @@ async function pack(games){
   await stats();
   await draftWeek(games);
   await pack(games);
+  /* power ranks, player positions and the Deep Dive units, beside the week files */
+  try { await require('./context').build({ out: OUT }); } catch (e) { console.log('context files kept:', e.message); }
   console.log('done. Next: read tools/out/week' + WEEK + '-pack.md and fill data/week' + WEEK + '.js');
 })().catch(e => { console.error(e); process.exit(1); });

@@ -11,7 +11,7 @@ on:
   push:
     # a change to the tracker's pull code runs it once, so a fix is proven straight away
     branches: [main]
-    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js"]
+    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js"]
 
 permissions:
   contents: write
@@ -40,7 +40,7 @@ jobs:
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add news/data/results.js news/data/stats2026.js news/data/week*.js news/tools/out
+          git add news/data/results.js news/data/stats2026.js news/data/ranks2026.js news/data/players2026.js news/data/units2026.js news/data/week*.js news/tools/out
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "news: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             git pull --rebase
