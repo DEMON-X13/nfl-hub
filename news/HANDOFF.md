@@ -1,5 +1,24 @@
 # 2026 NFL Season Tracker: handoff brief
 
+## Read this first: how to work out which week to build
+
+**N is the first 2026 regular season week in the nflverse schedule that still has an unplayed
+game.** That is what `tools/run-auto.js` computes and prints as `current week N`. Work it out
+that way, or just run the pull and read the number it prints.
+
+**Do not use "the last entry in `data/weeks.js`, plus one."** The routine prompt still says that,
+and it is wrong. It builds a week early whenever a session runs before the published week has
+been played. If `data/weekN.js` exists and `WEEKN` is already listed in `data/weeks.js`, the
+upcoming week is already published: **stop and report that, and do not build N+1 to have
+something to do.** Publishing next week's slate while this week's games are still to come
+replaces the live week on the page with a preview written without this week's results.
+
+Caught September 15, 2026, when Week 2 was published on a Tuesday and the Wednesday run would
+have built Week 3 before Week 2 had kicked off. Dormant until then only because `data/weeks.js`
+had a single entry, which made the two rules agree.
+
+---
+
 ## What this is
 
 A single-file static site that tracks all 32 NFL teams week to week. Built for a small
