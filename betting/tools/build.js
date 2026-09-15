@@ -49,10 +49,10 @@ const HOOK = `<script>
 `;
 
 const TRIM = `<script>
-/* viewer only: no Downloads, Upload, Record & Bets or Backup, and no odds fetch/upload card */
+/* viewer only: no Downloads, Upload, Records, Bet Log or Backup, and no odds fetch/upload card */
 window.VIEWER=true;
 document.addEventListener('DOMContentLoaded',()=>{
-  for(const t of ['upload','record','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
+  for(const t of ['upload','record','bets','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
   const ml=[...document.querySelectorAll('#tab-bank .card h2')].find(h=>h.textContent.trim()==='Moneylines'); if(ml&&ml.closest('.card')) ml.closest('.card').remove();
 });
 </script>

@@ -72,7 +72,7 @@ function load(picks) {
   await sleep(600);
   const SA = a.window.eval('S'); const da = a.window.document;
   check(Object.keys(SA.processed).length === graded.length, 'admin: published season loaded');
-  check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,record,ratings,upload,backup', 'admin: every tab present');
+  check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,record,bets,ratings,upload,backup', 'admin: every tab present');
   check(!!da.getElementById('oddsFetch'), 'admin: moneylines card kept');
   check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.start === 250, 'admin: picks, bets and bankroll come from the same browser store as the viewer');
   check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
