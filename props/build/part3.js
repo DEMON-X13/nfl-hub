@@ -52,11 +52,20 @@ function renderWeekOptions(){
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
+/* W-L on the model's side of every book main line, frozen pre-game numbers */
+function renderRecords(w){
+  const wr=$('weekRec'), sr=$('seasonRec'); if(!wr||!sr) return;
+  const main=trackRecord().filter(r=>r.kind==='main');
+  const line=rows=>`${rows.filter(r=>r.hit).length}\u2013${rows.filter(r=>!r.hit).length}`;
+  wr.innerHTML=`Week ${w} <b>${line(main.filter(r=>+r.w===+w))}</b>`;
+  sr.innerHTML=`Season <b>${line(main)}</b>`;
+}
 function renderSlate(){
   if(S.ui.game){ const g=S.sched.find(x=>x.id===S.ui.game); if(!g||!weekOpen(+g.w)) S.ui.game=null; }
   if(!S.ui.game) closeGameModal();
   $('slateView').hidden=false;
   const w=+$('weekSel').value||currentWeek();
+  renderRecords(w);
   const gs=gamesIn(w);
   const open=weekOpen(w), lw=liveWeek();
   /* expected points are the biggest input to every projection, so say so when the lines are stale */

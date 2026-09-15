@@ -29,6 +29,8 @@ nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-v
 main{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
 section[hidden]{display:none}
 .bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.bar .rec{display:inline-flex;align-items:baseline;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 11px;border-radius:999px;background:#E9EDF1;color:var(--ink-2);white-space:nowrap}
+.bar .rec b{font-family:var(--display);font-size:14px;font-weight:700;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}
 .bar .grow{flex:1}
 select,input[type=number],input[type=text]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
 input[type=number]{width:90px}
@@ -323,6 +325,8 @@ body.modal-open{overflow:hidden}
   <div id="slateView">
     <div class="bar">
       <label>Week <select id="weekSel"></select></label>
+      <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
+      <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
       <span class="grow"></span>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
@@ -511,7 +515,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v30 \u00b7 2026-09-14';
+const APP_BUILD='app v31 \u00b7 2026-09-15';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1254,11 +1258,20 @@ function renderWeekOptions(){
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
 function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
+/* W-L on the model's side of every book main line, frozen pre-game numbers */
+function renderRecords(w){
+  const wr=$('weekRec'), sr=$('seasonRec'); if(!wr||!sr) return;
+  const main=trackRecord().filter(r=>r.kind==='main');
+  const line=rows=>`${rows.filter(r=>r.hit).length}\u2013${rows.filter(r=>!r.hit).length}`;
+  wr.innerHTML=`Week ${w} <b>${line(main.filter(r=>+r.w===+w))}</b>`;
+  sr.innerHTML=`Season <b>${line(main)}</b>`;
+}
 function renderSlate(){
   if(S.ui.game){ const g=S.sched.find(x=>x.id===S.ui.game); if(!g||!weekOpen(+g.w)) S.ui.game=null; }
   if(!S.ui.game) closeGameModal();
   $('slateView').hidden=false;
   const w=+$('weekSel').value||currentWeek();
+  renderRecords(w);
   const gs=gamesIn(w);
   const open=weekOpen(w), lw=liveWeek();
   /* expected points are the biggest input to every projection, so say so when the lines are stale */
