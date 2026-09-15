@@ -763,6 +763,128 @@ function legPrice(l){
   if(l.price!=null) return {ml:l.price,src:l.src||'est'};
   return {ml:probToAmerican(l.p),src:'fair'};
 }
+/* ---------- suggested parlays: safe, medium, aggressive ----------
+   One core parlay grown in three steps. Each tier has a floor on the chance that every leg
+   lands and a leg cap; the next leg is always the one with the best expected return
+   (chance x payout, real correlations) that keeps the parlay above the floor. */
+const SUGGEST_TIERS=[['safe','Safe',0.50,3],['med','Medium',0.30,5],['aggr','Aggressive',0.15,8]];
+let SUGGEST_CACHE=null;
+function suggestCandidates(){
+  const w=currentWeek(); const out=[];
+  for(const g of gamesIn(w)){
+    if(gameStarted(g)) continue;
+    for(const team of [g.a,g.h]){
+      const isHome=team===g.h, opp=isHome?g.a:g.h;
+      for(const kind of ['ml','ats']){
+        const b=gameBet(g,team,kind); if(!b) continue;
+        const book=kind==='ml'?(isHome?g.mlh:g.mla):(isHome?g.sph:g.spa);
+        if(book==null||!isFinite(book)) continue;
+        out.push({key:legKey(g.id,'team:'+team,kind),gid:g.id,pid:'team:'+team,stat:kind,k:b.line==null?0:b.line,side:'over',main:false,
+          p:b.p,price:book,src:'real',mu:null,name:TEAM_NAMES[team]||team,pos:'Game',grp:'TEAM',team,opp,week:g.w,
+          label:kind==='ml'?'To win':`To cover ${b.line>0?'+':''}${b.line}`});
+      }
+    }
+    const roster=rosterFor(g,false);
+    for(const team in roster) for(const x of roster[team].players){
+      if(x.gp<3) continue;
+      for(const l of statLines(x)){
+        const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'real'};
+        if(l.prob){ const od=oddsFor(g.id,x.pl.id,'any_td',1);
+          if(od!=null) out.push({...base,key:legKey(g.id,x.pl.id,'any_td'),k:1,side:'over',main:false,p:l.p,price:od,mu:null,label:'Scores a touchdown'});
+          continue; }
+        const L=marketLine(g.w,x.pl.id,l.stat);
+        if(L){ const pO=pOver(x.pl.grp,l.stat,l.mu,L.line), lbl=l.m.lbl.toLowerCase();
+          if(L.over!=null) out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:L.line,side:'over',main:true,p:pO,price:L.over,mu:l.mu,label:`Over ${L.line} ${lbl}`});
+          if(L.under!=null) out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:L.line,side:'under',main:true,p:1-pO,price:L.under,mu:l.mu,label:`Under ${L.line} ${lbl}`}); }
+        for(const r of l.rungs){ const od=oddsFor(g.id,x.pl.id,l.stat,r.k); if(od==null) continue;
+          out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:r.k,side:'over',main:false,p:r.p,price:od,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }
+      }
+    }
+  }
+  const edge=c=>c.p-mlProb(c.price);
+  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&edge(c)>=0.03).sort((a,b)=>edge(b)-edge(a)).slice(0,40);
+}
+function buildSuggestions(){
+  const cands=suggestCandidates();
+  const dec=legs=>legs.reduce((a,l)=>a*(mlToDec(l.price)||1),1);
+  const chance=(legs,sims)=>legs.length?parlayProb(legs,sims).corr:1;
+  const tiers=[]; let cur=[];
+  for(const [id,label,floor,cap] of SUGGEST_TIERS){
+    const startLen=cur.length;
+    /* every tier grows the one before: Safe starts from its two most likely legs, Medium and
+       Aggressive each take at least one more leg (the best expected return), then keep adding
+       while the parlay stays above the tier's floor */
+    const must=id==='safe'?2:startLen+1;
+    while(cur.length<cap){
+      let best=null;
+      for(const c of cands){
+        if(cur.some(l=>l.key===c.key)) continue;
+        if(c.grp==='TEAM'&&cur.some(l=>l.grp==='TEAM'&&l.gid===c.gid)) continue;
+        const next=[...cur,c], p=chance(next,3000);
+        const forced=next.length<=must;
+        if(!forced&&p<floor) continue;
+        const score=(forced&&id==='safe')?p:p*dec(next);
+        if(!best||score>best.score) best={c,score};
+      }
+      if(!best) break;
+      cur=[...cur,best.c];
+    }
+    if(cur.length<2||cur.length===startLen) continue;
+    const pr=parlayProb(cur,40000);
+    tiers.push({id,label,floor,legs:cur.map(l=>({...l})),corr:pr.corr,indep:pr.indep,dec:dec(cur),added:cur.length-startLen});
+  }
+  return {tiers,candidates:cands.length};
+}
+function getSuggestions(){
+  const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
+  const sig=[w,started,JSON.stringify(S.odds||{}).length,PAY.baked_at||'',S.sched.length].join('|');
+  if(!SUGGEST_CACHE||SUGGEST_CACHE.sig!==sig) SUGGEST_CACHE={sig,...buildSuggestions()};
+  return SUGGEST_CACHE;
+}
+function suggestCard(){
+  const open=!(S.ui&&S.ui.suggestMin);
+  const w=currentWeek(), stake=Math.max(0,+S.stake||0);
+  let body='';
+  if(open){
+    const s=getSuggestions();
+    if(!s.tiers.length){
+      body=`<p class="muted" style="margin:0">No suggestions for week ${w} yet. They use only lines with a real sportsbook price that the model rates above the book, ${s.candidates?`and only ${s.candidates} line${s.candidates===1?'':'s'} qualify so far`:'and none qualify yet'}. Player prices arrive with the Thursday and Saturday pulls.</p>`;
+    } else {
+      const tag={safe:'high',med:'med',aggr:'low'};
+      body=`<p class="muted" style="margin:0 0 14px">Built from week ${w} lines with a real sportsbook price that the model rates above the book. Safe is the most likely pair, kept at 50% or better when the lines allow it; Medium and Aggressive add legs to the same core for a bigger payout. Payouts use your builder stake of $${stake.toFixed(2)}.${s.tiers[s.tiers.length-1].legs.every(l=>l.grp==='TEAM')?' Only game bets qualify so far; player lines join when this week’s prices are pulled on Thursday and Saturday.':''}</p>
+      <div class="sugg-grid">`+s.tiers.map((t,i)=>{
+        const payout=stake*t.dec, ev=t.corr*t.dec-1, ml=decToML(t.dec);
+        const saved=(S.saved||[]).some(p=>p.suggestSig===SUGGEST_CACHE.sig+'|'+t.id);
+        return `<div class="sugg-tier ${t.id}">
+          <div class="sugg-top"><span class="sugg-name">${t.label}</span><span class="conf ${tag[t.id]}">${t.legs.length} legs</span>${i?`<span class="muted sugg-add">+${t.added} leg${t.added===1?'':'s'}</span>`:''}</div>
+          <div class="sugg-nums">
+            <div><b>${(t.corr*100).toFixed(0)}%</b><span>chance all land</span></div>
+            <div><b>${fmtML(ml)}</b><span>book price</span></div>
+            <div><b class="payout">$${payout.toFixed(2)}</b><span>returns if it lands</span></div>
+            <div><b class="${ev>=0?'delta up':'delta down'}">${ev>=0?'+':'−'}${Math.abs(ev*100).toFixed(0)}%</b><span>expected return</span></div>
+          </div>
+          <ul class="sugg-legs">${t.legs.map(l=>`<li><span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
+          <button class="btn ${saved?'quiet':'go'}" data-suggest-save="${t.id}" ${saved?'disabled':''}>${saved?'Saved':'Add to saved parlays'}</button>
+        </div>`; }).join('')+`</div>
+      <p class="muted" style="margin:12px 0 0;font-size:12px">Chances allow for how the legs move together. They are the model's numbers, and its edges over book prices have not held up yet this season (see Track Record), so treat these as the model's view rather than a sure thing.</p>`;
+    }
+  }
+  return `<div class="card sugg${open?'':' min'}" id="suggCard">
+    <div class="sugg-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span><span class="grow"></span>
+      <button class="btn quiet" id="suggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>
+    ${body}</div>`;
+}
+function wireSuggest(){
+  $('suggToggle')?.addEventListener('click',()=>{ S.ui.suggestMin=!S.ui.suggestMin; save(); renderParlay(); });
+  document.querySelectorAll('[data-suggest-save]').forEach(b=>b.addEventListener('click',()=>{
+    const t=(SUGGEST_CACHE&&SUGGEST_CACHE.tiers||[]).find(x=>x.id===b.dataset.suggestSave); if(!t) return;
+    const stake=Math.max(0,+S.stake||0);
+    if(!confirm(`Save the ${t.label} ${t.legs.length}-leg parlay at ${fmtML(decToML(t.dec))} for $${stake.toFixed(2)}?\n\nIt goes to Saved parlays and settles like any other.`)) return;
+    S.saved.push({id:'sp'+Date.now(),saved:new Date().toISOString(),week:t.legs[0].week,legs:t.legs.map(l=>({...l})),
+      stake,price:decToML(t.dec),priceSrc:'real',pCorr:t.corr,pIndep:t.indep,payout:stake*t.dec,
+      suggested:t.label,suggestSig:SUGGEST_CACHE.sig+'|'+t.id});
+    save(); renderParlay(); }));
+}
 function renderParlay(){
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
   let dropped=0;
@@ -772,7 +894,7 @@ function renderParlay(){
   const el=$('parlayBody');
   const droppedNote=dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'';
   if(!legs.length){
-    el.innerHTML=droppedNote+`<div class="card"><h2>Nothing picked yet</h2>
+    el.innerHTML=suggestCard()+droppedNote+`<div class="card"><h2>Nothing picked yet</h2>
       <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like. Each one lands here and gets priced.</p>
       <ul style="margin:0">
         <li>You can pick <b>one line per stat per player</b>. Ticking 30+ pass attempts after 20+ replaces it rather than adding both, because a player can't be over two different numbers as separate bets.</li>
@@ -780,7 +902,7 @@ function renderParlay(){
         <li>Each game also offers <b>a team to win</b> and <b>a team to cover the spread</b>, at the top of the game. They go in like any other leg.</li>
         <li>Prices come from the sheet you upload on the Weekly Update tab. Anything you haven't priced is shown at the model's own fair odds instead.</li>
       </ul></div>`+renderSaved();
-    wireSaved();
+    wireSaved(); wireSuggest();
     return;
   }
   const wks=[...new Set(legs.map(l=>l.week))];
@@ -801,7 +923,7 @@ function renderParlay(){
   const payout=stake*useDec, profit=payout-stake;
   const ev=(realPrice||estPrice)?stake*(pr.corr*useDec-1):null;
 
-  let html=droppedNote+`<div class="card"><h2>${legs.length}-leg parlay <span class="pill">building</span></h2>
+  let html=suggestCard()+droppedNote+`<div class="card"><h2>${legs.length}-leg parlay <span class="pill">building</span></h2>
     <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
   legs.forEach((l,i)=>{
@@ -860,7 +982,7 @@ function renderParlay(){
     delete S.parlay[b.dataset.drop]; save(); renderParlay(); if(S.ui.game) renderGame(); }));
   $('pClear').addEventListener('click',()=>{ if(!confirm('Remove every leg from the builder?')) return;
     S.parlay={}; save(); renderParlay(); if(S.ui.game) renderGame(); });
-  wireSaved();
+  wireSaved(); wireSuggest();
 }
 function renderSaved(){
   const list=(S.saved||[]).slice().reverse();
@@ -887,7 +1009,7 @@ function renderSaved(){
     const result=s.status==='won'?`+$${profit.toFixed(2)}`:(s.status==='lost'?`\u2212$${p.stake.toFixed(2)}`:(s.status==='void'?'$0.00':`$${p.payout.toFixed(2)} to come`));
     html+=`<div class="savedp" style="border-left:4px solid ${tone}">
       <div class="sp-head">
-        <span class="sp-title">${p.legs.length}-leg parlay</span>
+        <span class="sp-title">${p.legs.length}-leg parlay</span>${p.suggested?`<span class="pill">${p.suggested} suggestion</span>`:''}
         <span class="pill ${s.status==='won'?'ok':(s.status==='lost'?'bad':(s.status==='pending'?'warn':''))}">${s.status==='pending'?'live':s.status}</span>
         <span class="muted" style="font-size:12px">week ${p.week} \u00b7 saved ${p.saved.slice(0,10)}</span>
         <span class="grow"></span>

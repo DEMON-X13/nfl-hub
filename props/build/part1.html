@@ -252,6 +252,32 @@ body.modal-open{overflow:hidden}
 .bigp .hero{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);border-color:#0F1B2D}
 .bigp .hero b,.bigp .hero span{color:#fff}
 .bigp .hero span{color:#B9C5D4}
+/* suggested parlays */
+.sugg-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sugg-hd h2{margin:0}
+.sugg-hd .pill{white-space:nowrap}
+.sugg.min .sugg-hd{margin-bottom:0}
+.sugg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sugg-tier{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
+.sugg-top{display:flex;align-items:center;gap:8px}
+.sugg-name{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
+.sugg-add{font-size:11px;margin-left:auto}
+.sugg-tier .conf::before{display:none}
+.sugg-tier.aggr .conf{background:var(--miss-soft);color:var(--miss)}
+.sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sugg-nums div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px}
+.sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.sugg-nums b.payout{font-size:18px}
+.sugg-nums span{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.sugg-legs{list-style:none;margin:0;padding:0}
+.sugg-legs li{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+.sugg-legs .nm{font-weight:600;min-width:0}
+.sugg-legs .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
+.sugg-legs .pr{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
+.sugg-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
+.sugg-tier .btn{margin-top:auto;align-self:stretch;text-align:center}
+@media(max-width:900px){ .sugg-grid{grid-template-columns:1fr} }
 /* the parlay card: what it pays sits under the legs behind a divider, then the actions behind another */
 .pays{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 .pays h3{margin:0 0 12px}

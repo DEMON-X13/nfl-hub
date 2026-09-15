@@ -263,6 +263,26 @@ setTimeout(()=>{
     const kinds={}; for(const r of TR) kinds[r.kind]=(kinds[r.kind]||0)+1;
     console.log(`G3. track record: ${priced.length} priced; ${TR.length} graded lines (${Object.entries(kinds).map(([k,v])=>k+' '+v).join(', ')}), said ${(t.said*100).toFixed(1)}% happened ${(t.hit*100).toFixed(1)}%, ${stored} snapshots carry frozen rungs, ${faithful} rung chances all match the frozen projection`);
   }
+  /* ---- M. suggested parlays ---- */
+  { const SG=F('buildSuggestions')();
+    const tiers=SG.tiers;
+    chk(tiers.every((t,i)=>i===0||(t.legs.length>tiers[i-1].legs.length&&tiers[i-1].legs.every(l=>t.legs.some(x=>x.key===l.key&&x.k===l.k&&x.side===l.side)))),'suggested tiers must only add legs to the one before');
+    chk(tiers.every((t,i)=>i===0||t.corr<=tiers[i-1].corr+0.02),'a bigger tier should not be more likely to land');
+    chk(tiers.every(t=>t.legs.every(l=>l.src==='real'&&l.p-F('mlProb')(l.price)>=0.03)),'suggested legs must be real-priced edges');
+    chk(tiers.every(t=>new Set(t.legs.map(l=>l.key)).size===t.legs.length),'one line per player and stat in a suggestion');
+    chk(tiers.filter(t=>t.id!=='safe').every(t=>t.added>=1),'medium and aggressive each add at least one leg');
+    chk(SG.candidates<4||tiers.length===3,'with four or more qualifying lines all three tiers should show');
+    d.querySelector('#tabs button[data-tab="parlay"]').click();
+    chk(!!d.getElementById('suggCard'),'suggested parlays card missing from the builder');
+    chk(d.getElementById('parlayBody').firstElementChild.id==='suggCard','suggested parlays should be the first section');
+    if(tiers.length){ const before=(S.saved||[]).length; const sb=d.querySelector('[data-suggest-save]'); sb.click();
+      chk((S.saved||[]).length===before+1&&S.saved[S.saved.length-1].suggested&&S.saved[S.saved.length-1].legs.length>=2,'add to saved parlays did not save the tier');
+      chk(/suggestion/.test(d.getElementById('savedCard').textContent),'saved suggestion not labelled');
+      S.saved.pop(); F('save')(); F('renderParlay')(); }
+    d.getElementById('suggToggle').click(); chk(!d.querySelector('.sugg-grid')&&/Show/.test(d.getElementById('suggToggle').textContent),'minimize did not hide the suggestions');
+    d.getElementById('suggToggle').click(); chk(/Minimize/.test(d.getElementById('suggToggle').textContent),'show did not bring them back');
+    console.log(`M. suggested parlays: ${SG.candidates} qualifying lines, tiers ${tiers.map(t=>t.label+' '+t.legs.length+' legs '+(t.corr*100).toFixed(0)+'%').join(', ')||'none'}`); }
+
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;
     const ws=d.getElementById('weekSel'); const was=ws.value; ws.value=String(wkx); ws.dispatchEvent(new w.Event('change'));
