@@ -4,10 +4,11 @@
 
 A single-file static site that tracks all 32 NFL teams week to week. Built for a small
 group of friends to read like a newsletter. Live at
-**https://demon-x13.github.io/nfl-news-tracker/**, repo `DEMON-X13/nfl-news-tracker`,
-published with GitHub Pages from `main` at root.
+**https://demon-x13.github.io/nfl-hub/news/**, the `news/` folder of repo `DEMON-X13/nfl-hub`,
+published with GitHub Pages from `main`. (Moved from `DEMON-X13/nfl-news-tracker` on September 14, 2026;
+that repo's page now redirects here. The hub also holds `betting/` and `props/`; never touch them from here.)
 
-Deployed from the repo root: `index.html`, `css/`, `js/`, and `data/`.
+Deployed from `news/`: `index.html`, `css/`, `js/`, and `data/`. All paths in this file are relative to `news/`.
 
 ---
 
@@ -178,12 +179,17 @@ node tools/smoke.js
 git -c user.name=DEMON-X13 -c user.email=44211869+DEMON-X13@users.noreply.github.com commit -am "Week N" && git push origin main
 ```
 
+**Also automatic, in GitHub Actions** (`.github/workflows/news.yml`): Friday, Monday and Tuesday at
+12:00 UTC the hub runs the pull alone, refreshing `data/results.js`, `data/stats2026.js`, the draft
+`data/weekN.js` and the reading pack. It never writes narrative or adds a week to `data/weeks.js`;
+that stays with the routine below.
+
 **Automatic, set up September 13, 2026.** A Claude Code cloud routine named "NFL tracker: build and
-publish the week" (id `trig_017MSjEeFD8c5atgAEzBbWiF`, model Claude Opus 5, environment Default)
-runs every Wednesday at 13:00 UTC (6 AM Pacific in September, 5 AM after the November clock change)
+publish the week" (id `trig_017MSjEeFD8c5atgAEzBbWiF`, model Claude Opus 5, environment Default,
+repository `DEMON-X13/nfl-hub`, working in `news/`) runs every Wednesday at 13:00 UTC (6 AM Pacific in September, 5 AM after the November clock change)
 and does steps 1 to 4 unattended, pushing to main. Its prompt is the procedure above. Manage it at
 https://claude.ai/code/routines. If a run goes wrong, revert the commit with `git revert` and push;
-the previous week comes back. The first run is Wednesday, September 16, 2026, building Week 2.
+the previous week comes back. Repointed from the old repo to nfl-hub on September 15, 2026.
 If that run fails before a session starts, the usual cause is repository access: connect the repo
 to Claude Code's GitHub integration.
 
