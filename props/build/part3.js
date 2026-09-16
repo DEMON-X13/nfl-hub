@@ -41,7 +41,7 @@ function gamesIn(w){ return S.sched.filter(g=>+g.w===w).sort((a,b)=>((a.d||'')+(
 /* ---------- games list ---------- */
 function renderWeekOptions(){
   const cur=$('weekSel').value?+$('weekSel').value:currentWeek();
-  for(const id of ['weekSel','oddsWeekSel']){
+  for(const id of ['weekSel']){
     const sel=$(id); if(!sel) continue;
     sel.innerHTML=weeks().map(w=>`<option value="${w}">Week ${w}</option>`).join('');
     sel.value=cur;
@@ -618,7 +618,27 @@ function renderTrack(){
   body.innerHTML=html;
 }
 /* ---------- wiring ---------- */
-function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack();
+/* when credits were last spent, and on what. PAY.price_pull is written by the
+   build that actually pulled; older builds only recorded the date on the main lines. */
+function renderPricePull(){
+  const el=$('pricePull'); if(!el) return;
+  const pp=PAY.price_pull, meta=PAY.mkt_meta||{}, all=PAY.prices||{};
+  const weeks=Object.keys(all).sort((a,b)=>a-b);
+  const counts=weeks.length?weeks.map(w=>`week ${w}: ${all[w].length.toLocaleString()} price${all[w].length===1?'':'s'}`).join(', '):'no prices in this build';
+  const fmt=t=>{ const d=new Date(/Z|[+-]\d\d:?\d\d$/.test(t)?t:t+'Z');
+    return isFinite(d)?d.toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):t; };
+  let head, sub;
+  if(pp&&pp.at){
+    head=`Last credit pull: <b>${fmt(pp.at)}</b>, for week ${pp.week}.`;
+    sub=counts+(pp.credits_left!=null?` \u00b7 ${pp.credits_left} credit${pp.credits_left===1?'':'s'} left this month`:'');
+  } else {
+    const w=Object.keys(meta).sort((a,b)=>b-a)[0];
+    head=(w&&meta[w].asof)?`Last credit pull: <b>${meta[w].asof}</b>, for week ${w}.`:'No credit pull recorded in this build.';
+    sub=counts+' \u00b7 this build recorded the date only; later builds record the time and the credits left';
+  }
+  el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>`;
+}
+function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
@@ -1058,31 +1078,8 @@ function downloadText(name,text){
   document.body.appendChild(a); a.click();
   setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },1500);
 }
-function oddsTemplate(legsOnly){
-  const w=+$('oddsWeekSel').value||currentWeek();
-  const lines=['game_id,player,market,threshold,odds'];
-  if(legsOnly){
-    const legs=parlayLegs().filter(l=>!l.main);
-    if(!legs.length){ setStatus('oddsStatus','Nothing on the parlay yet. Tick some lines first, then this sheet will list just those.','warn'); return; }
-    for(const l of legs) lines.push(`${l.gid},"${l.name}",${l.stat},${l.k},`);
-  } else {
-    for(const g of gamesIn(w)){
-      const roster=rosterFor(g,false);
-      for(const team in roster) for(const x of roster[team].players){
-        for(const l of statLines(x)){
-          if(l.prob){ if(l.p>=0.10&&l.p<=0.90) lines.push(`${g.id},"${x.pl.n}",any_td,1,`); continue; }
-          for(const r of l.rungs){ if(r.p>=0.10&&r.p<=0.90) lines.push(`${g.id},"${x.pl.n}",${l.stat},${r.k},`); }
-        }
-      }
-    }
-  }
-  downloadText(legsOnly?`my_parlay_prices_week${w}.csv`:`prop_prices_week${w}.csv`,lines.join('\n'));
-  setStatus('oddsStatus',legsOnly
-    ?`Sheet with your ${lines.length-1} parlay line${lines.length===2?'':'s'} downloaded. Look each one up in your sportsbook's alternate lines, type the price in the odds column, upload it back.`
-    :`Full sheet for week ${w} downloaded: ${lines.length-1} lines. You only need to fill in the ones you care about; blank rows are ignored.`,'ok');
-}
 function ingestOdds(rows,week,quiet){
-  const w=week||(+$('oddsWeekSel').value||currentWeek());
+  const w=week||currentWeek();
   const gs=gamesIn(w), gids=new Set(gs.map(g=>g.id));
   const byName={};
   for(const g of gs){ const r=rosterFor(g,true);
@@ -1100,20 +1097,14 @@ function ingestOdds(rows,week,quiet){
     ((((S.odds[hit.gid]??={})[hit.pid]??={})[mk]??={}))[String(k)]=ml;
     n++;
   }
-  let msg=n?`Loaded ${n} price${n===1?'':'s'} for week ${w}. They now show in green on the game pages and price those legs in the Parlay Builder.`
-           :`That sheet had no prices filled in, so nothing changed. Open it, type odds into the last column for the lines you want, save as CSV, upload again.`;
-  if(missName.size) msg+=` ${missName.size} name${missName.size===1?'':'s'} not on this week's slate: ${[...missName].slice(0,3).join(', ')}${missName.size>3?'\u2026':''}.`;
-  if(missMkt.size) msg+=` Unknown markets: ${[...missMkt].slice(0,3).join(', ')}.`;
-  if(quiet) return {n,week:w,missName:missName.size};
-  setStatus('oddsStatus',msg,n?'ok':'warn');
-  save(); renderParlay(); if(S.ui.game) renderGame();
+  /* no interactive upload any more: the only caller is applyBaked */
   return {n,week:w,missName:missName.size};
 }
 /* ---------- data baked into the page by build/weekly.py ----------
-   Everything an upload carries (scores and lines, injuries, prices, player stats) can also
-   arrive inside the payload. It goes through exactly the same ingest functions as an upload,
-   so a game is graded before its stats are folded in and applying it twice is a no-op. A
-   price sheet you uploaded yourself for a week wins over the baked one. */
+   Scores and lines, injuries, prices and player stats all arrive inside the payload and go
+   through the same ingest functions the upload buttons use, so a game is graded before its
+   stats are folded in and applying it twice is a no-op. Prices for a week already in this
+   browser are left alone, so a rebuild never overwrites what is on the page. */
 function applyBaked(){
   const done={sched:0,inj:0,prices:0,stats:[]};
   buildNorm();   /* price matching projects every player, which needs the league averages ready */
@@ -1131,14 +1122,3 @@ function applyBaked(){
     const r=ingestStats(PAY.stats[w]); done.stats.push(...r.done.map(g=>g.id)); }
   return done;
 }
-$('oddsTemplate').addEventListener('click',()=>oddsTemplate(false));
-$('oddsLegs').addEventListener('click',()=>oddsTemplate(true));
-$('oddsUpload').addEventListener('click',()=>$('oddsFile').click());
-$('oddsFile').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  setStatus('oddsStatus','Reading\u2026'); ingestOdds(await parseCSV(f)); });
-$('oddsClear').addEventListener('click',()=>{
-  const w=+$('oddsWeekSel').value||currentWeek();
-  if(!confirm(`Clear every price you've loaded for week ${w}?`)) return;
-  for(const g of gamesIn(w)) delete S.odds[g.id];
-  save(); setStatus('oddsStatus',`Prices cleared for week ${w}.`); renderParlay(); if(S.ui.game) renderGame();
-});

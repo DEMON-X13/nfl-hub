@@ -64,6 +64,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   a.href='https://github.com/DEMON-X13/nfl-hub/actions/workflows/props.yml';
   a.title='Opens GitHub Actions. Press Run workflow to pull lines, bake, and republish now. Spends no credits unless you untick the skip box.';
   a.textContent='Refresh site now \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
+  a.addEventListener('click',e=>{
+    if(!confirm('Refresh site now \\u2014 this is the page where credits get spent.\\n\\n'
+      +'The run itself costs nothing by default: \"Skip the price pull\" is ticked, and a skipped run only re-downloads the free nflverse files.\\n\\n'
+      +'UNTICKING that box pulls fresh odds at about 7 credits a game \\u2014 roughly 112 for a full 16-game week, out of 500 free a month.\\n\\n'
+      +'Open the Run workflow page?')) e.preventDefault();
+  });
   st.insertAdjacentElement('afterend',a);
 });
 </script>

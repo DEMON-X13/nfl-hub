@@ -435,20 +435,9 @@ body.modal-open{overflow:hidden}
       <button class="btn go" id="upAll">3. Upload them back</button>
       <span class="muted">Pick all four at once. The app works out which is which.</span>
     </div>
-    <h3 style="margin:18px 0 6px">Prices for the 10+, 20+, 30+ lines</h3>
-    <p class="muted" style="margin:0 0 10px">The main lines (over/under 264.5 and the like) are already built in for the week, with real prices. The threshold lines are shown with an estimated price, because no free source publishes those. If you want the real ones from your own sportsbook, this is how: download a sheet, type the prices in, upload it back. Anything you fill in replaces the estimate on that line and in the Parlay Builder.</p>
-    <div class="bar" style="margin:0 0 8px">
-      <label>Week <select id="oddsWeekSel"></select></label>
-      <button class="btn quiet" id="oddsLegs">Sheet for just my parlay</button>
-      <button class="btn quiet" id="oddsTemplate">Sheet for the whole week</button>
-    </div>
-    <div class="bar" style="margin:0">
-      <input type="file" id="oddsFile" accept=".csv" hidden>
-      <button class="btn go" id="oddsUpload">Upload prices</button>
-      <button class="btn quiet" id="oddsClear">Clear prices</button>
-      <span class="muted" id="oddsStatus"></span>
-    </div>
-    <p class="muted" style="margin:8px 0 0;font-size:12px">"Just my parlay" is the practical one: a handful of rows for the lines you've ticked. The whole-week sheet is several thousand rows and exists for completeness.</p>
+    <h3 style="margin:18px 0 6px">Sportsbook prices</h3>
+    <p class="muted" style="margin:0 0 10px">Prices arrive with the Thursday and Saturday builds, and they are the only thing on this page that spends odds-API credits. Passing, rushing and receiving yards come in with a real price on the main line and on every X+ rung, along with anytime touchdown. Receptions, attempts, completions, passing touchdowns, interceptions and carries are not in that pull, so those rungs keep the model&rsquo;s own estimate and are labelled <b>est.</b></p>
+    <div id="pricePull" class="log" style="margin-top:0"></div>
     <div class="log" id="log"><div class="muted" data-placeholder>Nothing uploaded yet. Projections are running off how everyone finished 2025.</div></div>
   </div>
   <div class="card">
@@ -458,7 +447,7 @@ body.modal-open{overflow:hidden}
       <li><b>Rosters</b> keep everyone on the right team. The 2026 offseason is already built in, so Week 1 is correct out of the box, but signings and cuts happen all season and this is what catches them.</li>
       <li><b>Injury report</b> pulls anyone ruled out or doubtful off this week's game pages so you aren't looking at a player who isn't dressing.</li>
       <li><b>Depth charts</b> set who counts as the starter, so a game page shows QB1 and RB1 rather than whoever happened to touch the ball most last season. It's the big file, and it changes slowly, so every few weeks is enough.</li>
-      <li><b>Price sheet</b> is optional. Columns are <code>game_id, player, market, threshold, odds</code>, with odds in American form like -115 or +260. The threshold matches the numbers on the game pages, so a row reading <code>250, -120</code> means your book pays -120 on 250 or more. Open it in Excel or Numbers, fill the odds column, save as CSV.</li>
+      <li><b>Prices</b> are not on this list because nothing here fetches them. They come from the odds API on the Thursday and Saturday builds, and the panel above says when credits were last spent on them.</li>
       <li>Re-uploading is safe. Weeks already counted are skipped.</li>
     </ul>
   </div>
@@ -570,7 +559,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v33 \u00b7 2026-09-15';
+const APP_BUILD='app v34 \u00b7 2026-09-16';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1302,7 +1291,7 @@ function gamesIn(w){ return S.sched.filter(g=>+g.w===w).sort((a,b)=>((a.d||'')+(
 /* ---------- games list ---------- */
 function renderWeekOptions(){
   const cur=$('weekSel').value?+$('weekSel').value:currentWeek();
-  for(const id of ['weekSel','oddsWeekSel']){
+  for(const id of ['weekSel']){
     const sel=$(id); if(!sel) continue;
     sel.innerHTML=weeks().map(w=>`<option value="${w}">Week ${w}</option>`).join('');
     sel.value=cur;
@@ -1879,7 +1868,27 @@ function renderTrack(){
   body.innerHTML=html;
 }
 /* ---------- wiring ---------- */
-function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack();
+/* when credits were last spent, and on what. PAY.price_pull is written by the
+   build that actually pulled; older builds only recorded the date on the main lines. */
+function renderPricePull(){
+  const el=$('pricePull'); if(!el) return;
+  const pp=PAY.price_pull, meta=PAY.mkt_meta||{}, all=PAY.prices||{};
+  const weeks=Object.keys(all).sort((a,b)=>a-b);
+  const counts=weeks.length?weeks.map(w=>`week ${w}: ${all[w].length.toLocaleString()} price${all[w].length===1?'':'s'}`).join(', '):'no prices in this build';
+  const fmt=t=>{ const d=new Date(/Z|[+-]\d\d:?\d\d$/.test(t)?t:t+'Z');
+    return isFinite(d)?d.toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):t; };
+  let head, sub;
+  if(pp&&pp.at){
+    head=`Last credit pull: <b>${fmt(pp.at)}</b>, for week ${pp.week}.`;
+    sub=counts+(pp.credits_left!=null?` \u00b7 ${pp.credits_left} credit${pp.credits_left===1?'':'s'} left this month`:'');
+  } else {
+    const w=Object.keys(meta).sort((a,b)=>b-a)[0];
+    head=(w&&meta[w].asof)?`Last credit pull: <b>${meta[w].asof}</b>, for week ${w}.`:'No credit pull recorded in this build.';
+    sub=counts+' \u00b7 this build recorded the date only; later builds record the time and the credits left';
+  }
+  el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>`;
+}
+function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
@@ -2319,31 +2328,8 @@ function downloadText(name,text){
   document.body.appendChild(a); a.click();
   setTimeout(()=>{ a.remove(); URL.revokeObjectURL(url); },1500);
 }
-function oddsTemplate(legsOnly){
-  const w=+$('oddsWeekSel').value||currentWeek();
-  const lines=['game_id,player,market,threshold,odds'];
-  if(legsOnly){
-    const legs=parlayLegs().filter(l=>!l.main);
-    if(!legs.length){ setStatus('oddsStatus','Nothing on the parlay yet. Tick some lines first, then this sheet will list just those.','warn'); return; }
-    for(const l of legs) lines.push(`${l.gid},"${l.name}",${l.stat},${l.k},`);
-  } else {
-    for(const g of gamesIn(w)){
-      const roster=rosterFor(g,false);
-      for(const team in roster) for(const x of roster[team].players){
-        for(const l of statLines(x)){
-          if(l.prob){ if(l.p>=0.10&&l.p<=0.90) lines.push(`${g.id},"${x.pl.n}",any_td,1,`); continue; }
-          for(const r of l.rungs){ if(r.p>=0.10&&r.p<=0.90) lines.push(`${g.id},"${x.pl.n}",${l.stat},${r.k},`); }
-        }
-      }
-    }
-  }
-  downloadText(legsOnly?`my_parlay_prices_week${w}.csv`:`prop_prices_week${w}.csv`,lines.join('\n'));
-  setStatus('oddsStatus',legsOnly
-    ?`Sheet with your ${lines.length-1} parlay line${lines.length===2?'':'s'} downloaded. Look each one up in your sportsbook's alternate lines, type the price in the odds column, upload it back.`
-    :`Full sheet for week ${w} downloaded: ${lines.length-1} lines. You only need to fill in the ones you care about; blank rows are ignored.`,'ok');
-}
 function ingestOdds(rows,week,quiet){
-  const w=week||(+$('oddsWeekSel').value||currentWeek());
+  const w=week||currentWeek();
   const gs=gamesIn(w), gids=new Set(gs.map(g=>g.id));
   const byName={};
   for(const g of gs){ const r=rosterFor(g,true);
@@ -2361,20 +2347,14 @@ function ingestOdds(rows,week,quiet){
     ((((S.odds[hit.gid]??={})[hit.pid]??={})[mk]??={}))[String(k)]=ml;
     n++;
   }
-  let msg=n?`Loaded ${n} price${n===1?'':'s'} for week ${w}. They now show in green on the game pages and price those legs in the Parlay Builder.`
-           :`That sheet had no prices filled in, so nothing changed. Open it, type odds into the last column for the lines you want, save as CSV, upload again.`;
-  if(missName.size) msg+=` ${missName.size} name${missName.size===1?'':'s'} not on this week's slate: ${[...missName].slice(0,3).join(', ')}${missName.size>3?'\u2026':''}.`;
-  if(missMkt.size) msg+=` Unknown markets: ${[...missMkt].slice(0,3).join(', ')}.`;
-  if(quiet) return {n,week:w,missName:missName.size};
-  setStatus('oddsStatus',msg,n?'ok':'warn');
-  save(); renderParlay(); if(S.ui.game) renderGame();
+  /* no interactive upload any more: the only caller is applyBaked */
   return {n,week:w,missName:missName.size};
 }
 /* ---------- data baked into the page by build/weekly.py ----------
-   Everything an upload carries (scores and lines, injuries, prices, player stats) can also
-   arrive inside the payload. It goes through exactly the same ingest functions as an upload,
-   so a game is graded before its stats are folded in and applying it twice is a no-op. A
-   price sheet you uploaded yourself for a week wins over the baked one. */
+   Scores and lines, injuries, prices and player stats all arrive inside the payload and go
+   through the same ingest functions the upload buttons use, so a game is graded before its
+   stats are folded in and applying it twice is a no-op. Prices for a week already in this
+   browser are left alone, so a rebuild never overwrites what is on the page. */
 function applyBaked(){
   const done={sched:0,inj:0,prices:0,stats:[]};
   buildNorm();   /* price matching projects every player, which needs the league averages ready */
@@ -2392,17 +2372,6 @@ function applyBaked(){
     const r=ingestStats(PAY.stats[w]); done.stats.push(...r.done.map(g=>g.id)); }
   return done;
 }
-$('oddsTemplate').addEventListener('click',()=>oddsTemplate(false));
-$('oddsLegs').addEventListener('click',()=>oddsTemplate(true));
-$('oddsUpload').addEventListener('click',()=>$('oddsFile').click());
-$('oddsFile').addEventListener('change',async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  setStatus('oddsStatus','Reading\u2026'); ingestOdds(await parseCSV(f)); });
-$('oddsClear').addEventListener('click',()=>{
-  const w=+$('oddsWeekSel').value||currentWeek();
-  if(!confirm(`Clear every price you've loaded for week ${w}?`)) return;
-  for(const g of gamesIn(w)) delete S.odds[g.id];
-  save(); setStatus('oddsStatus',`Prices cleared for week ${w}.`); renderParlay(); if(S.ui.game) renderGame();
-});
 
 </script>
 </body>

@@ -74,6 +74,12 @@ def main():
         rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',str(hours)],DATA,'oddsfetch')
         for line in out.splitlines():
             if 'credits' in line or 'main lines' in line or 'threshold prices' in line or 'matched' in line: say('  '+line.strip())
+        if rc==0:
+            # what the app shows on the Weekly Update tab: when credits were last spent
+            left=re.findall(r'remaining (\d+)',out)
+            json.dump({'at':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M'),
+                       'week':week,'credits_left':int(left[-1]) if left else None},
+                      open(os.path.join(DATA,'pricepull.json'),'w',encoding='utf-8'))
         if rc==0 and os.path.exists(os.path.join(DATA,f'wk{week}_lines.csv')):
             rc2,out2=run([PY,'mktbuild.py',str(week),f'wk{week}_lines.csv','the-odds-api best of us',str(today)],DATA,'mktbuild')
             say('  '+out2.strip().splitlines()[-1] if out2.strip() else '  mktbuild: no output')
@@ -85,6 +91,9 @@ def main():
         if line.startswith(('players','depth','build')): say('  '+line.strip())
     try:
         pp=os.path.join(DATA,'payload.json'); pay=json.load(open(pp,encoding='utf-8'))
+        # survives builds that skip the price pull, so the tab keeps showing the real last pull
+        try: pay['price_pull']=json.load(open(os.path.join(DATA,'pricepull.json'),encoding='utf-8'))
+        except Exception: pass
         stats={}
         # only games that games.csv shows as finished: a game in progress must never be graded
         finished={r['game_id'] for r in gs if r['home_score'].strip()}
