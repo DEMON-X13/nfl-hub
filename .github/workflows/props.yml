@@ -2,13 +2,14 @@ name: Update prop model
 
 on:
   schedule:
-    # 14:00 UTC, four days a week. Each run prices only the games that kick off
-    # before the next run, so every game is priced by the last pull before it
-    # starts and none is priced twice. About 7 credits a game, ~112 a week.
-    - cron: "0 14 * * 1"    # Monday: Monday night
-    - cron: "0 14 * * 3"    # Wednesday: holiday games, nothing in an ordinary week
-    - cron: "0 14 * * 4"    # Thursday: Thursday night, and a Friday game if there is one
-    - cron: "0 14 * * 6"    # Saturday: the Sunday slate
+    # Four runs a week. Each prices only the games that kick off before the next
+    # run, so every game is priced by the last pull before it starts and none is
+    # priced twice. About 7 credits a game, ~112 a week. Times must match
+    # PULL_TIMES in props/build/weekly.py.
+    - cron: "0 14 * * 1"    # Monday 10am ET: Monday night
+    - cron: "0 14 * * 3"    # Wednesday 10am ET: holiday games, nothing in an ordinary week
+    - cron: "0 14 * * 4"    # Thursday 10am ET: Thursday night, and a Friday game if there is one
+    - cron: "0 22 * * 6"    # Saturday 6pm ET: the Sunday slate, priced ~20h out
   workflow_dispatch:
     inputs:
       no_odds:

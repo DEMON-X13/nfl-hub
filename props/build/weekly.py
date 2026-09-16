@@ -41,19 +41,26 @@ def run(args,cwd,label,soft=False):
     if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
 
-PULL_DAYS={0,2,3,5}          # Mon, Wed, Thu, Sat: the crons in .github/workflows/props.yml
-PULL_HOUR_UTC=14
+# weekday -> hour UTC, matching the crons in .github/workflows/props.yml.
+# Saturday runs in the evening so the Sunday slate is priced closer to kickoff.
+PULL_TIMES={0:14, 2:14, 3:14, 5:22}      # Mon, Wed, Thu 14:00; Sat 22:00
 
 def hours_to_next_pull(now=None):
     """How far ahead to price: up to the next scheduled pull, plus an hour of slack
     for a late runner. Every game is then priced by the last pull before it kicks
-    off, with no special case for a holiday or a Wednesday night game."""
+    off, with no special case for a holiday or a Wednesday night game.
+
+    Today counts: a manual Saturday morning run must see that evening's pull rather
+    than skip to Monday and buy the Sunday slate the evening run would buy anyway.
+    A pull less than half an hour away is treated as already happening."""
     now=now or datetime.datetime.now(datetime.timezone.utc)
-    t=now
-    for _ in range(9):
-        t=(t+datetime.timedelta(days=1)).replace(hour=PULL_HOUR_UTC,minute=0,second=0,microsecond=0)
-        if t.weekday() in PULL_DAYS:
-            return (t-now).total_seconds()/3600+1
+    for d in range(9):
+        t=now+datetime.timedelta(days=d)
+        h=PULL_TIMES.get(t.weekday())
+        if h is None: continue
+        nxt=t.replace(hour=h,minute=0,second=0,microsecond=0)
+        if (nxt-now).total_seconds()>1800:
+            return (nxt-now).total_seconds()/3600+1
     return 120.0
 
 def problems_file():
