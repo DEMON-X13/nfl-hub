@@ -333,6 +333,10 @@ setTimeout(()=>{
     PAY.credits=null; F('renderPricePull')();
     chk(!/credits left/.test(box.textContent),'panel invents a balance when none was read');
     PAY.credits=kc; F('renderPricePull')();
+    const cb=d.getElementById('checkCredits');
+    chk(!!cb&&/Check Credits/.test(cb.textContent),'no Check Credits button');
+    chk(cb&&cb.classList.contains('danger'),'the Check Credits button is not the red one');
+    chk(!!d.getElementById('creditsStatus'),'the Check Credits button has nowhere to report');
     console.log(`N. credit pull: ${keep&&keep.at} for week ${keep&&keep.week}, ${Object.keys(PAY.prices||{}).length} week(s) of prices counted, sheet controls gone`); }
 
   /* ---- H. week-2 projections still sane after update ---- */
@@ -345,6 +349,21 @@ setTimeout(()=>{
 
   /* ---- I. built-in data: same path as an upload, replayable, user state survives a rebuild ---- */
   (async()=>{
+    /* ---- N2. Check Credits reads the published balance ---- */
+    { const box=d.getElementById('pricePull'), btn=d.getElementById('checkCredits'), st=d.getElementById('creditsStatus');
+      const keep=PAY.credits, realFetch=w.fetch; let asked=null;
+      w.fetch=u=>{ asked=u; return Promise.resolve({ok:true,status:200,json:async()=>({at:'2026-09-17T14:05',used:131,left:369})}); };
+      btn.click(); await new Promise(r=>setTimeout(r,120));
+      chk(/credits\.json\?t=\d+/.test(asked||''),'Check Credits does not cache-bust the published balance');
+      chk(/369 credits left of 500 this month, 131 used/.test(box.textContent.replace(/\s+/g,' ')),'Check Credits did not update the panel');
+      chk(!btn.disabled&&/Check Credits/.test(btn.textContent),'the button did not come back after a check');
+      w.fetch=()=>Promise.resolve({ok:false,status:404});
+      btn.click(); await new Promise(r=>setTimeout(r,120));
+      chk(/HTTP 404/.test(st.textContent),'a failed check says nothing');
+      chk(/369/.test(box.textContent),'a failed check wiped the balance already on the page');
+      chk(!btn.disabled,'the button stayed disabled after a failed check');
+      w.fetch=realFetch; PAY.credits=keep; F('renderPricePull')();
+      console.log('N2. Check Credits: updates the panel, survives a 404'); }
     const applyBaked=F('applyBaked');
     w.eval('S=freshState(); NORM=null'); let SI=w.eval('S');   /* exactly the state boot has when it applies baked data */
     let b1; try{ b1=w.eval('applyBaked()'); }catch(e){ chk(false,'applyBaked threw on a fresh state: '+e.message); b1={sched:0,inj:0,prices:0,stats:[]}; }

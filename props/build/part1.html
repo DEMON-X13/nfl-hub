@@ -438,6 +438,10 @@ body.modal-open{overflow:hidden}
     <h3 style="margin:18px 0 6px">Sportsbook prices</h3>
     <p class="muted" style="margin:0 0 10px">Prices arrive with the Thursday and Saturday builds, and they are the only thing on this page that spends odds-API credits. Passing, rushing and receiving yards come in with a real price on the main line and on every X+ rung, along with anytime touchdown. Receptions, attempts, completions, passing touchdowns, interceptions and carries are not in that pull, so those rungs keep the model&rsquo;s own estimate and are labelled <b>est.</b></p>
     <div id="pricePull" class="log" style="margin-top:0"></div>
+    <div class="bar" style="margin:10px 0 0">
+      <button class="btn danger" id="checkCredits">Check Credits</button>
+      <span class="muted" id="creditsStatus">Re-reads the balance the last build published. Costs nothing.</span>
+    </div>
     <div class="log" id="log"><div class="muted" data-placeholder>Nothing uploaded yet. Projections are running off how everyone finished 2025.</div></div>
   </div>
   <div class="card">
