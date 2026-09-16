@@ -316,12 +316,23 @@ setTimeout(()=>{
     PAY.price_pull={at:'2026-09-17T14:03',week:2,credits_left:389};
     F('renderPricePull')();
     chk(/for week 2\./.test(box.textContent),'panel ignores the recorded pull week');
-    chk(box.textContent.includes('389 credits left this month'),'panel does not show the credits left');
     chk(!/date only/.test(box.textContent),'panel still claims it only has a date');
-    PAY.price_pull={at:'2026-09-17T14:03',week:2,credits_left:1};
+    PAY.price_pull={at:'2026-09-17T14:03',week:2,credits_left:389,credits_spent:112};
     F('renderPricePull')();
-    chk(box.textContent.includes('1 credit left'),'credits left is not singular at one');
-    PAY.price_pull=keep; F('renderPricePull')();
+    chk(box.textContent.includes('112 credits spent'),'panel does not say what the pull cost');
+    PAY.price_pull=keep;
+    /* the balance, read free on every build */
+    const kc=PAY.credits;
+    PAY.credits={at:'2026-09-17T14:05',used:131,left:369}; F('renderPricePull')();
+    chk(/369 credits left of 500 this month, 131 used/.test(box.textContent.replace(/\s+/g,' ')),'panel does not report the balance');
+    chk(!/class="warn"/.test(box.innerHTML),'a comfortable balance should not be flagged');
+    PAY.credits={at:'2026-09-17T14:05',used:451,left:49}; F('renderPricePull')();
+    chk(/class="warn"/.test(box.innerHTML),'a balance under a fifth of the month is not flagged');
+    PAY.credits={at:'2026-09-17T14:05',used:499,left:1}; F('renderPricePull')();
+    chk(/1 credit left/.test(box.textContent),'credits left is not singular at one');
+    PAY.credits=null; F('renderPricePull')();
+    chk(!/credits left/.test(box.textContent),'panel invents a balance when none was read');
+    PAY.credits=kc; F('renderPricePull')();
     console.log(`N. credit pull: ${keep&&keep.at} for week ${keep&&keep.week}, ${Object.keys(PAY.prices||{}).length} week(s) of prices counted, sheet controls gone`); }
 
   /* ---- H. week-2 projections still sane after update ---- */

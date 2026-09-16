@@ -629,14 +629,25 @@ function renderPricePull(){
     return isFinite(d)?d.toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):t; };
   let head, sub;
   if(pp&&pp.at){
-    head=`Last credit pull: <b>${fmt(pp.at)}</b>, for week ${pp.week}.`;
-    sub=counts+(pp.credits_left!=null?` \u00b7 ${pp.credits_left} credit${pp.credits_left===1?'':'s'} left this month`:'');
+    head=`Last credit pull: <b>${fmt(pp.at)}</b>, for week ${pp.week}`
+        +(pp.credits_spent!=null?`, ${pp.credits_spent} credit${pp.credits_spent===1?'':'s'} spent`:'')+'.';
+    sub=counts;
   } else {
     const w=Object.keys(meta).sort((a,b)=>b-a)[0];
     head=(w&&meta[w].asof)?`Last credit pull: <b>${meta[w].asof}</b>, for week ${w}.`:'No credit pull recorded in this build.';
     sub=counts+' \u00b7 this build recorded the date only; later builds record the time and the credits left';
   }
-  el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>`;
+  /* the balance is read on every build from an endpoint that costs nothing */
+  const c=PAY.credits; let bal='';
+  if(c&&c.left!=null){
+    const total=c.used!=null?c.used+c.left:null;
+    const low=total?c.left/total<0.2:false;
+    bal=`<div${low?' class="warn"':''}><b>${c.left.toLocaleString()}</b> credit${c.left===1?'':'s'} left`
+       +(total?` of ${total.toLocaleString()} this month`:'')
+       +(c.used!=null?`, ${c.used.toLocaleString()} used`:'')
+       +(c.at?` <span class="muted">\u00b7 checked ${fmt(c.at)}</span>`:'')+'</div>';
+  }
+  el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>${bal}`;
 }
 function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }

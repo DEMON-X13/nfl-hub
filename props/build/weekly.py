@@ -76,13 +76,18 @@ def main():
             if 'credits' in line or 'main lines' in line or 'threshold prices' in line or 'matched' in line: say('  '+line.strip())
         if rc==0:
             # what the app shows on the Weekly Update tab: when credits were last spent
-            left=re.findall(r'remaining (\d+)',out)
+            left=re.findall(r'remaining (\d+)',out); used=re.findall(r'credits used (\d+)',out)
+            spent=(int(used[-1])-int(used[0])) if len(used)>1 else None
             json.dump({'at':datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M'),
-                       'week':week,'credits_left':int(left[-1]) if left else None},
+                       'week':week,'credits_left':int(left[-1]) if left else None,'credits_spent':spent},
                       open(os.path.join(DATA,'pricepull.json'),'w',encoding='utf-8'))
         if rc==0 and os.path.exists(os.path.join(DATA,f'wk{week}_lines.csv')):
             rc2,out2=run([PY,'mktbuild.py',str(week),f'wk{week}_lines.csv','the-odds-api best of us',str(today)],DATA,'mktbuild')
             say('  '+out2.strip().splitlines()[-1] if out2.strip() else '  mktbuild: no output')
+    # 3b. the odds-API balance. /v4/sports does not count against the quota, so this
+    #     runs whether or not prices were pulled and costs nothing either way.
+    rc,out=run([PY,'credits.py'],DATA,'credits')
+    say('  '+(out.strip().splitlines()[-1] if out.strip() else 'balance not checked'))
     # 4. payload + bake
     if not os.path.exists(os.path.join(RAW,'feat.pkl')):
         say("  raw/feat.pkl missing: building features (a few minutes)"); run([PY,'features.py'],RES,'features')
@@ -92,8 +97,9 @@ def main():
     try:
         pp=os.path.join(DATA,'payload.json'); pay=json.load(open(pp,encoding='utf-8'))
         # survives builds that skip the price pull, so the tab keeps showing the real last pull
-        try: pay['price_pull']=json.load(open(os.path.join(DATA,'pricepull.json'),encoding='utf-8'))
-        except Exception: pass
+        for k,fn in (('price_pull','pricepull.json'),('credits','credits.json')):
+            try: pay[k]=json.load(open(os.path.join(DATA,fn),encoding='utf-8'))
+            except Exception: pass
         stats={}
         # only games that games.csv shows as finished: a game in progress must never be graded
         finished={r['game_id'] for r in gs if r['home_score'].strip()}
