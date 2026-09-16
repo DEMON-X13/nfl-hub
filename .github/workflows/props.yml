@@ -53,3 +53,13 @@ jobs:
             git pull --rebase
             git push
           fi
+      - name: Fail the run if the build reported problems
+        if: always()
+        run: |
+          f="$RUNNER_TEMP/props-build-problems.txt"
+          if [ -s "$f" ]; then
+            echo "::error::the weekly build reported problems; whatever worked was still published"
+            sed 's/^/  - /' "$f"
+            exit 1
+          fi
+          echo "the build reported no problems"

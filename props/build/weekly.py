@@ -18,7 +18,7 @@ What it does, in order, continuing past anything that fails and saying so at the
   7. prints a REPORT block
 Nothing here ever prints the key.
 """
-import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re
+import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
 HERE=os.path.dirname(os.path.abspath(__file__)); PKG=os.path.dirname(HERE)
 RAW=os.path.join(PKG,'raw'); DATA=os.path.join(PKG,'data'); RES=os.path.join(PKG,'research'); ROOT=os.path.dirname(PKG)
 PY=sys.executable; ENV=dict(os.environ,PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
@@ -35,11 +35,16 @@ STATCOLS=['player_id','player_display_name','position','season','week','season_t
 INJCOLS=['season','week','team','gsis_id','full_name','position','report_status','game_status']
 report=[]; problems=[]
 def say(s): print(s,flush=True); report.append(s)
-def run(args,cwd,label):
+def run(args,cwd,label,soft=False):
     r=subprocess.run(args,cwd=cwd,env=ENV,capture_output=True,text=True,encoding='utf-8',errors='replace')
     out=(r.stdout or '')+(r.stderr or '')
-    if r.returncode!=0: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
+    if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
+
+def problems_file():
+    """the job reads this after the commit step and goes red if it has anything in it"""
+    base=os.environ.get('RUNNER_TEMP') or tempfile.gettempdir()
+    return os.path.join(base,'props-build-problems.txt')
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true')
@@ -86,7 +91,7 @@ def main():
             say('  '+out2.strip().splitlines()[-1] if out2.strip() else '  mktbuild: no output')
     # 3b. the odds-API balance. /v4/sports does not count against the quota, so this
     #     runs whether or not prices were pulled and costs nothing either way.
-    rc,out=run([PY,'credits.py'],DATA,'credits')
+    rc,out=run([PY,'credits.py'],DATA,'credits',soft=True)
     say('  '+(out.strip().splitlines()[-1] if out.strip() else 'balance not checked'))
     # 4. payload + bake
     if not os.path.exists(os.path.join(RAW,'feat.pkl')):
@@ -158,10 +163,19 @@ def main():
     # 7. report
     print("\nREPORT")
     for s in report: print(s)
+    try:
+        mf=problems_file()
+        if problems:
+            with open(mf,'w',encoding='utf-8') as f: f.write('\n'.join(problems))
+        elif os.path.exists(mf): os.remove(mf)
+    except OSError as e: print(f"could not write the problems marker: {e}")
     if problems:
         print("PROBLEMS"); [print('  - '+p) for p in problems]
+        print("this run will be marked failed, whatever it managed to publish")
     else: print("no problems")
     print(f"open: {os.path.join(PKG,'app','prop_model_2026.html')}")
+    # a dirty audit stops here so nothing broken gets published; everything else is
+    # published first and the job is failed afterwards, by the step that reads the marker
     return 1 if any(p.startswith('AUDIT') for p in problems) else 0
 
 if __name__=='__main__': sys.exit(main())
