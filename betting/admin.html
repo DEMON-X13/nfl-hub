@@ -229,7 +229,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 #ratingsTable td{vertical-align:middle;line-height:20px} #ratingsTable td.movecell{text-align:center}
 #ratingsTable th:nth-child(3),#ratingsTable td:nth-child(3),#ratingsTable th:nth-child(4),#ratingsTable td:nth-child(4),#ratingsTable th:nth-child(5),#ratingsTable td:nth-child(5),#ratingsTable th:nth-child(6),#ratingsTable td:nth-child(6){text-align:center}
 #ratingsTable .elocell{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
-#recordTable th{text-align:center} #recordTable th:first-child,#recordTable th:last-child{text-align:left}
+#recordTable th,#recordTable td{text-align:center}
+#recordTable th:first-child,#recordTable td:first-child{text-align:left}
 #recordTable .hide{display:none}
 #bkPlan table{table-layout:fixed;width:100%}
 #bkPlan th:first-child,#bkPlan td:first-child{width:34px}
@@ -393,6 +394,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.38</td><td>Records: the week by week table drops the Main Model misses column and centres every number under its title.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.37</td><td>Record &amp; Bets is split: Records keeps the chart, the pick grid and the week table, and a new Bet Log tab holds the bet entry, balance chart and bet table. The model legend is one line with each record, all lines solid. Week by week centres its column titles and drops the margin error column.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.36</td><td>Record &amp; Bets: Show all models sits beside You, the other models list one per row, the disagreement lines are gone, Vegas is black, and a Show every pick button opens a week by week grid of what each model picked.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.35</td><td>Record &amp; Bets: the Vegas favourite, whoever the closing spread favoured, is tracked under Show all models as a point of reference, in slate dotted.</td></tr>
@@ -509,7 +511,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.37 \u00b7 2026-09-15';
+const APP_BUILD='v1.38 \u00b7 2026-09-15';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1041,16 +1043,15 @@ function renderRecord(){
   $('picksToggle')?.addEventListener('click',()=>{ S.picksOpen=!S.picksOpen; save(); renderRecord(); });
   $('picksWeek')?.addEventListener('change',e=>{ S.picksWeek=+e.target.value; save(); renderRecord(); });
   const weeks=[...new Set(rows.map(r=>+r.week))].sort((a,b)=>a-b);
-  let html=`<table><thead><tr><th>Week</th><th class="num">Games</th><th class="num">Main Model</th>${showAll?'<th class="num">Challenger</th>':''}${showAll&&jRunN?'<th class="num">The Joker</th>':''}${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th><th>Main Model misses</th></tr></thead><tbody>`;
+  let html=`<table><thead><tr><th>Week</th><th class="num">Games</th><th class="num">Main Model</th>${showAll?'<th class="num">Challenger</th>':''}${showAll&&jRunN?'<th class="num">The Joker</th>':''}${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>`;
   for(const w of weeks){ const wr=rows.filter(r=>+r.week===w); const wc=wr.filter(r=>r.correct).length; const wm=wr.reduce((s,r)=>s+Math.abs(r.margin-r.result),0)/wr.length;
-    const misses=wr.filter(r=>!r.correct).map(r=>`${r.pick} over ${r.pick===r.home?r.away:r.home} (${Math.round(r.conf*100)}%)`).join(', ');
     const mw=wr.filter(r=>r.myPick); const mc=mw.filter(r=>r.myCorrect).length;
     const meCell=mw.length?`${Math.round(100*mc/mw.length)}%`:'<span class="muted">no picks</span>';
     const cls=mw.length?(mc/mw.length>wc/wr.length?'delta up':mc/mw.length<wc/wr.length?'delta down':''):'';
     const hw=wr.filter(r=>r.h); const hc=hw.filter(r=>r.h.correct).length; const hCell=hw.length?`${Math.round(100*hc/hw.length)}%`:'<span class="muted">–</span>';
     const jw=wr.filter(r=>r.joker&&r.joker.correct!=null); const jc=jw.filter(r=>r.joker.correct).length; const jCell=jw.length?`${Math.round(100*jc/jw.length)}%`:'<span class="muted">–</span>';
     const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length; const vCell=vw.length?`${Math.round(100*vc/vw.length)}%`:'<span class="muted">–</span>';
-    html+=`<tr><td>${w>18?'Playoffs '+(w-18):'Week '+w}</td><td class="num">${wr.length}</td><td class="num">${Math.round(100*wc/wr.length)}%</td>${showAll?`<td class="num">${hCell}</td>`:''}${showAll&&jRunN?`<td class="num">${jCell}</td>`:''}${showAll&&vRunN?`<td class="num">${vCell}</td>`:''}<td class="num ${cls}">${meCell}</td><td class="hide">${wm.toFixed(1)}</td><td class="muted">${misses||'none'}</td></tr>`; }
+    html+=`<tr><td>${w>18?'Playoffs '+(w-18):'Week '+w}</td><td class="num">${wr.length}</td><td class="num">${Math.round(100*wc/wr.length)}%</td>${showAll?`<td class="num">${hCell}</td>`:''}${showAll&&jRunN?`<td class="num">${jCell}</td>`:''}${showAll&&vRunN?`<td class="num">${vCell}</td>`:''}<td class="num ${cls}">${meCell}</td><td class="hide">${wm.toFixed(1)}</td></tr>`; }
   el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   renderBets();
 }
