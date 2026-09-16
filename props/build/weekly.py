@@ -41,6 +41,21 @@ def run(args,cwd,label,soft=False):
     if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
 
+PULL_DAYS={0,2,3,5}          # Mon, Wed, Thu, Sat: the crons in .github/workflows/props.yml
+PULL_HOUR_UTC=14
+
+def hours_to_next_pull(now=None):
+    """How far ahead to price: up to the next scheduled pull, plus an hour of slack
+    for a late runner. Every game is then priced by the last pull before it kicks
+    off, with no special case for a holiday or a Wednesday night game."""
+    now=now or datetime.datetime.now(datetime.timezone.utc)
+    t=now
+    for _ in range(9):
+        t=(t+datetime.timedelta(days=1)).replace(hour=PULL_HOUR_UTC,minute=0,second=0,microsecond=0)
+        if t.weekday() in PULL_DAYS:
+            return (t-now).total_seconds()/3600+1
+    return 120.0
+
 def problems_file():
     """the job reads this after the commit step and goes red if it has anything in it"""
     base=os.environ.get('RUNNER_TEMP') or tempfile.gettempdir()
@@ -75,8 +90,9 @@ def main():
     if a.no_odds: say("  price pull skipped (--no-odds)")
     elif not os.environ.get('ODDS_API_KEY'): say("  price pull skipped: ODDS_API_KEY is not set in this environment"); problems.append("no ODDS_API_KEY; prices not pulled")
     else:
-        hours=a.hours or (36 if today.weekday()==3 else 120)
-        rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',str(hours)],DATA,'oddsfetch')
+        hours=a.hours or hours_to_next_pull()
+        say(f"  pricing week {week} games kicking off within {hours:.0f}h, which reaches the next scheduled pull")
+        rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',f'{hours:.1f}'],DATA,'oddsfetch')
         for line in out.splitlines():
             if 'credits' in line or 'main lines' in line or 'threshold prices' in line or 'matched' in line: say('  '+line.strip())
         if rc==0:

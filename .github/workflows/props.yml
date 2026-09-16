@@ -2,11 +2,13 @@ name: Update prop model
 
 on:
   schedule:
-    # Two pulls a week, 10am Eastern (14:00 UTC in season). The price pull spends
-    # odds-API credits (about 7 a game): Thursday covers the Thursday night game,
-    # Saturday covers the rest of the slate. Nothing else on this schedule.
-    - cron: "0 14 * * 4"    # Thursday
-    - cron: "0 14 * * 6"    # Saturday
+    # 14:00 UTC, four days a week. Each run prices only the games that kick off
+    # before the next run, so every game is priced by the last pull before it
+    # starts and none is priced twice. About 7 credits a game, ~112 a week.
+    - cron: "0 14 * * 1"    # Monday: Monday night
+    - cron: "0 14 * * 3"    # Wednesday: holiday games, nothing in an ordinary week
+    - cron: "0 14 * * 4"    # Thursday: Thursday night, and a Friday game if there is one
+    - cron: "0 14 * * 6"    # Saturday: the Sunday slate
   workflow_dispatch:
     inputs:
       no_odds:
