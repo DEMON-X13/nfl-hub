@@ -300,15 +300,19 @@ setTimeout(()=>{
       chk(d.getElementById(id)===null,`price sheet control still on the page: ${id}`);
     for(const id of ['fetchGames','statsLink','rosLink','injLink','dcLink','upAll','allFiles'])
       chk(d.getElementById(id)!==null,`free download/upload control went missing: ${id}`);
-    /* no build record: falls back to the date the main lines were priced */
-    const meta=PAY.mkt_meta||{}; const lastW=Object.keys(meta).sort((a,b)=>b-a)[0];
+    const keep=PAY.price_pull;
+    /* what this build actually carries: a recorded pull, with a time */
+    chk(keep&&keep.at,'no credit pull recorded in the payload');
     F('renderPricePull')();
     chk(/Last credit pull/.test(box.textContent),'panel does not say when credits were last spent');
-    if(lastW&&meta[lastW].asof) chk(box.textContent.includes(meta[lastW].asof),'panel does not carry the priced-on date');
+    chk(/\d{1,2}:\d\d/.test(box.textContent),'panel shows no time of day for the pull');
     for(const wk of Object.keys(PAY.prices||{}))
       chk(box.textContent.includes(`week ${wk}: ${PAY.prices[wk].length.toLocaleString()}`),`panel does not count week ${wk}'s prices`);
-    /* a build that did pull: the time and what is left of the month's credits */
-    const keep=PAY.price_pull;
+    /* no record at all: falls back to the date the main lines were priced */
+    const meta=PAY.mkt_meta||{}; const lastW=Object.keys(meta).sort((a,b)=>b-a)[0];
+    PAY.price_pull=null; F('renderPricePull')();
+    if(lastW&&meta[lastW].asof) chk(box.textContent.includes(meta[lastW].asof),'fallback does not carry the priced-on date');
+    chk(/date only/.test(box.textContent),'fallback does not say it has the date alone');
     PAY.price_pull={at:'2026-09-17T14:03',week:2,credits_left:389};
     F('renderPricePull')();
     chk(/for week 2\./.test(box.textContent),'panel ignores the recorded pull week');
@@ -318,7 +322,7 @@ setTimeout(()=>{
     F('renderPricePull')();
     chk(box.textContent.includes('1 credit left'),'credits left is not singular at one');
     PAY.price_pull=keep; F('renderPricePull')();
-    console.log(`N. credit pull: panel present, ${Object.keys(PAY.prices||{}).length} week(s) of prices counted, sheet controls gone`); }
+    console.log(`N. credit pull: ${keep&&keep.at} for week ${keep&&keep.week}, ${Object.keys(PAY.prices||{}).length} week(s) of prices counted, sheet controls gone`); }
 
   /* ---- H. week-2 projections still sane after update ---- */
   let bad2=0,n2=0;
