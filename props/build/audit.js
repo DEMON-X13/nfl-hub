@@ -283,6 +283,27 @@ setTimeout(()=>{
     d.getElementById('suggToggle').click(); chk(/Minimize/.test(d.getElementById('suggToggle').textContent),'show did not bring them back');
     console.log(`M. suggested parlays: ${SG.candidates} qualifying lines, tiers ${tiers.map(t=>t.label+' '+t.legs.length+' legs '+(t.corr*100).toFixed(0)+'%').join(', ')||'none'}`); }
 
+  /* ---- P. the bet box on the suggested parlays ---- */
+  { d.querySelector('#tabs button[data-tab="parlay"]').click();
+    const box=d.getElementById('suggStake');
+    chk(!!box,'no bet box on the suggested parlays');
+    if(box){
+      const was=S.stake;
+      chk(+box.value===+S.stake,'the bet box does not show the stake in use');
+      box.value='55'; box.dispatchEvent(new w.Event('change'));
+      chk(S.stake===55,'changing the bet box did not change the stake');
+      const s=F('getSuggestions')();
+      if(s.tiers.length){ const t=s.tiers[0];
+        chk(d.getElementById('suggCard').textContent.replace(/\s+/g,' ').includes(`$${(55*t.dec).toFixed(2)}`),
+          'the payout did not follow the bet box'); }
+      chk(+d.getElementById('suggStake').value===55,'the bet box lost its value on re-render');
+      /* the builder's own stake input is the same number */
+      const pS=d.getElementById('pStake'); if(pS) chk(+pS.value===55,'the builder and the suggestions disagree on the stake');
+      box.value=String(was); box.dispatchEvent(new w.Event('change'));
+      chk(S.stake===was,'the stake did not go back');
+    }
+    console.log('P. bet box: drives the suggested payouts and shares the builder stake'); }
+
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;
     const ws=d.getElementById('weekSel'); const was=ws.value; ws.value=String(wkx); ws.dispatchEvent(new w.Event('change'));
@@ -333,6 +354,10 @@ setTimeout(()=>{
       chk(new RegExp(`${Math.round(s2.corr*100)}% to land`).test(c2.textContent.replace(/\s+/g,' ')),'the card does not show the chance'); }
     S.odds[g.id]=keepOdds; if(!Object.keys(keepOdds).length) delete S.odds[g.id];
     w.eval('GAME_SUGGEST_CACHE={}');
+    /* the suggestion is the summary, the game bets table is the detail */
+    { const cards=[...d.querySelectorAll('#gameView .card')];
+      const iS=cards.findIndex(c=>c.classList.contains('gsugg')), iB=cards.findIndex(c=>c.classList.contains('gbets'));
+      chk(iS>=0&&iB>=0&&iS<iB,'the suggested parlay is not above the game bets'); }
     console.log(`O. game suggestion: ${s.legs.length} leg(s) live, ${s2.legs.length} from ${put} priced rungs, capped at two legs a player`); }
 
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */

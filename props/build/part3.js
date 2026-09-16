@@ -171,7 +171,7 @@ function gameBetsCard(g,locked){
     if(ats) h+=row('ats',ats,onATS,kATS,bookSP,rATS,`To cover ${ats.line>0?'+':''}${ats.line}`);
     return h+'</table></div>';
   }).join('');
-  return `<div class="card"><h2>Game bets</h2>
+  return `<div class="card gbets"><h2>Game bets</h2>
     <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line and the spread.':'A team to win, or to cover the spread. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. A game leg is priced as unrelated to player legs, because that relationship has not been measured here.</p>
     ${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
 }
@@ -201,8 +201,8 @@ function renderGame(){
     <p class="muted" style="margin:0">${d.day} ${d.t}${g.sp!=null?` \u00b7 ${g.sp>0?g.h+' favoured by '+g.sp:g.a+' favoured by '+Math.abs(g.sp)}`:` \u00b7 ${modelMargin(g)>0?g.h:g.a} favoured by ${Math.abs(modelMargin(g)).toFixed(1)} on our numbers`}${gameCtx(g,g.h).src==='market'?` \u00b7 ${g.tot} points expected between them`:` \u00b7 no betting line posted yet, so the game is built from our own team ratings (${(gameCtx(g,g.a).implied+gameCtx(g,g.h).implied).toFixed(0)} points expected)`}</p>
     <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t.'}</p>
   </div>`;
-  html+=gameBetsCard(g,locked);
   html+=gameSuggestCard(g,locked);
+  html+=gameBetsCard(g,locked);
   for(const team of [g.a,g.h]){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
@@ -962,7 +962,7 @@ function suggestCard(){
       body=`<p class="muted" style="margin:0">No suggestions for week ${w} yet. They use only lines with a real sportsbook price that the model rates above the book, ${s.candidates?`and only ${s.candidates} line${s.candidates===1?'':'s'} qualify so far`:'and none qualify yet'}. Player prices arrive with the Thursday and Saturday pulls.</p>`;
     } else {
       const tag={safe:'high',med:'med',aggr:'low'};
-      body=`<p class="muted" style="margin:0 0 14px">Built from week ${w} lines with a real sportsbook price that the model rates above the book. Safe is the most likely pair, kept at 50% or better when the lines allow it; Medium and Aggressive add legs to the same core for a bigger payout. Payouts use your builder stake of $${stake.toFixed(2)}.${s.tiers[s.tiers.length-1].legs.every(l=>l.grp==='TEAM')?' Only game bets qualify so far; player lines join when this week’s prices are pulled on Thursday and Saturday.':''}</p>
+      body=`<p class="muted" style="margin:0 0 14px">Built from week ${w} lines with a real sportsbook price that the model rates above the book. Safe is the most likely pair, kept at 50% or better when the lines allow it; Medium and Aggressive add legs to the same core for a bigger payout. Payouts are on a $${stake.toFixed(2)} bet, which you can change above.${s.tiers[s.tiers.length-1].legs.every(l=>l.grp==='TEAM')?' Only game bets qualify so far; player lines join when this week’s prices are pulled on Thursday and Saturday.':''}</p>
       <div class="sugg-grid">`+s.tiers.map((t,i)=>{
         const payout=stake*t.dec, ev=t.corr*t.dec-1, ml=decToML(t.dec);
         const saved=(S.saved||[]).some(p=>p.suggestSig===SUGGEST_CACHE.sig+'|'+t.id);
@@ -982,11 +982,14 @@ function suggestCard(){
   }
   return `<div class="card sugg${open?'':' min'}" id="suggCard">
     <div class="sugg-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span><span class="grow"></span>
+      ${open?`<label class="muted sugg-stake">Bet $<input type="number" id="suggStake" value="${stake}" min="0" step="1" inputmode="decimal" aria-label="Amount to bet on a suggested parlay"></label>`:''}
       <button class="btn quiet" id="suggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>
     ${body}</div>`;
 }
 function wireSuggest(){
   $('suggToggle')?.addEventListener('click',()=>{ S.ui.suggestMin=!S.ui.suggestMin; save(); renderParlay(); });
+  /* the same stake the builder uses, so a payout here and a payout there agree */
+  $('suggStake')?.addEventListener('change',e=>{ S.stake=Math.max(0,+e.target.value||0); save(); renderParlay(); });
   document.querySelectorAll('[data-suggest-save]').forEach(b=>b.addEventListener('click',()=>{
     const t=(SUGGEST_CACHE&&SUGGEST_CACHE.tiers||[]).find(x=>x.id===b.dataset.suggestSave); if(!t) return;
     const stake=Math.max(0,+S.stake||0);
