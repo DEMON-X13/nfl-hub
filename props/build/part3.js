@@ -202,6 +202,7 @@ function renderGame(){
     <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t.'}</p>
   </div>`;
   html+=gameBetsCard(g,locked);
+  html+=gameSuggestCard(g,locked);
   for(const team of [g.a,g.h]){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
@@ -833,9 +834,9 @@ function legPrice(l){
    (chance x payout, real correlations) that keeps the parlay above the floor. */
 const SUGGEST_TIERS=[['safe','Safe',0.50,3],['med','Medium',0.30,5],['aggr','Aggressive',0.15,8]];
 let SUGGEST_CACHE=null;
-function suggestCandidates(){
+function suggestCandidates(games){
   const w=currentWeek(); const out=[];
-  for(const g of gamesIn(w)){
+  for(const g of (games||gamesIn(w))){
     if(gameStarted(g)) continue;
     for(const team of [g.a,g.h]){
       const isHome=team===g.h, opp=isHome?g.a:g.h;
@@ -898,6 +899,52 @@ function buildSuggestions(){
     tiers.push({id,label,floor,legs:cur.map(l=>({...l})),corr:pr.corr,indep:pr.indep,dec:dec(cur),added:cur.length-startLen});
   }
   return {tiers,candidates:cands.length};
+}
+/* the same engine as the week-wide tiers, narrowed to one game and one tier.
+   Three legs at most: this sits on the game page and must stay short. */
+const GAME_SUGGEST_FLOOR=0.30, GAME_SUGGEST_CAP=3;
+let GAME_SUGGEST_CACHE={};
+function gameSuggestion(g){
+  const sig=[g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}).length,PAY.baked_at||'',S.margin||''].join('|');
+  const hit=GAME_SUGGEST_CACHE[g.id];
+  if(hit&&hit.sig===sig) return hit.val;
+  const cands=suggestCandidates([g]);
+  const dec=legs=>legs.reduce((a,l)=>a*(mlToDec(l.price)||1),1);
+  let cur=[];
+  while(cur.length<GAME_SUGGEST_CAP){
+    let best=null;
+    for(const c of cands){
+      if(cur.some(l=>l.key===c.key)) continue;
+      if(c.grp==='TEAM'&&cur.some(l=>l.grp==='TEAM')) continue;   /* one team bet per game */
+      /* two legs on one man is a deliberate correlated stack, which this model prices
+         properly; three is a single bet on his afternoon wearing a parlay's clothes */
+      if(cur.filter(l=>l.pid===c.pid).length>=2) continue;
+      const next=[...cur,c], p=parlayProb(next,3000).corr;
+      const forced=next.length<2;                                  /* a parlay needs two legs */
+      if(!forced&&p<GAME_SUGGEST_FLOOR) continue;
+      const score=p*dec(next);
+      if(!best||score>best.score) best={c,score};
+    }
+    if(!best) break;
+    cur=[...cur,best.c];
+  }
+  const val=cur.length<2?{legs:[],candidates:cands.length}
+    :{legs:cur,candidates:cands.length,corr:parlayProb(cur,20000).corr,dec:dec(cur)};
+  GAME_SUGGEST_CACHE[g.id]={sig,val};
+  return val;
+}
+function gameSuggestCard(g,locked){
+  if(locked) return '';
+  const s=gameSuggestion(g);
+  if(!s.legs.length) return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlay</h2></div>
+    <p class="muted" style="margin:0">Nothing here clears the bar yet: a suggestion needs two legs with a real sportsbook price that the model rates at least three points above that price${s.candidates===1?', and only one qualifies':''}. Player prices arrive with the Thursday and Saturday pulls.</p></div>`;
+  const stake=Math.max(0,+S.stake||0), ml=decToML(s.dec);
+  return `<div class="card gsugg"><div class="gsugg-hd">
+      <h2>Suggested parlay</h2><span class="conf med">Medium</span><span class="grow"></span>
+      <span class="gsugg-nums"><b>${(s.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*s.dec).toFixed(2)}</span>`:''}</span>
+    </div>
+    <ul class="gsugg-legs">${s.legs.map(l=>`<li><span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
+    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. Tick the lines yourself in the Parlay Builder to stake it.</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;

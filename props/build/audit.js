@@ -293,6 +293,48 @@ setTimeout(()=>{
     console.log(`L. record chips: week ${wkx} ${want(main.filter(r=>+r.w===+wkx))}, season ${want(main)}`); }
 
 
+  /* ---- O. one suggested parlay on the game page ---- */
+  { const g=openUpcoming(); const card=d.querySelector('.gsugg');
+    chk(!!card,'the game page has no suggested parlay section');
+    const s=F('gameSuggestion')(g);
+    chk(s.legs.length===0||s.legs.length<=3,`a game suggestion ran to ${s.legs.length} legs`);
+    chk(s.legs.every(l=>l.src==='real'),'a game suggestion used a line with no real price');
+    chk(s.legs.every(l=>l.gid===g.id),'a game suggestion pulled in another game');
+    chk(s.legs.filter(l=>l.grp==='TEAM').length<=1,'a game suggestion stacked two team bets');
+    if(s.legs.length){
+      chk(s.corr>0&&s.corr<1,'the game suggestion has a nonsense chance');
+      chk([...card.querySelectorAll('.gsugg-legs li')].length===s.legs.length,'the card shows a different number of legs');
+      chk(new RegExp(`${Math.round(s.corr*100)}% to land`).test(card.textContent.replace(/\s+/g,' ')),'the card does not show the chance');
+    } else chk(/Nothing here clears the bar/.test(card.textContent),'an empty suggestion says nothing useful');
+    /* the overlay re-renders whenever a player is expanded: that must not rebuild it */
+    const before=F('gameSuggestion')(g); chk(before===s,'the game suggestion is not cached between renders');
+    /* week 2 has no player prices until Saturday's pull, so price this game's rungs
+       8 points worse than the model to exercise the populated path too */
+    const keepOdds=JSON.parse(JSON.stringify(S.odds[g.id]||{}));
+    const toML=p=>p<0.5?Math.round(100/p-100):-Math.round(100*p/(1-p));
+    const rost=rosterFor(g,false); let put=0;
+    for(const tm in rost) for(const x of rost[tm].players){
+      if(x.gp<3) continue;
+      for(const l of statLines(x)){ if(l.prob) continue;
+        for(const r of l.rungs){ if(r.p<0.55||r.p>0.85||put>=12) continue;
+          ((((S.odds[g.id]??={})[x.pl.id]??={})[l.stat]??={}))[String(r.k)]=toML(r.p-0.08); put++; } }
+    }
+    w.eval('GAME_SUGGEST_CACHE={}');
+    const s2=F('gameSuggestion')(g);
+    chk(put===0||s2.legs.length>=2,'priced lines are available and still no suggestion');
+    chk(s2.legs.length<=3,`the suggestion ran to ${s2.legs.length} legs with prices available`);
+    chk(s2.legs.every(l=>l.gid===g.id),'a priced suggestion pulled in another game');
+    chk(s2.legs.every(l=>s2.legs.filter(x=>x.pid===l.pid).length<=2),'three legs landed on one player');
+    chk(!s2.legs.length||(s2.corr>=0.30||s2.legs.length===2),'a suggestion above two legs fell under the Medium floor');
+    chk(!s2.legs.length||(s2.dec>1&&isFinite(s2.dec)),'the suggested price is not a real payout');
+    if(s2.legs.length){ d.querySelector('[data-game="'+g.id+'"]').click();
+      const c2=d.querySelector('.gsugg');
+      chk([...c2.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'the card and the suggestion disagree on legs');
+      chk(new RegExp(`${Math.round(s2.corr*100)}% to land`).test(c2.textContent.replace(/\s+/g,' ')),'the card does not show the chance'); }
+    S.odds[g.id]=keepOdds; if(!Object.keys(keepOdds).length) delete S.odds[g.id];
+    w.eval('GAME_SUGGEST_CACHE={}');
+    console.log(`O. game suggestion: ${s.legs.length} leg(s) live, ${s2.legs.length} from ${put} priced rungs, capped at two legs a player`); }
+
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */
   { const box=d.getElementById('pricePull');
     chk(!!box,'the Weekly Update tab has no credit-pull panel');
