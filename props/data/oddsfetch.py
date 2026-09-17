@@ -33,13 +33,17 @@ MARKETS={'player_pass_yds':'passing_yards','player_pass_tds':'passing_tds','play
  'player_pass_completions':'completions','player_pass_interceptions':'passing_interceptions',
  'player_rush_yds':'rushing_yards','player_rush_attempts':'carries','player_receptions':'receptions',
  'player_reception_yds':'receiving_yards','player_anytime_td':'any_td'}
-# default pull, 7 credits a game. Live check 2026-09-13: the alternate markets carry Over prices
-# only, so the main line (both sides, needed for anchoring) has to come from the base market.
+# Default pull, 6 credits a game, all main lines plus anytime touchdown. The three
+# alternate ladders were dropped on 2026-09-17: on Detroit at Buffalo they supplied 3
+# of the 18 legs that cleared the suggestion bar while costing 3 of 7 credits, because
+# a rung carries far more hold than a main line and the model rarely beats it. The
+# rungs are still shown on the page at the model's own estimate; they just cannot be
+# picked by a suggestion, which is the honest outcome without a real price.
 DEFAULT=['player_pass_yds','player_rush_yds','player_reception_yds',
- 'player_pass_yds_alternate','player_rush_yds_alternate','player_reception_yds_alternate',
- 'player_anytime_td']
-FULL_EXTRA=['player_receptions','player_receptions_alternate','player_pass_tds','player_pass_attempts',
+ 'player_receptions','player_pass_tds','player_anytime_td']
+FULL_EXTRA=['player_receptions_alternate','player_pass_attempts',
  'player_pass_completions','player_pass_interceptions','player_rush_attempts',
+ 'player_pass_yds_alternate','player_rush_yds_alternate','player_reception_yds_alternate',
  'player_pass_tds_alternate','player_rush_attempts_alternate','player_pass_attempts_alternate',
  'player_pass_completions_alternate']
 # full team names as the API gives them -> nflverse abbreviations used in the schedule
@@ -61,6 +65,33 @@ def get(path,params,key):
         used=r.headers.get('x-requests-used'); left=r.headers.get('x-requests-remaining')
         if left is not None: print(f"   credits used {used}, remaining {left}",file=sys.stderr)
         return data
+
+def game_lines(key,book,regions,ids):
+    """Moneylines and spreads for the whole slate in one call. The bulk /odds endpoint
+    is billed per market per region, not per event, so this is 2 credits for every game
+    at once. Returns rows keyed to the app's game ids."""
+    data=get('/odds',{'regions':regions,'markets':'h2h,spreads','oddsFormat':'american'},key)
+    out=[]
+    for ev in data:
+        gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
+        if not gid: continue
+        away,home=ev.get('away_team'),ev.get('home_team')
+        row={'game_id':gid}
+        for bk in ev.get('bookmakers',[]):
+            if book and bk.get('key')!=book: continue
+            for m in bk.get('markets',[]):
+                for o in m.get('outcomes',[]):
+                    nm,price,point=o.get('name'),o.get('price'),o.get('point')
+                    if price is None: continue
+                    if m.get('key')=='h2h':
+                        row['away_moneyline' if nm==away else 'home_moneyline']=int(price)
+                    elif m.get('key')=='spreads' and point is not None:
+                        # nflverse's spread_line is positive when the home team is favoured;
+                        # the API gives the home side's own handicap, which is negative then
+                        if nm==home: row['spread_line']=-float(point); row['home_spread_odds']=int(price)
+                        elif nm==away: row['away_spread_odds']=int(price)
+        if len(row)>1: out.append(row)
+    return out
 
 def game_ids(pay,week):
     """map (away, home) abbreviations to the app's game ids for the week"""
@@ -130,7 +161,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--week',type=int); ap.add_argument('--events',action='store_true')
     ap.add_argument('--sample',help='a saved event-odds JSON (list of events) to parse instead of calling the API')
-    ap.add_argument('--regions',default='us'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull attempts, completions, TDs, interceptions, carries (15 credits a game)')
+    ap.add_argument('--regions',default='us'); ap.add_argument('--no-game-lines',action='store_true',help='skip the moneyline and spread pull (saves 2 credits for the whole slate)'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull attempts, completions, TDs, interceptions, carries (15 credits a game)')
     ap.add_argument('--teams',help='comma-separated abbreviations; only games involving them (e.g. NE,SEA for the Thursday game)')
     ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (36 on Thursday morning, 120 on Saturday)')
     a=ap.parse_args()
@@ -186,6 +217,15 @@ def main():
         if m: lines.append({'stat':stat,'player':player,'line':m[1],'over':m[2],'under':m[3]})
     n=merge_csv(f'wk{a.week}_lines.csv',['stat','player','line','over','under'],lambda r:(r['stat'],r['player']),lines)
     print(f"wk{a.week}_lines.csv: {len(lines)} main lines from this pull, {n} in the file")
+    if not a.no_game_lines and not a.sample and key:
+        try:
+            gl=game_lines(key,book,a.regions,ids)
+            n=merge_csv(f'gamelines_wk{a.week}.csv',
+                        ['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds'],
+                        lambda r:r['game_id'],gl,{r['game_id'] for r in gl})
+            print(f"gamelines_wk{a.week}.csv: {len(gl)} games from this pull, {n} in the file")
+        except Exception as e:
+            print(f"   game lines not pulled: {e}",file=sys.stderr)
     prices=[{'game_id':gid,'player':player,'market':stat,'threshold':k,'odds':price} for (gid,player,stat,k),price in sorted(alts.items())]
     done={p['game_id'] for p in prices}
     n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices,done)

@@ -314,6 +314,37 @@ setTimeout(()=>{
     console.log(`L. record chips: week ${wkx} ${want(main.filter(r=>+r.w===+wkx))}, season ${want(main)}`); }
 
 
+  /* ---- S. the threshold ladder toggle ---- */
+  { openUpcoming();
+    [...d.querySelectorAll('.plrbtn')][0].click();        /* rungs only render for an open player */
+    const box=d.getElementById('rungCb');
+    chk(!!box&&box.checked,'no threshold ladder toggle, or it does not default to shown');
+    const rows=()=>d.querySelectorAll('#gameView tr.rung').length;
+    const shown=rows();
+    chk(shown>0,'no ladder rows with the toggle on');
+    box.checked=false; box.dispatchEvent(new w.Event('change'));
+    chk(d.getElementById('rungCb').checked===false,'the toggle did not stay off');
+    chk(rows()===0,`ladder rows survived the toggle: ${rows()}`);
+    chk(/Threshold ladders are hidden/.test(d.getElementById('gameView').textContent),'hiding the ladders says nothing');
+    /* a rung already on the parlay must stay visible, or a leg could count while hidden */
+    let t=d.getElementById('rungCb'); t.checked=true; t.dispatchEvent(new w.Event('change'));
+    [...d.querySelectorAll('.plrbtn')][0].click();
+    const rung=[...d.querySelectorAll('#gameView tr.rung')].find(tr=>tr.querySelector('input[data-leg]'));
+    if(rung){ rung.querySelector('input[data-leg]').click();
+      t=d.getElementById('rungCb'); t.checked=false; t.dispatchEvent(new w.Event('change'));
+      chk(rows()===1,`a ticked rung was hidden: ${rows()} rows left`);
+      const back=d.querySelector('#gameView tr.rung input[data-leg]');
+      chk(!!back&&back.checked,'the surviving rung is not the ticked one');
+      if(back) back.click(); }
+    /* the model still builds every rung: hiding is a display choice, not a data one */
+    const g2=openUpcoming(); const roster=rosterFor(g2,false); let built=0;
+    for(const tm in roster) for(const x of roster[tm].players) for(const l of statLines(x)) built+=(l.rungs||[]).length;
+    chk(built>0,'statLines stopped building rungs when they were hidden');
+    t=d.getElementById('rungCb'); t.checked=true; t.dispatchEvent(new w.Event('change'));
+    [...d.querySelectorAll('.plrbtn')][0].click();
+    chk(rows()===shown,`turning the ladders back on restored ${rows()} of ${shown} rows`);
+    console.log(`S. ladder toggle: ${shown} rows for an open player, 0 when off, ${built} rungs still built either way`); }
+
   /* ---- R. baked prices follow the build, and the tiers price like a book ---- */
   { const s=F('getSuggestions')();
     if(s.tiers.length){
@@ -321,7 +352,11 @@ setTimeout(()=>{
       for(const t of s.tiers){
         const mult=t.legs.reduce((a,l)=>a*F('mlToDec')(l.price),1);
         chk(Math.abs(t.dec-pd(t.legs.map(l=>({leg:l,ml:l.price}))))<1e-6,`${t.label} tier's price is not what parlayDec says`);
-        if(F('sameGame')(t.legs)) chk(t.dec<mult-1e-9,`${t.label} tier multiplies legs that share a game`);
+        /* same-game legs are priced together and a book never pays above multiplying, so
+           the tier lands at or below it: strictly below when the legs overlap, and equal
+           when they pull against each other and parlayDec clamps. Section Q proves the
+           strict case on known legs; here the point is that it never exceeds. */
+        if(F('sameGame')(t.legs)) chk(t.dec<=mult+1e-9,`${t.label} tier priced above multiplying legs that share a game`);
         else chk(Math.abs(t.dec-mult)<1e-9,`${t.label} tier does not multiply legs from different games`);
       }
     }

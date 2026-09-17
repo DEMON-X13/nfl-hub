@@ -175,6 +175,9 @@ function gameBetsCard(g,locked){
     <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line and the spread.':'A team to win, or to cover the spread. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. A game leg is priced as unrelated to player legs, because that relationship has not been measured here.</p>
     ${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
 }
+/* the ladders are shown unless turned off. A rung already on the parlay stays visible
+   whatever the setting, so a leg can never be hidden while it is still counting. */
+function showRungs(){ return !(S.ui&&S.ui.hideRungs); }
 function renderGame(){
   const g=S.sched.find(x=>x.id===S.ui.game);
   if(!g){ S.ui.game=null; renderSlate(); return; }
@@ -192,6 +195,7 @@ function renderGame(){
       <option value="typical" ${S.margin==='typical'||!S.margin?'selected':''}>typical</option>
       <option value="heavy" ${S.margin==='heavy'?'selected':''}>heavy</option></select></label>
     <label class="muted"><input type="checkbox" id="allCb" ${showAll?'checked':''}> Include backups</label>
+    <label class="muted"><input type="checkbox" id="rungCb" ${showRungs()?'checked':''}> Threshold ladders</label>
   </div>`;
   if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
   if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}"><b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`:(fin?'Final.':'In progress.')}</b> <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.':'Player stats land with the Tuesday upload; until then each player shows only what was projected.'}${hasScore(g)?'':' Pull in scores on the Weekly Update tab for the final score.'}</span></div>`;
@@ -203,6 +207,7 @@ function renderGame(){
   </div>`;
   html+=gameSuggestCard(g,locked);
   html+=gameBetsCard(g,locked);
+  if(!showRungs()) html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">Threshold ladders are hidden. Tick <b>Threshold ladders</b> above to see the chance of clearing each number. Anything already on your parlay stays visible.</p>`;
   for(const team of [g.a,g.h]){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
@@ -307,11 +312,12 @@ function renderGame(){
         for(const r of l.rungs){
           const [c,lbl]=confTier(r.p);
           const on=cur&&!cur.main&&cur.k===r.k;
+          if(!showRungs()&&!on) continue;
           const od=oddsFor(g.id,x.pl.id,l.stat,r.k);
           const v=rungView(x.pl,l.stat,l.mu,r.k,g.w);
           const act=(locked&&haveStats)?actualFor(g.w,x.pl.id):null;
           const hit=act?(act[l.stat]>=r.k):null;
-          html+=`<tr class="${on?'on':''}${hit===true?' hit':(hit===false?' miss':'')}">
+          html+=`<tr class="rung ${on?'on':''}${hit===true?' hit':(hit===false?' miss':'')}">
             <td class="pick">${locked?(hit===true?'<span class="res win">\u2713</span>':(hit===false?'<span class="res loss">\u2717</span>':'<span class="res">\u2013</span>')):`<input type="checkbox" ${on?'checked':''} data-leg="${lk}" data-k="${r.k}" data-side="over"
               aria-label="Add ${esc(x.pl.n)} ${r.k} or more ${l.m.lbl.toLowerCase()} to the parlay">`}</td>
             <td class="thr">${r.k}+</td>
@@ -343,6 +349,7 @@ function renderGame(){
     S.ui.open=S.ui.open[id]?{}:{[id]:true};
     renderGame.anchor=id;
     save(); renderGame(); }));
+  $('rungCb')?.addEventListener('change',e=>{ S.ui.hideRungs=!e.target.checked; save(); renderGame(); });
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));

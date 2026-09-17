@@ -131,6 +131,26 @@ def main():
     try:
         pp=os.path.join(DATA,'payload.json'); pay=json.load(open(pp,encoding='utf-8'))
         # survives builds that skip the price pull, so the tab keeps showing the real last pull
+        # DraftKings' own moneylines and spreads, over the nflverse ones payload.py wrote
+        gl={}
+        for fn in sorted(os.listdir(DATA)):
+            m=re.match(r'gamelines_wk(\d+)\.csv$',fn)
+            if not m: continue
+            with open(os.path.join(DATA,fn),newline='',encoding='utf-8') as f:
+                for r in csv.DictReader(f): gl[r['game_id']]=r
+        if gl:
+            byid={g['id']:g for g in pay['sched']}; hit=0
+            for gid,r in gl.items():
+                g=byid.get(gid)
+                if not g: continue
+                for fld,col in (('mla','away_moneyline'),('mlh','home_moneyline'),
+                                ('spa','away_spread_odds'),('sph','home_spread_odds'),('sp','spread_line')):
+                    v=(r.get(col) or '').strip()
+                    if v:
+                        try: g[fld]=float(v)
+                        except ValueError: pass
+                hit+=1
+            say(f"  game lines from DraftKings applied to {hit} game(s)")
         for k,fn in (('price_pull','pricepull.json'),('credits','credits.json')):
             try: pay[k]=json.load(open(os.path.join(DATA,fn),encoding='utf-8'))
             except Exception: pass
