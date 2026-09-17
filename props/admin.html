@@ -582,7 +582,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v37 \u00b7 2026-09-17';
+const APP_BUILD='app v38 \u00b7 2026-09-17';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2109,6 +2109,34 @@ function legPrice(l){
   if(l.price!=null) return {ml:l.price,src:l.src||'est'};
   return {ml:probToAmerican(l.p),src:'fair'};
 }
+/* ---------- what a book pays for a parlay ----------
+   Legs in different games multiply: that is exactly what a book does. Legs in one
+   game do not, because they overlap. The chance they all land is higher than the
+   product, so the fair price is shorter, and the book holds more on a same-game
+   ticket than on singles. So each game's legs are priced together from the
+   market's own implied chances joined by our correlations, then cut by SGP_HOLD.
+
+   SGP_HOLD is fitted to two real DraftKings tickets on Detroit at Buffalo
+   (2026-09-17): correlating the market chances gave 8.05 and 5.79 where DraftKings
+   offered 6.25 and 5.05, so 0.82 is the geometric mean of the two ratios. Two
+   tickets is a thin sample and this wants refitting as more are collected. */
+const SGP_HOLD=0.82;
+function parlayDec(priced){
+  const byGame={};
+  for(const x of priced) (byGame[x.leg.gid]=byGame[x.leg.gid]||[]).push(x);
+  let dec=1;
+  for(const gid in byGame){
+    const grp=byGame[gid];
+    const mult=grp.reduce((a,x)=>a*(mlToDec(x.ml)||1),1);
+    if(grp.length<2){ dec*=mult; continue; }
+    const pj=parlayProb(grp.map(x=>({...x.leg,p:mlProb(x.ml)})),20000).corr;
+    dec*=(pj>0&&isFinite(pj))?Math.min(mult,(1/pj)*SGP_HOLD):mult;   /* never pay more than multiplying */
+  }
+  return dec;
+}
+const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1;
+  return Object.values(g).some(n=>n>1); };
+
 /* ---------- suggested parlays: safe, medium, aggressive ----------
    One core parlay grown in three steps. Each tier has a floor on the chance that every leg
    lands and a leg cap; the next leg is always the one with the best expected return
@@ -2203,14 +2231,16 @@ function gameSuggestion(g){
       const next=[...cur,c], p=parlayProb(next,3000).corr;
       const forced=next.length<2;                                  /* a parlay needs two legs */
       if(!forced&&p<GAME_SUGGEST_FLOOR) continue;
-      const score=p*dec(next);
+      /* score on what a book would actually pay for these legs together */
+      const score=p*parlayDec(next.map(l=>({leg:l,ml:l.price})));
       if(!best||score>best.score) best={c,score};
     }
     if(!best) break;
     cur=[...cur,best.c];
   }
   const val=cur.length<2?{legs:[],candidates:cands.length}
-    :{legs:cur,candidates:cands.length,corr:parlayProb(cur,20000).corr,dec:dec(cur)};
+    :{legs:cur,candidates:cands.length,corr:parlayProb(cur,20000).corr,
+      dec:parlayDec(cur.map(l=>({leg:l,ml:l.price}))),mult:dec(cur)};
   GAME_SUGGEST_CACHE[g.id]={sig,val};
   return val;
 }
@@ -2231,7 +2261,7 @@ function gameSuggestCard(g,locked){
         <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="Add ${esc(l.name)}, ${esc(l.label)}, to the parlay">
         <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>
         <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
-    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. Tick a leg to put it on the parlay.</p></div>`;
+    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay.</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
@@ -2310,7 +2340,9 @@ function renderParlay(){
   const pr=parlayProb(legs.map(l=>({...l,side:l.side||'over'})));
   const prices=legs.map(legPrice);
   const allBook=prices.every(p=>p.src==='real');
-  const bookDec=prices.reduce((a,p)=>a*(mlToDec(p.ml)||1),1);
+  const multDec=prices.reduce((a,p)=>a*(mlToDec(p.ml)||1),1);
+  const bookDec=parlayDec(legs.map((l,i)=>({leg:l,ml:prices[i].ml})));
+  const sg=sameGame(legs);
   const fairML=probToAmerican(pr.corr);
   const indepML=probToAmerican(pr.indep);
   const stake=Math.max(0,+S.stake||0);
@@ -2343,14 +2375,15 @@ function renderParlay(){
     <div class="bar">
       <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?S.bookPrice:''}" style="width:110px"></label>
-      <span class="muted">${allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.'}</span>
+      <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
     </div>
     <div class="bigp">
       <div class="box hero"><b>${(pr.corr*100).toFixed(1)}%</b><span>chance all ${legs.length} land</span></div>
       <div class="box"><b>${fmtML(fairML)}</b><span>fair price for that chance</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
       <div class="box tier ${confTier(pr.corr)[0]}"><b>${confTier(pr.corr)[1]}</b><span>confidence all ${legs.length} land</span></div>
-    </div>`;
+    </div>
+    ${sg&&override==null?`<p class="muted" style="margin:10px 0 0;font-size:12px">Legs here share a game, so they are priced together rather than multiplied: multiplying them would say <b>$${(stake*multDec).toFixed(2)}</b>, which is what a book pays only when the legs are in different games. The estimate carries a same-game cut fitted to real DraftKings tickets; type your book's own parlay price above to override it.</p>`:''}`;
   const canSave=wks.length===1&&(realPrice||estPrice);
   html+=`<div class="actions"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div></div>`;
   html+=`</div>`;

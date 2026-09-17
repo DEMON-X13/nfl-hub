@@ -116,7 +116,7 @@ def main():
                       open(os.path.join(DATA,'pricepull.json'),'w',encoding='utf-8'))
         elif rc==0: say('  nothing kicks off before the next pull; no credits spent')
         if rc==0 and len(used)>1 and os.path.exists(os.path.join(DATA,f'wk{week}_lines.csv')):
-            rc2,out2=run([PY,'mktbuild.py',str(week),f'wk{week}_lines.csv','the-odds-api best of us',str(today)],DATA,'mktbuild')
+            rc2,out2=run([PY,'mktbuild.py',str(week),f'wk{week}_lines.csv','DraftKings via the-odds-api',str(today)],DATA,'mktbuild')
             say('  '+out2.strip().splitlines()[-1] if out2.strip() else '  mktbuild: no output')
     # 3b. the odds-API balance. /v4/sports does not count against the quota, so this
     #     runs whether or not prices were pulled and costs nothing either way.

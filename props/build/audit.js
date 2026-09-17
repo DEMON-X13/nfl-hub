@@ -314,6 +314,29 @@ setTimeout(()=>{
     console.log(`L. record chips: week ${wkx} ${want(main.filter(r=>+r.w===+wkx))}, season ${want(main)}`); }
 
 
+  /* ---- Q. same-game parlays are priced together, not multiplied ---- */
+  { const pd=F('parlayDec');
+    /* two legs with known prices, so the check does not depend on what earlier
+       sections left in S.odds */
+    const L=[{leg:{gid:'g1',pid:'p1',stat:'receiving_yards',grp:'WR',k:25,side:'over',p:0.47},ml:250},
+             {leg:{gid:'g1',pid:'p2',stat:'passing_yards',grp:'QB',k:220,side:'over',p:0.75},ml:-261}];
+    const mult=L.reduce((a,x)=>a*F('mlToDec')(x.ml),1);
+    const sgp=pd(L);
+    chk(sgp>1,'a same-game parlay priced at or below the stake');
+    chk(sgp<mult,`legs in one game were multiplied anyway: ${sgp.toFixed(3)} vs ${mult.toFixed(3)}`);
+    /* the identical legs in two different games must multiply exactly */
+    const apart=[L[0],{leg:{...L[1].leg,gid:'g2'},ml:L[1].ml}];
+    chk(Math.abs(pd(apart)-mult)<1e-9,'legs in different games are not multiplied');
+    /* one leg is its own price, whatever game it is in */
+    chk(Math.abs(pd([L[0]])-F('mlToDec')(250))<1e-9,'a single leg is not its own price');
+    /* a third leg in the same game must shorten it further, never lengthen past multiplying */
+    const three=[...L,{leg:{gid:'g1',pid:'p3',stat:'rushing_yards',grp:'RB',k:60,side:'over',p:0.45},ml:-110}];
+    const mult3=three.reduce((a,x)=>a*F('mlToDec')(x.ml),1);
+    chk(pd(three)<mult3,'a third same-game leg was multiplied anyway');
+    chk(pd(three)>sgp,'adding a leg did not increase the price');
+    chk(F('sameGame')([{gid:'a'},{gid:'a'}])===true&&F('sameGame')([{gid:'a'},{gid:'b'}])===false,'sameGame does not spot a shared game');
+    console.log(`Q. same-game pricing: 2 legs multiply to ${mult.toFixed(2)}, priced together ${sgp.toFixed(2)} (${(100*(1-sgp/mult)).toFixed(0)}% shorter)`); }
+
   /* ---- O. one suggested parlay on the game page ---- */
   { const g=openUpcoming(); const card=d.querySelector('.gsugg');
     chk(!!card,'the game page has no suggested parlay section');

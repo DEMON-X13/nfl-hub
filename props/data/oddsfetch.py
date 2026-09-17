@@ -72,10 +72,14 @@ def threshold(point):
     return int(math.floor(p))+1 if p==math.floor(p) else int(math.ceil(p))
 
 def implied(ml): return 100/(ml+100) if ml>0 else abs(ml)/(abs(ml)+100)
-def parse_event(ev,gid,mains,alts):
-    """collect best prices from one event's bookmakers: every Over/Under at every point goes to
-    mains[(player,stat)][point][side]; every Over (and anytime-TD Yes) goes to alts as an X+ rung"""
+def parse_event(ev,gid,mains,alts,book=None):
+    """collect prices from one event: every Over/Under at every point goes to
+    mains[(player,stat)][point][side]; every Over (and anytime-TD Yes) goes to alts as an X+ rung.
+    With book set, only that bookmaker is read, because a best-of-the-market price is not one
+    you can actually take and a main line built from one book's over and another's under is not
+    a line anybody offers."""
     for bk in ev.get('bookmakers',[]):
+        if book and bk.get('key')!=book: continue
         for m in bk.get('markets',[]):
             key=m.get('key',''); alt=key.endswith('_alternate'); base=key[:-10] if alt else key
             stat=MARKETS.get(base)
@@ -91,7 +95,10 @@ def parse_event(ev,gid,mains,alts):
                 if name=='Over':
                     k=threshold(point)
                     alts[(gid,player,stat,k)]=max(alts.get((gid,player,stat,k),-10**9),int(price))
-                if name in ('Over','Under'):
+                # the main line comes from the base market only: both sides, one book, one
+                # market. An alternate ladder quotes Overs at its own points and letting
+                # those into mains can hand back a main line no book actually posts.
+                if name in ('Over','Under') and not alt:
                     mains[(player,stat)][float(point)][name].append(int(price))
 def main_from_ladder(pts):
     """the main line is the point where the best over and best under are closest to even"""
@@ -118,7 +125,7 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--week',type=int); ap.add_argument('--events',action='store_true')
     ap.add_argument('--sample',help='a saved event-odds JSON (list of events) to parse instead of calling the API')
-    ap.add_argument('--regions',default='us'); ap.add_argument('--full',action='store_true',help='also pull attempts, completions, TDs, interceptions, carries (15 credits a game)')
+    ap.add_argument('--regions',default='us'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull attempts, completions, TDs, interceptions, carries (15 credits a game)')
     ap.add_argument('--teams',help='comma-separated abbreviations; only games involving them (e.g. NE,SEA for the Thursday game)')
     ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (36 on Thursday morning, 120 on Saturday)')
     a=ap.parse_args()
@@ -142,6 +149,7 @@ def main():
     mains=collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
     alts={}; matched=0
     now=datetime.now(timezone.utc)
+    book=None if a.book=='all' else a.book
     for ev in events:
         gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
         if not gid: continue
@@ -150,18 +158,18 @@ def main():
             except ValueError: ko=None
             if ko and (ko-now).total_seconds()>a.hours*3600: continue
         matched+=1
-        if a.sample: parse_event(ev,gid,mains,alts); continue
+        if a.sample: parse_event(ev,gid,mains,alts,book); continue
         for markets in ([DEFAULT] + ([FULL_EXTRA] if a.full else [])):
             try:
                 data=get(f"/events/{ev['id']}/odds",{'regions':a.regions,'markets':','.join(markets),'oddsFormat':'american'},key)
-                parse_event(data,gid,mains,alts)
+                parse_event(data,gid,mains,alts,book)
             except urllib.error.HTTPError as err:
                 body=err.read().decode('utf-8','replace')[:300]
                 print(f"   {gid}: HTTP {err.code} for {len(markets)} markets ({body}); retrying one market at a time",file=sys.stderr)
                 for mk in markets:
                     try:
                         data=get(f"/events/{ev['id']}/odds",{'regions':a.regions,'markets':mk,'oddsFormat':'american'},key)
-                        parse_event(data,gid,mains,alts)
+                        parse_event(data,gid,mains,alts,book)
                     except urllib.error.HTTPError as e2:
                         print(f"   {gid}: {mk} not available ({e2.code})",file=sys.stderr)
     print(f"{matched} of {len(ids)} week-{a.week} games matched to API events")
@@ -176,6 +184,6 @@ def main():
     prices=[{'game_id':gid,'player':player,'market':stat,'threshold':k,'odds':price} for (gid,player,stat,k),price in sorted(alts.items())]
     n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices)
     print(f"prices_wk{a.week}.csv: {len(prices)} threshold prices from this pull, {n} in the file (upload on the Weekly Update tab)")
-    print(f"next: python mktbuild.py {a.week} wk{a.week}_lines.csv \"the-odds-api best of {a.regions}\" {datetime.now(timezone.utc).date()}")
+    print(f"next: python mktbuild.py {a.week} wk{a.week}_lines.csv \"{a.book if book else 'best of '+a.regions}\" {datetime.now(timezone.utc).date()}")
 
 if __name__=='__main__': main()
