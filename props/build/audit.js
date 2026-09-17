@@ -318,32 +318,33 @@ setTimeout(()=>{
   { openUpcoming();
     [...d.querySelectorAll('.plrbtn')][0].click();        /* rungs only render for an open player */
     const box=d.getElementById('rungCb');
-    chk(!!box&&box.checked,'no threshold ladder toggle, or it does not default to shown');
+    chk(!!box&&box.checked===false,'no threshold ladder toggle, or it does not default to hidden');
     const rows=()=>d.querySelectorAll('#gameView tr.rung').length;
+    chk(rows()===0,`ladder rows showed by default: ${rows()}`);
+    box.checked=true; box.dispatchEvent(new w.Event('change'));
+    chk(d.getElementById('rungCb').checked===true,'the toggle did not stay on');
     const shown=rows();
-    chk(shown>0,'no ladder rows with the toggle on');
-    box.checked=false; box.dispatchEvent(new w.Event('change'));
-    chk(d.getElementById('rungCb').checked===false,'the toggle did not stay off');
-    chk(rows()===0,`ladder rows survived the toggle: ${rows()}`);
-    chk(/Threshold ladders are hidden/.test(d.getElementById('gameView').textContent),'hiding the ladders says nothing');
+    chk(shown>0,'turning the ladders on showed no rows');
     /* a rung already on the parlay must stay visible, or a leg could count while hidden */
-    let t=d.getElementById('rungCb'); t.checked=true; t.dispatchEvent(new w.Event('change'));
-    [...d.querySelectorAll('.plrbtn')][0].click();
+    let t=d.getElementById('rungCb');
     const rung=[...d.querySelectorAll('#gameView tr.rung')].find(tr=>tr.querySelector('input[data-leg]'));
     if(rung){ rung.querySelector('input[data-leg]').click();
       t=d.getElementById('rungCb'); t.checked=false; t.dispatchEvent(new w.Event('change'));
       chk(rows()===1,`a ticked rung was hidden: ${rows()} rows left`);
       const back=d.querySelector('#gameView tr.rung input[data-leg]');
       chk(!!back&&back.checked,'the surviving rung is not the ticked one');
-      if(back) back.click(); }
+      chk(/nothing counts out of sight/.test(d.getElementById('gameView').textContent),'a pinned rung is not explained');
+      if(back) back.click();
+      chk(!/nothing counts out of sight/.test(d.getElementById('gameView').textContent),'the note outstayed the pinned rung'); }
     /* the model still builds every rung: hiding is a display choice, not a data one */
     const g2=openUpcoming(); const roster=rosterFor(g2,false); let built=0;
     for(const tm in roster) for(const x of roster[tm].players) for(const l of statLines(x)) built+=(l.rungs||[]).length;
     chk(built>0,'statLines stopped building rungs when they were hidden');
     t=d.getElementById('rungCb'); t.checked=true; t.dispatchEvent(new w.Event('change'));
-    [...d.querySelectorAll('.plrbtn')][0].click();
+    [...d.querySelectorAll('.plrbtn')][0].click();   /* openUpcoming above collapsed every player */
     chk(rows()===shown,`turning the ladders back on restored ${rows()} of ${shown} rows`);
-    console.log(`S. ladder toggle: ${shown} rows for an open player, 0 when off, ${built} rungs still built either way`); }
+    t=d.getElementById('rungCb'); t.checked=false; t.dispatchEvent(new w.Event('change'));
+    console.log(`S. ladder toggle: hidden by default, ${shown} rows when turned on, ${built} rungs built either way`); }
 
   /* ---- R. baked prices follow the build, and the tiers price like a book ---- */
   { const s=F('getSuggestions')();

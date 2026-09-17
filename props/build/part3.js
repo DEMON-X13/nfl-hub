@@ -175,9 +175,11 @@ function gameBetsCard(g,locked){
     <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line and the spread.':'A team to win, or to cover the spread. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. A game leg is priced as unrelated to player legs, because that relationship has not been measured here.</p>
     ${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
 }
-/* the ladders are shown unless turned off. A rung already on the parlay stays visible
-   whatever the setting, so a leg can never be hidden while it is still counting. */
-function showRungs(){ return !(S.ui&&S.ui.hideRungs); }
+/* the ladders are hidden unless turned on: without a real price they cannot be bet
+   or picked by a suggestion, and they run to thirty rows a player. The model still
+   builds every rung and the Track Record still grades them. A rung already on the
+   parlay stays visible whatever the setting, so a leg can never count while hidden. */
+function showRungs(){ return !!(S.ui&&S.ui.showRungs); }
 function renderGame(){
   const g=S.sched.find(x=>x.id===S.ui.game);
   if(!g){ S.ui.game=null; renderSlate(); return; }
@@ -207,7 +209,8 @@ function renderGame(){
   </div>`;
   html+=gameSuggestCard(g,locked);
   html+=gameBetsCard(g,locked);
-  if(!showRungs()) html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">Threshold ladders are hidden. Tick <b>Threshold ladders</b> above to see the chance of clearing each number. Anything already on your parlay stays visible.</p>`;
+  if(!showRungs()&&Object.values(S.parlay||{}).some(l=>l.gid===g.id&&!l.main&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='any_td'))
+    html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">A threshold leg on your parlay is shown below even though the ladders are hidden, so nothing counts out of sight.</p>`;
   for(const team of [g.a,g.h]){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
@@ -349,7 +352,7 @@ function renderGame(){
     S.ui.open=S.ui.open[id]?{}:{[id]:true};
     renderGame.anchor=id;
     save(); renderGame(); }));
-  $('rungCb')?.addEventListener('change',e=>{ S.ui.hideRungs=!e.target.checked; save(); renderGame(); });
+  $('rungCb')?.addEventListener('change',e=>{ S.ui.showRungs=e.target.checked; save(); renderGame(); });
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
