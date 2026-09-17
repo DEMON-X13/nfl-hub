@@ -41,9 +41,11 @@ def run(args,cwd,label,soft=False):
     if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
 
-# weekday -> hour UTC, matching the crons in .github/workflows/props.yml.
-# Saturday runs in the evening so the Sunday slate is priced closer to kickoff.
-PULL_TIMES={0:14, 2:14, 3:14, 5:22}      # Mon, Wed, Thu 14:00; Sat 22:00
+# weekday -> (hour, minute) UTC, matching the crons in .github/workflows/props.yml.
+# Overnight, because GitHub's scheduler runs 2-4.5 hours late for this repo and the
+# cushion before kickoff has to absorb that. Never on the hour: :00 is the most
+# contended minute on the platform and the likeliest to be dropped.
+PULL_TIMES={0:(8,17), 2:(8,17), 3:(8,17), 5:(23,17)}   # Mon, Wed, Thu 08:17; Sat 23:17
 
 def hours_to_next_pull(now=None):
     """How far ahead to price: up to the next scheduled pull, plus an hour of slack
@@ -56,9 +58,9 @@ def hours_to_next_pull(now=None):
     now=now or datetime.datetime.now(datetime.timezone.utc)
     for d in range(9):
         t=now+datetime.timedelta(days=d)
-        h=PULL_TIMES.get(t.weekday())
-        if h is None: continue
-        nxt=t.replace(hour=h,minute=0,second=0,microsecond=0)
+        hm=PULL_TIMES.get(t.weekday())
+        if hm is None: continue
+        nxt=t.replace(hour=hm[0],minute=hm[1],second=0,microsecond=0)
         if (nxt-now).total_seconds()>1800:
             return (nxt-now).total_seconds()/3600+1
     return 120.0

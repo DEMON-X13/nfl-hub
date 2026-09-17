@@ -6,10 +6,13 @@ on:
     # run, so every game is priced by the last pull before it starts and none is
     # priced twice. About 7 credits a game, ~112 a week. Times must match
     # PULL_TIMES in props/build/weekly.py.
-    - cron: "0 14 * * 1"    # Monday 10am ET: Monday night
-    - cron: "0 14 * * 3"    # Wednesday 10am ET: holiday games, nothing in an ordinary week
-    - cron: "0 14 * * 4"    # Thursday 10am ET: Thursday night, and a Friday game if there is one
-    - cron: "0 22 * * 6"    # Saturday 6pm ET: the Sunday slate, priced ~20h out
+    # Overnight, and never on the hour: this repo's scheduled runs land 2-4.5 hours
+    # late, so the cushion before kickoff has to absorb that, and :00 is the minute
+    # most likely to be dropped under load.
+    - cron: "17 8 * * 1"    # Monday 04:17 ET: Monday night, ~16h of cushion
+    - cron: "17 8 * * 3"    # Wednesday 04:17 ET: holiday games, nothing in an ordinary week
+    - cron: "17 8 * * 4"    # Thursday 04:17 ET: Thursday night, and Thanksgiving's early game
+    - cron: "17 23 * * 6"   # Saturday 19:17 ET: the Sunday slate, priced ~18h out
   workflow_dispatch:
     inputs:
       no_odds:
