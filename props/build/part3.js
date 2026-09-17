@@ -346,6 +346,14 @@ function renderGame(){
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
+  /* the whole suggestion at once, skipping any leg already on so it cannot toggle one off */
+  $('gameView').querySelector('[data-suggest-all]')?.addEventListener('click',()=>{
+    for(const l of gameSuggestion(g).legs){
+      const cur=S.parlay[l.key];
+      if(cur&&cur.k===l.k&&cur.side===l.side&&!!cur.main===!!l.main) continue;
+      toggleLeg(l.key,l.k,g,l.side,l.main);
+    }
+  });
 }
 
 /* ---------- weekly stats ingest ---------- */
@@ -941,10 +949,16 @@ function gameSuggestCard(g,locked){
   const stake=Math.max(0,+S.stake||0), ml=decToML(s.dec);
   return `<div class="card gsugg"><div class="gsugg-hd">
       <h2>Suggested parlay</h2><span class="conf med">Medium</span><span class="grow"></span>
+      <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${s.legs.every(l=>{const c=S.parlay[l.key];return !!c&&c.k===l.k&&c.side===l.side&&!!c.main===!!l.main;})?'On the parlay':'Add all'}</button>
       <span class="gsugg-nums"><b>${(s.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*s.dec).toFixed(2)}</span>`:''}</span>
     </div>
-    <ul class="gsugg-legs">${s.legs.map(l=>`<li><span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
-    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. Tick the lines yourself in the Parlay Builder to stake it.</p></div>`;
+    <ul class="gsugg-legs">${s.legs.map(l=>{
+      const cur=S.parlay[l.key], on=!!cur&&cur.k===l.k&&cur.side===l.side&&!!cur.main===!!l.main;
+      return `<li><label class="gsugg-pick${on?' on':''}">
+        <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="Add ${esc(l.name)}, ${esc(l.label)}, to the parlay">
+        <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>
+        <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
+    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. Tick a leg to put it on the parlay.</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;

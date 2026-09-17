@@ -352,6 +352,30 @@ setTimeout(()=>{
       const c2=d.querySelector('.gsugg');
       chk([...c2.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'the card and the suggestion disagree on legs');
       chk(new RegExp(`${Math.round(s2.corr*100)}% to land`).test(c2.textContent.replace(/\s+/g,' ')),'the card does not show the chance'); }
+    /* the legs are clickable, and share the toggle the tables below use */
+    if(s2.legs.length){
+      const keepParlay=JSON.parse(JSON.stringify(S.parlay||{}));
+      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
+      const boxes=[...d.querySelectorAll('.gsugg-legs input[data-leg]')];
+      chk(boxes.length===s2.legs.length,'the suggested legs are not all tickable');
+      chk(boxes.every(b=>b.dataset.k!==undefined&&b.dataset.side),'a suggested leg is missing its threshold or side');
+      chk(boxes.every(b=>!b.checked),'a suggested leg looks ticked with an empty parlay');
+      boxes[0].click();
+      chk(Object.keys(S.parlay).length===1,'ticking a suggested leg did not put it on the parlay');
+      const first=s2.legs[0], put=S.parlay[first.key];
+      chk(!!put&&put.k===first.k&&put.side===first.side,'the leg on the parlay is not the leg that was shown');
+      chk(d.querySelector('.gsugg-legs input[data-leg]').checked,'the tick did not survive the re-render');
+      chk(!!d.querySelector('.gsugg-pick.on'),'a ticked leg is not marked as on');
+      d.querySelector('.gsugg-legs input[data-leg]').click();
+      chk(Object.keys(S.parlay).length===0,'ticking a suggested leg again did not take it off');
+      /* Add all, twice: the second press must not undo the first */
+      d.querySelector('[data-suggest-all]').click();
+      chk(Object.keys(S.parlay).length===s2.legs.length,'Add all did not add every leg');
+      d.querySelector('[data-suggest-all]').click();
+      chk(Object.keys(S.parlay).length===s2.legs.length,'Add all pressed twice toggled legs back off');
+      chk(/On the parlay/.test(d.querySelector('[data-suggest-all]').textContent),'the button does not say the parlay is already on');
+      S.parlay=keepParlay;
+    }
     S.odds[g.id]=keepOdds; if(!Object.keys(keepOdds).length) delete S.odds[g.id];
     w.eval('GAME_SUGGEST_CACHE={}');
     /* the suggestion is the summary, the game bets table is the detail */

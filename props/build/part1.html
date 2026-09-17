@@ -273,7 +273,12 @@ body.modal-open{overflow:hidden}
 .gsugg-nums{font-size:13px;color:var(--ink-2);white-space:nowrap}
 .gsugg-nums b{font-family:var(--display);font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
 .gsugg-legs{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
-.gsugg-legs li{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.gsugg-legs li{border-bottom:1px solid var(--line);font-size:14px}
+.gsugg-pick{display:flex;align-items:baseline;gap:10px;padding:7px 6px;margin:0 -6px;cursor:pointer;border-radius:var(--r-sm)}
+.gsugg-pick:hover{background:var(--panel)}
+.gsugg-pick.on{background:var(--pick-soft)}
+.gsugg-pick input{margin:0;flex:none;align-self:center;cursor:pointer}
+.gsugg-all{padding:5px 11px;font-size:12px}
 .gsugg-legs .nm{flex:1;min-width:0}
 .gsugg-legs .nm small{display:block;color:var(--ink-2);font-size:12px}
 .gsugg-legs .pr{font-family:var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
