@@ -844,10 +844,12 @@ function legPrice(l){
    market's own implied chances joined by our correlations, then cut by SGP_HOLD.
 
    SGP_HOLD is fitted to two real DraftKings tickets on Detroit at Buffalo
-   (2026-09-17): correlating the market chances gave 8.05 and 5.79 where DraftKings
-   offered 6.25 and 5.05, so 0.82 is the geometric mean of the two ratios. Two
-   tickets is a thin sample and this wants refitting as more are collected. */
-const SGP_HOLD=0.82;
+   (2026-09-17), using DraftKings' own leg prices rather than a best-of-market
+   price, since the pull now reads one book. Correlating those leg prices gave 7.33
+   and 5.36 where DraftKings offered 6.25 and 5.05, implying cuts of 0.852 and
+   0.942; 0.896 is the geometric mean. That leaves +5.1% and -4.9% on the two.
+   Two tickets is a thin sample and this wants refitting as more are collected. */
+const SGP_HOLD=0.896;
 function parlayDec(priced){
   const byGame={};
   for(const x of priced) (byGame[x.leg.gid]=byGame[x.leg.gid]||[]).push(x);

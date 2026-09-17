@@ -109,12 +109,17 @@ def main_from_ladder(pts):
         gap=abs(implied(ov)-implied(un))
         if best is None or gap<best[0]: best=(gap,point,ov,un)
     return best
-def merge_csv(path,header,keyfn,rows):
-    """write rows over an existing file: keep old rows whose key is not being replaced"""
+def merge_csv(path,header,keyfn,rows,drop=None):
+    """write rows over an existing file: keep old rows whose key is not being replaced.
+    drop is a set of game_ids to clear out first. A pull covers a whole game, so any
+    rung it does not quote is one this book does not offer, and leaving the previous
+    pull's row there would mix two books' prices in one file."""
     old={}
     if os.path.exists(path):
         with open(path,newline='',encoding='utf-8') as f:
-            for r in csv.DictReader(f): old[keyfn(r)]=r
+            for r in csv.DictReader(f):
+                if drop and r.get('game_id') in drop: continue
+                old[keyfn(r)]=r
     for r in rows: old[keyfn(r)]={k:str(v) for k,v in r.items()}
     with open(path,'w',newline='',encoding='utf-8') as f:
         w=csv.DictWriter(f,fieldnames=header); w.writeheader()
@@ -182,7 +187,8 @@ def main():
     n=merge_csv(f'wk{a.week}_lines.csv',['stat','player','line','over','under'],lambda r:(r['stat'],r['player']),lines)
     print(f"wk{a.week}_lines.csv: {len(lines)} main lines from this pull, {n} in the file")
     prices=[{'game_id':gid,'player':player,'market':stat,'threshold':k,'odds':price} for (gid,player,stat,k),price in sorted(alts.items())]
-    n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices)
+    done={p['game_id'] for p in prices}
+    n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices,done)
     print(f"prices_wk{a.week}.csv: {len(prices)} threshold prices from this pull, {n} in the file (upload on the Weekly Update tab)")
     print(f"next: python mktbuild.py {a.week} wk{a.week}_lines.csv \"{a.book if book else 'best of '+a.regions}\" {datetime.now(timezone.utc).date()}")
 
