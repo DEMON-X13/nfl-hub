@@ -582,7 +582,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v38 \u00b7 2026-09-17';
+const APP_BUILD='app v39 \u00b7 2026-09-17';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2123,7 +2123,7 @@ function legPrice(l){
    0.942; 0.896 is the geometric mean. That leaves +5.1% and -4.9% on the two.
    Two tickets is a thin sample and this wants refitting as more are collected. */
 const SGP_HOLD=0.896;
-function parlayDec(priced){
+function parlayDec(priced,sims){
   const byGame={};
   for(const x of priced) (byGame[x.leg.gid]=byGame[x.leg.gid]||[]).push(x);
   let dec=1;
@@ -2131,7 +2131,7 @@ function parlayDec(priced){
     const grp=byGame[gid];
     const mult=grp.reduce((a,x)=>a*(mlToDec(x.ml)||1),1);
     if(grp.length<2){ dec*=mult; continue; }
-    const pj=parlayProb(grp.map(x=>({...x.leg,p:mlProb(x.ml)})),20000).corr;
+    const pj=parlayProb(grp.map(x=>({...x.leg,p:mlProb(x.ml)})),sims||20000).corr;
     dec*=(pj>0&&isFinite(pj))?Math.min(mult,(1/pj)*SGP_HOLD):mult;   /* never pay more than multiplying */
   }
   return dec;
@@ -2182,7 +2182,8 @@ function suggestCandidates(games){
 }
 function buildSuggestions(){
   const cands=suggestCandidates();
-  const dec=legs=>legs.reduce((a,l)=>a*(mlToDec(l.price)||1),1);
+  /* what a book pays for these legs together: same-game legs priced as one, cross-game legs multiplied */
+  const dec=(legs,sims)=>parlayDec(legs.map(l=>({leg:l,ml:l.price})),sims);
   const chance=(legs,sims)=>legs.length?parlayProb(legs,sims).corr:1;
   const tiers=[]; let cur=[];
   for(const [id,label,floor,cap] of SUGGEST_TIERS){
@@ -2199,7 +2200,7 @@ function buildSuggestions(){
         const next=[...cur,c], p=chance(next,3000);
         const forced=next.length<=must;
         if(!forced&&p<floor) continue;
-        const score=(forced&&id==='safe')?p:p*dec(next);
+        const score=(forced&&id==='safe')?p:p*dec(next,2000);
         if(!best||score>best.score) best={c,score};
       }
       if(!best) break;
@@ -2234,7 +2235,7 @@ function gameSuggestion(g){
       const forced=next.length<2;                                  /* a parlay needs two legs */
       if(!forced&&p<GAME_SUGGEST_FLOOR) continue;
       /* score on what a book would actually pay for these legs together */
-      const score=p*parlayDec(next.map(l=>({leg:l,ml:l.price})));
+      const score=p*parlayDec(next.map(l=>({leg:l,ml:l.price})),2000);
       if(!best||score>best.score) best={c,score};
     }
     if(!best) break;
@@ -2530,10 +2531,13 @@ function applyBaked(){
   /* the build pulled lines when it ran, so the freshness note counts from then */
   if(PAY.baked_at){ const t=Date.parse(PAY.baked_at); if(isFinite(t)&&!(S.gamesFetched>t)) S.gamesFetched=t; }
   if(PAY.injuries&&PAY.injuries.length) done.inj=ingestInjuries(PAY.injuries).out;
-  for(const w of Object.keys(PAY.prices||{}).sort((a,b)=>a-b)){
-    const gids=gamesIn(+w).map(g=>g.id);
-    if(gids.some(id=>S.odds[id]&&Object.keys(S.odds[id]).length)) continue;
-    done.prices+=ingestOdds(PAY.prices[w],+w,true).n; }
+  /* prices are reloaded whenever the build that carried them changes, and left alone
+     when it has not. There is no upload path any more, so nothing the user typed is at
+     stake; a week that already holds Thursday's game must still take Saturday's. */
+  const pricesFrom=PAY.baked_at||PAY.build||'';
+  if(S.pricesFrom!==pricesFrom){
+    for(const w of Object.keys(PAY.prices||{}).sort((a,b)=>a-b)) done.prices+=ingestOdds(PAY.prices[w],+w,true).n;
+    if(Object.keys(PAY.prices||{}).length) S.pricesFrom=pricesFrom; }
   for(const w of Object.keys(PAY.stats||{}).sort((a,b)=>a-b)){
     const r=ingestStats(PAY.stats[w]); done.stats.push(...r.done.map(g=>g.id)); }
   return done;

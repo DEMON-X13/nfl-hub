@@ -314,6 +314,34 @@ setTimeout(()=>{
     console.log(`L. record chips: week ${wkx} ${want(main.filter(r=>+r.w===+wkx))}, season ${want(main)}`); }
 
 
+  /* ---- R. baked prices follow the build, and the tiers price like a book ---- */
+  { const s=F('getSuggestions')();
+    if(s.tiers.length){
+      const pd=F('parlayDec');
+      for(const t of s.tiers){
+        const mult=t.legs.reduce((a,l)=>a*F('mlToDec')(l.price),1);
+        chk(Math.abs(t.dec-pd(t.legs.map(l=>({leg:l,ml:l.price}))))<1e-6,`${t.label} tier's price is not what parlayDec says`);
+        if(F('sameGame')(t.legs)) chk(t.dec<mult-1e-9,`${t.label} tier multiplies legs that share a game`);
+        else chk(Math.abs(t.dec-mult)<1e-9,`${t.label} tier does not multiply legs from different games`);
+      }
+    }
+    /* a browser holding last build's prices must take this build's */
+    const wk=Object.keys(PAY.prices||{})[0];
+    if(wk){
+      const gid=F('gamesIn')(+wk).map(g=>g.id).find(id=>S.odds[id]&&Object.keys(S.odds[id]).length);
+      if(gid){
+        const pid=Object.keys(S.odds[gid])[0], st=Object.keys(S.odds[gid][pid])[0], k=Object.keys(S.odds[gid][pid][st])[0];
+        const real=S.odds[gid][pid][st][k];
+        S.odds[gid][pid][st][k]=real+1000; S.pricesFrom='some-older-build';
+        const r=F('applyBaked')();
+        chk(r.prices>0,'a new build did not reload prices over a browser that had old ones');
+        chk(S.odds[gid][pid][st][k]===real,'the stale price survived the new build');
+        const again=F('applyBaked')();
+        chk(again.prices===0,'the same build reloaded prices a second time');
+      }
+    }
+    console.log(`R. tiers priced like a book; baked prices follow the build`); }
+
   /* ---- Q. same-game parlays are priced together, not multiplied ---- */
   { const pd=F('parlayDec');
     /* two legs with known prices, so the check does not depend on what earlier
