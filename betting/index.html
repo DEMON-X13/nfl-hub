@@ -124,6 +124,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
 .tier.high{background:var(--pick-soft);color:var(--pick)}
 .tier.med{background:var(--gold-soft);color:#8A5E05}
+.tier.coin{background:transparent;color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--line)}
 .tier.out{background:var(--miss-soft);color:var(--miss)}
 .tier.doubt{background:#FDEDEA;color:#B4533F}
 .margin{font-size:13px;color:var(--ink-2);line-height:1.35;text-align:center;white-space:nowrap}
@@ -394,6 +395,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.39</td><td>Four confidence bands, cut where the walk-forward record changes: COIN FLIP under 55% (won 52%), LOW 55&ndash;60% (58%), MED 60&ndash;75% (66%), HIGH 75% and up (80%). Records shows coin flips separately. The parlay builder leaves coin flips out instead of applying a 58% floor to LOW. Labels only; predictions are unchanged.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.38</td><td>Records: the week by week table drops the Main Model misses column and centres every number under its title.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.37</td><td>Record &amp; Bets is split: Records keeps the chart, the pick grid and the week table, and a new Bet Log tab holds the bet entry, balance chart and bet table. The model legend is one line with each record, all lines solid. Week by week centres its column titles and drops the margin error column.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.36</td><td>Record &amp; Bets: Show all models sits beside You, the other models list one per row, the disagreement lines are gone, Vegas is black, and a Show every pick button opens a week by week grid of what each model picked.</td></tr>
@@ -508,7 +510,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.38 \u00b7 2026-09-15';
+const APP_BUILD='v1.39 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -723,7 +725,9 @@ function predict(g,teams,spec=MODEL.pure){
   const pick=m>=0?g.home_team:g.away_team;
   return { margin:m, pHome, pick, conf:Math.max(pHome,1-pHome), blended:false };
 }
-function tier(c){ return c>=0.70?['high','HIGH']:c>=0.60?['med','MED']:['low','LOW']; }
+/* cut where the walk-forward record changes (2021-2025): under 55 won 52%, 55-60 won 58%,
+   60-75 won 66% with no step inside it, 75+ won 80% */
+function tier(c){ return c>=0.75?['high','HIGH']:c>=0.60?['med','MED']:c>=0.55?['low','LOW']:['coin','COIN FLIP']; }
 function statsFromRow(r){
   const num=k=>+r[k]||0; const db=num('attempts')+num('sacks_suffered'), car=num('carries'), plays=db+car;
   return { off_epa:plays?(num('passing_epa')+num('rushing_epa'))/plays:LM.off_epa, pass_epa:db?num('passing_epa')/db:LM.pass_epa, rush_epa:car?num('rushing_epa')/car:LM.rush_epa,
@@ -982,11 +986,12 @@ function renderRecord(){
   const rows=Object.values(S.processed).filter(r=>r.correct!==null); const el=$('recordTable');
   if(!rows.length){ $('recordStats').innerHTML=''; el.innerHTML='<div class="empty">No graded games yet. Upload a week\'s results and stats to start the record.</div>'; $('modelChart').innerHTML=''; renderBets(); return; }
   const n=rows.length, c=rows.filter(r=>r.correct).length; const mae=rows.reduce((s,r)=>s+Math.abs(r.margin-r.result),0)/n;
-  const tiers={high:[0,0],med:[0,0],low:[0,0]}; rows.forEach(r=>{const t=tier(r.conf)[0]; tiers[t][1]++; if(r.correct)tiers[t][0]++;});
+  const tiers={high:[0,0],med:[0,0],low:[0,0],coin:[0,0]}; rows.forEach(r=>{const t=tier(r.conf)[0]; tiers[t][1]++; if(r.correct)tiers[t][0]++;});
   $('recordStats').innerHTML=`<div class="stat"><b>${(100*c/n).toFixed(1)}%</b><span>straight-up, ${c} of ${n}</span></div>
     <div class="stat"><b>${tiers.high[1]?Math.round(100*tiers.high[0]/tiers.high[1]):'–'}%</b><span>high confidence, ${tiers.high[0]}/${tiers.high[1]}</span></div>
     <div class="stat"><b>${tiers.med[1]?Math.round(100*tiers.med[0]/tiers.med[1]):'–'}%</b><span>medium, ${tiers.med[0]}/${tiers.med[1]}</span></div>
     <div class="stat"><b>${tiers.low[1]?Math.round(100*tiers.low[0]/tiers.low[1]):'–'}%</b><span>low, ${tiers.low[0]}/${tiers.low[1]}</span></div>
+    <div class="stat"><b>${tiers.coin[1]?Math.round(100*tiers.coin[0]/tiers.coin[1]):'–'}%</b><span>coin flip, ${tiers.coin[0]}/${tiers.coin[1]}</span></div>
     <div class="stat"><b>${mae.toFixed(1)}</b><span>avg margin error, pts</span></div>
 `;
   // model accuracy, week by week
@@ -1267,11 +1272,10 @@ function renderParlay(){
     return {g,pr,tc,ml:oddsFor(g.game_id,pr.pick)}; });
   const sel=S.bank.parlaySel||'all';
   const stake=+(S.bank.parlayStake??10);
-  const LOW_FLOOR=0.58;
   const wanted = sel==='high'?['high'] : sel==='medhigh'?['med','high'] : ['low','med','high'];
-  // LOW legs only count from 58% up; MED and HIGH are already above that
-  const inTier=legsAll.filter(x=>wanted.includes(x.tc)&&(x.tc!=='low'||x.pr.conf>=LOW_FLOOR));
-  const lowCut=sel==='all'?legsAll.filter(x=>x.tc==='low'&&x.pr.conf<LOW_FLOOR).length:0;
+  // coin flips (under 55%) are never legs; the band does what the old 58% floor on LOW did
+  const inTier=legsAll.filter(x=>wanted.includes(x.tc));
+  const lowCut=sel==='all'?legsAll.filter(x=>x.tc==='coin').length:0;
   S.bank.parlayOff=S.bank.parlayOff||{};
   const off=S.bank.parlayOff;
   const priced=inTier.filter(x=>mlToDec(x.ml)!=null);
@@ -1287,7 +1291,7 @@ function renderParlay(){
   if(!games.length){ el.innerHTML=html+'<div class="empty">No unplayed games this week.</div>'; wireParlay([]); return; }
   if(legs.length<2){
     if(!priced.length){
-      el.innerHTML=html+`<div class="empty">${inTier.length?'None of those picks have a moneyline loaded yet. Fetch or upload odds above.':(sel==='all'&&lowCut?`No picks at 58% or better this week. ${lowCut} LOW pick${lowCut===1?'':'s'} fell under the floor.`:'No picks in that confidence band this week.')}</div>`;
+      el.innerHTML=html+`<div class="empty">${inTier.length?'None of those picks have a moneyline loaded yet. Fetch or upload odds above.':(sel==='all'&&lowCut?`No picks at 55% or better this week. ${lowCut} coin flip${lowCut===1?'':'s'} left out.`:'No picks in that confidence band this week.')}</div>`;
       wireParlay([]); return;
     }
     html+=legTable(priced,off,legs.length?stake:null);
@@ -1463,7 +1467,7 @@ function renderBank(){
   const games=S.schedule.filter(g=>+g.week===w&&g.result==null).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
   const plan=S.bank.weeks[w];
   const pick=g=>{ const pr=predict(g,S.teams); const tc=tier(pr.conf)[0]; return {pr,tc}; };
-  const eligible=games.map(g=>({g,...pick(g)})).filter(x=>S.bank.filter==='all'||(S.bank.filter==='med'&&x.tc!=='low')||(S.bank.filter==='high'&&x.tc==='high'));
+  const eligible=games.map(g=>({g,...pick(g)})).filter(x=>S.bank.filter==='all'||(S.bank.filter==='med'&&(x.tc==='med'||x.tc==='high'))||(S.bank.filter==='high'&&x.tc==='high'));
   const logged=betRows(); const totalStaked=logged.reduce((s,r)=>s+r.staked,0); const totalNet=logged.reduce((s,r)=>s+r.returned-r.staked,0);
   $('bkStats').innerHTML=`<div class="stat"><label style="display:block"><input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="font-family:var(--display);font-size:24px;font-weight:700;width:150px;padding:2px 6px;border:1px solid var(--line);border-radius:6px"></label><span>current balance, edit any time</span></div>
     <div class="stat"><label style="display:block"><select id="bkFilter" style="font-family:var(--display);font-size:18px;font-weight:600;padding:5px 6px;border:1px solid var(--line);border-radius:6px"><option value="all">Every game</option><option value="med">MED and HIGH</option><option value="high">HIGH only</option></select></label><span>confidence type</span></div>
