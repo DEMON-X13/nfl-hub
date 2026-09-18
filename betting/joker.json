@@ -3,7 +3,7 @@
  "formula": "gradient boosted trees, depth 4, 25 rounds, learning rate 0.1, min leaf 5",
  "fitted_on": "2019-2025 regular season and playoffs",
  "fitted_at": "2026-09-15T19:04+00:00",
- "generated": "2026-09-18T14:52+00:00",
+ "generated": "2026-09-18T19:16+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -178,7 +178,7 @@
    "home": "CHI",
    "away": "MIN",
    "pick": "MIN",
-   "pHome": 0.4659,
+   "pHome": 0.4632,
    "played": false
   },
   "2026_02_NO_BAL": {
