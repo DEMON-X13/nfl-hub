@@ -3,7 +3,7 @@
  "formula": "gradient boosted trees, depth 4, 25 rounds, learning rate 0.1, min leaf 5",
  "fitted_on": "2019-2025 regular season and playoffs",
  "fitted_at": "2026-09-15T19:04+00:00",
- "generated": "2026-09-15T19:05+00:00",
+ "generated": "2026-09-18T14:52+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -139,7 +139,7 @@
    "away": "DET",
    "pick": "BUF",
    "pHome": 0.6112,
-   "played": false
+   "played": true
   },
   "2026_02_CAR_ATL": {
    "week": 2,
@@ -154,7 +154,7 @@
    "home": "HOU",
    "away": "CIN",
    "pick": "CIN",
-   "pHome": 0.3705,
+   "pHome": 0.4049,
    "played": false
   },
   "2026_02_CLE_TB": {
@@ -234,7 +234,7 @@
    "home": "ARI",
    "away": "SEA",
    "pick": "ARI",
-   "pHome": 0.6006,
+   "pHome": 0.594,
    "played": false
   },
   "2026_02_WAS_DAL": {
