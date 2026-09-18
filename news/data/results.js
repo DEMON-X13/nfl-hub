@@ -65,5 +65,9 @@ const RESULTS = {
  "wk1:DEN-KC": [
   10,
   31
+ ],
+ "wk2:DET-BUF": [
+  31,
+  41
  ]
 };
