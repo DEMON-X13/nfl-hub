@@ -71,6 +71,16 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 .toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
 
 /* ---------- stat tiles ---------- */
+.stake-in{width:84px;text-align:right;font-variant-numeric:tabular-nums;padding:4px 6px;border:1px solid var(--line);border-radius:6px}
+.stake-in.fixed{border-color:var(--ink);font-weight:700}
+.sugg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.sugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
+.sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
+.sugg-top{display:flex;align-items:center;gap:8px} .sugg-top .n{font-weight:700;font-family:var(--display)} .sugg-top .grow{flex:1}
+.sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:6px} .sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.sugg-nums span{font-size:11px;color:var(--ink-2)}
+.sugg-legs{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)} .sugg-legs li{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
+.sugg-legs .g{flex:1;min-width:0;color:var(--ink-2)} .sugg-legs .pr{font-variant-numeric:tabular-nums;white-space:nowrap}
 .stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .stat{background:var(--panel);border:1px solid transparent;border-radius:var(--r-md);padding:14px 16px 12px;box-shadow:var(--sh-sm);position:relative;overflow:hidden;transition:box-shadow .2s var(--ease),transform .2s var(--ease)}
 .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),rgba(211,154,31,.25))}
@@ -381,6 +391,7 @@ th.sortable:hover{color:var(--ink)}
   </div>
   <div class="stat-strip" id="bkStats"></div>
   <div class="card" id="bkPlan"></div>
+  <div class="card" id="bkSuggest"></div>
   <div class="card" id="bkParlay"></div>
   <div id="bkHistory"></div>
 </section>
@@ -395,6 +406,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.40</td><td>Bank Roll: every stake in the week plan can be typed in; the games you have not touched re-split what is left of the week's risk. New Suggested parlays card under the plan, Safe, Medium and Aggressive, built from the ticked games: each leg is the model's pick, its chance the betting market's, and Load sends a tier to the parlay builder.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.39</td><td>Four confidence bands, cut where the walk-forward record changes: COIN FLIP under 55% (won 52%), LOW 55&ndash;60% (58%), MED 60&ndash;75% (66%), HIGH 75% and up (80%). Records shows coin flips separately. The parlay builder leaves coin flips out instead of applying a 58% floor to LOW. Labels only; predictions are unchanged.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.38</td><td>Records: the week by week table drops the Main Model misses column and centres every number under its title.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.37</td><td>Record &amp; Bets is split: Records keeps the chart, the pick grid and the week table, and a new Bet Log tab holds the bet entry, balance chart and bet table. The model legend is one line with each record, all lines solid. Week by week centres its column titles and drops the margin error column.</td></tr>
@@ -513,7 +525,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.39 \u00b7 2026-09-18';
+const APP_BUILD='v1.40 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1172,6 +1184,82 @@ function bankBalances(){ // balance is user-maintained; weeks are compared, not 
 
 // ---------- moneylines ----------
 const ODDS_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
+/* the market's chance that a team wins: its price's implied chance with the book's cut
+   removed across both sides. Backtested 2021-2025, sizing on these chances promised 54%
+   winning weeks and delivered 57%; the model's own promised 70% and delivered 46%. */
+function marketChance(game_id,team){
+  const o=S.odds&&S.odds[game_id]; const g=S.schedule.find(x=>x.game_id===game_id); if(!o||!g) return null;
+  const imp=m=>m==null||!isFinite(m)||m===0?null:(m>0?100/(m+100):Math.abs(m)/(Math.abs(m)+100));
+  const mine=imp(team===g.home_team?o.home:o.away), other=imp(team===g.home_team?o.away:o.home);
+  return mine==null?null:(other==null?mine:mine/(mine+other)); }
+/* the week plan's ticked games, with the model's pick, its band and its price */
+function planPool(){
+  const w=currentWeekDefault();
+  const draft=S.bank.draft&&S.bank.draft.week===w?S.bank.draft:null;
+  return S.schedule.filter(g=>+g.week===w&&g.result==null)
+    .sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime))
+    .map(g=>{ const pr=predict(g,S.teams); return {g,pr,tc:tier(pr.conf)[0],ml:oddsFor(g.game_id,pr.pick)}; })
+    .filter(x=>S.bank.filter==='all'||(S.bank.filter==='med'&&(x.tc==='med'||x.tc==='high'))||(S.bank.filter==='high'&&x.tc==='high'))
+    .filter(x=>!(draft&&draft.off[x.g.game_id]));
+}
+/* ---------- suggested parlays: safe, medium, aggressive ----------
+   One core parlay grown in three steps. Safe opens with the two likeliest legs and keeps
+   adding while every-leg-lands stays at 50% or better; Medium and Aggressive each add at
+   least one more, down to 30% and 15%. The next leg is the one with the best chance times
+   payout. Legs are in different games, so chances and prices multiply. */
+const BK_TIERS=[['safe','Safe',0.50,3],['med','Medium',0.30,5],['aggr','Aggressive',0.15,8]];
+function suggestBk(pool){
+  const legs=pool.filter(x=>x.tc!=='coin'&&x.ml!=null)
+    .map(x=>({...x,p:marketChance(x.g.game_id,x.pr.pick),D:mlToDec(x.ml)})).filter(x=>x.p!=null&&x.D);
+  const P=a=>a.reduce((t,x)=>t*x.p,1), Dm=a=>a.reduce((t,x)=>t*x.D,1);
+  const tiers=[]; let cur=[];
+  for(const [id,label,floor,cap] of BK_TIERS){
+    const start=cur.length, must=id==='safe'?2:start+1;
+    while(cur.length<cap){
+      let best=null;
+      for(const c of legs){ if(cur.includes(c)) continue;
+        const next=[...cur,c], p=P(next), forced=next.length<=must;
+        if(!forced&&p<floor) continue;
+        const sc=(forced&&id==='safe')?p:p*Dm(next);
+        if(!best||sc>best.sc) best={c,sc}; }
+      if(!best) break; cur=[...cur,best.c];
+    }
+    if(cur.length<2||cur.length===start) continue;
+    tiers.push({id,label,floor,legs:cur.slice(),p:P(cur),dec:Dm(cur),added:cur.length-start});
+  }
+  return {tiers,pool:legs.length};
+}
+function renderSuggestBk(){
+  const el=$('bkSuggest'); if(!el) return;
+  const w=currentWeekDefault(); const open=!S.bank.suggMin;
+  const stake=+(S.bank.suggStake??10);
+  const head=`<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Suggested parlays</h2><span class="muted">week ${w}</span><span class="grow"></span>
+    ${open?`<label>Bet $<input type="number" id="bkSuggStake" step="1" min="0" value="${stake}" style="width:80px"></label>`:''}
+    <button class="btn quiet" id="bkSuggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>`;
+  if(!open){ el.innerHTML=head; wireSuggestBk([]); return; }
+  const {tiers,pool}=suggestBk(planPool());
+  let body;
+  if(!tiers.length) body=`<p class="muted" style="margin:0">${pool<2?'A suggestion needs at least two ticked games with a price loaded that are not coin flips. Tick more games in the week plan above, or fetch odds.':'None of the ticked games combine into a parlay that clears 50%.'}</p>`;
+  else body=`<p class="muted" style="margin:0 0 12px;font-size:12px">From the games ticked in your week plan. Each leg is the model's pick; its chance is the betting market's, with the book's cut removed, which has been the more accurate of the two. The legs are in different games, so a book multiplies the prices, and so does this.</p>
+    <div class="sugg-grid">`+tiers.map((t,i)=>{ const ml=decToMl(t.dec);
+      return `<div class="sugg-tier ${t.id}">
+        <div class="sugg-top"><span class="n">${t.label}</span><span class="muted">${t.legs.length} legs</span><span class="grow"></span>${i?`<span class="muted">+${t.added} leg${t.added===1?'':'s'}</span>`:''}</div>
+        <div class="sugg-nums"><div><b>${Math.round(t.p*100)}%</b><span>chance all land</span></div><div><b>${fmtML(ml)}</b><span>price</span></div>
+          <div><b>$${(stake*t.dec).toFixed(2)}</b><span>returns on $${stake.toFixed(2)}</span></div><div><b>${Math.round(100*(1-t.p))}%</b><span>chance it misses</span></div></div>
+        <ul class="sugg-legs">${t.legs.map(x=>`<li>${pickTag(x.pr.pick)}<span class="g">${x.g.away_team} at ${x.g.home_team}</span><span class="pr">${fmtML(x.ml)} <span class="muted">${Math.round(x.p*100)}%</span></span></li>`).join('')}</ul>
+        <button class="btn quiet" data-sugg-load="${t.id}">Load into the parlay below</button></div>`; }).join('')+`</div>`;
+  el.innerHTML=head+body; wireSuggestBk(tiers);
+}
+function wireSuggestBk(tiers){
+  $('bkSuggToggle')?.addEventListener('click',()=>{ S.bank.suggMin=!S.bank.suggMin; save(); renderSuggestBk(); });
+  $('bkSuggStake')?.addEventListener('change',e=>{ S.bank.suggStake=Math.max(0,+e.target.value||0); save(); renderSuggestBk(); });
+  document.querySelectorAll('#bkSuggest button[data-sugg-load]').forEach(b=>b.addEventListener('click',()=>{
+    const t=tiers.find(x=>x.id===b.dataset.suggLoad); if(!t) return;
+    const w=currentWeekDefault(); const keep=new Set(t.legs.map(x=>x.g.game_id));
+    S.bank.parlaySel='all';
+    S.bank.parlayOff=Object.fromEntries(S.schedule.filter(g=>+g.week===w&&!keep.has(g.game_id)).map(g=>[g.game_id,true]));
+    save(); renderParlay(); }));
+}
 function amPayout(stake,ml){ if(ml==null||!isFinite(ml)||ml===0) return null;
   const profit = ml>0 ? stake*ml/100 : stake*100/Math.abs(ml);
   return {profit, ret: stake+profit}; }
@@ -1267,6 +1355,7 @@ function legTable(rows,off,stake){
    +`</tbody></table>`;
 }
 function renderParlay(){
+  renderSuggestBk();
   const el=$('bkParlay'); if(!el) return;
   const w=currentWeekDefault();
   const games=S.schedule.filter(g=>+g.week===w&&g.result==null)
@@ -1490,14 +1579,26 @@ function renderBank(){
     const draft=S.bank.draft&&S.bank.draft.week===w?S.bank.draft:(S.bank.draft={week:w,amt:S.bank.lastAmt??20,off:{}});
     if(draft.amt==null) draft.amt=S.bank.lastAmt??20;
     const chosen=eligible.filter(x=>!draft.off[x.g.game_id]); const wr=+draft.amt||0; const wp=chosen.length?wr/chosen.length:0;
+    /* amounts you typed stay put; every untouched game shares what is left evenly */
+    draft.fixed=draft.fixed||{};
+    for(const k of Object.keys(draft.fixed)) if(draft.off[k]||!chosen.some(x=>x.g.game_id===k)) delete draft.fixed[k];
+    const fixedIds=chosen.map(x=>x.g.game_id).filter(k=>draft.fixed[k]!=null);
+    const fixedSum=fixedIds.reduce((t,k)=>t+draft.fixed[k],0), nAuto=chosen.length-fixedIds.length;
+    const autoEach=nAuto?Math.max(0,(wr-fixedSum)/nAuto):0;
+    /* to the cent, with the odd cents handed out one a game, so the stakes shown add up exactly */
+    const autoAmt={}; { const ids=chosen.map(x=>x.g.game_id).filter(k=>draft.fixed[k]==null);
+      const cents=Math.max(0,Math.round((wr-fixedSum)*100)), base=ids.length?Math.floor(cents/ids.length):0;
+      ids.forEach((k,i)=>autoAmt[k]=(base+(i<cents-base*ids.length?1:0))/100); }
+    const stakeOf=gid=>draft.fixed[gid]!=null?draft.fixed[gid]:(autoAmt[gid]??0);
+    const placed=chosen.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
     html+=`<h2>Week ${w} plan</h2>
-      <div class="bar" style="margin:0 0 10px"><label>Risk this week $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label><span class="muted">${chosen.length?`split evenly across ${chosen.length} game${chosen.length===1?'':'s'} = <b>$${wp.toFixed(2)} each</b>`:'no games selected'}. Balance $${bal.toFixed(2)}.</span></div>
+      <div class="bar" style="margin:0 0 10px"><label>Risk this week $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label><span class="muted">${!chosen.length?'no games selected':(fixedIds.length?(nAuto?`${fixedIds.length} set by you, the other ${nAuto} share the rest at <b>$${autoEach.toFixed(2)} each</b>`:`all ${chosen.length} set by you, $${placed.toFixed(2)} of $${wr.toFixed(2)} placed`)+` <button class="btn quiet" id="bkEven" style="padding:4px 10px">Back to even</button>`:`split evenly across ${chosen.length} game${chosen.length===1?'':'s'} = <b>$${wp.toFixed(2)} each</b>. Type in any stake to set it; the rest re-split`)}. Balance $${bal.toFixed(2)}.</span></div>
       <div class="bar" style="margin:0 0 10px"><span class="muted">${chosen.length} of ${eligible.length} games in</span></div>`;
 
     const rowsData = eligible.map(x=>{ const on=!draft.off[x.g.game_id];
-      const ml=oddsFor(x.g.game_id,x.pr.pick); const po=on?amPayout(wp,ml):null;
-      return {x,on,ml,profit:po?po.profit:null,
-        sortConf:x.pr.conf, sortOdds:ml==null?null:mlToDec(ml), sortStake:on?wp:null, sortProfit:po?po.profit:null}; });
+      const ml=oddsFor(x.g.game_id,x.pr.pick); const stake=on?stakeOf(x.g.game_id):0; const po=on&&stake>0?amPayout(stake,ml):null;
+      return {x,on,ml,stake,fixed:draft.fixed[x.g.game_id]!=null,profit:po?po.profit:null,
+        sortConf:x.pr.conf, sortOdds:ml==null?null:mlToDec(ml), sortStake:on?stake:null, sortProfit:po?po.profit:null}; });
     const SORTS={
       game:(a,b)=>(a.x.g.away_team+a.x.g.home_team).localeCompare(b.x.g.away_team+b.x.g.home_team),
       pick:(a,b)=>a.x.pr.pick.localeCompare(b.x.pr.pick),
@@ -1515,19 +1616,19 @@ function renderBank(){
     const allOn=chosen.length===eligible.length, noneOn=chosen.length===0;
     const headCb=`<input type="checkbox" id="bkAllCb" ${allOn?'checked':''} ${(!allOn&&!noneOn)?'data-indeterminate="1"':''} aria-label="Select all games">`;
 
-    const body = sorted.map(({x,on,ml,profit})=>
+    const body = sorted.map(({x,on,ml,stake,fixed,profit})=>
       `<tr style="${on?'':'opacity:.5'}">`
       + `<td><input type="checkbox" data-bkg="${x.g.game_id}" ${on?'checked':''} aria-label="Include ${x.g.away_team} at ${x.g.home_team}"></td>`
       + `<td>${x.g.away_team} at ${x.g.home_team}</td>`
       + `<td>${pickTag(x.pr.pick)}</td>`
       + `<td><span class="tier ${x.tc}">${tier(x.pr.conf)[1]} ${Math.round(x.pr.conf*100)}%</span></td>`
       + `<td class="num ${ml==null?'muted':''}">${fmtML(ml)}</td>`
-      + `<td class="num">${on?'$'+wp.toFixed(2):'–'}</td>`
+      + `<td class="num">${on?`<input type="number" class="stake-in${fixed?' fixed':''}" data-stake="${x.g.game_id}" step="0.01" min="0" value="${stake.toFixed(2)}" aria-label="Stake on ${x.g.away_team} at ${x.g.home_team}">`:'–'}</td>`
       + `<td class="num ${profit!=null?'delta up':'muted'}">${profit!=null?'+$'+profit.toFixed(2):'–'}</td></tr>`
     ).join('');
 
-    const mlTot=(()=>{let s=0;chosen.forEach(x=>{const po=amPayout(wp,oddsFor(x.g.game_id,x.pr.pick)); if(po)s+=po.profit;});return s;})();
-    const tot = `<tr class="totrow"><td></td><td colspan="3"><b>If every pick hits</b></td><td></td><td class="num"><b>$${chosen.length?wr.toFixed(2):'0.00'}</b></td><td class="num delta up"><b>+$${mlTot.toFixed(2)}</b></td></tr>`;
+    const mlTot=(()=>{let s=0;chosen.forEach(x=>{const st=stakeOf(x.g.game_id); const po=st>0?amPayout(st,oddsFor(x.g.game_id,x.pr.pick)):null; if(po)s+=po.profit;});return s;})();
+    const tot = `<tr class="totrow"><td></td><td colspan="3"><b>If every pick hits</b></td><td></td><td class="num"><b>$${placed.toFixed(2)}</b></td><td class="num delta up"><b>+$${mlTot.toFixed(2)}</b></td></tr>`;
 
     html += eligible.length
       ? `<table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Model pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${sh('stake','Stake')}${sh('profit','Profit')}</tr></thead><tbody>${body}${tot}</tbody></table>`
@@ -1543,7 +1644,17 @@ function renderBank(){
     if(S.bank.sort===k) S.bank.sortDir=(S.bank.sortDir==='asc')?'desc':'asc';
     else { S.bank.sort=k; S.bank.sortDir='asc'; }
     save(); renderBank(); }));
-  $('bkWeekAmt')?.addEventListener('change',e=>{ const v=Math.max(0,Math.round(+e.target.value||0)); S.bank.lastAmt=v; S.bank.draft.amt=v; save(); renderBank(); });
+  $('bkWeekAmt')?.addEventListener('change',e=>{ const v=Math.max(0,Math.round(+e.target.value||0)); S.bank.lastAmt=v; S.bank.draft.amt=v;
+    /* a risk below what is already set would leave nothing sensible to share: start even */
+    const set=Object.entries(S.bank.draft.fixed||{}).filter(([k])=>!S.bank.draft.off[k]).reduce((t,[,a])=>t+a,0);
+    if(set>v) S.bank.draft.fixed={};
+    save(); renderBank(); });
+  $('bkEven')?.addEventListener('click',()=>{ S.bank.draft.fixed={}; save(); renderBank(); });
+  $('bkPlan').querySelectorAll('input[data-stake]').forEach(inp=>inp.addEventListener('change',()=>{
+    const d=S.bank.draft, gid=inp.dataset.stake, total=+d.amt||0;
+    const others=Object.entries(d.fixed||{}).filter(([k])=>k!==gid&&!d.off[k]).reduce((t,[,a])=>t+a,0);
+    const v=Math.max(0,Math.min(Math.round((+inp.value||0)*100)/100,Math.round((total-others)*100)/100));
+    (d.fixed=d.fixed||{})[gid]=v; save(); renderBank(); }));
   $('bkPlan').querySelectorAll('input[data-bkg]').forEach(c=>c.addEventListener('change',()=>{ if(c.checked) delete S.bank.draft.off[c.dataset.bkg]; else S.bank.draft.off[c.dataset.bkg]=true; save(); renderBank(); }));
   $('bkReopen')?.addEventListener('click',()=>{ delete S.bank.weeks[w]; save(); renderBank(); });
   // history
