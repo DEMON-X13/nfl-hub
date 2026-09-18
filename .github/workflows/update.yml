@@ -12,6 +12,14 @@ on:
     - cron: "0 17 * * 1"    # Monday 1pm ET: catch-up
     - cron: "0 11 * * 2"    # Tuesday 7am ET: Monday night game, week rolls over
     - cron: "0 17 * * 2"    # Tuesday 1pm ET: catch-up
+    # post-game: about an hour after the latest finish each slot sees all season,
+    # so AI Picks and the records update the same night. nflverse posts a final
+    # within minutes of the whistle. Free, like everything else in this job.
+    - cron: "47 5 * * 5"    # Thursday night game
+    - cron: "17 22 * * 0"   # Sunday early games
+    - cron: "47 1 * * 1"    # Sunday late games
+    - cron: "47 5 * * 1"    # Sunday night game
+    - cron: "47 5 * * 2"    # Monday night game
   workflow_dispatch:
     inputs:
       rebuild:
@@ -23,7 +31,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: update
+  # one group per workflow: GitHub cancels a pending run whenever a newer one queues
+  # in the same group, and post-game runs in all three would have collided
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -57,6 +67,12 @@ jobs:
           git add betting/state.json betting/joker.json betting/index.html betting/admin.html
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "betting: update $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git pull --rebase
-            git push
+            # each job has its own concurrency group now, so two can finish together:
+            # retry the pull-and-push, and fail honestly if all three attempts lose
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
           fi

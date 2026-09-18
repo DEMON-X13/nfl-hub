@@ -7,6 +7,13 @@ on:
     - cron: "0 12 * * 5"    # Friday
     - cron: "0 12 * * 1"    # Monday
     - cron: "0 12 * * 2"    # Tuesday
+    # post-game: results and team stats the same night. The narrative is untouched;
+    # run-auto only refreshes the self-updating parts and drafts a week it cannot show.
+    - cron: "27 6 * * 5"    # after Thursday night
+    - cron: "27 23 * * 0"   # after Sunday early
+    - cron: "27 2 * * 1"    # after Sunday late
+    - cron: "27 6 * * 1"    # after Sunday night
+    - cron: "27 6 * * 2"    # after Monday night
   workflow_dispatch:
   push:
     # a change to the tracker's pull code runs it once, so a fix is proven straight away
@@ -17,7 +24,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: update
+  # one group per workflow: GitHub cancels a pending run whenever a newer one queues
+  # in the same group, and post-game runs in all three would have collided
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -43,6 +52,12 @@ jobs:
           git add news/data/results.js news/data/stats2026.js news/data/ranks2026.js news/data/players2026.js news/data/units2026.js news/data/week*.js news/tools/out
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "news: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git pull --rebase
-            git push
+            # each job has its own concurrency group now, so two can finish together:
+            # retry the pull-and-push, and fail honestly if all three attempts lose
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
           fi

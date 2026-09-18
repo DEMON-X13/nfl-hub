@@ -13,6 +13,14 @@ on:
     - cron: "17 8 * * 3"    # Wednesday 04:17 ET: holiday games, nothing in an ordinary week
     - cron: "17 8 * * 4"    # Thursday 04:17 ET: Thursday night, and Thanksgiving's early game
     - cron: "17 23 * * 6"   # Saturday 19:17 ET: the Sunday slate, priced ~18h out
+    # post-game, score only: finals, game bets settled, started games out of the
+    # suggestions. Every one of these sits on minute 7, and the run step passes
+    # --no-odds for any schedule starting "7 ", so none of them spends a credit.
+    - cron: "7 6 * * 5"     # after Thursday night
+    - cron: "7 23 * * 0"    # after Sunday early
+    - cron: "7 2 * * 1"     # after Sunday late
+    - cron: "7 6 * * 1"     # after Sunday night
+    - cron: "7 6 * * 2"     # after Monday night
   workflow_dispatch:
     inputs:
       no_odds:
@@ -24,7 +32,9 @@ permissions:
   contents: write
 
 concurrency:
-  group: update
+  # one group per workflow: GitHub cancels a pending run whenever a newer one queues
+  # in the same group, and post-game runs in all three would have collided
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -46,7 +56,9 @@ jobs:
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           PYTHONUTF8: "1"
-        run: python weekly.py --no-commit ${{ inputs.no_odds && '--no-odds' || '' }}
+        # a scheduled run cannot carry the no_odds input, so the post-game crons are
+        # recognised by their minute: they all start "7 ", the price pulls start "17 "
+        run: python weekly.py --no-commit ${{ (inputs.no_odds || startsWith(github.event.schedule, '7 ')) && '--no-odds' || '' }}
       - name: Publish the pages
         run: node props/build/publish.js
       - name: Commit if anything changed
@@ -56,8 +68,14 @@ jobs:
           git add props/index.html props/admin.html props/app props/data
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "props: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git pull --rebase
-            git push
+            # each job has its own concurrency group now, so two can finish together:
+            # retry the pull-and-push, and fail honestly if all three attempts lose
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
           fi
       - name: Fail the run if the build reported problems
         if: always()
