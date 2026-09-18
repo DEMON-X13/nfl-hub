@@ -71,7 +71,12 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 .toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
 
 /* ---------- stat tiles ---------- */
-.stake-in{width:70px;text-align:right;font-variant-numeric:tabular-nums;padding:3px 6px;border:1px solid var(--line);border-radius:6px}
+#tab-bank input[type=number]::-webkit-inner-spin-button,#tab-bank input[type=number]::-webkit-outer-spin-button{opacity:1}
+#bkPlan>.bar,#bkParlay>.bar,#bkPlan>h2+.bar{justify-content:center}
+#bkPlan table,#bkParlay table{margin-left:auto;margin-right:auto}
+#bkParlay th,#bkParlay td{padding:11px 14px}
+#bkParlay .stat-strip{margin-top:16px}
+.stake-in{width:80px;text-align:right;font-variant-numeric:tabular-nums;padding:3px 6px;border:1px solid var(--line);border-radius:6px}
 #bkPlan table,#bkParlay table{width:auto;min-width:0}
 #bkPlan th,#bkPlan td,#bkParlay th,#bkParlay td{padding:7px 12px}
 #bkPlan td.num,#bkParlay td.num{white-space:nowrap}
@@ -406,6 +411,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.42</td><td>Bank Roll: the risk line is just the amount, with RESET when stakes are set. Stake arrows step by $1 and every number box shows its arrows. The week plan and parlay payout are centred, and the parlay rows match the plan's spacing.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.41</td><td>COIN FLIP is now 50/50, in light red. A pick's band is decided on the whole-number percentage the page shows, so a pick shown as 55% is always LOW. Bank Roll's week plan and parlay tables are tighter.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.40</td><td>Bank Roll: every stake in the week plan can be typed in; the games you have not touched re-split what is left of the week's risk. New Suggested parlays card under the plan, Safe, Medium and Aggressive, built from the ticked games: each leg is the model's pick, its chance the betting market's, and Load sends a tier to the parlay builder.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.39</td><td>Four confidence bands, cut where the walk-forward record changes: COIN FLIP under 55% (won 52%), LOW 55&ndash;60% (58%), MED 60&ndash;75% (66%), HIGH 75% and up (80%). Records shows coin flips separately. The parlay builder leaves coin flips out instead of applying a 58% floor to LOW. Labels only; predictions are unchanged.</td></tr>
@@ -523,7 +529,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.41 \u00b7 2026-09-18';
+const APP_BUILD='v1.42 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1347,7 +1353,7 @@ function legTable(rows,off,stake){
   const arrow=k=>key===k?(dir==='asc'?' ▲':' ▼'):'';
   const numCols=new Set(['odds','solo']);
   const sh=(k,label)=>`<th class="sortable${numCols.has(k)?' num':''}" data-psort="${k}">${label}${arrow(k)}</th>`;
-  return `<div class="bar" style="margin:0 0 6px"><span class="muted">${nOn} of ${rows.length} legs in</span></div>`
+  return `<div class="bar" style="margin:0 0 6px;justify-content:center"><span class="muted">${nOn} of ${rows.length} legs in</span></div>`
    +`<table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${stake!=null?sh('solo','Alone pays'):''}</tr></thead><tbody>`
    +sorted.map(x=>{const on=!off[x.g.game_id]; const solo=stake!=null?amPayout(stake,x.ml):null;
      return `<tr style="${on?'':'opacity:.45'}"><td><input type="checkbox" data-leg="${x.g.game_id}" ${on?'checked':''} aria-label="Include ${x.g.away_team} at ${x.g.home_team}"></td><td>${x.g.away_team} at ${x.g.home_team}</td><td>${pickTag(x.pr.pick)}</td><td><span class="tier ${x.tc}">${tier(x.pr.conf)[1]} ${Math.round(x.pr.conf*100)}%</span></td><td class="num">${fmtML(x.ml)}</td>${stake!=null?`<td class="num muted">${solo?'$'+solo.ret.toFixed(2):'–'}</td>`:''}</tr>`;}).join('')
@@ -1591,7 +1597,7 @@ function renderBank(){
     const stakeOf=gid=>draft.fixed[gid]!=null?draft.fixed[gid]:(autoAmt[gid]??0);
     const placed=chosen.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
     html+=`<h2>Week ${w} plan</h2>
-      <div class="bar" style="margin:0 0 10px"><label>Risk this week $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label><span class="muted">${!chosen.length?'no games selected':(fixedIds.length?(nAuto?`${fixedIds.length} set by you, the other ${nAuto} share the rest at <b>$${autoEach.toFixed(2)} each</b>`:`all ${chosen.length} set by you, $${placed.toFixed(2)} of $${wr.toFixed(2)} placed`)+` <button class="btn quiet" id="bkEven" style="padding:4px 10px">Back to even</button>`:`split evenly across ${chosen.length} game${chosen.length===1?'':'s'} = <b>$${wp.toFixed(2)} each</b>. Type in any stake to set it; the rest re-split`)}. Balance $${bal.toFixed(2)}.</span></div>
+      <div class="bar" style="margin:0 0 10px"><label>Risk this week $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label>${fixedIds.length?`<button class="btn quiet" id="bkEven" style="padding:5px 12px">RESET</button>`:''}</div>
       <div class="bar" style="margin:0 0 10px"><span class="muted">${chosen.length} of ${eligible.length} games in</span></div>`;
 
     const rowsData = eligible.map(x=>{ const on=!draft.off[x.g.game_id];
@@ -1622,7 +1628,7 @@ function renderBank(){
       + `<td>${pickTag(x.pr.pick)}</td>`
       + `<td><span class="tier ${x.tc}">${tier(x.pr.conf)[1]} ${Math.round(x.pr.conf*100)}%</span></td>`
       + `<td class="num ${ml==null?'muted':''}">${fmtML(ml)}</td>`
-      + `<td class="num">${on?`<input type="number" class="stake-in${fixed?' fixed':''}" data-stake="${x.g.game_id}" step="0.01" min="0" value="${stake.toFixed(2)}" aria-label="Stake on ${x.g.away_team} at ${x.g.home_team}">`:'–'}</td>`
+      + `<td class="num">${on?`<input type="number" class="stake-in${fixed?' fixed':''}" data-stake="${x.g.game_id}" step="1" min="0" value="${stake.toFixed(2)}" aria-label="Stake on ${x.g.away_team} at ${x.g.home_team}">`:'–'}</td>`
       + `<td class="num ${profit!=null?'delta up':'muted'}">${profit!=null?'+$'+profit.toFixed(2):'–'}</td></tr>`
     ).join('');
 
