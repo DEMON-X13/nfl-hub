@@ -21,6 +21,11 @@ on:
     - cron: "7 2 * * 1"     # after Sunday late
     - cron: "7 6 * * 1"     # after Sunday night
     - cron: "7 6 * * 2"     # after Monday night
+    # player stats: nflverse's stats file trails the final score by hours (Thursday
+    # night's game landed about nine hours after the whistle), so these runs pick them up
+    - cron: "7 16 * * 5"    # Thursday night's stats
+    - cron: "7 16 * * 1"    # Sunday's stats
+    - cron: "7 16 * * 2"    # Monday night's stats
   workflow_dispatch:
     inputs:
       no_odds:
