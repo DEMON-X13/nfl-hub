@@ -106,7 +106,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 .sugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
 .sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
 .sugg-top{display:flex;align-items:center;gap:8px} .sugg-top .n{font-weight:700;font-family:var(--display)} .sugg-top .grow{flex:1}
-.sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:6px} .sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums}
+.sugg-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center} .sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .sugg-nums span{font-size:11px;color:var(--ink-2)}
 .sugg-legs{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)} .sugg-legs li{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px}
 .sugg-legs .g{flex:1;min-width:0;color:var(--ink-2)} .sugg-legs .pr{font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -432,6 +432,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.47</td><td>Bank Roll: the first Confidence button is ALL and includes 50/50 picks. Suggested parlay cards show chance, odds and returns on one line; "chance it misses" is gone.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.46</td><td>AI Picks' check marks sit in their circles again. Bank Roll's plan controls are one toolbar (Stake, Confidence, Bet type), the plan and Bet Build tables are wider, and the suggestion cards' buttons line up along the bottom.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.45</td><td>Bank Roll in one place. Suggested parlays sit on top and can be locked in. The week plan and the parlay are one card: Stake, then LOW + MED + HIGH, MED + HIGH or HIGH only, then a Straight up / Parlay toggle, and Lock in. A new Bet Build card lists what you have locked in, grades each bet WON, LOST or PUSH as results come in, and sends the week to the Bet Log once everything is settled.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.44</td><td>Bank Roll: the week plan and parlay payout columns are spaced further apart.</td></tr>
@@ -554,7 +555,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.46 \u00b7 2026-09-18';
+const APP_BUILD='v1.47 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1223,9 +1224,9 @@ function marketChance(game_id,team){
   const mine=imp(team===g.home_team?o.home:o.away), other=imp(team===g.home_team?o.away:o.home);
   return mine==null?null:(other==null?mine:mine/(mine+other)); }
 /* ---------- Bank Roll: one band filter for the suggestions, the plan and the parlay ----------
-   LOW + MED + HIGH, MED + HIGH or HIGH only. 50/50 picks are never offered. */
-const BK_FILTERS=[['all','LOW + MED + HIGH'],['med','MED + HIGH'],['high','HIGH only']];
-function bkWanted(tc){ const f=S.bank.filter; return f==='high'?tc==='high':f==='med'?(tc==='med'||tc==='high'):tc!=='coin'; }
+   ALL (50/50s included), MED + HIGH or HIGH only. The suggestions never use a 50/50. */
+const BK_FILTERS=[['all','ALL'],['med','MED + HIGH'],['high','HIGH only']];
+function bkWanted(tc){ const f=S.bank.filter; return f==='high'?tc==='high':f==='med'?(tc==='med'||tc==='high'):true; }
 /* this week's unplayed games in the chosen band, with the model's pick, its band and its price */
 function bkGames(){
   const w=currentWeekDefault();
@@ -1285,8 +1286,8 @@ function renderSuggestBk(){
     <div class="sugg-grid">`+tiers.map((t,i)=>{ const ml=decToMl(t.dec);
       return `<div class="sugg-tier ${t.id}">
         <div class="sugg-top"><span class="n">${t.label}</span><span class="muted">${t.legs.length} legs</span><span class="grow"></span>${i?`<span class="muted">+${t.added} leg${t.added===1?'':'s'}</span>`:''}</div>
-        <div class="sugg-nums"><div><b>${Math.round(t.p*100)}%</b><span>chance all land</span></div><div><b>${fmtML(ml)}</b><span>price</span></div>
-          <div><b>$${(stake*t.dec).toFixed(2)}</b><span>returns on $${stake.toFixed(2)}</span></div><div><b>${Math.round(100*(1-t.p))}%</b><span>chance it misses</span></div></div>
+        <div class="sugg-nums"><div><b>${Math.round(t.p*100)}%</b><span>chance all land</span></div><div><b>${fmtML(ml)}</b><span>odds</span></div>
+          <div><b>$${(stake*t.dec).toFixed(2)}</b><span>returns on $${stake.toFixed(2)}</span></div></div>
         <ul class="sugg-legs">${t.legs.map(x=>`<li>${pickTag(x.pr.pick)}<span class="g">${x.g.away_team} at ${x.g.home_team}</span><span class="pr">${fmtML(x.ml)} <span class="muted">${Math.round(x.p*100)}%</span></span></li>`).join('')}</ul>
         <div class="sugg-btns"><button class="btn go" data-sugg-lock="${t.id}" ${stake>0?'':'disabled'}>Lock in</button><button class="btn quiet" data-sugg-load="${t.id}">Edit below</button></div></div>`; }).join('')+`</div>`;
   el.innerHTML=head+body; wireSuggestBk(tiers);
