@@ -332,6 +332,11 @@ th.sortable:hover{color:var(--ink)}
 .sugg-legs li{padding:3px 0}
 .sugg-btns .btn{padding:7px 12px}
 /* v1.50 */
+.sugg-bet{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.sugg-bet label{font-weight:700;font-size:15px;color:var(--ink)}
+.sugg-bet input{width:84px;height:32px;padding:0 8px;border:1px solid var(--line-2);border-radius:8px;font:inherit;font-weight:600}
+.sugg-foot{display:flex;justify-content:flex-end;margin-top:10px}
+.sugg-foot .btn{padding:4px 10px;font-size:12px}
 .wk-chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
 .bk-ctrl{align-items:center}
 .bk-ctrl .grp{align-items:center}
@@ -463,6 +468,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.53</td><td>Parlay Builder: no balance box. Bet $ sits on its own line under Suggested parlays, in bold; Minimize is a small button at the card's bottom right.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.52</td><td>Bank Roll is now Parlay Builder. Its balance, net and total-return tiles are gone (the Bet Log tracks net and return); the balance box sits in the Suggested parlays header, and the week is a pill beside the title.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.51</td><td>Stat tiles carry their gold mark along the top edge instead of down the left. The public page now has the Backup tab too.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.50</td><td>Bank Roll: the balance tiles and the plan toolbar are centred; the tiles read "current balance" and "total return"; stake boxes have a $ in front.</td></tr>
@@ -608,7 +614,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.52 \u00b7 2026-09-19';
+const APP_BUILD='v1.53 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1328,11 +1334,10 @@ function renderSuggestBk(){
   const el=$('bkSuggest'); if(!el) return;
   const w=currentWeekDefault(); const open=!S.bank.suggMin;
   const stake=+(S.bank.suggStake??10);
-  const head=`<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Suggested parlays</h2><span class="wk-chip">Week ${w}</span><span class="grow"></span>
-    <label>Balance $<input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="width:100px" aria-label="Current balance"></label>
-    ${open?`<label>Bet $<input type="number" id="bkSuggStake" step="1" min="0" value="${stake}" style="width:80px"></label>`:''}
-    <button class="btn quiet" id="bkSuggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>`;
-  if(!open){ el.innerHTML=head; wireSuggestBk([]); return; }
+  const head=`<div class="bar" style="margin:0 0 6px"><h2 style="margin:0">Suggested parlays</h2><span class="wk-chip">Week ${w}</span></div>`
+    +(open?`<div class="sugg-bet"><label for="bkSuggStake">Bet $</label><input type="number" id="bkSuggStake" step="1" min="0" value="${stake}"></div>`:'');
+  const foot=`<div class="sugg-foot"><button class="btn quiet" id="bkSuggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>`;
+  if(!open){ el.innerHTML=head+foot; wireSuggestBk([]); return; }
   const {tiers,pool}=suggestBk(bkGames());
   let body;
   if(!tiers.length) body=`<p class="muted" style="margin:0">${pool<2?'A suggestion needs at least two of this week’s picks in the chosen band with a price loaded. Pick a wider band in the plan below, or fetch odds.':'None of this week’s picks combine into a parlay that clears 50%.'}</p>`;
@@ -1344,11 +1349,10 @@ function renderSuggestBk(){
           <div><b>$${(stake*t.dec).toFixed(2)}</b><span>returns on $${stake.toFixed(2)}</span></div></div>
         <ul class="sugg-legs">${t.legs.map(x=>`<li>${pickTag(x.pr.pick)}<span class="g">${x.g.away_team} at ${x.g.home_team}</span><span class="od">${fmtML(x.ml)}</span><span class="pc muted">${Math.round(x.p*100)}%</span></li>`).join('')}</ul>
         <div class="sugg-btns"><button class="btn go" data-sugg-lock="${t.id}" ${stake>0?'':'disabled'}>Lock in</button><button class="btn quiet" data-sugg-load="${t.id}">Edit below</button></div></div>`; }).join('')+`</div>`;
-  el.innerHTML=head+body; wireSuggestBk(tiers);
+  el.innerHTML=head+body+foot; wireSuggestBk(tiers);
 }
 function wireSuggestBk(tiers){
   $('bkSuggToggle')?.addEventListener('click',()=>{ S.bank.suggMin=!S.bank.suggMin; save(); renderSuggestBk(); });
-  $('bkStart')?.addEventListener('change',e=>{ S.bank.start=Math.max(0,+e.target.value||0); e.target.value=S.bank.start.toFixed(2); save(); });
   $('bkSuggStake')?.addEventListener('change',e=>{ S.bank.suggStake=Math.max(0,Math.round(+e.target.value||0)); save(); renderSuggestBk(); });
   document.querySelectorAll('#bkSuggest button[data-sugg-load]').forEach(b=>b.addEventListener('click',()=>{
     const t=tiers.find(x=>x.id===b.dataset.suggLoad); if(!t) return;
