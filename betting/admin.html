@@ -472,6 +472,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.55</td><td><b>Quarterback changes were being missed on the site.</b> Games were graded before the depth chart loaded, so no team's week 1 starter was recorded and a backup's start (Cooper Rush for Atlanta) never moved the pick. The depth chart now loads first, and the missing starter records are rebuilt from the games already graded.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.54</td><td>Price check on Straight up bets in Parlay Builder: each price carries a dot. Red: the price needs a higher win rate than the model gives the pick (-400 needs 80%). Amber: a close call. Green: the model clears it by 3+ points. Hover a price for the numbers.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.53</td><td>Parlay Builder: no balance box. Bet $ sits on its own line under Suggested parlays, in bold; Minimize is a small button at the card's bottom right.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.52</td><td>Bank Roll is now Parlay Builder. Its balance, net and total-return tiles are gone (the Bet Log tracks net and return); the balance box sits in the Suggested parlays header, and the week is a pill beside the title.</td></tr>
@@ -619,7 +620,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.54 \u00b7 2026-09-19';
+const APP_BUILD='v1.55 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -770,6 +771,25 @@ function qbAdj(team,w){
 function teamAdj(team,w){ return effAdj(team)+qbAdj(team,w).pts; }
 function qbNote(team,w){ const q=qbAdj(team,w); if(!q.pts) return null;
   return `${team}: QB ${qbName(q.last)} → ${qbName(q.exp)}${q.k?`, game ${q.k+1} of the change`:''} (${q.pts>0?'+':''}${q.pts.toFixed(1)})`; }
+/* a team's starter run, rebuilt from the starters recorded at grading, for teams whose games were graded
+   before any depth chart was loaded. Same rule as applyQBGame: a first start is measured against QB1. */
+function repairQBStints(){
+  if(!S.qb||!S.depth||!S.depth.byId) return 0;
+  S.qb.stint=S.qb.stint||{};
+  const at=gid=>S.schedule.find(x=>x.game_id===gid)||{};
+  const gids=Object.keys(S.qb.starters||{}).filter(gid=>S.processed&&S.processed[gid])
+    .sort((a,b)=>{ const A=at(a),B=at(b); return (+A.week-+B.week)||String((A.gameday||'')+(A.gametime||'')).localeCompare((B.gameday||'')+(B.gametime||'')); });
+  const fresh={};
+  for(const gid of gids) for(const [tm,rec] of Object.entries(S.qb.starters[gid]||{})){
+    if(S.qb.stint[tm]&&!fresh[tm]) continue;
+    const actual=rec&&rec.id; if(!actual) continue;
+    const cur=fresh[tm];
+    if(cur&&cur.last===actual) cur.k++;
+    else { const prev=cur?cur.last:((teamQBs(tm)[0]||{}).id||null); fresh[tm]={last:actual,gap:(!prev||prev===actual)?0:qbRating(prev)-qbRating(actual),k:1}; }
+  }
+  Object.assign(S.qb.stint,fresh);
+  return Object.keys(fresh).length;
+}
 // called when a game is graded: record who started, advance the stint, fold the game's dropbacks into the ratings
 function applyQBGame(g){
   const rec={}; const pend=pendingQB[g.game_id];
@@ -1803,8 +1823,9 @@ async function handleAnyFiles(files){
     const isInj=head.includes('report_status')||(head.includes('full_name')&&head.includes('week')&&!isRoster);
     (isDepth||isRoster||isInj?inj:data).push(f);
   }
+  /* depth, injuries and rosters first: grading records each team's starter only when a depth chart is loaded */
+  if(inj.length){ await processInjuryFiles(inj); repairQBStints(); }
   if(data.length) handleFiles(data);
-  if(inj.length) await processInjuryFiles(inj);
 }
 $('allFilesBtn').addEventListener('click',()=>{ $('allInput').click(); });
 $('allInput').addEventListener('change',e=>{ const files=[...e.target.files]; e.target.value=''; handleAnyFiles(files); });

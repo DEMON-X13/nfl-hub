@@ -20,6 +20,12 @@ on:
     - cron: "47 1 * * 1"    # Sunday late games
     - cron: "47 5 * * 1"    # Sunday night game
     - cron: "47 5 * * 2"    # Monday night game
+    # injury reports: a game's Out / Doubtful statuses come on the last report before it,
+    # Wednesday afternoon for Thursday night and Friday afternoon for Sunday and Monday.
+    # Without these runs the picks go into the weekend without them. Off the hour: this
+    # repo's scheduled runs land hours late and :00 is the minute most often dropped.
+    - cron: "23 12 * * 4"   # Thursday 8:23am ET: Wednesday's report, for Thursday night
+    - cron: "23 12 * * 6"   # Saturday 8:23am ET: Friday's report, for Sunday and Monday
   workflow_dispatch:
     inputs:
       rebuild:
