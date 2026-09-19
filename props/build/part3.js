@@ -670,7 +670,7 @@ function renderPricePull(){
   }
   el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>${bal}`;
 }
-function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull();
+function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull(); renderBackupState();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
@@ -786,7 +786,17 @@ $('allFiles').addEventListener('change',async e=>{
   }
   save(); renderAll();
 });
-$('exportBtn').addEventListener('click',()=>downloadText(`prop_model_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(S)));
+$('exportBtn').addEventListener('click',()=>{ S.lastBackup=Date.now(); downloadText(`prop_model_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(S)); save(); renderBackupState(); });
+/* how old the last backup is; red once it passes a week, or when there is something to lose and no backup */
+function renderBackupState(){
+  const el=$('backupState'); if(!el) return;
+  const mine=(S.saved||[]).length+Object.keys(S.parlay||{}).length;
+  if(!S.lastBackup){ el.className=mine?'err':'muted';
+    el.innerHTML=mine?'<b>No backup saved yet.</b> Your saved parlays live only in this browser.':'No backup saved yet. Nothing to lose until you save a parlay.'; return; }
+  const age=(Date.now()-S.lastBackup)/86400000, d=Math.floor(age);
+  el.className=age>7?'err':'ok';
+  el.innerHTML=`Last backup <b>${d===0?'today':d===1?'yesterday':d+' days ago'}</b>.`+(age>7?' That is getting old, save a fresh one.':'');
+}
 $('importBtn').addEventListener('click',()=>{
   if(!confirm('Import a backup?\n\nIt replaces everything currently here. This cannot be undone.')) return;
   $('importInput').click(); });
@@ -796,10 +806,6 @@ $('importInput').addEventListener('change',e=>{ const f=e.target.files[0]; e.tar
     S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{}; S.processedGames=S.processedGames||{};
     save(); renderAll(); alert('Backup restored.'); }catch(err){ alert('That file could not be read: '+err.message); } };
   rd.readAsText(f); });
-$('resetBtn').addEventListener('click',()=>{
-  const n=Object.keys(S.processed).length;
-  if(!confirm(`Reset to preseason?\n\nThis clears ${n} uploaded week${n===1?'':'s'} and rebuilds every projection from the 2025 baseline. Export a backup first if you are unsure.`)) return;
-  S=freshState(); S.ui={game:null,open:{},showAll:false}; save(); renderAll(); });
 
 boot();
 

@@ -556,6 +556,7 @@ th.sortable:hover{color:var(--ink)}
       const r=await fetch('state.json',{cache:'no-store'}); if(!r.ok) throw new Error('state.json '+r.status);
       const S=await r.json(); const mine=loadMine(); const picks=mine.myPicks||{};
       S.myPicks=picks; S.bets=mine.bets||{}; S.bank=mine.bank||{start:100,lastAmt:20,filter:'all',weeks:{}};
+      S.lastBackup=mine.lastBackup||null; S.lastBackupHow=mine.lastBackupHow||null;
       S.odds=Object.assign({},S.odds||{},mine.odds||{});
       for(const [gid,p] of Object.entries(S.processed||{})){
         const m=picks[gid]||null; p.myPick=m;
@@ -567,7 +568,7 @@ th.sortable:hover{color:var(--ink)}
     },
     async set(key,v){ try{ const S=JSON.parse(v);
       const own={}; for(const [gid,o] of Object.entries(S.odds||{})) if(o&&o.src!=='nflverse') own[gid]=o;
-      localStorage.setItem(MINE,JSON.stringify({myPicks:S.myPicks||{},bank:S.bank||null,bets:S.bets||{},odds:own})); }catch(e){} return true; }
+      localStorage.setItem(MINE,JSON.stringify({myPicks:S.myPicks||{},bank:S.bank||null,bets:S.bets||{},odds:own,lastBackup:S.lastBackup||null,lastBackupHow:S.lastBackupHow||null})); }catch(e){} return true; }
   };
   document.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>{ const el=document.getElementById('saveState'); if(el&&window.__published){ const d=new Date(window.__published); el.textContent='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } },600);
@@ -583,6 +584,19 @@ document.addEventListener('DOMContentLoaded',()=>{
   a.title='Opens GitHub Actions. Press Run workflow to download the latest files, grade, and republish now.';
   a.textContent='Refresh site now ↗'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
   st.insertAdjacentElement('afterend',a);
+});
+/* admin only: the season is rebuilt by the GitHub job, so Backup covers only what lives in this
+   browser. Rebuild and Reset belonged to uploading weeks by hand and go. */
+document.addEventListener('DOMContentLoaded',()=>{
+  for(const id of ['rebuildBtn','resetBtn']) document.getElementById(id)?.remove();
+  const bs=document.getElementById('backupState'), card=bs&&bs.closest('.card'); if(!card) return;
+  const h=card.querySelector('h2'); if(h) h.textContent='Backup';
+  let n=bs.nextElementSibling; while(n){ const nx=n.nextElementSibling; n.remove(); n=nx; }
+  bs.insertAdjacentHTML('afterend','<ul style="margin:12px 0 0">'
+    +'<li><b>Save backup now</b> writes a file with <b>your picks, Bet Log, bankroll and Bet Build</b>. Those live only in this browser: clearing site data or switching computers loses them, and nothing backs them up automatically any more.</li>'
+    +'<li><b>Import backup</b> restores one of those files, or moves your picks and bets to another computer.</li>'
+    +'<li>Ratings, results and odds are not your data to lose: the GitHub job rebuilds them and the site reloads them every time.</li></ul>'
+    +'<p class="muted" style="margin:10px 0 0">The note above turns red once your last backup is more than a week old. Backups land in your Downloads folder.</p>');
 });
 </script>
 <script>

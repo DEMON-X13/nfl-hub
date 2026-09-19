@@ -77,6 +77,11 @@ function load(picks) {
   check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.start === 250, 'admin: picks, bets and bankroll come from the same browser store as the viewer');
   check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
 
+  check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');
+  check(/your picks, Bet Log, bankroll and Bet Build/.test(da.getElementById('tab-backup').textContent), 'admin: Backup says what it covers');
+  a.window.eval('S.lastBackup=Date.now()-3*86400000; S.lastBackupHow="downloaded"; save()'); await sleep(900);
+  const kept = JSON.parse(a.window.localStorage.getItem('x_nfl_viewer_picks_2026') || '{}');
+  check(kept.lastBackup && Date.now() - kept.lastBackup > 2 * 86400000, 'admin: the last-backup time is kept in the browser store');
   console.log(fails ? `${fails} check(s) failed` : `viewer + admin smoke test passed (${graded.length} graded games in the published state)`);
   process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

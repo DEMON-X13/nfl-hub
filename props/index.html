@@ -128,6 +128,7 @@ th.sortable:hover{color:var(--ink)}
 .pill.ok{background:var(--pick-soft);color:var(--pick)}
 .log{background:var(--panel);border:1px solid transparent;border-radius:var(--r-md);padding:12px 16px;margin-top:14px;max-height:280px;overflow:auto;font-size:13px;box-shadow:var(--sh-sm)}
 .log div{padding:4px 0;border-bottom:1px solid var(--line)}
+#backupState.ok{color:var(--pick)} #backupState.err{color:var(--miss)}
 .log .ok{color:var(--pick)} .log .warn{color:#8A5E05} .log .err{color:var(--miss)}
 .bkline{width:100%;height:130px;display:block}
 .totrow td{border-top:2px solid var(--line-2);padding-top:10px;background:var(--panel-2);font-weight:600}
@@ -553,20 +554,20 @@ body.modal-open{overflow:hidden}
     </div>
   </div>
   <div class="card">
-    <h2>Backup and reset</h2>
+    <h2>Backup</h2>
     <p id="buildNote" class="muted" style="margin:0 0 10px"></p>
     <div class="bar" style="margin:0">
-      <button class="btn quiet" id="exportBtn">Export backup</button>
+      <button class="btn go" id="exportBtn">Save backup now</button>
       <button class="btn quiet" id="importBtn">Import backup</button>
       <input type="file" id="importInput" accept=".json" hidden>
-      <span class="grow"></span>
-      <button class="btn danger" id="resetBtn">Reset to preseason</button>
     </div>
+    <p id="backupState" class="muted" style="margin:12px 0 0"></p>
     <ul>
-      <li><b>Export backup</b> saves everything to a file: player form, team numbers and every week you've loaded. It otherwise lives only in this browser, so clearing site data would wipe it.</li>
-      <li><b>Import backup</b> restores one of those, or moves your season to another computer.</li>
-      <li><b>Reset to preseason</b> throws away every week you've uploaded and rebuilds from the 2025 baseline.</li>
+      <li><b>Save backup now</b> writes a file with <b>your saved parlays, the parlay builder and your stake</b>. Those live only in this browser: clearing site data or switching computers loses them, and nothing backs them up automatically.</li>
+      <li><b>Import backup</b> restores one of those files, or moves your parlays to another computer.</li>
+      <li>Stats, rosters, injuries and prices are not your data to lose: the GitHub job bakes them into the page and every load picks them up.</li>
     </ul>
+    <p class="muted" style="margin:10px 0 0">The note above turns red once your last backup is more than a week old. Backups land in your Downloads folder.</p>
   </div>
 </section>
 
@@ -583,7 +584,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v43 \u00b7 2026-09-18';
+const APP_BUILD='app v44 \u00b7 2026-09-19';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1944,7 +1945,7 @@ function renderPricePull(){
   }
   el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>${bal}`;
 }
-function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull();
+function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull(); renderBackupState();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
@@ -2060,7 +2061,17 @@ $('allFiles').addEventListener('change',async e=>{
   }
   save(); renderAll();
 });
-$('exportBtn').addEventListener('click',()=>downloadText(`prop_model_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(S)));
+$('exportBtn').addEventListener('click',()=>{ S.lastBackup=Date.now(); downloadText(`prop_model_${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(S)); save(); renderBackupState(); });
+/* how old the last backup is; red once it passes a week, or when there is something to lose and no backup */
+function renderBackupState(){
+  const el=$('backupState'); if(!el) return;
+  const mine=(S.saved||[]).length+Object.keys(S.parlay||{}).length;
+  if(!S.lastBackup){ el.className=mine?'err':'muted';
+    el.innerHTML=mine?'<b>No backup saved yet.</b> Your saved parlays live only in this browser.':'No backup saved yet. Nothing to lose until you save a parlay.'; return; }
+  const age=(Date.now()-S.lastBackup)/86400000, d=Math.floor(age);
+  el.className=age>7?'err':'ok';
+  el.innerHTML=`Last backup <b>${d===0?'today':d===1?'yesterday':d+' days ago'}</b>.`+(age>7?' That is getting old, save a fresh one.':'');
+}
 $('importBtn').addEventListener('click',()=>{
   if(!confirm('Import a backup?\n\nIt replaces everything currently here. This cannot be undone.')) return;
   $('importInput').click(); });
@@ -2070,10 +2081,6 @@ $('importInput').addEventListener('change',e=>{ const f=e.target.files[0]; e.tar
     S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{}; S.processedGames=S.processedGames||{};
     save(); renderAll(); alert('Backup restored.'); }catch(err){ alert('That file could not be read: '+err.message); } };
   rd.readAsText(f); });
-$('resetBtn').addEventListener('click',()=>{
-  const n=Object.keys(S.processed).length;
-  if(!confirm(`Reset to preseason?\n\nThis clears ${n} uploaded week${n===1?'':'s'} and rebuilds every projection from the 2025 baseline. Export a backup first if you are unsure.`)) return;
-  S=freshState(); S.ui={game:null,open:{},showAll:false}; save(); renderAll(); });
 
 boot();
 
