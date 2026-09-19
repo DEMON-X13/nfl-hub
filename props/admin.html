@@ -407,7 +407,7 @@ body.modal-open{overflow:hidden}
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
     <div class="gamehead">
       <div>Kickoff</div><div>Matchup</div><div class="c">Biggest projections</div>
-      <div class="c">Expected score</div><div class="c">Total pt</div><div class="c">Winner</div><div></div>
+      <div class="c">Expected score</div><div class="c">Total pt</div><div class="c">Model pick</div><div></div>
     </div>
     <div id="gamesList"></div>
   </div>
@@ -583,7 +583,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v42 \u00b7 2026-09-18';
+const APP_BUILD='app v43 \u00b7 2026-09-18';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1368,7 +1368,7 @@ function renderSlate(){
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
       <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>':(started?'<span class="pill warn">LIVE</span>':d.t)}</div>
-      <div class="matchup">${tag(g.a)}${winMark(g,g.a)}<span class="at">at</span>${tag(g.h)}${winMark(g,g.h)}</div>
+      <div class="matchup">${tag(g.a)}<span class="at">at</span>${tag(g.h)}</div>
       <div class="lead">${gameHeadline(g).map(x=>{
         const st={pass:'passing_yards',rush:'rushing_yards',rec:'receiving_yards'}[x.k];
         const a=fin?actualFor(g.w,x.v.pl.id):null;

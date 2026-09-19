@@ -94,7 +94,7 @@ function renderSlate(){
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
       <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>':(started?'<span class="pill warn">LIVE</span>':d.t)}</div>
-      <div class="matchup">${tag(g.a)}${winMark(g,g.a)}<span class="at">at</span>${tag(g.h)}${winMark(g,g.h)}</div>
+      <div class="matchup">${tag(g.a)}<span class="at">at</span>${tag(g.h)}</div>
       <div class="lead">${gameHeadline(g).map(x=>{
         const st={pass:'passing_yards',rush:'rushing_yards',rec:'receiving_yards'}[x.k];
         const a=fin?actualFor(g.w,x.v.pl.id):null;
