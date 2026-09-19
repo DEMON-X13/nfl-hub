@@ -331,6 +331,13 @@ th.sortable:hover{color:var(--ink)}
 .sugg-nums b{font-size:17px}
 .sugg-legs li{padding:3px 0}
 .sugg-btns .btn{padding:7px 12px}
+/* v1.50 */
+#bkStats .stat{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#bkStats .stat input{text-align:center}
+.bk-ctrl{align-items:center}
+.bk-ctrl .grp{align-items:center}
+.bk-ctrl .row{justify-content:center}
+.stake-cur{color:var(--muted);margin-right:5px}
 </style>
 </head>
 <body>
@@ -458,6 +465,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.50</td><td>Bank Roll: the balance tiles and the plan toolbar are centred; the tiles read "current balance" and "total return"; stake boxes have a $ in front.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.49</td><td>Suggested parlay cards: each leg's odds and chance sit in their own columns, spaced apart and lined up.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.48</td><td>Bank Roll is more compact. Stake amounts are centred in their boxes, clear of the arrows, and odds are centred in their column.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.47</td><td>Bank Roll: the first Confidence button is ALL and includes 50/50 picks. Suggested parlay cards show chance, odds and returns on one line; "chance it misses" is gone.</td></tr>
@@ -546,7 +554,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.49 \u00b7 2026-09-18';
+const APP_BUILD='v1.50 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1558,9 +1566,9 @@ function renderBank(){
   const plan=S.bank.weeks[w];
   const eligible=bkGames();
   const logged=betRows(); const totalStaked=logged.reduce((s,r)=>s+r.staked,0); const totalNet=logged.reduce((s,r)=>s+r.returned-r.staked,0);
-  $('bkStats').innerHTML=`<div class="stat"><label style="display:block"><input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="font-family:var(--display);font-size:24px;font-weight:700;width:150px;padding:2px 6px;border:1px solid var(--line);border-radius:6px"></label><span>current balance, edit any time</span></div>
+  $('bkStats').innerHTML=`<div class="stat"><label style="display:block"><input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="font-family:var(--display);font-size:24px;font-weight:700;width:150px;padding:2px 6px;border:1px solid var(--line);border-radius:6px"></label><span>current balance</span></div>
     <div class="stat"><b class="${totalNet>=0?'delta up':'delta down'}">${totalNet>=0?'+':'-'}$${Math.abs(totalNet).toFixed(2)}</b><span>net, ${logged.length} logged week${logged.length===1?'':'s'}</span></div>
-    <div class="stat"><b>${totalStaked?(100*totalNet/totalStaked).toFixed(1):'0.0'}%</b><span>return on money staked</span></div>`;
+    <div class="stat"><b>${totalStaked?(100*totalNet/totalStaked).toFixed(1):'0.0'}%</b><span>total return</span></div>`;
   $('bkStart').addEventListener('change',e=>{ S.bank.start=Math.max(0,+e.target.value||0); save(); renderBank(); });
   renderSuggestBk();
   let html=''; const msg=bkMsg; bkMsg=''; let onLock=null, shownIds=[];
@@ -1624,7 +1632,7 @@ function renderBank(){
     else if(mode==='straight'){
       html+=`<div class="bar" style="margin:0 0 10px"><span class="muted">${chosen.length} of ${avail.length} games in</span></div>`;
       const body=sorted.map(r=>`<tr style="${r.on?'':'opacity:.5'}">${lead(r)}`
-        +`<td class="num">${r.on?`<input type="number" class="stake-in${r.fixed?' fixed':''}" data-stake="${r.x.g.game_id}" step="1" min="0" value="${r.stake.toFixed(2)}" aria-label="Stake on ${r.x.g.away_team} at ${r.x.g.home_team}">`:'–'}</td>`
+        +`<td class="num">${r.on?`<span class="stake-cur">$</span><input type="number" class="stake-in${r.fixed?' fixed':''}" data-stake="${r.x.g.game_id}" step="1" min="0" value="${r.stake.toFixed(2)}" aria-label="Stake on ${r.x.g.away_team} at ${r.x.g.home_team}">`:'–'}</td>`
         +`<td class="num ${r.profit!=null?'delta up':'muted'}">${r.profit!=null?'+$'+r.profit.toFixed(2):'–'}</td></tr>`).join('');
       const placed=chosen.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
       const mlTot=chosen.reduce((t,x)=>{ const st=stakeOf(x.g.game_id); const po=st>0?amPayout(st,x.ml):null; return t+(po?po.profit:0); },0);
