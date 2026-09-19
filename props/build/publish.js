@@ -57,21 +57,6 @@ const ADMIN = `<script>
     put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
 })();
-/* admin only: a link straight to the job's Run workflow page, the manual refresh */
-document.addEventListener('DOMContentLoaded',()=>{
-  const st=document.getElementById('saveState'); if(!st) return;
-  const a=document.createElement('a'); a.className='sub'; a.target='_blank'; a.rel='noopener';
-  a.href='https://github.com/DEMON-X13/nfl-hub/actions/workflows/props.yml';
-  a.title='Opens GitHub Actions. Press Run workflow to pull fresh odds, bake and republish. This spends odds-API credits.';
-  a.textContent='Refresh site now \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
-  a.addEventListener('click',e=>{
-    if(!confirm('STOP \\u2014 this spends odds-API credits.\\n\\n'
-      +'A refresh pulls fresh prices at about 7 credits a game: roughly 112 for a full 16-game week, out of 500 free a month.\\n\\n'
-      +'Only run this when you actually want new prices. The Thursday and Saturday builds already do it on schedule.\\n\\n'
-      +'Open the Run workflow page?')) e.preventDefault();
-  });
-  st.insertAdjacentElement('afterend',a);
-});
 </script>
 `;
 fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), html.replace('</body>', ADMIN + '</body>'));
