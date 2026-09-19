@@ -75,26 +75,33 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 #bkPlan>.bar,#bkParlay>.bar,#bkPlan>h2+.bar{justify-content:center}
 #bkPlan table,#bkParlay table{margin-left:auto;margin-right:auto}
 .stake-in{width:80px;text-align:right;font-variant-numeric:tabular-nums;padding:3px 6px;border:1px solid var(--line);border-radius:6px}
-#bkPlan table,#bkParlay table{width:auto;min-width:0}
+#bkPlan table{width:100%;max-width:960px}
 #bkPlan th,#bkPlan td,#bkParlay th,#bkParlay td{padding:7px 22px}
 #bkPlan table.parlay td{padding:14px 22px}
 #bkPlan td.num,#bkParlay td.num{white-space:nowrap}
 .stake-in.fixed{border-color:var(--ink);font-weight:700}
-.seg{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line-2);border-radius:999px;background:var(--panel-2)}
-.seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-weight:600;padding:7px 20px;border-radius:999px;cursor:pointer}
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line-2);border-radius:999px;background:var(--panel)}
+.seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg button:not(.on):hover{color:var(--ink);background:var(--panel-2)}
+.bk-ctrl{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:16px 40px;margin:0 auto 18px;padding:14px 22px;max-width:960px;background:var(--panel-2);border:1px solid var(--line);border-radius:12px}
+.bk-ctrl .grp{display:flex;flex-direction:column;gap:6px}
+.bk-ctrl .lab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bk-ctrl .row{display:flex;align-items:center;gap:8px;height:36px}
+.bk-ctrl .row input{width:84px;height:34px;padding:0 8px;border:1px solid var(--line-2);border-radius:8px;font:inherit;font-weight:600;background:var(--panel)}
+.bk-ctrl .row .btn{padding:6px 12px;font-size:13px}
 .seg button.on{background:var(--ink);color:#fff}
 .btn:disabled{opacity:.5;cursor:default;transform:none;filter:none;box-shadow:none}
 .bk-in{font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:999px;background:#E3F2EA;color:#1F6F4A;margin-left:8px}
 #bkBuild>.bar{justify-content:center}
-#bkBuild table{margin-left:auto;margin-right:auto;width:auto;min-width:0}
+#bkBuild table{margin-left:auto;margin-right:auto;width:100%;max-width:960px}
 #bkBuild th,#bkBuild td{padding:10px 18px;vertical-align:middle}
 #bkBuild th{text-align:left} #bkBuild th.num,#bkBuild td.num{text-align:right;white-space:nowrap}
 #bkBuild .bl{display:flex;align-items:center;gap:8px;white-space:nowrap;margin:3px 0}
-.res{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.res.won{background:#E3F2EA;color:#1F6F4A} .res.lost{background:#FCECEA;color:#A8453A} .res.push{background:#E9EEF4;color:var(--ink-2)}
+.bres{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.bres.won{background:#E3F2EA;color:#1F6F4A} .bres.lost{background:#FCECEA;color:#A8453A} .bres.push{background:#E9EEF4;color:var(--ink-2)}
 .x-btn{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px}
 .x-btn:hover{color:#B23A32}
-.sugg-btns{display:flex;gap:8px} .sugg-btns .btn{flex:1}
+.sugg-btns{display:flex;gap:8px;margin-top:auto} .sugg-btns .btn{flex:1}
 .sugg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 .sugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
 .sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
@@ -425,6 +432,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.46</td><td>AI Picks' check marks sit in their circles again. Bank Roll's plan controls are one toolbar (Stake, Confidence, Bet type), the plan and Bet Build tables are wider, and the suggestion cards' buttons line up along the bottom.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.45</td><td>Bank Roll in one place. Suggested parlays sit on top and can be locked in. The week plan and the parlay are one card: Stake, then LOW + MED + HIGH, MED + HIGH or HIGH only, then a Straight up / Parlay toggle, and Lock in. A new Bet Build card lists what you have locked in, grades each bet WON, LOST or PUSH as results come in, and sends the week to the Bet Log once everything is settled.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.44</td><td>Bank Roll: the week plan and parlay payout columns are spaced further apart.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.43</td><td>Bank Roll: the parlay payout rows now have the same height as the week plan's; the v1.42 spacing had been overridden.</td></tr>
@@ -546,7 +554,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.45 \u00b7 2026-09-18';
+const APP_BUILD='v1.46 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1332,9 +1340,9 @@ function renderBuild(){
   if(!weeks.length){ el.innerHTML=html+'<p class="muted" style="margin:0;text-align:center">Nothing locked in yet. Tick games in the plan above and press Lock in, or lock in a suggested parlay.</p>'; return; }
   const mark=l=>{ const o=legOutcome(l); return o==='won'?'<span class="delta up">✓</span>':o==='lost'?'<span class="delta down">✗</span>':o==='push'?'<span class="muted">push</span>':''; };
   const res=x=>x.gr.st==='pending'?'<span class="muted">pending</span>'
-    :x.gr.st==='won'?`<span class="res won">WON</span> <span class="delta up">+$${(x.gr.ret-x.b.stake).toFixed(2)}</span>`
-    :x.gr.st==='push'?'<span class="res push">PUSH</span>'
-    :`<span class="res lost">LOST</span> <span class="delta down">-$${x.b.stake.toFixed(2)}</span>`;
+    :x.gr.st==='won'?`<span class="bres won">WON</span> <span class="delta up">+$${(x.gr.ret-x.b.stake).toFixed(2)}</span>`
+    :x.gr.st==='push'?'<span class="bres push">PUSH</span>'
+    :`<span class="bres lost">LOST</span> <span class="delta down">-$${x.b.stake.toFixed(2)}</span>`;
   for(const w of weeks){
     const W=buildWeek(w), net=W.returned-W.settledStake;
     html+=`<div class="bar" style="margin:${w===weeks[0]?'0':'22px'} 0 8px"><b>Week ${w}</b><span class="muted">${W.bets.length} bet${W.bets.length===1?'':'s'}</span></div>
@@ -1586,12 +1594,14 @@ function renderBank(){
       const cents=Math.max(0,Math.round((wr-fixedSum)*100)), base=ids.length?Math.floor(cents/ids.length):0;
       ids.forEach((k,i)=>autoAmt[k]=(base+(i<cents-base*ids.length?1:0))/100); }
     const stakeOf=gid=>draft.fixed[gid]!=null?draft.fixed[gid]:(autoAmt[gid]??0);
-    const fbtn=(k,l)=>`<button class="btn ${S.bank.filter===k?'':'quiet'}" data-bkfilter="${k}" aria-pressed="${S.bank.filter===k}">${l}</button>`;
+    const fbtn=(k,l)=>`<button class="${S.bank.filter===k?'on':''}" data-bkfilter="${k}" aria-pressed="${S.bank.filter===k}">${l}</button>`;
     const mbtn=(k,l)=>`<button class="${mode===k?'on':''}" data-bkmode="${k}" aria-pressed="${mode===k}">${l}</button>`;
     html+=`<h2>Week ${w} plan</h2>
-      <div class="bar" style="margin:0 0 10px"><label>Stake $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label>${fixedIds.length?`<button class="btn quiet" id="bkEven" style="padding:5px 12px">RESET</button>`:''}</div>
-      <div class="bar" style="margin:0 0 10px">${BK_FILTERS.map(([k,l])=>fbtn(k,l)).join('')}</div>
-      <div class="bar" style="margin:0 0 14px"><div class="seg" role="group" aria-label="Bet type">${mbtn('straight','Straight up')}${mbtn('parlay','Parlay')}</div></div>`;
+      <div class="bk-ctrl">
+        <div class="grp"><label class="lab" for="bkWeekAmt">Stake</label><div class="row">$<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}">${fixedIds.length?`<button class="btn quiet" id="bkEven">RESET</button>`:''}</div></div>
+        <div class="grp"><span class="lab">Confidence</span><div class="row"><div class="seg" role="group" aria-label="Confidence">${BK_FILTERS.map(([k,l])=>fbtn(k,l)).join('')}</div></div></div>
+        <div class="grp"><span class="lab">Bet type</span><div class="row"><div class="seg" role="group" aria-label="Bet type">${mbtn('straight','Straight up')}${mbtn('parlay','Parlay')}</div></div></div>
+      </div>`;
 
     const rowsData=(mode==='straight'?eligible:avail).map(x=>{ const id=x.g.game_id, locked=mode==='straight'&&inBuild.has(id), on=!locked&&!draft.off[id];
       const stake=mode==='straight'&&on?stakeOf(id):0; const po=stake>0?amPayout(stake,x.ml):null;
