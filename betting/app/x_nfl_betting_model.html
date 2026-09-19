@@ -337,6 +337,10 @@ th.sortable:hover{color:var(--ink)}
 .sugg-bet input{width:84px;height:32px;padding:0 8px;border:1px solid var(--line-2);border-radius:8px;font:inherit;font-weight:600}
 .sugg-foot{display:flex;justify-content:flex-end;margin-top:10px}
 .sugg-foot .btn{padding:4px 10px;font-size:12px}
+.px{white-space:nowrap} .px-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--line-2)}
+.px.bad .px-dot{background:var(--miss)} .px.thin .px-dot{background:var(--gold)} .px.good .px-dot{background:var(--pick)}
+.px-need{display:block;font-size:10.5px;line-height:1.2;color:var(--muted);white-space:nowrap}
+.px-key .px{margin:0 6px}
 .wk-chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
 .bk-ctrl{align-items:center}
 .bk-ctrl .grp{align-items:center}
@@ -468,6 +472,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.54</td><td>Price check on Straight up bets in Parlay Builder: each price carries a dot. Red: the price needs a higher win rate than the model gives the pick (-400 needs 80%). Amber: a close call. Green: the model clears it by 3+ points. Hover a price for the numbers.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.53</td><td>Parlay Builder: no balance box. Bet $ sits on its own line under Suggested parlays, in bold; Minimize is a small button at the card's bottom right.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.52</td><td>Bank Roll is now Parlay Builder. Its balance, net and total-return tiles are gone (the Bet Log tracks net and return); the balance box sits in the Suggested parlays header, and the week is a pill beside the title.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.51</td><td>Stat tiles carry their gold mark along the top edge instead of down the left. The public page now has the Backup tab too.</td></tr>
@@ -560,7 +565,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.53 \u00b7 2026-09-19';
+const APP_BUILD='v1.54 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1378,6 +1383,19 @@ function amPayout(stake,ml){ if(ml==null||!isFinite(ml)||ml===0) return null;
   const profit = ml>0 ? stake*ml/100 : stake*100/Math.abs(ml);
   return {profit, ret: stake+profit}; }
 function fmtML(ml){ return ml==null?'–':(ml>0?'+'+ml:''+ml); }
+/* ---------- price check (Straight up bets) ----------
+   A price's break-even is the win rate it needs to pay for itself: -400 needs 80%.
+   'bad': the model's own chance is under it, so the bet loses even if the model is exactly
+   right. 'thin': it clears by under 3 points, inside the model's calibration error.
+   'good': it clears by 3 or more. Good is "fair by the model", not "wins": backtested
+   2021-2025, no band of model-over-price made money. */
+const PX_THIN=0.03;
+function breakEven(ml){ return ml==null||!isFinite(ml)||ml===0?null:(ml>0?100/(ml+100):Math.abs(ml)/(Math.abs(ml)+100)); }
+function priceCheck(ml,conf){ const be=breakEven(ml); if(be==null||conf==null||!isFinite(conf)) return null;
+  const gap=Math.round((conf-be)*1e4)/1e4; return {be,gap,cls:gap<0?'bad':gap<PX_THIN?'thin':'good'}; }
+function pxOdds(ml,conf,need){ const c=priceCheck(ml,conf); if(!c) return fmtML(ml);
+  const be=(c.be*100).toFixed(1).replace(/\.0$/,''), tip=`${fmtML(ml)} needs ${be}% to break even; the model gives this pick ${Math.round(conf*100)}%`;
+  return `<span class="px ${c.cls}" title="${tip}"><i class="px-dot"></i>${fmtML(ml)}</span>`+(need&&c.cls!=='good'?`<span class="px-need">needs ${Math.round(c.be*100)}%</span>`:''); }
 function oddsFor(game_id,team){ const o=S.odds&&S.odds[game_id]; if(!o) return null;
   const g=S.schedule.find(x=>x.game_id===game_id); if(!g) return null;
   return team===g.home_team?(o.home??null):(o.away??null); }
@@ -1626,7 +1644,7 @@ function renderBank(){
       +`<td>${r.x.g.away_team} at ${r.x.g.home_team}${r.locked?'<span class="bk-in">IN BUILD</span>':''}</td>`
       +`<td>${pickTag(r.x.pr.pick)}</td>`
       +`<td><span class="tier ${r.x.tc}">${tier(r.x.pr.conf)[1]} ${Math.round(r.x.pr.conf*100)}%</span></td>`
-      +`<td class="num ${r.x.ml==null?'muted':''}">${fmtML(r.x.ml)}</td>`;
+      +`<td class="num ${r.x.ml==null?'muted':''}">${mode==='straight'?pxOdds(r.x.ml,r.x.pr.conf,true):fmtML(r.x.ml)}</td>`;
     shownIds=avail.map(x=>x.g.game_id);
 
     if(!eligible.length) html+='<div class="empty">No picks in that confidence band this week. Pick a wider band above.</div>';
@@ -1667,6 +1685,7 @@ function renderBank(){
           bkMsg=n?`Parlay added to the Bet Build below.`:'That parlay is already in the Bet Build.'; };
       }
     }
+    if(mode==='straight'&&eligible.some(x=>priceCheck(x.ml,x.pr.conf))) html+=`<p class="muted px-key" style="margin:10px 0 0;text-align:center">Price vs the model&#8217;s chance: <span class="px good"><i class="px-dot"></i>clears it by 3+ points</span> <span class="px thin"><i class="px-dot"></i>close call</span> <span class="px bad"><i class="px-dot"></i>price asks for more</span></p>`;
     if(msg) html+=`<p class="muted" id="bkMsg" style="margin:10px 0 0;text-align:center">${msg}</p>`;
   } else html+='<h2>No unplayed games</h2><p class="muted">Upload results to move to the next week.</p>';
   $('bkPlan').innerHTML=html;
