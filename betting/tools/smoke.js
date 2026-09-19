@@ -41,9 +41,9 @@ function load(picks) {
   const w = dom.window, d = w.document; const S = w.eval('S');
   check(errors.length === 0, 'no runtime errors: ' + errors.join('; '));
   check(Object.keys(S.processed).length === graded.length, `published season loaded (${Object.keys(S.processed).length} graded)`);
-  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,ratings,backup', 'AI Picks, My Picks, Bank Roll, Power Ratings and Backup tabs remain');
+  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,ratings,backup', 'AI Picks, My Picks, Parlay Builder, Power Ratings and Backup tabs remain');
   check(!d.getElementById('rebuildBtn') && !d.getElementById('resetBtn') && !!d.getElementById('exportBtn'), 'viewer: Backup has save and import only');
-  check(Object.keys(S.odds || {}).length > 0, 'published moneylines are available to the Bank Roll tab');
+  check(Object.keys(S.odds || {}).length > 0, 'published moneylines are available to the Parlay Builder tab');
   check(!d.getElementById('oddsFetch') && !d.getElementById('oddsFileBtn') && !d.getElementById('oddsClear'), 'Bank Roll: odds fetch/upload/clear card removed for visitors');
   check(Object.keys(S.myPicks).length === 0 && Object.values(S.processed).every(p => p.myPick === null), 'a new visitor has no picks and inherits none of the owner\'s');
   check(!d.getElementById('recordStats') || d.getElementById('tab-record').hidden, 'record tab is not shown');

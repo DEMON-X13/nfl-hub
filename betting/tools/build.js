@@ -2,7 +2,7 @@
  *
  *   node betting/tools/build.js
  *
- *   betting/index.html   the public viewer: AI Picks, My Picks, Bank Roll, Power Ratings.
+ *   betting/index.html   the public viewer: AI Picks, My Picks, Parlay Builder, Power Ratings, Backup.
  *   betting/admin.html   every tab, on the same published season.
  *
  * Both pages load betting/state.json (written by update.js) as the season and keep

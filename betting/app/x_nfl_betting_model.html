@@ -332,8 +332,7 @@ th.sortable:hover{color:var(--ink)}
 .sugg-legs li{padding:3px 0}
 .sugg-btns .btn{padding:7px 12px}
 /* v1.50 */
-#bkStats .stat{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-#bkStats .stat input{text-align:center}
+.wk-chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
 .bk-ctrl{align-items:center}
 .bk-ctrl .grp{align-items:center}
 .bk-ctrl .row{justify-content:center}
@@ -349,7 +348,7 @@ th.sortable:hover{color:var(--ink)}
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="picks" aria-selected="true">AI Picks</button>
     <button role="tab" data-tab="mine">My Picks</button>
-    <button role="tab" data-tab="bank">Bank Roll</button>
+    <button role="tab" data-tab="bank">Parlay Builder</button>
     <button role="tab" data-tab="record">Records</button>
     <button role="tab" data-tab="bets">Bet Log</button>
     <button role="tab" data-tab="ratings">Power Ratings</button>
@@ -448,7 +447,6 @@ th.sortable:hover{color:var(--ink)}
     </div>
     <p class="muted" style="margin:10px 0 0">The fetch button pulls published moneylines and spreads from the nflverse schedule file. For your own book&#8217;s numbers, upload a CSV with <code>game_id, away_moneyline, home_moneyline</code>. Payouts below are calculated from whatever is loaded.</p>
   </div>
-  <div class="stat-strip" id="bkStats"></div>
   <div class="card" id="bkSuggest"></div>
   <div class="card" id="bkPlan"></div>
   <div class="card" id="bkBuild"></div>
@@ -465,6 +463,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.52</td><td>Bank Roll is now Parlay Builder. Its balance, net and total-return tiles are gone (the Bet Log tracks net and return); the balance box sits in the Suggested parlays header, and the week is a pill beside the title.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.51</td><td>Stat tiles carry their gold mark along the top edge instead of down the left. The public page now has the Backup tab too.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.50</td><td>Bank Roll: the balance tiles and the plan toolbar are centred; the tiles read "current balance" and "total return"; stake boxes have a $ in front.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.49</td><td>Suggested parlay cards: each leg's odds and chance sit in their own columns, spaced apart and lined up.</td></tr>
@@ -555,7 +554,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.51 \u00b7 2026-09-19';
+const APP_BUILD='v1.52 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1275,7 +1274,8 @@ function renderSuggestBk(){
   const el=$('bkSuggest'); if(!el) return;
   const w=currentWeekDefault(); const open=!S.bank.suggMin;
   const stake=+(S.bank.suggStake??10);
-  const head=`<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Suggested parlays</h2><span class="muted">week ${w}</span><span class="grow"></span>
+  const head=`<div class="bar" style="margin:0 0 8px"><h2 style="margin:0">Suggested parlays</h2><span class="wk-chip">Week ${w}</span><span class="grow"></span>
+    <label>Balance $<input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="width:100px" aria-label="Current balance"></label>
     ${open?`<label>Bet $<input type="number" id="bkSuggStake" step="1" min="0" value="${stake}" style="width:80px"></label>`:''}
     <button class="btn quiet" id="bkSuggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>`;
   if(!open){ el.innerHTML=head; wireSuggestBk([]); return; }
@@ -1294,6 +1294,7 @@ function renderSuggestBk(){
 }
 function wireSuggestBk(tiers){
   $('bkSuggToggle')?.addEventListener('click',()=>{ S.bank.suggMin=!S.bank.suggMin; save(); renderSuggestBk(); });
+  $('bkStart')?.addEventListener('change',e=>{ S.bank.start=Math.max(0,+e.target.value||0); e.target.value=S.bank.start.toFixed(2); save(); });
   $('bkSuggStake')?.addEventListener('change',e=>{ S.bank.suggStake=Math.max(0,Math.round(+e.target.value||0)); save(); renderSuggestBk(); });
   document.querySelectorAll('#bkSuggest button[data-sugg-load]').forEach(b=>b.addEventListener('click',()=>{
     const t=tiers.find(x=>x.id===b.dataset.suggLoad); if(!t) return;
@@ -1566,11 +1567,6 @@ function renderBank(){
   const games=S.schedule.filter(g=>+g.week===w&&g.result==null);
   const plan=S.bank.weeks[w];
   const eligible=bkGames();
-  const logged=betRows(); const totalStaked=logged.reduce((s,r)=>s+r.staked,0); const totalNet=logged.reduce((s,r)=>s+r.returned-r.staked,0);
-  $('bkStats').innerHTML=`<div class="stat"><label style="display:block"><input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="font-family:var(--display);font-size:24px;font-weight:700;width:150px;padding:2px 6px;border:1px solid var(--line);border-radius:6px"></label><span>current balance</span></div>
-    <div class="stat"><b class="${totalNet>=0?'delta up':'delta down'}">${totalNet>=0?'+':'-'}$${Math.abs(totalNet).toFixed(2)}</b><span>net, ${logged.length} logged week${logged.length===1?'':'s'}</span></div>
-    <div class="stat"><b>${totalStaked?(100*totalNet/totalStaked).toFixed(1):'0.0'}%</b><span>total return</span></div>`;
-  $('bkStart').addEventListener('change',e=>{ S.bank.start=Math.max(0,+e.target.value||0); save(); renderBank(); });
   renderSuggestBk();
   let html=''; const msg=bkMsg; bkMsg=''; let onLock=null, shownIds=[];
   if(plan){
