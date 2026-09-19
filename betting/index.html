@@ -74,13 +74,27 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 #tab-bank input[type=number]::-webkit-inner-spin-button,#tab-bank input[type=number]::-webkit-outer-spin-button{opacity:1}
 #bkPlan>.bar,#bkParlay>.bar,#bkPlan>h2+.bar{justify-content:center}
 #bkPlan table,#bkParlay table{margin-left:auto;margin-right:auto}
-#bkParlay .stat-strip{margin-top:16px}
 .stake-in{width:80px;text-align:right;font-variant-numeric:tabular-nums;padding:3px 6px;border:1px solid var(--line);border-radius:6px}
 #bkPlan table,#bkParlay table{width:auto;min-width:0}
 #bkPlan th,#bkPlan td,#bkParlay th,#bkParlay td{padding:7px 22px}
-#bkParlay td{padding:14px 22px}
+#bkPlan table.parlay td{padding:14px 22px}
 #bkPlan td.num,#bkParlay td.num{white-space:nowrap}
 .stake-in.fixed{border-color:var(--ink);font-weight:700}
+.seg{display:inline-flex;gap:3px;padding:3px;border:1px solid var(--line-2);border-radius:999px;background:var(--panel-2)}
+.seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-weight:600;padding:7px 20px;border-radius:999px;cursor:pointer}
+.seg button.on{background:var(--ink);color:#fff}
+.btn:disabled{opacity:.5;cursor:default;transform:none;filter:none;box-shadow:none}
+.bk-in{font-size:10px;font-weight:700;letter-spacing:.06em;padding:2px 7px;border-radius:999px;background:#E3F2EA;color:#1F6F4A;margin-left:8px}
+#bkBuild>.bar{justify-content:center}
+#bkBuild table{margin-left:auto;margin-right:auto;width:auto;min-width:0}
+#bkBuild th,#bkBuild td{padding:10px 18px;vertical-align:middle}
+#bkBuild th{text-align:left} #bkBuild th.num,#bkBuild td.num{text-align:right;white-space:nowrap}
+#bkBuild .bl{display:flex;align-items:center;gap:8px;white-space:nowrap;margin:3px 0}
+.res{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.res.won{background:#E3F2EA;color:#1F6F4A} .res.lost{background:#FCECEA;color:#A8453A} .res.push{background:#E9EEF4;color:var(--ink-2)}
+.x-btn{border:0;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;padding:2px 6px}
+.x-btn:hover{color:#B23A32}
+.sugg-btns{display:flex;gap:8px} .sugg-btns .btn{flex:1}
 .sugg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 .sugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--panel)}
 .sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
@@ -395,9 +409,9 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:10px 0 0">The fetch button pulls published moneylines and spreads from the nflverse schedule file. For your own book&#8217;s numbers, upload a CSV with <code>game_id, away_moneyline, home_moneyline</code>. Payouts below are calculated from whatever is loaded.</p>
   </div>
   <div class="stat-strip" id="bkStats"></div>
-  <div class="card" id="bkPlan"></div>
   <div class="card" id="bkSuggest"></div>
-  <div class="card" id="bkParlay"></div>
+  <div class="card" id="bkPlan"></div>
+  <div class="card" id="bkBuild"></div>
   <div id="bkHistory"></div>
 </section>
 
@@ -411,6 +425,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.45</td><td>Bank Roll in one place. Suggested parlays sit on top and can be locked in. The week plan and the parlay are one card: Stake, then LOW + MED + HIGH, MED + HIGH or HIGH only, then a Straight up / Parlay toggle, and Lock in. A new Bet Build card lists what you have locked in, grades each bet WON, LOST or PUSH as results come in, and sends the week to the Bet Log once everything is settled.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.44</td><td>Bank Roll: the week plan and parlay payout columns are spaced further apart.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.43</td><td>Bank Roll: the parlay payout rows now have the same height as the week plan's; the v1.42 spacing had been overridden.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.42</td><td>Bank Roll: the risk line is just the amount, with RESET when stakes are set. Stake arrows step by $1 and every number box shows its arrows. The week plan and parlay payout are centred, and the parlay rows match the plan's spacing.</td></tr>
@@ -531,7 +546,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.44 \u00b7 2026-09-18';
+const APP_BUILD='v1.45 \u00b7 2026-09-18';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1199,15 +1214,26 @@ function marketChance(game_id,team){
   const imp=m=>m==null||!isFinite(m)||m===0?null:(m>0?100/(m+100):Math.abs(m)/(Math.abs(m)+100));
   const mine=imp(team===g.home_team?o.home:o.away), other=imp(team===g.home_team?o.away:o.home);
   return mine==null?null:(other==null?mine:mine/(mine+other)); }
-/* the week plan's ticked games, with the model's pick, its band and its price */
-function planPool(){
+/* ---------- Bank Roll: one band filter for the suggestions, the plan and the parlay ----------
+   LOW + MED + HIGH, MED + HIGH or HIGH only. 50/50 picks are never offered. */
+const BK_FILTERS=[['all','LOW + MED + HIGH'],['med','MED + HIGH'],['high','HIGH only']];
+function bkWanted(tc){ const f=S.bank.filter; return f==='high'?tc==='high':f==='med'?(tc==='med'||tc==='high'):tc!=='coin'; }
+/* this week's unplayed games in the chosen band, with the model's pick, its band and its price */
+function bkGames(){
   const w=currentWeekDefault();
-  const draft=S.bank.draft&&S.bank.draft.week===w?S.bank.draft:null;
   return S.schedule.filter(g=>+g.week===w&&g.result==null)
     .sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime))
     .map(g=>{ const pr=predict(g,S.teams); return {g,pr,tc:tier(pr.conf)[0],ml:oddsFor(g.game_id,pr.pick)}; })
-    .filter(x=>S.bank.filter==='all'||(S.bank.filter==='med'&&(x.tc==='med'||x.tc==='high'))||(S.bank.filter==='high'&&x.tc==='high'))
-    .filter(x=>!(draft&&draft.off[x.g.game_id]));
+    .filter(x=>bkWanted(x.tc));
+}
+function bkDraft(){ const w=currentWeekDefault();
+  if(!(S.bank.draft&&S.bank.draft.week===w)) S.bank.draft={week:w,amt:S.bank.lastAmt??20,off:{}};
+  const d=S.bank.draft; if(d.amt==null) d.amt=S.bank.lastAmt??20; d.off=d.off||{}; d.fixed=d.fixed||{}; return d; }
+/* the ticked ones */
+function planPool(){
+  const w=currentWeekDefault();
+  const draft=S.bank.draft&&S.bank.draft.week===w?S.bank.draft:null;
+  return bkGames().filter(x=>!(draft&&draft.off&&draft.off[x.g.game_id]));
 }
 /* ---------- suggested parlays: safe, medium, aggressive ----------
    One core parlay grown in three steps. Safe opens with the two likeliest legs and keeps
@@ -1244,28 +1270,95 @@ function renderSuggestBk(){
     ${open?`<label>Bet $<input type="number" id="bkSuggStake" step="1" min="0" value="${stake}" style="width:80px"></label>`:''}
     <button class="btn quiet" id="bkSuggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>`;
   if(!open){ el.innerHTML=head; wireSuggestBk([]); return; }
-  const {tiers,pool}=suggestBk(planPool());
+  const {tiers,pool}=suggestBk(bkGames());
   let body;
-  if(!tiers.length) body=`<p class="muted" style="margin:0">${pool<2?'A suggestion needs at least two ticked games with a price loaded that are not 50/50s. Tick more games in the week plan above, or fetch odds.':'None of the ticked games combine into a parlay that clears 50%.'}</p>`;
-  else body=`<p class="muted" style="margin:0 0 12px;font-size:12px">From the games ticked in your week plan. Each leg is the model's pick; its chance is the betting market's, with the book's cut removed, which has been the more accurate of the two. The legs are in different games, so a book multiplies the prices, and so does this.</p>
+  if(!tiers.length) body=`<p class="muted" style="margin:0">${pool<2?'A suggestion needs at least two of this week’s picks in the chosen band with a price loaded. Pick a wider band in the plan below, or fetch odds.':'None of this week’s picks combine into a parlay that clears 50%.'}</p>`;
+  else body=`<p class="muted" style="margin:0 0 12px;font-size:12px">From this week's picks in the band chosen below. Each leg is the model's pick; its chance is the betting market's, with the book's cut removed, which has been the more accurate of the two. The legs are in different games, so a book multiplies the prices, and so does this.</p>
     <div class="sugg-grid">`+tiers.map((t,i)=>{ const ml=decToMl(t.dec);
       return `<div class="sugg-tier ${t.id}">
         <div class="sugg-top"><span class="n">${t.label}</span><span class="muted">${t.legs.length} legs</span><span class="grow"></span>${i?`<span class="muted">+${t.added} leg${t.added===1?'':'s'}</span>`:''}</div>
         <div class="sugg-nums"><div><b>${Math.round(t.p*100)}%</b><span>chance all land</span></div><div><b>${fmtML(ml)}</b><span>price</span></div>
           <div><b>$${(stake*t.dec).toFixed(2)}</b><span>returns on $${stake.toFixed(2)}</span></div><div><b>${Math.round(100*(1-t.p))}%</b><span>chance it misses</span></div></div>
         <ul class="sugg-legs">${t.legs.map(x=>`<li>${pickTag(x.pr.pick)}<span class="g">${x.g.away_team} at ${x.g.home_team}</span><span class="pr">${fmtML(x.ml)} <span class="muted">${Math.round(x.p*100)}%</span></span></li>`).join('')}</ul>
-        <button class="btn quiet" data-sugg-load="${t.id}">Load into the parlay below</button></div>`; }).join('')+`</div>`;
+        <div class="sugg-btns"><button class="btn go" data-sugg-lock="${t.id}" ${stake>0?'':'disabled'}>Lock in</button><button class="btn quiet" data-sugg-load="${t.id}">Edit below</button></div></div>`; }).join('')+`</div>`;
   el.innerHTML=head+body; wireSuggestBk(tiers);
 }
 function wireSuggestBk(tiers){
   $('bkSuggToggle')?.addEventListener('click',()=>{ S.bank.suggMin=!S.bank.suggMin; save(); renderSuggestBk(); });
-  $('bkSuggStake')?.addEventListener('change',e=>{ S.bank.suggStake=Math.max(0,+e.target.value||0); save(); renderSuggestBk(); });
+  $('bkSuggStake')?.addEventListener('change',e=>{ S.bank.suggStake=Math.max(0,Math.round(+e.target.value||0)); save(); renderSuggestBk(); });
   document.querySelectorAll('#bkSuggest button[data-sugg-load]').forEach(b=>b.addEventListener('click',()=>{
     const t=tiers.find(x=>x.id===b.dataset.suggLoad); if(!t) return;
-    const w=currentWeekDefault(); const keep=new Set(t.legs.map(x=>x.g.game_id));
-    S.bank.parlaySel='all';
-    S.bank.parlayOff=Object.fromEntries(S.schedule.filter(g=>+g.week===w&&!keep.has(g.game_id)).map(g=>[g.game_id,true]));
-    save(); renderParlay(); }));
+    const keep=new Set(t.legs.map(x=>x.g.game_id)); const d=bkDraft();
+    d.off=Object.fromEntries(bkGames().filter(x=>!keep.has(x.g.game_id)).map(x=>[x.g.game_id,true]));
+    S.bank.mode='parlay'; save(); renderBank(); $('bkPlan')?.scrollIntoView?.({behavior:'smooth',block:'start'}); }));
+  document.querySelectorAll('#bkSuggest button[data-sugg-lock]').forEach(b=>b.addEventListener('click',()=>{
+    const t=tiers.find(x=>x.id===b.dataset.suggLock); const stake=+(S.bank.suggStake??10); if(!t||!(stake>0)) return;
+    const n=lockBet('parlay',t.legs,stake);
+    bkMsg=n?`${t.label} parlay added to the Bet Build below.`:`That ${t.label} parlay is already in the Bet Build.`;
+    save(); renderBank(); }));
+}
+
+/* ---------- Bet Build: what you have locked in, graded as results arrive ----------
+   Each bet keeps the price it was locked in at. A tied leg drops out of a parlay; a tied
+   straight bet is a push and the stake comes back. */
+let bkMsg='';
+function bkLeg(x){ return {game_id:x.g.game_id,away:x.g.away_team,home:x.g.home_team,pick:x.pr.pick,ml:x.ml,conf:x.pr.conf}; }
+function lockBet(type,legs,stake){
+  S.bank.build=S.bank.build||[];
+  const w=currentWeekDefault(); const key=a=>a.map(l=>l.game_id+':'+l.pick).sort().join('|');
+  const mine=key(legs.map(bkLeg));
+  if(S.bank.build.some(b=>b.week===w&&b.type===type&&key(b.legs)===mine)) return 0;
+  S.bank.build.push({id:'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),week:w,type,stake:Math.round(stake*100)/100,legs:legs.map(bkLeg)});
+  return 1; }
+function legOutcome(l){ const g=S.schedule.find(x=>x.game_id===l.game_id);
+  if(!g||g.result==null||g.result==='') return 'pending'; const r=+g.result;
+  if(r===0) return 'push'; return (r>0?g.home_team:g.away_team)===l.pick?'won':'lost'; }
+function betDec(b){ return b.legs.reduce((d,l)=>d*(mlToDec(l.ml)||1),1); }
+function gradeBet(b){ const o=b.legs.map(legOutcome);
+  if(o.includes('lost')) return {st:'lost',ret:0};
+  if(o.includes('pending')) return {st:'pending',ret:null};
+  if(o.every(x=>x==='push')) return {st:'push',ret:b.stake};
+  return {st:'won',ret:b.stake*b.legs.reduce((d,l,i)=>d*(o[i]==='won'?mlToDec(l.ml):1),1)}; }
+function buildWeek(w){
+  const bets=(S.bank.build||[]).filter(b=>b.week===w).map(b=>({b,gr:gradeBet(b),dec:betDec(b)}));
+  const done=bets.filter(x=>x.gr.st!=='pending');
+  return {bets,done,staked:bets.reduce((t,x)=>t+x.b.stake,0),pays:bets.reduce((t,x)=>t+x.b.stake*x.dec,0),
+    returned:done.reduce((t,x)=>t+x.gr.ret,0),settledStake:done.reduce((t,x)=>t+x.b.stake,0),allDone:bets.length>0&&done.length===bets.length}; }
+function renderBuild(){
+  const el=$('bkBuild'); if(!el) return;
+  const all=S.bank.build||[];
+  const weeks=[...new Set(all.map(b=>b.week))].sort((a,b)=>a-b);
+  let html='<h2>Bet Build</h2>';
+  if(!weeks.length){ el.innerHTML=html+'<p class="muted" style="margin:0;text-align:center">Nothing locked in yet. Tick games in the plan above and press Lock in, or lock in a suggested parlay.</p>'; return; }
+  const mark=l=>{ const o=legOutcome(l); return o==='won'?'<span class="delta up">✓</span>':o==='lost'?'<span class="delta down">✗</span>':o==='push'?'<span class="muted">push</span>':''; };
+  const res=x=>x.gr.st==='pending'?'<span class="muted">pending</span>'
+    :x.gr.st==='won'?`<span class="res won">WON</span> <span class="delta up">+$${(x.gr.ret-x.b.stake).toFixed(2)}</span>`
+    :x.gr.st==='push'?'<span class="res push">PUSH</span>'
+    :`<span class="res lost">LOST</span> <span class="delta down">-$${x.b.stake.toFixed(2)}</span>`;
+  for(const w of weeks){
+    const W=buildWeek(w), net=W.returned-W.settledStake;
+    html+=`<div class="bar" style="margin:${w===weeks[0]?'0':'22px'} 0 8px"><b>Week ${w}</b><span class="muted">${W.bets.length} bet${W.bets.length===1?'':'s'}</span></div>
+      <table data-build-week="${w}"><thead><tr><th>Bet</th><th>Pick</th><th class="num">Odds</th><th class="num">Stake</th><th class="num">Pays</th><th>Result</th><th></th></tr></thead><tbody>`
+      +W.bets.map(x=>`<tr data-bet="${x.b.id}"><td>${x.b.type==='parlay'?`Parlay <span class="muted">${x.b.legs.length} legs</span>`:'Straight'}</td>
+        <td>${x.b.legs.map(l=>`<div class="bl">${pickTag(l.pick)}<span class="muted">${l.away} at ${l.home}</span>${x.b.type==='parlay'?`<span class="muted">${fmtML(l.ml)}</span>${mark(l)}`:''}</div>`).join('')}</td>
+        <td class="num">${fmtML(decToMl(x.dec))}</td><td class="num">$${x.b.stake.toFixed(2)}</td><td class="num">$${(x.b.stake*x.dec).toFixed(2)}</td>
+        <td>${res(x)}</td><td><button class="x-btn" data-bkdel="${x.b.id}" aria-label="Remove this bet" title="Remove">×</button></td></tr>`).join('')
+      +`<tr class="totrow"><td colspan="3"><b>Week ${w}</b></td><td class="num"><b>$${W.staked.toFixed(2)}</b></td><td class="num"><b>$${W.pays.toFixed(2)}</b></td><td colspan="2"></td></tr></tbody></table>
+      <div class="bar" style="margin:12px 0 0"><span class="muted">${W.done.length} of ${W.bets.length} settled${W.done.length?`, $${W.returned.toFixed(2)} back`:''}</span>${W.done.length?`<span class="${net>=0?'delta up':'delta down'}"><b>${net>=0?'+':'-'}$${Math.abs(net).toFixed(2)}</b> net</span>`:''}
+        <button class="btn go" data-bklog="${w}" ${W.allDone?'':'disabled title="Every bet has to be settled first"'}>Send week ${w} to Bet Log</button>
+        <button class="btn quiet" data-bkclear="${w}">Clear week ${w}</button></div>`;
+  }
+  el.innerHTML=html;
+  el.querySelectorAll('button[data-bkdel]').forEach(b=>b.addEventListener('click',()=>{
+    S.bank.build=(S.bank.build||[]).filter(x=>x.id!==b.dataset.bkdel); save(); renderBank(); }));
+  el.querySelectorAll('button[data-bkclear]').forEach(b=>b.addEventListener('click',()=>{ const w=+b.dataset.bkclear;
+    if(!confirm(`Remove every week ${w} bet from the Bet Build?`)) return;
+    S.bank.build=(S.bank.build||[]).filter(x=>x.week!==w); save(); renderBank(); }));
+  el.querySelectorAll('button[data-bklog]').forEach(b=>b.addEventListener('click',()=>{ const w=+b.dataset.bklog; const W=buildWeek(w);
+    if(!W.allDone) return;
+    if(S.bets[w]&&!confirm(`Week ${w} already has a Bet Log entry. Replace it?`)) return;
+    S.bets[w]={staked:+W.staked.toFixed(2),returned:+W.returned.toFixed(2),note:`Bet Build: ${W.bets.length} bet${W.bets.length===1?'':'s'}`};
+    S.bank.build=(S.bank.build||[]).filter(x=>x.week!==w); save(); renderAll(); }));
 }
 function amPayout(stake,ml){ if(ml==null||!isFinite(ml)||ml===0) return null;
   const profit = ml>0 ? stake*ml/100 : stake*100/Math.abs(ml);
@@ -1339,108 +1432,6 @@ function parseOddsText(txt){
 // ---------- parlays ----------
 function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0 ? ml/100+1 : 100/Math.abs(ml)+1; }
 function decToMl(d){ if(!isFinite(d)||d<=1) return null; return d>=2 ? Math.round((d-1)*100) : -Math.round(100/(d-1)); }
-function legTable(rows,off,stake){
-  const nOn=rows.filter(x=>!off[x.g.game_id]).length, allOn=nOn===rows.length, noneOn=nOn===0;
-  const headCb=`<input type="checkbox" id="parlayAllCb" ${allOn?'checked':''} ${(!allOn&&!noneOn)?'data-indeterminate="1"':''} aria-label="Select all legs">`;
-  const SORTS={
-    game:(a,b)=>(a.g.away_team+a.g.home_team).localeCompare(b.g.away_team+b.g.home_team),
-    pick:(a,b)=>a.pr.pick.localeCompare(b.pr.pick),
-    conf:(a,b)=>a.pr.conf-b.pr.conf,
-    odds:(a,b)=>(mlToDec(a.ml)??-1)-(mlToDec(b.ml)??-1),
-    solo:(a,b)=>{const A=amPayout(stake,a.ml),B=amPayout(stake,b.ml); return (A?A.ret:-1)-(B?B.ret:-1);},
-  };
-  const key=S.bank.parlaySort||'game'; const dir=S.bank.parlaySortDir||'asc';
-  let sorted=rows.slice();
-  if(SORTS[key]){ sorted.sort(SORTS[key]); if(dir==='desc') sorted.reverse(); }
-  const arrow=k=>key===k?(dir==='asc'?' ▲':' ▼'):'';
-  const numCols=new Set(['odds','solo']);
-  const sh=(k,label)=>`<th class="sortable${numCols.has(k)?' num':''}" data-psort="${k}">${label}${arrow(k)}</th>`;
-  return `<div class="bar" style="margin:0 0 6px;justify-content:center"><span class="muted">${nOn} of ${rows.length} legs in</span></div>`
-   +`<table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${stake!=null?sh('solo','Alone pays'):''}</tr></thead><tbody>`
-   +sorted.map(x=>{const on=!off[x.g.game_id]; const solo=stake!=null?amPayout(stake,x.ml):null;
-     return `<tr style="${on?'':'opacity:.45'}"><td><input type="checkbox" data-leg="${x.g.game_id}" ${on?'checked':''} aria-label="Include ${x.g.away_team} at ${x.g.home_team}"></td><td>${x.g.away_team} at ${x.g.home_team}</td><td>${pickTag(x.pr.pick)}</td><td><span class="tier ${x.tc}">${tier(x.pr.conf)[1]} ${Math.round(x.pr.conf*100)}%</span></td><td class="num">${fmtML(x.ml)}</td>${stake!=null?`<td class="num muted">${solo?'$'+solo.ret.toFixed(2):'–'}</td>`:''}</tr>`;}).join('')
-   +`</tbody></table>`;
-}
-function renderParlay(){
-  renderSuggestBk();
-  const el=$('bkParlay'); if(!el) return;
-  const w=currentWeekDefault();
-  const games=S.schedule.filter(g=>+g.week===w&&g.result==null)
-    .sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
-  const legsAll=games.map(g=>{ const pr=predict(g,S.teams); const tc=tier(pr.conf)[0];
-    return {g,pr,tc,ml:oddsFor(g.game_id,pr.pick)}; });
-  const sel=S.bank.parlaySel||'all';
-  const stake=+(S.bank.parlayStake??10);
-  const wanted = sel==='high'?['high'] : sel==='medhigh'?['med','high'] : ['low','med','high'];
-  // coin flips (under 55%) are never legs; the band does what the old 58% floor on LOW did
-  const inTier=legsAll.filter(x=>wanted.includes(x.tc));
-  const lowCut=sel==='all'?legsAll.filter(x=>x.tc==='coin').length:0;
-  S.bank.parlayOff=S.bank.parlayOff||{};
-  const off=S.bank.parlayOff;
-  const priced=inTier.filter(x=>mlToDec(x.ml)!=null);
-  const legs=priced.filter(x=>!off[x.g.game_id]);
-  const missing=inTier.length-priced.length;
-  const unchecked=priced.length-legs.length;
-  const btn=(k,label)=>`<button class="btn ${sel===k?'':'quiet'}" data-parlay="${k}">${label}</button>`;
-  let html=`<h2>Parlay payout</h2>
-    <div class="bar" style="margin:0 0 10px">
-      ${btn('all','LOW + MED + HIGH')}${btn('medhigh','MED + HIGH')}${btn('high','HIGH only')}
-      <label>Stake $<input type="number" id="parlayStake" step="1" min="1" value="${stake}" style="width:90px"></label>
-    </div>`;
-  if(!games.length){ el.innerHTML=html+'<div class="empty">No unplayed games this week.</div>'; wireParlay([]); return; }
-  if(legs.length<2){
-    if(!priced.length){
-      el.innerHTML=html+`<div class="empty">${inTier.length?'None of those picks have a moneyline loaded yet. Fetch or upload odds above.':(sel==='all'&&lowCut?`No picks at 55% or better this week. ${lowCut} 50/50 pick${lowCut===1?'':'s'} left out.`:'No picks in that confidence band this week.')}</div>`;
-      wireParlay([]); return;
-    }
-    html+=legTable(priced,off,legs.length?stake:null);
-    html+=`<div class="stat-strip" style="margin-top:12px">
-      <div class="stat"><b>${legs.length}</b><span>leg${legs.length===1?'':'s'}</span></div>
-      <div class="stat"><b>\u2013</b><span>parlay odds</span></div>
-      <div class="stat"><b>$0.00</b><span>pays out on $${stake.toFixed(2)}</span></div>
-      <div class="stat"><b class="muted">+$0.00</b><span>profit if it hits</span></div>
-      <div class="stat"><b>\u2013</b><span>model says it hits</span></div>
-    </div>`;
-    html+=`<p class="muted" style="margin:10px 0 0">${priced.length<2?`Only ${priced.length} pick with odds in this band. A parlay needs at least two legs.`:legs.length?'One leg is a single bet, not a parlay. Tick at least one more to see a parlay payout.':`All ${priced.length} legs are unchecked. Tick at least two to see a parlay payout.`}</p>`;
-    el.innerHTML=html; wireParlay(priced); return;
-  }
-  const dec=legs.reduce((p,x)=>p*mlToDec(x.ml),1);
-  const am=decToMl(dec);
-  const payout=stake*dec, profit=payout-stake;
-  const modelP=legs.reduce((p,x)=>p*x.pr.conf,1);
-  html+=legTable(priced,off,stake);
-  html+=`<div class="stat-strip" style="margin-top:12px">
-    <div class="stat"><b>${legs.length}</b><span>leg${legs.length===1?'':'s'}</span></div>
-    <div class="stat"><b>${am>0?'+':''}${am}</b><span>parlay odds (${dec.toFixed(2)}x)</span></div>
-    <div class="stat"><b>$${payout.toFixed(2)}</b><span>pays out on $${stake.toFixed(2)}</span></div>
-    <div class="stat"><b class="delta up">+$${profit.toFixed(2)}</b><span>profit if it hits</span></div>
-    <div class="stat"><b>${(modelP*100).toFixed(modelP<0.01?2:1)}%</b><span>model says it hits</span></div>
-  </div>`;
-  el.innerHTML=html; wireParlay(priced);
-}
-function wireParlay(rows){
-  document.querySelectorAll('#bkParlay button[data-parlay]').forEach(b=>b.addEventListener('click',()=>{
-    S.bank.parlaySel=b.dataset.parlay; save(); renderParlay(); }));
-  const parlayAllCb=document.getElementById('parlayAllCb');
-  if(parlayAllCb){ if(parlayAllCb.dataset.indeterminate) parlayAllCb.indeterminate=true;
-    parlayAllCb.addEventListener('change',e=>{ S.bank.parlayOff = e.target.checked ? {} : Object.fromEntries(rows.map(x=>[x.g.game_id,true])); save(); renderParlay(); }); }
-  document.querySelectorAll('#bkParlay th.sortable').forEach(th=>th.addEventListener('click',()=>{
-    const k=th.dataset.psort;
-    if(S.bank.parlaySort===k) S.bank.parlaySortDir=(S.bank.parlaySortDir==='asc')?'desc':'asc';
-    else { S.bank.parlaySort=k; S.bank.parlaySortDir='asc'; }
-    save(); renderParlay(); }));
-  document.querySelectorAll('#bkParlay input[data-leg]').forEach(c=>c.addEventListener('change',()=>{
-    S.bank.parlayOff=S.bank.parlayOff||{};
-    if(c.checked) delete S.bank.parlayOff[c.dataset.leg]; else S.bank.parlayOff[c.dataset.leg]=true;
-    save(); renderParlay(); }));
-  $('parlayAll')?.addEventListener('click',()=>{ S.bank.parlayOff={}; save(); renderParlay(); });
-  $('parlayNone')?.addEventListener('click',()=>{ const o={};
-    document.querySelectorAll('#bkParlay input[data-leg]').forEach(c=>o[c.dataset.leg]=true);
-    S.bank.parlayOff=o; save(); renderParlay(); });
-  const s=$('parlayStake');
-  s?.addEventListener('change',e=>{ S.bank.parlayStake=Math.max(1,+e.target.value||1); save(); renderParlay(); });
-}
-
 // ---------- injury report + depth chart ----------
 const SLOT_QB=['QB'], SLOT_RB=['RB'];
 function normPos(x){ return String(x||'').toUpperCase().trim(); }
@@ -1562,20 +1553,17 @@ function injStatusLine(){
 function renderBank(){
   const nOdds=oddsCount();
   setOddsStatus(nOdds?`${nOdds} game${nOdds===1?'':'s'} with moneylines loaded.`:'No odds loaded yet.', nOdds?'ok':'muted');
-  const {out,bal}=bankBalances(); const w=currentWeekDefault();
-  const games=S.schedule.filter(g=>+g.week===w&&g.result==null).sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
+  const {out}=bankBalances(); const w=currentWeekDefault();
+  const games=S.schedule.filter(g=>+g.week===w&&g.result==null);
   const plan=S.bank.weeks[w];
-  const pick=g=>{ const pr=predict(g,S.teams); const tc=tier(pr.conf)[0]; return {pr,tc}; };
-  const eligible=games.map(g=>({g,...pick(g)})).filter(x=>S.bank.filter==='all'||(S.bank.filter==='med'&&(x.tc==='med'||x.tc==='high'))||(S.bank.filter==='high'&&x.tc==='high'));
+  const eligible=bkGames();
   const logged=betRows(); const totalStaked=logged.reduce((s,r)=>s+r.staked,0); const totalNet=logged.reduce((s,r)=>s+r.returned-r.staked,0);
   $('bkStats').innerHTML=`<div class="stat"><label style="display:block"><input type="number" id="bkStart" step="0.01" min="0" value="${(+S.bank.start||0).toFixed(2)}" style="font-family:var(--display);font-size:24px;font-weight:700;width:150px;padding:2px 6px;border:1px solid var(--line);border-radius:6px"></label><span>current balance, edit any time</span></div>
-    <div class="stat"><label style="display:block"><select id="bkFilter" style="font-family:var(--display);font-size:18px;font-weight:600;padding:5px 6px;border:1px solid var(--line);border-radius:6px"><option value="all">Every game</option><option value="med">MED and HIGH</option><option value="high">HIGH only</option></select></label><span>confidence type</span></div>
     <div class="stat"><b class="${totalNet>=0?'delta up':'delta down'}">${totalNet>=0?'+':'-'}$${Math.abs(totalNet).toFixed(2)}</b><span>net, ${logged.length} logged week${logged.length===1?'':'s'}</span></div>
     <div class="stat"><b>${totalStaked?(100*totalNet/totalStaked).toFixed(1):'0.0'}%</b><span>return on money staked</span></div>`;
-  $('bkFilter').value=S.bank.filter;
   $('bkStart').addEventListener('change',e=>{ S.bank.start=Math.max(0,+e.target.value||0); save(); renderBank(); });
-  $('bkFilter').addEventListener('change',e=>{ S.bank.filter=e.target.value; save(); renderBank(); });
-      let html='';
+  renderSuggestBk();
+  let html=''; const msg=bkMsg; bkMsg=''; let onLock=null, shownIds=[];
   if(plan){
     const net=(plan.returned??0)-plan.staked;
     html+=`<h2>Week ${w}: recorded</h2><p class="muted">${plan.games.length?`$${plan.staked.toFixed(2)} staked across ${plan.games.length} game${plan.games.length===1?'':'s'}, $${(plan.returned??0).toFixed(2)} returned.`:'No bets recorded this week.'}</p>`;
@@ -1583,76 +1571,106 @@ function renderBank(){
       return `<tr><td>${x.away} at ${x.home}</td><td>${pickTag(x.pick)} <span class="muted">${Math.round(x.conf*100)}%</span></td><td class="num ${ml==null?'muted':''}">${fmtML(ml)}</td><td class="num">$${plan.perGame.toFixed(2)}</td></tr>`;}).join('')+'</tbody></table>';
     html+=`<div class="bar" style="margin:12px 0 0"><span class="${net>=0?'delta up':'delta down'}"><b>${net>=0?'+':'-'}$${Math.abs(net).toFixed(2)}</b> net</span><button class="btn quiet" id="bkReopen">Clear week ${w} and re-plan</button></div>`;
   } else if(games.length){
-    const draft=S.bank.draft&&S.bank.draft.week===w?S.bank.draft:(S.bank.draft={week:w,amt:S.bank.lastAmt??20,off:{}});
-    if(draft.amt==null) draft.amt=S.bank.lastAmt??20;
-    const chosen=eligible.filter(x=>!draft.off[x.g.game_id]); const wr=+draft.amt||0; const wp=chosen.length?wr/chosen.length:0;
+    const draft=bkDraft(); const mode=S.bank.mode==='parlay'?'parlay':'straight';
+    const wr=+draft.amt||0;
+    /* straight bets already locked in sit out of the split until they are removed from the build */
+    const inBuild=new Set((S.bank.build||[]).filter(b=>b.week===w&&b.type==='single').map(b=>b.legs[0].game_id));
+    const avail=mode==='straight'?eligible.filter(x=>!inBuild.has(x.g.game_id)):eligible.filter(x=>x.ml!=null);
+    const chosen=avail.filter(x=>!draft.off[x.g.game_id]);
     /* amounts you typed stay put; every untouched game shares what is left evenly */
-    draft.fixed=draft.fixed||{};
     for(const k of Object.keys(draft.fixed)) if(draft.off[k]||!chosen.some(x=>x.g.game_id===k)) delete draft.fixed[k];
-    const fixedIds=chosen.map(x=>x.g.game_id).filter(k=>draft.fixed[k]!=null);
-    const fixedSum=fixedIds.reduce((t,k)=>t+draft.fixed[k],0), nAuto=chosen.length-fixedIds.length;
-    const autoEach=nAuto?Math.max(0,(wr-fixedSum)/nAuto):0;
+    const fixedIds=mode==='straight'?chosen.map(x=>x.g.game_id).filter(k=>draft.fixed[k]!=null):[];
+    const fixedSum=fixedIds.reduce((t,k)=>t+draft.fixed[k],0);
     /* to the cent, with the odd cents handed out one a game, so the stakes shown add up exactly */
     const autoAmt={}; { const ids=chosen.map(x=>x.g.game_id).filter(k=>draft.fixed[k]==null);
       const cents=Math.max(0,Math.round((wr-fixedSum)*100)), base=ids.length?Math.floor(cents/ids.length):0;
       ids.forEach((k,i)=>autoAmt[k]=(base+(i<cents-base*ids.length?1:0))/100); }
     const stakeOf=gid=>draft.fixed[gid]!=null?draft.fixed[gid]:(autoAmt[gid]??0);
-    const placed=chosen.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
+    const fbtn=(k,l)=>`<button class="btn ${S.bank.filter===k?'':'quiet'}" data-bkfilter="${k}" aria-pressed="${S.bank.filter===k}">${l}</button>`;
+    const mbtn=(k,l)=>`<button class="${mode===k?'on':''}" data-bkmode="${k}" aria-pressed="${mode===k}">${l}</button>`;
     html+=`<h2>Week ${w} plan</h2>
-      <div class="bar" style="margin:0 0 10px"><label>Risk this week $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label>${fixedIds.length?`<button class="btn quiet" id="bkEven" style="padding:5px 12px">RESET</button>`:''}</div>
-      <div class="bar" style="margin:0 0 10px"><span class="muted">${chosen.length} of ${eligible.length} games in</span></div>`;
+      <div class="bar" style="margin:0 0 10px"><label>Stake $<input type="number" id="bkWeekAmt" step="1" min="0" value="${draft.amt}"></label>${fixedIds.length?`<button class="btn quiet" id="bkEven" style="padding:5px 12px">RESET</button>`:''}</div>
+      <div class="bar" style="margin:0 0 10px">${BK_FILTERS.map(([k,l])=>fbtn(k,l)).join('')}</div>
+      <div class="bar" style="margin:0 0 14px"><div class="seg" role="group" aria-label="Bet type">${mbtn('straight','Straight up')}${mbtn('parlay','Parlay')}</div></div>`;
 
-    const rowsData = eligible.map(x=>{ const on=!draft.off[x.g.game_id];
-      const ml=oddsFor(x.g.game_id,x.pr.pick); const stake=on?stakeOf(x.g.game_id):0; const po=on&&stake>0?amPayout(stake,ml):null;
-      return {x,on,ml,stake,fixed:draft.fixed[x.g.game_id]!=null,profit:po?po.profit:null,
-        sortConf:x.pr.conf, sortOdds:ml==null?null:mlToDec(ml), sortStake:on?stake:null, sortProfit:po?po.profit:null}; });
+    const rowsData=(mode==='straight'?eligible:avail).map(x=>{ const id=x.g.game_id, locked=mode==='straight'&&inBuild.has(id), on=!locked&&!draft.off[id];
+      const stake=mode==='straight'&&on?stakeOf(id):0; const po=stake>0?amPayout(stake,x.ml):null;
+      return {x,on,locked,stake,fixed:draft.fixed[id]!=null,profit:po?po.profit:null}; });
     const SORTS={
       game:(a,b)=>(a.x.g.away_team+a.x.g.home_team).localeCompare(b.x.g.away_team+b.x.g.home_team),
       pick:(a,b)=>a.x.pr.pick.localeCompare(b.x.pr.pick),
-      conf:(a,b)=>a.sortConf-b.sortConf,
-      odds:(a,b)=>(a.sortOdds??-1)-(b.sortOdds??-1),
-      stake:(a,b)=>(a.sortStake??-1)-(b.sortStake??-1),
-      profit:(a,b)=>(a.sortProfit??-1)-(b.sortProfit??-1),
+      conf:(a,b)=>a.x.pr.conf-b.x.pr.conf,
+      odds:(a,b)=>(mlToDec(a.x.ml)??-1)-(mlToDec(b.x.ml)??-1),
+      stake:(a,b)=>a.stake-b.stake,
+      profit:(a,b)=>(a.profit??-1)-(b.profit??-1),
     };
     const sortKey=S.bank.sort||'game'; const sortDir=S.bank.sortDir||'asc';
-    let sorted=rowsData.slice();
-    if(SORTS[sortKey]){ sorted.sort(SORTS[sortKey]); if(sortDir==='desc') sorted.reverse(); }
+    const sorted=rowsData.slice(); if(SORTS[sortKey]){ sorted.sort(SORTS[sortKey]); if(sortDir==='desc') sorted.reverse(); }
     const arrow=k=>sortKey===k?(sortDir==='asc'?' ▲':' ▼'):'';
     const NUMCOL=new Set(['odds','stake','profit']);
     const sh=(k,label)=>`<th class="sortable${NUMCOL.has(k)?' num':''}" data-sort="${k}">${label}${arrow(k)}</th>`;
-    const allOn=chosen.length===eligible.length, noneOn=chosen.length===0;
+    const allOn=chosen.length===avail.length&&avail.length>0, noneOn=chosen.length===0;
     const headCb=`<input type="checkbox" id="bkAllCb" ${allOn?'checked':''} ${(!allOn&&!noneOn)?'data-indeterminate="1"':''} aria-label="Select all games">`;
+    const lead=r=>`<td><input type="checkbox" data-bkg="${r.x.g.game_id}" ${r.on?'checked':''} ${r.locked?'disabled':''} aria-label="Include ${r.x.g.away_team} at ${r.x.g.home_team}"></td>`
+      +`<td>${r.x.g.away_team} at ${r.x.g.home_team}${r.locked?'<span class="bk-in">IN BUILD</span>':''}</td>`
+      +`<td>${pickTag(r.x.pr.pick)}</td>`
+      +`<td><span class="tier ${r.x.tc}">${tier(r.x.pr.conf)[1]} ${Math.round(r.x.pr.conf*100)}%</span></td>`
+      +`<td class="num ${r.x.ml==null?'muted':''}">${fmtML(r.x.ml)}</td>`;
+    shownIds=avail.map(x=>x.g.game_id);
 
-    const body = sorted.map(({x,on,ml,stake,fixed,profit})=>
-      `<tr style="${on?'':'opacity:.5'}">`
-      + `<td><input type="checkbox" data-bkg="${x.g.game_id}" ${on?'checked':''} aria-label="Include ${x.g.away_team} at ${x.g.home_team}"></td>`
-      + `<td>${x.g.away_team} at ${x.g.home_team}</td>`
-      + `<td>${pickTag(x.pr.pick)}</td>`
-      + `<td><span class="tier ${x.tc}">${tier(x.pr.conf)[1]} ${Math.round(x.pr.conf*100)}%</span></td>`
-      + `<td class="num ${ml==null?'muted':''}">${fmtML(ml)}</td>`
-      + `<td class="num">${on?`<input type="number" class="stake-in${fixed?' fixed':''}" data-stake="${x.g.game_id}" step="1" min="0" value="${stake.toFixed(2)}" aria-label="Stake on ${x.g.away_team} at ${x.g.home_team}">`:'–'}</td>`
-      + `<td class="num ${profit!=null?'delta up':'muted'}">${profit!=null?'+$'+profit.toFixed(2):'–'}</td></tr>`
-    ).join('');
-
-    const mlTot=(()=>{let s=0;chosen.forEach(x=>{const st=stakeOf(x.g.game_id); const po=st>0?amPayout(st,oddsFor(x.g.game_id,x.pr.pick)):null; if(po)s+=po.profit;});return s;})();
-    const tot = `<tr class="totrow"><td></td><td colspan="3"><b>If every pick hits</b></td><td></td><td class="num"><b>$${placed.toFixed(2)}</b></td><td class="num delta up"><b>+$${mlTot.toFixed(2)}</b></td></tr>`;
-
-    html += eligible.length
-      ? `<table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Model pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${sh('stake','Stake')}${sh('profit','Profit')}</tr></thead><tbody>${body}${tot}</tbody></table>`
-        + (chosen.some(x=>oddsFor(x.g.game_id,x.pr.pick)==null)?'<p class="muted" style="margin:8px 0 0">* Some picks have no moneyline loaded, so they are left out of the profit total.</p>':'')
-      : '<div class="empty">No games meet the confidence filter this week. Change the filter above.</div>';
+    if(!eligible.length) html+='<div class="empty">No picks in that confidence band this week. Pick a wider band above.</div>';
+    else if(mode==='straight'){
+      html+=`<div class="bar" style="margin:0 0 10px"><span class="muted">${chosen.length} of ${avail.length} games in</span></div>`;
+      const body=sorted.map(r=>`<tr style="${r.on?'':'opacity:.5'}">${lead(r)}`
+        +`<td class="num">${r.on?`<input type="number" class="stake-in${r.fixed?' fixed':''}" data-stake="${r.x.g.game_id}" step="1" min="0" value="${r.stake.toFixed(2)}" aria-label="Stake on ${r.x.g.away_team} at ${r.x.g.home_team}">`:'–'}</td>`
+        +`<td class="num ${r.profit!=null?'delta up':'muted'}">${r.profit!=null?'+$'+r.profit.toFixed(2):'–'}</td></tr>`).join('');
+      const placed=chosen.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
+      const mlTot=chosen.reduce((t,x)=>{ const st=stakeOf(x.g.game_id); const po=st>0?amPayout(st,x.ml):null; return t+(po?po.profit:0); },0);
+      const tot=`<tr class="totrow"><td></td><td colspan="3"><b>If every pick hits</b></td><td></td><td class="num"><b>$${placed.toFixed(2)}</b></td><td class="num delta up"><b>+$${mlTot.toFixed(2)}</b></td></tr>`;
+      html+=`<table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Model pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${sh('stake','Stake')}${sh('profit','Profit')}</tr></thead><tbody>${body}${tot}</tbody></table>`
+        +(chosen.some(x=>x.ml==null)?'<p class="muted" style="margin:8px 0 0;text-align:center">* Some picks have no moneyline loaded, so they are left out of the profit total and cannot be locked in.</p>':'');
+      const lockable=chosen.filter(x=>stakeOf(x.g.game_id)>0&&x.ml!=null);
+      const lockAmt=lockable.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
+      html+=`<div class="bar" style="margin:16px 0 0"><button class="btn go" id="bkLock" ${lockable.length?'':'disabled'}>Lock in ${lockable.length} bet${lockable.length===1?'':'s'} · $${lockAmt.toFixed(2)}</button></div>`;
+      onLock=()=>{ let n=0; for(const x of lockable){ n+=lockBet('single',[x],stakeOf(x.g.game_id)); }
+        draft.fixed={}; bkMsg=n?`Added ${n} straight bet${n===1?'':'s'} to the Bet Build below.`:'Those bets are already in the Bet Build.'; };
+    } else {
+      const legs=chosen, missing=eligible.length-avail.length;
+      html+=`<div class="bar" style="margin:0 0 10px"><span class="muted">${legs.length} of ${avail.length} legs in</span></div>`;
+      if(!avail.length) html+='<div class="empty">None of those picks have a moneyline loaded yet. Fetch or upload odds above.</div>';
+      else {
+        html+=`<table class="parlay"><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Pick')}${sh('conf','Confidence')}${sh('odds','Odds')}</tr></thead><tbody>`
+          +sorted.map(r=>`<tr style="${r.on?'':'opacity:.45'}">${lead(r)}</tr>`).join('')+'</tbody></table>';
+        const two=legs.length>=2, dec=legs.reduce((p,x)=>p*mlToDec(x.ml),1), am=decToMl(dec), modelP=legs.reduce((p,x)=>p*x.pr.conf,1);
+        html+=`<div class="stat-strip" style="margin:16px 0 0">
+          <div class="stat"><b>${legs.length}</b><span>leg${legs.length===1?'':'s'}</span></div>
+          <div class="stat"><b>${two?(am>0?'+':'')+am:'–'}</b><span>parlay odds${two?` (${dec.toFixed(2)}x)`:''}</span></div>
+          <div class="stat"><b>$${two?(wr*dec).toFixed(2):'0.00'}</b><span>pays out on $${wr.toFixed(2)}</span></div>
+          <div class="stat"><b class="${two?'delta up':'muted'}">+$${two?(wr*dec-wr).toFixed(2):'0.00'}</b><span>profit if it hits</span></div>
+          <div class="stat"><b>${two?(modelP*100).toFixed(modelP<0.01?2:1)+'%':'–'}</b><span>model says it hits</span></div>
+        </div>`;
+        if(!two) html+=`<p class="muted" style="margin:10px 0 0;text-align:center">${avail.length<2?`Only ${avail.length} pick with odds in this band. A parlay needs at least two legs.`:legs.length?'One leg is a single bet, not a parlay. Tick at least one more to see a parlay payout.':`All ${avail.length} legs are unchecked. Tick at least two to see a parlay payout.`}</p>`;
+        if(missing) html+=`<p class="muted" style="margin:8px 0 0;text-align:center">${missing} pick${missing===1?' has':'s have'} no moneyline loaded and ${missing===1?'is':'are'} left out.</p>`;
+        html+=`<div class="bar" style="margin:16px 0 0"><button class="btn go" id="bkLock" ${two&&wr>0?'':'disabled'}>Lock in parlay · $${wr.toFixed(2)}</button></div>`;
+        onLock=()=>{ if(!two||!(wr>0)) return; const n=lockBet('parlay',legs,wr);
+          bkMsg=n?`Parlay added to the Bet Build below.`:'That parlay is already in the Bet Build.'; };
+      }
+    }
+    if(msg) html+=`<p class="muted" id="bkMsg" style="margin:10px 0 0;text-align:center">${msg}</p>`;
   } else html+='<h2>No unplayed games</h2><p class="muted">Upload results to move to the next week.</p>';
   $('bkPlan').innerHTML=html;
   const bkAllCb=$('bkAllCb');
   if(bkAllCb){ if(bkAllCb.dataset.indeterminate) bkAllCb.indeterminate=true;
-    bkAllCb.addEventListener('change',e=>{ S.bank.draft.off = e.target.checked ? {} : Object.fromEntries(eligible.map(x=>[x.g.game_id,true])); save(); renderBank(); }); }
+    bkAllCb.addEventListener('change',e=>{ const d=S.bank.draft; if(e.target.checked) shownIds.forEach(k=>delete d.off[k]); else shownIds.forEach(k=>d.off[k]=true); save(); renderBank(); }); }
   $('bkPlan').querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click',()=>{
     const k=th.dataset.sort;
     if(S.bank.sort===k) S.bank.sortDir=(S.bank.sortDir==='asc')?'desc':'asc';
     else { S.bank.sort=k; S.bank.sortDir='asc'; }
     save(); renderBank(); }));
+  $('bkPlan').querySelectorAll('button[data-bkfilter]').forEach(b=>b.addEventListener('click',()=>{ S.bank.filter=b.dataset.bkfilter; save(); renderBank(); }));
+  $('bkPlan').querySelectorAll('button[data-bkmode]').forEach(b=>b.addEventListener('click',()=>{ S.bank.mode=b.dataset.bkmode; save(); renderBank(); }));
   $('bkWeekAmt')?.addEventListener('change',e=>{ const v=Math.max(0,Math.round(+e.target.value||0)); S.bank.lastAmt=v; S.bank.draft.amt=v;
-    /* a risk below what is already set would leave nothing sensible to share: start even */
+    /* a stake below what is already set would leave nothing sensible to share: start even */
     const set=Object.entries(S.bank.draft.fixed||{}).filter(([k])=>!S.bank.draft.off[k]).reduce((t,[,a])=>t+a,0);
     if(set>v) S.bank.draft.fixed={};
     save(); renderBank(); });
@@ -1663,17 +1681,18 @@ function renderBank(){
     const v=Math.max(0,Math.min(Math.round((+inp.value||0)*100)/100,Math.round((total-others)*100)/100));
     (d.fixed=d.fixed||{})[gid]=v; save(); renderBank(); }));
   $('bkPlan').querySelectorAll('input[data-bkg]').forEach(c=>c.addEventListener('change',()=>{ if(c.checked) delete S.bank.draft.off[c.dataset.bkg]; else S.bank.draft.off[c.dataset.bkg]=true; save(); renderBank(); }));
+  $('bkLock')?.addEventListener('click',()=>{ if(!onLock) return; onLock(); save(); renderBank(); });
   $('bkReopen')?.addEventListener('click',()=>{ delete S.bank.weeks[w]; save(); renderBank(); });
+  renderBuild();
   // history
   const weeks=Object.keys(S.bank.weeks).map(Number).sort((a,b)=>a-b);
-  if(!weeks.length){ $('bkHistory').innerHTML=''; renderParlay(); return; }
+  if(!weeks.length){ $('bkHistory').innerHTML=''; return; }
   const pts=[...weeks.map(k=>out[k].startBal),+S.bank.start];
   const W=700,H=120,pad=8; const mn=Math.min(...pts)*0.95,mx=Math.max(...pts)*1.05||1;
   const xy=pts.map((p,i)=>[pad+i*(W-2*pad)/Math.max(pts.length-1,1),H-pad-(p-mn)/(mx-mn||1)*(H-2*pad)]);
   const line=pts.length>1?`<svg class="bkline" viewBox="0 0 ${W} ${H}" aria-label="Balance over the season"><line x1="${pad}" x2="${W-pad}" y1="${xy[0][1]}" y2="${xy[0][1]}" stroke="#CBD3DC" stroke-dasharray="4 4"/><polyline fill="none" stroke="#132238" stroke-width="2.5" points="${xy.map(p=>p.join(',')).join(' ')}"/>${xy.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${pts[i]>=pts[0]?'#1F6F4A':'#B23A32'}"/>`).join('')}</svg>`:'';
   $('bkHistory').innerHTML=`<div class="card">${line}<table><thead><tr><th>Week</th><th class="num">Balance</th><th class="num">Risk</th><th class="num">Games</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Week over week</th><th>Note</th><th></th></tr></thead><tbody>`+weeks.map(k=>{const r=S.bank.weeks[k],o=out[k];
     return `<tr><td>Week ${k}</td><td class="num">$${o.startBal.toFixed(2)}</td><td class="num">${r.amt!=null?'$'+r.amt:(r.pct??0)+'%'}</td><td class="num">${r.games.length}</td><td class="num">$${r.staked.toFixed(2)}</td><td class="num">${o.settled?'$'+r.returned.toFixed(2):'<span class="muted">pending</span>'}</td><td class="num ${o.settled?(o.net>=0?'delta up':'delta down'):'muted'}">${o.settled?(o.net>=0?'+':'-')+'$'+Math.abs(o.net).toFixed(2):'–'}</td><td class="num ${o.wow==null?'muted':(o.wow>=0?'delta up':'delta down')}">${o.wow==null?'–':(o.wow>=0?'+':'-')+'$'+Math.abs(o.wow).toFixed(2)}</td><td class="muted">${r.note||''}</td><td>${o.settled?`<button class="btn quiet" data-bkedit="${k}">Edit</button>`:''}</td></tr>`;}).join('')+'</tbody></table></div>';
-  renderParlay();
   $('bkHistory').querySelectorAll('button[data-bkedit]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.bkedit; const v=prompt(`Total returned for week ${k}:`,S.bank.weeks[k].returned); if(v===null) return; const n=parseFloat(v); if(isNaN(n)||n<0) return; S.bank.weeks[k].returned=+n.toFixed(2); save(); renderBank(); }));
 }
 function renderAll(){ renderWeekOptions(); renderPicks(); renderMine(); renderBank(); renderRecord(); renderRatings(); renderAdjust(); }
@@ -1828,7 +1847,7 @@ function buildCheck(){
     el.textContent='Saved state was built on an older model ('+(S.modelBuild||'unstamped')+') but has '+graded+' graded game'+(graded===1?'':'s')+', so ratings were left alone. To move to '+MODEL_BUILD+': export a backup, click Rebuild ratings from Week 1 (your picks and bankroll are kept), then re-upload the games file and the team stats file from Week 1.';
   }
 }
-(async()=>{ const saved=await store.get(); if(saved&&saved.teams&&saved.schedule){ S=saved; S.events??=[]; S.gamesPlayed??={}; S.myPicks??={}; S.processed??={}; S.odds??={}; S.bets??={}; S.injuries??=null; S.depth??=null; S.roster??=null; S.bank??={start:100,lastAmt:20,filter:'all',weeks:{}}; S.bank.lastAmt??=20; S.teamsH??=JSON.parse(JSON.stringify(MODEL_H.teams)); S.showAllModels??=false; S.qb??={players:{},stint:{},seen:{},starters:{}}; S.qb.starters??={}; delete S.bank.pct; delete S.bank.lastPct; delete S.locked; delete S.useMarket; if(S.bank&&S.bank.view!=='ml'&&S.bank.view!=='sp') delete S.bank.view; (S.events||[]).forEach(e=>{ if(e.type==='pr_out'||e.type==='pr_back'||e.type==='qb_out'||e.type==='qb_back'){ if(!e.ended){ e.ended=true; e.endedWeek='retired'; } } }); } buildCheck(); renderAll(); renderBackupState();
+(async()=>{ const saved=await store.get(); if(saved&&saved.teams&&saved.schedule){ S=saved; S.events??=[]; S.gamesPlayed??={}; S.myPicks??={}; S.processed??={}; S.odds??={}; S.bets??={}; S.injuries??=null; S.depth??=null; S.roster??=null; S.bank??={start:100,lastAmt:20,filter:'all',weeks:{}}; S.bank.lastAmt??=20; S.bank.build??=[]; S.bank.mode??='straight'; if(!['all','med','high'].includes(S.bank.filter)) S.bank.filter='all'; ['parlaySel','parlayOff','parlayStake','parlaySort','parlaySortDir'].forEach(k=>delete S.bank[k]); S.teamsH??=JSON.parse(JSON.stringify(MODEL_H.teams)); S.showAllModels??=false; S.qb??={players:{},stint:{},seen:{},starters:{}}; S.qb.starters??={}; delete S.bank.pct; delete S.bank.lastPct; delete S.locked; delete S.useMarket; if(S.bank&&S.bank.view!=='ml'&&S.bank.view!=='sp') delete S.bank.view; (S.events||[]).forEach(e=>{ if(e.type==='pr_out'||e.type==='pr_back'||e.type==='qb_out'||e.type==='qb_back'){ if(!e.ended){ e.ended=true; e.endedWeek='retired'; } } }); } buildCheck(); renderAll(); renderBackupState();
   const _age=backupAgeDays(), _graded=Object.keys(S.processed||{}).length;
   if(_graded&&(_age==null||_age>BACKUP_STALE_DAYS)) log('No recent backup. Open the Backup tab and save one so a cleared cache cannot wipe your season.','warn');
 })();
