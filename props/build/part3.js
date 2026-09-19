@@ -670,7 +670,7 @@ function renderPricePull(){
   }
   el.innerHTML=`<div>${head}</div><div class="muted">${sub}</div>${bal}`;
 }
-function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderModel(); renderTrack(); renderPricePull(); renderBackupState();
+function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderTrack(); renderPricePull(); renderBackupState();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });

@@ -113,7 +113,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 .sugg-legs .od{width:58px;text-align:center} .sugg-legs .pc{width:38px;text-align:right;margin-left:6px}
 .stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .stat{background:var(--panel);border:1px solid transparent;border-radius:var(--r-md);padding:14px 16px 12px;box-shadow:var(--sh-sm);position:relative;overflow:hidden;transition:box-shadow .2s var(--ease),transform .2s var(--ease)}
-.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),rgba(211,154,31,.25))}
+.stat::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--gold),rgba(211,154,31,.25))}
 .stat:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
 .stat b{font-family:var(--display);font-size:28px;font-weight:700;display:block;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
 .stat span{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:5px}
@@ -465,6 +465,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.51</td><td>Stat tiles carry their gold mark along the top edge instead of down the left. The public page now has the Backup tab too.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.50</td><td>Bank Roll: the balance tiles and the plan toolbar are centred; the tiles read "current balance" and "total return"; stake boxes have a $ in front.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.49</td><td>Suggested parlay cards: each leg's odds and chance sit in their own columns, spaced apart and lined up.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.48</td><td>Bank Roll is more compact. Stake amounts are centred in their boxes, clear of the arrows, and odds are centred in their column.</td></tr>
@@ -570,16 +571,29 @@ th.sortable:hover{color:var(--ink)}
       const own={}; for(const [gid,o] of Object.entries(S.odds||{})) if(o&&o.src!=='nflverse') own[gid]=o;
       localStorage.setItem(MINE,JSON.stringify({myPicks:S.myPicks||{},bank:S.bank||null,bets:S.bets||{},odds:own,lastBackup:S.lastBackup||null,lastBackupHow:S.lastBackupHow||null})); }catch(e){} return true; }
   };
+/* both pages: the season is rebuilt by the GitHub job, so Backup covers only what lives in this
+     browser. Rebuild and Reset belonged to uploading weeks by hand and go. */
+  document.addEventListener('DOMContentLoaded',()=>{
+    for(const id of ['rebuildBtn','resetBtn']) document.getElementById(id)?.remove();
+    const bs=document.getElementById('backupState'), card=bs&&bs.closest('.card'); if(!card) return;
+    const h=card.querySelector('h2'); if(h) h.textContent='Backup';
+    let n=bs.nextElementSibling; while(n){ const nx=n.nextElementSibling; n.remove(); n=nx; }
+    bs.insertAdjacentHTML('afterend','<ul style="margin:12px 0 0">'
+      +'<li><b>Save backup now</b> writes a file with <b>your picks, Bet Log, bankroll and Bet Build</b>. Those live only in this browser: clearing site data or switching computers loses them, and nothing backs them up automatically any more.</li>'
+      +'<li><b>Import backup</b> restores one of those files, or moves your picks and bets to another computer.</li>'
+      +'<li>Ratings, results and odds are not your data to lose: the GitHub job rebuilds them and the site reloads them every time.</li></ul>'
+      +'<p class="muted" style="margin:10px 0 0">The note above turns red once your last backup is more than a week old. Backups land in your Downloads folder.</p>');
+  });
   document.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>{ const el=document.getElementById('saveState'); if(el&&window.__published){ const d=new Date(window.__published); el.textContent='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } },600);
   });
 })();
 </script>
 <script>
-/* viewer only: no Downloads, Upload, Records, Bet Log or Backup, and no odds fetch/upload card */
+/* viewer only: no Downloads, Upload, Records or Bet Log, and no odds fetch/upload card; Backup stays, since a visitor's picks and bets live only in their browser */
 window.VIEWER=true;
 document.addEventListener('DOMContentLoaded',()=>{
-  for(const t of ['upload','record','bets','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
+  for(const t of ['upload','record','bets']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
   const ml=[...document.querySelectorAll('#tab-bank .card h2')].find(h=>h.textContent.trim()==='Moneylines'); if(ml&&ml.closest('.card')) ml.closest('.card').remove();
 });
 </script>
@@ -592,7 +606,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.50 \u00b7 2026-09-18';
+const APP_BUILD='v1.51 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={

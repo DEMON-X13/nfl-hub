@@ -67,7 +67,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink);cursor:point
 /* ---------- stat tiles ---------- */
 .stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .stat{background:var(--panel);border:1px solid transparent;border-radius:var(--r-md);padding:14px 16px 12px;box-shadow:var(--sh-sm);position:relative;overflow:hidden}
-.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),rgba(211,154,31,.25))}
+.stat::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,var(--gold),rgba(211,154,31,.25))}
 .stat b{font-family:var(--display);font-size:28px;font-weight:700;display:block;line-height:1;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
 .stat span{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-top:5px}
 
@@ -390,7 +390,6 @@ body.modal-open{overflow:hidden}
     <button role="tab" data-tab="parlay">Parlay Builder</button>
     <button role="tab" data-tab="track">Track Record</button>
     <button role="tab" data-tab="week">Weekly Update</button>
-    <button role="tab" data-tab="model">How It Works</button>
     <button role="tab" data-tab="backup">Backup</button>
   </nav>
 </header>
@@ -478,50 +477,6 @@ body.modal-open{overflow:hidden}
   </div>
 </section>
 
-<section id="tab-model" hidden>
-  <div class="card">
-    <h2>What this app does</h2>
-    <p class="muted" style="margin:0 0 10px">For every starter and rotation player in a game, it projects what they will do, then works out the chance of clearing each threshold: 20 or more pass attempts, 50 or more rushing yards, 6 or more catches, and so on. Each line gets its own percentage and a Low, Med or High rating.</p>
-    <h3>How a projection is built</h3>
-    <ul>
-      <li><b>The player's own recent form</b> carries the most weight: a five-game and a three-game weighted average, their career rate, and last season's rate. The career and last-season numbers are pulled toward the league average when a player has barely any history, so one big game in limited action doesn't blow up his projection.</li>
-      <li><b>Team volume</b>, because a receiver's targets depend on how much his offense throws.</li>
-      <li><b>The opponent</b>, both overall and what they specifically give up to that position.</li>
-      <li><b>Game context</b>: the points each team is expected to score, home or away, and how lopsided the game looks. Where a sportsbook has posted a line, that is used, because the market predicts scoring better than we do (7.25 points of average error against our 7.60 on the 2025 season). Where no line exists yet, which is most of the season this far out, the game is built from our own team ratings instead of assuming an average game. Those weeks are marked.</li>
-    </ul>
-    <h3>Why the percentages aren't what you'd guess</h3>
-    <ul>
-      <li>A projection is an average, and averages sit above a typical night. A receiver projected for 60 yards clears 60 well under half the time, because his quiet games are near zero and his big ones are huge, which drags the average up.</li>
-      <li>So the app doesn't assume a neat bell curve. It carries the real shape of each stat's outcomes, measured across seven seasons, and reads the chance of clearing a number straight off that. This is why you'll see a player projected for 60 yards sitting under 50% to hit 60 or more, and it's the correct answer.</li>
-      <li><b>High</b> is 70% or better, <b>Med</b> is 45 to 70%, <b>Low</b> is under 45%.</li>
-    </ul>
-    <h3>Two different questions on every line</h3>
-    <ul>
-      <li><b>The percentage answers "will it happen?"</b> That is the model's own view, tested against seven seasons of results. Checked on established starters in 2025, it is unbiased: predicted averages match real averages within a few percent on every stat, and the chance of clearing its own median comes out at 47 to 51%.</li>
-      <li><b>The estimated price answers "what would a sportsbook charge?"</b> That is a different question, because the market disagrees with the model. In Week 1 the market sat about 5 points higher than the model on every main line. So the price estimate starts from where the market is, not where the model is.</li>
-      <li>The gap between those two is the whole point. If the model says 55% and the book's price implies 48%, that is the disagreement worth looking at. Whether the model or the market is right is the open question this app cannot yet answer, because it has never been scored against real prices.</li>
-    </ul>
-    <h3>How the estimated price is built</h3>
-    <ul>
-      <li><b>Where a real line is baked in</b> (the "book line" shown beside the stat), the model's distribution is shifted until it agrees with the market at that number, with the bookmaker's cut stripped out first. Then the chance of each rung is read off the shifted distribution.</li>
-      <li><b>Where no line exists</b>, the projection is nudged by the average gap measured against the market in the most recent week with lines: roughly 3% on pass attempts, 6% on passing yards, 9% on rushing and receiving yards, 14% on receptions.</li>
-      <li><b>Then the cut is added.</b> Main lines run about 6.5% total hold, which is the -114/-114 you see everywhere. Alternate ladders run far higher, and the longer the shot the more they take. The shape of that curve is an assumption, not a measurement, because no free source publishes alternate prices to measure it against. The margin setting on each game page lets you make it lighter or heavier if your book runs differently.</li>
-      <li><b>Reliability falls off in the tails.</b> A few points of error barely moves a coin-flip price and wildly moves a longshot: 8% is +1150, 3% is +3233. Near the projection the estimate is worth using. At 300+ passing yards it is a rough direction.</li>
-      <li>Every price is labelled: <b>real</b> is a sportsbook's actual number, <b>est.</b> is this estimate, <b>fair</b> is the model's chance with no cut at all.</li>
-    </ul>
-    <div id="modelValidation"></div>
-    <div id="modelSeason"></div>
-    <h3>What it can't do</h3>
-    <ul>
-      <li><b>It has never been checked against a sportsbook.</b> Old betting lines aren't published anywhere free, so everything below is the model against what players actually did. Whether these percentages beat a real book is a harder question and this hasn't answered it.</li>
-      <li><b>Kickers are a coin flip.</b> Across seven seasons the model is no better at field goals than guessing the league average. Kicker numbers are shown but treat them as noise.</li>
-      <li><b>It doesn't know about news.</b> A snap-count change, a new coordinator or a player working through something all move the picture before they show up in the stats.</li>
-      <li><b>It only sees starters and the main rotation.</b> Deep backups are hidden because projecting them from almost no history produces nonsense.</li>
-      <li><b>Rookies aren't in it.</b> Anyone who has never played an NFL game has nothing to project from, so first-year players are missing entirely until they've played three games. If a rookie is starting somewhere, you'll notice a name absent rather than a wrong number.</li>
-      <li><b>Rosters are a snapshot.</b> Teams are baked in from the 2026 roster as of the build date, with anyone released or on reserve already removed. Upload a fresh roster each week and it stays current through the season.</li>
-    </ul>
-  </div>
-</section>
 
 <section id="tab-backup" hidden>
   <div class="card">

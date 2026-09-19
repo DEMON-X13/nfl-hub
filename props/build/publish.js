@@ -2,9 +2,10 @@
  *
  *   node props/build/publish.js      (from the hub root)
  *
- *   props/index.html   public: Games, Parlay Builder, Track Record, How It Works.
- *                      The Weekly Update and Backup tabs are removed; the week's
- *                      data is baked in by weekly.py, so visitors never upload.
+ *   props/index.html   public: Games, Parlay Builder, Track Record, Backup.
+ *                      The Weekly Update tab is removed; the week's data is baked in
+ *                      by weekly.py, so visitors never upload. Backup stays: a
+ *                      visitor's saved parlays live only in their own browser.
  *   props/admin.html   the full app, every tab.
  * Anything a visitor does (parlays, bets, settings) stays in their own browser.
  */
@@ -16,10 +17,10 @@ const APP = path.join(ROOT, 'props', 'app', 'prop_model_2026.html');
 const html = fs.readFileSync(APP, 'utf8');
 
 const TRIM = `<script>
-/* public page: no Weekly Update or Backup tab; the data is baked in */
+/* public page: no Weekly Update tab; the data is baked in */
 window.VIEWER=true;
 document.addEventListener('DOMContentLoaded',()=>{
-  for(const t of ['week','backup']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
+  for(const t of ['week']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
   const bt=document.getElementById('buildTag'); if(bt) bt.remove();   /* the betting model's public header carries no build tag */
 });
 /* header note, as on the betting model: when the site's data was last built, not "Autosaved" */
