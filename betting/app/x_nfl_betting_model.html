@@ -345,6 +345,20 @@ th.sortable:hover{color:var(--ink)}
 .bk-ctrl .grp{align-items:center}
 .bk-ctrl .row{justify-content:center}
 .stake-cur{color:var(--muted);margin-right:5px}
+/* v1.57: phones */
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.tscroll>table{margin-left:auto;margin-right:auto}
+@media (max-width:560px){
+  /* the My Picks row has to fit inside a card that clips what does not */
+  .mybody{grid-template-columns:17px minmax(0,1fr) minmax(0,auto) 52px minmax(0,auto) minmax(0,1fr) 17px;gap:6px;padding:10px 8px}
+  .donut{width:52px;height:52px}
+  .mypct{font-size:17px;letter-spacing:-.2px}
+  .myside b{font-size:12px} .myside small{font-size:8.5px}
+  .pickdot{width:17px;height:17px}
+  #bkPlan th,#bkPlan td,#bkBuild th,#bkBuild td{padding:5px 10px}
+  #bkPlan table.parlay td{padding:9px 10px}
+  .bk-ctrl{padding:10px 12px;gap:10px 18px}
+}
 </style>
 </head>
 <body>
@@ -471,6 +485,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.57</td><td><b>Phones.</b> On My Picks, half the pick buttons sat outside the card, which clips, so those teams could not be picked on a phone; the row now fits. Parlay Builder and Bet Build tables scroll sideways on their own instead of dragging the whole page with them.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.56</td><td>The price check no longer prints "needs X%" under a price; the dot and the hover text say it.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.55</td><td><b>Quarterback changes were being missed on the site.</b> Games were graded before the depth chart loaded, so no team's week 1 starter was recorded and a backup's start (Cooper Rush for Atlanta) never moved the pick. The depth chart now loads first, and the missing starter records are rebuilt from the games already graded.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.54</td><td>Price check on Straight up bets in Parlay Builder: each price carries a dot. Red: the price needs a higher win rate than the model gives the pick (-400 needs 80%). Amber: a close call. Green: the model clears it by 3+ points. Hover a price for the numbers.</td></tr>
@@ -566,7 +581,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.56 \u00b7 2026-09-19';
+const APP_BUILD='v1.57 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1377,12 +1392,12 @@ function renderBuild(){
   for(const w of weeks){
     const W=buildWeek(w), net=W.returned-W.settledStake;
     html+=`<div class="bar" style="margin:${w===weeks[0]?'0':'22px'} 0 8px"><b>Week ${w}</b><span class="muted">${W.bets.length} bet${W.bets.length===1?'':'s'}</span></div>
-      <table data-build-week="${w}"><thead><tr><th>Bet</th><th>Pick</th><th class="num">Odds</th><th class="num">Stake</th><th class="num">Pays</th><th>Result</th><th></th></tr></thead><tbody>`
+      <div class="tscroll"><table data-build-week="${w}"><thead><tr><th>Bet</th><th>Pick</th><th class="num">Odds</th><th class="num">Stake</th><th class="num">Pays</th><th>Result</th><th></th></tr></thead><tbody>`
       +W.bets.map(x=>`<tr data-bet="${x.b.id}"><td>${x.b.type==='parlay'?`Parlay <span class="muted">${x.b.legs.length} legs</span>`:'Straight'}</td>
         <td>${x.b.legs.map(l=>`<div class="bl">${pickTag(l.pick)}<span class="muted">${l.away} at ${l.home}</span>${x.b.type==='parlay'?`<span class="muted">${fmtML(l.ml)}</span>${mark(l)}`:''}</div>`).join('')}</td>
         <td class="num">${fmtML(decToMl(x.dec))}</td><td class="num">$${x.b.stake.toFixed(2)}</td><td class="num">$${(x.b.stake*x.dec).toFixed(2)}</td>
         <td>${res(x)}</td><td><button class="x-btn" data-bkdel="${x.b.id}" aria-label="Remove this bet" title="Remove">×</button></td></tr>`).join('')
-      +`<tr class="totrow"><td colspan="3"><b>Week ${w}</b></td><td class="num"><b>$${W.staked.toFixed(2)}</b></td><td class="num"><b>$${W.pays.toFixed(2)}</b></td><td colspan="2"></td></tr></tbody></table>
+      +`<tr class="totrow"><td colspan="3"><b>Week ${w}</b></td><td class="num"><b>$${W.staked.toFixed(2)}</b></td><td class="num"><b>$${W.pays.toFixed(2)}</b></td><td colspan="2"></td></tr></tbody></table></div>
       <div class="bar" style="margin:12px 0 0"><span class="muted">${W.done.length} of ${W.bets.length} settled${W.done.length?`, $${W.returned.toFixed(2)} back`:''}</span>${W.done.length?`<span class="${net>=0?'delta up':'delta down'}"><b>${net>=0?'+':'-'}$${Math.abs(net).toFixed(2)}</b> net</span>`:''}
         <button class="btn go" data-bklog="${w}" ${W.allDone?'':'disabled title="Every bet has to be settled first"'}>Send week ${w} to Bet Log</button>
         <button class="btn quiet" data-bkclear="${w}">Clear week ${w}</button></div>`;
@@ -1676,7 +1691,7 @@ function renderBank(){
       const placed=chosen.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
       const mlTot=chosen.reduce((t,x)=>{ const st=stakeOf(x.g.game_id); const po=st>0?amPayout(st,x.ml):null; return t+(po?po.profit:0); },0);
       const tot=`<tr class="totrow"><td></td><td colspan="3"><b>If every pick hits</b></td><td></td><td class="num"><b>$${placed.toFixed(2)}</b></td><td class="num delta up"><b>+$${mlTot.toFixed(2)}</b></td></tr>`;
-      html+=`<table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Model pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${sh('stake','Stake')}${sh('profit','Profit')}</tr></thead><tbody>${body}${tot}</tbody></table>`
+      html+=`<div class="tscroll"><table><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Model pick')}${sh('conf','Confidence')}${sh('odds','Odds')}${sh('stake','Stake')}${sh('profit','Profit')}</tr></thead><tbody>${body}${tot}</tbody></table></div>`
         +(chosen.some(x=>x.ml==null)?'<p class="muted" style="margin:8px 0 0;text-align:center">* Some picks have no moneyline loaded, so they are left out of the profit total and cannot be locked in.</p>':'');
       const lockable=chosen.filter(x=>stakeOf(x.g.game_id)>0&&x.ml!=null);
       const lockAmt=lockable.reduce((t,x)=>t+stakeOf(x.g.game_id),0);
@@ -1688,8 +1703,8 @@ function renderBank(){
       html+=`<div class="bar" style="margin:0 0 10px"><span class="muted">${legs.length} of ${avail.length} legs in</span></div>`;
       if(!avail.length) html+='<div class="empty">None of those picks have a moneyline loaded yet. Fetch or upload odds above.</div>';
       else {
-        html+=`<table class="parlay"><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Pick')}${sh('conf','Confidence')}${sh('odds','Odds')}</tr></thead><tbody>`
-          +sorted.map(r=>`<tr style="${r.on?'':'opacity:.45'}">${lead(r)}</tr>`).join('')+'</tbody></table>';
+        html+=`<div class="tscroll"><table class="parlay"><thead><tr><th>${headCb}</th>${sh('game','Game')}${sh('pick','Pick')}${sh('conf','Confidence')}${sh('odds','Odds')}</tr></thead><tbody>`
+          +sorted.map(r=>`<tr style="${r.on?'':'opacity:.45'}">${lead(r)}</tr>`).join('')+'</tbody></table></div>';
         const two=legs.length>=2, dec=legs.reduce((p,x)=>p*mlToDec(x.ml),1), am=decToMl(dec), modelP=legs.reduce((p,x)=>p*x.pr.conf,1);
         html+=`<div class="stat-strip" style="margin:16px 0 0">
           <div class="stat"><b>${legs.length}</b><span>leg${legs.length===1?'':'s'}</span></div>
