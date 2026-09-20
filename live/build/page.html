@@ -72,6 +72,12 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:400}
 .movedNote a{color:var(--gold)}
 .lineEdit input{width:78px;padding:5px 8px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}
+.gm{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-family:var(--display);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gm em{font-style:normal;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);margin-left:7px}
+.gm.on{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05} .gm.on em{color:#8A5E05}
+.gm.done{color:var(--ink-2)}
+.statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
 .sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
@@ -248,8 +254,44 @@ function liveFor(l){
   const sum=STATE.box[l.gid]; if(!sum) return null;
   const st=espnStats(sum,l.team,l.name);
   if(st===null) return {val:null,k:+l.k,need:null,state:'unmatched',game:g};
-  return Object.assign({},liveLeg(l,st[l.stat]==null?null:st[l.stat],g.state),{game:g});
+  return Object.assign({},liveLeg(l,st[l.stat]==null?null:st[l.stat],g.state),{game:g,stats:st});
 }
+/* what the man has actually done, not only the number being bet on. Built from whatever
+   groups the box score put him in, so a back who catches passes shows both. */
+function statLine(st){
+  if(!st) return '';
+  const n=(v,d)=>num(v==null?null:v,d||0), bits=[];
+  if(st.attempts!=null){
+    let t=`${n(st.completions)}/${n(st.attempts)}, ${n(st.passing_yards)} pass yds`;
+    if(st.passing_tds>0) t+=`, ${n(st.passing_tds)} TD`;
+    if(st.passing_interceptions>0) t+=`, ${n(st.passing_interceptions)} INT`;
+    bits.push(t);
+  }
+  if(st.carries!=null) bits.push(`${n(st.carries)} car, ${n(st.rushing_yards)} rush yds`);
+  if(st.receptions!=null){
+    let t=`${n(st.receptions)} rec, ${n(st.receiving_yards)} rec yds`;
+    if(st.targets!=null) t+=` on ${n(st.targets)}`;
+    bits.push(t);
+  }
+  if(st.fg_att!=null) bits.push(`${n(st.fg_made)}/${n(st.fg_att)} FG, ${n(st.kick_pts)} pts`);
+  if(st.tds>0) bits.push(`${n(st.tds)} TD`);        /* rushing and receiving together, as ESPN gives them */
+  return bits.join(' · ');
+}
+/* the games a parlay is riding on, with the score and the clock */
+function gameStrip(p){
+  const seen=[], out=[];
+  for(const l of p.legs){
+    if(!l.gid||seen.indexOf(l.gid)>=0) continue;
+    seen.push(l.gid);
+    const g=STATE.games[l.gid];
+    if(!g){ continue; }
+    const done=g.state==='post', live=g.state==='live';
+    const score=g.state==='pre'?'':`${esc(g.away)} ${n0(g.as)}–${n0(g.hs)} ${esc(g.home)}`;
+    out.push(`<span class="gm${live?' on':''}${done?' done':''}">${score||esc(g.away+' at '+g.home)}<em>${esc(g.clock||'')}</em></span>`);
+  }
+  return out.length?`<div class="games">${out.join('')}</div>`:'';
+}
+const n0=v=>v==null?'–':String(v);
 const MARK={hit:'✓',missed:'✗',push:'P'};
 function legRow(p,l,i){
   const k=lineOf(p,i,l), moved=k!==+l.k, canEdit=l.stat!=='ml';
@@ -273,8 +315,9 @@ function legRow(p,l,i){
   const label=moved?String(l.label||'').replace(/\d+(\.\d+)?/,num(k,k%1?1:0)):String(l.label||'');
   const note=moved?`<small class="movedNote">moved from ${esc(num(+l.k,(+l.k)%1?1:0))} · <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></small>`:'';
   const edit=canEdit?`<button class="lineBtn" data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}" title="The book moved this line? Set what you actually bet.">line</button>`:'<span></span>';
+  const line=(r&&r.stats)?statLine(r.stats):'';
   return `<div class="sp-leg"><span class="${cls}">${r&&MARK[r.state]?MARK[r.state]:'○'}</span>
-    <span class="nm">${esc(l.name)}<small>${esc(label)}</small>${note}</span>${right}${edit}</div>`;
+    <span class="nm">${esc(l.name)}<small>${esc(label)}</small>${line?`<small class="statline">${esc(line)}</small>`:''}${note}</span>${right}${edit}</div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
@@ -322,6 +365,7 @@ function draw(){
         <div><b>${p.price==null?'–':fmtML(p.price)}</b><span>price</span></div>
         <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'–'}</b><span>pays</span></div>
       </div>
+      ${gameStrip(p)}
       ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
   }
   app.innerHTML=html;
