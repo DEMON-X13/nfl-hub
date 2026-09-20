@@ -58,10 +58,11 @@ function parseDay(j) {
 }
 
 function merge(have, date, fresh) {
+  const prev = new Map(have.map(r => [r.game_id, r]));
   const keep = have.filter(r => !(r.date === date && r.source === 'espn'));
   const byId = new Map(keep.map(r => [r.game_id, r]));
   for (const r of fresh) {
-    const old = byId.get(r.game_id);
+    const old = prev.get(r.game_id);
     if (old && old.source !== 'espn' && old.status === 'final') continue;   // history already has this final
     /* ESPN carries odds only before tip-off, so a final arrives without them: keep the last line seen,
        the morning-of line from the day's earlier pull */
