@@ -66,13 +66,32 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.sp-leg.prop{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
+.sp-leg.prop .res{margin-top:3px}
+.legbody{min-width:0}
+.legtop{display:flex;align-items:baseline;gap:10px}
+.legtop .grow{flex:1}
+.tgt{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.1}
+.who{color:var(--ink-2);font-size:13px;margin-top:1px}
+.status{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.status.win{color:var(--pick);font-weight:700} .status.lose{color:var(--miss);font-weight:700}
+/* room at both ends so a knob well past its line can overhang without touching the card */
+.pbar{position:relative;margin:14px 0 0;padding:0 26px 20px 6px}
+.track{position:relative;height:10px;border-radius:999px;background:var(--line)}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#F4E2B4,var(--gold));transition:width .3s var(--ease)}
+.fill.win{background:linear-gradient(90deg,#A9E2C6,var(--pick))}
+.fill.lose{background:linear-gradient(90deg,#F3BEB8,var(--miss))}
+.tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-2);border-radius:2px;opacity:.65}
+.knob{position:absolute;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:2px solid var(--gold);border-radius:999px;padding:1px 9px;font-family:var(--display);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--sh-xs)}
+.knob.win{border-color:var(--pick);color:var(--pick)} .knob.lose{border-color:var(--miss);color:var(--miss)}
+.lineLbl{position:absolute;top:calc(100% + 6px);transform:translateX(-50%);font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ln.edit{cursor:pointer;border-bottom:1px dashed var(--line-2);padding-bottom:1px}
 .ln.edit:hover{border-bottom-color:var(--ink-2)}
 .ln.edit:focus-visible{outline:none;box-shadow:var(--ring);border-radius:3px}
 .ln.moved{color:var(--gold);border-bottom-color:var(--gold)}
 .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:400}
 .movedNote a{color:var(--gold)}
-.lineEdit input{width:78px;padding:5px 8px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.lineInput{width:72px;padding:3px 6px;border:1px solid var(--ink-2);border-radius:var(--r-sm);font-size:12px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
 .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}
 .gm{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-family:var(--display);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .gm em{font-style:normal;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);margin-left:7px}
@@ -438,33 +457,66 @@ function gameStrip(p){
 }
 const n0=v=>v==null?'0':String(v);      /* no score yet is nought, not a dash */
 const MARK={hit:'✓',missed:'✗',push:'P'};
+/* what the stat is called, so the row reads "Bo Nix Rushing Yards" rather than repeating
+   the threshold that is already the heading */
+const STAT_NAME={passing_yards:'Passing Yards',passing_tds:'Passing TDs',passing_interceptions:'Interceptions',
+  attempts:'Pass Attempts',completions:'Completions',carries:'Rushing Attempts',rushing_yards:'Rushing Yards',
+  receptions:'Receptions',receiving_yards:'Receiving Yards',targets:'Targets',scrim_yards:'Scrimmage Yards',
+  any_td:'Touchdowns',fg_made:'Field Goals',fg_att:'FG Attempts',kick_pts:'Kicking Points',
+  ml:'To Win',ats:'To Cover'};
+const statName=l=>STAT_NAME[l.stat]||String(l.label||'').replace(/^(over|under)\s+[\d.]+\s*/i,'').replace(/^[\d.]+\+\s*/,'')||l.stat;
+/* the target, the way a book writes it: 20+ to go over, under 54.5 to stay below */
+const targetLabel=(l,k)=>(l.side==='under'&&l.main)?`under ${num(k,k%1?1:0)}`:`${num(k,k%1?1:0)}+`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+/* the bar runs a quarter past the line, so the tick sits at 80% and there is visible room
+   beyond it -- a number past its target should look past it, not pinned to the end */
+function progressBar(val,k,state,lineHTML){
+  const max=(isFinite(k)&&k>0)?k*1.25:Math.max(1,val||1);
+  const tick=clamp(100*k/max,0,100);
+  const pct=clamp(100*(val||0)/max,0,100);
+  const knob=clamp(pct,3,97);
+  const tone=state==='hit'?' win':(state==='missed'?' lose':'');
+  return `<div class="pbar">
+    <div class="track"><div class="fill${tone}" style="width:${pct.toFixed(2)}%"></div>
+      <span class="tick" style="left:${tick.toFixed(2)}%"></span>
+      <span class="knob${tone}" style="left:${knob.toFixed(2)}%">${esc(num(val,(val||0)%1?1:0))}</span>
+      <span class="lineLbl" style="left:${tick.toFixed(2)}%">${lineHTML}</span></div>
+  </div>`;
+}
 function legRow(p,l,i){
   const k=lineOf(p,i,l), moved=k!==+l.k, canEdit=l.stat!=='ml';
   const L=moved?Object.assign({},l,{k}):l;
   const r=liveFor(L), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
-  let right='<span class="rs muted">waiting</span>';
-  if(r){
-    if(r.state==='unknown') right='<span class="rs muted">not reported</span>';
-    else if(isGameLeg(l)){ const g=r.game;
-      right=`<span class="rs ${tone}">${esc(g.away+' '+g.as+'–'+g.hs+' '+g.home)}<em>${esc(g.clock)}</em></span>`; }
-    else { const room=L.main&&L.side==='under';
-      /* before kickoff the number is still 0 against the line; the tail carries the kick time */
-      const tail=r.state==='pending'?(r.game.clock||'not started')
-        :(r.state==='hit'?'hit':(r.state==='missed'?'missed':(r.state==='push'?'push':
-          (r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live'))));
-      /* the line itself is the control: tap the number to set what was actually bet */
-      const lnAttrs=canEdit?` role="button" tabindex="0" data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}" title="Tap to set the line you actually bet"`:'';
-      right=`<span class="rs ${tone}">${esc(num(r.val,r.val%1?1:0))} / <span class="ln${moved?' moved':''}${canEdit?' edit':''}"${lnAttrs}>${esc(num(k,k%1?1:0))}</span><em>${esc(tail)}</em></span>`; }
-  }
   const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
-  /* the label carries the old number ("Over 43.5 receiving yards"), which would contradict a
-     corrected line sitting next to it, so the first number in it moves too */
-  const label=moved?String(l.label||'').replace(/\d+(\.\d+)?/,num(k,k%1?1:0)):String(l.label||'');
-  const note=moved?`<small class="movedNote">moved from ${esc(num(+l.k,(+l.k)%1?1:0))} · <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></small>`:'';
-
+  const mark=r&&MARK[r.state]?MARK[r.state]:'\u25cb';
+  const who=`${esc(l.name)} ${esc(statName(l))}`;
+  const note=moved?`<small class="movedNote">moved from ${esc(num(+l.k,(+l.k)%1?1:0))} \u00b7 <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></small>`:'';
   const line=(r&&r.stats)?statLine(r.stats):'';
-  return `<div class="sp-leg"><span class="${cls}">${r&&MARK[r.state]?MARK[r.state]:'○'}</span>
-    <span class="nm">${esc(l.name)}<small>${esc(label)}</small>${line?`<small class="statline">${esc(line)}</small>`:''}${note}</span>${right}</div>`;
+  const body=line?`<div class="statline">${esc(line)}</div>`:'';
+
+  /* a team bet has no number to fill a bar with: it is the scoreboard */
+  if(isGameLeg(l)){
+    const g=r&&r.game;
+    const right=!r?'<span class="rs muted">waiting</span>'
+      :`<span class="rs ${tone}">${esc(g.away+' '+n0(g.as)+'\u2013'+n0(g.hs)+' '+g.home)}<em>${esc(g.clock||'')}</em></span>`;
+    return `<div class="sp-leg team"><span class="${cls}">${mark}</span>
+      <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${right}</div>`;
+  }
+
+  const state=r?r.state:'pending';
+  const room=L.main&&L.side==='under';
+  const status=!r?'waiting':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':
+    (state==='pending'?esc((r.game&&r.game.clock)||'not started')
+      :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')))));
+  const lnAttrs=canEdit?` role="button" tabindex="0" data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}" title="Tap to set the line you actually bet"`:'';
+  const lineHTML=`<span class="ln${moved?' moved':''}${canEdit?' edit':''}"${lnAttrs}>${esc(num(k,k%1?1:0))}</span>`;
+  return `<div class="sp-leg prop"><span class="${cls}">${mark}</span>
+    <div class="legbody">
+      <div class="legtop"><span class="tgt">${esc(targetLabel(L,k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
+      <div class="who">${who}</div>
+      ${body}${note}
+      ${progressBar(r?r.val:0,k,state,lineHTML)}
+    </div></div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
@@ -516,29 +568,27 @@ function draw(){
       ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
   }
   app.innerHTML=html;
-  /* edit a line in place: the row's value cell becomes a number box, Enter or Save commits,
-     Escape or blur without a change puts it back */
+  /* edit a line in place: the number itself becomes a box, Enter or leaving it commits,
+     Escape puts it back. It sits under the tick on the bar, which is where the line is */
   app.querySelectorAll('[data-edit]').forEach(b=>{
     b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); b.click(); } });
     b.addEventListener('click',()=>{
-    const row=b.closest('.sp-leg'), cell=row.querySelector('.rs'); if(!cell) return;
-    const key=b.dataset.edit, cur=b.dataset.k;
-    const box=document.createElement('span');
-    box.className='rs lineEdit';
-    box.innerHTML=`<input type="number" step="0.5" inputmode="decimal" value="${esc(cur)}" aria-label="the line you actually bet">`;
-    cell.replaceWith(box); b.disabled=true;
-    const inp=box.querySelector('input'); inp.focus(); inp.select();
-    let gone=false;
-    const commit=()=>{ if(gone) return; gone=true;
-      const v=parseFloat(inp.value);
-      const [src,id,i]=key.split('|');
-      if(isFinite(v)) setLine({src,id},+i,v); 
-      draw(); };
-    const cancel=()=>{ if(gone) return; gone=true; draw(); };
-    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); }
-      else if(e.key==='Escape'){ e.preventDefault(); cancel(); } });
-    inp.addEventListener('blur',commit);
-  });});
+      const key=b.dataset.edit, cur=b.dataset.k;
+      const inp=document.createElement('input');
+      inp.type='number'; inp.step='0.5'; inp.className='lineInput'; inp.value=cur;
+      inp.setAttribute('inputmode','decimal');
+      inp.setAttribute('aria-label','the line you actually bet');
+      b.replaceWith(inp); inp.focus(); inp.select();
+      let gone=false;
+      const done=save=>{ if(gone) return; gone=true;
+        if(save){ const v=parseFloat(inp.value); const q=key.split('|');
+          if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
+        draw(); };
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
+        else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
+      inp.addEventListener('blur',()=>done(true));
+    });
+  });
   app.querySelectorAll('[data-reset]').forEach(a=>a.addEventListener('click',e=>{
     e.preventDefault();
     const [src,id,i]=a.dataset.reset.split('|');

@@ -19,6 +19,12 @@ const PROP_KEY = 'props_2026_v1', BET_KEY = 'x_nfl_viewer_picks_2026';
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+/* a prop row is a bar now: the knob carries what he has, the label under the tick the line */
+const knob = row => txt(row.querySelector('.knob'));
+const lineAt = row => txt(row.querySelector('.lineLbl'));
+const status = row => txt(row.querySelector('.status'));
+const who = row => txt(row.querySelector('.who') || row.querySelector('.nm'));
+const target = row => txt(row.querySelector('.tgt'));
 
 const GID = '2026_02_CAR_ATL';          /* the early game */
 const GID2 = '2026_02_KC_BUF';          /* the night game */
@@ -93,11 +99,23 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
   chk(cards.length === 3, `expected 3 parlays (2 prop, 1 betting), got ${cards.length}`);
   chk(d.querySelectorAll('.savedp.prop').length === 2, 'the prop parlays are not marked as such');
   chk(d.querySelectorAll('.savedp:not(.prop)').length === 1, 'the betting parlay is not marked as such');
-  const rows = [...d.querySelector('.savedp.prop').querySelectorAll('.sp-leg')].map(txt);
+  const rows = [...d.querySelector('.savedp.prop').querySelectorAll('.sp-leg')];
   chk(rows.length === 3, `the first prop parlay should show 3 legs, showed ${rows.length}`);
-  chk(/86 \/ 43\.5/.test(rows[0]) && /hit/.test(rows[0]), 'an over that cleared is not marked hit: ' + rows[0]);
-  chk(/31 \/ 54\.5/.test(rows[1]) && /to spare/.test(rows[1]), 'a live under does not show its room: ' + rows[1]);
-  chk(/2 \/ 3/.test(rows[2]) && /1 to go/.test(rows[2]), 'a rung does not show what is left: ' + rows[2]);
+  chk(knob(rows[0]) === '86' && lineAt(rows[0]) === '43.5' && status(rows[0]) === 'hit',
+    'an over that cleared is not shown as hit on the bar: ' + txt(rows[0]));
+  chk(target(rows[0]) === '43.5+', 'an over does not read as a target to beat: ' + target(rows[0]));
+  chk(knob(rows[1]) === '31' && lineAt(rows[1]) === '54.5' && /to spare/.test(status(rows[1])),
+    'a live under does not show its room: ' + txt(rows[1]));
+  chk(target(rows[1]) === 'under 54.5', 'an under does not read as an under: ' + target(rows[1]));
+  chk(knob(rows[2]) === '2' && lineAt(rows[2]) === '3' && status(rows[2]) === '1 to go',
+    'a rung does not show what is left: ' + txt(rows[2]));
+  chk(who(rows[0]) === 'Bijan Robinson Rushing Yards', 'the row does not name the man and the stat: ' + who(rows[0]));
+  /* the bar has to be filled in proportion, with the tick where the line is */
+  { const fill = rows[0].querySelector('.fill'), tick = rows[0].querySelector('.tick');
+    chk(/width:\s*100/.test(fill.getAttribute('style')), 'a cleared over should fill the bar: ' + fill.getAttribute('style'));
+    chk(/left:\s*80/.test(tick.getAttribute('style')), 'the tick should sit at the line, a quarter short of the end: ' + tick.getAttribute('style'));
+    const half = rows[1].querySelector('.fill');
+    chk(/width:\s*45\.50/.test(half.getAttribute('style')), '31 of 54.5, on a bar a quarter past the line, is 45.5%: ' + half.getAttribute('style')); }
   chk(!!d.querySelector('.sp-leg .res.win'), 'a hit leg has no tick');
   const bet = [...d.querySelector('.savedp:not(.prop)').querySelectorAll('.sp-leg')].map(txt);
   chk(/CAR 17.20 ATL/.test(bet[0]) && /Q3 7:12/.test(bet[0]), 'a betting leg does not show the score and clock: ' + bet[0]);
@@ -156,7 +174,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
       w.localStorage.removeItem(BET_KEY);
     };
     const o = await run({ seed });
-    const order = [...o.d.querySelectorAll('.savedp')].map(c => txt(c.querySelector('.sp-leg .nm')));
+    const order = [...o.d.querySelectorAll('.savedp')].map(c => who(c.querySelector('.sp-leg')));
     chk(order.length === 2, `ordering: expected 2 parlays, got ${order.length}`);
     chk(/Bijan Robinson/.test(order[0]) && /Josh Allen/.test(order[1]),
       'the night game should sort below the early one, got: ' + order.join(' | '));
@@ -177,7 +195,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     const fix = w => { seed2(w); const v = JSON.parse(w.localStorage.getItem(PROP_KEY));
       v.saved[0].legs[0].gid = GID3; w.localStorage.setItem(PROP_KEY, JSON.stringify(v)); };
     const o2 = await run({ seed: fix });
-    const ord2 = [...o2.d.querySelectorAll('.savedp')].map(c => txt(c.querySelector('.sp-leg .nm')));
+    const ord2 = [...o2.d.querySelectorAll('.savedp')].map(c => who(c.querySelector('.sp-leg')));
     chk(ord2.length === 2, `ordering: expected 2 parlays, got ${ord2.length}`);
     chk(/Bijan Robinson/.test(ord2[0]), 'the one o\'clock-only parlay should come first, got: ' + ord2.join(' | '));
     chk(/Kamara|Early Guy/.test(ord2[1]), 'the parlay carrying a four o\'clock leg should come second, got: ' + ord2.join(' | '));
@@ -223,22 +241,25 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
   {
     const a = await run();
     const row = [...a.d.querySelectorAll('.savedp.prop .sp-leg')][0];   /* Bijan, over 43.5, 86 so far */
-    chk(/86 \/ 43\.5/.test(txt(row)) && /hit/.test(txt(row)), 'the starting row is not what the test expects: ' + txt(row));
+    chk(knob(row) === '86' && lineAt(row) === '43.5' && status(row) === 'hit',
+      'the starting row is not what the test expects: ' + txt(row));
     const btn = row.querySelector('[data-edit]');
     chk(!!btn, 'a player prop leg offers no way to correct its line');
     chk(!a.d.querySelector('.savedp:not(.prop) [data-edit]'), 'a moneyline leg should have no line to edit');
     btn.click();
-    const inp = a.d.querySelector('.lineEdit input');
+    const inp = a.d.querySelector('.lineInput');
     chk(!!inp && inp.value === '43.5', 'the editor did not open prefilled with the current line');
     inp.value = '100';
     inp.dispatchEvent(new a.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await new Promise(r => setTimeout(r, 60));
-    const after = txt([...a.d.querySelectorAll('.savedp.prop .sp-leg')][0]);
-    chk(/86 \/ 100/.test(after), 'the corrected line is not what the leg is measured against: ' + after);
-    chk(/14 to go/.test(after), 'the distance left was not recomputed on the new line: ' + after);
-    chk(/moved from 43\.5/.test(after), 'the row does not say the line moved: ' + after);
-    chk(/Over 100 rushing yards/.test(after) && !/Over 43\.5 rushing/.test(after),
-      'the label still quotes the old line, contradicting the corrected one: ' + after);
+    const rowAfter = [...a.d.querySelectorAll('.savedp.prop .sp-leg')][0];
+    chk(knob(rowAfter) === '86' && lineAt(rowAfter) === '100',
+      'the corrected line is not what the leg is measured against: ' + txt(rowAfter));
+    chk(status(rowAfter) === '14 to go', 'the distance left was not recomputed on the new line: ' + status(rowAfter));
+    chk(target(rowAfter) === '100+', 'the heading still quotes the old line: ' + target(rowAfter));
+    chk(/moved from 43\.5/.test(txt(rowAfter)), 'the row does not say the line moved: ' + txt(rowAfter));
+    chk(/width:\s*68\.8/.test(rowAfter.querySelector('.fill').getAttribute('style')),
+      'the bar was not refilled against the corrected line');
     /* stored here, and nowhere else */
     const store = JSON.parse(a.w.localStorage.getItem('live_parlays_v1'));
     chk(store.lines && Object.values(store.lines)[0] === 100, 'the corrected line was not stored');
@@ -254,18 +275,18 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     /* undo puts the model's own line back */
     a.d.querySelector('[data-reset]').click();
     await new Promise(r => setTimeout(r, 60));
-    const undone = txt([...a.d.querySelectorAll('.savedp.prop .sp-leg')][0]);
-    chk(/86 \/ 43\.5/.test(undone) && !/moved from/.test(undone), 'undo did not restore the original line: ' + undone);
+    const undone = [...a.d.querySelectorAll('.savedp.prop .sp-leg')][0];
+    chk(lineAt(undone) === '43.5' && !/moved from/.test(txt(undone)), 'undo did not restore the original line: ' + txt(undone));
 
     /* Escape leaves it alone */
     const b2 = await run();
     const row2 = [...b2.d.querySelectorAll('.savedp.prop .sp-leg')][0];
     row2.querySelector('[data-edit]').click();
-    const inp2 = b2.d.querySelector('.lineEdit input');
+    const inp2 = b2.d.querySelector('.lineInput');
     inp2.value = '999';
     inp2.dispatchEvent(new b2.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await new Promise(r => setTimeout(r, 60));
-    chk(/86 \/ 43\.5/.test(txt([...b2.d.querySelectorAll('.savedp.prop .sp-leg')][0])), 'Escape saved the line anyway');
+    chk(lineAt([...b2.d.querySelectorAll('.savedp.prop .sp-leg')][0]) === '43.5', 'Escape saved the line anyway');
   }
 
   // ---- J. light on ESPN: off by default, and nothing fetched twice for nothing ----
@@ -306,7 +327,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     chk(!!card.querySelector('.gm.on'), 'a game in progress is not marked live on the strip');
 
     /* Bijan both runs and catches in the fixture, so both lines have to show */
-    const bijan = [...card.querySelectorAll('.sp-leg')].find(r => /Bijan/.test(txt(r)));
+    const bijan = [...card.querySelectorAll('.sp-leg')].find(r => /Bijan/.test(who(r)));
     const sl = txt(bijan.querySelector('.statline'));
     chk(!!sl, 'a player leg shows no stat line');
     chk(/17 car, 86 rush yds/.test(sl), 'the rushing line is missing or wrong: ' + sl);
@@ -330,20 +351,21 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     const strip = txt(b4.d.querySelector('.savedp.prop .games'));
     chk(/CAR 0.0 ATL/.test(strip), 'before kickoff the strip should read 0\u20130, got: ' + strip);
     chk(/1:00 PM ET/.test(strip), 'the kickoff time is missing from the strip: ' + strip);
-    const first = txt([...b4.d.querySelectorAll('.savedp.prop .sp-leg')][0]);
-    chk(/0 \/ 43\.5/.test(first), 'before kickoff a leg should read 0 against its line, got: ' + first);
-    chk(/1:00 PM ET/.test(first), 'before kickoff the row should carry the kick time, got: ' + first);
-    chk(/0 car, 0 rush yds/.test(first), 'before kickoff the stat line should be zeros, got: ' + first);
-    chk(!/not started|no box score/.test(first), 'a blank is still being shown instead of zeros: ' + first);
+    const first = [...b4.d.querySelectorAll('.savedp.prop .sp-leg')][0];
+    chk(knob(first) === '0' && lineAt(first) === '43.5', 'before kickoff a leg should read 0 against its line, got: ' + txt(first));
+    chk(/1:00 PM ET/.test(status(first)), 'before kickoff the row should carry the kick time, got: ' + status(first));
+    chk(/0 car, 0 rush yds/.test(txt(first)), 'before kickoff the stat line should be zeros, got: ' + txt(first));
+    chk(!/not started|no box score/.test(txt(first)), 'a blank is still being shown instead of zeros: ' + txt(first));
+    chk(/width:\s*0/.test(first.querySelector('.fill').getAttribute('style')), 'an empty bar should be empty');
 
     /* a player the box score has not mentioned yet has nought, not nothing */
     const seed = w => w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
       { id: 'ghost', week: 2, stake: 10, price: 200, payout: 30, legs: [
         leg('pz', 'Nobody Played', 'receiving_yards', 30.5, 'over', true, 'Over 30.5 receiving yards', 'ATL')] }] }));
     const g = await run({ seed });
-    const row = txt(g.d.querySelector('.savedp .sp-leg'));
-    chk(/0 \/ 30\.5/.test(row), 'a man missing from the box score should read 0, got: ' + row);
-    chk(/0 rec, 0 rec yds/.test(row), 'a man missing from the box score should show a zeroed line, got: ' + row);
+    const row = g.d.querySelector('.savedp .sp-leg');
+    chk(knob(row) === '0' && lineAt(row) === '30.5', 'a man missing from the box score should read 0, got: ' + txt(row));
+    chk(/0 rec, 0 rec yds/.test(txt(row)), 'a man missing from the box score should show a zeroed line, got: ' + txt(row));
 
     /* the line number is the control now; there is no second button repeating it */
     const a = await run();
@@ -353,7 +375,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     chk(ln.getAttribute('role') === 'button' && ln.getAttribute('tabindex') === '0',
       'the line number is not reachable from the keyboard');
     ln.click();
-    chk(!!a.d.querySelector('.lineEdit input'), 'tapping the line number did not open the editor');
+    chk(!!a.d.querySelector('.lineInput'), 'tapping the line number did not open the editor');
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
