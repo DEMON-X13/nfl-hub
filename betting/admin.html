@@ -638,10 +638,14 @@ header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
 .lvdot.bad{background:#C0392B}
 .mwin.tie,.mres.tie{color:#8A5E05}
 .pickdot.lockd{opacity:.45;cursor:not-allowed}
+/* A wide table scrolls inside its card rather than stretching the page behind it: Power
+   Ratings is eight columns and 672px, which on a 390px phone pushed everything else out
+   with it. */
 @media(max-width:560px){
-  #tab-record table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
-  #tab-record table th,#tab-record table td{padding:7px 9px}
-  .pickgrid table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #tab-record table,#tab-ratings table,#tab-upload table,#tab-bets table,.pickgrid table{
+    display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;max-width:100%}
+  #tab-record table th,#tab-record table td,
+  #tab-ratings table th,#tab-ratings table td{padding:7px 9px}
 }
 </style>
 <script>
