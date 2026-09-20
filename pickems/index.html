@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>X NFL Pick'ems</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F4; --bg-2:#F6F8FA; --panel:#FFFFFF; --panel-2:#F7F9FB;
+  --ink:#0F1B2D; --ink-2:#4F607A; --muted:#657386; --line:#E4E9F0; --line-2:#D5DCE6;
+  --pick:#1B7A4E; --pick-soft:#DDF3E6; --gold:#D39A1F; --gold-soft:#FBEFD3;
+  --miss:#C0392B; --miss-soft:#FAE1DE;
+  --r-lg:16px; --r-md:12px; --r-sm:9px;
+  --sh-xs:0 1px 2px rgba(15,27,45,.06);
+  --sh-sm:0 1px 2px rgba(15,27,45,.05),0 4px 12px -4px rgba(15,27,45,.10);
+  --display:"Space Grotesk",ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+  --body:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+body{background:radial-gradient(1200px 600px at 20% -10%,#FFFFFF 0%,rgba(255,255,255,0) 60%),linear-gradient(180deg,var(--bg-2) 0%,var(--bg) 100%);background-attachment:fixed;min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+header{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);color:#fff;padding:22px 28px 0;position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,rgba(211,154,31,0),rgba(211,154,31,.55),rgba(211,154,31,0))}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand h1{font-family:var(--display);font-weight:700;font-size:31px;letter-spacing:-.5px;margin:0;line-height:1}
+.brand h1::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-left:8px;box-shadow:0 0 12px rgba(211,154,31,.7)}
+.brand .sub{color:#B9C5D4;font-size:13px}
+.brand .grow{flex:1}
+.brand a{color:#B9C5D4;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(185,197,212,.35)}
+.brand a:hover{color:#fff}
+#tabs{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+#tabs button{background:transparent;color:#B9C5D4;border:0;border-radius:10px 10px 0 0;padding:10px 18px;font-weight:600;cursor:pointer}
+#tabs button[aria-selected="true"]{background:var(--bg-2);color:var(--ink)}
+main{max-width:1000px;margin:0 auto;padding:22px 28px 72px}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.bar .grow{flex:1}
+select{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:8px 11px}
+.rec{background:#E9EEF4;color:var(--ink-2);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.rec b{color:var(--ink);font-size:13px}
+.empty{padding:40px 24px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg);line-height:1.7}
+.note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+.game{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:0;margin-bottom:10px;box-shadow:var(--sh-xs);overflow:hidden}
+.ghead{display:grid;grid-template-columns:118px 1fr auto auto 26px;gap:12px;align-items:center;padding:13px 16px;cursor:pointer;background:none;border:0;width:100%;text-align:left}
+.ghead:hover{background:var(--panel-2)}
+.when{font-size:12px;color:var(--ink-2)} .when b{display:block;color:var(--ink);font-size:13px}
+.matchup{display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:15px}
+.matchup .at{color:var(--muted);font-weight:400;font-size:12px}
+.tg{display:inline-block;padding:3px 9px;border-radius:7px;color:#fff;font-size:12px;font-weight:700;letter-spacing:.02em}
+.callout{text-align:right;font-size:12px;color:var(--ink-2);white-space:nowrap}
+.callout b{display:block;font-family:var(--display);font-size:15px;color:var(--ink)}
+.tier{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:#8A5E05}
+.tier.low{background:#E9EEF4;color:var(--ink-2)} .tier.coin{background:var(--miss-soft);color:var(--miss)}
+.chev{color:var(--muted);text-align:center;transition:transform .18s var(--ease)}
+.game.open .chev{transform:rotate(90deg)}
+.gbody{border-top:1px solid var(--line);padding:14px 16px 16px;background:var(--panel-2)}
+.statblk{margin-bottom:12px}
+.statblk h4{font-family:var(--display);font-size:14px;margin:0 0 7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.statblk h4 em{font-style:normal;font-weight:400;font-size:12px;color:var(--ink-2)}
+table.rungs{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border-radius:var(--r-sm);overflow:hidden}
+table.rungs td{padding:7px 9px;border-top:1px solid var(--line)}
+table.rungs tr:first-child td{border-top:0}
+.thr{font-weight:600;white-space:nowrap}
+.bar-track{height:8px;background:var(--line);border-radius:999px;overflow:hidden;min-width:70px}
+.bar-fill{height:100%;border-radius:999px;background:var(--gold)}
+.bar-fill.high{background:var(--pick)} .bar-fill.low{background:var(--line-2)}
+.pct{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+.conf{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.conf.high{background:var(--pick-soft);color:var(--pick)} .conf.med{background:var(--gold-soft);color:#8A5E05} .conf.low{background:#E9EEF4;color:var(--ink-2)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.num em{font-style:normal;color:var(--muted);font-size:11px;margin-left:4px}
+td.book{font-weight:700}
+.res{display:inline-block;width:18px;text-align:center;font-weight:700;color:var(--muted)}
+.res.win{color:var(--pick)} .res.loss{color:var(--miss)}
+footer{max-width:1000px;margin:0 auto;padding:0 28px 48px;color:var(--muted);font-size:12px;line-height:1.7}
+footer a{color:var(--ink-2)}
+@media(max-width:620px){
+  header{padding:18px 16px 0} .brand h1{font-size:26px} main{padding:16px 16px 56px} footer{padding:0 16px 40px}
+  .ghead{grid-template-columns:1fr auto 20px;gap:8px;row-gap:6px}
+  .when{grid-column:1/-1} .callout{font-size:11px}
+  table.rungs{display:block;overflow-x:auto;white-space:nowrap}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>X NFL Pick'ems</h1>
+    <span class="sub">the model's call on every game, and what each side is worth</span>
+    <span class="grow"></span>
+    <a href="../">back to the hub</a>
+  </div>
+  <div id="tabs" role="tablist"><button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button></div>
+</header>
+<main>
+  <section id="tab-pickems">
+    <div class="bar">
+      <label>Week <select id="weekSel"></select></label>
+      <span class="rec" id="weekRec"></span>
+      <span class="rec" id="seasonRec"></span>
+      <span class="grow"></span>
+    </div>
+    <div id="board"></div>
+  </section>
+</main>
+<footer id="foot"></footer>
+<script>
+const S_MARGIN='typical';
+const S={margin:S_MARGIN};
+const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Panthers",CHI:"Bears",CIN:"Bengals",CLE:"Browns",DAL:"Cowboys",DEN:"Broncos",DET:"Lions",GB:"Packers",HOU:"Texans",IND:"Colts",JAX:"Jaguars",KC:"Chiefs",LA:"Rams",LAC:"Chargers",LV:"Raiders",MIA:"Dolphins",MIN:"Vikings",NE:"Patriots",NO:"Saints",NYG:"Giants",NYJ:"Jets",PHI:"Eagles",PIT:"Steelers",SEA:"Seahawks",SF:"49ers",TB:"Buccaneers",TEN:"Titans",WAS:"Commanders"};
+const TEAM_COLORS={"ARI":["#97233F","#000000","#FFB612","#A5ACAF"],"ATL":["#A71930","#000000","#A5ACAF","#A30D2D"],"BAL":["#241773","#9E7C0C","#C60C30"],"BUF":["#00338D","#C60C30","#0C2E82","#D50A0A"],"CAR":["#0085CA","#000000","#BFC0BF"],"CHI":["#0B162A","#E64100"],"CIN":["#FB4F14","#000000","#D32F1E"],"CLE":["#FF3C00","#311D00","#A5ACAF","#D32F1E"],"DAL":["#002244","#B0B7BC","#ACC0C6","#A5ACAF"],"DEN":["#002244","#FB4F14","#00234C","#FF5200"],"DET":["#0076B6","#B0B7BC","#000000","#004E89"],"GB":["#203731","#FFB612","#1C2D25","#EEAD1E"],"HOU":["#03202F","#A71930","#00071C","#A30D2D"],"IND":["#002C5F","#A5ACAF","#013369","#9BA1A2"],"JAX":["#006778","#000000","#9F792C","#D7A22A"],"KC":["#E31837","#FFB612","#000000"],"LA":["#003594","#FFD100","#001532","#AF925D"],"LAC":["#007BC7","#FFC20E","#FFB612","#001532"],"LV":["#000000","#A5ACAF","#A6AEB0"],"MIA":["#008E97","#F58220","#005778"],"MIN":["#4F2683","#FFC62F","#E9BF9B","#000000"],"NE":["#002244","#C60C30","#B0B7BC","#001532"],"NO":["#D3BC8D","#000000","#9F8958"],"NYG":["#0B2265","#A71930","#A5ACAF","#012352"],"NYJ":["#125740","#000000","#FFFFFF"],"PHI":["#004C54","#A5ACAF","#ACC0C6","#000000"],"PIT":["#000000","#FFB612","#C60C30","#00539B"],"SEA":["#002244","#69BE28","#A5ACAF","#001532"],"SF":["#AA0000","#B3995D","#000000","#A5ACAF"],"TB":["#A71930","#322F2B","#000000","#FF7900"],"TEN":["#0C2340","#4B92DB","#C8102E"],"WAS":["#5A1414","#FFB612","#000000","#5B2B2F"]};
+const clip=(x,a,b)=>Math.max(a,Math.min(b,x));
+/* the team model from the other project: predicted winning margin, home side */
+function modelMargin(g){
+  const G=PAY.grid; if(!G) return 0;
+  const h=G.teams[g.h], a=G.teams[g.a]; if(!h||!a) return 0;
+  const net=(h.off_epa-h.d_off_epa)-(a.off_epa-a.d_off_epa);
+  const f={elo_diff:h.elo-a.elo, rest:0, neutral:0, net_epa:net};
+  let m=G.intercept;
+  G.feats.forEach((k,i)=>{ m+=G.coef[i]*(f[k]||0); });
+  return m;
+}
+const MARGIN_SD=13.5;
+function gbErf(x){ const t=1/(1+0.3275911*Math.abs(x)); const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x); return x<0?-y:y; }
+function gbNorm(z){ return 0.5*(1+gbErf(z/Math.SQRT2)); }
+function gameMu(g){ const m=modelMargin(g); return (g.sp!=null&&isFinite(g.sp))?(m+g.sp)/2:m; }
+/* kind 'ml': chance the team wins. kind 'ats': chance it covers; line is the team's own
+   spread as a book shows it (negative when favoured). null when no spread is posted. */
+function gameBet(g,team,kind){
+  const isHome=team===g.h; const mu=gameMu(g);
+  if(kind==='ml'){ const pH=gbNorm(mu/MARGIN_SD); return {p:isHome?pH:1-pH,line:null,mu:isHome?mu:-mu}; }
+  if(g.sp==null||!isFinite(g.sp)) return null;
+  const pH=1-gbNorm((g.sp-mu)/MARGIN_SD);      /* home covers when its margin beats the spread */
+  return {p:isHome?pH:1-pH,line:isHome?-g.sp:g.sp,mu:isHome?mu:-mu};
+}
+function confTier(p){
+  if(p>=0.70) return ['high','High'];
+  if(p>=0.45) return ['med','Med'];
+  return ['low','Low'];
+}
+function probToAmerican(p){
+  if(!(p>0&&p<1)) return null;
+  return p>=0.5?-Math.round(100*p/(1-p)):Math.round(100*(1-p)/p);
+}
+function bookImplied(p){
+  const lvl={light:0.6,typical:1.0,heavy:1.5}[S.margin||'typical']||1;
+  const base=0.065, tail=0.5*Math.max(0,0.5-p), fav=0.13*Math.max(0,p-0.5);
+  const f=1+lvl*(base+tail-fav);
+  return Math.min(0.985,Math.max(0.015,p*f));
+}
+function bookPrice(pMarket){ return probToAmerican(bookImplied(pMarket)); }
+function fmtML(ml){ return ml==null?'\u2013':(ml>0?'+'+ml:''+ml); }
+function tier(c){ const r=Math.round(c*100)/100; return r>=0.75?['high','HIGH']:r>=0.60?['med','MED']:r>=0.55?['low','LOW']:['coin','50/50']; }
+
+const PAY={grid:{"coef":[0.02553446587632314,0.14318774346204133,0.42135577777086725,7.221013258682133],"feats":["elo_diff","rest","neutral","net_epa"],"intercept":1.7430521789557656,"k":0.1272110871312432,"lm_off_epa":-0.00038106084881954955,"teams":{"CHI":{"elo":1541.43,"off_epa":0.05415,"d_off_epa":0.01675},"GB":{"elo":1525.03,"off_epa":0.04385,"d_off_epa":0.01673},"CAR":{"elo":1408.34,"off_epa":-0.06883,"d_off_epa":0.0088},"LA":{"elo":1641.6,"off_epa":0.12853,"d_off_epa":0.00958},"CLE":{"elo":1401.26,"off_epa":-0.14543,"d_off_epa":-0.01335},"TEN":{"elo":1312.85,"off_epa":-0.11614,"d_off_epa":0.025},"JAX":{"elo":1595.52,"off_epa":0.07013,"d_off_epa":-0.01992},"KC":{"elo":1476.2,"off_epa":-0.1603,"d_off_epa":-0.02156},"MIA":{"elo":1434.33,"off_epa":-0.05085,"d_off_epa":0.02218},"BAL":{"elo":1551.39,"off_epa":0.10359,"d_off_epa":0.00379},"MIN":{"elo":1573.54,"off_epa":-0.09129,"d_off_epa":-0.05106},"ATL":{"elo":1461.74,"off_epa":-0.02289,"d_off_epa":-0.00294},"NYJ":{"elo":1315.86,"off_epa":-0.18044,"d_off_epa":0.04569},"BUF":{"elo":1636.37,"off_epa":0.10062,"d_off_epa":-0.00894},"PHI":{"elo":1578.31,"off_epa":-0.01131,"d_off_epa":-0.01532},"WAS":{"elo":1434.49,"off_epa":-0.01874,"d_off_epa":0.02262},"LAC":{"elo":1530.12,"off_epa":-0.12652,"d_off_epa":-0.02309},"IND":{"elo":1449.07,"off_epa":-0.03478,"d_off_epa":0.01097},"SEA":{"elo":1734.09,"off_epa":0.04851,"d_off_epa":-0.03513},"CIN":{"elo":1465.82,"off_epa":0.07381,"d_off_epa":0.00379},"ARI":{"elo":1354.05,"off_epa":-0.00904,"d_off_epa":0.03576},"DET":{"elo":1560.26,"off_epa":0.01309,"d_off_epa":0.00258},"DAL":{"elo":1434.35,"off_epa":0.03652,"d_off_epa":0.04266},"NYG":{"elo":1403.12,"off_epa":0.04549,"d_off_epa":-0.00641},"TB":{"elo":1462.97,"off_epa":-0.00282,"d_off_epa":0.01176},"SF":{"elo":1576.87,"off_epa":-0.03281,"d_off_epa":0.01903},"NE":{"elo":1630.99,"off_epa":-0.0609,"d_off_epa":-0.03815},"PIT":{"elo":1513.68,"off_epa":-0.08681,"d_off_epa":0.00527},"NO":{"elo":1418.31,"off_epa":0.02483,"d_off_epa":-0.03478},"HOU":{"elo":1638.78,"off_epa":-0.09194,"d_off_epa":-0.04521},"LV":{"elo":1294.14,"off_epa":-0.22627,"d_off_epa":-0.01371},"DEN":{"elo":1645.11,"off_epa":-0.06044,"d_off_epa":-0.02107}}}};
+const MKT={"2026_01_NE_SEA":{"h":"SEA","a":"NE","sp":3,"tot":44.5,"mla":140,"mlh":-166,"spa":-102,"sph":-118},"2026_01_SF_LA":{"h":"LA","a":"SF","sp":3.5,"tot":47.5,"mla":180,"mlh":-218,"spa":-105,"sph":-115},"2026_01_CHI_CAR":{"h":"CAR","a":"CHI","sp":-3,"tot":47.5,"mla":-166,"mlh":140,"spa":-112,"sph":-108},"2026_01_TB_CIN":{"h":"CIN","a":"TB","sp":3.5,"tot":50.5,"mla":170,"mlh":-205,"spa":-102,"sph":-118},"2026_01_NO_DET":{"h":"DET","a":"NO","sp":7,"tot":49.5,"mla":260,"mlh":-325,"spa":-110,"sph":-110},"2026_01_BUF_HOU":{"h":"HOU","a":"BUF","sp":-1.5,"tot":44.5,"mla":-112,"mlh":-108,"spa":-105,"sph":-115},"2026_01_BAL_IND":{"h":"IND","a":"BAL","sp":-3,"tot":48.5,"mla":-162,"mlh":136,"spa":-108,"sph":-112},"2026_01_CLE_JAX":{"h":"JAX","a":"CLE","sp":8.5,"tot":40.5,"mla":360,"mlh":-470,"spa":-105,"sph":-115},"2026_01_ATL_PIT":{"h":"PIT","a":"ATL","sp":6.5,"tot":40.5,"mla":240,"mlh":-298,"spa":-108,"sph":-112},"2026_01_NYJ_TEN":{"h":"TEN","a":"NYJ","sp":1.5,"tot":39.5,"mla":-102,"mlh":-118,"spa":-115,"sph":-105},"2026_01_ARI_LAC":{"h":"LAC","a":"ARI","sp":8.5,"tot":47.5,"mla":350,"mlh":-455,"spa":-102,"sph":-118},"2026_01_MIA_LV":{"h":"LV","a":"MIA","sp":3,"tot":40.5,"mla":142,"mlh":-170,"spa":-110,"sph":-110},"2026_01_GB_MIN":{"h":"MIN","a":"GB","sp":1.5,"tot":46.5,"mla":105,"mlh":-125,"spa":-105,"sph":-115},"2026_01_WAS_PHI":{"h":"PHI","a":"WAS","sp":6,"tot":43.5,"mla":200,"mlh":-245,"spa":-110,"sph":-110},"2026_01_DAL_NYG":{"h":"NYG","a":"DAL","sp":-3,"tot":47.5,"mla":-166,"mlh":140,"spa":-112,"sph":-108},"2026_01_DEN_KC":{"h":"KC","a":"DEN","sp":2.5,"tot":42.5,"mla":110,"mlh":-130,"spa":-112,"sph":-108},"2026_02_DET_BUF":{"h":"BUF","a":"DET","sp":5.5,"tot":54.5,"mla":205,"mlh":-250,"spa":-110,"sph":-110},"2026_02_CAR_ATL":{"h":"ATL","a":"CAR","sp":-2.5,"tot":43.5,"mla":-155,"mlh":130,"spa":-120,"sph":100},"2026_02_NO_BAL":{"h":"BAL","a":"NO","sp":8.5,"tot":45.5,"mla":295,"mlh":-375,"spa":-112,"sph":-108},"2026_02_MIN_CHI":{"h":"CHI","a":"MIN","sp":4.5,"tot":47.5,"mla":180,"mlh":-218,"spa":-102,"sph":-118},"2026_02_CIN_HOU":{"h":"HOU","a":"CIN","sp":2.5,"tot":45.5,"mla":120,"mlh":-142,"spa":-102,"sph":-118},"2026_02_PIT_NE":{"h":"NE","a":"PIT","sp":5.5,"tot":41.5,"mla":185,"mlh":-225,"spa":-112,"sph":-108},"2026_02_GB_NYJ":{"h":"NYJ","a":"GB","sp":-3.5,"tot":44.5,"mla":-185,"mlh":154,"spa":-110,"sph":-110},"2026_02_CLE_TB":{"h":"TB","a":"CLE","sp":8.5,"tot":41.5,"mla":360,"mlh":-470,"spa":-112,"sph":-108},"2026_02_PHI_TEN":{"h":"TEN","a":"PHI","sp":-7,"tot":39.5,"mla":-325,"mlh":260,"spa":-115,"sph":-105},"2026_02_JAX_DEN":{"h":"DEN","a":"JAX","sp":3,"tot":45.5,"mla":130,"mlh":-155,"spa":-120,"sph":100},"2026_02_LV_LAC":{"h":"LAC","a":"LV","sp":6.5,"tot":43.5,"mla":245,"mlh":-305,"spa":-102,"sph":-118},"2026_02_SEA_ARI":{"h":"ARI","a":"SEA","sp":-3.5,"tot":40.5,"mla":-205,"mlh":170,"spa":-120,"sph":100},"2026_02_WAS_DAL":{"h":"DAL","a":"WAS","sp":3.5,"tot":50.5,"mla":180,"mlh":-218,"spa":100,"sph":-120},"2026_02_MIA_SF":{"h":"SF","a":"MIA","sp":13.5,"tot":44.5,"mla":625,"mlh":-950,"spa":-115,"sph":-105},"2026_02_IND_KC":{"h":"KC","a":"IND","sp":6,"tot":46.5,"mla":230,"mlh":-285,"spa":-108,"sph":-112},"2026_02_NYG_LA":{"h":"LA","a":"NYG","sp":7,"tot":47.5,"mla":250,"mlh":-310,"spa":-115,"sph":-105},"2026_03_ATL_GB":{"h":"GB","a":"ATL","sp":6.5,"tot":46.5,"mla":240,"mlh":-298,"spa":-105,"sph":-115},"2026_03_LAC_BUF":{"h":"BUF","a":"LAC","sp":4.5,"tot":50.5,"mla":188,"mlh":-225,"spa":-110,"sph":-110},"2026_03_CAR_CLE":{"h":"CLE","a":"CAR","sp":-2.5,"tot":40.5,"mla":-142,"mlh":120,"spa":-115,"sph":-105},"2026_03_NYJ_DET":{"h":"DET","a":"NYJ","sp":7.5,"tot":48.5,"mla":300,"mlh":-375,"spa":-118,"sph":-104},"2026_03_HOU_IND":{"h":"IND","a":"HOU","sp":-2.5,"tot":45.5,"mla":-135,"mlh":114,"spa":-110,"sph":-110},"2026_03_NE_JAX":{"h":"JAX","a":"NE","sp":2.5,"tot":45.5,"mla":114,"mlh":-135,"spa":-110,"sph":-110},"2026_03_KC_MIA":{"h":"MIA","a":"KC","sp":-8.5,"tot":44.5,"mla":-455,"mlh":350,"spa":-110,"sph":-110},"2026_03_TEN_NYG":{"h":"NYG","a":"TEN","sp":5.5,"tot":43.5,"mla":205,"mlh":-250,"spa":-110,"sph":-110},"2026_03_CIN_PIT":{"h":"PIT","a":"CIN","sp":-2.5,"tot":45.5,"mla":-135,"mlh":114,"spa":-110,"sph":-110},"2026_03_SEA_WAS":{"h":"WAS","a":"SEA","sp":-2.5,"tot":41.5,"mla":-135,"mlh":114,"spa":-110,"sph":-110},"2026_03_ARI_SF":{"h":"SF","a":"ARI","sp":8.5,"tot":47.5,"mla":350,"mlh":-455,"spa":-110,"sph":-110},"2026_03_MIN_TB":{"h":"TB","a":"MIN","sp":1.5,"tot":45.5,"mla":105,"mlh":-125,"spa":-110,"sph":-110},"2026_03_BAL_DAL":{"h":"DAL","a":"BAL","sp":-3,"tot":52.5,"mla":-155,"mlh":130,"spa":-110,"sph":-110},"2026_03_LV_NO":{"h":"NO","a":"LV","sp":3,"tot":45.5,"mla":136,"mlh":-162,"spa":-110,"sph":-110},"2026_03_LA_DEN":{"h":"DEN","a":"LA","sp":-2.5,"tot":46.5,"mla":-135,"mlh":114,"spa":-110,"sph":-110},"2026_03_PHI_CHI":{"h":"CHI","a":"PHI","sp":1.5,"tot":47.5,"mla":-102,"mlh":-118,"spa":-115,"sph":-105},"2026_04_PIT_CLE":{"h":"CLE","a":"PIT"},"2026_04_IND_WAS":{"h":"WAS","a":"IND"},"2026_04_TEN_BAL":{"h":"BAL","a":"TEN"},"2026_04_NE_BUF":{"h":"BUF","a":"NE"},"2026_04_NYJ_CHI":{"h":"CHI","a":"NYJ"},"2026_04_JAX_CIN":{"h":"CIN","a":"JAX"},"2026_04_DAL_HOU":{"h":"HOU","a":"DAL"},"2026_04_ARI_NYG":{"h":"NYG","a":"ARI"},"2026_04_LA_PHI":{"h":"PHI","a":"LA"},"2026_04_GB_TB":{"h":"TB","a":"GB"},"2026_04_MIA_MIN":{"h":"MIN","a":"MIA"},"2026_04_KC_LV":{"h":"LV","a":"KC"},"2026_04_LAC_SEA":{"h":"SEA","a":"LAC"},"2026_04_DEN_SF":{"h":"SF","a":"DEN"},"2026_04_DET_CAR":{"h":"CAR","a":"DET"},"2026_04_ATL_NO":{"h":"NO","a":"ATL"},"2026_05_TB_DAL":{"h":"DAL","a":"TB"},"2026_05_PHI_JAX":{"h":"JAX","a":"PHI"},"2026_05_CIN_MIA":{"h":"MIA","a":"CIN"},"2026_05_LV_NE":{"h":"NE","a":"LV"},"2026_05_MIN_NO":{"h":"NO","a":"MIN"},"2026_05_CLE_NYJ":{"h":"NYJ","a":"CLE"},"2026_05_IND_PIT":{"h":"PIT","a":"IND"},"2026_05_HOU_TEN":{"h":"TEN","a":"HOU"},"2026_05_NYG_WAS":{"h":"WAS","a":"NYG"},"2026_05_DEN_LAC":{"h":"LAC","a":"DEN"},"2026_05_DET_ARI":{"h":"ARI","a":"DET"},"2026_05_CHI_GB":{"h":"GB","a":"CHI"},"2026_05_SF_SEA":{"h":"SEA","a":"SF"},"2026_05_BAL_ATL":{"h":"ATL","a":"BAL"},"2026_05_BUF_LA":{"h":"LA","a":"BUF"},"2026_06_SEA_DEN":{"h":"DEN","a":"SEA"},"2026_06_HOU_JAX":{"h":"JAX","a":"HOU"},"2026_06_CHI_ATL":{"h":"ATL","a":"CHI"},"2026_06_BAL_CLE":{"h":"CLE","a":"BAL"},"2026_06_TEN_IND":{"h":"IND","a":"TEN"},"2026_06_NYJ_NE":{"h":"NE","a":"NYJ"},"2026_06_NO_NYG":{"h":"NYG","a":"NO"},"2026_06_CAR_PHI":{"h":"PHI","a":"CAR"},"2026_06_PIT_TB":{"h":"TB","a":"PIT"},"2026_06_ARI_LA":{"h":"LA","a":"ARI"},"2026_06_LAC_KC":{"h":"KC","a":"LAC"},"2026_06_BUF_LV":{"h":"LV","a":"BUF"},"2026_06_DAL_GB":{"h":"GB","a":"DAL"},"2026_06_WAS_SF":{"h":"SF","a":"WAS"},"2026_07_NE_CHI":{"h":"CHI","a":"NE"},"2026_07_PIT_NO":{"h":"NO","a":"PIT"},"2026_07_SF_ATL":{"h":"ATL","a":"SF"},"2026_07_CIN_BAL":{"h":"BAL","a":"CIN"},"2026_07_TB_CAR":{"h":"CAR","a":"TB"},"2026_07_NYG_HOU":{"h":"HOU","a":"NYG"},"2026_07_IND_MIN":{"h":"MIN","a":"IND"},"2026_07_MIA_NYJ":{"h":"NYJ","a":"MIA"},"2026_07_CLE_TEN":{"h":"TEN","a":"CLE"},"2026_07_DEN_ARI":{"h":"ARI","a":"DEN"},"2026_07_GB_DET":{"h":"DET","a":"GB"},"2026_07_LA_LV":{"h":"LV","a":"LA"},"2026_07_KC_SEA":{"h":"SEA","a":"KC"},"2026_07_DAL_PHI":{"h":"PHI","a":"DAL"},"2026_08_CAR_GB":{"h":"GB","a":"CAR"},"2026_08_BAL_BUF":{"h":"BUF","a":"BAL"},"2026_08_TEN_CIN":{"h":"CIN","a":"TEN"},"2026_08_ARI_DAL":{"h":"DAL","a":"ARI"},"2026_08_MIN_DET":{"h":"DET","a":"MIN"},"2026_08_IND_JAX":{"h":"JAX","a":"IND"},"2026_08_LV_NYJ":{"h":"NYJ","a":"LV"},"2026_08_CLE_PIT":{"h":"PIT","a":"CLE"},"2026_08_ATL_TB":{"h":"TB","a":"ATL"},"2026_08_LAC_LA":{"h":"LA","a":"LAC"},"2026_08_KC_DEN":{"h":"DEN","a":"KC"},"2026_08_NE_MIA":{"h":"MIA","a":"NE"},"2026_08_PHI_WAS":{"h":"WAS","a":"PHI"},"2026_08_CHI_SEA":{"h":"SEA","a":"CHI"},"2026_09_JAX_BAL":{"h":"BAL","a":"JAX"},"2026_09_CIN_ATL":{"h":"ATL","a":"CIN"},"2026_09_DEN_CAR":{"h":"CAR","a":"DEN"},"2026_09_DAL_IND":{"h":"IND","a":"DAL"},"2026_09_NYJ_KC":{"h":"KC","a":"NYJ"},"2026_09_DET_MIA":{"h":"MIA","a":"DET"},"2026_09_CLE_NO":{"h":"NO","a":"CLE"},"2026_09_NYG_PHI":{"h":"PHI","a":"NYG"},"2026_09_LA_WAS":{"h":"WAS","a":"LA"},"2026_09_HOU_LAC":{"h":"LAC","a":"HOU"},"2026_09_LV_SF":{"h":"SF","a":"LV"},"2026_09_GB_NE":{"h":"NE","a":"GB"},"2026_09_ARI_SEA":{"h":"SEA","a":"ARI"},"2026_09_TB_CHI":{"h":"CHI","a":"TB"},"2026_09_BUF_MIN":{"h":"MIN","a":"BUF"},"2026_10_WAS_NYG":{"h":"NYG","a":"WAS"},"2026_10_NE_DET":{"h":"DET","a":"NE"},"2026_10_KC_ATL":{"h":"ATL","a":"KC"},"2026_10_HOU_CLE":{"h":"CLE","a":"HOU"},"2026_10_MIN_GB":{"h":"GB","a":"MIN"},"2026_10_MIA_IND":{"h":"IND","a":"MIA"},"2026_10_CAR_NO":{"h":"NO","a":"CAR"},"2026_10_BUF_NYJ":{"h":"NYJ","a":"BUF"},"2026_10_JAX_TEN":{"h":"TEN","a":"JAX"},"2026_10_LA_ARI":{"h":"ARI","a":"LA"},"2026_10_SEA_LV":{"h":"LV","a":"SEA"},"2026_10_SF_DAL":{"h":"DAL","a":"SF"},"2026_10_PIT_CIN":{"h":"CIN","a":"PIT"},"2026_10_LAC_BAL":{"h":"BAL","a":"LAC"},"2026_11_IND_HOU":{"h":"HOU","a":"IND"},"2026_11_MIA_BUF":{"h":"BUF","a":"MIA"},"2026_11_BAL_CAR":{"h":"CAR","a":"BAL"},"2026_11_NO_CHI":{"h":"CHI","a":"NO"},"2026_11_TEN_DAL":{"h":"DAL","a":"TEN"},"2026_11_TB_DET":{"h":"DET","a":"TB"},"2026_11_ARI_KC":{"h":"KC","a":"ARI"},"2026_11_JAX_NYG":{"h":"NYG","a":"JAX"},"2026_11_NYJ_LAC":{"h":"LAC","a":"NYJ"},"2026_11_LV_DEN":{"h":"DEN","a":"LV"},"2026_11_PIT_PHI":{"h":"PHI","a":"PIT"},"2026_11_MIN_SF":{"h":"SF","a":"MIN"},"2026_11_CIN_WAS":{"h":"WAS","a":"CIN"},"2026_12_GB_LA":{"h":"LA","a":"GB"},"2026_12_CHI_DET":{"h":"DET","a":"CHI"},"2026_12_PHI_DAL":{"h":"DAL","a":"PHI"},"2026_12_KC_BUF":{"h":"BUF","a":"KC"},"2026_12_DEN_PIT":{"h":"PIT","a":"DEN"},"2026_12_NO_CIN":{"h":"CIN","a":"NO"},"2026_12_LV_CLE":{"h":"CLE","a":"LV"},"2026_12_BAL_HOU":{"h":"HOU","a":"BAL"},"2026_12_NYG_IND":{"h":"IND","a":"NYG"},"2026_12_NYJ_MIA":{"h":"MIA","a":"NYJ"},"2026_12_ATL_MIN":{"h":"MIN","a":"ATL"},"2026_12_TEN_JAX":{"h":"JAX","a":"TEN"},"2026_12_WAS_ARI":{"h":"ARI","a":"WAS"},"2026_12_SEA_SF":{"h":"SF","a":"SEA"},"2026_12_NE_LAC":{"h":"LAC","a":"NE"},"2026_12_CAR_TB":{"h":"TB","a":"CAR"},"2026_13_KC_LA":{"h":"LA","a":"KC"},"2026_13_DET_ATL":{"h":"ATL","a":"DET"},"2026_13_JAX_CHI":{"h":"CHI","a":"JAX"},"2026_13_CIN_CLE":{"h":"CLE","a":"CIN"},"2026_13_GB_NO":{"h":"NO","a":"GB"},"2026_13_SF_NYG":{"h":"NYG","a":"SF"},"2026_13_LAC_TB":{"h":"TB","a":"LAC"},"2026_13_WAS_TEN":{"h":"TEN","a":"WAS"},"2026_13_PHI_ARI":{"h":"ARI","a":"PHI"},"2026_13_MIA_DEN":{"h":"DEN","a":"MIA"},"2026_13_CAR_MIN":{"h":"MIN","a":"CAR"},"2026_13_BUF_NE":{"h":"NE","a":"BUF"},"2026_13_HOU_PIT":{"h":"PIT","a":"HOU"},"2026_13_DAL_SEA":{"h":"SEA","a":"DAL"},"2026_14_MIN_NE":{"h":"NE","a":"MIN"},"2026_14_TB_BAL":{"h":"BAL","a":"TB"},"2026_14_NO_CAR":{"h":"CAR","a":"NO"},"2026_14_ATL_CLE":{"h":"CLE","a":"ATL"},"2026_14_TEN_DET":{"h":"DET","a":"TEN"},"2026_14_CHI_MIA":{"h":"MIA","a":"CHI"},"2026_14_DEN_NYJ":{"h":"NYJ","a":"DEN"},"2026_14_IND_PHI":{"h":"PHI","a":"IND"},"2026_14_HOU_WAS":{"h":"WAS","a":"HOU"},"2026_14_LAC_LV":{"h":"LV","a":"LAC"},"2026_14_KC_CIN":{"h":"CIN","a":"KC"},"2026_14_NYG_SEA":{"h":"SEA","a":"NYG"},"2026_14_LA_SF":{"h":"SF","a":"LA"},"2026_14_BUF_GB":{"h":"GB","a":"BUF"},"2026_14_PIT_JAX":{"h":"JAX","a":"PIT"},"2026_15_SF_LAC":{"h":"LAC","a":"SF"},"2026_15_SEA_PHI":{"h":"PHI","a":"SEA"},"2026_15_CHI_BUF":{"h":"BUF","a":"CHI"},"2026_15_CIN_CAR":{"h":"CAR","a":"CIN"},"2026_15_MIA_GB":{"h":"GB","a":"MIA"},"2026_15_JAX_HOU":{"h":"HOU","a":"JAX"},"2026_15_CLE_NYG":{"h":"NYG","a":"CLE"},"2026_15_BAL_PIT":{"h":"PIT","a":"BAL"},"2026_15_NO_TB":{"h":"TB","a":"NO"},"2026_15_IND_TEN":{"h":"TEN","a":"IND"},"2026_15_ATL_WAS":{"h":"WAS","a":"ATL"},"2026_15_NYJ_ARI":{"h":"ARI","a":"NYJ"},"2026_15_DAL_LA":{"h":"LA","a":"DAL"},"2026_15_DEN_LV":{"h":"LV","a":"DEN"},"2026_15_DET_MIN":{"h":"MIN","a":"DET"},"2026_15_NE_KC":{"h":"KC","a":"NE"},"2026_16_HOU_PHI":{"h":"PHI","a":"HOU"},"2026_16_GB_CHI":{"h":"CHI","a":"GB"},"2026_16_BUF_DEN":{"h":"DEN","a":"BUF"},"2026_16_LA_SEA":{"h":"SEA","a":"LA"},"2026_16_TB_ATL":{"h":"ATL","a":"TB"},"2026_16_CLE_BAL":{"h":"BAL","a":"CLE"},"2026_16_CIN_IND":{"h":"IND","a":"CIN"},"2026_16_LAC_MIA":{"h":"MIA","a":"LAC"},"2026_16_WAS_MIN":{"h":"MIN","a":"WAS"},"2026_16_ARI_NO":{"h":"NO","a":"ARI"},"2026_16_NE_NYJ":{"h":"NYJ","a":"NE"},"2026_16_CAR_PIT":{"h":"PIT","a":"CAR"},"2026_16_TEN_LV":{"h":"LV","a":"TEN"},"2026_16_SF_KC":{"h":"KC","a":"SF"},"2026_16_JAX_DAL":{"h":"DAL","a":"JAX"},"2026_16_NYG_DET":{"h":"DET","a":"NYG"},"2026_17_BAL_CIN":{"h":"CIN","a":"BAL"},"2026_17_NO_ATL":{"h":"ATL","a":"NO"},"2026_17_SEA_CAR":{"h":"CAR","a":"SEA"},"2026_17_IND_CLE":{"h":"CLE","a":"IND"},"2026_17_NYG_DAL":{"h":"DAL","a":"NYG"},"2026_17_WAS_JAX":{"h":"JAX","a":"WAS"},"2026_17_KC_LAC":{"h":"LAC","a":"KC"},"2026_17_BUF_MIA":{"h":"MIA","a":"BUF"},"2026_17_DEN_NE":{"h":"NE","a":"DEN"},"2026_17_MIN_NYJ":{"h":"NYJ","a":"MIN"},"2026_17_LA_TB":{"h":"TB","a":"LA"},"2026_17_PIT_TEN":{"h":"TEN","a":"PIT"},"2026_17_LV_ARI":{"h":"ARI","a":"LV"},"2026_17_DET_CHI":{"h":"CHI","a":"DET"},"2026_17_PHI_SF":{"h":"SF","a":"PHI"},"2026_17_HOU_GB":{"h":"GB","a":"HOU"},"2026_18_SF_ARI":{"h":"ARI","a":"SF"},"2026_18_PIT_BAL":{"h":"BAL","a":"PIT"},"2026_18_NYJ_BUF":{"h":"BUF","a":"NYJ"},"2026_18_ATL_CAR":{"h":"CAR","a":"ATL"},"2026_18_CLE_CIN":{"h":"CIN","a":"CLE"},"2026_18_LAC_DEN":{"h":"DEN","a":"LAC"},"2026_18_DET_GB":{"h":"GB","a":"DET"},"2026_18_TEN_HOU":{"h":"HOU","a":"TEN"},"2026_18_JAX_IND":{"h":"IND","a":"JAX"},"2026_18_LV_KC":{"h":"KC","a":"LV"},"2026_18_SEA_LA":{"h":"LA","a":"SEA"},"2026_18_CHI_MIN":{"h":"MIN","a":"CHI"},"2026_18_MIA_NE":{"h":"NE","a":"MIA"},"2026_18_TB_NO":{"h":"NO","a":"TB"},"2026_18_PHI_NYG":{"h":"NYG","a":"PHI"},"2026_18_DAL_WAS":{"h":"WAS","a":"DAL"}};
+
+/* ---------- this page ----------
+   Two models, one board. The call on each game is the betting model's, published by its own
+   job in state.json because re-deriving it here would mean a second copy of a model that
+   already exists. Open a game and the prop model's Game Bets sit underneath: the chance each
+   side wins and covers, off its own team ratings, against what a book is charging.
+
+   Nothing is stored and nothing is picked here yet. This is the first tab of a page that will
+   grow one tab at a time; the two sites it draws on are untouched. */
+const STATE_URL='../betting/state.json';
+/* the lifted pricing reads S.margin, so this page's own state is ST */
+const ST={sched:[],processed:{},picks:{},err:null};
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tag=t=>`<span class="tg" style="background:${TEAM_COLORS[t]?TEAM_COLORS[t][0]:'#334'}">${esc(t)}</span>`;
+
+/* the prop model's schedule row for a game, which is where its spread and the book's prices
+   live. Keyed by the same nflverse id both sites use. */
+const mkt=gid=>MKT[gid]||null;
+
+function fmtDate(g){
+  if(!g.gameday) return ['',''];
+  const d=new Date(g.gameday+'T12:00:00');
+  const day=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  let t=g.gametime||'';
+  if(t){ const [h,m]=t.split(':').map(Number); const ap=h>=12?'PM':'AM'; const h12=h%12||12; t=`${h12}:${String(m).padStart(2,'0')} ${ap} ET`; }
+  return [day,t];
+}
+const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
+
+/* what the betting model says: the published call for an ungraded game, what was logged for
+   a graded one */
+function call(g){
+  const done=ST.processed[g.game_id];
+  if(done) return {pick:done.pick,conf:done.conf,pHome:done.pHome,graded:true,correct:done.correct};
+  const p=ST.picks[g.game_id];
+  return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,graded:false,correct:null}:null;
+}
+
+/* the prop model's two bets on one side of one game */
+function sideRows(gid,team,isHome){
+  const m=mkt(gid); if(!m) return '';
+  const g={id:gid,h:m.h,a:m.a,sp:m.sp==null?null:+m.sp,tot:m.tot==null?null:+m.tot};
+  const ml=gameBet(g,team,'ml'), ats=gameBet(g,team,'ats');
+  if(!ml) return '';
+  const bookML=isHome?m.mlh:m.mla, bookSP=isHome?m.sph:m.spa;
+  const row=(b,label,book)=>{ const [c,lbl]=confTier(b.p);
+    return `<tr>
+      <td class="thr">${esc(label)}</td>
+      <td><div class="bar-track"><div class="bar-fill ${c}" style="width:${Math.max(2,b.p*100).toFixed(0)}%"></div></div></td>
+      <td class="pct">${(b.p*100).toFixed(0)}%</td>
+      <td><span class="conf ${c}">${lbl}</span></td>
+      <td class="num">${fmtML(bookPrice(b.p))}<em>est.</em></td>
+      <td class="num book">${book!=null&&isFinite(book)?fmtML(book):''}</td></tr>`; };
+  let h=`<div class="statblk"><h4>${tag(team)} ${esc(TEAM_NAMES[team]||team)}
+    <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em>book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="rungs">`;
+  h+=row(ml,'To win',bookML);
+  if(ats) h+=row(ats,`To cover ${ats.line>0?'+':''}${ats.line}`,bookSP);
+  return h+'</table></div>';
+}
+
+function gameBody(g){
+  const m=mkt(g.game_id);
+  if(!m) return `<div class="gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  return `<div class="gbody">${sideRows(g.game_id,g.away_team,false)}${sideRows(g.game_id,g.home_team,true)}</div>`;
+}
+
+function render(){
+  const w=+el('weekSel').value;
+  const games=ST.sched.filter(g=>+g.week===w)
+    .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
+  records(w);
+  if(!games.length){ el('board').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
+  el('board').innerHTML=games.map(g=>{
+    const c=call(g), [day,time]=fmtDate(g), win=winnerOf(g);
+    const t=c?tier(c.conf):null;
+    const mark=(c&&c.graded&&c.correct!=null)?`<span class="res ${c.correct?'win':'loss'}">${c.correct?'✓':'✗'}</span>`:'';
+    return `<div class="game" data-game="${esc(g.game_id)}">
+      <button class="ghead" aria-expanded="false">
+        <span class="when"><b>${esc(day)}</b>${esc(time)}</span>
+        <span class="matchup">${tag(g.away_team)}<span class="at">at</span>${tag(g.home_team)}${win?`<span class="at">· ${esc(win)} won</span>`:''}</span>
+        <span class="callout">${c?`<b>${esc(c.pick)}${mark}</b>${(c.conf*100).toFixed(0)}% to win`:'<b>–</b>no call yet'}</span>
+        ${t?`<span class="tier ${t[0]}">${t[1]}</span>`:'<span></span>'}
+        <span class="chev">›</span>
+      </button>
+    </div>`;
+  }).join('');
+  el('board').querySelectorAll('.ghead').forEach(b=>b.addEventListener('click',()=>{
+    const card=b.parentElement, open=card.classList.toggle('open');
+    b.setAttribute('aria-expanded',open?'true':'false');
+    const had=card.querySelector('.gbody');
+    if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
+    else if(!open&&had) had.remove();
+  }));
+}
+
+/* the betting model's record, counted the way its own Records tab counts it */
+function records(w){
+  const rows=Object.values(ST.processed);
+  const line=f=>{ const r=rows.filter(f); const won=r.filter(x=>x.correct===true).length, lost=r.filter(x=>x.correct===false).length;
+    return `${won}–${lost}`; };
+  el('weekRec').innerHTML=`Week ${w} <b>${line(r=>+r.week===w)}</b>`;
+  el('seasonRec').innerHTML=`Season <b>${line(()=>true)}</b>`;
+}
+
+function foot(){
+  el('foot').innerHTML=`The call on each game is the <a href="../betting/">betting model</a>'s, published by its own job. Open a game and the numbers underneath are the <a href="../props/">prop model</a>'s: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging. Two models, neither of them changed to sit here.
+    <br>Nothing is saved on this page and nothing is picked on it yet — it is the first tab, and the rest follow one at a time.`;
+}
+
+async function boot(){
+  try{
+    const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const st=await r.json();
+    ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{};
+  }catch(e){
+    el('board').innerHTML=`<div class="note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This page reads <code>betting/state.json</code>; nothing is stored here.</div>`;
+    foot(); return;
+  }
+  const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
+  const graded=new Set(Object.values(ST.processed).map(r=>+r.week));
+  const cur=Math.max(...weeks.filter(x=>!graded.has(x)||[...graded].every(y=>y<=x)),Math.min(...weeks));
+  const openOn=Object.keys(ST.picks).length
+    ? +ST.sched.find(g=>ST.picks[g.game_id]).week
+    : (weeks.filter(x=>graded.has(x)).pop()||weeks[0]);
+  el('weekSel').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${x>18?'Playoffs '+(x-18):'Week '+x}</option>`).join('');
+  el('weekSel').addEventListener('change',render);
+  render(); foot();
+}
+boot();
+</script>
+</body>
+</html>

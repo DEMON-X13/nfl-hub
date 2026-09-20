@@ -150,6 +150,22 @@ async function main() {
 
   const out = {};
   for (const k of Object.keys(st)) if (!PRIVATE.includes(k)) out[k] = st[k];
+
+  /* The model's call on the games that have not been graded yet. Everything else in here is
+   * either a rating or a result; this is the one thing the app works out on the fly, from
+   * ratings plus the injury and quarterback adjustments, and re-deriving it anywhere else
+   * would mean a second copy of the model. Published for the week the app itself is willing
+   * to predict -- it refuses to look further ahead, because the ratings move every week. */
+  const picks = {};
+  const wk = +w.eval('currentWeekDefault()');
+  for (const g of st.schedule) {
+    if (+g.week !== wk || st.processed[g.game_id]) continue;
+    const pr = w.eval(`predict(S.schedule.find(x => x.game_id === ${JSON.stringify(g.game_id)}), S.teams)`);
+    if (!pr) continue;
+    picks[g.game_id] = { pick: pr.pick, pHome: +pr.pHome.toFixed(4), conf: +pr.conf.toFixed(4), margin: +pr.margin.toFixed(3) };
+  }
+  out.picks = picks;
+  log(`picks published for week ${wk}: ${Object.keys(picks).length} game(s) not yet graded`);
   // the publish stamp only moves when the content moved, so a quiet run commits nothing
   const prev = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : null;
   const strip = o => { const c = JSON.parse(JSON.stringify(o)); delete c.published; delete c.publishedBuild;
