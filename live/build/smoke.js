@@ -62,18 +62,20 @@ const betBlob = () => JSON.stringify({ myPicks: { g1: 'KC' }, bets: { 2: { stake
 function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); },
                mode = 'ok', state = 'in', hash = '' } = {}) {
   return new Promise(resolve => {
+    const calls = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_ + hash,
       beforeParse(w) {
         w.confirm = () => true; w.alert = () => {};
-        w.fetch = u => mode === 'fail'
-          ? Promise.resolve({ ok: false, status: 403 })
-          : Promise.resolve({ ok: true, status: 200, json: async () => String(u).includes('/summary?') ? SUM : sb(state) });
+        w.fetch = u => { calls.push(String(u));
+          return mode === 'fail'
+            ? Promise.resolve({ ok: false, status: 403 })
+            : Promise.resolve({ ok: true, status: 200, json: async () => String(u).includes('/summary?') ? SUM : sb(state) }); };
         try { seed(w); } catch (e) {}
       } });
     const w = dom.window;
     try { seed(w); } catch (e) {}
     if (typeof w.refresh === 'function') w.refresh();
-    setTimeout(() => resolve({ w, d: w.document }), 700);
+    setTimeout(() => resolve({ w, d: w.document, calls }), 700);
   });
 }
 
@@ -260,6 +262,33 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     inp2.dispatchEvent(new b2.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await new Promise(r => setTimeout(r, 60));
     chk(/86 \/ 43\.5/.test(txt([...b2.d.querySelectorAll('.savedp.prop .sp-leg')][0])), 'Escape saved the line anyway');
+  }
+
+  // ---- J. light on ESPN: off by default, and nothing fetched twice for nothing ----
+  {
+    const a = await run();
+    chk(a.d.getElementById('every').value === '0', 'auto-refresh should start off');
+    chk(/off/.test(txt(a.d.querySelector('#every option[selected]')) || a.d.getElementById('every').value),
+      'the off option is not the selected one');
+    chk(a.calls.length > 0, 'the page should still fetch once when it opens');
+    /* with auto off, coming back to the tab must not fetch */
+    const before = a.calls.length;
+    a.d.dispatchEvent(new a.w.Event('visibilitychange'));
+    await new Promise(r => setTimeout(r, 80));
+    chk(a.calls.length === before, 'returning to the tab fetched even with auto-refresh off');
+    /* pressing Refresh now does fetch */
+    a.d.getElementById('now').click();
+    await new Promise(r => setTimeout(r, 200));
+    chk(a.calls.length > before, 'Refresh now did not fetch');
+
+    /* a finished game's box score is fetched once and kept */
+    const f = await run({ state: 'post' });
+    const sums = () => f.calls.filter(u => u.includes('/summary?')).length;
+    const first = sums();
+    chk(first > 0, 'no box score was fetched at all');
+    await f.w.refresh();
+    await new Promise(r => setTimeout(r, 200));
+    chk(sums() === first, `a finished game's box score was fetched again (${first} -> ${sums()})`);
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
