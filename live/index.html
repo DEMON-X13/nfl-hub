@@ -65,7 +65,13 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
 .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.sp-leg{display:grid;grid-template-columns:22px 1fr auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.lineBtn{background:var(--panel-2);border:1px solid var(--line-2);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.lineBtn:hover{border-color:#B9C4D2;color:var(--ink)}
+.ln.moved{color:var(--gold)}
+.movedNote{display:block;font-size:11px;color:var(--gold);font-weight:400}
+.movedNote a{color:var(--gold)}
+.lineEdit input{width:78px;padding:5px 8px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
 .sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
@@ -291,15 +297,25 @@ const LIVE_KEY='live_parlays_v1';
 const PACK_LEG=['gid','stat','k','side','main','name','label','team'];
 const PACK_P=['id','src','week','stake','price','payout'];
 function importedParlays(){
-  const v=readKey(LIVE_KEY), a=(v&&v.imported)||[];
-  return Array.isArray(a)?a.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>Object.assign({},p,{src:'shared'})):[];
+  return liveStore().imported.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>Object.assign({},p,{src:'shared'}));
 }
-function writeImported(list){
-  try{ localStorage.setItem(LIVE_KEY,JSON.stringify({imported:list})); return true; }catch(e){ return false; }
+function liveStore(){ const v=readKey(LIVE_KEY)||{}; return {imported:Array.isArray(v.imported)?v.imported:[],lines:(v.lines&&typeof v.lines==='object')?v.lines:{}}; }
+function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
+function writeImported(list){ const st=liveStore(); st.imported=list; return writeStore(st); }
+/* a book line that moved after the parlay was built. Kept here and nowhere else: the parlay
+   in the prop model or the betting model is left exactly as it was saved, so this changes
+   what the page measures against and not how anything settles. */
+function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }   /* p needs only src and id */
+function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
+function setLine(p,i,val){
+  const st=liveStore(), k=lineKey(p,i);
+  if(val==null) delete st.lines[k]; else st.lines[k]=+val;
+  return writeStore(st);
 }
 const pick=(o,keys)=>{ const r={}; for(const k of keys) if(o[k]!==undefined&&o[k]!==null) r[k]=o[k]; return r; };
 function packParlays(ps){
-  return ps.map(p=>Object.assign(pick(p,PACK_P),{legs:p.legs.map(l=>pick(l,PACK_LEG))}));
+  return ps.map(p=>Object.assign(pick(p,PACK_P),
+    {legs:p.legs.map((l,i)=>Object.assign(pick(l,PACK_LEG),{k:lineOf(p,i,l)}))}));
 }
 /* base64url over UTF-8, the long-standing way: no TextEncoder, so this works in anything
    that can open the page, and in the jsdom the smoke test drives it with */
@@ -362,8 +378,10 @@ function liveFor(l){
   return Object.assign({},liveLeg(l,st[l.stat]==null?null:st[l.stat],g.state),{game:g});
 }
 const MARK={hit:'✓',missed:'✗',push:'P'};
-function legRow(l){
-  const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
+function legRow(p,l,i){
+  const k=lineOf(p,i,l), moved=k!==+l.k, canEdit=l.stat!=='ml';
+  const L=moved?Object.assign({},l,{k}):l;
+  const r=liveFor(L), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
   let right='<span class="rs muted">waiting</span>';
   if(r){
     if(r.state==='pending') right=`<span class="rs muted">${esc(r.game.clock||'not started')}</span>`;
@@ -371,14 +389,19 @@ function legRow(l){
     else if(r.state==='unknown') right='<span class="rs muted">not reported</span>';
     else if(isGameLeg(l)){ const g=r.game;
       right=`<span class="rs ${tone}">${esc(g.away+' '+g.as+'–'+g.hs+' '+g.home)}<em>${esc(g.clock)}</em></span>`; }
-    else { const room=l.main&&l.side==='under';
+    else { const room=L.main&&L.side==='under';
       const tail=r.state==='hit'?'hit':(r.state==='missed'?'missed':(r.state==='push'?'push':
         (r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')));
-      right=`<span class="rs ${tone}">${esc(num(r.val,r.val%1?1:0)+' / '+r.k)}<em>${esc(tail)}</em></span>`; }
+      right=`<span class="rs ${tone}">${esc(num(r.val,r.val%1?1:0))} / <span class="ln${moved?' moved':''}">${esc(num(k,k%1?1:0))}</span><em>${esc(tail)}</em></span>`; }
   }
   const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
+  /* the label carries the old number ("Over 43.5 receiving yards"), which would contradict a
+     corrected line sitting next to it, so the first number in it moves too */
+  const label=moved?String(l.label||'').replace(/\d+(\.\d+)?/,num(k,k%1?1:0)):String(l.label||'');
+  const note=moved?`<small class="movedNote">moved from ${esc(num(+l.k,(+l.k)%1?1:0))} · <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></small>`:'';
+  const edit=canEdit?`<button class="lineBtn" data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}" title="The book moved this line? Set what you actually bet.">line</button>`:'<span></span>';
   return `<div class="sp-leg"><span class="${cls}">${r&&MARK[r.state]?MARK[r.state]:'○'}</span>
-    <span class="nm">${esc(l.name)}<small>${esc(l.label||'')}</small></span>${right}</div>`;
+    <span class="nm">${esc(l.name)}<small>${esc(label)}</small>${note}</span>${right}${edit}</div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
@@ -426,9 +449,35 @@ function draw(){
         <div><b>${p.price==null?'–':fmtML(p.price)}</b><span>price</span></div>
         <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'–'}</b><span>pays</span></div>
       </div>
-      ${p.legs.map(legRow).join('')}</div>`;
+      ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
   }
   app.innerHTML=html;
+  /* edit a line in place: the row's value cell becomes a number box, Enter or Save commits,
+     Escape or blur without a change puts it back */
+  app.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>{
+    const row=b.closest('.sp-leg'), cell=row.querySelector('.rs'); if(!cell) return;
+    const key=b.dataset.edit, cur=b.dataset.k;
+    const box=document.createElement('span');
+    box.className='rs lineEdit';
+    box.innerHTML=`<input type="number" step="0.5" inputmode="decimal" value="${esc(cur)}" aria-label="the line you actually bet">`;
+    cell.replaceWith(box); b.disabled=true;
+    const inp=box.querySelector('input'); inp.focus(); inp.select();
+    let gone=false;
+    const commit=()=>{ if(gone) return; gone=true;
+      const v=parseFloat(inp.value);
+      const [src,id,i]=key.split('|');
+      if(isFinite(v)) setLine({src,id},+i,v); 
+      draw(); };
+    const cancel=()=>{ if(gone) return; gone=true; draw(); };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(); }
+      else if(e.key==='Escape'){ e.preventDefault(); cancel(); } });
+    inp.addEventListener('blur',commit);
+  }));
+  app.querySelectorAll('[data-reset]').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    const [src,id,i]=a.dataset.reset.split('|');
+    setLine({src,id},+i,null); draw();
+  }));
   app.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
     const i=b.dataset.rm.indexOf(':'), src=b.dataset.rm.slice(0,i), id=b.dataset.rm.slice(i+1);
     const where=src==='prop'?'prop model':'betting model';
@@ -441,7 +490,7 @@ function draw(){
 function foot(){
   document.getElementById('stamp').textContent=STATE.err?'not updating':(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'idle');
   document.getElementById('foot').innerHTML=`Scores come from ESPN's public feeds, read by this page in your own browser. No odds-API credits are ever spent here, and no job runs for it.
-    Parlays are read from this browser's storage; this page writes only a removal you ask for and the parlays you send here by link, and it settles nothing — that still happens in the
+    Parlays are read from this browser's storage; this page writes only a removal you ask for, the parlays you send here by link and a line you correct, and it settles nothing — that still happens in the
     <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>.`;
 }
 let TIMER=null;

@@ -213,6 +213,55 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     chk(/could not be read|carried no parlays/.test(txt(e2.d.querySelector('.note')) || ''), 'a broken link is not explained');
   }
 
+  // ---- I. a line that moved after the bet was placed ----
+  {
+    const a = await run();
+    const row = [...a.d.querySelectorAll('.savedp.prop .sp-leg')][0];   /* Bijan, over 43.5, 86 so far */
+    chk(/86 \/ 43\.5/.test(txt(row)) && /hit/.test(txt(row)), 'the starting row is not what the test expects: ' + txt(row));
+    const btn = row.querySelector('[data-edit]');
+    chk(!!btn, 'a player prop leg offers no way to correct its line');
+    chk(!a.d.querySelector('.savedp:not(.prop) [data-edit]'), 'a moneyline leg should have no line to edit');
+    btn.click();
+    const inp = a.d.querySelector('.lineEdit input');
+    chk(!!inp && inp.value === '43.5', 'the editor did not open prefilled with the current line');
+    inp.value = '100';
+    inp.dispatchEvent(new a.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await new Promise(r => setTimeout(r, 60));
+    const after = txt([...a.d.querySelectorAll('.savedp.prop .sp-leg')][0]);
+    chk(/86 \/ 100/.test(after), 'the corrected line is not what the leg is measured against: ' + after);
+    chk(/14 to go/.test(after), 'the distance left was not recomputed on the new line: ' + after);
+    chk(/moved from 43\.5/.test(after), 'the row does not say the line moved: ' + after);
+    chk(/Over 100 rushing yards/.test(after) && !/Over 43\.5 rushing/.test(after),
+      'the label still quotes the old line, contradicting the corrected one: ' + after);
+    /* stored here, and nowhere else */
+    const store = JSON.parse(a.w.localStorage.getItem('live_parlays_v1'));
+    chk(store.lines && Object.values(store.lines)[0] === 100, 'the corrected line was not stored');
+    chk(JSON.parse(a.w.localStorage.getItem(PROP_KEY)).saved[0].legs[0].k === 43.5,
+      'correcting a line changed the parlay saved in the prop model');
+    /* and it rides along when the parlay is sent to another device */
+    let copied = null;
+    a.w.navigator.clipboard = { writeText: t => { copied = t; return Promise.resolve(); } };
+    a.d.getElementById('send').click();
+    await new Promise(r => setTimeout(r, 60));
+    const sent = JSON.parse(Buffer.from(copied.slice(copied.indexOf('#p=') + 3).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    chk(sent.some(x => x.legs.some(l => l.k === 100)), 'a sent parlay did not carry the corrected line');
+    /* undo puts the model's own line back */
+    a.d.querySelector('[data-reset]').click();
+    await new Promise(r => setTimeout(r, 60));
+    const undone = txt([...a.d.querySelectorAll('.savedp.prop .sp-leg')][0]);
+    chk(/86 \/ 43\.5/.test(undone) && !/moved from/.test(undone), 'undo did not restore the original line: ' + undone);
+
+    /* Escape leaves it alone */
+    const b2 = await run();
+    const row2 = [...b2.d.querySelectorAll('.savedp.prop .sp-leg')][0];
+    row2.querySelector('[data-edit]').click();
+    const inp2 = b2.d.querySelector('.lineEdit input');
+    inp2.value = '999';
+    inp2.dispatchEvent(new b2.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await new Promise(r => setTimeout(r, 60));
+    chk(/86 \/ 43\.5/.test(txt([...b2.d.querySelectorAll('.savedp.prop .sp-leg')][0])), 'Escape saved the line anyway');
+  }
+
   console.log(`${checks} checks, ${fails.length} failures`);
   fails.forEach(f2 => console.log('  FAIL:', f2));
   process.exit(fails.length ? 1 : 0);
