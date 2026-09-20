@@ -893,7 +893,17 @@ function stripMine(){
 }
 /* after anything redraws a board: the lock does not wait for a score to be read, since it
    is a rule about the clock rather than about the scoreboard */
-function after(){ lockPlayed(); stripMine(); tidyStats(); if(L.on) paintAll(); }
+function after(){ lockPlayed(); stripMine(); allModels(); tidyStats(); if(L.on) paintAll(); }
+/* Records shows every model, always. The toggle defaulted to off, so the challenger, the
+   joker and Vegas were hidden behind a checkbox on the one tab that exists to compare them. */
+function allModels(){
+  if(S.showAllModels!==true){
+    S.showAllModels=true;
+    if(typeof window.renderRecord==='function'){ try{ window.renderRecord(); }catch(e){} }
+  }
+  document.querySelectorAll('#tab-record label').forEach(l=>{
+    if(/show all models/i.test(l.textContent)) l.remove(); });
+}
 /* an empty band renders as "-%", which reads like a number that failed to load rather than
    a band nothing has landed in yet */
 function tidyStats(){
@@ -942,6 +952,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   setTimeout(read,300);
   for(const n of ['renderPicks','renderMine','renderRecord']) hook(n);
   stripMine();
+  allModels();
   routeTabs();
 });
 })();
