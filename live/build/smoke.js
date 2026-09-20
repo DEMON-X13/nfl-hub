@@ -27,6 +27,15 @@ const who = row => txt(row.querySelector('.who') || row.querySelector('.nm'));
 const target = row => txt(row.querySelector('.tgt'));
 /* Send copies a link when it is short enough to message and the code when it is not */
 const codeOf = v => v.includes('#p=') ? v.slice(v.indexOf('#p=') + 3) : v;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+/* Save asks for a token with a panel now, not a prompt box: fill it and press Save token */
+async function saveWithToken(ctx, tok) {
+  ctx.d.getElementById('ghSave').click();
+  await wait(80);
+  const inp = ctx.d.getElementById('tokIn');
+  if (inp && tok) { inp.value = tok; ctx.d.getElementById('tokGo').click(); }
+  await wait(200);
+}
 const hashOf = v => '#p=' + codeOf(v);
 
 const GID = '2026_02_CAR_ATL';          /* the early game */
@@ -506,17 +515,19 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     /* saving without a token asks for one, and nothing is written if none is given */
     const noTok = makeGh(null);
     const a = await run({ seed: seedOne, gh: noTok.fn });
-    a.w.prompt = () => '';
     a.d.getElementById('ghSave').click();
-    await new Promise(r => setTimeout(r, 120));
+    await wait(80);
+    chk(!!a.d.getElementById('tokIn'), 'Save did not ask for a token');
+    chk(!!a.d.querySelector('a[href*="github.com/settings/tokens/new"]'),
+      'the token panel does not link at the page that makes one');
+    chk(a.d.getElementById('tokIn').type === 'password', 'the token box shows the token as it is typed');
+    await wait(120);
     chk(noTok.writes.length === 0, 'a save went ahead without a token');
 
     /* with a token it writes, to the data branch, and the token never reaches the file */
     const store = makeGh(null);
     const b = await run({ seed: seedOne, gh: store.fn });
-    b.w.prompt = () => 'ghp_pretendtoken';
-    b.d.getElementById('ghSave').click();
-    await new Promise(r => setTimeout(r, 160));
+    await saveWithToken(b, 'ghp_pretendtoken');
     chk(store.writes.length === 1, 'nothing was written to the repository');
     const sent = store.writes[0];
     chk(sent.branch === 'parlay-data', `saved to the wrong branch: ${sent.branch}`);
@@ -545,9 +556,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
       ? Promise.resolve({ ok: false, status: 401, json: async () => ({}) })
       : Promise.resolve({ ok: false, status: 404, json: async () => ({}) }));
     const e3 = await run({ seed: seedOne, gh: bad.fn });
-    e3.w.prompt = () => 'ghp_wrong';
-    e3.d.getElementById('ghSave').click();
-    await new Promise(r => setTimeout(r, 160));
+    await saveWithToken(e3, 'ghp_wrong');
     chk(/refused the token/.test(txt(e3.d.querySelector('.note'))), 'a refused token is not explained');
 
     /* and the token can be forgotten */
@@ -582,9 +591,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     /* once something is saved, both say so */
     const store = makeGh(null);
     const c = await run({ seed: seedOne, gh: store.fn });
-    c.w.prompt = () => 'ghp_pretendtoken';
-    c.d.getElementById('ghSave').click();
-    await new Promise(r => setTimeout(r, 200));
+    await saveWithToken(c, 'ghp_pretendtoken');
     chk(/GitHub: 1 parlay, saved/.test(txt(c.d.getElementById('ghState'))),
       'after a save the bar does not say so: ' + txt(c.d.getElementById('ghState')));
     const d3 = await run({ seed: () => {}, gh: store.fn });
