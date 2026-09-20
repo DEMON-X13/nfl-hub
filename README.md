@@ -97,13 +97,16 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
 - Parlays are listed in the order the day runs: anything still to finish first, then by when
   a parlay can settle -- its **last** kickoff, not its first, so one carrying a four o'clock
   leg sits below one made only of one o'clock games. Settled parlays go to the bottom.
+- Nothing reads as a blank. Before kickoff the strip shows **0-0** with the kick time and every
+  leg reads `0 / 43.5` on a zeroed stat line; a player ESPN has not put in the box score yet
+  reads 0 too, because that is what he has.
 - Each parlay carries a **score strip** of the games it rides on, with the clock, the one in
   progress highlighted, and under every player leg **his whole line** from the box score --
   carries and rushing yards, catches and receiving yards on targets, completions and passing
   yards with touchdowns and interceptions, kicks made of attempted -- not only the one number
   being bet on.
-- **A book line that moved** after the bet was placed can be corrected per leg, with the
-  `line` button on the row. The leg is then measured against what was actually bet, its label
+- **A book line that moved** after the bet was placed can be corrected per leg by tapping
+  the line number itself on the row. The leg is then measured against what was actually bet, its label
   follows the new number, and `undo` puts the model's own line back. The correction is kept
   in this page's key and rides along in a sent link; the parlay saved in the owning app is
   left exactly as it was, so nothing about settlement or the Track Record changes.

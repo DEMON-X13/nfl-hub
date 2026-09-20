@@ -24,9 +24,10 @@ const GID = '2026_02_CAR_ATL';          /* the early game */
 const GID2 = '2026_02_KC_BUF';          /* the night game */
 const EARLY = '2026-09-20T17:00Z', NIGHT = '2026-09-21T00:20Z';
 const ev = (id, date, away, home, state, as, hs) => ({ id, date,
-  competitions: [{ status: { type: { state, shortDetail: state === 'post' ? 'Final' : 'Q3 7:12' } },
-    competitors: [{ homeAway: 'home', team: { abbreviation: home }, score: String(hs) },
-                  { homeAway: 'away', team: { abbreviation: away }, score: String(as) }] }] });
+  competitions: [{ status: { type: { state, shortDetail: state === 'post' ? 'Final' : (state === 'pre' ? '1:00 PM ET' : 'Q3 7:12') } },
+    /* before kickoff ESPN carries no score at all, which is the case worth testing */
+    competitors: [{ homeAway: 'home', team: { abbreviation: home }, score: state === 'pre' ? undefined : String(hs) },
+                  { homeAway: 'away', team: { abbreviation: away }, score: state === 'pre' ? undefined : String(as) }] }] });
 const GID3 = '2026_02_NO_BAL';          /* the four o'clock game */
 const LATE = '2026-09-20T20:25Z';
 const sb = state => ({ events: [ev('401', EARLY, 'CAR', 'ATL', state, 17, 20),
@@ -321,6 +322,38 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
 
     /* the betting parlay's games get a strip too */
     chk(!!a.d.querySelector('.savedp:not(.prop) .games'), 'a team-bet parlay shows no score strip');
+  }
+
+  // ---- L. nought is a number: before kickoff, and for a man not yet in the box score ----
+  {
+    const b4 = await run({ state: 'pre' });
+    const strip = txt(b4.d.querySelector('.savedp.prop .games'));
+    chk(/CAR 0.0 ATL/.test(strip), 'before kickoff the strip should read 0\u20130, got: ' + strip);
+    chk(/1:00 PM ET/.test(strip), 'the kickoff time is missing from the strip: ' + strip);
+    const first = txt([...b4.d.querySelectorAll('.savedp.prop .sp-leg')][0]);
+    chk(/0 \/ 43\.5/.test(first), 'before kickoff a leg should read 0 against its line, got: ' + first);
+    chk(/1:00 PM ET/.test(first), 'before kickoff the row should carry the kick time, got: ' + first);
+    chk(/0 car, 0 rush yds/.test(first), 'before kickoff the stat line should be zeros, got: ' + first);
+    chk(!/not started|no box score/.test(first), 'a blank is still being shown instead of zeros: ' + first);
+
+    /* a player the box score has not mentioned yet has nought, not nothing */
+    const seed = w => w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
+      { id: 'ghost', week: 2, stake: 10, price: 200, payout: 30, legs: [
+        leg('pz', 'Nobody Played', 'receiving_yards', 30.5, 'over', true, 'Over 30.5 receiving yards', 'ATL')] }] }));
+    const g = await run({ seed });
+    const row = txt(g.d.querySelector('.savedp .sp-leg'));
+    chk(/0 \/ 30\.5/.test(row), 'a man missing from the box score should read 0, got: ' + row);
+    chk(/0 rec, 0 rec yds/.test(row), 'a man missing from the box score should show a zeroed line, got: ' + row);
+
+    /* the line number is the control now; there is no second button repeating it */
+    const a = await run();
+    chk(!a.d.querySelector('.lineBtn'), 'the old line button is still there');
+    chk(!!a.d.querySelector('.ln.edit[data-edit]'), 'the line number is not the thing you tap');
+    const ln = a.d.querySelector('.savedp.prop .ln.edit');
+    chk(ln.getAttribute('role') === 'button' && ln.getAttribute('tabindex') === '0',
+      'the line number is not reachable from the keyboard');
+    ln.click();
+    chk(!!a.d.querySelector('.lineEdit input'), 'tapping the line number did not open the editor');
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
