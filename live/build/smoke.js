@@ -146,6 +146,13 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     const same = [...dup.d.querySelectorAll('.savedp')].filter(c => /Kyle Pitts/.test(txt(c)));
     chk(same.length === 1, `a parlay in both places showed ${same.length} times`);
     chk(/\$15\.00/.test(txt(same[0])), "the file's older copy won over this browser's");
+    /* and the same parlay under a different id is still the same parlay */
+    const ren = await run({ seed, file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'a-different-id', week: 2, stake: 99, legs: [
+        legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 20.5, 'over', true)] }] } });
+    const twice = [...ren.d.querySelectorAll('.savedp')].filter(c => /Kyle Pitts/.test(txt(c)));
+    chk(twice.length === 1, `the same legs under another id showed ${twice.length} times`);
+    chk(/\$15\.00/.test(txt(twice[0])), "the file's copy won over this browser's");
   }
 
   // ---- C2. a parlay still in the prop model's builder counts too ----
@@ -215,6 +222,27 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   const n1 = sums();
   await h2.w.refresh(); await wait(200);
   chk(sums() === n1, `a finished game's box score was fetched again (${n1} -> ${sums()})`);
+
+  // ---- H2. a box score is only asked for where a player leg needs one ----
+  {
+    const mlOnly = { updated: null, games: ['2026_02_CAR_ATL', '2026_02_NO_BAL'], parlays: [
+      { id: 'ml', week: 2, stake: 2, price: 142, payout: 4.84, legs: [
+        { game: 0, player: 'Falcons', team: 'ATL', stat: 'ml', line: 0, side: 'over', main: false },
+        { game: 1, player: 'Ravens', team: 'BAL', stat: 'ml', line: 0, side: 'over', main: false }] }] };
+    const m = await run({ file: mlOnly });
+    chk(m.calls.filter(u => u.includes('/summary?')).length === 0,
+      'a parlay of moneylines fetched box scores it has no use for');
+    const row = m.d.querySelector('.sp-leg');
+    chk(/Falcons/.test(txt(row)) && /To Win/.test(txt(row)), 'a whole-game bet from the file is wrong: ' + txt(row));
+    chk(/CAR 17.20 ATL/.test(txt(row)), 'a whole-game bet does not show the score: ' + txt(row));
+    /* one game with a player leg must not drag in the box scores of the moneyline games */
+    const mixed = JSON.parse(JSON.stringify(mlOnly));
+    mixed.parlays.push({ id: 'pp', week: 2, stake: 1, legs: [
+      legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 43.5, 'over', true)] });
+    const m2 = await run({ file: mixed });
+    chk(m2.calls.filter(u => u.includes('/summary?')).length === 1,
+      'one player leg fetched more box scores than there are games with player legs');
+  }
 
   // ---- I. the file's own shape is what a person would write ----
   const real = JSON.parse(fs.readFileSync(path.join(ROOT, 'live', 'parlays.json'), 'utf8'));

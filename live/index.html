@@ -334,12 +334,16 @@ function localParlays(){
     price:p.priced?decToML(p.dec):null,payout:p.payout,note:'',legs:p.legs}));
   return propParlays().concat(bet);
 }
+/* the same parlay written twice is the same parlay: ids never match across the file and the
+   two models, so a copy is recognised by its legs instead */
+const legPrint=p=>p.legs.map(l=>[l.gid,l.stat,l.k,l.side].join('|')).sort().join(' + ');
 function allParlays(){
   const mine=localParlays(), seen={};
-  for(const p of mine) seen[String(p.id)]=1;
+  for(const p of mine){ seen[String(p.id)]=1; seen[legPrint(p)]=1; }
   /* what this browser holds wins over the copy in the file, so a parlay you are looking at
      is the one you built rather than an older snapshot of it */
-  return mine.concat(STATE.parlays.filter(p=>!seen[String(p.id)]).map(p=>Object.assign({},p,{src:'file'})));
+  return mine.concat(STATE.parlays.filter(p=>!seen[String(p.id)]&&!seen[legPrint(p)])
+    .map(p=>Object.assign({},p,{src:'file'})));
 }
 
 /* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL,
@@ -397,15 +401,17 @@ async function refresh(){
       }
       STATE.games=games;
       const box=Object.assign({},STATE.box);
-      /* every parlay on the page, not just the file's: box scores are what a player leg is
-         tracked against, and a browser whose parlays all come from the two models needs them
-         exactly as much as one reading the file */
-      if(ps.some(p=>p.legs.some(l=>!isGameLeg(l))))
-        for(const gid of want){ const g=games[gid];
-          if(!g||g.state==='pre') continue;
-          if(STATE.settled[gid]&&box[gid]) continue;      /* a final box score cannot change */
-          try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
-        }
+      /* a box score is only worth asking for where a player leg is being tracked against it:
+         a parlay of four moneylines is settled by the scoreboard alone. Every parlay on the
+         page counts here, not just the file's -- a browser whose parlays all come out of the
+         two models needs the box scores exactly as much as one reading the file. */
+      const wantBox=new Set();
+      for(const p of ps) for(const l of p.legs) if(l.gid&&!isGameLeg(l)) wantBox.add(l.gid);
+      for(const gid of wantBox){ const g=games[gid];
+        if(!g||g.state==='pre') continue;
+        if(STATE.settled[gid]&&box[gid]) continue;        /* a final box score cannot change */
+        try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
+      }
       STATE.box=box; STATE.err=null; STATE.at=Date.now();
     }catch(e){ STATE.err=String(e&&e.message||e); }
   }
