@@ -271,7 +271,10 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     a.d.getElementById('send').click();
     await new Promise(r => setTimeout(r, 60));
     const sent = JSON.parse(Buffer.from(copied.slice(copied.indexOf('#p=') + 3).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
-    chk(sent.some(x => x.legs.some(l => l.k === 100)), 'a sent parlay did not carry the corrected line');
+    chk(Array.isArray(sent.g) && Array.isArray(sent.p), 'the packed form is not the compact one');
+    chk(sent.p.some(x => (x.l || []).some(l => l.n === 100)), 'a sent parlay did not carry the corrected line');
+    chk(!JSON.stringify(sent).includes('rushing_yards'), 'stat names are still travelling in full');
+    chk(sent.g.length === 1 && sent.g[0] === GID, 'games are not listed once and referenced');
     /* undo puts the model's own line back */
     a.d.querySelector('[data-reset]').click();
     await new Promise(r => setTimeout(r, 60));
@@ -376,6 +379,50 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
       'the line number is not reachable from the keyboard');
     ln.click();
     chk(!!a.d.querySelector('.lineInput'), 'tapping the line number did not open the editor');
+  }
+
+  // ---- M. the link has to survive being messaged ----
+  {
+    const seed = w => w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
+      { id: 'big', week: 2, stake: 20, price: 580, payout: 136, legs: [
+        leg('p1', 'Bijan Robinson', 'rushing_yards', 43.5, 'over', true, 'Over 43.5 rushing yards', 'ATL'),
+        leg('p2', 'Travis Kelce', 'receiving_yards', 43.5, 'over', true, 'Over 43.5 receiving yards', 'ATL'),
+        leg('p3', 'Michael Penix Jr.', 'passing_yards', 225.5, 'over', true, 'Over 225.5 passing yards', 'ATL'),
+        leg('p4', 'Derrick Henry', 'rushing_yards', 70.5, 'over', true, 'Over 70.5 rushing yards', 'BAL')] }] }));
+    const a = await run({ seed });
+    let copied = null;
+    a.w.navigator.clipboard = { writeText: t2 => { copied = t2; return Promise.resolve(); } };
+    a.d.getElementById('send').click();
+    await new Promise(r => setTimeout(r, 80));
+    /* iMessage cut a 993-character link in half. A four-leg parlay must stay far under that. */
+    chk(copied.length < 600, `a four-leg link is ${copied.length} chars, which is too long to message`);
+
+    /* the code alone, pasted on the other device, has to work as well as the link */
+    const code = copied.slice(copied.indexOf('#p=') + 3);
+    const b = await run({ seed: () => {} });
+    b.w.prompt = () => code;
+    b.w.navigator.clipboard = { readText: () => Promise.resolve('') };
+    b.d.getElementById('paste').click();
+    await new Promise(r => setTimeout(r, 120));
+    chk(b.d.querySelectorAll('.savedp').length === 1, 'pasting a code did not bring the parlay across');
+    chk([...b.d.querySelectorAll('.sp-leg')].length === 4, 'the pasted parlay lost legs');
+    chk(who(b.d.querySelector('.sp-leg')) === 'Bijan Robinson Rushing Yards', 'a pasted leg lost its man or its stat');
+
+    /* a whole link pasted in works too, and rubbish says so */
+    const c = await run({ seed: () => {} });
+    c.w.prompt = () => copied;
+    c.w.navigator.clipboard = { readText: () => Promise.resolve('') };
+    c.d.getElementById('paste').click();
+    await new Promise(r => setTimeout(r, 120));
+    chk(c.d.querySelectorAll('.savedp').length === 1, 'pasting the whole link did not work');
+
+    const e2 = await run({ seed: () => {} });
+    e2.w.prompt = () => 'hello there';
+    e2.w.navigator.clipboard = { readText: () => Promise.resolve('') };
+    e2.d.getElementById('paste').click();
+    await new Promise(r => setTimeout(r, 120));
+    chk(/does not look like|could not be read/.test(txt(e2.d.querySelector('.note')) || ''),
+      'rubbish pasted in is not explained');
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);

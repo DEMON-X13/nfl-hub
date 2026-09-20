@@ -91,6 +91,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .ln.moved{color:var(--gold);border-bottom-color:var(--gold)}
 .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:400}
 .movedNote a{color:var(--gold)}
+.shareBox{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .lineInput{width:72px;padding:3px 6px;border:1px solid var(--ink-2);border-radius:var(--r-sm);font-size:12px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
 .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}
 .gm{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-family:var(--display);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -128,6 +129,7 @@ footer a{color:var(--ink-2)}
     </label>
     <button class="btn quiet" id="now">Refresh now</button>
     <button class="btn quiet" id="send">Send to a device</button>
+    <button class="btn quiet" id="paste">Paste a code</button>
     <button class="btn quiet" id="clearDone" hidden>Clear finished</button>
   </div>
   <div id="app"></div>
@@ -189,8 +191,14 @@ function removeParlay(src,id){
    Deliberately its own key, not the two apps': nothing this page imports should appear in
    the prop model or the betting model as though it had been saved there. */
 const LIVE_KEY='live_parlays_v1';
-const PACK_LEG=['gid','stat','k','side','main','name','label','team'];
-const PACK_P=['id','src','week','stake','price','payout'];
+/* the packed form is kept small on purpose: a long URL does not survive being messaged.
+   iMessage cut one in half. Games are listed once and referenced by number, stats travel as
+   two-letter codes, over and "not a main line" are the defaults and so are left out, and the
+   label is dropped because the page rebuilds it from the stat and the line. */
+const STAT_CODE={passing_yards:'py',passing_tds:'pt',passing_interceptions:'pi',attempts:'pa',
+  completions:'pc',carries:'ra',rushing_yards:'ry',receptions:'rc',receiving_yards:'re',
+  targets:'tg',scrim_yards:'sy',any_td:'td',fg_made:'fm',fg_att:'fa',kick_pts:'kp',ml:'ml',ats:'as'};
+const CODE_STAT={}; for(const k in STAT_CODE) CODE_STAT[STAT_CODE[k]]=k;
 function importedParlays(){
   return liveStore().imported.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>Object.assign({},p,{src:'shared'}));
 }
@@ -207,10 +215,33 @@ function setLine(p,i,val){
   if(val==null) delete st.lines[k]; else st.lines[k]=+val;
   return writeStore(st);
 }
-const pick=(o,keys)=>{ const r={}; for(const k of keys) if(o[k]!==undefined&&o[k]!==null) r[k]=o[k]; return r; };
 function packParlays(ps){
-  return ps.map(p=>Object.assign(pick(p,PACK_P),
-    {legs:p.legs.map((l,i)=>Object.assign(pick(l,PACK_LEG),{k:lineOf(p,i,l)}))}));
+  const games=[], gi=g=>{ let i=games.indexOf(g); if(i<0){ i=games.length; games.push(g); } return i; };
+  const out=ps.map(p=>{
+    const o={i:String(p.id||''),s:p.src};
+    if(p.week) o.w=+p.week;
+    if(p.stake) o.k=+p.stake;
+    if(p.price!=null) o.r=p.price;
+    if(p.payout) o.y=+p.payout;
+    o.l=p.legs.map((l,ix)=>{
+      const q={g:gi(l.gid),t:STAT_CODE[l.stat]||l.stat,n:lineOf(p,ix,l),a:l.name,e:l.team};
+      if(l.side==='under') q.d='u';
+      if(l.main) q.m=1;
+      return q;
+    });
+    return o;
+  });
+  return {g:games,p:out};
+}
+/* reads the compact form, and still reads the first one so a link already sent keeps working */
+function unpackParlays(v){
+  if(Array.isArray(v)) return v;
+  if(!v||!Array.isArray(v.p)||!Array.isArray(v.g)) return [];
+  return v.p.map(o=>({id:o.i,src:'shared',week:o.w||null,stake:+o.k||0,
+    price:(o.r==null?null:o.r),payout:+o.y||0,
+    legs:(o.l||[]).map(q=>({gid:v.g[q.g],stat:CODE_STAT[q.t]||q.t,k:+q.n,
+      side:q.d==='u'?'under':'over',main:!!q.m,name:q.a,team:q.e,label:''}))}))
+    .filter(x=>x.legs.length&&x.legs.every(l=>l.gid));
 }
 /* base64url over UTF-8, the long-standing way: no TextEncoder, so this works in anything
    that can open the page, and in the jsdom the smoke test drives it with */
@@ -218,16 +249,24 @@ function b64e(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g
 function b64d(t){ return decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))); }
 function shareLink(ps){
   const packed=packParlays(ps);
-  if(!packed.length) return null;
+  if(!packed.p.length) return null;
   return location.origin+location.pathname+'#p='+b64e(JSON.stringify(packed));
 }
 /* anything arriving in the link joins what this device already had, by id */
+/* a code on its own, or a whole link with one in it */
+function takeCode(code){
+  const m=/(?:[#&?]p=)?([A-Za-z0-9\-_]{8,})\s*$/.exec(String(code||'').trim());
+  return m?takeFrom(m[1]):{err:'That does not look like a parlay code.'};
+}
 function takeFromHash(){
   const m=/[#&]p=([A-Za-z0-9\-_]+)/.exec(location.hash||'');
-  if(!m) return null;
+  return m?takeFrom(m[1]):null;
+}
+function takeFrom(raw){
   let incoming=null;
-  try{ incoming=JSON.parse(b64d(m[1])); }catch(e){ return {err:'That link could not be read. It may have been cut short in the message it arrived in.'}; }
-  if(!Array.isArray(incoming)||!incoming.length) return {err:'That link carried no parlays.'};
+  try{ incoming=unpackParlays(JSON.parse(b64d(raw))); }
+  catch(e){ return {err:'That could not be read. A long link is often cut in half by the app it was sent through \u2014 try the code instead.'}; }
+  if(!incoming.length) return {err:'That carried no parlays.'};
   const have=importedParlays(), byId={};
   for(const p of have) byId[String(p.id)]=p;
   let added=0;
@@ -398,7 +437,7 @@ function draw(){
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing saved in this browser</b>
       Parlays live in the browser that made them and do not travel between devices.<br>
       Save one in the <a href="../props/">prop model</a>, or a Bet Build parlay in the <a href="../betting/">betting model</a>, on this device and it will appear here.<br><br>
-      Already have one on another device? Open this page there and press <b>Send to a device</b> \u2014 the parlays travel in the link.</div>`;
+      Already have one on another device? Open this page there and press <b>Send to a device</b>, then open the link here \u2014 or paste its code with <b>Paste a code</b> if the link arrives broken.</div>`;
     foot(); return;
   }
   /* the order the day runs in: anything still to finish first, then by when a parlay is
@@ -490,12 +529,15 @@ document.getElementById('send').addEventListener('click',async()=>{
   if(!ps.length){ STATE.msg='There is nothing on this device to send.'; draw(); return; }
   const url=shareLink(ps);
   if(!url){ STATE.msg='Those parlays could not be packed into a link.'; draw(); return; }
-  /* some messaging apps trim a long link, which is worth saying before it happens */
-  const long=url.length>7000?' It is a long link, so send it somewhere that will not shorten it \u2014 Messages or email rather than a chat that trims links.':'';
+  const code=url.slice(url.indexOf('#p=')+3);
   let copied=false;
   try{ await navigator.clipboard.writeText(url); copied=true; }catch(e){}
-  STATE.msg=`<b>${copied?'Link copied.':'Link ready.'}</b> Open it on the other device and these ${ps.length} parlay${ps.length===1?'':'s'} appear there.${long}
-    <br><input type="text" readonly value="${esc(url)}" style="width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel)" onclick="this.select()">`;
+  /* iMessage will cut a long link in two, so the code is offered beside it as the sure way */
+  const warn=url.length>900?`<br><b>That is a long link</b>, and Messages has been known to cut one in half. If the other device says it could not be read, send the code below instead and press <b>Paste a code</b> there.`:'';
+  STATE.msg=`<b>${copied?'Link copied.':'Link ready.'}</b> Open it on the other device and these ${ps.length} parlay${ps.length===1?'':'s'} appear there.${warn}
+    <br><input class="shareBox" type="text" readonly value="${esc(url)}" onclick="this.select()" aria-label="the link">
+    <br><span class="muted" style="font-size:12px">or the code on its own, to paste over there:</span>
+    <br><input class="shareBox" type="text" readonly value="${esc(code)}" onclick="this.select()" aria-label="the code">`;
   draw();
 });
 /* a link from another device: unpacked once, then cleared out of the address bar */
@@ -509,6 +551,17 @@ document.getElementById('send').addEventListener('click',async()=>{
 })();
 document.getElementById('every').addEventListener('change',arm);
 document.getElementById('now').addEventListener('click',refresh);
+document.getElementById('paste').addEventListener('click',async()=>{
+  let v='';
+  try{ v=await navigator.clipboard.readText(); }catch(e){}
+  v=prompt('Paste the link or the code from the other device:',v||'')||'';
+  if(!v.trim()) return;
+  const got=takeCode(v);
+  STATE.msg=got.err?`<b>${esc(got.err)}</b>`
+    :(got.added?`<b>${got.added} parlay${got.added===1?'':'s'} added.</b> They stay on this device until you remove them.`
+                :'<b>Those parlays were already here.</b>');
+  draw(); if(!got.err&&got.added) refresh();
+});
 document.getElementById('clearDone').addEventListener('click',()=>{
   const done=allParlays().filter(isDone);
   if(!done.length) return;
