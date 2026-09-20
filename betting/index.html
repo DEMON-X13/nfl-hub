@@ -775,6 +775,15 @@ function settleFinished(){
     let pr=null;
     if(typeof window.predict==='function'){ try{ pr=window.predict(g,S.teams); }catch(e){} }
     if(!pr) continue;
+    /* Every model that has a column has to be in the row, not just the main one. The grid
+       reads done.h for the challenger and has no fallback behind it, so a settled row
+       without it blanks the challenger's pick and drops the game from its record. The joker
+       falls back to S.joker and survived; the challenger had nothing to fall back to. */
+    let h=null;
+    if(S.teamsH&&typeof window.predict==='function'){
+      try{ h=window.predict(g,S.teamsH,(typeof MODEL_H!=='undefined'&&MODEL_H)?MODEL_H.pure:undefined); }catch(e){}
+    }
+    const jk=(S.joker&&S.joker[g.game_id])||null;
     const result=s.hs-s.as;                                  /* home margin, as the job writes it */
     const winner=result>0?g.home_team:(result<0?g.away_team:null);
     const myPick=(S.myPicks&&S.myPicks[g.game_id])||null;
@@ -783,6 +792,11 @@ function settleFinished(){
       pick:pr.pick,conf:pr.conf,margin:pr.margin,pHome:pr.pHome,blended:!!pr.blended,
       result,correct:winner?pr.pick===winner:null,line:g.spread_line,
       myPick,myCorrect:myPick?(winner?myPick===winner:null):null,
+      h:h?{pick:h.pick,conf:h.conf,margin:h.margin,pHome:h.pHome,
+           correct:winner?h.pick===winner:null}:undefined,
+      joker:jk?{pick:jk.pick,pHome:jk.pHome,
+                correct:winner?jk.pick===winner:null}:undefined,
+      news:[],
       fromScoreboard:true};
     n++;
   }
