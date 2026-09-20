@@ -107,7 +107,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
 .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-.src{border-left:4px solid var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F}
+.src{border-left:4px solid var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F} .src.cloud{border-left-color:#6E5AA8}
 footer{max-width:900px;margin:0 auto;padding:0 28px 48px;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--ink-2)}
 @media(max-width:620px){ header{padding:18px 16px 16px} .brand h1{font-size:27px} main{padding:18px 16px 56px} footer{padding:0 16px 40px} .card{padding:16px 15px} }
@@ -128,6 +128,8 @@ footer a{color:var(--ink-2)}
       <select id="every"><option value="15">every 15s</option><option value="30">every 30s</option><option value="60">every 60s</option><option value="0" selected>off</option></select>
     </label>
     <button class="btn quiet" id="now">Refresh now</button>
+    <button class="btn quiet" id="ghLoad">Load</button>
+    <button class="btn quiet" id="ghSave">Save to GitHub</button>
     <button class="btn quiet" id="send">Send all</button>
     <button class="btn quiet" id="paste">Paste a code</button>
     <button class="btn quiet" id="clearDone" hidden>Clear finished</button>
@@ -298,12 +300,19 @@ function propParlays(){
 function allParlays(){
   const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
     price:p.priced?decToML(p.dec):null,payout:p.payout,legs:p.legs}));
-  return propParlays().concat(bet).concat(importedParlays());
+  const mine=propParlays().concat(bet).concat(importedParlays());
+  const have={}; for(const p of mine) have[p.src+'|'+p.id]=1;
+  /* a parlay already on this device wins over the copy in the repository, so a line
+     corrected here is not undone by what was saved before it */
+  const seen={}; for(const p of mine) seen[String(p.id)]=1;
+  return mine.concat(STATE.cloud.filter(p=>!seen[String(p.id)]));
 }
 /* Removing writes, and it is the only thing on this page that does. Read, change the one
    array, write the whole object back, so every other field the owning app keeps -- picks,
    bankroll, bet log, odds -- comes through untouched. */
 function removeParlay(src,id){
+  /* a parlay from the repository goes from this screen; it leaves the file on the next save */
+  if(src==='cloud'){ STATE.cloud=STATE.cloud.filter(p=>String(p.id)!==String(id)); return true; }
   if(src==='shared') return writeImported(importedParlays().filter(p=>String(p.id)!==String(id)));
   const key=src==='prop'?PROP_KEY:BET_KEY, v=readKey(key);
   if(!v) return false;
@@ -410,7 +419,49 @@ function takeFrom(raw){
   writeImported(Object.values(byId));
   return {added,total:incoming.length};
 }
-const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null,settled:{}};
+/* ---------- the copy kept in the repository ----------
+   Reading needs nothing: the repository is public, so any device can fetch the file. Writing
+   needs a token, which lives in the browser of whichever device does the saving and is never
+   put in a link, a code, or the file itself.
+
+   It saves to parlay-data, a branch with no site built from it, so a save starts no Pages
+   deployment and leaves main's history alone. The repository being public means what is
+   saved is world-readable -- parlay legs, deliberately, and nothing else. */
+const GH={owner:'DEMON-X13',repo:'nfl-hub',branch:'parlay-data',path:'live/parlays.json'};
+const GH_KEY='live_gh_token';
+const ghUrl=()=>`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}?ref=${GH.branch}`;
+function ghToken(){ try{ return localStorage.getItem(GH_KEY)||''; }catch(e){ return ''; } }
+function ghSetToken(v){ try{ if(v) localStorage.setItem(GH_KEY,v); else localStorage.removeItem(GH_KEY); return true; }catch(e){ return false; } }
+function ghHeaders(){
+  const h={'Accept':'application/vnd.github+json'};
+  const t=ghToken(); if(t) h['Authorization']='Bearer '+t;     /* only to raise the read limit, and to write */
+  return h;
+}
+async function ghRead(){
+  const r=await fetch(ghUrl(),{headers:ghHeaders(),cache:'no-store'});
+  if(r.status===404) return {sha:null,parlays:[]};
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  const j=await r.json();
+  let body={};
+  try{ body=JSON.parse(b64d(String(j.content||'').replace(/\s/g,''))); }catch(e){ body={}; }
+  return {sha:j.sha,parlays:unpackParlays(body).map(x=>Object.assign({},x,{src:'cloud'}))};
+}
+async function ghWrite(ps,sha){
+  const t=ghToken(); if(!t) throw new Error('no token on this device');
+  const packed=packParlays(ps);
+  packed.v=1; packed.updated=new Date().toISOString();
+  packed.note='Saved by the Live Parlays page. Data only: nothing is built from this branch.';
+  const body={message:`parlays: ${ps.length} saved ${new Date().toISOString().slice(0,16).replace('T',' ')}`,
+    content:btoa(unescape(encodeURIComponent(JSON.stringify(packed,null,1)))),branch:GH.branch};
+  if(sha) body.sha=sha;
+  const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`,
+    {method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHeaders()),body:JSON.stringify(body)});
+  if(r.status===409) throw new Error('another device saved first \u2014 press Load, then save again');
+  if(r.status===401||r.status===403) throw new Error('GitHub refused the token (' + r.status + ')');
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  return (await r.json()).content.sha;
+}
+const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null,settled:{},cloud:[],sha:null,ghErr:null};
 function legGames(ps){ const s=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s.add(l.gid); return s; }
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -591,8 +642,8 @@ function draw(){
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
     const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':`<span class="pill warn">${hit} of ${p.legs.length} in</span>`);
-    const from={prop:'prop model',bet:'betting model',shared:'sent here'}[p.src]||p.src;
-    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='shared'?'shared':''))}">
+    const from={prop:'prop model',bet:'betting model',shared:'sent here',cloud:'from GitHub'}[p.src]||p.src;
+    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='shared'?'shared':(p.src==='cloud'?'cloud':'')))}">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
@@ -654,7 +705,11 @@ function foot(){
   document.getElementById('foot').innerHTML=`Scores come from ESPN's public feeds, read by this page in your own browser. No odds-API credits are ever spent here, and no job runs for it.
     Auto-refresh starts <b>off</b> so the page asks ESPN for nothing you did not ask for: it fetches once when you open it, then only when you press Refresh now or turn an interval on. A finished game's box score is fetched once and kept.
     Parlays are read from this browser's storage; this page writes only a removal you ask for, the parlays you send here by link and a line you correct, and it settles nothing — that still happens in the
-    <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>.`;
+    <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>.
+    <br>Parlays saved with <b>Save to GitHub</b> go to the <b>${esc(GH.branch)}</b> branch of ${esc(GH.owner)}/${esc(GH.repo)}, which builds no site, so saving redeploys nothing. That repository is public, so what is saved there can be read by anyone \u2014 legs and lines, never a token.
+    ${ghToken()?' <a href="#" id="ghForget">Forget the token on this device</a>.':''}`;
+  document.getElementById('ghForget')?.addEventListener('click',e=>{ e.preventDefault();
+    if(confirm('Forget the GitHub token stored in this browser?\n\nThis device can still read what is saved; it just will not be able to save.')){ ghSetToken(''); draw(); } });
 }
 let TIMER=null;
 function arm(){
@@ -697,6 +752,32 @@ document.getElementById('send').addEventListener('click',()=>doShare(allParlays(
 })();
 document.getElementById('every').addEventListener('change',arm);
 document.getElementById('now').addEventListener('click',refresh);
+async function doGhLoad(quiet){
+  try{
+    const got=await ghRead();
+    STATE.cloud=got.parlays; STATE.sha=got.sha; STATE.ghErr=null;
+    if(!quiet) STATE.msg=`<b>Loaded ${got.parlays.length} parlay${got.parlays.length===1?'':'s'} from GitHub.</b> They show on every device that opens this page.`;
+  }catch(e){ STATE.ghErr=String(e&&e.message||e); if(!quiet) STATE.msg=`<b>Could not read from GitHub: ${esc(STATE.ghErr)}</b>`; }
+  draw(); if(!quiet) refresh();
+}
+document.getElementById('ghLoad').addEventListener('click',()=>doGhLoad(false));
+document.getElementById('ghSave').addEventListener('click',async()=>{
+  if(!ghToken()){
+    const t=prompt('Paste a GitHub token with Contents: read and write on '+GH.owner+'/'+GH.repo+'.\n\nIt is kept in this browser only, and never put in a link, a code, or the saved file. Only the device you build parlays on needs one.');
+    if(!t||!t.trim()){ return; }
+    ghSetToken(t.trim());
+  }
+  const ps=allParlays();
+  if(!ps.length){ STATE.msg='There is nothing here to save.'; draw(); return; }
+  try{
+    let sha=STATE.sha;
+    if(sha===null){ try{ sha=(await ghRead()).sha; }catch(e){} }
+    STATE.sha=await ghWrite(ps,sha);
+    STATE.ghErr=null;
+    STATE.msg=`<b>Saved ${ps.length} parlay${ps.length===1?'':'s'} to GitHub.</b> Open this page on any device and press <b>Load</b>, or just open it \u2014 it loads on its own. <span class="muted">Saved to the ${esc(GH.branch)} branch, which builds no site, so nothing redeploys. The repository is public, so these are readable by anyone.</span>`;
+  }catch(e){ STATE.ghErr=String(e&&e.message||e); STATE.msg=`<b>Could not save: ${esc(STATE.ghErr)}</b>`; }
+  draw();
+});
 document.getElementById('paste').addEventListener('click',async()=>{
   let v='';
   try{ v=await navigator.clipboard.readText(); }catch(e){}
@@ -719,6 +800,8 @@ document.getElementById('clearDone').addEventListener('click',()=>{
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&(+document.getElementById('every').value||0)) refresh(); });
 draw(); arm(); refresh();
+/* every device picks up what was saved, without a token and without being asked */
+doGhLoad(true);
 </script>
 </body>
 </html>
