@@ -118,7 +118,11 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
 - Local storage does not travel between devices, so it finds the parlays made in the browser
   it is running in. **Send to a device** packs what is on screen into the page's own URL;
   opening that link anywhere unpacks it into this page's own key (`live_parlays_v1`), never
-  into the two apps'. Remove takes one out again, and Clear finished sweeps the settled ones.
+  into the two apps'. The packed form is kept small deliberately -- games listed once and
+  referenced, stats as two-letter codes, defaults and labels dropped -- because iMessage cut
+  a 993-character link in half; a four-leg parlay now travels in about 520. When a link still
+  arrives broken, **Paste a code** takes the code on its own, or the whole link, on the other
+  device. Remove takes one out again, and Clear finished sweeps the settled ones.
 
 The ESPN parsing and the betting-model reader are not copied into the page. `live/build/build.js`
 lifts them out of `props/build/part2.js` at build time, so there is one source of truth and the
