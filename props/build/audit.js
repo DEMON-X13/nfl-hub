@@ -701,6 +701,24 @@ setTimeout(async()=>{
         const k=espnGames(SBD,[{id:'2026_02_CAR_ATL',h:'ATL',a:'CAR',w:2}])['2026_02_CAR_ATL'].kick;
         chk(k===Date.parse('2026-09-20T17:00Z'),'the kickoff time did not come through'); }
       chk(Object.keys(espnGames(SB,[{id:'x',h:'KC',a:'BUF',w:2}])).length===0,'an unrelated game was matched anyway');
+      /* every code our schedule uses has to survive the map, or that team's games never
+         appear on any of the three sites. The Rams did not: ESPN_AB turned our own LA into
+         LAR, which matches nothing, so no Rams game was ever mapped. */
+      { const espnAb=F('espnAb'), ours=new Set();
+        for(const g2 of S.sched){ ours.add(g2.h); ours.add(g2.a); }
+        const lost=[...ours].filter(t=>espnAb(t)!==t&&!ours.has(espnAb(t)));
+        chk(lost.length===0,'the abbreviation map sends our own code somewhere we do not use: '+lost.join(', '));
+        /* and the codes ESPN is known to differ on land on one of ours */
+        for(const [from,to] of [['WSH','WAS'],['LAR','LA'],['JAC','JAX']])
+          chk(ours.has(espnAb(from))&&espnAb(from)===to,
+            'ESPN\u2019s '+from+' does not map onto a team we have (got '+espnAb(from)+')');
+        /* a whole week must map, not most of it */
+        const wk=S.sched.filter(g2=>+g2.w===2);
+        const SBW={events:wk.map((g2,i)=>({id:'5'+i,competitions:[{status:{type:{state:'in',shortDetail:'Q1'}},
+          competitors:[{homeAway:'home',team:{abbreviation:g2.h},score:'7'},
+                       {homeAway:'away',team:{abbreviation:g2.a},score:'3'}]}]}))};
+        chk(Object.keys(espnGames(SBW,wk)).length===wk.length,
+          'only '+Object.keys(espnGames(SBW,wk)).length+' of '+wk.length+' games in a week mapped'); }
       /* the scoreboard is someone else's: it must never reach what we save */
       chk(!/"state":"(live|post|pre)"/.test(JSON.stringify(S.saved||[])),'live data reached a saved parlay');
       console.log('T. live tracking: box score, name matching, leg states and scoreboard mapping all parse'); }
