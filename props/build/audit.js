@@ -762,6 +762,80 @@ setTimeout(async()=>{
             chk(!lv||/^final /.test(lv.textContent),
               'a finished game calls its score live: '+g2.id+' '+(lv&&lv.textContent)); } }
       }
+      /* a week is graded a game at a time: one game's stats must never speak for another */
+      { const wks=Object.keys(S.actuals||{});
+        for(const wname of wks){
+          const inWeek=F('gamesIn')(+wname);
+          const graded=inWeek.filter(g2=>S.processedGames&&S.processedGames[g2.id]);
+          chk(graded.length>0,'week '+wname+' has actuals but no game marked graded');
+          if(graded.length<inWeek.length){
+            /* the mixed case, which is every Sunday: opening an ungraded game must not
+               show it as played */
+            const nope=inWeek.find(g2=>!(S.processedGames&&S.processedGames[g2.id]));
+            chk(!!nope,'expected an ungraded game in week '+wname);
+          }
+        }
+        console.log(`S2. grading is per game: ${Object.keys(S.processedGames||{}).length} game(s) graded across ${wks.length} week(s) with actuals`); }
+
+      /* ---- T3. a game in progress reads its box score on the button ---- */
+      if(wk!=null){
+        const live=S.sched.filter(g2=>+g2.w===+wk&&F('gameStarted')(g2)&&!F('gameFinal')(g2));
+        const g3=live[0];
+        if(g3){
+          /* the box score ESPN would serve for this game: one real player off our own roster,
+             so the name matching is exercised rather than stubbed around */
+          const ros=F('rosterFor')(g3,false);
+          const team=Object.keys(ros).find(t=>ros[t].players.length);
+          const who=team&&ros[team].players[0];
+          let boxCalls=0;
+          w.fetch=u=>{ const s2=String(u);
+            if(s2.indexOf('/summary?')>=0){ boxCalls++;
+              /* every group, because the first man on the roster may be any position and the
+                 row shows the headline stats for his: a passer must get a passing line */
+              return Promise.resolve({ok:true,status:200,json:async()=>({boxscore:{players:[
+                {team:{abbreviation:team},statistics:[
+                  {name:'passing',labels:['C/ATT','YDS','AVG','TD','INT'],
+                   athletes:[{athlete:{displayName:who.pl.n},stats:['18/27','241','8.9','2','1']}]},
+                  {name:'rushing',labels:['CAR','YDS','AVG','TD','LONG'],
+                   athletes:[{athlete:{displayName:who.pl.n},stats:['12','78','6.5','1','21']}]},
+                  {name:'receiving',labels:['REC','YDS','AVG','TD','LONG','TGTS'],
+                   athletes:[{athlete:{displayName:who.pl.n},stats:['3','29','9.7','0','14','5']}]},
+                  {name:'kicking',labels:['FG','PCT','LONG','XP','PTS'],
+                   athletes:[{athlete:{displayName:who.pl.n},stats:['2/3','66.7','48','3/3','9']}]}]}]}})});
+            }
+            if(s2.indexOf('scoreboard')>=0){
+              return Promise.resolve({ok:true,status:200,json:async()=>({events:[{id:'777',date:'2026-09-20T17:00Z',
+                competitions:[{status:{type:{state:'in',shortDetail:'Q3 2:15'}},competitors:[
+                  {homeAway:'home',team:{abbreviation:g3.h},score:'19'},
+                  {homeAway:'away',team:{abbreviation:g3.a},score:'12'}]}]}]})});
+            }
+            return realFetch(u); };
+          d.querySelector('[data-game="'+g3.id+'"]').click();
+          chk(!!d.getElementById('gameStatsNow'),'a game in progress has no Refresh stats button');
+          const before=d.querySelector('[data-open="'+who.pl.id+'"] .sum').textContent;
+          chk(/projected/.test(before),'a player should read projected until the box score is read: '+before);
+          d.getElementById('gameStatsNow').click();
+          await new Promise(r=>setTimeout(r,150));
+          const after=d.querySelector('[data-open="'+who.pl.id+'"] .sum').textContent;
+          chk(/241|78|29|9/.test(after.replace(/proj[^)]*\)/g,'')),
+            'no live number reached the row: '+after);
+          chk(/proj/.test(after),'the live line dropped the projection it is read against: '+after);
+          chk(!/projected$/.test(after.trim()),'the row still says only projected');
+          chk(boxCalls===1,'the modal fetched '+boxCalls+' box scores for one game, not 1');
+          chk(/12, /.test(d.querySelector('#gameView .card').textContent)
+              ||/19/.test(d.querySelector('#gameView .card').textContent),
+            'the live score did not reach the status card');
+          /* and none of it settles anything */
+          chk(!(S.actuals&&S.actuals[String(g3.w)]&&S.actuals[String(g3.w)][who.pl.id]),
+            'a live box score was written into S.actuals');
+          chk(!/"clock"/.test(JSON.stringify(S)),'the scoreboard reached the saved state');
+          /* an ungraded game must not claim stats its week happens to hold for another game */
+          chk(!/did not play/.test(d.getElementById('gameView').textContent),
+            'a game still being played says a player did not play');
+          d.getElementById('backBtn').click();
+        }
+        console.log('T3. game modal: '+(g3?'live box score on the button, one call, nothing settled':'no game in progress to drive'));
+      }
       w.fetch=realFetch;
       console.log(`T2. games tab scores: control present and off, ${wk==null?'no live game this week to drive':'score and clock on the card, one scoreboard call, no box scores'}`); }
 

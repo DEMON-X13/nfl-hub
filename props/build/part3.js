@@ -142,8 +142,11 @@ function hitBand(actual,proj){
   if(d>0) return 'over';
   return Math.abs(d)<=Math.max(1,proj*0.15)?'near':'far';
 }
-function actualSummary(x,lines,week){
-  const a=actualFor(week,x.pl.id); if(!a) return '<span class="muted">did not play</span>';
+function actualSummary(x,lines,week,src){
+  /* src is a live box-score block when nflverse has not posted yet; the shape is the same,
+     which is the whole reason espnStats was written to match */
+  const a=src||actualFor(week,x.pl.id);
+  if(!a) return src===null?'<span class="muted">nothing on the sheet yet</span>':'<span class="muted">did not play</span>';
   const snap=(S.projections&&S.projections[String(week)]&&S.projections[String(week)][x.pl.id])||{};
   lines=lines.map(l=>{ const s0=snap[l.stat]; return (s0&&!l.prob&&s0.mu!=null)?{...l,mu:s0.mu}:l; });
   const want=HEADLINE[x.pl.grp]||[]; const bits=[];
@@ -189,7 +192,10 @@ function renderGame(){
   openGameModal();
   const showAll=!!S.ui.showAll;
   const roster=rosterFor(g,showAll);
-  const locked=gameStarted(g), fin=gameFinal(g), haveStats=!!(S.actuals&&S.actuals[String(g.w)]);
+  const locked=gameStarted(g), fin=gameFinal(g);
+  /* this game's stats, not its week's: one graded game used to make the whole week claim
+     stats it did not have, and every other game in it said "did not play" */
+  const haveStats=!!(S.processedGames&&S.processedGames[g.id]&&S.actuals&&S.actuals[String(g.w)]);
   const d=fmtDate(g);
   const meta=PAY.mkt_meta&&PAY.mkt_meta[String(g.w)];
   let html=`<div class="bar">
@@ -203,7 +209,21 @@ function renderGame(){
     <label class="muted"><input type="checkbox" id="rungCb" ${showRungs()?'checked':''}> Threshold ladders</label>
   </div>`;
   if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
-  if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}"><b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`:(fin?'Final.':'In progress.')}</b> <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.':'Player stats come out some hours after the final whistle and appear with the next update; until then each player shows only what was projected.'}${hasScore(g)?'':' The final score appears after the next refresh.'}</span></div>`;
+  /* a live score and stats, when the scoreboard has been read for this game */
+  const lg=LIVE.games[g.id], lbox=!!LIVE.box[g.id];
+  const liveOn=!haveStats&&lbox;
+  if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`
+        :(lg&&lg.as!=null?`${g.a} ${num(lg.as,0)}, ${g.h} ${num(lg.hs,0)}${lg.clock?' \u00b7 '+esc(lg.clock):''}.`
+          :(fin?'Final.':'In progress.'))}</b>
+      <span class="grow"></span>
+      ${LIVE.at?`<span class="muted" style="font-size:12px">${LIVE.err?'stats not loading':'read '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})}</span>`:''}
+      <button class="btn quiet small" id="gameStatsNow" title="Read the score and the box score for this game from ESPN. Free: no odds-API credits, no job.">Refresh stats</button>
+    </div>
+    <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.'
+      :(liveOn?'Each player below shows what he has done so far, live from the scoreboard, against what was projected. These are not the settled numbers: the season\u2019s stats arrive with the next update and the Track Record still grades those.'
+        :'Player stats come out some hours after the final whistle and appear with the next update. Press Refresh stats to read them live from the scoreboard in the meantime.')}${hasScore(g)||lg?'':' The final score appears after the next refresh.'}</span></div>`;
   html+=`
   <div class="card">
     <h2 style="display:flex;align-items:center;gap:10px">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
@@ -216,7 +236,7 @@ function renderGame(){
     html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">A threshold leg on your parlay is shown below even though the ladders are hidden, so nothing counts out of sight.</p>`;
   for(const team of [g.a,g.h]){
     const t=roster[team];
-    html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
+    html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${fin?'played '+t.opp:'playing '+t.opp}</span></div>`;
     if(t.gaps&&t.gaps.length) html+=`<p class="muted" style="margin:-2px 0 8px">Not shown: ${t.gaps.map(x=>`<b>${esc(x.name)}</b> (${x.slot}, ${x.why})`).join(', ')}.</p>`;
     if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Rosters and depth charts are refreshed twice a week.</div>'; continue; }
     for(const x of t.players){
@@ -225,7 +245,10 @@ function renderGame(){
       const open=!!S.ui.open[x.pl.id];
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
         <div class="who">${esc(x.pl.n)}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span></div>
-        <div class="sum">${locked?`<span class="finchip${fin?'':' live'}">${fin?'FINAL':'LIVE'}</span>`:''}${(locked&&haveStats)?actualSummary(x,lines,g.w):(locked?'<span class="muted">projected</span> '+summaryOf(x,lines):summaryOf(x,lines))}</div>
+        <div class="sum">${locked?`<span class="finchip${fin?'':' live'}">${fin?'FINAL':'LIVE'}</span>`:''}${
+          (locked&&haveStats)?actualSummary(x,lines,g.w)
+          :(locked&&liveOn?actualSummary(x,lines,g.w,liveStatsFor(g.id,team,x.pl.n))
+          :(locked?'<span class="muted">projected</span> '+summaryOf(x,lines):summaryOf(x,lines)))}</div>
         <div class="arrow">${open?'\u2303':'\u2304'}</div></button>`;
       if(!open) continue;
       html+='<div class="plrbody">';
@@ -347,6 +370,7 @@ function renderGame(){
   modal.scrollTop=keepY;
   if(pinTop!=null){ const nb=$('gameView').querySelector('[data-open="'+pinned.dataset.open+'"]'); if(nb) modal.scrollTop+=nb.getBoundingClientRect().top-pinTop; }
   $('backBtn').addEventListener('click',closeGame);
+  $('gameStatsNow')?.addEventListener('click',()=>refreshGameStats(g));
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
   $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
@@ -1327,6 +1351,31 @@ function liveStart(){
   if(every) LIVE_TIMER=setInterval(()=>{ if(document.visibilityState==='visible') liveRefresh(); },every*1000);
   liveRefresh();
 }
+/* one player's live line, out of the box score for the game on screen. null means the
+   sheet has him but with nothing on it yet; undefined means there is no sheet to read. */
+function liveStatsFor(gid,team,name){
+  const sum=LIVE.box[gid]; if(!sum) return undefined;
+  return espnStats(sum,team,name);
+}
+/* the scoreboard and one box score, for the game being looked at and nothing else */
+async function refreshGameStats(g){
+  if(LIVE.busy) return;
+  LIVE.busy=true; LIVE.err=null; gameStatsBtn('reading\u2026');
+  try{
+    const sb=await liveGet(`${ESPN_SB}?seasontype=2&week=${g.w}&dates=${SEASON}`);
+    LIVE.games=Object.assign({},LIVE.games,espnGames(sb,S.sched));
+    const s=LIVE.games[g.id];
+    if(s&&s.state!=='pre'){
+      const box=await liveGet(ESPN_SUM+s.eid);
+      LIVE.box=Object.assign({},LIVE.box,{[g.id]:box});
+    }
+    LIVE.at=Date.now();
+  }catch(e){ LIVE.err=String(e&&e.message||e); }
+  finally{ LIVE.busy=false; }
+  if(S.ui.game===g.id) renderGame();
+}
+function gameStatsBtn(txt){ const b=$('gameStatsNow'); if(b) b.textContent=txt; }
+
 /* what to show against one leg of a saved parlay, live */
 function liveFor(l){
   const g=LIVE.games[l.gid]; if(!g) return null;
