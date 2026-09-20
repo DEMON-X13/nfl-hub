@@ -1,0 +1,6 @@
+{
+  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet.",
+  "updated": null,
+  "games": [],
+  "parlays": []
+}

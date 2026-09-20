@@ -78,70 +78,41 @@ Workflow `.github/workflows/news.yml`: Friday, Monday and Tuesday, 8am Eastern.
 
 ## Live parlays
 
-`live/` is one page, about 19KB against the prop model's 1.1MB, meant to be left open on a
-phone or tablet while the games are on. It loads no season data: a leg's game id
-(`2026_02_CAR_ATL`) already carries the week and both teams, which is everything it needs.
+`live/` is one page, about 31KB, that shows where the parlays in `live/parlays.json` stand
+while the games are on. It is a reader and nothing else.
 
-- **The copy in the repository.** `Save to GitHub` writes the parlays on screen to
-  `live/parlays.json` on the **`parlay-data`** branch, and every device loads it when the page
-  opens. Reading needs nothing, because the repository is public. Writing needs a fine-grained
-  token with `Contents: read and write`, kept in the browser of whichever device does the
-  saving and never put in a link, a code or the saved file; *Forget the token on this device*
-  removes it. That branch has no history from `main` and builds no site, so **a save starts no
-  Pages deployment and leaves `main`'s history alone**. The repository being public means what
-  is saved there is world-readable: parlay legs and lines, deliberately, and never a token.
-- It reads the parlays saved in that browser by the two models -- the prop model's Saved
-  parlays under `props_2026_v1`, the betting model's Bet Build parlays under
-  `x_nfl_viewer_picks_2026`. Both sites are served from one origin, so both keys are
-  readable. It never writes to either, and settlement still happens in the two apps.
-- Scores come from ESPN's public feeds, fetched by the reader's browser. **No odds-API
-  credits are ever spent here**; `ODDS_API_KEY` buys prices for the prop model and nothing
-  else touches it. No job runs for this page either.
-- **Auto-refresh starts off**, so the page asks ESPN for nothing that was not asked for: one
-  fetch when it opens, then only on Refresh now or once an interval (15/30/60s) is turned on.
-  An interval only fires while the tab is visible, and with auto off returning to the tab does
-  not fetch either. A finished game's box score is fetched once and kept, since it cannot
-  change. End to end the lag is ESPN's own plus at most the interval.
-- Parlays are listed in the order the day runs: anything still to finish first, then by when
-  a parlay can settle -- its **last** kickoff, not its first, so one carrying a four o'clock
-  leg sits below one made only of one o'clock games. Settled parlays go to the bottom.
-- A player leg is drawn the way a book draws it: the target as the heading (`43.5+`, or
-  `under 54.5`), the man and the stat under it, and a **progress bar** with his number in a
-  pill where it falls, a tick at the line and the line labelled beneath. The bar runs a
-  quarter past the line, so the tick sits at 80% and a number past its target visibly is.
-  Gold while it is running, green once it lands, red once it is gone.
-- Nothing reads as a blank. Before kickoff the strip shows **0-0** with the kick time and every
-  leg reads `0 / 43.5` on a zeroed stat line; a player ESPN has not put in the box score yet
-  reads 0 too, because that is what he has.
-- Each parlay carries a **score strip** of the games it rides on, with the clock, the one in
-  progress highlighted, and under every player leg **his whole line** from the box score --
-  carries and rushing yards, catches and receiving yards on targets, completions and passing
-  yards with touchdowns and interceptions, kicks made of attempted -- not only the one number
-  being bet on.
-- **A book line that moved** after the bet was placed can be corrected per leg by tapping
-  the line number itself on the row. The leg is then measured against what was actually bet, its label
-  follows the new number, and `undo` puts the model's own line back. The correction is kept
-  in this page's key and rides along in a sent link; the parlay saved in the owning app is
-  left exactly as it was, so nothing about settlement or the Track Record changes.
-- Local storage does not travel between devices, so it finds the parlays made in the browser
-  it is running in. **Send to a device** packs what is on screen into the page's own URL;
-  opening that link anywhere unpacks it into this page's own key (`live_parlays_v1`), never
-  into the two apps'. The packed form is kept small deliberately -- games listed once and
-  referenced, stats as two-letter codes, defaults and labels dropped -- because iMessage cut
-  a 993-character link in half; a four-leg parlay now travels in about 520. Each parlay also has its own
-  **Send**, which is the one to use: one parlay is about 450 characters and travels as a link,
-  where a whole slate is a couple of thousand and does not. Above that length the page copies
-  the **code** rather than the link and says why -- plain text carries no URL for Messages to
-  detect, so it is never split -- and **Paste a code** on the other device takes the code or a
-  whole link either way. Remove takes one out again, and Clear finished sweeps the settled ones.
+- **Every parlay lives in `live/parlays.json`**, beside the page, and the page only reads it.
+  Change the file and every device shows the change on its next load. The file is written to
+  be edited by hand: games listed once, legs pointing at them by index, stats spelled out, and
+  a `how` field at the top saying what a leg needs.
+- **Nothing is kept in a browser.** No local storage, no token, no sending, no codes. Every
+  device reads the same file, so every device shows the same thing -- which is the point, and
+  is why a parlay built on one phone used to be invisible on another.
+- **A browser cannot write to GitHub without a credential**, and a static page has nowhere
+  safe to keep one, so the file is edited in the repository rather than from the page. That is
+  the one thing this design gives up, deliberately.
+- It loads no season data: a leg's game id (`2026_02_CAR_ATL`) carries the week and both
+  teams, which is all it needs to find the game.
+- A player leg is drawn the way a book draws it: the target as a heading (`43.5+`, or
+  `under 54.5`), the man and the stat under it, his whole box-score line, and a progress bar
+  with his number in a pill, a tick at the line and the line labelled beneath. The bar runs a
+  quarter past the line, so the tick sits at 80%. Gold while running, green once landed, red
+  once gone. Nothing reads as a blank: before kickoff it is 0-0 and `0 / 43.5`.
+- Parlays sit in the order the day runs: still to finish first, then by when each can settle --
+  its **last** kickoff, so one carrying a four o'clock leg sits below one made only of one
+  o'clock games.
+- Scores come from ESPN's public feeds, fetched by the reader's browser. **No odds-API credits
+  are ever spent here** and no job runs for it. Auto-refresh starts **off**: one fetch on open,
+  then only on `Refresh now` or once an interval is turned on. A finished game's box score is
+  fetched once and kept.
 
-The ESPN parsing and the betting-model reader are not copied into the page. `live/build/build.js`
-lifts them out of `props/build/part2.js` at build time, so there is one source of truth and the
-prop model's audit keeps testing them.
+The ESPN parsing is not copied into the page. `live/build/build.js` lifts it out of
+`props/build/part2.js` between two banners and refuses to build if it has moved, so there is
+one source of truth and the prop model's audit keeps testing it.
 
 ```
 node live/build/build.js        # -> live/index.html
-node live/build/smoke.js        # seeds both keys, stubs ESPN, checks what renders
+node live/build/smoke.js        # hands the page a file and a stubbed ESPN, checks what renders
 ```
 
 ## The betting job
