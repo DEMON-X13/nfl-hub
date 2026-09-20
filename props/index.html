@@ -266,7 +266,7 @@ body.modal-open{overflow:hidden}
 .gsugg-pick:hover{background:var(--panel)}
 .gsugg-pick.on{background:var(--pick-soft)}
 .gsugg-pick input{margin:0;flex:none;align-self:center;cursor:pointer}
-.gsugg-all,.gsugg-alt,.gsugg-orig{padding:5px 11px;font-size:12px}
+.gsugg-all,.gsugg-alt{padding:5px 11px;font-size:12px}
 .gsugg-legs .nm{flex:1;min-width:0}
 .gsugg-legs .nm small{display:block;color:var(--ink-2);font-size:12px}
 .gsugg-legs .lk{flex:none;align-self:center;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pick);white-space:nowrap}
@@ -519,7 +519,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v50 \u00b7 2026-09-20';
+const APP_BUILD='app v51 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1488,8 +1488,6 @@ function renderGame(){
     const alt=shuffleSuggestion(g);
     GAME_SUGGEST_ALT[g.id]={sig:gameSuggestSig(g),val:alt,miss:!alt};
     renderGame(); });
-  $('gameView').querySelector('[data-suggest-orig]')?.addEventListener('click',()=>{
-    delete GAME_SUGGEST_ALT[g.id]; renderGame(); });
   /* the whole suggestion at once, skipping any leg already on so it cannot toggle one off */
   $('gameView').querySelector('[data-suggest-all]')?.addEventListener('click',()=>{
     for(const l of shownSuggestion(g).legs){
@@ -2173,7 +2171,6 @@ function gameSuggestCard(g,locked){
   const nLock=s.legs.filter(suggestLegOn).length, free=s.legs.length-nLock;
   return `<div class="card gsugg"><div class="gsugg-hd">
       <h2>Suggested parlay</h2><span class="conf med">Medium</span><span class="grow"></span>
-      ${s.alt?`<button class="btn quiet gsugg-orig" data-suggest-orig="${g.id}">Original</button>`:''}
       <button class="btn quiet gsugg-alt" data-suggest-shuffle="${g.id}"${s.candidates>s.legs.length&&free?'':' disabled'} aria-label="Shuffle the legs that are not locked, keeping the same confidence">\u21bb Shuffle</button>
       <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${free?'Add all':'On the parlay'}</button>
       <span class="gsugg-nums"><b>${(s.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*s.dec).toFixed(2)}</span>`:''}</span>
@@ -2184,7 +2181,7 @@ function gameSuggestCard(g,locked){
         <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}, and ${on?'take it off':'put it on'} the parlay">
         <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>${on?'<span class="lk">locked</span>':''}
         <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
-    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back with Original, or by leaving the game and opening it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
+    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
