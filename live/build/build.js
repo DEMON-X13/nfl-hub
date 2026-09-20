@@ -20,13 +20,14 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8');
 
 const FROM = "/* ---------- live tracking: ESPN's public feeds ----------";
-/* only the ESPN half. The betting-model reader that follows it reads local storage, and this
-   page keeps nothing in a browser: every parlay comes from the file in the repository. */
-const TO = "/* ---------- the betting model's parlays, read across ----------";
+/* the ESPN half and the betting-model reader both: the page shows the file from the
+   repository and, on whichever device it is opened, whatever that browser's own prop and
+   betting models have saved */
+const TO = '/* ---------- track record:';
 const a = SRC.indexOf(FROM), b = SRC.indexOf(TO);
 if (a < 0 || b < 0 || b <= a) throw new Error('the live block is not where build.js expects it in part2.js');
 const shared = SRC.slice(a, b).trimEnd();
-for (const need of ['function espnStats', 'function liveLeg', 'function liveGameLeg', 'function espnGames'])
+for (const need of ['function espnStats', 'function liveLeg', 'function liveGameLeg', 'function espnGames', 'function bettingParlays'])
   if (!shared.includes(need)) throw new Error('the extracted block is missing ' + need);
 
 const page = fs.readFileSync(path.join(__dirname, 'page.html'), 'utf8');

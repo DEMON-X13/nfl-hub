@@ -110,7 +110,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
 .stamp.ok{color:var(--pick)} .stamp.bad{color:#8A5E05}
 .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-.src{border-left:4px solid var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F} .src.cloud{border-left-color:#6E5AA8}
+.src{border-left:4px solid #6E5AA8} .src.prop{border-left-color:var(--pick)} .src.bet{border-left-color:var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F} .src.cloud{border-left-color:#6E5AA8}
 footer{max-width:900px;margin:0 auto;padding:0 28px 48px;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--ink-2)}
 @media(max-width:620px){ header{padding:18px 16px 16px} .brand h1{font-size:27px} main{padding:18px 16px 56px} footer{padding:0 16px 40px} .card{padding:16px 15px} }
@@ -160,6 +160,37 @@ const SEASON=2026;
    in the repository instead and the page picks the change up on the next load. */
 const DATA='parlays.json';
 
+/* The two models keep what you save in the browser that saved it, which is theirs to do:
+   picks and bets are the visitor's and never leave the machine. So this page shows both --
+   the file, which every device sees, and whatever the prop and betting models on THIS device
+   have saved, picked up on their own with nothing to press.
+
+   The gap that leaves is worth being straight about: a parlay built on one machine shows
+   there and not on the next one, because nothing carries it across. Getting it into the file
+   means editing the file. */
+function propParlays(){
+  let v=null;
+  try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return []; }
+  const saved=(v&&v.saved)||[];
+  if(!Array.isArray(saved)) return [];
+  return saved.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>({
+    src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,price:p.price,
+    payout:+p.payout||0,note:'',legs:p.legs.map(l=>({gid:l.gid,stat:l.stat,k:+l.k,
+      side:l.side||'over',main:!!l.main,name:l.name,team:l.team,label:''}))}));
+}
+function localParlays(){
+  const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
+    price:p.priced?decToML(p.dec):null,payout:p.payout,note:'',legs:p.legs}));
+  return propParlays().concat(bet);
+}
+function allParlays(){
+  const mine=localParlays(), seen={};
+  for(const p of mine) seen[String(p.id)]=1;
+  /* what this browser holds wins over the copy in the file, so a parlay you are looking at
+     is the one you built rather than an older snapshot of it */
+  return mine.concat(STATE.parlays.filter(p=>!seen[String(p.id)]).map(p=>Object.assign({},p,{src:'file'})));
+}
+
 /* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL,
    so no season payload is loaded here either */
 function gidParts(gid){
@@ -204,7 +235,7 @@ async function refresh(){
     STATE.parlays=readFile(f); STATE.updated=f.updated||null; STATE.dataErr=null;
   }catch(e){ STATE.dataErr=String(e&&e.message||e); }
   STATE.loaded=true;
-  const want=legGames(STATE.parlays);
+  const want=legGames(allParlays());
   if(want.size){
     try{
       const sched=[...want].map(gidParts).filter(Boolean), games={};
@@ -316,14 +347,14 @@ function legRow(l){
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
-  const app=document.getElementById('app'), ps=STATE.parlays.slice();
+  const app=document.getElementById('app'), ps=allParlays();
   let html='';
   if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>live/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
   else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
   if(!ps.length){
-    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">No parlays in the file</b>
-      Every parlay on this page comes from <code>live/parlays.json</code> in the repository, and the same file is what every device reads.<br>
-      Ask Claude to put a parlay in it and it appears here, and everywhere else, on the next load.</div>`;
+    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing to watch yet</b>
+      This page shows two things, both on its own: the parlays in <code>live/parlays.json</code>, which every device sees, and whatever the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> have saved <b>in this browser</b>.<br><br>
+      Save a parlay in either and it appears here. To have it on your other devices too, it has to go in the file.</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
@@ -335,8 +366,10 @@ function draw(){
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
     const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':`<span class="pill warn">${hit} of ${p.legs.length} in</span>`);
-    html+=`<div class="savedp src">
+    const from={prop:'prop model',bet:'betting model',file:'in the repository'}[p.src]||'in the repository';
+    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='bet'?'bet':'file'))}">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
+        <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
         ${tag}<span class="grow"></span></div>
@@ -355,7 +388,7 @@ function foot(){
   document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
     :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
-  document.getElementById('foot').innerHTML=`Every parlay here lives in <code>live/parlays.json</code> in the repository${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}. The same file is what every device reads, so this page looks the same on all of them, and nothing is kept in your browser.
+  document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>live/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> in this browser, with nothing to press \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
     Scores come from ESPN's public feeds, read by this page in your own browser: no odds-API credits are ever spent here, and no job runs for it.
     Auto-refresh starts <b>off</b> \u2014 the page fetches once when you open it, then only when you press Refresh now or turn an interval on.`;
 }

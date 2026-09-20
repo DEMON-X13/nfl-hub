@@ -54,11 +54,23 @@ const FILE = {
       legF(0, 'Kyle Pitts', 'ATL', 'receptions', 3, 'over', false),
       legF(0, 'Michael Penix Jr.', 'ATL', 'passing_yards', 225.5, 'over', true)] }] };
 
-function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok' } = {}) {
+const PROP_KEY = 'props_2026_v1', BET_KEY = 'x_nfl_viewer_picks_2026';
+/* the two models' own storage, written exactly as they write it */
+const propBlob = () => JSON.stringify({ stake: 55, saved: [
+  { id: 'mine', week: 2, stake: 15, price: 250, payout: 52, legs: [
+    { gid: '2026_02_CAR_ATL', stat: 'receiving_yards', k: 20.5, side: 'over', main: true,
+      name: 'Kyle Pitts', team: 'ATL', label: 'Over 20.5 receiving yards', week: 2 }] }] });
+const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
+  { id: 'bb1', week: 2, type: 'parlay', stake: 25, legs: [
+    { game_id: '2026_02_CAR_ATL', away: 'CAR', home: 'ATL', pick: 'ATL', ml: -150 },
+    { game_id: '2026_02_NO_BAL', away: 'NO', home: 'BAL', pick: 'BAL', ml: 130 }] }] } });
+
+function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {} } = {}) {
   return new Promise(resolve => {
     const calls = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_,
       beforeParse(w) {
+        try { seed(w); } catch (e) {}
         w.fetch = u => { const s = String(u); calls.push(s);
           if (s.includes('parlays.json')) return data === 'ok'
             ? Promise.resolve({ ok: true, status: 200, json: async () => file })
@@ -102,10 +114,32 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok' } = {}) {
   chk(/Bijan Robinson/.test(who(cards[0].querySelector('.sp-leg'))), 'the early parlay should be first');
   chk(/Derrick Henry/.test(who(cards[1].querySelector('.sp-leg'))), 'the late parlay should be second');
 
-  // ---- C. nothing is kept in the browser ----
-  chk(w.localStorage.length === 0, `the page wrote ${w.localStorage.length} thing(s) to local storage; it should write none`);
-  chk(!/localStorage/.test(HTML), 'the page still mentions local storage');
+  // ---- C. it reads the two models, and never writes anything ----
   chk(!/api\.github\.com/.test(HTML), 'the page still talks to the GitHub API');
+  chk(!/localStorage\.setItem|localStorage\.removeItem/.test(HTML),
+    'the page writes to local storage; it should only ever read it');
+  {
+    const seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); };
+    const m = await run({ seed });
+    const cards = [...m.d.querySelectorAll('.savedp')];
+    chk(cards.length === 4, `2 from the file plus 2 from this browser expected, got ${cards.length}`);
+    const pills = cards.map(c => txt(c.querySelector('.pill')));
+    chk(pills.filter(x => x === 'prop model').length === 1, 'the prop model parlay is not picked up or not labelled');
+    chk(pills.filter(x => x === 'betting model').length === 1, 'the betting parlay is not picked up or not labelled');
+    chk(pills.filter(x => x === 'in the repository').length === 2, 'the file parlays are not labelled');
+    const mine = cards.find(c => /prop model/.test(txt(c.querySelector('.pill'))));
+    chk(who(mine.querySelector('.sp-leg')) === 'Kyle Pitts Receiving Yards', 'the imported leg is wrong: ' + who(mine.querySelector('.sp-leg')));
+    chk(knob(mine.querySelector('.sp-leg')) === '21', 'an imported leg is not tracked against the live box score');
+    /* the two models' own storage must come back untouched */
+    chk(m.w.localStorage.getItem(PROP_KEY) === propBlob(), 'the page wrote over the prop model key');
+    chk(m.w.localStorage.getItem(BET_KEY) === betBlob(), 'the page wrote over the betting model key');
+    /* a parlay in both places is shown once, with this browser's copy winning */
+    const dup = await run({ seed, file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'mine', week: 2, stake: 99, legs: [legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 99.5, 'over', true)] }] } });
+    const same = [...dup.d.querySelectorAll('.savedp')].filter(c => /Kyle Pitts/.test(txt(c)));
+    chk(same.length === 1, `a parlay in both places showed ${same.length} times`);
+    chk(/\$15\.00/.test(txt(same[0])), "the file's older copy won over this browser's");
+  }
 
   // ---- D. the buttons are gone ----
   for (const id of ['ghSave', 'ghLoad', 'send', 'paste', 'clearDone', 'tokIn'])
@@ -123,8 +157,9 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok' } = {}) {
 
   // ---- F. an empty file, and a missing one ----
   const e1 = await run({ file: { updated: null, games: [], parlays: [] } });
-  chk(/No parlays in the file/.test(txt(e1.d.getElementById('app'))), 'an empty file is not explained');
-  chk(/parlays\.json/.test(txt(e1.d.getElementById('app'))), 'an empty file does not say where the parlays come from');
+  chk(/Nothing to watch yet/.test(txt(e1.d.getElementById('app'))), 'an empty page is not explained');
+  chk(/parlays\.json/.test(txt(e1.d.getElementById('app'))) && /prop model/.test(txt(e1.d.getElementById('app'))),
+    'an empty page does not say where parlays can come from');
   const e2 = await run({ data: 'fail' });
   chk(/could not be read/.test(txt(e2.d.querySelector('.note')) || ''), 'a missing file is not explained');
 
