@@ -635,6 +635,7 @@ b.sc.lv em{font-style:normal;display:block;font-size:11px;font-weight:600;color:
 b.sc.lv.ok{color:#1B7A4E} b.sc.lv.bad{color:#C0392B} b.sc.lv.tie{color:#8A5E05}
 .mres.lv.ok{color:#1B7A4E} .mres.lv.bad{color:#C0392B} .mres.lv.tie{color:#8A5E05}
 .mres.lv{font-weight:600}
+.pickdot.lockd{opacity:.45;cursor:not-allowed}
 </style>
 <script>
 (function(){
@@ -707,6 +708,43 @@ function paint(rootId,w){
     cell.innerHTML=line(g,s)+(s.clock?'<em>'+esc(s.clock)+'</em>':'');
   });
 }
+/* Kickoff, from the schedule's Eastern times, the same way the prop model works it out.
+   The clocks go back on the first Sunday of November, which is close enough to the first
+   of the month for a kickoff time. */
+function kickoff(g){
+  if(!g.gameday) return null;
+  const yr=g.gameday.slice(0,4);
+  const off=(g.gameday>=yr+'-11-01')?'-05:00':'-04:00';
+  const d=new Date(g.gameday+'T'+(g.gametime||'13:00')+':00'+off);
+  return isNaN(d)?null:d.getTime();
+}
+/* a game that has started, by the scoreboard if it has been read and by the clock otherwise */
+function started(g){
+  const s=L.games[g.game_id];
+  if(s&&s.state&&s.state!=='pre') return true;
+  const k=kickoff(g);
+  return !!k&&Date.now()>=k;
+}
+/* A pick cannot be made or changed once the game has kicked off. The app already refuses
+   once a game is graded, but grading happens when the job next runs and nflverse has
+   posted -- hours after the whistle, and not at all until the next morning for a Sunday
+   night game. In that gap every game played today was still editable, which is not a pick,
+   it is a result being written down afterwards. */
+function lockPlayed(){
+  const root=el('myGames'); if(!root) return;
+  const by={}; for(const g of S.schedule) by[g.game_id]=g;
+  let n=0;
+  root.querySelectorAll('button[data-my]').forEach(b=>{
+    if(b.disabled) return;                       /* graded: the app locked it already */
+    const g=by[b.dataset.my]; if(!g||!started(g)) return;
+    b.disabled=true; b.classList.add('lockd'); n++;
+    b.title=b.getAttribute('aria-checked')==='true'
+      ? 'Locked: this game has kicked off. Your pick stands.'
+      : 'Locked: this game has kicked off, so it can no longer be picked.';
+  });
+  return n;
+}
+
 /* the graded rows read "BUF won 31-41"; a game still being played reads the same way, with
    the side that is ahead and leading instead of won, so the two say the same kind of thing */
 function line(g,s){
@@ -739,11 +777,14 @@ function paintMine(w){
   });
 }
 function paintAll(){ paint('gamesList',weekOf('weekSel')); paintMine(weekOf('myWeekSel')); }
+/* after anything redraws a board: the lock does not wait for a score to be read, since it
+   is a rule about the clock rather than about the scoreboard */
+function after(){ lockPlayed(); if(L.on) paintAll(); }
 /* both boards are redrawn on every pick, week change and upload, which wipes what we
    painted, so repaint after whatever redrew them rather than chasing each caller */
 function hook(name){
   const f=window[name]; if(typeof f!=='function') return;
-  window[name]=function(){ const r=f.apply(this,arguments); if(L.on) setTimeout(paintAll,0); return r; };
+  window[name]=function(){ const r=f.apply(this,arguments); setTimeout(after,0); return r; };
 }
 document.addEventListener('DOMContentLoaded',()=>{
   /* in the header, beside the Updated stamp: this is the first thing looked at during a
@@ -757,6 +798,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     +'<button class="btn" id="lvNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>';
   bar.appendChild(wrap);
   el('lvNow').addEventListener('click',read);
+  setTimeout(after,0);                            /* lock what has kicked off on first load */
   for(const n of ['renderPicks','renderMine']) hook(n);
 });
 })();
