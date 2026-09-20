@@ -308,9 +308,43 @@ function paintMine(w){
   });
 }
 function paintAll(){ paint('gamesList',weekOf('weekSel')); paintMine(weekOf('myWeekSel')); }
+
+/* My Picks is gone: the tab, the column in both tables, the line on the chart and its
+   legend. Nothing is deleted from storage -- the picks key is left exactly as it is, so
+   turning this back on is one build away and loses nothing. */
+function stripCol(table,label){
+  if(!table) return;
+  const ths=[...table.querySelectorAll('thead th')];
+  const i=ths.findIndex(th=>th.textContent.trim()===label);
+  if(i<0) return;
+  ths[i].remove();
+  table.querySelectorAll('tbody tr, tfoot tr').forEach(tr=>{ const c=tr.children[i]; if(c) c.remove(); });
+}
+function stripMine(){
+  const tab=document.querySelector('#tabs button[data-tab="mine"]'); if(tab) tab.remove();
+  const sec=document.getElementById('tab-mine');
+  if(sec){
+    sec.remove();
+    /* renderMine reaches straight for myWeekSel, and renderAll calls it on every refresh:
+       with the section gone that throws and takes the rest of the render down with it. So
+       it stops being a function that draws a tab and becomes one that does nothing. */
+    window.renderMine=function(){};
+    if(typeof window.renderMyRecords==='function') window.renderMyRecords=function(){};
+  }
+  document.querySelectorAll('.pickgrid table, #tab-record table').forEach(t=>stripCol(t,'You'));
+  /* the chart's own line and its legend entry, both drawn in the picks colour. A legend
+     item is a span wrapping a colour swatch, the name and the count, so it is the swatch's
+     colour that identifies it rather than the text, which is spread across children. */
+  document.querySelectorAll('.lgdrow > span').forEach(sp=>{
+    const sw=sp.querySelector('i.lgd');
+    const col=sw?(sw.getAttribute('style')||''):'';
+    if(/#C98B0F/i.test(col)||/^You\b/.test(sp.textContent.trim())) sp.remove(); });
+  document.querySelectorAll('#modelChart [stroke="#C98B0F"], #modelChart [fill="#C98B0F"]')
+    .forEach(n=>n.remove());
+}
 /* after anything redraws a board: the lock does not wait for a score to be read, since it
    is a rule about the clock rather than about the scoreboard */
-function after(){ lockPlayed(); if(L.on) paintAll(); }
+function after(){ lockPlayed(); stripMine(); if(L.on) paintAll(); }
 /* both boards are redrawn on every pick, week change and upload, which wipes what we
    painted, so repaint after whatever redrew them rather than chasing each caller */
 function hook(name){
@@ -333,7 +367,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   /* read once on load, so a finished game shows its result without being asked and does not
      vanish again on the next reload */
   setTimeout(read,300);
-  for(const n of ['renderPicks','renderMine']) hook(n);
+  for(const n of ['renderPicks','renderMine','renderRecord']) hook(n);
+  stripMine();
 });
 })();
 </script>
