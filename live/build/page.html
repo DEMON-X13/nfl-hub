@@ -263,16 +263,23 @@ function draw(){
       Already have one on another device? Open this page there and press <b>Send to a device</b> \u2014 the parlays travel in the link.</div>`;
     foot(); return;
   }
-  /* the order the day runs in: anything still to finish first, earliest kickoff at the top,
-     settled parlays out of the way at the bottom. Without scores yet, fall back to the week. */
-  const kickOf=p=>{ let k=null;
+  /* the order the day runs in: anything still to finish first, then by when a parlay is
+     settled -- its last game to kick off, not its first, because a parlay carrying a four
+     o'clock leg is still open long after one made only of one o'clock games has been
+     decided. Earliest kickoff breaks a tie; without scores yet, fall back to the week. */
+  const endsAt=p=>{ let k=null;
+    for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue;
+      if(k===null||g.kick>k) k=g.kick; }
+    return k; };
+  const startsAt=p=>{ let k=null;
     for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue;
       if(k===null||g.kick<k) k=g.kick; }
     return k; };
-  const rank=p=>{ const k=kickOf(p);
-    return [isDone(p)?1:0, k===null?Number.MAX_SAFE_INTEGER:k, p.week||0]; };
+  const FAR=Number.MAX_SAFE_INTEGER;
+  const rank=p=>{ const e=endsAt(p), s0=startsAt(p);
+    return [isDone(p)?1:0, e===null?FAR:e, s0===null?FAR:s0, p.week||0]; };
   for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y);
-      return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||String(x.src).localeCompare(String(y.src)); })){
+      return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3])||String(x.src).localeCompare(String(y.src)); })){
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
     const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':`<span class="pill warn">${hit} of ${p.legs.length} in</span>`);
