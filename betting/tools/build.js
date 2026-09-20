@@ -92,14 +92,17 @@ document.addEventListener('DOMContentLoaded',()=>{
 `;
 
 const ADMIN = `<script>
-/* admin only: a link straight to the job's Run workflow page, the manual refresh */
+/* admin only: the job's Run workflow page. It used to sit in the header, where it read as
+   the refresh button and was pressed as one -- it is not: it runs the weekly job, takes a
+   minute and fails outright while games are being played. Refresh scores owns that corner
+   now, and this lives with the rest of the housekeeping in Backup. */
 document.addEventListener('DOMContentLoaded',()=>{
-  const st=document.getElementById('saveState'); if(!st) return;
-  const a=document.createElement('a'); a.className='sub'; a.target='_blank'; a.rel='noopener';
-  a.href='https://github.com/DEMON-X13/nfl-hub/actions/workflows/update.yml';
-  a.title='Opens GitHub Actions and runs the update job: it downloads nflverse files, grades the week and republishes the site. It does not fetch live scores, and it fails while games are still being played, because the stats are not posted yet. For scores during a game, use Refresh scores.';
-  a.textContent='Run update job on GitHub \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
-  st.insertAdjacentElement('afterend',a);
+  const bs=document.getElementById('backupState'); if(!bs) return;
+  const ul=bs.parentElement.querySelector('ul'); if(!ul) return;
+  const li=document.createElement('li');
+  li.innerHTML='<b>Rebuild the site</b> \u2014 <a href="https://github.com/DEMON-X13/nfl-hub/actions/workflows/update.yml" target="_blank" rel="noopener">run the update job on GitHub \u2197</a>. '
+    +'It downloads the nflverse files, grades the week and republishes. It does not fetch live scores, and it fails while games are still being played because the stats are not posted yet \u2014 for scores during a game use <b>Refresh scores</b> in the header.';
+  ul.appendChild(li);
 });
 </script>
 `;
@@ -121,11 +124,13 @@ header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
 b.sc.lv{font-variant-numeric:tabular-nums}
 b.sc.lv em{font-style:normal;display:block;font-size:11px;font-weight:600;color:#8A5E05}
 b.sc.lv.ok{color:#1B7A4E} b.sc.lv.bad{color:#C0392B} b.sc.lv.tie{color:#8A5E05}
+.mres.lv.ok{color:#1B7A4E} .mres.lv.bad{color:#C0392B} .mres.lv.tie{color:#8A5E05}
+.mres.lv{font-weight:600}
 </style>
 <script>
 (function(){
 ${ESPN}
-const L={games:{},at:0,err:null,busy:false,every:0,timer:null,on:false};
+const L={games:{},at:0,err:null,busy:false,on:false};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const el=id=>document.getElementById(id);
 /* the same sort both boards render in, so a row and a game line up by position */
@@ -156,7 +161,7 @@ function stamp(){
   if(d){ d.classList.toggle('on',L.busy); d.classList.toggle('bad',!!L.err); }
   s.textContent=L.err?'scores not loading':(L.busy?'reading\u2026':(L.at
     ?'scores '+new Date(L.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
-    :'scores off'));
+    :'scores not read yet'));
 }
 /* fill the placeholder score on any row whose game has no result yet */
 function paint(rootId,w){
@@ -167,21 +172,42 @@ function paint(rootId,w){
     const g=gs[i]; if(!g||g.result!=null) return;
     const s=L.games[g.game_id]; if(!s||s.state==='pre'||s.hs==null||s.as==null) return;
     const cell=row.querySelector('b.sc'); if(!cell) return;
-    const done=S.processed&&S.processed[g.game_id];
-    let pick=done?done.pick:null;
-    if(!pick&&typeof window.predict==='function'){ try{ pick=window.predict(g,S.teams).pick; }catch(e){} }
-    const m=pick?(pick===g.home_team?s.hs-s.as:s.as-s.hs):null;
-    const tone=m==null?'':(m>0?'ok':(m<0?'bad':'tie'));
-    cell.className='sc lv '+tone;
-    cell.innerHTML=esc(g.away_team)+' '+s.as+'\u2013'+s.hs+' '+esc(g.home_team)
-      +(s.clock?'<em>'+esc(s.clock)+'</em>':'');
+    cell.className='sc lv '+tone(g,s);
+    cell.innerHTML=line(g,s)+(s.clock?'<em>'+esc(s.clock)+'</em>':'');
   });
 }
-function paintAll(){ paint('gamesList',weekOf('weekSel')); paint('myGames',weekOf('myWeekSel')); }
-function arm(){
-  if(L.timer){ clearInterval(L.timer); L.timer=null; }
-  if(L.every) L.timer=setInterval(()=>{ if(document.visibilityState==='visible') read(); },L.every*1000);
+/* the graded rows read "BUF won 31-41"; a game still being played reads the same way, with
+   the side that is ahead and leading instead of won, so the two say the same kind of thing */
+function line(g,s){
+  const lead=s.hs>s.as?g.home_team:(s.as>s.hs?g.away_team:null);
+  return lead?esc(lead)+' leading '+s.as+'\u2013'+s.hs
+            :'Tied '+s.as+'\u2013'+s.hs;
 }
+/* green while the row's pick is ahead, red while it is behind, yellow level */
+function tone(g,s){
+  const done=S.processed&&S.processed[g.game_id];
+  let pick=done?done.pick:null;
+  if(!pick&&typeof window.predict==='function'){ try{ pick=window.predict(g,S.teams).pick; }catch(e){} }
+  if(!pick) return '';
+  const m=pick===g.home_team?s.hs-s.as:s.as-s.hs;
+  return m>0?'ok':(m<0?'bad':'tie');
+}
+/* My Picks draws a card per game with the result in its header, not a board row */
+function paintMine(w){
+  const root=el('myGames'); if(!root||!w) return;
+  const gs=weekGames(w), cards=[...root.querySelectorAll('.mycard')];
+  if(!cards.length||cards.length!==gs.length) return;
+  cards.forEach((card,i)=>{
+    const g=gs[i]; if(!g||g.result!=null) return;
+    const s=L.games[g.game_id]; if(!s||s.state==='pre'||s.hs==null||s.as==null) return;
+    const head=card.querySelector('.myhead'); if(!head) return;
+    let sp=head.querySelector('.mres.lv');
+    if(!sp){ sp=document.createElement('span'); sp.className='mres lv'; head.appendChild(sp); }
+    sp.className='mres lv '+tone(g,s);
+    sp.textContent=' \u00b7 '+line(g,s).replace(/&amp;/g,'&')+(s.clock?' \u00b7 '+s.clock:'');
+  });
+}
+function paintAll(){ paint('gamesList',weekOf('weekSel')); paintMine(weekOf('myWeekSel')); }
 /* both boards are redrawn on every pick, week change and upload, which wipes what we
    painted, so repaint after whatever redrew them rather than chasing each caller */
 function hook(name){
@@ -196,14 +222,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   const wrap=document.createElement('span');
   wrap.style.cssText='display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap'
     +(host?';margin:8px 0 0;width:100%;justify-content:flex-end':';margin-left:auto');
-  wrap.innerHTML='<span class="lvwrap"><span class="lvdot" id="lvDot"></span><span id="lvStamp">scores off</span></span>'
-    +'<label class="muted">Scores <select id="lvEvery">'
-    +'<option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>'
-    +'</select></label>'
+  wrap.innerHTML='<span class="lvwrap"><span class="lvdot" id="lvDot"></span><span id="lvStamp">scores not read yet</span></span>'
     +'<button class="btn" id="lvNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>';
   bar.appendChild(wrap);
   el('lvNow').addEventListener('click',read);
-  el('lvEvery').addEventListener('change',e=>{ L.every=+e.target.value||0; arm(); if(L.every) read(); });
   for(const n of ['renderPicks','renderMine']) hook(n);
 });
 })();
