@@ -333,6 +333,7 @@ th.sortable:hover{color:var(--ink)}
 .px{white-space:nowrap} .px-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--line-2)}
 .px.bad .px-dot{background:var(--miss)} .px.thin .px-dot{background:var(--gold)} .px.good .px-dot{background:var(--pick)}
 .px-key .px{margin:0 6px}
+.vs-market{display:inline-block;margin-left:6px;font-size:9.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:999px;background:#FCECEA;color:#A8453A;white-space:nowrap;vertical-align:1px}
 .wk-chip{display:inline-flex;align-items:center;padding:5px 13px;border-radius:999px;background:var(--ink);color:#fff;font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
 .bk-ctrl{align-items:center}
 .bk-ctrl .grp{align-items:center}
@@ -477,6 +478,7 @@ th.sortable:hover{color:var(--ink)}
     <p class="muted" style="margin:0 0 10px">Fixes and features by version, most recent first.</p>
     <div style="max-height:420px;overflow-y:auto;padding-right:6px">
     <table><tbody>
+      <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.60</td><td><b>VS MARKET.</b> A pick on the side the market has as the underdog now carries a red chip. Those picks say 56% and have won 41.7% since 2021, wrong in all five seasons, while picks with the market's favourite say 65% and win 68%. The model's numbers are unchanged; this is a warning label.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.59</td><td>Cleanup, no change on screen: the old bankroll-history feature (nothing has written a recorded week since v1.45), backup-file linking (it had no button), a dozen dead style rules and several unused variables are gone, and Data Upload's instructions now describe what the GitHub job actually does.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.58</td><td>Review fixes. The backup warning counted the site's own season, so every visitor saw a red alarm before entering anything; it now counts your picks, bets and locked-in bets. Clicking anything no longer replaces the "Updated" time with "Autosaved". No surprise backup download on the published page. Repaired quarterback records are saved properly, and the Bet Log week box no longer stacks up listeners.</td></tr>
       <tr><td class="num muted" style="white-space:nowrap;vertical-align:top">v1.57</td><td><b>Phones.</b> On My Picks, half the pick buttons sat outside the card, which clips, so those teams could not be picked on a phone; the row now fits. Parlay Builder and Bet Build tables scroll sideways on their own instead of dragging the whole page with them.</td></tr>
@@ -626,7 +628,7 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const P=MODEL.params, STATS=MODEL.stats, LM=MODEL.league_means; const PH=MODEL_H.params;
 const KEY='x_nfl_betting_model_2026_v1';
 const MODEL_BUILD='2026.3 fit 2019-2025, neutral-site fix, prior-carry fix';
-const APP_BUILD='v1.59 \u00b7 2026-09-19';
+const APP_BUILD='v1.60 \u00b7 2026-09-19';
 
 /* ---------- storage adapter ---------- */
 const store={
@@ -1266,6 +1268,19 @@ function marketChance(game_id,team){
   const imp=m=>m==null||!isFinite(m)||m===0?null:(m>0?100/(m+100):Math.abs(m)/(Math.abs(m)+100));
   const mine=imp(team===g.home_team?o.home:o.away), other=imp(team===g.home_team?o.away:o.home);
   return mine==null?null:(other==null?mine:mine/(mine+other)); }
+/* ---------- against the market ----------
+   The model's pick is the side the market prices as the underdog. Walk-forward
+   2021-2025: 223 such picks, the model said 56% on average, 41.7% won, and every
+   season landed between 31.8% and 48.7%. Picks with the market's favourite said
+   65.1% and won 67.9%. The band a pick carries is the model's; this says the market
+   disagrees, which historically mattered more than the band did. */
+const VS_MARKET_RATE='42%';
+function againstMarket(game_id,pick){ const m=marketChance(game_id,pick); return m==null?false:m<0.5; }
+function vsMarketChip(game_id,pick,conf){
+  if(!againstMarket(game_id,pick)) return '';
+  const m=Math.round(marketChance(game_id,pick)*100);
+  return `<span class="vs-market" title="The model likes this side; the market has it as the underdog at ${m}%. Picks like this have won about ${VS_MARKET_RATE} since 2021, not the ${Math.round(conf*100)}% the model shows.">VS MARKET</span>`;
+}
 /* ---------- Bank Roll: one band filter for the suggestions, the plan and the parlay ----------
    ALL (50/50s included), MED + HIGH or HIGH only. The suggestions never use a 50/50. */
 const BK_FILTERS=[['all','ALL'],['med','MED + HIGH'],['high','HIGH only']];
@@ -1669,7 +1684,7 @@ function renderBank(){
     const lead=r=>`<td><input type="checkbox" data-bkg="${r.x.g.game_id}" ${r.on?'checked':''} ${r.locked?'disabled':''} aria-label="Include ${r.x.g.away_team} at ${r.x.g.home_team}"></td>`
       +`<td>${r.x.g.away_team} at ${r.x.g.home_team}${r.locked?'<span class="bk-in">IN BUILD</span>':''}</td>`
       +`<td>${pickTag(r.x.pr.pick)}</td>`
-      +`<td><span class="tier ${r.x.tc}">${tier(r.x.pr.conf)[1]} ${Math.round(r.x.pr.conf*100)}%</span></td>`
+      +`<td><span class="tier ${r.x.tc}">${tier(r.x.pr.conf)[1]} ${Math.round(r.x.pr.conf*100)}%</span>${vsMarketChip(r.x.g.game_id,r.x.pr.pick,r.x.pr.conf)}</td>`
       +`<td class="num ${r.x.ml==null?'muted':''}">${mode==='straight'?pxOdds(r.x.ml,r.x.pr.conf):fmtML(r.x.ml)}</td>`;
     shownIds=avail.map(x=>x.g.game_id);
 
@@ -1711,6 +1726,7 @@ function renderBank(){
           bkMsg=n?`Parlay added to the Bet Build below.`:'That parlay is already in the Bet Build.'; };
       }
     }
+    if(eligible.some(x=>againstMarket(x.g.game_id,x.pr.pick))) html+=`<p class="muted" style="margin:10px 0 0;text-align:center"><span class="vs-market">VS MARKET</span> the model likes a side the market has as the underdog. Those picks have won about ${VS_MARKET_RATE} since 2021, well under the band shown.</p>`;
     if(mode==='straight'&&eligible.some(x=>priceCheck(x.ml,x.pr.conf))) html+=`<p class="muted px-key" style="margin:10px 0 0;text-align:center">Price vs the model&#8217;s chance: <span class="px good"><i class="px-dot"></i>clears it by 3+ points</span> <span class="px thin"><i class="px-dot"></i>close call</span> <span class="px bad"><i class="px-dot"></i>price asks for more</span></p>`;
     if(msg) html+=`<p class="muted" id="bkMsg" style="margin:10px 0 0;text-align:center">${msg}</p>`;
   } else html+='<h2>No unplayed games</h2><p class="muted">Upload results to move to the next week.</p>';
