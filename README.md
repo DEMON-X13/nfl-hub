@@ -97,6 +97,11 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
 - Parlays are listed in the order the day runs: anything still to finish first, then by when
   a parlay can settle -- its **last** kickoff, not its first, so one carrying a four o'clock
   leg sits below one made only of one o'clock games. Settled parlays go to the bottom.
+- Each parlay carries a **score strip** of the games it rides on, with the clock, the one in
+  progress highlighted, and under every player leg **his whole line** from the box score --
+  carries and rushing yards, catches and receiving yards on targets, completions and passing
+  yards with touchdowns and interceptions, kicks made of attempted -- not only the one number
+  being bet on.
 - **A book line that moved** after the bet was placed can be corrected per leg, with the
   `line` button on the row. The leg is then measured against what was actually bet, its label
   follows the new number, and `undo` puts the model's own line back. The correction is kept

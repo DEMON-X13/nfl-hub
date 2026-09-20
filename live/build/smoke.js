@@ -35,7 +35,10 @@ const sb = state => ({ events: [ev('401', EARLY, 'CAR', 'ATL', state, 17, 20),
 const SUM = { boxscore: { players: [
   { team: { abbreviation: 'ATL' }, statistics: [
     { name: 'rushing', labels: ['CAR', 'YDS', 'AVG', 'TD', 'LONG'], athletes: [{ athlete: { displayName: 'Bijan Robinson' }, stats: ['17', '86', '5.1', '1', '22'] }] },
-    { name: 'receiving', labels: ['REC', 'YDS', 'AVG', 'TD', 'LONG', 'TGTS'], athletes: [{ athlete: { displayName: 'Kyle Pitts' }, stats: ['2', '21', '10.5', '0', '12', '4'] }] }] },
+    /* Bijan runs and catches, so one player landing in two groups is covered */
+    { name: 'receiving', labels: ['REC', 'YDS', 'AVG', 'TD', 'LONG', 'TGTS'], athletes: [
+      { athlete: { displayName: 'Kyle Pitts' }, stats: ['2', '21', '10.5', '0', '12', '4'] },
+      { athlete: { displayName: 'Bijan Robinson' }, stats: ['4', '31', '7.8', '0', '12', '5'] }] }] },
   { team: { abbreviation: 'CAR' }, statistics: [
     { name: 'rushing', labels: ['CAR', 'YDS', 'AVG', 'TD', 'LONG'], athletes: [{ athlete: { displayName: 'Chuba Hubbard' }, stats: ['12', '31', '2.6', '0', '9'] }] }] }] } };
 
@@ -289,6 +292,35 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     await f.w.refresh();
     await new Promise(r => setTimeout(r, 200));
     chk(sums() === first, `a finished game's box score was fetched again (${first} -> ${sums()})`);
+  }
+
+  // ---- K. the score and the whole stat line, not just the number being bet ----
+  {
+    const a = await run();
+    const card = a.d.querySelector('.savedp.prop');
+    const strip = txt(card.querySelector('.games'));
+    chk(!!card.querySelector('.games'), 'a parlay on player props shows no score at all');
+    chk(/CAR 17.20 ATL/.test(strip), 'the score strip does not carry the score: ' + strip);
+    chk(/Q3 7:12/.test(strip), 'the score strip does not carry the clock: ' + strip);
+    chk(!!card.querySelector('.gm.on'), 'a game in progress is not marked live on the strip');
+
+    /* Bijan both runs and catches in the fixture, so both lines have to show */
+    const bijan = [...card.querySelectorAll('.sp-leg')].find(r => /Bijan/.test(txt(r)));
+    const sl = txt(bijan.querySelector('.statline'));
+    chk(!!sl, 'a player leg shows no stat line');
+    chk(/17 car, 86 rush yds/.test(sl), 'the rushing line is missing or wrong: ' + sl);
+    chk(/4 rec, 31 rec yds on 5/.test(sl), 'the receiving line is missing or wrong: ' + sl);
+    chk(/1 TD/.test(sl), 'the touchdown is missing: ' + sl);
+
+    /* a quarterback reads as a quarterback */
+    const qbSum = { boxscore: { players: [{ team: { abbreviation: 'ATL' }, statistics: [
+      { name: 'passing', labels: ['C/ATT', 'YDS', 'AVG', 'TD', 'INT'], athletes: [{ athlete: { displayName: 'Michael Penix Jr.' }, stats: ['18/27', '241', '8.9', '2', '1'] }] }] }] } };
+    const st = a.w.espnStats(qbSum, 'ATL', 'Michael Penix');
+    chk(/18\/27, 241 pass yds, 2 TD, 1 INT/.test(a.w.statLine(st)), 'a passing line does not read right: ' + a.w.statLine(st));
+    chk(a.w.statLine(null) === '', 'a player with no stats should produce no line');
+
+    /* the betting parlay's games get a strip too */
+    chk(!!a.d.querySelector('.savedp:not(.prop) .games'), 'a team-bet parlay shows no score strip');
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
