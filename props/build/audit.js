@@ -10,7 +10,7 @@ const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
 const w=dom.window,d=w.document;
 const fails=[]; let checks=0;
 const chk=(ok,msg)=>{checks++; if(!ok) fails.push(msg);};
-setTimeout(()=>{
+setTimeout(async()=>{
   const S=w.eval('S'); const F=n=>w.eval(n);
   const [gameCtx,rosterFor,statLines,project,pOver,fairLine,rungView,marketLine,marketMu,devigOver,bookImplied,bookPrice,probToAmerican,mlToDec,parlayProb,modelMargin,modelPoints,legRho,gameBet,settleLeg,gameMu,tdPlus]=
    ['gameCtx','rosterFor','statLines','project','pOver','fairLine','rungView','marketLine','marketMu','devigOver','bookImplied','bookPrice','probToAmerican','mlToDec','parlayProb','modelMargin','modelPoints','legRho','gameBet','settleLeg','gameMu','tdPlus'].map(F);
@@ -704,6 +704,66 @@ setTimeout(()=>{
       /* the scoreboard is someone else's: it must never reach what we save */
       chk(!/"state":"(live|post|pre)"/.test(JSON.stringify(S.saved||[])),'live data reached a saved parlay');
       console.log('T. live tracking: box score, name matching, leg states and scoreboard mapping all parse'); }
+
+    /* ---- T2. the Games tab reads the scoreboard when asked, and not before ---- */
+    { const LIVE=F('LIVE');
+      chk(!!d.getElementById('slateNow')&&!!d.getElementById('slateEvery')&&!!d.getElementById('slateStamp'),
+        'the Games tab has no scores control');
+      chk(d.getElementById('slateEvery').value==='0','the Games tab should not poll until it is asked to');
+      chk(LIVE.slate===false,'the Games tab starts with the scoreboard off');
+      chk(d.getElementById('slateStamp').textContent==='scores off','the stamp does not say the scores are off');
+      /* with it off, a started game reads exactly as it did before there was a scoreboard */
+      const started=S.sched.filter(g=>F('gameStarted')(g)&&!F('gameFinal')(g));
+      const wk=started.length?started[0].w:null;
+      /* the fetch the page would make: serve a scoreboard for whichever week is on screen,
+         and fail any box-score call, since the slate must never ask for one */
+      let sbCalls=0, sumCalls=0;
+      const realFetch=w.fetch;
+      w.fetch=u=>{ const s2=String(u);
+        if(s2.indexOf('/summary?')>=0){ sumCalls++; return Promise.reject(new Error('no box score for a slate')); }
+        if(s2.indexOf('scoreboard')>=0){ sbCalls++;
+          const shown=F('slateWeek')();
+          /* the scoreboard says what is happening, which is not always what our schedule
+             thinks: a game we call final by the clock is reported post, one still running
+             is reported in, and the card must follow ESPN rather than the clock */
+          return Promise.resolve({ok:true,status:200,json:async()=>({events:F('gamesIn')(shown).map((g,i)=>{
+            const over=F('gameFinal')(g);
+            return {id:'9'+i, date:'2026-09-20T17:00Z',
+              competitions:[{status:{type:{state:over?'post':'in',shortDetail:over?'Final':'Q2 4:01'}},competitors:[
+                {homeAway:'home',team:{abbreviation:g.h},score:'21'},
+                {homeAway:'away',team:{abbreviation:g.a},score:'13'}]}]};})})});
+        }
+        return realFetch(u); };
+      if(wk!=null){
+        const ws=d.getElementById('weekSel');
+        if(ws.value!==String(wk)){ ws.value=String(wk); ws.dispatchEvent(new w.Event('change')); }
+        const shownWk=wk;
+        const before=d.querySelector('[data-game="'+started[0].id+'"] .when').textContent;
+        chk(/LIVE/.test(before),'a started game should read LIVE until the scoreboard is read: '+before);
+        d.getElementById('slateNow').click();
+        await new Promise(r=>setTimeout(r,120));
+        const after=d.querySelector('[data-game="'+started[0].id+'"] .when').textContent;
+        chk(/13.21/.test(after),'the score did not reach the card: '+after);
+        chk(/Q2 4:01/.test(after),'the clock did not reach the card: '+after);
+        chk(sbCalls===1,'the slate asked for the scoreboard '+sbCalls+' times, not once');
+        chk(sumCalls===0,'the slate fetched '+sumCalls+' box score(s); a game card needs none');
+        chk(/^scores \d/.test(d.getElementById('slateStamp').textContent),
+          'the stamp does not say when the scores were read: '+d.getElementById('slateStamp').textContent);
+        /* someone else's scoreboard must not reach what we save */
+        chk(!/"clock"/.test(JSON.stringify(S)),'the scoreboard reached the saved state');
+        /* a finished game is not a live one: ESPN carries the final score for hours before
+           nflverse posts the stats that settle it, and it must not be labelled live */
+        { const done=S.sched.filter(g2=>+g2.w===+shownWk&&F('gameFinal')(g2));
+          for(const g2 of done){
+            const card=d.querySelector('[data-game="'+g2.id+'"]'); if(!card) continue;
+            chk(!/\bLIVE\b/.test(card.querySelector('.when').textContent),
+              'a finished game still reads LIVE: '+g2.id);
+            const lv=card.querySelector('.tot .lv');
+            chk(!lv||/^final /.test(lv.textContent),
+              'a finished game calls its score live: '+g2.id+' '+(lv&&lv.textContent)); } }
+      }
+      w.fetch=realFetch;
+      console.log(`T2. games tab scores: control present and off, ${wk==null?'no live game this week to drive':'score and clock on the card, one scoreboard call, no box scores'}`); }
 
     /* ---- U. the betting model's parlays, read across from its key ---- */
     { const bp=F('bettingParlays');

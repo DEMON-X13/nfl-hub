@@ -161,6 +161,13 @@ body.modal-open{overflow:hidden}
   line-height:1;padding:4px 8px;border-radius:5px;margin-right:10px;vertical-align:1px;
   background:#CFE0F4;color:#1E3D66;border:1px solid #9DBBDC}
 .finchip.live{background:#FCF1D6;color:#8A5E05;border-color:#E8D49A}
+.livestamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.livedot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
+.livedot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
+.livedot.bad{background:var(--miss)}
+.when .sc{display:block;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.when .cl{display:block;font-size:11px;color:#8A5E05;font-weight:600}
+.tot .lv,.totpts .lv{display:block;font-size:11px;color:#8A5E05;font-weight:600;font-variant-numeric:tabular-nums}
 .plrbtn .sum b{color:var(--ink);font-family:var(--display);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .plrbtn .arrow{text-align:right;color:var(--muted);font-size:18px}
 .plrbody{border:1px solid var(--ink);border-top:0;border-radius:0 0 var(--r-md) var(--r-md);background:var(--panel);
@@ -392,6 +399,11 @@ body.modal-open{overflow:hidden}
       <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
       <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
       <span class="grow"></span>
+      <span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>
+      <label class="muted">Scores <select id="slateEvery">
+        <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
+      </select></label>
+      <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
     <div class="gamehead">
