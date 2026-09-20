@@ -1,7 +1,9 @@
 const {JSDOM}=require('jsdom'); const fs=require('fs'); const Papa=require('papaparse');
 const errs=[]; let mem=null;
 const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
- {runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=()=>Promise.reject(new Error('x'));
+ {runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=u=>String(u).indexOf('payload.json')>=0
+   ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync('../data/payload.json','utf8'))})
+   : Promise.reject(new Error('x'));   /* the payload is fetched now, not baked in */
   w.confirm=()=>true;w.alert=()=>{};w.scrollTo=()=>{};w.URL.createObjectURL=()=>'blob:x';
   w.storage={get:async()=>mem?{value:mem}:null,set:async(k,v)=>{mem=v;return true;}};
   w.addEventListener('error',e=>errs.push(e.message));}});

@@ -25,29 +25,40 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 /* header note, as on the betting model: when the site's data was last built, not "Autosaved" */
 (function(){
-  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY.baked_at) return;
+  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY||!PAY.baked_at) return;
     const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
     const txt='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
     const put=()=>{ if(st.textContent!==txt) st.textContent=txt; };
     put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
+  /* the payload is fetched now, so PAY does not exist at DOMContentLoaded: wait for boot */
+  document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>
 `;
 if (!html.includes('</body>')) throw new Error('no </body> in the app');
-const pub = html.replace('</body>', TRIM + '</body>');
+
+/* props/app/prop_model_2026.html fetches ../data/payload.json; props/index.html and
+   props/admin.html sit one directory up, so for them it is data/payload.json. */
+const APP_DATA = "const DATA_URL='../data/payload.json';";
+const PUB_DATA = "const DATA_URL='data/payload.json';";
+const rehome = s => {
+  if (s.split(APP_DATA).length - 1 !== 1) throw new Error('the payload path is not in the app exactly once');
+  return s.replace(APP_DATA, PUB_DATA);
+};
+const pub = rehome(html).replace('</body>', TRIM + '</body>');
 fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), pub);
 const ADMIN = `<script>
 /* header note, as on the betting model: when the site's data was last built, not "Autosaved" */
 (function(){
-  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY.baked_at) return;
+  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY||!PAY.baked_at) return;
     const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
     const txt='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
     const put=()=>{ if(st.textContent!==txt) st.textContent=txt; };
     put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run); else run();
+  /* the payload is fetched now, so PAY does not exist at DOMContentLoaded: wait for boot */
+  document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>
 `;
-fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), html.replace('</body>', ADMIN + '</body>'));
+fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), rehome(html).replace('</body>', ADMIN + '</body>'));
 console.log('published props/index.html (public, 4 tabs) and props/admin.html (all tabs)');

@@ -656,7 +656,27 @@ document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',
   document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab); }));
 function parseCSV(file){ return new Promise(res=>Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>res(r.data)})); }
 
+/* The payload is fetched, not baked in. The page and the data are separate files so a
+   data refresh does not rewrite the page, and a browser holding the page never holds
+   stale numbers with it: this is asked for with no-store every single load. */
+async function loadPayload(){
+  const r=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'});
+  if(!r.ok) throw new Error(DATA_URL+' returned HTTP '+r.status);
+  const p=await r.json();
+  if(!p||!Array.isArray(p.sched)||!Array.isArray(p.players)) throw new Error(DATA_URL+' is not a payload');
+  return p;
+}
+function payloadFailed(e){
+  const m=document.createElement('div');
+  m.style.cssText='margin:18px;padding:16px 18px;border-radius:12px;background:#FAE1DE;color:#7A241A;line-height:1.6;font:15px/1.6 system-ui,sans-serif';
+  m.innerHTML='<b>The season data could not be loaded.</b><br>'+String(e&&e.message||e)
+    +'<br><br>This page holds no data of its own \u2014 it reads <code>data/payload.json</code> beside it every time it opens, so that it can never show you a stale number. Reload to try again.';
+  const main=document.querySelector('main')||document.body;
+  main.insertBefore(m,main.firstChild);
+}
 async function boot(){
+  try{ PAY=await loadPayload(); }catch(e){ console.error(e); payloadFailed(e); return; }
+  DATA_BUILD=PAY.build||'baseline';
   const saved=await store.get();
   S=freshState();
   let rebuilt=null;
@@ -784,7 +804,7 @@ $('importInput').addEventListener('change',e=>{ const f=e.target.files[0]; e.tar
     save(); renderAll(); alert('Backup restored.'); }catch(err){ alert('That file could not be read: '+err.message); } };
   rd.readAsText(f); });
 
-boot();
+boot().then(()=>document.dispatchEvent(new Event('app-ready')));
 
 /* ---------- parlay builder ---------- */
 function toggleLeg(key,k,g,side,main){
