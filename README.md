@@ -81,13 +81,20 @@ Workflow `.github/workflows/news.yml`: Friday, Monday and Tuesday, 8am Eastern.
 `live/` is one page, about 31KB, that shows where the parlays in `live/parlays.json` stand
 while the games are on. It is a reader and nothing else.
 
-- **Every parlay lives in `live/parlays.json`**, beside the page, and the page only reads it.
-  Change the file and every device shows the change on its next load. The file is written to
-  be edited by hand: games listed once, legs pointing at them by index, stats spelled out, and
-  a `how` field at the top saying what a leg needs.
-- **Nothing is kept in a browser.** No local storage, no token, no sending, no codes. Every
-  device reads the same file, so every device shows the same thing -- which is the point, and
-  is why a parlay built on one phone used to be invisible on another.
+- It shows **two sources, both picked up on their own**, with nothing to press.
+  `live/parlays.json` beside the page, which every device sees; and whatever the prop model
+  and the betting model have saved **in the browser it is opened in**, read straight out of
+  their own keys (`props_2026_v1`, `x_nfl_viewer_picks_2026`). Each card says which it came
+  from. A parlay in both is shown once, and the browser's own copy wins.
+- **The file is the only part that travels.** Change it and every device shows the change on
+  its next load. It is written to be edited by hand: games listed once, legs pointing at them
+  by index, stats spelled out, and a `how` field at the top saying what a leg needs.
+- **The page never writes anything** -- not to the two models' keys, not anywhere. No token,
+  no sending, no codes.
+- The gap is stated rather than papered over: a parlay saved in the prop or betting model
+  lives in that browser, because that is where those apps keep a visitor's own data, so it
+  shows on that device and not the next one. Getting it to follow you means putting it in the
+  file, and a browser cannot write to GitHub without a credential.
 - **A browser cannot write to GitHub without a credential**, and a static page has nowhere
   safe to keep one, so the file is edited in the repository rather than from the page. That is
   the one thing this design gives up, deliberately.
