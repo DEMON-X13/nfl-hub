@@ -27,7 +27,10 @@ const ev = (id, date, away, home, state, as, hs) => ({ id, date,
   competitions: [{ status: { type: { state, shortDetail: state === 'post' ? 'Final' : 'Q3 7:12' } },
     competitors: [{ homeAway: 'home', team: { abbreviation: home }, score: String(hs) },
                   { homeAway: 'away', team: { abbreviation: away }, score: String(as) }] }] });
+const GID3 = '2026_02_NO_BAL';          /* the four o'clock game */
+const LATE = '2026-09-20T20:25Z';
 const sb = state => ({ events: [ev('401', EARLY, 'CAR', 'ATL', state, 17, 20),
+                                 ev('403', LATE, 'NO', 'BAL', state, 10, 14),
                                  ev('402', NIGHT, 'KC', 'BUF', state, 7, 3)] });
 const SUM = { boxscore: { players: [
   { team: { abbreviation: 'ATL' }, statistics: [
@@ -151,6 +154,27 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     chk(order.length === 2, `ordering: expected 2 parlays, got ${order.length}`);
     chk(/Bijan Robinson/.test(order[0]) && /Josh Allen/.test(order[1]),
       'the night game should sort below the early one, got: ' + order.join(' | '));
+
+    /* the real case: two parlays both holding a one o'clock leg, one of them also holding a
+       four o'clock leg. The one that cannot settle until later goes second, even though both
+       start at the same time -- which sorting on the earliest kickoff would have got wrong. */
+    const seed2 = w => {
+      w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
+        { id: 'spans', week: 2, stake: 10, price: 200, payout: 30, legs: [
+          leg('pa', 'Alvin Kamara', 'rushing_yards', 40.5, 'over', true, 'Over 40.5 rushing yards', 'NO'),
+          Object.assign({}, leg('pb', 'Early Guy', 'rushing_yards', 20.5, 'over', true, 'Over 20.5 rushing yards', 'ATL'), { gid: GID }) ] },
+        { id: 'oneslot', week: 2, stake: 10, price: 200, payout: 30, legs: [
+          leg('p1', 'Bijan Robinson', 'rushing_yards', 43.5, 'over', true, 'Over 43.5 rushing yards', 'ATL')] }] }));
+      w.localStorage.removeItem(BET_KEY);
+    };
+    /* the four o'clock leg belongs to the late game */
+    const fix = w => { seed2(w); const v = JSON.parse(w.localStorage.getItem(PROP_KEY));
+      v.saved[0].legs[0].gid = GID3; w.localStorage.setItem(PROP_KEY, JSON.stringify(v)); };
+    const o2 = await run({ seed: fix });
+    const ord2 = [...o2.d.querySelectorAll('.savedp')].map(c => txt(c.querySelector('.sp-leg .nm')));
+    chk(ord2.length === 2, `ordering: expected 2 parlays, got ${ord2.length}`);
+    chk(/Bijan Robinson/.test(ord2[0]), 'the one o\'clock-only parlay should come first, got: ' + ord2.join(' | '));
+    chk(/Kamara|Early Guy/.test(ord2[1]), 'the parlay carrying a four o\'clock leg should come second, got: ' + ord2.join(' | '));
     /* once the early one is final it drops to the bottom even though it kicked off first */
     const f = await run({ seed, state: 'post' });
     chk([...f.d.querySelectorAll('.savedp')].length === 2, 'ordering: parlays vanished when final');
