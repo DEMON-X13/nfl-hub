@@ -1,8 +1,8 @@
 /* The player, coach and matchup model.
  *
- *   node nba/tools/players.js          replay the box scores with the params in nba/players.json,
+ *   node nba-hub/tools/players.js          replay the box scores with the params in nba-hub/players.json,
  *                                      write ratings, the report and tonight's numbers
- *   node nba/tools/players.js fit      search the params on the fit seasons first
+ *   node nba-hub/tools/players.js fit      search the params on the fit seasons first
  *
  * Every player carries two ratings, offence and defence, in Elo points for a player on the floor all
  * game. A team's strength for a game is 1500 plus the coach plus each player's ratings weighted by his
@@ -32,19 +32,21 @@ const path = require('path');
 const L = require('./lib');
 const E = require('./elo');
 
-const DATA = path.join(L.ROOT, 'nba', 'data');
-const OUT = path.join(L.ROOT, 'nba', 'players.json');
-const MODEL = path.join(L.ROOT, 'nba', 'model.json');
+const DATA = path.join(L.ROOT, 'nba-hub', 'data');
+const OUT = path.join(L.ROOT, 'nba-hub', 'players.json');
+const MODEL = path.join(L.ROOT, 'nba-hub', 'model.json');
 const FIRST = 2022, WARM_TO = 2022, FIT_TO = 2024;
-const DEFAULT = { ke: 3, kc: 1, carryP: 0.85, carryC: 0.8, prior: 1, rookie: -40, clip: 30, minGames: 10 };
+const DEFAULT = { ke: 1, kc: 0.2, carryP: 0.6, carryC: 0.8, prior: 1.25, rookie: -60, clip: 15, minGames: 10, blend: 0 };
 const GRID = {
-  ke: [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8],
-  kc: [0, 0.5, 1, 2, 3, 5],
-  carryP: [0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1],
+  ke: [0.3, 0.4, 0.5, 0.6, 0.75, 0.9, 1, 1.25, 1.5, 2],
+  kc: [0, 0.05, 0.1, 0.2, 0.3, 0.5, 1],
+  carryP: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
   carryC: [0.5, 0.7, 0.8, 0.9, 1],
-  prior: [0, 0.5, 0.75, 1, 1.25, 1.5],
-  rookie: [-100, -80, -60, -40, -20, 0],
-  clip: [15, 20, 30, 40, 60],
+  prior: [0.5, 0.75, 1, 1.25, 1.5, 2],
+  rookie: [-100, -80, -60, -40, -20],
+  clip: [5, 8, 10, 12, 15, 20, 30],
+  minGames: [5, 8, 10, 15],
+  blend: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],           // share of the team Elo's difference in the final number
 };
 const PCOLS = ['game_id', 'date', 'team', 'opp', 'home', 'player_id', 'name', 'pos', 'starter', 'min', 'fgm', 'fga', 'tpm', 'tpa', 'ftm', 'fta', 'orb', 'drb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pm', 'pts', 'dnp'];
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/[^a-z]/g, '');
@@ -162,9 +164,11 @@ function replay(P, ctx, mode, collect) {
 
     if (g.status !== 'final') {
       if (!collect) continue;
-      const live = ctx.liveLineup(g, players, projected, getP);
+      const live = ctx.liveLineup(g, players, projected);
       const H = strength(live.home.list), A = strength(live.away.list);
-      const diff = (E.MEAN + ch.c + H.O + H.D + sh) - (E.MEAN + ca.c + A.O + A.D + sa);
+      const own = (ch.c + H.O + H.D + sh) - (ca.c + A.O + A.D + sa);
+      const td = ctx.teamDiff[g.game_id];
+      const diff = td === undefined ? own : (1 - P.blend) * own + P.blend * td;
       const eh = lg + (H.O - A.D) / situP.scale + (sh - sa) / (2 * situP.scale), ea = lg + (A.O - H.D) / situP.scale - (sh - sa) / (2 * situP.scale);
       upcoming[g.game_id] = { pHome: +E.prob(diff).toFixed(4), spread: +(-diff / situP.scale * expPace / 100).toFixed(1), total: +((eh + ea) * expPace / 100).toFixed(1),
         pace: +expPace.toFixed(1), home: sideReport(g.home, H, ch, live.home), away: sideReport(g.away, A, ca, live.away) };
@@ -176,7 +180,9 @@ function replay(P, ctx, mode, collect) {
 
     if (collect && g.season > WARM_TO) {
       const Hm = strength(lineupFor(g.home, box[g.home], mode, g.season)), Am = strength(lineupFor(g.away, box[g.away], mode, g.season));
-      const diff = (ch.c + Hm.O + Hm.D + sh) - (ca.c + Am.O + Am.D + sa);
+      const own = (ch.c + Hm.O + Hm.D + sh) - (ca.c + Am.O + Am.D + sa);
+      const td = ctx.teamDiff[g.game_id];
+      const diff = td === undefined ? own : (1 - P.blend) * own + P.blend * td;
       const eh = lg + (Hm.O - Am.D) / situP.scale + (sh - sa) / (2 * situP.scale), ea = lg + (Am.O - Hm.D) / situP.scale - (sh - sa) / (2 * situP.scale);
       recs.push({ season: g.season, d: diff, pHome: E.prob(diff), mov: +g.home_score - +g.away_score, total: +g.home_score + +g.away_score, expTotal: (eh + ea) * expPace / 100 });
     }
@@ -225,7 +231,7 @@ function makeLiveLineup(ctx) {
   const inj = fs.existsSync(path.join(DATA, 'injuries.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'injuries.json'), 'utf8')) : { teams: {} };
   const ros = fs.existsSync(path.join(DATA, 'rosters_espn.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'rosters_espn.json'), 'utf8')) : null;
   const OUT_RE = /^(out|doubtful|suspended|suspension)/i;
-  return (g, players, projected, getP) => {
+  return (g, players, projected) => {
     const side = team => {
       const status = {}; for (const x of (inj.teams[team] || [])) status[x.id] = x.status;
       let ids;
@@ -233,9 +239,8 @@ function makeLiveLineup(ctx) {
       else ids = Object.keys(players).filter(id => players[id].team === team);
       const list = [], out = [];
       for (const id of ids) {
-        let p = players[id];
-        if (!p && ros && ros.teams[team]) { const a = ros.teams[team].find(x => x.id === id); p = getP({ player_id: id, name: a.name, pos: a.pos, team }, g.season); p.team = team; }
-        if (!p) continue;
+        const p = players[id];
+        if (!p) continue;                                           // no box score on record: not projected to play
         p.id = id;
         const m = p.mins.length ? projected(p, false) : 0;        // a player with no minutes on record is not projected to play
         if (OUT_RE.test(status[id] || '')) { if (m) out.push({ p, status: status[id], min: m }); continue; }
@@ -270,8 +275,14 @@ function main() {
   const situP = model.params;
   const games = L.readGames().filter(g => +g.season >= FIRST && (g.status === 'final' || g.status === 'scheduled' || g.status === 'live'));
   games.forEach(g => { g.season = +g.season; g.neutral = +g.neutral; });
-  const ctx = { games, boxes: loadBoxes(), teamStats: loadTeamBoxes(), coachOf: loadCoaches(), raptor: loadRaptor(), situP };
+  const ctx = { games, boxes: loadBoxes(), teamStats: loadTeamBoxes(), coachOf: loadCoaches(), raptor: loadRaptor(), situP, teamDiff: {} };
   ctx.liveLineup = makeLiveLineup(ctx);
+  /* the team Elo's own pre-game difference for every game, finals and the slate, for the blend and the comparison */
+  const everything = L.readGames().filter(g => g.status === 'final' || g.status === 'scheduled' || g.status === 'live');
+  everything.forEach(g => { g.season = +g.season; g.neutral = +g.neutral; });
+  const TE = E.replay(situP, everything, true);
+  for (const r of TE.recs) ctx.teamDiff[`${r.season}_${r.date.replace(/-/g, '')}_${r.away}_${r.home}`] = r.d;
+  for (const [id, u] of Object.entries(TE.upcoming)) ctx.teamDiff[id] = -u.spread * situP.scale;
   const withBox = games.filter(g => g.status === 'final' && ctx.boxes[g.game_id]).length;
   L.log(`${withBox} finals with a box score, ${Object.keys(ctx.raptor).length} RAPTOR priors`);
   if (!withBox) { L.log('no box scores yet: nothing to do'); return; }
@@ -285,9 +296,8 @@ function main() {
     report[mode] = { fit: score(R.recs, WARM_TO, FIT_TO, situP.scale), holdout: score(R.recs, FIT_TO, 9999, situP.scale) };
   }
   /* the team Elo on the same games, for the comparison */
-  const all = L.readGames().filter(g => g.status === 'final'); all.forEach(g => { g.season = +g.season; g.neutral = +g.neutral; });
   const boxed = new Set(games.filter(g => g.status === 'final' && ctx.boxes[g.game_id]).map(g => g.game_id));
-  const TR = E.replay(situP, all, true).recs.filter(r => boxed.has(`${r.season}_${r.date.replace(/-/g, '')}_${r.away}_${r.home}`)).map(r => ({ ...r, total: 0, expTotal: 0 }));
+  const TR = TE.recs.filter(r => boxed.has(`${r.season}_${r.date.replace(/-/g, '')}_${r.away}_${r.home}`)).map(r => ({ ...r, total: 0, expTotal: 0 }));
   report.teamElo = { fit: score(TR, WARM_TO, FIT_TO, situP.scale), holdout: score(TR, FIT_TO, 9999, situP.scale) };
   delete report.teamElo.fit.totalMae; delete report.teamElo.holdout.totalMae;
 
@@ -308,7 +318,7 @@ function main() {
   const teams = {};
   for (const t of L.TEAMS) {
     const g = { season: season + (asOf < `${season}-07-01` ? 0 : 1), home: t, away: t, date: asOf, neutral: 0 };
-    const live = ctx.liveLineup(g, R.players, (p) => p.mins.length ? mean(p.mins.slice(-P.minGames)) : 0, () => null);
+    const live = ctx.liveLineup(g, R.players, (p) => p.mins.length ? mean(p.mins.slice(-P.minGames)) : 0);
     const tot = live.home.list.reduce((s, x) => s + x[1], 0) || 1;
     let O = 0, D = 0; for (const [p, m] of live.home.list) { O += m / tot * 5 * p.o; D += m / tot * 5 * p.d; }
     const coach = R.coaches[live.home.coach] || { c: 0 };

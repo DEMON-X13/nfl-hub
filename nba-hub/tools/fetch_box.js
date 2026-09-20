@@ -1,27 +1,27 @@
 /* Box scores, the injury report and the coaches, from ESPN's public feeds.
  *
- *   node nba/tools/fetch_box.js                 every final from the 2022 season on that has no box score yet,
+ *   node nba-hub/tools/fetch_box.js                 every final from the 2022 season on that has no box score yet,
  *                                               then today's injury report and each team's coach
- *   node nba/tools/fetch_box.js --from 2022 --to 2026 --budget 300   (seasons, minutes)
- *   node nba/tools/fetch_box.js --offline summary.json                (parse one saved payload, for tests)
+ *   node nba-hub/tools/fetch_box.js --from 2022 --to 2026 --budget 300   (seasons, minutes)
+ *   node nba-hub/tools/fetch_box.js --offline summary.json                (parse one saved payload, for tests)
  *
- * Writes, per season, nba/data/box_<season>.csv (one row per player per game: minutes and the box line)
- * and nba/data/teambox_<season>.jsonl (one line per team per game: every team statistic the feed gives).
+ * Writes, per season, nba-hub/data/box_<season>.csv (one row per player per game: minutes and the box line)
+ * and nba-hub/data/teambox_<season>.jsonl (one line per team per game: every team statistic the feed gives).
  * A game's ESPN id comes from the games table when the daily fetch stored it, else from the scoreboard
  * for that day (one request per day, so a season of history costs about 1,500 requests). The first
- * payload read is saved as nba/data/sample_summary.json for inspection. A game whose payload cannot be
+ * payload read is saved as nba-hub/data/sample_summary.json for inspection. A game whose payload cannot be
  * parsed is logged and skipped; the run fails only if nothing at all could be read.
  *
- * nba/data/injuries.json is today's report (status per player per team) and nba/data/injuries_log.csv
- * keeps one line per player per day so availability can be replayed later. nba/data/coaches_espn.json
- * is each team's head coach as the roster feed lists them today, and nba/data/rosters_espn.json the roster.
+ * nba-hub/data/injuries.json is today's report (status per player per team) and nba-hub/data/injuries_log.csv
+ * keeps one line per player per day so availability can be replayed later. nba-hub/data/coaches_espn.json
+ * is each team's head coach as the roster feed lists them today, and nba-hub/data/rosters_espn.json the roster.
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const L = require('./lib');
 
-const DATA = path.join(L.ROOT, 'nba', 'data');
+const DATA = path.join(L.ROOT, 'nba-hub', 'data');
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
@@ -157,22 +157,41 @@ async function boxes(games) {
   return read;
 }
 
+/* the team list once: id and display name to this site's code */
+let teamMap = null;
+async function teamIds() {
+  if (teamMap) return teamMap;
+  const j = await L.getJSON(BASE + 'teams?limit=40');
+  const list = ((((j.sports || [])[0] || {}).leagues || [])[0] || {}).teams || [];
+  teamMap = { byId: {}, byName: {}, list: [] };
+  for (const t of list) {
+    const ab = L.fromEspn(t.team && t.team.abbreviation);
+    if (!L.TEAMS.includes(ab)) continue;
+    teamMap.byId[String(t.team.id)] = ab; teamMap.byName[t.team.displayName] = ab; teamMap.list.push({ id: t.team.id, ab });
+  }
+  return teamMap;
+}
+
 async function injuries() {
   const today = L.etDate(new Date());
   const j = await L.getJSON(BASE + 'injuries');
+  const sample = path.join(DATA, 'sample_injuries.json');
+  if (!fs.existsSync(sample)) fs.writeFileSync(sample, JSON.stringify(j, null, 1));
+  const ids = await teamIds();
   const teams = {};
   const lines = [];
   for (const t of j.injuries || []) {
-    const ab = L.fromEspn(t.abbreviation || (t.team && t.team.abbreviation) || '');
+    /* the feed names a team by id and display name; abbreviation only sometimes */
+    const ab = L.fromEspn(t.abbreviation || (t.team && t.team.abbreviation) || '') || ids.byId[String(t.id || (t.team && t.team.id) || '')] || ids.byName[t.displayName] || '';
     const list = [];
     for (const inj of t.injuries || []) {
       const a = inj.athlete || {};
-      const row = { id: String(a.id || ''), name: clean(a.displayName), pos: clean(a.position && a.position.abbreviation), status: clean(inj.status),
-        detail: clean(inj.shortComment || (inj.details && inj.details.detail) || ''), date: inj.date ? inj.date.slice(0, 10) : '' };
+      const row = { id: String(a.id || inj.athleteId || ''), name: clean(a.displayName || a.fullName || inj.displayName), pos: clean(a.position && (a.position.abbreviation || a.position.name)),
+        status: clean(inj.status || (inj.type && inj.type.description)), detail: clean(inj.shortComment || (inj.details && (inj.details.detail || inj.details.type)) || ''), date: inj.date ? String(inj.date).slice(0, 10) : '' };
       list.push(row);
       lines.push([today, ab, row.id, row.name, row.status].join(','));
     }
-    if (ab) teams[ab] = list;
+    if (ab) teams[ab] = list; else L.log(`injuries: team not recognised: ${JSON.stringify({ id: t.id, name: t.displayName })}`);
   }
   fs.writeFileSync(path.join(DATA, 'injuries.json'), JSON.stringify({ date: today, teams }, null, 1) + '\n');
   const logf = path.join(DATA, 'injuries_log.csv');
@@ -184,14 +203,11 @@ async function injuries() {
 
 async function coaches() {
   const today = L.etDate(new Date());
-  const j = await L.getJSON(BASE + 'teams?limit=40');
-  const list = ((((j.sports || [])[0] || {}).leagues || [])[0] || {}).teams || [];
+  const ids = await teamIds();
   const out = {}, rosters = {};
-  for (const t of list) {
-    const ab = L.fromEspn(t.team && t.team.abbreviation);
-    if (!L.TEAMS.includes(ab)) continue;
+  for (const { id, ab } of ids.list) {
     try {
-      const r = await L.getJSON(BASE + `teams/${t.team.id}/roster`);
+      const r = await L.getJSON(BASE + `teams/${id}/roster`);
       const c = (r.coach || [])[0];
       out[ab] = c ? { id: String(c.id || ''), name: clean([c.firstName, c.lastName].filter(Boolean).join(' ')), experience: c.experience } : null;
       rosters[ab] = (r.athletes || []).map(a => ({ id: String(a.id || ''), name: clean(a.displayName || a.fullName), pos: clean(a.position && a.position.abbreviation),

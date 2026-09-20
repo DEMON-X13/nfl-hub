@@ -9,7 +9,7 @@ the results. GitHub Pages serves the repo root:
 | `betting/` | X NFL Betting Model, public viewer (`index.html`) and full app (`admin.html`) | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model, one page (`index.html`) with the week's data baked in | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
-| `nba/` | NBA model: the games table, the Elo model and its daily job; the page comes next | see `nba/README.md`; its own workflow, `.github/workflows/nba.yml`, runs every morning |
+| `nba-hub/` | NBA Hub: the games table, box scores, the team and player models and their daily job; the page comes next | see `nba-hub/README.md`; its own workflow, `.github/workflows/nba.yml`, runs every morning |
 
 ## Betting site
 

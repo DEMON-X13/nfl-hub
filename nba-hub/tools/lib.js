@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const GAMES = path.join(ROOT, 'nba', 'data', 'games.csv');
+const GAMES = path.join(ROOT, 'nba-hub', 'data', 'games.csv');
 const COLS = ['game_id', 'season', 'date', 'type', 'away', 'home', 'away_score', 'home_score', 'neutral', 'status', 'home_line', 'total', 'source', 'espn_id'];
 
 /* The 30 codes this site uses. Both sources are mapped onto them. */
