@@ -299,15 +299,35 @@ const DATA='parlays.json';
    The gap that leaves is worth being straight about: a parlay built on one machine shows
    there and not on the next one, because nothing carries it across. Getting it into the file
    means editing the file. */
+function propState(){
+  try{ return JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return null; }
+}
+const propLeg=l=>({gid:l.gid,stat:l.stat,k:+l.k,side:l.side||'over',main:!!l.main,
+  name:l.name,team:l.team,label:''});
+
+/* Saved and locked is not the only parlay worth watching, and on a Sunday it is usually not
+   the one you are watching: the prop model will not let you lock a parlay until it has a
+   price, so a parlay you have built and bet can easily still be sitting in the builder. That
+   one is read too, marked "in the builder" and shown without a price -- pricing legs that
+   share a game is the prop model's same-game maths, not this page's, and a wrong number here
+   would be worse than none. */
 function propParlays(){
-  let v=null;
-  try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return []; }
-  const saved=(v&&v.saved)||[];
-  if(!Array.isArray(saved)) return [];
-  return saved.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>({
-    src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,price:p.price,
-    payout:+p.payout||0,note:'',legs:p.legs.map(l=>({gid:l.gid,stat:l.stat,k:+l.k,
-      side:l.side||'over',main:!!l.main,name:l.name,team:l.team,label:''}))}));
+  const v=propState(); if(!v) return [];
+  const out=[];
+  const saved=Array.isArray(v.saved)?v.saved:[];
+  for(const p of saved){
+    if(!p||!Array.isArray(p.legs)||!p.legs.length) continue;
+    out.push({src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,
+      price:p.price,payout:+p.payout||0,note:'',legs:p.legs.map(propLeg)});
+  }
+  const work=(v.parlay&&typeof v.parlay==='object')
+    ?Object.keys(v.parlay).map(k=>v.parlay[k]).filter(l=>l&&l.gid&&l.stat):[];
+  if(work.length){
+    let w=null; for(const l of work) if(+l.week&&(w===null||+l.week<w)) w=+l.week;
+    out.push({src:'prop',id:'prop-builder',week:w,stake:+v.stake||0,price:null,payout:0,
+      note:'in the builder',legs:work.map(propLeg)});
+  }
+  return out;
 }
 function localParlays(){
   const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
@@ -366,7 +386,8 @@ async function refresh(){
     STATE.parlays=readFile(f); STATE.updated=f.updated||null; STATE.dataErr=null;
   }catch(e){ STATE.dataErr=String(e&&e.message||e); }
   STATE.loaded=true;
-  const want=legGames(allParlays());
+  const ps=allParlays();
+  const want=legGames(ps);
   if(want.size){
     try{
       const sched=[...want].map(gidParts).filter(Boolean), games={};
@@ -376,7 +397,10 @@ async function refresh(){
       }
       STATE.games=games;
       const box=Object.assign({},STATE.box);
-      if(STATE.parlays.some(p=>p.legs.some(l=>!isGameLeg(l))))
+      /* every parlay on the page, not just the file's: box scores are what a player leg is
+         tracked against, and a browser whose parlays all come from the two models needs them
+         exactly as much as one reading the file */
+      if(ps.some(p=>p.legs.some(l=>!isGameLeg(l))))
         for(const gid of want){ const g=games[gid];
           if(!g||g.state==='pre') continue;
           if(STATE.settled[gid]&&box[gid]) continue;      /* a final box score cannot change */
@@ -476,6 +500,26 @@ function legRow(l){
       ${progressBar(r?r.val:0,+l.k,state)}
     </div></div>`;
 }
+/* Empty is not one thing. Empty because this browser has never opened the two models is a
+   different problem from empty because a parlay is still in a builder, and nobody can tell
+   them apart from the outside -- so the page says which it is instead of shrugging. */
+function whatsHere(){
+  const rows=[];
+  let v=null, broke=false;
+  try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ broke=true; }
+  if(broke) rows.push('<b>prop model</b> \u2014 this browser would not let the page read its storage');
+  else if(!v) rows.push('<b>prop model</b> \u2014 nothing here yet. Open <a href="../props/">the prop model</a> in <i>this</i> browser and build a parlay');
+  else rows.push('<b>prop model</b> \u2014 '+(Array.isArray(v.saved)?v.saved.length:0)+' saved and locked, '
+    +Object.keys((v.parlay&&typeof v.parlay==='object')?v.parlay:{}).length+' leg(s) in the builder');
+  let raw=null, bbroke=false;
+  try{ raw=localStorage.getItem(BET_KEY); }catch(e){ bbroke=true; }
+  if(bbroke) rows.push('<b>betting model</b> \u2014 this browser would not let the page read its storage');
+  else if(!raw) rows.push('<b>betting model</b> \u2014 nothing here yet. Open <a href="../betting/">the betting model</a> in <i>this</i> browser and press <b>Lock in parlay</b>');
+  else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
+  rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>live/parlays.json</code>'
+    +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
+  return rows;
+}
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
   const app=document.getElementById('app'), ps=allParlays();
@@ -484,8 +528,10 @@ function draw(){
   else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
   if(!ps.length){
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing to watch yet</b>
-      This page shows two things, both on its own: the parlays in <code>live/parlays.json</code>, which every device sees, and whatever the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> have saved <b>in this browser</b>.<br><br>
-      Save a parlay in either and it appears here. To have it on your other devices too, it has to go in the file.</div>`;
+      This page shows two things, both on its own: the parlays in <code>live/parlays.json</code>, which every device sees, and whatever the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> hold <b>in this browser</b>.<br><br>
+      <b style="color:var(--ink)">Where it looked just now:</b>
+      <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
+      A parlay in the prop model's builder shows here as soon as it has a leg, so an empty builder and nothing saved means this browser has nothing yet. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
@@ -519,7 +565,7 @@ function foot(){
   document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
     :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
-  document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>live/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> in this browser, with nothing to press \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
+  document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>live/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> in this browser, with nothing to press — saved and locked parlays, and whatever is sitting in the prop model's builder \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
     Scores come from ESPN's public feeds, read by this page in your own browser: no odds-API credits are ever spent here, and no job runs for it.
     Auto-refresh starts <b>off</b> \u2014 the page fetches once when you open it, then only when you press Refresh now or turn an interval on.`;
 }

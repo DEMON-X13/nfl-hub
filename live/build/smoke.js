@@ -60,6 +60,13 @@ const propBlob = () => JSON.stringify({ stake: 55, saved: [
   { id: 'mine', week: 2, stake: 15, price: 250, payout: 52, legs: [
     { gid: '2026_02_CAR_ATL', stat: 'receiving_yards', k: 20.5, side: 'over', main: true,
       name: 'Kyle Pitts', team: 'ATL', label: 'Over 20.5 receiving yards', week: 2 }] }] });
+/* a parlay built but not saved: the prop model will not let it be locked without a price,
+   so this is what a bet parlay usually looks like in storage on a Sunday */
+const workBlob = () => JSON.stringify({ stake: 40, saved: [], parlay: {
+  '2026_02_CAR_ATL|bij|rushing_yards': { gid: '2026_02_CAR_ATL', pid: 'bij', stat: 'rushing_yards',
+    k: 43.5, side: 'over', main: true, name: 'Bijan Robinson', team: 'ATL', week: 2 },
+  '2026_02_NO_BAL|hen|rushing_yards': { gid: '2026_02_NO_BAL', pid: 'hen', stat: 'rushing_yards',
+    k: 70.5, side: 'over', main: true, name: 'Derrick Henry', team: 'BAL', week: 2 } } });
 const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
   { id: 'bb1', week: 2, type: 'parlay', stake: 25, legs: [
     { game_id: '2026_02_CAR_ATL', away: 'CAR', home: 'ATL', pick: 'ATL', ml: -150 },
@@ -141,6 +148,24 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(/\$15\.00/.test(txt(same[0])), "the file's older copy won over this browser's");
   }
 
+  // ---- C2. a parlay still in the prop model's builder counts too ----
+  {
+    const seed = w => { w.localStorage.setItem(PROP_KEY, workBlob()); };
+    const b = await run({ seed, file: { updated: null, games: [], parlays: [] } });
+    const card = [...b.d.querySelectorAll('.savedp')];
+    chk(card.length === 1, `a parlay in the builder should show, got ${card.length} cards`);
+    chk(/in the builder/.test(txt(card[0])), 'a builder parlay is not marked as one: ' + txt(card[0]));
+    chk(card[0].querySelectorAll('.sp-leg').length === 2, 'a builder parlay lost legs');
+    chk(/\$40\.00/.test(txt(card[0])), "the builder parlay should carry the builder's stake");
+    chk(knob(card[0].querySelector('.sp-leg')) === '86', 'a builder leg is not tracked live');
+    chk(b.w.localStorage.getItem(PROP_KEY) === workBlob(), 'the page wrote over the prop model key');
+    /* saved and building at once: both show, and the saved one keeps its price */
+    const both = JSON.parse(propBlob()); both.parlay = JSON.parse(workBlob()).parlay;
+    const c2 = await run({ seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify(both)),
+      file: { updated: null, games: [], parlays: [] } });
+    chk(c2.d.querySelectorAll('.savedp').length === 2, 'saved and building should be two parlays');
+  }
+
   // ---- D. the buttons are gone ----
   for (const id of ['ghSave', 'ghLoad', 'send', 'paste', 'clearDone', 'tokIn'])
     chk(!d.getElementById(id), `the ${id} control is still on the page`);
@@ -160,6 +185,14 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   chk(/Nothing to watch yet/.test(txt(e1.d.getElementById('app'))), 'an empty page is not explained');
   chk(/parlays\.json/.test(txt(e1.d.getElementById('app'))) && /prop model/.test(txt(e1.d.getElementById('app'))),
     'an empty page does not say where parlays can come from');
+  chk(/nothing here yet/.test(txt(e1.d.getElementById('app'))),
+    'an empty page does not say the two models have never been opened here');
+  chk(/0 in .?live\/parlays\.json/.test(txt(e1.d.getElementById('app'))),
+    'an empty page does not say the file is empty: ' + txt(e1.d.getElementById('app')));
+  const e1b = await run({ file: { updated: null, games: [], parlays: [] },
+    seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [], parlay: {} })); } });
+  chk(/0 saved and locked, 0 leg/.test(txt(e1b.d.getElementById('app'))),
+    'an empty page does not count an opened but empty prop model: ' + txt(e1b.d.getElementById('app')));
   const e2 = await run({ data: 'fail' });
   chk(/could not be read/.test(txt(e2.d.querySelector('.note')) || ''), 'a missing file is not explained');
 
