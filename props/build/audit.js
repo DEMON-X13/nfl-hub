@@ -488,10 +488,10 @@ setTimeout(()=>{
         chk([...card3.querySelectorAll('.gsugg-legs li')].length===a.val.legs.length,'the card and the shuffled parlay disagree on legs');
         chk(new RegExp(`${Math.round(a.val.corr*100)}% to land`).test(card3.textContent.replace(/\s+/g,' ')),'the card does not show the shuffled chance');
         chk(sig(F('gameSuggestion')(g).legs)===sig(s2.legs),'shuffling changed the model\'s own suggestion');
-        /* Original puts the model's own pick back without leaving the game */
-        d.querySelector('[data-suggest-orig]').click();
-        chk(!F('gameAlternate')(g),'Original did not drop the shuffled parlay');
-        chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'Original did not bring back the suggestion');
+        /* opening the game again is the whole way back now, so it has to work every time */
+        d.querySelector('[data-game="'+g.id+'"]').click();
+        chk(!F('gameAlternate')(g),'reopening the game did not drop the shuffled parlay');
+        chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'reopening the game did not bring back the suggestion');
       }
       /* a thin pool has no second parlay at the same confidence to find, and the app
          says so rather than inventing one: demand an alternative only where there is

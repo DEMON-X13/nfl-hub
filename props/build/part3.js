@@ -364,8 +364,6 @@ function renderGame(){
     const alt=shuffleSuggestion(g);
     GAME_SUGGEST_ALT[g.id]={sig:gameSuggestSig(g),val:alt,miss:!alt};
     renderGame(); });
-  $('gameView').querySelector('[data-suggest-orig]')?.addEventListener('click',()=>{
-    delete GAME_SUGGEST_ALT[g.id]; renderGame(); });
   /* the whole suggestion at once, skipping any leg already on so it cannot toggle one off */
   $('gameView').querySelector('[data-suggest-all]')?.addEventListener('click',()=>{
     for(const l of shownSuggestion(g).legs){
@@ -1049,7 +1047,6 @@ function gameSuggestCard(g,locked){
   const nLock=s.legs.filter(suggestLegOn).length, free=s.legs.length-nLock;
   return `<div class="card gsugg"><div class="gsugg-hd">
       <h2>Suggested parlay</h2><span class="conf med">Medium</span><span class="grow"></span>
-      ${s.alt?`<button class="btn quiet gsugg-orig" data-suggest-orig="${g.id}">Original</button>`:''}
       <button class="btn quiet gsugg-alt" data-suggest-shuffle="${g.id}"${s.candidates>s.legs.length&&free?'':' disabled'} aria-label="Shuffle the legs that are not locked, keeping the same confidence">\u21bb Shuffle</button>
       <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${free?'Add all':'On the parlay'}</button>
       <span class="gsugg-nums"><b>${(s.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*s.dec).toFixed(2)}</span>`:''}</span>
@@ -1060,7 +1057,7 @@ function gameSuggestCard(g,locked){
         <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}, and ${on?'take it off':'put it on'} the parlay">
         <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>${on?'<span class="lk">locked</span>':''}
         <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
-    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back with Original, or by leaving the game and opening it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
+    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
