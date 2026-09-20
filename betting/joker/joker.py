@@ -30,6 +30,7 @@ PBP_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_
 
 sys.path.insert(0, str(HERE))
 import features as F  # noqa: E402
+import explain as X  # noqa: E402
 
 
 def log(msg):
@@ -55,11 +56,32 @@ def main():
     if not len(this):
         log("no 2026 games to score"); return
     p = model.predict_proba(this)[:, 1]
+    # why each game came out where it did: every tree walked down this game's own path, the
+    # value change at each split credited to the feature that made it. It has to add back up
+    # to what the model said, so it is checked here and dropped rather than shipped wrong.
+    try:
+        made = X.contributions(model, this, top=8)
+        err, _ = X.check(model, this, made)
+        if err > 1e-3:
+            log(f"attribution does not reconstruct the model (max error {err:.2e}); shipping picks without it")
+            made = None
+        else:
+            log(f"attribution checks out on {len(made)} games (max error {err:.1e})")
+    except Exception as e:
+        log(f"attribution failed ({type(e).__name__}: {e}); shipping picks without it")
+        made = None
     games = {}
-    for (_, g), ph in zip(this.iterrows(), p):
-        games[g.game_id] = dict(week=int(g.week), home=g.home_team, away=g.away_team,
-                                pick=g.home_team if ph >= 0.5 else g.away_team, pHome=round(float(ph), 4), played=bool(g.played))
+    for i, ((_, g), ph) in enumerate(zip(this.iterrows(), p)):
+        rec = dict(week=int(g.week), home=g.home_team, away=g.away_team,
+                   pick=g.home_team if ph >= 0.5 else g.away_team, pHome=round(float(ph), 4), played=bool(g.played))
+        if made:
+            rec["base"] = made[i]["base"]
+            rec["why"] = made[i]["why"]
+        games[g.game_id] = rec
     out = dict(name=meta["name"], formula=meta["formula"], fitted_on=meta["fitted_on"], fitted_at=meta["fitted_at"],
+               why_note=("Per game: base is what the model says before any split, why lists the inputs that moved it "
+                         "most, in log-odds. base plus every contribution reconstructs the model's raw output; only "
+                         "the eight largest are kept here."),
                generated=datetime.now(timezone.utc).isoformat(timespec="minutes"), games=games)
     prev = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else None
     if prev is None or prev.get("games") != games:
@@ -73,8 +95,12 @@ def main():
         log("no state.json to patch"); return
     st = json.loads(STATE.read_text(encoding="utf-8"))
     changed = False
-    if st.get("joker") != games:
-        st["joker"] = games; changed = True
+    # the reasons stay in joker.json: state.json is fetched by the site on every load, and
+    # eight contributions a game put 190KB on it for something only one game at a time is
+    # ever read for
+    lean = {gid: {k: v for k, v in rec.items() if k not in ("why", "base")} for gid, rec in games.items()}
+    if st.get("joker") != lean:
+        st["joker"] = lean; changed = True
     for gid, rec in st.get("processed", {}).items():
         j = games.get(gid)
         if not j or rec.get("result") is None:
