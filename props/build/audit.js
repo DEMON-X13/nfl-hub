@@ -461,6 +461,47 @@ setTimeout(()=>{
       d.querySelector('[data-suggest-all]').click();
       chk(Object.keys(S.parlay).length===s2.legs.length,'Add all pressed twice toggled legs back off');
       chk(/On the parlay/.test(d.querySelector('[data-suggest-all]').textContent),'the button does not say the parlay is already on');
+      /* Shuffle: a different parlay of the same confidence, and the original still there */
+      const sh=d.querySelector('[data-suggest-shuffle]');
+      chk(!!sh,'no shuffle button on the game suggestion');
+      chk(!sh.disabled,'shuffle is disabled with a pool of candidates available');
+      const sig=ls=>ls.map(l=>l.key+'@'+l.k+l.side).sort().join(',');
+      let shuffled=0;
+      for(let i=0;i<4;i++){
+        d.querySelector('[data-suggest-shuffle]').click();
+        const a=F('gameAlternate')(g);
+        chk(!!a,'shuffle left no answer at all');
+        if(!a.val){ chk(a.miss&&/Nothing else in this game/.test(d.querySelector('.gsugg').textContent),'a shuffle that found nothing does not say so'); continue; }
+        shuffled++;
+        chk(a.val.legs.length>=2&&a.val.legs.length<=3,`a shuffled parlay ran to ${a.val.legs.length} legs`);
+        chk(a.val.legs.every(l=>l.gid===g.id),'a shuffled parlay pulled in another game');
+        chk(a.val.legs.every(l=>l.src==='real'),'a shuffled parlay used a line with no real price');
+        chk(a.val.legs.filter(l=>l.grp==='TEAM').length<=1,'a shuffled parlay stacked two team bets');
+        chk(a.val.legs.every(l=>a.val.legs.filter(x=>x.pid===l.pid).length<=2),'three shuffled legs landed on one player');
+        chk(new Set(a.val.legs.map(l=>l.key)).size===a.val.legs.length,'a shuffled parlay repeated a line');
+        chk(sig(a.val.legs)!==sig(s2.legs),'shuffle dealt the same parlay back');
+        chk(Math.abs(a.val.corr-s2.corr)<=0.12,`a shuffled parlay is ${(Math.abs(a.val.corr-s2.corr)*100).toFixed(0)} points off the original's confidence`);
+        chk(a.val.legs.length===2||a.val.corr>=0.30,'a shuffled parlay above two legs fell under the Medium floor');
+        const card3=d.querySelector('.gsugg');
+        chk([...card3.querySelectorAll('.gsugg-legs li')].length===a.val.legs.length,'the card and the shuffled parlay disagree on legs');
+        chk(new RegExp(`${Math.round(a.val.corr*100)}% to land`).test(card3.textContent.replace(/\s+/g,' ')),'the card does not show the shuffled chance');
+        chk(sig(F('gameSuggestion')(g).legs)===sig(s2.legs),'shuffling changed the model\'s own suggestion');
+        /* Original puts the model's own pick back without leaving the game */
+        d.querySelector('[data-suggest-orig]').click();
+        chk(!F('gameAlternate')(g),'Original did not drop the shuffled parlay');
+        chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'Original did not bring back the suggestion');
+      }
+      chk(shuffled>0,'four shuffles produced no alternative at all');
+      /* leaving the game and opening it again starts back at the model's own pick */
+      d.querySelector('[data-suggest-shuffle]').click();
+      if(F('gameAlternate')(g)){
+        d.getElementById('backBtn').click();
+        d.querySelector('[data-game="'+g.id+'"]').click();
+        chk(!F('gameAlternate')(g),'a shuffled parlay survived leaving the game');
+        chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'reopening the game did not show the original suggestion');
+      }
+      /* the alternative is held outside S, so nothing about it is ever saved */
+      chk(!/"alt":true/.test(JSON.stringify(S)),'a shuffled parlay reached the saved state');
       S.parlay=keepParlay;
     }
     S.odds[g.id]=keepOdds; if(!Object.keys(keepOdds).length) delete S.odds[g.id];
