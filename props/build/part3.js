@@ -76,8 +76,8 @@ function renderSlate(){
       const age=S.gamesFetched?(Date.now()-S.gamesFetched)/864e5:null; const stale=open&&soon&&(age==null||age>3);
       ln.hidden=!stale;
       ln.textContent=!stale?'':(age==null
-        ?'Spreads and totals have not been pulled in this browser yet. Expected points are the biggest single input to every projection, so pull scores and lines on the Weekly Update tab before kickoff.'
-        :`Spreads and totals were last pulled ${age.toFixed(0)} day${age>=1.5?'s':''} ago. Pull them again on the Weekly Update tab before kickoff; expected points are the biggest single input to every projection.`); } }
+        ?'Spreads and totals have not been pulled in this browser yet. Expected points are the biggest single input to every projection, and they are refreshed twice a week.'
+        :`Spreads and totals were last pulled ${age.toFixed(0)} day${age>=1.5?'s':''} ago. They are refreshed twice a week; expected points are the biggest single input to every projection.`); } }
   if(!open){
     $('gamesList').innerHTML=`<div class="empty" style="text-align:left;padding:26px 30px">
       <b style="font-family:var(--display);font-size:22px;display:block;margin-bottom:8px">Week ${w} isn't open yet</b>
@@ -114,7 +114,6 @@ function renderSlate(){
       })()}</div>
       <div class="chev">\u203a</div></button>`;
   }).join('');
-  const lastWk=Object.keys(S.processed).length;
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
     S.ui.game=b.dataset.game; S.ui.open={}; save(); renderGame(); }));
@@ -202,7 +201,7 @@ function renderGame(){
     <label class="muted"><input type="checkbox" id="rungCb" ${showRungs()?'checked':''}> Threshold ladders</label>
   </div>`;
   if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
-  if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}"><b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`:(fin?'Final.':'In progress.')}</b> <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.':'Player stats come out some hours after the final whistle and appear with the next update; until then each player shows only what was projected.'}${hasScore(g)?'':' Pull in scores on the Weekly Update tab for the final score.'}</span></div>`;
+  if(locked) html+=`<div class="card" style="border-left:4px solid ${fin?'var(--pick)':'var(--gold)'}"><b>${hasScore(g)?`Final: ${g.a} ${g.as}, ${g.h} ${g.hs}.`:(fin?'Final.':'In progress.')}</b> <span class="muted">${haveStats?'Each player below shows what the model projected against what he actually did.':'Player stats come out some hours after the final whistle and appear with the next update; until then each player shows only what was projected.'}${hasScore(g)?'':' The final score appears after the next refresh.'}</span></div>`;
   html+=`
   <div class="card">
     <h2 style="display:flex;align-items:center;gap:10px">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
@@ -217,7 +216,7 @@ function renderGame(){
     const t=roster[team];
     html+=`<div class="teamhdr">${tag(team)} ${TEAM_NAMES[team]||team} <span class="pill">${locked?'played '+t.opp:'playing '+t.opp}</span></div>`;
     if(t.gaps&&t.gaps.length) html+=`<p class="muted" style="margin:-2px 0 8px">Not shown: ${t.gaps.map(x=>`<b>${esc(x.name)}</b> (${x.slot}, ${x.why})`).join(', ')}.</p>`;
-    if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Load a roster and depth chart on the Weekly Update tab.</div>'; continue; }
+    if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Rosters and depth charts are refreshed twice a week.</div>'; continue; }
     for(const x of t.players){
       const lines=statLines(x);
       if(!lines.length) continue;
@@ -519,6 +518,9 @@ function ingestRoster(rows){
 }
 function ingestInjuries(rows){
   const w=currentWeek(); let out=0;
+  /* last week's Out is not this week's: drop every weekly record from another week.
+     'season' records (IR, PUP, suspended) are not weekly and stay until the roster clears them. */
+  for(const id of Object.keys(S.inactive)){ const r=S.inactive[id]; if(r&&r.week!=='season'&&r.week!==w) delete S.inactive[id]; }
   for(const r of rows){
     if(+r.season!==SEASON||+r.week!==w) continue;
     const id=r.gsis_id||r.player_id; if(!id) continue;
@@ -527,39 +529,6 @@ function ingestInjuries(rows){
     else if(S.inactive[id]&&S.inactive[id].week===w) delete S.inactive[id];
   }
   return {out,week:w};
-}
-
-/* ---------- how it works ---------- */
-function renderModel(){
-  $('modelValidation').innerHTML=`<h3>Tested on a season it never saw</h3>
-    <p class="muted" style="margin:0 0 10px">Built on 2019 through 2024, then run against all of 2025. Average miss is how far the projection landed from the real number, in that stat's own units. "Recent form" is a five-game weighted average of the same player, which is what anyone can work out for free, and is the honest thing to beat.</p>
-    <table><thead><tr><th>Stat</th><th class="num">Average miss</th><th class="num">Recent form alone</th><th class="num">Season average</th></tr></thead><tbody>
-    ${VALIDATION.map(v=>`<tr><td>${v[0]}</td><td class="num"><b>${v[1]}</b></td><td class="num muted">${v[2]}</td><td class="num muted">${v[3]}</td></tr>`).join('')}
-    </tbody></table>
-    <h3>Are the percentages honest?</h3>
-    <p class="muted" style="margin:0 0 10px">This is what decides whether a rating means anything. Across 146,000 test thresholds in 2025, here is what the model said against what happened.</p>
-    <table><thead><tr><th>When it said</th><th class="num">It happened</th><th class="num">Off by</th></tr></thead><tbody>
-    ${CALIB.map(c=>`<tr><td>${c[0]}</td><td class="num">${c[1]}</td><td class="num">${c[2]>0?'+':''}${c[2]} pts</td></tr>`).join('')}
-    </tbody></table>
-    <p class="muted" style="margin:8px 0 0">Everything lands within about three points, and it leans very slightly optimistic. So treat a 55% as somewhere in the low fifties, and don't read much into the difference between 48% and 52%.</p>
-    <h3>Does it hold up year to year?</h3>
-    <p class="muted" style="margin:0 0 10px">A model can look good on one season by luck. So it was rebuilt from scratch five times, each version only allowed to see the seasons before the one it was tested on. No version ever saw its own test year. Numbers are how much closer it landed than a five-game rolling average of the same player.</p>
-    <table><thead><tr><th>Stat</th><th class="num">2021</th><th class="num">2022</th><th class="num">2023</th><th class="num">2024</th><th class="num">2025</th><th class="num">Average</th></tr></thead><tbody>
-    ${WALK.map(r=>`<tr><td>${r[0]}</td>${r.slice(1,6).map(v=>`<td class="num ${parseFloat(v)<0?'delta down':''}">${v}%</td>`).join('')}<td class="num"><b>${r[6]}%</b></td></tr>`).join('')}
-    </tbody></table>
-    <p class="muted" style="margin:8px 0 0">Two things to take from this. It beats a rolling average in 37 of 40 season-by-season tests, so it is doing something real and repeatable rather than fitting one year. But the size of the gain is honest: big for quarterback passing volume, small for running back and receiver counting stats, where a player's own recent average is already close to the best anyone can do.</p>
-    <h3>And the percentages, year by year</h3>
-    <table><thead><tr><th>Season tested</th><th class="num">Said 25%, happened</th><th class="num">Said 50%, happened</th><th class="num">Said 75%, happened</th></tr></thead><tbody>
-    ${SEASONCAL.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}
-    </tbody></table>
-    <p class="muted" style="margin:8px 0 0">Same story every season: reliable to about two points, with a consistent small lean toward optimism. That lean is stable enough to just keep in mind rather than correct for.</p>`;
-  const acc=S.accuracy||{}, keys=Object.keys(acc).filter(k=>acc[k].n>0);
-  $('modelSeason').innerHTML=keys.length?`<h3>How it's doing this season</h3>
-    <p class="muted" style="margin:0 0 10px">Every projection the app showed in 2026, checked against what happened. This fills in on its own each time you upload a week.</p>
-    <table><thead><tr><th>Stat</th><th class="num">Graded</th><th class="num">Average miss</th><th class="num">Recent form alone</th><th class="num">Better by</th></tr></thead><tbody>`+
-    keys.sort((a,b)=>acc[b].n-acc[a].n).map(k=>{const e=acc[k],m=e.ae/e.n,b=e.base/e.n,i=b>0?100*(b-m)/b:0;
-      return `<tr><td>${MKT[k]?MKT[k].lbl:k}</td><td class="num">${e.n}</td><td class="num">${m.toFixed(2)}</td><td class="num muted">${b.toFixed(2)}</td><td class="num ${i>=0?'delta up':'delta down'}">${i>=0?'+':''}${i.toFixed(1)}%</td></tr>`;
-    }).join('')+'</tbody></table>':'';
 }
 
 /* ---------- track record tab ---------- */
@@ -581,7 +550,7 @@ function trackTable(title,groups,note){
   return html+'</tbody></table>';
 }
 function trackBookTable(groups){
-  let html=`<h3>Against the book</h3><p class="muted" style="margin:0 0 8px">Lines that carried a real price: the main lines built in for the week, plus any sheet you uploaded. The book's chance includes its cut, so the model has to clear that too. Return is a flat $100 on every line at the price shown.</p>`;
+  let html=`<h3>Against the book</h3><p class="muted" style="margin:0 0 8px">Lines that carried a real price: the main lines built in for the week. The book's chance includes its cut, so the model has to clear that too. Return is a flat $100 on every line at the price shown.</p>`;
   html+=`<table><thead><tr><th></th><th class="num">Lines</th><th class="num">Model said</th><th class="num">Book implied</th><th class="num">Happened</th><th class="num">Return per $100</th><th>Read</th></tr></thead><tbody>`;
   for(const [lbl,rows] of groups){
     const n=rows.length; if(!n) continue;
@@ -602,7 +571,7 @@ function renderTrack(){
   const total=rows.length;
   if(mk!=='all') rows=rows.filter(r=>r.stat===mk);
   if(kind!=='all') rows=rows.filter(r=>r.kind===kind);
-  if(!total){ body.innerHTML='<p class="muted">Nothing graded yet. Once a week\u2019s player stats are uploaded, every projection from that week is scored here.</p>'; return; }
+  if(!total){ body.innerHTML='<p class="muted">Nothing graded yet. Once a week\u2019s player stats are in, every projection from that week is scored here.</p>'; return; }
   if(!rows.length){ body.innerHTML='<p class="muted">Nothing graded for that combination yet.</p>'; return; }
   const all=trackSummary(rows);
   const bands=[['High (70% and up)',rows.filter(r=>r.p>=0.70)],['Med (45% to 70%)',rows.filter(r=>r.p>=0.45&&r.p<0.70)],['Low (under 45%)',rows.filter(r=>r.p<0.45)]];
@@ -687,18 +656,19 @@ async function boot(){
   if(saved&&saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD){ S={...S,...saved}; }
   else if(saved){
     rebuilt=(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
-      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and any prices you uploaded were kept; weeks built into this file were replayed.'
-      : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and any prices you uploaded were kept; weeks built into this file were replayed.';
+      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and prices were kept; weeks built into this file were replayed.'
+      : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and prices were kept; weeks built into this file were replayed.';
     /* the season's data is built in and replays below; keep what only you could have made */
-    for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched']) if(saved[k]!=null) S[k]=saved[k];
+    for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }
-  S.ui={game:null,open:{},showAll:false};
+  /* the view resets, but a toggle the reader set is theirs */
+  S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui&&saved.ui.showRungs),suggestMin:!!(saved&&saved.ui&&saved.ui.suggestMin)};
   S.accuracy=S.accuracy||{}; S.inactive=S.inactive||{}; S.depth=S.depth||{};
-  S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{}; S.headlines=S.headlines||{};
+  S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{};
   let baked=null;
   if(!window.NO_BAKED){ try{ baked=applyBaked(); }catch(e){ console.error('built-in data failed to apply',e); setTimeout(()=>log('Built-in data could not be applied: '+(e&&e.message||e)+'. The upload buttons still work.','err'),0); } }
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
-  $('buildTag').textContent=`${MODEL_BUILD} \u00b7 ${APP_BUILD}`;
+  { const bt=$('buildTag'); if(bt) bt.textContent=`${MODEL_BUILD} \u00b7 ${APP_BUILD}`; }
   renderAll();
   if(rebuilt){ $('rebuildNote').hidden=false; $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
   if(baked&&(baked.stats.length||baked.prices||baked.inj)){
@@ -962,7 +932,7 @@ function buildSuggestions(){
 const GAME_SUGGEST_FLOOR=0.30, GAME_SUGGEST_CAP=3;
 let GAME_SUGGEST_CACHE={};
 function gameSuggestion(g){
-  const sig=[g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}).length,PAY.baked_at||'',S.margin||''].join('|');
+  const sig=[g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}),g.sp,g.tot,g.mlh,g.mla,PAY.baked_at||'',S.margin||''].join('|');
   const hit=GAME_SUGGEST_CACHE[g.id];
   if(hit&&hit.sig===sig) return hit.val;
   const cands=suggestCandidates([g]);
@@ -1079,7 +1049,7 @@ function renderParlay(){
         <li>You can pick <b>one line per stat per player</b>. Ticking 30+ pass attempts after 20+ replaces it rather than adding both, because a player can't be over two different numbers as separate bets.</li>
         <li>Different stats for the same player are fine, and so are players from different games.</li>
         <li>Each game also offers <b>a team to win</b> and <b>a team to cover the spread</b>, at the top of the game. They go in like any other leg.</li>
-        <li>Prices come from the sheet you upload on the Weekly Update tab. Anything you haven't priced is shown at the model's own fair odds instead.</li>
+        <li>Prices are pulled from the odds market twice a week. Anything without a market price is shown at the model's own fair odds instead.</li>
       </ul></div>`+renderSaved();
     wireSaved(); wireSuggest();
     return;
@@ -1092,7 +1062,6 @@ function renderParlay(){
   const bookDec=parlayDec(legs.map((l,i)=>({leg:l,ml:prices[i].ml})));
   const sg=sameGame(legs);
   const fairML=probToAmerican(pr.corr);
-  const indepML=probToAmerican(pr.indep);
   const stake=Math.max(0,+S.stake||0);
   const override=S.bookPrice!=null&&isFinite(S.bookPrice)?mlToDec(S.bookPrice):null;
   /* only call it "your price" when it really is one: a price you typed, or every
@@ -1102,7 +1071,6 @@ function renderParlay(){
   const estPrice=!realPrice&&prices.every(p=>p.src!=='fair');
   const useDec=override||((allBook||estPrice)?bookDec:mlToDec(fairML));
   const payout=stake*useDec, profit=payout-stake;
-  const ev=(realPrice||estPrice)?stake*(pr.corr*useDec-1):null;
 
   let html=suggestCard()+droppedNote+`<div class="card"><h2>${legs.length}-leg parlay <span class="pill">building</span></h2>
     <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>

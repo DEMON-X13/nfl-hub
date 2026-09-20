@@ -193,6 +193,7 @@ def main():
     # 5. assemble + audit
     rc,out=run([PY,'assemble.py'],HERE,'assemble')
     rc,out=run(['node','audit.js'],HERE,'audit')
+    rc,out2=run(['node','publish.js'],HERE,'publish')   # the workflow publishes too; a manual run must not leave the site stale
     last=[l for l in out.splitlines() if 'checks,' in l]
     audit=last[-1].strip() if last else 'audit produced no summary line'
     say('  '+audit)

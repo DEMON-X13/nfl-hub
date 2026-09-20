@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v45 \u00b7 2026-09-19';
+const APP_BUILD='app v47 \u00b7 2026-09-19';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -219,11 +219,6 @@ function project(pl,stat,opp,ctx){
 }
 
 /* ---------- projection to probability, via the stored outcome shape ---------- */
-function distFor(grp,stat,mu){
-  const D=PAY.dist[grp]&&PAY.dist[grp][stat]; if(!D) return null;
-  let t=0; for(const ed of D.edges) if(mu>ed) t++;
-  return D.q[t];
-}
 function cdfRatio(q,r){
   const QS=PAY.qs;
   if(r<=q[0]) return 0;
@@ -258,73 +253,10 @@ function fairLine(grp,stat,mu){
 
 /* ---------- odds helpers ---------- */
 function mlToProb(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?100/(ml+100):Math.abs(ml)/(Math.abs(ml)+100); }
-function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?ml/100+1:100/Math.abs(ml)+1; }
-function fmtML(ml){ return ml==null?'\u2013':(ml>0?'+'+ml:''+ml); }
-function devig(o,u){
-  const po=mlToProb(o), pu=mlToProb(u);
-  if(po==null&&pu==null) return null;
-  if(po==null) return {over:1-pu,under:pu,vig:false};
-  if(pu==null) return {over:po,under:1-po,vig:false};
-  const t=po+pu; return {over:po/t,under:pu/t,vig:true,hold:t-1};
-}
-function kelly(p,ml,frac){ const d=mlToDec(ml); if(!d) return 0; const b=d-1;
-  const f=(p*b-(1-p))/b; return Math.max(0,f)*frac; }
 
 /* ---------- build every playable line for one game ---------- */
 function playersFor(team){
   return Object.values(S.players).filter(p=>p.team===team && !S.inactive[p.id]);
-}
-function propsForGame(g){
-  const out=[];
-  for(const [team,opp] of [[g.a,g.h],[g.h,g.a]]){
-    const ctx=gameCtx(g,team);
-    for(const pl of playersFor(team)){
-      const gp=pl.gp+pl.base_gp;
-      const row={pl,team,opp,ctx,thin:gp<3,lines:[]};
-      for(const stat of (GRP_STATS[pl.grp]||[])){
-        if(NO_BET.has(stat)) continue;
-        const m=MKT[stat]; if(!m) continue;
-        const pr=project(pl,stat,opp,ctx); if(!pr) continue;
-        const o=(S.odds[g.id]&&S.odds[g.id][pl.id]&&S.odds[g.id][pl.id][stat])||null;
-        /* "worth it by" is measured against the price you actually pay, vig included:
-           the break-even is the raw implied probability of that side's odds. */
-        if(m.prob){
-          if(pr.p==null) continue;
-          const need=o?mlToProb(o.over):null;
-          const edge=(need!=null)?(pr.p-need)*100:null;
-          row.lines.push({stat,m,p:pr.p,mu:pr.p,line:null,odds:o,need,edge,
-            side:edge==null?null:'over',pSide:pr.p,priceUsed:o?o.over:null});
-        } else {
-          if(pr.mu==null||!isFinite(pr.mu)) continue;
-          const fl=fairLine(pl.grp,stat,pr.mu);
-          const line=o&&o.line!=null?o.line:null;
-          const p=line!=null?pOver(pl.grp,stat,pr.mu,line):null;
-          let edge=null,side=null,need=null,pSide=null,priceUsed=null;
-          if(p!=null&&o){
-            const io=mlToProb(o.over), iu=mlToProb(o.under);
-            const eo=io!=null?(p-io)*100:null, eu=iu!=null?((1-p)-iu)*100:null;
-            if(eo!=null&&(eu==null||eo>=eu)){edge=eo;side='over';need=io;pSide=p;priceUsed=o.over;}
-            else if(eu!=null){edge=eu;side='under';need=iu;pSide=1-p;priceUsed=o.under;}
-          }
-          row.lines.push({stat,m,mu:pr.mu,fl,line,p,odds:o,need,edge,side,pSide,priceUsed,count:pr.count});
-        }
-      }
-      if(row.lines.length) out.push(row);
-    }
-  }
-  return out;
-}
-function edgeThreshold(){ return +(S.ui.edge||3); }
-function countEdges(g){
-  let n=0,best=0;
-  for(const r of propsForGame(g)){
-    if(r.thin) continue;
-    for(const l of r.lines){
-      if(l.m.noedge||l.edge==null) continue;
-      if(l.edge>=edgeThreshold()){ n++; if(l.edge>best) best=l.edge; }
-    }
-  }
-  return {n,best};
 }
 
 /* ---------- correlated parlays: gaussian copula over the shipped pair table ---------- */
@@ -383,26 +315,8 @@ function parlayProb(legs,sims=40000){
   }
   return {indep,corr:hits/sims,pairs,shrunk:lam>0};
 }
-function probToML(p){ if(p<=0||p>=1) return null; return p>=0.5?-Math.round(100*p/(1-p)):Math.round(100*(1-p)/p); }
 
 /* every play the model would actually bet, strongest first */
-function picksForGame(g){
-  const out=[];
-  for(const r of propsForGame(g)){
-    if(r.thin) continue;
-    for(const l of r.lines){
-      if(l.m.noedge||l.edge==null||l.side==null) continue;
-      if(l.edge<edgeThreshold()) continue;
-      out.push({row:r,l});
-    }
-  }
-  return out.sort((a,b)=>b.l.edge-a.l.edge);
-}
-function betPhrase(l){
-  if(l.m.prob) return 'To score a touchdown';
-  const verb=l.side==='over'?'More than':'Fewer than';
-  return `${verb} ${l.line} ${l.m.lbl.toLowerCase()}`;
-}
 
 /* ---------- threshold ladders: "10+, 20+, 30+" style ---------- */
 const LADDER={
