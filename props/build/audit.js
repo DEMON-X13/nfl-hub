@@ -464,7 +464,7 @@ setTimeout(()=>{
       /* Shuffle: a different parlay of the same confidence, and the original still there */
       const sh=d.querySelector('[data-suggest-shuffle]');
       chk(!!sh,'no shuffle button on the game suggestion');
-      chk(!sh.disabled,'shuffle is disabled with a pool of candidates available');
+      chk(sh.disabled===!(s2.candidates>s2.legs.length),'the shuffle button is not disabled in step with the pool it has');
       const sig=ls=>ls.map(l=>l.key+'@'+l.k+l.side).sort().join(',');
       let shuffled=0;
       for(let i=0;i<4;i++){
@@ -491,7 +491,13 @@ setTimeout(()=>{
         chk(!F('gameAlternate')(g),'Original did not drop the shuffled parlay');
         chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'Original did not bring back the suggestion');
       }
-      chk(shuffled>0,'four shuffles produced no alternative at all');
+      /* a thin pool has no second parlay at the same confidence to find, and the app
+         says so rather than inventing one: demand an alternative only where there is
+         plainly room for one, so a lean week cannot fail the audit and stop a publish */
+      const pool=F('suggestCandidates')([g]).slice(0,18);
+      const roomy=pool.length>=s2.legs.length+3&&new Set(pool.map(c=>c.pid)).size>=3;
+      chk(!roomy||shuffled>0,`four shuffles found nothing in a pool of ${pool.length} lines over ${new Set(pool.map(c=>c.pid)).size} players`);
+      console.log(`O2. shuffle: ${shuffled} of 4 dealt an alternative, pool ${pool.length} lines over ${new Set(pool.map(c=>c.pid)).size} players`);
       /* leaving the game and opening it again starts back at the model's own pick */
       d.querySelector('[data-suggest-shuffle]').click();
       if(F('gameAlternate')(g)){
