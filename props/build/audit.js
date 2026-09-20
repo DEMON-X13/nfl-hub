@@ -699,6 +699,33 @@ setTimeout(()=>{
       chk(!/"state":"(live|post|pre)"/.test(JSON.stringify(S.saved||[])),'live data reached a saved parlay');
       console.log('T. live tracking: box score, name matching, leg states and scoreboard mapping all parse'); }
 
+    /* ---- U. the betting model's parlays, read across from its key ---- */
+    { const bp=F('bettingParlays');
+      const blob=JSON.stringify({bank:{build:[
+        {id:'b1',week:2,type:'parlay',stake:25,legs:[
+          {game_id:'2026_02_CAR_ATL',away:'CAR',home:'ATL',pick:'ATL',ml:-150,conf:'MED'},
+          {game_id:'2026_02_KC_BUF',away:'KC',home:'BUF',pick:'KC',ml:120,conf:'HIGH'}]},
+        {id:'b2',week:2,type:'single',stake:10,legs:[{game_id:'2026_02_KC_BUF',away:'KC',home:'BUF',pick:'BUF',ml:-110}]},
+        {id:'b3',week:2,type:'parlay',stake:5,legs:[{game_id:'2026_02_KC_BUF',away:'KC',home:'BUF',pick:'BUF',ml:-110}]},
+        {id:'b4',week:2,type:'parlay',stake:5,legs:[{pick:'ATL'},{game_id:'2026_02_KC_BUF',pick:'BUF',ml:-110}]}]}});
+      const got=bp(blob);
+      chk(got.length===1&&got[0].id==='b1','the betting parlay reader did not pick out exactly the one good parlay');
+      chk(got[0].legs.length===2&&got[0].legs[0].gid==='2026_02_CAR_ATL','a betting leg lost its game id');
+      chk(got[0].legs.every(l=>l.stat==='ml'&&l.grp==='TEAM'&&l.label==='To win'),'a betting leg is not shaped like a team leg');
+      chk(got[0].legs[0].team==='ATL'&&got[0].legs[1].team==='KC','the picked side came through wrong');
+      chk(got[0].stake===25&&got[0].priced,'stake or pricing wrong on a betting parlay');
+      chk(Math.abs(got[0].dec-(F('mlToDec')(-150)*F('mlToDec')(120)))<1e-9,'the parlay price is not the legs multiplied');
+      chk(Math.abs(got[0].payout-25*got[0].dec)<1e-9,'the payout does not follow the price');
+      /* a single, a one-leg "parlay" and a leg with no game are all skipped, not guessed at */
+      chk(!got.some(p=>p.id==='b2'||p.id==='b3'),'a single or a one-leg parlay was treated as a parlay');
+      chk(bp('not json')  .length===0&&bp('').length===0&&bp(null).length===0,'malformed storage was not survived');
+      chk(bp(JSON.stringify({bank:{}})).length===0&&bp(JSON.stringify({bank:{build:'x'}})).length===0,'a missing or wrong-typed build was not survived');
+      /* the live poll must ask for those games too */
+      chk(/bettingParlays\(\)/.test(String(F('liveWanted'))),'the live poll does not cover betting parlays');
+      /* and none of it may reach our own state */
+      chk(!(S.saved||[]).some(p=>p.id==='b1'),'a betting parlay was copied into our saved parlays');
+      console.log(`U. betting parlays: ${got.length} read from a fixture, singles and malformed entries skipped`); }
+
     console.log(`\n${checks} checks, ${fails.length} failures, ${errs.length} runtime errors`);
     fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
     errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));

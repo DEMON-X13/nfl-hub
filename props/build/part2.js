@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v52 \u00b7 2026-09-20';
+const APP_BUILD='app v53 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -643,6 +643,36 @@ function espnGames(sb,sched){
     const st=((c.status||e.status||{}).type)||{};
     out[g.id]={eid:String(e.id),home:h,away:a,hs:espnNum(home.score),as:espnNum(away.score),
       state:st.state==='post'?'post':(st.state==='in'?'live':'pre'),clock:String(st.shortDetail||st.detail||'')};
+  }
+  return out;
+}
+
+/* ---------- the betting model's parlays, read across ----------
+   One origin serves both sites, so its key is readable here. Read only and defensively:
+   this page never writes to it, storage can be refused outright, and a malformed entry is
+   skipped rather than guessed at. Both apps use nflverse game ids, so nothing is translated. */
+const BET_KEY='x_nfl_viewer_picks_2026';
+function bettingParlays(raw){
+  if(raw===undefined){ try{ raw=localStorage.getItem(BET_KEY); }catch(e){ return []; } }
+  if(!raw) return [];
+  let v=null; try{ v=JSON.parse(raw); }catch(e){ return []; }
+  const build=v&&v.bank&&v.bank.build;
+  if(!Array.isArray(build)) return [];
+  const out=[];
+  for(const b of build){
+    if(!b||b.type!=='parlay'||!Array.isArray(b.legs)) continue;
+    const legs=[];
+    for(const l of b.legs){
+      if(!l||!l.game_id||!l.pick) continue;
+      const ml=(l.ml==null||!isFinite(+l.ml))?null:+l.ml;
+      legs.push({gid:String(l.game_id),team:String(l.pick),stat:'ml',k:0,side:'over',main:false,grp:'TEAM',
+        name:TEAM_NAMES[l.pick]||String(l.pick),label:'To win',price:ml,week:+b.week||null});
+    }
+    if(legs.length<2) continue;                       /* two legs or it is not a parlay */
+    const dec=legs.reduce((a,l)=>a*(l.price==null?1:(mlToDec(l.price)||1)),1);
+    const stake=Math.max(0,+b.stake||0);
+    out.push({id:String(b.id||''),week:+b.week||null,stake,legs,dec,
+      priced:legs.every(l=>l.price!=null),payout:stake*dec});
   }
   return out;
 }
