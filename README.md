@@ -97,6 +97,11 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
 - Parlays are listed in the order the day runs: anything still to finish first, then by when
   a parlay can settle -- its **last** kickoff, not its first, so one carrying a four o'clock
   leg sits below one made only of one o'clock games. Settled parlays go to the bottom.
+- A player leg is drawn the way a book draws it: the target as the heading (`43.5+`, or
+  `under 54.5`), the man and the stat under it, and a **progress bar** with his number in a
+  pill where it falls, a tick at the line and the line labelled beneath. The bar runs a
+  quarter past the line, so the tick sits at 80% and a number past its target visibly is.
+  Gold while it is running, green once it lands, red once it is gone.
 - Nothing reads as a blank. Before kickoff the strip shows **0-0** with the kick time and every
   leg reads `0 / 43.5` on a zeroed stat line; a player ESPN has not put in the box score yet
   reads 0 too, because that is what he has.
