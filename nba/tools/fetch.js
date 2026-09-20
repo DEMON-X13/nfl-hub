@@ -8,7 +8,8 @@
  * asked for again, and July to September are skipped, so a rerun costs a handful of requests. Games are
  * upserted by id: a day's ESPN rows are replaced by what the feed says now, so a postponed game leaves
  * its old date and appears on the new one. Rows from the history file are kept unless the feed has a
- * final for the same game. Preseason games are ignored. Exit 1 if ESPN could not be read at all, so a
+ * final for the same game. ESPN carries a line only before tip-off, so the line a final keeps is the last
+ * one seen on it, the morning-of line from the day's earlier pull. Preseason games are ignored. Exit 1 if ESPN could not be read at all, so a
  * network block shows as a failed run and not as a quiet day with no games.
  */
 'use strict';
@@ -62,6 +63,9 @@ function merge(have, date, fresh) {
   for (const r of fresh) {
     const old = byId.get(r.game_id);
     if (old && old.source !== 'espn' && old.status === 'final') continue;   // history already has this final
+    /* ESPN carries odds only before tip-off, so a final arrives without them: keep the last line seen,
+       the morning-of line from the day's earlier pull */
+    if (old) { if (!r.home_line && old.home_line) r.home_line = old.home_line; if (!r.total && old.total) r.total = old.total; }
     byId.set(r.game_id, r);
   }
   return [...byId.values()];
