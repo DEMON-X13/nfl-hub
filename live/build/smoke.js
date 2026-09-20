@@ -20,10 +20,15 @@ const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 
-const GID = '2026_02_CAR_ATL';
-const sb = state => ({ events: [{ id: '401', competitions: [{ status: { type: { state, shortDetail: state === 'post' ? 'Final' : 'Q3 7:12' } },
-  competitors: [{ homeAway: 'home', team: { abbreviation: 'ATL' }, score: '20' },
-                { homeAway: 'away', team: { abbreviation: 'CAR' }, score: '17' }] }] }] });
+const GID = '2026_02_CAR_ATL';          /* the early game */
+const GID2 = '2026_02_KC_BUF';          /* the night game */
+const EARLY = '2026-09-20T17:00Z', NIGHT = '2026-09-21T00:20Z';
+const ev = (id, date, away, home, state, as, hs) => ({ id, date,
+  competitions: [{ status: { type: { state, shortDetail: state === 'post' ? 'Final' : 'Q3 7:12' } },
+    competitors: [{ homeAway: 'home', team: { abbreviation: home }, score: String(hs) },
+                  { homeAway: 'away', team: { abbreviation: away }, score: String(as) }] }] });
+const sb = state => ({ events: [ev('401', EARLY, 'CAR', 'ATL', state, 17, 20),
+                                 ev('402', NIGHT, 'KC', 'BUF', state, 7, 3)] });
 const SUM = { boxscore: { players: [
   { team: { abbreviation: 'ATL' }, statistics: [
     { name: 'rushing', labels: ['CAR', 'YDS', 'AVG', 'TD', 'LONG'], athletes: [{ athlete: { displayName: 'Bijan Robinson' }, stats: ['17', '86', '5.1', '1', '22'] }] },
@@ -52,9 +57,9 @@ const betBlob = () => JSON.stringify({ myPicks: { g1: 'KC' }, bets: { 2: { stake
       { game_id: GID, away: 'CAR', home: 'ATL', pick: 'CAR', ml: 130 }] }] } });
 
 function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); },
-               mode = 'ok', state = 'in' } = {}) {
+               mode = 'ok', state = 'in', hash = '' } = {}) {
   return new Promise(resolve => {
-    const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_,
+    const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_ + hash,
       beforeParse(w) {
         w.confirm = () => true; w.alert = () => {};
         w.fetch = u => mode === 'fail'
@@ -129,6 +134,60 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     'a refused fetch is not explained');
   chk(c.d.querySelectorAll('.savedp').length === 3, 'the parlays should still list when the scores cannot load');
   chk(c.d.querySelectorAll('[data-rm]').length === 3, 'Remove should still work when the scores cannot load');
+
+  // ---- G. the day's order: earliest kickoff first, finished at the bottom ----
+  {
+    const nightLeg = Object.assign({}, leg('p9', 'Josh Allen', 'passing_yards', 250.5, 'over', true, 'Over 250.5 passing yards', 'BUF'),
+      { key: `${GID2}|p9|passing_yards`, gid: GID2 });
+    const seed = w => {
+      w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
+        { id: 'night', week: 2, stake: 10, price: 200, payout: 30, legs: [nightLeg] },
+        { id: 'early', week: 2, stake: 10, price: 200, payout: 30, legs: [
+          leg('p1', 'Bijan Robinson', 'rushing_yards', 43.5, 'over', true, 'Over 43.5 rushing yards', 'ATL')] }] }));
+      w.localStorage.removeItem(BET_KEY);
+    };
+    const o = await run({ seed });
+    const order = [...o.d.querySelectorAll('.savedp')].map(c => txt(c.querySelector('.sp-leg .nm')));
+    chk(order.length === 2, `ordering: expected 2 parlays, got ${order.length}`);
+    chk(/Bijan Robinson/.test(order[0]) && /Josh Allen/.test(order[1]),
+      'the night game should sort below the early one, got: ' + order.join(' | '));
+    /* once the early one is final it drops to the bottom even though it kicked off first */
+    const f = await run({ seed, state: 'post' });
+    chk([...f.d.querySelectorAll('.savedp')].length === 2, 'ordering: parlays vanished when final');
+  }
+
+  // ---- H. parlays travel between devices in the link ----
+  {
+    const a = await run();
+    let copied = null;
+    a.w.navigator.clipboard = { writeText: t => { copied = t; return Promise.resolve(); } };
+    a.d.getElementById('send').click();
+    await new Promise(r => setTimeout(r, 60));
+    chk(!!copied && copied.includes('#p='), 'Send did not produce a link with the parlays in it');
+    const hash = copied.slice(copied.indexOf('#'));
+    chk(/Link copied/.test(txt(a.d.querySelector('.note'))), 'Send did not say the link was ready');
+
+    /* a clean device opens it */
+    const b = await run({ seed: () => {}, hash });
+    chk(b.d.querySelectorAll('.savedp').length === 3, `the link should carry 3 parlays, got ${b.d.querySelectorAll('.savedp').length}`);
+    chk(/3 parlays added/.test(txt(b.d.querySelector('.note'))), 'the arrival was not announced');
+    chk([...b.d.querySelectorAll('.pill')].some(x => /sent here/.test(x.textContent)), 'an imported parlay is not labelled');
+    chk(!/#p=/.test(b.w.location.href), 'the link was left in the address bar');
+    chk(!b.w.localStorage.getItem(PROP_KEY) && !b.w.localStorage.getItem(BET_KEY),
+      'importing wrote into the two apps instead of this page\'s own key');
+    chk(!!b.w.localStorage.getItem('live_parlays_v1'), 'the imported parlays were not stored');
+    /* an imported parlay can be removed like any other */
+    b.d.querySelector('[data-rm]').click();
+    chk(b.d.querySelectorAll('.savedp').length === 2, 'an imported parlay could not be removed');
+
+    /* opening the same link twice adds nothing */
+    const c = await run({ seed: w => w.localStorage.setItem('live_parlays_v1', b.w.localStorage.getItem('live_parlays_v1')), hash });
+    chk(/already here/.test(txt(c.d.querySelector('.note'))) || c.d.querySelectorAll('.savedp').length <= 3,
+      'a repeated link duplicated the parlays');
+    /* a mangled link says so rather than failing silently */
+    const e2 = await run({ seed: () => {}, hash: '#p=notbase64!!' });
+    chk(/could not be read|carried no parlays/.test(txt(e2.d.querySelector('.note')) || ''), 'a broken link is not explained');
+  }
 
   console.log(`${checks} checks, ${fails.length} failures`);
   fails.forEach(f2 => console.log('  FAIL:', f2));

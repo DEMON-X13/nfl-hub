@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v53 \u00b7 2026-09-20';
+const APP_BUILD='app v54 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -641,8 +641,11 @@ function espnGames(sb,sched){
     const h=espnAb(home.team&&home.team.abbreviation), a=espnAb(away.team&&away.team.abbreviation);
     const g=(sched||[]).find(x=>x.h===h&&x.a===a); if(!g) continue;
     const st=((c.status||e.status||{}).type)||{};
+    /* the kickoff, so a reader can put games in the order they are played */
+    const when=Date.parse(String(e.date||c.date||''));
     out[g.id]={eid:String(e.id),home:h,away:a,hs:espnNum(home.score),as:espnNum(away.score),
-      state:st.state==='post'?'post':(st.state==='in'?'live':'pre'),clock:String(st.shortDetail||st.detail||'')};
+      state:st.state==='post'?'post':(st.state==='in'?'live':'pre'),clock:String(st.shortDetail||st.detail||''),
+      kick:isFinite(when)?when:null};
   }
   return out;
 }

@@ -91,8 +91,12 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
   else touches it. No job runs for this page either.
 - It refreshes every 30 seconds by default (15, 60 or off), only while the tab is visible,
   plus a Refresh button. End to end that is ESPN's own lag plus at most the interval.
+- Parlays are listed in the order the day runs: anything still to finish first, earliest
+  kickoff at the top, settled ones out of the way at the bottom.
 - Local storage does not travel between devices, so it finds the parlays made in the browser
-  it is running in. Moving them is what the Backup tab on each site is for.
+  it is running in. **Send to a device** packs what is on screen into the page's own URL;
+  opening that link anywhere unpacks it into this page's own key (`live_parlays_v1`), never
+  into the two apps'. Remove takes one out again, and Clear finished sweeps the settled ones.
 
 The ESPN parsing and the betting-model reader are not copied into the page. `live/build/build.js`
 lifts them out of `props/build/part2.js` at build time, so there is one source of truth and the
