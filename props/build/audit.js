@@ -461,6 +461,8 @@ setTimeout(()=>{
       d.querySelector('[data-suggest-all]').click();
       chk(Object.keys(S.parlay).length===s2.legs.length,'Add all pressed twice toggled legs back off');
       chk(/On the parlay/.test(d.querySelector('[data-suggest-all]').textContent),'the button does not say the parlay is already on');
+      /* Add all has just locked every leg; the plain shuffle is tested with none locked */
+      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
       /* Shuffle: a different parlay of the same confidence, and the original still there */
       const sh=d.querySelector('[data-suggest-shuffle]');
       chk(!!sh,'no shuffle button on the game suggestion');
@@ -498,6 +500,30 @@ setTimeout(()=>{
       const roomy=pool.length>=s2.legs.length+3&&new Set(pool.map(c=>c.pid)).size>=3;
       chk(!roomy||shuffled>0,`four shuffles found nothing in a pool of ${pool.length} lines over ${new Set(pool.map(c=>c.pid)).size} players`);
       console.log(`O2. shuffle: ${shuffled} of 4 dealt an alternative, pool ${pool.length} lines over ${new Set(pool.map(c=>c.pid)).size} players`);
+      /* a ticked leg is locked: every shuffle has to keep it */
+      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
+      const lockBox=d.querySelector('.gsugg-legs input[data-leg]'), lockKey=lockBox.dataset.leg;
+      lockBox.click();
+      chk(Object.keys(S.parlay).length===1,'ticking a suggested leg did not lock it on the parlay');
+      chk(!!d.querySelector('.gsugg-legs .lk'),'a locked leg is not marked locked');
+      let keptAll=true, lockedAlts=0;
+      for(let i=0;i<4;i++){
+        const b=d.querySelector('[data-suggest-shuffle]'); if(!b||b.disabled) break;
+        b.click();
+        const a=F('gameAlternate')(g); if(!a||!a.val) continue;
+        lockedAlts++;
+        if(!a.val.legs.some(l=>l.key===lockKey)) keptAll=false;
+        chk(a.val.legs.length===s2.legs.length,'a shuffle around a locked leg changed the parlay size');
+      }
+      chk(keptAll,'shuffle dropped a locked leg');
+      if(lockedAlts) chk(!!d.querySelector('.gsugg-legs input[data-leg]:checked'),'the locked leg lost its tick after a shuffle');
+      /* every leg locked leaves shuffle nothing to do, and it says so rather than pretending */
+      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
+      d.querySelector('[data-suggest-all]').click();
+      chk(d.querySelector('[data-suggest-shuffle]').disabled,'shuffle is still live with every leg locked');
+      chk(/Every leg is locked/.test(d.querySelector('.gsugg').textContent),'an all-locked card does not say why shuffle is dead');
+      chk(F('shuffleSuggestion')(g)===null,'shuffle dealt a parlay with every leg locked');
+      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
       /* leaving the game and opening it again starts back at the model's own pick */
       d.querySelector('[data-suggest-shuffle]').click();
       if(F('gameAlternate')(g)){
