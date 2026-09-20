@@ -518,7 +518,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v48 \u00b7 2026-09-20';
+const APP_BUILD='app v49 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2162,7 +2162,7 @@ function gameSuggestCard(g,locked){
     <p class="muted" style="margin:0">Nothing here clears the bar yet: a suggestion needs two legs with a real sportsbook price that the model rates at least three points above that price${s.candidates===1?', and only one qualifies':''}. Player prices arrive with the Thursday and Saturday pulls.</p></div>`;
   const stake=Math.max(0,+S.stake||0), ml=decToML(s.dec);
   return `<div class="card gsugg"><div class="gsugg-hd">
-      <h2>Suggested parlay</h2><span class="conf med">Medium</span>${s.alt?'<span class="pill">shuffled</span>':''}<span class="grow"></span>
+      <h2>Suggested parlay</h2><span class="conf med">Medium</span><span class="grow"></span>
       ${s.alt?`<button class="btn quiet gsugg-orig" data-suggest-orig="${g.id}">Original</button>`:''}
       <button class="btn quiet gsugg-alt" data-suggest-shuffle="${g.id}"${s.candidates>s.legs.length?'':' disabled'} aria-label="Shuffle another parlay of the same confidence for this game">\u21bb Shuffle</button>
       <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${s.legs.every(l=>{const c=S.parlay[l.key];return !!c&&c.k===l.k&&c.side===l.side&&!!c.main===!!l.main;})?'On the parlay':'Add all'}</button>
