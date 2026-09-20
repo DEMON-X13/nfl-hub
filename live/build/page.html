@@ -56,7 +56,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .pill.ok{background:var(--pick-soft);color:var(--pick)}
 .pill.bad{background:var(--miss-soft);color:var(--miss)}
 .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
-.res.win{color:var(--pick)} .res.loss{color:var(--miss)}
+.res.win{color:var(--pick)} .res.loss{color:var(--miss)} .res.tie{color:var(--gold)}
 .savedp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
 .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .sp-head .grow{flex:1}
@@ -76,7 +76,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .status{font-size:12px;color:var(--ink-2);white-space:nowrap}
 .status.win{color:var(--pick);font-weight:700} .status.lose{color:var(--miss);font-weight:700}
 /* room at both ends so a knob well past its line can overhang without touching the card */
-.pbar{position:relative;margin:14px 0 0;padding:0 26px 20px 6px}
+.pbar{position:relative;margin:14px 0 0;padding:0 26px 30px 6px}
 .track{position:relative;height:10px;border-radius:999px;background:var(--line)}
 .fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#F4E2B4,var(--gold));transition:width .3s var(--ease)}
 .fill.win{background:linear-gradient(90deg,#A9E2C6,var(--pick))}
@@ -84,27 +84,36 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-2);border-radius:2px;opacity:.65}
 .knob{position:absolute;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:2px solid var(--gold);border-radius:999px;padding:1px 9px;font-family:var(--display);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--sh-xs)}
 .knob.win{border-color:var(--pick);color:var(--pick)} .knob.lose{border-color:var(--miss);color:var(--miss)}
-.lineLbl{position:absolute;top:calc(100% + 6px);transform:translateX(-50%);font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ln.edit{cursor:pointer;border-bottom:1px dashed var(--line-2);padding-bottom:1px}
-.ln.edit:hover{border-bottom-color:var(--ink-2)}
-.ln.edit:focus-visible{outline:none;box-shadow:var(--ring);border-radius:3px}
-.ln.moved{color:var(--gold);border-bottom-color:var(--gold)}
-.movedNote{display:block;font-size:11px;color:var(--gold);font-weight:400}
+.lineLbl{position:absolute;top:calc(100% + 5px);transform:translateX(-50%);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+/* the line is the one thing on a leg you can change, so it has to look changeable: a dashed
+   pill with a pencil, big enough to hit with a thumb */
+.ln.edit{display:inline-block;cursor:pointer;border:1.5px dashed var(--line-2);border-radius:999px;padding:3px 9px;background:var(--panel);color:var(--ink-2);font-weight:600;line-height:1.2}
+.ln.edit::after{content:"\270E";margin-left:5px;opacity:.75;font-weight:400}
+.ln.edit:hover{border-color:var(--ink-2);color:var(--ink)}
+.ln.edit:focus-visible{outline:none;box-shadow:var(--ring)}
+.ln.moved{color:var(--gold);border-color:var(--gold);border-style:solid}
+.movedNote{display:block;font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
 .movedNote a{color:var(--gold)}
 .tokRow{display:flex;gap:8px;align-items:center;margin-top:8px}
 .tokBox{width:auto;flex:1;margin-top:0}
 .shareBox{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.lineInput{width:72px;padding:3px 6px;border:1px solid var(--ink-2);border-radius:var(--r-sm);font-size:12px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
-.games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}
-.gm{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-family:var(--display);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
-.gm em{font-style:normal;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);margin-left:7px}
-.gm.on{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05} .gm.on em{color:#8A5E05}
-.gm.done{color:var(--ink-2)}
+.lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
+.games{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.gm{background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;font-family:var(--display);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px;box-shadow:var(--sh-xs)}
+.gm em{font-style:normal;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);margin-left:9px}
+/* green while the parlay is winning this game, red once it is losing it, yellow while it is
+   level or undecided -- the same three colours the legs use, on the scoreboard */
+.gm.good{border-color:var(--pick);background:var(--pick-soft);color:var(--pick)} .gm.good em{color:var(--pick)}
+.gm.bad{border-color:var(--miss);background:var(--miss-soft);color:var(--miss)} .gm.bad em{color:var(--miss)}
+.gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05} .gm.tie em{color:#8A5E05}
+.gm.done{box-shadow:none}
+@media(max-width:620px){ .gm{font-size:16px;padding:8px 15px} }
 .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
 .sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
 .sp-leg .rs.win{color:var(--pick);font-weight:700} .sp-leg .rs.lose{color:var(--miss);font-weight:700}
+.sp-leg .rs.tie{color:#8A5E05;font-weight:700}
 .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
@@ -167,7 +176,31 @@ const DATA='parlays.json';
 /* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
    thing worth knowing is whether the browser is even showing the current build, and from the
    outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v1 \u00b7 __BUILT__';
+const PAGE_BUILD='live v2 \u00b7 __BUILT__';
+
+/* A line that moved between building the parlay and placing it -- Kelce's receiving yards
+   going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
+   line under the bar and set what you actually took.
+
+   The correction is kept in this page's own key and nowhere else. The parlay in the prop
+   model, in the betting model and in the file is left exactly as it was: this changes what
+   the page measures against, not how anything settles, and the prop model's Track Record
+   still grades the line the model actually quoted. Like everything a browser keeps, it is
+   that browser's -- for a correction every device should see, the number goes in the file. */
+const LIVE_KEY='live_parlays_v1';
+function liveStore(){
+  let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
+  return {lines:(v&&v.lines&&typeof v.lines==='object')?v.lines:{}};
+}
+function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
+function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
+function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
+function setLine(p,i,val){
+  const st=liveStore(), k=lineKey(p,i);
+  if(val==null) delete st.lines[k]; else st.lines[k]=+val;
+  return writeStore(st);
+}
+const legAt=(p,i,l)=>{ const k=lineOf(p,i,l); return k===+l.k?l:Object.assign({},l,{k}); };
 
 /* The two models keep what you save in the browser that saved it, which is theirs to do:
    picks and bets are the visitor's and never leave the machine. So this page shows both --
@@ -333,13 +366,33 @@ function statLine(st){
   return bits.join(' \u00b7 ');
 }
 const n0=v=>v==null?'0':String(v);
+/* Where this parlay's stake in one game currently stands, which is what colours its chip.
+   Red the moment a leg there is lost, green while every leg is won, yellow for level or
+   still undecided -- a leg short of its line with the game running is not lost yet. A game
+   that has not kicked off is none of the three. */
+function gameTone(p,gid){
+  const g=STATE.games[gid]; if(!g||g.state==='pre') return '';
+  let good=0, bad=0, n=0;
+  p.legs.forEach((leg,i)=>{
+    if(leg.gid!==gid) return; n++;
+    const l=legAt(p,i,leg);
+    const r=liveFor(l); if(!r) return;
+    if(r.state==='hit'){ good++; return; }
+    if(r.state==='missed'){ bad++; return; }
+    /* a team bet while the game runs is decided by the scoreboard, not by a final state */
+    if(isGameLeg(l)&&r.state==='live'){ if(+r.val>0) good++; else if(+r.val<0) bad++; }
+  });
+  if(!n) return '';
+  return bad?'bad':(good===n?'good':'tie');
+}
 function gameStrip(p){
   const seen=[], out=[];
   for(const l of p.legs){
     if(!l.gid||seen.indexOf(l.gid)>=0) continue;
     seen.push(l.gid);
     const g=STATE.games[l.gid]; if(!g) continue;
-    out.push(`<span class="gm${g.state==='live'?' on':''}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}<em>${esc(g.clock||'')}</em></span>`);
+    const tone=gameTone(p,l.gid);
+    out.push(`<span class="gm${tone?' '+tone:''}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}<em>${esc(g.clock||'')}</em></span>`);
   }
   return out.length?`<div class="games">${out.join('')}</div>`:'';
 }
@@ -350,25 +403,41 @@ const STAT_NAME={passing_yards:'Passing Yards',passing_tds:'Passing TDs',passing
 const statName=l=>STAT_NAME[l.stat]||l.stat;
 const targetLabel=(l,k)=>(l.side==='under'&&l.main)?`under ${num(k,k%1?1:0)}`:`${num(k,k%1?1:0)}+`;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function progressBar(val,k,state){
+function progressBar(val,k,state,lineHTML){
   const max=(isFinite(k)&&k>0)?k*1.25:Math.max(1,val||1);
   const tick=clamp(100*k/max,0,100), pct=clamp(100*(val||0)/max,0,100), knob=clamp(pct,3,97);
   const tone=state==='hit'?' win':(state==='missed'?' lose':'');
   return `<div class="pbar"><div class="track"><div class="fill${tone}" style="width:${pct.toFixed(2)}%"></div>
     <span class="tick" style="left:${tick.toFixed(2)}%"></span>
     <span class="knob${tone}" style="left:${knob.toFixed(2)}%">${esc(num(val,(val||0)%1?1:0))}</span>
-    <span class="lineLbl" style="left:${tick.toFixed(2)}%">${esc(num(k,k%1?1:0))}</span></div></div>`;
+    <span class="lineLbl" style="left:${tick.toFixed(2)}%">${lineHTML||esc(num(k,k%1?1:0))}</span></div></div>`;
 }
 const MARK={hit:'\u2713',missed:'\u2717',push:'P'};
-function legRow(l){
+function legRow(p,leg,i){
+  const l=legAt(p,i,leg), k=+l.k, moved=k!==+leg.k;
   const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
   const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
   const mark=r&&MARK[r.state]?MARK[r.state]:'\u25cb';
+  /* A team bet says how it is doing, not what the score is: the score is already on the chip
+     above it, in bigger type. Green while the side bet on is ahead, red while it is behind,
+     yellow level -- the same three the chips use. */
   if(isGameLeg(l)){
     const g=r&&r.game;
-    const right=!r?'<span class="rs muted">waiting</span>'
-      :`<span class="rs ${tone}">${esc(g.away+' '+n0(g.as)+'\u2013'+n0(g.hs)+' '+g.home)}<em>${esc(g.clock||'')}</em></span>`;
-    return `<div class="sp-leg team"><span class="${cls}">${mark}</span>
+    let t2='', word='waiting';
+    if(r&&g){
+      if(r.state==='pending'){ word=g.clock||'not started'; }
+      else if(r.state==='unknown'){ word='not reported'; }
+      else { const m=+r.val;
+        t2=r.state==='hit'?'win':(r.state==='missed'?'lose':(m>0?'win':(m<0?'lose':'tie')));
+        word=r.state==='hit'?'won':(r.state==='missed'?'lost':(r.state==='push'?'level':
+          (m>0?'up '+n0(m):(m<0?'down '+n0(-m):'level'))));
+      }
+    }
+    const tcls=t2==='win'?'res win':(t2==='lose'?'res loss':(t2==='tie'?'res tie':'res'));
+    const tmark=t2==='win'&&r&&r.state==='hit'?MARK.hit:(t2==='lose'&&r&&r.state==='missed'?MARK.missed:mark);
+    const right=(!r||word==='waiting')?'<span class="rs muted">waiting</span>'
+      :`<span class="rs ${t2}">${esc(word)}<em>${esc(g.clock||'')}</em></span>`;
+    return `<div class="sp-leg team"><span class="${tcls}">${tmark}</span>
       <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${right}</div>`;
   }
   const state=r?r.state:'pending', room=l.main&&l.side==='under';
@@ -376,12 +445,16 @@ function legRow(l){
     (state==='pending'?esc((r.game&&r.game.clock)||'not started')
       :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')))));
   const line=(r&&r.stats)?statLine(r.stats):'';
+  const lineHTML=`<span class="ln edit${moved?' moved':''}" role="button" tabindex="0"
+    data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}"
+    title="The book moved this line? Tap and set what you actually bet.">${esc(num(k,k%1?1:0))}</span>`;
+  const note=moved?`<span class="movedNote">moved from ${esc(num(+leg.k,(+leg.k)%1?1:0))} \u00b7 <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></span>`:'';
   return `<div class="sp-leg prop"><span class="${cls}">${mark}</span>
     <div class="legbody">
-      <div class="legtop"><span class="tgt">${esc(targetLabel(l,+l.k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
+      <div class="legtop"><span class="tgt">${esc(targetLabel(l,k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
       <div class="who">${esc(l.name)} ${esc(statName(l))}</div>
-      ${line?`<div class="statline">${esc(line)}</div>`:''}
-      ${progressBar(r?r.val:0,+l.k,state)}
+      ${line?`<div class="statline">${esc(line)}</div>`:''}${note}
+      ${progressBar(r?r.val:0,k,state,lineHTML)}
     </div></div>`;
 }
 /* Empty is not one thing. Empty because this browser has never opened the two models is a
@@ -440,9 +513,38 @@ function draw(){
         <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'\u2013'}</b><span>pays</span></div>
       </div>
       ${gameStrip(p)}
-      ${p.legs.map(legRow).join('')}</div>`;
+      ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
   }
-  app.innerHTML=html; foot();
+  app.innerHTML=html; wireLines(app); foot();
+}
+/* Edit a line in place: the number under the bar becomes a box, Enter or leaving it commits,
+   Escape puts it back. It is drawn where the line actually is, on the bar, rather than as a
+   button repeating the number beside it. */
+function wireLines(app){
+  app.querySelectorAll('[data-edit]').forEach(b=>{
+    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); b.click(); } });
+    b.addEventListener('click',()=>{
+      const key=b.dataset.edit, cur=b.dataset.k;
+      const inp=document.createElement('input');
+      inp.type='number'; inp.step='0.5'; inp.className='lineInput'; inp.value=cur;
+      inp.setAttribute('inputmode','decimal');
+      inp.setAttribute('aria-label','the line you actually bet');
+      b.replaceWith(inp); inp.focus(); inp.select();
+      let gone=false;
+      const done=save=>{ if(gone) return; gone=true;
+        if(save){ const v=parseFloat(inp.value), q=key.split('|');
+          if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
+        draw(); };
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
+        else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
+      inp.addEventListener('blur',()=>done(true));
+    });
+  });
+  app.querySelectorAll('[data-reset]').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    const q=a.dataset.reset.split('|');
+    setLine({src:q[0],id:q[1]},+q[2],null); draw();
+  }));
 }
 function foot(){
   const when=STATE.updated?new Date(STATE.updated):null;
@@ -450,6 +552,7 @@ function foot(){
     :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
   document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>live/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> in this browser, with nothing to press — saved and locked parlays, and whatever is sitting in the prop model's builder \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
+    Tap the line under a bar (<b>41.5 \u270e</b>) if the book moved it after you bet: the page measures against your number from then on, the parlay itself is left alone, and the correction stays in this browser \u2014 for one every device should see, it goes in the file.
     Scores come from ESPN's public feeds, read by this page in your own browser: no odds-API credits are ever spent here, and no job runs for it.
     Auto-refresh starts <b>off</b> \u2014 the page fetches once when you open it, then only when you press Refresh now or turn an interval on.`;
 }

@@ -123,8 +123,10 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
 
   // ---- C. it reads the two models, and never writes anything ----
   chk(!/api\.github\.com/.test(HTML), 'the page still talks to the GitHub API');
-  chk(!/localStorage\.setItem|localStorage\.removeItem/.test(HTML),
-    'the page writes to local storage; it should only ever read it');
+  /* the page may write its own key and no other: the two models' storage is theirs */
+  chk(!/localStorage\.setItem\((?!LIVE_KEY)/.test(HTML),
+    'the page writes to a local storage key that is not its own');
+  chk(!/localStorage\.removeItem/.test(HTML), 'the page removes something from local storage');
   {
     const seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); };
     const m = await run({ seed });
@@ -176,7 +178,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   // ---- D. the buttons are gone ----
   for (const id of ['ghSave', 'ghLoad', 'send', 'paste', 'clearDone', 'tokIn'])
     chk(!d.getElementById(id), `the ${id} control is still on the page`);
-  chk(!d.querySelector('[data-rm],[data-send],[data-edit],[data-reset]'), 'a per-parlay control survived');
+  chk(!d.querySelector('[data-rm],[data-send]'), 'a sending or removing control survived');
   chk(!!d.getElementById('now') && !!d.getElementById('every'), 'the refresh controls should stay');
   chk(d.getElementById('every').value === '0', 'auto-refresh should start off');
   /* the build stamp: the one thing that tells a stale cached copy from a broken one */
@@ -184,6 +186,60 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     'the page does not say which build it is: ' + txt(d.getElementById('ver')));
   chk(!/__BUILT__/.test(HTML), 'the build stamp was never filled in');
   chk(/needs JavaScript/.test(HTML), 'a browser with scripts off gets no explanation');
+
+  // ---- D2. a line the book moved, corrected on the page ----
+  {
+    const one = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'k', week: 2, stake: 5, legs: [
+        legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 41.5, 'over', true)] }] };
+    const e = await run({ file: one });
+    const ln = e.d.querySelector('[data-edit]');
+    chk(!!ln && txt(ln) === '41.5', 'the line is not a control on the bar: ' + txt(ln || null));
+    chk(!e.d.querySelector('.sp-leg.team [data-edit]'), 'a team bet has a line to edit and should not');
+    ln.click();
+    const inp = e.d.querySelector('.lineInput');
+    chk(!!inp && inp.value === '41.5', 'the editor does not open prefilled');
+    inp.value = '50';
+    inp.dispatchEvent(new e.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await wait(60);
+    const row = e.d.querySelector('.sp-leg.prop');
+    chk(target(row) === '50+', 'the corrected line is not what the leg reads: ' + target(row));
+    chk(/29 to go/.test(status(row)), 'the distance is not recomputed on the new line: ' + status(row));
+    chk(/moved from 41\.5/.test(txt(row)), 'the row does not say where the line moved from');
+    /* it is kept in this page's key, and the prop model's is not touched */
+    const store = JSON.parse(e.w.localStorage.getItem('live_parlays_v1'));
+    chk(store && store.lines && Object.values(store.lines)[0] === 50, 'the correction was not stored');
+    chk(e.w.localStorage.getItem(PROP_KEY) === null, "the page wrote to the prop model's key");
+    /* and undone */
+    e.d.querySelector('[data-reset]').click();
+    await wait(60);
+    chk(target(e.d.querySelector('.sp-leg.prop')) === '41.5+', 'undo did not put the line back');
+    /* Escape leaves it alone */
+    const e2 = await run({ file: one });
+    e2.d.querySelector('[data-edit]').click();
+    const i2 = e2.d.querySelector('.lineInput'); i2.value = '99';
+    i2.dispatchEvent(new e2.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await wait(60);
+    chk(target(e2.d.querySelector('.sp-leg.prop')) === '41.5+', 'Escape committed the edit anyway');
+  }
+
+  // ---- D3. the scoreboard chips carry the result ----
+  {
+    const chip = (file, state) => run({ file, state }).then(x => x.d.querySelector('.gm'));
+    const ml = (gi, team) => ({ game: gi, player: team, team, stat: 'ml', line: 0, side: 'over', main: false });
+    const winning = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'w', week: 2, stake: 1, legs: [ml(0, 'ATL')] }] };      /* ATL up 20-17 */
+    const losing = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'l', week: 2, stake: 1, legs: [ml(0, 'CAR')] }] };
+    chk(/\bgood\b/.test((await chip(winning, 'in')).className), 'a game being won is not green');
+    chk(/\bbad\b/.test((await chip(losing, 'in')).className), 'a game being lost is not red');
+    chk(/\btie\b/.test((await chip({ updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'p', week: 2, stake: 1, legs: [
+        legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 400.5, 'over', true)] }] }, 'in')).className),
+      'a leg still short with the game running is not yellow');
+    const pre = await chip(winning, 'pre');
+    chk(!/good|bad|tie/.test(pre.className), 'a game that has not kicked off is coloured');
+  }
 
   // ---- E. nought before kickoff ----
   const b4 = await run({ state: 'pre' });
@@ -239,7 +295,12 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
       'a parlay of moneylines fetched box scores it has no use for');
     const row = m.d.querySelector('.sp-leg');
     chk(/Falcons/.test(txt(row)) && /To Win/.test(txt(row)), 'a whole-game bet from the file is wrong: ' + txt(row));
-    chk(/CAR 17.20 ATL/.test(txt(row)), 'a whole-game bet does not show the score: ' + txt(row));
+    /* the score is on the chip above in bigger type; the row says how the bet is doing */
+    chk(/up 3/.test(txt(row)) && !/17.20/.test(txt(row)),
+      'a whole-game bet repeats the score instead of saying where it stands: ' + txt(row));
+    chk(/\bwin\b/.test(row.querySelector('.rs').className), 'a team bet being won is not green');
+    const second = m.d.querySelectorAll('.sp-leg.team')[1];
+    chk(/up 4/.test(txt(second)), 'the margin on the second leg is wrong: ' + txt(second));
     /* one game with a player leg must not drag in the box scores of the moneyline games */
     const mixed = JSON.parse(JSON.stringify(mlOnly));
     mixed.parlays.push({ id: 'pp', week: 2, stake: 1, legs: [
