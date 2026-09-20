@@ -126,17 +126,11 @@ footer a{color:var(--ink-2)}
 <main>
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
-    <span class="stamp" id="ghState"></span>
     <span class="grow"></span>
     <label class="muted">Refresh
       <select id="every"><option value="15">every 15s</option><option value="30">every 30s</option><option value="60">every 60s</option><option value="0" selected>off</option></select>
     </label>
     <button class="btn quiet" id="now">Refresh now</button>
-    <button class="btn quiet" id="ghLoad">Load</button>
-    <button class="btn quiet" id="ghSave">Save to GitHub</button>
-    <button class="btn quiet" id="send">Send all</button>
-    <button class="btn quiet" id="paste">Paste a code</button>
-    <button class="btn quiet" id="clearDone" hidden>Clear finished</button>
   </div>
   <div id="app"></div>
 </main>
@@ -155,237 +149,100 @@ const SEASON=2026;
 
 /*SHARED*/
 
-/* ---- this page ---- */
-/* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL.
-   That is why no season payload is loaded here. */
+/* ---- this page ----
+   Every parlay lives in the repository, in parlays.json beside this file, and this page only
+   reads it. That is the whole design: no token, because reading a public file needs none; no
+   sending, because there is nothing to move between devices; and nothing kept in the browser,
+   because every device reads the same file and therefore shows the same thing.
+
+   Writing is the part a page like this cannot do. A browser has no way to commit to GitHub
+   without a credential, and a static page has nowhere safe to keep one, so the file is edited
+   in the repository instead and the page picks the change up on the next load. */
+const DATA='parlays.json';
+
+/* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL,
+   so no season payload is loaded here either */
 function gidParts(gid){
   const m=/^(\d{4})_(\d{2})_([A-Z0-9]+)_([A-Z0-9]+)$/.exec(String(gid||''));
   return m?{season:+m[1],w:+m[2],a:m[3],h:m[4],id:String(gid)}:null;
 }
-function readKey(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
-function propParlays(){
-  const v=readKey(PROP_KEY), saved=(v&&v.saved)||[];
-  if(!Array.isArray(saved)) return [];
-  return saved.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>({
-    src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,price:p.price,
-    payout:+p.payout||0,legs:p.legs.slice()}));
-}
-function allParlays(){
-  const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
-    price:p.priced?decToML(p.dec):null,payout:p.payout,legs:p.legs}));
-  const mine=propParlays().concat(bet).concat(importedParlays());
-  const have={}; for(const p of mine) have[p.src+'|'+p.id]=1;
-  /* a parlay already on this device wins over the copy in the repository, so a line
-     corrected here is not undone by what was saved before it */
-  const seen={}; for(const p of mine) seen[String(p.id)]=1;
-  return mine.concat(STATE.cloud.filter(p=>!seen[String(p.id)]));
-}
-/* Removing writes, and it is the only thing on this page that does. Read, change the one
-   array, write the whole object back, so every other field the owning app keeps -- picks,
-   bankroll, bet log, odds -- comes through untouched. */
-function removeParlay(src,id){
-  /* a parlay from the repository goes from this screen; it leaves the file on the next save */
-  if(src==='cloud'){ STATE.cloud=STATE.cloud.filter(p=>String(p.id)!==String(id)); return true; }
-  if(src==='shared') return writeImported(importedParlays().filter(p=>String(p.id)!==String(id)));
-  const key=src==='prop'?PROP_KEY:BET_KEY, v=readKey(key);
-  if(!v) return false;
-  const arr=src==='prop'?v.saved:(v.bank&&v.bank.build);
-  if(!Array.isArray(arr)) return false;
-  const kept=arr.filter(p=>String(p&&p.id)!==String(id));
-  if(kept.length===arr.length) return false;
-  if(src==='prop') v.saved=kept; else v.bank.build=kept;
-  try{ localStorage.setItem(key,JSON.stringify(v)); }catch(e){ return false; }
-  return true;
-}
-/* ---- moving parlays between devices ----
-   Storage does not travel, so a parlay built on a computer is invisible on a phone. The
-   parlays themselves are tiny, so they can ride in the link: Send packs what is on screen
-   into the URL, and opening that URL anywhere unpacks it into this page's own key.
-   Deliberately its own key, not the two apps': nothing this page imports should appear in
-   the prop model or the betting model as though it had been saved there. */
-const LIVE_KEY='live_parlays_v1';
-/* the packed form is kept small on purpose: a long URL does not survive being messaged.
-   iMessage cut one in half. Games are listed once and referenced by number, stats travel as
-   two-letter codes, over and "not a main line" are the defaults and so are left out, and the
-   label is dropped because the page rebuilds it from the stat and the line. */
 const STAT_CODE={passing_yards:'py',passing_tds:'pt',passing_interceptions:'pi',attempts:'pa',
   completions:'pc',carries:'ra',rushing_yards:'ry',receptions:'rc',receiving_yards:'re',
   targets:'tg',scrim_yards:'sy',any_td:'td',fg_made:'fm',fg_att:'fa',kick_pts:'kp',ml:'ml',ats:'as'};
 const CODE_STAT={}; for(const k in STAT_CODE) CODE_STAT[STAT_CODE[k]]=k;
-function importedParlays(){
-  return liveStore().imported.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>Object.assign({},p,{src:'shared'}));
+/* the file's own shape: games listed once, legs pointing at them. Long names are spelled out
+   so the file stays something a person can read and edit by hand. */
+function readFile(v){
+  if(!v) return [];
+  const games=Array.isArray(v.games)?v.games:(Array.isArray(v.g)?v.g:[]);
+  const rows=Array.isArray(v.parlays)?v.parlays:(Array.isArray(v.p)?v.p:[]);
+  return rows.map((o,ix)=>({
+    id:String(o.id||o.i||('p'+ix)),
+    week:+(o.week||o.w)||null,
+    stake:+(o.stake!=null?o.stake:o.k)||0,
+    price:(o.price!=null?o.price:(o.r!=null?o.r:null)),
+    payout:+(o.payout!=null?o.payout:o.y)||0,
+    note:o.note||'',
+    legs:(o.legs||o.l||[]).map(q=>{
+      const gid=q.game!=null?games[q.game]:(q.g!=null&&typeof q.g==='number'?games[q.g]:(q.gid||q.g));
+      const stat=q.stat||CODE_STAT[q.t]||q.t;
+      return {gid:String(gid||''),stat:String(stat||''),k:+(q.line!=null?q.line:q.n),
+        side:(q.side||(q.d==='u'?'under':'over')),main:q.main!=null?!!q.main:!!q.m,
+        name:String(q.player||q.a||''),team:String(q.team||q.e||''),label:''};
+    }).filter(l=>l.gid&&l.stat&&isFinite(l.k))
+  })).filter(x=>x.legs.length);
 }
-function liveStore(){ const v=readKey(LIVE_KEY)||{}; return {imported:Array.isArray(v.imported)?v.imported:[],lines:(v.lines&&typeof v.lines==='object')?v.lines:{}}; }
-function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
-function writeImported(list){ const st=liveStore(); st.imported=list; return writeStore(st); }
-/* a book line that moved after the parlay was built. Kept here and nowhere else: the parlay
-   in the prop model or the betting model is left exactly as it was saved, so this changes
-   what the page measures against and not how anything settles. */
-function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }   /* p needs only src and id */
-function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
-function setLine(p,i,val){
-  const st=liveStore(), k=lineKey(p,i);
-  if(val==null) delete st.lines[k]; else st.lines[k]=+val;
-  return writeStore(st);
-}
-function packParlays(ps){
-  const games=[], gi=g=>{ let i=games.indexOf(g); if(i<0){ i=games.length; games.push(g); } return i; };
-  const out=ps.map(p=>{
-    const o={i:String(p.id||''),s:p.src};
-    if(p.week) o.w=+p.week;
-    if(p.stake) o.k=+p.stake;
-    if(p.price!=null) o.r=p.price;
-    if(p.payout) o.y=+p.payout;
-    o.l=p.legs.map((l,ix)=>{
-      const q={g:gi(l.gid),t:STAT_CODE[l.stat]||l.stat,n:lineOf(p,ix,l),a:l.name,e:l.team};
-      if(l.side==='under') q.d='u';
-      if(l.main) q.m=1;
-      return q;
-    });
-    return o;
-  });
-  return {g:games,p:out};
-}
-/* reads the compact form, and still reads the first one so a link already sent keeps working */
-function unpackParlays(v){
-  if(Array.isArray(v)) return v;
-  if(!v||!Array.isArray(v.p)||!Array.isArray(v.g)) return [];
-  return v.p.map(o=>({id:o.i,src:'shared',week:o.w||null,stake:+o.k||0,
-    price:(o.r==null?null:o.r),payout:+o.y||0,
-    legs:(o.l||[]).map(q=>({gid:v.g[q.g],stat:CODE_STAT[q.t]||q.t,k:+q.n,
-      side:q.d==='u'?'under':'over',main:!!q.m,name:q.a,team:q.e,label:''}))}))
-    .filter(x=>x.legs.length&&x.legs.every(l=>l.gid));
-}
-/* base64url over UTF-8, the long-standing way: no TextEncoder, so this works in anything
-   that can open the page, and in the jsdom the smoke test drives it with */
-function b64e(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
-function b64d(t){ return decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))); }
-function shareLink(ps){
-  const packed=packParlays(ps);
-  if(!packed.p.length) return null;
-  return location.origin+location.pathname+'#p='+b64e(JSON.stringify(packed));
-}
-/* anything arriving in the link joins what this device already had, by id */
-/* a code on its own, or a whole link with one in it */
-function takeCode(code){
-  const m=/(?:[#&?]p=)?([A-Za-z0-9\-_]{8,})\s*$/.exec(String(code||'').trim());
-  return m?takeFrom(m[1]):{err:'That does not look like a parlay code.'};
-}
-function takeFromHash(){
-  const m=/[#&]p=([A-Za-z0-9\-_]+)/.exec(location.hash||'');
-  return m?takeFrom(m[1]):null;
-}
-function takeFrom(raw){
-  let incoming=null;
-  try{ incoming=unpackParlays(JSON.parse(b64d(raw))); }
-  catch(e){ return {err:'That could not be read. A long link is often cut in half by the app it was sent through \u2014 try the code instead.'}; }
-  if(!incoming.length) return {err:'That carried no parlays.'};
-  const have=importedParlays(), byId={};
-  for(const p of have) byId[String(p.id)]=p;
-  let added=0;
-  for(const p of incoming){
-    if(!p||!Array.isArray(p.legs)||!p.legs.length) continue;
-    const id=String(p.id||('sh'+Math.random().toString(36).slice(2,9)));
-    if(byId[id]) continue;
-    byId[id]=Object.assign({},p,{id,src:'shared'}); added++;
-  }
-  writeImported(Object.values(byId));
-  return {added,total:incoming.length};
-}
-/* ---------- the copy kept in the repository ----------
-   Reading needs nothing: the repository is public, so any device can fetch the file. Writing
-   needs a token, which lives in the browser of whichever device does the saving and is never
-   put in a link, a code, or the file itself.
-
-   It saves to parlay-data, a branch with no site built from it, so a save starts no Pages
-   deployment and leaves main's history alone. The repository being public means what is
-   saved is world-readable -- parlay legs, deliberately, and nothing else. */
-const GH={owner:'DEMON-X13',repo:'nfl-hub',branch:'parlay-data',path:'live/parlays.json'};
-const GH_KEY='live_gh_token';
-const ghUrl=()=>`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}?ref=${GH.branch}`;
-function ghToken(){ try{ return localStorage.getItem(GH_KEY)||''; }catch(e){ return ''; } }
-function ghSetToken(v){ try{ if(v) localStorage.setItem(GH_KEY,v); else localStorage.removeItem(GH_KEY); return true; }catch(e){ return false; } }
-function ghHeaders(){
-  const h={'Accept':'application/vnd.github+json'};
-  const t=ghToken(); if(t) h['Authorization']='Bearer '+t;     /* only to raise the read limit, and to write */
-  return h;
-}
-async function ghRead(){
-  const r=await fetch(ghUrl(),{headers:ghHeaders(),cache:'no-store'});
-  if(r.status===404) return {sha:null,parlays:[]};
-  if(!r.ok) throw new Error('GitHub '+r.status);
-  const j=await r.json();
-  let body={};
-  try{ body=JSON.parse(b64d(String(j.content||'').replace(/\s/g,''))); }catch(e){ body={}; }
-  return {sha:j.sha,updated:body.updated||null,
-    parlays:unpackParlays(body).map(x=>Object.assign({},x,{src:'cloud'}))};
-}
-async function ghWrite(ps,sha){
-  const t=ghToken(); if(!t) throw new Error('no token on this device');
-  const packed=packParlays(ps);
-  packed.v=1; packed.updated=new Date().toISOString();
-  packed.note='Saved by the Live Parlays page. Data only: nothing is built from this branch.';
-  const body={message:`parlays: ${ps.length} saved ${new Date().toISOString().slice(0,16).replace('T',' ')}`,
-    content:btoa(unescape(encodeURIComponent(JSON.stringify(packed,null,1)))),branch:GH.branch};
-  if(sha) body.sha=sha;
-  const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${GH.path}`,
-    {method:'PUT',headers:Object.assign({'Content-Type':'application/json'},ghHeaders()),body:JSON.stringify(body)});
-  if(r.status===409) throw new Error('another device saved first \u2014 press Load, then save again');
-  if(r.status===401||r.status===403) throw new Error('GitHub refused the token (' + r.status + ')');
-  if(!r.ok) throw new Error('GitHub '+r.status);
-  return (await r.json()).content.sha;
-}
-const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null,settled:{},cloud:[],sha:null,cloudAt:null,ghErr:null,ghTried:false};
-function legGames(ps){ const s=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s.add(l.gid); return s; }
+const STATE={parlays:[],updated:null,games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false};
+const legGames=ps=>{ const s2=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s2.add(l.gid); return s2; };
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
-  if(STATE.busy) return; const ps=allParlays(), want=legGames(ps);
-  if(!want.size){ draw(); return; }
+  if(STATE.busy) return;
   STATE.busy=true; document.getElementById('dot').classList.add('on');
+  /* the file first: it is the list of what to watch */
   try{
-    const sched=[...want].map(gidParts).filter(Boolean);
-    const games={};
-    for(const w of [...new Set(sched.map(g=>g.w))]){
-      const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON);
-      Object.assign(games,espnGames(sb,sched));
-    }
-    STATE.games=games;
-    const box=Object.assign({},STATE.box);
-    if(ps.some(p=>p.legs.some(l=>!isGameLeg(l))))
-      for(const gid of want){ const g=games[gid];
-        if(!g||g.state==='pre') continue;
-        /* the box score of a finished game is finished too: fetch it the once, keep it */
-        if(STATE.settled[gid]&&box[gid]) continue;
-        try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
+    const f=await getJSON(DATA+'?t='+Date.now());
+    STATE.parlays=readFile(f); STATE.updated=f.updated||null; STATE.dataErr=null;
+  }catch(e){ STATE.dataErr=String(e&&e.message||e); }
+  STATE.loaded=true;
+  const want=legGames(STATE.parlays);
+  if(want.size){
+    try{
+      const sched=[...want].map(gidParts).filter(Boolean), games={};
+      for(const w of [...new Set(sched.map(g=>g.w))]){
+        const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON);
+        Object.assign(games,espnGames(sb,sched));
       }
-    STATE.box=box; STATE.err=null; STATE.at=Date.now();
-  }catch(e){ STATE.err=String(e&&e.message||e); }
-  finally{ STATE.busy=false; document.getElementById('dot').classList.remove('on'); draw(); }
+      STATE.games=games;
+      const box=Object.assign({},STATE.box);
+      if(STATE.parlays.some(p=>p.legs.some(l=>!isGameLeg(l))))
+        for(const gid of want){ const g=games[gid];
+          if(!g||g.state==='pre') continue;
+          if(STATE.settled[gid]&&box[gid]) continue;      /* a final box score cannot change */
+          try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
+        }
+      STATE.box=box; STATE.err=null; STATE.at=Date.now();
+    }catch(e){ STATE.err=String(e&&e.message||e); }
+  }
+  STATE.busy=false; document.getElementById('dot').classList.remove('on'); draw();
 }
-/* a man with nothing yet has nothing, not a blank: zeros for the group his leg belongs to,
-   so the row reads 0 / 43.5 rather than "no box score yet" */
 function zeroStats(l){
-  const s={tds:0};
-  if(/^(passing|attempts|completions)/.test(l.stat)) Object.assign(s,{completions:0,attempts:0,passing_yards:0,passing_tds:0,passing_interceptions:0});
-  else if(/^(carries|rushing)/.test(l.stat)) Object.assign(s,{carries:0,rushing_yards:0});
-  else if(/^(receptions|receiving|targets)/.test(l.stat)) Object.assign(s,{receptions:0,receiving_yards:0,targets:0});
-  else if(/^(fg_|kick_)/.test(l.stat)) Object.assign(s,{fg_made:0,fg_att:0,kick_pts:0});
-  else if(l.stat==='scrim_yards') Object.assign(s,{carries:0,rushing_yards:0,receptions:0,receiving_yards:0,targets:0});
-  return s;
+  const s2={tds:0};
+  if(/^(passing|attempts|completions)/.test(l.stat)) Object.assign(s2,{completions:0,attempts:0,passing_yards:0,passing_tds:0,passing_interceptions:0});
+  else if(/^(carries|rushing)/.test(l.stat)) Object.assign(s2,{carries:0,rushing_yards:0});
+  else if(/^(receptions|receiving|targets)/.test(l.stat)) Object.assign(s2,{receptions:0,receiving_yards:0,targets:0});
+  else if(/^(fg_|kick_)/.test(l.stat)) Object.assign(s2,{fg_made:0,fg_att:0,kick_pts:0});
+  else if(l.stat==='scrim_yards') Object.assign(s2,{carries:0,rushing_yards:0,receptions:0,receiving_yards:0,targets:0});
+  return s2;
 }
 function liveFor(l){
   const g=STATE.games[l.gid]; if(!g) return null;
   if(isGameLeg(l)) return Object.assign({},liveGameLeg(l,g),{game:g});
-  /* before kickoff everyone is on nought, which is worth showing plainly */
   if(g.state==='pre') return Object.assign({},liveLeg(l,0,'pre'),{val:0,need:+l.k,game:g,stats:zeroStats(l)});
   const sum=STATE.box[l.gid]; if(!sum) return null;
   const st=espnStats(sum,l.team,l.name);
-  /* ESPN leaves a man out of the box score until he does something: that is nought, not unknown */
   if(st===null) return Object.assign({},liveLeg(l,0,g.state),{game:g,stats:zeroStats(l)});
   return Object.assign({},liveLeg(l,st[l.stat]==null?0:st[l.stat],g.state),{game:g,stats:st});
 }
-/* what the man has actually done, not only the number being bet on. Built from whatever
-   groups the box score put him in, so a back who catches passes shows both. */
 function statLine(st){
   if(!st) return '';
   const n=(v,d)=>num(v==null?null:v,d||0), bits=[];
@@ -402,63 +259,41 @@ function statLine(st){
     bits.push(t);
   }
   if(st.fg_att!=null) bits.push(`${n(st.fg_made)}/${n(st.fg_att)} FG, ${n(st.kick_pts)} pts`);
-  if(st.tds>0) bits.push(`${n(st.tds)} TD`);        /* rushing and receiving together, as ESPN gives them */
-  return bits.join(' · ');
+  if(st.tds>0) bits.push(`${n(st.tds)} TD`);
+  return bits.join(' \u00b7 ');
 }
-/* the games a parlay is riding on, with the score and the clock */
+const n0=v=>v==null?'0':String(v);
 function gameStrip(p){
   const seen=[], out=[];
   for(const l of p.legs){
     if(!l.gid||seen.indexOf(l.gid)>=0) continue;
     seen.push(l.gid);
-    const g=STATE.games[l.gid];
-    if(!g){ continue; }
-    const done=g.state==='post', live=g.state==='live';
-    const score=`${esc(g.away)} ${n0(g.as)}–${n0(g.hs)} ${esc(g.home)}`;
-    out.push(`<span class="gm${live?' on':''}${done?' done':''}">${score}<em>${esc(g.clock||'')}</em></span>`);
+    const g=STATE.games[l.gid]; if(!g) continue;
+    out.push(`<span class="gm${g.state==='live'?' on':''}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}<em>${esc(g.clock||'')}</em></span>`);
   }
   return out.length?`<div class="games">${out.join('')}</div>`:'';
 }
-const n0=v=>v==null?'0':String(v);      /* no score yet is nought, not a dash */
-const MARK={hit:'✓',missed:'✗',push:'P'};
-/* what the stat is called, so the row reads "Bo Nix Rushing Yards" rather than repeating
-   the threshold that is already the heading */
 const STAT_NAME={passing_yards:'Passing Yards',passing_tds:'Passing TDs',passing_interceptions:'Interceptions',
   attempts:'Pass Attempts',completions:'Completions',carries:'Rushing Attempts',rushing_yards:'Rushing Yards',
   receptions:'Receptions',receiving_yards:'Receiving Yards',targets:'Targets',scrim_yards:'Scrimmage Yards',
-  any_td:'Touchdowns',fg_made:'Field Goals',fg_att:'FG Attempts',kick_pts:'Kicking Points',
-  ml:'To Win',ats:'To Cover'};
-const statName=l=>STAT_NAME[l.stat]||String(l.label||'').replace(/^(over|under)\s+[\d.]+\s*/i,'').replace(/^[\d.]+\+\s*/,'')||l.stat;
-/* the target, the way a book writes it: 20+ to go over, under 54.5 to stay below */
+  any_td:'Touchdowns',fg_made:'Field Goals',fg_att:'FG Attempts',kick_pts:'Kicking Points',ml:'To Win',ats:'To Cover'};
+const statName=l=>STAT_NAME[l.stat]||l.stat;
 const targetLabel=(l,k)=>(l.side==='under'&&l.main)?`under ${num(k,k%1?1:0)}`:`${num(k,k%1?1:0)}+`;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-/* the bar runs a quarter past the line, so the tick sits at 80% and there is visible room
-   beyond it -- a number past its target should look past it, not pinned to the end */
-function progressBar(val,k,state,lineHTML){
+function progressBar(val,k,state){
   const max=(isFinite(k)&&k>0)?k*1.25:Math.max(1,val||1);
-  const tick=clamp(100*k/max,0,100);
-  const pct=clamp(100*(val||0)/max,0,100);
-  const knob=clamp(pct,3,97);
+  const tick=clamp(100*k/max,0,100), pct=clamp(100*(val||0)/max,0,100), knob=clamp(pct,3,97);
   const tone=state==='hit'?' win':(state==='missed'?' lose':'');
-  return `<div class="pbar">
-    <div class="track"><div class="fill${tone}" style="width:${pct.toFixed(2)}%"></div>
-      <span class="tick" style="left:${tick.toFixed(2)}%"></span>
-      <span class="knob${tone}" style="left:${knob.toFixed(2)}%">${esc(num(val,(val||0)%1?1:0))}</span>
-      <span class="lineLbl" style="left:${tick.toFixed(2)}%">${lineHTML}</span></div>
-  </div>`;
+  return `<div class="pbar"><div class="track"><div class="fill${tone}" style="width:${pct.toFixed(2)}%"></div>
+    <span class="tick" style="left:${tick.toFixed(2)}%"></span>
+    <span class="knob${tone}" style="left:${knob.toFixed(2)}%">${esc(num(val,(val||0)%1?1:0))}</span>
+    <span class="lineLbl" style="left:${tick.toFixed(2)}%">${esc(num(k,k%1?1:0))}</span></div></div>`;
 }
-function legRow(p,l,i){
-  const k=lineOf(p,i,l), moved=k!==+l.k, canEdit=l.stat!=='ml';
-  const L=moved?Object.assign({},l,{k}):l;
-  const r=liveFor(L), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
+const MARK={hit:'\u2713',missed:'\u2717',push:'P'};
+function legRow(l){
+  const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
   const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
   const mark=r&&MARK[r.state]?MARK[r.state]:'\u25cb';
-  const who=`${esc(l.name)} ${esc(statName(l))}`;
-  const note=moved?`<small class="movedNote">moved from ${esc(num(+l.k,(+l.k)%1?1:0))} \u00b7 <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></small>`:'';
-  const line=(r&&r.stats)?statLine(r.stats):'';
-  const body=line?`<div class="statline">${esc(line)}</div>`:'';
-
-  /* a team bet has no number to fill a bar with: it is the scoreboard */
   if(isGameLeg(l)){
     const g=r&&r.game;
     const right=!r?'<span class="rs muted">waiting</span>'
@@ -466,246 +301,75 @@ function legRow(p,l,i){
     return `<div class="sp-leg team"><span class="${cls}">${mark}</span>
       <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${right}</div>`;
   }
-
-  const state=r?r.state:'pending';
-  const room=L.main&&L.side==='under';
+  const state=r?r.state:'pending', room=l.main&&l.side==='under';
   const status=!r?'waiting':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':
     (state==='pending'?esc((r.game&&r.game.clock)||'not started')
       :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')))));
-  const lnAttrs=canEdit?` role="button" tabindex="0" data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}" title="Tap to set the line you actually bet"`:'';
-  const lineHTML=`<span class="ln${moved?' moved':''}${canEdit?' edit':''}"${lnAttrs}>${esc(num(k,k%1?1:0))}</span>`;
+  const line=(r&&r.stats)?statLine(r.stats):'';
   return `<div class="sp-leg prop"><span class="${cls}">${mark}</span>
     <div class="legbody">
-      <div class="legtop"><span class="tgt">${esc(targetLabel(L,k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
-      <div class="who">${who}</div>
-      ${body}${note}
-      ${progressBar(r?r.val:0,k,state,lineHTML)}
+      <div class="legtop"><span class="tgt">${esc(targetLabel(l,+l.k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
+      <div class="who">${esc(l.name)} ${esc(statName(l))}</div>
+      ${line?`<div class="statline">${esc(line)}</div>`:''}
+      ${progressBar(r?r.val:0,+l.k,state)}
     </div></div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
-  const ps=allParlays(), app=document.getElementById('app');
-  document.getElementById('clearDone').hidden=!ps.some(isDone);
+  const app=document.getElementById('app'), ps=STATE.parlays.slice();
   let html='';
-  if(STATE.msg) html+=`<div class="note">${STATE.msg}</div>`;
-  if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b><br>This page reads ESPN's public scoreboard straight from your browser. If your browser refuses that read nothing here can update — say so and it can be routed another way. Your parlays, and the way they settle, are not affected.</div>`;
+  if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>live/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
+  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
   if(!ps.length){
-    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing saved in this browser</b>
-      Parlays live in the browser that made them and do not travel between devices.<br>
-      Save one in the <a href="../props/">prop model</a>, or a Bet Build parlay in the <a href="../betting/">betting model</a>, on this device and it will appear here.<br><br>
-      <b>Have them on another device?</b> Nothing has been saved to GitHub yet \u2014 open this page there and press <b>Save to GitHub</b> once, and every device will pick them up from then on.<br><br>
-      Already have one on another device? Open this page there, press <b>Send</b> on the parlay you want, and open the link here \u2014 or paste its code with <b>Paste a code</b>.</div>`;
+    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">No parlays in the file</b>
+      Every parlay on this page comes from <code>live/parlays.json</code> in the repository, and the same file is what every device reads.<br>
+      Ask Claude to put a parlay in it and it appears here, and everywhere else, on the next load.</div>`;
     foot(); return;
   }
-  /* the order the day runs in: anything still to finish first, then by when a parlay is
-     settled -- its last game to kick off, not its first, because a parlay carrying a four
-     o'clock leg is still open long after one made only of one o'clock games has been
-     decided. Earliest kickoff breaks a tie; without scores yet, fall back to the week. */
-  const endsAt=p=>{ let k=null;
-    for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue;
-      if(k===null||g.kick>k) k=g.kick; }
-    return k; };
-  const startsAt=p=>{ let k=null;
-    for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue;
-      if(k===null||g.kick<k) k=g.kick; }
-    return k; };
+  /* the order the day runs in: still to finish first, then by when a parlay can settle */
+  const endsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick>k) k=g.kick; } return k; };
+  const startsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick<k) k=g.kick; } return k; };
   const FAR=Number.MAX_SAFE_INTEGER;
-  const rank=p=>{ const e=endsAt(p), s0=startsAt(p);
-    return [isDone(p)?1:0, e===null?FAR:e, s0===null?FAR:s0, p.week||0]; };
-  for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y);
-      return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3])||String(x.src).localeCompare(String(y.src)); })){
+  const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isDone(p)?1:0,e===null?FAR:e,s2===null?FAR:s2,p.week||0]; };
+  for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); })){
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
     const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':`<span class="pill warn">${hit} of ${p.legs.length} in</span>`);
-    const from={prop:'prop model',bet:'betting model',shared:'sent here',cloud:'from GitHub'}[p.src]||p.src;
-    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='shared'?'shared':(p.src==='cloud'?'cloud':'')))}">
+    html+=`<div class="savedp src">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
-        <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
-        ${tag}<span class="grow"></span>
-        <button class="btn quiet small" data-send="${esc(p.src)}:${esc(p.id)}">Send</button>
-        <button class="btn quiet small" data-rm="${esc(p.src)}:${esc(p.id)}">Remove</button></div>
+        ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
+        ${tag}<span class="grow"></span></div>
       <div class="sp-money">
         <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
-        <div><b>${p.price==null?'–':fmtML(p.price)}</b><span>price</span></div>
-        <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'–'}</b><span>pays</span></div>
+        <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
+        <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'\u2013'}</b><span>pays</span></div>
       </div>
       ${gameStrip(p)}
-      ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
+      ${p.legs.map(legRow).join('')}</div>`;
   }
-  app.innerHTML=html;
-  /* edit a line in place: the number itself becomes a box, Enter or leaving it commits,
-     Escape puts it back. It sits under the tick on the bar, which is where the line is */
-  app.querySelectorAll('[data-edit]').forEach(b=>{
-    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); b.click(); } });
-    b.addEventListener('click',()=>{
-      const key=b.dataset.edit, cur=b.dataset.k;
-      const inp=document.createElement('input');
-      inp.type='number'; inp.step='0.5'; inp.className='lineInput'; inp.value=cur;
-      inp.setAttribute('inputmode','decimal');
-      inp.setAttribute('aria-label','the line you actually bet');
-      b.replaceWith(inp); inp.focus(); inp.select();
-      let gone=false;
-      const done=save=>{ if(gone) return; gone=true;
-        if(save){ const v=parseFloat(inp.value); const q=key.split('|');
-          if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
-        draw(); };
-      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
-        else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
-      inp.addEventListener('blur',()=>done(true));
-    });
-  });
-  app.querySelectorAll('[data-reset]').forEach(a=>a.addEventListener('click',e=>{
-    e.preventDefault();
-    const [src,id,i]=a.dataset.reset.split('|');
-    setLine({src,id},+i,null); draw();
-  }));
-  /* one parlay on its own is short enough to travel as a link; everything at once is not */
-  app.querySelectorAll('[data-send]').forEach(b=>b.addEventListener('click',()=>{
-    const i=b.dataset.send.indexOf(':'), src=b.dataset.send.slice(0,i), id=b.dataset.send.slice(i+1);
-    const one=allParlays().filter(p=>p.src===src&&String(p.id)===String(id));
-    doShare(one,'this parlay');
-  }));
-  app.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
-    const i=b.dataset.rm.indexOf(':'), src=b.dataset.rm.slice(0,i), id=b.dataset.rm.slice(i+1);
-    const where=src==='prop'?'prop model':'betting model';
-    if(!confirm(`Remove this parlay from the ${where}?\n\nIt is deleted from this browser and cannot be brought back.`)) return;
-    if(!removeParlay(src,id)) alert('That parlay could not be removed. It may already be gone.');
-    draw();
-  }));
-  foot();
-}
-function ghStateLine(){
-  const el=document.getElementById('ghState'); if(!el) return;
-  const n=STATE.cloud.length;
-  if(STATE.ghErr){ el.className='stamp bad'; el.textContent='GitHub: '+STATE.ghErr; return; }
-  if(!STATE.ghTried){ el.className='stamp'; el.textContent=''; return; }
-  if(!STATE.cloudAt&&!n){ el.className='stamp bad'; el.textContent='GitHub: nothing saved yet'; return; }
-  const when=STATE.cloudAt?new Date(STATE.cloudAt):null;
-  el.className='stamp ok';
-  el.textContent=`GitHub: ${STATE.cloudN!=null?STATE.cloudN:n} parlay${((STATE.cloudN!=null?STATE.cloudN:n))===1?'':'s'}`
-    +(when&&!isNaN(when)?', saved '+when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'');
+  app.innerHTML=html; foot();
 }
 function foot(){
-  ghStateLine();
-  document.getElementById('stamp').textContent=STATE.err?'not updating':(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'idle');
-  document.getElementById('foot').innerHTML=`Scores come from ESPN's public feeds, read by this page in your own browser. No odds-API credits are ever spent here, and no job runs for it.
-    Auto-refresh starts <b>off</b> so the page asks ESPN for nothing you did not ask for: it fetches once when you open it, then only when you press Refresh now or turn an interval on. A finished game's box score is fetched once and kept.
-    Parlays are read from this browser's storage; this page writes only a removal you ask for, the parlays you send here by link and a line you correct, and it settles nothing — that still happens in the
-    <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>.
-    <br>Parlays saved with <b>Save to GitHub</b> go to the <b>${esc(GH.branch)}</b> branch of ${esc(GH.owner)}/${esc(GH.repo)}, which builds no site, so saving redeploys nothing. That repository is public, so what is saved there can be read by anyone \u2014 legs and lines, never a token.
-    ${ghToken()?' <a href="#" id="ghForget">Forget the token on this device</a>.':''}`;
-  document.getElementById('ghForget')?.addEventListener('click',e=>{ e.preventDefault();
-    if(confirm('Forget the GitHub token stored in this browser?\n\nThis device can still read what is saved; it just will not be able to save.')){ ghSetToken(''); draw(); } });
+  const when=STATE.updated?new Date(STATE.updated):null;
+  document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
+    :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
+      :(STATE.loaded?'loaded':'idle'));
+  document.getElementById('foot').innerHTML=`Every parlay here lives in <code>live/parlays.json</code> in the repository${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}. The same file is what every device reads, so this page looks the same on all of them, and nothing is kept in your browser.
+    Scores come from ESPN's public feeds, read by this page in your own browser: no odds-API credits are ever spent here, and no job runs for it.
+    Auto-refresh starts <b>off</b> \u2014 the page fetches once when you open it, then only when you press Refresh now or turn an interval on.`;
 }
 let TIMER=null;
 function arm(){
   if(TIMER){ clearInterval(TIMER); TIMER=null; }
-  const s=+document.getElementById('every').value||0;
-  if(s) TIMER=setInterval(()=>{ if(document.visibilityState==='visible') refresh(); },s*1000);
+  const s2=+document.getElementById('every').value||0;
+  if(s2) TIMER=setInterval(()=>{ if(document.visibilityState==='visible') refresh(); },s2*1000);
 }
-/* Messages splits a message when it finds a URL it cannot carry whole: it made a link card
-   out of the front and dropped the rest in as text. Plain text is not link-detected, so the
-   code is the safe thing to send once a link gets long -- and it is the code that gets
-   copied in that case, rather than leaving the reader to notice. */
-const LINK_SAFE=500;
-async function doShare(ps,what){
-  if(!ps.length){ STATE.msg='There is nothing here to send.'; draw(); return; }
-  const url=shareLink(ps);
-  if(!url){ STATE.msg='That could not be packed into a link.'; draw(); return; }
-  const code=url.slice(url.indexOf('#p=')+3), long=url.length>LINK_SAFE;
-  let copied=false;
-  try{ await navigator.clipboard.writeText(long?code:url); copied=true; }catch(e){}
-  const n=ps.length, leg=ps.reduce((a,p)=>a+p.legs.length,0);
-  STATE.msg=(long
-    ? `<b>${copied?'Code copied.':'Code ready.'}</b> ${esc(what)} is too long to send as a link \u2014 Messages cuts a long link in half, which is what went wrong before. Paste this code into a message instead, and press <b>Paste a code</b> on the other device. Plain text is never split.`
-    : `<b>${copied?'Link copied.':'Link ready.'}</b> Open it on the other device and ${esc(what)} appears there.`)
-    + ` <span class="muted">(${n} parlay${n===1?'':'s'}, ${leg} leg${leg===1?'':'s'}, ${url.length} characters)</span>`
-    + `<br><span class="muted" style="font-size:12px">the code</span>`
-    + `<br><input class="shareBox" type="text" readonly value="${esc(code)}" onclick="this.select()" aria-label="the code">`
-    + `<br><span class="muted" style="font-size:12px">the link${long?', which may not survive being messaged':''}</span>`
-    + `<br><input class="shareBox" type="text" readonly value="${esc(url)}" onclick="this.select()" aria-label="the link">`;
-  draw();
-}
-document.getElementById('send').addEventListener('click',()=>doShare(allParlays(),'everything here'));
-/* a link from another device: unpacked once, then cleared out of the address bar */
-(function(){
-  const got=takeFromHash();
-  if(!got) return;
-  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; }
-  STATE.msg=got.err?`<b>${esc(got.err)}</b>`
-    :(got.added?`<b>${got.added} parlay${got.added===1?'':'s'} added from the link.</b> They stay on this device until you remove them.`
-                :'<b>Those parlays were already here.</b>');
-})();
 document.getElementById('every').addEventListener('change',arm);
 document.getElementById('now').addEventListener('click',refresh);
-async function doGhLoad(quiet){
-  try{
-    const got=await ghRead();
-    STATE.cloud=got.parlays; STATE.sha=got.sha; STATE.cloudAt=got.updated; STATE.ghErr=null;
-    if(!quiet) STATE.msg=`<b>Loaded ${got.parlays.length} parlay${got.parlays.length===1?'':'s'} from GitHub.</b> They show on every device that opens this page.`;
-  }catch(e){ STATE.ghErr=String(e&&e.message||e); if(!quiet) STATE.msg=`<b>Could not read from GitHub: ${esc(STATE.ghErr)}</b>`; }
-  STATE.ghTried=true;
-  draw(); if(!quiet) refresh();
-}
-document.getElementById('ghLoad').addEventListener('click',()=>doGhLoad(false));
-/* asking for a token in a prompt box was a poor way to ask for one, on a phone especially.
-   This lays the two steps out and links straight at the GitHub page with the scope already
-   ticked, so it is: tap, Generate, copy, paste. */
-function ghAskToken(){
-  const make='https://github.com/settings/tokens/new?scopes=public_repo&description='+encodeURIComponent('NFL Hub Live Parlays');
-  STATE.msg=`<b>One step, once, on this device.</b> Saving needs a GitHub token. Reading never does \u2014 every other device just opens the page.
-    <br><br><b>1.</b> <a href="${make}" target="_blank" rel="noopener">Make a token on GitHub</a> \u2014 the name and the scope are filled in; scroll down and press <b>Generate token</b>, then copy it.
-    <br><b>2.</b> Paste it here:
-    <span class="tokRow"><input class="shareBox tokBox" id="tokIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_\u2026" aria-label="the GitHub token">
-    <button class="btn quiet small" id="tokGo">Save token</button></span>
-    <br><span class="muted" style="font-size:12px">It stays in this browser, and never goes into a link, a code, or the saved file. The scope above covers your public repositories; a fine-grained token limited to just ${esc(GH.owner)}/${esc(GH.repo)} with <b>Contents: read and write</b> is tighter if you would rather.</span>`;
-  draw();
-  const go=()=>{ const v=(document.getElementById('tokIn').value||'').trim();
-    if(!v) return;
-    ghSetToken(v); STATE.msg=null; draw();
-    document.getElementById('ghSave').click(); };
-  document.getElementById('tokGo').addEventListener('click',go);
-  document.getElementById('tokIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } });
-  document.getElementById('tokIn').focus();
-}
-document.getElementById('ghSave').addEventListener('click',async()=>{
-  if(!ghToken()){ ghAskToken(); return; }
-  const ps=allParlays();
-  if(!ps.length){ STATE.msg='There is nothing here to save.'; draw(); return; }
-  try{
-    let sha=STATE.sha;
-    if(sha===null){ try{ sha=(await ghRead()).sha; }catch(e){} }
-    STATE.sha=await ghWrite(ps,sha);
-    STATE.ghErr=null; STATE.cloudAt=new Date().toISOString(); STATE.cloudN=ps.length;
-    STATE.msg=`<b>Saved ${ps.length} parlay${ps.length===1?'':'s'} to GitHub.</b> Open this page on any device and press <b>Load</b>, or just open it \u2014 it loads on its own. <span class="muted">Saved to the ${esc(GH.branch)} branch, which builds no site, so nothing redeploys. The repository is public, so these are readable by anyone.</span>`;
-  }catch(e){ STATE.ghErr=String(e&&e.message||e); STATE.msg=`<b>Could not save: ${esc(STATE.ghErr)}</b>`; }
-  draw();
-});
-document.getElementById('paste').addEventListener('click',async()=>{
-  let v='';
-  try{ v=await navigator.clipboard.readText(); }catch(e){}
-  v=prompt('Paste the link or the code from the other device:',v||'')||'';
-  if(!v.trim()) return;
-  const got=takeCode(v);
-  STATE.msg=got.err?`<b>${esc(got.err)}</b>`
-    :(got.added?`<b>${got.added} parlay${got.added===1?'':'s'} added.</b> They stay on this device until you remove them.`
-                :'<b>Those parlays were already here.</b>');
-  draw(); if(!got.err&&got.added) refresh();
-});
-document.getElementById('clearDone').addEventListener('click',()=>{
-  const done=allParlays().filter(isDone);
-  if(!done.length) return;
-  if(!confirm(`Remove ${done.length} finished parlay${done.length===1?'':'s'}?\n\nThey are deleted from this browser and cannot be brought back.`)) return;
-  for(const p of done) removeParlay(p.src,p.id);
-  draw();
-});
-/* off means off: returning to the tab only refetches when auto-refresh is actually on */
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&(+document.getElementById('every').value||0)) refresh(); });
 draw(); arm(); refresh();
-/* every device picks up what was saved, without a token and without being asked */
-doGhLoad(true);
 </script>
 </body>
 </html>
