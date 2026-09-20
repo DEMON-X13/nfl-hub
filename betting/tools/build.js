@@ -97,8 +97,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   const st=document.getElementById('saveState'); if(!st) return;
   const a=document.createElement('a'); a.className='sub'; a.target='_blank'; a.rel='noopener';
   a.href='https://github.com/DEMON-X13/nfl-hub/actions/workflows/update.yml';
-  a.title='Opens GitHub Actions. Press Run workflow to download the latest files, grade, and republish now.';
-  a.textContent='Refresh site now \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
+  a.title='Opens GitHub Actions and runs the update job: it downloads nflverse files, grades the week and republishes the site. It does not fetch live scores, and it fails while games are still being played, because the stats are not posted yet. For scores during a game, use Refresh scores.';
+  a.textContent='Run update job on GitHub \u2197'; a.style.marginLeft='14px'; a.style.whiteSpace='nowrap';
   st.insertAdjacentElement('afterend',a);
 });
 </script>
@@ -111,7 +111,10 @@ document.addEventListener('DOMContentLoaded',()=>{
  * This is injected ahead of the app's own script, so everything it does happens on
  * DOMContentLoaded, by which time S, predict and the two boards exist. */
 const LIVE = `<style>
-.lvwrap{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#4F607A;font-variant-numeric:tabular-nums}
+.lvwrap{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:inherit;opacity:.85;font-variant-numeric:tabular-nums}
+header .lvwrap,header label.muted{color:#B9C5D4}
+header #lvEvery{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:5px 8px}
+header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
 .lvdot{width:8px;height:8px;border-radius:50%;background:#D5DCE6;display:inline-block}
 .lvdot.on{background:#1B7A4E;box-shadow:0 0 8px rgba(27,122,78,.6)}
 .lvdot.bad{background:#C0392B}
@@ -186,9 +189,13 @@ function hook(name){
   window[name]=function(){ const r=f.apply(this,arguments); if(L.on) setTimeout(paintAll,0); return r; };
 }
 document.addEventListener('DOMContentLoaded',()=>{
-  const sel=el('weekSel'), bar=sel&&sel.closest('.bar'); if(!bar) return;
+  /* in the header, beside the Updated stamp: this is the first thing looked at during a
+     game, and the week bar put it a screen and a half down a phone */
+  const host=el('saveState')&&el('saveState').parentElement;
+  const sel=el('weekSel'), bar=host||(sel&&sel.closest('.bar')); if(!bar) return;
   const wrap=document.createElement('span');
-  wrap.style.cssText='display:inline-flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap';
+  wrap.style.cssText='display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap'
+    +(host?';margin:8px 0 0;width:100%;justify-content:flex-end':';margin-left:auto');
   wrap.innerHTML='<span class="lvwrap"><span class="lvdot" id="lvDot"></span><span id="lvStamp">scores off</span></span>'
     +'<label class="muted">Scores <select id="lvEvery">'
     +'<option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>'
