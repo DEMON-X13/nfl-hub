@@ -233,10 +233,13 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
       { id: 'l', week: 2, stake: 1, legs: [ml(0, 'CAR')] }] };
     chk(/\bgood\b/.test((await chip(winning, 'in')).className), 'a game being won is not green');
     chk(/\bbad\b/.test((await chip(losing, 'in')).className), 'a game being lost is not red');
-    chk(/\btie\b/.test((await chip({ updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+    /* a prop-only game has no row of its own, so its chip is the strip above the legs */
+    const propOnly = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
       { id: 'p', week: 2, stake: 1, legs: [
-        legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 400.5, 'over', true)] }] }, 'in')).className),
-      'a leg still short with the game running is not yellow');
+        legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 400.5, 'over', true)] }] };
+    const pc = await chip(propOnly, 'in');
+    chk(/\btie\b/.test(pc.className), 'a leg still short with the game running is not yellow');
+    chk(!!pc.closest('.games'), 'a prop-only game lost its score strip');
     const pre = await chip(winning, 'pre');
     chk(!/good|bad|tie/.test(pre.className), 'a game that has not kicked off is coloured');
   }
@@ -295,9 +298,13 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
       'a parlay of moneylines fetched box scores it has no use for');
     const row = m.d.querySelector('.sp-leg');
     chk(/Falcons/.test(txt(row)) && /To Win/.test(txt(row)), 'a whole-game bet from the file is wrong: ' + txt(row));
-    /* the score is on the chip above in bigger type; the row says how the bet is doing */
-    chk(/up 3/.test(txt(row)) && !/17.20/.test(txt(row)),
-      'a whole-game bet repeats the score instead of saying where it stands: ' + txt(row));
+    /* the score rides in the row as a chip, with the margin beside it and the clock once */
+    chk(/up 3/.test(txt(row)), 'a whole-game bet does not say where it stands: ' + txt(row));
+    const gm = row.querySelector('.gm');
+    chk(!!gm && /CAR 17.20 ATL/.test(txt(gm)), 'the score chip is not in the row: ' + txt(gm || null));
+    chk(!/Q3/.test(txt(gm)), 'the chip still carries the clock: ' + txt(gm));
+    chk((txt(row).match(/Q3 7:12/g) || []).length === 1, 'the clock is in the row twice: ' + txt(row));
+    chk(!m.d.querySelector('.games .gm'), 'a game already shown in a row is repeated in the strip above');
     chk(/\bwin\b/.test(row.querySelector('.rs').className), 'a team bet being won is not green');
     const second = m.d.querySelectorAll('.sp-leg.team')[1];
     chk(/up 4/.test(txt(second)), 'the margin on the second leg is wrong: ' + txt(second));
