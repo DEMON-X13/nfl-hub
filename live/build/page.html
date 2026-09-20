@@ -74,7 +74,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
 .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-.src{border-left:4px solid var(--gold)} .src.prop{border-left-color:var(--pick)}
+.src{border-left:4px solid var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F}
 footer{max-width:900px;margin:0 auto;padding:0 28px 48px;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--ink-2)}
 @media(max-width:620px){ header{padding:18px 16px 16px} .brand h1{font-size:27px} main{padding:18px 16px 56px} footer{padding:0 16px 40px} .card{padding:16px 15px} }
@@ -95,6 +95,7 @@ footer a{color:var(--ink-2)}
       <select id="every"><option value="15">every 15s</option><option value="30" selected>every 30s</option><option value="60">every 60s</option><option value="0">off</option></select>
     </label>
     <button class="btn quiet" id="now">Refresh now</button>
+    <button class="btn quiet" id="send">Send to a device</button>
     <button class="btn quiet" id="clearDone" hidden>Clear finished</button>
   </div>
   <div id="app"></div>
@@ -132,12 +133,13 @@ function propParlays(){
 function allParlays(){
   const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
     price:p.priced?decToML(p.dec):null,payout:p.payout,legs:p.legs}));
-  return propParlays().concat(bet);
+  return propParlays().concat(bet).concat(importedParlays());
 }
 /* Removing writes, and it is the only thing on this page that does. Read, change the one
    array, write the whole object back, so every other field the owning app keeps -- picks,
    bankroll, bet log, odds -- comes through untouched. */
 function removeParlay(src,id){
+  if(src==='shared') return writeImported(importedParlays().filter(p=>String(p.id)!==String(id)));
   const key=src==='prop'?PROP_KEY:BET_KEY, v=readKey(key);
   if(!v) return false;
   const arr=src==='prop'?v.saved:(v.bank&&v.bank.build);
@@ -148,7 +150,55 @@ function removeParlay(src,id){
   try{ localStorage.setItem(key,JSON.stringify(v)); }catch(e){ return false; }
   return true;
 }
-const STATE={games:{},box:{},err:null,at:0,busy:false};
+/* ---- moving parlays between devices ----
+   Storage does not travel, so a parlay built on a computer is invisible on a phone. The
+   parlays themselves are tiny, so they can ride in the link: Send packs what is on screen
+   into the URL, and opening that URL anywhere unpacks it into this page's own key.
+   Deliberately its own key, not the two apps': nothing this page imports should appear in
+   the prop model or the betting model as though it had been saved there. */
+const LIVE_KEY='live_parlays_v1';
+const PACK_LEG=['gid','stat','k','side','main','name','label','team'];
+const PACK_P=['id','src','week','stake','price','payout'];
+function importedParlays(){
+  const v=readKey(LIVE_KEY), a=(v&&v.imported)||[];
+  return Array.isArray(a)?a.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>Object.assign({},p,{src:'shared'})):[];
+}
+function writeImported(list){
+  try{ localStorage.setItem(LIVE_KEY,JSON.stringify({imported:list})); return true; }catch(e){ return false; }
+}
+const pick=(o,keys)=>{ const r={}; for(const k of keys) if(o[k]!==undefined&&o[k]!==null) r[k]=o[k]; return r; };
+function packParlays(ps){
+  return ps.map(p=>Object.assign(pick(p,PACK_P),{legs:p.legs.map(l=>pick(l,PACK_LEG))}));
+}
+/* base64url over UTF-8, the long-standing way: no TextEncoder, so this works in anything
+   that can open the page, and in the jsdom the smoke test drives it with */
+function b64e(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64d(t){ return decodeURIComponent(escape(atob(t.replace(/-/g,'+').replace(/_/g,'/')))); }
+function shareLink(ps){
+  const packed=packParlays(ps);
+  if(!packed.length) return null;
+  return location.origin+location.pathname+'#p='+b64e(JSON.stringify(packed));
+}
+/* anything arriving in the link joins what this device already had, by id */
+function takeFromHash(){
+  const m=/[#&]p=([A-Za-z0-9\-_]+)/.exec(location.hash||'');
+  if(!m) return null;
+  let incoming=null;
+  try{ incoming=JSON.parse(b64d(m[1])); }catch(e){ return {err:'That link could not be read. It may have been cut short in the message it arrived in.'}; }
+  if(!Array.isArray(incoming)||!incoming.length) return {err:'That link carried no parlays.'};
+  const have=importedParlays(), byId={};
+  for(const p of have) byId[String(p.id)]=p;
+  let added=0;
+  for(const p of incoming){
+    if(!p||!Array.isArray(p.legs)||!p.legs.length) continue;
+    const id=String(p.id||('sh'+Math.random().toString(36).slice(2,9)));
+    if(byId[id]) continue;
+    byId[id]=Object.assign({},p,{id,src:'shared'}); added++;
+  }
+  writeImported(Object.values(byId));
+  return {added,total:incoming.length};
+}
+const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null};
 function legGames(ps){ const s=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s.add(l.gid); return s; }
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -204,20 +254,32 @@ function draw(){
   const ps=allParlays(), app=document.getElementById('app');
   document.getElementById('clearDone').hidden=!ps.some(isDone);
   let html='';
+  if(STATE.msg) html+=`<div class="note">${STATE.msg}</div>`;
   if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b><br>This page reads ESPN's public scoreboard straight from your browser. If your browser refuses that read nothing here can update — say so and it can be routed another way. Your parlays, and the way they settle, are not affected.</div>`;
   if(!ps.length){
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing saved in this browser</b>
       Parlays live in the browser that made them and do not travel between devices.<br>
-      Save one in the <a href="../props/">prop model</a>, or a Bet Build parlay in the <a href="../betting/">betting model</a>, on this device and it will appear here.</div>`;
+      Save one in the <a href="../props/">prop model</a>, or a Bet Build parlay in the <a href="../betting/">betting model</a>, on this device and it will appear here.<br><br>
+      Already have one on another device? Open this page there and press <b>Send to a device</b> \u2014 the parlays travel in the link.</div>`;
     foot(); return;
   }
-  for(const p of ps.sort((x,y)=>(x.src===y.src?0:(x.src==='prop'?-1:1)))){
+  /* the order the day runs in: anything still to finish first, earliest kickoff at the top,
+     settled parlays out of the way at the bottom. Without scores yet, fall back to the week. */
+  const kickOf=p=>{ let k=null;
+    for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue;
+      if(k===null||g.kick<k) k=g.kick; }
+    return k; };
+  const rank=p=>{ const k=kickOf(p);
+    return [isDone(p)?1:0, k===null?Number.MAX_SAFE_INTEGER:k, p.week||0]; };
+  for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y);
+      return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||String(x.src).localeCompare(String(y.src)); })){
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
     const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':`<span class="pill warn">${hit} of ${p.legs.length} in</span>`);
-    html+=`<div class="savedp src ${p.src==='prop'?'prop':''}">
+    const from={prop:'prop model',bet:'betting model',shared:'sent here'}[p.src]||p.src;
+    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='shared'?'shared':''))}">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
-        <span class="pill">${p.src==='prop'?'prop model':'betting model'}</span>
+        <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${tag}<span class="grow"></span>
         <button class="btn quiet small" data-rm="${esc(p.src)}:${esc(p.id)}">Remove</button></div>
@@ -241,7 +303,7 @@ function draw(){
 function foot(){
   document.getElementById('stamp').textContent=STATE.err?'not updating':(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'idle');
   document.getElementById('foot').innerHTML=`Scores come from ESPN's public feeds, read by this page in your own browser. No odds-API credits are ever spent here, and no job runs for it.
-    Parlays are read from this browser's storage; the only thing this page writes is a removal you ask for, and it settles nothing — that still happens in the
+    Parlays are read from this browser's storage; this page writes only a removal you ask for and the parlays you send here by link, and it settles nothing — that still happens in the
     <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>.`;
 }
 let TIMER=null;
@@ -250,6 +312,28 @@ function arm(){
   const s=+document.getElementById('every').value||0;
   if(s) TIMER=setInterval(()=>{ if(document.visibilityState==='visible') refresh(); },s*1000);
 }
+document.getElementById('send').addEventListener('click',async()=>{
+  const ps=allParlays();
+  if(!ps.length){ STATE.msg='There is nothing on this device to send.'; draw(); return; }
+  const url=shareLink(ps);
+  if(!url){ STATE.msg='Those parlays could not be packed into a link.'; draw(); return; }
+  /* some messaging apps trim a long link, which is worth saying before it happens */
+  const long=url.length>7000?' It is a long link, so send it somewhere that will not shorten it \u2014 Messages or email rather than a chat that trims links.':'';
+  let copied=false;
+  try{ await navigator.clipboard.writeText(url); copied=true; }catch(e){}
+  STATE.msg=`<b>${copied?'Link copied.':'Link ready.'}</b> Open it on the other device and these ${ps.length} parlay${ps.length===1?'':'s'} appear there.${long}
+    <br><input type="text" readonly value="${esc(url)}" style="width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel)" onclick="this.select()">`;
+  draw();
+});
+/* a link from another device: unpacked once, then cleared out of the address bar */
+(function(){
+  const got=takeFromHash();
+  if(!got) return;
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; }
+  STATE.msg=got.err?`<b>${esc(got.err)}</b>`
+    :(got.added?`<b>${got.added} parlay${got.added===1?'':'s'} added from the link.</b> They stay on this device until you remove them.`
+                :'<b>Those parlays were already here.</b>');
+})();
 document.getElementById('every').addEventListener('change',arm);
 document.getElementById('now').addEventListener('click',refresh);
 document.getElementById('clearDone').addEventListener('click',()=>{
