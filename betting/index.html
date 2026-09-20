@@ -630,11 +630,7 @@ header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
 .lvdot{width:8px;height:8px;border-radius:50%;background:#D5DCE6;display:inline-block}
 .lvdot.on{background:#1B7A4E;box-shadow:0 0 8px rgba(27,122,78,.6)}
 .lvdot.bad{background:#C0392B}
-b.sc.lv{font-variant-numeric:tabular-nums}
-b.sc.lv em{font-style:normal;display:block;font-size:11px;font-weight:600;color:#8A5E05}
-b.sc.lv.ok{color:#1B7A4E} b.sc.lv.bad{color:#C0392B} b.sc.lv.tie{color:#8A5E05}
-.mres.lv.ok{color:#1B7A4E} .mres.lv.bad{color:#C0392B} .mres.lv.tie{color:#8A5E05}
-.mres.lv{font-weight:600}
+.mwin.tie,.mres.tie{color:#8A5E05}
 .pickdot.lockd{opacity:.45;cursor:not-allowed}
 </style>
 <script>
@@ -692,7 +688,7 @@ async function read(){
     if(typeof window.renderPicks==='function') window.renderPicks();
     if(typeof window.renderMine==='function') window.renderMine();
   }
-  paintAll(); settledNote(); stamp();
+  paintAll(); stamp();
 }
 function stamp(){
   const s=el('lvStamp'), d=el('lvDot'); if(!s) return;
@@ -709,9 +705,11 @@ function paint(rootId,w){
   rows.forEach((row,i)=>{
     const g=gs[i]; if(!g||g.result!=null) return;
     const s=L.games[g.game_id]; if(!s||s.state==='pre'||s.hs==null||s.as==null) return;
-    const cell=row.querySelector('b.sc'); if(!cell) return;
-    cell.className='sc lv '+tone(g,s);
-    cell.innerHTML=line(g,s)+(s.clock?'<em>'+esc(s.clock)+'</em>':'');
+    /* the same two spans the app writes for a finished game, in the same box, so a game
+       being played and one that is over read identically rather than in two type sizes */
+    const box=row.querySelector('.result'); if(!box) return;
+    box.innerHTML='<span class="mwin '+tone(g,s)+'">'+line(g,s)+'</span>'
+      +(s.clock?'<span class="muted">'+esc(s.clock)+'</span>':'');
   });
 }
 /* Kickoff, from the schedule's Eastern times, the same way the prop model works it out.
@@ -790,17 +788,6 @@ function settleFinished(){
   }
   return n;
 }
-/* say so, rather than letting a provisional result pass for a graded one */
-function settledNote(){
-  const n=Object.values(S.processed).filter(r=>r.fromScoreboard).length;
-  let el2=document.getElementById('lvSettled');
-  const bar=document.getElementById('weekSel')&&document.getElementById('weekSel').closest('.bar');
-  if(!n){ if(el2) el2.remove(); return; }
-  if(!el2&&bar){ el2=document.createElement('span'); el2.id='lvSettled'; el2.className='pill';
-    el2.style.cssText='background:#FBEFD3;color:#8A5E05;font-weight:600'; bar.appendChild(el2); }
-  if(el2) el2.textContent=n+' game'+(n===1?'':'s')+' settled from the scoreboard · the job confirms them on its next run';
-}
-
 /* the graded rows read "BUF won 31-41"; a game still being played reads the same way, with
    the side that is ahead and leading instead of won, so the two say the same kind of thing */
 function line(g,s){
@@ -826,10 +813,15 @@ function paintMine(w){
     const g=gs[i]; if(!g||g.result!=null) return;
     const s=L.games[g.game_id]; if(!s||s.state==='pre'||s.hs==null||s.as==null) return;
     const head=card.querySelector('.myhead'); if(!head) return;
+    /* My Picks puts the result in the card's header, separated by a middle dot: the same
+       span the app uses for a final, with the clock as another of the header's own bits */
     let sp=head.querySelector('.mres.lv');
-    if(!sp){ sp=document.createElement('span'); sp.className='mres lv'; head.appendChild(sp); }
+    if(!sp){ head.appendChild(document.createTextNode(' · '));
+      sp=document.createElement('span'); sp.className='mres lv'; head.appendChild(sp);
+      head.appendChild(document.createTextNode('')); }
     sp.className='mres lv '+tone(g,s);
-    sp.textContent=' · '+line(g,s).replace(/&amp;/g,'&')+(s.clock?' · '+s.clock:'');
+    sp.textContent=line(g,s).replace(/&amp;/g,'&');
+    sp.nextSibling.textContent=s.clock?' · '+s.clock:'';
   });
 }
 function paintAll(){ paint('gamesList',weekOf('weekSel')); paintMine(weekOf('myWeekSel')); }
