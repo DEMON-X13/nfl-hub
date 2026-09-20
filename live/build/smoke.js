@@ -559,6 +559,40 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     chk(!f2.w.localStorage.getItem('live_gh_token'), 'the token could not be forgotten');
   }
 
+  // ---- P. the page says where the shared copy stands ----
+  {
+    const seedOne = w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
+      { id: 'sp1', week: 2, stake: 20, price: 580, payout: 136, legs: [
+        leg('p1', 'Bijan Robinson', 'rushing_yards', 43.5, 'over', true, 'Over 43.5 rushing yards', 'ATL')] }] }));
+      w.localStorage.removeItem(BET_KEY); };
+
+    /* the file exists but is empty, which is exactly what went wrong: nothing had been saved */
+    const empty = makeGh({ v: 1, updated: null, g: [], p: [] });
+    const a = await run({ seed: seedOne, gh: empty.fn });
+    await new Promise(r => setTimeout(r, 200));
+    chk(/nothing saved yet/.test(txt(a.d.getElementById('ghState'))),
+      'a device with parlays does not say they are unsaved: ' + txt(a.d.getElementById('ghState')));
+
+    /* a second device with nothing of its own is told where to go */
+    const b = await run({ seed: () => {}, gh: empty.fn });
+    await new Promise(r => setTimeout(r, 200));
+    chk(/Nothing has been saved to GitHub yet/.test(txt(b.d.getElementById('app'))),
+      'an empty device does not explain that the other one has to save first');
+
+    /* once something is saved, both say so */
+    const store = makeGh(null);
+    const c = await run({ seed: seedOne, gh: store.fn });
+    c.w.prompt = () => 'ghp_pretendtoken';
+    c.d.getElementById('ghSave').click();
+    await new Promise(r => setTimeout(r, 200));
+    chk(/GitHub: 1 parlay, saved/.test(txt(c.d.getElementById('ghState'))),
+      'after a save the bar does not say so: ' + txt(c.d.getElementById('ghState')));
+    const d3 = await run({ seed: () => {}, gh: store.fn });
+    await new Promise(r => setTimeout(r, 200));
+    chk(/GitHub: 1 parlay/.test(txt(d3.d.getElementById('ghState'))),
+      'a second device does not report what it loaded: ' + txt(d3.d.getElementById('ghState')));
+  }
+
   console.log(`${checks} checks, ${fails.length} failures`);
   fails.forEach(f2 => console.log('  FAIL:', f2));
   process.exit(fails.length ? 1 : 0);
