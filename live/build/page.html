@@ -67,6 +67,8 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
 .sp-leg.prop{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
+.sp-leg.team{grid-template-columns:22px minmax(88px,max-content) 1fr auto;gap:9px}
+.sp-leg.team .gm{justify-self:start}
 .sp-leg.prop .res{margin-top:3px}
 .legbody{min-width:0}
 .legtop{display:flex;align-items:baseline;gap:10px}
@@ -98,16 +100,19 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .tokBox{width:auto;flex:1;margin-top:0}
 .shareBox{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
-.games{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 8px}
-.gm{background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;font-family:var(--display);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px;box-shadow:var(--sh-xs)}
+.games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.gm{display:inline-block;background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:4px 11px;font-family:var(--display);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px}
 .gm em{font-style:normal;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);margin-left:9px}
 /* green while the parlay is winning this game, red once it is losing it, yellow while it is
    level or undecided -- the same three colours the legs use, on the scoreboard */
 .gm.good{border-color:var(--pick);background:var(--pick-soft);color:var(--pick)} .gm.good em{color:var(--pick)}
 .gm.bad{border-color:var(--miss);background:var(--miss-soft);color:var(--miss)} .gm.bad em{color:var(--miss)}
 .gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05} .gm.tie em{color:#8A5E05}
-.gm.done{box-shadow:none}
-@media(max-width:620px){ .gm{font-size:16px;padding:8px 15px} }
+.gm.done{opacity:.85}
+/* on a phone the row gives up the alignment before it gives up fitting */
+@media(max-width:430px){ .gm{font-size:12px;padding:3px 9px}
+  .sp-leg.team{grid-template-columns:20px minmax(0,max-content) 1fr auto;gap:7px}
+  .sp-leg.team .nm{overflow:hidden;text-overflow:ellipsis} }
 .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
@@ -176,7 +181,7 @@ const DATA='parlays.json';
 /* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
    thing worth knowing is whether the browser is even showing the current build, and from the
    outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v2 \u00b7 __BUILT__';
+const PAGE_BUILD='live v3 \u00b7 __BUILT__';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
@@ -385,10 +390,13 @@ function gameTone(p,gid){
   if(!n) return '';
   return bad?'bad':(good===n?'good':'tie');
 }
+/* Only the games this parlay has no team bet in: where it does, the score is in that leg's
+   own row and a strip above would just say it twice. */
 function gameStrip(p){
-  const seen=[], out=[];
+  const seen=[], out=[], inRow=[];
+  for(const l of p.legs) if(isGameLeg(l)&&l.gid) inRow.push(l.gid);
   for(const l of p.legs){
-    if(!l.gid||seen.indexOf(l.gid)>=0) continue;
+    if(!l.gid||seen.indexOf(l.gid)>=0||inRow.indexOf(l.gid)>=0) continue;
     seen.push(l.gid);
     const g=STATE.games[l.gid]; if(!g) continue;
     const tone=gameTone(p,l.gid);
@@ -437,8 +445,11 @@ function legRow(p,leg,i){
     const tmark=t2==='win'&&r&&r.state==='hit'?MARK.hit:(t2==='lose'&&r&&r.state==='missed'?MARK.missed:mark);
     const right=(!r||word==='waiting')?'<span class="rs muted">waiting</span>'
       :`<span class="rs ${t2}">${esc(word)}<em>${esc(g.clock||'')}</em></span>`;
+    /* the score rides in the row, after the team, rather than in a strip above repeating it.
+       No clock on it: the clock is already under the margin on the right of the same row. */
+    const chip=g?`<span class="gm${t2==='win'?' good':(t2==='lose'?' bad':(t2==='tie'?' tie':''))}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}</span>`:'<span></span>';
     return `<div class="sp-leg team"><span class="${tcls}">${tmark}</span>
-      <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${right}</div>`;
+      <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${chip}${right}</div>`;
   }
   const state=r?r.state:'pending', room=l.main&&l.side==='under';
   const status=!r?'waiting':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':
