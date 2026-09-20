@@ -1,5 +1,10 @@
 # Working in this repo
 
+`docs/ARCHITECTURE.md` is the deeper map: every directory and what is in it, how
+the data flows, the shape of the state and the payload, and the vocabulary the
+code uses (leg, rung, main line, corr, SGP, the margin). Read it when you need to
+find something; this file is the part you need every time.
+
 ## How the owner wants this done
 
 Do the whole job, including the git and GitHub half, without being asked and
