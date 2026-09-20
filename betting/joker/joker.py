@@ -31,6 +31,7 @@ PBP_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_
 sys.path.insert(0, str(HERE))
 import features as F  # noqa: E402
 import explain as X  # noqa: E402
+import drift as D  # noqa: E402
 
 
 def log(msg):
@@ -70,6 +71,13 @@ def main():
     except Exception as e:
         log(f"attribution failed ({type(e).__name__}: {e}); shipping picks without it")
         made = None
+    # an input that no longer arrives on the scale it was fitted on is something the model
+    # cannot tell you about itself: it extrapolates and still reports a confident number
+    moved = D.report(F.FROZEN, FRESH, F.FIT_SEASONS, F.SEASON)
+    for m in moved:
+        log(f"input drifted: {m['col']} fitted mean {m['fit']}, this season {m['now']} ({m['z']:+} sd)")
+    if not moved:
+        log("no input has moved more than 0.75 sd from its fitted mean")
     games = {}
     for i, ((_, g), ph) in enumerate(zip(this.iterrows(), p)):
         rec = dict(week=int(g.week), home=g.home_team, away=g.away_team,
@@ -82,6 +90,10 @@ def main():
                why_note=("Per game: base is what the model says before any split, why lists the inputs that moved it "
                          "most, in log-odds. base plus every contribution reconstructs the model's raw output; only "
                          "the eight largest are kept here."),
+               drift=moved,
+               drift_note=("Inputs whose season mean has moved more than 0.75 fitted standard deviations. "
+                           "The model is frozen, so nothing is corrected for them; a pick that turns on one "
+                           "of these is leaning on an input that no longer means what it did when it was fitted."),
                generated=datetime.now(timezone.utc).isoformat(timespec="minutes"), games=games)
     prev = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else None
     if prev is None or prev.get("games") != games:
