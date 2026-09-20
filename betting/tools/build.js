@@ -155,7 +155,13 @@ async function read(){
     L.games=games; L.at=Date.now(); L.on=true;
   }catch(e){ L.err=String(e&&e.message||e); }
   finally{ L.busy=false; }
-  paintAll(); stamp();
+  /* a finished game becomes a result; the boards are redrawn by the app so that records,
+     ticks and crosses all follow from it */
+  if(settleFinished()){
+    if(typeof window.renderPicks==='function') window.renderPicks();
+    if(typeof window.renderMine==='function') window.renderMine();
+  }
+  paintAll(); settledNote(); stamp();
 }
 function stamp(){
   const s=el('lvStamp'), d=el('lvDot'); if(!s) return;
@@ -214,6 +220,56 @@ function lockPlayed(){
   return n;
 }
 
+/* A finished game does not need the weekly job to say who won.
+ *
+ * The job's grading writes two different kinds of thing. Ratings need nflverse's stats,
+ * which is why it waits. Whether a pick hit needs only the final score, and the scoreboard
+ * has that at the whistle. So a game ESPN reports as over is settled here, from the score,
+ * in exactly the shape the job writes -- which means the records, the ticks and crosses,
+ * "Pick hit", the My Picks marks and the lock all come out of the app's own code rather
+ * than a second implementation of it.
+ *
+ * None of it is persisted. In published mode this browser keeps only picks, bets, bankroll
+ * and self-loaded odds; S.processed and S.schedule are rebuilt from state.json on every
+ * load. So this is a view of a finished game that the job has not reached yet, and the
+ * moment it does, its version is what loads and nothing here is consulted again.
+ *
+ * The pick it settles against is the one the board is already showing for that game:
+ * an ungraded row renders predict(g, S.teams), and ratings do not move until the job
+ * ingests results, so the pick cannot drift between being shown and being settled. */
+function settleFinished(){
+  let n=0;
+  for(const g of S.schedule){
+    if(g.result!=null||S.processed[g.game_id]) continue;     /* already settled or graded */
+    const s=L.games[g.game_id];
+    if(!s||s.state!=='post'||s.hs==null||s.as==null) continue;
+    let pr=null;
+    if(typeof window.predict==='function'){ try{ pr=window.predict(g,S.teams); }catch(e){} }
+    if(!pr) continue;
+    const result=s.hs-s.as;                                  /* home margin, as the job writes it */
+    const winner=result>0?g.home_team:(result<0?g.away_team:null);
+    const myPick=(S.myPicks&&S.myPicks[g.game_id])||null;
+    g.away_score=s.as; g.home_score=s.hs; g.result=result;
+    S.processed[g.game_id]={week:+g.week,home:g.home_team,away:g.away_team,
+      pick:pr.pick,conf:pr.conf,margin:pr.margin,pHome:pr.pHome,blended:!!pr.blended,
+      result,correct:winner?pr.pick===winner:null,line:g.spread_line,
+      myPick,myCorrect:myPick?(winner?myPick===winner:null):null,
+      fromScoreboard:true};
+    n++;
+  }
+  return n;
+}
+/* say so, rather than letting a provisional result pass for a graded one */
+function settledNote(){
+  const n=Object.values(S.processed).filter(r=>r.fromScoreboard).length;
+  let el2=document.getElementById('lvSettled');
+  const bar=document.getElementById('weekSel')&&document.getElementById('weekSel').closest('.bar');
+  if(!n){ if(el2) el2.remove(); return; }
+  if(!el2&&bar){ el2=document.createElement('span'); el2.id='lvSettled'; el2.className='pill';
+    el2.style.cssText='background:#FBEFD3;color:#8A5E05;font-weight:600'; bar.appendChild(el2); }
+  if(el2) el2.textContent=n+' game'+(n===1?'':'s')+' settled from the scoreboard \u00b7 the job confirms them on its next run';
+}
+
 /* the graded rows read "BUF won 31-41"; a game still being played reads the same way, with
    the side that is ahead and leading instead of won, so the two say the same kind of thing */
 function line(g,s){
@@ -268,6 +324,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   bar.appendChild(wrap);
   el('lvNow').addEventListener('click',read);
   setTimeout(after,0);                            /* lock what has kicked off on first load */
+  /* read once on load, so a finished game shows its result without being asked and does not
+     vanish again on the next reload */
+  setTimeout(read,300);
   for(const n of ['renderPicks','renderMine']) hook(n);
 });
 })();
