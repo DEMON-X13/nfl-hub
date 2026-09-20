@@ -179,6 +179,11 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   chk(!d.querySelector('[data-rm],[data-send],[data-edit],[data-reset]'), 'a per-parlay control survived');
   chk(!!d.getElementById('now') && !!d.getElementById('every'), 'the refresh controls should stay');
   chk(d.getElementById('every').value === '0', 'auto-refresh should start off');
+  /* the build stamp: the one thing that tells a stale cached copy from a broken one */
+  chk(/^live v\d+ \u00b7 \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/.test(txt(d.getElementById('ver'))),
+    'the page does not say which build it is: ' + txt(d.getElementById('ver')));
+  chk(!/__BUILT__/.test(HTML), 'the build stamp was never filled in');
+  chk(/needs JavaScript/.test(HTML), 'a browser with scripts off gets no explanation');
 
   // ---- E. nought before kickoff ----
   const b4 = await run({ state: 'pre' });

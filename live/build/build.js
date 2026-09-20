@@ -32,6 +32,8 @@ for (const need of ['function espnStats', 'function liveLeg', 'function liveGame
 
 const page = fs.readFileSync(path.join(__dirname, 'page.html'), 'utf8');
 if (!page.includes('/*SHARED*/')) throw new Error('page.html has no /*SHARED*/ slot');
-const out = page.replace('/*SHARED*/', shared);
+if (!page.includes('__BUILT__')) throw new Error('page.html has no __BUILT__ stamp');
+const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+const out = page.replace('/*SHARED*/', shared).replace('__BUILT__', stamp);
 fs.writeFileSync(path.join(ROOT, 'live', 'index.html'), out);
 console.log(`live/index.html written: ${(out.length / 1024).toFixed(1)} KB (${shared.split('\n').length} lines shared from the prop model)`);
