@@ -161,6 +161,13 @@ body.modal-open{overflow:hidden}
   line-height:1;padding:4px 8px;border-radius:5px;margin-right:10px;vertical-align:1px;
   background:#CFE0F4;color:#1E3D66;border:1px solid #9DBBDC}
 .finchip.live{background:#FCF1D6;color:#8A5E05;border-color:#E8D49A}
+.livestamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.livedot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
+.livedot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
+.livedot.bad{background:var(--miss)}
+.when .sc{display:block;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.when .cl{display:block;font-size:11px;color:#8A5E05;font-weight:600}
+.tot .lv,.totpts .lv{display:block;font-size:11px;color:#8A5E05;font-weight:600;font-variant-numeric:tabular-nums}
 .plrbtn .sum b{color:var(--ink);font-family:var(--display);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .plrbtn .arrow{text-align:right;color:var(--muted);font-size:18px}
 .plrbody{border:1px solid var(--ink);border-top:0;border-radius:0 0 var(--r-md) var(--r-md);background:var(--panel);
@@ -392,6 +399,11 @@ body.modal-open{overflow:hidden}
       <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
       <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
       <span class="grow"></span>
+      <span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>
+      <label class="muted">Scores <select id="slateEvery">
+        <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
+      </select></label>
+      <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
     <div class="gamehead">
@@ -525,7 +537,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
-const APP_BUILD='app v55 \u00b7 2026-09-20';
+const APP_BUILD='app v56 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1358,7 +1370,7 @@ function renderSlate(){
     const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
-      <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>':(started?'<span class="pill warn">LIVE</span>':d.t)}</div>
+      <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>'+liveWhen(g,true):(started?liveWhen(g):d.t)}</div>
       <div class="matchup">${tag(g.a)}<span class="at">at</span>${tag(g.h)}</div>
       <div class="lead">${gameHeadline(g).map(x=>{
         const st={pass:'passing_yards',rush:'rushing_yards',rec:'receiving_yards'}[x.k];
@@ -1367,7 +1379,7 @@ function renderSlate(){
         const band=av==null?'':hitBand(av,x.v.mu);
         return `<div><span class="cat">${x.k}</span><span class="nm">${esc(shortName(x.v.pl.n))}</span><span class="v">${x.v.mu.toFixed(0)}<em>yds</em>${
           av!=null?`<span class="va ${band}">${num(av,0)}<em>yds</em></span>`:(fin?'<span class="va pend">\u2013</span>':'')}</span></div>`;}).join('')}</div>
-      <div class="tot"><b>${ca.implied.toFixed(0)} \u2013 ${ch.implied.toFixed(0)}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:''}</div>
+      <div class="tot"><b>${ca.implied.toFixed(0)} \u2013 ${ch.implied.toFixed(0)}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:liveScoreLine(g)}</div>
       <div class="totpts${ca.src==='model'?' assumed':''}"><b>${(ca.implied+ch.implied).toFixed(0)}</b><small>${ca.src==='market'?'points':'our model'}</small>${hasScore(g)?`<small class="act">(actual ${g.as+g.hs})</small>`:''}</div>
       <div class="winner">${(()=>{
         if(ca.implied===ch.implied&&!hasScore(g)) return '<span class="none">\u2013</span><small>even</small>';
@@ -1911,6 +1923,13 @@ function renderPricePull(){
 }
 function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderParlay(); renderTrack(); renderPricePull(); renderBackupState();
   $('buildNote').textContent=`Model ${MODEL_BUILD}. ${APP_BUILD}. ${Object.keys(S.processed).length} week${Object.keys(S.processed).length===1?'':'s'} of ${SEASON} loaded.`; }
+/* the Games tab's own scores: off until asked, then read once or on an interval */
+$('slateNow')?.addEventListener('click',()=>{ LIVE.slate=true; LIVE.err=null; slateStamp(); liveRefresh(); });
+$('slateEvery')?.addEventListener('change',()=>{
+  const every=+($('slateEvery').value||0);
+  if(every){ LIVE.slate=true; LIVE.err=null; liveStart(); }
+  else { liveStop(); if(LIVE.on) liveStart(); slateStamp(); }
+});
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
 $('gameModal').addEventListener('click',e=>{ if(e.target===$('gameModal')) closeGame(); });
@@ -2498,8 +2517,17 @@ function renderParlay(){
 /* ---------- live: fetch, poll, and never persist ----------
    LIVE sits outside S on purpose. It is someone else's scoreboard, not our state: it must
    never be saved, and settlement still comes from nflverse on the next refresh. */
-let LIVE={at:0,games:{},box:{},err:null,busy:false,on:false};
+let LIVE={at:0,games:{},box:{},err:null,busy:false,on:false,slate:false};
 let LIVE_TIMER=null;
+/* the week on screen, which is not always the live one: someone reading week 1 in
+   October wants that week's scoreboard, and gets an empty one, which is correct */
+const slateWeek=()=>+$('weekSel')?.value||currentWeek();
+/* every game the Games tab wants a score for: started, not yet final */
+const liveSlateWanted=()=>{
+  const ids=new Set(); if(!LIVE.slate) return ids;
+  for(const g of gamesIn(slateWeek())) if(gameStarted(g)&&!gameFinal(g)) ids.add(g.id);
+  return ids;
+};
 const liveWanted=()=>{                                   /* every game an unsettled parlay needs */
   const ids=new Set();
   for(const p of (S.saved||[])){ if(settleParlay(p).status!=='pending') continue;
@@ -2514,10 +2542,15 @@ async function liveGet(url){
   return r.json();
 }
 async function liveRefresh(){
-  if(LIVE.busy) return; const want=liveWanted(); if(!want.size){ LIVE.on=false; return; }
-  LIVE.busy=true;
+  if(LIVE.busy) return;
+  const want=liveWanted(), slate=liveSlateWanted();
+  if(!want.size&&!LIVE.slate){ LIVE.on=false; return; }
+  LIVE.busy=true; slateDot(true);
   try{
-    const sb=await liveGet(`${ESPN_SB}?seasontype=2&week=${currentWeek()}&dates=${SEASON}`);
+    /* one scoreboard call covers the week, whoever asked for it. A game card wants a
+       score and not a stat line, so the slate never costs a box score. */
+    const wk=LIVE.slate?slateWeek():currentWeek();
+    const sb=await liveGet(`${ESPN_SB}?seasontype=2&week=${wk}&dates=${SEASON}`);
     LIVE.games=espnGames(sb,S.sched);
     const box={};
     for(const gid of want){ const g=LIVE.games[gid]; if(!g||g.state==='pre') continue;
@@ -2527,15 +2560,46 @@ async function liveRefresh(){
     /* the likeliest cause by far is the browser refusing a cross-site read, which is worth
        saying plainly rather than leaving the card blank */
     LIVE.err=String(e&&e.message||e);
-  }finally{ LIVE.busy=false; }
+  }finally{ LIVE.busy=false; slateDot(false); }
   if($('savedCard')) renderParlay();
+  if(LIVE.slate) renderSlate();
+  slateStamp();
+}
+function slateDot(busy){ const d=$('slateDot'); if(d) d.classList.toggle('on',!!busy); }
+function slateStamp(){
+  const el=$('slateStamp'), d=$('slateDot'); if(!el) return;
+  if(d) d.classList.toggle('bad',!!LIVE.err);
+  el.textContent=!LIVE.slate?'scores off'
+    :(LIVE.err?'scores not loading'
+      :(LIVE.at?'scores '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
+        :'reading\u2026'));
+}
+/* a started game's card: the score where the kickoff time was, with the clock under it.
+   Falls back to the LIVE pill when the scoreboard has not been read yet, which is what
+   the card said before there was a scoreboard to read. */
+function liveWhen(g,done){
+  const s=LIVE.slate?LIVE.games[g.id]:null;
+  if(!s||s.as==null||s.hs==null) return done?'':'<span class="pill warn">LIVE</span>';
+  /* a game already carrying its real result says it once, in the FINAL pill and the actual
+     score below; there is nothing for the scoreboard to add */
+  if(done&&hasScore(g)) return '';
+  return `<span class="sc">${esc(g.a)} ${num(s.as,0)}\u2013${num(s.hs,0)} ${esc(g.h)}</span>`
+    +(s.clock&&!done?`<span class="cl">${esc(s.clock)}</span>`:'');
+}
+/* the live score next to the expected one, so the model's number and the real one read
+   together while the game is on */
+function liveScoreLine(g){
+  const s=LIVE.slate?LIVE.games[g.id]:null;
+  if(!s||s.as==null||s.hs==null||s.state==='pre') return '';
+  return `<small class="lv">${s.state==='post'?'final':'live'} ${num(s.as,0)} \u2013 ${num(s.hs,0)}</small>`;
 }
 function liveStop(){ if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; } }
 function liveStart(){
   liveStop();
-  if(!LIVE.on) return;
+  if(!LIVE.on&&!LIVE.slate) return;
   /* only while the tab is in front: an iPad should not poll in someone's pocket */
-  LIVE_TIMER=setInterval(()=>{ if(document.visibilityState==='visible') liveRefresh(); },30000);
+  const every=(LIVE.slate&&+($('slateEvery')?.value||0))||(LIVE.on?30:0);
+  if(every) LIVE_TIMER=setInterval(()=>{ if(document.visibilityState==='visible') liveRefresh(); },every*1000);
   liveRefresh();
 }
 /* what to show against one leg of a saved parlay, live */
