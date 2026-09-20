@@ -126,12 +126,16 @@ footer a{color:var(--ink-2)}
 <main>
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
+    <span class="pill" id="ver" title="which build of this page your browser is showing"></span>
     <span class="grow"></span>
     <label class="muted">Refresh
       <select id="every"><option value="15">every 15s</option><option value="30">every 30s</option><option value="60">every 60s</option><option value="0" selected>off</option></select>
     </label>
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
+  <noscript><div class="note"><b>This page needs JavaScript.</b> It has none of its own data:
+    it reads the parlay file and the live scores when it opens, and with scripts turned off
+    there is nothing for it to show. Lockdown Mode and some content blockers turn them off.</div></noscript>
   <div id="app"></div>
 </main>
 <footer id="foot"></footer>
@@ -290,6 +294,11 @@ function bettingParlays(raw){
    without a credential, and a static page has nowhere safe to keep one, so the file is edited
    in the repository instead and the page picks the change up on the next load. */
 const DATA='parlays.json';
+
+/* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
+   thing worth knowing is whether the browser is even showing the current build, and from the
+   outside a stale cached copy and a broken one look identical. */
+const PAGE_BUILD='live v1 \u00b7 2026-09-20 18:14 UTC';
 
 /* The two models keep what you save in the browser that saved it, which is theirs to do:
    picks and bets are the visitor's and never leave the machine. So this page shows both --
@@ -585,6 +594,7 @@ document.getElementById('every').addEventListener('change',arm);
 document.getElementById('now').addEventListener('click',refresh);
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'&&(+document.getElementById('every').value||0)) refresh(); });
+document.getElementById('ver').textContent=PAGE_BUILD;
 draw(); arm(); refresh();
 </script>
 </body>
