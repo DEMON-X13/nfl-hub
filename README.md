@@ -89,8 +89,11 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
 - Scores come from ESPN's public feeds, fetched by the reader's browser. **No odds-API
   credits are ever spent here**; `ODDS_API_KEY` buys prices for the prop model and nothing
   else touches it. No job runs for this page either.
-- It refreshes every 30 seconds by default (15, 60 or off), only while the tab is visible,
-  plus a Refresh button. End to end that is ESPN's own lag plus at most the interval.
+- **Auto-refresh starts off**, so the page asks ESPN for nothing that was not asked for: one
+  fetch when it opens, then only on Refresh now or once an interval (15/30/60s) is turned on.
+  An interval only fires while the tab is visible, and with auto off returning to the tab does
+  not fetch either. A finished game's box score is fetched once and kept, since it cannot
+  change. End to end the lag is ESPN's own plus at most the interval.
 - Parlays are listed in the order the day runs: anything still to finish first, then by when
   a parlay can settle -- its **last** kickoff, not its first, so one carrying a four o'clock
   leg sits below one made only of one o'clock games. Settled parlays go to the bottom.

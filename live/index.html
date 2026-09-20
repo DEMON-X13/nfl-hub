@@ -98,7 +98,7 @@ footer a{color:var(--ink-2)}
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
     <span class="grow"></span>
     <label class="muted">Refresh
-      <select id="every"><option value="15">every 15s</option><option value="30" selected>every 30s</option><option value="60">every 60s</option><option value="0">off</option></select>
+      <select id="every"><option value="15">every 15s</option><option value="30">every 30s</option><option value="60">every 60s</option><option value="0" selected>off</option></select>
     </label>
     <button class="btn quiet" id="now">Refresh now</button>
     <button class="btn quiet" id="send">Send to a device</button>
@@ -345,7 +345,7 @@ function takeFromHash(){
   writeImported(Object.values(byId));
   return {added,total:incoming.length};
 }
-const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null};
+const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null,settled:{}};
 function legGames(ps){ const s=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s.add(l.gid); return s; }
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -360,10 +360,14 @@ async function refresh(){
       Object.assign(games,espnGames(sb,sched));
     }
     STATE.games=games;
-    const box={};
+    const box=Object.assign({},STATE.box);
     if(ps.some(p=>p.legs.some(l=>!isGameLeg(l))))
-      for(const gid of want){ const g=games[gid]; if(!g||g.state==='pre') continue;
-        try{ box[gid]=await getJSON(ESPN_SUM+g.eid); }catch(e){} }
+      for(const gid of want){ const g=games[gid];
+        if(!g||g.state==='pre') continue;
+        /* the box score of a finished game is finished too: fetch it the once, keep it */
+        if(STATE.settled[gid]&&box[gid]) continue;
+        try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
+      }
     STATE.box=box; STATE.err=null; STATE.at=Date.now();
   }catch(e){ STATE.err=String(e&&e.message||e); }
   finally{ STATE.busy=false; document.getElementById('dot').classList.remove('on'); draw(); }
@@ -490,6 +494,7 @@ function draw(){
 function foot(){
   document.getElementById('stamp').textContent=STATE.err?'not updating':(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'idle');
   document.getElementById('foot').innerHTML=`Scores come from ESPN's public feeds, read by this page in your own browser. No odds-API credits are ever spent here, and no job runs for it.
+    Auto-refresh starts <b>off</b> so the page asks ESPN for nothing you did not ask for: it fetches once when you open it, then only when you press Refresh now or turn an interval on. A finished game's box score is fetched once and kept.
     Parlays are read from this browser's storage; this page writes only a removal you ask for, the parlays you send here by link and a line you correct, and it settles nothing — that still happens in the
     <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>.`;
 }
@@ -530,7 +535,9 @@ document.getElementById('clearDone').addEventListener('click',()=>{
   for(const p of done) removeParlay(p.src,p.id);
   draw();
 });
-document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refresh(); });
+/* off means off: returning to the tab only refetches when auto-refresh is actually on */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&(+document.getElementById('every').value||0)) refresh(); });
 draw(); arm(); refresh();
 </script>
 </body>
