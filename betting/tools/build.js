@@ -123,6 +123,11 @@ header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
 .lvdot.bad{background:#C0392B}
 .mwin.tie,.mres.tie{color:#8A5E05}
 .pickdot.lockd{opacity:.45;cursor:not-allowed}
+@media(max-width:560px){
+  #tab-record table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+  #tab-record table th,#tab-record table td{padding:7px 9px}
+  .pickgrid table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
 </style>
 <script>
 (function(){
@@ -154,8 +159,11 @@ async function read(){
   /* a finished game becomes a result; the boards are redrawn by the app so that records,
      ticks and crosses all follow from it */
   if(settleFinished()){
-    if(typeof window.renderPicks==='function') window.renderPicks();
-    if(typeof window.renderMine==='function') window.renderMine();
+    /* Records too: it reads the same S.processed and was left showing the counts from
+       before the games settled until you happened to switch tabs. */
+    for(const n of ['renderPicks','renderMine','renderRecord'])
+      if(typeof window[n]==='function'){ try{ window[n](); }catch(e){} }
+    tidyStats();
   }
   paintAll(); stamp();
 }
@@ -344,7 +352,14 @@ function stripMine(){
 }
 /* after anything redraws a board: the lock does not wait for a score to be read, since it
    is a rule about the clock rather than about the scoreboard */
-function after(){ lockPlayed(); stripMine(); if(L.on) paintAll(); }
+function after(){ lockPlayed(); stripMine(); tidyStats(); if(L.on) paintAll(); }
+/* an empty band renders as "-%", which reads like a number that failed to load rather than
+   a band nothing has landed in yet */
+function tidyStats(){
+  document.querySelectorAll('#recordStats .stat b').forEach(b=>{
+    if(b.textContent.trim()==='\u2013%') b.textContent='\u2013';
+  });
+}
 
 /* The tab you are on goes in the address, so a refresh, a bookmark or the back button all
    land where you were instead of dropping you on AI Picks. replaceState rather than a hash
