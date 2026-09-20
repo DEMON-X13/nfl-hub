@@ -524,7 +524,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v52 \u00b7 2026-09-20';
+const APP_BUILD='app v53 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1163,6 +1163,36 @@ function espnGames(sb,sched){
     const st=((c.status||e.status||{}).type)||{};
     out[g.id]={eid:String(e.id),home:h,away:a,hs:espnNum(home.score),as:espnNum(away.score),
       state:st.state==='post'?'post':(st.state==='in'?'live':'pre'),clock:String(st.shortDetail||st.detail||'')};
+  }
+  return out;
+}
+
+/* ---------- the betting model's parlays, read across ----------
+   One origin serves both sites, so its key is readable here. Read only and defensively:
+   this page never writes to it, storage can be refused outright, and a malformed entry is
+   skipped rather than guessed at. Both apps use nflverse game ids, so nothing is translated. */
+const BET_KEY='x_nfl_viewer_picks_2026';
+function bettingParlays(raw){
+  if(raw===undefined){ try{ raw=localStorage.getItem(BET_KEY); }catch(e){ return []; } }
+  if(!raw) return [];
+  let v=null; try{ v=JSON.parse(raw); }catch(e){ return []; }
+  const build=v&&v.bank&&v.bank.build;
+  if(!Array.isArray(build)) return [];
+  const out=[];
+  for(const b of build){
+    if(!b||b.type!=='parlay'||!Array.isArray(b.legs)) continue;
+    const legs=[];
+    for(const l of b.legs){
+      if(!l||!l.game_id||!l.pick) continue;
+      const ml=(l.ml==null||!isFinite(+l.ml))?null:+l.ml;
+      legs.push({gid:String(l.game_id),team:String(l.pick),stat:'ml',k:0,side:'over',main:false,grp:'TEAM',
+        name:TEAM_NAMES[l.pick]||String(l.pick),label:'To win',price:ml,week:+b.week||null});
+    }
+    if(legs.length<2) continue;                       /* two legs or it is not a parlay */
+    const dec=legs.reduce((a,l)=>a*(l.price==null?1:(mlToDec(l.price)||1)),1);
+    const stake=Math.max(0,+b.stake||0);
+    out.push({id:String(b.id||''),week:+b.week||null,stake,legs,dec,
+      priced:legs.every(l=>l.price!=null),payout:stake*dec});
   }
   return out;
 }
@@ -2357,7 +2387,7 @@ function renderParlay(){
         <li>Different stats for the same player are fine, and so are players from different games.</li>
         <li>Each game also offers <b>a team to win</b> and <b>a team to cover the spread</b>, at the top of the game. They go in like any other leg.</li>
         <li>Prices are pulled from the odds market twice a week. Anything without a market price is shown at the model's own fair odds instead.</li>
-      </ul></div>`+renderSaved();
+      </ul></div>`+renderSaved()+renderBetParlays();
     wireSaved(); wireSuggest();
     return;
   }
@@ -2424,7 +2454,7 @@ function renderParlay(){
       }).join('')+`</tbody></table>
       <p class="muted" style="margin:10px 0 0">Measured across 2019 to 2024. A quarterback throwing for a lot and his receiver catching a lot is the same afternoon described twice, which is why stacking them is worth more than a book's multiplied price suggests.</p></div>`;
   }
-  html+=renderSaved();
+  html+=renderSaved()+renderBetParlays();
   html+=pairsHtml;
   el.innerHTML=html;
   $('pSave')?.addEventListener('click',()=>{
@@ -2446,10 +2476,12 @@ function renderParlay(){
    never be saved, and settlement still comes from nflverse on the next refresh. */
 let LIVE={at:0,games:{},box:{},err:null,busy:false,on:false};
 let LIVE_TIMER=null;
-const liveWanted=()=>{                                   /* the games an unsettled saved parlay needs */
+const liveWanted=()=>{                                   /* every game an unsettled parlay needs */
   const ids=new Set();
   for(const p of (S.saved||[])){ if(settleParlay(p).status!=='pending') continue;
     for(const l of p.legs) if(l.gid) ids.add(l.gid); }
+  for(const p of bettingParlays()) for(const l of p.legs){
+    const g=S.sched.find(x=>x.id===l.gid); if(g&&!gameFinal(g)) ids.add(l.gid); }
   return ids;
 };
 async function liveGet(url){
@@ -2564,7 +2596,37 @@ function renderSaved(){
   html+=`<div class="bar" style="margin:12px 0 0"><span class="grow"></span><button class="btn danger" id="savedClear">Clear saved parlays</button></div></div>`;
   return html;
 }
+/* the betting model's parlays, shown only while one of their games is still to finish:
+   this card is for watching, and that site stays the place they are settled and recorded */
+function renderBetParlays(){
+  const all=bettingParlays();
+  const live=all.filter(p=>p.legs.some(l=>{ const g=S.sched.find(x=>x.id===l.gid); return g&&!gameFinal(g); }));
+  if(!live.length) return '';
+  let html=`<div class="card" id="betParlays"><h2 style="display:flex;align-items:center;gap:10px">From the betting model <span class="pill">${live.length}</span>
+    <span class="grow"></span><label class="muted sp-live"><input type="checkbox" id="liveCbB" ${LIVE.on?'checked':''}> Live</label></h2>
+    <p class="muted" style="margin:0 0 12px;font-size:12px">Bet Build parlays saved in the betting model on this browser, every leg a team to win. They are settled and recorded over there; this only shows where they stand. <a href="../betting/">Open the betting model</a></p>`;
+  for(const p of live){
+    html+=`<div class="savedp" style="border-left:4px solid var(--gold)">
+      <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
+        <span class="pill warn">live</span>
+        <span class="muted" style="font-size:12px">${p.week?`week ${p.week}`:''}</span><span class="grow"></span></div>
+      <div class="sp-money">
+        <div><b>$${p.stake.toFixed(2)}</b><span>staked</span></div>
+        <div><b>${p.priced?fmtML(decToML(p.dec)):'\u2013'}</b><span>price</span></div>
+        <div><b>${p.priced?'$'+p.payout.toFixed(2):'\u2013'}</b><span>pays if it lands</span></div>
+      </div>
+      ${p.legs.map(l=>{ const lv=LIVE.on?liveCell(l):'';
+        return `<div class="sp-leg"><span class="res">\u25cb</span>
+          <span class="nm">${esc(l.name)}<small>${esc(l.label)}${l.price!=null?' \u00b7 '+fmtML(l.price):''}</small></span>
+          <span class="rs">${lv||'<span class="muted">pending</span>'}</span>
+          <span class="rs"></span></div>`;}).join('')}
+    </div>`;
+  }
+  return html+'</div>';
+}
 function wireSaved(){
+  $('liveCbB')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;
+    if(LIVE.on) liveStart(); else { liveStop(); renderParlay(); } });
   $('liveCb')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;
     if(LIVE.on) liveStart(); else { liveStop(); renderParlay(); } });
   document.querySelectorAll('[data-sp]').forEach(b=>b.addEventListener('click',()=>{
