@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Live Parlays</title>
+<style>
+:root{--bg:#0F1B2D;--panel:#17263C;--panel2:#1E3150;--line:#2A3D5C;--ink:#E9EEF4;--ink2:#9AA4B0;
+  --win:#3FD08A;--lose:#F2685C;--gold:#E8B944;--display:ui-rounded,'SF Pro Rounded',system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body{padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-width:820px;margin:0 auto;-webkit-text-size-adjust:100%}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-family:var(--display);font-size:24px;margin:0;letter-spacing:-.4px}
+.grow{flex:1}
+.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2)}
+select,button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 11px;font:inherit;font-size:13px;cursor:pointer}
+button:active{filter:brightness(1.15)}
+.stamp{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--win);display:inline-block;margin-right:5px}
+.dot.off{background:var(--ink2)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.card.bet{border-left:4px solid var(--gold)}
+.card.prop{border-left:4px solid #4F8EF7}
+.ch{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:10px}
+.ch b{font-family:var(--display);font-size:17px}
+.tag{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+.money{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-bottom:10px}
+.money b{display:block;font-family:var(--display);font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.leg{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid var(--line)}
+.mk{width:20px;text-align:center;font-weight:700;color:var(--ink2);flex:none}
+.mk.win{color:var(--win)} .mk.lose{color:var(--lose)}
+.nm{flex:1;min-width:0;font-size:15px}
+.nm small{display:block;color:var(--ink2);font-size:12px;margin-top:1px}
+.val{text-align:right;font-family:var(--display);font-variant-numeric:tabular-nums;font-size:16px;white-space:nowrap}
+.val em{font-style:normal;display:block;font-size:11px;color:var(--ink2);font-family:system-ui,sans-serif;margin-top:1px}
+.val.win{color:var(--win)} .val.lose{color:var(--lose)}
+.note{background:#2A2418;border:1px solid #4A3C1E;color:#E8C97A;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5;margin-bottom:12px}
+.empty{color:var(--ink2);font-size:15px;line-height:1.6}
+.empty a{color:#79B0FF}
+footer{color:var(--ink2);font-size:12px;margin-top:18px;line-height:1.6}
+footer a{color:#79B0FF}
+</style>
+</head>
+<body>
+<header>
+  <h1>Live Parlays</h1>
+  <span class="grow"></span>
+  <span class="ctl"><span class="dot off" id="dot"></span><span class="stamp" id="stamp">idle</span></span>
+  <span class="ctl">every
+    <select id="every"><option value="15">15s</option><option value="30" selected>30s</option><option value="60">60s</option><option value="0">off</option></select>
+  </span>
+  <button id="now">Refresh</button>
+</header>
+<div id="app"><p class="empty">Reading your saved parlays…</p></div>
+<footer id="foot"></footer>
+<script>
+/* ---- lifted from props/build/part2.js by live/build/build.js: one source of truth ---- */
+const PROP_KEY='props_2026_v1';
+const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Panthers",CHI:"Bears",CIN:"Bengals",CLE:"Browns",DAL:"Cowboys",DEN:"Broncos",DET:"Lions",GB:"Packers",HOU:"Texans",IND:"Colts",JAX:"Jaguars",KC:"Chiefs",LA:"Rams",LAC:"Chargers",LV:"Raiders",MIA:"Dolphins",MIN:"Vikings",NE:"Patriots",NO:"Saints",NYG:"Giants",NYJ:"Jets",PHI:"Eagles",PIT:"Steelers",SEA:"Seahawks",SF:"49ers",TB:"Buccaneers",TEN:"Titans",WAS:"Commanders"};
+function fmtML(ml){ return ml==null?'–':(ml>0?'+'+ml:''+ml); }
+function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?ml/100+1:100/Math.abs(ml)+1; }
+function decToML(d){ if(!isFinite(d)||d<=1) return null; return d>=2?Math.round((d-1)*100):-Math.round(100/(d-1)); }
+function num(x,d){ return x==null||!isFinite(x)?'–':(+x).toFixed(d); }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isGameLeg=l=>l.stat==='ml'||l.stat==='ats';
+const SEASON=2026;
+
+/*SHARED*/
+
+/* ---- this page ---- */
+/* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL.
+   That is why no season payload has to be loaded here. */
+function gidParts(gid){
+  const m=/^(\d{4})_(\d{2})_([A-Z0-9]+)_([A-Z0-9]+)$/.exec(String(gid||''));
+  return m?{season:+m[1],w:+m[2],a:m[3],h:m[4],id:String(gid)}:null;
+}
+function propParlays(){
+  let v=null;
+  try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return []; }
+  const saved=(v&&v.saved)||[];
+  if(!Array.isArray(saved)) return [];
+  return saved.filter(p=>p&&Array.isArray(p.legs)&&p.legs.length).map(p=>({
+    src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,price:p.price,
+    payout:+p.payout||0,legs:p.legs.slice()}));
+}
+function allParlays(){
+  const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
+    price:p.priced?decToML(p.dec):null,payout:p.payout,legs:p.legs}));
+  return propParlays().concat(bet);
+}
+const STATE={games:{},box:{},err:null,at:0,busy:false};
+function legGames(ps){ const s=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s.add(l.gid); return s; }
+async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function refresh(){
+  if(STATE.busy) return; const ps=allParlays(); const want=legGames(ps);
+  if(!want.size){ draw(); return; }
+  STATE.busy=true; dot(true);
+  try{
+    const sched=[...want].map(gidParts).filter(Boolean);
+    const weeks=[...new Set(sched.map(g=>g.w))];
+    let games={};
+    for(const w of weeks){
+      const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON);
+      Object.assign(games,espnGames(sb,sched));
+    }
+    STATE.games=games;
+    const box={};
+    const needBox=ps.some(p=>p.legs.some(l=>!isGameLeg(l)));
+    if(needBox) for(const gid of want){ const g=games[gid]; if(!g||g.state==='pre') continue;
+      try{ box[gid]=await getJSON(ESPN_SUM+g.eid); }catch(e){} }
+    STATE.box=box; STATE.err=null; STATE.at=Date.now();
+  }catch(e){ STATE.err=String(e&&e.message||e); }
+  finally{ STATE.busy=false; dot(false); draw(); }
+}
+function dot(on){ document.getElementById('dot').className='dot'+(on?'':' off'); }
+function liveFor(l){
+  const g=STATE.games[l.gid]; if(!g) return null;
+  if(isGameLeg(l)) return Object.assign({},liveGameLeg(l,g),{game:g});
+  if(g.state==='pre') return {val:null,k:+l.k,need:null,state:'pending',game:g};
+  const sum=STATE.box[l.gid]; if(!sum) return null;
+  const st=espnStats(sum,l.team,l.name);
+  if(st===null) return {val:null,k:+l.k,need:null,state:'unmatched',game:g};
+  return Object.assign({},liveLeg(l,st[l.stat]==null?null:st[l.stat],g.state),{game:g});
+}
+const MARK={hit:'✓',missed:'✗',push:'P'};
+function legRow(l){
+  const r=liveFor(l);
+  const tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
+  let right='<span class="val"><em>waiting</em></span>';
+  if(r){
+    if(r.state==='pending') right=`<span class="val"><em>${esc(r.game.clock||'not started')}</em></span>`;
+    else if(r.state==='unmatched') right='<span class="val"><em>no box score yet</em></span>';
+    else if(r.state==='unknown') right='<span class="val"><em>not reported</em></span>';
+    else if(isGameLeg(l)){ const g=r.game;
+      right=`<span class="val ${tone}">${esc(g.away+' '+g.as+'–'+g.hs+' '+g.home)}<em>${esc(g.clock)}</em></span>`; }
+    else { const room=l.main&&l.side==='under';
+      const tail=r.state==='hit'?'hit':(r.state==='missed'?'missed':(r.state==='push'?'push':
+        (r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')));
+      right=`<span class="val ${tone}">${esc(num(r.val,r.val%1?1:0)+' / '+r.k)}<em>${esc(tail)}</em></span>`; }
+  }
+  const mk=r&&MARK[r.state]?`<span class="mk ${tone}">${MARK[r.state]}</span>`:'<span class="mk">○</span>';
+  return `<div class="leg">${mk}<span class="nm">${esc(l.name)}<small>${esc(l.label||'')}</small></span>${right}</div>`;
+}
+function draw(){
+  const ps=allParlays(), app=document.getElementById('app');
+  let html='';
+  if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b><br>This page reads ESPN's public scoreboard straight from your browser. If your browser refuses that read, nothing here can update — tell Claude and it can be routed another way. Your parlays and their settlement are not affected.</div>`;
+  if(!ps.length){
+    app.innerHTML=html+`<p class="empty">No saved parlays in <b>this browser</b>.<br><br>
+      Parlays live in the browser that made them and do not travel between devices. Build and save one in the
+      <a href="../props/">prop model</a>, or a Bet Build parlay in the <a href="../betting/">betting model</a>,
+      on this device and it will show up here.</p>`;
+    foot(); return;
+  }
+  for(const p of ps.sort((x,y)=>(x.src===y.src?0:(x.src==='prop'?-1:1)))){
+    const done=p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
+    const hit=p.legs.filter(l=>{ const r=liveFor(l); return r&&r.state==='hit'; }).length;
+    const gone=p.legs.some(l=>{ const r=liveFor(l); return r&&r.state==='missed'; });
+    html+=`<div class="card ${p.src}">
+      <div class="ch"><b>${p.legs.length}-leg parlay</b>
+        <span class="tag">${p.src==='prop'?'prop model':'betting model'}</span>
+        ${p.week?`<span class="tag">week ${p.week}</span>`:''}
+        <span class="grow"></span>
+        <span class="tag">${gone?'gone':(done?'landed':hit+' of '+p.legs.length+' in')}</span></div>
+      <div class="money">
+        <div><b>$${(+p.stake||0).toFixed(2)}</b>staked</div>
+        <div><b>${p.price==null?'–':fmtML(p.price)}</b>price</div>
+        <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'–'}</b>pays</div>
+      </div>
+      ${p.legs.map(legRow).join('')}</div>`;
+  }
+  app.innerHTML=html; foot();
+}
+function foot(){
+  const st=document.getElementById('stamp');
+  st.textContent=STATE.err?'error':(STATE.at?new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'idle');
+  document.getElementById('foot').innerHTML=`Scores from ESPN's public feeds, read by this page in your browser — free, and no odds-API credits are ever spent here.
+    Parlays are read from this browser's own storage and are never written to or sent anywhere.
+    Settlement still happens in the <a href="../props/">prop model</a> and the <a href="../betting/">betting model</a>; this page only watches.`;
+}
+let TIMER=null;
+function arm(){
+  if(TIMER){ clearInterval(TIMER); TIMER=null; }
+  const s=+document.getElementById('every').value||0;
+  if(s) TIMER=setInterval(()=>{ if(document.visibilityState==='visible') refresh(); },s*1000);
+}
+document.getElementById('every').addEventListener('change',arm);
+document.getElementById('now').addEventListener('click',refresh);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') refresh(); });
+draw(); arm(); refresh();
+</script>
+</body>
+</html>
