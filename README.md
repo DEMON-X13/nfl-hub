@@ -82,6 +82,14 @@ Workflow `.github/workflows/news.yml`: Friday, Monday and Tuesday, 8am Eastern.
 phone or tablet while the games are on. It loads no season data: a leg's game id
 (`2026_02_CAR_ATL`) already carries the week and both teams, which is everything it needs.
 
+- **The copy in the repository.** `Save to GitHub` writes the parlays on screen to
+  `live/parlays.json` on the **`parlay-data`** branch, and every device loads it when the page
+  opens. Reading needs nothing, because the repository is public. Writing needs a fine-grained
+  token with `Contents: read and write`, kept in the browser of whichever device does the
+  saving and never put in a link, a code or the saved file; *Forget the token on this device*
+  removes it. That branch has no history from `main` and builds no site, so **a save starts no
+  Pages deployment and leaves `main`'s history alone**. The repository being public means what
+  is saved there is world-readable: parlay legs and lines, deliberately, and never a token.
 - It reads the parlays saved in that browser by the two models -- the prop model's Saved
   parlays under `props_2026_v1`, the betting model's Bet Build parlays under
   `x_nfl_viewer_picks_2026`. Both sites are served from one origin, so both keys are

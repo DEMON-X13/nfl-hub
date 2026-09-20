@@ -72,17 +72,40 @@ const betBlob = () => JSON.stringify({ myPicks: { g1: 'KC' }, bets: { 2: { stake
       { game_id: GID, away: 'CAR', home: 'ATL', pick: 'ATL', ml: -150 },
       { game_id: GID, away: 'CAR', home: 'ATL', pick: 'CAR', ml: 130 }] }] } });
 
+/* a stand-in for the repository: holds one file, and refuses a write without a token */
+function makeGh(initial) {
+  const store = { body: initial || null, sha: initial ? 'sha0' : null, writes: [], auth: [] };
+  store.fn = (u, opt) => {
+    const method = (opt && opt.method) || 'GET';
+    const auth = (opt && opt.headers && opt.headers.Authorization) || '';
+    store.auth.push(auth);
+    if (method === 'GET') {
+      if (!store.body) return Promise.resolve({ ok: false, status: 404, json: async () => ({}) });
+      return Promise.resolve({ ok: true, status: 200, json: async () =>
+        ({ sha: store.sha, content: Buffer.from(JSON.stringify(store.body)).toString('base64') }) });
+    }
+    if (!auth) return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+    const sent = JSON.parse(opt.body);
+    store.body = JSON.parse(Buffer.from(sent.content, 'base64').toString('utf8'));
+    store.sha = 'sha' + (store.writes.length + 1);
+    store.writes.push(sent);
+    return Promise.resolve({ ok: true, status: 200, json: async () => ({ content: { sha: store.sha } }) });
+  };
+  return store;
+}
 function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); },
-               mode = 'ok', state = 'in', hash = '' } = {}) {
+               mode = 'ok', state = 'in', hash = '', gh = () => Promise.resolve({ ok: false, status: 404, json: async () => ({}) }) } = {}) {
   return new Promise(resolve => {
     const calls = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_ + hash,
       beforeParse(w) {
         w.confirm = () => true; w.alert = () => {};
-        w.fetch = u => { calls.push(String(u));
+        w.fetch = (u, opt) => { calls.push(String(u) + (opt && opt.method ? ' ' + opt.method : ''));
+          const s = String(u);
+          if (s.includes('api.github.com')) return gh(s, opt);
           return mode === 'fail'
             ? Promise.resolve({ ok: false, status: 403 })
-            : Promise.resolve({ ok: true, status: 200, json: async () => String(u).includes('/summary?') ? SUM : sb(state) }); };
+            : Promise.resolve({ ok: true, status: 200, json: async () => s.includes('/summary?') ? SUM : sb(state) }); };
         try { seed(w); } catch (e) {}
       } });
     const w = dom.window;
@@ -471,6 +494,69 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     e2.d.getElementById('paste').click();
     await new Promise(r => setTimeout(r, 140));
     chk(e2.d.querySelectorAll('.savedp').length === 6, 'the code did not carry every parlay across');
+  }
+
+  // ---- O. the copy kept in the repository ----
+  {
+    const seedOne = w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [
+      { id: 'sp1', week: 2, stake: 20, price: 580, payout: 136, legs: [
+        leg('p1', 'Bijan Robinson', 'rushing_yards', 43.5, 'over', true, 'Over 43.5 rushing yards', 'ATL')] }] }));
+      w.localStorage.removeItem(BET_KEY); };
+
+    /* saving without a token asks for one, and nothing is written if none is given */
+    const noTok = makeGh(null);
+    const a = await run({ seed: seedOne, gh: noTok.fn });
+    a.w.prompt = () => '';
+    a.d.getElementById('ghSave').click();
+    await new Promise(r => setTimeout(r, 120));
+    chk(noTok.writes.length === 0, 'a save went ahead without a token');
+
+    /* with a token it writes, to the data branch, and the token never reaches the file */
+    const store = makeGh(null);
+    const b = await run({ seed: seedOne, gh: store.fn });
+    b.w.prompt = () => 'ghp_pretendtoken';
+    b.d.getElementById('ghSave').click();
+    await new Promise(r => setTimeout(r, 160));
+    chk(store.writes.length === 1, 'nothing was written to the repository');
+    const sent = store.writes[0];
+    chk(sent.branch === 'parlay-data', `saved to the wrong branch: ${sent.branch}`);
+    chk(!/ghp_|token/i.test(JSON.stringify(store.body)), 'the token reached the saved file');
+    chk(JSON.stringify(store.body).includes('Bijan Robinson'), 'the parlay did not reach the saved file');
+    chk(/Saved 1 parlay/.test(txt(b.d.querySelector('.note'))), 'the save was not confirmed on screen');
+    chk(b.w.localStorage.getItem('live_gh_token') === 'ghp_pretendtoken', 'the token was not kept for next time');
+
+    /* another device, no token, reads it on open */
+    const c = await run({ seed: () => {}, gh: store.fn });
+    await new Promise(r => setTimeout(r, 200));
+    chk(c.d.querySelectorAll('.savedp').length === 1, 'a second device did not pick up the saved parlay');
+    chk(who(c.d.querySelector('.sp-leg')) === 'Bijan Robinson Rushing Yards', 'the parlay came back wrong');
+    chk([...c.d.querySelectorAll('.pill')].some(x => /from GitHub/.test(x.textContent)), 'a parlay from the repository is not labelled');
+    chk(!c.w.localStorage.getItem('live_gh_token'), 'the reading device was made to hold a token');
+    chk(store.auth.some(x => !x), 'the read was not attempted without a token');
+
+    /* the device that made it does not show it twice */
+    const d2 = await run({ seed: seedOne, gh: store.fn });
+    await new Promise(r => setTimeout(r, 200));
+    chk(d2.d.querySelectorAll('.savedp').length === 1, 'the saving device sees its own parlay twice');
+
+    /* a refused token is reported rather than swallowed */
+    const bad = makeGh(null);
+    bad.fn = (u, opt) => ((opt && opt.method) === 'PUT'
+      ? Promise.resolve({ ok: false, status: 401, json: async () => ({}) })
+      : Promise.resolve({ ok: false, status: 404, json: async () => ({}) }));
+    const e3 = await run({ seed: seedOne, gh: bad.fn });
+    e3.w.prompt = () => 'ghp_wrong';
+    e3.d.getElementById('ghSave').click();
+    await new Promise(r => setTimeout(r, 160));
+    chk(/refused the token/.test(txt(e3.d.querySelector('.note'))), 'a refused token is not explained');
+
+    /* and the token can be forgotten */
+    const f2 = await run({ seed: seedOne, gh: store.fn });
+    f2.w.localStorage.setItem('live_gh_token', 'ghp_x');
+    f2.w.confirm = () => true;
+    f2.w.draw();
+    f2.d.getElementById('ghForget').click();
+    chk(!f2.w.localStorage.getItem('live_gh_token'), 'the token could not be forgotten');
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
