@@ -106,6 +106,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
+.stamp.ok{color:var(--pick)} .stamp.bad{color:#8A5E05}
 .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
 .src{border-left:4px solid var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F} .src.cloud{border-left-color:#6E5AA8}
 footer{max-width:900px;margin:0 auto;padding:0 28px 48px;color:var(--muted);font-size:12px;line-height:1.7}
@@ -123,6 +124,7 @@ footer a{color:var(--ink-2)}
 <main>
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
+    <span class="stamp" id="ghState"></span>
     <span class="grow"></span>
     <label class="muted">Refresh
       <select id="every"><option value="15">every 15s</option><option value="30">every 30s</option><option value="60">every 60s</option><option value="0" selected>off</option></select>
@@ -444,7 +446,8 @@ async function ghRead(){
   const j=await r.json();
   let body={};
   try{ body=JSON.parse(b64d(String(j.content||'').replace(/\s/g,''))); }catch(e){ body={}; }
-  return {sha:j.sha,parlays:unpackParlays(body).map(x=>Object.assign({},x,{src:'cloud'}))};
+  return {sha:j.sha,updated:body.updated||null,
+    parlays:unpackParlays(body).map(x=>Object.assign({},x,{src:'cloud'}))};
 }
 async function ghWrite(ps,sha){
   const t=ghToken(); if(!t) throw new Error('no token on this device');
@@ -461,7 +464,7 @@ async function ghWrite(ps,sha){
   if(!r.ok) throw new Error('GitHub '+r.status);
   return (await r.json()).content.sha;
 }
-const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null,settled:{},cloud:[],sha:null,ghErr:null};
+const STATE={games:{},box:{},err:null,at:0,busy:false,msg:null,settled:{},cloud:[],sha:null,cloudAt:null,ghErr:null,ghTried:false};
 function legGames(ps){ const s=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s.add(l.gid); return s; }
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -619,6 +622,7 @@ function draw(){
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing saved in this browser</b>
       Parlays live in the browser that made them and do not travel between devices.<br>
       Save one in the <a href="../props/">prop model</a>, or a Bet Build parlay in the <a href="../betting/">betting model</a>, on this device and it will appear here.<br><br>
+      <b>Have them on another device?</b> Nothing has been saved to GitHub yet \u2014 open this page there and press <b>Save to GitHub</b> once, and every device will pick them up from then on.<br><br>
       Already have one on another device? Open this page there, press <b>Send</b> on the parlay you want, and open the link here \u2014 or paste its code with <b>Paste a code</b>.</div>`;
     foot(); return;
   }
@@ -700,7 +704,19 @@ function draw(){
   }));
   foot();
 }
+function ghStateLine(){
+  const el=document.getElementById('ghState'); if(!el) return;
+  const n=STATE.cloud.length;
+  if(STATE.ghErr){ el.className='stamp bad'; el.textContent='GitHub: '+STATE.ghErr; return; }
+  if(!STATE.ghTried){ el.className='stamp'; el.textContent=''; return; }
+  if(!STATE.cloudAt&&!n){ el.className='stamp bad'; el.textContent='GitHub: nothing saved yet'; return; }
+  const when=STATE.cloudAt?new Date(STATE.cloudAt):null;
+  el.className='stamp ok';
+  el.textContent=`GitHub: ${STATE.cloudN!=null?STATE.cloudN:n} parlay${((STATE.cloudN!=null?STATE.cloudN:n))===1?'':'s'}`
+    +(when&&!isNaN(when)?', saved '+when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'');
+}
 function foot(){
+  ghStateLine();
   document.getElementById('stamp').textContent=STATE.err?'not updating':(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'idle');
   document.getElementById('foot').innerHTML=`Scores come from ESPN's public feeds, read by this page in your own browser. No odds-API credits are ever spent here, and no job runs for it.
     Auto-refresh starts <b>off</b> so the page asks ESPN for nothing you did not ask for: it fetches once when you open it, then only when you press Refresh now or turn an interval on. A finished game's box score is fetched once and kept.
@@ -755,9 +771,10 @@ document.getElementById('now').addEventListener('click',refresh);
 async function doGhLoad(quiet){
   try{
     const got=await ghRead();
-    STATE.cloud=got.parlays; STATE.sha=got.sha; STATE.ghErr=null;
+    STATE.cloud=got.parlays; STATE.sha=got.sha; STATE.cloudAt=got.updated; STATE.ghErr=null;
     if(!quiet) STATE.msg=`<b>Loaded ${got.parlays.length} parlay${got.parlays.length===1?'':'s'} from GitHub.</b> They show on every device that opens this page.`;
   }catch(e){ STATE.ghErr=String(e&&e.message||e); if(!quiet) STATE.msg=`<b>Could not read from GitHub: ${esc(STATE.ghErr)}</b>`; }
+  STATE.ghTried=true;
   draw(); if(!quiet) refresh();
 }
 document.getElementById('ghLoad').addEventListener('click',()=>doGhLoad(false));
@@ -773,7 +790,7 @@ document.getElementById('ghSave').addEventListener('click',async()=>{
     let sha=STATE.sha;
     if(sha===null){ try{ sha=(await ghRead()).sha; }catch(e){} }
     STATE.sha=await ghWrite(ps,sha);
-    STATE.ghErr=null;
+    STATE.ghErr=null; STATE.cloudAt=new Date().toISOString(); STATE.cloudN=ps.length;
     STATE.msg=`<b>Saved ${ps.length} parlay${ps.length===1?'':'s'} to GitHub.</b> Open this page on any device and press <b>Load</b>, or just open it \u2014 it loads on its own. <span class="muted">Saved to the ${esc(GH.branch)} branch, which builds no site, so nothing redeploys. The repository is public, so these are readable by anyone.</span>`;
   }catch(e){ STATE.ghErr=String(e&&e.message||e); STATE.msg=`<b>Could not save: ${esc(STATE.ghErr)}</b>`; }
   draw();
