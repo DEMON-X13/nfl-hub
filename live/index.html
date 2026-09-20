@@ -67,7 +67,10 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
 .sp-leg.prop{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
-.sp-leg.team{grid-template-columns:22px minmax(88px,max-content) 1fr auto;gap:9px}
+/* The columns are shares of the row, not fixed widths, so the clock sits the same way into
+   the row on a small phone as on a laptop: a fixed column looks further and further left the
+   narrower the screen gets, which is exactly what it did. */
+.sp-leg.team{grid-template-columns:22px minmax(74px,max-content) minmax(0,1.7fr) minmax(58px,0.85fr);gap:9px}
 .sp-leg.team .gm{justify-self:start}
 .sp-leg.prop .res{margin-top:3px}
 .legbody{min-width:0}
@@ -109,18 +112,23 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .gm.bad{border-color:var(--miss);background:var(--miss-soft);color:var(--miss)} .gm.bad em{color:var(--miss)}
 .gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05} .gm.tie em{color:#8A5E05}
 .gm.done{opacity:.85}
-/* on a phone the row gives up the alignment before it gives up fitting */
+/* on a phone the row tightens before it gives up anything */
 @media(max-width:430px){ .gm{font-size:12px;padding:3px 9px}
-  .sp-leg.team{grid-template-columns:20px minmax(0,max-content) 1fr auto;gap:7px}
-  .sp-leg.team .nm{overflow:hidden;text-overflow:ellipsis}
-  .sp-leg .rs.clock{min-width:64px;font-size:12px} }
+  .sp-leg.team{grid-template-columns:20px minmax(62px,max-content) minmax(0,1.5fr) minmax(50px,0.9fr);gap:7px}
+  .sp-leg .rs.clock{font-size:12px} }
+/* narrower than an iPhone SE the four of them will not sit on one line without the team name
+   turning into an initial, so the score drops under it instead of being squeezed */
+@media(max-width:372px){
+  .sp-leg.team{grid-template-columns:20px 1fr auto;grid-template-areas:"mark name clock" "gap chip chip";row-gap:7px}
+  .sp-leg.team>.res{grid-area:mark} .sp-leg.team>.nm{grid-area:name}
+  .sp-leg.team>.gm{grid-area:chip;justify-self:start} .sp-leg.team>.rs{grid-area:clock} }
 .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
 .sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
 .sp-leg .rs.win{color:var(--pick);font-weight:700} .sp-leg .rs.lose{color:var(--miss);font-weight:700}
 .sp-leg .rs.tie{color:#8A5E05;font-weight:700}
-.sp-leg .rs.clock{min-width:84px;text-align:center;color:var(--ink-2);font-weight:500;font-size:13px}
+.sp-leg .rs.clock{text-align:center;color:var(--ink-2);font-weight:500;font-size:13px}
 .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
@@ -314,7 +322,7 @@ const DATA='parlays.json';
 /* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
    thing worth knowing is whether the browser is even showing the current build, and from the
    outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v4 \u00b7 2026-09-20 18:42 UTC';
+const PAGE_BUILD='live v5 \u00b7 2026-09-20 19:32 UTC';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
