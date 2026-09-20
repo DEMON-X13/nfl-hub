@@ -298,16 +298,18 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
       'a parlay of moneylines fetched box scores it has no use for');
     const row = m.d.querySelector('.sp-leg');
     chk(/Falcons/.test(txt(row)) && /To Win/.test(txt(row)), 'a whole-game bet from the file is wrong: ' + txt(row));
-    /* the score rides in the row as a chip, with the margin beside it and the clock once */
-    chk(/up 3/.test(txt(row)), 'a whole-game bet does not say where it stands: ' + txt(row));
+    /* the score rides in the row as a chip; the last column is the clock and nothing else */
     const gm = row.querySelector('.gm');
     chk(!!gm && /CAR 17.20 ATL/.test(txt(gm)), 'the score chip is not in the row: ' + txt(gm || null));
     chk(!/Q3/.test(txt(gm)), 'the chip still carries the clock: ' + txt(gm));
+    chk(txt(row.querySelector('.rs')) === 'Q3 7:12', 'the last column is not just the clock: ' + txt(row.querySelector('.rs')));
+    chk(!/up |down |level/.test(txt(row)), 'the margin is still being said as well as shown: ' + txt(row));
     chk((txt(row).match(/Q3 7:12/g) || []).length === 1, 'the clock is in the row twice: ' + txt(row));
     chk(!m.d.querySelector('.games .gm'), 'a game already shown in a row is repeated in the strip above');
-    chk(/\bwin\b/.test(row.querySelector('.rs').className), 'a team bet being won is not green');
+    chk(/\bgood\b/.test(gm.className), 'a team bet being won is not green');
+    chk(/\bwin\b/.test(row.querySelector('.res').className), 'the marker on a bet being won is not green');
     const second = m.d.querySelectorAll('.sp-leg.team')[1];
-    chk(/up 4/.test(txt(second)), 'the margin on the second leg is wrong: ' + txt(second));
+    chk(txt(second.querySelector('.rs')) === 'Q3 7:12', 'the second leg lost its clock: ' + txt(second));
     /* one game with a player leg must not drag in the box scores of the moneyline games */
     const mixed = JSON.parse(JSON.stringify(mlOnly));
     mixed.parlays.push({ id: 'pp', week: 2, stake: 1, legs: [

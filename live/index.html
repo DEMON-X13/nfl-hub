@@ -112,13 +112,15 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 /* on a phone the row gives up the alignment before it gives up fitting */
 @media(max-width:430px){ .gm{font-size:12px;padding:3px 9px}
   .sp-leg.team{grid-template-columns:20px minmax(0,max-content) 1fr auto;gap:7px}
-  .sp-leg.team .nm{overflow:hidden;text-overflow:ellipsis} }
+  .sp-leg.team .nm{overflow:hidden;text-overflow:ellipsis}
+  .sp-leg .rs.clock{min-width:64px;font-size:12px} }
 .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
 .sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
 .sp-leg .rs.win{color:var(--pick);font-weight:700} .sp-leg .rs.lose{color:var(--miss);font-weight:700}
 .sp-leg .rs.tie{color:#8A5E05;font-weight:700}
+.sp-leg .rs.clock{min-width:84px;text-align:center;color:var(--ink-2);font-weight:500;font-size:13px}
 .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
@@ -312,7 +314,7 @@ const DATA='parlays.json';
 /* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
    thing worth knowing is whether the browser is even showing the current build, and from the
    outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v3 \u00b7 2026-09-20 18:35 UTC';
+const PAGE_BUILD='live v4 \u00b7 2026-09-20 18:42 UTC';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
@@ -574,10 +576,12 @@ function legRow(p,leg,i){
     }
     const tcls=t2==='win'?'res win':(t2==='lose'?'res loss':(t2==='tie'?'res tie':'res'));
     const tmark=t2==='win'&&r&&r.state==='hit'?MARK.hit:(t2==='lose'&&r&&r.state==='missed'?MARK.missed:mark);
-    const right=(!r||word==='waiting')?'<span class="rs muted">waiting</span>'
-      :`<span class="rs ${t2}">${esc(word)}<em>${esc(g.clock||'')}</em></span>`;
+    /* the last column is the clock and nothing else. The margin it used to carry -- up 14,
+       down 3 -- is the chip's colour said twice, and the colour says it without a number to
+       read. Before kickoff this is the kickoff time, after it is Final. */
+    const right=`<span class="rs clock">${esc((g&&g.clock)||(r&&r.state==='unknown'?'not reported':'waiting'))}</span>`;
     /* the score rides in the row, after the team, rather than in a strip above repeating it.
-       No clock on it: the clock is already under the margin on the right of the same row. */
+       No clock on it: the clock is the column to its right. */
     const chip=g?`<span class="gm${t2==='win'?' good':(t2==='lose'?' bad':(t2==='tie'?' tie':''))}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}</span>`:'<span></span>';
     return `<div class="sp-leg team"><span class="${tcls}">${tmark}</span>
       <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${chip}${right}</div>`;
