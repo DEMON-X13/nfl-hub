@@ -14,7 +14,7 @@
  *
  * nba/data/injuries.json is today's report (status per player per team) and nba/data/injuries_log.csv
  * keeps one line per player per day so availability can be replayed later. nba/data/coaches_espn.json
- * is each team's head coach as the roster feed lists them today.
+ * is each team's head coach as the roster feed lists them today, and nba/data/rosters_espn.json the roster.
  */
 'use strict';
 const fs = require('fs');
@@ -186,7 +186,7 @@ async function coaches() {
   const today = L.etDate(new Date());
   const j = await L.getJSON(BASE + 'teams?limit=40');
   const list = ((((j.sports || [])[0] || {}).leagues || [])[0] || {}).teams || [];
-  const out = {};
+  const out = {}, rosters = {};
   for (const t of list) {
     const ab = L.fromEspn(t.team && t.team.abbreviation);
     if (!L.TEAMS.includes(ab)) continue;
@@ -194,11 +194,14 @@ async function coaches() {
       const r = await L.getJSON(BASE + `teams/${t.team.id}/roster`);
       const c = (r.coach || [])[0];
       out[ab] = c ? { id: String(c.id || ''), name: clean([c.firstName, c.lastName].filter(Boolean).join(' ')), experience: c.experience } : null;
+      rosters[ab] = (r.athletes || []).map(a => ({ id: String(a.id || ''), name: clean(a.displayName || a.fullName), pos: clean(a.position && a.position.abbreviation),
+        status: clean(a.status && a.status.type), injured: !!(a.injuries && a.injuries.length) }));
       await sleep(200);
     } catch (e) { out[ab] = null; L.log(`${ab} roster: ${e.message}`); }
   }
   fs.writeFileSync(path.join(DATA, 'coaches_espn.json'), JSON.stringify({ date: today, teams: out }, null, 1) + '\n');
-  L.log(`coaches: ${Object.values(out).filter(Boolean).length} of ${Object.keys(out).length} teams`);
+  fs.writeFileSync(path.join(DATA, 'rosters_espn.json'), JSON.stringify({ date: today, teams: rosters }, null, 1) + '\n');
+  L.log(`coaches: ${Object.values(out).filter(Boolean).length} of ${Object.keys(out).length} teams; rosters: ${Object.values(rosters).reduce((n, r) => n + r.length, 0)} players`);
 }
 
 async function main() {

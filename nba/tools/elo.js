@@ -146,4 +146,5 @@ function main() {
   const top = Object.entries(teams).sort((a, b) => b[1].elo - a[1].elo).slice(0, 5).map(([t, v]) => `${t} ${v.elo}`).join(', ');
   L.log('top five: ' + top);
 }
-main();
+if (require.main === module) main();
+module.exports = { replay, score, situ, prob, DEFAULT, WARM_TO, FIT_TO, MEAN };

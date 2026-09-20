@@ -38,6 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # the branch head, not the pushed commit: a run queued behind another must see what that one committed
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -47,11 +50,13 @@ jobs:
         run: node nba/tools/fetch_box.js
       - name: Replay the ratings and price the slate
         run: node nba/tools/elo.js ${{ inputs.fit && 'fit' || '' }}
+      - name: Replay the player, coach and matchup model
+        run: node nba/tools/players.js ${{ inputs.fit && 'fit' || '' }}
       - name: Commit if anything changed
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add nba/data nba/model.json
+          git add nba/data nba/model.json nba/players.json
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "nba: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             ok=0
