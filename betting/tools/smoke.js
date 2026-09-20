@@ -41,7 +41,11 @@ function load(picks) {
   const w = dom.window, d = w.document; const S = w.eval('S');
   check(errors.length === 0, 'no runtime errors: ' + errors.join('; '));
   check(Object.keys(S.processed).length === graded.length, `published season loaded (${Object.keys(S.processed).length} graded)`);
-  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,ratings,backup', 'AI Picks, My Picks, Parlay Builder, Power Ratings and Backup tabs remain');
+  /* My Picks is gone on purpose: the picks it held never left the browser that made them,
+     and losing a week of them was the whole reason for dropping it. The key is untouched. */
+  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,bank,ratings,backup', 'AI Picks, Parlay Builder, Power Ratings and Backup tabs remain, without My Picks');
+  check(!d.getElementById('tab-mine'), 'the My Picks section is gone with its tab');
+  check(![...d.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'no You column survives');
   check(!d.getElementById('rebuildBtn') && !d.getElementById('resetBtn') && !!d.getElementById('exportBtn'), 'viewer: Backup has save and import only');
   check(Object.keys(S.odds || {}).length > 0, 'published moneylines are available to the Parlay Builder tab');
   check(!d.getElementById('oddsFetch') && !d.getElementById('oddsFileBtn') && !d.getElementById('oddsClear'), 'Bank Roll: odds fetch/upload/clear card removed for visitors');
@@ -84,7 +88,9 @@ function load(picks) {
   await sleep(600);
   const SA = a.window.eval('S'); const da = a.window.document;
   check(Object.keys(SA.processed).length === graded.length, 'admin: published season loaded');
-  check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,record,bets,ratings,upload,backup', 'admin: every tab present');
+  check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,bank,record,bets,ratings,upload,backup', 'admin: every tab present but My Picks');
+  check(!da.getElementById('tab-mine'), 'admin: the My Picks section is gone with its tab');
+  check(![...da.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'admin: no You column survives');
   check(!!da.getElementById('oddsFetch'), 'admin: moneylines card kept');
   check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.lastAmt === 35, 'admin: picks, bets and stake come from the same browser store as the viewer');
   check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
