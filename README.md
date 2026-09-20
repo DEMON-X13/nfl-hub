@@ -91,8 +91,14 @@ phone or tablet while the games are on. It loads no season data: a leg's game id
   else touches it. No job runs for this page either.
 - It refreshes every 30 seconds by default (15, 60 or off), only while the tab is visible,
   plus a Refresh button. End to end that is ESPN's own lag plus at most the interval.
-- Parlays are listed in the order the day runs: anything still to finish first, earliest
-  kickoff at the top, settled ones out of the way at the bottom.
+- Parlays are listed in the order the day runs: anything still to finish first, then by when
+  a parlay can settle -- its **last** kickoff, not its first, so one carrying a four o'clock
+  leg sits below one made only of one o'clock games. Settled parlays go to the bottom.
+- **A book line that moved** after the bet was placed can be corrected per leg, with the
+  `line` button on the row. The leg is then measured against what was actually bet, its label
+  follows the new number, and `undo` puts the model's own line back. The correction is kept
+  in this page's key and rides along in a sent link; the parlay saved in the owning app is
+  left exactly as it was, so nothing about settlement or the Track Record changes.
 - Local storage does not travel between devices, so it finds the parlays made in the browser
   it is running in. **Send to a device** packs what is on screen into the page's own URL;
   opening that link anywhere unpacks it into this page's own key (`live_parlays_v1`), never
