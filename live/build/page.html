@@ -91,6 +91,8 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .ln.moved{color:var(--gold);border-bottom-color:var(--gold)}
 .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:400}
 .movedNote a{color:var(--gold)}
+.tokRow{display:flex;gap:8px;align-items:center;margin-top:8px}
+.tokBox{width:auto;flex:1;margin-top:0}
 .shareBox{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .lineInput{width:72px;padding:3px 6px;border:1px solid var(--ink-2);border-radius:var(--r-sm);font-size:12px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
 .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 4px}
@@ -647,12 +649,28 @@ async function doGhLoad(quiet){
   draw(); if(!quiet) refresh();
 }
 document.getElementById('ghLoad').addEventListener('click',()=>doGhLoad(false));
+/* asking for a token in a prompt box was a poor way to ask for one, on a phone especially.
+   This lays the two steps out and links straight at the GitHub page with the scope already
+   ticked, so it is: tap, Generate, copy, paste. */
+function ghAskToken(){
+  const make='https://github.com/settings/tokens/new?scopes=public_repo&description='+encodeURIComponent('NFL Hub Live Parlays');
+  STATE.msg=`<b>One step, once, on this device.</b> Saving needs a GitHub token. Reading never does \u2014 every other device just opens the page.
+    <br><br><b>1.</b> <a href="${make}" target="_blank" rel="noopener">Make a token on GitHub</a> \u2014 the name and the scope are filled in; scroll down and press <b>Generate token</b>, then copy it.
+    <br><b>2.</b> Paste it here:
+    <span class="tokRow"><input class="shareBox tokBox" id="tokIn" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ghp_\u2026" aria-label="the GitHub token">
+    <button class="btn quiet small" id="tokGo">Save token</button></span>
+    <br><span class="muted" style="font-size:12px">It stays in this browser, and never goes into a link, a code, or the saved file. The scope above covers your public repositories; a fine-grained token limited to just ${esc(GH.owner)}/${esc(GH.repo)} with <b>Contents: read and write</b> is tighter if you would rather.</span>`;
+  draw();
+  const go=()=>{ const v=(document.getElementById('tokIn').value||'').trim();
+    if(!v) return;
+    ghSetToken(v); STATE.msg=null; draw();
+    document.getElementById('ghSave').click(); };
+  document.getElementById('tokGo').addEventListener('click',go);
+  document.getElementById('tokIn').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } });
+  document.getElementById('tokIn').focus();
+}
 document.getElementById('ghSave').addEventListener('click',async()=>{
-  if(!ghToken()){
-    const t=prompt('Paste a GitHub token with Contents: read and write on '+GH.owner+'/'+GH.repo+'.\n\nIt is kept in this browser only, and never put in a link, a code, or the saved file. Only the device you build parlays on needs one.');
-    if(!t||!t.trim()){ return; }
-    ghSetToken(t.trim());
-  }
+  if(!ghToken()){ ghAskToken(); return; }
   const ps=allParlays();
   if(!ps.length){ STATE.msg='There is nothing here to save.'; draw(); return; }
   try{
