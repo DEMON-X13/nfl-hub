@@ -25,6 +25,9 @@ const lineAt = row => txt(row.querySelector('.lineLbl'));
 const status = row => txt(row.querySelector('.status'));
 const who = row => txt(row.querySelector('.who') || row.querySelector('.nm'));
 const target = row => txt(row.querySelector('.tgt'));
+/* Send copies a link when it is short enough to message and the code when it is not */
+const codeOf = v => v.includes('#p=') ? v.slice(v.indexOf('#p=') + 3) : v;
+const hashOf = v => '#p=' + codeOf(v);
 
 const GID = '2026_02_CAR_ATL';          /* the early game */
 const GID2 = '2026_02_KC_BUF';          /* the night game */
@@ -211,9 +214,11 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     a.w.navigator.clipboard = { writeText: t => { copied = t; return Promise.resolve(); } };
     a.d.getElementById('send').click();
     await new Promise(r => setTimeout(r, 60));
-    chk(!!copied && copied.includes('#p='), 'Send did not produce a link with the parlays in it');
-    const hash = copied.slice(copied.indexOf('#'));
-    chk(/Link copied/.test(txt(a.d.querySelector('.note'))), 'Send did not say the link was ready');
+    chk(!!copied, 'Send copied nothing at all');
+    chk(!!a.d.querySelector('.shareBox'), 'Send offered neither a link nor a code to copy');
+    /* Send all copies the code once the link is too long to message, so accept either */
+    const hash = hashOf(copied);
+    chk(/(Link|Code) copied/.test(txt(a.d.querySelector('.note'))), 'Send did not say what was copied');
 
     /* a clean device opens it */
     const b = await run({ seed: () => {}, hash });
@@ -270,7 +275,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     a.w.navigator.clipboard = { writeText: t => { copied = t; return Promise.resolve(); } };
     a.d.getElementById('send').click();
     await new Promise(r => setTimeout(r, 60));
-    const sent = JSON.parse(Buffer.from(copied.slice(copied.indexOf('#p=') + 3).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    const sent = JSON.parse(Buffer.from(codeOf(copied).replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
     chk(Array.isArray(sent.g) && Array.isArray(sent.p), 'the packed form is not the compact one');
     chk(sent.p.some(x => (x.l || []).some(l => l.n === 100)), 'a sent parlay did not carry the corrected line');
     chk(!JSON.stringify(sent).includes('rushing_yards'), 'stat names are still travelling in full');
@@ -398,7 +403,7 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     chk(copied.length < 600, `a four-leg link is ${copied.length} chars, which is too long to message`);
 
     /* the code alone, pasted on the other device, has to work as well as the link */
-    const code = copied.slice(copied.indexOf('#p=') + 3);
+    const code = codeOf(copied);
     const b = await run({ seed: () => {} });
     b.w.prompt = () => code;
     b.w.navigator.clipboard = { readText: () => Promise.resolve('') };
@@ -423,6 +428,49 @@ function run({ seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.loc
     await new Promise(r => setTimeout(r, 120));
     chk(/does not look like|could not be read/.test(txt(e2.d.querySelector('.note')) || ''),
       'rubbish pasted in is not explained');
+  }
+
+  // ---- N. one parlay at a time, and the code when a link will not carry it ----
+  {
+    /* a full slate: this is what broke -- Send packed every parlay into one URL */
+    const many = [];
+    for (let n = 0; n < 6; n++) many.push({ id: 'p' + n, week: 2, stake: 10, price: 300, payout: 40, legs: [
+      leg('a' + n, 'Bijan Robinson', 'rushing_yards', 43.5, 'over', true, 'Over 43.5 rushing yards', 'ATL'),
+      leg('b' + n, 'Travis Kelce', 'receiving_yards', 43.5, 'over', true, 'Over 43.5 receiving yards', 'ATL'),
+      leg('c' + n, 'Chuba Hubbard', 'rushing_yards', 54.5, 'under', true, 'Under 54.5 rushing yards', 'CAR')] });
+    const seed = w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: many })); w.localStorage.removeItem(BET_KEY); };
+    const a = await run({ seed });
+    chk(a.d.querySelectorAll('[data-send]').length === 6, 'every parlay should have its own Send');
+
+    /* one parlay on its own has to be short enough to travel as a link */
+    let copied = null;
+    a.w.navigator.clipboard = { writeText: v => { copied = v; return Promise.resolve(); } };
+    a.d.querySelector('[data-send]').click();
+    await new Promise(r => setTimeout(r, 80));
+    chk(copied.includes('#p='), 'one parlay should still be sendable as a link, got a code');
+    chk(copied.length < 500, `one parlay is ${copied.length} chars, too long for a link`);
+    chk(/Link copied/.test(txt(a.d.querySelector('.note'))), 'sending one parlay did not offer a link');
+
+    /* and it carries only that parlay */
+    const b = await run({ seed: () => {}, hash: hashOf(copied) });
+    chk(b.d.querySelectorAll('.savedp').length === 1, 'sending one parlay brought more than one across');
+
+    /* everything at once is too long, so the code is what gets copied */
+    const c = await run({ seed });
+    let got = null;
+    c.w.navigator.clipboard = { writeText: v => { got = v; return Promise.resolve(); } };
+    c.d.getElementById('send').click();
+    await new Promise(r => setTimeout(r, 80));
+    chk(!got.includes('#p='), 'a link too long to message was still the thing copied');
+    chk(/Code copied/.test(txt(c.d.querySelector('.note'))), 'the reader is not told the code was copied');
+    chk(/cuts a long link in half/.test(txt(c.d.querySelector('.note'))), 'the reason is not explained');
+    /* the code still works, which is the whole point of falling back to it */
+    const e2 = await run({ seed: () => {} });
+    e2.w.prompt = () => got;
+    e2.w.navigator.clipboard = { readText: () => Promise.resolve('') };
+    e2.d.getElementById('paste').click();
+    await new Promise(r => setTimeout(r, 140));
+    chk(e2.d.querySelectorAll('.savedp').length === 6, 'the code did not carry every parlay across');
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
