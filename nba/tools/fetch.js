@@ -98,6 +98,7 @@ async function main() {
       continue;
     }
     ok++;
+    if (ok === 1) L.log(`first day read: ${(j.events || []).length} events, season types ${[...new Set((j.events || []).map(e => e.season && e.season.type))].join('/') || 'none'}`);
     const rows = parseDay(j).filter(r => r.date === d);           // a late West Coast game lands on the day it tipped off, Eastern
     games += rows.length;
     have = merge(have, d, rows);

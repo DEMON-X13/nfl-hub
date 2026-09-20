@@ -21,8 +21,9 @@ on:
         type: boolean
         default: false
   push:
-    # a change to the NBA tools runs them once, so a fix is proven straight away
-    branches: [main]
+    # a change to the NBA tools runs them once, so a fix is proven straight away. On a claude/ branch the
+    # run commits to that branch; the schedule and the on-demand switch only work from main.
+    branches: [main, "claude/**"]
     paths: ["nba/tools/*.js"]
 
 permissions:
