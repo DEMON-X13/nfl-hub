@@ -27,7 +27,7 @@ const HOOK = `<script>
     async get(key){
       const r=await fetch('state.json',{cache:'no-store'}); if(!r.ok) throw new Error('state.json '+r.status);
       const S=await r.json(); const mine=loadMine(); const picks=mine.myPicks||{};
-      S.myPicks=picks; S.bets=mine.bets||{}; S.bank=mine.bank||{start:100,lastAmt:20,filter:'all',weeks:{}};
+      S.myPicks=picks; S.bets=mine.bets||{}; S.bank=mine.bank||{lastAmt:20,filter:'all',build:[],mode:'straight'};
       S.lastBackup=mine.lastBackup||null; S.lastBackupHow=mine.lastBackupHow||null;
       S.odds=Object.assign({},S.odds||{},mine.odds||{});
       for(const [gid,p] of Object.entries(S.processed||{})){

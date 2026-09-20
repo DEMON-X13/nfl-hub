@@ -47,35 +47,46 @@ function load(picks) {
   check(!d.getElementById('oddsFetch') && !d.getElementById('oddsFileBtn') && !d.getElementById('oddsClear'), 'Bank Roll: odds fetch/upload/clear card removed for visitors');
   check(Object.keys(S.myPicks).length === 0 && Object.values(S.processed).every(p => p.myPick === null), 'a new visitor has no picks and inherits none of the owner\'s');
   check(!d.getElementById('recordStats') || d.getElementById('tab-record').hidden, 'record tab is not shown');
+  { d.querySelector('#tabs button[data-tab="backup"]').click();
+    const bs = d.getElementById('backupState');
+    check(bs && bs.className !== 'err' && !/Everything you have entered/.test(bs.textContent), 'a visitor with no data gets no backup alarm: ' + (bs && bs.textContent.trim().slice(0, 60)));
+    check(w.eval('myDataCount()') === 0, "myDataCount counts the visitor's own entries, not the published season"); }
   // the visitor picks the loser of the first graded game; save() should persist only picks
-  S.myPicks[first] = loser; S.bank.start = 250; S.bets[1] = { staked: 20, returned: 35, note: 'visitor' }; w.eval('save()'); await sleep(400);
+  S.myPicks[first] = loser; S.bank.lastAmt = 35; S.bets[1] = { staked: 20, returned: 35, note: 'visitor' }; w.eval('save()'); await sleep(400);
   const stored = JSON.parse(w.localStorage.getItem('x_nfl_viewer_picks_2026') || '{}');
   check(stored.myPicks && stored.myPicks[first] === loser, 'visitor pick saved to their own storage');
-  check(stored.bank && stored.bank.start === 250 && stored.bets && stored.bets[1].returned === 35, 'visitor bankroll and bets saved to their own storage');
+  check(stored.bank && stored.bank.lastAmt === 35 && stored.bets && stored.bets[1].returned === 35, 'visitor stake and bets saved to their own storage');
   check(w.localStorage.getItem('x_nfl_betting_model_2026_v1') === null, 'the full state is never written to the visitor\'s storage');
 
   // 2. returning visitor: pick graded against the published result
-  const r2 = load({ myPicks: { [first]: loser }, bank: { start: 250, lastAmt: 20, filter: 'all', weeks: {} }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } }); await sleep(300);
+  const r2 = load({ myPicks: { [first]: loser }, bank: { lastAmt: 35, filter: 'all', build: [], mode: 'straight' }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } }); await sleep(300);
   const S2 = r2.dom.window.eval('S');
   check(S2.processed[first].myPick === loser && S2.processed[first].myCorrect === (winner ? false : null), 'returning visitor: pick restored and graded as a miss');
-  check(S2.bank.start === 250 && S2.bets[1] && S2.bets[1].returned === 35, 'returning visitor: bankroll and bets restored');
+  check(S2.bank.lastAmt === 35 && S2.bets[1] && S2.bets[1].returned === 35, 'returning visitor: stake and bets restored');
   check(r2.errors.length === 0, 'returning visitor: no runtime errors');
   const stamp = r2.dom.window.document.getElementById('saveState');
   await sleep(500);
   check(stamp && /^Updated /.test(stamp.textContent), 'page shows the publish time instead of an autosave note');
+  r2.dom.window.eval('save()'); await sleep(500);
+  check(/^Updated /.test(stamp.textContent), 'the publish time survives a save (no "Autosaved" on a published page)');
+  { const S3 = r2.dom.window.eval('S'); S3.myPicks[first] = loser;
+    r2.dom.window.document.querySelector('#tabs button[data-tab="backup"]').click();
+    r2.dom.window.eval('renderBackupState()');
+    const bs2 = r2.dom.window.document.getElementById('backupState');
+    check(bs2.className === 'err' && /Everything you have entered/.test(bs2.textContent), 'a visitor who has picks does get the backup warning'); }
 
   // 3. admin page: same published season, every tab, private things from the same store
   const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
   const a = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html',
     beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
       w2.confirm = () => true; w2.alert = () => {}; w2.scrollTo = () => {};
-      w2.localStorage.setItem('x_nfl_viewer_picks_2026', JSON.stringify({ myPicks: { [first]: loser }, bank: { start: 250, lastAmt: 20, filter: 'all', weeks: {} }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } })); } });
+      w2.localStorage.setItem('x_nfl_viewer_picks_2026', JSON.stringify({ myPicks: { [first]: loser }, bank: { lastAmt: 35, filter: 'all', build: [], mode: 'straight' }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } })); } });
   await sleep(600);
   const SA = a.window.eval('S'); const da = a.window.document;
   check(Object.keys(SA.processed).length === graded.length, 'admin: published season loaded');
   check([...da.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,mine,bank,record,bets,ratings,upload,backup', 'admin: every tab present');
   check(!!da.getElementById('oddsFetch'), 'admin: moneylines card kept');
-  check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.start === 250, 'admin: picks, bets and bankroll come from the same browser store as the viewer');
+  check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.lastAmt === 35, 'admin: picks, bets and stake come from the same browser store as the viewer');
   check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
 
   check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');
