@@ -1212,10 +1212,82 @@ function renderParlay(){
     S.parlay={}; save(); renderParlay(); if(S.ui.game) renderGame(); });
   wireSaved(); wireSuggest();
 }
+/* ---------- live: fetch, poll, and never persist ----------
+   LIVE sits outside S on purpose. It is someone else's scoreboard, not our state: it must
+   never be saved, and settlement still comes from nflverse on the next refresh. */
+let LIVE={at:0,games:{},box:{},err:null,busy:false,on:false};
+let LIVE_TIMER=null;
+const liveWanted=()=>{                                   /* the games an unsettled saved parlay needs */
+  const ids=new Set();
+  for(const p of (S.saved||[])){ if(settleParlay(p).status!=='pending') continue;
+    for(const l of p.legs) if(l.gid) ids.add(l.gid); }
+  return ids;
+};
+async function liveGet(url){
+  const r=await fetch(url,{cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+async function liveRefresh(){
+  if(LIVE.busy) return; const want=liveWanted(); if(!want.size){ LIVE.on=false; return; }
+  LIVE.busy=true;
+  try{
+    const sb=await liveGet(`${ESPN_SB}?seasontype=2&week=${currentWeek()}&dates=${SEASON}`);
+    LIVE.games=espnGames(sb,S.sched);
+    const box={};
+    for(const gid of want){ const g=LIVE.games[gid]; if(!g||g.state==='pre') continue;
+      try{ box[gid]=await liveGet(ESPN_SUM+g.eid); }catch(e){ /* one game short is not a failure */ } }
+    LIVE.box=box; LIVE.err=null; LIVE.at=Date.now();
+  }catch(e){
+    /* the likeliest cause by far is the browser refusing a cross-site read, which is worth
+       saying plainly rather than leaving the card blank */
+    LIVE.err=String(e&&e.message||e);
+  }finally{ LIVE.busy=false; }
+  if($('savedCard')) renderParlay();
+}
+function liveStop(){ if(LIVE_TIMER){ clearInterval(LIVE_TIMER); LIVE_TIMER=null; } }
+function liveStart(){
+  liveStop();
+  if(!LIVE.on) return;
+  /* only while the tab is in front: an iPad should not poll in someone's pocket */
+  LIVE_TIMER=setInterval(()=>{ if(document.visibilityState==='visible') liveRefresh(); },30000);
+  liveRefresh();
+}
+/* what to show against one leg of a saved parlay, live */
+function liveFor(l){
+  const g=LIVE.games[l.gid]; if(!g) return null;
+  if(isGameLeg(l)) return {...liveGameLeg(l,g),game:g};
+  if(g.state==='pre') return {val:null,k:+l.k,need:null,state:'pending',game:g};
+  const sum=LIVE.box[l.gid]; if(!sum) return null;
+  const st=espnStats(sum,l.team,l.name);
+  if(st===null) return {val:null,k:+l.k,need:null,state:'unmatched',game:g};
+  return {...liveLeg(l,st[l.stat]==null?null:st[l.stat],g.state),game:g};
+}
+function liveCell(l){
+  const r=liveFor(l); if(!r) return '';
+  const tone={hit:'win',missed:'lose',push:'',live:'',pending:'',unknown:'',unmatched:''}[r.state]||'';
+  if(r.state==='pending') return `<span class="lv">${esc(r.game.clock||'not started')}</span>`;
+  if(r.state==='unmatched') return `<span class="lv warnc">no box-score line yet</span>`;
+  if(r.state==='unknown') return `<span class="lv warnc">not reported</span>`;
+  if(isGameLeg(l)){
+    const g=r.game, sc=`${g.away} ${g.as}\u2013${g.hs} ${g.home}`;
+    return `<span class="lv ${tone}">${esc(sc)}<em>${esc(g.clock)}</em></span>`;
+  }
+  const shown=`${num(r.val,r.val%1?1:0)} / ${r.k}`;
+  const room=l.main&&l.side==='under';                    /* an under has room left, not distance to cover */
+  const tail=r.state==='hit'?'hit':(r.state==='missed'?'missed':(r.state==='push'?'push':
+    (r.need>0?`${num(r.need,r.need%1?1:0)} ${room?'to spare':'to go'}`:'live')));
+  return `<span class="lv ${tone}">${esc(shown)}<em>${esc(tail)}</em></span>`;
+}
 function renderSaved(){
   const list=(S.saved||[]).slice().reverse();
   const settled=list.map(p=>settleParlay(p));
-  let html=`<div class="card" id="savedCard"><h2 style="display:flex;align-items:center;gap:10px">Saved parlays <span class="pill">${list.length}</span></h2>`;
+  const anyLive=list.some(p=>settleParlay(p).status==='pending');
+  const lvBar=!anyLive?'':`<span class="grow"></span>
+    <label class="muted sp-live"><input type="checkbox" id="liveCb" ${LIVE.on?'checked':''}> Live</label>
+    ${LIVE.on?`<span class="muted" style="font-size:12px">${LIVE.err?'':(LIVE.at?'updated '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'checking\u2026')}</span>`:''}`;
+  let html=`<div class="card" id="savedCard"><h2 style="display:flex;align-items:center;gap:10px">Saved parlays <span class="pill">${list.length}</span>${lvBar}</h2>`;
+  if(LIVE.on&&LIVE.err) html+=`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">Live scores are not loading: <b>${esc(LIVE.err)}</b>. The page reads ESPN's public scoreboard straight from your browser, and a browser will refuse that read if ESPN does not allow it from another site. Nothing else on this page is affected, and the parlay still settles from the week's own numbers.</p>`;
   if(!list.length){ html+=`<p class="muted" style="margin:0">Nothing saved. Build a parlay above and press Save and lock; only locked parlays appear here.</p></div>`; return html; }
   const won=settled.filter(s=>s.status==='won').length, lost=settled.filter(s=>s.status==='lost').length, pend=settled.filter(s=>s.status==='pending').length;
   const staked=list.reduce((s,p)=>s+p.stake,0);
@@ -1253,9 +1325,10 @@ function renderSaved(){
       </div>
       ${p.legs.map((l,k)=>{ const r=s.legs[k]; const a=actualFor(l.week,l.pid);
         const mark=r==null?'<span class="res">\u25cb</span>':(r==='win'?'<span class="res win">\u2713</span>':(r==='push'?'<span class="res">P</span>':'<span class="res loss">\u2717</span>'));
+        const lv=(LIVE.on&&s.status==='pending')?liveCell(l):'';
         return `<div class="sp-leg">${mark}
           <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>
-          <span class="rs">${a&&a[l.stat]!=null?`got ${num(a[l.stat],0)}`:'<span class="muted">pending</span>'}</span>
+          <span class="rs">${a&&a[l.stat]!=null?`got ${num(a[l.stat],0)}`:(lv||'<span class="muted">pending</span>')}</span>
           <span class="rs">${(l.p*100).toFixed(0)}%</span></div>`;}).join('')}
     </div>`;
   });
@@ -1263,6 +1336,8 @@ function renderSaved(){
   return html;
 }
 function wireSaved(){
+  $('liveCb')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;
+    if(LIVE.on) liveStart(); else { liveStop(); renderParlay(); } });
   document.querySelectorAll('[data-sp]').forEach(b=>b.addEventListener('click',()=>{
     S.saved=(S.saved||[]).filter(p=>p.id!==b.dataset.sp); save(); renderParlay(); }));
   $('savedClear')?.addEventListener('click',()=>{

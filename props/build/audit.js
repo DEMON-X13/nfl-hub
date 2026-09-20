@@ -640,6 +640,65 @@ setTimeout(()=>{
     chk(SI.stake===55&&SI.parlay['g|p|s']&&SI.saved.length===1&&SI.odds.gX,'user state lost across a data rebuild');
     chk(Object.keys(SI.processedGames).length===0,'rebuild replayed data despite NO_BAKED');
     console.log(`I. built-in data: ${bakedWeeks.length} week(s) of stats (${b1.stats.length} games), ${b1.prices} prices, ${b1.inj} inactives, ${b1.sched} schedule fields; replay is a no-op; parlays/stake/prices survive a rebuild`);
+    /* ---- T. live tracking: every bit of it pure, so none of it needs a network ---- */
+    { const nameKey=F('nameKey'), espnStats=F('espnStats'), liveLeg=F('liveLeg'),
+            liveGameLeg=F('liveGameLeg'), espnGames=F('espnGames');
+      chk(nameKey('A.J. Brown')===nameKey('AJ Brown'),'A.J. and AJ do not match');
+      chk(nameKey('Marvin Harrison Jr.')===nameKey('Marvin Harrison'),'a suffix breaks the match');
+      chk(nameKey('Amon-Ra St. Brown')===nameKey('Amon-Ra St Brown'),'punctuation breaks the match');
+      chk(nameKey('Josh Allen')!==nameKey('Keenan Allen'),'two Allens collide');
+      const SUM={boxscore:{players:[
+        {team:{abbreviation:'ATL'},statistics:[
+          {name:'passing',labels:['C/ATT','YDS','AVG','TD','INT'],athletes:[{athlete:{displayName:'Michael Penix Jr.'},stats:['18/27','241','8.9','2','1']}]},
+          {name:'rushing',labels:['CAR','YDS','AVG','TD','LONG'],athletes:[{athlete:{displayName:'Bijan Robinson'},stats:['17','86','5.1','1','22']}]},
+          {name:'receiving',labels:['REC','YDS','AVG','TD','LONG','TGTS'],athletes:[{athlete:{displayName:'Bijan Robinson'},stats:['4','31','7.8','0','12','5']}]}]},
+        {team:{abbreviation:'WSH'},statistics:[
+          {name:'kicking',labels:['FG','PCT','LONG','XP','PTS'],athletes:[{athlete:{displayName:'Matt Gay'},stats:['2/3','66.7','48','3/3','9']}]}]}]}};
+      const bij=espnStats(SUM,'ATL','Bijan Robinson');
+      chk(bij&&bij.carries===17&&bij.rushing_yards===86,'the rushing line was misread');
+      chk(bij&&bij.receptions===4&&bij.receiving_yards===31&&bij.targets===5,'the receiving line was misread');
+      chk(bij&&bij.scrim_yards===117,'scrimmage yards were not added up');
+      chk(bij&&bij.any_td===1,'a touchdown was not counted');
+      const pen=espnStats(SUM,'ATL','Michael Penix');
+      chk(pen&&pen.completions===18&&pen.attempts===27,'C/ATT was not split');
+      chk(pen&&pen.passing_yards===241&&pen.passing_tds===2&&pen.passing_interceptions===1,'the passing line was misread');
+      const gay=espnStats(SUM,'WAS','Matt Gay');     /* our WAS against ESPN's WSH */
+      chk(gay&&gay.fg_made===2&&gay.fg_att===3&&gay.kick_pts===9,'the kicking line was misread, or the team alias missed');
+      chk(espnStats(SUM,'ATL','Nobody Here')===null,'a player with no line should read null, never zeroes');
+      const SHUF=JSON.parse(JSON.stringify(SUM)), grp=SHUF.boxscore.players[0].statistics[1];
+      grp.labels=['YDS','CAR','TD','AVG','LONG']; grp.athletes[0].stats=['86','17','1','5.1','22'];
+      chk(espnStats(SHUF,'ATL','Bijan Robinson').rushing_yards===86,'the box score is read by position rather than by label');
+      const over={k:43.5,side:'over',main:true,stat:'receiving_yards'},
+            under={k:54.5,side:'under',main:true,stat:'rushing_yards'},
+            rung={k:3,side:'over',main:false,stat:'receptions'};
+      chk(liveLeg(over,50,'live').state==='hit','an over that has cleared is not called early');
+      chk(liveLeg(over,20,'live').state==='live'&&liveLeg(over,20,'live').need===23.5,'an over in progress miscounts what is left');
+      chk(liveLeg(over,20,'post').state==='missed','an over that never cleared is not a miss at the final');
+      chk(liveLeg(under,60,'live').state==='missed','a busted under is not called the moment it busts');
+      chk(liveLeg(under,30,'live').state==='live','a live under is decided too soon');
+      chk(liveLeg(under,30,'post').state==='hit','an under that held is not a hit');
+      chk(liveLeg(rung,3,'live').state==='hit','a rung needs k or more, not more than k');
+      chk(liveLeg(rung,2,'live').need===1,'a rung miscounts what is left');
+      chk(liveLeg(over,null,'live').state==='unknown','a missing number is not flagged unknown');
+      chk(liveLeg(over,5,'pre').state==='pending','a game that has not started is not pending');
+      const sc={home:'ATL',away:'CAR',hs:20,as:17,state:'live'}, fin={...sc,state:'post'};
+      chk(liveGameLeg({stat:'ml',team:'ATL',k:0},sc).state==='live','a team leg is decided before the final');
+      chk(liveGameLeg({stat:'ml',team:'ATL',k:0},fin).state==='hit','the winner is not called at the final');
+      chk(liveGameLeg({stat:'ml',team:'CAR',k:0},fin).state==='missed','the loser is not called at the final');
+      chk(liveGameLeg({stat:'ats',team:'CAR',k:6.5},fin).state==='hit','a cover from the dog side is misread');
+      chk(liveGameLeg({stat:'ats',team:'ATL',k:-6.5},fin).state==='missed','a failed cover from the favourite side is misread');
+      chk(liveGameLeg({stat:'ml',team:'ATL',k:0},{...sc,state:'pre'}).state==='pending','a game that has not kicked off is not pending');
+      const SB={events:[{id:'401',competitions:[{status:{type:{state:'in',shortDetail:'Q3 7:12'}},competitors:[
+        {homeAway:'home',team:{abbreviation:'ATL'},score:'20'},{homeAway:'away',team:{abbreviation:'CAR'},score:'17'}]}]}]};
+      const mp=espnGames(SB,[{id:'2026_02_CAR_ATL',h:'ATL',a:'CAR',w:2}]);
+      chk(!!mp['2026_02_CAR_ATL'],'the scoreboard did not map onto our schedule');
+      chk(mp['2026_02_CAR_ATL'].hs===20&&mp['2026_02_CAR_ATL'].as===17,'the score came through wrong');
+      chk(mp['2026_02_CAR_ATL'].state==='live'&&mp['2026_02_CAR_ATL'].eid==='401','the state or the event id is wrong');
+      chk(Object.keys(espnGames(SB,[{id:'x',h:'KC',a:'BUF',w:2}])).length===0,'an unrelated game was matched anyway');
+      /* the scoreboard is someone else's: it must never reach what we save */
+      chk(!/"state":"(live|post|pre)"/.test(JSON.stringify(S.saved||[])),'live data reached a saved parlay');
+      console.log('T. live tracking: box score, name matching, leg states and scoreboard mapping all parse'); }
+
     console.log(`\n${checks} checks, ${fails.length} failures, ${errs.length} runtime errors`);
     fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
     errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));

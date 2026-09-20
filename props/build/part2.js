@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v51 \u00b7 2026-09-20';
+const APP_BUILD='app v52 \u00b7 2026-09-20';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -547,6 +547,106 @@ function settleLeg(l){
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
   return v>=l.k?'win':'loss';
 }
+/* ---------- live tracking: ESPN's public feeds ----------
+   Free, no key, no quota: this never touches the odds API. Everything here is pure -- it
+   takes a payload and returns numbers -- so the audit can test it without a network. */
+const ESPN_SB='https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+const ESPN_SUM='https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
+const ESPN_AB={WSH:'WAS',LA:'LAR',JAC:'JAX'};          /* where ESPN's abbreviations differ */
+const espnAb=a=>{const u=String(a||'').toUpperCase(); return ESPN_AB[u]||u;};
+/* a name both sources can agree on: no case, accents, punctuation or suffix */
+function normName(n){ return String(n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[.'\u2019]/g,'').replace(/-/g,' ').replace(/\b(jr|sr|ii|iii|iv)\b/g,'').replace(/\s+/g,' ').trim(); }
+/* last name plus first initial. Inside one team that is unique in practice, and it survives
+   "A.J." against "AJ" and "Marvin Harrison Jr." against "Marvin Harrison". */
+function nameKey(n){ const p=normName(n).split(' ').filter(Boolean); if(!p.length) return '';
+  return p[p.length-1]+'|'+p[0][0]; }
+/* where each stat we bet on sits in ESPN's box score: the group, the column's label, and for
+   the two columns that carry a pair ("C/ATT", "FG") which side of the slash. Read by label
+   and never by position, so a column added upstream cannot silently shift the numbers. */
+const ESPN_COL={
+  completions:['passing','C/ATT',0], attempts:['passing','C/ATT',1],
+  passing_yards:['passing','YDS'], passing_tds:['passing','TD'], passing_interceptions:['passing','INT'],
+  carries:['rushing','CAR'], rushing_yards:['rushing','YDS'],
+  receptions:['receiving','REC'], receiving_yards:['receiving','YDS'], targets:['receiving','TGTS'],
+  fg_made:['kicking','FG',0], fg_att:['kicking','FG',1], kick_pts:['kicking','PTS']};
+function espnNum(s){ if(s==null) return null; const v=parseFloat(String(s).replace(/,/g,'')); return isFinite(v)?v:null; }
+/* one player's line out of a summary payload, keyed by our own stat names */
+function espnStats(sum,team,who){
+  const want=nameKey(who), tm=espnAb(team), out={}; let seen=false;
+  for(const b of ((sum&&sum.boxscore&&sum.boxscore.players)||[])){
+    if(espnAb(b.team&&b.team.abbreviation)!==tm) continue;
+    for(const grp of (b.statistics||[])){
+      const labels=(grp.labels||[]).map(x=>String(x).toUpperCase());
+      for(const a of (grp.athletes||[])){
+        const nm=(a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
+        if(nameKey(nm)!==want) continue;
+        seen=true;
+        for(const stat in ESPN_COL){
+          const c=ESPN_COL[stat]; if(c[0]!==grp.name) continue;
+          const i=labels.indexOf(c[1]); if(i<0) continue;
+          let raw=(a.stats||[])[i];
+          if(c[2]!=null) raw=String(raw==null?'':raw).split('/')[c[2]];
+          const v=espnNum(raw); if(v!=null) out[stat]=v;
+        }
+        /* a touchdown he scored himself, which is what the board's "scores a touchdown" means */
+        if(grp.name==='rushing'||grp.name==='receiving'){
+          const i=labels.indexOf('TD');
+          if(i>=0){ const v=espnNum((a.stats||[])[i]); if(v!=null) out.tds=(out.tds||0)+v; }
+        }
+      }
+    }
+  }
+  if(!seen) return null;                                  /* not on the sheet: say so, don't guess zero */
+  if(out.rushing_yards!=null||out.receiving_yards!=null)
+    out.scrim_yards=(out.rushing_yards||0)+(out.receiving_yards||0);
+  out.any_td=out.tds||0;
+  return out;
+}
+/* where a player leg stands. state: pre | live | post */
+function liveLeg(leg,val,state){
+  const k=+leg.k, r={val,k,state:'pending',need:null};
+  if(state==='pre') return r;
+  if(val==null){ r.state='unknown'; return r; }
+  const done=state==='post';
+  if(leg.stat==='any_td'||!leg.main){                     /* "k or more" */
+    if(val>=k) r.state='hit'; else { r.need=k-val; r.state=done?'missed':'live'; }
+    return r;
+  }
+  if(leg.side==='under'){                                 /* gone the moment it busts */
+    if(val>k) r.state='missed'; else { r.state=done?(val===k?'push':'hit'):'live'; r.need=+(k-val).toFixed(2); }
+    return r;
+  }
+  if(val>k) r.state='hit'; else { r.need=+(k-val).toFixed(2); r.state=done?(val===k?'push':'missed'):'live'; }
+  return r;
+}
+/* where a team leg stands, off the scoreboard alone. sc: {home,away,hs,as,state} */
+function liveGameLeg(leg,sc){
+  if(!sc||sc.state==='pre') return {val:null,k:+leg.k||0,need:null,state:'pending'};
+  const isHome=leg.team===sc.home, mine=isHome?sc.hs:sc.as, theirs=isHome?sc.as:sc.hs;
+  if(mine==null||theirs==null) return {val:null,k:+leg.k||0,need:null,state:'unknown'};
+  const done=sc.state==='post';
+  if(leg.stat==='ml'){ const up=mine-theirs;
+    return {val:up,k:0,need:null,state:done?(up>0?'hit':(up===0?'push':'missed')):'live'}; }
+  const m=mine-theirs+(+leg.k||0);                        /* the line is from this team's side */
+  return {val:m,k:0,need:null,state:done?(m>0?'hit':(m===0?'push':'missed')):'live'};
+}
+/* a scoreboard payload down to the games we care about, keyed by our own game id */
+function espnGames(sb,sched){
+  const out={};
+  for(const e of ((sb&&sb.events)||[])){
+    const c=(e.competitions&&e.competitions[0])||{}, cs=c.competitors||[];
+    const home=cs.find(x=>x.homeAway==='home'), away=cs.find(x=>x.homeAway==='away');
+    if(!home||!away) continue;
+    const h=espnAb(home.team&&home.team.abbreviation), a=espnAb(away.team&&away.team.abbreviation);
+    const g=(sched||[]).find(x=>x.h===h&&x.a===a); if(!g) continue;
+    const st=((c.status||e.status||{}).type)||{};
+    out[g.id]={eid:String(e.id),home:h,away:a,hs:espnNum(home.score),as:espnNum(away.score),
+      state:st.state==='post'?'post':(st.state==='in'?'live':'pre'),clock:String(st.shortDetail||st.detail||'')};
+  }
+  return out;
+}
+
 /* ---------- track record: every frozen pre-game chance against what happened ----------
    Reads only S.projections (frozen at grade time) and S.actuals. Snapshots written before
    v27 hold just the projection; their rungs are rebuilt from it with the same static tables,
