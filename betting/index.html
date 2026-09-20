@@ -876,6 +876,23 @@ function stripMine(){
 /* after anything redraws a board: the lock does not wait for a score to be read, since it
    is a rule about the clock rather than about the scoreboard */
 function after(){ lockPlayed(); stripMine(); if(L.on) paintAll(); }
+
+/* The tab you are on goes in the address, so a refresh, a bookmark or the back button all
+   land where you were instead of dropping you on AI Picks. replaceState rather than a hash
+   assignment, so setting it does not fire hashchange and bounce back into the same tab. */
+function routeTabs(){
+  const tabs=document.getElementById('tabs'); if(!tabs) return;
+  const go=name=>{ const b=tabs.querySelector('button[data-tab="'+name+'"]'); if(b){ b.click(); return true; } return false; };
+  tabs.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+    const h='#'+b.dataset.tab;
+    if(location.hash!==h) history.replaceState(null,'',h);
+  }));
+  const want=decodeURIComponent((location.hash||'').slice(1));
+  if(want&&!go(want)) history.replaceState(null,'',location.pathname+location.search);
+  window.addEventListener('hashchange',()=>{
+    const n=decodeURIComponent((location.hash||'').slice(1)); if(n) go(n);
+  });
+}
 /* both boards are redrawn on every pick, week change and upload, which wipes what we
    painted, so repaint after whatever redrew them rather than chasing each caller */
 function hook(name){
@@ -900,6 +917,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   setTimeout(read,300);
   for(const n of ['renderPicks','renderMine','renderRecord']) hook(n);
   stripMine();
+  routeTabs();
 });
 })();
 </script>
