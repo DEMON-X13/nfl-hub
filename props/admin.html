@@ -1085,7 +1085,7 @@ function settleLeg(l){
    takes a payload and returns numbers -- so the audit can test it without a network. */
 const ESPN_SB='https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
 const ESPN_SUM='https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
-const ESPN_AB={WSH:'WAS',LA:'LAR',JAC:'JAX'};          /* where ESPN's abbreviations differ */
+const ESPN_AB={WSH:'WAS',LAR:'LA',JAC:'JAX'};          /* ESPN's abbreviation -> ours, where they differ */
 const espnAb=a=>{const u=String(a||'').toUpperCase(); return ESPN_AB[u]||u;};
 /* a name both sources can agree on: no case, accents, punctuation or suffix */
 function normName(n){ return String(n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
