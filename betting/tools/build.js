@@ -132,9 +132,16 @@ header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
   #tab-record table th,#tab-record table td,
   #tab-ratings table th,#tab-ratings table td{padding:7px 9px}
 }
+/* embedded: one tab of this page shown inside another page (the Pick'ems page frames the
+   Records, Power Ratings and Bet Log tabs), which has a header and a tab bar of its own */
+html.embed header,html.embed #tabs{display:none}
+html.embed body{background:none;min-height:0}
+html.embed main{padding:4px 0 16px;max-width:none}
 </style>
 <script>
 (function(){
+/* ?embed: no header, no tab bar, no background; the hash still says which tab shows */
+if(/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList.add('embed');
 ${ESPN}
 const L={games:{},at:0,err:null,busy:false,on:false};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));

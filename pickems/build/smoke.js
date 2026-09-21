@@ -64,7 +64,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record", 'tabs are ' + tabs.join('|'));
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
@@ -160,6 +160,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(/Nothing picked yet|-leg parlay/.test(txt(pb)), 'the working parlay card is missing');
   chk(!!d.getElementById('savedCard'), 'the saved parlays card is missing');
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
+
+  /* ---- Pick'em Record: the betting site's Records tab, framed, loaded when first opened ---- */
+  const recFrame = d.querySelector('#tab-record iframe.pk-frame');
+  chk(!!recFrame && !recFrame.getAttribute('src'), 'the Records frame should not load before its tab is opened');
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'record').click();
+  await wait(60);
+  chk(!d.getElementById('tab-record').hidden && d.getElementById('tab-parlay').hidden, 'the Pick\'em Record tab did not open');
+  chk(w.location.hash === '#record', 'the Pick\'em Record tab did not become the address');
+  chk(recFrame.getAttribute('src') === '../betting/admin.html?embed=1#record', 'the Records frame does not open the betting site on its Records tab: ' + recFrame.getAttribute('src'));
+  const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8');
+  chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
+    'the betting page has no embed mode, so the frame would show its header and tab bar');
+  chk(/data-tab="record"/.test(adminHtml), 'the betting admin page has no Records tab to frame');
 
   /* back to the board by address */
   w.location.hash = '#pickems';
