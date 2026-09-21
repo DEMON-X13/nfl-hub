@@ -374,43 +374,45 @@ body.modal-open{overflow:hidden}
 .winner small.act.right{color:var(--pick)} .winner small.act.wrong{color:var(--miss)}
 </style>
 <style>
-/* the board row is the betting app's, rule for rule, so the format is the same thing and not a lookalike */
-.brand a.pk-hub{color:#B9C5D4;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(185,197,212,.35)}
-.brand a.pk-hub:hover{color:#fff}
-.pk-gamehead{max-width:908px;display:grid;grid-template-columns:100px 136px minmax(278px,358px) 112px 96px;gap:14px;align-items:end;padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* the board row: the betting app's columns -- date, matchup, split bar, confidence, final
+   score -- at the Props tab's size and type, so the two tabs read as one page: the same
+   grid gutters, the same row padding, the same 13px display-face matchup and tags, the same
+   date block, the same 20px score */
+.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px 1fr 138px 132px;gap:14px;align-items:center}
+.pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pk-gamehead .pk-c{text-align:center}
-.pk-game{max-width:908px;display:grid;grid-template-columns:100px 136px minmax(278px,358px) 112px 96px;gap:14px;align-items:center;background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;box-shadow:var(--sh-sm);cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
-.pk-game:hover{box-shadow:0 2px 4px rgba(15,27,45,.06),0 10px 24px -8px rgba(15,27,45,.16);transform:translateY(-1px)}
+.pk-game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
+.pk-game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
 .pk-game.pk-open{border-color:var(--line-2)}
 .pk-game .pk-when{color:var(--ink-2);font-size:12px;line-height:1.35}
-.pk-game .pk-when b{color:var(--ink);font-weight:600;display:block;font-size:13px}
-.pk-matchup{font-family:var(--display);display:flex;align-items:center;justify-content:center;gap:6px;line-height:1;white-space:nowrap;min-width:0}
+.pk-game .pk-when b{color:var(--ink);font-weight:600;display:block;font-size:13px;margin-bottom:5px}
+.pk-matchup{font-family:var(--display);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;min-width:0}
 .pk-matchup .pk-at{color:var(--muted);font-size:11px;font-family:var(--body);font-weight:500;letter-spacing:.02em;flex:none}
 .pk-matchup .pk-tw{position:relative;display:inline-flex;flex:none}
 .pk-matchup .pk-res{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid currentColor;font-size:11px;font-weight:800;line-height:13px;text-align:center;font-family:var(--body);box-shadow:0 1px 2px rgba(15,27,45,.2)}
 .pk-matchup .pk-tw.pk-away .pk-res{left:-9px} .pk-matchup .pk-tw.pk-home .pk-res{right:-9px}
 .pk-matchup .pk-res.pk-ok{color:var(--pick)} .pk-matchup .pk-res.pk-bad{color:var(--miss)}
-.pk-ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
+.pk-ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:13px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
 .pk-ttag.pk-win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
-.pk-ttag.pk-mini{font-size:12px;padding:4px 5px;min-width:40px;vertical-align:-1px}
-.pk-probrow{display:flex;align-items:center;gap:10px;padding:0 14px;justify-content:center}
-.pk-tlab{font-family:var(--display);font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.02em;flex:none;min-width:40px;text-align:center}
+.pk-ttag.pk-mini{padding:4px 5px;min-width:40px;vertical-align:-1px}
+.pk-probrow{display:flex;align-items:center;gap:10px;justify-content:center;min-width:0}
+.pk-tlab{font-family:var(--display);font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em;flex:none;min-width:34px;text-align:center}
 .pk-tlab.pk-win{color:var(--ink);font-weight:800}
 .pk-probrow .pk-prob{flex:1;min-width:0}
-.pk-prob{position:relative;height:28px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
-.pk-prob .pk-a,.pk-prob .pk-h{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
+.pk-prob{position:relative;height:26px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
+.pk-prob .pk-a,.pk-prob .pk-h{display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
 .pk-prob .pk-a{justify-content:flex-start;border-right:1px solid rgba(15,27,45,.18)} .pk-prob .pk-h{justify-content:flex-end;margin-left:auto}
 .pk-prob .pk-a span.pk-w,.pk-prob .pk-h span.pk-w{font-weight:800}
 .pk-conf{text-align:center}
 .pk-tier{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px 4px 8px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
 .pk-tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
 .pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-tier.pk-coin{background:#FCECEA;color:#A8453A}
-.pk-result{font-size:12px;text-align:center;line-height:1.4}
-.pk-sc{font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.2px;font-variant-numeric:tabular-nums}
-.pk-sc.pk-pend{color:var(--muted);font-weight:600}
-.pk-result .pk-mwin{font-weight:700;font-size:12px;display:block}
+.pk-result{text-align:center;line-height:1.2;white-space:nowrap}
+.pk-sc{display:block;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.pk-sc.pk-pend{color:var(--muted)}
+.pk-result .pk-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
 .pk-result .pk-mwin.pk-ok{color:var(--pick)} .pk-result .pk-mwin.pk-bad{color:var(--miss)} .pk-result .pk-mwin.pk-tie{color:var(--ink-2)}
-.pk-result .pk-muted{color:var(--muted)}
+.pk-result .pk-muted{display:block;font-size:11px;color:var(--ink-2);line-height:1.3}
 /* the prop model's Game bets card, opened inside the same row. Its classes are the prop
    model's, so it is styled by the prop model's stylesheet; only the card chrome comes off */
 .pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
@@ -423,10 +425,17 @@ body.modal-open{overflow:hidden}
 .pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
 .pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
 .pk-foot a{color:var(--ink-2)}
-@media(max-width:620px){
+@media(max-width:900px){
   .pk-gamehead{display:none}
-  .pk-game{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
-  .pk-game .pk-when{grid-column:1/-1} .pk-game .pk-probrow{grid-column:1/-1;padding:0}
+  /* one card per game, laid out the way the Props tab lays its out */
+  .pk-game{grid-template-columns:1fr 1fr auto;gap:6px 10px;padding:13px 14px}
+  .pk-game .pk-when{grid-column:1/3;grid-row:1;display:flex;gap:8px;align-items:baseline}
+  .pk-game .pk-when b{display:inline;font-size:13px;margin:0}
+  .pk-game .pk-result{grid-column:3;grid-row:1/3;align-self:center;padding-left:6px}
+  .pk-matchup{grid-column:1/3;grid-row:2}
+  .pk-probrow{grid-column:1/-1;grid-row:3;margin-top:4px}
+  .pk-conf{grid-column:1/-1;grid-row:4;text-align:left}
+  .pk-game .pk-gbody{grid-row:5}
   .pk-gbody table.rungs{display:block;overflow-x:auto;white-space:nowrap}
 }
 </style>
@@ -437,15 +446,14 @@ body.modal-open{overflow:hidden}
     <h1>X NFL Pick'ems</h1>
     <span class="sub" id="buildTag"></span>
     <span class="sub grow" id="saveState" style="margin-left:auto"></span>
-    <a class="pk-hub" href="../">back to the hub</a>
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
     <button role="tab" data-tab="slate">Props</button>
     <button role="tab" data-tab="parlay">Parlay Builders</button>
+    <button role="tab" data-tab="ratings">Power Ratings</button>
     <button role="tab" data-tab="record">Pick'em Record</button>
     <button role="tab" data-tab="track">Prop Record</button>
-    <button role="tab" data-tab="ratings">Power Ratings</button>
     <button role="tab" data-tab="bets">Bet Log</button>
   </nav>
 </header>
@@ -462,9 +470,9 @@ body.modal-open{overflow:hidden}
   <p class="pk-foot" id="pkFoot"></p>
 </section>
 
-<section id="tab-record" hidden><iframe class="pk-frame" data-src="../betting/admin.html?embed=1#record" title="Pick'em Record"></iframe></section>
-
 <section id="tab-ratings" hidden><iframe class="pk-frame" data-src="../betting/admin.html?embed=1#ratings" title="Power Ratings"></iframe></section>
+
+<section id="tab-record" hidden><iframe class="pk-frame" data-src="../betting/admin.html?embed=1#record" title="Pick'em Record"></iframe></section>
 
 <section id="tab-bets" hidden><iframe class="pk-frame" data-src="../betting/admin.html?embed=1#bets" title="Bet Log"></iframe></section>
 
@@ -476,11 +484,7 @@ body.modal-open{overflow:hidden}
       <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
       <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
       <span class="grow"></span>
-      <span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>
-      <label class="muted">Scores <select id="slateEvery">
-        <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
-      </select></label>
-      <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
+                  <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
     <div class="gamehead">
@@ -3049,7 +3053,7 @@ function render(){
     .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
   records(w);
   if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
-  const HEAD='<div class="pk-gamehead"><div>Date</div><div class="pk-c">Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Final score</div></div>';
+  const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Final score</div></div>';
   el('pkBoard').innerHTML=HEAD+games.map(g=>{
     const c=call(g), [day,time]=fmtDate(g), win=winnerOf(g);
     const pick=c?c.pick:null;

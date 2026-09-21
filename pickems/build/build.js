@@ -66,8 +66,12 @@ for (const need of ['function gameBet', 'function confTier', 'function bookPrice
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', "<title>X NFL Pick'ems</title>", 'title');
 html = sub1(html, '<h1>X NFL Prop Model</h1>', `<h1>X NFL Pick'ems</h1>`, 'heading');
-html = sub1(html, '<span class="sub grow" id="saveState" style="margin-left:auto"></span>',
-  '<span class="sub grow" id="saveState" style="margin-left:auto"></span>\n    <a class="pk-hub" href="../">back to the hub</a>', 'hub link');
+/* the Props tab's timed score refresh goes: the button stays, the "scores off" stamp and
+   the every-30s picker do not. Their code is null-safe on both. */
+html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>\n', '', 'the scores stamp');
+html = sub1(html, `<label class="muted">Scores <select id="slateEvery">
+        <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
+      </select></label>\n`, '', 'the scores picker');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here is in the page but not yet shown. */
@@ -79,9 +83,9 @@ const TABS = [
   ['pickems', "Pick'ems"],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builders'],
+  ['ratings', 'Power Ratings', '../betting/admin.html?embed=1#ratings'],
   ['record', "Pick'em Record", '../betting/admin.html?embed=1#record'],
   ['track', 'Prop Record'],
-  ['ratings', 'Power Ratings', '../betting/admin.html?embed=1#ratings'],
   ['bets', 'Bet Log', '../betting/admin.html?embed=1#bets'],
 ];
 for (const [, , src] of TABS) if (src && !fs.existsSync(path.join(__dirname, '..', src.replace(/[?#].*$/, ''))))
