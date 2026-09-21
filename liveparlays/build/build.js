@@ -1,8 +1,8 @@
 /* Build the live tracker page.
  *
- *   node live/build/build.js        (from the hub root)
+ *   node liveparlays/build/build.js        (from the hub root)
  *
- *   live/index.html   one small page that watches the parlays already saved in this
+ *   liveparlays/index.html   one small page that watches the parlays already saved in this
  *                     browser by the prop model and the betting model.
  *
  * The ESPN parsing is not copied here: it is lifted out of props/build/part2.js at build
@@ -10,7 +10,7 @@
  * the prop model's audit keeps testing it. Only the page itself -- shell, styling and
  * rendering -- lives in page.html.
  *
- * The page reads live/parlays.json and nothing else. It keeps nothing in a browser, which is
+ * The page reads liveparlays/parlays.json and nothing else. It keeps nothing in a browser, which is
  * why the extraction stops before the betting-model reader: that one reads local storage.
  */
 'use strict';
@@ -35,5 +35,5 @@ if (!page.includes('/*SHARED*/')) throw new Error('page.html has no /*SHARED*/ s
 if (!page.includes('__BUILT__')) throw new Error('page.html has no __BUILT__ stamp');
 const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 const out = page.replace('/*SHARED*/', shared).replace('__BUILT__', stamp);
-fs.writeFileSync(path.join(ROOT, 'live', 'index.html'), out);
-console.log(`live/index.html written: ${(out.length / 1024).toFixed(1)} KB (${shared.split('\n').length} lines shared from the prop model)`);
+fs.writeFileSync(path.join(ROOT, 'liveparlays', 'index.html'), out);
+console.log(`liveparlays/index.html written: ${(out.length / 1024).toFixed(1)} KB (${shared.split('\n').length} lines shared from the prop model)`);

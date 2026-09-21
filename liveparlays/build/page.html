@@ -78,6 +78,9 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .legtop .grow{flex:1}
 .tgt{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.1}
 .who{color:var(--ink-2);font-size:13px;margin-top:1px}
+[hidden]{display:none!important}
+.hidebtn{background:none;border:0;color:var(--muted);font-size:18px;line-height:1;padding:0 4px;cursor:pointer;border-radius:6px}
+.hidebtn:hover{color:var(--ink);background:var(--panel-2)}
 .status{font-size:12px;color:var(--ink-2);white-space:nowrap}
 .status.win{color:var(--pick);font-weight:700} .status.lose{color:var(--miss);font-weight:700}
 /* room at both ends so a knob well past its line can overhang without touching the card */
@@ -150,11 +153,9 @@ footer a{color:var(--ink-2)}
 <main>
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
-    <span class="pill" id="ver" title="which build of this page your browser is showing"></span>
     <span class="grow"></span>
-    <label class="muted">Refresh
-      <select id="every"><option value="15">every 15s</option><option value="30">every 30s</option><option value="60">every 60s</option><option value="0" selected>off</option></select>
-    </label>
+    <a href="#" class="muted" id="showHidden" hidden></a>
+    <button class="btn quiet" id="clear" title="Hide every parlay that has landed or gone, on this device. Show them again from the link that appears.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
   <noscript><div class="note"><b>This page needs JavaScript.</b> It has none of its own data:
@@ -205,8 +206,15 @@ const PAGE_BUILD='live v5 \u00b7 __BUILT__';
 const LIVE_KEY='live_parlays_v1';
 function liveStore(){
   let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
-  return {lines:(v&&v.lines&&typeof v.lines==='object')?v.lines:{}};
+  return {lines:(v&&v.lines&&typeof v.lines==='object')?v.lines:{},
+    hidden:(v&&v.hidden&&typeof v.hidden==='object')?v.hidden:{}};
 }
+/* a parlay cleared from this page is hidden here and nowhere else: the prop model, the
+   betting model and the file keep it, and this device shows it again on request */
+const hideKey=p=>p.src+'|'+p.id;
+function hideParlay(p,on){ const st=liveStore(); if(on) st.hidden[hideKey(p)]=1; else delete st.hidden[hideKey(p)]; writeStore(st); }
+function unhideAll(){ const st=liveStore(); st.hidden={}; writeStore(st); }
+const isHidden=p=>!!liveStore().hidden[hideKey(p)];
 function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
 function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
 function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
@@ -488,27 +496,30 @@ function whatsHere(){
   let v=null, broke=false;
   try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ broke=true; }
   if(broke) rows.push('<b>prop model</b> \u2014 this browser would not let the page read its storage');
-  else if(!v) rows.push('<b>prop model</b> \u2014 nothing here yet. Open <a href="../props/">the prop model</a> in <i>this</i> browser and build a parlay');
+  else if(!v) rows.push('<b>prop model</b> \u2014 nothing here yet. Open <a href="../nflbets/#slate">the prop model</a> in <i>this</i> browser and build a parlay');
   else rows.push('<b>prop model</b> \u2014 '+(Array.isArray(v.saved)?v.saved.length:0)+' saved and locked, '
     +Object.keys((v.parlay&&typeof v.parlay==='object')?v.parlay:{}).length+' leg(s) in the builder');
   let raw=null, bbroke=false;
   try{ raw=localStorage.getItem(BET_KEY); }catch(e){ bbroke=true; }
   if(bbroke) rows.push('<b>betting model</b> \u2014 this browser would not let the page read its storage');
-  else if(!raw) rows.push('<b>betting model</b> \u2014 nothing here yet. Open <a href="../betting/">the betting model</a> in <i>this</i> browser and press <b>Lock in parlay</b>');
+  else if(!raw) rows.push('<b>betting model</b> \u2014 nothing here yet. Open <a href="../nflbets/">the betting model</a> in <i>this</i> browser and press <b>Lock in parlay</b>');
   else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
-  rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>live/parlays.json</code>'
+  rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>liveparlays/parlays.json</code>'
     +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
   return rows;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
-  const app=document.getElementById('app'), ps=allParlays();
+  const app=document.getElementById('app'), every=allParlays(), ps=every.filter(p=>!isHidden(p));
+  const nHidden=every.length-ps.length, sh=document.getElementById('showHidden');
+  sh.hidden=!nHidden; sh.textContent=nHidden?`${nHidden} hidden \u00b7 show`:'';
+  document.getElementById('clear').hidden=!ps.some(settledP);
   let html='';
-  if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>live/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
+  if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
   else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
   if(!ps.length){
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing to watch yet</b>
-      This page shows two things, both on its own: the parlays in <code>live/parlays.json</code>, which every device sees, and whatever the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> hold <b>in this browser</b>.<br><br>
+      This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
       <b style="color:var(--ink)">Where it looked just now:</b>
       <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
       A parlay in the prop model's builder shows here as soon as it has a leg, so an empty builder and nothing saved means this browser has nothing yet. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
@@ -529,7 +540,7 @@ function draw(){
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
-        ${tag}<span class="grow"></span></div>
+        ${tag}<span class="grow"></span><button class="hidebtn" data-hide="${esc(hideKey(p))}" title="Hide this parlay on this device" aria-label="Hide this parlay">\u00d7</button></div>
       <div class="sp-money">
         <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
         <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
@@ -539,7 +550,11 @@ function draw(){
       ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
   }
   app.innerHTML=html; wireLines(app); foot();
+  app.querySelectorAll('[data-hide]').forEach(b=>b.addEventListener('click',()=>{
+    const q=b.dataset.hide.split('|'); hideParlay({src:q[0],id:q.slice(1).join('|')},true); draw(); }));
 }
+/* landed or gone: nothing left to watch */
+function settledP(p){ return isDone(p)||p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';}); }
 /* Edit a line in place: the number under the bar becomes a box, Enter or leaving it commits,
    Escape puts it back. It is drawn where the line actually is, on the bar, rather than as a
    button repeating the number beside it. */
@@ -574,23 +589,17 @@ function foot(){
   document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
     :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
-  document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>live/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../props/">prop model</a> and <a href="../betting/">betting model</a> in this browser, with nothing to press — saved and locked parlays, and whatever is sitting in the prop model's builder \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
+  document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>liveparlays/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> in this browser, with nothing to press — saved and locked parlays, and whatever is sitting in the prop model's builder \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
     Tap the line under a bar (<b>41.5 \u270e</b>) if the book moved it after you bet: the page measures against your number from then on, the parlay itself is left alone, and the correction stays in this browser \u2014 for one every device should see, it goes in the file.
     Scores come from ESPN's public feeds, read by this page in your own browser: no odds-API credits are ever spent here, and no job runs for it.
-    Auto-refresh starts <b>off</b> \u2014 the page fetches once when you open it, then only when you press Refresh now or turn an interval on.`;
+    The page fetches once when you open it, then when you press Refresh now. Clear settled hides the parlays that have landed or gone, on this device only; \u00d7 on a parlay hides just that one, and the link that appears brings them all back.`;
 }
-let TIMER=null;
-function arm(){
-  if(TIMER){ clearInterval(TIMER); TIMER=null; }
-  const s2=+document.getElementById('every').value||0;
-  if(s2) TIMER=setInterval(()=>{ if(document.visibilityState==='visible') refresh(); },s2*1000);
-}
-document.getElementById('every').addEventListener('change',arm);
 document.getElementById('now').addEventListener('click',refresh);
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&(+document.getElementById('every').value||0)) refresh(); });
-document.getElementById('ver').textContent=PAGE_BUILD;
-draw(); arm(); refresh();
+document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isHidden(p)&&settledP(p)) hideParlay(p,true); draw(); });
+document.getElementById('showHidden').addEventListener('click',e=>{ e.preventDefault(); unhideAll(); draw(); });
+/* the build this browser is showing, for a "blank on every device" day: in the markup, not the bar */
+document.documentElement.dataset.build=PAGE_BUILD;
+draw(); refresh();
 </script>
 </body>
 </html>
