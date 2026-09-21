@@ -313,13 +313,21 @@ setTimeout(async()=>{
                 legs:[{gid:'g2',stat:'rushing_yards',k:40.5,side:'over',main:true,name:'B',team:'Y',week:1}]}];
       F('save')(); F('renderParlay')();
       const btn=()=>d.getElementById('sendLive');
-      chk(!!btn()&&/Send 2 to Live Parlays/.test(btn().textContent),'the send button does not offer both: '+(btn()&&btn().textContent));
+      chk(!!btn()&&/^Send to Live Parlays$/.test(btn().textContent.trim()),'the send button does not read plainly: '+(btn()&&btn().textContent));
       chk(btn().className.includes('go'),'the send button is not the green one');
-      chk(!!d.querySelector('#savedCard a[href="../liveparlays/"]'),'the card offers no way to open the live page');
+      /* beside Clear saved parlays in the footer bar, not in the heading */
+      chk(btn().nextElementSibling&&btn().nextElementSibling.id==='savedClear','the send button is not to the left of Clear saved parlays');
+      chk(!d.querySelector('#savedCard h2 #sendLive'),'the send button is still in the heading');
+      { const a=d.querySelector('#savedCard h2 a[href="../liveparlays/"]');
+        chk(!!a&&/Live tracking/.test(a.textContent),'the heading has no Live tracking link: '+(a&&a.textContent));
+        chk(!/go|btn/.test(a.className)&&/8A5E05/i.test(a.getAttribute('style')||''),'the Live tracking link reads as a button');
+        /* .grow is only flex:1 inside a .bar, and a heading is not one */
+        const sp=d.querySelector('#savedCard h2 .grow');
+        chk(!!sp&&/flex\s*:\s*1/.test(sp.getAttribute('style')||''),'nothing pushes the link to the right of the heading'); }
       btn().click();
       const read=()=>{ try{ return JSON.parse(w.localStorage.getItem('live_parlays_v1')||'{}'); }catch(e){ return {}; } };
       chk(read().sent&&read().sent['prop|sendA']&&read().sent['prop|sendB'],'sending did not write both ids: '+JSON.stringify(read()));
-      chk(/All on Live Parlays/.test(btn().textContent)&&btn().disabled,'the button still offers a send with nothing left');
+      chk(/^Send to Live Parlays$/.test(btn().textContent.trim())&&!btn().disabled,'the button should not change once everything is sent');
       chk((d.getElementById('savedCard').textContent.match(/sent/g)||[]).length>=2,'a sent parlay is not marked on its card');
       /* sending twice adds nothing, and the same legs under another id are the same parlay */
       chk(F('sendToLive')(S.saved)===0,'the same parlays were sent a second time');
@@ -330,7 +338,7 @@ setTimeout(async()=>{
       /* deleted on the live page, and offered again here: the only way back from a delete */
       { const st=read(); st.removed={'prop|sendA':1}; w.localStorage.setItem('live_parlays_v1',JSON.stringify(st));
         F('renderParlay')();
-        chk(/Send 1 to Live Parlays/.test(btn().textContent),'a parlay deleted on the live page is not offered again: '+btn().textContent); }
+        chk(F('sendToLive')(S.saved)===1,'a parlay deleted on the live page is not offered again'); }
       /* the live page's own half of that key is never touched */
       { const st=read(); st.lines={'prop|sendA|0':77}; w.localStorage.setItem('live_parlays_v1',JSON.stringify(st));
         F('sendToLive')(S.saved);
