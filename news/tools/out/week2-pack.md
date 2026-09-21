@@ -1025,7 +1025,7 @@ Kansas City Chiefs, injuries:
 Kansas City Chiefs, ESPN headlines:
 
 ### New York Giants at Los Angeles Rams
-Mon, Sep 21, 8:15 PM ET, ESPN / ABC, SoFi Stadium, Inglewood. Line: LAR -7, O/U 47.5
+Mon, Sep 21, 8:15 PM ET, ESPN / ABC, SoFi Stadium, Inglewood. Line: LAR -6.5, O/U 47.5
 
 Searches to run:
 - "New York Giants Los Angeles Rams preview week 2"
