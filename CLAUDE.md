@@ -29,6 +29,7 @@ build and its own scheduled workflow.
 | `props/` | Prop Model: Games, Parlay Builder, Track Record | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
+| `pickems/` | Pick'ems: the two models on one page, built one tab at a time | `pickems/build/tab_pickems.html` + the props parts + the betting app |
 
 ## Source vs generated -- never edit a generated file
 
@@ -37,6 +38,7 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html`, `props/index.html`, `props/admin.html`
 - `betting/index.html`, `betting/admin.html`, `betting/state.json`
+- `pickems/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
@@ -75,6 +77,21 @@ node betting/tools/smoke.js      # viewer check
 
 Gate: the app's embedded model numbers must equal
 `betting/tools/reference_models.json`, or the publish aborts.
+
+## Pick'ems: the loop
+
+`pickems/index.html` is the prop model's page (part1 + part2 + part3, assembled by
+`pickems/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
+front of it as its own `pk-` prefixed section, and the betting site's Records, Power
+Ratings and Bet Log tabs framed from `betting/admin.html?embed=1#tab`. Nothing is baked
+in: it fetches `props/data/payload.json` and `betting/state.json`, so it is rebuilt when
+a source changes, never when the data does. A props patch or a betting build change
+means rebuilding it too:
+
+```
+node pickems/build/build.js
+node pickems/build/smoke.js       # must end "0 failures"
+```
 
 ## Conventions
 
