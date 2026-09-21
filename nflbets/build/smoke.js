@@ -54,7 +54,7 @@ function scoreboard(state, week) {
 }
 
 /* boot the page; resolves once the prop model says it is ready and the board has drawn */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null) {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false) {
   return new Promise(resolve => {
     const errs = [], fetched = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
@@ -62,7 +62,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
         w.addEventListener('error', e => errs.push(e.message));
         w.fetch = u => { const s = String(u); fetched.push(s.replace(/\?.*$/, ''));
-          if (s.includes('state.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
+          if (s.includes('state.json')) return noState
+            ? Promise.resolve({ ok: false, status: 404 })
+            : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
           if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
@@ -89,7 +91,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
-  chk(!d.getElementById('buildTag'), 'the build tag is on the public header');
+  chk(/^app v\d+ \u00b7 \d{4}-\d{2}-\d{2}$/.test(txt(d.getElementById('buildTag'))),
+    'the page does not say which build it is: ' + txt(d.getElementById('buildTag')));
 
   /* ---- Pick'ems ---- */
   let cards = [...d.querySelectorAll('.pk-game')];
@@ -258,7 +261,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(60);
   chk(!d.getElementById('tab-record').hidden && d.getElementById('tab-ratings').hidden, 'the Pick\'em Record tab did not open');
   chk(w.location.hash === '#record', 'the Pick\'em Record tab did not become the address');
-  chk(recFrame.getAttribute('src') === '../betting/admin.html?embed=1#record', 'the Records frame does not open the betting site on its Records tab: ' + recFrame.getAttribute('src'));
+  /* the frame's address carries the betting job's publish time, so a new publish is a new
+     address: a script-set frame never sees this page's hard refresh */
+  const stamp = encodeURIComponent(String(state.published));
+  chk(recFrame.getAttribute('src') === `../betting/admin.html?embed=1&v=${stamp}#record`,
+    'the Records frame is not cache-busted on the betting publish time: ' + recFrame.getAttribute('src'));
   const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8');
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
     'the betting page has no embed mode, so the frame would show its header and tab bar');
@@ -281,7 +288,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(60);
   chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-parlay').hidden, 'the Power Ratings tab did not open');
   chk(w.location.hash === '#ratings', 'the Power Ratings tab did not become the address');
-  chk(ratFrame.getAttribute('src') === '../betting/admin.html?embed=1#ratings', 'the Power Ratings frame does not open the betting site on its Power Ratings tab');
+  chk(ratFrame.getAttribute('src') === `../betting/admin.html?embed=1&v=${stamp}#ratings`, 'the Power Ratings frame is not cache-busted: ' + ratFrame.getAttribute('src'));
   chk(/data-tab="ratings"/.test(adminHtml), 'the betting admin page has no Power Ratings tab to frame');
 
   /* ---- Bet Log: the betting site's Bet Log tab, framed, on the same browser store ---- */
@@ -291,7 +298,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(60);
   chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-track').hidden, 'the Bet Log tab did not open');
   chk(w.location.hash === '#bets', 'the Bet Log tab did not become the address');
-  chk(betFrame.getAttribute('src') === '../betting/admin.html?embed=1#bets', 'the Bet Log frame does not open the betting site on its Bet Log tab');
+  chk(betFrame.getAttribute('src') === `../betting/admin.html?embed=1&v=${stamp}#bets`, 'the Bet Log frame is not cache-busted: ' + betFrame.getAttribute('src'));
   chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml), 'the betting admin page has no Bet Log tab with its form to frame');
   /* every framed tab is the same page, so one store: a bet logged in either place is in both */
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^\.\.\/betting\/admin\.html\?embed=1#/.test(f.dataset.src)), 'a framed tab points somewhere other than the betting admin page');
@@ -317,6 +324,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const b = await run(bare);
   chk(b.errs.length === 0, 'the page threw without published calls: ' + b.errs.join('; '));
   chk(b.d.querySelectorAll('.pk-game').length > 0, 'no board without published calls');
+
+  /* the betting tabs do not depend on this tab's fetch: with state.json gone they still frame */
+  const noState = await run(state, undefined, null, true);
+  [...noState.d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'ratings').click();
+  await wait(60);
+  const ff = noState.d.querySelector('#tab-ratings iframe.pk-frame');
+  chk(!!ff && ff.getAttribute('src') === '../betting/admin.html?embed=1#ratings',
+    'with the season unreachable the framed tabs should still load, uncached: ' + (ff && ff.getAttribute('src')));
   /* and with no scoreboard to read, the stamp says so and the board stands */
   await wait(700);
   chk(/scores not loading/.test(txt(b.d.getElementById('pkStamp'))) && b.d.getElementById('pkStamp').classList.contains('bad'), 'an unreachable scoreboard is not said: ' + txt(b.d.getElementById('pkStamp')));

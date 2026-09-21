@@ -93,6 +93,26 @@ node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"
 ```
 
+## The sites behave like websites
+
+The owner publishes a change and expects it on every device on the next load. Nothing
+may quietly outrank what the job published:
+
+- **Published data wins over anything a browser kept.** Local storage holds only what the
+  visitor made -- parlays, saved slips, picks, bankroll, the bet log, corrected lines,
+  settings. Schedule, scores, stats, prices, ratings and projections are read from
+  `props/data/payload.json` and `betting/state.json` on every load. The prop model keys its
+  saved season on `PAY.baked_at`, which moves on every run of the job, so a run always
+  rebuilds; the betting app already merges only the visitor's keys over the published state.
+- **A routine rebuild is silent.** The job publishes several times a week. Only a model or
+  roster change is worth a banner.
+- **Every page says which build it is.** `buildTag` on the Bets and Stats header, `PAGE_BUILD`
+  in `data-build` on Live Parlays. Without it a stale copy cannot be told from a current one.
+- **A frame is not covered by a refresh of the page around it.** A framed tab carries the
+  publishing timestamp in its address (`&v=`), so a new publish is a new address.
+- **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
+  ten-minute cache, which a reload clears; nothing else may hold data longer than that.
+
 ## Conventions
 
 - **Patch scripts.** A change to the props parts is applied by a

@@ -279,7 +279,14 @@ function routeTabs(){
 }
 
 /* the betting tabs are the betting site's own page, framed. A frame loads the first time its
-   tab is opened and then follows the height of what it shows, so the page scrolls as one. */
+   tab is opened and then follows the height of what it shows, so the page scrolls as one.
+
+   A frame is a separate document that a script points somewhere after this page has loaded,
+   so a hard refresh of this page never reaches it: the browser serves it from its own cache
+   on its own schedule, and a framed tab could sit a build behind the rest of the page with
+   no way to shift it. The address carries the moment the betting job last published, so a
+   new publish is a new address and the browser has to go and get it. */
+let FRAME_V='';
 function frames(){
   const load=f=>{
     if(f.src||!f.dataset.src) return;
@@ -290,7 +297,7 @@ function frames(){
       fit();
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
     });
-    f.src=f.dataset.src;
+    f.src=FRAME_V?f.dataset.src.replace('#','&v='+encodeURIComponent(FRAME_V)+'#'):f.dataset.src;
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));
@@ -298,16 +305,21 @@ function frames(){
 }
 
 async function boot(){
-  routeTabs(); frames(); wireLegs();
+  routeTabs(); wireLegs();
+  let failed=false;
   try{
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
     ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{};
+    FRAME_V=String(st.published||'');
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
-    foot(); return;
+    failed=true;
   }
+  /* the frames are wired either way: the betting tabs do not depend on this tab's fetch */
+  frames();
+  if(failed){ foot(); return; }
   const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
   const graded=new Set(Object.values(ST.processed).map(r=>+r.week));
   const openOn=Object.keys(ST.picks).length

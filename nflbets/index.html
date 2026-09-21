@@ -623,7 +623,11 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
-const APP_BUILD='app v59 \u00b7 2026-09-21';
+/* what the saved season is checked against. DATA_BUILD is the model's own hash and moves
+   only when rosters or depth charts do; this is the moment the payload was baked, so it
+   moves on every run of the job and a published change always reaches every device. */
+let DATA_STAMP='baseline';
+const APP_BUILD='app v60 \u00b7 2026-09-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -685,7 +689,7 @@ const ewm=acc=>acc[1]>0?acc[0]/acc[1]:0;
 
 /* ---------- fresh state built from the embedded 2025 baseline ---------- */
 function freshState(){
-  const st={season:SEASON,build:MODEL_BUILD,dataBuild:DATA_BUILD,week:1,players:{},teams:{},defs:{},defg:{},
+  const st={season:SEASON,build:MODEL_BUILD,dataBuild:DATA_BUILD,dataStamp:DATA_STAMP,week:1,players:{},teams:{},defs:{},defg:{},
     sched:JSON.parse(JSON.stringify(PAY.sched)),processed:{},processedGames:{},
     accuracy:{},inactive:{},depth:{},odds:{},parlay:{},saved:[],actuals:{},projections:{},headlines:{},stake:20,bookPrice:null,margin:'typical',
     ui:{game:null,open:{},showAll:false}};
@@ -2072,12 +2076,16 @@ function payloadFailed(e){
 async function boot(){
   try{ PAY=await loadPayload(); }catch(e){ console.error(e); payloadFailed(e); return; }
   DATA_BUILD=PAY.build||'baseline';
+  DATA_STAMP=PAY.baked_at||DATA_BUILD;
   const saved=await store.get();
   S=freshState();
   let rebuilt=null;
-  if(saved&&saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD){ S={...S,...saved}; }
+  if(saved&&saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD&&saved.dataStamp===DATA_STAMP){ S={...S,...saved}; }
   else if(saved){
-    rebuilt=(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
+    /* a fresh bake on its own rebuilds the season without a word: the job publishes several
+       times a week and a banner on each would bury the one that matters */
+    rebuilt=(saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD)?null
+      :(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
       ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and prices were kept; weeks built into this file were replayed.'
       : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and prices were kept; weeks built into this file were replayed.';
     /* the season's data is built in and replays below; keep what only you could have made */
@@ -2092,7 +2100,8 @@ async function boot(){
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
   { const bt=$('buildTag'); if(bt) bt.textContent=`${MODEL_BUILD} \u00b7 ${APP_BUILD}`; }
   renderAll();
-  if(rebuilt){ $('rebuildNote').hidden=false; $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
+  $('rebuildNote').hidden=!rebuilt;
+  if(rebuilt){ $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
   if(baked&&(baked.stats.length||baked.prices||baked.inj)){
     const parts=[]; if(baked.stats.length) parts.push(`${baked.stats.length} game${baked.stats.length===1?'':'s'} of stats graded and applied`);
     if(baked.prices) parts.push(`${baked.prices} prices loaded`); if(baked.inj) parts.push(`${baked.inj} players ruled out`);
@@ -2932,7 +2941,10 @@ function applyBaked(){
 </script>
 <script>
 window.VIEWER=true;
-document.addEventListener('DOMContentLoaded',()=>{ const bt=document.getElementById('buildTag'); if(bt) bt.remove(); });
+/* which build of this page you are looking at. Without it there is no way to tell a page
+   the browser cached last week from the one the job published this morning. */
+document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
+  if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD; });
 (function(){
   const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY||!PAY.baked_at) return;
     const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
@@ -3171,7 +3183,14 @@ function routeTabs(){
 }
 
 /* the betting tabs are the betting site's own page, framed. A frame loads the first time its
-   tab is opened and then follows the height of what it shows, so the page scrolls as one. */
+   tab is opened and then follows the height of what it shows, so the page scrolls as one.
+
+   A frame is a separate document that a script points somewhere after this page has loaded,
+   so a hard refresh of this page never reaches it: the browser serves it from its own cache
+   on its own schedule, and a framed tab could sit a build behind the rest of the page with
+   no way to shift it. The address carries the moment the betting job last published, so a
+   new publish is a new address and the browser has to go and get it. */
+let FRAME_V='';
 function frames(){
   const load=f=>{
     if(f.src||!f.dataset.src) return;
@@ -3182,7 +3201,7 @@ function frames(){
       fit();
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
     });
-    f.src=f.dataset.src;
+    f.src=FRAME_V?f.dataset.src.replace('#','&v='+encodeURIComponent(FRAME_V)+'#'):f.dataset.src;
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));
@@ -3190,16 +3209,21 @@ function frames(){
 }
 
 async function boot(){
-  routeTabs(); frames(); wireLegs();
+  routeTabs(); wireLegs();
+  let failed=false;
   try{
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
     ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{};
+    FRAME_V=String(st.published||'');
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
-    foot(); return;
+    failed=true;
   }
+  /* the frames are wired either way: the betting tabs do not depend on this tab's fetch */
+  frames();
+  if(failed){ foot(); return; }
   const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
   const graded=new Set(Object.values(ST.processed).map(r=>+r.week));
   const openOn=Object.keys(ST.picks).length

@@ -662,6 +662,28 @@ setTimeout(async()=>{
     chk(SI.dataBuild===F('DATA_BUILD'),'rebuild did not adopt the new data build');
     chk(SI.stake===55&&SI.parlay['g|p|s']&&SI.saved.length===1&&SI.odds.gX,'user state lost across a data rebuild');
     chk(Object.keys(SI.processedGames).length===0,'rebuild replayed data despite NO_BAKED');
+    /* I2. a new bake of the same model rebuilds the season and says nothing about it: the job
+       publishes several times a week, and every one of those has to reach every device */
+    { const stamp=F('DATA_STAMP');
+      chk(!!stamp&&stamp!=='baseline','the payload carries no bake time to key freshness on');
+      chk(stamp===(PAY.baked_at||F('DATA_BUILD')),'the freshness key is not the bake time');
+      /* saved under the same model and rosters, but an older bake */
+      mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:'2000-01-01T00:00',
+        stake:41,parlay:{'g|p|s':{p:0.5}},processedGames:{'stale-game':true},actuals:{'1':{x:1}},
+        projections:{'stale':1},processed:{'1':true}});
+      await F('boot')(); let SN=w.eval('S');
+      chk(SN.dataStamp===stamp,'a stale bake was not adopted');
+      chk(!SN.processedGames['stale-game'],'a stale bake kept the browser\'s old graded games');
+      chk(!SN.projections.stale,'a stale bake kept the browser\'s old projections');
+      chk(SN.stake===41&&SN.parlay['g|p|s'],'a stale bake lost what the visitor made');
+      chk(d.getElementById('rebuildNote').hidden,'a routine re-bake shouted about itself');
+      /* the same bake is reused rather than rebuilt: the fast path still exists */
+      mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:stamp,
+        stake:42,processedGames:{'kept-game':true}});
+      await F('boot')(); SN=w.eval('S');
+      chk(SN.processedGames['kept-game']&&SN.stake===42,'an unchanged bake was rebuilt anyway');
+      chk(d.getElementById('rebuildNote').hidden,'an unchanged bake showed a note');
+    }
     console.log(`I. built-in data: ${bakedWeeks.length} week(s) of stats (${b1.stats.length} games), ${b1.prices} prices, ${b1.inj} inactives, ${b1.sched} schedule fields; replay is a no-op; parlays/stake/prices survive a rebuild`);
     /* ---- T. live tracking: every bit of it pure, so none of it needs a network ---- */
     { const nameKey=F('nameKey'), espnStats=F('espnStats'), liveLeg=F('liveLeg'),

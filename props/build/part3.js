@@ -708,12 +708,16 @@ function payloadFailed(e){
 async function boot(){
   try{ PAY=await loadPayload(); }catch(e){ console.error(e); payloadFailed(e); return; }
   DATA_BUILD=PAY.build||'baseline';
+  DATA_STAMP=PAY.baked_at||DATA_BUILD;
   const saved=await store.get();
   S=freshState();
   let rebuilt=null;
-  if(saved&&saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD){ S={...S,...saved}; }
+  if(saved&&saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD&&saved.dataStamp===DATA_STAMP){ S={...S,...saved}; }
   else if(saved){
-    rebuilt=(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
+    /* a fresh bake on its own rebuilds the season without a word: the job publishes several
+       times a week and a banner on each would bury the one that matters */
+    rebuilt=(saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD)?null
+      :(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
       ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and prices were kept; weeks built into this file were replayed.'
       : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and prices were kept; weeks built into this file were replayed.';
     /* the season's data is built in and replays below; keep what only you could have made */
@@ -728,7 +732,8 @@ async function boot(){
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
   { const bt=$('buildTag'); if(bt) bt.textContent=`${MODEL_BUILD} \u00b7 ${APP_BUILD}`; }
   renderAll();
-  if(rebuilt){ $('rebuildNote').hidden=false; $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
+  $('rebuildNote').hidden=!rebuilt;
+  if(rebuilt){ $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
   if(baked&&(baked.stats.length||baked.prices||baked.inj)){
     const parts=[]; if(baked.stats.length) parts.push(`${baked.stats.length} game${baked.stats.length===1?'':'s'} of stats graded and applied`);
     if(baked.prices) parts.push(`${baked.prices} prices loaded`); if(baked.inj) parts.push(`${baked.inj} players ruled out`);
