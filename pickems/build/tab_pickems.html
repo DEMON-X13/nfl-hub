@@ -1,0 +1,240 @@
+<!-- The Pick'ems tab: its own styles, its section, its script. build.js sets these into the
+     prop model's page, so every class and id here is prefixed pk- to stay clear of the prop
+     model's own, which share the page. The script is one closure for the same reason. -->
+<style>
+/* the board row is the betting app's, rule for rule, so the format is the same thing and not a lookalike */
+.brand a.pk-hub{color:#B9C5D4;font-size:13px;text-decoration:none;border-bottom:1px solid rgba(185,197,212,.35)}
+.brand a.pk-hub:hover{color:#fff}
+.pk-gamehead{max-width:908px;display:grid;grid-template-columns:100px 136px minmax(278px,358px) 112px 96px;gap:14px;align-items:end;padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pk-gamehead .pk-c{text-align:center}
+.pk-game{max-width:908px;display:grid;grid-template-columns:100px 136px minmax(278px,358px) 112px 96px;gap:14px;align-items:center;background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;box-shadow:var(--sh-sm);cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
+.pk-game:hover{box-shadow:0 2px 4px rgba(15,27,45,.06),0 10px 24px -8px rgba(15,27,45,.16);transform:translateY(-1px)}
+.pk-game.pk-open{border-color:var(--line-2)}
+.pk-game .pk-when{color:var(--ink-2);font-size:12px;line-height:1.35}
+.pk-game .pk-when b{color:var(--ink);font-weight:600;display:block;font-size:13px}
+.pk-matchup{font-family:var(--display);display:flex;align-items:center;justify-content:center;gap:6px;line-height:1;white-space:nowrap;min-width:0}
+.pk-matchup .pk-at{color:var(--muted);font-size:11px;font-family:var(--body);font-weight:500;letter-spacing:.02em;flex:none}
+.pk-matchup .pk-tw{position:relative;display:inline-flex;flex:none}
+.pk-matchup .pk-res{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid currentColor;font-size:11px;font-weight:800;line-height:13px;text-align:center;font-family:var(--body);box-shadow:0 1px 2px rgba(15,27,45,.2)}
+.pk-matchup .pk-tw.pk-away .pk-res{left:-9px} .pk-matchup .pk-tw.pk-home .pk-res{right:-9px}
+.pk-matchup .pk-res.pk-ok{color:var(--pick)} .pk-matchup .pk-res.pk-bad{color:var(--miss)}
+.pk-ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
+.pk-ttag.pk-win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
+.pk-ttag.pk-mini{font-size:12px;padding:4px 5px;min-width:40px;vertical-align:-1px}
+.pk-probrow{display:flex;align-items:center;gap:10px;padding:0 14px;justify-content:center}
+.pk-tlab{font-family:var(--display);font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.02em;flex:none;min-width:40px;text-align:center}
+.pk-tlab.pk-win{color:var(--ink);font-weight:800}
+.pk-probrow .pk-prob{flex:1;min-width:0}
+.pk-prob{position:relative;height:28px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
+.pk-prob .pk-a,.pk-prob .pk-h{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
+.pk-prob .pk-a{justify-content:flex-start;border-right:1px solid rgba(15,27,45,.18)} .pk-prob .pk-h{justify-content:flex-end;margin-left:auto}
+.pk-prob .pk-a span.pk-w,.pk-prob .pk-h span.pk-w{font-weight:800}
+.pk-conf{text-align:center}
+.pk-tier{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px 4px 8px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
+.pk-tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-tier.pk-coin{background:#FCECEA;color:#A8453A}
+.pk-result{font-size:12px;text-align:center;line-height:1.4}
+.pk-sc{font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+.pk-sc.pk-pend{color:var(--muted);font-weight:600}
+.pk-result .pk-mwin{font-weight:700;font-size:12px;display:block}
+.pk-result .pk-mwin.pk-ok{color:var(--pick)} .pk-result .pk-mwin.pk-bad{color:var(--miss)} .pk-result .pk-mwin.pk-tie{color:var(--ink-2)}
+.pk-result .pk-muted{color:var(--muted)}
+/* the prop model's prices, opened inside the same card */
+.pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
+.pk-statblk{margin-bottom:12px}
+.pk-statblk h4{font-family:var(--display);font-size:14px;margin:0 0 7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.pk-statblk h4 em{font-style:normal;font-weight:400;font-size:12px;color:var(--ink-2)}
+table.pk-rungs{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border-radius:var(--r-sm);overflow:hidden}
+table.pk-rungs td{padding:7px 9px;border-top:1px solid var(--line)}
+table.pk-rungs tr:first-child td{border-top:0}
+.pk-thr{font-weight:600;white-space:nowrap}
+.pk-track{height:8px;background:var(--line);border-radius:999px;overflow:hidden;min-width:70px}
+.pk-fill{height:100%;border-radius:999px;background:var(--gold)}
+.pk-fill.pk-high{background:var(--pick)} .pk-fill.pk-low{background:var(--line-2)}
+.pk-pct{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+.pk-band{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pk-band.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-band.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-band.pk-low{background:#E9EEF4;color:var(--ink-2)}
+td.pk-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.pk-num em{font-style:normal;color:var(--muted);font-size:11px;margin-left:4px}
+td.pk-book{font-weight:700}
+.pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+.pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
+.pk-foot a{color:var(--ink-2)}
+@media(max-width:620px){
+  .pk-gamehead{display:none}
+  .pk-game{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+  .pk-game .pk-when{grid-column:1/-1} .pk-game .pk-probrow{grid-column:1/-1;padding:0}
+  table.pk-rungs{display:block;overflow-x:auto;white-space:nowrap}
+}
+</style>
+<section id="tab-pickems">
+  <div class="bar">
+    <label>Week <select id="pkWeek"></select></label>
+    <span class="rec" id="pkWeekRec"></span>
+    <span class="rec" id="pkSeasonRec"></span>
+    <span class="grow"></span>
+  </div>
+  <div id="pkBoard"></div>
+  <p class="pk-foot" id="pkFoot"></p>
+</section>
+<script>
+/* ---------- the Pick'ems tab ----------
+   Two models, one board. The call on each game is the betting model's, published by its own
+   job in state.json because re-deriving it here would mean a second copy of a model that
+   already exists. Open a game and the prop model's Game Bets sit underneath: the chance each
+   side wins and covers, off its own team ratings, against what a book is charging. The prop
+   model is the rest of this page, so its prices are its own functions on its own state.
+
+   Nothing is stored and nothing is picked here yet. */
+(function(){
+/*BETTING*/
+const STATE_URL='../betting/state.json';
+const ST={sched:[],processed:{},picks:{}};
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* the betting app's tag, in this tab's own class names */
+const tag=(...a)=>BET.tag(...a).replace(/class="([^"]*)"/,(m,c)=>'class="'+c.split(' ').map(x=>'pk-'+x).join(' ')+'"');
+const ttag=t=>tag(t,BET.tagColor(t),false,'mini');
+
+/* the prop model's schedule row for a game, which is where its spread and the book's prices
+   live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
+const mkt=gid=>(typeof S==='object'&&S&&S.sched||[]).find(x=>x.id===gid)||null;
+
+function fmtDate(g){
+  if(!g.gameday) return ['',''];
+  const d=new Date(g.gameday+'T12:00:00');
+  const day=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  let t=g.gametime||'';
+  if(t){ const [h,m]=t.split(':').map(Number); const ap=h>=12?'PM':'AM'; const h12=h%12||12; t=`${h12}:${String(m).padStart(2,'0')} ${ap} ET`; }
+  return [day,t];
+}
+const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
+
+/* what the betting model says: the published call for an ungraded game, what was logged for
+   a graded one */
+function call(g){
+  const done=ST.processed[g.game_id];
+  if(done) return {pick:done.pick,conf:done.conf,pHome:done.pHome,graded:true,correct:done.correct};
+  const p=ST.picks[g.game_id];
+  return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,graded:false,correct:null}:null;
+}
+
+/* the prop model's two bets on one side of one game */
+function sideRows(gid,team,isHome){
+  const g=mkt(gid); if(!g) return '';
+  const ml=gameBet(g,team,'ml'), ats=gameBet(g,team,'ats');
+  if(!ml) return '';
+  const bookML=isHome?g.mlh:g.mla, bookSP=isHome?g.sph:g.spa;
+  const row=(b,label,book)=>{ const [c,lbl]=confTier(b.p);
+    return `<tr>
+      <td class="pk-thr">${esc(label)}</td>
+      <td><div class="pk-track"><div class="pk-fill pk-${c}" style="width:${Math.max(2,b.p*100).toFixed(0)}%"></div></div></td>
+      <td class="pk-pct">${(b.p*100).toFixed(0)}%</td>
+      <td><span class="pk-band pk-${c}">${lbl}</span></td>
+      <td class="pk-num">${fmtML(bookPrice(b.p))}<em>est.</em></td>
+      <td class="pk-num pk-book">${book!=null&&isFinite(book)?fmtML(book):''}</td></tr>`; };
+  let h=`<div class="pk-statblk"><h4>${ttag(team)} ${esc(TEAM_NAMES[team]||team)}
+    <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em>book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="pk-rungs">`;
+  h+=row(ml,'To win',bookML);
+  if(ats) h+=row(ats,`To cover ${ats.line>0?'+':''}${ats.line}`,bookSP);
+  return h+'</table></div>';
+}
+
+function gameBody(g){
+  if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody"><span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
+  if(!mkt(g.game_id)) return `<div class="pk-gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  return `<div class="pk-gbody">${sideRows(g.game_id,g.away_team,false)}${sideRows(g.game_id,g.home_team,true)}</div>`;
+}
+
+function resultCell(g,c){
+  if(g.result==null) return '<b class="pk-sc pk-pend">0 : 0</b>';
+  const win=winnerOf(g);
+  const line=win?`${win} won ${g.away_score}–${g.home_score}`:`Tie ${g.away_score}–${g.home_score}`;
+  if(!c||!c.graded) return `<span class="pk-mwin pk-tie">${esc(line)}</span><span class="pk-muted">Awaiting stats</span>`;
+  const cls=c.correct===null?'tie':c.correct?'ok':'bad';
+  return `<span class="pk-mwin pk-${cls}">${esc(line)}</span>${c.correct===null?'':`<span class="pk-muted">${c.correct?'Pick hit':'Pick missed'}</span>`}`;
+}
+function render(){
+  const w=+el('pkWeek').value;
+  const games=ST.sched.filter(g=>+g.week===w)
+    .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
+  records(w);
+  if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
+  const HEAD='<div class="pk-gamehead"><div>Date</div><div class="pk-c">Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Final score</div></div>';
+  el('pkBoard').innerHTML=HEAD+games.map(g=>{
+    const c=call(g), [day,time]=fmtDate(g), win=winnerOf(g);
+    const pick=c?c.pick:null;
+    const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
+    const [tc,tl]=c?BET.tier(c.conf):['','–'];
+    /* tick or cross on the winner's tag: did the model's pick win? */
+    let markA='',markH='';
+    if(c&&c.graded&&win&&c.correct!==null){
+      const mk=`<span class="pk-res ${c.correct?'pk-ok':'pk-bad'}" title="${c.correct?'Pick hit':'Pick missed'}">${c.correct?'✓':'✗'}</span>`;
+      if(win===g.away_team) markA=mk; else markH=mk; }
+    return `<div class="pk-game${g.result!=null?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
+      <div class="pk-when"><b>${esc(day)}</b>${esc(time)}</div>
+      <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span><span class="pk-at">at</span><span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
+      <div class="pk-probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
+        <span class="pk-tlab${pick===g.away_team?' pk-win':''}">${esc(g.away_team)}</span>
+        <div class="pk-prob"><div class="pk-a" style="width:${pa}%;background:${pa>=ph?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.away_team?'pk-w':''}">${pa>=14?pa+'%':''}</span></div><div class="pk-h" style="width:${ph}%;background:${ph>pa?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.home_team?'pk-w':''}">${ph>=14?ph+'%':''}</span></div></div>
+        <span class="pk-tlab${pick===g.home_team?' pk-win':''}">${esc(g.home_team)}</span>
+      </div>
+      <div class="pk-conf">${c?`<span class="pk-tier pk-${tc}">${tl} ${Math.round(c.conf*100)}%</span>`:'<span class="pk-tier">no call yet</span>'}</div>
+      <div class="pk-result">${resultCell(g,c)}</div>
+    </div>`;
+  }).join('');
+  el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
+    if(e.target.closest('.pk-gbody')) return;          /* the prices are not a toggle */
+    const open=card.classList.toggle('pk-open');
+    card.setAttribute('aria-expanded',open?'true':'false');
+    const had=card.querySelector('.pk-gbody');
+    if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
+    else if(!open&&had) had.remove();
+  }));
+}
+
+/* the betting model's record, counted the way its own Records tab counts it */
+function records(w){
+  const rows=Object.values(ST.processed);
+  const line=f=>{ const r=rows.filter(f); const won=r.filter(x=>x.correct===true).length, lost=r.filter(x=>x.correct===false).length;
+    return `${won}–${lost}`; };
+  el('pkWeekRec').innerHTML=`Week ${w} <b>${line(r=>+r.week===w)}</b>`;
+  el('pkSeasonRec').innerHTML=`Season <b>${line(()=>true)}</b>`;
+}
+
+function foot(){
+  el('pkFoot').innerHTML=`The call on each game is the <a href="../betting/">betting model</a>'s, published by its own job. Open a game and the numbers underneath are the <a href="../props/">prop model</a>'s: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging. Two models, neither of them changed to sit here.
+    <br>Nothing is picked on this tab yet.`;
+}
+
+/* tabs as addresses: #props opens the Props tab, and a reload stays where it was */
+function routeTabs(){
+  const btns=[...document.querySelectorAll('#tabs button')];
+  const go=()=>{ const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); };
+  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); }));
+  window.addEventListener('hashchange',go); go();
+}
+
+async function boot(){
+  routeTabs();
+  try{
+    const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const st=await r.json();
+    ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{};
+  }catch(e){
+    el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
+    foot(); return;
+  }
+  const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
+  const graded=new Set(Object.values(ST.processed).map(r=>+r.week));
+  const openOn=Object.keys(ST.picks).length
+    ? +ST.sched.find(g=>ST.picks[g.game_id]).week
+    : (weeks.filter(x=>graded.has(x)).pop()||weeks[0]);
+  el('pkWeek').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${x>18?'Playoffs '+(x-18):'Week '+x}</option>`).join('');
+  el('pkWeek').addEventListener('change',render);
+  render(); foot();
+}
+boot();
+})();
+</script>
