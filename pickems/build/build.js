@@ -37,7 +37,10 @@ const lift = (file, from, to, what) => {
 
 const LIFTED = [
   lift('part2', 'const TEAM_NAMES=', 'const TEAM_COLORS=', 'team names'),
-  lift('part2', 'const TEAM_COLORS=', 'const TAG_OVERRIDE', 'team colours'),
+  // the board is the betting app's row, so its tags are the betting app's: the colour table,
+  // the contrast maths that picks a readable text colour, and tag() itself
+  lift('betting', 'const TEAM_COLORS=', '\n', 'team colours'),
+  lift('betting', 'function hex2rgb(', 'function tier(', 'tag colours and tag()'),
   lift('part2', 'const clip=', 'function relz', 'clip'),
   lift('part2', '/* the team model from the other project', 'function gameCtx', 'model margin'),
   lift('part2', 'const MARGIN_SD=', '/* chance of k or more touchdowns', 'game bet maths'),
@@ -50,7 +53,8 @@ const LIFTED = [
 
 for (const need of ['const TEAM_NAMES', 'function fmtML', 'const clip=', 'function modelMargin',
                     'function gameBet', 'function gameMu', 'function confTier',
-                    'function probToAmerican', 'function bookImplied', 'function bookPrice', 'function tier('])
+                    'function probToAmerican', 'function bookImplied', 'function bookPrice', 'function tier(',
+                    'function tag(', 'function tagColor(', 'const PROB_HI'])
   if (!LIFTED.includes(need)) throw new Error('the lifted block is missing ' + need);
 
 /* bookImplied reads the visitor's margin setting off the prop model's state object, which
