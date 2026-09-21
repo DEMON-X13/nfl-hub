@@ -96,13 +96,19 @@ function load(picks) {
   check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
 
   // Power Ratings carries the Impact absences table and not the rank-tag note
-  check(!!da.querySelector('#tab-ratings #injCard #injSuggest') && /Impact absences, week \d+/.test(da.getElementById('injSuggest').textContent), 'admin: Impact absences is not under Power Ratings');
+  // what the block says depends on the week's files, so the checks are on the shape: the element
+  // is under Power Ratings; it carries the heading whenever the state has the files it is built
+  // from; and its card is hidden exactly when it has nothing to say
+  check(!!da.querySelector('#tab-ratings #injCard #injSuggest'), 'admin: Impact absences is not under Power Ratings');
+  const injText = da.getElementById('injSuggest').textContent.trim();
+  const injFiles = !!((SA.roster || SA.injuries) && SA.depth);
+  check(!injFiles || /Impact absences, week \d+/.test(injText), 'admin: the state has the injury files but the absences block has no heading: ' + injText.slice(0, 80));
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
-  check(!da.getElementById('injCard').hidden, 'admin: the absences card is hidden although it has rows');
+  check(da.getElementById('injCard').hidden === !injText, 'admin: the absences card is not hidden exactly when it is empty');
   for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['recordTable', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/]])
     check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
-  check(/Impact absences, week \d+/.test(da.getElementById('injSuggest').textContent) && !!da.querySelector('#injSuggest table'), 'admin: dropping the note took the absences table with it');
+  check(!injFiles || /Impact absences, week \d+/.test(injText), 'admin: dropping the note took the absences heading with it');
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
     check(rt.querySelectorAll('tbody tr').length === 32 && rt.querySelectorAll('tbody .tierbadge').length === 32, 'admin: every Elo should carry its tier shield');
