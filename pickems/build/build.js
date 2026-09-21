@@ -2,79 +2,101 @@
  *
  *   node pickems/build/build.js        (from the hub root)
  *
- *   pickems/index.html   one page, one tab for now: the betting model's call on every game,
- *                        and underneath each one the prop model's price on both sides.
+ *   pickems/index.html   the prop model's page with the Pick'ems board in front of it.
  *
- * The maths is lifted out of props/build/part2.js at build time rather than copied, the way
- * live/build/build.js and betting/tools/build.js lift from the same file: two pages pricing
- * the same bet have to price it identically, and moving any of it fails this build rather
- * than letting them drift apart.
+ * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
+ * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
+ * tabs, and a copy of a tab that size would be a second prop model to keep in step. Its
+ * sections all stay in the page, listeners and all; only the tab buttons say which are shown.
+ * The Pick'ems tab is set in front of them: its own section, styles and one closure, every
+ * name prefixed pk- so nothing of it collides with the app around it.
  *
- * The market rows and the fitted margin grid are baked in -- 30KB of the prop model's
- * payload rather than its 942KB -- so the page's only fetch is betting/state.json, which it
- * would be loading anyway.
+ * The board draws the betting app's row, so the betting app's tag and confidence-band code is
+ * lifted from it at build time, the way live/build and betting/tools lift from part2: the same
+ * code, not a copy that can drift. It is scoped inside the closure because the prop model has
+ * its own TEAM_COLORS and tag().
  *
- * Neither site is touched. This page reads what they publish.
+ * Nothing is baked in. The page fetches props/data/payload.json and betting/state.json when it
+ * opens, so it is rebuilt when a source changes, never when the data does. Neither site is
+ * touched. This page reads what they publish.
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
-const SRC = {
-  part2: fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8'),
-  part3: fs.readFileSync(path.join(ROOT, 'props', 'build', 'part3.js'), 'utf8'),
-  // the confidence bands belong to the betting model, whose call this board shows: they were
-  // cut where its walk-forward record changes, and a second copy here would drift off them
-  betting: fs.readFileSync(path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html'), 'utf8'),
-};
+const rd = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
+const part1 = rd('props', 'build', 'part1.html');
+const part2 = rd('props', 'build', 'part2.js');
+const part3 = rd('props', 'build', 'part3.js');
+const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
+const tab = rd('pickems', 'build', 'tab_pickems.html');
 
-const lift = (file, from, to, what) => {
-  const src = SRC[file];
+/* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
+   not a page to ship half-edited */
+const sub1 = (s, from, to, what) => {
+  const n = s.split(from).length - 1;
+  if (n !== 1) throw new Error(`${what}: expected exactly one match, found ${n}`);
+  return s.replace(from, () => to);
+};
+const lift = (src, from, to, what) => {
   const a = src.indexOf(from), b = src.indexOf(to, a + 1);
-  if (a < 0 || b < 0) throw new Error(`the ${what} is not where pickems/build expects it in ${file}.js`);
+  if (a < 0 || b < 0) throw new Error(`the ${what} is not where pickems/build expects it`);
   return src.slice(a, b).trimEnd();
 };
+const piece = (re, what) => { const m = tab.match(re); if (!m) throw new Error(`tab_pickems.html has no ${what}`); return m[1]; };
+const TAB_CSS = piece(/<style>([\s\S]*?)<\/style>/, '<style> block');
+const TAB_HTML = piece(/(<section id="tab-pickems">[\s\S]*?<\/section>)/, 'section');
+const TAB_JS = piece(/<script>([\s\S]*?)<\/script>/, '<script> block');
 
-const LIFTED = [
-  lift('part2', 'const TEAM_NAMES=', 'const TEAM_COLORS=', 'team names'),
-  // the board is the betting app's row, so its tags are the betting app's: the colour table,
-  // the contrast maths that picks a readable text colour, and tag() itself
-  lift('betting', 'const TEAM_COLORS=', '\n', 'team colours'),
-  lift('betting', 'function hex2rgb(', 'function tier(', 'tag colours and tag()'),
-  lift('part2', 'const clip=', 'function relz', 'clip'),
-  lift('part2', '/* the team model from the other project', 'function gameCtx', 'model margin'),
-  lift('part2', 'const MARGIN_SD=', '/* chance of k or more touchdowns', 'game bet maths'),
-  lift('part2', 'function confTier(', '/* rungs worth showing', 'confidence tiers'),
-  lift('part2', 'function probToAmerican(', 'function legKey', 'probability to american'),
-  lift('part2', 'function bookImplied(', '/* the full picture for one rung', 'book pricing'),
-  lift('part3', 'function fmtML(', 'function mlToDec', 'american price formatter'),
-  lift('betting', 'function tier(', 'function statsFromRow', 'betting confidence bands'),
+/* the betting app's colour table, tag() and the contrast maths behind it, and its confidence
+   bands: cut where its walk-forward record changes, so a second copy here would drift off them */
+const BET = [
+  lift(betting, 'const TEAM_COLORS=', '\n', 'team colours'),
+  lift(betting, 'function hex2rgb(', 'function predict(', 'tag colours and tag()'),
+  lift(betting, 'function tier(', 'function statsFromRow', 'betting confidence bands'),
 ].join('\n');
+for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier('])
+  if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);
+const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO};\n})();`;
+const js = sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot');
+for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES'])
+  if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');
 
-for (const need of ['const TEAM_NAMES', 'function fmtML', 'const clip=', 'function modelMargin',
-                    'function gameBet', 'function gameMu', 'function confTier',
-                    'function probToAmerican', 'function bookImplied', 'function bookPrice', 'function tier(',
-                    'function tag(', 'function tagColor(', 'const PROB_HI'])
-  if (!LIFTED.includes(need)) throw new Error('the lifted block is missing ' + need);
+/* the prop model's page, re-headed */
+let html = part1;
+html = sub1(html, '<title>X NFL Prop Model</title>', "<title>X NFL Pick'ems</title>", 'title');
+html = sub1(html, '<h1>X NFL Prop Model</h1>', `<h1>X NFL Pick'ems</h1>`, 'heading');
+html = sub1(html, '<span class="sub grow" id="saveState" style="margin-left:auto"></span>',
+  '<span class="sub grow" id="saveState" style="margin-left:auto"></span>\n    <a class="pk-hub" href="../">back to the hub</a>', 'hub link');
+html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n</head>', 'style block');
+/* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
+   names. One tab at a time: a section with no button here is in the page but not yet shown. */
+const NAV = `<nav role="tablist" id="tabs">
+    <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
+    <button role="tab" data-tab="slate">Props</button>
+  </nav>`;
+const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
+if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where pickems/build expects it in part1.html');
+html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
+html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 
-/* bookImplied reads the visitor's margin setting off the prop model's state object, which
-   does not exist here. This page has no settings, so it prices at the middle one. */
-const SHIM = `const S_MARGIN='typical';\nconst S={margin:S_MARGIN};`;
-
-const pay = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8'));
-if (!pay.grid || !Array.isArray(pay.sched)) throw new Error('the prop model payload is not the shape this build reads');
-const MKT = {};
-for (const g of pay.sched) {
-  const row = { h: g.h, a: g.a };
-  for (const k of ['sp', 'tot', 'mla', 'mlh', 'spa', 'sph']) if (g[k] != null && isFinite(g[k])) row[k] = g[k];
-  MKT[g.id] = row;
-}
-const DATA = `const PAY={grid:${JSON.stringify(pay.grid)}};\nconst MKT=${JSON.stringify(MKT)};`;
-
-const page = fs.readFileSync(path.join(__dirname, 'page.html'), 'utf8');
-for (const slot of ['/*LIFTED*/', '/*DATA*/'])
-  if (!page.includes(slot)) throw new Error(`page.html has no ${slot} slot`);
-const out = page.replace('/*LIFTED*/', SHIM + '\n' + LIFTED).replace('/*DATA*/', DATA);
+/* the app, as assemble.py assembles it, one directory further from its payload */
+const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n' + part3;
+/* the public prop page's header note: when the data was last built, not "Autosaved" */
+const NOTE = `<script>
+window.VIEWER=true;
+document.addEventListener('DOMContentLoaded',()=>{ const bt=document.getElementById('buildTag'); if(bt) bt.remove(); });
+(function(){
+  const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY||!PAY.baked_at) return;
+    const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
+    const txt='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    const put=()=>{ if(st.textContent!==txt) st.textContent=txt; };
+    put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
+  document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
+})();
+</script>`;
+const out = html + APP + '\n</script>\n' + NOTE + '\n<script>' + js + '</script>\n</body>\n</html>\n';
 fs.writeFileSync(path.join(ROOT, 'pickems', 'index.html'), out);
 console.log(`pickems/index.html written: ${(out.length / 1024).toFixed(1)} KB `
-  + `(${LIFTED.split('\n').length} lines lifted from the prop model, ${Object.keys(MKT).length} games of market)`);
+  + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
