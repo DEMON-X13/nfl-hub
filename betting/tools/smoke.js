@@ -95,6 +95,13 @@ function load(picks) {
   check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.lastAmt === 35, 'admin: picks, bets and stake come from the same browser store as the viewer');
   check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
 
+  // Power Ratings carries the Impact absences table and not the rank-tag note
+  check(!!da.querySelector('#tab-ratings #injCard #injSuggest') && /Impact absences, week \d+/.test(da.getElementById('injSuggest').textContent), 'admin: Impact absences is not under Power Ratings');
+  check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
+  check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
+  check(!da.getElementById('injCard').hidden, 'admin: the absences card is hidden although it has rows');
+  const dv = dom.window.document;
+  check(!!dv.querySelector('#tab-ratings #injCard #injSuggest') && !/Rank tags and the Elo change column/.test(dv.getElementById('ratingsTable').textContent), 'viewer: Power Ratings does not carry the absences table, or still carries the note');
   check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');
   check(/your picks, Bet Log, bankroll and Bet Build/.test(da.getElementById('tab-backup').textContent), 'admin: Backup says what it covers');
   a.window.eval('S.lastBackup=Date.now()-3*86400000; S.lastBackupHow="downloaded"; save()'); await sleep(900);
