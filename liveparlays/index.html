@@ -66,13 +66,14 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
 .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
 .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
-.sp-leg.prop{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
+/* a team bet is laid out like a player bet, so it is the same two columns: the marker, and
+   everything else. The four-column row it used to have went with the old chip-and-clock
+   layout, and squeezed the bar into a column sized for a team name. */
+.sp-leg.prop,.sp-leg.team{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
 /* The columns are shares of the row, not fixed widths, so the clock sits the same way into
    the row on a small phone as on a laptop: a fixed column looks further and further left the
    narrower the screen gets, which is exactly what it did. */
-.sp-leg.team{grid-template-columns:22px minmax(74px,max-content) minmax(0,1.7fr) minmax(58px,0.85fr);gap:9px}
-.sp-leg.team .gm{justify-self:start}
-.sp-leg.prop .res{margin-top:3px}
+.sp-leg.prop .res,.sp-leg.team .res{margin-top:3px}
 .legbody{min-width:0}
 .legtop{display:flex;align-items:baseline;gap:10px}
 .legtop .grow{flex:1}
@@ -116,15 +117,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05} .gm.tie em{color:#8A5E05}
 .gm.done{opacity:.85}
 /* on a phone the row tightens before it gives up anything */
-@media(max-width:430px){ .gm{font-size:12px;padding:3px 9px}
-  .sp-leg.team{grid-template-columns:20px minmax(62px,max-content) minmax(0,1.5fr) minmax(50px,0.9fr);gap:7px}
-  .sp-leg .rs.clock{font-size:12px} }
-/* narrower than an iPhone SE the four of them will not sit on one line without the team name
-   turning into an initial, so the score drops under it instead of being squeezed */
-@media(max-width:372px){
-  .sp-leg.team{grid-template-columns:20px 1fr auto;grid-template-areas:"mark name clock" "gap chip chip";row-gap:7px}
-  .sp-leg.team>.res{grid-area:mark} .sp-leg.team>.nm{grid-area:name}
-  .sp-leg.team>.gm{grid-area:chip;justify-self:start} .sp-leg.team>.rs{grid-area:clock} }
+@media(max-width:430px){ .gm{font-size:12px;padding:3px 9px} }
 .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
 .sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
 .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
@@ -318,7 +311,7 @@ const DATA='parlays.json';
 /* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
    thing worth knowing is whether the browser is even showing the current build, and from the
    outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v5 \u00b7 2026-09-21 15:02 UTC';
+const PAGE_BUILD='live v5 \u00b7 2026-09-21 22:30 UTC';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
@@ -574,38 +567,58 @@ function progressBar(val,k,state,lineHTML){
     <span class="knob${tone}" style="left:${knob.toFixed(2)}%">${esc(num(val,(val||0)%1?1:0))}</span>
     <span class="lineLbl" style="left:${tick.toFixed(2)}%">${lineHTML||esc(num(k,k%1?1:0))}</span></div></div>`;
 }
+/* A team bet is points clear of the line, which liveGameLeg hands over already worked out:
+   above zero is winning the bet, below it is losing. That runs either side of nothing, so it
+   gets a bar with the line in the middle rather than the props' one, which runs from zero up
+   to a target and would draw a side three points behind exactly like a side thirty behind. */
+function marginBar(val,state){
+  const v=val==null?0:+val;
+  const span=Math.max(10,Math.abs(v)*1.3);
+  const pos=x=>clamp(50+50*x/span,0,100);
+  const at=pos(v), mid=50, lo=Math.min(mid,at), hi=Math.max(mid,at);
+  const tone=state==='hit'?' win':(state==='missed'?' lose':'');
+  return `<div class="pbar"><div class="track"><div class="fill${tone}" style="left:${lo.toFixed(2)}%;width:${(hi-lo).toFixed(2)}%"></div>
+    <span class="tick" style="left:${mid}%"></span>
+    <span class="knob${tone}" style="left:${clamp(at,3,97).toFixed(2)}%">${val==null?'\u2013':(v>0?'+':'')+n0(v)}</span>
+    <span class="lineLbl" style="left:${mid}%">line</span></div></div>`;
+}
 const MARK={hit:'\u2713',missed:'\u2717',push:'P'};
 function legRow(p,leg,i){
   const l=legAt(p,i,leg), k=+l.k, moved=k!==+leg.k;
   const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
   const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
   const mark=r&&MARK[r.state]?MARK[r.state]:'\u25cb';
-  /* A team bet says how it is doing, not what the score is: the score is already on the chip
-     above it, in bigger type. Green while the side bet on is ahead, red while it is behind,
-     yellow level -- the same three the chips use. */
+  /* A team bet reads like a player bet: the line it was taken at in big type, who and what
+     under it, the score where a player's stat line goes, and a bar for how it is doing. The
+     chip keeps its colour -- green while the side bet on is ahead, red behind, yellow level --
+     which is why the margin is not also said in words. */
   if(isGameLeg(l)){
     const g=r&&r.game;
-    let t2='', word='waiting';
-    if(r&&g){
-      if(r.state==='pending'){ word=g.clock||'not started'; }
-      else if(r.state==='unknown'){ word='not reported'; }
-      else { const m=+r.val;
-        t2=r.state==='hit'?'win':(r.state==='missed'?'lose':(m>0?'win':(m<0?'lose':'tie')));
-        word=r.state==='hit'?'won':(r.state==='missed'?'lost':(r.state==='push'?'level':
-          (m>0?'up '+n0(m):(m<0?'down '+n0(-m):'level'))));
-      }
-    }
+    /* liveGameLeg folds the line into the margin, so leg.k is the line as the book wrote it
+       from this side. A money line has none: the target is simply to win. */
+    const bk=+l.k||0;
+    const tgt=l.stat==='ml'?'Win':`${bk>0?'+':''}${num(bk,bk%1?1:0)}`;
+    const word=!r?'waiting'
+      :(r.state==='unknown'?'not reported'
+        :(r.state==='hit'?'won':(r.state==='missed'?'lost':(r.state==='push'?'level'
+          :((g&&g.clock)||'not started')))));
+    /* the chip's tone is the bet's, not the game's: it is green when the side bet on is
+       clear of the line, whoever happens to be ahead on the scoreboard */
+    const m=r&&r.val!=null?+r.val:null;
+    const t2=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose'
+      :(m==null?'':(m>0?'win':(m<0?'lose':'tie'))));
+    const chip=g?`<span class="gm${t2==='win'?' good':(t2==='lose'?' bad':(t2==='tie'?' tie':''))}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}</span>`:'';
+    /* the marker follows the bet while it is running, not only once it is settled: green
+       while the side bet on is clear of the line, red while it is not */
     const tcls=t2==='win'?'res win':(t2==='lose'?'res loss':(t2==='tie'?'res tie':'res'));
-    const tmark=t2==='win'&&r&&r.state==='hit'?MARK.hit:(t2==='lose'&&r&&r.state==='missed'?MARK.missed:mark);
-    /* the last column is the clock and nothing else. The margin it used to carry -- up 14,
-       down 3 -- is the chip's colour said twice, and the colour says it without a number to
-       read. Before kickoff this is the kickoff time, after it is Final. */
-    const right=`<span class="rs clock">${esc((g&&g.clock)||(r&&r.state==='unknown'?'not reported':'waiting'))}</span>`;
-    /* the score rides in the row, after the team, rather than in a strip above repeating it.
-       No clock on it: the clock is the column to its right. */
-    const chip=g?`<span class="gm${t2==='win'?' good':(t2==='lose'?' bad':(t2==='tie'?' tie':''))}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}</span>`:'<span></span>';
+    const tmark=r&&r.state==='hit'?MARK.hit:(r&&r.state==='missed'?MARK.missed:mark);
     return `<div class="sp-leg team"><span class="${tcls}">${tmark}</span>
-      <span class="nm">${esc(l.name)}<small>${esc(statName(l))}</small></span>${chip}${right}</div>`;
+      <div class="legbody">
+        <div class="legtop"><span class="tgt">${esc(tgt)}</span><span class="grow"></span><span class="status ${tone}">${esc(word)}</span></div>
+        <div class="who">${esc(l.name)} ${esc(statName(l))}</div>
+        ${chip?`<div class="statline">${chip}</div>`:''}
+        ${marginBar(r?r.val:null,r?r.state:'pending')}
+      </div></div>`;
   }
   const state=r?r.state:'pending', room=l.main&&l.side==='under';
   const status=!r?'waiting':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':

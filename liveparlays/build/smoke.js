@@ -351,14 +351,21 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     const gm = row.querySelector('.gm');
     chk(!!gm && /CAR 17.20 ATL/.test(txt(gm)), 'the score chip is not in the row: ' + txt(gm || null));
     chk(!/Q3/.test(txt(gm)), 'the chip still carries the clock: ' + txt(gm));
-    chk(txt(row.querySelector('.rs')) === 'Q3 7:12', 'the last column is not just the clock: ' + txt(row.querySelector('.rs')));
-    chk(!/up |down |level/.test(txt(row)), 'the margin is still being said as well as shown: ' + txt(row));
+    /* the clock sits where a player leg's clock sits, at the top right of the row */
+    chk(txt(row.querySelector('.legtop .status')) === 'Q3 7:12', 'the clock is not in the status slot: ' + txt(row.querySelector('.legtop .status')));
+    chk(!row.querySelector('.rs'), 'the team row still has a column of its own');
+    /* and the row is built like a player row: a target, a name line and a bar */
+    chk(!!row.querySelector('.legbody .legtop .tgt') && !!row.querySelector('.who') && !!row.querySelector('.pbar .knob'),
+      'a team bet is not laid out like a player bet: ' + row.innerHTML.slice(0, 120));
+    chk(/To Cover|To Win/.test(txt(row.querySelector('.who'))), 'the name line does not say what the bet is');
+    chk(txt(row.querySelector('.lineLbl')) === 'line', 'the bar does not mark the line');
+    chk(!/up \d|down \d/.test(txt(row)), 'the margin is still being said as well as shown: ' + txt(row));
     chk((txt(row).match(/Q3 7:12/g) || []).length === 1, 'the clock is in the row twice: ' + txt(row));
     chk(!m.d.querySelector('.games .gm'), 'a game already shown in a row is repeated in the strip above');
     chk(/\bgood\b/.test(gm.className), 'a team bet being won is not green');
     chk(/\bwin\b/.test(row.querySelector('.res').className), 'the marker on a bet being won is not green');
     const second = m.d.querySelectorAll('.sp-leg.team')[1];
-    chk(txt(second.querySelector('.rs')) === 'Q3 7:12', 'the second leg lost its clock: ' + txt(second));
+    chk(txt(second.querySelector('.legtop .status')) === 'Q3 7:12', 'the second leg lost its clock: ' + txt(second));
     /* one game with a player leg must not drag in the box scores of the moneyline games */
     const mixed = JSON.parse(JSON.stringify(mlOnly));
     mixed.parlays.push({ id: 'pp', week: 2, stake: 1, legs: [
