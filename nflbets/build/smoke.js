@@ -1,6 +1,6 @@
-/* Check the built Pick'ems page.
+/* Check the built X NFL Bets and Stats page (nflbets/).
  *
- *   node pickems/build/smoke.js        (from the hub root)
+ *   node nflbets/build/smoke.js        (from the hub root)
  *
  * Boots the real page against a stubbed state.json and payload.json: the Pick'ems board, the
  * call on each game, the prop model's prices that open underneath one, and the Props tab,
@@ -13,7 +13,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
-const HTML = fs.readFileSync(path.join(ROOT, 'pickems', 'index.html'), 'utf8');
+const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 
@@ -54,7 +54,7 @@ function scoreboard(state, week) {
 }
 
 /* boot the page; resolves once the prop model says it is ready and the board has drawn */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/', espn = null) {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null) {
   return new Promise(resolve => {
     const errs = [], fetched = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
@@ -79,7 +79,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/', espn =
 
   chk(!timedOut, 'the prop model never said app-ready');
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
-  chk(d.title === "X NFL Pick'ems" && /X NFL Pick'ems/.test(txt(d.querySelector('h1'))), 'the page is not headed Pick\'ems');
+  chk(d.title === 'X NFL Bets and Stats' && /X NFL Bets and Stats/.test(txt(d.querySelector('h1'))), 'the page is not headed X NFL Bets and Stats');
 
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
@@ -306,7 +306,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/', espn =
   chk(!/api\.github\.com/.test(HTML), 'the page talks to the GitHub API');
 
   /* opened on #slate, the Props tab is the one showing */
-  const s2 = await run(state, 'https://demon-x13.github.io/nfl-hub/pickems/#slate');
+  const s2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#slate');
   chk(s2.errs.length === 0, 'the page threw opening on #slate: ' + s2.errs.join('; '));
   chk(!s2.d.getElementById('tab-slate').hidden && s2.d.getElementById('tab-pickems').hidden, 'opening on #slate did not open the Props tab');
   chk(s2.d.querySelectorAll('#gamesList .game').length > 0, 'opened on #slate, the Props tab has no games');
