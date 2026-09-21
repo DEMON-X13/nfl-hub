@@ -1017,8 +1017,12 @@ function gameSuggestion(g){
     if(!best) break;
     cur=[...cur,best.c];
   }
+  /* the floor was held on a quick estimate while building; the chance shown is the full
+     one, and a hand above two legs that only cleared the floor by noise loses its last leg */
+  let corr=cur.length<2?0:parlayProb(cur,20000).corr;
+  while(cur.length>2&&corr<GAME_SUGGEST_FLOOR){ cur=cur.slice(0,-1); corr=parlayProb(cur,20000).corr; }
   const val=cur.length<2?{legs:[],candidates:cands.length}
-    :{legs:cur,candidates:cands.length,corr:parlayProb(cur,20000).corr,
+    :{legs:cur,candidates:cands.length,corr,
       dec:parlayDec(cur.map(l=>({leg:l,ml:l.price}))),mult:dec(cur)};
   GAME_SUGGEST_CACHE[g.id]={sig,val};
   return val;
@@ -1082,6 +1086,7 @@ function shuffleSuggestion(g){
     }
     if(legs.length<2||seen.includes(legSig(legs))) continue;
     const corr=parlayProb(legs,20000).corr, gap=Math.abs(corr-base.corr);
+    if(legs.length>2&&corr<GAME_SUGGEST_FLOOR) continue;     /* cleared the floor by noise only */
     if(!best||gap<best.gap) best={legs,corr,gap};
   }
   if(!best||best.gap>GAME_SHUFFLE_LIMIT) return null;
@@ -1112,7 +1117,10 @@ function gameSuggestCard(g,locked){
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
-  const sig=[w,started,JSON.stringify(S.odds||{}).length,PAY.baked_at||'',S.sched.length].join('|');
+  /* everything the candidates are filtered and priced on: a player needs three games played,
+     which is the stats that have been counted, so those are part of it */
+  const sig=[w,started,JSON.stringify(S.odds||{}).length,PAY.baked_at||'',S.sched.length,
+    Object.keys(S.processedGames||{}).length,S.margin||''].join('|');
   if(!SUGGEST_CACHE||SUGGEST_CACHE.sig!==sig) SUGGEST_CACHE={sig,...buildSuggestions()};
   return SUGGEST_CACHE;
 }
