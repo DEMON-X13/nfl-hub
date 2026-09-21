@@ -64,7 +64,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record|Prop Record|Power Ratings", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record|Prop Record|Power Ratings|Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
@@ -193,6 +193,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(w.location.hash === '#ratings', 'the Power Ratings tab did not become the address');
   chk(ratFrame.getAttribute('src') === '../betting/admin.html?embed=1#ratings', 'the Power Ratings frame does not open the betting site on its Power Ratings tab');
   chk(/data-tab="ratings"/.test(adminHtml), 'the betting admin page has no Power Ratings tab to frame');
+
+  /* ---- Bet Log: the betting site's Bet Log tab, framed, on the same browser store ---- */
+  const betFrame = d.querySelector('#tab-bets iframe.pk-frame');
+  chk(!!betFrame && !betFrame.getAttribute('src'), 'the Bet Log frame should not load before its tab is opened');
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'bets').click();
+  await wait(60);
+  chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-ratings').hidden, 'the Bet Log tab did not open');
+  chk(w.location.hash === '#bets', 'the Bet Log tab did not become the address');
+  chk(betFrame.getAttribute('src') === '../betting/admin.html?embed=1#bets', 'the Bet Log frame does not open the betting site on its Bet Log tab');
+  chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml), 'the betting admin page has no Bet Log tab with its form to frame');
+  /* every framed tab is the same page, so one store: a bet logged in either place is in both */
+  chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^\.\.\/betting\/admin\.html\?embed=1#/.test(f.dataset.src)), 'a framed tab points somewhere other than the betting admin page');
 
   /* back to the board by address */
   w.location.hash = '#pickems';

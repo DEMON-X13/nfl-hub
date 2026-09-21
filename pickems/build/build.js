@@ -82,6 +82,7 @@ const TABS = [
   ['record', "Pick'em Record", '../betting/admin.html?embed=1#record'],
   ['track', 'Prop Record'],
   ['ratings', 'Power Ratings', '../betting/admin.html?embed=1#ratings'],
+  ['bets', 'Bet Log', '../betting/admin.html?embed=1#bets'],
 ];
 for (const [, , src] of TABS) if (src && !fs.existsSync(path.join(__dirname, '..', src.replace(/[?#].*$/, ''))))
   throw new Error('a framed tab points at a page that is not there: ' + src);
