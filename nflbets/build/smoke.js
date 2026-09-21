@@ -184,7 +184,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     box2.click();
     await wait(60);
     chk(!w.eval('S').parlay[key], 'unticking did not take the leg off the parlay');
-    chk(/Nothing picked yet/.test(txt(d.getElementById('parlayBody'))), 'the builder still shows a parlay after unticking');
+    chk(/Parlay Builder/.test(txt(d.getElementById('parlayBody'))), 'the builder still shows a parlay after unticking');
     if (openCard !== first) { openCard.click(); await wait(30); first.click(); await wait(60); }
   } else chk(cards.every(c => started(c.dataset.game)), 'no game offered lines although one has not kicked off');
   const lockedCard = cards.find(c => started(c.dataset.game));
@@ -248,9 +248,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden, 'the Parlay Builders tab did not open');
   chk(w.location.hash === '#parlay', 'the Parlay Builders tab did not become the address');
   const pb = d.getElementById('parlayBody');
-  chk(!!d.getElementById('suggCard') && pb.firstElementChild.id === 'suggCard', 'suggested parlays are not the first card of the builder');
-  chk(/Nothing picked yet|-leg parlay/.test(txt(pb)), 'the working parlay card is missing');
-  chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under Nothing picked yet');
+  /* the suggestions are behind a button in a window, so the builder heads the tab */
+  chk(!d.getElementById('suggCard') && !!d.getElementById('suggOpen'), 'the suggestions are still taking up the tab');
+  chk(/Parlay Builder|-leg parlay/.test(txt(pb.firstElementChild.querySelector('h2'))), 'the builder is not the first card: ' + txt(pb.firstElementChild));
+  d.getElementById('suggOpen').click();
+  await wait(60);
+  chk(!d.getElementById('suggModal').hidden && !!d.querySelector('#suggView #suggCard'), 'the suggestions window did not open');
+  d.getElementById('suggClose').click();
+  await wait(60);
+  chk(d.getElementById('suggModal').hidden, 'the suggestions window would not close');
+  chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
   chk(!!d.getElementById('savedCard'), 'the saved parlays card is missing');
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 

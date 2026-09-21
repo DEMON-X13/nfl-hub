@@ -507,6 +507,11 @@ body.modal-open{overflow:hidden}
 
 <section id="tab-parlay" hidden>
   <div id="parlayBody"></div>
+  <div id="suggModal" class="modal" hidden>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-label="Suggested parlays">
+      <div id="suggView"></div>
+    </div>
+  </div>
 </section>
 
 <section id="tab-track" hidden>
@@ -627,7 +632,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v62 \u00b7 2026-09-21';
+const APP_BUILD='app v63 \u00b7 2026-09-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2081,8 +2086,10 @@ $('slateEvery')?.addEventListener('change',()=>{
   else { liveStop(); if(LIVE.on) liveStart(); slateStamp(); }
 });
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame();
+  else if(e.key==='Escape'&&suggestOpen()) closeSuggest(); });
 $('gameModal').addEventListener('click',e=>{ if(e.target===$('gameModal')) closeGame(); });
+$('suggModal').addEventListener('click',e=>{ if(e.target===$('suggModal')) closeSuggest(); });
 document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
   document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab); }));
@@ -2530,8 +2537,10 @@ function getSuggestions(){
   if(!SUGGEST_CACHE||SUGGEST_CACHE.sig!==sig) SUGGEST_CACHE={sig,...buildSuggestions()};
   return SUGGEST_CACHE;
 }
-function suggestCard(){
-  const open=!(S.ui&&S.ui.suggestMin);
+function suggestCard(inModal){
+  /* in the window it is always open: the window is the reveal, so minimising inside it
+     would leave a box with a button in it and nothing else */
+  const open=inModal?true:!(S.ui&&S.ui.suggestMin);
   const w=currentWeek(), stake=Math.max(0,+S.stake||0);
   let body='';
   if(open){
@@ -2561,13 +2570,24 @@ function suggestCard(){
   return `<div class="card sugg${open?'':' min'}" id="suggCard">
     <div class="sugg-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span><span class="grow"></span>
       ${open?`<label class="muted sugg-stake">Bet $<input type="number" id="suggStake" value="${stake}" min="0" step="1" inputmode="decimal" aria-label="Amount to bet on a suggested parlay"></label>`:''}
-      <button class="btn quiet" id="suggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button></div>
+      ${inModal?`<button class="btn quiet" id="suggClose">Close</button>`
+        :`<button class="btn quiet" id="suggToggle" aria-expanded="${open}">${open?'Minimize':'Show'}</button>`}</div>
     ${body}</div>`;
 }
+/* the suggestions, in a window opened from the builder. Filling and wiring are separate
+   from opening, so saving a tier can redraw what is on screen without scrolling it away. */
+function fillSuggest(){ const v=$('suggView'); if(!v) return; v.innerHTML=suggestCard(true); wireSuggest(); }
+function openSuggest(){ const m=$('suggModal'); if(!m) return; fillSuggest();
+  m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; }
+function closeSuggest(){ const m=$('suggModal'); if(!m) return;
+  m.hidden=true; document.body.classList.remove('modal-open'); }
+const suggestOpen=()=>{ const m=$('suggModal'); return !!m&&!m.hidden; };
 function wireSuggest(){
+  $('suggClose')?.addEventListener('click',closeSuggest);
   $('suggToggle')?.addEventListener('click',()=>{ S.ui.suggestMin=!S.ui.suggestMin; save(); renderParlay(); });
+  $('suggOpen')?.addEventListener('click',openSuggest);
   /* the same stake the builder uses, so a payout here and a payout there agree */
-  $('suggStake')?.addEventListener('change',e=>{ S.stake=Math.max(0,+e.target.value||0); save(); renderParlay(); });
+  $('suggStake')?.addEventListener('change',e=>{ S.stake=Math.max(0,+e.target.value||0); save(); renderParlay(); if(suggestOpen()) fillSuggest(); });
   document.querySelectorAll('[data-suggest-save]').forEach(b=>b.addEventListener('click',()=>{
     const t=(SUGGEST_CACHE&&SUGGEST_CACHE.tiers||[]).find(x=>x.id===b.dataset.suggestSave); if(!t) return;
     const stake=Math.max(0,+S.stake||0);
@@ -2575,7 +2595,7 @@ function wireSuggest(){
     S.saved.push({id:'sp'+Date.now(),saved:new Date().toISOString(),week:t.legs[0].week,legs:t.legs.map(l=>({...l})),
       stake,price:decToML(t.dec),priceSrc:'real',pCorr:t.corr,pIndep:t.indep,payout:stake*t.dec,
       suggested:t.label,suggestSig:SUGGEST_CACHE.sig+'|'+t.id});
-    save(); renderParlay(); }));
+    save(); renderParlay(); if(suggestOpen()) fillSuggest(); }));
 }
 function renderParlay(){
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
@@ -2586,7 +2606,7 @@ function renderParlay(){
   const el=$('parlayBody');
   const droppedNote=dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'';
   if(!legs.length){
-    el.innerHTML=suggestCard()+droppedNote+`<div class="card"><h2>Nothing picked yet</h2>
+    el.innerHTML=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Parlay Builder<span class="grow" style="flex:1"></span><button class="btn quiet" id="suggOpen" title="The model's own parlays for this week, in a window">Suggested parlays</button></h2>
       <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like. Each one lands here and gets priced.</p>
 </div>`+renderSaved()+renderBetParlays();
     wireSaved(); wireSuggest();
@@ -2610,7 +2630,7 @@ function renderParlay(){
   const useDec=override||((allBook||estPrice)?bookDec:mlToDec(fairML));
   const payout=stake*useDec, profit=payout-stake;
 
-  let html=suggestCard()+droppedNote+`<div class="card"><h2>${legs.length}-leg parlay <span class="pill">building</span></h2>
+  let html=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">${legs.length}-leg parlay <span class="pill">building</span><span class="grow" style="flex:1"></span><button class="btn quiet" id="suggOpen" title="The model's own parlays for this week, in a window">Suggested parlays</button></h2>
     <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
   legs.forEach((l,i)=>{
@@ -2869,7 +2889,7 @@ function renderSaved(){
     </div>`;
   });
   html+=`<div class="bar" style="margin:12px 0 0"><span class="grow"></span>
-    <button class="btn go" id="sendLive" style="padding:6px 12px;font-size:13px" title="Put the parlays in this section on the live page, where they are followed while the games are on">Send to Live Parlays</button>
+    <button class="btn" id="sendLive" style="background:linear-gradient(180deg,#8B5CF6,#6D28D9)" title="Put the parlays in this section on the live page, where they are followed while the games are on">Send to Live Parlays</button>
     <button class="btn danger" id="savedClear">Clear saved parlays</button></div></div>`;
   return html;
 }

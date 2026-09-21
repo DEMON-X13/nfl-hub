@@ -298,11 +298,21 @@ setTimeout(async()=>{
     chk(tiers.filter(t=>t.id!=='safe').every(t=>t.added>=1),'medium and aggressive each add at least one leg');
     chk(SG.candidates<4||tiers.length===3,'with four or more qualifying lines all three tiers should show');
     d.querySelector('#tabs button[data-tab="parlay"]').click();
-    chk(!!d.getElementById('suggCard'),'suggested parlays card missing from the builder');
-    chk(d.getElementById('parlayBody').firstElementChild.id==='suggCard','suggested parlays should be the first section');
-    if(tiers.length){ const before=(S.saved||[]).length; const sb=d.querySelector('[data-suggest-save]'); sb.click();
+    /* the suggestions are behind a button now: the builder heads the tab */
+    chk(!d.getElementById('suggCard'),'the suggestions are still taking up the tab');
+    chk(d.getElementById('suggModal').hidden,'the suggestions window opens by itself');
+    chk(/Parlay Builder|-leg parlay/.test(d.getElementById('parlayBody').firstElementChild.querySelector('h2').textContent),
+      'the builder is not the first section: '+d.getElementById('parlayBody').firstElementChild.outerHTML.slice(0,90));
+    chk(!!d.getElementById('suggOpen'),'no button opens the suggestions');
+    d.getElementById('suggOpen').click();
+    chk(!d.getElementById('suggModal').hidden&&!!d.getElementById('suggCard'),'the suggestions window did not open');
+    chk(!!d.querySelector('#suggView #suggCard')&&!d.querySelector('#parlayBody #suggCard'),'the suggestions are drawn outside the window');
+    chk(!d.getElementById('suggToggle')&&!!d.getElementById('suggClose'),'the window minimises instead of closing');
+    chk(!d.querySelector('#suggCard.min'),'the window opened minimised');
+    if(tiers.length){ const before=(S.saved||[]).length; const sb=d.querySelector('#suggView [data-suggest-save]'); sb.click();
       chk((S.saved||[]).length===before+1&&S.saved[S.saved.length-1].suggested&&S.saved[S.saved.length-1].legs.length>=2,'add to saved parlays did not save the tier');
       chk(/suggestion/.test(d.getElementById('savedCard').textContent),'saved suggestion not labelled');
+      chk(!d.getElementById('suggModal').hidden&&!!d.getElementById('suggCard'),'saving a tier closed the window');
       S.saved.pop(); F('save')(); F('renderParlay')(); }
     /* ---- M2. sending saved parlays to the live page ---- */
     { const keep=JSON.stringify(S.saved||[]);
@@ -314,7 +324,8 @@ setTimeout(async()=>{
       F('save')(); F('renderParlay')();
       const btn=()=>d.getElementById('sendLive');
       chk(!!btn()&&/^Send to Live Parlays$/.test(btn().textContent.trim()),'the send button does not read plainly: '+(btn()&&btn().textContent));
-      chk(btn().className.includes('go'),'the send button is not the green one');
+      chk(/8B5CF6|6D28D9/i.test(btn().getAttribute('style')||''),'the send button is not purple: '+btn().getAttribute('style'));
+      chk(!/font-size|padding/.test(btn().getAttribute('style')||''),'the send button overrides its size instead of matching the one beside it');
       /* beside Clear saved parlays in the footer bar, not in the heading */
       chk(btn().nextElementSibling&&btn().nextElementSibling.id==='savedClear','the send button is not to the left of Clear saved parlays');
       chk(!d.querySelector('#savedCard h2 #sendLive'),'the send button is still in the heading');
@@ -348,12 +359,22 @@ setTimeout(async()=>{
       S.saved=JSON.parse(keep); F('save')(); F('renderParlay')();
       console.log('M2. send to live: both offered, sent once, marked, re-offered after a delete, the live page\'s own keys untouched');
     }
-    d.getElementById('suggToggle').click(); chk(!d.querySelector('.sugg-grid')&&/Show/.test(d.getElementById('suggToggle').textContent),'minimize did not hide the suggestions');
-    d.getElementById('suggToggle').click(); chk(/Minimize/.test(d.getElementById('suggToggle').textContent),'show did not bring them back');
+    d.getElementById('suggClose').click();
+    chk(d.getElementById('suggModal').hidden,'Close did not shut the suggestions window');
+    /* and it closes the way the game window does */
+    d.getElementById('suggOpen').click();
+    d.dispatchEvent(Object.assign(new w.Event('keydown'),{key:'Escape'}));
+    chk(d.getElementById('suggModal').hidden,'Escape did not shut the suggestions window');
+    d.getElementById('suggOpen').click();
+    d.getElementById('suggModal').dispatchEvent(new w.Event('click'));
+    chk(d.getElementById('suggModal').hidden,'a click on the background did not shut the window');
+    d.getElementById('suggOpen').click(); chk(!d.getElementById('suggModal').hidden,'the window would not open a second time');
+    d.getElementById('suggClose').click();
     console.log(`M. suggested parlays: ${SG.candidates} qualifying lines, tiers ${tiers.map(t=>t.label+' '+t.legs.length+' legs '+(t.corr*100).toFixed(0)+'%').join(', ')||'none'}`); }
 
   /* ---- P. the bet box on the suggested parlays ---- */
   { d.querySelector('#tabs button[data-tab="parlay"]').click();
+    d.getElementById('suggOpen').click();          /* the bet box lives in the window now */
     const box=d.getElementById('suggStake');
     chk(!!box,'no bet box on the suggested parlays');
     if(box){
