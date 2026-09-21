@@ -185,6 +185,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   const modal = d.getElementById('gameModal');
   chk(modal && !modal.hidden, 'clicking a game on the Props tab did not open the game');
   chk(txt(d.getElementById('gameView')).length > 200, 'the game modal is empty');
+  /* a game here is its players: the Game bets card is the Pick'ems tab's job now */
+  chk(!d.querySelector('#gameView .gbets') && !/Game bets/.test(txt(d.getElementById('gameView'))), 'the game view still carries the Game bets card');
+  chk(d.querySelectorAll('#gameView .plrbtn').length > 0, 'the game view shows no players');
   chk(typeof w.closeGame === 'function', 'the prop model\'s closeGame is not on the page');
   w.closeGame();
   await wait(50);
