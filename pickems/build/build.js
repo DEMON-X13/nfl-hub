@@ -104,8 +104,11 @@ for (const [t] of TABS) if (t !== 'pickems' && !t.match(/^(slate|parlay|track)$/
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 
-/* the app, as assemble.py assembles it, one directory further from its payload */
-const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n' + part3;
+/* the app, as assemble.py assembles it, one directory further from its payload. One thing
+   is left out of a game on this page: the Game bets card, since the same bets open under
+   every game on the Pick'ems tab, from the same function. A game here is its players. */
+const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n'
+  + sub1(part3, '  html+=gameBetsCard(g,locked);\n', '', 'the Game bets card in the game view');
 /* the public prop page's header note: when the data was last built, not "Autosaved" */
 const NOTE = `<script>
 window.VIEWER=true;
