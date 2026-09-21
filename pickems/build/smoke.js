@@ -64,7 +64,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record|Prop Record|Power Ratings|Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Power Ratings|Pick'em Record|Prop Record|Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
@@ -170,8 +171,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(slateRows.length > 0, 'the Props tab has no games');
   const wk = +d.getElementById('weekSel').value;
   chk(slateRows.length === w.eval('S').sched.filter(g => +g.w === wk).length, `Props shows ${slateRows.length} games for week ${wk}`);
-  for (const id of ['weekSel', 'weekRec', 'seasonRec', 'slateNow', 'slateEvery', 'slateStamp'])
+  for (const id of ['weekSel', 'weekRec', 'seasonRec', 'slateNow'])
     chk(!!d.getElementById(id), `the Games tab's ${id} is missing`);
+  for (const id of ['slateEvery', 'slateStamp', 'slateDot'])
+    chk(!d.getElementById(id), `the Games tab's ${id} should be gone`);
+  d.getElementById('slateNow').click();
+  await wait(100);
   chk(/Week \d+ \d+–\d+/.test(txt(d.getElementById('weekRec'))), 'the prop model\'s week record is not drawn: ' + txt(d.getElementById('weekRec')));
   chk(txt(d.querySelector('#tab-slate .gamehead')).includes('Biggest projections'), 'the Games column header is not the prop model\'s');
   /* open a game: the prop model's own modal, with players in it */
@@ -203,7 +208,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(!!recFrame && !recFrame.getAttribute('src'), 'the Records frame should not load before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'record').click();
   await wait(60);
-  chk(!d.getElementById('tab-record').hidden && d.getElementById('tab-parlay').hidden, 'the Pick\'em Record tab did not open');
+  chk(!d.getElementById('tab-record').hidden && d.getElementById('tab-ratings').hidden, 'the Pick\'em Record tab did not open');
   chk(w.location.hash === '#record', 'the Pick\'em Record tab did not become the address');
   chk(recFrame.getAttribute('src') === '../betting/admin.html?embed=1#record', 'the Records frame does not open the betting site on its Records tab: ' + recFrame.getAttribute('src'));
   const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8');
@@ -226,7 +231,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(!!ratFrame && !ratFrame.getAttribute('src'), 'the Power Ratings frame should not load before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'ratings').click();
   await wait(60);
-  chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-track').hidden, 'the Power Ratings tab did not open');
+  chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-parlay').hidden, 'the Power Ratings tab did not open');
   chk(w.location.hash === '#ratings', 'the Power Ratings tab did not become the address');
   chk(ratFrame.getAttribute('src') === '../betting/admin.html?embed=1#ratings', 'the Power Ratings frame does not open the betting site on its Power Ratings tab');
   chk(/data-tab="ratings"/.test(adminHtml), 'the betting admin page has no Power Ratings tab to frame');
@@ -236,7 +241,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(!!betFrame && !betFrame.getAttribute('src'), 'the Bet Log frame should not load before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'bets').click();
   await wait(60);
-  chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-ratings').hidden, 'the Bet Log tab did not open');
+  chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-track').hidden, 'the Bet Log tab did not open');
   chk(w.location.hash === '#bets', 'the Bet Log tab did not become the address');
   chk(betFrame.getAttribute('src') === '../betting/admin.html?embed=1#bets', 'the Bet Log frame does not open the betting site on its Bet Log tab');
   chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml), 'the betting admin page has no Bet Log tab with its form to frame');
