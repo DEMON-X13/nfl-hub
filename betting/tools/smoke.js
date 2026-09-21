@@ -100,8 +100,10 @@ function load(picks) {
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
   check(!da.getElementById('injCard').hidden, 'admin: the absences card is hidden although it has rows');
-  { const rt = da.getElementById('ratingsTable'), lg = rt.querySelector('.tierlegend'), tb = rt.querySelector('table');
-    check(lg && tb && (lg.compareDocumentPosition(tb) & 4) && /Challenger 1700\+/.test(lg.textContent), 'admin: the tier key is not above the ratings table'); }
+  { const rt = da.getElementById('ratingsTable');
+    check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
+    check(!rt.querySelector('.tierbadge') && !rt.querySelector('.tierlegend') && !/Challenger/.test(rt.textContent), 'admin: the Elo tier shields or their key are still on the ratings table');
+    check(rt.querySelectorAll('tbody tr').length === 32 && /^\d{4}$/.test(rt.querySelector('tbody tr td:nth-child(3)').textContent.trim()), 'admin: the Elo column does not read as a plain number: ' + rt.querySelector('tbody tr td:nth-child(3)').textContent.trim()); }
   const dv = dom.window.document;
   check(!!dv.querySelector('#tab-ratings #injCard #injSuggest') && !/Rank tags and the Elo change column/.test(dv.getElementById('ratingsTable').textContent), 'viewer: Power Ratings does not carry the absences table, or still carries the note');
   check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');
