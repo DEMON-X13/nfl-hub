@@ -64,7 +64,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record|Prop Record", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record|Prop Record|Power Ratings", 'tabs are ' + tabs.join('|'));
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
@@ -183,6 +183,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(!!d.getElementById('trackMarket') && !!d.getElementById('trackKind') && d.getElementById('trackMarket').options.length > 1, 'the Track Record filters are missing or empty');
   chk(txt(d.getElementById('trackBody')).length > 100, 'the track record is empty');
   chk(!!d.querySelector('#trackBody table') || /Nothing graded yet/.test(txt(d.getElementById('trackBody'))), 'the track record has neither a table nor its empty note');
+
+  /* ---- Power Ratings: the betting site's Power Ratings tab, framed ---- */
+  const ratFrame = d.querySelector('#tab-ratings iframe.pk-frame');
+  chk(!!ratFrame && !ratFrame.getAttribute('src'), 'the Power Ratings frame should not load before its tab is opened');
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'ratings').click();
+  await wait(60);
+  chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-track').hidden, 'the Power Ratings tab did not open');
+  chk(w.location.hash === '#ratings', 'the Power Ratings tab did not become the address');
+  chk(ratFrame.getAttribute('src') === '../betting/admin.html?embed=1#ratings', 'the Power Ratings frame does not open the betting site on its Power Ratings tab');
+  chk(/data-tab="ratings"/.test(adminHtml), 'the betting admin page has no Power Ratings tab to frame');
 
   /* back to the board by address */
   w.location.hash = '#pickems';
