@@ -50,6 +50,27 @@ setTimeout(async()=>{
   chk(dupes===0,`duplicate players on a page: ${dupes}`); chk(wrongTeam===0,`players on wrong team: ${wrongTeam}`); chk(capViol===0,`depth cap violations: ${capViol}`);
   console.log(`B. rosters: ${nPl} player-slots across the season, ${dupes} dupes, ${wrongTeam} wrong-team, ${capViol} over cap, ${gaps} flagged gaps`);
 
+  /* ---- B2. next man up: a ruled-out QB1 hands the slot to the chart's QB2, not to an
+     unranked player with enough projected usage. Any team with both on the chart will do. ---- */
+  { const D=PAY.depth||{}; let tried=0,ok=0;
+    for(const team of new Set(Object.values(D).map(d=>d[0]))){
+      const q=id=>S.players[id]&&S.players[id].team===team&&(S.players[id].gp+S.players[id].base_gp)>=3;
+      const one=Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===1&&q(id));
+      const two=Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===2&&q(id));
+      const g=S.sched.find(x=>x.a===team||x.h===team);
+      if(!one||!two||!g) continue;
+      tried++;
+      S.inactive[one]=true;
+      try{ const qb=rosterFor(g,false)[team].players.filter(x=>x.pl.grp==='QB');
+        if(qb.length===1&&qb[0].pl.id===two) ok++;
+        else chk(false,`${team}: with QB1 out the quarterback shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not the chart's QB2 ${S.players[two].n}`);
+      } finally { delete S.inactive[one]; }
+      if(tried>=6) break;
+    }
+    chk(tried>0,'no team on the depth chart has a QB1 and a QB2 to test next man up with');
+    console.log(`B2. next man up: ${ok} of ${tried} teams hand a ruled-out QB1's slot to the chart's QB2`);
+  }
+
   /* ---- C. projections & ladders: finite, monotone, in range ---- */
   let nLines=0,nRungs=0,nonMono=0,badP=0,badMu=0,badEst=0,capTD=0;
   const wk=[1,5,12,18];
