@@ -128,7 +128,16 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     'the page writes to a local storage key that is not its own');
   chk(!/localStorage\.removeItem/.test(HTML), 'the page removes something from local storage');
   {
-    const seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); };
+    /* the builder sends a saved parlay by writing its id into this page's own key */
+    const SENT = JSON.stringify({ lines: {}, removed: {}, sent: { 'prop|mine': 1 } });
+    const seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob());
+      w.localStorage.setItem('live_parlays_v1', SENT); };
+    /* unsent, it is not watched: this page is a watchlist, not everything the model holds */
+    const unsent = await run({ seed: w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); } });
+    chk([...unsent.d.querySelectorAll('.savedp')].every(c => !/prop model/.test(txt(c.querySelector('.pill')))),
+      'a saved parlay that was never sent is being watched');
+    chk(/1 saved and locked, 0 of them sent here/.test(txt(unsent.d.getElementById('app'))) || unsent.d.querySelectorAll('.savedp').length > 0,
+      'the empty state does not say how many saved parlays are waiting to be sent');
     const m = await run({ seed });
     const cards = [...m.d.querySelectorAll('.savedp')];
     chk(cards.length === 4, `2 from the file plus 2 from this browser expected, got ${cards.length}`);
@@ -170,7 +179,8 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(b.w.localStorage.getItem(PROP_KEY) === workBlob(), 'the page wrote over the prop model key');
     /* saved and building at once: both show, and the saved one keeps its price */
     const both = JSON.parse(propBlob()); both.parlay = JSON.parse(workBlob()).parlay;
-    const c2 = await run({ seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify(both)),
+    const c2 = await run({ seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(both));
+        w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {}, sent: { 'prop|mine': 1 } })); },
       file: { updated: null, games: [], parlays: [] } });
     chk(c2.d.querySelectorAll('.savedp').length === 2, 'saved and building should be two parlays');
   }
@@ -201,6 +211,13 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(!live.d.getElementById('showHidden') && !/\u00b7 show/.test(txt(live.d.body)), 'a deleted parlay is offered back');
     const st = JSON.parse(live.w.localStorage.getItem('live_parlays_v1') || '{}');
     chk(st.removed && Object.keys(st.removed).length === 1 && /^file\|/.test(Object.keys(st.removed)[0]), 'the deleted parlay is not kept under this page\'s own key: ' + JSON.stringify(st));
+    /* the builder's watchlist shares this key: a deletion here must not wipe it */
+    { const keep = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: { 'a|b|0': 44 }, removed: {}, sent: { 'prop|keepme': 1 } })) });
+      keep.d.querySelector('.savedp [data-rm]').click();
+      await wait(60);
+      const after = JSON.parse(keep.w.localStorage.getItem('live_parlays_v1') || '{}');
+      chk(after.sent && after.sent['prop|keepme'] === 1, 'deleting a parlay wiped the builder\'s watchlist: ' + JSON.stringify(after));
+      chk(after.lines && after.lines['a|b|0'] === 44, 'deleting a parlay wiped a corrected line'); }
     chk(live.w.localStorage.getItem(PROP_KEY) === null && live.w.localStorage.getItem(BET_KEY) === null, 'deleting wrote to a model\'s key');
 
     const done = await run({ state: 'post' });
@@ -294,7 +311,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     'an empty page does not say the file is empty: ' + txt(e1.d.getElementById('app')));
   const e1b = await run({ file: { updated: null, games: [], parlays: [] },
     seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [], parlay: {} })); } });
-  chk(/0 saved and locked, 0 leg/.test(txt(e1b.d.getElementById('app'))),
+  chk(/0 saved and locked, 0 of them sent here, 0 leg/.test(txt(e1b.d.getElementById('app'))),
     'an empty page does not count an opened but empty prop model: ' + txt(e1b.d.getElementById('app')));
   const e2 = await run({ data: 'fail' });
   chk(/could not be read/.test(txt(e2.d.querySelector('.note')) || ''), 'a missing file is not explained');
