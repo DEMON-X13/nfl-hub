@@ -125,6 +125,12 @@ may quietly outrank what the job published:
 - **Commit messages** are prose, not bullets: what changed, why, what the audit
   reported. Look at recent commits before writing one. End with the
   `Co-Authored-By` and `Claude-Session` lines the session provides.
+- **`live_parlays_v1` has two owners.** The live page owns `lines` (a line you corrected)
+  and `removed` (a parlay you deleted there); the prop model owns `sent`, the ids of the
+  saved parlays it has pushed to that page. Each side reads the whole object and writes it
+  back whole, so neither may drop a half it does not own. The writer lives above the
+  live-tracking banner in `part2.js`, outside the block `liveparlays/build/build.js` lifts,
+  because the live page may read that key and must never carry a writer for it.
 - **Visitor data is the visitor's.** Picks, parlays, bankroll, bets and
   self-loaded odds live in the browser's local storage only and are never
   written to the repo. Anything held per-session and not meant to persist (for

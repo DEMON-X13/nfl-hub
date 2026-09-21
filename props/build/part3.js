@@ -1422,7 +1422,13 @@ function renderSaved(){
   const lvBar=!anyLive?'':`<span class="grow"></span>
     <label class="muted sp-live"><input type="checkbox" id="liveCb" ${LIVE.on?'checked':''}> Live</label>
     ${LIVE.on?`<span class="muted" style="font-size:12px">${LIVE.err?'':(LIVE.at?'updated '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'checking\u2026')}</span>`:''}`;
-  let html=`<div class="card" id="savedCard"><h2 style="display:flex;align-items:center;gap:10px">Saved parlays <span class="pill">${list.length}</span>${lvBar}</h2>`;
+  /* which of these the live page is watching, so the button can count rather than guess */
+  const watch=liveWatch(), onLive=list.filter(p=>liveHas(p,watch)).length, toSend=list.length-onLive;
+  const sendBtn=!list.length?'':(toSend
+    ? `<button class="btn go" id="sendLive" title="Put these on the live page, where they are followed while the games are on">Send ${toSend} to Live Parlays</button>`
+    : `<button class="btn quiet" id="sendLive" disabled>All on Live Parlays</button>`)
+    +(list.length?` <a class="muted" style="font-size:12px" href="../liveparlays/" target="_blank" rel="noopener">open ↗</a>`:'');
+  let html=`<div class="card" id="savedCard"><h2 style="display:flex;align-items:center;gap:10px">Saved parlays <span class="pill">${list.length}</span>${sendBtn}${lvBar}</h2>`;
   if(LIVE.on&&LIVE.err) html+=`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">Live scores are not loading: <b>${esc(LIVE.err)}</b>. The page reads ESPN's public scoreboard straight from your browser, and a browser will refuse that read if ESPN does not allow it from another site. Nothing else on this page is affected, and the parlay still settles from the week's own numbers.</p>`;
   if(!list.length){ html+=`<p class="muted" style="margin:0">Nothing saved. Build a parlay above and press Save and lock; only locked parlays appear here.</p></div>`; return html; }
   const won=settled.filter(s=>s.status==='won').length, lost=settled.filter(s=>s.status==='lost').length, pend=settled.filter(s=>s.status==='pending').length;
@@ -1447,6 +1453,7 @@ function renderSaved(){
       <div class="sp-head">
         <span class="sp-title">${p.legs.length}-leg parlay</span>${p.suggested?`<span class="pill">${p.suggested} suggestion</span>`:''}
         <span class="pill ${s.status==='won'?'ok':(s.status==='lost'?'bad':(s.status==='pending'?'warn':''))}">${s.status==='pending'?'live':s.status}</span>
+        ${liveHas(p,watch)?'<span class="pill">sent</span>':''}
         <span class="muted" style="font-size:12px">week ${p.week} \u00b7 saved ${p.saved.slice(0,10)}</span>
         <span class="grow"></span>
         <button class="btn quiet" data-sp="${p.id}">Remove</button>
@@ -1500,6 +1507,11 @@ function renderBetParlays(){
   return html+'</div>';
 }
 function wireSaved(){
+  $('sendLive')?.addEventListener('click',()=>{
+    const n=sendToLive(S.saved||[]);
+    if(n<0) log('This browser would not let anything be stored, so nothing was sent.','err');
+    else log(n?`${n} parlay${n===1?'':'s'} sent to the live page.`:'Those parlays are already on the live page.','ok');
+    renderParlay(); });
   $('liveCbB')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;
     if(LIVE.on) liveStart(); else { liveStop(); renderParlay(); } });
   $('liveCb')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;

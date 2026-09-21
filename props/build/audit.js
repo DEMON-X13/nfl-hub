@@ -1,7 +1,9 @@
 const {JSDOM}=require('jsdom'); const fs=require('fs'); const Papa=require('papaparse');
 const errs=[]; let mem=null;
 const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
- {runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=u=>String(u).indexOf('payload.json')>=0
+ /* a real origin, so window.localStorage exists: the app reads the betting model's key and
+    writes the live page's watchlist, and neither can be exercised on about:blank */
+ {url:'https://demon-x13.github.io/nfl-hub/props/',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=u=>String(u).indexOf('payload.json')>=0
    ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync('../data/payload.json','utf8'))})
    : Promise.reject(new Error('x'));   /* the payload is fetched now, not baked in */
   w.confirm=()=>true;w.alert=()=>{};w.scrollTo=()=>{};w.URL.createObjectURL=()=>'blob:x';
@@ -302,6 +304,42 @@ setTimeout(async()=>{
       chk((S.saved||[]).length===before+1&&S.saved[S.saved.length-1].suggested&&S.saved[S.saved.length-1].legs.length>=2,'add to saved parlays did not save the tier');
       chk(/suggestion/.test(d.getElementById('savedCard').textContent),'saved suggestion not labelled');
       S.saved.pop(); F('save')(); F('renderParlay')(); }
+    /* ---- M2. sending saved parlays to the live page ---- */
+    { const keep=JSON.stringify(S.saved||[]);
+      try{ w.localStorage.removeItem('live_parlays_v1'); }catch(e){}
+      S.saved=[{id:'sendA',saved:'2026-09-13T00:00:00.000Z',week:1,stake:5,payout:20,price:300,
+                legs:[{gid:'g1',stat:'passing_yards',k:200.5,side:'over',main:true,name:'A',team:'X',week:1}]},
+               {id:'sendB',saved:'2026-09-13T00:00:00.000Z',week:1,stake:5,payout:20,price:300,
+                legs:[{gid:'g2',stat:'rushing_yards',k:40.5,side:'over',main:true,name:'B',team:'Y',week:1}]}];
+      F('save')(); F('renderParlay')();
+      const btn=()=>d.getElementById('sendLive');
+      chk(!!btn()&&/Send 2 to Live Parlays/.test(btn().textContent),'the send button does not offer both: '+(btn()&&btn().textContent));
+      chk(btn().className.includes('go'),'the send button is not the green one');
+      chk(!!d.querySelector('#savedCard a[href="../liveparlays/"]'),'the card offers no way to open the live page');
+      btn().click();
+      const read=()=>{ try{ return JSON.parse(w.localStorage.getItem('live_parlays_v1')||'{}'); }catch(e){ return {}; } };
+      chk(read().sent&&read().sent['prop|sendA']&&read().sent['prop|sendB'],'sending did not write both ids: '+JSON.stringify(read()));
+      chk(/All on Live Parlays/.test(btn().textContent)&&btn().disabled,'the button still offers a send with nothing left');
+      chk((d.getElementById('savedCard').textContent.match(/sent/g)||[]).length>=2,'a sent parlay is not marked on its card');
+      /* sending twice adds nothing, and the same legs under another id are the same parlay */
+      chk(F('sendToLive')(S.saved)===0,'the same parlays were sent a second time');
+      S.saved.push({id:'sendC',saved:'2026-09-13T00:00:00.000Z',week:1,stake:5,payout:20,price:300,
+        legs:[{gid:'g1',stat:'passing_yards',k:200.5,side:'over',main:true,name:'A',team:'X',week:1}]});
+      chk(F('sendToLive')(S.saved)===0,'the same legs under another id were sent as a new parlay');
+      S.saved.pop();   /* the duplicate has served its purpose and is itself unsent */
+      /* deleted on the live page, and offered again here: the only way back from a delete */
+      { const st=read(); st.removed={'prop|sendA':1}; w.localStorage.setItem('live_parlays_v1',JSON.stringify(st));
+        F('renderParlay')();
+        chk(/Send 1 to Live Parlays/.test(btn().textContent),'a parlay deleted on the live page is not offered again: '+btn().textContent); }
+      /* the live page's own half of that key is never touched */
+      { const st=read(); st.lines={'prop|sendA|0':77}; w.localStorage.setItem('live_parlays_v1',JSON.stringify(st));
+        F('sendToLive')(S.saved);
+        chk(read().lines&&read().lines['prop|sendA|0']===77,'sending trampled a corrected line');
+        chk(w.localStorage.getItem(F('BET_KEY'))===null,'sending wrote to the betting model key'); }
+      try{ w.localStorage.removeItem('live_parlays_v1'); }catch(e){}
+      S.saved=JSON.parse(keep); F('save')(); F('renderParlay')();
+      console.log('M2. send to live: both offered, sent once, marked, re-offered after a delete, the live page\'s own keys untouched');
+    }
     d.getElementById('suggToggle').click(); chk(!d.querySelector('.sugg-grid')&&/Show/.test(d.getElementById('suggToggle').textContent),'minimize did not hide the suggestions');
     d.getElementById('suggToggle').click(); chk(/Minimize/.test(d.getElementById('suggToggle').textContent),'show did not bring them back');
     console.log(`M. suggested parlays: ${SG.candidates} qualifying lines, tiers ${tiers.map(t=>t.label+' '+t.legs.length+' legs '+(t.corr*100).toFixed(0)+'%').join(', ')||'none'}`); }
