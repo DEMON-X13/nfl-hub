@@ -114,7 +114,10 @@ const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + pa
 /* the public prop page's header note: when the data was last built, not "Autosaved" */
 const NOTE = `<script>
 window.VIEWER=true;
-document.addEventListener('DOMContentLoaded',()=>{ const bt=document.getElementById('buildTag'); if(bt) bt.remove(); });
+/* which build of this page you are looking at. Without it there is no way to tell a page
+   the browser cached last week from the one the job published this morning. */
+document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
+  if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD; });
 (function(){
   const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY||!PAY.baked_at) return;
     const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;

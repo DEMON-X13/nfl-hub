@@ -4,7 +4,11 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
-const APP_BUILD='app v59 \u00b7 2026-09-21';
+/* what the saved season is checked against. DATA_BUILD is the model's own hash and moves
+   only when rosters or depth charts do; this is the moment the payload was baked, so it
+   moves on every run of the job and a published change always reaches every device. */
+let DATA_STAMP='baseline';
+const APP_BUILD='app v60 \u00b7 2026-09-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -66,7 +70,7 @@ const ewm=acc=>acc[1]>0?acc[0]/acc[1]:0;
 
 /* ---------- fresh state built from the embedded 2025 baseline ---------- */
 function freshState(){
-  const st={season:SEASON,build:MODEL_BUILD,dataBuild:DATA_BUILD,week:1,players:{},teams:{},defs:{},defg:{},
+  const st={season:SEASON,build:MODEL_BUILD,dataBuild:DATA_BUILD,dataStamp:DATA_STAMP,week:1,players:{},teams:{},defs:{},defg:{},
     sched:JSON.parse(JSON.stringify(PAY.sched)),processed:{},processedGames:{},
     accuracy:{},inactive:{},depth:{},odds:{},parlay:{},saved:[],actuals:{},projections:{},headlines:{},stake:20,bookPrice:null,margin:'typical',
     ui:{game:null,open:{},showAll:false}};
