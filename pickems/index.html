@@ -419,6 +419,7 @@ body.modal-open{overflow:hidden}
 .pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
 .pk-gbody .gbets{background:none;border:0;border-radius:0;padding:0;margin:0;box-shadow:none}
 .pk-gbody .gbets h2{font-size:16px;margin:0 0 6px}
+.livestamp.bad{color:var(--miss)}
 .pk-tolegs{margin:10px 0 0;font-size:12px;color:var(--muted)}
 .pk-tolegs a{color:var(--ink-2)}
 .pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
@@ -466,6 +467,8 @@ body.modal-open{overflow:hidden}
     <span class="rec" id="pkWeekRec"></span>
     <span class="rec" id="pkSeasonRec"></span>
     <span class="grow"></span>
+    <span class="livestamp" id="pkStamp"></span>
+    <button class="btn quiet" id="pkNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
   </div>
   <div id="pkBoard"></div>
   <p class="pk-foot" id="pkFoot"></p>
@@ -485,7 +488,8 @@ body.modal-open{overflow:hidden}
       <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
       <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
       <span class="grow"></span>
-                  <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
+      <span class="livestamp" id="slateStamp"></span>
+            <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
     <div class="gamehead">
@@ -2983,6 +2987,8 @@ return {tag,tagColor,tier,PROB_HI,PROB_LO};
 })();
 const STATE_URL='../betting/state.json';
 const ST={sched:[],processed:{},picks:{}};
+/* the scoreboard as last read, by game id: nothing here is saved anywhere */
+const PK_LIVE={games:{},at:0,err:null,busy:false};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* the betting app's tag, in this tab's own class names */
@@ -3001,6 +3007,15 @@ function fmtDate(g){
   return [day,t];
 }
 const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
+/* where a game stands: the published result when the job has graded it, otherwise what the
+   scoreboard said when it was last read. final says the game is over; live says it is on. */
+function outcome(g){
+  if(g.result!=null) return {final:true,live:false,as:g.away_score,hs:g.home_score,winner:winnerOf(g),clock:''};
+  const s=PK_LIVE.games[g.game_id];
+  if(!s||s.as==null||s.hs==null||s.state==='pre') return null;
+  const winner=s.hs>s.as?g.home_team:(s.as>s.hs?g.away_team:null);
+  return {final:s.state==='post',live:s.state==='live',as:s.as,hs:s.hs,winner,clock:s.clock||''};
+}
 
 /* what the betting model says: the published call for an ungraded game, what was logged for
    a graded one */
@@ -3039,13 +3054,26 @@ function wireLegs(){
   });
 }
 
+/* did the call land: the job's grade once it has one, the scoreboard's winner until then */
+function landed(c,o){
+  if(!c||!o||!o.final) return null;
+  if(c.graded) return c.correct;
+  return o.winner?c.pick===o.winner:null;
+}
 function resultCell(g,c){
-  if(g.result==null) return '<b class="pk-sc pk-pend">0 : 0</b>';
-  const win=winnerOf(g);
-  const line=win?`${win} won ${g.away_score}–${g.home_score}`:`Tie ${g.away_score}–${g.home_score}`;
-  if(!c||!c.graded) return `<span class="pk-mwin pk-tie">${esc(line)}</span><span class="pk-muted">Awaiting stats</span>`;
-  const cls=c.correct===null?'tie':c.correct?'ok':'bad';
-  return `<span class="pk-mwin pk-${cls}">${esc(line)}</span>${c.correct===null?'':`<span class="pk-muted">${c.correct?'Pick hit':'Pick missed'}</span>`}`;
+  const o=outcome(g);
+  if(!o) return '<b class="pk-sc pk-pend">0 : 0</b>';
+  const score=`${o.as}–${o.hs}`;
+  if(o.live){
+    /* on now: who leads, coloured by whether the call is ahead, the clock under it */
+    const line=o.winner?`${o.winner} leading ${score}`:`Tied ${score}`;
+    const cls=!c||!o.winner?'tie':(c.pick===o.winner?'ok':'bad');
+    return `<span class="pk-mwin pk-${cls}">${esc(line)}</span><span class="pk-muted">${esc(o.clock)}</span>`;
+  }
+  const line=o.winner?`${o.winner} won ${score}`:`Tie ${score}`;
+  const hit=landed(c,o);
+  if(hit===null) return `<span class="pk-mwin pk-tie">${esc(line)}</span><span class="pk-muted">${c&&c.graded?'':'Awaiting stats'}</span>`;
+  return `<span class="pk-mwin ${hit?'pk-ok':'pk-bad'}">${esc(line)}</span><span class="pk-muted">${hit?'Pick hit':'Pick missed'}</span>`;
 }
 function render(){
   const w=+el('pkWeek').value;
@@ -3054,17 +3082,19 @@ function render(){
   records(w);
   if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
   const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Final score</div></div>';
+  const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
   el('pkBoard').innerHTML=HEAD+games.map(g=>{
-    const c=call(g), [day,time]=fmtDate(g), win=winnerOf(g);
+    const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
     const pick=c?c.pick:null;
     const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
     const [tc,tl]=c?BET.tier(c.conf):['','–'];
     /* tick or cross on the winner's tag: did the model's pick win? */
     let markA='',markH='';
-    if(c&&c.graded&&win&&c.correct!==null){
-      const mk=`<span class="pk-res ${c.correct?'pk-ok':'pk-bad'}" title="${c.correct?'Pick hit':'Pick missed'}">${c.correct?'✓':'✗'}</span>`;
+    const hit=landed(c,o);
+    if(win&&hit!==null){
+      const mk=`<span class="pk-res ${hit?'pk-ok':'pk-bad'}" title="${hit?'Pick hit':'Pick missed'}">${hit?'✓':'✗'}</span>`;
       if(win===g.away_team) markA=mk; else markH=mk; }
-    return `<div class="pk-game${g.result!=null?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
+    return `<div class="pk-game${o&&o.final?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
       <div class="pk-when"><b>${esc(day)}</b>${esc(time)}</div>
       <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span><span class="pk-at">at</span><span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
       <div class="pk-probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
@@ -3084,7 +3114,40 @@ function render(){
     if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
     else if(!open&&had) had.remove();
   }));
+  for(const gid of wasOpen){ const card=el('pkBoard').querySelector(`.pk-game[data-game="${CSS.escape(gid)}"]`); if(card) card.click(); }
 }
+
+/* the scoreboard, read from ESPN in this browser: free, no odds-API credits, no job. One
+   call covers the week on screen. The prop model's own ESPN reader maps the games, since
+   both sites key them the same way. Nothing read here is stored or graded: the week is
+   still settled by the betting job, from nflverse, on its next run. */
+async function readScores(){
+  if(PK_LIVE.busy) return;
+  PK_LIVE.busy=true; stamp('reading…');
+  try{
+    const wk=+el('pkWeek').value;
+    const r=await fetch(`${ESPN_SB}?seasontype=2&week=${wk}&dates=${SEASON}`,{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    PK_LIVE.games=espnGames(await r.json(),(typeof S==='object'&&S&&S.sched)||[]);
+    PK_LIVE.err=null; PK_LIVE.at=Date.now();
+  }catch(e){ PK_LIVE.err=String(e&&e.message||e); }
+  finally{ PK_LIVE.busy=false; }
+  stamp(); render();
+}
+function stamp(text){
+  const s=el('pkStamp'); if(!s) return;
+  s.classList.toggle('bad',!!PK_LIVE.err);
+  s.textContent=text!=null?text:(PK_LIVE.err?'scores not loading':(PK_LIVE.at?'scores '+new Date(PK_LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):''));
+}
+
+/* the Props tab's stamp, in this page's words: nothing until the scoreboard has been read,
+   then when, or that it is not loading. The prop model's own version opens on "scores off",
+   which named a picker this page does not have. */
+window.slateStamp=function(){
+  const s=document.getElementById('slateStamp'); if(!s) return;
+  s.classList.toggle('bad',!!LIVE.err);
+  s.textContent=LIVE.err?'scores not loading':(LIVE.at?'scores '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):(LIVE.busy?'reading…':''));
+};
 
 /* the betting model's record, counted the way its own Records tab counts it */
 function records(w){
@@ -3145,7 +3208,13 @@ async function boot(){
     : (weeks.filter(x=>graded.has(x)).pop()||weeks[0]);
   el('pkWeek').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${x>18?'Playoffs '+(x-18):'Week '+x}</option>`).join('');
   el('pkWeek').addEventListener('change',render);
+  el('pkNow').addEventListener('click',readScores);
   render(); foot();
+  /* read once on load, so a game that has finished since the job last ran shows its result
+     without being asked. The scoreboard is mapped onto the prop model's schedule, so this
+     waits for the prop model to have one. */
+  const ready=new Promise(res=>{ if(typeof S==='object'&&S&&S.sched) res(); else document.addEventListener('app-ready',res,{once:true}); });
+  ready.then(()=>setTimeout(readScores,300));
 }
 boot();
 })();
