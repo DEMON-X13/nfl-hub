@@ -1,8 +1,8 @@
 /* Check the built live tracker.
  *
- *   node live/build/smoke.js        (from the hub root)
+ *   node liveparlays/build/smoke.js        (from the hub root)
  *
- * The page reads live/parlays.json and nothing else, so the test hands it a file and a
+ * The page reads liveparlays/parlays.json and nothing else, so the test hands it a file and a
  * stubbed ESPN and checks what renders. jsdom is borrowed from props/build, so this needs no
  * install of its own; run npm ci there first.
  */
@@ -11,8 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
-const HTML = fs.readFileSync(path.join(ROOT, 'live', 'index.html'), 'utf8');
-const URL_ = 'https://demon-x13.github.io/nfl-hub/live/';
+const HTML = fs.readFileSync(path.join(ROOT, 'liveparlays', 'index.html'), 'utf8');
+const URL_ = 'https://demon-x13.github.io/nfl-hub/liveparlays/';
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -179,13 +179,44 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   for (const id of ['ghSave', 'ghLoad', 'send', 'paste', 'clearDone', 'tokIn'])
     chk(!d.getElementById(id), `the ${id} control is still on the page`);
   chk(!d.querySelector('[data-rm],[data-send]'), 'a sending or removing control survived');
-  chk(!!d.getElementById('now') && !!d.getElementById('every'), 'the refresh controls should stay');
-  chk(d.getElementById('every').value === '0', 'auto-refresh should start off');
-  /* the build stamp: the one thing that tells a stale cached copy from a broken one */
-  chk(/^live v\d+ \u00b7 \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/.test(txt(d.getElementById('ver'))),
-    'the page does not say which build it is: ' + txt(d.getElementById('ver')));
+  chk(!!d.getElementById('now') && !d.getElementById('every') && !d.getElementById('ver'), 'Refresh now stays; the interval picker and the build pill go');
+  /* the build stamp: the one thing that tells a stale cached copy from a broken one, in the markup now */
+  chk(/^live v\d+ \u00b7 \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/.test(d.documentElement.dataset.build || ''),
+    'the page does not carry which build it is: ' + d.documentElement.dataset.build);
   chk(!/__BUILT__/.test(HTML), 'the build stamp was never filled in');
   chk(/needs JavaScript/.test(HTML), 'a browser with scripts off gets no explanation');
+
+  // ---- D1. clearing what has settled, on this device only ----
+  {
+    const live = await run({ state: 'in' });
+    chk(live.d.getElementById('clear').hidden && live.d.getElementById('showHidden').hidden, 'with nothing settled there is nothing to clear and nothing hidden');
+    chk(/\[hidden\]\{display:none!important\}/.test(HTML), 'a hidden button is still drawn: the .btn display rule beats the hidden attribute without this');
+    chk(live.d.querySelectorAll('.savedp [data-hide]').length === 2, 'every parlay should carry its own hide button');
+    live.d.querySelector('.savedp [data-hide]').click();
+    await wait(60);
+    chk(live.d.querySelectorAll('.savedp').length === 1, 'hiding one parlay did not take it off the page');
+    chk(!live.d.getElementById('showHidden').hidden && /1 hidden/.test(txt(live.d.getElementById('showHidden'))), 'the hidden count is not offered back: ' + txt(live.d.getElementById('showHidden')));
+    const st = JSON.parse(live.w.localStorage.getItem('live_parlays_v1') || '{}');
+    chk(st.hidden && Object.keys(st.hidden).length === 1 && /^file\|/.test(Object.keys(st.hidden)[0]), 'the hidden parlay is not kept under this page\'s own key: ' + JSON.stringify(st));
+    chk(live.w.localStorage.getItem(PROP_KEY) === null && live.w.localStorage.getItem(BET_KEY) === null, 'hiding wrote to a model\'s key');
+    live.d.getElementById('showHidden').click();
+    await wait(60);
+    chk(live.d.querySelectorAll('.savedp').length === 2 && live.d.getElementById('showHidden').hidden, 'show did not bring the parlay back');
+
+    const done = await run({ state: 'post' });
+    chk(!done.d.getElementById('clear').hidden, 'with every game final, Clear settled should be offered');
+    done.d.getElementById('clear').click();
+    await wait(60);
+    chk(done.d.querySelectorAll('.savedp').length === 0 && /2 hidden/.test(txt(done.d.getElementById('showHidden'))), 'Clear settled did not hide the settled parlays: ' + done.d.querySelectorAll('.savedp').length);
+    chk(done.d.getElementById('clear').hidden, 'Clear settled stays offered with nothing left to clear');
+    chk(/Nothing to watch yet|2 hidden/.test(txt(done.d.getElementById('app')) + txt(done.d.getElementById('showHidden'))), 'an emptied page does not say why');
+    /* a parlay still running is not settled and is not cleared */
+    const mixed = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, hidden: {} })) });
+    chk(mixed.d.getElementById('clear').hidden, 'a running parlay is offered for clearing');
+    /* what was hidden stays hidden on the next visit */
+    const again = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, hidden: { 'file|night': 1 } })) });
+    chk(again.d.querySelectorAll('.savedp').length === 1 && /1 hidden/.test(txt(again.d.getElementById('showHidden'))), 'a parlay hidden on the last visit came back');
+  }
 
   // ---- D2. a line the book moved, corrected on the page ----
   {
@@ -258,7 +289,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     'an empty page does not say where parlays can come from');
   chk(/nothing here yet/.test(txt(e1.d.getElementById('app'))),
     'an empty page does not say the two models have never been opened here');
-  chk(/0 in .?live\/parlays\.json/.test(txt(e1.d.getElementById('app'))),
+  chk(/0 in .?liveparlays\/parlays\.json/.test(txt(e1.d.getElementById('app'))),
     'an empty page does not say the file is empty: ' + txt(e1.d.getElementById('app')));
   const e1b = await run({ file: { updated: null, games: [], parlays: [] },
     seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [], parlay: {} })); } });
@@ -277,7 +308,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   const before = h1.calls.length;
   h1.d.dispatchEvent(new h1.w.Event('visibilitychange'));
   await wait(80);
-  chk(h1.calls.length === before, 'returning to the tab fetched with auto-refresh off');
+  chk(h1.calls.length === before, 'returning to the tab fetched on its own');
   h1.d.getElementById('now').click();
   await wait(200);
   chk(h1.calls.length > before, 'Refresh now did not fetch');
@@ -320,8 +351,8 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   }
 
   // ---- I. the file's own shape is what a person would write ----
-  const real = JSON.parse(fs.readFileSync(path.join(ROOT, 'live', 'parlays.json'), 'utf8'));
-  chk(Array.isArray(real.games) && Array.isArray(real.parlays), 'live/parlays.json is not the shape the page reads');
+  const real = JSON.parse(fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8'));
+  chk(Array.isArray(real.games) && Array.isArray(real.parlays), 'liveparlays/parlays.json is not the shape the page reads');
   chk(typeof real.how === 'string' && /stat/.test(real.how), 'the file does not explain how to edit itself');
   const shaped = await run({ file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
     { id: 'x', week: 2, stake: 5, legs: [legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 43.5, 'over', true)] }] } });
