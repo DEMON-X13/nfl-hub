@@ -100,6 +100,9 @@ function load(picks) {
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
   check(!da.getElementById('injCard').hidden, 'admin: the absences card is hidden although it has rows');
+  for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['recordTable', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/]])
+    check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
+  check(/Impact absences, week \d+/.test(da.getElementById('injSuggest').textContent) && !!da.querySelector('#injSuggest table'), 'admin: dropping the note took the absences table with it');
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
     check(rt.querySelectorAll('tbody tr').length === 32 && rt.querySelectorAll('tbody .tierbadge').length === 32, 'admin: every Elo should carry its tier shield');

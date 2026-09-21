@@ -34,7 +34,7 @@ const tab = rd('nflbets', 'build', 'tab_pickems.html');
 /* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
    not a page to ship half-edited */
 const sub1 = (s, from, to, what) => {
-  const n = s.split(from).length - 1;
+  const n = from instanceof RegExp ? (s.match(new RegExp(from.source, from.flags.replace('g', '') + 'g')) || []).length : s.split(from).length - 1;
   if (n !== 1) throw new Error(`${what}: expected exactly one match, found ${n}`);
   return s.replace(from, () => to);
 };
@@ -109,7 +109,8 @@ if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by 
    is left out of a game on this page: the Game bets card, since the same bets open under
    every game on the Pick'ems tab, from the same function. A game here is its players. */
 const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n'
-  + sub1(part3, '  html+=gameBetsCard(g,locked);\n', '', 'the Game bets card in the game view');
+  + sub1(sub1(part3, '  html+=gameBetsCard(g,locked);\n', '', 'the Game bets card in the game view'),
+      /      <ul style="margin:0">\n        <li>You can pick <b>one line per stat per player<\/b>[\s\S]*?<\/ul>/, '', 'the how-to list under Nothing picked yet');
 /* the public prop page's header note: when the data was last built, not "Autosaved" */
 const NOTE = `<script>
 window.VIEWER=true;

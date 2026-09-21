@@ -247,6 +247,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const pb = d.getElementById('parlayBody');
   chk(!!d.getElementById('suggCard') && pb.firstElementChild.id === 'suggCard', 'suggested parlays are not the first card of the builder');
   chk(/Nothing picked yet|-leg parlay/.test(txt(pb)), 'the working parlay card is missing');
+  chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under Nothing picked yet');
   chk(!!d.getElementById('savedCard'), 'the saved parlays card is missing');
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 
