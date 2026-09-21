@@ -916,7 +916,8 @@ function tidyStats(){
    moves are, rather than on Data Upload, which the job has made a page nobody opens. The
    app renders it into #injSuggest on every redraw, so the element itself moves, once, into a
    card of its own here; the card hides when there is nothing in it. The note under the
-   ratings about where the rank tags are measured from goes. */
+   ratings about where the rank tags are measured from goes, and the tier key moves above
+   the table. */
 function ratingsExtras(){
   const tab=el('tab-ratings'), inj=el('injSuggest'); if(!tab) return;
   if(inj&&!tab.contains(inj)){
@@ -927,6 +928,9 @@ function ratingsExtras(){
   document.querySelectorAll('#ratingsTable p.muted').forEach(p=>{
     if(/^Rank tags and the Elo change column/.test(p.textContent.trim())) p.remove();
   });
+  /* the tier key reads before the table it explains, not after thirty-two rows of it */
+  const rt=el('ratingsTable'), lg=rt&&rt.querySelector('.tierlegend'), tb=rt&&rt.querySelector('table');
+  if(lg&&tb&&lg.compareDocumentPosition(tb)&Node.DOCUMENT_POSITION_PRECEDING){ lg.style.margin='0 0 10px'; rt.insertBefore(lg,tb); }
 }
 
 /* The tab you are on goes in the address, so a refresh, a bookmark or the back button all
