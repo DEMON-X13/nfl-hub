@@ -59,7 +59,7 @@ for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'fun
   if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);
 const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO};\n})();`;
 const js = sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot');
-for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted'])
+for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');
 
 /* the prop model's page, re-headed */

@@ -411,28 +411,13 @@ body.modal-open{overflow:hidden}
 .pk-result .pk-mwin{font-weight:700;font-size:12px;display:block}
 .pk-result .pk-mwin.pk-ok{color:var(--pick)} .pk-result .pk-mwin.pk-bad{color:var(--miss)} .pk-result .pk-mwin.pk-tie{color:var(--ink-2)}
 .pk-result .pk-muted{color:var(--muted)}
-/* the prop model's prices, opened inside the same card */
+/* the prop model's Game bets card, opened inside the same row. Its classes are the prop
+   model's, so it is styled by the prop model's stylesheet; only the card chrome comes off */
 .pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
-.pk-statblk{margin-bottom:12px}
-.pk-statblk h4{font-family:var(--display);font-size:14px;margin:0 0 7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-.pk-statblk h4 em{font-style:normal;font-weight:400;font-size:12px;color:var(--ink-2)}
-table.pk-rungs{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border-radius:var(--r-sm);overflow:hidden}
-table.pk-rungs td{padding:7px 9px;border-top:1px solid var(--line)}
-table.pk-rungs tr:first-child td{border-top:0}
-table.pk-rungs td.pk-pick{width:34px;padding-left:0}
-table.pk-rungs tr.pk-on td{background:#EFF8F3}
-.pk-tolegs{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.pk-gbody .gbets{background:none;border:0;border-radius:0;padding:0;margin:0;box-shadow:none}
+.pk-gbody .gbets h2{font-size:16px;margin:0 0 6px}
+.pk-tolegs{margin:10px 0 0;font-size:12px;color:var(--muted)}
 .pk-tolegs a{color:var(--ink-2)}
-.pk-thr{font-weight:600;white-space:nowrap}
-.pk-track{height:8px;background:var(--line);border-radius:999px;overflow:hidden;min-width:70px}
-.pk-fill{height:100%;border-radius:999px;background:var(--gold)}
-.pk-fill.pk-high{background:var(--pick)} .pk-fill.pk-low{background:var(--line-2)}
-.pk-pct{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
-.pk-band{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
-.pk-band.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-band.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-band.pk-low{background:#E9EEF4;color:var(--ink-2)}
-td.pk-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-td.pk-num em{font-style:normal;color:var(--muted);font-size:11px;margin-left:4px}
-td.pk-book{font-weight:700}
 .pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
 /* a framed betting tab: full width, no border, as tall as the tab it shows */
 .pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
@@ -442,7 +427,7 @@ td.pk-book{font-weight:700}
   .pk-gamehead{display:none}
   .pk-game{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
   .pk-game .pk-when{grid-column:1/-1} .pk-game .pk-probrow{grid-column:1/-1;padding:0}
-  table.pk-rungs{display:block;overflow-x:auto;white-space:nowrap}
+  .pk-gbody table.rungs{display:block;overflow-x:auto;white-space:nowrap}
 }
 </style>
 </head>
@@ -2998,7 +2983,6 @@ const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 /* the betting app's tag, in this tab's own class names */
 const tag=(...a)=>BET.tag(...a).replace(/class="([^"]*)"/,(m,c)=>'class="'+c.split(' ').map(x=>'pk-'+x).join(' ')+'"');
-const ttag=t=>tag(t,BET.tagColor(t),false,'mini');
 
 /* the prop model's schedule row for a game, which is where its spread and the book's prices
    live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
@@ -3023,50 +3007,30 @@ function call(g){
   return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,graded:false,correct:null}:null;
 }
 
-/* the prop model's two bets on one side of one game. Each is a line the Parlay Builders
-   tab takes, ticked here the way it is ticked on the game's own page: the same key in the
-   same working parlay, through the prop model's own toggleLeg. A game that has kicked off
-   cannot be bet, so it has no boxes. */
-function sideRows(gid,team,isHome){
-  const g=mkt(gid); if(!g) return '';
-  const ml=gameBet(g,team,'ml'), ats=gameBet(g,team,'ats');
-  if(!ml) return '';
-  const bookML=isHome?g.mlh:g.mla, bookSP=isHome?g.sph:g.spa;
-  const locked=gameStarted(g);
-  const row=(b,label,book,kind)=>{ const [c,lbl]=confTier(b.p);
-    const key=legKey(g.id,'team:'+team,kind), on=!!(S.parlay&&S.parlay[key]), k=b.line==null?0:b.line;
-    return `<tr class="${on?'pk-on':''}">
-      <td class="pk-pick">${locked?'':`<input type="checkbox" ${on?'checked':''} data-pkleg="${esc(key)}" data-k="${k}" aria-label="Add ${esc(TEAM_NAMES[team]||team)} ${esc(label.toLowerCase())} to the parlay">`}</td>
-      <td class="pk-thr">${esc(label)}</td>
-      <td><div class="pk-track"><div class="pk-fill pk-${c}" style="width:${Math.max(2,b.p*100).toFixed(0)}%"></div></div></td>
-      <td class="pk-pct">${(b.p*100).toFixed(0)}%</td>
-      <td><span class="pk-band pk-${c}">${lbl}</span></td>
-      <td class="pk-num">${fmtML(bookPrice(b.p))}<em>est.</em></td>
-      <td class="pk-num pk-book">${book!=null&&isFinite(book)?fmtML(book):''}</td></tr>`; };
-  let h=`<div class="pk-statblk"><h4>${ttag(team)} ${esc(TEAM_NAMES[team]||team)}
-    <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em>book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="pk-rungs">`;
-  h+=row(ml,'To win',bookML,'ml');
-  if(ats) h+=row(ats,`To cover ${ats.line>0?'+':''}${ats.line}`,bookSP,'ats');
-  return h+'</table></div>';
-}
-
+/* the prop model's Game bets card for this game, exactly as the game's own page draws it:
+   both teams, to win and to cover, a box on each line while the game can still be bet and
+   a tick or a cross on each once it has a score. The card is the prop model's own function
+   on its own schedule row, so this is the same card and not a copy of one. */
 function gameBody(g){
   if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody"><span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
   const row=mkt(g.game_id);
-  if(!row) return `<div class="pk-gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  if(!row||!gameBet(row,row.h,'ml')) return `<div class="pk-gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  const locked=gameStarted(row);
+  let card=gameBetsCard(row,locked);
+  if(card.split('class="card gbets"').length!==2) throw new Error("the Game bets card is not the shape this tab expects");
+  card=card.replace('class="card gbets"','class="gbets"');
   const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')).length;
-  const note=gameStarted(row)
-    ? 'This game has kicked off, so its lines can no longer go on a parlay.'
-    : `Tick a line to put it on the parlay in <a href="#parlay">Parlay Builders</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on it.`:''}`;
-  return `<div class="pk-gbody">${sideRows(g.game_id,g.away_team,false)}${sideRows(g.game_id,g.home_team,true)}<p class="pk-tolegs">${note}</p></div>`;
+  const note=locked?''
+    :`<p class="pk-tolegs">Ticked lines go to <a href="#parlay">Parlay Builders</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
+  return `<div class="pk-gbody">${card}${note}</div>`;
 }
 /* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
    so the row shows what is on the parlay now */
 function wireLegs(){
   el('pkBoard').addEventListener('change',e=>{
-    const box=e.target; if(!box.matches||!box.matches('input[data-pkleg]')) return;
+    const box=e.target; if(!box.matches||!box.matches('input[data-leg]')) return;
     const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;
-    toggleLeg(box.dataset.pkleg,+box.dataset.k,mkt(g.game_id),'over',false);
+    toggleLeg(box.dataset.leg,+box.dataset.k,mkt(g.game_id),box.dataset.side||'over',box.dataset.main==='1');
     const body=card.querySelector('.pk-gbody'); if(body) body.outerHTML=gameBody(g);
   });
 }
