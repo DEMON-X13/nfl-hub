@@ -386,8 +386,8 @@ function tidyStats(){
    moves are, rather than on Data Upload, which the job has made a page nobody opens. The
    app renders it into #injSuggest on every redraw, so the element itself moves, once, into a
    card of its own here; the card hides when there is nothing in it. The note under the
-   ratings about where the rank tags are measured from goes, and so do the Elo tier
-   shields and their key. */
+   ratings about where the rank tags are measured from goes, and so does the key to the
+   tier shields; the shields stay. */
 function ratingsExtras(){
   const tab=el('tab-ratings'), inj=el('injSuggest'); if(!tab) return;
   if(inj&&!tab.contains(inj)){
@@ -398,11 +398,9 @@ function ratingsExtras(){
   document.querySelectorAll('#ratingsTable p.muted').forEach(p=>{
     if(/^Rank tags and the Elo change column/.test(p.textContent.trim())) p.remove();
   });
-  /* the Elo tiers -- Challenger, Master, Diamond and their shields beside every number --
-     are a game's ranks laid over a football table, and they read as noise: the shield
-     pushed the number off its column and the key underneath explained a thing nobody
-     asked. The number stands on its own. */
-  document.querySelectorAll('#ratingsTable .tierbadge, #ratingsTable .tierlegend, #ratingsTable svg[aria-hidden="true"]').forEach(n=>n.remove());
+  /* the tier shields stay beside the numbers; the key that spelled them out -- Challenger
+     1700+, Master 1650+ and so on -- goes */
+  document.querySelectorAll('#ratingsTable .tierlegend').forEach(n=>n.remove());
   /* the table sat bare at its own width over a full-width card, and the two read as two
      things: it goes in a card of the same width, and fills it */
   const rt=el('ratingsTable');
