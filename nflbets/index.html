@@ -2546,12 +2546,7 @@ function renderParlay(){
   if(!legs.length){
     el.innerHTML=suggestCard()+droppedNote+`<div class="card"><h2>Nothing picked yet</h2>
       <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like. Each one lands here and gets priced.</p>
-      <ul style="margin:0">
-        <li>You can pick <b>one line per stat per player</b>. Ticking 30+ pass attempts after 20+ replaces it rather than adding both, because a player can't be over two different numbers as separate bets.</li>
-        <li>Different stats for the same player are fine, and so are players from different games.</li>
-        <li>Each game also offers <b>a team to win</b> and <b>a team to cover the spread</b>, at the top of the game. They go in like any other leg.</li>
-        <li>Prices are pulled from the odds market twice a week. Anything without a market price is shown at the model's own fair odds instead.</li>
-      </ul></div>`+renderSaved()+renderBetParlays();
+</div>`+renderSaved()+renderBetParlays();
     wireSaved(); wireSuggest();
     return;
   }

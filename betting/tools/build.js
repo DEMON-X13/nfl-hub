@@ -364,7 +364,16 @@ function stripMine(){
 }
 /* after anything redraws a board: the lock does not wait for a score to be read, since it
    is a rule about the clock rather than about the scoreboard */
-function after(){ lockPlayed(); stripMine(); allModels(); tidyStats(); ratingsExtras(); if(L.on) paintAll(); }
+/* three paragraphs of method under Records and Power Ratings that nobody reads twice: the
+   note under the accuracy chart, the small-samples note under the week-by-week table, and
+   the paragraph that explains the absences table. The app redraws them; this drops them. */
+const DROP=[/^Early weeks bounce around on small samples/,/^Running season accuracy after each week/,/^Two absences carry a measured effect/];
+function dropNotes(){
+  document.querySelectorAll('#tab-record p.muted, #tab-ratings p.muted').forEach(p=>{
+    const t=p.textContent.trim(); if(DROP.some(re=>re.test(t))) p.remove();
+  });
+}
+function after(){ lockPlayed(); stripMine(); allModels(); tidyStats(); ratingsExtras(); dropNotes(); if(L.on) paintAll(); }
 /* Records shows every model, always. The toggle defaulted to off, so the challenger, the
    joker and Vegas were hidden behind a checkbox on the one tab that exists to compare them. */
 function allModels(){
@@ -452,6 +461,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   stripMine();
   allModels();
   ratingsExtras();
+  dropNotes();
   routeTabs();
 });
 })();
