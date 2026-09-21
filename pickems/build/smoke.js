@@ -59,17 +59,26 @@ function run(state) {
   chk(/Week \d+ \d+–\d+/.test(txt(d.getElementById('weekRec'))), 'no week record: ' + txt(d.getElementById('weekRec')));
   chk(/Season \d+–\d+/.test(txt(d.getElementById('seasonRec'))), 'no season record');
 
-  /* the betting model's call rides on the row, and a graded game carries its result */
-  const withCall = cards.filter(c => /% to win/.test(txt(c)));
-  chk(withCall.length === cards.length, `${cards.length - withCall.length} game(s) show no call`);
-  chk(cards.every(c => /HIGH|MED|LOW|50\/50/.test(txt(c))), 'a game is missing its confidence band');
+  /* the row is the betting app's: header, split bar, band, final-score cell */
+  chk(!!d.querySelector('.gamehead') && /Date.*Matchup.*Win probability.*Confidence.*Final score/.test(txt(d.querySelector('.gamehead'))),
+    'the column header is not the betting board\'s');
+  chk(cards.every(c => c.querySelector('.probrow .prob .a') && c.querySelector('.probrow .prob .h')), 'a game is missing its split bar');
+  chk(cards.every(c => /HIGH|MED|LOW|50\/50/.test(txt(c.querySelector('.tier')))), 'a game is missing its confidence band');
+  chk(cards.every(c => c.querySelector('.ttag.win')), 'no pick is marked on a matchup tag');
+  chk(cards.every(c => c.querySelector('.result')), 'a game is missing its final-score cell');
+  const pend = cards.filter(c => /0 : 0/.test(txt(c.querySelector('.result')))).length;
+  const done = cards.filter(c => / won /.test(txt(c.querySelector('.result')))).length;
+  chk(pend + done === cards.length, `every result cell is either 0 : 0 or a result: ${pend} + ${done} of ${cards.length}`);
+  const graded = cards.find(c => c.classList.contains('played'));
+  if (graded) chk(!!graded.querySelector('.matchup .res') && /Pick (hit|missed)/.test(txt(graded.querySelector('.result'))),
+    'a graded game shows no tick or cross and no Pick hit/missed');
 
   /* nothing is open until a game is clicked */
   chk(!d.querySelector('.gbody'), 'a game was open before anything was clicked');
 
   /* open one and the prop model prices both sides */
   const first = cards[0];
-  first.querySelector('.ghead').click();
+  first.click();
   await wait(60);
   const body = first.querySelector('.gbody');
   chk(!!body, 'clicking a game opened nothing');
@@ -83,8 +92,11 @@ function run(state) {
   chk(rows.every(r => /[-+]\d+est\./.test(txt(r).replace(/\s/g, ''))), 'a row is missing our own price');
   chk(first.classList.contains('open'), 'the card did not mark itself open');
 
-  /* and closing it puts it away */
-  first.querySelector('.ghead').click();
+  /* clicking inside the prices does not toggle; clicking the row does */
+  first.querySelector('.gbody').click();
+  await wait(60);
+  chk(!!first.querySelector('.gbody'), 'clicking inside the prices closed them');
+  first.click();
   await wait(60);
   chk(!first.querySelector('.gbody'), 'clicking again did not close the game');
 

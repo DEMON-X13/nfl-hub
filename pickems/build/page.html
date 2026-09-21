@@ -43,21 +43,43 @@ select{background:var(--panel);border:1px solid var(--line-2);border-radius:var(
 .rec b{color:var(--ink);font-size:13px}
 .empty{padding:40px 24px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg);line-height:1.7}
 .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-.game{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:0;margin-bottom:10px;box-shadow:var(--sh-xs);overflow:hidden}
-.ghead{display:grid;grid-template-columns:118px 1fr auto auto 26px;gap:12px;align-items:center;padding:13px 16px;cursor:pointer;background:none;border:0;width:100%;text-align:left}
-.ghead:hover{background:var(--panel-2)}
-.when{font-size:12px;color:var(--ink-2)} .when b{display:block;color:var(--ink);font-size:13px}
-.matchup{display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:15px}
-.matchup .at{color:var(--muted);font-weight:400;font-size:12px}
-.tg{display:inline-block;padding:3px 9px;border-radius:7px;color:#fff;font-size:12px;font-weight:700;letter-spacing:.02em}
-.callout{text-align:right;font-size:12px;color:var(--ink-2);white-space:nowrap}
-.callout b{display:block;font-family:var(--display);font-size:15px;color:var(--ink)}
-.tier{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
-.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:#8A5E05}
-.tier.low{background:#E9EEF4;color:var(--ink-2)} .tier.coin{background:var(--miss-soft);color:var(--miss)}
-.chev{color:var(--muted);text-align:center;transition:transform .18s var(--ease)}
-.game.open .chev{transform:rotate(90deg)}
-.gbody{border-top:1px solid var(--line);padding:14px 16px 16px;background:var(--panel-2)}
+/* the board row is the betting app's, rule for rule, so the format is the same thing and not a lookalike */
+.gamehead{max-width:908px;display:grid;grid-template-columns:100px 136px minmax(278px,358px) 112px 96px;gap:14px;align-items:end;padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.gamehead .c{text-align:center}
+.game{max-width:908px;display:grid;grid-template-columns:100px 136px minmax(278px,358px) 112px 96px;gap:14px;align-items:center;background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;box-shadow:var(--sh-sm);cursor:pointer;transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
+.game:hover{box-shadow:0 2px 4px rgba(15,27,45,.06),0 10px 24px -8px rgba(15,27,45,.16);transform:translateY(-1px)}
+.game.open{border-color:var(--line-2)}
+.game .when{color:var(--ink-2);font-size:12px;line-height:1.35}
+.game .when b{color:var(--ink);font-weight:600;display:block;font-size:13px}
+.matchup{font-family:var(--display);display:flex;align-items:center;justify-content:center;gap:6px;line-height:1;white-space:nowrap;min-width:0}
+.matchup .at{color:var(--muted);font-size:11px;font-family:var(--body);font-weight:500;letter-spacing:.02em;flex:none}
+.matchup .tw{position:relative;display:inline-flex;flex:none}
+.matchup .res{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid currentColor;font-size:11px;font-weight:800;line-height:13px;text-align:center;font-family:var(--body);box-shadow:0 1px 2px rgba(15,27,45,.2)}
+.matchup .tw.away .res{left:-9px} .matchup .tw.home .res{right:-9px}
+.matchup .res.ok{color:var(--pick)} .matchup .res.bad{color:var(--miss)}
+.ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
+.ttag.win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
+.ttag.mini{font-size:12px;padding:4px 5px;min-width:40px;vertical-align:-1px}
+.probrow{display:flex;align-items:center;gap:10px;padding:0 14px;justify-content:center}
+.tlab{font-family:var(--display);font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.02em;flex:none;min-width:40px;text-align:center}
+.tlab.win{color:var(--ink);font-weight:800}
+.probrow .prob{flex:1;min-width:0}
+.prob{position:relative;height:28px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
+.prob .a,.prob .h{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
+.prob .a{justify-content:flex-start;border-right:1px solid rgba(15,27,45,.18)} .prob .h{justify-content:flex-end;margin-left:auto}
+.prob .a span.w,.prob .h span.w{font-weight:800}
+.conf{text-align:center}
+.tier{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px 4px 8px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
+.tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:#8A5E05} .tier.coin{background:#FCECEA;color:#A8453A}
+.result{font-size:12px;text-align:center;line-height:1.4}
+.sc{font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-.2px;font-variant-numeric:tabular-nums}
+.sc.pend{color:var(--muted);font-weight:600}
+.result .mwin{font-weight:700;font-size:12px;display:block}
+.result .mwin.ok{color:var(--pick)} .result .mwin.bad{color:var(--miss)} .result .mwin.tie{color:var(--ink-2)}
+.result .muted{color:var(--muted)}
+/* the prop model's prices, opened inside the same card */
+.gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
 .statblk{margin-bottom:12px}
 .statblk h4{font-family:var(--display);font-size:14px;margin:0 0 7px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .statblk h4 em{font-style:normal;font-weight:400;font-size:12px;color:var(--ink-2)}
@@ -80,8 +102,9 @@ footer{max-width:1000px;margin:0 auto;padding:0 28px 48px;color:var(--muted);fon
 footer a{color:var(--ink-2)}
 @media(max-width:620px){
   header{padding:18px 16px 0} .brand h1{font-size:26px} main{padding:16px 16px 56px} footer{padding:0 16px 40px}
-  .ghead{grid-template-columns:1fr auto 20px;gap:8px;row-gap:6px}
-  .when{grid-column:1/-1} .callout{font-size:11px}
+  .gamehead{display:none}
+  .game{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+  .game .when{grid-column:1/-1} .game .probrow{grid-column:1/-1;padding:0}
   table.rungs{display:block;overflow-x:auto;white-space:nowrap}
 }
 </style>
@@ -126,7 +149,7 @@ const STATE_URL='../betting/state.json';
 const ST={sched:[],processed:{},picks:{},err:null};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const tag=t=>`<span class="tg" style="background:${TEAM_COLORS[t]?TEAM_COLORS[t][0]:'#334'}">${esc(t)}</span>`;
+const ttag=t=>tag(t,tagColor(t),false,'mini');
 
 /* the prop model's schedule row for a game, which is where its spread and the book's prices
    live. Keyed by the same nflverse id both sites use. */
@@ -166,7 +189,7 @@ function sideRows(gid,team,isHome){
       <td><span class="conf ${c}">${lbl}</span></td>
       <td class="num">${fmtML(bookPrice(b.p))}<em>est.</em></td>
       <td class="num book">${book!=null&&isFinite(book)?fmtML(book):''}</td></tr>`; };
-  let h=`<div class="statblk"><h4>${tag(team)} ${esc(TEAM_NAMES[team]||team)}
+  let h=`<div class="statblk"><h4>${ttag(team)} ${esc(TEAM_NAMES[team]||team)}
     <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em>book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="rungs">`;
   h+=row(ml,'To win',bookML);
   if(ats) h+=row(ats,`To cover ${ats.line>0?'+':''}${ats.line}`,bookSP);
@@ -179,29 +202,47 @@ function gameBody(g){
   return `<div class="gbody">${sideRows(g.game_id,g.away_team,false)}${sideRows(g.game_id,g.home_team,true)}</div>`;
 }
 
+function resultCell(g,c){
+  if(g.result==null) return '<b class="sc pend">0 : 0</b>';
+  const win=winnerOf(g);
+  const line=win?`${win} won ${g.away_score}\u2013${g.home_score}`:`Tie ${g.away_score}\u2013${g.home_score}`;
+  if(!c||!c.graded) return `<span class="mwin tie">${esc(line)}</span><span class="muted">Awaiting stats</span>`;
+  const cls=c.correct===null?'tie':c.correct?'ok':'bad';
+  return `<span class="mwin ${cls}">${esc(line)}</span>${c.correct===null?'':`<span class="muted">${c.correct?'Pick hit':'Pick missed'}</span>`}`;
+}
 function render(){
   const w=+el('weekSel').value;
   const games=ST.sched.filter(g=>+g.week===w)
     .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
   records(w);
   if(!games.length){ el('board').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
-  el('board').innerHTML=games.map(g=>{
+  const HEAD='<div class="gamehead"><div>Date</div><div class="c">Matchup</div><div class="c">Win probability</div><div class="c">Confidence</div><div class="c">Final score</div></div>';
+  el('board').innerHTML=HEAD+games.map(g=>{
     const c=call(g), [day,time]=fmtDate(g), win=winnerOf(g);
-    const t=c?tier(c.conf):null;
-    const mark=(c&&c.graded&&c.correct!=null)?`<span class="res ${c.correct?'win':'loss'}">${c.correct?'✓':'✗'}</span>`:'';
-    return `<div class="game" data-game="${esc(g.game_id)}">
-      <button class="ghead" aria-expanded="false">
-        <span class="when"><b>${esc(day)}</b>${esc(time)}</span>
-        <span class="matchup">${tag(g.away_team)}<span class="at">at</span>${tag(g.home_team)}${win?`<span class="at">· ${esc(win)} won</span>`:''}</span>
-        <span class="callout">${c?`<b>${esc(c.pick)}${mark}</b>${(c.conf*100).toFixed(0)}% to win`:'<b>–</b>no call yet'}</span>
-        ${t?`<span class="tier ${t[0]}">${t[1]}</span>`:'<span></span>'}
-        <span class="chev">›</span>
-      </button>
+    const pick=c?c.pick:null;
+    const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
+    const [tc,tl]=c?tier(c.conf):['','\u2013'];
+    /* tick or cross on the winner's tag: did the model's pick win? */
+    let markA='',markH='';
+    if(c&&c.graded&&win&&c.correct!==null){
+      const mk=`<span class="res ${c.correct?'ok':'bad'}" title="${c.correct?'Pick hit':'Pick missed'}">${c.correct?'\u2713':'\u2717'}</span>`;
+      if(win===g.away_team) markA=mk; else markH=mk; }
+    return `<div class="game${g.result!=null?' played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
+      <div class="when"><b>${esc(day)}</b>${esc(time)}</div>
+      <div class="matchup"><span class="tw away">${tag(g.away_team,tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span><span class="at">at</span><span class="tw home">${tag(g.home_team,tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
+      <div class="probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
+        <span class="tlab${pick===g.away_team?' win':''}">${esc(g.away_team)}</span>
+        <div class="prob"><div class="a" style="width:${pa}%;background:${pa>=ph?PROB_HI:PROB_LO};color:#0B162A"><span class="${pick===g.away_team?'w':''}">${pa>=14?pa+'%':''}</span></div><div class="h" style="width:${ph}%;background:${ph>pa?PROB_HI:PROB_LO};color:#0B162A"><span class="${pick===g.home_team?'w':''}">${ph>=14?ph+'%':''}</span></div></div>
+        <span class="tlab${pick===g.home_team?' win':''}">${esc(g.home_team)}</span>
+      </div>
+      <div class="conf">${c?`<span class="tier ${tc}">${tl} ${Math.round(c.conf*100)}%</span>`:'<span class="tier">no call yet</span>'}</div>
+      <div class="result">${resultCell(g,c)}</div>
     </div>`;
   }).join('');
-  el('board').querySelectorAll('.ghead').forEach(b=>b.addEventListener('click',()=>{
-    const card=b.parentElement, open=card.classList.toggle('open');
-    b.setAttribute('aria-expanded',open?'true':'false');
+  el('board').querySelectorAll('.game').forEach(card=>card.addEventListener('click',e=>{
+    if(e.target.closest('.gbody')) return;          /* the prices are not a toggle */
+    const open=card.classList.toggle('open');
+    card.setAttribute('aria-expanded',open?'true':'false');
     const had=card.querySelector('.gbody');
     if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
     else if(!open&&had) had.remove();
