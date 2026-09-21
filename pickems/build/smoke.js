@@ -64,7 +64,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders", 'tabs are ' + tabs.join('|'));
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
@@ -149,6 +149,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(modal.hidden, 'the game did not close');
   /* the Games tab's own state saved, under the prop model's own key */
   chk(!!w.localStorage.getItem('props_2026_v1'), 'the prop model did not save its state under its own key');
+
+  /* ---- Parlay Builders: the prop model's Parlay Builder, suggestions, saved parlays and all ---- */
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'parlay').click();
+  await wait(60);
+  chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden, 'the Parlay Builders tab did not open');
+  chk(w.location.hash === '#parlay', 'the Parlay Builders tab did not become the address');
+  const pb = d.getElementById('parlayBody');
+  chk(!!d.getElementById('suggCard') && pb.firstElementChild.id === 'suggCard', 'suggested parlays are not the first card of the builder');
+  chk(/Nothing picked yet|-leg parlay/.test(txt(pb)), 'the working parlay card is missing');
+  chk(!!d.getElementById('savedCard'), 'the saved parlays card is missing');
+  chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 
   /* back to the board by address */
   w.location.hash = '#pickems';

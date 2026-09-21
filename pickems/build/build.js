@@ -74,6 +74,7 @@ html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>
 const NAV = `<nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
     <button role="tab" data-tab="slate">Props</button>
+    <button role="tab" data-tab="parlay">Parlay Builders</button>
   </nav>`;
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where pickems/build expects it in part1.html');
