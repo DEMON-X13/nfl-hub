@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-21T07:12+00:00",
+ "generated": "2026-09-21T11:08+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1307,7 +1307,7 @@
    "home": "DEN",
    "away": "JAX",
    "pick": "JAX",
-   "pHome": 0.4748,
+   "pHome": 0.4823,
    "played": true,
    "base": 0.1727,
    "why": [
@@ -1327,6 +1327,16 @@
      "c": 0.1621
     },
     {
+     "f": "pg_carries_H",
+     "v": 15.0,
+     "c": -0.1409
+    },
+    {
+     "f": "td_pt_inside_20_H",
+     "v": 3.0,
+     "c": 0.1391
+    },
+    {
      "f": "td_def_tackle_assists_H",
      "v": 40.0,
      "c": -0.119
@@ -1340,16 +1350,6 @@
      "f": "home_moneyline",
      "v": -148.0,
      "c": 0.11
-    },
-    {
-     "f": "surface_fieldturf",
-     "v": 0.0,
-     "c": -0.1087
-    },
-    {
-     "f": "td_fumble_recovery_yards_own_H",
-     "v": -5.0,
-     "c": 0.1004
     }
    ]
   },
@@ -1619,7 +1619,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -305.0,
+     "v": -290.0,
      "c": 0.893
     },
     {
