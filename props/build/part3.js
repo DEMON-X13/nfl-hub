@@ -53,7 +53,9 @@ function renderWeekOptions(){
    changing a setting) keeps the reader where they were */
 function openGameModal(){ const m=$('gameModal'); if(m.hidden){ m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; } }
 function closeGameModal(){ const m=$('gameModal'); m.hidden=true; document.body.classList.remove('modal-open'); }
-function closeGame(){ S.ui.game=null; save(); closeGameModal(); renderSlate(); }
+/* a shuffled parlay belongs to this visit to the game: opening the game again, from here
+   or from the list, starts back at the model's own suggestion */
+function closeGame(){ S.ui.game=null; forgetGameAlternates(); save(); closeGameModal(); renderSlate(); }
 /* W-L on the model's side of every book main line, frozen pre-game numbers */
 function renderRecords(w){
   const wr=$('weekRec'), sr=$('seasonRec'); if(!wr||!sr) return;
@@ -116,7 +118,7 @@ function renderSlate(){
   }).join('');
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
-    S.ui.game=b.dataset.game; S.ui.open={}; save(); renderGame(); }));
+    S.ui.game=b.dataset.game; S.ui.open={}; forgetGameAlternates(); save(); renderGame(); }));
   if(S.ui.game) renderGame();
 }
 
@@ -357,9 +359,14 @@ function renderGame(){
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
+  /* a different parlay of the same confidence, kept in memory only */
+  $('gameView').querySelector('[data-suggest-shuffle]')?.addEventListener('click',()=>{
+    const alt=shuffleSuggestion(g);
+    GAME_SUGGEST_ALT[g.id]={sig:gameSuggestSig(g),val:alt,miss:!alt};
+    renderGame(); });
   /* the whole suggestion at once, skipping any leg already on so it cannot toggle one off */
   $('gameView').querySelector('[data-suggest-all]')?.addEventListener('click',()=>{
-    for(const l of gameSuggestion(g).legs){
+    for(const l of shownSuggestion(g).legs){
       const cur=S.parlay[l.key];
       if(cur&&cur.k===l.k&&cur.side===l.side&&!!cur.main===!!l.main) continue;
       toggleLeg(l.key,l.k,g,l.side,l.main);
@@ -931,8 +938,11 @@ function buildSuggestions(){
    Three legs at most: this sits on the game page and must stay short. */
 const GAME_SUGGEST_FLOOR=0.30, GAME_SUGGEST_CAP=3;
 let GAME_SUGGEST_CACHE={};
+function gameSuggestSig(g){
+  return [g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}),g.sp,g.tot,g.mlh,g.mla,PAY.baked_at||'',S.margin||''].join('|');
+}
 function gameSuggestion(g){
-  const sig=[g.id,gameStarted(g),JSON.stringify(S.odds[g.id]||{}),g.sp,g.tot,g.mlh,g.mla,PAY.baked_at||'',S.margin||''].join('|');
+  const sig=gameSuggestSig(g);
   const hit=GAME_SUGGEST_CACHE[g.id];
   if(hit&&hit.sig===sig) return hit.val;
   const cands=suggestCandidates([g]);
@@ -962,24 +972,92 @@ function gameSuggestion(g){
   GAME_SUGGEST_CACHE[g.id]={sig,val};
   return val;
 }
+/* ---------- Shuffle: another parlay for the same game ----------
+   The card opens on gameSuggestion(), the model's own answer. Shuffle deals a different
+   hand from the same candidate pool: legs are taken at random from the best few at each
+   step instead of the single best, and the last leg is the one that lands the parlay
+   nearest the original's chance, so an alternative is a different bet of the same
+   confidence rather than a longer or safer one. Alternatives are held here and nowhere
+   else: they are not in S, so they are never saved, and leaving the game forgets them. */
+const GAME_SHUFFLE_BAND=0.06,    /* close enough to the original's chance to stop looking */
+      GAME_SHUFFLE_LIMIT=0.12,   /* further than this is a different bet, not an alternative */
+      GAME_SHUFFLE_TRIES=10, GAME_SHUFFLE_POOL=18, GAME_SHUFFLE_TOP=4;
+let GAME_SUGGEST_ALT={};         /* gid -> {sig,val,miss} */
+let GAME_SHUFFLE_N=0;
+function forgetGameAlternates(){ GAME_SUGGEST_ALT={}; }
+/* an alternative is priced off the lines it was built from: if those move, it goes */
+function gameAlternate(g){ const a=GAME_SUGGEST_ALT[g.id];
+  if(!a) return null;
+  if(a.sig!==gameSuggestSig(g)){ delete GAME_SUGGEST_ALT[g.id]; return null; }
+  return a; }
+function shownSuggestion(g){ const a=gameAlternate(g); return (a&&a.val)||gameSuggestion(g); }
+/* on the parlay means this exact line, threshold and side are ticked -- and on a
+   suggestion that also means locked: Shuffle deals the other legs around it */
+const suggestLegOn=l=>{ const c=S.parlay[l.key]; return !!c&&c.k===l.k&&c.side===l.side&&!!c.main===!!l.main; };
+const legSig=legs=>legs.map(l=>`${l.key}@${l.k}${l.side}${l.main?'m':''}`).sort().join(',');
+function shuffleSuggestion(g){
+  const base=gameSuggestion(g);
+  if(base.legs.length<2) return null;
+  const want=base.legs.length;
+  /* a ticked leg is locked: it is the hand this deal starts from, so everything below
+     grows around it and the floor and caps still have to hold for the whole parlay */
+  const locked=shownSuggestion(g).legs.filter(suggestLegOn).slice(0,want);
+  if(locked.length>=want) return null;                           /* nothing left to change */
+  const pool=suggestCandidates([g]).slice(0,GAME_SHUFFLE_POOL);
+  if(pool.length<=want) return null;                             /* nothing left to swap in */
+  const rnd=mulberry((Date.now()+(GAME_SHUFFLE_N++)*7919)|0);
+  const seen=[legSig(base.legs)];
+  const cur=gameAlternate(g); if(cur&&cur.val) seen.push(legSig(cur.val.legs));
+  const fits=(legs,c)=>!legs.some(l=>l.key===c.key)
+    &&!(c.grp==='TEAM'&&legs.some(l=>l.grp==='TEAM'))            /* one team bet per game */
+    &&legs.filter(l=>l.pid===c.pid).length<2;                    /* at most two legs on one man */
+  let best=null;
+  for(let t=0;t<GAME_SHUFFLE_TRIES&&(!best||best.gap>GAME_SHUFFLE_BAND);t++){
+    let legs=[...locked];
+    while(legs.length<want){
+      const last=legs.length+1===want, ok=[];
+      for(const c of pool){
+        if(!fits(legs,c)) continue;
+        const next=[...legs,c], p=parlayProb(next,1500).corr;
+        if(next.length>=2&&p<GAME_SUGGEST_FLOOR) continue;
+        /* on the way up, the best expected return; on the last leg, the one that keeps
+           the parlay closest to the chance the original quoted */
+        ok.push({c,rank:last?-Math.abs(p-base.corr):p*parlayDec(next.map(l=>({leg:l,ml:l.price})),1500)});
+      }
+      if(!ok.length) break;
+      ok.sort((a,b)=>b.rank-a.rank);
+      const take=ok.slice(0,Math.min(ok.length,last?3:GAME_SHUFFLE_TOP));
+      legs=[...legs,take[Math.floor(rnd()*take.length)].c];
+    }
+    if(legs.length<2||seen.includes(legSig(legs))) continue;
+    const corr=parlayProb(legs,20000).corr, gap=Math.abs(corr-base.corr);
+    if(!best||gap<best.gap) best={legs,corr,gap};
+  }
+  if(!best||best.gap>GAME_SHUFFLE_LIMIT) return null;
+  return {legs:best.legs,candidates:base.candidates,corr:best.corr,alt:true,
+    dec:parlayDec(best.legs.map(l=>({leg:l,ml:l.price}))),
+    mult:best.legs.reduce((a,l)=>a*(mlToDec(l.price)||1),1)};
+}
 function gameSuggestCard(g,locked){
   if(locked) return '';
-  const s=gameSuggestion(g);
+  const alt=gameAlternate(g), s=shownSuggestion(g);
   if(!s.legs.length) return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlay</h2></div>
     <p class="muted" style="margin:0">Nothing here clears the bar yet: a suggestion needs two legs with a real sportsbook price that the model rates at least three points above that price${s.candidates===1?', and only one qualifies':''}. Player prices arrive with the Thursday and Saturday pulls.</p></div>`;
   const stake=Math.max(0,+S.stake||0), ml=decToML(s.dec);
+  const nLock=s.legs.filter(suggestLegOn).length, free=s.legs.length-nLock;
   return `<div class="card gsugg"><div class="gsugg-hd">
       <h2>Suggested parlay</h2><span class="conf med">Medium</span><span class="grow"></span>
-      <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${s.legs.every(l=>{const c=S.parlay[l.key];return !!c&&c.k===l.k&&c.side===l.side&&!!c.main===!!l.main;})?'On the parlay':'Add all'}</button>
+      <button class="btn quiet gsugg-alt" data-suggest-shuffle="${g.id}"${s.candidates>s.legs.length&&free?'':' disabled'} aria-label="Shuffle the legs that are not locked, keeping the same confidence">\u21bb Shuffle</button>
+      <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${free?'Add all':'On the parlay'}</button>
       <span class="gsugg-nums"><b>${(s.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*s.dec).toFixed(2)}</span>`:''}</span>
     </div>
     <ul class="gsugg-legs">${s.legs.map(l=>{
-      const cur=S.parlay[l.key], on=!!cur&&cur.k===l.k&&cur.side===l.side&&!!cur.main===!!l.main;
+      const on=suggestLegOn(l);
       return `<li><label class="gsugg-pick${on?' on':''}">
-        <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="Add ${esc(l.name)}, ${esc(l.label)}, to the parlay">
-        <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>
+        <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}, and ${on?'take it off':'put it on'} the parlay">
+        <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>${on?'<span class="lk">locked</span>':''}
         <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
-    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay.</p></div>`;
+    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
