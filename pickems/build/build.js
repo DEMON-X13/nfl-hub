@@ -71,15 +71,30 @@ html = sub1(html, '<span class="sub grow" id="saveState" style="margin-left:auto
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here is in the page but not yet shown. */
-const NAV = `<nav role="tablist" id="tabs">
-    <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
-    <button role="tab" data-tab="slate">Props</button>
-    <button role="tab" data-tab="parlay">Parlay Builders</button>
-  </nav>`;
+/* A betting tab is the betting site's own page, framed: betting/admin.html opened on that
+   tab with ?embed, which hides its header and tab bar. The frame is the exact tab, drawn by
+   the betting app itself on the same browser store, so a bet logged there is logged here.
+   It loads when its tab is first opened and takes the height of what it shows. */
+const TABS = [
+  ['pickems', "Pick'ems"],
+  ['slate', 'Props'],
+  ['parlay', 'Parlay Builders'],
+  ['record', "Pick'em Record", '../betting/admin.html?embed=1#record'],
+];
+for (const [, , src] of TABS) if (src && !fs.existsSync(path.join(__dirname, '..', src.replace(/[?#].*$/, ''))))
+  throw new Error('a framed tab points at a page that is not there: ' + src);
+if (!betting.includes('html.embed') && !rd('betting', 'admin.html').includes('html.embed header'))
+  throw new Error('betting/admin.html has no embed mode, so a framed tab would show its header and tab bar');
+const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label], i) =>
+  `    <button role="tab" data-tab="${t}"${i === 0 ? ' aria-selected="true"' : ''}>${label}</button>`).join('\n') + '\n  </nav>';
+const FRAMES = TABS.filter(t => t[2]).map(([t, label, src]) =>
+  `<section id="tab-${t}" hidden><iframe class="pk-frame" data-src="${src}" title="${label}"></iframe></section>`).join('\n\n');
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where pickems/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
-html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+for (const [t] of TABS) if (t !== 'pickems' && !t.match(/^(slate|parlay|track)$/) && html.includes(`id="tab-${t}"`))
+  throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
+html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 
 /* the app, as assemble.py assembles it, one directory further from its payload */

@@ -58,6 +58,8 @@ td.pk-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.pk-num em{font-style:normal;color:var(--muted);font-size:11px;margin-left:4px}
 td.pk-book{font-weight:700}
 .pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+/* a framed betting tab: full width, no border, as tall as the tab it shows */
+.pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
 .pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
 .pk-foot a{color:var(--ink-2)}
 @media(max-width:620px){
@@ -215,8 +217,27 @@ function routeTabs(){
   window.addEventListener('hashchange',go); go();
 }
 
+/* the betting tabs are the betting site's own page, framed. A frame loads the first time its
+   tab is opened and then follows the height of what it shows, so the page scrolls as one. */
+function frames(){
+  const load=f=>{
+    if(f.src||!f.dataset.src) return;
+    f.addEventListener('load',()=>{
+      let doc=null; try{ doc=f.contentDocument; }catch(e){ return; }
+      if(!doc||!doc.documentElement) return;
+      const fit=()=>{ const h=doc.documentElement.scrollHeight; if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>2) f.style.height=h+'px'; };
+      fit();
+      if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
+    });
+    f.src=f.dataset.src;
+  };
+  const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
+  document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));
+  show();
+}
+
 async function boot(){
-  routeTabs();
+  routeTabs(); frames();
   try{
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
