@@ -64,7 +64,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Pick'em Record|Prop Record", 'tabs are ' + tabs.join('|'));
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
@@ -173,6 +173,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
     'the betting page has no embed mode, so the frame would show its header and tab bar');
   chk(/data-tab="record"/.test(adminHtml), 'the betting admin page has no Records tab to frame');
+
+  /* ---- Prop Record: the prop model's Track Record, market and line-type filters and all ---- */
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'track').click();
+  await wait(60);
+  chk(!d.getElementById('tab-track').hidden && d.getElementById('tab-record').hidden, 'the Prop Record tab did not open');
+  chk(w.location.hash === '#track', 'the Prop Record tab did not become the address');
+  chk(/Track record/.test(txt(d.querySelector('#tab-track h2'))), 'the Track Record card is not there');
+  chk(!!d.getElementById('trackMarket') && !!d.getElementById('trackKind') && d.getElementById('trackMarket').options.length > 1, 'the Track Record filters are missing or empty');
+  chk(txt(d.getElementById('trackBody')).length > 100, 'the track record is empty');
+  chk(!!d.querySelector('#trackBody table') || /Nothing graded yet/.test(txt(d.getElementById('trackBody'))), 'the track record has neither a table nor its empty note');
 
   /* back to the board by address */
   w.location.hash = '#pickems';
