@@ -4,7 +4,7 @@ const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
 const MODEL_BUILD='2026.1 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
-const APP_BUILD='app v58 \u00b7 2026-09-21';
+const APP_BUILD='app v59 \u00b7 2026-09-21';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -390,7 +390,11 @@ function rosterFor(g,showAll){
         if(b.rank!=null) return 1;
         return b.use-a.use;
       });
-      const cut=pool.filter(x=>x.gp>=3&&(x.rank!=null?x.rank<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
+      /* a ruled-out starter is gone from the pool already, so the chart's ranks are re-counted
+         over who is left: the next man up takes the slot rather than an unranked player with
+         enough projected usage to walk in on his own */
+      let place=0; for(const x of pool) x.eff=x.rank!=null?++place:null;
+      const cut=pool.filter(x=>x.gp>=3&&(x.eff!=null?x.eff<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
                     .slice(0,DEPTH[grp]);
       for(const x of (showAll?pool:cut)) out.push({...x,starter:cut.includes(x)});
     }
