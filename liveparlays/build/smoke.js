@@ -185,6 +185,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     'the page does not carry which build it is: ' + d.documentElement.dataset.build);
   chk(!/__BUILT__/.test(HTML), 'the build stamp was never filled in');
   chk(/needs JavaScript/.test(HTML), 'a browser with scripts off gets no explanation');
+  chk(!d.querySelector('header .sub') && !d.querySelector('header a'), 'the header should be the title alone');
 
   // ---- D1. clearing what has settled, on this device only ----
   {
