@@ -47,6 +47,10 @@
 table.pk-rungs{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border-radius:var(--r-sm);overflow:hidden}
 table.pk-rungs td{padding:7px 9px;border-top:1px solid var(--line)}
 table.pk-rungs tr:first-child td{border-top:0}
+table.pk-rungs td.pk-pick{width:34px;padding-left:0}
+table.pk-rungs tr.pk-on td{background:#EFF8F3}
+.pk-tolegs{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.pk-tolegs a{color:var(--ink-2)}
 .pk-thr{font-weight:600;white-space:nowrap}
 .pk-track{height:8px;background:var(--line);border-radius:999px;overflow:hidden;min-width:70px}
 .pk-fill{height:100%;border-radius:999px;background:var(--gold)}
@@ -121,14 +125,20 @@ function call(g){
   return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,graded:false,correct:null}:null;
 }
 
-/* the prop model's two bets on one side of one game */
+/* the prop model's two bets on one side of one game. Each is a line the Parlay Builders
+   tab takes, ticked here the way it is ticked on the game's own page: the same key in the
+   same working parlay, through the prop model's own toggleLeg. A game that has kicked off
+   cannot be bet, so it has no boxes. */
 function sideRows(gid,team,isHome){
   const g=mkt(gid); if(!g) return '';
   const ml=gameBet(g,team,'ml'), ats=gameBet(g,team,'ats');
   if(!ml) return '';
   const bookML=isHome?g.mlh:g.mla, bookSP=isHome?g.sph:g.spa;
-  const row=(b,label,book)=>{ const [c,lbl]=confTier(b.p);
-    return `<tr>
+  const locked=gameStarted(g);
+  const row=(b,label,book,kind)=>{ const [c,lbl]=confTier(b.p);
+    const key=legKey(g.id,'team:'+team,kind), on=!!(S.parlay&&S.parlay[key]), k=b.line==null?0:b.line;
+    return `<tr class="${on?'pk-on':''}">
+      <td class="pk-pick">${locked?'':`<input type="checkbox" ${on?'checked':''} data-pkleg="${esc(key)}" data-k="${k}" aria-label="Add ${esc(TEAM_NAMES[team]||team)} ${esc(label.toLowerCase())} to the parlay">`}</td>
       <td class="pk-thr">${esc(label)}</td>
       <td><div class="pk-track"><div class="pk-fill pk-${c}" style="width:${Math.max(2,b.p*100).toFixed(0)}%"></div></div></td>
       <td class="pk-pct">${(b.p*100).toFixed(0)}%</td>
@@ -137,15 +147,30 @@ function sideRows(gid,team,isHome){
       <td class="pk-num pk-book">${book!=null&&isFinite(book)?fmtML(book):''}</td></tr>`; };
   let h=`<div class="pk-statblk"><h4>${ttag(team)} ${esc(TEAM_NAMES[team]||team)}
     <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em>book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="pk-rungs">`;
-  h+=row(ml,'To win',bookML);
-  if(ats) h+=row(ats,`To cover ${ats.line>0?'+':''}${ats.line}`,bookSP);
+  h+=row(ml,'To win',bookML,'ml');
+  if(ats) h+=row(ats,`To cover ${ats.line>0?'+':''}${ats.line}`,bookSP,'ats');
   return h+'</table></div>';
 }
 
 function gameBody(g){
   if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody"><span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
-  if(!mkt(g.game_id)) return `<div class="pk-gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
-  return `<div class="pk-gbody">${sideRows(g.game_id,g.away_team,false)}${sideRows(g.game_id,g.home_team,true)}</div>`;
+  const row=mkt(g.game_id);
+  if(!row) return `<div class="pk-gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')).length;
+  const note=gameStarted(row)
+    ? 'This game has kicked off, so its lines can no longer go on a parlay.'
+    : `Tick a line to put it on the parlay in <a href="#parlay">Parlay Builders</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on it.`:''}`;
+  return `<div class="pk-gbody">${sideRows(g.game_id,g.away_team,false)}${sideRows(g.game_id,g.home_team,true)}<p class="pk-tolegs">${note}</p></div>`;
+}
+/* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
+   so the row shows what is on the parlay now */
+function wireLegs(){
+  el('pkBoard').addEventListener('change',e=>{
+    const box=e.target; if(!box.matches||!box.matches('input[data-pkleg]')) return;
+    const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;
+    toggleLeg(box.dataset.pkleg,+box.dataset.k,mkt(g.game_id),'over',false);
+    const body=card.querySelector('.pk-gbody'); if(body) body.outerHTML=gameBody(g);
+  });
 }
 
 function resultCell(g,c){
@@ -237,7 +262,7 @@ function frames(){
 }
 
 async function boot(){
-  routeTabs(); frames();
+  routeTabs(); frames(); wireLegs();
   try{
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
