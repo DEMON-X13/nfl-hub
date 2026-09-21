@@ -35,8 +35,26 @@ function withPicks(st) {
   return { state: s, week: wk };
 }
 
+/* what ESPN's scoreboard says about the week: for the games the job has not graded, the
+   first is over (the home side won 27-20), the second is on (the away side leads 14-10 in
+   the third quarter), the rest have not kicked off. Graded games are final. */
+function scoreboard(state, week) {
+  const games = state.schedule.filter(g => +g.week === week);
+  let n = 0;
+  return { events: games.map(g => {
+    const graded = !!state.processed[g.game_id];
+    const kind = graded ? 'final' : (n++ === 0 ? 'post' : (n === 2 ? 'in' : 'pre'));
+    const hs = kind === 'final' ? g.home_score : kind === 'post' ? 27 : kind === 'in' ? 10 : 0;
+    const as = kind === 'final' ? g.away_score : kind === 'post' ? 20 : kind === 'in' ? 14 : 0;
+    const st = kind === 'in' ? { state: 'in', shortDetail: 'Q3 5:44' } : kind === 'pre' ? { state: 'pre', shortDetail: '8:15 PM' } : { state: 'post', shortDetail: 'Final' };
+    return { id: 'e' + g.game_id, date: g.gameday + 'T17:00Z', status: { type: st }, competitions: [{ competitors: [
+      { homeAway: 'home', team: { abbreviation: g.home_team }, score: String(hs) },
+      { homeAway: 'away', team: { abbreviation: g.away_team }, score: String(as) } ] }] };
+  }) };
+}
+
 /* boot the page; resolves once the prop model says it is ready and the board has drawn */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/', espn = null) {
   return new Promise(resolve => {
     const errs = [], fetched = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
@@ -46,6 +64,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
         w.fetch = u => { const s = String(u); fetched.push(s.replace(/\?.*$/, ''));
           if (s.includes('state.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
           if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
+          if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched }), 300));
       } });
@@ -55,7 +74,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
 
 (async () => {
   const { state, week } = withPicks(STATE);
-  const { w, d, errs, fetched, timedOut } = await run(state);
+  const { w, d, errs, fetched, timedOut } = await run(state, undefined, wk => scoreboard(state, wk));
+  await wait(700);                                  /* the scoreboard is read once on load, after the prop model is up */
 
   chk(!timedOut, 'the prop model never said app-ready');
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
@@ -72,7 +92,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(!d.getElementById('buildTag'), 'the build tag is on the public header');
 
   /* ---- Pick'ems ---- */
-  const cards = [...d.querySelectorAll('.pk-game')];
+  let cards = [...d.querySelectorAll('.pk-game')];
   const want = state.schedule.filter(g => +g.week === week).length;
   chk(cards.length === want, `expected ${want} games in week ${week}, got ${cards.length}`);
   chk(+d.getElementById('pkWeek').value === week, 'the board did not open on the week with calls to show');
@@ -89,7 +109,29 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(cards.every(c => c.querySelector('.pk-result')), 'a game is missing its final-score cell');
   const pend = cards.filter(c => /0 : 0/.test(txt(c.querySelector('.pk-result')))).length;
   const done = cards.filter(c => / won /.test(txt(c.querySelector('.pk-result')))).length;
-  chk(pend + done === cards.length, `every result cell is either 0 : 0 or a result: ${pend} + ${done} of ${cards.length}`);
+  const on = cards.filter(c => / leading |Tied /.test(txt(c.querySelector('.pk-result')))).length;
+  chk(pend + done + on === cards.length, `every result cell is 0 : 0, a result or a game on now: ${pend} + ${done} + ${on} of ${cards.length}`);
+  /* the scoreboard was read on load: a game the job has not reached shows what ESPN says */
+  const ungraded = state.schedule.filter(g => +g.week === week && !state.processed[g.game_id]);
+  chk(/scores \d/.test(txt(d.getElementById('pkStamp'))), 'the Pick\'ems stamp does not say when the scoreboard was read: ' + txt(d.getElementById('pkStamp')));
+  if (ungraded.length) {
+    const g0 = ungraded[0], c0 = cards.find(c => c.dataset.game === g0.game_id);
+    chk(new RegExp(`${g0.home_team} won 20–27`).test(txt(c0.querySelector('.pk-result'))) && /Pick hit/.test(txt(c0.querySelector('.pk-result'))),
+      'a game finished on the scoreboard does not read "HOME won 20–27 / Pick hit": ' + txt(c0.querySelector('.pk-result')));
+    chk(!!c0.querySelector('.pk-tw.pk-home .pk-res.pk-ok') && c0.classList.contains('pk-played'), 'the scoreboard winner carries no tick');
+    chk(c0.querySelector('.pk-result .pk-mwin').classList.contains('pk-ok'), 'a landed call is not green');
+  }
+  if (ungraded.length > 1) {
+    const g1 = ungraded[1], c1 = cards.find(c => c.dataset.game === g1.game_id);
+    chk(new RegExp(`${g1.away_team} leading 14–10`).test(txt(c1.querySelector('.pk-result'))) && /Q3 5:44/.test(txt(c1.querySelector('.pk-result'))),
+      'a game on now does not read "AWAY leading 14–10 / Q3 5:44": ' + txt(c1.querySelector('.pk-result')));
+    chk(c1.querySelector('.pk-result .pk-mwin').classList.contains('pk-bad') && !c1.querySelector('.pk-res'), 'a call behind is not red, or a game on now carries a mark');
+  }
+  /* the button reads again */
+  d.getElementById('pkNow').click();
+  await wait(200);
+  chk(fetched.filter(u => u.includes('/scoreboard')).length === 2, 'Refresh scores did not read the scoreboard again: ' + fetched.filter(u => u.includes('/scoreboard')).length);
+  cards = [...d.querySelectorAll('.pk-game')];        /* the board is redrawn on every read */
   const graded = cards.find(c => c.classList.contains('pk-played'));
   if (graded) chk(!!graded.querySelector('.pk-matchup .pk-res') && /Pick (hit|missed)/.test(txt(graded.querySelector('.pk-result'))),
     'a graded game shows no tick or cross and no Pick hit/missed');
@@ -173,10 +215,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(slateRows.length === w.eval('S').sched.filter(g => +g.w === wk).length, `Props shows ${slateRows.length} games for week ${wk}`);
   for (const id of ['weekSel', 'weekRec', 'seasonRec', 'slateNow'])
     chk(!!d.getElementById(id), `the Games tab's ${id} is missing`);
-  for (const id of ['slateEvery', 'slateStamp', 'slateDot'])
+  for (const id of ['slateEvery', 'slateDot'])
     chk(!d.getElementById(id), `the Games tab's ${id} should be gone`);
+  chk(txt(d.getElementById('slateStamp')) === '', 'the Props stamp says something before the scoreboard is read: ' + txt(d.getElementById('slateStamp')));
   d.getElementById('slateNow').click();
-  await wait(100);
+  await wait(300);
+  chk(/scores \d/.test(txt(d.getElementById('slateStamp'))), 'Refresh scores on the Props tab left no stamp: ' + txt(d.getElementById('slateStamp')));
   chk(/Week \d+ \d+–\d+/.test(txt(d.getElementById('weekRec'))), 'the prop model\'s week record is not drawn: ' + txt(d.getElementById('weekRec')));
   chk(txt(d.querySelector('#tab-slate .gamehead')).includes('Biggest projections'), 'the Games column header is not the prop model\'s');
   /* open a game: the prop model's own modal, with players in it */
@@ -272,6 +316,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   const b = await run(bare);
   chk(b.errs.length === 0, 'the page threw without published calls: ' + b.errs.join('; '));
   chk(b.d.querySelectorAll('.pk-game').length > 0, 'no board without published calls');
+  /* and with no scoreboard to read, the stamp says so and the board stands */
+  await wait(700);
+  chk(/scores not loading/.test(txt(b.d.getElementById('pkStamp'))) && b.d.getElementById('pkStamp').classList.contains('bad'), 'an unreachable scoreboard is not said: ' + txt(b.d.getElementById('pkStamp')));
+  chk(b.d.querySelectorAll('.pk-game').length > 0 && b.errs.length === 0, 'an unreachable scoreboard broke the board');
 
   console.log(`${checks} checks, ${fails.length} failures`);
   fails.forEach(f => console.log('  FAIL:', f));

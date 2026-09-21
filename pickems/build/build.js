@@ -59,7 +59,7 @@ for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'fun
   if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);
 const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO};\n})();`;
 const js = sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot');
-for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg'])
+for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg', 'function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');
 
 /* the prop model's page, re-headed */
@@ -68,7 +68,8 @@ html = sub1(html, '<title>X NFL Prop Model</title>', "<title>X NFL Pick'ems</tit
 html = sub1(html, '<h1>X NFL Prop Model</h1>', `<h1>X NFL Pick'ems</h1>`, 'heading');
 /* the Props tab's timed score refresh goes: the button stays, the "scores off" stamp and
    the every-30s picker do not. Their code is null-safe on both. */
-html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>\n', '', 'the scores stamp');
+html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>\n',
+  '<span class="livestamp" id="slateStamp"></span>\n', 'the scores stamp');
 html = sub1(html, `<label class="muted">Scores <select id="slateEvery">
         <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
       </select></label>\n`, '', 'the scores picker');
