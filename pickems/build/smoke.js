@@ -115,6 +115,35 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/pickems/') {
   chk(own && Math.round(own.p * 100) === pcts[0], `the board's away win chance ${pcts[0]} is not the prop model's ${own && Math.round(own.p * 100)}`);
   chk(first.classList.contains('pk-open'), 'the card did not mark itself open');
 
+  /* a line on a game that has not kicked off can be ticked onto the prop model's parlay */
+  const started = gid => w.eval('gameStarted')(w.eval('S').sched.find(x => x.id === gid));
+  chk(cards.every(c => started(c.dataset.game) === !c.querySelector('input[data-pkleg]') || !c.querySelector('.pk-gbody')), 'boxes and kickoffs disagree');
+  const openCard = cards.find(c => !started(c.dataset.game));
+  if (openCard) {
+    if (openCard !== first) { first.click(); await wait(30); openCard.click(); await wait(60); }
+    const boxes = [...openCard.querySelectorAll('input[data-pkleg]')];
+    chk(boxes.length === 4 && boxes.every(b => !b.checked), `a game not yet kicked off should offer four unticked lines, got ${boxes.length}`);
+    chk(/Tick a line/.test(txt(openCard.querySelector('.pk-tolegs'))) && !!openCard.querySelector('.pk-tolegs a[href="#parlay"]'), 'no note pointing at Parlay Builders');
+    const key = boxes[0].dataset.pkleg;
+    boxes[0].click();
+    await wait(60);
+    const leg = w.eval('S').parlay[key];
+    chk(!!leg && leg.grp === 'TEAM' && leg.stat === 'ml' && leg.label === 'To win', 'ticking To win did not put a team leg on the parlay: ' + JSON.stringify(leg));
+    const box2 = openCard.querySelector(`input[data-pkleg="${key}"]`);
+    chk(box2 && box2.checked && box2.closest('tr').classList.contains('pk-on'), 'the ticked row does not show as on');
+    chk(/1 from this game is on it/.test(txt(openCard.querySelector('.pk-tolegs'))), 'the note does not count the leg');
+    chk(/1-leg parlay/.test(txt(d.getElementById('parlayBody'))) && txt(d.getElementById('parlayBody')).includes(leg.name), 'the Parlay Builders tab does not show the leg');
+    box2.click();
+    await wait(60);
+    chk(!w.eval('S').parlay[key], 'unticking did not take the leg off the parlay');
+    chk(/Nothing picked yet/.test(txt(d.getElementById('parlayBody'))), 'the builder still shows a parlay after unticking');
+    if (openCard !== first) { openCard.click(); await wait(30); first.click(); await wait(60); }
+  } else chk(cards.every(c => started(c.dataset.game)), 'no game offered lines although one has not kicked off');
+  const lockedCard = cards.find(c => started(c.dataset.game));
+  if (lockedCard && lockedCard !== first) { lockedCard.click(); await wait(60);
+    chk(!lockedCard.querySelector('input[data-pkleg]') && /kicked off/.test(txt(lockedCard.querySelector('.pk-tolegs'))), 'a game that kicked off still offers lines');
+    lockedCard.click(); await wait(30); }
+
   /* clicking inside the prices does not toggle; clicking the row does */
   first.querySelector('.pk-gbody').click();
   await wait(60);
