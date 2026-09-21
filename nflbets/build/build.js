@@ -1,8 +1,8 @@
-/* Build the Pick'ems page.
+/* Build the X NFL Bets and Stats page (nflbets/).
  *
- *   node pickems/build/build.js        (from the hub root)
+ *   node nflbets/build/build.js        (from the hub root)
  *
- *   pickems/index.html   the prop model's page with the Pick'ems board in front of it.
+ *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it.
  *
  * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
@@ -29,7 +29,7 @@ const part1 = rd('props', 'build', 'part1.html');
 const part2 = rd('props', 'build', 'part2.js');
 const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
-const tab = rd('pickems', 'build', 'tab_pickems.html');
+const tab = rd('nflbets', 'build', 'tab_pickems.html');
 
 /* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
    not a page to ship half-edited */
@@ -40,7 +40,7 @@ const sub1 = (s, from, to, what) => {
 };
 const lift = (src, from, to, what) => {
   const a = src.indexOf(from), b = src.indexOf(to, a + 1);
-  if (a < 0 || b < 0) throw new Error(`the ${what} is not where pickems/build expects it`);
+  if (a < 0 || b < 0) throw new Error(`the ${what} is not where nflbets/build expects it`);
   return src.slice(a, b).trimEnd();
 };
 const piece = (re, what) => { const m = tab.match(re); if (!m) throw new Error(`tab_pickems.html has no ${what}`); return m[1]; };
@@ -64,8 +64,8 @@ for (const need of ['function gameBet', 'function confTier', 'function bookPrice
 
 /* the prop model's page, re-headed */
 let html = part1;
-html = sub1(html, '<title>X NFL Prop Model</title>', "<title>X NFL Pick'ems</title>", 'title');
-html = sub1(html, '<h1>X NFL Prop Model</h1>', `<h1>X NFL Pick'ems</h1>`, 'heading');
+html = sub1(html, '<title>X NFL Prop Model</title>', '<title>X NFL Bets and Stats</title>', 'title');
+html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 'heading');
 /* the Props tab's timed score refresh goes: the button stays, the "scores off" stamp and
    the every-30s picker do not. Their code is null-safe on both. */
 html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>\n',
@@ -98,7 +98,7 @@ const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label], i) =>
 const FRAMES = TABS.filter(t => t[2]).map(([t, label, src]) =>
   `<section id="tab-${t}" hidden><iframe class="pk-frame" data-src="${src}" title="${label}"></iframe></section>`).join('\n\n');
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
-if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where pickems/build expects it in part1.html');
+if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && !t.match(/^(slate|parlay|track)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
@@ -124,6 +124,6 @@ document.addEventListener('DOMContentLoaded',()=>{ const bt=document.getElementB
 })();
 </script>`;
 const out = html + APP + '\n</script>\n' + NOTE + '\n<script>' + js + '</script>\n</body>\n</html>\n';
-fs.writeFileSync(path.join(ROOT, 'pickems', 'index.html'), out);
-console.log(`pickems/index.html written: ${(out.length / 1024).toFixed(1)} KB `
+fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
+console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB `
   + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);

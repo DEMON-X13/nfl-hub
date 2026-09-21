@@ -73,13 +73,13 @@ news/
   HANDOFF.md                     how to publish a week -- read before touching news/
 ```
 
-## Pick'ems: one page over both models
+## Bets and Stats: one page over both models
 
-`pickems/` is the page the two sites are migrating into, one tab at a time, so that
-either can be reverted to on its own. `pickems/build/build.js` assembles the prop model
+`nflbets/` (X NFL Bets and Stats) is the page the two sites are migrating into, one tab at a time, so that
+either can be reverted to on its own. `nflbets/build/build.js` assembles the prop model
 from its parts (title, heading and tab bar swapped; every prop model section kept in the
 page, listeners and all, whether or not it has a button yet), sets the Pick'ems board in
-front of it from `pickems/build/tab_pickems.html` (its own section, styles and closure,
+front of it from `nflbets/build/tab_pickems.html` (its own section, styles and closure,
 every class and id prefixed `pk-`), and frames the betting site's Records, Power Ratings
 and Bet Log tabs from `betting/admin.html?embed=1#tab`, which hides that page's header
 and tab bar. The board's tag and confidence bands are lifted from the betting app at
@@ -87,7 +87,7 @@ build time and scoped inside the closure, since the prop model has its own `tag(
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting site's, so a pick, parlay or bet made on either site is
 what this page shows. Tabs are addresses: `#slate`, `#parlay`, `#record` and so on.
-`pickems/build/smoke.js` boots the built page in jsdom against both sites' published
+`nflbets/build/smoke.js` boots the built page in jsdom against both sites' published
 data and walks every tab.
 
 ## Props: how it fits together

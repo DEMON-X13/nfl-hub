@@ -100,7 +100,7 @@ function load(picks) {
   a.window.eval('S.lastBackup=Date.now()-3*86400000; S.lastBackupHow="downloaded"; save()'); await sleep(900);
   const kept = JSON.parse(a.window.localStorage.getItem('x_nfl_viewer_picks_2026') || '{}');
   check(kept.lastBackup && Date.now() - kept.lastBackup > 2 * 86400000, 'admin: the last-backup time is kept in the browser store');
-  // 4. embedded: the Pick'ems page frames one tab of the admin page, headless
+  // 4. embedded: the X NFL Bets and Stats page frames one tab of the admin page, headless
   const e = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html?embed=1#record',
     beforeParse(w3) { w3.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w3.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
       w3.confirm = () => true; w3.alert = () => {}; w3.scrollTo = () => {}; } });
