@@ -2,13 +2,15 @@
  *
  *   node betting/tools/build.js
  *
- *   betting/index.html   the public viewer: AI Picks, My Picks, Parlay Builder, Power Ratings, Backup.
- *   betting/admin.html   every tab, on the same published season.
+ *   betting/index.html   retired: a redirect to nflbets/, where the board, the builder, the
+ *                        records, the ratings and the bet log live now.
+ *   betting/admin.html   every tab, on the published season. nflbets/ frames its Records,
+ *                        Power Ratings and Bet Log tabs with ?embed.
  *
- * Both pages load betting/state.json (written by update.js) as the season and keep
- * only this browser's own picks, bankroll, bets and self-loaded odds in local
- * storage, under one key shared by the two pages. Uploads on the admin page grade
- * for the session only; the job's published state wins on the next load.
+ * The admin page loads betting/state.json (written by update.js) as the season and keeps
+ * only this browser's own picks, bankroll, bets and self-loaded odds in local storage,
+ * under one key shared with nflbets/. Uploads on the admin page grade for the session
+ * only; the job's published state wins on the next load.
  */
 'use strict';
 const fs = require('fs');
@@ -470,6 +472,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 const anchor = '<script>\nconst MODEL = ';
 if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
-fs.writeFileSync(path.join(ROOT, 'betting', 'index.html'), html.replace(anchor, HOOK + TRIM + LIVE + anchor));
+/* retired: the viewer is one tab of nflbets/ now, and the admin page is what it frames.
+   index.html sends a visitor there, tab hash and all. TRIM is kept for a revert. */
+void TRIM;
+fs.writeFileSync(path.join(ROOT, 'betting', 'index.html'), "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>X NFL Bets and Stats</title>\n<!-- retired: this site is one tab of X NFL Bets and Stats now. The hash carries across, so a\n     bookmarked tab still lands on it. -->\n<meta http-equiv=\"refresh\" content=\"0; url=../nflbets/\">\n<script>location.replace('../nflbets/'+(location.hash||''));</script>\n</head>\n<body><a href=\"../nflbets/\">This page has moved to X NFL Bets and Stats.</a></body>\n</html>\n");
 fs.writeFileSync(path.join(ROOT, 'betting', 'admin.html'), html.replace(anchor, HOOK + ADMIN + LIVE + anchor));
-console.log('built betting/index.html (viewer) and betting/admin.html (all tabs, same published season) from', path.relative(ROOT, APP));
+console.log('built betting/index.html (a redirect to nflbets/) and betting/admin.html (all tabs, same published season) from', path.relative(ROOT, APP));

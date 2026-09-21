@@ -2,14 +2,14 @@
  *
  *   node props/build/publish.js      (from the hub root)
  *
- *   props/index.html   public: Games, Parlay Builder, Track Record, Backup.
- *                      The Weekly Update tab is removed; the week's data is baked in
- *                      by weekly.py, so visitors never upload. Backup stays: a
- *                      visitor's saved parlays live only in their own browser.
- *   props/admin.html   the full app, every tab.
+ *   props/index.html   retired: a redirect to nflbets/, where the Games, Parlay Builder and
+ *                      Track Record tabs live now, on the same parts and the same payload.
+ *                      A tab in the hash carries across.
+ *   props/admin.html   the full app, every tab, for a manual run or a backup.
  * Anything a visitor does (parlays, bets, settings) stays in their own browser.
  */
 'use strict';
+const REDIRECT = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>X NFL Bets and Stats</title>\n<!-- retired: this site is one tab of X NFL Bets and Stats now. The hash carries across, so a\n     bookmarked tab still lands on it. -->\n<meta http-equiv=\"refresh\" content=\"0; url=../nflbets/#slate\">\n<script>location.replace('../nflbets/'+(location.hash||'#slate'));</script>\n</head>\n<body><a href=\"../nflbets/#slate\">This page has moved to X NFL Bets and Stats.</a></body>\n</html>\n";
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -45,8 +45,8 @@ const rehome = s => {
   if (s.split(APP_DATA).length - 1 !== 1) throw new Error('the payload path is not in the app exactly once');
   return s.replace(APP_DATA, PUB_DATA);
 };
-const pub = rehome(html).replace('</body>', TRIM + '</body>');
-fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), pub);
+void TRIM;   /* the public trim is not applied to anything now; kept for a revert */
+fs.writeFileSync(path.join(ROOT, 'props', 'index.html'), REDIRECT);
 const ADMIN = `<script>
 /* header note, as on the betting model: when the site's data was last built, not "Autosaved" */
 (function(){
@@ -61,4 +61,4 @@ const ADMIN = `<script>
 </script>
 `;
 fs.writeFileSync(path.join(ROOT, 'props', 'admin.html'), rehome(html).replace('</body>', ADMIN + '</body>'));
-console.log('published props/index.html (public, 4 tabs) and props/admin.html (all tabs)');
+console.log('published props/index.html (a redirect to nflbets/) and props/admin.html (all tabs)');

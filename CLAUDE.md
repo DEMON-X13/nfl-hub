@@ -26,8 +26,8 @@ build and its own scheduled workflow.
 
 | Path | What | Source of truth |
 |---|---|---|
-| `props/` | Prop Model: Games, Parlay Builder, Track Record | `props/build/part1.html`, `part2.js`, `part3.js` |
-| `betting/` | X NFL Betting Model | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
+| `props/` | Prop Model, retired as a site: `index.html` redirects to `nflbets/`; `admin.html` is the full app for a manual run or a backup | `props/build/part1.html`, `part2.js`, `part3.js` |
+| `betting/` | X NFL Betting Model, retired as a site: `index.html` redirects to `nflbets/`; `admin.html` is the app `nflbets/` frames | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time | `nflbets/build/tab_pickems.html` + the props parts + the betting app |
 

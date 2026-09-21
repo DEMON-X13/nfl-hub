@@ -1,4 +1,4 @@
-/* Smoke test for the built viewer page.
+/* Smoke test for the built pages: admin.html, which is the app now, and index.html, which is a redirect.
  *
  *   node betting/tools/smoke.js
  *
@@ -11,7 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const ROOT = path.resolve(__dirname, '..', '..');
-const html = fs.readFileSync(path.join(ROOT, 'betting', 'index.html'), 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
+const html = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
+const redirect = fs.readFileSync(path.join(ROOT, 'betting', 'index.html'), 'utf8');
 const state = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let fails = 0; const check = (c, m) => { if (!c) { fails++; console.log('  FAIL', m); } };
@@ -43,14 +44,13 @@ function load(picks) {
   check(Object.keys(S.processed).length === graded.length, `published season loaded (${Object.keys(S.processed).length} graded)`);
   /* My Picks is gone on purpose: the picks it held never left the browser that made them,
      and losing a week of them was the whole reason for dropping it. The key is untouched. */
-  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,bank,ratings,backup', 'AI Picks, Parlay Builder, Power Ratings and Backup tabs remain, without My Picks');
+  check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,bank,record,bets,ratings,upload,backup', 'every tab present but My Picks');
+  check(/<meta http-equiv="refresh" content="0; url=\.\.\/nflbets\/">/.test(redirect) && /location\.replace\('\.\.\/nflbets\/'\+\(location\.hash\|\|''\)\)/.test(redirect) && !/const MODEL/.test(redirect), 'index.html is a redirect to nflbets/ that carries the hash, and not the app');
   check(!d.getElementById('tab-mine'), 'the My Picks section is gone with its tab');
   check(![...d.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'no You column survives');
-  check(!d.getElementById('rebuildBtn') && !d.getElementById('resetBtn') && !!d.getElementById('exportBtn'), 'viewer: Backup has save and import only');
+  check(!d.getElementById('rebuildBtn') && !d.getElementById('resetBtn') && !!d.getElementById('exportBtn'), 'Backup has save and import only');
   check(Object.keys(S.odds || {}).length > 0, 'published moneylines are available to the Parlay Builder tab');
-  check(!d.getElementById('oddsFetch') && !d.getElementById('oddsFileBtn') && !d.getElementById('oddsClear'), 'Bank Roll: odds fetch/upload/clear card removed for visitors');
   check(Object.keys(S.myPicks).length === 0 && Object.values(S.processed).every(p => p.myPick === null), 'a new visitor has no picks and inherits none of the owner\'s');
-  check(!d.getElementById('recordStats') || d.getElementById('tab-record').hidden, 'record tab is not shown');
   { d.querySelector('#tabs button[data-tab="backup"]').click();
     const bs = d.getElementById('backupState');
     check(bs && bs.className !== 'err' && !/Everything you have entered/.test(bs.textContent), 'a visitor with no data gets no backup alarm: ' + (bs && bs.textContent.trim().slice(0, 60)));
@@ -132,6 +132,6 @@ function load(picks) {
   check(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml), 'embed: header and tab bar are hidden by the stylesheet');
   const plain = a.window.document.documentElement;
   check(!plain.classList.contains('embed'), 'a page opened normally is not embedded');
-  console.log(fails ? `${fails} check(s) failed` : `viewer + admin smoke test passed (${graded.length} graded games in the published state)`);
+  console.log(fails ? `${fails} check(s) failed` : `admin + redirect smoke test passed (${graded.length} graded games in the published state)`);
   process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });
