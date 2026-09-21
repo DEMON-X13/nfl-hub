@@ -151,8 +151,7 @@ footer a{color:var(--ink-2)}
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
     <span class="grow"></span>
-    <a href="#" class="muted" id="showHidden" hidden></a>
-    <button class="btn quiet" id="clear" title="Hide every parlay that has landed or gone, on this device. Show them again from the link that appears.">Clear settled</button>
+    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page, on this device.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
   <noscript><div class="note"><b>This page needs JavaScript.</b> It has none of its own data:
@@ -160,7 +159,6 @@ footer a{color:var(--ink-2)}
     there is nothing for it to show. Lockdown Mode and some content blockers turn them off.</div></noscript>
   <div id="app"></div>
 </main>
-<footer id="foot"></footer>
 <script>
 /* ---- lifted from props/build/part2.js by live/build/build.js: one source of truth ---- */
 const PROP_KEY='props_2026_v1';
@@ -204,14 +202,14 @@ const LIVE_KEY='live_parlays_v1';
 function liveStore(){
   let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
   return {lines:(v&&v.lines&&typeof v.lines==='object')?v.lines:{},
-    hidden:(v&&v.hidden&&typeof v.hidden==='object')?v.hidden:{}};
+    removed:(v&&v.removed&&typeof v.removed==='object')?v.removed:{}};
 }
-/* a parlay cleared from this page is hidden here and nowhere else: the prop model, the
-   betting model and the file keep it, and this device shows it again on request */
-const hideKey=p=>p.src+'|'+p.id;
-function hideParlay(p,on){ const st=liveStore(); if(on) st.hidden[hideKey(p)]=1; else delete st.hidden[hideKey(p)]; writeStore(st); }
-function unhideAll(){ const st=liveStore(); st.hidden={}; writeStore(st); }
-const isHidden=p=>!!liveStore().hidden[hideKey(p)];
+/* a parlay deleted from this page is gone from this page on this device, for good. This
+   page writes to no other key: the prop model's saved parlays and the betting model's slips
+   are deleted where they were made, and a parlay in the file is taken out of the file. */
+const rmKey=p=>p.src+'|'+p.id;
+function removeParlay(p){ const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
+const isRemoved=p=>!!liveStore().removed[rmKey(p)];
 function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
 function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
 function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
@@ -507,9 +505,7 @@ function whatsHere(){
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
-  const app=document.getElementById('app'), every=allParlays(), ps=every.filter(p=>!isHidden(p));
-  const nHidden=every.length-ps.length, sh=document.getElementById('showHidden');
-  sh.hidden=!nHidden; sh.textContent=nHidden?`${nHidden} hidden \u00b7 show`:'';
+  const app=document.getElementById('app'), ps=allParlays().filter(p=>!isRemoved(p));
   document.getElementById('clear').hidden=!ps.some(settledP);
   let html='';
   if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
@@ -530,14 +526,14 @@ function draw(){
   for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); })){
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
-    const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':`<span class="pill warn">${hit} of ${p.legs.length} in</span>`);
+    const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':'');
     const from={prop:'prop model',bet:'betting model',file:'in the repository'}[p.src]||'in the repository';
     html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='bet'?'bet':'file'))}">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
-        ${tag}<span class="grow"></span><button class="hidebtn" data-hide="${esc(hideKey(p))}" title="Hide this parlay on this device" aria-label="Hide this parlay">\u00d7</button></div>
+        ${tag}<span class="grow"></span><button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay from this page" aria-label="Delete this parlay">\u00d7</button></div>
       <div class="sp-money">
         <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
         <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
@@ -547,8 +543,8 @@ function draw(){
       ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
   }
   app.innerHTML=html; wireLines(app); foot();
-  app.querySelectorAll('[data-hide]').forEach(b=>b.addEventListener('click',()=>{
-    const q=b.dataset.hide.split('|'); hideParlay({src:q[0],id:q.slice(1).join('|')},true); draw(); }));
+  app.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
+    const q=b.dataset.rm.split('|'); removeParlay({src:q[0],id:q.slice(1).join('|')}); draw(); }));
 }
 /* landed or gone: nothing left to watch */
 function settledP(p){ return isDone(p)||p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';}); }
@@ -586,14 +582,9 @@ function foot(){
   document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
     :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
-  document.getElementById('foot').innerHTML=`Parlays marked <b>in the repository</b> come from <code>liveparlays/parlays.json</code>${when&&!isNaN(when)?', last changed '+esc(when.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}, and every device sees those. The rest are read straight out of the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> in this browser, with nothing to press — saved and locked parlays, and whatever is sitting in the prop model's builder \u2014 but they stay in this browser, because that is where those two apps keep them. A parlay that should follow you between devices has to go in the file.
-    Tap the line under a bar (<b>41.5 \u270e</b>) if the book moved it after you bet: the page measures against your number from then on, the parlay itself is left alone, and the correction stays in this browser \u2014 for one every device should see, it goes in the file.
-    Scores come from ESPN's public feeds, read by this page in your own browser: no odds-API credits are ever spent here, and no job runs for it.
-    The page fetches once when you open it, then when you press Refresh now. Clear settled hides the parlays that have landed or gone, on this device only; \u00d7 on a parlay hides just that one, and the link that appears brings them all back.`;
 }
 document.getElementById('now').addEventListener('click',refresh);
-document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isHidden(p)&&settledP(p)) hideParlay(p,true); draw(); });
-document.getElementById('showHidden').addEventListener('click',e=>{ e.preventDefault(); unhideAll(); draw(); });
+document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
 /* the build this browser is showing, for a "blank on every device" day: in the markup, not the bar */
 document.documentElement.dataset.build=PAGE_BUILD;
 draw(); refresh();

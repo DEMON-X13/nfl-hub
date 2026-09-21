@@ -178,7 +178,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   // ---- D. the buttons are gone ----
   for (const id of ['ghSave', 'ghLoad', 'send', 'paste', 'clearDone', 'tokIn'])
     chk(!d.getElementById(id), `the ${id} control is still on the page`);
-  chk(!d.querySelector('[data-rm],[data-send]'), 'a sending or removing control survived');
+  chk(!d.querySelector('[data-send]'), 'a sending control survived');
   chk(!!d.getElementById('now') && !d.getElementById('every') && !d.getElementById('ver'), 'Refresh now stays; the interval picker and the build pill go');
   /* the build stamp: the one thing that tells a stale cached copy from a broken one, in the markup now */
   chk(/^live v\d+ \u00b7 \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/.test(d.documentElement.dataset.build || ''),
@@ -186,37 +186,37 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   chk(!/__BUILT__/.test(HTML), 'the build stamp was never filled in');
   chk(/needs JavaScript/.test(HTML), 'a browser with scripts off gets no explanation');
   chk(!d.querySelector('header .sub') && !d.querySelector('header a'), 'the header should be the title alone');
+  chk(!d.querySelector('footer') && !/Parlays marked/.test(txt(d.body)), 'the footer text is still on the page');
 
-  // ---- D1. clearing what has settled, on this device only ----
+  // ---- D1. deleting what has settled, on this device ----
   {
     const live = await run({ state: 'in' });
-    chk(live.d.getElementById('clear').hidden && live.d.getElementById('showHidden').hidden, 'with nothing settled there is nothing to clear and nothing hidden');
+    chk(live.d.getElementById('clear').hidden, 'with nothing settled there is nothing to clear');
     chk(/\[hidden\]\{display:none!important\}/.test(HTML), 'a hidden button is still drawn: the .btn display rule beats the hidden attribute without this');
-    chk(live.d.querySelectorAll('.savedp [data-hide]').length === 2, 'every parlay should carry its own hide button');
-    live.d.querySelector('.savedp [data-hide]').click();
+    chk(live.d.querySelectorAll('.savedp [data-rm]').length === 2, 'every parlay should carry its own delete button');
+    chk(!live.d.querySelector('.pill.warn') && !/\d of \d in/.test(txt(live.d.getElementById('app'))), 'a running parlay still carries the "n of m in" tag');
+    live.d.querySelector('.savedp [data-rm]').click();
     await wait(60);
-    chk(live.d.querySelectorAll('.savedp').length === 1, 'hiding one parlay did not take it off the page');
-    chk(!live.d.getElementById('showHidden').hidden && /1 hidden/.test(txt(live.d.getElementById('showHidden'))), 'the hidden count is not offered back: ' + txt(live.d.getElementById('showHidden')));
+    chk(live.d.querySelectorAll('.savedp').length === 1, 'deleting one parlay did not take it off the page');
+    chk(!live.d.getElementById('showHidden') && !/\u00b7 show/.test(txt(live.d.body)), 'a deleted parlay is offered back');
     const st = JSON.parse(live.w.localStorage.getItem('live_parlays_v1') || '{}');
-    chk(st.hidden && Object.keys(st.hidden).length === 1 && /^file\|/.test(Object.keys(st.hidden)[0]), 'the hidden parlay is not kept under this page\'s own key: ' + JSON.stringify(st));
-    chk(live.w.localStorage.getItem(PROP_KEY) === null && live.w.localStorage.getItem(BET_KEY) === null, 'hiding wrote to a model\'s key');
-    live.d.getElementById('showHidden').click();
-    await wait(60);
-    chk(live.d.querySelectorAll('.savedp').length === 2 && live.d.getElementById('showHidden').hidden, 'show did not bring the parlay back');
+    chk(st.removed && Object.keys(st.removed).length === 1 && /^file\|/.test(Object.keys(st.removed)[0]), 'the deleted parlay is not kept under this page\'s own key: ' + JSON.stringify(st));
+    chk(live.w.localStorage.getItem(PROP_KEY) === null && live.w.localStorage.getItem(BET_KEY) === null, 'deleting wrote to a model\'s key');
 
     const done = await run({ state: 'post' });
     chk(!done.d.getElementById('clear').hidden, 'with every game final, Clear settled should be offered');
+    chk(done.d.querySelectorAll('.pill.ok, .pill.bad').length === 2, 'a finished parlay should still say landed or gone');
     done.d.getElementById('clear').click();
     await wait(60);
-    chk(done.d.querySelectorAll('.savedp').length === 0 && /2 hidden/.test(txt(done.d.getElementById('showHidden'))), 'Clear settled did not hide the settled parlays: ' + done.d.querySelectorAll('.savedp').length);
+    chk(done.d.querySelectorAll('.savedp').length === 0, 'Clear settled did not delete the settled parlays: ' + done.d.querySelectorAll('.savedp').length);
     chk(done.d.getElementById('clear').hidden, 'Clear settled stays offered with nothing left to clear');
-    chk(/Nothing to watch yet|2 hidden/.test(txt(done.d.getElementById('app')) + txt(done.d.getElementById('showHidden'))), 'an emptied page does not say why');
+    chk(/Nothing to watch yet/.test(txt(done.d.getElementById('app'))), 'an emptied page does not say so');
     /* a parlay still running is not settled and is not cleared */
-    const mixed = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, hidden: {} })) });
+    const mixed = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {} })) });
     chk(mixed.d.getElementById('clear').hidden, 'a running parlay is offered for clearing');
-    /* what was hidden stays hidden on the next visit */
-    const again = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, hidden: { 'file|night': 1 } })) });
-    chk(again.d.querySelectorAll('.savedp').length === 1 && /1 hidden/.test(txt(again.d.getElementById('showHidden'))), 'a parlay hidden on the last visit came back');
+    /* what was deleted stays deleted on the next visit */
+    const again = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: { 'file|night': 1 } })) });
+    chk(again.d.querySelectorAll('.savedp').length === 1, 'a parlay deleted on the last visit came back');
   }
 
   // ---- D2. a line the book moved, corrected on the page ----
