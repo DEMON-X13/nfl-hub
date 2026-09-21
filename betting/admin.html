@@ -900,7 +900,7 @@ function stripMine(){
 }
 /* after anything redraws a board: the lock does not wait for a score to be read, since it
    is a rule about the clock rather than about the scoreboard */
-function after(){ lockPlayed(); stripMine(); allModels(); tidyStats(); if(L.on) paintAll(); }
+function after(){ lockPlayed(); stripMine(); allModels(); tidyStats(); ratingsExtras(); if(L.on) paintAll(); }
 /* Records shows every model, always. The toggle defaulted to off, so the challenger, the
    joker and Vegas were hidden behind a checkbox on the one tab that exists to compare them. */
 function allModels(){
@@ -916,6 +916,22 @@ function allModels(){
 function tidyStats(){
   document.querySelectorAll('#recordStats .stat b').forEach(b=>{
     if(b.textContent.trim()==='–%') b.textContent='–';
+  });
+}
+/* Power Ratings: the Impact absences table sits under the ratings, where the ratings it
+   moves are, rather than on Data Upload, which the job has made a page nobody opens. The
+   app renders it into #injSuggest on every redraw, so the element itself moves, once, into a
+   card of its own here; the card hides when there is nothing in it. The note under the
+   ratings about where the rank tags are measured from goes. */
+function ratingsExtras(){
+  const tab=el('tab-ratings'), inj=el('injSuggest'); if(!tab) return;
+  if(inj&&!tab.contains(inj)){
+    const card=document.createElement('div'); card.className='card'; card.id='injCard';
+    inj.style.marginTop='0'; card.appendChild(inj); tab.appendChild(card);
+  }
+  const card=el('injCard'); if(card) card.hidden=!inj||!inj.textContent.trim();
+  document.querySelectorAll('#ratingsTable p.muted').forEach(p=>{
+    if(/^Rank tags and the Elo change column/.test(p.textContent.trim())) p.remove();
   });
 }
 
@@ -957,9 +973,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   /* read once on load, so a finished game shows its result without being asked and does not
      vanish again on the next reload */
   setTimeout(read,300);
-  for(const n of ['renderPicks','renderMine','renderRecord']) hook(n);
+  for(const n of ['renderPicks','renderMine','renderRecord','renderRatings','renderAdjust']) hook(n);
   stripMine();
   allModels();
+  ratingsExtras();
   routeTabs();
 });
 })();
