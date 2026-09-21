@@ -8,24 +8,24 @@
   {
    "col": "kickoff_return_yards",
    "fit": 49.111,
-   "now": 105.2,
-   "z": 1.24
+   "now": 107.081,
+   "z": 1.29
   },
   {
    "col": "kickoff_returns",
    "fit": 2.037,
-   "now": 3.967,
-   "z": 1.13
+   "now": 4.032,
+   "z": 1.17
   },
   {
    "col": "def_tackles_with_assist",
    "fit": 4.44,
-   "now": 0.783,
-   "z": -0.98
+   "now": 0.758,
+   "z": -0.99
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-21T00:18+00:00",
+ "generated": "2026-09-21T07:12+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -63,7 +63,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.5169,
+     "v": 1.5168,
      "c": -0.0409
     },
     {
@@ -262,7 +262,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.7425,
+     "v": 1.7424,
      "c": -0.0409
     },
     {
@@ -323,7 +323,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.3931,
+     "v": 1.393,
      "c": -0.0409
     },
     {
@@ -420,7 +420,7 @@
     },
     {
      "f": "off_home",
-     "v": 0.0127,
+     "v": 0.0128,
      "c": -0.0294
     },
     {
@@ -471,7 +471,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.255,
+     "v": 1.2549,
      "c": -0.0409
     },
     {
@@ -614,7 +614,7 @@
     },
     {
      "f": "to_away",
-     "v": 0.8107,
+     "v": 0.8106,
      "c": 0.0436
     },
     {
@@ -670,7 +670,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.3311,
+     "v": 1.331,
      "c": -0.0409
     },
     {
@@ -685,7 +685,7 @@
     },
     {
      "f": "d_to_home",
-     "v": 1.1861,
+     "v": 1.1858,
      "c": -0.0329
     }
    ]
@@ -787,7 +787,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.221,
+     "v": 1.2209,
      "c": -0.0409
     }
    ]
@@ -1563,7 +1563,7 @@
    "away": "IND",
    "pick": "KC",
    "pHome": 0.6542,
-   "played": false,
+   "played": true,
    "base": 0.1727,
    "why": [
     {
@@ -1619,7 +1619,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -285.0,
+     "v": -305.0,
      "c": 0.893
     },
     {
@@ -1639,7 +1639,7 @@
     },
     {
      "f": "spread_line",
-     "v": 6.5,
+     "v": 7.0,
      "c": -0.1488
     },
     {
