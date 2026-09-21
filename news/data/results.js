@@ -66,6 +66,10 @@ const RESULTS = {
   10,
   31
  ],
+ "wk2:DET-BUF": [
+  31,
+  41
+ ],
  "wk2:CAR-ATL": [
   34,
   3
@@ -118,8 +122,8 @@ const RESULTS = {
   13,
   35
  ],
- "wk2:DET-BUF": [
-  31,
-  41
+ "wk2:IND-KC": [
+  30,
+  33
  ]
 };
