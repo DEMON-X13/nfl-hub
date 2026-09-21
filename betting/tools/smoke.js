@@ -102,8 +102,8 @@ function load(picks) {
   check(!da.getElementById('injCard').hidden, 'admin: the absences card is hidden although it has rows');
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
-    check(!rt.querySelector('.tierbadge') && !rt.querySelector('.tierlegend') && !/Challenger/.test(rt.textContent), 'admin: the Elo tier shields or their key are still on the ratings table');
-    check(rt.querySelectorAll('tbody tr').length === 32 && /^\d{4}$/.test(rt.querySelector('tbody tr td:nth-child(3)').textContent.trim()), 'admin: the Elo column does not read as a plain number: ' + rt.querySelector('tbody tr td:nth-child(3)').textContent.trim()); }
+    check(rt.querySelectorAll('tbody tr').length === 32 && rt.querySelectorAll('tbody .tierbadge').length === 32, 'admin: every Elo should carry its tier shield');
+    check(!rt.querySelector('.tierlegend') && !/Challenger 1700/.test(rt.textContent), 'admin: the tier key is still on the ratings table'); }
   const dv = dom.window.document;
   check(!!dv.querySelector('#tab-ratings #injCard #injSuggest') && !/Rank tags and the Elo change column/.test(dv.getElementById('ratingsTable').textContent), 'viewer: Power Ratings does not carry the absences table, or still carries the note');
   check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');
