@@ -70,7 +70,7 @@ jobs:
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add betting/state.json betting/joker.json betting/index.html betting/admin.html
+          git add betting/state.json betting/joker.json
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "betting: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:

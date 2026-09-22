@@ -26,8 +26,8 @@ build and its own scheduled workflow.
 
 | Path | What | Source of truth |
 |---|---|---|
-| `props/` | Prop Model, retired as a site: `index.html` redirects to `nflbets/`; `admin.html` is the full app for a manual run or a backup | `props/build/part1.html`, `part2.js`, `part3.js` |
-| `betting/` | X NFL Betting Model, retired as a site: `index.html` redirects to `nflbets/`; `admin.html` is the app `nflbets/` frames | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
+| `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what `nflbets/` reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
+| `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with Live Parlays as a section of the Parlay Builders tab | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is the file the section reads, and `build/page.html` is the section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json` |
@@ -37,8 +37,8 @@ build and its own scheduled workflow.
 These are rebuilt from source on every scheduled run, so an edit to one is lost
 at the next refresh:
 
-- `props/app/prop_model_2026.html`, `props/index.html`, `props/admin.html`
-- `betting/index.html`, `betting/admin.html`, `betting/state.json`
+- `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
+- `betting/state.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
 
@@ -50,10 +50,10 @@ source, shipped in from `nfl-model-lab`, not generated here.
 Edit the parts, then from `props/build/`:
 
 ```
-python3 assemble.py        # part1 + payload.json + part2 + part3 -> ../app/prop_model_2026.html
+python3 assemble.py        # part1 + payload.json + part2 + part3 -> ../app/prop_model_2026.html (gitignored)
 node audit.js              # the gate: must end "0 failures, 0 runtime errors"
-node publish.js            # -> props/index.html (public) + props/admin.html (all tabs)
 rm -f ../app/app.js        # gitignored build leftover; weekly.py removes it too
+node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's source: rebuild it (see below)
 ```
 
 `node_modules` for the audit lives in `props/build/` (`npm ci`).
@@ -72,8 +72,9 @@ that spend nothing. It commits straight to `main`.
 ```
 cd betting/tools && npm install
 node betting/tools/update.js     # download + grade + write state.json
-node betting/tools/build.js      # -> betting/index.html + betting/admin.html
-node betting/tools/smoke.js      # viewer check
+node betting/tools/build.js      # checks the app builds; writes nothing (nflbets/build/build.js sets it into the page)
+node betting/tools/smoke.js      # the built app, on its own and embedded
+node nflbets/build/build.js      # the app changed, so the page that carries it is rebuilt
 ```
 
 Gate: the app's embedded model numbers must equal
@@ -87,7 +88,10 @@ front of it as its own `pk-` prefixed section, the Live Parlays section lifted o
 `liveparlays/build/page.html` into the Parlay Builders tab (styles scoped to `#lpCard`,
 script in a closure, standing where the prop model's Saved parlays card is: a saved parlay
 is watched the moment it is saved, and deleting it there deletes it), and the betting
-site's Records, Power Ratings and Bet Log tabs framed from `betting/admin.html?embed=1#tab`.
+app's Records, Power Ratings and Bet Log tabs in frames: the app, as `betting/tools/build.js`
+builds it, is carried in the page as a string (`BET_APP`) and becomes a frame's srcdoc when
+its tab is first opened, with `window.EMBED_TAB` and `window.STATE_URL` written in front of
+it. A srcdoc frame is the page's own origin, so the app keeps its browser store.
 Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json` and
 `liveparlays/parlays.json`, so it is rebuilt when a source changes, never when the data
 does. A props patch, a betting build change or an edit to the live section's source means
@@ -119,8 +123,9 @@ may quietly outrank what the job published:
   roster change is worth a banner.
 - **Every page says which build it is.** `buildTag` on the Bets and Stats header. Without it a
   stale copy cannot be told from a current one.
-- **A frame is not covered by a refresh of the page around it.** A framed tab carries the
-  publishing timestamp in its address (`&v=`), so a new publish is a new address.
+- **A frame's content is in the page.** The betting tabs are srcdoc frames filled from a
+  string inside `nflbets/index.html`, so nothing is fetched or cached for them apart from
+  the page itself: a refresh of the page is a refresh of the frames.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **The parlays are one document for every device.** The builder, the saved parlays, the

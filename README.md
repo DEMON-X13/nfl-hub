@@ -6,8 +6,9 @@ the results. GitHub Pages serves the repo root:
 
 | Path | What | Source |
 |---|---|---|
-| `betting/` | X NFL Betting Model, public viewer (`index.html`) and full app (`admin.html`) | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
-| `props/` | Prop Model, one page (`index.html`) with the week's data baked in | `props/` is the prop model package; its own `weekly.py` does the refresh |
+| `nflbets/` | X NFL Bets and Stats, the one site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app and the Live Parlays section |
+| `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
+| `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
 | `live/` | Live Parlays, one small page that watches the parlays saved in the two models | built from `live/build/page.html` plus logic lifted out of the prop model |
 
@@ -21,13 +22,14 @@ the results. GitHub Pages serves the repo root:
 - Gate: the app's embedded model numbers must equal
   `betting/tools/reference_models.json`, the numbers the research harness
   exported. A mismatch aborts the publish.
-- `betting/tools/build.js` makes `index.html` (viewer) and `admin.html` (every
-  tab) from the one app file. Both load the same published season; the admin
-  page adds Record & Bets, Downloads, Upload and Backup. Picks, bankroll and
-  bets are kept in the browser under one key shared by the two pages, so a
-  pick made on either shows on both. Uploads on admin grade for that session
-  only; the job's published state wins on the next load. To carry picks over
-  from a local copy of the app, use Import backup on the admin page. The viewer removes the Downloads, Upload,
+- `betting/tools/build.js` builds the app from the one app file for
+  `nflbets/build/build.js`, which carries it inside the Bets and Stats page and
+  shows its Records, Power Ratings and Bet Log tabs in frames. It loads the
+  published season from `betting/state.json`. Picks, bankroll and bets are kept
+  in the browser under one key. Uploads grade for that session only; the job's
+  published state wins on the next load. To carry picks over from a local copy
+  of the app, use Import backup on the Bet Log tab. (The viewer trim below is
+  kept for a revert:) it removes the Downloads, Upload,
   Record & Bets and Backup tabs, loads `state.json`, and keeps the visitor's own
   picks, bankroll, bets and any odds they load in their browser only. Picks are
   graded against the published results. Moneylines from nflverse are published
@@ -44,8 +46,9 @@ Local run:
 ```
 cd betting/tools && npm install
 node betting/tools/update.js            # download + grade + write state.json
-node betting/tools/build.js             # index.html + admin.html
-node betting/tools/smoke.js             # viewer check
+node betting/tools/build.js             # checks the app builds; writes nothing
+node betting/tools/smoke.js             # the built app, plain and embedded
+node nflbets/build/build.js             # the page that carries the app
 ```
 
 ## Prop model
@@ -55,9 +58,8 @@ lockfile so the job can install it. `props/build/weekly.py` downloads the five
 nflverse files, pulls prop prices from the-odds-api (needs the `ODDS_API_KEY`
 repository secret; about 7 credits a game, 500 free a month), rebuilds the
 payload, bakes stats, injuries and prices into the page, assembles it and runs
-the 27,000-check audit. `props/build/publish.js` then writes `props/index.html`
-(public: Games, Parlay Builder, Track Record, How It Works) and `props/admin.html`
-(every tab, including Weekly Update and Backup).
+the 26,000-check audit against the assembled page, which is gitignored: the prop
+model has no pages of its own, its parts are the source of `nflbets/index.html`.
 `raw/feat.pkl` (43MB, the fitted feature table for 2019-2025) is committed so
 the job does not rebuild it. Visitors' parlays and bets stay in their browser.
 

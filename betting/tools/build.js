@@ -1,16 +1,20 @@
-/* Build the two betting pages from the one app file.
+/* Build the betting app for the X NFL Bets and Stats page.
  *
- *   node betting/tools/build.js
+ *   node betting/tools/build.js        checks the build and writes nothing
+ *   require('./build.js').buildApp()   the built app, as a string, for nflbets/build/build.js
  *
- *   betting/index.html   retired: a redirect to nflbets/, where the board, the builder, the
- *                        records, the ratings and the bet log live now.
- *   betting/admin.html   every tab, on the published season. nflbets/ frames its Records,
- *                        Power Ratings and Bet Log tabs with ?embed.
+ * The betting site has no pages of its own any more: betting/index.html and betting/admin.html
+ * are gone, and the app lives inside nflbets/index.html, which sets it into the Pick'em
+ * Record, Power Ratings and Bet Log tabs as the srcdoc of a frame. A srcdoc frame is the
+ * page's own origin, so the app keeps this browser's picks, bankroll, bets and self-loaded
+ * odds under the same local-storage key it always did, and its relative fetches resolve
+ * against nflbets/, which is why the season is read from ../betting/state.json (written by
+ * update.js). Uploads grade for the session only; the job's published state wins on the
+ * next load.
  *
- * The admin page loads betting/state.json (written by update.js) as the season and keeps
- * only this browser's own picks, bankroll, bets and self-loaded odds in local storage,
- * under one key shared with nflbets/. Uploads on the admin page grade for the session
- * only; the job's published state wins on the next load.
+ * Inside the frame there is no address to carry a tab, so the page sets window.EMBED_TAB
+ * before the app runs: it marks the document embedded (no header, no tab bar) and opens
+ * that tab. The ?embed and #tab forms are still honoured, for a copy opened on its own.
  */
 'use strict';
 const fs = require('fs');
@@ -46,7 +50,7 @@ const HOOK = `<script>
   window.PUBLISHED=true;
   window.storage={
     async get(key){
-      const r=await fetch('state.json',{cache:'no-store'}); if(!r.ok) throw new Error('state.json '+r.status);
+      const r=await fetch(window.STATE_URL||'state.json',{cache:'no-store'}); if(!r.ok) throw new Error('state.json '+r.status);
       const S=await r.json(); const mine=loadMine(); const picks=mine.myPicks||{};
       S.myPicks=picks; S.bets=mine.bets||{}; S.bank=mine.bank||{lastAmt:20,filter:'all',build:[],mode:'straight'};
       S.lastBackup=mine.lastBackup||null; S.lastBackupHow=mine.lastBackupHow||null;
@@ -143,8 +147,9 @@ html.embed main{padding:4px 0 16px;max-width:none}
 </style>
 <script>
 (function(){
-/* ?embed: no header, no tab bar, no background; the hash still says which tab shows */
-if(/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList.add('embed');
+/* embedded -- window.EMBED_TAB set by the page around this one, or ?embed on the address:
+   no header, no tab bar, no background; EMBED_TAB or the hash says which tab shows */
+if(window.EMBED_TAB||/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList.add('embed');
 ${ESPN}
 const L={games:{},at:0,err:null,busy:false,on:false};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -427,12 +432,14 @@ function ratingsExtras(){
 function routeTabs(){
   const tabs=document.getElementById('tabs'); if(!tabs) return;
   const go=name=>{ const b=tabs.querySelector('button[data-tab="'+name+'"]'); if(b){ b.click(); return true; } return false; };
+  /* a srcdoc frame has no address of its own to write to, and the browser refuses the write */
+  const replace=u=>{ try{ history.replaceState(null,'',u); }catch(e){} };
   tabs.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
     const h='#'+b.dataset.tab;
-    if(location.hash!==h) history.replaceState(null,'',h);
+    if(location.hash!==h) replace(h);
   }));
-  const want=decodeURIComponent((location.hash||'').slice(1));
-  if(want&&!go(want)) history.replaceState(null,'',location.pathname+location.search);
+  const want=window.EMBED_TAB||decodeURIComponent((location.hash||'').slice(1));
+  if(want&&!go(want)&&!window.EMBED_TAB) replace(location.pathname+location.search);
   window.addEventListener('hashchange',()=>{
     const n=decodeURIComponent((location.hash||'').slice(1)); if(n) go(n);
   });
@@ -472,9 +479,20 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 const anchor = '<script>\nconst MODEL = ';
 if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
-/* retired: the viewer is one tab of nflbets/ now, and the admin page is what it frames.
-   index.html sends a visitor there, tab hash and all. TRIM is kept for a revert. */
+/* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
-fs.writeFileSync(path.join(ROOT, 'betting', 'index.html'), "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>X NFL Bets and Stats</title>\n<!-- retired: this site is one tab of X NFL Bets and Stats now. The hash carries across, so a\n     bookmarked tab still lands on it. -->\n<meta http-equiv=\"refresh\" content=\"0; url=../nflbets/\">\n<script>location.replace('../nflbets/'+(location.hash||''));</script>\n</head>\n<body><a href=\"../nflbets/\">This page has moved to X NFL Bets and Stats.</a></body>\n</html>\n");
-fs.writeFileSync(path.join(ROOT, 'betting', 'admin.html'), html.replace(anchor, HOOK + ADMIN + LIVE + anchor));
-console.log('built betting/index.html (a redirect to nflbets/) and betting/admin.html (all tabs, same published season) from', path.relative(ROOT, APP));
+/* the built app: every tab, on the published season, reading it from where the page around
+   it says (window.STATE_URL) and opening on the tab it names (window.EMBED_TAB). Both are
+   set by a script the page puts in before this one; on its own the app reads state.json
+   beside it and routes by hash. */
+function buildApp() {
+  const out = html.replace(anchor, HOOK + ADMIN + LIVE + anchor);
+  for (const need of ['window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
+    if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
+  return out;
+}
+module.exports = { buildApp };
+if (require.main === module) {
+  const out = buildApp();
+  console.log(`betting app builds: ${(out.length / 1024).toFixed(1)} KB from ${path.relative(ROOT, APP)}; nothing written, nflbets/build/build.js sets it into the page`);
+}

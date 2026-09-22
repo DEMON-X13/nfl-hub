@@ -64,13 +64,11 @@ jobs:
         # a scheduled run cannot carry the no_odds input, so the post-game crons are
         # recognised by their minute: they all start "7 ", the price pulls start "17 "
         run: python weekly.py --no-commit ${{ (inputs.no_odds || startsWith(github.event.schedule, '7 ')) && '--no-odds' || '' }}
-      - name: Publish the pages
-        run: node props/build/publish.js
       - name: Commit if anything changed
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add props/index.html props/admin.html props/app props/data
+          git add props/data
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "props: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:

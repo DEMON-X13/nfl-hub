@@ -287,15 +287,14 @@ function routeTabs(){
 /* the betting tabs are the betting site's own page, framed. A frame loads the first time its
    tab is opened and then follows the height of what it shows, so the page scrolls as one.
 
-   A frame is a separate document that a script points somewhere after this page has loaded,
-   so a hard refresh of this page never reaches it: the browser serves it from its own cache
-   on its own schedule, and a framed tab could sit a build behind the rest of the page with
-   no way to shift it. The address carries the moment the betting job last published, so a
-   new publish is a new address and the browser has to go and get it. */
-let FRAME_V='';
+   The frame's document is this page's own: the betting app is carried here as a string
+   (BET_APP, set by the build) and becomes the frame's srcdoc when its tab is first opened,
+   with the tab's name written in front of it. Nothing is fetched for it and nothing can be
+   cached apart from this page, so a refresh of this page refreshes the frames with it. */
 function frames(){
   const load=f=>{
-    if(f.src||!f.dataset.src) return;
+    if(f.dataset.loaded||!f.dataset.embed||typeof BET_APP!=='string') return;
+    f.dataset.loaded='1';
     f.addEventListener('load',()=>{
       let doc=null; try{ doc=f.contentDocument; }catch(e){ return; }
       if(!doc||!doc.documentElement) return;
@@ -303,7 +302,7 @@ function frames(){
       fit();
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
     });
-    f.src=FRAME_V?f.dataset.src.replace('#','&v='+encodeURIComponent(FRAME_V)+'#'):f.dataset.src;
+    f.setAttribute('srcdoc',BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed)));
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));
@@ -318,7 +317,6 @@ async function boot(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
     ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{};
-    FRAME_V=String(st.published||'');
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
     failed=true;

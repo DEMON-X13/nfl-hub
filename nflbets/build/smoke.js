@@ -310,22 +310,27 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(!(st.removed && st.removed['prop|live-smoke']), 'a deleted saved parlay was written to the device deletions instead of deleted'); }
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 
-  /* ---- Pick'em Record: the betting site's Records tab, framed, loaded when first opened ---- */
+  /* ---- Pick'em Record: the betting app's Records tab, in a frame filled when first opened ---- */
+  /* the betting site has no pages: the app is inside this page, and nothing points outside it */
+  chk(!/betting\/(admin|index)\.html/.test(HTML), 'the page still points at a betting page');
+  chk(!fs.existsSync(path.join(ROOT, 'betting', 'admin.html')) && !fs.existsSync(path.join(ROOT, 'betting', 'index.html')) && !fs.existsSync(path.join(ROOT, 'props', 'admin.html')) && !fs.existsSync(path.join(ROOT, 'props', 'index.html')),
+    'a retired props or betting page is back in the repository');
   const recFrame = d.querySelector('#tab-record iframe.pk-frame');
-  chk(!!recFrame && !recFrame.getAttribute('src'), 'the Records frame should not load before its tab is opened');
+  chk(!!recFrame && !recFrame.getAttribute('srcdoc') && !recFrame.getAttribute('src'), 'the Records frame should not be filled before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'record').click();
   await wait(60);
   chk(!d.getElementById('tab-record').hidden && d.getElementById('tab-ratings').hidden, 'the Pick\'em Record tab did not open');
   chk(w.location.hash === '#record', 'the Pick\'em Record tab did not become the address');
-  /* the frame's address carries the betting job's publish time, so a new publish is a new
-     address: a script-set frame never sees this page's hard refresh */
-  const stamp = encodeURIComponent(String(state.published));
-  chk(recFrame.getAttribute('src') === `../betting/admin.html?embed=1&v=${stamp}#record`,
-    'the Records frame is not cache-busted on the betting publish time: ' + recFrame.getAttribute('src'));
-  const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8');
+  /* the frame is filled from the page itself, opened on its tab, reading the season from
+     the betting site's data */
+  const adminHtml = recFrame.getAttribute('srcdoc') || '';
+  chk(adminHtml.length > 100000 && /const MODEL = /.test(adminHtml), 'the Records frame was not filled with the betting app: ' + adminHtml.length + ' chars');
+  chk(/^<!DOCTYPE html>/i.test(adminHtml.trim()), 'the framed app does not start with its doctype');
+  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='\.\.\/betting\/state\.json';<\/script>/.test(adminHtml), 'the framed app is not told its tab and its season path');
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
-    'the betting page has no embed mode, so the frame would show its header and tab bar');
-  chk(/data-tab="record"/.test(adminHtml), 'the betting admin page has no Records tab to frame');
+    'the framed app has no embed mode, so the frame would show its header and tab bar');
+  chk(/data-tab="record"/.test(adminHtml), 'the framed app has no Records tab');
+  chk(!/betting\/(admin|index)\.html/.test(adminHtml) && !/<\/script>[\s\S]*const BET_APP=/.test(adminHtml), 'the framed app carries a copy of itself or points at a betting page');
 
   /* ---- Prop Record: the prop model's Track Record, market and line-type filters and all ---- */
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'track').click();
@@ -339,25 +344,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
   /* ---- Power Ratings: the betting site's Power Ratings tab, framed ---- */
   const ratFrame = d.querySelector('#tab-ratings iframe.pk-frame');
-  chk(!!ratFrame && !ratFrame.getAttribute('src'), 'the Power Ratings frame should not load before its tab is opened');
+  chk(!!ratFrame && !ratFrame.getAttribute('srcdoc'), 'the Power Ratings frame should not be filled before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'ratings').click();
   await wait(60);
   chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-parlay').hidden, 'the Power Ratings tab did not open');
   chk(w.location.hash === '#ratings', 'the Power Ratings tab did not become the address');
-  chk(ratFrame.getAttribute('src') === `../betting/admin.html?embed=1&v=${stamp}#ratings`, 'the Power Ratings frame is not cache-busted: ' + ratFrame.getAttribute('src'));
-  chk(/data-tab="ratings"/.test(adminHtml), 'the betting admin page has no Power Ratings tab to frame');
+  chk(/window\.EMBED_TAB="ratings";/.test(ratFrame.getAttribute('srcdoc') || ''), 'the Power Ratings frame is not opened on its tab');
+  chk(/data-tab="ratings"/.test(adminHtml), 'the framed app has no Power Ratings tab');
 
   /* ---- Bet Log: the betting site's Bet Log tab, framed, on the same browser store ---- */
   const betFrame = d.querySelector('#tab-bets iframe.pk-frame');
-  chk(!!betFrame && !betFrame.getAttribute('src'), 'the Bet Log frame should not load before its tab is opened');
+  chk(!!betFrame && !betFrame.getAttribute('srcdoc'), 'the Bet Log frame should not be filled before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'bets').click();
   await wait(60);
   chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-track').hidden, 'the Bet Log tab did not open');
   chk(w.location.hash === '#bets', 'the Bet Log tab did not become the address');
-  chk(betFrame.getAttribute('src') === `../betting/admin.html?embed=1&v=${stamp}#bets`, 'the Bet Log frame is not cache-busted: ' + betFrame.getAttribute('src'));
-  chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml), 'the betting admin page has no Bet Log tab with its form to frame');
-  /* every framed tab is the same page, so one store: a bet logged in either place is in both */
-  chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^\.\.\/betting\/admin\.html\?embed=1#/.test(f.dataset.src)), 'a framed tab points somewhere other than the betting admin page');
+  chk(/window\.EMBED_TAB="bets";/.test(betFrame.getAttribute('srcdoc') || ''), 'the Bet Log frame is not opened on its tab');
+  chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml), 'the framed app has no Bet Log tab with its form');
+  /* every framed tab is the same app on this page's origin, so one store: a bet logged in either place is in both */
+  chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
+  chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
 
   /* back to the board by address */
   w.location.hash = '#pickems';
@@ -386,8 +392,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   [...noState.d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'ratings').click();
   await wait(60);
   const ff = noState.d.querySelector('#tab-ratings iframe.pk-frame');
-  chk(!!ff && ff.getAttribute('src') === '../betting/admin.html?embed=1#ratings',
-    'with the season unreachable the framed tabs should still load, uncached: ' + (ff && ff.getAttribute('src')));
+  chk(!!ff && /window\.EMBED_TAB="ratings";/.test(ff.getAttribute('srcdoc') || ''),
+    'with the season unreachable the framed tabs should still be filled');
   /* and with no scoreboard to read, the stamp says so and the board stands */
   await wait(700);
   chk(/scores not loading/.test(txt(b.d.getElementById('pkStamp'))) && b.d.getElementById('pkStamp').classList.contains('bad'), 'an unreachable scoreboard is not said: ' + txt(b.d.getElementById('pkStamp')));

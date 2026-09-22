@@ -193,7 +193,9 @@ def main():
     # 5. assemble + audit
     rc,out=run([PY,'assemble.py'],HERE,'assemble')
     rc,out=run(['node','audit.js'],HERE,'audit')
-    rc,out2=run(['node','publish.js'],HERE,'publish')   # the workflow publishes too; a manual run must not leave the site stale
+    # no page is published from here any more: the prop model has no site of its own, its
+    # parts are the source of nflbets/index.html, and the assembled page is the audit's
+    # subject only (gitignored)
     last=[l for l in out.splitlines() if 'checks,' in l]
     audit=last[-1].strip() if last else 'audit produced no summary line'
     say('  '+audit)
