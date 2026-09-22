@@ -132,7 +132,9 @@ may quietly outrank what the job published:
   blank the page runs on the browser alone and the header says "Not synced". The layer is
   `nflbets/build/sync.js`: it defines the `window.storage` the prop model saves through and
   the `window.LIVE_IO` the section's key goes through, pushes nothing until it has read the
-  document once, and the header's `syncStamp` says whether it is synced, saving or failing.
+  document once, adds a browser's own saved parlays to the document the first time that browser
+  reads it (after that the document wins, so a deletion elsewhere holds), and the header's
+  `syncStamp` says whether it is synced, saving or failing.
   Setting it up: Firebase console → new project → Realtime Database → rules
   `{"rules":{"nflhub":{".read":true,".write":true}}}` → the database URL plus `/nflhub` into
   `nflbets/sync.json`. Open rules mean anyone with the address can read and change the
