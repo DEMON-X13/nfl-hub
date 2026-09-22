@@ -56,14 +56,34 @@ function scoreboard(state, week) {
 }
 
 /* boot the page; resolves once the prop model says it is ready and the board has drawn */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false) {
+/* a shared store for the sync layer, as a Firebase Realtime Database answers over REST: the
+   node at <url> holds {rev, at, doc}, <url>/rev.json is the tag alone, <url>/doc.json the
+   document, and a PUT to <url>.json replaces the node. Two devices are two runs on one store. */
+const STORE_URL = 'https://store.test/nflhub';
+function mkStore() { return { node: null, puts: [], revGets: 0, docGets: 0, fail: false }; }
+const res = (status, body) => Promise.resolve({ ok: status < 300, status, json: async () => body });
+function storeFetch(store, s, o) {
+  if (/(^|\/)sync\.json/.test(s)) return res(200, { url: STORE_URL });
+  if (!s.startsWith(STORE_URL)) return null;
+  if (store.fail) return res(500, null);
+  const p = s.slice(STORE_URL.length).replace(/\?.*$/, '');
+  if (o && o.method === 'PUT') { const b = JSON.parse(o.body); store.node = b; store.puts.push(b); return res(200, null); }
+  if (p === '/rev.json') { store.revGets++; return res(200, store.node ? store.node.rev : null); }
+  if (p === '/doc.json') { store.docGets++; return res(200, store.node ? store.node.doc : null); }
+  return res(404, null);
+}
+const storeDoc = store => store.node ? JSON.parse(store.node.doc.json) : null;
+
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { sync = null, seed = null } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
         w.addEventListener('error', e => errs.push(e.message));
-        w.fetch = u => { const s = String(u); fetched.push(s.replace(/\?.*$/, ''));
+        if (seed) seed(w);
+        w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, ''));
+          if (sync) { const r = storeFetch(sync, s, o); if (r) return r; }
           if (s.includes('state.json')) return noState
             ? Promise.resolve({ ok: false, status: 404 })
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
@@ -372,6 +392,109 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(700);
   chk(/scores not loading/.test(txt(b.d.getElementById('pkStamp'))) && b.d.getElementById('pkStamp').classList.contains('bad'), 'an unreachable scoreboard is not said: ' + txt(b.d.getElementById('pkStamp')));
   chk(b.d.querySelectorAll('.pk-game').length > 0 && b.errs.length === 0, 'an unreachable scoreboard broke the board');
+
+  /* ---- Sync: one document for every device ---- */
+  /* with no store address the page runs on this browser alone, and says so */
+  chk(fetched.includes('sync.json'), 'the page never read nflbets/sync.json for the store address');
+  chk(w.NFLSYNC && w.NFLSYNC.state().live === false && w.NFLSYNC.state().url === null, 'with sync.json unreachable the page should be local-only');
+  chk(/Not synced/.test(txt(d.getElementById('syncStamp'))), 'the header does not say the page is not synced: ' + txt(d.getElementById('syncStamp')));
+  const PROP_KEY = 'props_2026_v1';
+  /* a game that has not kicked off, so the builder keeps the leg */
+  const openGame = S => { const wk = Math.max(...S.sched.map(x => +x.w)); return S.sched.find(x => +x.w === wk); };
+  const teamLeg = g => ({ gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -120, src: 'real',
+    name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win' });
+  const settle = () => wait(900);
+  { const store = mkStore();
+    /* device A, first to open the page on an empty store: whatever it makes seeds the document */
+    const A = await run(state, undefined, null, false, { sync: store });
+    chk(!A.timedOut && A.errs.length === 0, 'device A broke: ' + A.errs.join('; '));
+    chk(A.w.NFLSYNC.state().live === true && A.w.NFLSYNC.state().url === STORE_URL, 'device A did not come up synced: ' + JSON.stringify(A.w.NFLSYNC.state()));
+    await settle();
+    chk(/^Synced/.test(txt(A.d.getElementById('syncStamp'))), 'device A\'s header does not say Synced: ' + txt(A.d.getElementById('syncStamp')));
+    const SA = A.w.eval('S'), gA = openGame(SA), key = gA.id + '|team:' + gA.h + '|ml';
+    SA.parlay[key] = teamLeg(gA);
+    SA.saved.push({ id: 'sync-1', saved: new Date().toISOString(), week: gA.w, stake: 3, payout: 9, price: 200, legs: [teamLeg(gA)] });
+    A.w.eval('save(); renderParlay();');
+    await settle();
+    const docA = storeDoc(store);
+    chk(!!docA && docA.prop && docA.prop.parlay && !!docA.prop.parlay[key], 'the builder leg was not written to the store: ' + JSON.stringify(docA));
+    chk(!!docA && docA.prop.saved && docA.prop.saved.some(p => p.id === 'sync-1'), 'the saved parlay was not written to the store');
+    chk(!!docA && docA.prop.stake === SA.stake, 'the stake was not written to the store');
+    chk(!!docA && !('players' in docA.prop) && !('sched' in docA.prop) && !('odds' in docA.prop), 'the store holds more than what the visitor made');
+    chk(store.node && typeof store.node.doc.json === 'string' && store.node.rev && store.node.doc.rev === store.node.rev, 'the store node is not {rev, at, doc:{rev, at, json}}');
+    chk(/^Synced/.test(txt(A.d.getElementById('syncStamp'))), 'after a push the header does not say Synced: ' + txt(A.d.getElementById('syncStamp')));
+    /* a poll after its own push reads the tag alone and fetches nothing */
+    const dg = store.docGets, puts = store.puts.length;
+    await A.w.NFLSYNC.poll();
+    chk(store.docGets === dg && store.puts.length === puts, 'a poll with nothing changed fetched the document or pushed it again');
+    /* device B opens the page fresh and sees exactly what A made, in the builder and in the section */
+    const B = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { sync: store });
+    chk(!B.timedOut && B.errs.length === 0, 'device B broke: ' + B.errs.join('; '));
+    await settle();
+    const SB = B.w.eval('S');
+    chk(!!SB.parlay[key], 'device B did not get the builder leg');
+    chk(SB.saved.some(p => p.id === 'sync-1'), 'device B did not get the saved parlay');
+    chk(new RegExp(TEAM(gA.h)).test(txt(B.d.getElementById('parlayBody'))), 'device B\'s builder does not show the leg');
+    const lpB = B.d.getElementById('lpCard');
+    chk([...lpB.querySelectorAll('.savedp .pill')].some(x => /in the builder/.test(txt(x))), 'device B\'s section does not show the builder parlay');
+    chk([...lpB.querySelectorAll('.savedp .pill')].some(x => /prop model/.test(txt(x))), 'device B\'s section does not show the saved parlay');
+    chk(store.puts.length === puts, 'device B pushed on opening, with nothing of its own to add');
+    /* B deletes the saved parlay in the section and deletes a file parlay; A sees both on its next look */
+    const mine = [...lpB.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
+    mine.querySelector('[data-rm]').click();
+    const filep = [...lpB.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
+    filep.querySelector('[data-rm]').click();
+    await settle();
+    const docB = storeDoc(store);
+    chk(!!docB && !docB.prop.saved.some(p => p.id === 'sync-1'), 'B\'s deletion of the saved parlay did not reach the store');
+    chk(!!docB && Object.keys(docB.live.removed).length === 1, 'B\'s deletion of a file parlay did not reach the store: ' + JSON.stringify(docB && docB.live));
+    const shownA = () => A.d.getElementById('lpCard').querySelectorAll('.savedp').length;
+    const beforeA = shownA();
+    await A.w.NFLSYNC.poll(); await settle();
+    chk(!SA.saved.some(p => p.id === 'sync-1'), 'A still has the saved parlay B deleted');
+    chk(shownA() === beforeA - 2, `A's section did not follow B's two deletions (${beforeA} -> ${shownA()})`);
+    chk(JSON.parse(A.w.localStorage.getItem('live_parlays_v1')).removed && Object.keys(JSON.parse(A.w.localStorage.getItem('live_parlays_v1')).removed).length === 1, 'A\'s copy of the section key did not take B\'s deletion');
+    chk(JSON.parse(A.w.localStorage.getItem(PROP_KEY)).saved.length === 0, 'A\'s browser copy of the prop state did not take B\'s deletion');
+    /* A drops the builder leg; B follows */
+    delete SA.parlay[key]; A.w.eval('save(); renderParlay();');
+    await settle(); await B.w.NFLSYNC.poll(); await wait(200);
+    chk(!SB.parlay[key], 'B still has the builder leg A dropped');
+    chk(!new RegExp(TEAM(gA.h)).test(txt(B.d.getElementById('parlayBody'))), 'B\'s builder still shows the leg A dropped');
+    /* A brings the deleted file parlay back; B follows */
+    const restore = A.d.getElementById('lpCard').querySelector('#restoreAll') || null;
+    if (restore) { restore.click(); await settle(); await B.w.NFLSYNC.poll(); await wait(200);
+      chk(Object.keys(JSON.parse(B.w.localStorage.getItem('live_parlays_v1')).removed).length === 0, 'B did not follow A\'s restore'); }
+    /* device C opens while the store is down: it must not push its empty builder over the document, and it takes the document when the store is back */
+    store.fail = true;
+    SB.parlay[key] = teamLeg(gA); B.w.eval('save(); renderParlay();');
+    store.fail = false; await settle(); store.fail = true;
+    const C = await run(state, undefined, null, false, { sync: store });
+    chk(!C.timedOut && C.errs.length === 0, 'device C broke: ' + C.errs.join('; '));
+    chk(C.w.NFLSYNC.state().live === false && C.w.NFLSYNC.state().ok === false, 'device C should be waiting on the store: ' + JSON.stringify(C.w.NFLSYNC.state()));
+    chk(/Sync failed/.test(txt(C.d.getElementById('syncStamp'))), 'device C\'s header does not say the store is unreachable: ' + txt(C.d.getElementById('syncStamp')));
+    const SC = C.w.eval('S'), putsC = store.puts.length;
+    SC.saved.push({ id: 'offline', saved: new Date().toISOString(), week: gA.w, stake: 1, payout: 2, price: 100, legs: [teamLeg(gA)] });
+    C.w.eval('save(); renderParlay();'); await settle();
+    chk(store.puts.length === putsC, 'device C pushed while it had never read the document');
+    store.fail = false; await C.w.NFLSYNC.poll(); await wait(200);
+    chk(C.w.NFLSYNC.state().live === true && !!SC.parlay[key], 'device C did not take the document once the store answered: ' + JSON.stringify(C.w.NFLSYNC.state()));
+    chk(/^Synced/.test(txt(C.d.getElementById('syncStamp'))), 'device C\'s header does not say Synced once the store answers');
+    /* device D has a browser copy from before sync and opens on an empty store: its copy seeds the document */
+    const fresh = mkStore();
+    const blob = JSON.parse(A.w.localStorage.getItem(PROP_KEY)); blob.saved = [{ id: 'old-device', saved: new Date().toISOString(), week: gA.w, stake: 2, payout: 4, price: 100, legs: [teamLeg(gA)] }];
+    const D = await run(state, undefined, null, false, { sync: fresh, seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify(blob)) });
+    chk(!D.timedOut && D.errs.length === 0, 'device D broke: ' + D.errs.join('; '));
+    await settle();
+    chk(D.w.eval('S').saved.some(p => p.id === 'old-device'), 'device D lost its own saved parlay to an empty store');
+    chk(!!storeDoc(fresh) && storeDoc(fresh).prop.saved.some(p => p.id === 'old-device'), 'device D\'s browser copy did not seed the empty store');
+    /* a correction to a line in the section travels too */
+    const edit = D.d.getElementById('lpCard').querySelector('[data-edit]');
+    if (edit) { edit.click(); const inp = D.d.getElementById('lpCard').querySelector('input.lineInput'); inp.value = '44.5';
+      inp.dispatchEvent(new D.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
+      chk(!!storeDoc(fresh) && Object.values(storeDoc(fresh).live.lines).includes(44.5), 'a corrected line did not reach the store: ' + JSON.stringify(storeDoc(fresh) && storeDoc(fresh).live)); }
+    else chk(false, 'no line to correct in device D\'s section');
+    for (const x of [A, B, C, D]) x.w.close();
+  }
 
   console.log(`${checks} checks, ${fails.length} failures`);
   fails.forEach(f => console.log('  FAIL:', f));

@@ -373,6 +373,7 @@ body.modal-open{overflow:hidden}
   color:var(--away);letter-spacing:.01em}
 .winner small.act.right{color:var(--pick)} .winner small.act.wrong{color:var(--miss)}
 </style>
+<style>#syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>
 <style>
 /* the board row: the betting app's columns -- date, matchup, split bar, confidence, final
    score -- at the Props tab's size and type, so the two tabs read as one page: the same
@@ -536,6 +537,7 @@ body.modal-open{overflow:hidden}
     <h1>X NFL Bets and Stats</h1>
     <span class="sub" id="buildTag"></span>
     <span class="sub grow" id="saveState" style="margin-left:auto"></span>
+    <span class="sub" id="syncStamp" title="Whether this page shares its parlays with your other devices"></span>
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
@@ -600,7 +602,7 @@ body.modal-open{overflow:hidden}
     <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
     <span class="grow"></span>
-    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page, on this device.">Clear settled</button>
+    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
     <div id="app"></div>
@@ -717,6 +719,224 @@ body.modal-open{overflow:hidden}
 </section>
 
 </main>
+<script>
+/* One copy for every device.
+ *
+ * The parlay builder, the saved parlays, a line corrected in the Live Parlays section and a
+ * parlay deleted there used to live in the browser that made them and nowhere else, so a
+ * parlay built on the phone was not on the laptop. This layer keeps them in one shared
+ * document instead: every device reads it when the page opens, writes it on every change,
+ * and re-reads it every few seconds while the page is on screen, so a change made anywhere
+ * shows everywhere on the next look.
+ *
+ * The document lives in a plain JSON store reached over HTTPS -- a Firebase Realtime
+ * Database, which needs no SDK: GET <url>/doc.json reads it, PUT <url>.json replaces it.
+ * Its address is not built into the page: it is read from nflbets/sync.json beside it on
+ * every load, so pasting the address into that file is the whole setup and needs no rebuild.
+ * With the address blank the page runs as before, on this browser only, and says so.
+ *
+ * How it hooks in. The prop model saves through window.storage when the page defines one,
+ * so this script, which runs before it, defines one: get() answers with the browser's copy
+ * with the shared document's keys laid over it, set() keeps the browser's copy and pushes
+ * the shared keys. The Live Parlays section's own key goes through window.LIVE_IO the same
+ * way. Only what the visitor made is shared -- the builder, the saved parlays, the stake,
+ * the book price, the margin, the corrected lines and the deletions. The season itself is
+ * never in the document: it is read from the published data on every load.
+ *
+ * What is in the store is a string, not a tree: {rev, at, doc:{rev, at, json:"..."}}, so that no
+ * store's rules about key names or empty objects can change what comes back. The rev is a
+ * random tag per write. A poll reads only <url>/rev.json, a few bytes, and fetches the
+ * document when the tag has moved; a push is skipped when the document would not change.
+ *
+ * Nothing is pushed until the shared document has been read and applied once: a device
+ * that has not seen the document yet must not replace it with its own empty builder. If the
+ * store cannot be read the page runs on the browser's copy, keeps retrying, and the stamp
+ * says so. */
+window.NFLSYNC=(function(){
+  const CONF='sync.json', PROP_KEY='props_2026_v1', LIVE_KEY='live_parlays_v1';
+  const PROP_KEYS=['parlay','saved','stake','bookPrice','margin'];
+  const POLL_MS=8000, PUSH_MS=400, BOOT_WAIT_MS=6000;
+  const st={url:null, conf:null, rev:null, doc:null, applied:false, live:false, ready:false, ok:null, err:null,
+    at:null, pending:false, pushing:false, pulls:0, pushes:0};
+  const listeners=[];
+  const emit=()=>{ for(const f of listeners){ try{ f(state()); }catch(e){} }
+    try{ document.dispatchEvent(new CustomEvent('nflsync',{detail:state()})); }catch(e){} };
+  const state=()=>({url:st.url, conf:st.conf, rev:st.rev, applied:st.applied, live:st.live, ready:st.ready, ok:st.ok,
+    err:st.err, at:st.at, pending:st.pending, pulls:st.pulls, pushes:st.pushes});
+  const ls={
+    get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+    set(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } } };
+  const parse=s=>{ try{ return s?JSON.parse(s):null; }catch(e){ return null; } };
+  const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+  const newRev=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8);
+
+  /* the shared part of what the two models keep */
+  function propPart(v){ const out={}; if(!isObj(v)) return out;
+    for(const k of PROP_KEYS) if(v[k]!==undefined) out[k]=v[k]; return out; }
+  function livePart(v){ if(!isObj(v)) v={};
+    return {lines:isObj(v.lines)?v.lines:{}, removed:isObj(v.removed)?v.removed:{}}; }
+  const sig=d=>JSON.stringify(d||{});
+  /* always a copy: the document held here must not share an object with the model's state,
+     or an edit to the state would edit the copy it is compared against and never push */
+  const deep=d=>parse(sig(d));
+  function localDoc(){
+    const S_=typeof S==='object'&&S&&Array.isArray(S.saved)?S:parse(ls.get(PROP_KEY));
+    return deep({prop:propPart(S_), live:livePart(parse(ls.get(LIVE_KEY)))}); }
+
+  /* the address: nflbets/sync.json, read fresh every load. Blank means this browser only. */
+  async function readConf(){
+    try{
+      const r=await fetch(CONF+'?t='+Date.now(),{cache:'no-store'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const c=await r.json(); st.conf=c;
+      let u=String((c&&c.url)||'').trim();
+      if(u){ u=u.replace(/\.json$/,'').replace(/\/+$/,''); if(!/^https:\/\//.test(u)) throw new Error('the store address must start with https://'); }
+      st.url=u||null;
+    }catch(e){ st.url=null; st.err='sync.json: '+(e&&e.message||e); }
+    return st.url;
+  }
+  const opts=o=>Object.assign({cache:'no-store'},o||{});
+  async function getJSON(path){
+    const r=await fetch(st.url+path+'?t='+Date.now(),opts());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }
+
+  /* read the whole document; null when the store is empty */
+  async function pull(){
+    if(!st.url) return null;
+    const d=await getJSON('/doc.json');
+    if(d==null) return null;
+    const doc=parse(typeof d.json==='string'?d.json:null);
+    if(!isObj(doc)) throw new Error('the shared document is not readable');
+    return {rev:String(d.rev||''), at:d.at||null, doc:{prop:propPart(doc.prop), live:livePart(doc.live)}};
+  }
+
+  /* lay the document over the running page: the prop model's state in memory, the browser's
+     copy of both keys, and every view that shows them */
+  function apply(remote){
+    st.rev=remote?remote.rev:null; st.at=remote?remote.at:null;
+    /* an empty store has no document to compare against, so the first save seeds it */
+    st.doc=remote?deep(remote.doc):null;
+    if(remote){
+      const prop=deep(remote.doc.prop);
+      ls.set(LIVE_KEY,JSON.stringify(Object.assign(livePart(parse(ls.get(LIVE_KEY))),remote.doc.live)));
+      /* the prop model's state is touched only once the model is up: mid-boot it is half built */
+      if(st.ready&&typeof S==='object'&&S&&Array.isArray(S.saved)){
+        const before=sig(propPart(S));
+        for(const k of PROP_KEYS) S[k]=prop[k]!==undefined?prop[k]:(k==='parlay'?{}:k==='saved'?[]:S[k]);
+        S.parlay=isObj(S.parlay)?S.parlay:{}; S.saved=Array.isArray(S.saved)?S.saved:[];
+        if(sig(propPart(S))!==before){
+          try{ if(typeof save==='function') save(); }catch(e){}
+          try{ if(typeof renderParlay==='function') renderParlay(); }catch(e){}
+          try{ if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
+        }
+      } else {
+        const v=parse(ls.get(PROP_KEY));
+        if(isObj(v)){ Object.assign(v,prop); ls.set(PROP_KEY,JSON.stringify(v)); }
+      }
+      try{ if(st.ready&&window.lpDraw) window.lpDraw(); }catch(e){}
+    }
+    st.applied=true; st.live=true; st.ok=true; st.err=null;
+    try{ document.dispatchEvent(new CustomEvent('nflsync-applied',{detail:state()})); }catch(e){}
+    emit();
+  }
+
+  /* the poll: the rev first, the document only when it moved */
+  let polling=false;
+  async function poll(){
+    if(!st.url||polling) return; polling=true;
+    try{
+      if(!st.applied){ apply(await pull()); st.pulls++; }
+      else if(!st.pending&&!st.pushing){
+        const rev=await getJSON('/rev.json'); st.pulls++;
+        if((rev==null?'':String(rev))!==(st.rev||'')){
+          const remote=await pull();
+          if(!st.pending&&!st.pushing) apply(remote);
+        }
+        else { st.ok=true; st.err=null; emit(); }
+      }
+    }catch(e){ st.ok=false; st.err=String(e&&e.message||e); emit(); }
+    polling=false;
+  }
+
+  /* the push: what this browser has, whole, under a fresh rev */
+  let pushTimer=null;
+  function schedulePush(){
+    if(!st.url||!st.live) return;
+    st.pending=true; clearTimeout(pushTimer); pushTimer=setTimeout(push,PUSH_MS); emit();
+  }
+  async function push(keepalive){
+    clearTimeout(pushTimer);
+    if(!st.url||!st.live){ st.pending=false; return false; }
+    const doc=localDoc();
+    if(st.doc&&sig(doc)===sig(st.doc)){ st.pending=false; emit(); return true; }
+    const rev=newRev(), at=new Date().toISOString();
+    st.pushing=true;
+    try{
+      const r=await fetch(st.url+'.json?print=silent',opts({method:'PUT',keepalive:!!keepalive,
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({rev,at,doc:{rev,at,json:JSON.stringify(doc)}})}));
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      st.rev=rev; st.at=at; st.doc=doc; st.pushes++; st.ok=true; st.err=null; st.pending=false;
+    }catch(e){ st.ok=false; st.err=String(e&&e.message||e); st.pending=true; pushTimer=setTimeout(push,POLL_MS); }
+    st.pushing=false; emit();
+    return st.ok;
+  }
+
+  /* --- the hooks the two models save through --- */
+  let booted=null;
+  function boot(){
+    if(booted) return booted;
+    booted=(async()=>{
+      await readConf();
+      if(!st.url){ st.applied=true; st.live=false; st.ok=null; emit(); return; }
+      try{ apply(await pull()); st.pulls++; }
+      catch(e){ st.ok=false; st.err=String(e&&e.message||e); emit(); }
+    })();
+    return booted;
+  }
+  const settled=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(r,ms))]);
+  window.storage={
+    /* the prop model's read at boot: the browser's copy with the shared keys laid over it.
+       A store that will not answer holds the page for a few seconds at most. */
+    async get(key){
+      if(key===PROP_KEY) await settled(boot(),BOOT_WAIT_MS);
+      const raw=ls.get(key);
+      if(key!==PROP_KEY||!st.doc||!st.applied||!st.live) return raw==null?null:{value:raw};
+      const v=parse(raw);
+      if(!isObj(v)) return raw==null?null:{value:raw};
+      Object.assign(v,deep(st.doc.prop));
+      return {value:JSON.stringify(v)};
+    },
+    async set(key,value){
+      if(!ls.set(key,String(value))) throw new Error('local storage refused the write');
+      if(key===PROP_KEY) schedulePush();
+    }
+  };
+  window.LIVE_IO={
+    get(){ return ls.get(LIVE_KEY); },
+    set(v){ const ok=ls.set(LIVE_KEY,String(v)); schedulePush(); return ok; }
+  };
+
+  /* while the page is on screen it looks every few seconds; the moment it comes back it
+     looks at once; on the way out it sends what it has not sent yet */
+  let timer=null;
+  function tick(){ clearInterval(timer); timer=null;
+    if(document.visibilityState==='hidden') return;
+    poll(); timer=setInterval(poll,POLL_MS); }
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') tick(); else { clearInterval(timer); timer=null; if(st.pending) push(true); } });
+  window.addEventListener('pagehide',()=>{ if(st.pending) push(true); });
+  document.addEventListener('app-ready',()=>{ st.ready=true; boot().then(()=>{
+    if(st.url&&st.applied&&st.doc) apply({rev:st.rev,at:st.at,doc:st.doc});
+    /* an empty store takes what this browser already had, so a second device sees it */
+    else if(st.url&&st.applied&&st.live) schedulePush();
+    tick(); }); });
+
+  return {state, boot, poll, push, onChange(f){ listeners.push(f); }, PROP_KEYS, POLL_MS};
+})();
+
+</script>
 <script>
 let PAY=null;
 const DATA_URL='../props/data/payload.json';
@@ -3113,11 +3333,17 @@ const PAGE_BUILD='live v5 \u00b7 __BUILT__';
    The correction is kept in this page's own key and nowhere else. The parlay in the prop
    model, in the betting model and in the file is left exactly as it was: this changes what
    the page measures against, not how anything settles, and the prop model's Track Record
-   still grades the line the model actually quoted. Like everything a browser keeps, it is
-   that browser's -- for a correction every device should see, the number goes in the file. */
+   still grades the line the model actually quoted.
+
+   The key is read and written through LIVE_IO when the page around this section defines
+   one: inside the Bets and Stats page that is the sync layer, which keeps the same key in
+   the shared document every device reads, so a correction or a deletion made on one device
+   is on all of them. On its own the section keeps the key in this browser. */
 const LIVE_KEY='live_parlays_v1';
+const LIVE_IO=(typeof window!=='undefined'&&window.LIVE_IO)||{get:()=>localStorage.getItem(LIVE_KEY),set:v=>{ localStorage.setItem(LIVE_KEY,v); return true; }};
+const synced=()=>!!(window.NFLSYNC&&NFLSYNC.state().live);
 function liveStore(){
-  let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
+  let v=null; try{ v=JSON.parse(LIVE_IO.get()||'null'); }catch(e){}
   if(!v||typeof v!=='object') v={};
   /* anything else in the object is carried through untouched: writeStore writes the whole
      object back, and a key some other page put here is not this page's to drop */
@@ -3125,9 +3351,10 @@ function liveStore(){
     lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
     removed:(v.removed&&typeof v.removed==='object')?v.removed:{}};
 }
-/* a parlay deleted from this page is gone from this page on this device, for good. This
-   page writes to no other key: the prop model's saved parlays and the betting model's slips
-   are deleted where they were made, and a parlay in the file is taken out of the file. */
+/* a parlay deleted from this page is gone from this page, for good -- on this device, or
+   on every device when the page is synced. This page writes to no other key: the prop
+   model's saved parlays and the betting model's slips are deleted where they were made, and
+   a parlay in the file is taken out of the file. */
 const rmKey=p=>p.src+'|'+p.id;
 function removeParlay(p){
   /* a saved parlay has one copy, in the prop model, and this is the section that shows it,
@@ -3140,7 +3367,7 @@ function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
 const removedCount=()=>allParlays().filter(isRemoved).length;
 const isRemoved=p=>!!liveStore().removed[rmKey(p)];
-function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
+function writeStore(st){ try{ return LIVE_IO.set(JSON.stringify(st))!==false; }catch(e){ return false; } }
 function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
 function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
 function setLine(p,i,val){
@@ -3455,7 +3682,7 @@ function whatsHere(){
   else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
   const gone=STATE.parlays.filter(p=>isRemoved(Object.assign({src:'file'},p))).length;
   rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>liveparlays/parlays.json</code>'
-    +(gone?', '+gone+' of them deleted on this device':'')
+    +(gone?', '+gone+' of them deleted'+(synced()?'':' on this device'):'')
     +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
   return rows;
 }
@@ -3471,7 +3698,7 @@ function draw(){
       This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
       <b style="color:var(--ink)">Where it looked just now:</b>
       <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
-      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted on this device.</b> Deleting is per device and the parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
+      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted${synced()?'':' on this device'}.</b> The parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. ${synced()?'This page is synced: a parlay built or deleted on any device is built or deleted on all of them.':'Parlays live in the browser that built them; to see one on your other devices it has to go in the file.'}</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
@@ -3555,6 +3782,20 @@ renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
+/* the sync stamp in the header: synced and when the document last changed, saving, failed
+   and retrying, or not set up */
+(function(){
+  const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
+  const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+  const put=s=>{ let t, cls='';
+    if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced — this browser only'; cls='off'; }
+    else if(s.ok===false){ t='Sync failed: '+s.err+' — retrying'; cls='bad'; }
+    else if(s.pending){ t='Saving…'; cls='ok'; }
+    else if(!s.applied){ t='Connecting…'; }
+    else { t='Synced'+(s.at?' · '+when(s.at):''); cls='ok'; }
+    el.textContent=t; el.dataset.state=cls; el.title=s.url?'Every device reads and writes the same parlays, through '+s.url:'nflbets/sync.json has no store address, so parlays stay in this browser'; };
+  NFLSYNC.onChange(put); put(NFLSYNC.state());
+})();
 </script>
 <script>
 /* ---------- the Pick'ems tab ----------
@@ -3659,6 +3900,12 @@ function gameBody(g){
 /* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
    so the row shows what is on the parlay now */
 function wireLegs(){
+  /* the parlay changed on another device: every open game redraws its ticks */
+  document.addEventListener('nflsync-applied',()=>{
+    el('pkBoard').querySelectorAll('.pk-game.pk-open').forEach(card=>{
+      const g=ST.sched.find(x=>x.game_id===card.dataset.game), body=card.querySelector('.pk-gbody');
+      if(g&&body) body.outerHTML=gameBody(g); });
+  });
   el('pkBoard').addEventListener('change',e=>{
     const box=e.target; if(!box.matches||!box.matches('input[data-leg]')) return;
     const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;
