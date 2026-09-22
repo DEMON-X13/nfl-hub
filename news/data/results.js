@@ -125,5 +125,9 @@ const RESULTS = {
  "wk2:IND-KC": [
   30,
   33
+ ],
+ "wk2:NYG-LAR": [
+  6,
+  28
  ]
 };
