@@ -478,7 +478,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(store.puts.length === putsC, 'device C pushed while it had never read the document');
     store.fail = false; await C.w.NFLSYNC.poll(); await wait(200);
     chk(C.w.NFLSYNC.state().live === true && !!SC.parlay[key], 'device C did not take the document once the store answered: ' + JSON.stringify(C.w.NFLSYNC.state()));
+    chk(/^Saving/.test(txt(C.d.getElementById('syncStamp'))), 'device C\'s header does not say it is saving the parlay it made offline: ' + txt(C.d.getElementById('syncStamp')));
+    /* what C made while the store was down was its first document, so it joins rather than yields */
+    await settle();
     chk(/^Synced/.test(txt(C.d.getElementById('syncStamp'))), 'device C\'s header does not say Synced once the store answers');
+    chk(SC.saved.some(p => p.id === 'offline') && !!storeDoc(store) && storeDoc(store).prop.saved.some(p => p.id === 'offline'), 'the parlay C made while the store was down did not join the document');
     /* device D has a browser copy from before sync and opens on an empty store: its copy seeds the document */
     const fresh = mkStore();
     const blob = JSON.parse(A.w.localStorage.getItem(PROP_KEY)); blob.saved = [{ id: 'old-device', saved: new Date().toISOString(), week: gA.w, stake: 2, payout: 4, price: 100, legs: [teamLeg(gA)] }];
@@ -493,7 +497,38 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       inp.dispatchEvent(new D.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); await settle();
       chk(!!storeDoc(fresh) && Object.values(storeDoc(fresh).live.lines).includes(44.5), 'a corrected line did not reach the store: ' + JSON.stringify(storeDoc(fresh) && storeDoc(fresh).live)); }
     else chk(false, 'no line to correct in device D\'s section');
-    for (const x of [A, B, C, D]) x.w.close();
+    /* device E also has a browser copy from before sync, but opens on the store D already seeded: its
+       parlays join the document instead of being replaced by it, its builder stands in for D's empty
+       one, its deletion in the section is kept, and D sees all of it on its next look */
+    const blobE = JSON.parse(A.w.localStorage.getItem(PROP_KEY)); blobE.saved = [{ id: 'other-device', saved: new Date().toISOString(), week: gA.w, stake: 5, payout: 15, price: 200, legs: [teamLeg(gA)] }];
+    blobE.parlay = { [key]: teamLeg(gA) };
+    const putsE = fresh.puts.length;
+    const E = await run(state, undefined, null, false, { sync: fresh, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(blobE));
+      w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: { 'file|gone-before-sync': 1 } })); } });
+    chk(!E.timedOut && E.errs.length === 0, 'device E broke: ' + E.errs.join('; '));
+    await settle();
+    const SE = E.w.eval('S'), docE = storeDoc(fresh);
+    chk(SE.saved.some(p => p.id === 'other-device') && SE.saved.some(p => p.id === 'old-device'), 'device E did not keep its own saved parlay beside the document\'s: ' + JSON.stringify(SE.saved.map(p => p.id)));
+    chk(!!SE.parlay[key], 'device E\'s builder leg was replaced by the document\'s empty builder');
+    chk(fresh.puts.length === putsE + 1, `device E should have pushed its join exactly once (${fresh.puts.length - putsE} pushes)`);
+    chk(!!docE && docE.prop.saved.some(p => p.id === 'other-device') && docE.prop.saved.some(p => p.id === 'old-device'), 'device E\'s saved parlay did not join the document: ' + JSON.stringify(docE && docE.prop.saved.map(p => p.id)));
+    chk(!!docE && !!docE.prop.parlay[key], 'device E\'s builder leg did not join the document');
+    chk(!!docE && docE.live.removed['file|gone-before-sync'] === 1, 'device E\'s deletion from before sync did not join the document: ' + JSON.stringify(docE && docE.live));
+    chk(E.w.NFLSYNC.state().joined === 1 && /^Synced/.test(txt(E.d.getElementById('syncStamp'))), 'device E is not synced after its join: ' + JSON.stringify(E.w.NFLSYNC.state()));
+    chk(E.w.localStorage.getItem('nflsync_v1') === fresh.node.rev, 'device E did not remember the rev it wrote');
+    await D.w.NFLSYNC.poll(); await settle();
+    chk(D.w.eval('S').saved.some(p => p.id === 'other-device'), 'device D did not get the parlay E brought');
+    /* device F has shared before (it remembers a rev) and holds a parlay the document lacks: another
+       device deleted it, so the document wins and nothing is pushed */
+    const blobF = JSON.parse(E.w.localStorage.getItem(PROP_KEY)); blobF.saved = blobF.saved.concat([{ id: 'ghost', saved: new Date().toISOString(), week: gA.w, stake: 1, payout: 2, price: 100, legs: [teamLeg(gA)] }]);
+    const putsF = fresh.puts.length;
+    const F = await run(state, undefined, null, false, { sync: fresh, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(blobF)); w.localStorage.setItem('nflsync_v1', 'some-earlier-rev'); } });
+    chk(!F.timedOut && F.errs.length === 0, 'device F broke: ' + F.errs.join('; '));
+    await settle();
+    chk(!F.w.eval('S').saved.some(p => p.id === 'ghost'), 'device F kept a parlay the document lacks although it had shared before');
+    chk(fresh.puts.length === putsF && !storeDoc(fresh).prop.saved.some(p => p.id === 'ghost'), 'device F pushed a parlay another device had deleted');
+    chk(F.w.localStorage.getItem('nflsync_v1') === fresh.node.rev, 'device F did not remember the rev it took');
+    for (const x of [A, B, C, D, E, F]) x.w.close();
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
