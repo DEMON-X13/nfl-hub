@@ -36,6 +36,17 @@ const tab = rd('nflbets', 'build', 'tab_pickems.html');
    to that card and its script runs in a closure, since the page around it defines most of
    the same names for itself. */
 const livePage = rd('liveparlays', 'build', 'page.html');
+/* the sync layer: one shared document for the builder, the saved parlays, the corrected
+   lines and the deletions, read and written by every device. It runs before the prop
+   model, which saves through the window.storage it defines; the section's key goes through
+   window.LIVE_IO. Its address is read from nflbets/sync.json at run time, never built in. */
+const SYNC_JS = rd('nflbets', 'build', 'sync.js');
+for (const need of ['window.storage=', 'window.LIVE_IO=', "PROP_KEY='props_2026_v1'", "LIVE_KEY='live_parlays_v1'", "CONF='sync.json'"])
+  if (!SYNC_JS.includes(need)) throw new Error('nflbets/build/sync.js no longer has ' + need);
+if (!part2.includes("const SEASON=2026, KEY='props_2026_v1';")) throw new Error("the prop model's storage key moved; sync.js names it");
+if (!part2.includes('if(window.storage){const r=await window.storage.get(KEY,false)')) throw new Error('the prop model no longer reads through window.storage, which the sync layer relies on');
+if (!fs.existsSync(path.join(ROOT, 'nflbets', 'sync.json'))) throw new Error('nflbets/sync.json is missing: the page reads the store address from it');
+JSON.parse(rd('nflbets', 'sync.json'));
 
 /* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
    not a page to ship half-edited */
@@ -111,7 +122,7 @@ lsub("document.documentElement.dataset.build=PAGE_BUILD;", '', 'build stamp');
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
 lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
-for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll'])
+for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'LIVE_IO.get()', 'LIVE_IO.set('])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
 const LIVE_SECTION = `<div class="card" id="lpCard">
     <h2 style="display:flex;align-items:center;gap:10px">Live Parlays<span class="grow" style="flex:1"></span></h2>
@@ -131,12 +142,30 @@ renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
+/* the sync stamp in the header: synced and when the document last changed, saving, failed
+   and retrying, or not set up */
+(function(){
+  const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
+  const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+  const put=s=>{ let t, cls='';
+    if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced \u2014 this browser only'; cls='off'; }
+    else if(s.ok===false){ t='Sync failed: '+s.err+' \u2014 retrying'; cls='bad'; }
+    else if(s.pending){ t='Saving\u2026'; cls='ok'; }
+    else if(!s.applied){ t='Connecting\u2026'; }
+    else { t='Synced'+(s.at?' \u00b7 '+when(s.at):''); cls='ok'; }
+    el.textContent=t; el.dataset.state=cls; el.title=s.url?'Every device reads and writes the same parlays, through '+s.url:'nflbets/sync.json has no store address, so parlays stay in this browser'; };
+  NFLSYNC.onChange(put); put(NFLSYNC.state());
+})();
 </script>`;
 
 /* the prop model's page, re-headed */
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>X NFL Bets and Stats</title>', 'title');
 html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 'heading');
+/* the sync stamp, beside the data stamp */
+html = sub1(html, '<span class="sub grow" id="saveState" style="margin-left:auto"></span>',
+  '<span class="sub grow" id="saveState" style="margin-left:auto"></span>\n    <span class="sub" id="syncStamp" title="Whether this page shares its parlays with your other devices"></span>', 'the save stamp');
+html = sub1(html, '</style>\n</head>', '</style>\n<style>#syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>\n</head>', 'the sync stamp style');
 /* the Props tab's timed score refresh goes: the button stays, the "scores off" stamp and
    the every-30s picker do not. Their code is null-safe on both. */
 html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>\n',
@@ -177,6 +206,8 @@ html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n
 /* the Live Parlays section, under the builder, where the Saved parlays card was */
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  ' + LIVE_SECTION, 'the Parlay Builder section');
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
+/* the sync layer runs first: the prop model reads its state through it at boot */
+html = html.slice(0, -'<script>\n'.length) + '<script>\n' + SYNC_JS + '\n</script>\n<script>\n';
 
 /* the app, as assemble.py assembles it, one directory further from its payload. One thing
    is left out of a game on this page: the Game bets card, since the same bets open under

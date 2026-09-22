@@ -97,6 +97,21 @@ redirect. `nflbets/build/smoke.js` boots the built page in jsdom against both si
 published data and walks every tab; `nflbets/build/smoke_live.js` does the same for the
 Live Parlays section against a stubbed parlay file and scoreboard.
 
+The parlays are one document for every device. `nflbets/build/sync.js`, inlined before the
+prop model's script, defines the `window.storage` the model saves through and the
+`window.LIVE_IO` the section's `live_parlays_v1` key goes through. On load it reads
+`nflbets/sync.json` for the store's address, pulls the document (`GET <url>/doc.json`) and
+lays its keys -- `parlay`, `saved`, `stake`, `bookPrice`, `margin`, and the section's
+`lines` and `removed` -- over the browser's copy; every save pushes the same keys back
+(`PUT <url>.json`, the document as a JSON string under a random `rev`), and a poll every
+eight seconds while the page is on screen reads `<url>/rev.json` and pulls the document when
+the tag moved, then redraws the builder, the open game, the section and any open Pick'ems
+game. Nothing is pushed until the document has been read once, so a device that could not
+reach the store never replaces it with an empty builder. The store is a Firebase Realtime
+Database over its REST interface; with `sync.json` blank the page runs on the browser alone
+and the header stamp says so. `nflbets/build/smoke.js` runs two, then more, devices against
+one stubbed store and checks that each sees what the others did.
+
 ## Props: how it fits together
 
 ```

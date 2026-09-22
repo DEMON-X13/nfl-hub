@@ -95,9 +95,11 @@ rebuilding it too:
 
 ```
 node nflbets/build/build.js
-node nflbets/build/smoke.js       # must end "0 failures"
+node nflbets/build/smoke.js       # must end "0 failures"; includes the sync layer against a stubbed store
 node nflbets/build/smoke_live.js  # the Live Parlays section; must end "0 failures"
 ```
+
+`nflbets/build/sync.js` (the sync layer) is inlined by the build, so a change to it is a rebuild too.
 
 A parlay every device should see goes in `liveparlays/parlays.json`, by hand, as its `how`
 field describes.
@@ -121,6 +123,20 @@ may quietly outrank what the job published:
   publishing timestamp in its address (`&v=`), so a new publish is a new address.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
+- **The parlays are one document for every device.** The builder, the saved parlays, the
+  stake, the book price, the margin, and the Live Parlays section's corrected lines and
+  deletions are kept in a shared JSON document that every device reads when the page opens,
+  writes on every change and re-reads every few seconds while on screen. The document lives
+  in a Firebase Realtime Database reached over plain HTTPS, whose address is in
+  `nflbets/sync.json` (read at run time, so pasting it in needs no rebuild); with the address
+  blank the page runs on the browser alone and the header says "Not synced". The layer is
+  `nflbets/build/sync.js`: it defines the `window.storage` the prop model saves through and
+  the `window.LIVE_IO` the section's key goes through, pushes nothing until it has read the
+  document once, and the header's `syncStamp` says whether it is synced, saving or failing.
+  Setting it up: Firebase console → new project → Realtime Database → rules
+  `{"rules":{"nflhub":{".read":true,".write":true}}}` → the database URL plus `/nflhub` into
+  `nflbets/sync.json`. Open rules mean anyone with the address can read and change the
+  parlays; that is the trade for a static page with no login.
 
 ## Conventions
 
@@ -135,14 +151,17 @@ may quietly outrank what the job published:
   reported. Look at recent commits before writing one. End with the
   `Co-Authored-By` and `Claude-Session` lines the session provides.
 - **`live_parlays_v1` is the Live Parlays section's key.** It holds `lines` (a line you
-  corrected) and `removed` (a file or betting-model parlay you deleted on this device). A
-  saved parlay is not in it: deleting one in the section deletes it from the prop model's
-  own saved list, which is the only copy. The section reads the whole object and writes it
-  back whole, so a key anything else puts there is carried through.
-- **Visitor data is the visitor's.** Picks, parlays, bankroll, bets and
-  self-loaded odds live in the browser's local storage only and are never
-  written to the repo. Anything held per-session and not meant to persist (for
-  example a shuffled parlay alternative) is kept outside the saved state object
-  `S`, so it is never serialised.
+  corrected) and `removed` (a file or betting-model parlay you deleted). A saved parlay is
+  not in it: deleting one in the section deletes it from the prop model's own saved list,
+  which is the only copy. The section reads the whole object and writes it back whole, so a
+  key anything else puts there is carried through. Inside the Bets and Stats page the key is
+  read and written through `LIVE_IO`, which is the sync layer, so it is shared like the
+  parlays.
+- **Visitor data is the visitor's.** Picks, parlays, bankroll, bets and self-loaded odds are
+  never written to the repo. Picks, bankroll, bets and odds live in the browser's local
+  storage only; the parlays and the section's key are shared through the sync document above
+  when `nflbets/sync.json` names one. Anything held per-session and not meant to persist
+  (for example a shuffled parlay alternative) is kept outside the saved state object `S`, so
+  it is never serialised.
 - **No secrets in the repo.** `ODDS_API_KEY` is a repository secret and only the
   props workflow touches it.

@@ -153,6 +153,12 @@ function gameBody(g){
 /* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
    so the row shows what is on the parlay now */
 function wireLegs(){
+  /* the parlay changed on another device: every open game redraws its ticks */
+  document.addEventListener('nflsync-applied',()=>{
+    el('pkBoard').querySelectorAll('.pk-game.pk-open').forEach(card=>{
+      const g=ST.sched.find(x=>x.game_id===card.dataset.game), body=card.querySelector('.pk-gbody');
+      if(g&&body) body.outerHTML=gameBody(g); });
+  });
   el('pkBoard').addEventListener('change',e=>{
     const box=e.target; if(!box.matches||!box.matches('input[data-leg]')) return;
     const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;

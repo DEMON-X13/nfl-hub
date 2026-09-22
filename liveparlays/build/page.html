@@ -144,7 +144,7 @@ footer a{color:var(--ink-2)}
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
     <span class="grow"></span>
-    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page, on this device.">Clear settled</button>
+    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
   <noscript><div class="note"><b>This page needs JavaScript.</b> It has none of its own data:
@@ -189,11 +189,17 @@ const PAGE_BUILD='live v5 \u00b7 __BUILT__';
    The correction is kept in this page's own key and nowhere else. The parlay in the prop
    model, in the betting model and in the file is left exactly as it was: this changes what
    the page measures against, not how anything settles, and the prop model's Track Record
-   still grades the line the model actually quoted. Like everything a browser keeps, it is
-   that browser's -- for a correction every device should see, the number goes in the file. */
+   still grades the line the model actually quoted.
+
+   The key is read and written through LIVE_IO when the page around this section defines
+   one: inside the Bets and Stats page that is the sync layer, which keeps the same key in
+   the shared document every device reads, so a correction or a deletion made on one device
+   is on all of them. On its own the section keeps the key in this browser. */
 const LIVE_KEY='live_parlays_v1';
+const LIVE_IO=(typeof window!=='undefined'&&window.LIVE_IO)||{get:()=>localStorage.getItem(LIVE_KEY),set:v=>{ localStorage.setItem(LIVE_KEY,v); return true; }};
+const synced=()=>!!(window.NFLSYNC&&NFLSYNC.state().live);
 function liveStore(){
-  let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
+  let v=null; try{ v=JSON.parse(LIVE_IO.get()||'null'); }catch(e){}
   if(!v||typeof v!=='object') v={};
   /* anything else in the object is carried through untouched: writeStore writes the whole
      object back, and a key some other page put here is not this page's to drop */
@@ -201,9 +207,10 @@ function liveStore(){
     lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
     removed:(v.removed&&typeof v.removed==='object')?v.removed:{}};
 }
-/* a parlay deleted from this page is gone from this page on this device, for good. This
-   page writes to no other key: the prop model's saved parlays and the betting model's slips
-   are deleted where they were made, and a parlay in the file is taken out of the file. */
+/* a parlay deleted from this page is gone from this page, for good -- on this device, or
+   on every device when the page is synced. This page writes to no other key: the prop
+   model's saved parlays and the betting model's slips are deleted where they were made, and
+   a parlay in the file is taken out of the file. */
 const rmKey=p=>p.src+'|'+p.id;
 function removeParlay(p){
   /* a saved parlay has one copy, in the prop model, and this is the section that shows it,
@@ -216,7 +223,7 @@ function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
 const removedCount=()=>allParlays().filter(isRemoved).length;
 const isRemoved=p=>!!liveStore().removed[rmKey(p)];
-function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
+function writeStore(st){ try{ return LIVE_IO.set(JSON.stringify(st))!==false; }catch(e){ return false; } }
 function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
 function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
 function setLine(p,i,val){
@@ -531,7 +538,7 @@ function whatsHere(){
   else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
   const gone=STATE.parlays.filter(p=>isRemoved(Object.assign({src:'file'},p))).length;
   rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>liveparlays/parlays.json</code>'
-    +(gone?', '+gone+' of them deleted on this device':'')
+    +(gone?', '+gone+' of them deleted'+(synced()?'':' on this device'):'')
     +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
   return rows;
 }
@@ -547,7 +554,7 @@ function draw(){
       This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
       <b style="color:var(--ink)">Where it looked just now:</b>
       <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
-      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted on this device.</b> Deleting is per device and the parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
+      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted${synced()?'':' on this device'}.</b> The parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. ${synced()?'This page is synced: a parlay built or deleted on any device is built or deleted on all of them.':'Parlays live in the browser that built them; to see one on your other devices it has to go in the file.'}</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
