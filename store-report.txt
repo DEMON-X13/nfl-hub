@@ -1,0 +1,43 @@
+Sync store report (read-only check)
+Taken: 2026-09-22, after main commit 2bc5940 ("A sync poll that never comes back no longer stops the next one (#88)")
+
+== Firebase store: https://nfl-bets-and-stats-default-rtdb.firebaseio.com/nflhub ==
+
+rev.json
+  "mucw46ba-spg52j"
+
+doc.json
+  rev : mucw46ba-spg52j   (matches rev.json)
+  at  : 2026-09-22T16:30:16.822Z
+  json: parsed below
+
+Parsed document
+  prop.parlay   : 0 keys (empty object)
+  prop.saved    : 0 saved parlays (empty array; no ids, no legs)
+  prop.stake    : 20
+  prop.bookPrice: null
+  prop.margin   : "typical"
+  live.lines    : 0 keys (empty object)
+  live.removed  : 4 keys
+    bet|bmu7p6py25777s
+    bet|bmu9y18hi1m6pr
+    file|w2-props-4
+    file|w2-sgp-5
+
+Raw document
+{"prop":{"parlay":{},"saved":[],"stake":20,"bookPrice":null,"margin":"typical"},"live":{"lines":{},"removed":{"bet|bmu7p6py25777s":1,"bet|bmu9y18hi1m6pr":1,"file|w2-props-4":1,"file|w2-sgp-5":1}}}
+
+== Published site ==
+
+https://demon-x13.github.io/nfl-hub/nflbets/sync.json
+  {"url": "https://nfl-bets-and-stats-default-rtdb.firebaseio.com/nflhub"}
+  (same database the store check above read)
+
+https://demon-x13.github.io/nfl-hub/nflbets/index.html
+  size: 286057 bytes
+  contains "checked '+clock" in the sync stamp code: YES (1 occurrence), line 3850:
+    else { t='Synced'+(s.at?' · changed '+when(s.at):'')+(s.checked?' · checked '+clock(s.checked):''); cls='ok'; }
+  APP_BUILD  : app v64 · 2026-09-22
+  MODEL_BUILD: 2026.1 fit 2019-2025
+
+Nothing in the store was changed.
