@@ -1,52 +1,196 @@
 {
-  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet. A whole-game bet takes line 0, team set to the side you are on, and player set to whatever you want it called.",
-  "updated": "2026-09-20T18:05:00Z",
-  "games": [
-    "2026_02_NO_BAL",
-    "2026_02_PHI_TEN",
-    "2026_02_LV_LAC",
-    "2026_02_MIA_SF",
-    "2026_02_CAR_ATL",
-    "2026_02_CIN_HOU",
-    "2026_02_GB_NYJ",
-    "2026_02_IND_KC"
-  ],
-  "parlays": [
+ "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet. A whole-game bet takes line 0, team set to the side you are on, and player set to whatever you want it called.",
+ "updated": "2026-09-22T00:30:00Z",
+ "games": [
+  "2026_02_NO_BAL",
+  "2026_02_PHI_TEN",
+  "2026_02_LV_LAC",
+  "2026_02_MIA_SF",
+  "2026_02_CAR_ATL",
+  "2026_02_CIN_HOU",
+  "2026_02_GB_NYJ",
+  "2026_02_IND_KC",
+  "2026_02_NYG_LA"
+ ],
+ "parlays": [
+  {
+   "id": "w2-ml-4",
+   "week": 2,
+   "stake": 2,
+   "price": 142,
+   "payout": 4.84,
+   "legs": [
     {
-      "id": "w2-ml-4",
-      "week": 2,
-      "stake": 2,
-      "price": 142,
-      "payout": 4.84,
-      "legs": [
-        {"game": 0, "player": "Ravens", "team": "BAL", "stat": "ml", "line": 0, "side": "over", "main": false},
-        {"game": 1, "player": "Eagles", "team": "PHI", "stat": "ml", "line": 0, "side": "over", "main": false},
-        {"game": 2, "player": "Chargers", "team": "LAC", "stat": "ml", "line": 0, "side": "over", "main": false},
-        {"game": 3, "player": "49ers", "team": "SF", "stat": "ml", "line": 0, "side": "over", "main": false}
-      ]
+     "game": 0,
+     "player": "Ravens",
+     "team": "BAL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
     },
     {
-      "id": "w2-ml-3",
-      "week": 2,
-      "stake": 1,
-      "price": 503,
-      "payout": 6.03,
-      "legs": [
-        {"game": 4, "player": "Falcons", "team": "ATL", "stat": "ml", "line": 0, "side": "over", "main": false},
-        {"game": 5, "player": "Texans", "team": "HOU", "stat": "ml", "line": 0, "side": "over", "main": false},
-        {"game": 6, "player": "Packers", "team": "GB", "stat": "ml", "line": 0, "side": "over", "main": false}
-      ]
+     "game": 1,
+     "player": "Eagles",
+     "team": "PHI",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
     },
     {
-      "id": "w2-props-4",
-      "week": 2,
-      "stake": 1,
-      "legs": [
-        {"game": 7, "player": "Daniel Jones", "team": "IND", "stat": "passing_yards", "line": 216.5, "side": "over", "main": true},
-        {"game": 7, "player": "Jonathan Taylor", "team": "IND", "stat": "any_td", "line": 1, "side": "over", "main": false},
-        {"game": 7, "player": "Patrick Mahomes", "team": "KC", "stat": "passing_yards", "line": 220.5, "side": "over", "main": true},
-        {"game": 7, "player": "Travis Kelce", "team": "KC", "stat": "receiving_yards", "line": 41.5, "side": "over", "main": true}
-      ]
+     "game": 2,
+     "player": "Chargers",
+     "team": "LAC",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 3,
+     "player": "49ers",
+     "team": "SF",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
     }
-  ]
+   ]
+  },
+  {
+   "id": "w2-ml-3",
+   "week": 2,
+   "stake": 1,
+   "price": 503,
+   "payout": 6.03,
+   "legs": [
+    {
+     "game": 4,
+     "player": "Falcons",
+     "team": "ATL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 5,
+     "player": "Texans",
+     "team": "HOU",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 6,
+     "player": "Packers",
+     "team": "GB",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w2-props-4",
+   "week": 2,
+   "stake": 1,
+   "legs": [
+    {
+     "game": 7,
+     "player": "Daniel Jones",
+     "team": "IND",
+     "stat": "passing_yards",
+     "line": 216.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 7,
+     "player": "Jonathan Taylor",
+     "team": "IND",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 7,
+     "player": "Patrick Mahomes",
+     "team": "KC",
+     "stat": "passing_yards",
+     "line": 220.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 7,
+     "player": "Travis Kelce",
+     "team": "KC",
+     "stat": "receiving_yards",
+     "line": 41.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w2-sgp-5",
+   "week": 2,
+   "stake": 2,
+   "price": 1700,
+   "payout": 36.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 8,
+     "player": "Rams",
+     "team": "LA",
+     "stat": "ats",
+     "line": -6.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 8,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 8,
+     "player": "Cam Skattebo",
+     "team": "NYG",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 8,
+     "player": "Cam Skattebo",
+     "team": "NYG",
+     "stat": "rushing_yards",
+     "line": 52,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 8,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_yards",
+     "line": 240,
+     "side": "over",
+     "main": false
+    }
+   ]
+  }
+ ]
 }
