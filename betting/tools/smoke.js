@@ -1,19 +1,24 @@
-/* Smoke test for the built pages: admin.html, which is the app now, and index.html, which is a redirect.
+/* Smoke test for the built betting app: the string build.js returns, which nflbets/index.html
+ * carries as the srcdoc of its Pick'em Record, Power Ratings and Bet Log frames.
  *
  *   node betting/tools/smoke.js
  *
- * Loads betting/index.html in jsdom with fetch stubbed to serve betting/state.json,
- * and checks: the published season is shown, the private tabs are gone, a visitor's
- * pick is kept in their own storage and graded against the published result.
+ * Loads the built app in jsdom with fetch stubbed to serve betting/state.json, and checks:
+ * the published season is shown, the private tabs are gone, a visitor's pick is kept in
+ * their own storage and graded against the published result, and the embedded form (the
+ * page around it sets window.EMBED_TAB and window.STATE_URL before the app runs) opens the
+ * tab it is told to, headless, reading the season from where it is told.
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
 const ROOT = path.resolve(__dirname, '..', '..');
-const html = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
-const redirect = fs.readFileSync(path.join(ROOT, 'betting', 'index.html'), 'utf8');
+const { buildApp } = require('./build.js');
+const html = buildApp().replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
 const state = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
+for (const gone of ['index.html', 'admin.html'])
+  if (fs.existsSync(path.join(ROOT, 'betting', gone))) throw new Error('betting/' + gone + ' is back; the betting site has no pages, the app lives in nflbets/index.html');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let fails = 0; const check = (c, m) => { if (!c) { fails++; console.log('  FAIL', m); } };
 
@@ -45,7 +50,6 @@ function load(picks) {
   /* My Picks is gone on purpose: the picks it held never left the browser that made them,
      and losing a week of them was the whole reason for dropping it. The key is untouched. */
   check([...d.querySelectorAll('#tabs button')].map(b => b.dataset.tab).join() === 'picks,bank,record,bets,ratings,upload,backup', 'every tab present but My Picks');
-  check(/<meta http-equiv="refresh" content="0; url=\.\.\/nflbets\/">/.test(redirect) && /location\.replace\('\.\.\/nflbets\/'\+\(location\.hash\|\|''\)\)/.test(redirect) && !/const MODEL/.test(redirect), 'index.html is a redirect to nflbets/ that carries the hash, and not the app');
   check(!d.getElementById('tab-mine'), 'the My Picks section is gone with its tab');
   check(![...d.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'no You column survives');
   check(!d.getElementById('rebuildBtn') && !d.getElementById('resetBtn') && !!d.getElementById('exportBtn'), 'Backup has save and import only');
@@ -79,8 +83,8 @@ function load(picks) {
     const bs2 = r2.dom.window.document.getElementById('backupState');
     check(bs2.className === 'err' && /Everything you have entered/.test(bs2.textContent), 'a visitor who has picks does get the backup warning'); }
 
-  // 3. admin page: same published season, every tab, private things from the same store
-  const adminHtml = fs.readFileSync(path.join(ROOT, 'betting', 'admin.html'), 'utf8').replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
+  // 3. the app on its own: same published season, every tab, private things from the same store
+  const adminHtml = html;
   const a = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html',
     beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
       w2.confirm = () => true; w2.alert = () => {}; w2.scrollTo = () => {};
@@ -120,18 +124,32 @@ function load(picks) {
   a.window.eval('S.lastBackup=Date.now()-3*86400000; S.lastBackupHow="downloaded"; save()'); await sleep(900);
   const kept = JSON.parse(a.window.localStorage.getItem('x_nfl_viewer_picks_2026') || '{}');
   check(kept.lastBackup && Date.now() - kept.lastBackup > 2 * 86400000, 'admin: the last-backup time is kept in the browser store');
-  // 4. embedded: the X NFL Bets and Stats page frames one tab of the admin page, headless
-  const e = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html?embed=1#record',
-    beforeParse(w3) { w3.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w3.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
+  // 4. embedded: the X NFL Bets and Stats page sets the app into a srcdoc frame, one tab of it, headless.
+  //    The frame has the page's address, so the season path is given and the tab is named.
+  const embedFetched = [];
+  const e = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/nflbets/',
+    beforeParse(w3) { w3.EMBED_TAB = 'record'; w3.STATE_URL = '../betting/state.json';
+      w3.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w3.fetch = async url => { embedFetched.push(String(url)); return { ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) }; };
       w3.confirm = () => true; w3.alert = () => {}; w3.scrollTo = () => {}; } });
   await sleep(600);
   const de = e.window.document;
   check(de.documentElement.classList.contains('embed'), 'embed: the page marks itself embedded');
-  check(!de.getElementById('tab-record').hidden && de.getElementById('tab-picks').hidden, 'embed: #record opens the Records tab');
+  check(!de.getElementById('tab-record').hidden && de.getElementById('tab-picks').hidden, 'embed: EMBED_TAB opens the Records tab');
   check(/straight-up, \d+ of \d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
+  check(embedFetched.some(u => u === '../betting/state.json'), 'embed: the season is not read from ../betting/state.json: ' + embedFetched.join(', '));
   check(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml), 'embed: header and tab bar are hidden by the stylesheet');
+  /* clicking a tab inside the frame must not throw on the address it cannot write */
+  { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
+    de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);
+    check(!threw && !de.getElementById('tab-bets').hidden, 'embed: switching tabs inside the frame failed: ' + threw); }
+  /* the old ?embed#tab form still works for a copy opened on its own */
+  const e2 = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/app.html?embed=1#record',
+    beforeParse(w4) { w4.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w4.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
+      w4.confirm = () => true; w4.alert = () => {}; w4.scrollTo = () => {}; } });
+  await sleep(600);
+  check(e2.window.document.documentElement.classList.contains('embed') && !e2.window.document.getElementById('tab-record').hidden, 'embed: ?embed#record on its own no longer works');
   const plain = a.window.document.documentElement;
   check(!plain.classList.contains('embed'), 'a page opened normally is not embedded');
-  console.log(fails ? `${fails} check(s) failed` : `admin + redirect smoke test passed (${graded.length} graded games in the published state)`);
+  console.log(fails ? `${fails} check(s) failed` : `betting app smoke test passed (${graded.length} graded games in the published state)`);
   process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

@@ -5,3 +5,4 @@ raw/*.pkl
 build/node_modules/
 app/app.js
 .env
+app/prop_model_2026.html

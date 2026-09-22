@@ -180,27 +180,35 @@ html = sub1(html, `<label class="muted">Scores <select id="slateEvery">
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here is in the page but not yet shown. */
-/* A betting tab is the betting site's own page, framed: betting/admin.html opened on that
-   tab with ?embed, which hides its header and tab bar. The frame is the exact tab, drawn by
-   the betting app itself on the same browser store, so a bet logged there is logged here.
-   It loads when its tab is first opened and takes the height of what it shows. */
+/* A betting tab is the betting app itself, one tab of it, in a frame: the app as
+   betting/tools/build.js builds it is carried in this page as a string and set into the
+   frame as its srcdoc when the tab is first opened, with the tab's name in front of it. No
+   betting page exists on the site any more. A srcdoc frame is this page's own origin, so
+   the app draws on the same browser store as ever (a bet logged there is logged here) and
+   reads the season from ../betting/state.json. The frame takes the height of what it shows.
+   Nothing is cached apart from this page: the frame's content is inside it. */
+const { buildApp } = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
+const BET_APP = sub1(buildApp(), '<head>', "<head>\n<script>window.EMBED_TAB=null;window.STATE_URL='../betting/state.json';</script>", 'the head of the betting app');
+for (const need of ['html.embed header,html.embed #tabs{display:none}', "classList.add('embed')", 'data-tab="record"', 'data-tab="ratings"', 'data-tab="bets"', 'id="betSave"', 'window.STATE_URL||'])
+  if (!BET_APP.includes(need)) throw new Error('the built betting app has no ' + need + ', which the framed tabs rely on');
+for (const gone of ['index.html', 'admin.html']) if (fs.existsSync(path.join(ROOT, 'betting', gone)))
+  throw new Error('betting/' + gone + ' exists; the betting site has no pages, its app is inside this one');
+/* the app as a script string: JSON is JavaScript, once a closing script tag and a comment
+   opener inside it are broken so the HTML parser does not act on them */
+const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
 const TABS = [
   ['pickems', "Pick'ems"],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builders'],
-  ['ratings', 'Power Ratings', '../betting/admin.html?embed=1#ratings'],
-  ['record', "Pick'em Record", '../betting/admin.html?embed=1#record'],
+  ['ratings', 'Power Ratings', 'ratings'],
+  ['record', "Pick'em Record", 'record'],
   ['track', 'Prop Record'],
-  ['bets', 'Bet Log', '../betting/admin.html?embed=1#bets'],
+  ['bets', 'Bet Log', 'bets'],
 ];
-for (const [, , src] of TABS) if (src && !fs.existsSync(path.join(__dirname, '..', src.replace(/[?#].*$/, ''))))
-  throw new Error('a framed tab points at a page that is not there: ' + src);
-if (!betting.includes('html.embed') && !rd('betting', 'admin.html').includes('html.embed header'))
-  throw new Error('betting/admin.html has no embed mode, so a framed tab would show its header and tab bar');
 const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label], i) =>
   `    <button role="tab" data-tab="${t}"${i === 0 ? ' aria-selected="true"' : ''}>${label}</button>`).join('\n') + '\n  </nav>';
-const FRAMES = TABS.filter(t => t[2]).map(([t, label, src]) =>
-  `<section id="tab-${t}" hidden><iframe class="pk-frame" data-src="${src}" title="${label}"></iframe></section>`).join('\n\n');
+const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed]) =>
+  `<section id="tab-${t}" hidden><iframe class="pk-frame" data-embed="${embed}" title="${label}"></iframe></section>`).join('\n\n');
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
@@ -235,7 +243,7 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
   document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>`;
-const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>' + js + '</script>\n</body>\n</html>\n';
+const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n</body>\n</html>\n';
 fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
 console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB `
   + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
