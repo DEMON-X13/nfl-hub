@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-22T15:21+00:00",
+ "generated": "2026-09-22T19:59+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -2020,8 +2020,8 @@
    "week": 3,
    "home": "DET",
    "away": "NYJ",
-   "pick": "NYJ",
-   "pHome": 0.4706,
+   "pick": "DET",
+   "pHome": 0.5037,
    "played": false,
    "base": 0.1727,
    "why": [
@@ -2038,7 +2038,7 @@
     {
      "f": "rush_epa_away",
      "v": -0.1735,
-     "c": -0.1737
+     "c": -0.1706
     },
     {
      "f": "spread_line",
@@ -2051,19 +2051,19 @@
      "c": -0.1555
     },
     {
-     "f": "pg_kickoff_returns_H",
-     "v": 6.0,
-     "c": 0.1309
-    },
-    {
-     "f": "total_line",
-     "v": 48.5,
-     "c": -0.1301
-    },
-    {
      "f": "td_def_tackle_assists_H",
      "v": 31.0,
      "c": -0.119
+    },
+    {
+     "f": "td_def_fumbles_forced_A",
+     "v": 2.5,
+     "c": -0.0934
+    },
+    {
+     "f": "td_def_tackles_for_loss_A",
+     "v": 5.0,
+     "c": 0.0893
     }
    ]
   },
@@ -2123,15 +2123,10 @@
    "home": "NYG",
    "away": "TEN",
    "pick": "NYG",
-   "pHome": 0.532,
+   "pHome": 0.5153,
    "played": false,
    "base": 0.1727,
    "why": [
-    {
-     "f": "home_moneyline",
-     "v": -175.0,
-     "c": 0.164
-    },
     {
      "f": "pg_punt_returns_H",
      "v": 0.0,
@@ -2141,6 +2136,11 @@
      "f": "pg_passing_16_H",
      "v": 3.0,
      "c": 0.1132
+    },
+    {
+     "f": "home_moneyline",
+     "v": -155.0,
+     "c": 0.11
     },
     {
      "f": "pg_passing_cpoe_A",
@@ -2153,11 +2153,6 @@
      "c": 0.0791
     },
     {
-     "f": "spread_line",
-     "v": 3.5,
-     "c": -0.0771
-    },
-    {
      "f": "td_rushing_fumbles_H",
      "v": 1.0,
      "c": 0.0761
@@ -2166,6 +2161,11 @@
      "f": "pg_receiving_epa_A",
      "v": 4.1497,
      "c": -0.0736
+    },
+    {
+     "f": "pg_kickoff_returns_A",
+     "v": 4.0,
+     "c": -0.0599
     }
    ]
   },
@@ -2327,19 +2327,29 @@
    "home": "NO",
    "away": "LV",
    "pick": "NO",
-   "pHome": 0.5679,
+   "pHome": 0.6571,
    "played": false,
    "base": 0.1727,
    "why": [
     {
      "f": "home_moneyline",
-     "v": -175.0,
-     "c": 0.164
+     "v": -192.0,
+     "c": 0.4809
+    },
+    {
+     "f": "spread_line",
+     "v": 3.0,
+     "c": -0.126
     },
     {
      "f": "td_def_tackle_assists_H",
      "v": 32.0,
      "c": -0.119
+    },
+    {
+     "f": "td_def_fg_blocks_H",
+     "v": 0.5,
+     "c": 0.1059
     },
     {
      "f": "td_fumble_recovery_yards_own_H",
@@ -2352,24 +2362,14 @@
      "c": -0.0934
     },
     {
-     "f": "spread_line",
-     "v": 3.0,
-     "c": -0.0847
-    },
-    {
      "f": "td_rushing_fumbles_H",
      "v": 1.0,
      "c": 0.0761
     },
     {
-     "f": "total_line",
-     "v": 43.5,
-     "c": 0.0622
-    },
-    {
-     "f": "pg_passing_16_H",
-     "v": 5.0,
-     "c": -0.043
+     "f": "def_away",
+     "v": -0.1032,
+     "c": -0.0626
     }
    ]
   },
@@ -2377,15 +2377,15 @@
    "week": 3,
    "home": "DEN",
    "away": "LA",
-   "pick": "DEN",
-   "pHome": 0.5308,
+   "pick": "LA",
+   "pHome": 0.4545,
    "played": false,
    "base": 0.1727,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 114.0,
-     "c": -0.3981
+     "v": 120.0,
+     "c": -0.5912
     },
     {
      "f": "td_def_tackles_with_assist_A",
@@ -2413,14 +2413,14 @@
      "c": 0.0755
     },
     {
+     "f": "td_receiving_fumbles_lost_H",
+     "v": 0.0,
+     "c": -0.0571
+    },
+    {
      "f": "pg_passing_cpoe_A",
      "v": 7.2726,
      "c": -0.0496
-    },
-    {
-     "f": "td_pt_yards_H",
-     "v": 225.5,
-     "c": -0.0472
     }
    ]
   },
@@ -2435,7 +2435,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 142.0,
+     "v": 180.0,
      "c": -0.6444
     },
     {
@@ -2460,7 +2460,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -170.0,
+     "v": -218.0,
      "c": 0.091
     },
     {
