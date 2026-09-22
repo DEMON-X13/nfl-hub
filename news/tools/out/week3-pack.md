@@ -44,7 +44,7 @@ Atlanta Falcons, injuries:
 Atlanta Falcons, ESPN headlines:
 
 Green Bay Packers, injuries:
-- Anthony Campbell (DT) Questionable, Ankle: Campbell (ankle) did not participate in Monday's practice, Tom Silverstein of the Milwaukee Journal Sentinel reports.
+- Anthony Campbell (DT) Questionable, Ankle: Campbell (ankle) was listed as a non-participant in Monday's estimated practice report, Tom Silverstein of the Milwaukee Journal Sentinel reports.
 - Donovan Jennings (G) Questionable, Hand: Jennings (hand) did not participate in Monday's estimated practice, Tom Silverstein of the Milwaukee Journal Sentinel reports.
 - Benjamin St-Juste (CB) Active: St-Juste (hamstring) was a full participant in Monday's estimated practice, Tom Silverstein of the Milwaukee Journal Sentinel reports.
 - Evan Williams (S) Active: Williams made 10 tackles (seven solo) and defensed two passes during Sunday's 20-17 overtime win over the Jets.
@@ -219,6 +219,7 @@ Searches to run:
 - "NFL week 3 picks NYJ DET"
 
 New York Jets, injuries:
+- Arian Smith (WR) Questionable, Knee: questionable
 - Braelon Allen (RB) Active: Allen rushed five times for seven yards and a touchdown while catching his only target for eight yards in Sunday's 20-17 overtime loss to the Packers.
 - Kenyon Sadiq (TE) Active: Sadiq caught two of three targets for 17 yards during Sunday's 20-17 overtime loss to the Packers.
 - Jason Sanders (PK) Active: Sanders reverted to the Jets' practice squad Monday, per the NFL's official transaction log.
@@ -243,7 +244,6 @@ New York Jets, injuries:
 - Demario Davis (LB) Active: Davis made eight tackles (four solo) and had one pass defensed over 50 defensive snaps in Sunday's 23-10 win over the Titans.
 - Isaiah Davis (RB) Active: Davis didn't have any output in the box score during the Jets' win over the Titans on Sunday.
 - Jeremy Ruckert (TE) Active: Ruckert played 29 offensive snaps, catching his sole target for four yards in Sunday's 23-10 win over the Titans.
-- Jarvis Brownlee Jr. (CB) Active: Brownlee (calf) has been cleared to return to Sunday's game against the Titans, Brian Costello of the New York Post reports.
 
 New York Jets, ESPN headlines:
 
@@ -266,7 +266,7 @@ Detroit Lions, injuries:
 - Derrick Barnes (LB) Active: Barnes recorded seven tackles (five solo), including 1.0 sacks, in Thursday's 41-31 loss to the Bills.
 - Chuck Clark (S) Active: Clark finished with 11 tackles (four solo) in Thursday's 41-31 loss to the Bills.
 - Jared Goff (QB) Active: Goff completed 26 of 38 passes for 327 yards with four touchdowns and no interceptions while adding three rushes for seven yards in the Lions' 41-31 loss to the Bills on Thursday. He also committed two fumbles, losing one.
-- Jake Bates (PK) Active: Bates made all four of his extra-point attempts and his only field-goal try in Thursday's 41-31 loss to the Bills.
+- Jake Bates (K) Active: Bates made all four of his extra-point attempts and his only field-goal try in Thursday's 41-31 loss to the Bills.
 - Amon-Ra St. Brown (WR) Active: St. Brown brought in nine of 13 targets for 142 yards and two touchdowns in the Lions' 41-31 loss to the Bills on Thursday.
 - Jahmyr Gibbs (RB) Active: Gibbs rushed 16 times for 52 yards and brought in six of eight targets for 61 yards and a touchdown in the Lions' 41-31 loss to the Bills on Thursday.
 - Levi Onwuzurike (DE) Active: Onwuzurike was signed to the active roster by the Lions ahead of Thursday night's contest against the Bills.
@@ -317,7 +317,7 @@ Houston Texans, ESPN headlines:
 
 Indianapolis Colts, injuries:
 - Seth McGowan (RB) Active: McGowan rushed twice for zero yards and had two kick returns for 58 yards in Sunday's 33-30 overtime loss to the Chiefs.
-- Alec Pierce (WR) Doubtful, Heel: Pierce (heel) will try to rehab his injured left heel without surgery and could return around midseason if all goes well, Ian Rapoport of NFL Network reports.
+- Alec Pierce (WR) Doubtful, Heel: Pierce will try to rehab his injured left heel without surgery and is expected to miss several weeks before potentially returning around midseason if all goes well, Ian Rapoport of NFL Network reports.
 - Spencer Shrader (PK) Active: Shrader made all three of his field-goal attempts and PATs in Sunday night's 33-30 overtime loss to the Chiefs.
 - Charvarius Ward (CB) Questionable, Groin: Ward is dealing with groin tightness after Sunday night's 33-30 overtime loss to the Chiefs, Jake Arthur of Roundtable.io reports.
 - DJ Giddens (RB) Out, Knee: out
@@ -386,7 +386,7 @@ Kansas City Chiefs, ESPN headlines:
 Miami Dolphins, injuries:
 - Malik Washington (WR) Active: Washington caught four of his five targets for 43 yards, rushed once for four yards, returned a punt for seven yards and returned three kicks for 69 yards in Sunday's 35-13 loss to the 49ers.
 - Greg Dulcich (TE) Active: Dulcich caught two of his three targets for 17 yards in Sunday's 35-13 loss to the 49ers.
-- Riley Patterson (PK) Active: Patterson converted two of his three field-goal attempts and his sole extra-point try during the Dolphins' 35-13 loss to the 49ers.
+- Riley Patterson (K) Active: Patterson converted two of his three field-goal attempts and his sole extra-point try during the Dolphins' 35-13 loss to the 49ers.
 - Jaylen Wright (RB) Questionable, Neck: Wright (neck) is day-to-day heading into Week 3, David Furones of the South Florida Sun Sentinel reports.
 - Caleb Douglas (WR) Questionable, Ankle: Dolphins head coach Jeff Hafley said Monday that it's "too early to tell" the severity of the ankle injury Douglas sustained in Sunday's 35-13 loss to the 49ers, C. Isaiah Smalls II of the Miami Herald reports.
 - Chop Robinson (LB) Out, Concussion: out
@@ -455,18 +455,18 @@ New York Giants, injuries:
 - Malachi Fields (WR) Active: Fields brought in two of six targets for 30 yards in the Giants' 28-6 loss to the Rams on Monday night.
 - Isaiah Likely (TE) Active: Likely secured five of 10 targets for 33 yards in the Giants' 28-6 loss to the Rams on Monday night.
 - Jameis Winston (QB) Active: Winston replaced Jaxson Dart (knee) with 9:51 remaining in the first quarter of Monday night's 28-6 loss to the Rams and completed 11 of 27 passes for 111 yards with no touchdowns and one interception while rushing twice for one yard.
-- Malik Nabers (WR) Questionable, Shoulder: Nabers brought in one of four targets for one yard in the Giants' 28-6 loss to the Rams on Monday night.
 - Cam Skattebo (RB) Active: Skattebo rushed 12 times for 36 yards and brought in all four targets for 19 yards in the Giants' 28-6 loss to the Rams on Monday night. He also committed a fumble recovered by New York.
 - Brian Burns (LB) Questionable, Ankle: Burns suffered a low-ankle sprain in Monday's 28-6 loss to the Rams, Connor Hughes of SNY.tv reports.
+- Jaxson Dart (QB) Doubtful, Knee - MCL: Dart is believed to have suffered a sprained MCL in his left knee during Monday's 28-6 loss to the Rams, Ian Rapoport of NFL Network reports.
 - Andrew Thomas (OT) Questionable, Groin: Thomas (groin) is questionable to return to Monday's game against the Rams, Dan Salomone of the Giants' official site reports.
-- Jaxson Dart (QB) Questionable, Knee - MCL: Dart (knee) is officially questionable to return to Monday's matchup against the Rams.
+- Malik Nabers (WR) Questionable, Shoulder: Nabers left Monday's game against the Rams with an apparent right arm injury and is questionable to return, Ralph Vacchiano of FoxSports.com reports.
 - Micah McFadden (LB) Out, Neck: McFadden (neck) is inactive for Monday's game against the Rams, Dan Salomone of the Giants' official site reports.
 - Deonte Banks (CB) Out, Calf: Banks (calf) is inactive for Monday's game against the Rams, Dan Salomone of the Giants' official site reports.
-- Jason Pinnock (S) Out, Coach's Decision: inactive
+- Jason Pinnock (S) Inactive, Coach's Decision: inactive
 - Bobby Jamison-Travis (DT) Out, Coach's Decision: inactive
-- Darius Alexander (DT) Out, Coach's Decision: inactive
+- Darius Alexander (DT) Inactive, Coach's Decision: inactive
 - J.C. Davis (OT) Out, Coach's Decision: inactive
-- Thomas Fidone II (TE) Out, Coach's Decision: inactive
+- Thomas Fidone II (TE) Inactive, Coach's Decision: inactive
 - Najee Harris (RB) Active: Harris is active for Monday's game against the Rams, Patricia Traina of SI.com reports.
 - Braxton Berrios (WR) Active: The Giants elevated Berrios from the practice squad to the active roster ahead of Monday night's game against the Rams, Dan Salomone of the Giants' official site reports.
 - Francis Mauigoa (OT) Active: Mauigoa (shoulder) does not have any injury designation ahead of Monday's game against the Rams.
@@ -513,7 +513,7 @@ Cincinnati Bengals, injuries:
 - DJ Turner II (CB) Active: Turner (hamstring) does not carry an injury designation into Sunday's game versus Tampa Bay.
 - Myles Murphy (DE) Active: Murphy (undisclosed) is not listed on the injury report ahead of Sunday's game against Tampa Bay.
 - Dax Hill (CB) Active: Hill (hamstring) is not listed on the injury report ahead of Sunday's game versus Tampa Bay.
-- Brian Parker II (OT) Injured Reserve, Undisclosed: ir
+- Brian Parker II (OT) IR, Undisclosed: ir
 - Ja'Sir Taylor (CB) Injured Reserve, Undisclosed: The Bengals placed Taylor (undisclosed) on injured reserve Sunday with a designation to return, Geoff Hobson of the team's official site reports.
 - Dohnte Meyers (WR) Active: Meyers has made the Bengals' initial 53-man roster, Charlie Clifford of NBC 5 Cincinnati reports.
 
@@ -592,9 +592,9 @@ Washington Commanders, injuries:
 - Dyami Brown (WR) Active: Brown caught four of his six targets for 21 yards and completed his sole pass attempt for zero yards while losing one fumble in Sunday's 37-20 loss to the Cowboys.
 - Antonio Williams (WR) Active: Williams caught all three of his targets for 24 yards and went 0-for-1 passing in Sunday's 37-20 loss to the Cowboys.
 - Kaytron Allen (RB) Active: Allen logged five carries for 24 yards in the last 3:01 of Sunday's 37-20 loss to the Cowboys.
-- Brandon Coleman (G) Questionable, Finger: Coach Dan Quinn said Monday that "all signs look good to go" regarding Coleman's odds of being available in Week 3, JP Finlay of NBC Sports Washington reports.
-- Sam Cosmi (G) Questionable, Concussion: Cosmi suffered a concussion in Sunday's 37-20 loss to the Commanders, Nicki Jhabvala of The Athletic reports.
-- Drew Stevens (PK) Active: Stevens made two of his three field-goal attempts while converting both PATs in Sunday's 37-20 loss to the Cowboys.
+- Brandon Coleman (G) Questionable, Finger: Coach Dan Quinn said Monday that "all signs look good to go" regarding Coleman's (finger) odds of being available in Week 3, JP Finlay of NBC Sports Washington reports.
+- Sam Cosmi (G) Questionable, Concussion: Cosmi suffered a concussion in Sunday's 37-20 loss to the Cowboys, Nicki Jhabvala of The Athletic reports.
+- Drew Stevens (K) Active: Stevens made two of his three field-goal attempts while converting both PATs in Sunday's 37-20 loss to the Cowboys.
 - Nick Cross (S) Questionable, Undisclosed: Cross (undisclosed) stayed in Dallas overnight Sunday due to an internal injury, and his status for Week 3 against the Seahawks is up in the air, Ben Standig of Big 100 Washington D.C. reports.
 - Javon Kinlaw (DT) Questionable, Shoulder: Head coach Dan Quinn told reporters Monday that Kinlaw will have an MRI for a shoulder injury, JP Finlay of NBC Sports Washington reports.
 - Jayden Daniels (QB) Doubtful, Elbow: Daniels (elbow) underwent imaging Monday and will consult with multiple experts over the next few days, Ian Rapoport of NFL Network reports.
@@ -636,7 +636,7 @@ New England Patriots, injuries:
 - Dametrious Crownover (OT) Out, Knee: out
 - Carlton Davis III (CB) Out, Neck: out
 - Hunter Henry (TE) Active: Henry caught three of five targets for 40 yards in the Patriots' 20-3 win over the Steelers on Sunday.
-- Andy Borregales (PK) Active: Borregales went 2-for-3 on field-goal tries and made both of his extra-point attempts during the Patriots' 20-3 win over the Steelers on Sunday.
+- Andy Borregales (K) Active: Borregales went 2-for-3 on field-goal tries and made both of his extra-point attempts during the Patriots' 20-3 win over the Steelers on Sunday.
 - Mike Onwenu (G) Out, Ankle: Initial X-rays revealed that Onwenu fractured his right ankle during Sunday's 20-3 win over the Steelers, Mike Reiss of ESPN.com reports.
 - Romeo Doubs (WR) Active: Doubs caught three of four targets for 96 yards in Sunday's 20-3 win over the Steelers.
 - Rhamondre Stevenson (RB) Active: Stevenson rushed six times for 43 yards while catching one of two targets for three yards in Sunday's 20-3 win over the Steelers. He also lost a fumble.
@@ -698,7 +698,7 @@ Arizona Cardinals, injuries:
 - Kendrick Bourne (WR) Active: Bourne caught two of his three targets for 11 yards in Sunday's 31-7 loss to the Seahawks.
 - Chad Ryland (PK) Active: Ryland did not have any field-goal tries but converted on his only extra-point attempt during Sunday's 31-7 loss versus the Seahawks.
 - Max Melton (CB) Questionable, Toe: Melton (toe) is considered to be day-to-day ahead of Week 3, Howard Balzer of USA Today reports.
-- Will Johnson (CB) Doubtful, Neck: Johnson (neck) may be forced to miss the remainder of the 2026 season, Darren Urban of the Cardinals' official site reports.
+- Will Johnson (CB) Out, Neck: Johnson (neck) may be forced to miss the remainder of the 2026 season, Darren Urban of the Cardinals' official site reports.
 - Garrett Williams (CB) Out, Achilles: out
 - Josh Fryar (OT) Active
 - Tyler Allgeier (RB) Active: Allgeier turned five carries into 10 yards and caught both of his targets for nine yards in Sunday's 31-7 loss to the Seahawks.
@@ -862,8 +862,8 @@ Baltimore Ravens, ESPN headlines:
 Dallas Cowboys, injuries:
 - Ryan Flournoy (WR) Active: Flournoy caught five of six targets for 23 yards Sunday in a 37-20 victory versus Washington.
 - Emari Demercado (RB) Active: Demercado had three carries for eight yards in Sunday's 37-20 win over the Commanders.
-- Cobie Durant (CB) Questionable, Hamstring: Durant (hamstring) could miss a few weeks due to injury, Todd Archer of ESPN.com reports.
-- P.J. Locke (S) Questionable, Foot: Locke (foot) is set to miss a few weeks, Todd Archer of ESPN.com reported Monday.
+- Cobie Durant (CB) Out, Hamstring: Cowboys head coach Brian Schottenheimer said that Durant (hamstring) could miss "a few weeks" after sustaining a hamstring injury in Sunday's 37-20 win over the Commanders, Todd Archer of ESPN.com reports.
+- P.J. Locke (S) Out, Foot: Cowboys head coach Brian Schottenheimer said S P.J. Locke (foot) could need a "few weeks" to recover after exiting Sunday's 37-20 win over the Commanders, Todd Archer of ESPN.com reports.
 - DeMarvion Overshown (LB) Out, Hamstring: out
 - Malik Hooker (S) Out, Forearm: out
 - Caelen Carson (CB) Active
@@ -957,7 +957,7 @@ New Orleans Saints, injuries:
 New Orleans Saints, ESPN headlines:
 
 ### Los Angeles Rams at Denver Broncos
-Sun, Sep 27, 8:20 PM ET, NBC, Empower Field at Mile High, Denver. Line: LAR -1.5, O/U 45.5
+Sun, Sep 27, 8:20 PM ET, NBC, Empower Field at Mile High, Denver. Line: LAR -2.5, O/U 45.5
 
 Searches to run:
 - "Los Angeles Rams Denver Broncos preview week 3"
@@ -967,6 +967,7 @@ Searches to run:
 - "NFL week 3 picks LAR DEN"
 
 Los Angeles Rams, injuries:
+- Puka Nacua (WR) Out, Groin: Rams head coach Sean McVay acknowledged Tuesday that he's uncertain if Nacua (groin) will be available for Sunday's game against the Broncos, Gary Klein of the Los Angeles Times reports. "I'm not sure what his status is as far as this next coming week," McVay said of Nacua. "I'm hopeful that he'll play.... If he's ready to go, great. If not, then we'll continue to roll."
 - Terrance Ferguson (TE) Active: Ferguson secured six of nine targets for 54 yards and a touchdown in the Rams' 28-6 win over the Giants on Monday night.
 - Matthew Stafford (QB) Active: Stafford completed 22 of 31 passes for 327 yards with four touchdowns and one interception and rushed four times for minus-1 yard in the Rams' 28-6 win over the Giants on Monday night.
 - Blake Corum (RB) Active: Corum rushed 12 times for 79 yards and brought in his only target for 13 yards in the Rams' 28-6 win over the Giants on Monday night. He also fumbled once but recovered.
@@ -977,10 +978,9 @@ Los Angeles Rams, injuries:
 - Konata Mumpfield (WR) Active: With Puka Nacua (hip) inactive, Mumpfield is expected to serve as the Rams' WR2 behind Davante Adams against the Giants on Monday, Cameron DaSilva of USA Today reports.
 - Ty Simpson (QB) Out, Coach's Decision: Simpson (coach's decision) is inactive but will serve as the Rams' emergency third quarterback for Monday's game against the Giants.
 - Jordan Whittington (WR) Out, Quadriceps: Whittington (quadriceps) is inactive for Monday's game against the Giants.
-- Bill Murray (G) Out, Coach's Decision: inactive
+- Bill Murray (G) Inactive, Coach's Decision: inactive
 - Kamren Kinchens (S) Out, Hamstring: inactive
-- CJ Daniels (WR) Out, Coach's Decision: inactive
-- Puka Nacua (WR) Out, Hip: Nacua (hip) is listed as inactive Monday against the Giants, Adam Schefter of ESPN reports.
+- CJ Daniels (WR) Inactive, Coach's Decision: inactive
 - Omar Speights (LB) Active: Speights (hip) does not have any injury designation ahead of Monday night's game against the Giants, Benjamin Royer of The Orange County Register reports.
 - Kam Curl (S) Active: Curl (ankle) does not have any injury designation ahead of Monday night's game against the Giants, Benjamin Royer of The Orange County Register reports.
 - Nate Landman (LB) Active: Landman (shoulder) does not have any injury designation ahead of Monday night's game against the Giants, Benjamin Royer of The Orange County Register reports.
@@ -998,7 +998,7 @@ Los Angeles Rams, ESPN headlines:
 Denver Broncos, injuries:
 - Pat Bryant (WR) Active: Bryant failed to catch his only target while adding a 16-yard rush during Sunday's 20-13 win over the Jaguars.
 - Evan Engram (TE) Active: Engram hauled in his lone target for 17 yards during the Broncos' 20-13 win over the Jaguars on Sunday.
-- Wil Lutz (PK) Active: Lutz made both of his field-goal attempts and both PATs in Sunday's 20-13 win over the Jaguars.
+- Wil Lutz (K) Active: Lutz made both of his field-goal attempts and both PATs in Sunday's 20-13 win over the Jaguars.
 - Marvin Mims Jr. (WR) Out, Foot: out
 - RJ Harvey (RB) Out, Hamstring: out
 - J.K. Dobbins (RB) Questionable, Hamstring: The Broncos believe that Dobbins' injured hamstring is "good" heading into next Sunday's game against the Rams, Tom Pelissero of Netflix reports.
@@ -1019,13 +1019,13 @@ Denver Broncos, injuries:
 - Jarrett Stidham (QB) Active: Coach Sean Payton said Wednesday that Stidham will be the Broncos' backup quarterback to begin the 2026 season, Zac Stevens of TheDNVR.com reports.
 - Jonathon Cooper (LB) Out, Personal: Cooper pleaded not guilty to five charges of domestic violence in a Douglas County (Colo.) courtroom Monday, Jeff Legwold of ESPN.com reports.
 - Nick Gargiulo (G) Out, Knee - ACL: Gargiulo (knee) was moved to the reserve/PUP list by the Broncos on Sunday, Aric DiLalla of the team's official site reports.
-- Frank Crum (OT) Injured Reserve, Undisclosed: Crum (undisclosed) was placed on injured reserve with a designation to return by the Broncos on Sunday, Aric DiLalla of the team's official site reports.
+- Frank Crum (OT) IR, Undisclosed: Crum (undisclosed) was placed on injured reserve with a designation to return by the Broncos on Sunday, Aric DiLalla of the team's official site reports.
 - Caleb Lohner (TE) Injured Reserve, Lower Body: Lohner (lower body) was placed on injured reserve by the Broncos on Sunday with a designation to return, Aric DiLalla of the team's official website reports.
 
 Denver Broncos, ESPN headlines:
 
 ### Philadelphia Eagles at Chicago Bears
-Mon, Sep 28, 8:15 PM ET, ESPN / ABC, Soldier Field, Chicago. Line: PHI -3, O/U 44.5
+Mon, Sep 28, 8:15 PM ET, ESPN / ABC, Soldier Field, Chicago. Line: PHI -3, O/U 43.5
 
 Searches to run:
 - "Philadelphia Eagles Chicago Bears preview week 3"

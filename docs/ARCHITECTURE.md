@@ -107,7 +107,13 @@ lays its keys -- `parlay`, `saved`, `stake`, `bookPrice`, `margin`, and the sect
 eight seconds while the page is on screen reads `<url>/rev.json` and pulls the document when
 the tag moved, then redraws the builder, the open game, the section and any open Pick'ems
 game. Nothing is pushed until the document has been read once, so a device that could not
-reach the store never replaces it with an empty builder. The store is a Firebase Realtime
+reach the store never replaces it with an empty builder. A browser's first read of the
+document joins rather than yields: its own saved parlays are added to the document by id,
+its builder stands in for an empty one, its corrected lines and deletions are kept where
+the document has none, and the result is pushed, so parlays saved before the store had an
+address are not lost to whichever device seeded it. The browser then remembers the rev it
+took or wrote under `nflsync_v1`, and from then on the document wins outright, since a
+parlay it lacks is one another device deleted. The store is a Firebase Realtime
 Database over its REST interface; with `sync.json` blank the page runs on the browser alone
 and the header stamp says so. `nflbets/build/smoke.js` runs two, then more, devices against
 one stubbed store and checks that each sees what the others did.
