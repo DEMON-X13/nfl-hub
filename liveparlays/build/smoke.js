@@ -231,6 +231,23 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     /* a parlay still running is not settled and is not cleared */
     const mixed = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {} })) });
     chk(mixed.d.getElementById('clear').hidden, 'a running parlay is offered for clearing');
+    /* an emptied page is never a dead end: it says why, and the way back is on it */
+    { const all = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1',
+        JSON.stringify({ lines: {}, sent: {}, removed: { 'file|night': 1, 'file|early': 1 } })) });
+      chk(all.d.querySelectorAll('.savedp').length === 0, 'the fixture should leave nothing to watch');
+      const txtAll = txt(all.d.getElementById('app'));
+      chk(/Everything here was deleted on this device/.test(txtAll), 'an emptied page does not say why it is empty: ' + txtAll.slice(0, 160));
+      chk(/2 in .?liveparlays\/parlays\.json.?, 2 of them deleted on this device/.test(txtAll),
+        'the page claims the file is empty when it is not: ' + txtAll);
+      const back = all.d.getElementById('restoreAll');
+      chk(!!back, 'no way back from an emptied page');
+      back.click();
+      await wait(60);
+      chk(all.d.querySelectorAll('.savedp').length === 2, 'bringing them back did not bring them back');
+      chk(!all.d.getElementById('restoreAll'), 'the way back is still offered with nothing deleted');
+      const st2 = JSON.parse(all.w.localStorage.getItem('live_parlays_v1') || '{}');
+      chk(st2.removed && !Object.keys(st2.removed).length, 'the deletions were not cleared: ' + JSON.stringify(st2)); }
+
     /* what was deleted stays deleted on the next visit */
     const again = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: { 'file|night': 1 } })) });
     chk(again.d.querySelectorAll('.savedp').length === 1, 'a parlay deleted on the last visit came back');

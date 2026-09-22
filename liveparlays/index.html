@@ -311,7 +311,7 @@ const DATA='parlays.json';
 /* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
    thing worth knowing is whether the browser is even showing the current build, and from the
    outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v5 \u00b7 2026-09-21 22:30 UTC';
+const PAGE_BUILD='live v5 \u00b7 2026-09-22 00:21 UTC';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
@@ -339,6 +339,9 @@ function liveStore(){
    are deleted where they were made, and a parlay in the file is taken out of the file. */
 const rmKey=p=>p.src+'|'+p.id;
 function removeParlay(p){ const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
+function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
+/* how many of the parlays this device can see have been deleted on it */
+const removedCount=()=>allParlays().filter(isRemoved).length;
 const isRemoved=p=>!!liveStore().removed[rmKey(p)];
 function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
 function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
@@ -655,7 +658,9 @@ function whatsHere(){
   if(bbroke) rows.push('<b>betting model</b> \u2014 this browser would not let the page read its storage');
   else if(!raw) rows.push('<b>betting model</b> \u2014 nothing here yet. Open <a href="../nflbets/">the betting model</a> in <i>this</i> browser and press <b>Lock in parlay</b>');
   else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
+  const gone=STATE.parlays.filter(p=>isRemoved(Object.assign({src:'file'},p))).length;
   rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>liveparlays/parlays.json</code>'
+    +(gone?', '+gone+' of them deleted on this device':'')
     +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
   return rows;
 }
@@ -671,7 +676,7 @@ function draw(){
       This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
       <b style="color:var(--ink)">Where it looked just now:</b>
       <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
-      A parlay in the prop model's builder shows here as soon as it has a leg. A saved one shows once you send it, with the green button on the Saved parlays card. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
+      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted on this device.</b> Deleting is per device and the parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the prop model's builder shows here as soon as it has a leg. A saved one shows once you send it, with the green button on the Saved parlays card. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
@@ -741,6 +746,8 @@ function foot(){
 }
 document.getElementById('now').addEventListener('click',refresh);
 document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
+document.getElementById('app').addEventListener('click',e=>{
+  if(e.target&&e.target.id==='restoreAll'){ e.preventDefault(); restoreAll(); draw(); } });
 /* the build this browser is showing, for a "blank on every device" day: in the markup, not the bar */
 document.documentElement.dataset.build=PAGE_BUILD;
 draw(); refresh();
