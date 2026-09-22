@@ -3714,29 +3714,6 @@ function legRow(p,leg,i){
       ${progressBar(r?r.val:0,k,state,lineHTML)}
     </div></div>`;
 }
-/* Empty is not one thing. Empty because this browser has never opened the two models is a
-   different problem from empty because a parlay is still in a builder, and nobody can tell
-   them apart from the outside -- so the page says which it is instead of shrugging. */
-function whatsHere(){
-  const rows=[];
-  let v=null, broke=false;
-  try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ broke=true; }
-  if(broke) rows.push('<b>prop model</b> \u2014 this browser would not let the page read its storage');
-  else if(!v) rows.push('<b>prop model</b> \u2014 nothing here yet. Open <a href="../nflbets/#slate">the prop model</a> in <i>this</i> browser and build a parlay');
-  else { const sv=Array.isArray(v.saved)?v.saved:[];
-    rows.push('<b>prop model</b> \u2014 '+sv.length+' saved and locked, '
-      +Object.keys((v.parlay&&typeof v.parlay==='object')?v.parlay:{}).length+' leg(s) in the builder'); }
-  let raw=null, bbroke=false;
-  try{ raw=localStorage.getItem(BET_KEY); }catch(e){ bbroke=true; }
-  if(bbroke) rows.push('<b>betting model</b> \u2014 this browser would not let the page read its storage');
-  else if(!raw) rows.push('<b>betting model</b> \u2014 nothing here yet. Open <a href="../nflbets/">the betting model</a> in <i>this</i> browser and press <b>Lock in parlay</b>');
-  else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
-  const gone=STATE.parlays.filter(p=>isRemoved(Object.assign({src:'file'},p))).length;
-  rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>liveparlays/parlays.json</code>'
-    +(gone?', '+gone+' of them deleted'+(synced()?'':' on this device'):'')
-    +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
-  return rows;
-}
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 function draw(){
   const app=document.getElementById('app'), ps=allParlays().filter(p=>!isRemoved(p));
@@ -3745,11 +3722,8 @@ function draw(){
   if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
   else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
   if(!ps.length){
-    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing to watch yet</b>
-      This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
-      <b style="color:var(--ink)">Where it looked just now:</b>
-      <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
-      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted${synced()?'':' on this device'}.</b> The parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. ${synced()?'This page is synced: a parlay built or deleted on any device is built or deleted on all of them.':'Parlays live in the browser that built them; to see one on your other devices it has to go in the file.'}</div>`;
+    /* empty says so and no more; the one thing worth a line is the way back for what was deleted */
+    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${removedCount()?';margin-bottom:8px':''}">Nothing to watch yet</b>${removedCount()?`<a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>`:''}</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
