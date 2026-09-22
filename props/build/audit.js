@@ -314,51 +314,6 @@ setTimeout(async()=>{
       chk(/suggestion/.test(d.getElementById('savedCard').textContent),'saved suggestion not labelled');
       chk(!d.getElementById('suggModal').hidden&&!!d.getElementById('suggCard'),'saving a tier closed the window');
       S.saved.pop(); F('save')(); F('renderParlay')(); }
-    /* ---- M2. sending saved parlays to the live page ---- */
-    { const keep=JSON.stringify(S.saved||[]);
-      try{ w.localStorage.removeItem('live_parlays_v1'); }catch(e){}
-      S.saved=[{id:'sendA',saved:'2026-09-13T00:00:00.000Z',week:1,stake:5,payout:20,price:300,
-                legs:[{gid:'g1',stat:'passing_yards',k:200.5,side:'over',main:true,name:'A',team:'X',week:1}]},
-               {id:'sendB',saved:'2026-09-13T00:00:00.000Z',week:1,stake:5,payout:20,price:300,
-                legs:[{gid:'g2',stat:'rushing_yards',k:40.5,side:'over',main:true,name:'B',team:'Y',week:1}]}];
-      F('save')(); F('renderParlay')();
-      const btn=()=>d.getElementById('sendLive');
-      chk(!!btn()&&/^Send to Live Parlays$/.test(btn().textContent.trim()),'the send button does not read plainly: '+(btn()&&btn().textContent));
-      chk(/8B5CF6|6D28D9/i.test(btn().getAttribute('style')||''),'the send button is not purple: '+btn().getAttribute('style'));
-      chk(!/font-size|padding/.test(btn().getAttribute('style')||''),'the send button overrides its size instead of matching the one beside it');
-      /* beside Clear saved parlays in the footer bar, not in the heading */
-      chk(btn().nextElementSibling&&btn().nextElementSibling.id==='savedClear','the send button is not to the left of Clear saved parlays');
-      chk(!d.querySelector('#savedCard h2 #sendLive'),'the send button is still in the heading');
-      { const a=d.querySelector('#savedCard h2 a[href="../liveparlays/"]');
-        chk(!!a&&/Live tracking/.test(a.textContent),'the heading has no Live tracking link: '+(a&&a.textContent));
-        chk(!/go|btn/.test(a.className)&&/8A5E05/i.test(a.getAttribute('style')||''),'the Live tracking link reads as a button');
-        /* .grow is only flex:1 inside a .bar, and a heading is not one */
-        const sp=d.querySelector('#savedCard h2 .grow');
-        chk(!!sp&&/flex\s*:\s*1/.test(sp.getAttribute('style')||''),'nothing pushes the link to the right of the heading'); }
-      btn().click();
-      const read=()=>{ try{ return JSON.parse(w.localStorage.getItem('live_parlays_v1')||'{}'); }catch(e){ return {}; } };
-      chk(read().sent&&read().sent['prop|sendA']&&read().sent['prop|sendB'],'sending did not write both ids: '+JSON.stringify(read()));
-      chk(/^Send to Live Parlays$/.test(btn().textContent.trim())&&!btn().disabled,'the button should not change once everything is sent');
-      chk((d.getElementById('savedCard').textContent.match(/sent/g)||[]).length>=2,'a sent parlay is not marked on its card');
-      /* sending twice adds nothing, and the same legs under another id are the same parlay */
-      chk(F('sendToLive')(S.saved)===0,'the same parlays were sent a second time');
-      S.saved.push({id:'sendC',saved:'2026-09-13T00:00:00.000Z',week:1,stake:5,payout:20,price:300,
-        legs:[{gid:'g1',stat:'passing_yards',k:200.5,side:'over',main:true,name:'A',team:'X',week:1}]});
-      chk(F('sendToLive')(S.saved)===0,'the same legs under another id were sent as a new parlay');
-      S.saved.pop();   /* the duplicate has served its purpose and is itself unsent */
-      /* deleted on the live page, and offered again here: the only way back from a delete */
-      { const st=read(); st.removed={'prop|sendA':1}; w.localStorage.setItem('live_parlays_v1',JSON.stringify(st));
-        F('renderParlay')();
-        chk(F('sendToLive')(S.saved)===1,'a parlay deleted on the live page is not offered again'); }
-      /* the live page's own half of that key is never touched */
-      { const st=read(); st.lines={'prop|sendA|0':77}; w.localStorage.setItem('live_parlays_v1',JSON.stringify(st));
-        F('sendToLive')(S.saved);
-        chk(read().lines&&read().lines['prop|sendA|0']===77,'sending trampled a corrected line');
-        chk(w.localStorage.getItem(F('BET_KEY'))===null,'sending wrote to the betting model key'); }
-      try{ w.localStorage.removeItem('live_parlays_v1'); }catch(e){}
-      S.saved=JSON.parse(keep); F('save')(); F('renderParlay')();
-      console.log('M2. send to live: both offered, sent once, marked, re-offered after a delete, the live page\'s own keys untouched');
-    }
     d.getElementById('suggClose').click();
     chk(d.getElementById('suggModal').hidden,'Close did not shut the suggestions window');
     /* and it closes the way the game window does */

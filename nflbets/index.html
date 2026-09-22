@@ -441,6 +441,94 @@ body.modal-open{overflow:hidden}
   .pk-gbody table.rungs{display:block;overflow-x:auto;white-space:nowrap}
 }
 </style>
+<style>
+#lpCard button,#lpCard input{font:inherit;color:inherit}
+#lpCard select:focus,#lpCard button:focus-visible{outline:none;box-shadow:var(--ring)}
+#lpCard .empty{padding:44px 24px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg);line-height:1.7}
+#lpCard .empty a{color:var(--ink)}
+#lpCard .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#E9EEF4;color:var(--ink-2)}
+#lpCard .pill.warn{background:var(--gold-soft);color:#8A5E05}
+#lpCard .pill.ok{background:var(--pick-soft);color:var(--pick)}
+#lpCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+#lpCard .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
+#lpCard .res.win{color:var(--pick)}
+#lpCard .res.loss{color:var(--miss)}
+#lpCard .res.tie{color:var(--gold)}
+#lpCard .savedp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
+#lpCard .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+#lpCard .sp-head .grow{flex:1}
+#lpCard .sp-title{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
+#lpCard .sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
+#lpCard .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
+#lpCard .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+#lpCard .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+#lpCard .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+#lpCard .sp-leg.prop,#lpCard .sp-leg.team{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
+#lpCard .sp-leg.prop .res,#lpCard .sp-leg.team .res{margin-top:3px}
+#lpCard .legbody{min-width:0}
+#lpCard .legtop{display:flex;align-items:baseline;gap:10px}
+#lpCard .legtop .grow{flex:1}
+#lpCard .tgt{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.1}
+#lpCard .who{color:var(--ink-2);font-size:13px;margin-top:1px}
+#lpCard [hidden]{display:none!important}
+#lpCard .hidebtn{background:none;border:0;color:var(--muted);font-size:18px;line-height:1;padding:0 4px;cursor:pointer;border-radius:6px}
+#lpCard .hidebtn:hover{color:var(--ink);background:var(--panel-2)}
+#lpCard .status{font-size:12px;color:var(--ink-2);white-space:nowrap}
+#lpCard .status.win{color:var(--pick);font-weight:700}
+#lpCard .status.lose{color:var(--miss);font-weight:700}
+#lpCard .pbar{position:relative;margin:14px 0 0;padding:0 26px 30px 6px}
+#lpCard .track{position:relative;height:10px;border-radius:999px;background:var(--line)}
+#lpCard .fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#F4E2B4,var(--gold));transition:width .3s var(--ease)}
+#lpCard .fill.win{background:linear-gradient(90deg,#A9E2C6,var(--pick))}
+#lpCard .fill.lose{background:linear-gradient(90deg,#F3BEB8,var(--miss))}
+#lpCard .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-2);border-radius:2px;opacity:.65}
+#lpCard .knob{position:absolute;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:2px solid var(--gold);border-radius:999px;padding:1px 9px;font-family:var(--display);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--sh-xs)}
+#lpCard .knob.win{border-color:var(--pick);color:var(--pick)}
+#lpCard .knob.lose{border-color:var(--miss);color:var(--miss)}
+#lpCard .lineLbl{position:absolute;top:calc(100% + 5px);transform:translateX(-50%);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+#lpCard .ln.edit{display:inline-block;cursor:pointer;border:1.5px dashed var(--line-2);border-radius:999px;padding:3px 9px;background:var(--panel);color:var(--ink-2);font-weight:600;line-height:1.2}
+#lpCard .ln.edit::after{content:"\270E";margin-left:5px;opacity:.75;font-weight:400}
+#lpCard .ln.edit:hover{border-color:var(--ink-2);color:var(--ink)}
+#lpCard .ln.edit:focus-visible{outline:none;box-shadow:var(--ring)}
+#lpCard .ln.moved{color:var(--gold);border-color:var(--gold);border-style:solid}
+#lpCard .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
+#lpCard .movedNote a{color:var(--gold)}
+#lpCard .lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
+#lpCard .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+#lpCard .gm{display:inline-block;background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:4px 11px;font-family:var(--display);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px}
+#lpCard .gm em{font-style:normal;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);margin-left:9px}
+#lpCard .gm.good{border-color:var(--pick);background:var(--pick-soft);color:var(--pick)}
+#lpCard .gm.good em{color:var(--pick)}
+#lpCard .gm.bad{border-color:var(--miss);background:var(--miss-soft);color:var(--miss)}
+#lpCard .gm.bad em{color:var(--miss)}
+#lpCard .gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05}
+#lpCard .gm.tie em{color:#8A5E05}
+#lpCard .gm.done{opacity:.85}
+@media(max-width:430px){#lpCard .gm{font-size:12px;padding:3px 9px}
+}
+#lpCard .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
+#lpCard .sp-leg .nm{font-weight:600;min-width:0}
+#lpCard .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
+#lpCard .sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
+#lpCard .sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
+#lpCard .sp-leg .rs.win{color:var(--pick);font-weight:700}
+#lpCard .sp-leg .rs.lose{color:var(--miss);font-weight:700}
+#lpCard .sp-leg .rs.tie{color:#8A5E05;font-weight:700}
+#lpCard .sp-leg .rs.clock{text-align:center;color:var(--ink-2);font-weight:500;font-size:13px}
+#lpCard .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+#lpCard .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
+#lpCard .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
+#lpCard .stamp.ok{color:var(--pick)}
+#lpCard .stamp.bad{color:#8A5E05}
+#lpCard .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+#lpCard .src{border-left:4px solid #6E5AA8}
+#lpCard .src.prop{border-left-color:var(--pick)}
+#lpCard .src.bet{border-left-color:var(--gold)}
+#lpCard .src.prop{border-left-color:var(--pick)}
+#lpCard .src.shared{border-left-color:#3F5F8F}
+#lpCard .src.cloud{border-left-color:#6E5AA8}
+@media(max-width:620px){}
+</style>
 </head>
 <body>
 <header>
@@ -507,6 +595,16 @@ body.modal-open{overflow:hidden}
 
 <section id="tab-parlay" hidden>
   <div id="parlayBody"></div>
+  <div class="card" id="lpCard">
+    <h2 style="display:flex;align-items:center;gap:10px">Live Parlays<span class="grow" style="flex:1"></span></h2>
+    <div class="bar">
+    <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
+    <span class="grow"></span>
+    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page, on this device.">Clear settled</button>
+    <button class="btn quiet" id="now">Refresh now</button>
+  </div>
+    <div id="app"></div>
+  </div>
   <div id="suggModal" class="modal" hidden>
     <div class="modal-panel" role="dialog" aria-modal="true" aria-label="Suggested parlays">
       <div id="suggView"></div>
@@ -632,7 +730,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v63 \u00b7 2026-09-21';
+const APP_BUILD='app v64 \u00b7 2026-09-22';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1179,39 +1277,6 @@ function settleLeg(l){
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
   return v>=l.k?'win':'loss';
 }
-/* ---------- the live page's watchlist, written across ----------
-   One origin serves both, so its key is writable here. Only the sent set is ours: the
-   corrected lines and the deletions beside it are the live page's own and are read and
-   written back untouched. */
-const LIVE_PARLAY_KEY='live_parlays_v1';
-function liveWatch(){
-  let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_PARLAY_KEY)||'null'); }catch(e){}
-  if(!v||typeof v!=='object') v={};
-  return {...v,
-    lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
-    removed:(v.removed&&typeof v.removed==='object')?v.removed:{},
-    sent:(v.sent&&typeof v.sent==='object')?v.sent:{}};
-}
-const liveKeyOf=p=>'prop|'+p.id;
-/* on the live page: sent, and not deleted over there since */
-function liveHas(p,w){ w=w||liveWatch(); const k=liveKeyOf(p); return !!w.sent[k]&&!w.removed[k]; }
-/* the same legs are the same parlay, whatever id it was saved under */
-const liveLegPrint=p=>(p.legs||[]).map(l=>[l.gid,l.stat,l.k,l.side||'over'].join('|')).sort().join(' + ');
-/* returns how many were sent, or -1 if this browser refused to store it */
-function sendToLive(ps){
-  const w=liveWatch(); let n=0;
-  const already=new Set();
-  for(const p of (S.saved||[])) if(liveHas(p,w)) already.add(liveLegPrint(p));
-  for(const p of ps){
-    if(!p||!p.id||!(p.legs||[]).length) continue;
-    if(liveHas(p,w)) continue;
-    const print=liveLegPrint(p); if(already.has(print)) continue;
-    w.sent[liveKeyOf(p)]=1; delete w.removed[liveKeyOf(p)]; already.add(print); n++;
-  }
-  try{ localStorage.setItem(LIVE_PARLAY_KEY,JSON.stringify(w)); }catch(e){ return -1; }
-  return n;
-}
-
 /* ---------- live tracking: ESPN's public feeds ----------
    Free, no key, no quota: this never touches the odds API. Everything here is pure -- it
    takes a payload and returns numbers -- so the audit can test it without a network. */
@@ -2837,11 +2902,7 @@ function renderSaved(){
   const anyLive=list.some(p=>settleParlay(p).status==='pending');
   const lvBar=!anyLive?'':`<label class="muted sp-live"><input type="checkbox" id="liveCb" ${LIVE.on?'checked':''}> Live</label>
     ${LIVE.on?`<span class="muted" style="font-size:12px">${LIVE.err?'':(LIVE.at?'updated '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):'checking\u2026')}</span>`:''}`;
-  /* which of these the live page is watching: the mark on each card below */
-  const watch=liveWatch();
-  /* gold, not green: it goes somewhere, it does not do something */
-  const lvLink=`<a href="../liveparlays/" target="_blank" rel="noopener" style="color:#8A5E05;font-size:12px;font-weight:600;text-decoration:none;border-bottom:1px solid rgba(138,94,5,.4)">Live tracking ↗</a>`;
-  let html=`<div class="card" id="savedCard"><h2 style="display:flex;align-items:center;gap:10px">Saved parlays <span class="pill">${list.length}</span><span class="grow" style="flex:1"></span>${lvBar}${lvLink}</h2>`;
+  let html=`<div class="card" id="savedCard"><h2 style="display:flex;align-items:center;gap:10px">Saved parlays <span class="pill">${list.length}</span><span class="grow" style="flex:1"></span>${lvBar}</h2>`;
   if(LIVE.on&&LIVE.err) html+=`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">Live scores are not loading: <b>${esc(LIVE.err)}</b>. The page reads ESPN's public scoreboard straight from your browser, and a browser will refuse that read if ESPN does not allow it from another site. Nothing else on this page is affected, and the parlay still settles from the week's own numbers.</p>`;
   if(!list.length){ html+=`<p class="muted" style="margin:0">Nothing saved. Build a parlay above and press Save and lock; only locked parlays appear here.</p></div>`; return html; }
   const won=settled.filter(s=>s.status==='won').length, lost=settled.filter(s=>s.status==='lost').length, pend=settled.filter(s=>s.status==='pending').length;
@@ -2866,7 +2927,6 @@ function renderSaved(){
       <div class="sp-head">
         <span class="sp-title">${p.legs.length}-leg parlay</span>${p.suggested?`<span class="pill">${p.suggested} suggestion</span>`:''}
         <span class="pill ${s.status==='won'?'ok':(s.status==='lost'?'bad':(s.status==='pending'?'warn':''))}">${s.status==='pending'?'live':s.status}</span>
-        ${liveHas(p,watch)?'<span class="pill">sent</span>':''}
         <span class="muted" style="font-size:12px">week ${p.week} \u00b7 saved ${p.saved.slice(0,10)}</span>
         <span class="grow"></span>
         <button class="btn quiet" data-sp="${p.id}">Remove</button>
@@ -2889,7 +2949,6 @@ function renderSaved(){
     </div>`;
   });
   html+=`<div class="bar" style="margin:12px 0 0"><span class="grow"></span>
-    <button class="btn" id="sendLive" style="background:linear-gradient(180deg,#8B5CF6,#6D28D9)" title="Put the parlays in this section on the live page, where they are followed while the games are on">Send to Live Parlays</button>
     <button class="btn danger" id="savedClear">Clear saved parlays</button></div></div>`;
   return html;
 }
@@ -2922,11 +2981,6 @@ function renderBetParlays(){
   return html+'</div>';
 }
 function wireSaved(){
-  $('sendLive')?.addEventListener('click',()=>{
-    const n=sendToLive(S.saved||[]);
-    if(n<0) log('This browser would not let anything be stored, so nothing was sent.','err');
-    else log(n?`${n} parlay${n===1?'':'s'} sent to the live page.`:'Those parlays are already on the live page.','ok');
-    renderParlay(); });
   $('liveCbB')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;
     if(LIVE.on) liveStart(); else { liveStop(); renderParlay(); } });
   $('liveCb')?.addEventListener('change',e=>{ LIVE.on=e.target.checked; LIVE.err=null;
@@ -3017,6 +3071,490 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
     put(); new MutationObserver(put).observe(st,{childList:true,characterData:true,subtree:true}); };
   document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
+</script>
+<script>
+/* the Live Parlays section: liveparlays/build/page.html, in a closure. Names it shares with
+   the prop model -- esc, num, fmtML, the team names -- are its own copies inside it. */
+(function(){
+
+/* ---- lifted from props/build/part2.js by live/build/build.js: one source of truth ---- */
+const PROP_KEY='props_2026_v1';
+const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Panthers",CHI:"Bears",CIN:"Bengals",CLE:"Browns",DAL:"Cowboys",DEN:"Broncos",DET:"Lions",GB:"Packers",HOU:"Texans",IND:"Colts",JAX:"Jaguars",KC:"Chiefs",LA:"Rams",LAC:"Chargers",LV:"Raiders",MIA:"Dolphins",MIN:"Vikings",NE:"Patriots",NO:"Saints",NYG:"Giants",NYJ:"Jets",PHI:"Eagles",PIT:"Steelers",SEA:"Seahawks",SF:"49ers",TB:"Buccaneers",TEN:"Titans",WAS:"Commanders"};
+function fmtML(ml){ return ml==null?'–':(ml>0?'+'+ml:''+ml); }
+function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?ml/100+1:100/Math.abs(ml)+1; }
+function decToML(d){ if(!isFinite(d)||d<=1) return null; return d>=2?Math.round((d-1)*100):-Math.round(100/(d-1)); }
+function num(x,d){ return x==null||!isFinite(x)?'–':(+x).toFixed(d); }
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const isGameLeg=l=>l.stat==='ml'||l.stat==='ats';
+const SEASON=2026;
+
+
+
+/* ---- this page ----
+   Every parlay lives in the repository, in parlays.json beside this file, and this page only
+   reads it. That is the whole design: no token, because reading a public file needs none; no
+   sending, because there is nothing to move between devices; and nothing kept in the browser,
+   because every device reads the same file and therefore shows the same thing.
+
+   Writing is the part a page like this cannot do. A browser has no way to commit to GitHub
+   without a credential, and a static page has nowhere safe to keep one, so the file is edited
+   in the repository instead and the page picks the change up on the next load. */
+const DATA='../liveparlays/parlays.json';
+
+/* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
+   thing worth knowing is whether the browser is even showing the current build, and from the
+   outside a stale cached copy and a broken one look identical. */
+const PAGE_BUILD='live v5 \u00b7 __BUILT__';
+
+/* A line that moved between building the parlay and placing it -- Kelce's receiving yards
+   going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
+   line under the bar and set what you actually took.
+
+   The correction is kept in this page's own key and nowhere else. The parlay in the prop
+   model, in the betting model and in the file is left exactly as it was: this changes what
+   the page measures against, not how anything settles, and the prop model's Track Record
+   still grades the line the model actually quoted. Like everything a browser keeps, it is
+   that browser's -- for a correction every device should see, the number goes in the file. */
+const LIVE_KEY='live_parlays_v1';
+function liveStore(){
+  let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
+  if(!v||typeof v!=='object') v={};
+  /* anything else in the object is carried through untouched: writeStore writes the whole
+     object back, and a key some other page put here is not this page's to drop */
+  return {...v,
+    lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
+    removed:(v.removed&&typeof v.removed==='object')?v.removed:{}};
+}
+/* a parlay deleted from this page is gone from this page on this device, for good. This
+   page writes to no other key: the prop model's saved parlays and the betting model's slips
+   are deleted where they were made, and a parlay in the file is taken out of the file. */
+const rmKey=p=>p.src+'|'+p.id;
+function removeParlay(p){
+  /* a saved parlay has one copy, in the prop model, and this is the section that shows it,
+     so deleting it here deletes it there. A parlay from the file or the betting model is
+     somebody else's copy, and is only taken off this device. */
+  if(p.src==='prop'&&p.id!=='prop-builder'&&typeof S==='object'&&S&&Array.isArray(S.saved)&&typeof save==='function'){
+    S.saved=S.saved.filter(x=>String(x.id)!==String(p.id)); save(); return; }
+  const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
+function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
+/* how many of the parlays this device can see have been deleted on it */
+const removedCount=()=>allParlays().filter(isRemoved).length;
+const isRemoved=p=>!!liveStore().removed[rmKey(p)];
+function writeStore(st){ try{ localStorage.setItem(LIVE_KEY,JSON.stringify(st)); return true; }catch(e){ return false; } }
+function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
+function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
+function setLine(p,i,val){
+  const st=liveStore(), k=lineKey(p,i);
+  if(val==null) delete st.lines[k]; else st.lines[k]=+val;
+  return writeStore(st);
+}
+const legAt=(p,i,l)=>{ const k=lineOf(p,i,l); return k===+l.k?l:Object.assign({},l,{k}); };
+
+/* The two models keep what you save in the browser that saved it, which is theirs to do:
+   picks and bets are the visitor's and never leave the machine. So this page shows both --
+   the file, which every device sees, and whatever the prop and betting models on THIS device
+   have saved, picked up on their own with nothing to press.
+
+   The gap that leaves is worth being straight about: a parlay built on one machine shows
+   there and not on the next one, because nothing carries it across. Getting it into the file
+   means editing the file. */
+function propState(){
+  /* inside the Bets and Stats page this runs beside the prop model itself, whose state in
+     memory is ahead of what it has written to storage; that one wins */
+  if(typeof S==='object'&&S&&Array.isArray(S.saved)) return S;
+  try{ return JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return null; }
+}
+const propLeg=l=>({gid:l.gid,stat:l.stat,k:+l.k,side:l.side||'over',main:!!l.main,
+  name:l.name,team:l.team,label:''});
+
+/* Saved and locked is not the only parlay worth watching, and on a Sunday it is usually not
+   the one you are watching: the prop model will not let you lock a parlay until it has a
+   price, so a parlay you have built and bet can easily still be sitting in the builder. That
+   one is read too, marked "in the builder" and shown without a price -- pricing legs that
+   share a game is the prop model's same-game maths, not this page's, and a wrong number here
+   would be worse than none. */
+function propParlays(){
+  const v=propState(); if(!v) return [];
+  const out=[];
+  const saved=Array.isArray(v.saved)?v.saved:[];
+  for(const p of saved){
+    if(!p||!Array.isArray(p.legs)||!p.legs.length) continue;
+    out.push({src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,
+      price:p.price,payout:+p.payout||0,note:'',legs:p.legs.map(propLeg)});
+  }
+  const work=(v.parlay&&typeof v.parlay==='object')
+    ?Object.keys(v.parlay).map(k=>v.parlay[k]).filter(l=>l&&l.gid&&l.stat):[];
+  if(work.length){
+    let w=null; for(const l of work) if(+l.week&&(w===null||+l.week<w)) w=+l.week;
+    out.push({src:'prop',id:'prop-builder',week:w,stake:+v.stake||0,price:null,payout:0,
+      note:'in the builder',legs:work.map(propLeg)});
+  }
+  return out;
+}
+function localParlays(){
+  const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
+    price:p.priced?decToML(p.dec):null,payout:p.payout,note:'',legs:p.legs}));
+  return propParlays().concat(bet);
+}
+/* the same parlay written twice is the same parlay: ids never match across the file and the
+   two models, so a copy is recognised by its legs instead */
+const legPrint=p=>p.legs.map(l=>[l.gid,l.stat,l.k,l.side].join('|')).sort().join(' + ');
+function allParlays(){
+  const mine=localParlays(), seen={};
+  for(const p of mine){ seen[String(p.id)]=1; seen[legPrint(p)]=1; }
+  /* what this browser holds wins over the copy in the file, so a parlay you are looking at
+     is the one you built rather than an older snapshot of it */
+  return mine.concat(STATE.parlays.filter(p=>!seen[String(p.id)]&&!seen[legPrint(p)])
+    .map(p=>Object.assign({},p,{src:'file'})));
+}
+
+/* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL,
+   so no season payload is loaded here either */
+function gidParts(gid){
+  const m=/^(\d{4})_(\d{2})_([A-Z0-9]+)_([A-Z0-9]+)$/.exec(String(gid||''));
+  return m?{season:+m[1],w:+m[2],a:m[3],h:m[4],id:String(gid)}:null;
+}
+const STAT_CODE={passing_yards:'py',passing_tds:'pt',passing_interceptions:'pi',attempts:'pa',
+  completions:'pc',carries:'ra',rushing_yards:'ry',receptions:'rc',receiving_yards:'re',
+  targets:'tg',scrim_yards:'sy',any_td:'td',fg_made:'fm',fg_att:'fa',kick_pts:'kp',ml:'ml',ats:'as'};
+const CODE_STAT={}; for(const k in STAT_CODE) CODE_STAT[STAT_CODE[k]]=k;
+/* the file's own shape: games listed once, legs pointing at them. Long names are spelled out
+   so the file stays something a person can read and edit by hand. */
+function readFile(v){
+  if(!v) return [];
+  const games=Array.isArray(v.games)?v.games:(Array.isArray(v.g)?v.g:[]);
+  const rows=Array.isArray(v.parlays)?v.parlays:(Array.isArray(v.p)?v.p:[]);
+  return rows.map((o,ix)=>({
+    id:String(o.id||o.i||('p'+ix)),
+    week:+(o.week||o.w)||null,
+    stake:+(o.stake!=null?o.stake:o.k)||0,
+    price:(o.price!=null?o.price:(o.r!=null?o.r:null)),
+    payout:+(o.payout!=null?o.payout:o.y)||0,
+    note:o.note||'',
+    legs:(o.legs||o.l||[]).map(q=>{
+      const gid=q.game!=null?games[q.game]:(q.g!=null&&typeof q.g==='number'?games[q.g]:(q.gid||q.g));
+      const stat=q.stat||CODE_STAT[q.t]||q.t;
+      return {gid:String(gid||''),stat:String(stat||''),k:+(q.line!=null?q.line:q.n),
+        side:(q.side||(q.d==='u'?'under':'over')),main:q.main!=null?!!q.main:!!q.m,
+        name:String(q.player||q.a||''),team:String(q.team||q.e||''),label:''};
+    }).filter(l=>l.gid&&l.stat&&isFinite(l.k))
+  })).filter(x=>x.legs.length);
+}
+const STATE={parlays:[],updated:null,games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false};
+const legGames=ps=>{ const s2=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s2.add(l.gid); return s2; };
+async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function refresh(){
+  if(STATE.busy) return;
+  STATE.busy=true; document.getElementById('dot').classList.add('on');
+  /* the file first: it is the list of what to watch */
+  try{
+    const f=await getJSON(DATA+'?t='+Date.now());
+    STATE.parlays=readFile(f); STATE.updated=f.updated||null; STATE.dataErr=null;
+  }catch(e){ STATE.dataErr=String(e&&e.message||e); }
+  STATE.loaded=true;
+  const ps=allParlays();
+  const want=legGames(ps);
+  if(want.size){
+    try{
+      const sched=[...want].map(gidParts).filter(Boolean), games={};
+      for(const w of [...new Set(sched.map(g=>g.w))]){
+        const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON);
+        Object.assign(games,espnGames(sb,sched));
+      }
+      STATE.games=games;
+      const box=Object.assign({},STATE.box);
+      /* a box score is only worth asking for where a player leg is being tracked against it:
+         a parlay of four moneylines is settled by the scoreboard alone. Every parlay on the
+         page counts here, not just the file's -- a browser whose parlays all come out of the
+         two models needs the box scores exactly as much as one reading the file. */
+      const wantBox=new Set();
+      for(const p of ps) for(const l of p.legs) if(l.gid&&!isGameLeg(l)) wantBox.add(l.gid);
+      for(const gid of wantBox){ const g=games[gid];
+        if(!g||g.state==='pre') continue;
+        if(STATE.settled[gid]&&box[gid]) continue;        /* a final box score cannot change */
+        try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
+      }
+      STATE.box=box; STATE.err=null; STATE.at=Date.now();
+    }catch(e){ STATE.err=String(e&&e.message||e); }
+  }
+  STATE.busy=false; document.getElementById('dot').classList.remove('on'); draw();
+}
+function zeroStats(l){
+  const s2={tds:0};
+  if(/^(passing|attempts|completions)/.test(l.stat)) Object.assign(s2,{completions:0,attempts:0,passing_yards:0,passing_tds:0,passing_interceptions:0});
+  else if(/^(carries|rushing)/.test(l.stat)) Object.assign(s2,{carries:0,rushing_yards:0});
+  else if(/^(receptions|receiving|targets)/.test(l.stat)) Object.assign(s2,{receptions:0,receiving_yards:0,targets:0});
+  else if(/^(fg_|kick_)/.test(l.stat)) Object.assign(s2,{fg_made:0,fg_att:0,kick_pts:0});
+  else if(l.stat==='scrim_yards') Object.assign(s2,{carries:0,rushing_yards:0,receptions:0,receiving_yards:0,targets:0});
+  return s2;
+}
+function liveFor(l){
+  const g=STATE.games[l.gid]; if(!g) return null;
+  if(isGameLeg(l)) return Object.assign({},liveGameLeg(l,g),{game:g});
+  if(g.state==='pre') return Object.assign({},liveLeg(l,0,'pre'),{val:0,need:+l.k,game:g,stats:zeroStats(l)});
+  const sum=STATE.box[l.gid]; if(!sum) return null;
+  const st=espnStats(sum,l.team,l.name);
+  if(st===null) return Object.assign({},liveLeg(l,0,g.state),{game:g,stats:zeroStats(l)});
+  return Object.assign({},liveLeg(l,st[l.stat]==null?0:st[l.stat],g.state),{game:g,stats:st});
+}
+function statLine(st){
+  if(!st) return '';
+  const n=(v,d)=>num(v==null?null:v,d||0), bits=[];
+  if(st.attempts!=null){
+    let t=`${n(st.completions)}/${n(st.attempts)}, ${n(st.passing_yards)} pass yds`;
+    if(st.passing_tds>0) t+=`, ${n(st.passing_tds)} TD`;
+    if(st.passing_interceptions>0) t+=`, ${n(st.passing_interceptions)} INT`;
+    bits.push(t);
+  }
+  if(st.carries!=null) bits.push(`${n(st.carries)} car, ${n(st.rushing_yards)} rush yds`);
+  if(st.receptions!=null){
+    let t=`${n(st.receptions)} rec, ${n(st.receiving_yards)} rec yds`;
+    if(st.targets!=null) t+=` on ${n(st.targets)}`;
+    bits.push(t);
+  }
+  if(st.fg_att!=null) bits.push(`${n(st.fg_made)}/${n(st.fg_att)} FG, ${n(st.kick_pts)} pts`);
+  if(st.tds>0) bits.push(`${n(st.tds)} TD`);
+  return bits.join(' \u00b7 ');
+}
+const n0=v=>v==null?'0':String(v);
+/* Where this parlay's stake in one game currently stands, which is what colours its chip.
+   Red the moment a leg there is lost, green while every leg is won, yellow for level or
+   still undecided -- a leg short of its line with the game running is not lost yet. A game
+   that has not kicked off is none of the three. */
+function gameTone(p,gid){
+  const g=STATE.games[gid]; if(!g||g.state==='pre') return '';
+  let good=0, bad=0, n=0;
+  p.legs.forEach((leg,i)=>{
+    if(leg.gid!==gid) return; n++;
+    const l=legAt(p,i,leg);
+    const r=liveFor(l); if(!r) return;
+    if(r.state==='hit'){ good++; return; }
+    if(r.state==='missed'){ bad++; return; }
+    /* a team bet while the game runs is decided by the scoreboard, not by a final state */
+    if(isGameLeg(l)&&r.state==='live'){ if(+r.val>0) good++; else if(+r.val<0) bad++; }
+  });
+  if(!n) return '';
+  return bad?'bad':(good===n?'good':'tie');
+}
+/* Only the games this parlay has no team bet in: where it does, the score is in that leg's
+   own row and a strip above would just say it twice. */
+function gameStrip(p){
+  const seen=[], out=[], inRow=[];
+  for(const l of p.legs) if(isGameLeg(l)&&l.gid) inRow.push(l.gid);
+  for(const l of p.legs){
+    if(!l.gid||seen.indexOf(l.gid)>=0||inRow.indexOf(l.gid)>=0) continue;
+    seen.push(l.gid);
+    const g=STATE.games[l.gid]; if(!g) continue;
+    const tone=gameTone(p,l.gid);
+    out.push(`<span class="gm${tone?' '+tone:''}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}<em>${esc(g.clock||'')}</em></span>`);
+  }
+  return out.length?`<div class="games">${out.join('')}</div>`:'';
+}
+const STAT_NAME={passing_yards:'Passing Yards',passing_tds:'Passing TDs',passing_interceptions:'Interceptions',
+  attempts:'Pass Attempts',completions:'Completions',carries:'Rushing Attempts',rushing_yards:'Rushing Yards',
+  receptions:'Receptions',receiving_yards:'Receiving Yards',targets:'Targets',scrim_yards:'Scrimmage Yards',
+  any_td:'Touchdowns',fg_made:'Field Goals',fg_att:'FG Attempts',kick_pts:'Kicking Points',ml:'To Win',ats:'To Cover'};
+const statName=l=>STAT_NAME[l.stat]||l.stat;
+const targetLabel=(l,k)=>(l.side==='under'&&l.main)?`under ${num(k,k%1?1:0)}`:`${num(k,k%1?1:0)}+`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function progressBar(val,k,state,lineHTML){
+  const max=(isFinite(k)&&k>0)?k*1.25:Math.max(1,val||1);
+  const tick=clamp(100*k/max,0,100), pct=clamp(100*(val||0)/max,0,100), knob=clamp(pct,3,97);
+  const tone=state==='hit'?' win':(state==='missed'?' lose':'');
+  return `<div class="pbar"><div class="track"><div class="fill${tone}" style="width:${pct.toFixed(2)}%"></div>
+    <span class="tick" style="left:${tick.toFixed(2)}%"></span>
+    <span class="knob${tone}" style="left:${knob.toFixed(2)}%">${esc(num(val,(val||0)%1?1:0))}</span>
+    <span class="lineLbl" style="left:${tick.toFixed(2)}%">${lineHTML||esc(num(k,k%1?1:0))}</span></div></div>`;
+}
+/* A team bet is points clear of the line, which liveGameLeg hands over already worked out:
+   above zero is winning the bet, below it is losing. That runs either side of nothing, so it
+   gets a bar with the line in the middle rather than the props' one, which runs from zero up
+   to a target and would draw a side three points behind exactly like a side thirty behind. */
+function marginBar(val,state){
+  const v=val==null?0:+val;
+  const span=Math.max(10,Math.abs(v)*1.3);
+  const pos=x=>clamp(50+50*x/span,0,100);
+  const at=pos(v), mid=50, lo=Math.min(mid,at), hi=Math.max(mid,at);
+  const tone=state==='hit'?' win':(state==='missed'?' lose':'');
+  return `<div class="pbar"><div class="track"><div class="fill${tone}" style="left:${lo.toFixed(2)}%;width:${(hi-lo).toFixed(2)}%"></div>
+    <span class="tick" style="left:${mid}%"></span>
+    <span class="knob${tone}" style="left:${clamp(at,3,97).toFixed(2)}%">${val==null?'\u2013':(v>0?'+':'')+n0(v)}</span>
+    <span class="lineLbl" style="left:${mid}%">line</span></div></div>`;
+}
+const MARK={hit:'\u2713',missed:'\u2717',push:'P'};
+function legRow(p,leg,i){
+  const l=legAt(p,i,leg), k=+l.k, moved=k!==+leg.k;
+  const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
+  const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
+  const mark=r&&MARK[r.state]?MARK[r.state]:'\u25cb';
+  /* A team bet reads like a player bet: the line it was taken at in big type, who and what
+     under it, the score where a player's stat line goes, and a bar for how it is doing. The
+     chip keeps its colour -- green while the side bet on is ahead, red behind, yellow level --
+     which is why the margin is not also said in words. */
+  if(isGameLeg(l)){
+    const g=r&&r.game;
+    /* liveGameLeg folds the line into the margin, so leg.k is the line as the book wrote it
+       from this side. A money line has none: the target is simply to win. */
+    const bk=+l.k||0;
+    const tgt=l.stat==='ml'?'Win':`${bk>0?'+':''}${num(bk,bk%1?1:0)}`;
+    const word=!r?'waiting'
+      :(r.state==='unknown'?'not reported'
+        :(r.state==='hit'?'won':(r.state==='missed'?'lost':(r.state==='push'?'level'
+          :((g&&g.clock)||'not started')))));
+    /* the chip's tone is the bet's, not the game's: it is green when the side bet on is
+       clear of the line, whoever happens to be ahead on the scoreboard */
+    const m=r&&r.val!=null?+r.val:null;
+    const t2=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose'
+      :(m==null?'':(m>0?'win':(m<0?'lose':'tie'))));
+    const chip=g?`<span class="gm${t2==='win'?' good':(t2==='lose'?' bad':(t2==='tie'?' tie':''))}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}</span>`:'';
+    /* the marker follows the bet while it is running, not only once it is settled: green
+       while the side bet on is clear of the line, red while it is not */
+    const tcls=t2==='win'?'res win':(t2==='lose'?'res loss':(t2==='tie'?'res tie':'res'));
+    const tmark=r&&r.state==='hit'?MARK.hit:(r&&r.state==='missed'?MARK.missed:mark);
+    return `<div class="sp-leg team"><span class="${tcls}">${tmark}</span>
+      <div class="legbody">
+        <div class="legtop"><span class="tgt">${esc(tgt)}</span><span class="grow"></span><span class="status ${tone}">${esc(word)}</span></div>
+        <div class="who">${esc(l.name)} ${esc(statName(l))}</div>
+        ${chip?`<div class="statline">${chip}</div>`:''}
+        ${marginBar(r?r.val:null,r?r.state:'pending')}
+      </div></div>`;
+  }
+  const state=r?r.state:'pending', room=l.main&&l.side==='under';
+  const status=!r?'waiting':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':
+    (state==='pending'?esc((r.game&&r.game.clock)||'not started')
+      :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')))));
+  const line=(r&&r.stats)?statLine(r.stats):'';
+  const lineHTML=`<span class="ln edit${moved?' moved':''}" role="button" tabindex="0"
+    data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}"
+    title="The book moved this line? Tap and set what you actually bet.">${esc(num(k,k%1?1:0))}</span>`;
+  const note=moved?`<span class="movedNote">moved from ${esc(num(+leg.k,(+leg.k)%1?1:0))} \u00b7 <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></span>`:'';
+  return `<div class="sp-leg prop"><span class="${cls}">${mark}</span>
+    <div class="legbody">
+      <div class="legtop"><span class="tgt">${esc(targetLabel(l,k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
+      <div class="who">${esc(l.name)} ${esc(statName(l))}</div>
+      ${line?`<div class="statline">${esc(line)}</div>`:''}${note}
+      ${progressBar(r?r.val:0,k,state,lineHTML)}
+    </div></div>`;
+}
+/* Empty is not one thing. Empty because this browser has never opened the two models is a
+   different problem from empty because a parlay is still in a builder, and nobody can tell
+   them apart from the outside -- so the page says which it is instead of shrugging. */
+function whatsHere(){
+  const rows=[];
+  let v=null, broke=false;
+  try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ broke=true; }
+  if(broke) rows.push('<b>prop model</b> \u2014 this browser would not let the page read its storage');
+  else if(!v) rows.push('<b>prop model</b> \u2014 nothing here yet. Open <a href="../nflbets/#slate">the prop model</a> in <i>this</i> browser and build a parlay');
+  else { const sv=Array.isArray(v.saved)?v.saved:[];
+    rows.push('<b>prop model</b> \u2014 '+sv.length+' saved and locked, '
+      +Object.keys((v.parlay&&typeof v.parlay==='object')?v.parlay:{}).length+' leg(s) in the builder'); }
+  let raw=null, bbroke=false;
+  try{ raw=localStorage.getItem(BET_KEY); }catch(e){ bbroke=true; }
+  if(bbroke) rows.push('<b>betting model</b> \u2014 this browser would not let the page read its storage');
+  else if(!raw) rows.push('<b>betting model</b> \u2014 nothing here yet. Open <a href="../nflbets/">the betting model</a> in <i>this</i> browser and press <b>Lock in parlay</b>');
+  else rows.push('<b>betting model</b> \u2014 '+bettingParlays().length+' parlay(s) locked in');
+  const gone=STATE.parlays.filter(p=>isRemoved(Object.assign({src:'file'},p))).length;
+  rows.push('<b>the repository</b> \u2014 '+STATE.parlays.length+' in <code>liveparlays/parlays.json</code>'
+    +(gone?', '+gone+' of them deleted on this device':'')
+    +(STATE.dataErr?' (it could not be read: '+esc(STATE.dataErr)+')':''));
+  return rows;
+}
+const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
+function draw(){
+  const app=document.getElementById('app'), ps=allParlays().filter(p=>!isRemoved(p));
+  document.getElementById('clear').hidden=!ps.some(settledP);
+  let html='';
+  if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
+  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
+  if(!ps.length){
+    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block;margin-bottom:8px">Nothing to watch yet</b>
+      This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
+      <b style="color:var(--ink)">Where it looked just now:</b>
+      <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
+      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted on this device.</b> Deleting is per device and the parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
+    foot(); return;
+  }
+  /* the order the day runs in: still to finish first, then by when a parlay can settle */
+  const endsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick>k) k=g.kick; } return k; };
+  const startsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick<k) k=g.kick; } return k; };
+  const FAR=Number.MAX_SAFE_INTEGER;
+  const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isDone(p)?1:0,e===null?FAR:e,s2===null?FAR:s2,p.week||0]; };
+  for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); })){
+    const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
+    const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
+    const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':'');
+    const from={prop:'prop model',bet:'betting model',file:'in the repository'}[p.src]||'in the repository';
+    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='bet'?'bet':'file'))}">
+      <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
+        <span class="pill">${esc(from)}</span>
+        ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
+        ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
+        ${tag}<span class="grow"></span>${p.id==='prop-builder'?'':`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
+      <div class="sp-money">
+        <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
+        <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
+        <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'\u2013'}</b><span>pays</span></div>
+      </div>
+      ${gameStrip(p)}
+      ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
+  }
+  app.innerHTML=html; wireLines(app); foot();
+  app.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
+    const q=b.dataset.rm.split('|'); removeParlay({src:q[0],id:q.slice(1).join('|')}); draw(); }));
+}
+/* landed or gone: nothing left to watch */
+function settledP(p){ return isDone(p)||p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';}); }
+/* Edit a line in place: the number under the bar becomes a box, Enter or leaving it commits,
+   Escape puts it back. It is drawn where the line actually is, on the bar, rather than as a
+   button repeating the number beside it. */
+function wireLines(app){
+  app.querySelectorAll('[data-edit]').forEach(b=>{
+    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); b.click(); } });
+    b.addEventListener('click',()=>{
+      const key=b.dataset.edit, cur=b.dataset.k;
+      const inp=document.createElement('input');
+      inp.type='number'; inp.step='0.5'; inp.className='lineInput'; inp.value=cur;
+      inp.setAttribute('inputmode','decimal');
+      inp.setAttribute('aria-label','the line you actually bet');
+      b.replaceWith(inp); inp.focus(); inp.select();
+      let gone=false;
+      const done=save=>{ if(gone) return; gone=true;
+        if(save){ const v=parseFloat(inp.value), q=key.split('|');
+          if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
+        draw(); };
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
+        else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
+      inp.addEventListener('blur',()=>done(true));
+    });
+  });
+  app.querySelectorAll('[data-reset]').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    const q=a.dataset.reset.split('|');
+    setLine({src:q[0],id:q[1]},+q[2],null); draw();
+  }));
+}
+function foot(){
+  const when=STATE.updated?new Date(STATE.updated):null;
+  document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
+    :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
+      :(STATE.loaded?'loaded':'idle'));
+}
+document.getElementById('now').addEventListener('click',refresh);
+document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
+document.getElementById('app').addEventListener('click',e=>{
+  if(e.target&&e.target.id==='restoreAll'){ e.preventDefault(); restoreAll(); draw(); } });
+/* the build this browser is showing, for a "blank on every device" day: in the markup, not the bar */
+
+window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();
+
+})();
+/* the Saved parlays card and the betting-slips card it also covered are drawn by the section
+   now; the builder keeps its place above it and the section follows every redraw */
+renderSaved=function(){ return ''; };
+renderBetParlays=function(){ return ''; };
+{ const drawParlay=renderParlay;
+  renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
+document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
 </script>
 <script>
 /* ---------- the Pick'ems tab ----------

@@ -15,12 +15,14 @@ const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsd
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
 const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
+const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
+const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
 
 /* the shape the betting job publishes: a call on every game of the week it will predict */
 function withPicks(st) {
@@ -66,6 +68,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             ? Promise.resolve({ ok: false, status: 404 })
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
           if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
+          if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PARLAYS) });
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched }), 300));
@@ -130,10 +133,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       'a game on now does not read "AWAY leading 14–10 / Q3 5:44": ' + txt(c1.querySelector('.pk-result')));
     chk(c1.querySelector('.pk-result .pk-mwin').classList.contains('pk-bad') && !c1.querySelector('.pk-res'), 'a call behind is not red, or a game on now carries a mark');
   }
-  /* the button reads again */
+  /* the button reads again (the Live Parlays section reads the scoreboard too, so count the delta) */
+  const sbReads = () => fetched.filter(u => u.includes('/scoreboard')).length;
+  const sbBefore = sbReads();
   d.getElementById('pkNow').click();
   await wait(200);
-  chk(fetched.filter(u => u.includes('/scoreboard')).length === 2, 'Refresh scores did not read the scoreboard again: ' + fetched.filter(u => u.includes('/scoreboard')).length);
+  chk(sbReads() === sbBefore + 1, `Refresh scores did not read the scoreboard again: ${sbBefore} -> ${sbReads()}`);
   cards = [...d.querySelectorAll('.pk-game')];        /* the board is redrawn on every read */
   const graded = cards.find(c => c.classList.contains('pk-played'));
   if (graded) chk(!!graded.querySelector('.pk-matchup .pk-res') && /Pick (hit|missed)/.test(txt(graded.querySelector('.pk-result'))),
@@ -258,7 +263,31 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(60);
   chk(d.getElementById('suggModal').hidden, 'the suggestions window would not close');
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
-  chk(!!d.getElementById('savedCard'), 'the saved parlays card is missing');
+  /* ---- Live Parlays: the live page's section, where the Saved parlays card was ---- */
+  const lp = d.getElementById('lpCard');
+  chk(!!lp && lp.closest('#tab-parlay') && lp.previousElementSibling && lp.previousElementSibling.id === 'parlayBody', 'the Live Parlays section is not under the builder');
+  chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old Saved parlays or betting-slips card is still drawn beside the section');
+  chk(!!lp.querySelector('#now') && !!lp.querySelector('#stamp') && !!lp.querySelector('#app'), 'the section is missing its controls');
+  const fileCount = JSON.parse(PARLAYS).parlays.length;
+  chk(lp.querySelectorAll('.savedp').length >= fileCount, `the section shows ${lp.querySelectorAll('.savedp').length} parlays; the file alone holds ${fileCount}`);
+  chk([...lp.querySelectorAll('.savedp .pill')].some(x => /in the repository/.test(txt(x))), 'the file parlays are not labelled');
+  /* a saved parlay is watched the moment it is saved: no sending */
+  { const S = w.eval('S'); const before = lp.querySelectorAll('.savedp').length;
+    const g = S.sched.find(x => x.id === (cards[0] && cards[0].dataset.game)) || S.sched[0];
+    S.saved.push({ id: 'live-smoke', saved: new Date().toISOString(), week: g.w, stake: 3, payout: 9, price: 200,
+      legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.55, price: -120, src: 'real' }] });
+    w.eval('save(); renderParlay();');
+    await wait(80);
+    chk(lp.querySelectorAll('.savedp').length === before + 1, 'a saved parlay did not appear in the section on its own');
+    const mine = [...lp.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
+    chk(!!mine, 'the saved parlay is not labelled as the prop model\'s');
+    /* and deleting it here deletes the parlay itself */
+    mine.querySelector('[data-rm]').click();
+    await wait(80);
+    chk(!S.saved.some(p => p.id === 'live-smoke'), 'deleting a saved parlay in the section left it in the saved list');
+    chk(lp.querySelectorAll('.savedp').length === before, 'the deleted parlay is still drawn');
+    const st = JSON.parse(w.localStorage.getItem('live_parlays_v1') || '{}');
+    chk(!(st.removed && st.removed['prop|live-smoke']), 'a deleted saved parlay was written to the device deletions instead of deleted'); }
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 
   /* ---- Pick'em Record: the betting site's Records tab, framed, loaded when first opened ---- */

@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v63 \u00b7 2026-09-21';
+const APP_BUILD='app v64 \u00b7 2026-09-22';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -555,39 +555,6 @@ function settleLeg(l){
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
   return v>=l.k?'win':'loss';
 }
-/* ---------- the live page's watchlist, written across ----------
-   One origin serves both, so its key is writable here. Only the sent set is ours: the
-   corrected lines and the deletions beside it are the live page's own and are read and
-   written back untouched. */
-const LIVE_PARLAY_KEY='live_parlays_v1';
-function liveWatch(){
-  let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_PARLAY_KEY)||'null'); }catch(e){}
-  if(!v||typeof v!=='object') v={};
-  return {...v,
-    lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
-    removed:(v.removed&&typeof v.removed==='object')?v.removed:{},
-    sent:(v.sent&&typeof v.sent==='object')?v.sent:{}};
-}
-const liveKeyOf=p=>'prop|'+p.id;
-/* on the live page: sent, and not deleted over there since */
-function liveHas(p,w){ w=w||liveWatch(); const k=liveKeyOf(p); return !!w.sent[k]&&!w.removed[k]; }
-/* the same legs are the same parlay, whatever id it was saved under */
-const liveLegPrint=p=>(p.legs||[]).map(l=>[l.gid,l.stat,l.k,l.side||'over'].join('|')).sort().join(' + ');
-/* returns how many were sent, or -1 if this browser refused to store it */
-function sendToLive(ps){
-  const w=liveWatch(); let n=0;
-  const already=new Set();
-  for(const p of (S.saved||[])) if(liveHas(p,w)) already.add(liveLegPrint(p));
-  for(const p of ps){
-    if(!p||!p.id||!(p.legs||[]).length) continue;
-    if(liveHas(p,w)) continue;
-    const print=liveLegPrint(p); if(already.has(print)) continue;
-    w.sent[liveKeyOf(p)]=1; delete w.removed[liveKeyOf(p)]; already.add(print); n++;
-  }
-  try{ localStorage.setItem(LIVE_PARLAY_KEY,JSON.stringify(w)); }catch(e){ return -1; }
-  return n;
-}
-
 /* ---------- live tracking: ESPN's public feeds ----------
    Free, no key, no quota: this never touches the odds API. Everything here is pure -- it
    takes a payload and returns numbers -- so the audit can test it without a network. */

@@ -29,7 +29,8 @@ build and its own scheduled workflow.
 | `props/` | Prop Model, retired as a site: `index.html` redirects to `nflbets/`; `admin.html` is the full app for a manual run or a backup | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model, retired as a site: `index.html` redirects to `nflbets/`; `admin.html` is the app `nflbets/` frames | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
-| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time | `nflbets/build/tab_pickems.html` + the props parts + the betting app |
+| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with Live Parlays as a section of the Parlay Builders tab | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app |
+| `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is the file the section reads, and `build/page.html` is the section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json` |
 
 ## Source vs generated -- never edit a generated file
 
@@ -82,16 +83,24 @@ Gate: the app's embedded model numbers must equal
 
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
-front of it as its own `pk-` prefixed section, and the betting site's Records, Power
-Ratings and Bet Log tabs framed from `betting/admin.html?embed=1#tab`. Nothing is baked
-in: it fetches `props/data/payload.json` and `betting/state.json`, so it is rebuilt when
-a source changes, never when the data does. A props patch or a betting build change
-means rebuilding it too:
+front of it as its own `pk-` prefixed section, the Live Parlays section lifted out of
+`liveparlays/build/page.html` into the Parlay Builders tab (styles scoped to `#lpCard`,
+script in a closure, standing where the prop model's Saved parlays card is: a saved parlay
+is watched the moment it is saved, and deleting it there deletes it), and the betting
+site's Records, Power Ratings and Bet Log tabs framed from `betting/admin.html?embed=1#tab`.
+Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json` and
+`liveparlays/parlays.json`, so it is rebuilt when a source changes, never when the data
+does. A props patch, a betting build change or an edit to the live section's source means
+rebuilding it too:
 
 ```
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"
+node nflbets/build/smoke_live.js  # the Live Parlays section; must end "0 failures"
 ```
+
+A parlay every device should see goes in `liveparlays/parlays.json`, by hand, as its `how`
+field describes.
 
 ## The sites behave like websites
 
@@ -106,8 +115,8 @@ may quietly outrank what the job published:
   rebuilds; the betting app already merges only the visitor's keys over the published state.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
   roster change is worth a banner.
-- **Every page says which build it is.** `buildTag` on the Bets and Stats header, `PAGE_BUILD`
-  in `data-build` on Live Parlays. Without it a stale copy cannot be told from a current one.
+- **Every page says which build it is.** `buildTag` on the Bets and Stats header. Without it a
+  stale copy cannot be told from a current one.
 - **A frame is not covered by a refresh of the page around it.** A framed tab carries the
   publishing timestamp in its address (`&v=`), so a new publish is a new address.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
@@ -125,12 +134,11 @@ may quietly outrank what the job published:
 - **Commit messages** are prose, not bullets: what changed, why, what the audit
   reported. Look at recent commits before writing one. End with the
   `Co-Authored-By` and `Claude-Session` lines the session provides.
-- **`live_parlays_v1` has two owners.** The live page owns `lines` (a line you corrected)
-  and `removed` (a parlay you deleted there); the prop model owns `sent`, the ids of the
-  saved parlays it has pushed to that page. Each side reads the whole object and writes it
-  back whole, so neither may drop a half it does not own. The writer lives above the
-  live-tracking banner in `part2.js`, outside the block `liveparlays/build/build.js` lifts,
-  because the live page may read that key and must never carry a writer for it.
+- **`live_parlays_v1` is the Live Parlays section's key.** It holds `lines` (a line you
+  corrected) and `removed` (a file or betting-model parlay you deleted on this device). A
+  saved parlay is not in it: deleting one in the section deletes it from the prop model's
+  own saved list, which is the only copy. The section reads the whole object and writes it
+  back whole, so a key anything else puts there is carried through.
 - **Visitor data is the visitor's.** Picks, parlays, bankroll, bets and
   self-loaded odds live in the browser's local storage only and are never
   written to the repo. Anything held per-session and not meant to persist (for

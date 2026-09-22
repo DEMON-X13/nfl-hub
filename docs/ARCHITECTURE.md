@@ -87,8 +87,15 @@ build time and scoped inside the closure, since the prop model has its own `tag(
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting site's, so a pick, parlay or bet made on either site is
 what this page shows. Tabs are addresses: `#slate`, `#parlay`, `#record` and so on.
-`nflbets/build/smoke.js` boots the built page in jsdom against both sites' published
-data and walks every tab.
+Live Parlays is a section of the Parlay Builders tab, standing where the prop model's
+Saved parlays card is: `nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its
+styles scoped to `#lpCard` and its script in a closure -- and hands it the prop model's own
+in-memory state, so a saved parlay is watched the moment it is saved and deleting it there
+deletes it. The section reads `liveparlays/parlays.json` (parlays every device sees) and
+ESPN's public scoreboard and box scores in the browser. `liveparlays/index.html` is a
+redirect. `nflbets/build/smoke.js` boots the built page in jsdom against both sites'
+published data and walks every tab; `nflbets/build/smoke_live.js` does the same for the
+Live Parlays section against a stubbed parlay file and scoreboard.
 
 ## Props: how it fits together
 
