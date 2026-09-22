@@ -423,6 +423,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(!!docA && !('players' in docA.prop) && !('sched' in docA.prop) && !('odds' in docA.prop), 'the store holds more than what the visitor made');
     chk(store.node && typeof store.node.doc.json === 'string' && store.node.rev && store.node.doc.rev === store.node.rev, 'the store node is not {rev, at, doc:{rev, at, json}}');
     chk(/^Synced/.test(txt(A.d.getElementById('syncStamp'))), 'after a push the header does not say Synced: ' + txt(A.d.getElementById('syncStamp')));
+    chk(/changed .* checked \d/.test(txt(A.d.getElementById('syncStamp'))), 'the header does not say when the document changed and when the page last checked: ' + txt(A.d.getElementById('syncStamp')));
     /* a poll after its own push reads the tag alone and fetches nothing */
     const dg = store.docGets, puts = store.puts.length;
     await A.w.NFLSYNC.poll();
