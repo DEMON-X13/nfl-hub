@@ -147,12 +147,16 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
 (function(){
   const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
   const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+  const clock=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}); };
+  /* changed: when the shared document last moved, on any device. checked: when this page
+     last heard from the store, so a page that has stopped looking can be told from one
+     with nothing new to show. */
   const put=s=>{ let t, cls='';
     if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced \u2014 this browser only'; cls='off'; }
     else if(s.ok===false){ t='Sync failed: '+s.err+' \u2014 retrying'; cls='bad'; }
     else if(s.pending){ t='Saving\u2026'; cls='ok'; }
     else if(!s.applied){ t='Connecting\u2026'; }
-    else { t='Synced'+(s.at?' \u00b7 '+when(s.at):''); cls='ok'; }
+    else { t='Synced'+(s.at?' \u00b7 changed '+when(s.at):'')+(s.checked?' \u00b7 checked '+clock(s.checked):''); cls='ok'; }
     el.textContent=t; el.dataset.state=cls; el.title=s.url?'Every device reads and writes the same parlays, through '+s.url:'nflbets/sync.json has no store address, so parlays stay in this browser'; };
   NFLSYNC.onChange(put); put(NFLSYNC.state());
 })();

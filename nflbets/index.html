@@ -755,14 +755,14 @@ body.modal-open{overflow:hidden}
 window.NFLSYNC=(function(){
   const CONF='sync.json', PROP_KEY='props_2026_v1', LIVE_KEY='live_parlays_v1';
   const PROP_KEYS=['parlay','saved','stake','bookPrice','margin'];
-  const POLL_MS=8000, PUSH_MS=400, BOOT_WAIT_MS=6000;
+  const POLL_MS=8000, PUSH_MS=400, BOOT_WAIT_MS=6000, GET_MS=12000, PUT_MS=20000;
   const st={url:null, conf:null, rev:null, doc:null, applied:false, live:false, ready:false, ok:null, err:null,
-    at:null, pending:false, pushing:false, pulls:0, pushes:0};
+    at:null, checked:null, pending:false, pushing:false, pulls:0, pushes:0};
   const listeners=[];
   const emit=()=>{ for(const f of listeners){ try{ f(state()); }catch(e){} }
     try{ document.dispatchEvent(new CustomEvent('nflsync',{detail:state()})); }catch(e){} };
   const state=()=>({url:st.url, conf:st.conf, rev:st.rev, applied:st.applied, live:st.live, ready:st.ready, ok:st.ok,
-    err:st.err, at:st.at, pending:st.pending, pulls:st.pulls, pushes:st.pushes});
+    err:st.err, at:st.at, checked:st.checked, pending:st.pending, pushing:st.pushing, pulls:st.pulls, pushes:st.pushes});
   const ls={
     get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
     set(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ return false; } } };
@@ -786,7 +786,7 @@ window.NFLSYNC=(function(){
   /* the address: nflbets/sync.json, read fresh every load. Blank means this browser only. */
   async function readConf(){
     try{
-      const r=await fetch(CONF+'?t='+Date.now(),{cache:'no-store'});
+      const r=await fetchT(CONF+'?t='+Date.now(),null,GET_MS);
       if(!r.ok) throw new Error('HTTP '+r.status);
       const c=await r.json(); st.conf=c;
       let u=String((c&&c.url)||'').trim();
@@ -796,8 +796,17 @@ window.NFLSYNC=(function(){
     return st.url;
   }
   const opts=o=>Object.assign({cache:'no-store'},o||{});
+  /* every request gives up after a while: a phone that sleeps mid-request can leave a fetch
+     that never settles, and a poll waiting on it would never look again */
+  async function fetchT(url,o,ms){
+    const ac=typeof AbortController==='function'?new AbortController():null;
+    const t=ac?setTimeout(()=>ac.abort(),ms):null;
+    try{ return await fetch(url,Object.assign(opts(o),ac?{signal:ac.signal}:{})); }
+    catch(e){ throw (e&&e.name==='AbortError')?new Error('no answer in '+Math.round(ms/1000)+'s'):e; }
+    finally{ if(t) clearTimeout(t); }
+  }
   async function getJSON(path){
-    const r=await fetch(st.url+path+'?t='+Date.now(),opts());
+    const r=await fetchT(st.url+path+'?t='+Date.now(),null,GET_MS);
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }
@@ -837,15 +846,17 @@ window.NFLSYNC=(function(){
       }
       try{ if(st.ready&&window.lpDraw) window.lpDraw(); }catch(e){}
     }
-    st.applied=true; st.live=true; st.ok=true; st.err=null;
+    st.applied=true; st.live=true; st.ok=true; st.err=null; st.checked=new Date().toISOString();
     try{ document.dispatchEvent(new CustomEvent('nflsync-applied',{detail:state()})); }catch(e){}
     emit();
   }
 
   /* the poll: the rev first, the document only when it moved */
-  let polling=false;
+  /* a poll in flight is a time, not a flag: one that never comes back is forgotten after
+     the requests inside it have all given up, so the next look is never blocked by it */
+  let pollingSince=0;
   async function poll(){
-    if(!st.url||polling) return; polling=true;
+    if(!st.url||(pollingSince&&Date.now()-pollingSince<GET_MS*2+1000)) return; pollingSince=Date.now();
     try{
       if(!st.applied){ apply(await pull()); st.pulls++; }
       else if(!st.pending&&!st.pushing){
@@ -854,10 +865,10 @@ window.NFLSYNC=(function(){
           const remote=await pull();
           if(!st.pending&&!st.pushing) apply(remote);
         }
-        else { st.ok=true; st.err=null; emit(); }
+        else { st.ok=true; st.err=null; st.checked=new Date().toISOString(); emit(); }
       }
     }catch(e){ st.ok=false; st.err=String(e&&e.message||e); emit(); }
-    polling=false;
+    pollingSince=0;
   }
 
   /* the push: what this browser has, whole, under a fresh rev */
@@ -874,11 +885,11 @@ window.NFLSYNC=(function(){
     const rev=newRev(), at=new Date().toISOString();
     st.pushing=true;
     try{
-      const r=await fetch(st.url+'.json?print=silent',opts({method:'PUT',keepalive:!!keepalive,
+      const r=await fetchT(st.url+'.json?print=silent',{method:'PUT',keepalive:!!keepalive,
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({rev,at,doc:{rev,at,json:JSON.stringify(doc)}})}));
+        body:JSON.stringify({rev,at,doc:{rev,at,json:JSON.stringify(doc)}})},PUT_MS);
       if(!r.ok) throw new Error('HTTP '+r.status);
-      st.rev=rev; st.at=at; st.doc=doc; st.pushes++; st.ok=true; st.err=null; st.pending=false;
+      st.rev=rev; st.at=at; st.doc=doc; st.pushes++; st.ok=true; st.err=null; st.pending=false; st.checked=at;
     }catch(e){ st.ok=false; st.err=String(e&&e.message||e); st.pending=true; pushTimer=setTimeout(push,POLL_MS); }
     st.pushing=false; emit();
     return st.ok;
@@ -926,6 +937,9 @@ window.NFLSYNC=(function(){
     if(document.visibilityState==='hidden') return;
     poll(); timer=setInterval(poll,POLL_MS); }
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') tick(); else { clearInterval(timer); timer=null; if(st.pending) push(true); } });
+  /* a phone brings a page back in more ways than one: out of its page cache, on focus, and
+     when the network returns. Each one is a look, if the page is up. */
+  for(const ev of ['pageshow','focus','online']) window.addEventListener(ev,()=>{ if(st.ready) tick(); });
   window.addEventListener('pagehide',()=>{ if(st.pending) push(true); });
   document.addEventListener('app-ready',()=>{ st.ready=true; boot().then(()=>{
     if(st.url&&st.applied&&st.doc) apply({rev:st.rev,at:st.at,doc:st.doc});
@@ -3787,12 +3801,16 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
 (function(){
   const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
   const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+  const clock=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}); };
+  /* changed: when the shared document last moved, on any device. checked: when this page
+     last heard from the store, so a page that has stopped looking can be told from one
+     with nothing new to show. */
   const put=s=>{ let t, cls='';
     if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced — this browser only'; cls='off'; }
     else if(s.ok===false){ t='Sync failed: '+s.err+' — retrying'; cls='bad'; }
     else if(s.pending){ t='Saving…'; cls='ok'; }
     else if(!s.applied){ t='Connecting…'; }
-    else { t='Synced'+(s.at?' · '+when(s.at):''); cls='ok'; }
+    else { t='Synced'+(s.at?' · changed '+when(s.at):'')+(s.checked?' · checked '+clock(s.checked):''); cls='ok'; }
     el.textContent=t; el.dataset.state=cls; el.title=s.url?'Every device reads and writes the same parlays, through '+s.url:'nflbets/sync.json has no store address, so parlays stay in this browser'; };
   NFLSYNC.onChange(put); put(NFLSYNC.state());
 })();
