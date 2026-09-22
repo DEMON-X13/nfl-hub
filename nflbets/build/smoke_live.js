@@ -244,9 +244,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
         JSON.stringify({ lines: {}, sent: {}, removed: { 'file|night': 1, 'file|early': 1 } })) });
       chk(all.d.querySelectorAll('.savedp').length === 0, 'the fixture should leave nothing to watch');
       const txtAll = txt(all.d.getElementById('app'));
-      chk(/Everything here was deleted on this device/.test(txtAll), 'an emptied page does not say why it is empty: ' + txtAll.slice(0, 160));
-      chk(/2 in .?liveparlays\/parlays\.json.?, 2 of them deleted on this device/.test(txtAll),
-        'the page claims the file is empty when it is not: ' + txtAll);
+      chk(/^Nothing to watch yet\s*bring back the 2 deleted$/.test(txtAll), 'an emptied page should say only that, and the way back: ' + txtAll.slice(0, 160));
       const back = all.d.getElementById('restoreAll');
       chk(!!back, 'no way back from an emptied page');
       back.click();
@@ -327,17 +325,9 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
 
   // ---- F. an empty file, and a missing one ----
   const e1 = await run({ file: { updated: null, games: [], parlays: [] } });
-  chk(/Nothing to watch yet/.test(txt(e1.d.getElementById('app'))), 'an empty page is not explained');
-  chk(/parlays\.json/.test(txt(e1.d.getElementById('app'))) && /prop model/.test(txt(e1.d.getElementById('app'))),
-    'an empty page does not say where parlays can come from');
-  chk(/nothing here yet/.test(txt(e1.d.getElementById('app'))),
-    'an empty page does not say the two models have never been opened here');
-  chk(/0 in .?liveparlays\/parlays\.json/.test(txt(e1.d.getElementById('app'))),
-    'an empty page does not say the file is empty: ' + txt(e1.d.getElementById('app')));
-  const e1b = await run({ file: { updated: null, games: [], parlays: [] },
-    seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify({ saved: [], parlay: {} })); } });
-  chk(/0 saved and locked, 0 leg/.test(txt(e1b.d.getElementById('app'))),
-    'an empty page does not count an opened but empty prop model: ' + txt(e1b.d.getElementById('app')));
+  /* empty says so and nothing else: no tour of where parlays come from */
+  chk(txt(e1.d.getElementById('app')) === 'Nothing to watch yet', 'an empty page should say only "Nothing to watch yet": ' + txt(e1.d.getElementById('app')));
+  chk(!e1.d.getElementById('restoreAll'), 'the way back is offered with nothing deleted');
   const e2 = await run({ data: 'fail' });
   chk(/could not be read/.test(txt(e2.d.querySelector('.note')) || ''), 'a missing file is not explained');
 
