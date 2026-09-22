@@ -30,6 +30,12 @@ const part2 = rd('props', 'build', 'part2.js');
 const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
 const tab = rd('nflbets', 'build', 'tab_pickems.html');
+/* the Live Parlays section is the live page's own source, set into the Parlay Builders tab
+   where the Saved parlays card was: a saved parlay is watched the moment it is saved, so the
+   list of what is saved and the view of how it is doing are one card. Its styles are scoped
+   to that card and its script runs in a closure, since the page around it defines most of
+   the same names for itself. */
+const livePage = rd('liveparlays', 'build', 'page.html');
 
 /* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
    not a page to ship half-edited */
@@ -62,6 +68,71 @@ const js = sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot');
 for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg', 'function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');
 
+/* ---- the Live Parlays section, out of liveparlays/build/page.html ---- */
+const lpiece = (re, what) => { const m = livePage.match(re); if (!m) throw new Error(`liveparlays/build/page.html has no ${what}`); return m[1]; };
+const LIVE_CSS = lpiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
+const LIVE_BAR = lpiece(/<main>\s*(<div class="bar">[\s\S]*?<\/div>)\s*<noscript>/, 'control bar');
+let LIVE_JS = lpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+/* Scope every rule to the card. Page-level rules -- the page shell, the button and card
+   bases the prop model already has -- are dropped; the rest keep their look inside the card
+   and touch nothing outside it. Handles one level of @media. */
+function scopeCss(css, scope) {
+  css = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const DROP = /^(\*|:root|html|body|html,body|header|header::after|main|footer|footer a|button,input,select|select|select:focus,button:focus-visible|\.brand.*|\.btn.*|\.card|\.card h2|\.bar|\.bar \.grow|\.muted|\.tokBox|\.tokRow|\.shareBox)$/;
+  const block = str => {
+    let out = '', pos = 0;
+    for (;;) {
+      const open = str.indexOf('{', pos); if (open < 0) break;
+      const sel = str.slice(pos, open).trim();
+      let depth = 1, j = open + 1;
+      while (j < str.length && depth) { if (str[j] === '{') depth++; else if (str[j] === '}') depth--; j++; }
+      const body = str.slice(open + 1, j - 1);
+      if (sel.startsWith('@media')) out += sel + '{' + block(body) + '}\n';
+      else {
+        const kept = sel.split(',').map(x => x.trim()).filter(x => x && !DROP.test(x)).map(x => scope + ' ' + x);
+        if (kept.length) out += kept.join(',') + '{' + body.trim() + '}\n';
+      }
+      pos = j;
+    }
+    return out;
+  };
+  return block(css);
+}
+const LIVE_SCOPED = scopeCss(LIVE_CSS, '#lpCard');
+for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#lpCard .gm{', '#lpCard .hidebtn{'])
+  if (!LIVE_SCOPED.includes(need)) throw new Error('the scoped live styles lost ' + need);
+if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
+const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
+/* the shared block is the prop model's own part2, which this page already carries */
+lsub('/*SHARED*/', '', 'shared slot');
+lsub("const DATA='parlays.json';", "const DATA='../liveparlays/parlays.json';", 'file path');
+lsub("document.documentElement.dataset.build=PAGE_BUILD;", '', 'build stamp');
+/* the section redraws whenever the prop model redraws its builder, and once the model is up */
+/* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
+   would replace it */
+lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
+for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll'])
+  if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
+const LIVE_SECTION = `<div class="card" id="lpCard">
+    <h2 style="display:flex;align-items:center;gap:10px">Live Parlays<span class="grow" style="flex:1"></span></h2>
+    ${LIVE_BAR}
+    <div id="app"></div>
+  </div>`;
+const LIVE_SCRIPT = `<script>
+/* the Live Parlays section: liveparlays/build/page.html, in a closure. Names it shares with
+   the prop model -- esc, num, fmtML, the team names -- are its own copies inside it. */
+(function(){
+${LIVE_JS}
+})();
+/* the Saved parlays card and the betting-slips card it also covered are drawn by the section
+   now; the builder keeps its place above it and the section follows every redraw */
+renderSaved=function(){ return ''; };
+renderBetParlays=function(){ return ''; };
+{ const drawParlay=renderParlay;
+  renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
+document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
+</script>`;
+
 /* the prop model's page, re-headed */
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>X NFL Bets and Stats</title>', 'title');
@@ -73,7 +144,7 @@ html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"><
 html = sub1(html, `<label class="muted">Scores <select id="slateEvery">
         <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
       </select></label>\n`, '', 'the scores picker');
-html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n</head>', 'style block');
+html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here is in the page but not yet shown. */
 /* A betting tab is the betting site's own page, framed: betting/admin.html opened on that
@@ -103,6 +174,8 @@ html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && !t.match(/^(slate|parlay|track)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+/* the Live Parlays section, under the builder, where the Saved parlays card was */
+html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  ' + LIVE_SECTION, 'the Parlay Builder section');
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 
 /* the app, as assemble.py assembles it, one directory further from its payload. One thing
@@ -127,7 +200,7 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
   document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>`;
-const out = html + APP + '\n</script>\n' + NOTE + '\n<script>' + js + '</script>\n</body>\n</html>\n';
+const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>' + js + '</script>\n</body>\n</html>\n';
 fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
 console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB `
   + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);

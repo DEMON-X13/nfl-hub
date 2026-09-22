@@ -20,7 +20,7 @@ const APP = path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html');
 const html = fs.readFileSync(APP, 'utf8');
 
 /* The scoreboard mapping is lifted out of props/build/part2.js at build time rather than
- * copied, the way liveparlays/build/build.js lifts the same file. Both sites key games by the same
+ * copied, the way nflbets/build/build.js lifts the same file. Both sites key games by the same
  * nflverse ids, so they have to agree on how ESPN's teams map onto them, and the prop
  * model's audit is what keeps testing it. Moving any of it fails this build rather than
  * quietly leaving the two sites disagreeing. */

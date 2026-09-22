@@ -195,19 +195,23 @@ const LIVE_KEY='live_parlays_v1';
 function liveStore(){
   let v=null; try{ v=JSON.parse(localStorage.getItem(LIVE_KEY)||'null'); }catch(e){}
   if(!v||typeof v!=='object') v={};
-  /* sent is the prop model's half of this key: it says which saved parlays are watched here.
-     It is carried through untouched, because writeStore writes the whole object back and a
-     deletion made here would otherwise wipe the watchlist. */
+  /* anything else in the object is carried through untouched: writeStore writes the whole
+     object back, and a key some other page put here is not this page's to drop */
   return {...v,
     lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
-    removed:(v.removed&&typeof v.removed==='object')?v.removed:{},
-    sent:(v.sent&&typeof v.sent==='object')?v.sent:{}};
+    removed:(v.removed&&typeof v.removed==='object')?v.removed:{}};
 }
 /* a parlay deleted from this page is gone from this page on this device, for good. This
    page writes to no other key: the prop model's saved parlays and the betting model's slips
    are deleted where they were made, and a parlay in the file is taken out of the file. */
 const rmKey=p=>p.src+'|'+p.id;
-function removeParlay(p){ const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
+function removeParlay(p){
+  /* a saved parlay has one copy, in the prop model, and this is the section that shows it,
+     so deleting it here deletes it there. A parlay from the file or the betting model is
+     somebody else's copy, and is only taken off this device. */
+  if(p.src==='prop'&&p.id!=='prop-builder'&&typeof S==='object'&&S&&Array.isArray(S.saved)&&typeof save==='function'){
+    S.saved=S.saved.filter(x=>String(x.id)!==String(p.id)); save(); return; }
+  const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
 function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
 const removedCount=()=>allParlays().filter(isRemoved).length;
@@ -231,6 +235,9 @@ const legAt=(p,i,l)=>{ const k=lineOf(p,i,l); return k===+l.k?l:Object.assign({}
    there and not on the next one, because nothing carries it across. Getting it into the file
    means editing the file. */
 function propState(){
+  /* inside the Bets and Stats page this runs beside the prop model itself, whose state in
+     memory is ahead of what it has written to storage; that one wins */
+  if(typeof S==='object'&&S&&Array.isArray(S.saved)) return S;
   try{ return JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return null; }
 }
 const propLeg=l=>({gid:l.gid,stat:l.stat,k:+l.k,side:l.side||'over',main:!!l.main,
@@ -246,12 +253,8 @@ function propParlays(){
   const v=propState(); if(!v) return [];
   const out=[];
   const saved=Array.isArray(v.saved)?v.saved:[];
-  /* a saved parlay is watched here once it has been sent from the builder. This page is a
-     watchlist, not everything the prop model has ever locked. */
-  const sent=liveStore().sent;
   for(const p of saved){
     if(!p||!Array.isArray(p.legs)||!p.legs.length) continue;
-    if(!sent['prop|'+String(p.id||'')]) continue;
     out.push({src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,
       price:p.price,payout:+p.payout||0,note:'',legs:p.legs.map(propLeg)});
   }
@@ -518,9 +521,8 @@ function whatsHere(){
   try{ v=JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ broke=true; }
   if(broke) rows.push('<b>prop model</b> \u2014 this browser would not let the page read its storage');
   else if(!v) rows.push('<b>prop model</b> \u2014 nothing here yet. Open <a href="../nflbets/#slate">the prop model</a> in <i>this</i> browser and build a parlay');
-  else { const sv=Array.isArray(v.saved)?v.saved:[], st=liveStore().sent;
-    const on=sv.filter(p=>p&&st['prop|'+String(p.id||'')]).length;
-    rows.push('<b>prop model</b> \u2014 '+sv.length+' saved and locked, '+on+' of them sent here, '
+  else { const sv=Array.isArray(v.saved)?v.saved:[];
+    rows.push('<b>prop model</b> \u2014 '+sv.length+' saved and locked, '
       +Object.keys((v.parlay&&typeof v.parlay==='object')?v.parlay:{}).length+' leg(s) in the builder'); }
   let raw=null, bbroke=false;
   try{ raw=localStorage.getItem(BET_KEY); }catch(e){ bbroke=true; }
@@ -545,7 +547,7 @@ function draw(){
       This page shows two things, both on its own: the parlays in <code>liveparlays/parlays.json</code>, which every device sees, and whatever the <a href="../nflbets/#slate">prop model</a> and <a href="../nflbets/">betting model</a> hold <b>in this browser</b>.<br><br>
       <b style="color:var(--ink)">Where it looked just now:</b>
       <div style="text-align:left;max-width:520px;margin:10px auto 0">${whatsHere().map(r=>'<div style="margin:5px 0">\u2022 '+r+'</div>').join('')}</div><br>
-      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted on this device.</b> Deleting is per device and the parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the prop model's builder shows here as soon as it has a leg. A saved one shows once you send it, with the green button on the Saved parlays card. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
+      ${removedCount()?`<b style="color:var(--ink)">Everything here was deleted on this device.</b> Deleting is per device and the parlays themselves are untouched, so they can come back: <a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>.<br><br>`:''}A parlay in the builder shows here as soon as it has a leg, and a saved one as soon as it is saved. Parlays live in the browser that built them; to see one on your other devices it has to go in the file.</div>`;
     foot(); return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
@@ -563,7 +565,7 @@ function draw(){
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
-        ${tag}<span class="grow"></span><button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay from this page" aria-label="Delete this parlay">\u00d7</button></div>
+        ${tag}<span class="grow"></span>${p.id==='prop-builder'?'':`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
       <div class="sp-money">
         <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
         <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
