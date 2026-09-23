@@ -70,7 +70,7 @@ const epiece = (re, what) => { const m = eloTab.match(re); if (!m) throw new Err
 const ELO_CSS = epiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
 const ELO_HTML = epiece(/(<section id="tab-elo" hidden>[\s\S]*?<\/section>)/, 'section');
 const ELO_JS = epiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
-for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'window.pkTag'])
+for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'window.pkTag', 'window.pkTierBadge', 'window.pkTierDefs'])
   if (!ELO_JS.includes(need)) throw new Error('tab_elo.html no longer has ' + need);
 for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
   throw new Error('elo/data/' + f + ' is missing: run python3 elo/build.py first');
@@ -82,13 +82,15 @@ const BET = [
   lift(betting, 'const TEAM_COLORS=', '\n', 'team colours'),
   lift(betting, 'function hex2rgb(', 'function predict(', 'tag colours and tag()'),
   lift(betting, 'function tier(', 'function statsFromRow', 'betting confidence bands'),
+  /* the Elo tiers and their shields, so a player's rating wears the same badge a team's does */
+  lift(betting, 'const TIERS=', 'function tierLegend(', 'Elo tiers and shields'),
 ].join('\n');
-for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier('])
+for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier(', 'function eloTier(', 'function tierBadge(', 'const TIER_DEFS'])
   if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);
-const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO};\n})();`;
+const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO,eloTier,tierBadge,TIER_DEFS};\n})();`;
 const js = sub1(sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot'),
   "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');",
-  "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');\n/* the Player Elo tab draws team tags with this one */\nwindow.pkTag=tag; window.pkTagColor=BET.tagColor;",
+  "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');\n/* the Player Elo tab draws team tags and tier shields with these */\nwindow.pkTag=tag; window.pkTagColor=BET.tagColor; window.pkTierBadge=BET.tierBadge; window.pkEloTier=BET.eloTier; window.pkTierDefs=BET.TIER_DEFS;",
   'the tag helper, which the Elo tab shares');
 for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg', 'function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');

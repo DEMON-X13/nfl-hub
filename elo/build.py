@@ -60,6 +60,11 @@ CACHE = os.path.join(HERE, 'cache')
 OUT = os.path.join(HERE, 'data')
 FIRST = 2020
 STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{y}.csv'
+ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_{y}.csv'
+INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
+# what a roster status means for the rankings: only the active list is ranked
+STATUS = {'ACT': None, 'RES': 'on injured reserve', 'PUP': 'on the PUP list', 'RET': 'retired', 'DEV': 'on the practice squad',
+          'CUT': 'a free agent', 'EXE': 'on the exempt list', 'SUS': 'suspended', 'NON': 'on the non-football injury list'}
 GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'
 
 GROUP = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K',
@@ -114,11 +119,51 @@ def load(offline):
             else:
                 raise
     stats = pd.concat(frames, ignore_index=True)
+    # who can play this week: the season's latest weekly roster and injury report, both
+    # re-downloaded every run since both change daily
+    roster, inj = None, None
+    for name, url in (('roster', ROSTER_URL), ('injuries', INJ_URL)):
+        dest = os.path.join(CACHE, f'{name}_{last}.csv')
+        if not offline and os.path.exists(dest):
+            os.remove(dest)
+        try:
+            df = pd.read_csv(fetch(url.format(y=last), dest, offline), low_memory=False)
+            if name == 'roster':
+                roster = df
+            else:
+                inj = df
+        except Exception as e:
+            print(f'  no {name} file for {last} ({e}); nobody is marked out')
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
     # the week's order within a season: regular weeks, then the playoffs in order
     stats = stats[stats.game_id.notna()]
-    return games, stats
+    return games, stats, roster, inj
+
+
+def availability(roster, inj, week):
+    """player_id -> (reason he is out of the rankings or None, his team now). A player on
+    no roster at all is a free agent; one the coming week's injury report lists as Out is
+    out. An older report says nothing about this week and is not read."""
+    out, team = {}, {}
+    if roster is not None and len(roster):
+        wk = roster.week.max() if 'week' in roster else None
+        r = roster[roster.week == wk] if wk is not None else roster
+        for row in r.itertuples(index=False):
+            pid = row.gsis_id
+            if not isinstance(pid, str):
+                continue
+            team[pid] = row.team
+            reason = STATUS.get(str(row.status), 'not on the active list')
+            out[pid] = reason
+    if inj is not None and len(inj) and week is not None and (inj.week == week).any():
+        wk = week
+        for row in inj[(inj.week == wk) & (inj.report_status == 'Out')].itertuples(index=False):
+            pid = row.gsis_id
+            if isinstance(pid, str) and not out.get(pid):
+                what = row.report_primary_injury if isinstance(row.report_primary_injury, str) else ''
+                out[pid] = 'out' + (f' ({what.lower()})' if what else '') + f', week {int(wk)}'
+    return out, team
 
 
 def scores(d):
@@ -180,8 +225,11 @@ def main():
     ap.add_argument('--offline', action='store_true')
     a = ap.parse_args()
     print('loading')
-    games, stats = load(a.offline)
+    games, stats, roster, inj = load(a.offline)
     games = week_order(games)
+    coming = games[(games.season == games.season.max()) & games.home_score.isna()]
+    out_now, team_now = availability(roster, inj, int(coming.week.min()) if len(coming) else None)
+    on_roster = roster is not None and len(roster) > 0
     stats['score'], stats['vol'] = scores(stats)
     stats['w'] = np.minimum(1.0, stats.vol / stats.group.map(VOLUME))
     # kickers and defenders with nothing on the sheet did not really play
@@ -360,9 +408,28 @@ def main():
     latest_season = {pid: max(h) for pid, h in hist.items()}
     players = {}
     groups_out = {}
+    def why_out(pid):
+        if pid in out_now:
+            return out_now[pid]
+        return 'a free agent' if on_roster else None
     for g in GROUPS:
-        pool = [pid for pid in R if info[pid]['group'] == g and latest_season[pid] >= active_cut and N[pid] >= 3]
-        pool.sort(key=lambda p: -R[p])
+        rated = [pid for pid in R if info[pid]['group'] == g and latest_season[pid] >= active_cut and N[pid] >= 3]
+        rated.sort(key=lambda p: -R[p])
+        # the rankings are of players who can play: the injured, the retired and the unsigned
+        # are listed under the table instead, where they would have stood
+        sidelined = []
+        pool = []
+        for pid in rated:
+            w = why_out(pid)
+            if w:
+                if len(pool) < 25:
+                    sidelined.append({'id': pid, 'name': info[pid]['name'], 'team': team_now.get(pid, info[pid]['team']),
+                                      'elo': round(R[pid]), 'would_rank': len(pool) + 1, 'why': w})
+            else:
+                pool.append(pid)
+        for pid in rated:
+            if pid in team_now:
+                info[pid]['team'] = team_now[pid]
         # where everyone stood when this season began, for the movement column
         start = {pid: season_start.get((last, pid), 1500.0) for pid in pool}
         start_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: -start[p]))}
@@ -373,7 +440,7 @@ def main():
                          'elo': round(R[pid]), 'rank': i + 1, 'start_rank': start_rank[pid], 'start_elo': round(start[pid]),
                          'games': N[pid], 'peak': round(peak[pid][0]), 'peak_season': peak[pid][1],
                          'this_season': h.get(last, []), 'last_season': latest_season[pid]})
-        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'top': rows[:25], 'facet': FACET[g], 'volume': VOLUME[g]}
+        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
         for row in rows:
             players[row['id']] = {'name': row['name'], 'pos': row['pos'], 'group': g, 'team': row['team'], 'elo': row['elo'], 'rank': row['rank']}
     # season-end top tens, every season: the six-year story
