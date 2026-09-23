@@ -447,7 +447,32 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(!!d.getElementById('peDefs') && d.querySelectorAll('#peDefs defs, #peBody defs').length === 1, 'the shield gradients are not defined exactly once on the page');
       w.eval('renderParlay()'); await wait(80);
       chk(d.querySelectorAll('#parlayBody tr.legrow .pe-badge').length === 1, 'a redraw doubled or lost the badge');
-      delete S.parlay[key]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
+      /* market + form: a second price on a leg the book has priced, none on an estimated or team leg */
+      chk(!mine.querySelector('.pe-alt') && !team.querySelector('.pe-alt'), 'an estimated or team leg got a market + form price');
+      const wr = eloP.groups.WR.top[0], key2 = g.id + '|' + wr.id + '|receiving_yards';
+      S.parlay[key2] = { gid: g.id, pid: wr.id, stat: 'receiving_yards', k: 70, side: 'over', main: true, p: 0.55, price: -115, src: 'real', name: wr.name, pos: 'WR', grp: 'WR', week: g.w, label: '70+ rec yds' };
+      S.parlay[key] = Object.assign({}, S.parlay[key], { price: -110, src: 'real', side: 'under' });
+      w.eval('renderParlay()'); await wait(80);
+      const rows2 = [...d.querySelectorAll('#parlayBody tr.legrow')];
+      const wrRow = rows2.find(tr => txt(tr).includes(wr.name)), qbRow = rows2.find(tr => txt(tr).includes(top.name));
+      const altOf = tr => tr && tr.querySelector('.pe-alt') ? +tr.querySelector('.pe-alt').dataset.p : null;
+      chk(altOf(wrRow) > 0.5 && altOf(wrRow) < 0.75 && /market \+ form \d+%/.test(txt(wrRow.querySelector('.pe-alt'))), 'a top receiver\'s over at -115 should carry a market + form price above the book\'s: ' + altOf(wrRow));
+      chk(altOf(qbRow) !== null && altOf(qbRow) < w.eval('mlProb')(-110), 'a top quarterback\'s under should price below the book\'s chance: ' + altOf(qbRow));
+      chk(/Market \+ form/.test(txt(d.querySelector('#parlayBody .pe-altsum')) || '') && /\d+\.\d% to all land/.test(txt(d.querySelector('#parlayBody .pe-altsum'))), 'the builder does not sum the market + form chances: ' + txt(d.querySelector('#parlayBody .pe-altsum')));
+      w.eval('renderParlay()'); await wait(80);
+      chk(d.querySelectorAll('#parlayBody .pe-alt').length === 2 && d.querySelectorAll('#parlayBody .pe-altsum').length === 1, 'a redraw doubled or lost the second prices');
+      delete S.parlay[key]; delete S.parlay[key2]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
+    /* the Prop Record grades the three chances on every book line, week by week */
+    { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'track').click(); await wait(80);
+      const card = d.querySelector('#trackBody .pe-track');
+      chk(!!card && card === d.getElementById('trackBody').firstElementChild, 'the market + form card is not at the top of the Prop Record');
+      const trs = card ? [...card.querySelectorAll('tbody tr')] : [];
+      const weeksGraded = new Set(w.eval('trackRecord()').filter(r => r.kind === 'main' && r.imp != null).map(r => r.w));
+      chk(trs.length === weeksGraded.size + 1 && /^All/.test(txt(trs[trs.length - 1])), `the card should have a row per graded week and an All row: ${trs.length} rows for ${weeksGraded.size} weeks`);
+      chk(trs.every(tr => tr.querySelectorAll('td').length === 11 && /0\.\d{3}/.test(txt(tr))), 'a row lacks its eleven cells or its Brier scores');
+      w.eval('renderTrack()'); await wait(40);
+      chk(d.querySelectorAll('#trackBody .pe-track').length === 1, 'redrawing the Prop Record doubled the card');
+      [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
     const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
