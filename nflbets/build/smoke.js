@@ -462,6 +462,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       w.eval('renderParlay()'); await wait(80);
       chk(d.querySelectorAll('#parlayBody .pe-alt').length === 2 && d.querySelectorAll('#parlayBody .pe-altsum').length === 1, 'a redraw doubled or lost the second prices');
       delete S.parlay[key]; delete S.parlay[key2]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
+    /* the Props game view: the same shield on a ranked player's row */
+    { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
+      const S = w.eval('S'); const top = eloP.groups.QB.top[0];
+      const g = S.sched.find(x => (x.h === top.team || x.a === top.team) && !w.eval('gameStarted')(x)) || S.sched.find(x => x.h === top.team || x.a === top.team);
+      S.ui.game = g.id; w.eval('renderGame()'); await wait(120);
+      const row = d.querySelector(`button.plrbtn[data-open="${top.id}"]`);
+      chk(!!row && !!row.querySelector('.who .pe-badge svg.tierbadge') && new RegExp('#' + top.rank + '\\b').test(txt(row.querySelector('.pe-badge'))), 'the top quarterback\'s row in the Props game view has no shield: ' + (row ? txt(row).slice(0, 80) : 'no row for ' + top.name + ' in ' + g.id));
+      chk(row.querySelector('.who').firstElementChild.classList.contains('pe-badge'), 'the shield is not in front of the name on the game view');
+      chk(d.querySelectorAll(`button.plrbtn[data-open="${top.id}"] .pe-badge`).length === 1, 'the game view row has more than one shield');
+      w.eval('renderGame()'); await wait(60);
+      chk(d.querySelectorAll(`button.plrbtn[data-open="${top.id}"] .pe-badge`).length === 1, 'redrawing the game doubled or lost the shield');
+      S.ui.game = null; w.eval('renderSlate()'); }
     /* the Prop Record grades the three chances on every book line, week by week */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'track').click(); await wait(80);
       const card = d.querySelector('#trackBody .pe-track');
