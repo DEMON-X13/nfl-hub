@@ -420,7 +420,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(txt(rankRows()[0]).includes(eloP.groups.QB.top[0].name) && txt(rankRows()[0]).includes(String(eloP.groups.QB.top[0].elo)), 'the top quarterback is not first: ' + txt(rankRows()[0]));
     chk(rankRows()[0].querySelector('svg.pe-spark') !== null, 'the season trend line is missing');
     chk([...rankRows()].every(tr => tr.querySelector('svg.tierbadge') && /Challenger|Master|Diamond|Platinum|Gold|Silver|Bronze|Iron/.test(txt(tr))), 'a ranked player has no tier shield on the team scale');
-    chk(!!body.querySelector('svg defs linearGradient[id^="tg-"]'), 'the tier shields have no gradient definitions on the page');
+    chk(!!d.querySelector('#peDefs svg defs linearGradient[id^="tg-"]'), 'the tier shields have no gradient definitions on the page');
     /* the sidelined are out of the rankings and listed where they would have stood */
     chk(eloM.groups.every(g => Array.isArray(eloP.groups[g].sidelined)), 'a group has no sidelined list');
     { const sideIds = new Set(eloM.groups.flatMap(g => eloP.groups[g].sidelined.map(x => x.id)));
@@ -433,6 +433,21 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(eloM.groups.every(g => eloP.groups[g].sidelined.every(x => /reserve|free agent|practice squad|retired|out|list|suspended/i.test(x.why))), 'a sidelined player has no reason'); }
     posBtns.find(b => b.dataset.pos === 'DL').click(); await wait(40);
     chk(txt(rankRows()[0]).includes(eloP.groups.DL.top[0].name), 'switching to the defensive line did not redraw the rankings');
+    /* a ranked player's shield and place stand in front of his name on his builder leg; a team leg has none */
+    { const S = w.eval('S'), top = eloP.groups.QB.top[0]; const wk = Math.max(...S.sched.map(x => +x.w)); const g = S.sched.find(x => +x.w === wk);
+      const key = g.id + '|' + top.id + '|passing_yards';
+      S.parlay[key] = { gid: g.id, pid: top.id, stat: 'passing_yards', k: 200, side: 'over', main: false, p: 0.5, price: -110, src: 'est', name: top.name, pos: 'QB', grp: 'QB', week: g.w, label: '200+ pass yds' };
+      S.parlay[g.id + '|team:' + g.h + '|ml'] = { gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -120, src: 'real', name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win' };
+      w.eval('renderParlay()'); await wait(80);
+      const rows = [...d.querySelectorAll('#parlayBody tr.legrow')];
+      const mine = rows.find(tr => txt(tr).includes(top.name)), team = rows.find(tr => txt(tr).includes(TEAM(g.h)) && !txt(tr).includes(top.name));
+      chk(!!mine && !!mine.querySelector('td.plr .pe-badge svg.tierbadge') && new RegExp('#' + top.rank + '\\b').test(txt(mine.querySelector('.pe-badge'))), 'the top quarterback\'s builder leg has no shield and place: ' + (mine ? txt(mine).slice(0, 80) : 'no leg'));
+      chk(mine.querySelector('td.plr').firstElementChild.classList.contains('pe-badge'), 'the badge is not in front of the name');
+      chk(!!team && !team.querySelector('.pe-badge'), 'a team leg got a player badge');
+      chk(!!d.getElementById('peDefs') && d.querySelectorAll('#peDefs defs, #peBody defs').length === 1, 'the shield gradients are not defined exactly once on the page');
+      w.eval('renderParlay()'); await wait(80);
+      chk(d.querySelectorAll('#parlayBody tr.legrow .pe-badge').length === 1, 'a redraw doubled or lost the badge');
+      delete S.parlay[key]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
     const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
