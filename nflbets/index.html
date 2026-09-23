@@ -415,6 +415,9 @@ body.modal-open{overflow:hidden}
 .pk-pred .pk-psc{display:block;font-family:var(--display);font-size:17px;font-weight:700;color:var(--ink-2);letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
 .pk-pred .pk-muted{display:block;font-size:11px;color:var(--muted);line-height:1.3}
 .pk-pred .pk-plab{display:none}
+/* the side the model has ahead, as a smaller copy of the matchup's team tag */
+.pk-pred .pk-pby{display:inline-flex;align-items:center;gap:5px}
+.pk-pred .pk-pby .pk-ttag{font-size:10px;padding:3px 5px;min-width:32px;border-radius:5px;border-width:1px}
 .pk-sc{display:block;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .pk-sc.pk-pend{color:var(--muted)}
 .pk-result .pk-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
@@ -4067,7 +4070,7 @@ function predCell(g,c){
   const p=predicted(g,c);
   if(!p) return '<span class="pk-psc">–</span>';
   const lead=p.hs>p.as?g.home_team:g.away_team, by=Math.abs(p.hs-p.as);
-  return `<span class="pk-plab">Predicted</span><span class="pk-psc" title="${esc(g.away_team)} ${p.as}, ${esc(g.home_team)} ${p.hs}: the model's margin around the ${p.src} of ${Math.round(p.tot*2)/2}">${p.as}–${p.hs}</span><span class="pk-muted">${esc(lead)} by ${by}</span>`;
+  return `<span class="pk-plab">Predicted</span><span class="pk-psc" title="${esc(g.away_team)} ${p.as}, ${esc(g.home_team)} ${p.hs}: the model's margin around the ${p.src} of ${Math.round(p.tot*2)/2}">${p.as}–${p.hs}</span><span class="pk-muted pk-pby">${tag(lead,BET.tagColor(lead),false,'mini')} by ${by}</span>`;
 }
 function resultCell(g,c){
   const o=outcome(g);
