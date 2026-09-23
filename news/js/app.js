@@ -159,16 +159,12 @@ function render(){
 /* ============================ the page: one week, the slate ============================ */
 function renderWeek(w){
   const recap = w.type === "recap";
+  /* the page is the slate: the week's label and dates are in the app bar, and the headline
+     and intro a week file carries are kept in the file but not shown */
   return `
-  <section class="pagehead">
-    <div class="eyebrow ${w.status==="sample"?"sample":""}"><i></i>${w.dates}</div>
-    <h2>${w.headline}</h2>
-    <p>${withPos(w.intro, [])}</p>
-    ${w.status==="sample" ? `<p class="sampleflag"><strong>Sample data.</strong> Nothing on this tab is real. It exists to show what a played week looks like before one has been played.</p>` : ""}
-  </section>
+  ${w.status==="sample" ? `<section class="pagehead"><p class="sampleflag"><strong>Sample data.</strong> Nothing on this tab is real. It exists to show what a played week looks like before one has been played.</p></section>` : ""}
 
   <section class="sec">
-    <div class="sec-head"><h3>${recap ? "Results" : "The slate"}</h3><p>${w.games.length} games. Click one for the full breakdown. Kickoffs show in your local time${TZFMT?" ("+TZFMT+")":""}.</p></div>
     <div class="slate">
       ${w.games.map(g=>{
         const a=T[g.away], h=T[g.home], k=kickOf(g);

@@ -67,8 +67,10 @@ top when hosted), and the app bar shows its label and dates.
 
 ```
 App bar: brand, week label, dates
-Page head: dates eyebrow, headline, intro
 The slate: 16 tiles, one per game, each a <button class="slot">
+    (no page head and no section heading since September 23, 2026: the owner asked for the
+    dates line, the week headline and intro, and "The slate" heading and its kickoff note to
+    go. The week file still carries headline and intro; the page does not show them.)
     kickoff in viewer local time (or Final), AWAY at HOME, score if played,
     TV and venue, the game note, "Full breakdown"
 Data tools (collapsed), footer
