@@ -380,7 +380,7 @@ body.modal-open{overflow:hidden}
    grid gutters, the same row padding, the same 13px display-face matchup and tags, the same
    date block, the same 20px score */
 /* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
-.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 132px;gap:14px;align-items:center;justify-content:space-between}
+.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
 .pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pk-gamehead .pk-c{text-align:center}
 .pk-game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
@@ -410,6 +410,11 @@ body.modal-open{overflow:hidden}
 .pk-tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
 .pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-tier.pk-coin{background:#FCECEA;color:#A8453A}
 .pk-result{text-align:center;line-height:1.2;white-space:nowrap}
+/* the score the model expects, in the final score's shape but quieter */
+.pk-pred{text-align:center;line-height:1.2;white-space:nowrap}
+.pk-pred .pk-psc{display:block;font-family:var(--display);font-size:17px;font-weight:700;color:var(--ink-2);letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.pk-pred .pk-muted{display:block;font-size:11px;color:var(--muted);line-height:1.3}
+.pk-pred .pk-plab{display:none}
 .pk-sc{display:block;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .pk-sc.pk-pend{color:var(--muted)}
 .pk-result .pk-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
@@ -437,7 +442,11 @@ body.modal-open{overflow:hidden}
   .pk-game .pk-result{grid-column:3;grid-row:1/3;align-self:center;padding-left:6px}
   .pk-matchup{grid-column:1/3;grid-row:2}
   .pk-probrow{grid-column:1/-1;grid-row:3;margin-top:4px;padding:0}
-  .pk-conf{grid-column:1/-1;grid-row:4;text-align:left}
+  .pk-conf{grid-column:1/3;grid-row:4;text-align:left}
+  .pk-pred{grid-column:3;grid-row:4;text-align:right;padding-left:6px}
+  .pk-pred .pk-psc{display:inline;font-size:15px;margin:0}
+  .pk-pred .pk-plab{display:inline;font-size:11px;color:var(--muted);margin-right:6px}
+  .pk-pred .pk-muted{display:none}
   .pk-game .pk-gbody{grid-row:5}
   .pk-gbody table.rungs{display:block;overflow-x:auto;white-space:nowrap}
 }
@@ -3994,9 +4003,9 @@ function outcome(g){
    a graded one */
 function call(g){
   const done=ST.processed[g.game_id];
-  if(done) return {pick:done.pick,conf:done.conf,pHome:done.pHome,graded:true,correct:done.correct};
+  if(done) return {pick:done.pick,conf:done.conf,pHome:done.pHome,margin:done.margin,graded:true,correct:done.correct};
   const p=ST.picks[g.game_id];
-  return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,graded:false,correct:null}:null;
+  return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,margin:p.margin,graded:false,correct:null}:null;
 }
 
 /* the prop model's Game bets card for this game, exactly as the game's own page draws it:
@@ -4039,6 +4048,27 @@ function landed(c,o){
   if(c.graded) return c.correct;
   return o.winner?c.pick===o.winner:null;
 }
+/* the score the model expects: its margin (the one logged at the call, for a graded game)
+   split around the game's total. The total is the book's, posted before kickoff, when there
+   is one, and otherwise the prop model's own points for each side, so nothing here knows the
+   result. Whole points, and never a tie against the model's own pick. */
+function predicted(g,c){
+  if(!c||c.margin==null||!isFinite(c.margin)) return null;
+  const row=mkt(g.game_id);
+  let tot=row&&row.tot!=null&&isFinite(row.tot)?+row.tot:null, src='book total';
+  if(tot==null&&row&&typeof modelPoints==='function'){
+    tot=modelPoints(g.away_team,g.home_team,false)+modelPoints(g.home_team,g.away_team,true); src='model total'; }
+  if(tot==null||!isFinite(tot)) return null;
+  let hs=Math.round((tot+c.margin)/2), as=Math.round((tot-c.margin)/2);
+  if(hs===as){ if(c.pick===g.home_team) hs++; else as++; }
+  return {as,hs,tot,src};
+}
+function predCell(g,c){
+  const p=predicted(g,c);
+  if(!p) return '<span class="pk-psc">–</span>';
+  const lead=p.hs>p.as?g.home_team:g.away_team, by=Math.abs(p.hs-p.as);
+  return `<span class="pk-plab">Predicted</span><span class="pk-psc" title="${esc(g.away_team)} ${p.as}, ${esc(g.home_team)} ${p.hs}: the model's margin around the ${p.src} of ${Math.round(p.tot*2)/2}">${p.as}–${p.hs}</span><span class="pk-muted">${esc(lead)} by ${by}</span>`;
+}
 function resultCell(g,c){
   const o=outcome(g);
   if(!o) return '<b class="pk-sc pk-pend">0 : 0</b>';
@@ -4060,7 +4090,7 @@ function render(){
     .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
   records(w);
   if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
-  const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Final score</div></div>';
+  const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Score prediction</div><div class="pk-c">Final score</div></div>';
   const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
   el('pkBoard').innerHTML=HEAD+games.map(g=>{
     const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
@@ -4082,6 +4112,7 @@ function render(){
         <span class="pk-tlab${pick===g.home_team?' pk-win':''}">${esc(g.home_team)}</span>
       </div>
       <div class="pk-conf">${c?`<span class="pk-tier pk-${tc}">${tl} ${Math.round(c.conf*100)}%</span>`:'<span class="pk-tier">no call yet</span>'}</div>
+      <div class="pk-pred">${predCell(g,c)}</div>
       <div class="pk-result">${resultCell(g,c)}</div>
     </div>`;
   }).join('');
@@ -4203,7 +4234,8 @@ async function boot(){
      without being asked. The scoreboard is mapped onto the prop model's schedule, so this
      waits for the prop model to have one. */
   const ready=new Promise(res=>{ if(typeof S==='object'&&S&&S.sched) res(); else document.addEventListener('app-ready',res,{once:true}); });
-  ready.then(()=>setTimeout(readScores,300));
+  /* the prop model holds the book's totals, so the predictions fill in once it is up */
+  ready.then(()=>{ render(); setTimeout(readScores,300); });
 }
 boot();
 })();
