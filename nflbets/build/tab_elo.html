@@ -41,6 +41,9 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-heat td.pe-n i{display:inline-block;height:6px;border-radius:999px;background:var(--pick);vertical-align:middle;margin-left:6px}
 .pe-heat td.pe-n i.pe-neg{background:var(--miss)}
 .pe-more{margin-top:10px}
+/* a ranked player's shield beside his name in the Parlay Builder, with his place at the position */
+.plr .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.plr .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
 @media(max-width:900px){
   table.pe-t{display:block;overflow-x:auto}
@@ -189,10 +192,35 @@ function history(){
     <div class="pe-hist">${cols}</div>
     <p class="pe-note">How a rating moves: a player's game is scored (expected points added for a QB, back, receiver or tight end; points over an average kicker's from each distance; sacks, hits, stops, takeaways and tackles for a defender), compared with the position's typical game from the season before, and played as a result against the opposing unit's own rating — a good game against a good defence counts for more. Full formula in <code>elo/build.py</code>.</p></div>`;
 }
+/* the shields' gradients, once, for every badge on the page */
+function defs(){
+  if(document.getElementById('peDefs')||!window.pkTierDefs) return;
+  const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box);
+}
+/* the Parlay Builder: a ranked player's shield and place go in front of his name on each leg.
+   The leg's key carries his id (game|player|stat); a team leg has none. Runs after every
+   builder redraw and once the ratings arrive. */
+function badge(pid){
+  const e=D.players&&D.players.players&&D.players.players[pid]; if(!e) return '';
+  return `<span class="pe-badge" title="${esc(tierName(e.elo))} · #${e.rank} at ${esc(e.group)} · Elo ${e.elo}">${shield(e.elo)}#${e.rank}</span>`;
+}
+function decorate(){
+  if(!D.players) return; defs();
+  document.querySelectorAll('#parlayBody tr.legrow').forEach(tr=>{
+    if(tr.querySelector('.pe-badge')) return;
+    const b=tr.querySelector('button[data-drop]'), td=tr.querySelector('td.plr'); if(!b||!td) return;
+    const pid=String(b.dataset.drop).split('|')[1]; const html=badge(pid); if(html) td.insertAdjacentHTML('afterbegin',html);
+  });
+}
+window.eloBadge=badge;
+if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
+  renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
+document.addEventListener('app-ready',decorate);
 function draw(){
   const body=el('peBody');
   if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>Player Elo</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
-  body.innerHTML=(window.pkTierDefs||'')+rankings()+weights();
+  defs(); decorate();
+  body.innerHTML=rankings()+weights();
   body.querySelectorAll('.pe-pos button').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();

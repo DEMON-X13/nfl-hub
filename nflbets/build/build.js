@@ -70,6 +70,8 @@ const epiece = (re, what) => { const m = eloTab.match(re); if (!m) throw new Err
 const ELO_CSS = epiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
 const ELO_HTML = epiece(/(<section id="tab-elo" hidden>[\s\S]*?<\/section>)/, 'section');
 const ELO_JS = epiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+for (const need of ['<tr class="legrow"><td class="plr">', 'data-drop="${l.key}"'])
+  if (!part3.includes(need)) throw new Error('the builder leg markup moved (' + need + '); the Elo badge on each leg relies on it');
 for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'window.pkTag', 'window.pkTierBadge', 'window.pkTierDefs'])
   if (!ELO_JS.includes(need)) throw new Error('tab_elo.html no longer has ' + need);
 for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
