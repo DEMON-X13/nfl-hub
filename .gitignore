@@ -3,4 +3,5 @@ node_modules/
 betting/tools/out/
 __pycache__/
 *.pyc
+news/tools/out/*-part*.json
 cfb/tools/out/

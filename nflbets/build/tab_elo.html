@@ -1,0 +1,245 @@
+<!-- The Player Elo tab: its own styles, its section, its script. build.js sets these into the
+     prop model's page the way it sets the Pick'ems tab in, so every class and id is prefixed
+     pe- and the script is one closure. Nothing is computed here: elo/build.py rates every
+     player and fits the game model, and this tab reads what it wrote. -->
+<style>
+.pe-wrap h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pe-wrap h2 .pill{font-family:var(--body)}
+.pe-sub{color:var(--ink-2);font-size:13px;line-height:1.6;margin:0 0 14px}
+.pe-pos{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.pe-pos button{font:600 12px/1 var(--body);padding:8px 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-2);cursor:pointer}
+.pe-pos button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+table.pe-t{width:100%;border-collapse:collapse;font-size:13px}
+table.pe-t th{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 10px 8px;white-space:nowrap}
+table.pe-t td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+table.pe-t td.pe-n,table.pe-t th.pe-n{text-align:right;font-variant-numeric:tabular-nums}
+table.pe-t .pe-rank{color:var(--muted);font-weight:600;width:28px}
+table.pe-t .pe-name{font-weight:600;color:var(--ink)}
+table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}
+.pe-elo{font-family:var(--display);font-weight:700;font-size:15px;color:var(--ink)}
+.pe-up{color:var(--pick);font-weight:600} .pe-down{color:var(--miss);font-weight:600} .pe-flat{color:var(--muted)}
+.pe-spark{display:inline-block;vertical-align:middle}
+.pe-shield{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.pe-shield .tierbadge{display:inline-block;width:20px;height:22px;vertical-align:middle;flex:none}
+.pe-mu{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:13px}
+.pe-at{color:var(--muted);font-family:var(--body);font-weight:500;font-size:11px}
+.pe-bar{display:inline-block;width:110px;height:8px;border-radius:999px;background:#E9EEF4;overflow:hidden;vertical-align:middle;margin-right:8px}
+.pe-bar i{display:block;height:100%;background:var(--pick)}
+.pe-agree{color:var(--pick)} .pe-split{color:#8A5E05}
+.pe-ok{color:var(--pick);font-weight:700} .pe-bad{color:var(--miss);font-weight:700}
+.pe-edge{font-size:11px;color:var(--ink-2)}
+.pe-edge b{color:var(--ink)}
+.pe-w{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px}
+.pe-w div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px}
+.pe-w b{display:block;font-family:var(--display);font-size:18px;color:var(--ink)}
+.pe-w span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pe-hist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.pe-hist .pe-col{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;font-size:12px}
+.pe-hist .pe-col b{display:block;font-family:var(--display);font-size:14px;margin-bottom:6px;color:var(--ink)}
+.pe-hist .pe-col div{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-top:1px solid var(--line)}
+.pe-hist .pe-col div span:last-child{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.pe-heat td.pe-n i{display:inline-block;height:6px;border-radius:999px;background:var(--pick);vertical-align:middle;margin-left:6px}
+.pe-heat td.pe-n i.pe-neg{background:var(--miss)}
+.pe-more{margin-top:10px}
+/* a ranked player's shield beside his name in the Parlay Builder, with his place at the position */
+.plr .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.plr .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+.pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
+@media(max-width:900px){
+  table.pe-t{display:block;overflow-x:auto}
+  table.pe-t td,table.pe-t th{padding-left:6px;padding-right:6px}
+  table.pe-t .pe-name small{white-space:normal}
+  /* a phone keeps the rank, the player, the rating and the tier; the rest is a swipe away or gone */
+  .pe-m0{display:none}
+  .pe-bar{width:56px}
+}
+</style>
+<section id="tab-elo" hidden>
+  <div class="bar">
+    <span class="rec" id="peWalkRec"></span>
+    <span class="grow"></span>
+    <span class="livestamp" id="peStamp"></span>
+  </div>
+  <div id="peBody" class="pe-wrap"></div>
+</section>
+<script>
+/* ---------- the Player Elo tab ----------
+   Every player rated by position, game by game since 2020, and a third game model built on
+   nothing but those ratings. elo/build.py does the work on the job's schedule and writes
+   elo/data/players.json and elo/data/model.json; this reads them on every load. The model's
+   calls and its record live on the Pick'em Record tab beside the other models'; this tab is
+   the rankings and what each position is worth. calls(), graded() and history() below still
+   draw the week's calls, the season's graded games and the season-end top tens, and are not
+   used. */
+(function(){
+const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', STATE_URL='../betting/state.json';
+const D={players:null,model:null,picks:{},processed:{},pos:'QB',more:false};
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=p=>Math.round(p*100)+'%';
+const tag=(t,mini)=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagColor(t):null,false,mini?'mini':'')
+  :'<span class="pill">'+esc(t)+'</span>';
+/* the tier is the betting app's own, on the same Elo scale the teams wear: Challenger 1700+,
+   Master 1650+, Diamond 1600+, Platinum 1550+, Gold 1500+, Silver 1450+, Bronze 1400+, Iron */
+const shield=elo=>window.pkTierBadge?window.pkTierBadge(elo):'';
+const tierName=elo=>{ const t=window.pkEloTier?window.pkEloTier(elo):null; return t?t[0]:''; };
+function spark(pts){
+  if(!pts||pts.length<2) return '';
+  const v=pts.map(p=>p[1]), lo=Math.min(...v), hi=Math.max(...v), W=84, H=22;
+  const x=i=>(i/(v.length-1))*(W-2)+1, y=e=>hi===lo?H/2:H-1-((e-lo)/(hi-lo))*(H-2);
+  const d=v.map((e,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(e).toFixed(1)).join(' ');
+  const up=v[v.length-1]>=v[0];
+  return `<svg class="pe-spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" fill="none" stroke="${up?'var(--pick)':'var(--miss)'}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function move(r){
+  const d=r.start_rank-r.rank;
+  if(!d) return '<span class="pe-flat">–</span>';
+  return d>0?`<span class="pe-up">▲${d}</span>`:`<span class="pe-down">▼${-d}</span>`;
+}
+function edges(g){
+  /* the two position groups that decide the call: edge in Elo points times the model's weight */
+  const c=D.model.coef;
+  return Object.entries(g.edges).map(([k,v])=>[k,v,v*(c[k]||0)]).sort((a,b)=>Math.abs(b[2])-Math.abs(a[2])).slice(0,2)
+    .map(([k,v])=>`<b>${k}</b> ${v>0?'+':''}${Math.round(v)}`).join(' · ');
+}
+function betCall(gid){
+  const done=D.processed[gid]; if(done) return {pick:done.pick,pHome:done.pHome};
+  const p=D.picks[gid]; return p?{pick:p.pick,pHome:p.pHome}:null;
+}
+function calls(){
+  const m=D.model, nx=m.next||{}, games=nx.games||[];
+  if(!games.length) return `<div class="card pe-calls"><h2>This week's calls <span class="pill">Roster Elo model</span></h2><p class="pe-sub">No games left to call this week. The job refreshes the ratings after each week's stats post.</p></div>`;
+  const rows=games.map(g=>{
+    const b=betCall(g.game_id);
+    const agree=b?(b.pick===g.pick?'<span class="pe-agree">agrees</span>':'<span class="pe-split">differs: '+esc(b.pick)+'</span>'):'<span class="pe-flat">no call yet</span>';
+    const p=g.pick===g.home?g.p_home:1-g.p_home;
+    return `<tr><td><div class="pe-mu">${tag(g.away,true)}<span class="pe-at">at</span>${tag(g.home,true)}</div></td>
+      <td>${tag(g.pick,true)}</td>
+      <td class="pe-n"><span class="pe-bar"><i style="width:${Math.round(p*100)}%"></i></span>${pct(p)}</td>
+      <td class="pe-edge pe-m0">${edges(g)}</td>
+      <td>${agree}</td></tr>`;
+  }).join('');
+  return `<div class="card pe-calls"><h2>Week ${esc(nx.week)} calls <span class="pill">Roster Elo model</span></h2>
+    <p class="pe-sub">Each team is scored at every position from the ratings of the players who took the field in its last game (QB1, two backs, three receivers, the tight end, the kicker, four linemen, three linebackers, five backs), and the differences go through the weights below. The last column is the betting model's call on the same game.</p>
+    <table class="pe-t"><thead><tr><th>Game</th><th>Pick</th><th class="pe-n">Chance</th><th class="pe-m0">Decided by</th><th>Betting model</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function graded(){
+  const gs=(D.model.graded||[]).slice().sort((a,b)=>b.week-a.week||a.game_id.localeCompare(b.game_id));
+  if(!gs.length) return '';
+  const rows=gs.map(g=>{
+    const p=g.pick===g.home?g.p_home:1-g.p_home;
+    const b=betCall(g.game_id);
+    return `<tr><td class="pe-n">${g.week}</td><td><div class="pe-mu">${tag(g.away,true)}<span class="pe-at">at</span>${tag(g.home,true)}</div></td>
+      <td>${tag(g.pick,true)}</td><td class="pe-n">${pct(p)}</td>
+      <td>${g.correct===null?'<span class="pe-flat">push</span>':g.correct?'<span class="pe-ok">✓ hit</span>':'<span class="pe-bad">✗ miss</span>'}</td>
+      <td>${b?(b.pick===g.pick?'<span class="pe-agree">same</span>':'<span class="pe-split">'+esc(b.pick)+'</span>'):'<span class="pe-flat">–</span>'}</td></tr>`;
+  }).join('');
+  const r=D.model.record;
+  return `<div class="card"><h2>${esc(r.season)} so far <span class="pill">${r.correct} of ${r.graded}${r.accuracy!=null?' · '+pct(r.accuracy):''}</span></h2>
+    <p class="pe-sub">Every game this season, called before it was played from the ratings as they stood, by the model fitted on ${esc(D.model.trained_on.seasons[0])}–${esc(D.model.trained_on.seasons.slice(-1)[0])}.</p>
+    <table class="pe-t"><thead><tr><th class="pe-n">Wk</th><th>Game</th><th>Pick</th><th class="pe-n">Chance</th><th>Result</th><th>Betting model</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function weights(){
+  const m=D.model, G=m.groups, wf=m.walk_forward||{}, bs=m.by_season||{};
+  const seasons=Object.keys(bs).sort();
+  const cells=G.map(g=>`<div><span>${esc(m.labels[g])}</span><b>${m.coef[g].toFixed(2)}</b></div>`).join('');
+  const mx=Math.max(...seasons.flatMap(s=>G.map(g=>Math.abs(bs[s][g]))),0.01);
+  const heat=`<table class="pe-t pe-heat"><thead><tr><th>Season</th>${G.map(g=>`<th class="pe-n">${g}</th>`).join('')}<th class="pe-n">Games</th></tr></thead><tbody>`
+    +seasons.map(s=>`<tr><td>${s}</td>${G.map(g=>{ const v=bs[s][g]; return `<td class="pe-n">${v.toFixed(2)}<i class="${v<0?'pe-neg':''}" style="width:${Math.round(Math.abs(v)/mx*36)}px"></i></td>`; }).join('')}<td class="pe-n">${bs[s].games}</td></tr>`).join('')
+    +'</tbody></table>';
+  const wp=m.walk_forward_who_played||{};
+  const walk=`<table class="pe-t"><thead><tr><th>Season</th><th class="pe-n">Games</th><th class="pe-n">Right</th><th class="pe-n pe-m0">If who played were known</th><th class="pe-n">Home won</th></tr></thead><tbody>`
+    +Object.keys(wf).sort().map(s=>`<tr><td>${s}</td><td class="pe-n">${wf[s].games}</td><td class="pe-n"><b>${pct(wf[s].accuracy)}</b></td><td class="pe-n pe-m0">${wp[s]?pct(wp[s].accuracy):'\u2013'}</td><td class="pe-n">${pct(wf[s].home_wins)}</td></tr>`).join('')+'</tbody></table>';
+  return `<div class="card"><h2>What each position is worth <span class="pill">fitted on ${esc(m.trained_on.games)} games</span></h2>
+    <p class="pe-sub">The model's weight on a 100-point edge at each position, in log-odds of winning. Fitted one season at a time underneath, which is the six-year story of which positions decided games. A home-field term (${m.coef.home.toFixed(2)}) sits alongside.</p>
+    <div class="pe-w">${cells}</div>
+    <h2 style="margin-top:22px">By season</h2>${heat}
+    <h2 style="margin-top:22px">Walk-forward record</h2>
+    <p class="pe-sub">Each season called by the model fitted on the seasons before it only, so no season is graded on itself, from the lineups as they were known before kickoff: the week's depth chart with the injury report's Outs removed. The hindsight column scores the same model on who actually played, which nobody knows in advance.</p>${walk}</div>`;
+}
+function rankings(){
+  const P=D.players, g=D.pos, grp=P.groups[g];
+  const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${k===g}">${esc(P.groups[k].label)}</button>`).join(''):'';
+  const rows=grp.top.slice(0,D.more?25:10).map(r=>{
+    return `<tr><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
+      <td class="pe-name">${esc(r.name)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} rated games</small></td>
+      <td class="pe-m0">${tag(r.team,true)}</td>
+      <td class="pe-n"><span class="pe-elo">${r.elo}</span></td>
+      <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
+      <td class="pe-n">${r.elo-r.start_elo>=0?'+':''}${r.elo-r.start_elo}</td>
+      <td class="pe-m0">${spark(r.this_season)}</td>
+      <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
+  return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} through week ${esc(P.through_week)}</span></h2>
+    <p class="pe-sub">${esc(grp.active)} ${esc(grp.label.toLowerCase())} rated this season or last and able to play. Movement is against the rank each held when the season began; the line is this season's rating, game by game. Tiers are the same shields the teams wear, on the same scale.</p>
+    <div class="pe-pos" role="tablist">${btns}</div>
+    <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Season</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div>
+    ${sidelined(grp)}</div>`;
+}
+/* the injured, the reserved, the retired and the unsigned are not ranked; the ones whose
+   rating would have placed them are listed here, where they would have stood */
+function sidelined(grp){
+  const s=(grp.sidelined||[]).filter(x=>x.would_rank<=(D.more?25:10));
+  if(!s.length) return '';
+  return `<p class="pe-note"><b style="color:var(--ink)">Not ranked:</b> ${s.map(x=>`${esc(x.name)} (${esc(x.team)}, ${x.elo}, would be #${x.would_rank}: ${esc(x.why)})`).join('; ')}.</p>`;
+}
+function history(){
+  const P=D.players, g=D.pos, ends=P.season_end_top10||{};
+  const cols=Object.keys(ends).sort((a,b)=>b-a).map(s=>{ const list=ends[s][g]||[];
+    return `<div class="pe-col"><b>${s}${+s===P.season?' (so far)':''}</b>${list.map((r,i)=>`<div><span>${i+1}. ${esc(r.name)}</span><span>${r.elo}</span></div>`).join('')}</div>`; }).join('');
+  return `<div class="card"><h2>${esc(P.groups[g].label)}, season by season</h2>
+    <p class="pe-sub">Where the position's top ten stood at the end of each season. Every rating comes back a quarter of the way to 1500 each offseason, so a place here is earned that year.</p>
+    <div class="pe-hist">${cols}</div>
+    <p class="pe-note">How a rating moves: a player's game is scored (expected points added for a QB, back, receiver or tight end; points over an average kicker's from each distance; sacks, hits, stops, takeaways and tackles for a defender), compared with the position's typical game from the season before, and played as a result against the opposing unit's own rating — a good game against a good defence counts for more. Full formula in <code>elo/build.py</code>.</p></div>`;
+}
+/* the shields' gradients, once, for every badge on the page */
+function defs(){
+  if(document.getElementById('peDefs')||!window.pkTierDefs) return;
+  const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box);
+}
+/* the Parlay Builder: a ranked player's shield and place go in front of his name on each leg.
+   The leg's key carries his id (game|player|stat); a team leg has none. Runs after every
+   builder redraw and once the ratings arrive. */
+function badge(pid){
+  const e=D.players&&D.players.players&&D.players.players[pid]; if(!e) return '';
+  return `<span class="pe-badge" title="${esc(tierName(e.elo))} · #${e.rank} at ${esc(e.group)} · Elo ${e.elo}">${shield(e.elo)}#${e.rank}</span>`;
+}
+function decorate(){
+  if(!D.players) return; defs();
+  document.querySelectorAll('#parlayBody tr.legrow').forEach(tr=>{
+    if(tr.querySelector('.pe-badge')) return;
+    const b=tr.querySelector('button[data-drop]'), td=tr.querySelector('td.plr'); if(!b||!td) return;
+    const pid=String(b.dataset.drop).split('|')[1]; const html=badge(pid); if(html) td.insertAdjacentHTML('afterbegin',html);
+  });
+}
+window.eloBadge=badge;
+if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
+  renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
+document.addEventListener('app-ready',decorate);
+function draw(){
+  const body=el('peBody');
+  if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>Player Elo</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
+  defs(); decorate();
+  body.innerHTML=rankings()+weights();
+  body.querySelectorAll('.pe-pos button').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
+  const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
+  const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
+  const prior=ws.filter(s=>+s<r.season);
+  if(prior.length){ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
+    el('peWalkRec').textContent=`${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; }
+  const d=new Date(D.model.built_at);
+  el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+async function boot(){
+  const get=async u=>{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(u.replace(/^\.\.\//,'')+' '+r.status); return r.json(); };
+  try{
+    const [p,m]=await Promise.all([get(P_URL),get(M_URL)]);
+    D.players=p; D.model=m;
+  }catch(e){ D.err='The ratings could not be loaded: '+(e.message||e); }
+  try{ const st=await get(STATE_URL); D.picks=st.picks||{}; D.processed=st.processed||{}; }catch(e){}
+  draw();
+}
+draw();
+boot();
+})();
+</script>

@@ -21,7 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const APP = path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html');
-const html = fs.readFileSync(APP, 'utf8');
+let html = fs.readFileSync(APP, 'utf8');
 
 /* The scoreboard mapping is lifted out of props/build/part2.js at build time rather than
  * copied, the way nflbets/build/build.js lifts the same file. Both sites key games by the same
@@ -60,6 +60,16 @@ const HOOK = `<script>
         const winner=p.result>0?p.home:p.result<0?p.away:null;
         p.myCorrect=m?(winner?m===winner:null):null;
       }
+      /* the Elo model's calls, from elo/data/model.json beside the season: graded ones onto the
+         processed games, the coming week's onto S.elo, so Records can show it like the Joker */
+      S.elo={};
+      try{
+        const r2=await fetch((window.ELO_URL||'../elo/data/model.json')+'?t='+Date.now(),{cache:'no-store'});
+        if(r2.ok){ const M=await r2.json();
+          for(const g of (M.graded||[])){ const e={pick:g.pick,pHome:g.p_home,correct:g.correct}; S.elo[g.game_id]=e; if(S.processed&&S.processed[g.game_id]) S.processed[g.game_id].elo=e; }
+          for(const g of ((M.next&&M.next.games)||[])) S.elo[g.game_id]={pick:g.pick,pHome:g.p_home,correct:null};
+          window.__eloRecord=M.walk_forward||null; }
+      }catch(e){}
       window.__published=S.published;
       return {value:JSON.stringify(S)};
     },
@@ -479,6 +489,55 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 const anchor = '<script>\nconst MODEL = ';
 if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
+
+/* The Elo model on Records. The app's renderRecord and pickGrid draw the Joker from
+   processed[gid].joker; the same lines are widened here, at build time, to draw the Elo
+   model from processed[gid].elo, which the hook above fills from elo/data/model.json. Each
+   edit must land exactly once, so a change to the app that moves these lines stops the
+   build rather than dropping the Elo model from the chart. The app file itself is not
+   touched: it is the source shipped from nfl-model-lab. */
+const patch = (from, to, what) => {
+  const n = html.split(from).length - 1;
+  if (n !== 1) throw new Error(`the Elo model patch "${what}": expected exactly one match, found ${n}`);
+  html = html.replace(from, () => to);
+};
+patch(`  const jDis=jRows.filter(r=>r.joker.pick!==r.pick); const jDisA=jDis.filter(r=>r.correct).length, jDisJ=jDis.filter(r=>r.joker.correct).length;`,
+`  const jDis=jRows.filter(r=>r.joker.pick!==r.pick); const jDisA=jDis.filter(r=>r.correct).length, jDisJ=jDis.filter(r=>r.joker.correct).length;
+  /* the Elo model: every player rated by position, the roster scored from those ratings; published as processed[gid].elo from elo/data/model.json */
+  const eRows=rows.filter(r=>r.elo&&r.elo.correct!==null&&r.elo.correct!==undefined); let eRun=0,eRunN=0; const ePts=[];
+  wks.forEach(w=>{ const wr=eRows.filter(r=>+r.week===w); const wc=wr.filter(r=>r.elo.correct).length; eRun+=wc; eRunN+=wr.length;
+    ePts.push({x:w, y:eRunN?100*eRun/eRunN:null, tip:wr.length?\`Week \${w} Elo model: \${wc} of \${wr.length} that week, \${(100*eRun/eRunN).toFixed(1)}% season to date\`:\`Week \${w}: no Elo model record\`}); });`,
+  'the Elo model series');
+patch(`      \${showAll?lgd('#C0392B','The Joker',jRun,jRunN):''}
+      \${showAll?lgd('#0F1B2D','Vegas',vRun,vRunN):''}`,
+`      \${showAll?lgd('#C0392B','The Joker',jRun,jRunN):''}
+      \${showAll?lgd('#E8730A','Elo model',eRun,eRunN):''}
+      \${showAll?lgd('#0F1B2D','Vegas',vRun,vRunN):''}`, 'the legend');
+patch(`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`,
+`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&eRunN?[{pts:ePts,color:'#E8730A'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`, 'the chart lines');
+patch(`\${showAll&&jRunN?'<th class="num">The Joker</th>':''}\${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>\`;`,
+`\${showAll&&jRunN?'<th class="num">The Joker</th>':''}\${showAll&&eRunN?'<th class="num">Elo model</th>':''}\${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>\`;`, 'the table head');
+patch(`    const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length; const vCell=vw.length?\`\${Math.round(100*vc/vw.length)}%\`:'<span class="muted">–</span>';`,
+`    const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length; const vCell=vw.length?\`\${Math.round(100*vc/vw.length)}%\`:'<span class="muted">–</span>';
+    const ew=wr.filter(r=>r.elo&&r.elo.correct!=null); const ec=ew.filter(r=>r.elo.correct).length; const eCell=ew.length?\`\${Math.round(100*ec/ew.length)}%\`:'<span class="muted">–</span>';`, 'the table row counts');
+patch(`\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`,
+`\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&eRunN?\`<td class="num">\${eCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`, 'the table row');
+/* one week of picks behind a picker that opens on this week and offers only the weeks
+   reached: the app's picker offered every scheduled week, where the main model and the
+   challenger show a call from today's ratings but the Joker and the Elo model, run for the
+   coming week only, have none, and a reader took the blanks for models that had stopped. */
+patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\${[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b).map(w=>\`<option value="\${w}" \${w===pickWeek?'selected':''}>\${w>18?'Playoffs '+(w-18):'Week '+w}</option>\`).join('')}</select></label>\`:''}</div>
+    \${S.picksOpen?pickGrid(pickWeek,showAll):''}`,
+`      \${S.picksOpen?(()=>{ const played=Math.max(...wks); const cur=S.schedule.some(g=>+g.week===played+1)?played+1:played; const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur;
+        return \`<label class="muted">Week <select id="picksWeek">\${[...new Set(S.schedule.map(g=>+g.week))].filter(w=>w<=cur).sort((a,b)=>b-a).map(w=>\`<option value="\${w}" \${w===pw?'selected':''}>\${w>18?'Playoffs '+(w-18):'Week '+w}\${w===cur?' (this week)':''}</option>\`).join('')}</select></label>\`; })():''}</div>
+    \${S.picksOpen?(()=>{ const played=Math.max(...wks); const cur=S.schedule.some(g=>+g.week===played+1)?played+1:played; const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur; return pickGrid(pw,showAll); })():''}`,
+  'the pick grid, this week by default, earlier weeks by the picker');
+patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
+`  const elo=S.elo||{};
+  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Elo model','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
+`    const ek=(done&&done.elo)||elo[g.game_id]||null;
+    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
 /* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around

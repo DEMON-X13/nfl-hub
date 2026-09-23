@@ -61,6 +61,17 @@ props/
   raw/feat.pkl                   43MB fitted feature table, committed so the job
                                  does not rebuild it
 
+elo/
+  build.py                       THE SOURCE: the player Elo formula and the roster model,
+                                 explained in its docstring; downloads 2020-now nflverse
+                                 player stats into cache/ (gitignored) and writes data/
+  data/players.json              generated: rankings by position, every rated player, the
+                                 season-end top tens since 2020
+  data/model.json                generated: the fitted position weights (overall and by
+                                 season), the walk-forward record, this season's graded
+                                 calls and the coming week's
+  requirements.txt               pandas, numpy
+
 news/
   index.html  js/app.js  css/    the site, hand-maintained
   data/weeks.js                  the list of published weeks; the page shows the last
@@ -90,6 +101,12 @@ build time and scoped inside the closure, since the prop model has its own `tag(
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting app's, so a pick, parlay or bet made in either is what
 this page shows. Tabs are addresses: `#slate`, `#parlay`, `#record` and so on.
+The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads
+`elo/data/players.json` and `elo/data/model.json` on load and draws the coming week's calls
+from the roster model beside the betting model's, the season's graded calls, the rankings
+by position with each player's season line, the season-end top tens since 2020, and the
+fitted weight of every position, overall and season by season. It borrows the Pick'ems
+tab's team tag through `window.pkTag`.
 Live Parlays is a section of the Parlay Builders tab, standing where the prop model's
 Saved parlays card is: `nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its
 styles scoped to `#lpCard` and its script in a closure -- and hands it the prop model's own
@@ -254,6 +271,7 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 | `props.yml` | 12x/week: 4 price pulls (Mon/Wed/Thu/Sat), 8 post-game and stats runs | `weekly.py`, commits `props/data` to `main` |
 | `update.yml` | Fri/Mon/Tue mornings ET, with an afternoon catch-up each | betting `update.js` + `build.js` (a check) + `smoke.js`, commits `state.json` and `joker.json` |
 | `news.yml` | Fri/Mon/Tue 8am ET | `run-auto.js` |
+| `elo.yml` | Tue/Fri 8:40am ET | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `smoke.js`, commits `cfb/state.json` |
 
 Only `props.yml` spends money (`ODDS_API_KEY`, ~7 credits a game, ~112 a week,

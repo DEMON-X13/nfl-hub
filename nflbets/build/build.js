@@ -64,6 +64,19 @@ const piece = (re, what) => { const m = tab.match(re); if (!m) throw new Error(`
 const TAB_CSS = piece(/<style>([\s\S]*?)<\/style>/, '<style> block');
 const TAB_HTML = piece(/(<section id="tab-pickems">[\s\S]*?<\/section>)/, 'section');
 const TAB_JS = piece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+/* the Player Elo tab: the same shape, prefixed pe-, reading elo/data/ on load */
+const eloTab = rd('nflbets', 'build', 'tab_elo.html');
+const epiece = (re, what) => { const m = eloTab.match(re); if (!m) throw new Error(`tab_elo.html has no ${what}`); return m[1]; };
+const ELO_CSS = epiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
+const ELO_HTML = epiece(/(<section id="tab-elo" hidden>[\s\S]*?<\/section>)/, 'section');
+const ELO_JS = epiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+for (const need of ['<tr class="legrow"><td class="plr">', 'data-drop="${l.key}"'])
+  if (!part3.includes(need)) throw new Error('the builder leg markup moved (' + need + '); the Elo badge on each leg relies on it');
+for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'window.pkTag', 'window.pkTierBadge', 'window.pkTierDefs'])
+  if (!ELO_JS.includes(need)) throw new Error('tab_elo.html no longer has ' + need);
+for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
+  throw new Error('elo/data/' + f + ' is missing: run python3 elo/build.py first');
+if (/(^|\n)(body|header|main|:root|\.card|\.bar|table)\{/.test(ELO_CSS)) throw new Error('a page-level rule in the Elo tab styles');
 
 /* the betting app's colour table, tag() and the contrast maths behind it, and its confidence
    bands: cut where its walk-forward record changes, so a second copy here would drift off them */
@@ -71,11 +84,16 @@ const BET = [
   lift(betting, 'const TEAM_COLORS=', '\n', 'team colours'),
   lift(betting, 'function hex2rgb(', 'function predict(', 'tag colours and tag()'),
   lift(betting, 'function tier(', 'function statsFromRow', 'betting confidence bands'),
+  /* the Elo tiers and their shields, so a player's rating wears the same badge a team's does */
+  lift(betting, 'const TIERS=', 'function tierLegend(', 'Elo tiers and shields'),
 ].join('\n');
-for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier('])
+for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier(', 'function eloTier(', 'function tierBadge(', 'const TIER_DEFS'])
   if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);
-const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO};\n})();`;
-const js = sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot');
+const BET_NS = `const BET=(()=>{\n${BET}\nreturn {tag,tagColor,tier,PROB_HI,PROB_LO,eloTier,tierBadge,TIER_DEFS};\n})();`;
+const js = sub1(sub1(TAB_JS, '/*BETTING*/', BET_NS, 'the /*BETTING*/ slot'),
+  "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');",
+  "const tag=(...a)=>BET.tag(...a).replace(/class=\"([^\"]*)\"/,(m,c)=>'class=\"'+c.split(' ').map(x=>'pk-'+x).join(' ')+'\"');\n/* the Player Elo tab draws team tags and tier shields with these */\nwindow.pkTag=tag; window.pkTagColor=BET.tagColor; window.pkTierBadge=BET.tierBadge; window.pkEloTier=BET.eloTier; window.pkTierDefs=BET.TIER_DEFS;",
+  'the tag helper, which the Elo tab shares');
 for (const need of ['function gameBet', 'function confTier', 'function bookPrice', 'function fmtML', 'const TEAM_NAMES', 'function toggleLeg', 'function legKey', 'function gameStarted', 'function gameBetsCard', 'function settleGameLeg', 'function slateStamp', 'const ESPN_SB', 'function espnGames', 'const SEASON'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the board prices with');
 
@@ -177,7 +195,7 @@ html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"><
 html = sub1(html, `<label class="muted">Scores <select id="slateEvery">
         <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
       </select></label>\n`, '', 'the scores picker');
-html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
+html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here is in the page but not yet shown. */
 /* A betting tab is the betting app itself, one tab of it, in a frame: the app as
@@ -204,6 +222,7 @@ const TABS = [
   ['record', "Pick'em Record", 'record'],
   ['track', 'Prop Record'],
   ['bets', 'Bet Log', 'bets'],
+  ['elo', 'Player Elo'],
 ];
 const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label], i) =>
   `    <button role="tab" data-tab="${t}"${i === 0 ? ' aria-selected="true"' : ''}>${label}</button>`).join('\n') + '\n  </nav>';
@@ -212,9 +231,9 @@ const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed]) =>
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
-for (const [t] of TABS) if (t !== 'pickems' && !t.match(/^(slate|parlay|track)$/) && html.includes(`id="tab-${t}"`))
+for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay|track)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
-html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 /* the Live Parlays section, under the builder, where the Saved parlays card was */
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>\n  ' + LIVE_SECTION, 'the Parlay Builder section');
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
@@ -243,7 +262,7 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
   document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>`;
-const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n</body>\n</html>\n';
+const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
 fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
 console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB `
   + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
