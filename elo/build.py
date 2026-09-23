@@ -24,8 +24,12 @@ opponent is a fixed 1500, so his rating is his own consistency.
               U -= 20 * mean over the unit's opponents that game of w * (S - E)
 
 w is the game's weight by involvement, so a backup with two carries barely moves and a
-starter moves fully: volume over a per-position norm, capped at 1. Every season every rating
-is pulled a quarter of the way back to 1500, since rosters, schemes and ages change.
+starter moves fully: volume over a per-position norm, capped at 1. A game a regular left
+early is not rated at all: when a player's involvement falls below 35% of his median over
+his last five rated games, and that median is a starter's, the game is skipped rather than
+scored as a bad one -- a quarterback hurt after eight throws did not have a bad day, he had
+a short one. Every season every rating is pulled a quarter of the way back to 1500, since
+rosters, schemes and ages change.
 
 THE SCORES. For a QB, RB, WR or TE the score is expected points added on the plays he
 touched (nflverse's passing_epa + rushing_epa + receiving_epa), which already prices yards,
@@ -96,6 +100,7 @@ DEPTH = {'QB': [1.0], 'RB': [1.0, 0.5], 'WR': [1.0, 0.7, 0.45], 'TE': [1.0], 'K'
 VOLUME = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
 K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 20.0, 8
 REPLACEMENT = 1450.0
+LEFT_EARLY = 0.35   # involvement under this share of a regular's recent median: the game is not rated
 CARRY = 0.75      # share of the distance from 1500 a rating keeps across an offseason
 # an average kicker's make rate by distance, for points over expectation
 FG_RATE = {'0_19': 0.99, '20_29': 0.97, '30_39': 0.90, '40_49': 0.78, '50_59': 0.63, '60_': 0.35}
@@ -328,6 +333,8 @@ def main():
     U = {}                 # (team, facet) -> unit rating
     info = {}              # player_id -> {name, pos, group, team, headshot}
     hist = {}              # player_id -> {season: [[ord, rating], ...]}
+    recent = {}            # player_id -> involvement in his last five rated games
+    skipped = 0            # games a regular left early, not rated
     season_start = {}      # (season, player) -> rating at the start of the season
     peak = {}              # player -> (rating, season)
     game_feat = []         # per game: features from pre-game ratings
@@ -408,6 +415,16 @@ def main():
                     season_start[(season, pid)] = 1500.0
                 info[pid] = {'name': r.player_display_name, 'pos': r.position, 'group': g, 'team': r.team,
                              'head': r.headshot_url if isinstance(r.headshot_url, str) else None}
+                # a regular who left early: his involvement collapsed against his own recent
+                # norm, so the game says nothing about how good he is and is not rated
+                rv = recent.setdefault(pid, [])
+                if len(rv) >= 3 and np.median(rv) >= 0.8 * VOLUME[g] and r.vol < LEFT_EARLY * np.median(rv):
+                    skipped += 1
+                    rv.append(r.vol)
+                    del rv[:-5]
+                    continue
+                rv.append(r.vol)
+                del rv[:-5]
                 mu, sd = norm[(season, g)]
                 z = max(-3.0, min(3.0, (r.score - mu) / sd))
                 S = 1 / (1 + math.exp(-1.5 * z))
@@ -425,7 +442,7 @@ def main():
             for key, ds in unit_delta.items():
                 U[key] = unit(*key) - K_UNIT * (sum(ds) / len(ds))
 
-    print(f'  {len(R)} players rated over {len(seasons)} seasons, {len(game_feat)} games featured')
+    print(f'  {len(R)} players rated over {len(seasons)} seasons, {len(game_feat)} games featured; {skipped} player-games a regular left early, not rated')
     # every game's features, for experiments beside this script (the cache is gitignored)
     with open(os.path.join(CACHE, 'features.json'), 'w') as f:
         json.dump(game_feat, f, separators=(',', ':'))
