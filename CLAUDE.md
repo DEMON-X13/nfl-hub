@@ -92,7 +92,11 @@ node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures
 
 The rankings are of players who can play: the season's latest weekly roster (only `ACT`
 counts) and the coming week's injury report (`Out`) sideline the rest, who are listed under
-the table where they would have stood. Tiers are the betting app's Elo shields, lifted with
+the table where they would have stood. The game model scores every game, past and coming,
+on the lineup known before kickoff: that week's depth chart (weekly files through 2024, the
+last daily snapshot before the game from 2025) minus the week's Outs, falling back to who
+played last game where a chart is silent; `walk_forward` in `model.json` is that honest
+number and `walk_forward_who_played` the hindsight one, kept for comparison only. Tiers are the betting app's Elo shields, lifted with
 its tag into the page. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
