@@ -17,6 +17,8 @@ const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
 const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
+const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
+const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -89,6 +91,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
           if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
           if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PARLAYS) });
+          if (s.includes('elo/data/players.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_P) });
+          if (s.includes('elo/data/model.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_M) });
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched }), 300));
@@ -109,7 +113,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Power Ratings|Pick'em Record|Prop Record|Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Power Ratings|Pick'em Record|Prop Record|Bet Log|Player Elo", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
@@ -398,6 +402,41 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(700);
   chk(/scores not loading/.test(txt(b.d.getElementById('pkStamp'))) && b.d.getElementById('pkStamp').classList.contains('bad'), 'an unreachable scoreboard is not said: ' + txt(b.d.getElementById('pkStamp')));
   chk(b.d.querySelectorAll('.pk-game').length > 0 && b.errs.length === 0, 'an unreachable scoreboard broke the board');
+
+  /* ---- Player Elo: the ratings and the roster model, read from elo/data ---- */
+  { const eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M);
+    chk(fetched.includes('../elo/data/players.json') && fetched.includes('../elo/data/model.json'), 'the page did not read the Elo files');
+    [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click();
+    await wait(80);
+    chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
+    const body = d.getElementById('peBody');
+    chk(body.querySelectorAll('.card').length >= 4, 'the Elo tab should draw its calls, record, rankings, history and weights cards: ' + body.querySelectorAll('.card').length);
+    const nx = (eloM.next && eloM.next.games) || [];
+    const callRows = body.querySelectorAll('.pe-calls tbody tr').length;
+    chk(!nx.length || callRows === nx.length, `the calls table has ${callRows} rows for ${nx.length} games`);
+    if (nx.length) chk([...body.querySelectorAll('.pe-calls tbody tr')].every(tr => /agrees|differs|no call yet/.test(txt(tr))), 'a call does not say what the betting model makes of the same game');
+    const posBtns = [...body.querySelectorAll('.pe-pos button')];
+    chk(posBtns.map(b => b.dataset.pos).join() === eloM.groups.join(), 'the position picker does not list every rated group: ' + posBtns.map(b => b.dataset.pos).join());
+    const rankRows = () => [...body.querySelectorAll('.card')].find(c => /Rankings/.test(txt(c.querySelector('h2')))).querySelectorAll('tbody tr');
+    chk(rankRows().length === 10, 'the rankings should open on the top ten: ' + rankRows().length);
+    chk(txt(rankRows()[0]).includes(eloP.groups.QB.top[0].name) && txt(rankRows()[0]).includes(String(eloP.groups.QB.top[0].elo)), 'the top quarterback is not first: ' + txt(rankRows()[0]));
+    chk(rankRows()[0].querySelector('svg.pe-spark') !== null, 'the season trend line is missing');
+    chk([...rankRows()].every(tr => /Elite|Great|Good|Solid/.test(txt(tr))), 'a ranked player has no tier');
+    posBtns.find(b => b.dataset.pos === 'DL').click(); await wait(40);
+    chk(txt(rankRows()[0]).includes(eloP.groups.DL.top[0].name), 'switching to the defensive line did not redraw the rankings');
+    d.getElementById('peMore').click(); await wait(40);
+    chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
+    const hist = [...body.querySelectorAll('.card')].find(c => /season by season/.test(txt(c.querySelector('h2'))));
+    chk(!!hist && hist.querySelectorAll('.pe-col').length === Object.keys(eloP.season_end_top10).length, 'the season-by-season card does not have a column per season');
+    const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
+    chk(!!wts && wts.querySelectorAll('.pe-w div').length === eloM.groups.length, 'the weights card does not show one weight per group');
+    chk(!!wts && wts.querySelectorAll('.pe-heat tbody tr').length === Object.keys(eloM.by_season).length, 'the by-season table is not one row per season');
+    chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))) && /\d{4}/.test(txt(d.getElementById('peSeasonRec'))), 'the tab bar does not carry the records: ' + txt(d.getElementById('peWalkRec')) + ' / ' + txt(d.getElementById('peSeasonRec')));
+    /* the data has the shape the tab relies on */
+    chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1300 && r.elo < 1800)), 'a group has fewer than ten rated players or a rating out of range');
+    chk(Object.values(eloM.walk_forward).every(x => x.accuracy > 0.5 && x.games > 0), 'the walk-forward record should beat a coin on every season: ' + JSON.stringify(eloM.walk_forward));
+    chk(eloM.coef.QB > 0 && eloM.coef.DB > 0, 'the fitted weights lost their sign');
+    [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'pickems').click(); await wait(40); }
 
   /* ---- Sync: one document for every device ---- */
   /* with no store address the page runs on this browser alone, and says so */

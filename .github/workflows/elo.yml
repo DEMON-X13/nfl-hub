@@ -1,0 +1,51 @@
+name: elo
+
+# The Player Elo ratings and the roster model: every player rated by position, game by game
+# since 2020, and the game model fitted on those ratings, re-run once the week's player stats
+# are on nflverse. Two mornings: Tuesday for the week (Monday night included), Friday to pick
+# up any late correction and call the coming week on the rosters as they last took the field.
+on:
+  schedule:
+    - cron: "40 12 * * 2"    # Tue 08:40 ET
+    - cron: "40 12 * * 5"    # Fri 08:40 ET
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  rate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r elo/requirements.txt
+      - name: Rate every player and fit the roster model
+        run: python elo/build.py
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: props/build
+      - name: Check the page still reads what was written
+        run: node nflbets/build/smoke.js
+      - name: Commit if anything changed
+        run: |
+          git config user.name "nfl-hub bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add elo/data
+          if git diff --cached --quiet; then echo "nothing changed"; else
+            git commit -m "elo: rate $(date -u +'%Y-%m-%d %H:%M UTC')"
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
+          fi
