@@ -54,7 +54,6 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 </style>
 <section id="tab-elo" hidden>
   <div class="bar">
-    <span class="rec" id="peSeasonRec"></span>
     <span class="rec" id="peWalkRec"></span>
     <span class="grow"></span>
     <span class="livestamp" id="peStamp"></span>
@@ -65,8 +64,10 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 /* ---------- the Player Elo tab ----------
    Every player rated by position, game by game since 2020, and a third game model built on
    nothing but those ratings. elo/build.py does the work on the job's schedule and writes
-   elo/data/players.json and elo/data/model.json; this reads them on every load. The betting
-   model's call on each game is read from its own published state, for the comparison. */
+   elo/data/players.json and elo/data/model.json; this reads them on every load. The model's
+   calls and its record live on the Pick'em Record tab beside the other models'; this tab is
+   the ratings, the six-year story and what each position is worth. calls() and graded()
+   below still draw the week's calls and the season's graded games, and are not used. */
 (function(){
 const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', STATE_URL='../betting/state.json';
 const D={players:null,model:null,picks:{},processed:{},pos:'QB',more:false};
@@ -186,11 +187,10 @@ function history(){
 function draw(){
   const body=el('peBody');
   if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>Player Elo</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
-  body.innerHTML=calls()+graded()+rankings()+history()+weights();
+  body.innerHTML=rankings()+history()+weights();
   body.querySelectorAll('.pe-pos button').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
-  el('peSeasonRec').textContent=r.graded?`${r.season} ${r.correct}–${r.graded-r.correct}`:`${r.season}: nothing graded yet`;
   const prior=ws.filter(s=>+s<r.season);
   if(prior.length){ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
     el('peWalkRec').textContent=`${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; }

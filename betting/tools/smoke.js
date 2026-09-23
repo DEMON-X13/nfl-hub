@@ -156,10 +156,18 @@ function load(picks) {
     const head = [...de.querySelectorAll('#recordTable thead th')].map(th => th.textContent.trim());
     check(head.includes('Elo model') && head.indexOf('Elo model') === head.indexOf('The Joker') + 1, 'embed: the week-by-week table has no Elo model column after the Joker: ' + head.join('|'));
     de.getElementById('picksToggle').click(); await sleep(80);
-    const gridHead = [...de.querySelectorAll('.pickgrid thead th')].map(th => th.textContent.trim());
+    const gridHead = [...de.querySelector('.pickgrid').querySelectorAll('thead th')].map(th => th.textContent.trim());
     check(gridHead.includes('Elo model'), 'embed: the pick grid has no Elo model column: ' + gridHead.join('|'));
     const firstRow = de.querySelector('.pickgrid tbody tr');
-    check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns'); }
+    check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
+    /* every week through the current one, newest first, and no week beyond it */
+    const gradedWeeks = [...new Set(Object.values(SE.processed).filter(r => r.correct !== null).map(r => +r.week))];
+    const played = Math.max(...gradedWeeks), cur = SE.schedule.some(g => +g.week === played + 1) ? played + 1 : played;
+    const heads = [...de.querySelectorAll('#modelChart h3')].map(h => h.textContent.trim());
+    check(!de.getElementById('picksWeek'), 'embed: the week picker is still on the pick grid');
+    check(de.querySelectorAll('.pickgrid').length === cur && heads.length === cur, `embed: the pick grid should show weeks 1-${cur}, one grid each: ${de.querySelectorAll('.pickgrid').length} grids, ${heads.join(' | ')}`);
+    check(/^Week \d+/.test(heads[0]) && +heads[0].match(/\d+/)[0] === cur && /this week/.test(heads[0]), 'embed: the current week is not first or not marked: ' + heads[0]);
+    check(!heads.some(h => +h.match(/\d+/)[0] > cur), 'embed: a week not yet reached is on the pick grid'); }
   /* clicking a tab inside the frame must not throw on the address it cannot write */
   { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
     de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);
