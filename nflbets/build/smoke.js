@@ -410,7 +410,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
-    chk(body.querySelectorAll('.card').length === 3, 'the Elo tab should draw its rankings, history and weights cards and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(body.querySelectorAll('.card').length === 2, 'the Elo tab should draw its rankings and weights cards and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(![...body.querySelectorAll('h2')].some(h => /season by season/.test(txt(h))), 'the season-by-season card is still on the Elo tab');
     chk(!body.querySelector('.pe-calls') && ![...body.querySelectorAll('h2')].some(h => /^\d{4} so far/.test(txt(h))), 'the week\'s calls or the season record are still on the Elo tab; they live on Pick\'em Record');
     const posBtns = [...body.querySelectorAll('.pe-pos button')];
     chk(posBtns.map(b => b.dataset.pos).join() === eloM.groups.join(), 'the position picker does not list every rated group: ' + posBtns.map(b => b.dataset.pos).join());
@@ -418,13 +419,22 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(rankRows().length === 10, 'the rankings should open on the top ten: ' + rankRows().length);
     chk(txt(rankRows()[0]).includes(eloP.groups.QB.top[0].name) && txt(rankRows()[0]).includes(String(eloP.groups.QB.top[0].elo)), 'the top quarterback is not first: ' + txt(rankRows()[0]));
     chk(rankRows()[0].querySelector('svg.pe-spark') !== null, 'the season trend line is missing');
-    chk([...rankRows()].every(tr => /Elite|Great|Good|Solid/.test(txt(tr))), 'a ranked player has no tier');
+    chk([...rankRows()].every(tr => tr.querySelector('svg.tierbadge') && /Challenger|Master|Diamond|Platinum|Gold|Silver|Bronze|Iron/.test(txt(tr))), 'a ranked player has no tier shield on the team scale');
+    chk(!!body.querySelector('svg defs linearGradient[id^="tg-"]'), 'the tier shields have no gradient definitions on the page');
+    /* the sidelined are out of the rankings and listed where they would have stood */
+    chk(eloM.groups.every(g => Array.isArray(eloP.groups[g].sidelined)), 'a group has no sidelined list');
+    { const sideIds = new Set(eloM.groups.flatMap(g => eloP.groups[g].sidelined.map(x => x.id)));
+      chk(eloM.groups.every(g => eloP.groups[g].top.every(r => !sideIds.has(r.id))), 'a sidelined player is still ranked');
+      const withSide = eloM.groups.find(g => eloP.groups[g].sidelined.some(x => x.would_rank <= 10));
+      if (withSide) { posBtns.find(b => b.dataset.pos === withSide).click(); await wait(40);
+        const note = [...body.querySelectorAll('.pe-note')].find(p => /Not ranked/.test(txt(p)));
+        const first = eloP.groups[withSide].sidelined.find(x => x.would_rank <= 10);
+        chk(!!note && txt(note).includes(first.name) && txt(note).includes(first.why), 'the sidelined are not listed under the rankings: ' + (note ? txt(note).slice(0, 120) : 'no note')); }
+      chk(eloM.groups.every(g => eloP.groups[g].sidelined.every(x => /reserve|free agent|practice squad|retired|out|list|suspended/i.test(x.why))), 'a sidelined player has no reason'); }
     posBtns.find(b => b.dataset.pos === 'DL').click(); await wait(40);
     chk(txt(rankRows()[0]).includes(eloP.groups.DL.top[0].name), 'switching to the defensive line did not redraw the rankings');
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
-    const hist = [...body.querySelectorAll('.card')].find(c => /season by season/.test(txt(c.querySelector('h2'))));
-    chk(!!hist && hist.querySelectorAll('.pe-col').length === Object.keys(eloP.season_end_top10).length, 'the season-by-season card does not have a column per season');
     const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
     chk(!!wts && wts.querySelectorAll('.pe-w div').length === eloM.groups.length, 'the weights card does not show one weight per group');
     chk(!!wts && wts.querySelectorAll('.pe-heat tbody tr').length === Object.keys(eloM.by_season).length, 'the by-season table is not one row per season');

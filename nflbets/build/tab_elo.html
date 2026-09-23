@@ -19,9 +19,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-elo{font-family:var(--display);font-weight:700;font-size:15px;color:var(--ink)}
 .pe-up{color:var(--pick);font-weight:600} .pe-down{color:var(--miss);font-weight:600} .pe-flat{color:var(--muted)}
 .pe-spark{display:inline-block;vertical-align:middle}
-.pe-tier{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
-.pe-tier.t1{background:var(--gold-soft);color:#8A5E05} .pe-tier.t2{background:var(--pick-soft);color:var(--pick)}
-.pe-tier.t3{background:#E9EEF4;color:var(--ink-2)} .pe-tier.t4{background:#F3F5F8;color:var(--muted)}
+.pe-shield{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.pe-shield .tierbadge{display:inline-block;width:20px;height:22px;vertical-align:middle;flex:none}
 .pe-mu{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:13px}
 .pe-at{color:var(--muted);font-family:var(--body);font-weight:500;font-size:11px}
 .pe-bar{display:inline-block;width:110px;height:8px;border-radius:999px;background:#E9EEF4;overflow:hidden;vertical-align:middle;margin-right:8px}
@@ -66,8 +65,9 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
    nothing but those ratings. elo/build.py does the work on the job's schedule and writes
    elo/data/players.json and elo/data/model.json; this reads them on every load. The model's
    calls and its record live on the Pick'em Record tab beside the other models'; this tab is
-   the ratings, the six-year story and what each position is worth. calls() and graded()
-   below still draw the week's calls and the season's graded games, and are not used. */
+   the rankings and what each position is worth. calls(), graded() and history() below still
+   draw the week's calls, the season's graded games and the season-end top tens, and are not
+   used. */
 (function(){
 const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', STATE_URL='../betting/state.json';
 const D={players:null,model:null,picks:{},processed:{},pos:'QB',more:false};
@@ -76,14 +76,10 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const pct=p=>Math.round(p*100)+'%';
 const tag=(t,mini)=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagColor(t):null,false,mini?'mini':'')
   :'<span class="pill">'+esc(t)+'</span>';
-/* a tier is where a rating stands among everyone rated at the position: the top 5% elite,
-   the top 15% great, the top 40% good, the rest solid */
-function tier(g,elo){
-  const top=D.players.groups[g].top, n=D.players.groups[g].active;
-  const rank=top.findIndex(r=>r.elo<=elo); const r=rank<0?n:rank+1;
-  const q=r/Math.max(1,n);
-  return q<=.05?['t1','Elite']:q<=.15?['t2','Great']:q<=.40?['t3','Good']:['t4','Solid'];
-}
+/* the tier is the betting app's own, on the same Elo scale the teams wear: Challenger 1700+,
+   Master 1650+, Diamond 1600+, Platinum 1550+, Gold 1500+, Silver 1450+, Bronze 1400+, Iron */
+const shield=elo=>window.pkTierBadge?window.pkTierBadge(elo):'';
+const tierName=elo=>{ const t=window.pkEloTier?window.pkEloTier(elo):null; return t?t[0]:''; };
 function spark(pts){
   if(!pts||pts.length<2) return '';
   const v=pts.map(p=>p[1]), lo=Math.min(...v), hi=Math.max(...v), W=84, H=22;
@@ -160,20 +156,28 @@ function weights(){
 function rankings(){
   const P=D.players, g=D.pos, grp=P.groups[g];
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${k===g}">${esc(P.groups[k].label)}</button>`).join(''):'';
-  const rows=grp.top.slice(0,D.more?25:10).map(r=>{ const [tc,tl]=tier(g,r.elo);
+  const rows=grp.top.slice(0,D.more?25:10).map(r=>{
     return `<tr><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
       <td class="pe-name">${esc(r.name)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} rated games</small></td>
       <td class="pe-m0">${tag(r.team,true)}</td>
       <td class="pe-n"><span class="pe-elo">${r.elo}</span></td>
-      <td><span class="pe-tier ${tc}">${tl}</span></td>
+      <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
       <td class="pe-n">${r.elo-r.start_elo>=0?'+':''}${r.elo-r.start_elo}</td>
       <td class="pe-m0">${spark(r.this_season)}</td>
       <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
   return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} through week ${esc(P.through_week)}</span></h2>
-    <p class="pe-sub">${esc(grp.active)} ${esc(grp.label.toLowerCase())} rated this season or last. Movement is against the rank each held when the season began; the line is this season's rating, game by game.</p>
+    <p class="pe-sub">${esc(grp.active)} ${esc(grp.label.toLowerCase())} rated this season or last and able to play. Movement is against the rank each held when the season began; the line is this season's rating, game by game. Tiers are the same shields the teams wear, on the same scale.</p>
     <div class="pe-pos" role="tablist">${btns}</div>
     <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Season</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div></div>`;
+    <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div>
+    ${sidelined(grp)}</div>`;
+}
+/* the injured, the reserved, the retired and the unsigned are not ranked; the ones whose
+   rating would have placed them are listed here, where they would have stood */
+function sidelined(grp){
+  const s=(grp.sidelined||[]).filter(x=>x.would_rank<=(D.more?25:10));
+  if(!s.length) return '';
+  return `<p class="pe-note"><b style="color:var(--ink)">Not ranked:</b> ${s.map(x=>`${esc(x.name)} (${esc(x.team)}, ${x.elo}, would be #${x.would_rank}: ${esc(x.why)})`).join('; ')}.</p>`;
 }
 function history(){
   const P=D.players, g=D.pos, ends=P.season_end_top10||{};
@@ -187,7 +191,7 @@ function history(){
 function draw(){
   const body=el('peBody');
   if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>Player Elo</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
-  body.innerHTML=rankings()+history()+weights();
+  body.innerHTML=(window.pkTierDefs||'')+rankings()+weights();
   body.querySelectorAll('.pe-pos button').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
