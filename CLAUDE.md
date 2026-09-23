@@ -31,6 +31,7 @@ build and its own scheduled workflow.
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with Live Parlays as a section of the Parlay Builders tab | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is the file the section reads, and `build/page.html` is the section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json` |
+| `elo/` | Player Elo: every player rated by position since 2020 and the roster model built on those ratings; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
 
 ## Source vs generated -- never edit a generated file
 
@@ -41,6 +42,7 @@ at the next refresh:
 - `betting/state.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
+- `elo/data/players.json`, `elo/data/model.json` (by `elo/build.py`; `elo/cache/` is gitignored)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
@@ -80,6 +82,20 @@ node nflbets/build/build.js      # the app changed, so the page that carries it 
 Gate: the app's embedded model numbers must equal
 `betting/tools/reference_models.json`, or the publish aborts.
 
+## Player Elo: the loop
+
+```
+pip install -r elo/requirements.txt
+python3 elo/build.py             # downloads nflverse player stats 2020-now into elo/cache/, writes elo/data/
+node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
+```
+
+A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
+moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
+rebuild of the page. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
+`elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
+a model fitted on the seasons before it. Do not tune the formula on the season in progress.
+
 ## Bets and Stats: the loop
 
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
@@ -87,14 +103,15 @@ Gate: the app's embedded model numbers must equal
 front of it as its own `pk-` prefixed section, the Live Parlays section lifted out of
 `liveparlays/build/page.html` into the Parlay Builders tab (styles scoped to `#lpCard`,
 script in a closure, standing where the prop model's Saved parlays card is: a saved parlay
-is watched the moment it is saved, and deleting it there deletes it), and the betting
+is watched the moment it is saved, and deleting it there deletes it), the Player Elo tab
+from `nflbets/build/tab_elo.html` (`pe-` prefixed, its own closure, reading `elo/data/`), and the betting
 app's Records, Power Ratings and Bet Log tabs in frames: the app, as `betting/tools/build.js`
 builds it, is carried in the page as a string (`BET_APP`) and becomes a frame's srcdoc when
 its tab is first opened, with `window.EMBED_TAB` and `window.STATE_URL` written in front of
 it. A srcdoc frame is the page's own origin, so the app keeps its browser store.
-Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json` and
-`liveparlays/parlays.json`, so it is rebuilt when a source changes, never when the data
-does. A props patch, a betting build change or an edit to the live section's source means
+Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
+`liveparlays/parlays.json` and `elo/data/*.json`, so it is rebuilt when a source changes, never
+when the data does. A props patch, a betting build change or an edit to the live section's source means
 rebuilding it too:
 
 ```

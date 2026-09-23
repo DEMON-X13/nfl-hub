@@ -10,6 +10,7 @@ the results. GitHub Pages serves the repo root:
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
+| `elo/` | Player Elo: every player rated by position since 2020, and a third game model built on those ratings, shown on the Player Elo tab | `elo/build.py`; `.github/workflows/elo.yml` re-rates twice a week |
 | `live/` | Live Parlays, one small page that watches the parlays saved in the two models | built from `live/build/page.html` plus logic lifted out of the prop model |
 
 ## Betting site
