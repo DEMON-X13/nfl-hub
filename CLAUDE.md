@@ -30,6 +30,7 @@ build and its own scheduled workflow.
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with Live Parlays as a section of the Parlay Builders tab | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app |
+| `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is the file the section reads, and `build/page.html` is the section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json` |
 
 ## Source vs generated -- never edit a generated file
@@ -39,6 +40,7 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
+- `cfb/state.json`, `cfb/data/teams.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
 
@@ -79,6 +81,21 @@ node nflbets/build/build.js      # the app changed, so the page that carries it 
 
 Gate: the app's embedded model numbers must equal
 `betting/tools/reference_models.json`, or the publish aborts.
+
+## College: the loop
+
+```
+cd cfb/tools && npm ci
+node cfb/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> cfb/state.json
+node cfb/tools/smoke.js           # must end "0 failures"
+```
+
+The page is `cfb/index.html`, hand-written, one file; it fetches `state.json` on every
+load, so a page change is just an edit (bump `APP_BUILD` in it) and a data change is the
+job's. `cfb/data/history.json` is twelve seasons of results pulled once by
+`tools/history.js`; `tools/fit.js` chooses the model's parameters on it and writes
+`cfb/data/model.json`. Refit only for a deliberate model change, and commit the new
+numbers with it. `.github/workflows/cfb.yml` runs six times a week on ESPN's free feeds.
 
 ## Bets and Stats: the loop
 

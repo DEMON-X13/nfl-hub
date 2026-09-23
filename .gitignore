@@ -3,3 +3,4 @@ node_modules/
 betting/tools/out/
 __pycache__/
 *.pyc
+cfb/tools/out/

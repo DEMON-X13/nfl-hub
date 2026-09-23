@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>X College Football Bets</title>
+<meta name="description" content="A rating model's call on every FBS game, the polls beside it, the playoff picture and a moneyline and spread parlay builder.">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F4; --panel:#FFFFFF; --panel-2:#F7F9FB;
+  --ink:#0F1B2D; --ink-2:#4F607A; --muted:#657386; --line:#E4E9F0; --line-2:#D5DCE6;
+  --pick:#1B7A4E; --pick-soft:#DDF3E6; --gold:#D39A1F; --gold-soft:#FBEFD3;
+  --miss:#C0392B; --miss-soft:#FAE1DE; --blue:#3F5F8F; --blue-soft:#E3EAF5;
+  --r-lg:16px; --r-md:12px; --r-sm:9px;
+  --sh-sm:0 1px 2px rgba(15,27,45,.05),0 4px 12px -4px rgba(15,27,45,.10);
+  --display:"Space Grotesk",ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+  --body:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4}
+a{color:var(--blue)}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 16px 0}
+.hdr{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px}
+.hdr h1{font-family:var(--display);font-size:22px;margin:0;letter-spacing:-.01em}
+.hdr .stamp{color:var(--muted);font-size:12px}
+.hdr .stamp b{color:var(--ink-2);font-weight:600}
+nav.tabs{max-width:1100px;margin:10px auto 0;display:flex;gap:4px;overflow-x:auto}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;font:600 14px var(--display);color:var(--ink-2);cursor:pointer;white-space:nowrap}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section[hidden]{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:14px 16px;margin-bottom:14px}
+.card h2{font-family:var(--display);font-size:17px;margin:0 0 8px}
+.card h3{font-family:var(--display);font-size:14px;margin:12px 0 6px;color:var(--ink-2)}
+.muted{color:var(--muted)} .small{font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--panel)}
+.btn{font:600 13px var(--display);padding:7px 12px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--panel);color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--panel-2)}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.quiet{border-color:transparent;color:var(--ink-2)}
+.btn.tiny{padding:3px 8px;font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden}
+.seg button{border:0;background:var(--panel);padding:6px 10px;font:600 13px var(--display);color:var(--ink-2);cursor:pointer}
+.seg button.on{background:var(--ink);color:#fff}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:12px;box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px}
+.game .when{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.game .when .live{color:var(--miss);font-weight:600}
+.side{display:grid;grid-template-columns:28px 1fr auto auto;gap:8px;align-items:center}
+.side img{width:28px;height:28px;object-fit:contain}
+.side .nm{font-weight:600;font-family:var(--display)} .side .nm small{color:var(--muted);font-weight:500;margin-left:4px}
+.side .rk{color:var(--gold);font-weight:700;font-size:12px;margin-right:3px}
+.side .sc{font-family:var(--display);font-weight:700;font-size:18px;min-width:28px;text-align:right}
+.side .wp{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px;text-align:right}
+.side.picked .wp{color:var(--pick)}
+.side.won .nm{color:var(--pick)}
+.lines{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.lines .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.lines .v{font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font:600 11px var(--display);padding:2px 8px;border-radius:999px;background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line)}
+.tag.pick{background:var(--pick-soft);color:var(--pick);border-color:transparent}
+.tag.pass{background:var(--panel-2);color:var(--muted)}
+.tag.win{background:var(--pick-soft);color:var(--pick);border-color:transparent}
+.tag.loss{background:var(--miss-soft);color:var(--miss);border-color:transparent}
+.tag.push{background:var(--gold-soft);color:#8A6412;border-color:transparent}
+.tag.replay{background:var(--blue-soft);color:var(--blue);border-color:transparent}
+.legbtns{display:flex;gap:6px;flex-wrap:wrap}
+.legbtns .btn.on{background:var(--gold-soft);border-color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.major td{font-weight:500}
+.tw{display:inline-flex;align-items:center;gap:6px}
+.tw img{width:20px;height:20px;object-fit:contain}
+.tw .rk{color:var(--gold);font-weight:700;font-size:11px}
+.scroll{overflow:auto;max-height:70vh}
+.bracket{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bracket .bye,.bracket .fr{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px}
+.bracket .seedline{display:flex;align-items:center;gap:8px;padding:4px 0}
+.bracket .seed{font:700 12px var(--display);color:var(--muted);width:20px}
+.bracket .auto{font-size:11px;color:var(--gold);font-weight:600}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--pick)}
+.legs{display:flex;flex-direction:column;gap:6px}
+.leg{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:8px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:13.5px}
+.leg .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px}
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:12px 0}
+.stat{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.stat .v{font:700 20px var(--display)}
+.stat .v.good{color:var(--pick)} .stat .v.bad{color:var(--miss)}
+.saved{border:1px solid var(--line);border-radius:var(--r-md);padding:10px;margin-bottom:8px}
+.saved .top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.empty{color:var(--muted);padding:20px;text-align:center}
+@media (max-width:640px){.bracket{grid-template-columns:1fr}.games{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr">
+    <h1>X College Football Bets</h1>
+    <span class="stamp" id="stamp">Loading…</span>
+    <span class="stamp" id="buildTag"></span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="games" class="on">Games</button>
+    <button data-tab="rankings">Rankings</button>
+    <button data-tab="ratings">Power Ratings</button>
+    <button data-tab="playoff">Playoff</button>
+    <button data-tab="parlays">Parlays <span id="legCount" class="tag" hidden>0</span></button>
+    <button data-tab="record">Record</button>
+  </nav>
+</header>
+<main>
+  <section id="tab-games">
+    <div class="toolbar">
+      <select id="weekSel"></select>
+      <div class="seg" id="scope">
+        <button data-scope="major" class="on">Major schools</button>
+        <button data-scope="ranked">Ranked</button>
+        <button data-scope="all">All FBS</button>
+      </div>
+      <select id="confSel"><option value="">Every conference</option></select>
+      <button class="btn quiet" id="refreshScores" title="Read the scoreboard from ESPN now, in this browser. Free.">Refresh scores</button>
+      <span class="small muted" id="gamesNote"></span>
+    </div>
+    <div class="games" id="games"></div>
+  </section>
+
+  <section id="tab-rankings" hidden>
+    <div class="card">
+      <h2>The polls and the model</h2>
+      <p class="small muted" id="rankNote"></p>
+      <div class="scroll"><table id="rankTable"></table></div>
+    </div>
+    <div class="card">
+      <h2>Rated in the model's top 25, unranked by the AP</h2>
+      <div id="rankGap" class="row"></div>
+    </div>
+  </section>
+
+  <section id="tab-ratings" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0">Power ratings</h2>
+        <select id="ratConf"><option value="">Every conference</option></select>
+        <label class="small"><input type="checkbox" id="ratMajor" checked> Major schools only</label>
+        <span class="small muted">Elo, home field <b id="hfaNote"></b>, <b id="ppeNote"></b> per point of spread.</span>
+      </div>
+      <div class="scroll"><table id="ratTable"></table></div>
+    </div>
+  </section>
+
+  <section id="tab-playoff" hidden>
+    <div class="card">
+      <h2>If the season ended today</h2>
+      <p class="small muted" id="bracketNote"></p>
+      <div class="bracket" id="bracket"></div>
+    </div>
+    <div class="card">
+      <div class="toolbar"><h2 style="margin:0">Playoff odds</h2><label class="small"><input type="checkbox" id="poMajor" checked> Major schools only</label><span class="small muted" id="poNote"></span></div>
+      <div class="scroll"><table id="poTable"></table></div>
+    </div>
+    <div class="card">
+      <h2>Conference standings</h2>
+      <div id="standings"></div>
+    </div>
+  </section>
+
+  <section id="tab-parlays" hidden>
+    <div class="card">
+      <h2>Parlay builder</h2>
+      <p class="small muted">Add moneylines and spreads from the Games tab. Priced at DraftKings' numbers as ESPN showed them when the job last ran; the model's chance is its own view of the same legs, multiplied, one leg a game.</p>
+      <div class="legs" id="legs"></div>
+      <div class="totals" id="parlayTotals"></div>
+      <div class="row">
+        <label>Stake $<input type="number" id="stake" value="10" min="1" step="1" style="width:80px"></label>
+        <button class="btn primary" id="saveParlay">Save parlay</button>
+        <button class="btn quiet" id="clearParlay">Clear</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Saved parlays</h2>
+      <p class="small muted">Kept in this browser only. Graded from the scores the job publishes.</p>
+      <div id="savedList"></div>
+    </div>
+  </section>
+
+  <section id="tab-record" hidden>
+    <div class="card">
+      <h2>The model's record</h2>
+      <p class="small muted" id="recordNote"></p>
+      <div class="totals" id="recordTotals"></div>
+      <h3>By week</h3>
+      <table id="recWeek"></table>
+      <h3>By confidence</h3>
+      <table id="recBand"></table>
+      <h3>How it was fitted</h3>
+      <p class="small muted" id="fitNote"></p>
+    </div>
+  </section>
+</main>
+<script>
+'use strict';
+const APP_BUILD = 'cfb v1 · 2026-09-23';
+const STATE_URL = 'state.json';
+const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
+const KEY = 'cfb_v1';
+let S = null;                 // the published state
+let P = load();               // the visitor's: legs, saved parlays, ui
+let LIVE = {};                // scores read from ESPN in this browser, by game id
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = p => (p * 100).toFixed(0) + '%';
+const pct1 = p => (p * 100).toFixed(1) + '%';
+const signed = n => n > 0 ? '+' + n : String(n);
+const fmtLine = n => n === 0 ? 'PK' : (n > 0 ? '+' + n : String(n));
+const fmtOdds = n => n === null || n === undefined ? '—' : (n > 0 ? '+' + n : String(n));
+const dec = am => am > 0 ? 1 + am / 100 : 1 + 100 / -am;
+const toAm = d => d >= 2 ? '+' + Math.round((d - 1) * 100) : String(Math.round(-100 / (d - 1)));
+const implied = am => am > 0 ? 100 / (am + 100) : -am / (-am + 100);
+
+function load() { try { const p = JSON.parse(localStorage.getItem(KEY) || '{}'); return Object.assign({ legs: [], saved: [], ui: {} }, p); } catch (e) { return { legs: [], saved: [], ui: {} }; } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} }
+
+const T = id => S.teams[id] || { abbr: id, name: id, short: id, fbs: false };
+const confName = id => (S.confs[id] || {}).short || '';
+const gameById = () => { const m = {}; for (const g of S.games) m[g.id] = g; return m; };
+const isMajorGame = g => T(g.home).major || T(g.away).major;
+const isRankedGame = g => g.hrank || g.arank || T(g.home).ap || T(g.away).ap;
+const weekLabel = g => g.type === 3 ? 'Postseason' : 'Week ' + g.week;
+function when(g) {
+  const d = new Date(g.date);
+  return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function teamCell(id, rank) {
+  const t = T(id);
+  return `<span class="tw">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.style.visibility='hidden'">` : ''}${rank ? `<span class="rk">${rank}</span>` : ''}<span>${esc(t.short)}</span></span>`;
+}
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  for (const b of $('tabs').querySelectorAll('button')) b.classList.toggle('on', b.dataset.tab === name);
+  for (const s of document.querySelectorAll('main > section')) s.hidden = s.id !== 'tab-' + name;
+  if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+  P.ui.tab = name; save();
+  ({ games: renderGames, rankings: renderRankings, ratings: renderRatings, playoff: renderPlayoff, parlays: renderParlays, record: renderRecord })[name]();
+}
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });
+window.addEventListener('hashchange', () => { const n = location.hash.slice(1); if (n && $('tab-' + n)) showTab(n); });
+
+/* ---------- Games ---------- */
+function weekOptions() {
+  const weeks = [...new Set(S.games.filter(g => g.type === 2).map(g => g.week))].sort((a, b) => a - b);
+  const hasPost = S.games.some(g => g.type === 3);
+  const sel = $('weekSel'); sel.innerHTML = weeks.map(w => `<option value="${w}">Week ${w}</option>`).join('') + (hasPost ? '<option value="post">Postseason</option>' : '');
+  sel.value = [...sel.options].some(o => o.value === String(S.week)) ? String(S.week) : sel.options[0].value;
+  const confs = Object.keys(S.confs).sort((a, b) => confName(a).localeCompare(confName(b)));
+  for (const id of ['confSel', 'ratConf']) $(id).innerHTML = '<option value="">Every conference</option>' + confs.map(c => `<option value="${c}">${esc(confName(c))}</option>`).join('');
+}
+$('weekSel').addEventListener('change', renderGames);
+$('confSel').addEventListener('change', () => { P.ui.conf = $('confSel').value; save(); renderGames(); });
+$('scope').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; P.ui.scope = b.dataset.scope; save(); renderGames(); });
+
+function legKey(g, side, kind) { return `${g.id}|${side}|${kind}`; }
+function hasLeg(g, side, kind) { return P.legs.some(l => l.game === g.id && l.side === side && l.kind === kind); }
+
+function renderGames() {
+  const wk = $('weekSel').value; const scope = P.ui.scope || 'major'; const conf = P.ui.conf || '';
+  for (const b of $('scope').querySelectorAll('button')) b.classList.toggle('on', b.dataset.scope === scope);
+  $('confSel').value = conf;
+  let gs = S.games.filter(g => wk === 'post' ? g.type === 3 : (g.type === 2 && String(g.week) === wk));
+  if (conf) gs = gs.filter(g => T(g.home).conf === conf || T(g.away).conf === conf);
+  else if (scope === 'major') gs = gs.filter(isMajorGame);
+  else if (scope === 'ranked') gs = gs.filter(isRankedGame);
+  gs.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  $('gamesNote').textContent = gs.length ? `${gs.length} games` : '';
+  if (!gs.length) { $('games').innerHTML = '<div class="empty">No games here. Widen the filter.</div>'; return; }
+  $('games').innerHTML = gs.map(gameCard).join('');
+}
+function gameCard(g) {
+  const live = LIVE[g.id]; const state = live ? live.state : g.state;
+  const hs = live ? live.hs : g.hs, as = live ? live.as : g.as;
+  const th = T(g.home), ta = T(g.away);
+  const pAway = 1 - g.pHome;
+  const final = state === 'final';
+  const homeWon = final && hs > as, awayWon = final && as > hs;
+  const line = g.line;
+  const side = (id, rank, rec, p, sc, picked, won) => `
+    <div class="side ${picked ? 'picked' : ''} ${won ? 'won' : ''}">
+      ${T(id).logo ? `<img src="${esc(T(id).logo)}" alt="" onerror="this.style.visibility='hidden'">` : '<span></span>'}
+      <span class="nm">${rank ? `<span class="rk">${rank}</span>` : ''}${esc(T(id).short)}<small>${esc(rec || '')}${T(id).fbs ? '' : ' · FCS'}</small></span>
+      <span class="wp" title="the model's chance">${pct(p)}</span>
+      <span class="sc">${sc === null || sc === undefined ? '' : sc}</span>
+    </div>`;
+  const modelLine = g.spread === 0 ? 'PK' : (g.spread < 0 ? `${th.abbr} ${g.spread}` : `${ta.abbr} ${-g.spread}`);
+  let mkt = '—', ml = '—', callTag = '';
+  if (line) {
+    mkt = line.homeLine === null || line.homeLine === undefined ? '—' : (line.homeLine <= 0 ? `${th.abbr} ${fmtLine(line.homeLine)}` : `${ta.abbr} ${fmtLine(-line.homeLine)}`) + (line.total ? ` · o/u ${line.total}` : '');
+    ml = `${ta.abbr} ${fmtOdds(line.awayML)} · ${th.abbr} ${fmtOdds(line.homeML)}`;
+  }
+  if (g.atsPick) {
+    const t = g.atsPick === 'home' ? th : ta; const l = g.atsPick === 'home' ? line.homeLine : -line.homeLine;
+    callTag = `<span class="tag pick">${esc(t.abbr)} ${fmtLine(l)} · edge ${Math.abs(g.edge)}</span>`;
+  } else if (g.noAts === 'fcs') callTag = `<span class="tag pass" title="the model has almost nothing on a lower-division school; the book's number is the better guess">no call against an FCS side</span>`;
+  else if (line && g.edge !== undefined) callTag = `<span class="tag pass">no edge against the spread (${Math.abs(g.edge)})</span>`;
+  let result = '';
+  if (g.result) {
+    result = `<span class="tag ${g.result.su ? 'win' : 'loss'}">${g.result.su ? 'call right' : 'call wrong'}</span>`;
+    if (g.result.ats) result += ` <span class="tag ${g.result.ats}">ATS ${g.result.ats}</span>`;
+    if (!g.frozen) result += ` <span class="tag replay" title="this game was over before the job first ran; the call is the replay's">replayed</span>`;
+  }
+  const legBtn = (sd, kind) => {
+    if (!line || final || state === 'live') return '';
+    const odds = kind === 'ml' ? (sd === 'home' ? line.homeML : line.awayML) : (sd === 'home' ? line.homeSpreadOdds : line.awaySpreadOdds);
+    const ln = sd === 'home' ? line.homeLine : (line.homeLine === null ? null : -line.homeLine);
+    if (odds === null || odds === undefined) return '';
+    if (kind === 'spread' && (ln === null || ln === undefined)) return '';
+    const label = kind === 'ml' ? `${T(g[sd]).abbr} ML ${fmtOdds(odds)}` : `${T(g[sd]).abbr} ${fmtLine(ln)} ${fmtOdds(odds)}`;
+    return `<button class="btn tiny ${hasLeg(g, sd, kind) ? 'on' : ''}" data-leg="${g.id}|${sd}|${kind}">${esc(label)}</button>`;
+  };
+  return `<div class="game" data-id="${g.id}">
+    <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span class="${state === 'live' ? 'live' : ''}">${state === 'pre' ? '' : esc(live ? live.detail : g.detail)}</span></div>
+    ${side(g.away, g.arank, g.arec, pAway, as, g.pick === 'away', awayWon)}
+    ${side(g.home, g.hrank, g.hrec, g.pHome, hs, g.pick === 'home', homeWon)}
+    <div class="lines">
+      <div><div class="k">Model spread</div><div class="v">${modelLine}</div></div>
+      <div><div class="k">${line ? esc(line.book || 'Book') : 'Book'}</div><div class="v">${mkt}</div></div>
+      <div><div class="k">Moneyline</div><div class="v">${ml}</div></div>
+      <div><div class="k">${g.result ? 'Result' : 'Against the spread'}</div><div class="v">${g.result ? result : (callTag || '<span class="muted">no line yet</span>')}</div></div>
+    </div>
+    ${g.result ? '' : `<div class="legbtns">${legBtn('away', 'ml')}${legBtn('home', 'ml')}${legBtn('away', 'spread')}${legBtn('home', 'spread')}</div>`}
+  </div>`;
+}
+$('games').addEventListener('click', e => {
+  const b = e.target.closest('button[data-leg]'); if (!b) return;
+  const [gid, side, kind] = b.dataset.leg.split('|'); const g = gameById()[gid];
+  const i = P.legs.findIndex(l => l.game === gid && l.side === side && l.kind === kind);
+  if (i >= 0) P.legs.splice(i, 1);
+  else {
+    P.legs = P.legs.filter(l => l.game !== gid);         // one leg a game
+    const line = g.line;
+    const odds = kind === 'ml' ? (side === 'home' ? line.homeML : line.awayML) : (side === 'home' ? line.homeSpreadOdds : line.awaySpreadOdds);
+    const ln = kind === 'spread' ? (side === 'home' ? line.homeLine : -line.homeLine) : null;
+    const p = kind === 'ml' ? (side === 'home' ? g.pHome : 1 - g.pHome) : (side === 'home' ? g.cover.home : g.cover.away);
+    P.legs.push({ game: gid, side, kind, odds, line: ln, p, label: `${T(g.away).abbr} @ ${T(g.home).abbr}`, team: T(g[side]).abbr, week: g.week, type: g.type });
+  }
+  save(); renderGames(); updateLegCount();
+});
+function updateLegCount() { const n = P.legs.length; $('legCount').hidden = !n; $('legCount').textContent = n; }
+
+/* live scores, read from ESPN in this browser */
+$('refreshScores').addEventListener('click', async () => {
+  const wk = $('weekSel').value; const btn = $('refreshScores'); btn.disabled = true; btn.textContent = 'Reading…';
+  try {
+    const q = wk === 'post' ? `groups=80&seasontype=3&week=1&dates=${S.season}&limit=400` : `groups=80&seasontype=2&week=${wk}&dates=${S.season}&limit=400`;
+    const r = await fetch(`${ESPN_SB}?${q}`, { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json(); let n = 0;
+    for (const ev of j.events || []) {
+      const c = ev.competitions && ev.competitions[0]; if (!c) continue;
+      const h = c.competitors.find(x => x.homeAway === 'home'), a = c.competitors.find(x => x.homeAway === 'away');
+      const st = c.status && c.status.type || {}; const state = st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
+      if (state === 'pre') continue;
+      LIVE[ev.id] = { state, hs: +h.score, as: +a.score, detail: st.shortDetail || st.detail || '' }; n++;
+    }
+    btn.textContent = `Scores read (${n})`;
+  } catch (e) { btn.textContent = 'ESPN did not answer'; }
+  setTimeout(() => { btn.textContent = 'Refresh scores'; btn.disabled = false; }, 2500);
+  renderGames();
+});
+
+/* ---------- Rankings ---------- */
+function renderRankings() {
+  const R = S.rankings || {}; const basis = R.cfp || R.ap;
+  if (!basis) { $('rankTable').innerHTML = ''; $('rankNote').textContent = 'No poll published yet.'; return; }
+  $('rankNote').textContent = `${basis.name}, ${basis.week || ''} (${basis.date || ''}). The model column is the power rating's place among FBS teams; Playoff is the simulation's chance of a bracket spot.`;
+  const po = (S.playoff && S.playoff.odds) || {};
+  const rows = basis.ranks.map(r => { const t = T(r.team); return `<tr class="${t.major ? 'major' : ''}">
+    <td class="n">${r.rank}</td><td class="n muted">${r.prev ? (r.prev === r.rank ? '·' : r.prev > r.rank ? '▲' + (r.prev - r.rank) : '▼' + (r.rank - r.prev)) : 'new'}</td>
+    <td>${teamCell(r.team)}</td><td>${esc(r.record || `${t.w}-${t.l}`)}</td><td class="muted">${esc(confName(t.conf))}</td>
+    <td class="n">${t.coaches ?? '—'}</td>${R.cfp && R.ap ? `<td class="n">${t.ap ?? '—'}</td>` : ''}
+    <td class="n"><b>${t.rank ?? '—'}</b></td><td class="n">${t.rating}</td><td class="n">${po[r.team] ? pct(po[r.team].playoff) : '—'}</td></tr>`; });
+  $('rankTable').innerHTML = `<thead><tr><th class="n">#</th><th class="n">Δ</th><th>Team</th><th>Rec</th><th>Conf</th><th class="n">Coaches</th>${R.cfp && R.ap ? '<th class="n">AP</th>' : ''}<th class="n">Model</th><th class="n">Rating</th><th class="n">Playoff</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+  const ranked = new Set(basis.ranks.map(r => r.team));
+  const gap = Object.keys(S.teams).filter(id => T(id).fbs && T(id).rank <= 25 && !ranked.has(id)).sort((a, b) => T(a).rank - T(b).rank);
+  $('rankGap').innerHTML = gap.length ? gap.map(id => `<span class="tag">#${T(id).rank} ${esc(T(id).short)} · ${T(id).w}-${T(id).l}</span>`).join('') : '<span class="muted small">None: the polls and the model agree on the top 25.</span>';
+}
+
+/* ---------- Power ratings ---------- */
+$('ratConf').addEventListener('change', renderRatings); $('ratMajor').addEventListener('change', renderRatings);
+function renderRatings() {
+  $('hfaNote').textContent = S.model.params.hfa + ' Elo'; $('ppeNote').textContent = S.model.ppe.toFixed(1) + ' Elo';
+  const conf = $('ratConf').value; const major = $('ratMajor').checked;
+  const po = (S.playoff && S.playoff.odds) || {};
+  let ids = Object.keys(S.teams).filter(id => T(id).fbs);
+  if (conf) ids = ids.filter(id => T(id).conf === conf); else if (major) ids = ids.filter(id => T(id).major);
+  ids.sort((a, b) => T(b).rating - T(a).rating);
+  $('ratTable').innerHTML = `<thead><tr><th class="n">#</th><th>Team</th><th>Conf</th><th class="n">Rating</th><th class="n">Rec</th><th class="n">Conf</th><th class="n">PF</th><th class="n">PA</th><th class="n">AP</th><th class="n">Playoff</th></tr></thead><tbody>` +
+    ids.map(id => { const t = T(id); return `<tr class="${t.major ? 'major' : ''}"><td class="n">${t.rank}</td><td>${teamCell(id, t.ap)}</td><td class="muted">${esc(confName(t.conf))}</td><td class="n"><b>${t.rating}</b></td><td class="n">${t.w}-${t.l}</td><td class="n">${t.cw}-${t.cl}</td><td class="n">${t.pf}</td><td class="n">${t.pa}</td><td class="n">${t.ap ?? '—'}</td><td class="n">${po[id] ? pct(po[id].playoff) : '—'}</td></tr>`; }).join('') + '</tbody>';
+}
+
+/* ---------- Playoff ---------- */
+$('poMajor').addEventListener('change', renderPlayoff);
+function renderPlayoff() {
+  const PO = S.playoff; if (!PO) return;
+  const f = PO.bracket.field;
+  $('bracketNote').textContent = `Seeded straight from the ${PO.bracket.basis}; the five best-placed conference leaders (★) are in as champions, seven more at large, the top four seeds on a bye. Unranked teams are placed by rating less ${PO.lossCost} Elo a loss, which stands in for the committee.`;
+  const seedLine = s => `<div class="seedline"><span class="seed">${s.seed}</span>${teamCell(s.team, s.rank)}<span class="muted small">${esc(s.record)}</span>${s.auto ? `<span class="auto">★ ${esc(confName(s.conf))}</span>` : ''}</div>`;
+  const byes = f.slice(0, 4), fr = [[5, 12], [6, 11], [7, 10], [8, 9]].map(([a, b]) => [f[a - 1], f[b - 1]]);
+  $('bracket').innerHTML = `<div class="bye"><h3 style="margin-top:0">Byes</h3>${byes.map(seedLine).join('')}</div>
+    <div class="fr"><h3 style="margin-top:0">First round, at the higher seed</h3>${fr.map(([h, a]) => a && h ? `${seedLine(a)}${seedLine(h)}<div style="height:6px"></div>` : '').join('')}</div>`;
+  const major = $('poMajor').checked;
+  let ids = Object.keys(PO.odds).filter(id => !major || T(id).major);
+  ids.sort((a, b) => PO.odds[b].playoff - PO.odds[a].playoff || PO.odds[b].title - PO.odds[a].title).splice(60);
+  $('poNote').textContent = `${PO.sims} simulations of the rest of the season, the title games and the bracket, at the current ratings.`;
+  const bar = p => `<span class="tw"><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span>${pct1(p)}</span>`;
+  $('poTable').innerHTML = `<thead><tr><th>Team</th><th>Conf</th><th class="n">Rec</th><th class="n">Exp. wins</th><th>Playoff</th><th class="n">Bye</th><th class="n">Conf title</th><th class="n">National title</th></tr></thead><tbody>` +
+    ids.map(id => { const t = T(id), o = PO.odds[id]; return `<tr class="${t.major ? 'major' : ''}"><td>${teamCell(id, t.ap)}</td><td class="muted">${esc(confName(t.conf))}</td><td class="n">${t.w}-${t.l}</td><td class="n">${o.expWins}</td><td>${bar(o.playoff)}</td><td class="n">${pct(o.bye)}</td><td class="n">${pct(o.conf)}</td><td class="n">${pct1(o.title)}</td></tr>`; }).join('') + '</tbody>';
+  const confs = Object.keys(PO.standings).sort((a, b) => (S.p4.includes(a) ? 0 : 1) - (S.p4.includes(b) ? 0 : 1) || confName(a).localeCompare(confName(b)));
+  $('standings').innerHTML = confs.map(c => `<details ${S.p4.includes(c) ? 'open' : ''}><summary><b>${esc(confName(c))}</b> <span class="muted small">leader ${esc(T(PO.champs[c]).short)}</span></summary>
+    <table><thead><tr><th>Team</th><th class="n">Conf</th><th class="n">Overall</th><th class="n">Rating</th><th class="n">Conf title</th></tr></thead><tbody>${PO.standings[c].map(r => `<tr><td>${teamCell(r.team, T(r.team).ap)}</td><td class="n">${r.cw}-${r.cl}</td><td class="n">${r.w}-${r.l}</td><td class="n">${T(r.team).rating}</td><td class="n">${PO.odds[r.team] ? pct(PO.odds[r.team].conf) : '—'}</td></tr>`).join('')}</tbody></table></details>`).join('');
+}
+
+/* ---------- Parlays ---------- */
+function priceLegs(legs) {
+  if (!legs.length) return null;
+  const d = legs.reduce((a, l) => a * dec(l.odds), 1), p = legs.reduce((a, l) => a * l.p, 1), imp = legs.reduce((a, l) => a * implied(l.odds), 1);
+  return { dec: d, am: toAm(d), p, imp, ev: p * (d - 1) - (1 - p) };
+}
+function legText(l) { return `${l.team} ${l.kind === 'ml' ? 'ML' : fmtLine(l.line)} <span class="muted">${fmtOdds(l.odds)}</span>`; }
+function gradeLeg(l) {
+  const g = gameById()[l.game]; if (!g || g.state !== 'final' || g.hs === null) return 'pending';
+  const margin = l.side === 'home' ? g.hs - g.as : g.as - g.hs;
+  if (l.kind === 'ml') return margin > 0 ? 'win' : 'loss';
+  const c = margin + l.line; return c > 0 ? 'win' : c < 0 ? 'loss' : 'push';
+}
+function renderParlays() {
+  updateLegCount();
+  $('legs').innerHTML = P.legs.length ? P.legs.map((l, i) => `<div class="leg"><span>${esc(l.label)} · ${legText(l)}</span><span class="muted small">${weekLabel(l)}</span><span class="n" title="the model's chance">${pct(l.p)}</span><button class="x" data-i="${i}" title="remove">×</button></div>`).join('') : '<div class="empty">No legs yet. Pick moneylines and spreads on the Games tab.</div>';
+  const pr = priceLegs(P.legs); const stake = +$('stake').value || 0;
+  $('parlayTotals').innerHTML = pr ? `
+    <div class="stat"><div class="k">Parlay odds</div><div class="v">${pr.am}</div></div>
+    <div class="stat"><div class="k">Book's implied</div><div class="v">${pct1(pr.imp)}</div></div>
+    <div class="stat"><div class="k">Model's chance</div><div class="v ${pr.p > pr.imp ? 'good' : 'bad'}">${pct1(pr.p)}</div></div>
+    <div class="stat"><div class="k">Pays</div><div class="v">$${(stake * pr.dec).toFixed(2)}</div></div>
+    <div class="stat"><div class="k">Model EV a $</div><div class="v ${pr.ev >= 0 ? 'good' : 'bad'}">${signed(pr.ev.toFixed(2))}</div></div>` : '';
+  $('savedList').innerHTML = P.saved.length ? P.saved.slice().reverse().map(sp => {
+    const grades = sp.legs.map(gradeLeg);
+    const status = grades.includes('loss') ? 'loss' : grades.includes('pending') ? 'pending' : grades.every(x => x === 'push') ? 'push' : 'win';
+    const live = sp.legs.filter((l, i) => grades[i] !== 'push'); const pr2 = priceLegs(live);
+    const pays = status === 'win' ? (sp.stake * (pr2 ? pr2.dec : 1)).toFixed(2) : status === 'push' ? sp.stake.toFixed(2) : null;
+    return `<div class="saved"><div class="top"><b>${sp.legs.length}-leg parlay · ${sp.am}</b><span><span class="tag ${status === 'pending' ? '' : status}">${status}${pays !== null ? ' · $' + pays : ''}</span> <button class="btn tiny quiet" data-del="${sp.id}">delete</button></span></div>
+      <div class="small muted">$${sp.stake} · saved ${sp.at.slice(0, 10)} · model ${pct1(sp.p)} vs implied ${pct1(sp.imp)}</div>
+      <div class="small">${sp.legs.map((l, i) => `<span class="tag ${grades[i] === 'pending' ? '' : grades[i]}">${esc(l.team)} ${l.kind === 'ml' ? 'ML' : fmtLine(l.line)} ${fmtOdds(l.odds)}</span>`).join(' ')}</div></div>`;
+  }).join('') : '<div class="empty">Nothing saved.</div>';
+}
+$('legs').addEventListener('click', e => { const b = e.target.closest('button.x'); if (!b) return; P.legs.splice(+b.dataset.i, 1); save(); renderParlays(); });
+$('stake').addEventListener('input', renderParlays);
+$('saveParlay').addEventListener('click', () => {
+  const pr = priceLegs(P.legs); if (!pr) return;
+  P.saved.push({ id: Date.now().toString(36), at: new Date().toISOString(), stake: +$('stake').value || 0, legs: P.legs, am: pr.am, p: pr.p, imp: pr.imp });
+  P.legs = []; save(); renderParlays();
+});
+$('clearParlay').addEventListener('click', () => { P.legs = []; save(); renderParlays(); });
+$('savedList').addEventListener('click', e => { const b = e.target.closest('button[data-del]'); if (!b) return; P.saved = P.saved.filter(s => s.id !== b.dataset.del); save(); renderParlays(); });
+
+/* ---------- Record ---------- */
+function renderRecord() {
+  const R = S.record; const f = S.model.fitted;
+  const stat = (k, v, cls) => `<div class="stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div></div>`;
+  const suPct = r => r.w + r.l ? pct1(r.w / (r.w + r.l)) : '—';
+  const atsStr = r => `${r.w}-${r.l}${r.p ? '-' + r.p : ''}`;
+  $('recordTotals').innerHTML = stat('Straight up', `${R.su.w}-${R.su.l}`) + stat('SU rate', suPct(R.su)) + stat('Against the spread', atsStr(R.ats), R.ats.w > R.ats.l ? 'good' : R.ats.w < R.ats.l ? 'bad' : '') + stat('ATS rate', suPct(R.ats)) + stat('Major schools SU', `${R.major.su.w}-${R.major.su.l}`) + stat('Major schools ATS', atsStr(R.major.ats));
+  const replayed = S.games.filter(g => g.result && !g.frozen).length;
+  $('recordNote').textContent = `Every FBS game the model called, straight up, and every game where it disagreed with the DraftKings line by ${S.atsEdge} points or more, against the spread. ${replayed ? replayed + ' games were over before the job first ran and are graded from the replay, without a line.' : ''}`;
+  const weeks = Object.keys(R.byWeek).sort((a, b) => (a === 'post') - (b === 'post') || a - b);
+  $('recWeek').innerHTML = '<thead><tr><th>Week</th><th class="n">SU</th><th class="n">Rate</th><th class="n">ATS</th></tr></thead><tbody>' + weeks.map(w => `<tr><td>${w === 'post' ? 'Postseason' : 'Week ' + w}</td><td class="n">${R.byWeek[w].su.w}-${R.byWeek[w].su.l}</td><td class="n">${suPct(R.byWeek[w].su)}</td><td class="n">${atsStr(R.byWeek[w].ats)}</td></tr>`).join('') + '</tbody>';
+  $('recBand').innerHTML = '<thead><tr><th>Model chance</th><th class="n">SU</th><th class="n">Rate</th><th class="n">ATS</th></tr></thead><tbody>' + ['80+', '65-80', '50-65'].filter(b => R.bands[b]).map(b => `<tr><td>${b}%</td><td class="n">${R.bands[b].su.w}-${R.bands[b].su.l}</td><td class="n">${suPct(R.bands[b].su)}</td><td class="n">${atsStr(R.bands[b].ats)}</td></tr>`).join('') + '</tbody>';
+  $('fitNote').textContent = `Elo with K ${S.model.params.K}, ${Math.round(S.model.params.carry * 100)}% of a rating carried between seasons, ${S.model.params.hfa} Elo of home field and a margin-of-victory multiplier, chosen by log loss on ${f.seasons[0]}-${f.seasons[f.seasons.length - 1]} (${f.games} games, ${pct1(f.accuracy)} of winners called). Held out, ${f.holdout}: ${pct1(f.holdoutAccuracy)} of winners, spread off by ${f.holdoutSpreadMae} points on average; the margin's standard deviation of ${S.model.sd.toFixed(1)} is what the cover chances use.`;
+}
+
+/* ---------- boot ---------- */
+async function boot() {
+  $('buildTag').textContent = APP_BUILD;
+  try {
+    const r = await fetch(STATE_URL + '?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    S = await r.json();
+  } catch (e) { $('stamp').textContent = 'Could not read state.json (' + e.message + ')'; return; }
+  const pub = new Date(S.published);
+  $('stamp').innerHTML = `<b>${S.season} season · ${S.week === 'post' ? 'postseason' : 'week ' + S.week}</b> · published ${pub.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${S.record.su.w}-${S.record.su.l} SU, ${S.record.ats.w}-${S.record.ats.l} ATS`;
+  weekOptions(); updateLegCount();
+  const h = location.hash.slice(1);
+  showTab(h && $('tab-' + h) ? h : (P.ui.tab && $('tab-' + P.ui.tab) ? P.ui.tab : 'games'));
+}
+boot();
+</script>
+</body>
+</html>
