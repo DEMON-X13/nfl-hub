@@ -92,7 +92,11 @@ node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures
 
 A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
-rebuild of the page. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
+rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
+grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season
+in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
+`S.elo`) and widens the app's own Joker lines to draw it, at build time, each edit asserted
+to land once. The app source is never touched. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
 `elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 

@@ -17,6 +17,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const { buildApp } = require('./build.js');
 const html = buildApp().replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
 const state = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
+const eloModel = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 for (const gone of ['index.html', 'admin.html'])
   if (fs.existsSync(path.join(ROOT, 'betting', gone))) throw new Error('betting/' + gone + ' is back; the betting site has no pages, the app lives in nflbets/index.html');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -129,7 +130,9 @@ function load(picks) {
   const embedFetched = [];
   const e = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/nflbets/',
     beforeParse(w3) { w3.EMBED_TAB = 'record'; w3.STATE_URL = '../betting/state.json';
-      w3.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w3.fetch = async url => { embedFetched.push(String(url)); return { ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) }; };
+      w3.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w3.fetch = async url => { embedFetched.push(String(url)); const u = String(url);
+        if (/elo\/data\/model\.json/.test(u)) return { ok: true, status: 200, json: async () => JSON.parse(eloModel) };
+        return { ok: /state\.json/.test(u), status: 200, json: async () => JSON.parse(state) }; };
       w3.confirm = () => true; w3.alert = () => {}; w3.scrollTo = () => {}; } });
   await sleep(600);
   const de = e.window.document;
@@ -138,6 +141,25 @@ function load(picks) {
   check(/straight-up, \d+ of \d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
   check(embedFetched.some(u => u === '../betting/state.json'), 'embed: the season is not read from ../betting/state.json: ' + embedFetched.join(', '));
   check(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml), 'embed: header and tab bar are hidden by the stylesheet');
+  /* the Elo model rides along: read from elo/data/model.json beside the season, graded onto
+     the games it called, and drawn on Records like the Joker */
+  { const EM = JSON.parse(eloModel), SE = e.window.eval('S');
+    const gradedIds = EM.graded.filter(g => g.correct !== null).map(g => g.game_id);
+    check(embedFetched.some(u => /\.\.\/elo\/data\/model\.json/.test(u)), 'embed: the Elo model was not read from ../elo/data/model.json');
+    check(gradedIds.length > 0 && gradedIds.every(id => SE.processed[id] && SE.processed[id].elo && typeof SE.processed[id].elo.correct === 'boolean'), 'embed: the Elo model\'s graded calls are not on the processed games');
+    check(Object.keys(SE.elo || {}).length >= gradedIds.length + ((EM.next && EM.next.games) || []).length, 'embed: S.elo does not carry the graded and coming calls');
+    const rec = de.getElementById('modelChart');
+    check(/Elo model/.test(rec.textContent) && /Elo model\s*\d+%\s*\(\d+ of \d+\)/.test(rec.textContent.replace(/\s+/g, ' ')), 'embed: the Season accuracy legend has no Elo model entry: ' + rec.textContent.replace(/\s+/g, ' ').slice(0, 200));
+    const want = gradedIds.filter(id => SE.processed[id].elo.correct).length;
+    check(new RegExp('Elo model\\s*' + Math.round(100 * want / gradedIds.length) + '%\\s*\\(' + want + ' of ' + gradedIds.length + '\\)').test(rec.textContent.replace(/\s+/g, ' ')), `embed: the Elo model's record should read ${want} of ${gradedIds.length}`);
+    check(rec.querySelectorAll('svg path[stroke="#7C3AED"], svg polyline[stroke="#7C3AED"], svg [stroke="#7C3AED"]').length > 0, 'embed: the Elo model has no line on the chart');
+    const head = [...de.querySelectorAll('#recordTable thead th')].map(th => th.textContent.trim());
+    check(head.includes('Elo model') && head.indexOf('Elo model') === head.indexOf('The Joker') + 1, 'embed: the week-by-week table has no Elo model column after the Joker: ' + head.join('|'));
+    de.getElementById('picksToggle').click(); await sleep(80);
+    const gridHead = [...de.querySelectorAll('.pickgrid thead th')].map(th => th.textContent.trim());
+    check(gridHead.includes('Elo model'), 'embed: the pick grid has no Elo model column: ' + gridHead.join('|'));
+    const firstRow = de.querySelector('.pickgrid tbody tr');
+    check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns'); }
   /* clicking a tab inside the frame must not throw on the address it cannot write */
   { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
     de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);
