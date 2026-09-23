@@ -160,14 +160,19 @@ function load(picks) {
     check(gridHead.includes('Elo model'), 'embed: the pick grid has no Elo model column: ' + gridHead.join('|'));
     const firstRow = de.querySelector('.pickgrid tbody tr');
     check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
-    /* every week through the current one, newest first, and no week beyond it */
+    /* one week at a time: this week by default, the weeks before it in the picker, nothing beyond */
     const gradedWeeks = [...new Set(Object.values(SE.processed).filter(r => r.correct !== null).map(r => +r.week))];
     const played = Math.max(...gradedWeeks), cur = SE.schedule.some(g => +g.week === played + 1) ? played + 1 : played;
-    const heads = [...de.querySelectorAll('#modelChart h3')].map(h => h.textContent.trim());
-    check(!de.getElementById('picksWeek'), 'embed: the week picker is still on the pick grid');
-    check(de.querySelectorAll('.pickgrid').length === cur && heads.length === cur, `embed: the pick grid should show weeks 1-${cur}, one grid each: ${de.querySelectorAll('.pickgrid').length} grids, ${heads.join(' | ')}`);
-    check(/^Week \d+/.test(heads[0]) && +heads[0].match(/\d+/)[0] === cur && /this week/.test(heads[0]), 'embed: the current week is not first or not marked: ' + heads[0]);
-    check(!heads.some(h => +h.match(/\d+/)[0] > cur), 'embed: a week not yet reached is on the pick grid'); }
+    const sel = de.getElementById('picksWeek');
+    check(!!sel && +sel.value === cur && /this week/.test(sel.selectedOptions[0].textContent), 'embed: the pick grid does not open on this week: ' + (sel && sel.selectedOptions[0].textContent));
+    const opts = [...sel.options].map(o => +o.value);
+    check(opts.length === cur && Math.max(...opts) === cur && Math.min(...opts) === 1, 'embed: the picker should offer weeks 1-' + cur + ' only: ' + opts.join(','));
+    check(de.querySelectorAll('.pickgrid').length === 1, 'embed: more than one week of picks is drawn at once');
+    const thisWeekGame = SE.schedule.find(g => +g.week === cur);
+    check(!!thisWeekGame && de.querySelector('.pickgrid').textContent.includes(thisWeekGame.away_team + ' at ' + thisWeekGame.home_team), 'embed: the grid shown is not this week\'s');
+    sel.value = String(cur - 1); sel.dispatchEvent(new e.window.Event('change', { bubbles: true })); await sleep(80);
+    const prevGame = SE.schedule.find(g => +g.week === cur - 1);
+    check(+de.getElementById('picksWeek').value === cur - 1 && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it'); }
   /* clicking a tab inside the frame must not throw on the address it cannot write */
   { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
     de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);

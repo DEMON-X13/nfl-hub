@@ -522,17 +522,16 @@ patch(`    const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r
     const ew=wr.filter(r=>r.elo&&r.elo.correct!=null); const ec=ew.filter(r=>r.elo.correct).length; const eCell=ew.length?\`\${Math.round(100*ec/ew.length)}%\`:'<span class="muted">–</span>';`, 'the table row counts');
 patch(`\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`,
 `\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&eRunN?\`<td class="num">\${eCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`, 'the table row');
-/* every pick, every week through the current one, newest first, instead of one week behind a
-   picker: the picker offered weeks not yet reached, where the main model and the challenger
-   show a call from today's ratings but the Joker and the Elo model, which are run for the
+/* one week of picks behind a picker that opens on this week and offers only the weeks
+   reached: the app's picker offered every scheduled week, where the main model and the
+   challenger show a call from today's ratings but the Joker and the Elo model, run for the
    coming week only, have none, and a reader took the blanks for models that had stopped. */
 patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\${[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b).map(w=>\`<option value="\${w}" \${w===pickWeek?'selected':''}>\${w>18?'Playoffs '+(w-18):'Week '+w}</option>\`).join('')}</select></label>\`:''}</div>
     \${S.picksOpen?pickGrid(pickWeek,showAll):''}`,
-`      </div>
-    \${S.picksOpen?(()=>{ const played=Math.max(...wks); const cur=S.schedule.some(g=>+g.week===played+1)?played+1:played;
-      return [...new Set(S.schedule.map(g=>+g.week))].filter(w=>w<=cur).sort((a,b)=>b-a)
-        .map(w=>\`<h3 style="margin:16px 0 4px">\${w>18?'Playoffs '+(w-18):'Week '+w}\${w===cur&&!rows.some(r=>+r.week===w)?' <span class="muted" style="font-weight:500">\u2014 this week\\'s calls</span>':''}</h3>\`+pickGrid(w,showAll)).join(''); })():''}`,
-  'the pick grid, every week through this one');
+`      \${S.picksOpen?(()=>{ const played=Math.max(...wks); const cur=S.schedule.some(g=>+g.week===played+1)?played+1:played; const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur;
+        return \`<label class="muted">Week <select id="picksWeek">\${[...new Set(S.schedule.map(g=>+g.week))].filter(w=>w<=cur).sort((a,b)=>b-a).map(w=>\`<option value="\${w}" \${w===pw?'selected':''}>\${w>18?'Playoffs '+(w-18):'Week '+w}\${w===cur?' (this week)':''}</option>\`).join('')}</select></label>\`; })():''}</div>
+    \${S.picksOpen?(()=>{ const played=Math.max(...wks); const cur=S.schedule.some(g=>+g.week===played+1)?played+1:played; const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur; return pickGrid(pw,showAll); })():''}`,
+  'the pick grid, this week by default, earlier weeks by the picker');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
 `  const elo=S.elo||{};
   const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Elo model','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
