@@ -152,7 +152,7 @@ function load(picks) {
     check(/Elo model/.test(rec.textContent) && /Elo model\s*\d+%\s*\(\d+ of \d+\)/.test(rec.textContent.replace(/\s+/g, ' ')), 'embed: the Season accuracy legend has no Elo model entry: ' + rec.textContent.replace(/\s+/g, ' ').slice(0, 200));
     const want = gradedIds.filter(id => SE.processed[id].elo.correct).length;
     check(new RegExp('Elo model\\s*' + Math.round(100 * want / gradedIds.length) + '%\\s*\\(' + want + ' of ' + gradedIds.length + '\\)').test(rec.textContent.replace(/\s+/g, ' ')), `embed: the Elo model's record should read ${want} of ${gradedIds.length}`);
-    check(rec.querySelectorAll('svg path[stroke="#7C3AED"], svg polyline[stroke="#7C3AED"], svg [stroke="#7C3AED"]').length > 0, 'embed: the Elo model has no line on the chart');
+    check(rec.querySelectorAll('svg path[stroke="#E8730A"], svg polyline[stroke="#E8730A"], svg [stroke="#E8730A"]').length > 0, 'embed: the Elo model has no line on the chart');
     const head = [...de.querySelectorAll('#recordTable thead th')].map(th => th.textContent.trim());
     check(head.includes('Elo model') && head.indexOf('Elo model') === head.indexOf('The Joker') + 1, 'embed: the week-by-week table has no Elo model column after the Joker: ' + head.join('|'));
     de.getElementById('picksToggle').click(); await sleep(80);

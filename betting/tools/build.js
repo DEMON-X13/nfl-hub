@@ -511,10 +511,10 @@ patch(`  const jDis=jRows.filter(r=>r.joker.pick!==r.pick); const jDisA=jDis.fil
 patch(`      \${showAll?lgd('#C0392B','The Joker',jRun,jRunN):''}
       \${showAll?lgd('#0F1B2D','Vegas',vRun,vRunN):''}`,
 `      \${showAll?lgd('#C0392B','The Joker',jRun,jRunN):''}
-      \${showAll?lgd('#7C3AED','Elo model',eRun,eRunN):''}
+      \${showAll?lgd('#E8730A','Elo model',eRun,eRunN):''}
       \${showAll?lgd('#0F1B2D','Vegas',vRun,vRunN):''}`, 'the legend');
 patch(`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`,
-`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&eRunN?[{pts:ePts,color:'#7C3AED'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`, 'the chart lines');
+`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&eRunN?[{pts:ePts,color:'#E8730A'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`, 'the chart lines');
 patch(`\${showAll&&jRunN?'<th class="num">The Joker</th>':''}\${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>\`;`,
 `\${showAll&&jRunN?'<th class="num">The Joker</th>':''}\${showAll&&eRunN?'<th class="num">Elo model</th>':''}\${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>\`;`, 'the table head');
 patch(`    const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length; const vCell=vw.length?\`\${Math.round(100*vc/vw.length)}%\`:'<span class="muted">–</span>';`,
@@ -524,7 +524,7 @@ patch(`\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&vRunN
 `\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&eRunN?\`<td class="num">\${eCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`, 'the table row');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
 `  const elo=S.elo||{};
-  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Elo model','#7C3AED'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Elo model','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null;
     const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
