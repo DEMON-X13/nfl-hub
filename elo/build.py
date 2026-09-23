@@ -36,15 +36,21 @@ interceptions, passes defended, touchdowns and tackles. Offensive linemen and pu
 box-score signal worth rating and are left out.
 
 THE GAME MODEL. For every game since 2020 each team's strength at each position group is the
-depth-weighted mean of the pre-game ratings of the players who took part (QB1; RB1 and RB2;
-WR1-3; TE1; K; DL top four; LB top three; DB top five), a short bench filled at 1450. The
-home-minus-away difference per group, in hundreds of Elo points, feeds a logistic regression
-for the home team winning, fitted on every earlier season and tested on the next
-(walk-forward), and the coefficient of each group is what the data says that position is
-worth in a matchup. Fitting one season at a time shows how that has moved. For the season in
-progress the model is fitted on all completed seasons, graded on the games played so far
-(pre-game ratings, of course) and asked about the next week's games with each team's roster
-as of its last game.
+depth-weighted mean of the pre-game ratings of the players expected to start (QB1; RB1 and
+RB2; WR1-3; TE1; K; DL top four; LB top three; DB top five), a short bench filled at 1450.
+Expected means what was known before kickoff: the team's depth chart for that week (nflverse
+publishes the weekly charts through 2024 and daily snapshots from 2025, of which the last
+one before the game is used) with anyone the week's injury report ruled Out taken off it,
+and where a chart says nothing about a group, the players who took the field for it in the
+team's last game. The home-minus-away difference per group, in hundreds of Elo points, feeds
+a logistic regression for the home team winning, fitted on every earlier season and tested
+on the next (walk-forward), and the coefficient of each group is what the data says that
+position is worth in a matchup. Fitting one season at a time shows how that has moved. For
+the season in progress the model is fitted on all completed seasons, graded on the games
+played so far (pre-game ratings and pre-game lineups) and asked about the next week's games
+from the latest depth charts and injury report. The same walk-forward is also run on who
+actually played, for comparison: that number is flattered by hindsight and is not the
+model's.
 
 Everything it writes is data the X NFL Bets and Stats page reads on load:
     elo/data/players.json   rankings by position, every rated player's rating, season-end top tens
@@ -62,6 +68,13 @@ FIRST = 2020
 STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{y}.csv'
 ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_{y}.csv'
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
+DC_URL = 'https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_{y}.csv'
+# the depth chart's own labels to the rated groups: the weekly files name positions, the daily
+# ones name slots. Returners, holders, punters, snappers and the offensive line are not rated.
+SLOT = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'HB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K', 'PK': 'K',
+        'DE': 'DL', 'DT': 'DL', 'NT': 'DL', 'DL': 'DL', 'LDE': 'DL', 'RDE': 'DL', 'LDT': 'DL', 'RDT': 'DL',
+        'LB': 'LB', 'ILB': 'LB', 'OLB': 'LB', 'MLB': 'LB', 'SLB': 'LB', 'WLB': 'LB', 'LILB': 'LB', 'RILB': 'LB',
+        'CB': 'DB', 'DB': 'DB', 'S': 'DB', 'FS': 'DB', 'SS': 'DB', 'SAF': 'DB', 'LCB': 'DB', 'RCB': 'DB', 'NB': 'DB'}
 # what a roster status means for the rankings: only the active list is ranked
 STATUS = {'ACT': None, 'RES': 'on injured reserve', 'PUP': 'on the PUP list', 'RET': 'retired', 'DEV': 'on the practice squad',
           'CUT': 'a free agent', 'EXE': 'on the exempt list', 'SUS': 'suspended', 'NON': 'on the non-football injury list'}
@@ -119,26 +132,87 @@ def load(offline):
             else:
                 raise
     stats = pd.concat(frames, ignore_index=True)
-    # who can play this week: the season's latest weekly roster and injury report, both
-    # re-downloaded every run since both change daily
-    roster, inj = None, None
-    for name, url in (('roster', ROSTER_URL), ('injuries', INJ_URL)):
-        dest = os.path.join(CACHE, f'{name}_{last}.csv')
-        if not offline and os.path.exists(dest):
-            os.remove(dest)
-        try:
-            df = pd.read_csv(fetch(url.format(y=last), dest, offline), low_memory=False)
-            if name == 'roster':
-                roster = df
-            else:
-                inj = df
-        except Exception as e:
-            print(f'  no {name} file for {last} ({e}); nobody is marked out')
+    # who was expected to play: every season's depth charts and injury reports, the current
+    # season's re-downloaded every run since both change daily; and who can play this week,
+    # from the season's latest weekly roster
+    charts, injuries = {}, {}
+    for y in range(FIRST, last + 1):
+        for name, url, store in (('depth_charts', DC_URL, charts), ('injuries', INJ_URL, injuries)):
+            dest = os.path.join(CACHE, f'{name}_{y}.csv')
+            if y == last and not offline and os.path.exists(dest):
+                os.remove(dest)
+            try:
+                store[y] = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False)
+            except Exception as e:
+                print(f'  no {name} file for {y} ({e})')
+    roster = None
+    dest = os.path.join(CACHE, f'roster_{last}.csv')
+    if not offline and os.path.exists(dest):
+        os.remove(dest)
+    try:
+        roster = pd.read_csv(fetch(ROSTER_URL.format(y=last), dest, offline), low_memory=False)
+    except Exception as e:
+        print(f'  no roster file for {last} ({e}); nobody is marked out')
+    inj = injuries.get(last)
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
     # the week's order within a season: regular weeks, then the playoffs in order
     stats = stats[stats.game_id.notna()]
-    return games, stats, roster, inj
+    return games, stats, roster, inj, charts, injuries
+
+
+def build_lineups(charts, injuries):
+    """the depth charts as {(season, week, team): {group: [pid, ...] by rank}} for the weekly
+    files, {team: [(date, {group: [...]}), ...]} for the daily snapshots, and the week's Outs
+    as {(season, week): set(pid)}"""
+    weekly, daily, outs = {}, {}, {}
+    for y, d in charts.items():
+        if 'depth_team' in d.columns:            # 2020-2024: one chart per team per week
+            d = d[d.gsis_id.notna() & d.week.notna()]
+            d = d.assign(group=d.position.map(SLOT))
+            d = d[d.group.notna() & (d.formation != 'Special Teams') | (d.group == 'K')]
+            d = d.sort_values('depth_team')
+            for (wk, team), grp in d.groupby(['week', 'club_code']):
+                out = {}
+                for g, pid in zip(grp.group, grp.gsis_id):
+                    lst = out.setdefault(g, [])
+                    if pid not in lst:
+                        lst.append(pid)
+                weekly[(int(y), int(wk), team)] = out
+        else:                                    # 2025 on: snapshots by date, several a week
+            d = d[d.gsis_id.notna()]
+            d = d.assign(group=d.pos_abb.map(SLOT), day=d.dt.str[:10])
+            d = d[d.group.notna()].sort_values(['dt', 'pos_rank'])
+            for team, tg in d.groupby('team'):
+                lst = daily.setdefault(team, [])
+                for day, sg in tg.groupby('day'):
+                    latest = sg[sg.dt == sg.dt.max()]
+                    out = {}
+                    for g, pid in zip(latest.group, latest.gsis_id):
+                        l2 = out.setdefault(g, [])
+                        if pid not in l2:
+                            l2.append(pid)
+                    lst.append((day, out))
+                lst.sort()
+    for y, d in injuries.items():
+        d = d[d.gsis_id.notna() & d.week.notna() & (d.report_status == 'Out')]
+        for wk, pid in zip(d.week, d.gsis_id):
+            outs.setdefault((int(y), int(wk)), set()).add(pid)
+    return weekly, daily, outs
+
+
+def chart_for(weekly, daily, season, week, team, gameday):
+    """the team's chart as known before that game, or None"""
+    c = weekly.get((season, week, team))
+    if c is not None:
+        return c
+    best = None
+    for day, out in daily.get(team, []):
+        if day <= str(gameday):
+            best = out
+        else:
+            break
+    return best
 
 
 def availability(roster, inj, week):
@@ -225,8 +299,10 @@ def main():
     ap.add_argument('--offline', action='store_true')
     a = ap.parse_args()
     print('loading')
-    games, stats, roster, inj = load(a.offline)
+    games, stats, roster, inj, charts, injuries = load(a.offline)
     games = week_order(games)
+    weekly, daily, outs = build_lineups(charts, injuries)
+    print(f'  depth charts: {len(weekly)} weekly team-charts, {sum(len(v) for v in daily.values())} daily snapshots; {sum(len(v) for v in outs.values())} players ruled out across {len(outs)} weeks')
     coming = games[(games.season == games.season.max()) & games.home_score.isna()]
     out_now, team_now = availability(roster, inj, int(coming.week.min()) if len(coming) else None)
     on_roster = roster is not None and len(roster) > 0
@@ -269,6 +345,20 @@ def main():
             out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
         return out
 
+    def expected(season, week, team, gameday, fallback, also_out=()):
+        """the players expected to start for the team, by group: the chart's order with the
+        week's Outs removed, as many as the group fields; last game's players where the chart
+        is silent on a group. Returns [(pid, group)] and whether a chart was found."""
+        chart = chart_for(weekly, daily, int(season), int(week), team, gameday)
+        gone = outs.get((int(season), int(week)), set()) | set(also_out)
+        parts = []
+        for g in GROUPS:
+            picked = [p for p in (chart or {}).get(g, []) if p not in gone][:len(DEPTH[g])]
+            if not picked:
+                picked = [p for p, gg in (fallback or []) if gg == g and p not in gone]
+            parts += [(p, g) for p in picked]
+        return parts, chart is not None
+
     cur_season = None
     for season, ordw in ord_weeks.itertuples(index=False):
         if season != cur_season:
@@ -282,7 +372,8 @@ def main():
             for p in R:
                 season_start[(season, p)] = R[p]
         week_games = games[(games.season == season) & (games.ord == ordw)]
-        # 1. features for every game of the week from pre-game ratings and who took part
+        # 1. features for every game of the week from pre-game ratings and the pre-game lineups;
+        #    the same from who took part, kept beside them for the comparison
         for row in week_games.itertuples(index=False):
             d = by_game.get(row.game_id)
             if d is None:
@@ -293,11 +384,15 @@ def main():
                     parts[team].append((pid, g))
             if not parts[row.home_team] or not parts[row.away_team]:
                 continue
-            sh, sa = strength(parts[row.home_team]), strength(parts[row.away_team])
+            eh, ch = expected(season, row.week, row.home_team, row.gameday, played.get((int(season), row.home_team)))
+            ea, ca = expected(season, row.week, row.away_team, row.gameday, played.get((int(season), row.away_team)))
+            sh, sa = strength(eh), strength(ea)
+            ph, pa = strength(parts[row.home_team]), strength(parts[row.away_team])
             game_feat.append({'game_id': row.game_id, 'season': int(season), 'ord': int(ordw), 'week': int(row.week),
-                              'home': row.home_team, 'away': row.away_team,
+                              'home': row.home_team, 'away': row.away_team, 'charted': bool(ch and ca),
                               'result': None if pd.isna(row.home_score) else float(row.home_score) - float(row.away_score),
-                              'x': {g: (sh[g] - sa[g]) / 100 for g in GROUPS}, 'sh': sh, 'sa': sa})
+                              'x': {g: (sh[g] - sa[g]) / 100 for g in GROUPS}, 'sh': sh, 'sa': sa,
+                              'x_played': {g: (ph[g] - pa[g]) / 100 for g in GROUPS}})
             for t in (row.home_team, row.away_team):
                 played[(int(season), t)] = parts[t]
         # 2. the week's results move the ratings
@@ -337,22 +432,27 @@ def main():
 
     # ---- the game model ----
     feats = [gf for gf in game_feat if gf['result'] is not None and gf['result'] != 0]
-    X = lambda rows: np.array([[r['x'][g] for g in GROUPS] for r in rows])
+    print(f'  {sum(1 for r in feats if r["charted"])} of {len(feats)} decided games had both depth charts')
+    X = lambda rows, key='x': np.array([[r[key][g] for g in GROUPS] for r in rows])
     Y = lambda rows: np.array([1.0 if r['result'] > 0 else 0.0 for r in rows])
-    walk = {}
-    for s in seasons[1:]:
-        train = [r for r in feats if r['season'] < s]
-        test = [r for r in feats if r['season'] == s]
-        if not test:
-            continue
-        w = logistic_fit(X(train), Y(train))
-        p = predict(w, X(test))
-        y = Y(test)
-        acc = float(((p > 0.5) == (y > 0.5)).mean())
-        ll = float(-np.mean(y * np.log(np.clip(p, 1e-9, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-9, 1))))
-        home = float(y.mean())
-        walk[int(s)] = {'games': len(test), 'accuracy': round(acc, 4), 'logloss': round(ll, 4), 'home_wins': round(home, 4),
-                        'coef': {'home': round(float(w[0]), 4), **{g: round(float(w[i + 1]), 4) for i, g in enumerate(GROUPS)}}}
+    def walk_forward(key):
+        walk = {}
+        for s in seasons[1:]:
+            train = [r for r in feats if r['season'] < s]
+            test = [r for r in feats if r['season'] == s]
+            if not test:
+                continue
+            w = logistic_fit(X(train, key), Y(train))
+            p = predict(w, X(test, key))
+            y = Y(test)
+            acc = float(((p > 0.5) == (y > 0.5)).mean())
+            ll = float(-np.mean(y * np.log(np.clip(p, 1e-9, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-9, 1))))
+            home = float(y.mean())
+            walk[int(s)] = {'games': len(test), 'accuracy': round(acc, 4), 'logloss': round(ll, 4), 'home_wins': round(home, 4),
+                            'coef': {'home': round(float(w[0]), 4), **{g: round(float(w[i + 1]), 4) for i, g in enumerate(GROUPS)}}}
+        return walk
+    walk = walk_forward('x')
+    walk_played = walk_forward('x_played')
     by_season = {}
     for s in seasons:
         rows = [r for r in feats if r['season'] == s]
@@ -374,7 +474,8 @@ def main():
                        'pick': r['home'] if p >= 0.5 else r['away'], 'result': r['result'],
                        'correct': (p >= 0.5) == (r['result'] > 0) if r['result'] != 0 else None,
                        'edges': {g: round(r['x'][g] * 100, 1) for g in GROUPS}})
-    # the coming week: each team as it last took the field
+    # the coming week: each team as its latest depth chart and the week's injury report have it,
+    # and as it last took the field where they are silent
     played_weeks = games[(games.season == last) & games.home_score.notna()]
     next_ord = None
     upcoming = games[(games.season == last) & games.home_score.isna()]
@@ -383,15 +484,21 @@ def main():
     calls = []
     if next_ord is not None:
         for row in upcoming[upcoming.ord == next_ord].itertuples(index=False):
-            ph, pa = played.get((last, row.home_team)), played.get((last, row.away_team))
-            if not ph or not pa:
+            # this week's lineups also drop anyone the latest roster carries off the active
+            # list (injured reserve and the rest), which a depth chart can lag behind
+            not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
+            eh, ch = expected(last, row.week, row.home_team, row.gameday, played.get((last, row.home_team)), not_active)
+            ea, ca = expected(last, row.week, row.away_team, row.gameday, played.get((last, row.away_team)), not_active)
+            if not eh or not ea:
                 continue
-            sh, sa = strength(ph), strength(pa)
+            sh, sa = strength(eh), strength(ea)
             x = {g: (sh[g] - sa[g]) / 100 for g in GROUPS}
             p = float(predict(w_all, np.array([[x[g] for g in GROUPS]]))[0])
+            qb = lambda parts: next((info[pid]['name'] for pid, g in parts if g == 'QB' and pid in info), None)
             calls.append({'game_id': row.game_id, 'week': int(row.week), 'gameday': row.gameday, 'away': row.away_team, 'home': row.home_team,
                           'p_home': round(p, 4), 'pick': row.home_team if p >= 0.5 else row.away_team,
-                          'edges': {g: round(x[g] * 100, 1) for g in GROUPS},
+                          'edges': {g: round(x[g] * 100, 1) for g in GROUPS}, 'charted': bool(ch and ca),
+                          'home_qb': qb(eh), 'away_qb': qb(ea),
                           'home_strength': {g: round(sh[g]) for g in GROUPS}, 'away_strength': {g: round(sa[g]) for g in GROUPS}})
     n_ok = sum(1 for g in graded if g['correct'] is True)
     n_gr = sum(1 for g in graded if g['correct'] is not None)
@@ -399,7 +506,7 @@ def main():
         'built_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='minutes'),
         'season': last, 'groups': GROUPS, 'labels': LABEL, 'depth': DEPTH,
         'coef': coef, 'trained_on': {'seasons': [int(s) for s in seasons if s < last], 'games': len(done)},
-        'by_season': by_season, 'walk_forward': walk,
+        'by_season': by_season, 'walk_forward': walk, 'walk_forward_who_played': walk_played,
         'record': {'season': last, 'graded': n_gr, 'correct': n_ok, 'accuracy': round(n_ok / n_gr, 4) if n_gr else None},
         'graded': graded, 'next': {'week': int(upcoming[upcoming.ord == next_ord].week.min()) if next_ord is not None else None, 'games': calls},
         'units': {f'{t}|{f}': round(v) for (t, f), v in sorted(U.items())},
@@ -472,7 +579,10 @@ def main():
     print(f'  wrote elo/data/players.json ({os.path.getsize(os.path.join(OUT, "players.json")) // 1024} KB) and model.json')
     for g in GROUPS:
         print(f'  {LABEL[g]}: ' + ', '.join(f"{r['name']} {r['elo']}" for r in groups_out[g]['top'][:5]))
-    print('  walk-forward: ' + ', '.join(f"{s}: {w['accuracy']:.3f} ({w['games']})" for s, w in walk.items()))
+    print('  walk-forward, pre-game lineups: ' + ', '.join(f"{s}: {w['accuracy']:.3f} ({w['games']})" for s, w in walk.items()))
+    print('  walk-forward, who played (hindsight): ' + ', '.join(f"{s}: {w['accuracy']:.3f}" for s, w in walk_played.items()))
+    if calls:
+        print('  ' + '; '.join(f"{c['away']}@{c['home']} {c['pick']} {max(c['p_home'], 1 - c['p_home']):.0%} ({c['away_qb']} v {c['home_qb']})" for c in calls[:6]))
     print(f"  weights: {coef}")
     if n_gr:
         print(f"  {last}: {n_ok}/{n_gr} graded; next week {model['next']['week']}: {len(calls)} calls")

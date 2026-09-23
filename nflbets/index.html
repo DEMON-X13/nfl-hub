@@ -4282,14 +4282,15 @@ function weights(){
   const heat=`<table class="pe-t pe-heat"><thead><tr><th>Season</th>${G.map(g=>`<th class="pe-n">${g}</th>`).join('')}<th class="pe-n">Games</th></tr></thead><tbody>`
     +seasons.map(s=>`<tr><td>${s}</td>${G.map(g=>{ const v=bs[s][g]; return `<td class="pe-n">${v.toFixed(2)}<i class="${v<0?'pe-neg':''}" style="width:${Math.round(Math.abs(v)/mx*36)}px"></i></td>`; }).join('')}<td class="pe-n">${bs[s].games}</td></tr>`).join('')
     +'</tbody></table>';
-  const walk=`<table class="pe-t"><thead><tr><th>Season</th><th class="pe-n">Games</th><th class="pe-n">Right</th><th class="pe-n">Home won</th></tr></thead><tbody>`
-    +Object.keys(wf).sort().map(s=>`<tr><td>${s}</td><td class="pe-n">${wf[s].games}</td><td class="pe-n"><b>${pct(wf[s].accuracy)}</b></td><td class="pe-n">${pct(wf[s].home_wins)}</td></tr>`).join('')+'</tbody></table>';
+  const wp=m.walk_forward_who_played||{};
+  const walk=`<table class="pe-t"><thead><tr><th>Season</th><th class="pe-n">Games</th><th class="pe-n">Right</th><th class="pe-n pe-m0">If who played were known</th><th class="pe-n">Home won</th></tr></thead><tbody>`
+    +Object.keys(wf).sort().map(s=>`<tr><td>${s}</td><td class="pe-n">${wf[s].games}</td><td class="pe-n"><b>${pct(wf[s].accuracy)}</b></td><td class="pe-n pe-m0">${wp[s]?pct(wp[s].accuracy):'\u2013'}</td><td class="pe-n">${pct(wf[s].home_wins)}</td></tr>`).join('')+'</tbody></table>';
   return `<div class="card"><h2>What each position is worth <span class="pill">fitted on ${esc(m.trained_on.games)} games</span></h2>
     <p class="pe-sub">The model's weight on a 100-point edge at each position, in log-odds of winning. Fitted one season at a time underneath, which is the six-year story of which positions decided games. A home-field term (${m.coef.home.toFixed(2)}) sits alongside.</p>
     <div class="pe-w">${cells}</div>
     <h2 style="margin-top:22px">By season</h2>${heat}
     <h2 style="margin-top:22px">Walk-forward record</h2>
-    <p class="pe-sub">Each season called by the model fitted on the seasons before it only, so no season is graded on itself.</p>${walk}</div>`;
+    <p class="pe-sub">Each season called by the model fitted on the seasons before it only, so no season is graded on itself, from the lineups as they were known before kickoff: the week's depth chart with the injury report's Outs removed. The hindsight column scores the same model on who actually played, which nobody knows in advance.</p>${walk}</div>`;
 }
 function rankings(){
   const P=D.players, g=D.pos, grp=P.groups[g];
