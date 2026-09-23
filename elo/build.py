@@ -331,6 +331,9 @@ def main():
                 U[key] = unit(*key) - K_UNIT * (sum(ds) / len(ds))
 
     print(f'  {len(R)} players rated over {len(seasons)} seasons, {len(game_feat)} games featured')
+    # every game's features, for experiments beside this script (the cache is gitignored)
+    with open(os.path.join(CACHE, 'features.json'), 'w') as f:
+        json.dump(game_feat, f, separators=(',', ':'))
 
     # ---- the game model ----
     feats = [gf for gf in game_feat if gf['result'] is not None and gf['result'] != 0]
