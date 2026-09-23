@@ -130,13 +130,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(/Season \d+–\d+/.test(txt(d.getElementById('pkSeasonRec'))), 'no season record');
 
   /* the row is the betting app's: header, split bar, band, final-score cell */
-  chk(!!d.querySelector('.pk-gamehead') && /Date.*Matchup.*Win probability.*Confidence.*Final score/.test(txt(d.querySelector('.pk-gamehead'))),
+  chk(!!d.querySelector('.pk-gamehead') && /Date.*Matchup.*Win probability.*Confidence.*Score prediction.*Final score/.test(txt(d.querySelector('.pk-gamehead'))),
     'the column header is not the betting board\'s');
   chk(cards.every(c => c.querySelector('.pk-probrow .pk-prob .pk-a') && c.querySelector('.pk-probrow .pk-prob .pk-h')), 'a game is missing its split bar');
   chk(cards.every(c => /HIGH|MED|LOW|50\/50/.test(txt(c.querySelector('.pk-tier')))), 'a game is missing its confidence band');
   chk(cards.every(c => c.querySelector('.pk-ttag.pk-win')), 'no pick is marked on a matchup tag');
   chk(!d.querySelector('#tab-pickems .ttag'), 'a betting tag came through in the prop model\'s class names');
   chk(cards.every(c => c.querySelector('.pk-result')), 'a game is missing its final-score cell');
+  /* the score prediction: the model's margin split around the book's total, whole points */
+  const PAYLOAD = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8'));
+  let predOk = 0, predAll = 0;
+  for (const c of cards) {
+    const g = state.schedule.find(x => x.game_id === c.dataset.game), pk = state.picks[g.game_id] || state.processed[g.game_id];
+    const row = PAYLOAD.sched.find(x => x.id === g.game_id);
+    if (!pk || !row || row.tot == null) continue;
+    predAll++;
+    let hs = Math.round((row.tot + pk.margin) / 2), as = Math.round((row.tot - pk.margin) / 2);
+    if (hs === as) { if (pk.pick === g.home_team) hs++; else as++; }
+    if (txt(c.querySelector('.pk-pred .pk-psc')) === `${as}–${hs}`) predOk++;
+  }
+  chk(predAll > 0 && predOk === predAll, `score predictions are the model's margin around the book's total: ${predOk} of ${predAll}`);
   const pend = cards.filter(c => /0 : 0/.test(txt(c.querySelector('.pk-result')))).length;
   const done = cards.filter(c => / won /.test(txt(c.querySelector('.pk-result')))).length;
   const on = cards.filter(c => / leading |Tied /.test(txt(c.querySelector('.pk-result')))).length;
