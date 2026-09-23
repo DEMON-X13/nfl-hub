@@ -44,6 +44,9 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 /* a ranked player's shield beside his name in the Parlay Builder, with his place at the position */
 .plr .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 .plr .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* the same shield on a player's row in the Props game view and the Pick'ems game bodies */
+.plrbtn .who .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.plrbtn .who .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 /* the second price on a player leg: the book's chance nudged by the player's form */
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
@@ -211,6 +214,11 @@ function badge(pid){
 }
 function decorate(){
   if(!D.players) return; defs();
+  /* the Props game view and the Pick'ems game bodies: every player row carries his id */
+  document.querySelectorAll('button.plrbtn[data-open]').forEach(btn=>{
+    const who=btn.querySelector('.who'); if(!who||who.querySelector('.pe-badge')) return;
+    const html=badge(btn.dataset.open); if(html) who.insertAdjacentHTML('afterbegin',html);
+  });
   document.querySelectorAll('#parlayBody tr.legrow').forEach(tr=>{
     if(tr.querySelector('.pe-badge')) return;
     const b=tr.querySelector('button[data-drop]'), td=tr.querySelector('td.plr'); if(!b||!td) return;
@@ -279,6 +287,10 @@ if(typeof renderTrack==='function'){ const drawTrack=renderTrack;
   renderTrack=function(){ const r=drawTrack.apply(this,arguments); trackAlt(); return r; }; }
 if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
+if(typeof renderGame==='function'){ const drawGame=renderGame;
+  renderGame=function(){ const r=drawGame.apply(this,arguments); decorate(); return r; }; }
+/* the Pick'ems board draws a game's players itself when a game is opened */
+document.addEventListener('click',()=>setTimeout(decorate,0),true);
 document.addEventListener('app-ready',decorate);
 function draw(){
   const body=el('peBody');
