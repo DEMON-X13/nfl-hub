@@ -1,0 +1,51 @@
+name: Update college site
+
+on:
+  schedule:
+    # In UTC (Eastern is UTC-4 in season). College football plays Tuesday to Saturday,
+    # nearly all of it Saturday. ESPN's public feeds are the only source: free, no credits.
+    # Off the hour, because this repo's scheduled runs land late and :00 is the minute most
+    # often dropped.
+    - cron: "17 13 * * 2"   # Tuesday 9:17am ET: the week rolls over, the new polls are out
+    - cron: "17 13 * * 5"   # Friday 9:17am ET: the weekend's lines are posted, the calls are frozen
+    - cron: "17 13 * * 6"   # Saturday 9:17am ET: the last read of the lines before kickoff
+    - cron: "47 3 * * 0"    # Saturday 11:47pm ET: the afternoon and early evening games are final
+    - cron: "17 9 * * 0"    # Sunday 5:17am ET: the late games, the whole Saturday graded
+    - cron: "17 13 * * 1"   # Monday 9:17am ET: catch-up
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  cfb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: cfb/tools
+      - name: Read the season, rate, call, grade and write state.json
+        run: node cfb/tools/update.js
+      - name: Smoke test the page over the new state
+        run: node cfb/tools/smoke.js
+      - name: Commit if anything changed
+        run: |
+          git config user.name "nfl-hub bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add cfb/state.json cfb/data/teams.json
+          if git diff --cached --quiet; then echo "nothing changed"; else
+            git commit -m "cfb: update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
+          fi
