@@ -410,11 +410,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
-    chk(body.querySelectorAll('.card').length >= 4, 'the Elo tab should draw its calls, record, rankings, history and weights cards: ' + body.querySelectorAll('.card').length);
-    const nx = (eloM.next && eloM.next.games) || [];
-    const callRows = body.querySelectorAll('.pe-calls tbody tr').length;
-    chk(!nx.length || callRows === nx.length, `the calls table has ${callRows} rows for ${nx.length} games`);
-    if (nx.length) chk([...body.querySelectorAll('.pe-calls tbody tr')].every(tr => /agrees|differs|no call yet/.test(txt(tr))), 'a call does not say what the betting model makes of the same game');
+    chk(body.querySelectorAll('.card').length === 3, 'the Elo tab should draw its rankings, history and weights cards and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(!body.querySelector('.pe-calls') && ![...body.querySelectorAll('h2')].some(h => /^\d{4} so far/.test(txt(h))), 'the week\'s calls or the season record are still on the Elo tab; they live on Pick\'em Record');
     const posBtns = [...body.querySelectorAll('.pe-pos button')];
     chk(posBtns.map(b => b.dataset.pos).join() === eloM.groups.join(), 'the position picker does not list every rated group: ' + posBtns.map(b => b.dataset.pos).join());
     const rankRows = () => [...body.querySelectorAll('.card')].find(c => /Rankings/.test(txt(c.querySelector('h2')))).querySelectorAll('tbody tr');
@@ -431,7 +428,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
     chk(!!wts && wts.querySelectorAll('.pe-w div').length === eloM.groups.length, 'the weights card does not show one weight per group');
     chk(!!wts && wts.querySelectorAll('.pe-heat tbody tr').length === Object.keys(eloM.by_season).length, 'the by-season table is not one row per season');
-    chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))) && /\d{4}/.test(txt(d.getElementById('peSeasonRec'))), 'the tab bar does not carry the records: ' + txt(d.getElementById('peWalkRec')) + ' / ' + txt(d.getElementById('peSeasonRec')));
+    chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))), 'the tab bar does not carry the walk-forward record: ' + txt(d.getElementById('peWalkRec')));
     /* the data has the shape the tab relies on */
     chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1300 && r.elo < 1800)), 'a group has fewer than ten rated players or a rating out of range');
     chk(Object.values(eloM.walk_forward).every(x => x.accuracy > 0.5 && x.games > 0), 'the walk-forward record should beat a coin on every season: ' + JSON.stringify(eloM.walk_forward));
