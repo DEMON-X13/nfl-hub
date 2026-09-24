@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-22T19:59+00:00",
+ "generated": "2026-09-24T17:22+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1663,20 +1663,20 @@
    "week": 3,
    "home": "GB",
    "away": "ATL",
-   "pick": "ATL",
-   "pHome": 0.493,
+   "pick": "GB",
+   "pHome": 0.5149,
    "played": false,
    "base": 0.1727,
    "why": [
     {
      "f": "home_moneyline",
-     "v": -290.0,
-     "c": 0.893
+     "v": -245.0,
+     "c": 0.4809
     },
     {
-     "f": "pg_fg_pct_A",
-     "v": 0.5,
-     "c": -0.4424
+     "f": "td_rushing_first_downs_H",
+     "v": 3.5,
+     "c": -0.2611
     },
     {
      "f": "td_rushing_yards_H",
@@ -1684,29 +1684,29 @@
      "c": -0.2558
     },
     {
-     "f": "pg_def_tackles_for_loss_H",
-     "v": 9.0,
-     "c": -0.1867
-    },
-    {
      "f": "spread_line",
-     "v": 6.0,
-     "c": -0.1488
-    },
-    {
-     "f": "td_rushing_first_downs_H",
-     "v": 3.5,
-     "c": -0.1192
-    },
-    {
-     "f": "td_passing_epa_H",
-     "v": -2.9361,
-     "c": -0.1113
+     "v": 4.5,
+     "c": -0.1185
     },
     {
      "f": "pg_passing_16_H",
      "v": 3.0,
-     "c": 0.0813
+     "c": 0.1132
+    },
+    {
+     "f": "surface_fieldturf",
+     "v": 0.0,
+     "c": -0.1087
+    },
+    {
+     "f": "td_passing_epa_H",
+     "v": -2.9361,
+     "c": -0.0808
+    },
+    {
+     "f": "td_rushing_fumbles_H",
+     "v": 1.0,
+     "c": 0.0761
     }
    ]
   },
@@ -1772,7 +1772,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 154.0,
+     "v": 160.0,
      "c": -0.6444
     },
     {
@@ -1807,7 +1807,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -185.0,
+     "v": -192.0,
      "c": 0.091
     }
    ]
@@ -1816,30 +1816,35 @@
    "week": 3,
    "home": "IND",
    "away": "HOU",
-   "pick": "HOU",
-   "pHome": 0.3439,
+   "pick": "IND",
+   "pHome": 0.5356,
    "played": false,
    "base": 0.1727,
    "why": [
     {
+     "f": "pg_def_tackle_assists_H",
+     "v": 50.0,
+     "c": -0.2042
+    },
+    {
      "f": "home_moneyline",
-     "v": 120.0,
-     "c": -0.5682
+     "v": 105.0,
+     "c": -0.1588
     },
     {
      "f": "td_def_tackles_with_assist_A",
      "v": 1.0,
-     "c": 0.3532
+     "c": 0.141
     },
     {
-     "f": "td_completions_A",
-     "v": 28.0,
-     "c": -0.3288
+     "f": "pg_passing_16_H",
+     "v": 2.0,
+     "c": 0.1132
     },
     {
-     "f": "pg_def_tackle_assists_H",
-     "v": 50.0,
-     "c": -0.2042
+     "f": "td_passing_epa_H",
+     "v": -1.8629,
+     "c": 0.0791
     },
     {
      "f": "td_fg_pct_H",
@@ -1852,14 +1857,9 @@
      "c": -0.0586
     },
     {
-     "f": "td_pt_inside_20_H",
-     "v": 1.0,
-     "c": -0.0563
-    },
-    {
-     "f": "td_sack_yards_lost_A",
-     "v": -28.0,
-     "c": 0.0493
+     "f": "pg_passing_air_yards_A",
+     "v": 475.0,
+     "c": 0.0578
     }
    ]
   },
@@ -1874,7 +1874,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 575.0,
+     "v": 470.0,
      "c": -1.1236
     },
     {
@@ -1889,7 +1889,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -850.0,
+     "v": -650.0,
      "c": -0.1501
     },
     {
@@ -1925,7 +1925,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -340.0,
+     "v": -345.0,
      "c": 0.893
     },
     {
@@ -1976,7 +1976,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -166.0,
+     "v": -155.0,
      "c": 0.11
     },
     {
@@ -2027,7 +2027,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -305.0,
+     "v": -298.0,
      "c": 0.893
     },
     {
@@ -2078,7 +2078,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 245.0,
+     "v": 270.0,
      "c": -1.1236
     },
     {
@@ -2108,7 +2108,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -305.0,
+     "v": -340.0,
      "c": -0.0933
     },
     {
@@ -2122,8 +2122,8 @@
    "week": 3,
    "home": "NYG",
    "away": "TEN",
-   "pick": "NYG",
-   "pHome": 0.5153,
+   "pick": "TEN",
+   "pHome": 0.4953,
    "played": false,
    "base": 0.1727,
    "why": [
@@ -2136,11 +2136,6 @@
      "f": "pg_passing_16_H",
      "v": 3.0,
      "c": 0.1132
-    },
-    {
-     "f": "home_moneyline",
-     "v": -155.0,
-     "c": 0.11
     },
     {
      "f": "pg_passing_cpoe_A",
@@ -2166,6 +2161,11 @@
      "f": "pg_kickoff_returns_A",
      "v": 4.0,
      "c": -0.0599
+    },
+    {
+     "f": "td_penalty_yards_A",
+     "v": 35.0,
+     "c": -0.052
     }
    ]
   },
@@ -2180,7 +2180,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -485.0,
+     "v": -455.0,
      "c": 0.893
     },
     {
@@ -2236,7 +2236,7 @@
     },
     {
      "f": "home_moneyline",
-     "v": 100.0,
+     "v": 102.0,
      "c": -0.1818
     },
     {
@@ -2282,7 +2282,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 130.0,
+     "v": 145.0,
      "c": -0.6444
     },
     {
@@ -2307,7 +2307,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -155.0,
+     "v": -175.0,
      "c": 0.091
     },
     {
@@ -2333,7 +2333,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -192.0,
+     "v": -185.0,
      "c": 0.4809
     },
     {
@@ -2377,15 +2377,15 @@
    "week": 3,
    "home": "DEN",
    "away": "LA",
-   "pick": "LA",
-   "pHome": 0.4545,
+   "pick": "DEN",
+   "pHome": 0.5308,
    "played": false,
    "base": 0.1727,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 120.0,
-     "c": -0.5912
+     "v": 114.0,
+     "c": -0.3981
     },
     {
      "f": "td_def_tackles_with_assist_A",
@@ -2413,14 +2413,14 @@
      "c": 0.0755
     },
     {
-     "f": "td_receiving_fumbles_lost_H",
-     "v": 0.0,
-     "c": -0.0571
-    },
-    {
      "f": "pg_passing_cpoe_A",
      "v": 7.2726,
      "c": -0.0496
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 225.5,
+     "c": -0.0472
     }
    ]
   },
@@ -2429,13 +2429,13 @@
    "home": "CHI",
    "away": "PHI",
    "pick": "CHI",
-   "pHome": 0.5623,
+   "pHome": 0.5352,
    "played": false,
    "base": 0.1727,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 180.0,
+     "v": 185.0,
      "c": -0.6444
     },
     {
@@ -2459,9 +2459,9 @@
      "c": 0.1218
     },
     {
-     "f": "away_moneyline",
-     "v": -218.0,
-     "c": 0.091
+     "f": "td_fg_long_A",
+     "v": 46.5,
+     "c": 0.0932
     },
     {
      "f": "pg_fumbles_total_A",
@@ -2469,9 +2469,9 @@
      "c": 0.0881
     },
     {
-     "f": "td_passing_20_H",
-     "v": 3.0,
-     "c": 0.0628
+     "f": "away_moneyline",
+     "v": -225.0,
+     "c": -0.0735
     }
    ]
   }
