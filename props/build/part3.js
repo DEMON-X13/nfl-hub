@@ -23,11 +23,11 @@ function winMark(g,t){ if(!gameFinal(g)||!hasScore(g)||g.as===g.hs) return ''; r
 function tag(t,mini){const bg=tagBg(tagColor(t));
   return `<span class="ttag${mini?' mini':''}" style="background:${bg};color:${textOn(bg)};border-color:${darken(bg,.72)}">${t}</span>`;}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* the schedule's times are US Eastern; they are shown in the viewer's own zone */
 function fmtDate(g){ if(!g.d) return {day:'',t:''};
-  const dt=new Date(g.d+'T12:00:00');
+  const k=g.t?kickoff(g):null, dt=k||new Date(g.d+'T12:00:00');
   const day=dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-  let t=''; if(g.t){ const [H,M]=g.t.split(':').map(Number);
-    const h=((H+11)%12)+1, ap=H<12?'am':'pm'; t=`${h}:${String(M).padStart(2,'0')}${ap} ET`; }
+  const t=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
   return {day,t}; }
 function fmtML(ml){ return ml==null?'\u2013':(ml>0?'+'+ml:''+ml); }
 function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?ml/100+1:100/Math.abs(ml)+1; }

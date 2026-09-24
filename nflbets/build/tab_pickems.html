@@ -117,12 +117,20 @@ const tag=(...a)=>BET.tag(...a).replace(/class="([^"]*)"/,(m,c)=>'class="'+c.spl
    live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
 const mkt=gid=>(typeof S==='object'&&S&&S.sched||[]).find(x=>x.id===gid)||null;
 
+/* the schedule's kickoff (US Eastern) as an instant: Eastern's offset on that day is read
+   from the browser's own zone tables, so the clock change needs no date written in here */
+function kickAt(d,t){
+  const guess=new Date(`${d}T${t}:00Z`);
+  const inZone=z=>new Date(guess.toLocaleString('en-US',{timeZone:z}));
+  const k=new Date(guess.getTime()+(inZone('UTC')-inZone('America/New_York')));
+  return isNaN(k)?null:k;
+}
+/* the date and kickoff in the viewer's own time zone, with the zone's short name */
 function fmtDate(g){
   if(!g.gameday) return ['',''];
-  const d=new Date(g.gameday+'T12:00:00');
+  const k=g.gametime?kickAt(g.gameday,g.gametime):null, d=k||new Date(g.gameday+'T12:00:00');
   const day=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-  let t=g.gametime||'';
-  if(t){ const [h,m]=t.split(':').map(Number); const ap=h>=12?'PM':'AM'; const h12=h%12||12; t=`${h12}:${String(m).padStart(2,'0')} ${ap} ET`; }
+  const t=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
   return [day,t];
 }
 const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
