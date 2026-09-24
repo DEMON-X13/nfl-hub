@@ -1,1 +1,36 @@
 stat,player,line,over,under
+passing_tds,Jordan Love,1.5,-118,-108
+passing_tds,Michael Penix Jr.,1.5,205,-267
+passing_yards,Jordan Love,228.5,-113,-111
+passing_yards,Michael Penix Jr.,206.5,-111,-113
+receiving_yards,Christian Watson,71.5,-111,-113
+receiving_yards,Drake London,66.5,-113,-111
+receiving_yards,Matthew Golden,52.5,-112,-112
+receiving_yards,Tucker Kraft,45.5,-111,-113
+receiving_yards,Bijan Robinson,41.5,-109,-115
+receiving_yards,Kyle Pitts,35.5,-112,-112
+receiving_yards,Jahan Dotson,19.5,-114,-110
+receiving_yards,Skyy Moore,9.5,-117,-108
+receiving_yards,Olamide Zaccheaus,9.5,-110,-114
+receiving_yards,Jonnu Smith,8.5,-105,-119
+receiving_yards,Chris Brooks,7.5,-110,-114
+receiving_yards,MarShawn Lloyd,5.5,-118,-106
+receptions,Drake London,5.5,-107,-120
+receptions,Christian Watson,5.5,122,-156
+receptions,Bijan Robinson,4.5,-117,-109
+receptions,Matthew Golden,4.5,103,-131
+receptions,Tucker Kraft,3.5,-164,128
+receptions,Kyle Pitts,3.5,-116,-110
+receptions,Jahan Dotson,1.5,-156,122
+receptions,Chris Brooks,1.5,129,-166
+receptions,Olamide Zaccheaus,1.5,130,-166
+receptions,Jonnu Smith,1.5,132,-170
+receptions,Skyy Moore,1.5,138,-177
+receptions,MarShawn Lloyd,1.5,166,-214
+rushing_yards,Bijan Robinson,77.5,-113,-111
+rushing_yards,Kaleb Johnson,34.5,-110,-114
+rushing_yards,MarShawn Lloyd,24.5,-112,-112
+rushing_yards,Brian Robinson Jr.,21.5,-116,-108
+rushing_yards,Chris Brooks,15.5,-111,-113
+rushing_yards,Jordan Love,8.5,-108,-116
+rushing_yards,Michael Penix Jr.,4.5,-110,-114

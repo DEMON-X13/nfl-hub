@@ -1,1 +1,62 @@
 game_id,player,market,threshold,odds
+2026_03_ATL_GB,Atlanta Falcons D/ST,any_td,1,550
+2026_03_ATL_GB,Austin Hooper,any_td,1,1400
+2026_03_ATL_GB,Bijan Robinson,any_td,1,-155
+2026_03_ATL_GB,Bijan Robinson,receiving_yards,42,-109
+2026_03_ATL_GB,Bijan Robinson,receptions,5,-117
+2026_03_ATL_GB,Bijan Robinson,rushing_yards,78,-113
+2026_03_ATL_GB,Bo Melton,any_td,1,850
+2026_03_ATL_GB,Brian Robinson Jr.,any_td,1,425
+2026_03_ATL_GB,Brian Robinson Jr.,rushing_yards,22,-116
+2026_03_ATL_GB,Charlie Woerner,any_td,1,2500
+2026_03_ATL_GB,Chris Blair,any_td,1,3000
+2026_03_ATL_GB,Chris Brooks,any_td,1,300
+2026_03_ATL_GB,Chris Brooks,receiving_yards,8,-110
+2026_03_ATL_GB,Chris Brooks,receptions,2,129
+2026_03_ATL_GB,Chris Brooks,rushing_yards,16,-111
+2026_03_ATL_GB,Christian Watson,any_td,1,150
+2026_03_ATL_GB,Christian Watson,receiving_yards,72,-111
+2026_03_ATL_GB,Christian Watson,receptions,6,122
+2026_03_ATL_GB,Drake London,any_td,1,175
+2026_03_ATL_GB,Drake London,receiving_yards,67,-113
+2026_03_ATL_GB,Drake London,receptions,6,-107
+2026_03_ATL_GB,Green Bay Packers D/ST,any_td,1,500
+2026_03_ATL_GB,Jahan Dotson,any_td,1,700
+2026_03_ATL_GB,Jahan Dotson,receiving_yards,20,-114
+2026_03_ATL_GB,Jahan Dotson,receptions,2,-156
+2026_03_ATL_GB,Jonnu Smith,any_td,1,550
+2026_03_ATL_GB,Jonnu Smith,receiving_yards,9,-105
+2026_03_ATL_GB,Jonnu Smith,receptions,2,132
+2026_03_ATL_GB,Jordan Love,any_td,1,550
+2026_03_ATL_GB,Jordan Love,passing_tds,2,-118
+2026_03_ATL_GB,Jordan Love,passing_yards,229,-113
+2026_03_ATL_GB,Jordan Love,rushing_yards,9,-108
+2026_03_ATL_GB,Josh Whyle,any_td,1,1500
+2026_03_ATL_GB,Kaleb Johnson,any_td,1,195
+2026_03_ATL_GB,Kaleb Johnson,rushing_yards,35,-110
+2026_03_ATL_GB,Kyle Pitts,any_td,1,360
+2026_03_ATL_GB,Kyle Pitts,receiving_yards,36,-112
+2026_03_ATL_GB,Kyle Pitts,receptions,4,-116
+2026_03_ATL_GB,MarShawn Lloyd,any_td,1,210
+2026_03_ATL_GB,MarShawn Lloyd,receiving_yards,6,-118
+2026_03_ATL_GB,MarShawn Lloyd,receptions,2,166
+2026_03_ATL_GB,MarShawn Lloyd,rushing_yards,25,-112
+2026_03_ATL_GB,Mark Redman,any_td,1,1500
+2026_03_ATL_GB,Matthew Golden,any_td,1,195
+2026_03_ATL_GB,Matthew Golden,receiving_yards,53,-112
+2026_03_ATL_GB,Matthew Golden,receptions,5,103
+2026_03_ATL_GB,Michael Penix Jr.,any_td,1,1000
+2026_03_ATL_GB,Michael Penix Jr.,passing_tds,2,205
+2026_03_ATL_GB,Michael Penix Jr.,passing_yards,207,-111
+2026_03_ATL_GB,Michael Penix Jr.,rushing_yards,5,-110
+2026_03_ATL_GB,Nick Muse,any_td,1,5000
+2026_03_ATL_GB,Olamide Zaccheaus,any_td,1,800
+2026_03_ATL_GB,Olamide Zaccheaus,receiving_yards,10,-110
+2026_03_ATL_GB,Olamide Zaccheaus,receptions,2,130
+2026_03_ATL_GB,Skyy Moore,any_td,1,475
+2026_03_ATL_GB,Skyy Moore,receiving_yards,10,-117
+2026_03_ATL_GB,Skyy Moore,receptions,2,138
+2026_03_ATL_GB,Tucker Kraft,any_td,1,190
+2026_03_ATL_GB,Tucker Kraft,receiving_yards,46,-111
+2026_03_ATL_GB,Tucker Kraft,receptions,4,-164
+2026_03_ATL_GB,Zachariah Branch,any_td,1,1300
