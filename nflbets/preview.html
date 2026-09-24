@@ -4630,7 +4630,7 @@ function eloPicks(){
     const p=pick.reduce((a,l)=>a*l.pe,1), d=pick.reduce((a,l)=>a*mlToDec(l.price),1);
     tiers.push({id:'elo'+n,label:`Elo ${n}-leg`,legs:pick,p,dec:d,sig:'elo|'+pick.map(l=>l.key+'|'+l.side+'|'+l.k).join(',')});
   }
-  return {tiers,candidates:best.length};
+  return {tiers,candidates:best.length,games:new Set(best.map(l=>l.gid)).size};
 }
 function eloSuggest(){
   const v=document.getElementById('suggView'); if(!v) return;
@@ -4638,7 +4638,8 @@ function eloSuggest(){
   const r=eloPicks(); if(!r) return;
   const w=typeof currentWeek==='function'?currentWeek():'', stake=Math.max(0,+S.stake||0), cls=['safe','med','aggr'];
   let body;
-  if(!r.tiers.length) body=`<p class="muted" style="margin:0">No Elo picks for week ${w} yet: ${r.candidates?`only ${r.candidates} ranked player${r.candidates===1?'':'s'} beat${r.candidates===1?'s':''} a book price`:'no ranked player beats a book price'} so far. Player prices arrive with the Thursday and Saturday pulls.</p>`;
+  if(!r.tiers.length) body=`<p class="muted" style="margin:0">No Elo picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price so far'
+    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices arrive with the Thursday and Saturday pulls; Sunday's games come with Saturday's.</p>`;
   else body=`<p class="muted" style="margin:0 0 14px">Ranked players whose Elo says they beat the book's price, plus money first, one leg a game. The chance is the book's moved by the player's rating on the side of the bet. Payouts on a $${stake.toFixed(2)} bet.</p>
     <div class="sugg-grid">${r.tiers.map((t,i)=>{
       const ev=t.p*t.dec-1, saved=(S.saved||[]).some(x=>x.suggestSig===t.sig);
