@@ -32,7 +32,7 @@ build and its own scheduled workflow.
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with Live Parlays as a section of the Parlay Builders tab | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app |
 | `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is the file the section reads, and `build/page.html` is the section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json` |
-| `elo/` | Player Elo: every player rated by position since 2020 and the roster model built on those ratings; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
+| `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
 
 ## Source vs generated -- never edit a generated file
 
@@ -44,7 +44,7 @@ at the next refresh:
 - `cfb/state.json`, `cfb/data/teams.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
-- `elo/data/players.json`, `elo/data/model.json` (by `elo/build.py`; `elo/cache/` is gitignored)
+- `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
@@ -88,7 +88,7 @@ Gate: the app's embedded model numbers must equal
 
 ```
 pip install -r elo/requirements.txt
-python3 elo/build.py             # downloads nflverse player stats 2020-now into elo/cache/, writes elo/data/
+python3 elo/build.py             # downloads nflverse player stats 2012-now into elo/cache/, writes elo/data/
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 ```
 
@@ -103,8 +103,11 @@ its tag into the page. The tab's script also puts a second price, "market + form
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the Prop
-Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The Suggested parlays window also carries its Elo picks: 2-, 3- and 4-leg parlays of ranked
-players whose rating says they beat the book's price (plus money first, -200 to +300, one leg a
+Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
+starter's stats from his recent form, his Elo and the Elo of the defenders he faces; the tab shows
+it as Matchups, each leg in the builder carries its Elo matchup chance, and the Suggested parlays
+window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
+they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
 game), built from `pricedLegs()` in the props parts beside the model's own suggestions. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick

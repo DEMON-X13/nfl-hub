@@ -63,13 +63,15 @@ props/
 
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
-                                 explained in its docstring; downloads 2020-now nflverse
+                                 explained in its docstring; downloads 2012-now nflverse
                                  player stats into cache/ (gitignored) and writes data/
   data/players.json              generated: rankings by position, every rated player, the
-                                 season-end top tens since 2020
+                                 season-end top tens since 2012
   data/model.json                generated: the fitted position weights (overall and by
                                  season), the walk-forward record, this season's graded
                                  calls and the coming week's
+  data/matchups.json             generated: the matchup formula per position and stat, its
+                                 walk-forward record, the coming week's projections
   requirements.txt               pandas, numpy
 
 news/
@@ -104,7 +106,7 @@ this page shows. Tabs are addresses: `#slate`, `#parlay`, `#record` and so on.
 The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads
 `elo/data/players.json` and `elo/data/model.json` on load and draws the coming week's calls
 from the roster model beside the betting model's, the season's graded calls, the rankings
-by position with each player's season line, the season-end top tens since 2020, and the
+by position with each player's season line, the season-end top tens since 2012, and the
 fitted weight of every position, overall and season by season. It borrows the Pick'ems
 tab's team tag through `window.pkTag`.
 Live Parlays is a section of the Parlay Builders tab, standing where the prop model's

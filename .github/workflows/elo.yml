@@ -1,7 +1,7 @@
 name: elo
 
 # The Player Elo ratings and the roster model: every player rated by position, game by game
-# since 2020, and the game model fitted on those ratings, re-run once the week's player stats
+# since 2012, the matchup formula, and the game model fitted on those ratings, re-run once the week's player stats
 # are on nflverse. Two mornings: Tuesday for the week (Monday night included), Friday to pick
 # up any late correction and call the coming week on the rosters as they last took the field.
 on:

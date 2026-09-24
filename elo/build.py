@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Player Elo: every player rated, by position, game by game, since 2020 -- and a game model
-built on nothing but those ratings.
+"""Player Elo: every player rated, by position, game by game, since 2012 -- a game model
+built on nothing but those ratings, and a matchup formula for each player's next game.
 
     python3 elo/build.py              # downloads what it lacks into elo/cache/, writes elo/data/
     python3 elo/build.py --offline    # use the cache only
@@ -39,7 +39,7 @@ sum of the events he made: sacks, tackles for loss, hits, forced and recovered f
 interceptions, passes defended, touchdowns and tackles. Offensive linemen and punters have no
 box-score signal worth rating and are left out.
 
-THE GAME MODEL. For every game since 2020 each team's strength at each position group is the
+THE GAME MODEL. For every game since 2012 each team's strength at each position group is the
 depth-weighted mean of the pre-game ratings of the players expected to start (QB1; RB1 and
 RB2; WR1-3; TE1; K; DL top four; LB top three; DB top five), a short bench filled at 1450.
 Expected means what was known before kickoff: the team's depth chart for that week (nflverse
@@ -56,10 +56,36 @@ from the latest depth charts and injury report. The same walk-forward is also ru
 actually played, for comparison: that number is flattered by hindsight and is not the
 model's.
 
+THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
+his next game beyond what his recent games already say? For every QB, RB, WR and TE game
+since 2016 in which the player was a regular (involvement at least 80% of the position's
+norm), with at least three such games behind him, each stat the prop model prices is
+regressed on:
+
+    y = c0 + c1 home*f + c2 f + c3 f*(allowed - 1) + c4 f*p + c5 f*dl + c6 f*lb + c7 f*db
+
+f is his recent average (exponentially weighted, half-life four games, previous seasons
+included), allowed what the defence has given the position per game (half-life six) over the
+league's, p his pre-game Elo and dl, lb, db the pre-game strengths of the opposing defensive
+line, linebackers and secondary from the game model's expected lineups, all in hundreds of
+points from 1500. The same fit without the last four terms is the form-only projection; the
+difference is the Elo nudge. Seasons 2012-2015 only warm the ratings up (from 2020 to 2012 in
+this change, so the fit has a decade behind it); nothing is fitted on them. The record is
+walk-forward: each season from 2017 projected by the fit on the seasons before it, graded on
+the typical miss with and without Elo and on how often the fifth of games Elo moved most
+landed on the side it moved. Through 2025 the Elo part helps passing yards, passing TDs and
+completions, running back carries, and receivers' and tight ends' catches, targets, yards and
+touchdowns (their biggest nudges right 53-63% of the time); it adds nothing to rushing yards,
+quarterback rushing, interceptions or running back receiving, and the page fades those. The
+coming week's projections are for the expected starters, from the latest ratings, the
+depth charts and the injury report, with the formula fitted on every completed season.
+
 Everything it writes is data the X NFL Bets and Stats page reads on load:
     elo/data/players.json   rankings by position, every rated player's rating, season-end top tens
     elo/data/model.json     the fitted weights, by season and overall, the walk-forward record,
                             this season's graded picks and the coming week's calls
+    elo/data/matchups.json  the matchup formula per position and stat, its walk-forward record and
+                            the coming week's projections for every expected starter
 """
 import argparse, datetime, json, math, os, sys, urllib.request
 import numpy as np
@@ -68,7 +94,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, 'cache')
 OUT = os.path.join(HERE, 'data')
-FIRST = 2020
+FIRST = 2012
 STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{y}.csv'
 ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_{y}.csv'
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
@@ -299,6 +325,116 @@ def predict(w, X):
     return 1 / (1 + np.exp(-(np.hstack([np.ones((len(X), 1)), X]) @ w)))
 
 
+# ---- matchups: a player's next game from his recent form, his Elo and the defenders he faces ----
+MU_STATS = {'QB': ['passing_yards', 'passing_tds', 'attempts', 'completions', 'passing_interceptions', 'rushing_yards', 'carries'],
+            'RB': ['rushing_yards', 'carries', 'receptions', 'receiving_yards', 'scrim_yards', 'any_td'],
+            'WR': ['receptions', 'receiving_yards', 'targets', 'any_td'],
+            'TE': ['receptions', 'receiving_yards', 'targets', 'any_td']}
+MU_COLS = ['completions', 'attempts', 'passing_yards', 'passing_tds', 'passing_interceptions', 'carries', 'rushing_yards',
+           'rushing_tds', 'receptions', 'targets', 'receiving_yards', 'receiving_tds']
+MU_FIRST = 2016          # the seasons before this are the ratings' warm-up, not fitted on
+MU_FORM_HL, MU_ALLOWED_HL, MU_MIN_GAMES = 4, 6, 3
+MU_DEF = ['DL', 'LB', 'DB']
+
+
+def mu_design(b, home, allowed, pz, dz, elo=True):
+    """the regression's columns: the recent average, home, what the defence has allowed, and
+    (with elo) the player's rating and the opposing defenders' ratings, each scaling the average"""
+    cols = [np.ones(len(b)), home * b, b, b * (allowed - 1)]
+    if elo:
+        cols += [b * pz] + [b * dz[:, i] for i in range(dz.shape[1])]
+    return np.column_stack(cols)
+
+
+def matchups(log, game_feat, coming, last):
+    """fit, check and apply the matchup formula (see the docstring's MATCHUPS)"""
+    d = pd.DataFrame(log)
+    if d.empty:
+        return None
+    d['scrim_yards'] = d.rushing_yards + d.receiving_yards
+    d['any_td'] = d.rushing_tds + d.receiving_tds
+    d = d.sort_values(['season', 'ord']).reset_index(drop=True)
+    opp = {}
+    for f in game_feat:
+        opp[(f['game_id'], f['home'])] = f['sa']
+        opp[(f['game_id'], f['away'])] = f['sh']
+    out = {'stats': MU_STATS, 'fit': {}, 'record': {}, 'players': {}}
+    for g, stats in MU_STATS.items():
+        x = d[(d.group == g) & (d.vol >= 0.8 * VOLUME[g])].copy()          # the games he was a regular in
+        if x.empty:
+            continue
+        x['n'] = x.groupby('pid').cumcount()
+        for st in stats:
+            x['b_' + st] = x.groupby('pid')[st].transform(lambda v: v.shift(1).ewm(halflife=MU_FORM_HL, min_periods=1).mean())
+        allowed = {}
+        for st in stats:
+            a = x.groupby(['season', 'ord', 'opp'])[st].mean().reset_index().sort_values(['season', 'ord'])
+            a['a'] = a.groupby('opp')[st].transform(lambda v: v.shift(1).ewm(halflife=MU_ALLOWED_HL, min_periods=1).mean())
+            x = x.merge(a[['season', 'ord', 'opp', 'a']].rename(columns={'a': 'a_' + st}), on=['season', 'ord', 'opp'], how='left')
+            # what each defence has allowed through its latest game, for the coming week
+            allowed[st] = a.groupby('opp')[st].apply(lambda v: v.ewm(halflife=MU_ALLOWED_HL).mean().iloc[-1]).to_dict()
+        for u in MU_DEF:
+            x['o' + u] = [((opp.get((gid, t)) or {}).get(u, np.nan) - 1500) / 100 for gid, t in zip(x.game_id, x.team)]
+        x['pz'] = (x.R - 1500) / 100
+        fit_rows = x[(x.season >= MU_FIRST) & (x.n >= MU_MIN_GAMES) & x.oDB.notna()]
+        latest = x.groupby('pid').tail(1).set_index('pid')
+        for st in stats:
+            y = fit_rows[st].values
+            mean = float(np.nanmean(y))
+            args = lambda r: (r['b_' + st].values, r.home.values, r['a_' + st].fillna(mean).values / mean, r.pz.values, r[['o' + u for u in MU_DEF]].values)
+            X1, X0 = mu_design(*args(fit_rows)), mu_design(*args(fit_rows), elo=False)
+            ok = ~np.isnan(X1).any(1)
+            seas = fit_rows.season.values
+            # walk-forward: every season called by the formula fitted on the seasons before it
+            p0, p1 = np.full(len(y), np.nan), np.full(len(y), np.nan)
+            for sn in sorted(set(seas)):
+                if sn == MU_FIRST:
+                    continue
+                tr, te = ok & (seas < sn), ok & (seas == sn)
+                if te.any():
+                    p0[te] = X0[te] @ np.linalg.lstsq(X0[tr], y[tr], rcond=None)[0]
+                    p1[te] = X1[te] @ np.linalg.lstsq(X1[tr], y[tr], rcond=None)[0]
+            rec = {}
+            for label, m in (('past', ~np.isnan(p1) & (seas < last)), ('this', ~np.isnan(p1) & (seas == last))):
+                if m.sum() < 30:
+                    continue
+                nud, res = p1[m] - p0[m], y[m] - p0[m]
+                top = np.abs(nud) >= np.percentile(np.abs(nud), 80)
+                rec[label] = {'games': int(m.sum()),
+                              'rmse_form': round(float(np.sqrt(np.mean(res ** 2))), 3),
+                              'rmse_elo': round(float(np.sqrt(np.mean((y[m] - p1[m]) ** 2))), 3),
+                              'right': round(float(np.mean(np.sign(nud) == np.sign(res))), 4),
+                              'right_top': round(float(np.mean(np.sign(nud[top]) == np.sign(res[top]))), 4)}
+            out['record'][f'{g}|{st}'] = rec
+            # the formula for the coming week: fitted on every completed season
+            done = ok & (seas < last)
+            w1 = np.linalg.lstsq(X1[done], y[done], rcond=None)[0]
+            w0 = np.linalg.lstsq(X0[done], y[done], rcond=None)[0]
+            sd = float(np.sqrt(np.mean((y[done] - X1[done] @ w1) ** 2)))
+            out['fit'][f'{g}|{st}'] = {'coef': [round(float(v), 5) for v in w1], 'coef_form': [round(float(v), 5) for v in w0],
+                                       'sd': round(sd, 3), 'mean': round(mean, 3)}
+            # the coming week's regulars: the expected lineup, each against the defenders he will face
+            for c in coming:
+                for pid, gg in c['parts']:
+                    if gg != g or pid not in latest.index:
+                        continue
+                    L = latest.loc[pid]
+                    if L.n + 1 < MU_MIN_GAMES:
+                        continue
+                    b = float(x[x.pid == pid][st].ewm(halflife=MU_FORM_HL).mean().iloc[-1])
+                    a = allowed[st].get(c['opp'], mean) / mean
+                    dz = np.array([[(c['opp_strength'][u] - 1500) / 100 for u in MU_DEF]])
+                    pz = (c['rating'][pid] - 1500) / 100
+                    arr = lambda v: np.array([v])
+                    e1 = float((mu_design(arr(b), arr(c["home"]), arr(a), arr(pz), dz) @ w1)[0])
+                    e0 = float((mu_design(arr(b), arr(c["home"]), arr(a), arr(pz), dz, elo=False) @ w0)[0])
+                    pl = out['players'].setdefault(pid, {'group': g, 'game_id': c['game_id'], 'team': c['team'], 'opp': c['opp'],
+                                                         'home': c['home'], 'elo': round(c['rating'][pid]),
+                                                         'opp_def': {u: round(c['opp_strength'][u]) for u in MU_DEF}, 'stats': {}})
+                    pl['stats'][st] = [round(b, 2), round(max(e1, 0.0), 2), round(e1 - e0, 2)]
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--offline', action='store_true')
@@ -366,6 +502,7 @@ def main():
             parts += [(p, g) for p in picked]
         return parts, chart is not None
 
+    mu_log = []             # every offensive player-game: pre-game rating, opponent, box score
     cur_season = None
     for season, ordw in ord_weeks.itertuples(index=False):
         if season != cur_season:
@@ -418,6 +555,10 @@ def main():
                 # a regular who left early: his involvement collapsed against his own recent
                 # norm, so the game says nothing about how good he is and is not rated
                 rv = recent.setdefault(pid, [])
+                if g in MU_STATS:
+                    mu_log.append({'season': int(season), 'ord': int(ordw), 'game_id': row.game_id, 'pid': pid, 'group': g,
+                                   'team': r.team, 'opp': r.opponent_team, 'home': int(r.team == row.home_team), 'R': R[pid],
+                                   'vol': float(r.vol), **{c: (0.0 if pd.isna(getattr(r, c, 0)) else float(getattr(r, c, 0))) for c in MU_COLS}})
                 if len(rv) >= 3 and np.median(rv) >= 0.8 * VOLUME[g] and r.vol < LEFT_EARLY * np.median(rv):
                     skipped += 1
                     rv.append(r.vol)
@@ -499,6 +640,7 @@ def main():
     if len(upcoming):
         next_ord = int(upcoming.ord.min())
     calls = []
+    coming = []
     if next_ord is not None:
         for row in upcoming[upcoming.ord == next_ord].itertuples(index=False):
             # this week's lineups also drop anyone the latest roster carries off the active
@@ -509,6 +651,9 @@ def main():
             if not eh or not ea:
                 continue
             sh, sa = strength(eh), strength(ea)
+            for team, other, parts, st_opp, home in ((row.home_team, row.away_team, eh, sa, 1), (row.away_team, row.home_team, ea, sh, 0)):
+                coming.append({'game_id': row.game_id, 'team': team, 'opp': other, 'home': home, 'parts': parts,
+                               'opp_strength': st_opp, 'rating': {pid: R.get(pid, REPLACEMENT) for pid, _ in parts}})
             x = {g: (sh[g] - sa[g]) / 100 for g in GROUPS}
             p = float(predict(w_all, np.array([[x[g] for g in GROUPS]]))[0])
             qb = lambda parts: next((info[pid]['name'] for pid, g in parts if g == 'QB' and pid in info), None)
@@ -573,7 +718,7 @@ def main():
             # the last game before it, or the season's start. The Prop Record grades on those.
             players[row['id']] = {'name': row['name'], 'pos': row['pos'], 'group': g, 'team': row['team'], 'elo': row['elo'], 'rank': row['rank'],
                                   's0': row['start_elo'], 'h': [[o, round(r)] for o, r in row['this_season']]}
-    # season-end top tens, every season: the six-year story
+    # season-end top tens, every season
     ends = {}
     for s in seasons:
         ends[int(s)] = {}
@@ -594,6 +739,16 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, 'players.json'), 'w') as f:
         json.dump(out, f, separators=(',', ':'))
+    mu = matchups(mu_log, game_feat, coming, last)
+    if mu:
+        mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'], 'defenders': MU_DEF,
+                   'columns': ['1', 'home x form', 'form', 'form x allowed', 'form x player Elo'] + [f'form x opposing {u} Elo' for u in MU_DEF]})
+        with open(os.path.join(OUT, 'matchups.json'), 'w') as f:
+            json.dump(mu, f, separators=(',', ':'))
+        for k in ('QB|passing_yards', 'WR|receiving_yards', 'RB|rushing_yards', 'TE|receiving_yards'):
+            r = mu['record'].get(k, {}).get('past')
+            if r:
+                print(f"  matchups {k}: {r['games']} games, rmse {r['rmse_form']} -> {r['rmse_elo']}, biggest nudges right {r['right_top']:.3f}")
     with open(os.path.join(OUT, 'model.json'), 'w') as f:
         json.dump(model, f, separators=(',', ':'))
     print(f'  wrote elo/data/players.json ({os.path.getsize(os.path.join(OUT, "players.json")) // 1024} KB) and model.json')

@@ -19,6 +19,7 @@ const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
+const ELO_MU = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8');
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -93,6 +94,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PARLAYS) });
           if (s.includes('elo/data/players.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_P) });
           if (s.includes('elo/data/model.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_M) });
+          if (s.includes('elo/data/matchups.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_MU) });
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched }), 300));
@@ -427,7 +429,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
-    chk(body.querySelectorAll('.card').length === 2, 'the Elo tab should draw its rankings and weights cards and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(body.querySelectorAll('.card').length === 3 && !!body.querySelector('.card.pe-mcard'), 'the Elo tab should draw its rankings, matchups and weights cards and nothing else: ' + body.querySelectorAll('.card').length);
     chk(![...body.querySelectorAll('h2')].some(h => /season by season/.test(txt(h))), 'the season-by-season card is still on the Elo tab');
     chk(!body.querySelector('.pe-calls') && ![...body.querySelectorAll('h2')].some(h => /^\d{4} so far/.test(txt(h))), 'the week\'s calls or the season record are still on the Elo tab; they live on Pick\'em Record');
     const posBtns = [...body.querySelectorAll('.pe-pos button')];
@@ -476,8 +478,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(altOf(wrRow) > 0.5 && altOf(wrRow) < 0.75 && /market \+ form \d+%/.test(txt(wrRow.querySelector('.pe-alt'))), 'a top receiver\'s over at -115 should carry a market + form price above the book\'s: ' + altOf(wrRow));
       chk(altOf(qbRow) !== null && altOf(qbRow) < w.eval('mlProb')(-110), 'a top quarterback\'s under should price below the book\'s chance: ' + altOf(qbRow));
       chk(/Market \+ form/.test(txt(d.querySelector('#parlayBody .pe-altsum')) || '') && /\d+\.\d% to all land/.test(txt(d.querySelector('#parlayBody .pe-altsum'))), 'the builder does not sum the market + form chances: ' + txt(d.querySelector('#parlayBody .pe-altsum')));
+      const nMu = d.querySelectorAll('#parlayBody .pe-muleg').length;
       w.eval('renderParlay()'); await wait(80);
-      chk(d.querySelectorAll('#parlayBody .pe-alt').length === 2 && d.querySelectorAll('#parlayBody .pe-altsum').length === 1, 'a redraw doubled or lost the second prices');
+      chk(d.querySelectorAll('#parlayBody .pe-alt:not(.pe-muleg)').length === 2 && d.querySelectorAll('#parlayBody .pe-altsum').length === 1
+        && d.querySelectorAll('#parlayBody .pe-muleg').length === nMu, 'a redraw doubled or lost the second prices');
       delete S.parlay[key]; delete S.parlay[key2]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
     /* the Props game view: the same shield on a ranked player's row */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
@@ -507,29 +511,42 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(w.eval(`eloPre(${JSON.stringify(pid)},1)`) === v.s0 && w.eval(`eloPre(${JSON.stringify(pid)},${v.h[0][0] + 1})`) === v.h[0][1],
             'eloPre does not read the rating a player took into the week'); } }
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
-    /* Elo picks: ranked players whose rating beats the book's price, plus money first, one leg
-       a game and a player, prices held between -200 and +300, saved like any suggestion */
-    { const top = Object.entries(eloP.players).filter(([, v]) => v.elo >= 1560).slice(0, 5);
-      const low = Object.entries(eloP.players).find(([, v]) => v.elo <= 1440);
-      const gs = w.eval('JSON.stringify(gamesIn(currentWeek()).filter(g=>!gameStarted(g)).map(g=>g.id))');
-      const gids = JSON.parse(gs);
-      if (top.length === 5 && low && gids.length >= 4) {
-        const L = (pid, gid, price, side, extra) => Object.assign({ key: gid + '|' + pid + '|receptions', gid, pid, stat: 'receptions', k: 4.5, side, main: true, p: 0.5, price,
-          src: 'real', mu: 4, name: eloP.players[pid].name, pos: 'WR', grp: 'WR', team: 'X', opp: 'Y', week: 1, label: (side === 'over' ? 'Over' : 'Under') + ' 4.5 receptions' }, extra || {});
-        const legs = [L(top[0][0], gids[0], 120, 'over'), L(top[1][0], gids[0], 130, 'over'),      /* same game: one of them */
-          L(top[2][0], gids[1], 1600, 'over'),                                                    /* too long a price */
-          L(top[3][0], gids[2], -110, 'over'), L(top[4][0], gids[3], 110, 'over'),
-          L(top[4][0], gids[3], -105, 'over', { stat: 'rec_yards', key: gids[3] + '|' + top[4][0] + '|rec_yards' }),   /* same player again */
-          L(low[0], gids[1], 105, 'over'),                                                         /* rated below 1500: no pick on his over */
-          L(top[2][0], gids[1], -115, 'under')];                                                   /* a top player's under: no pick */
+    /* Elo picks: legs whose Elo matchup (trusted stats only) beats the book's price with its
+       margin out, plus money first, one leg a game and a player, prices held between -200 and
+       +300, saved like any suggestion */
+    { const MU = JSON.parse(ELO_MU);
+      const trusted = (g, st) => { const p = ((MU.record[g + '|' + st] || {}).past); return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
+      const cand = [];
+      for (const [pid, v] of Object.entries(MU.players)) for (const [st, a] of Object.entries(v.stats))
+        if (trusted(v.group, st) && eloP.players[pid] && a[2] / MU.fit[v.group + '|' + st].sd >= 0.12) cand.push({ pid, st, gid: v.game_id, z: a[2] / MU.fit[v.group + '|' + st].sd });
+      cand.sort((a, b) => b.z - a.z);
+      const byGame = []; for (const c of cand) if (!byGame.some(x => x.gid === c.gid)) byGame.push(c);
+      const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st, gid: v.game_id })))[0];
+      if (byGame.length >= 3 && weak) {
+        const L = (c, price, side, extra) => Object.assign({ key: c.gid + '|' + c.pid + '|' + c.st, gid: c.gid, pid: c.pid, stat: c.st, k: 4.5, side, main: true, p: 0.5, price,
+          src: 'real', mu: 4, name: eloP.players[c.pid].name, pos: 'X', grp: eloP.players[c.pid].group, team: 'X', opp: 'Y', week: 3, label: side + ' test line' }, extra || {});
+        const legs = [L(byGame[0], 120, 'over'), L(byGame[1], -110, 'over'), L(byGame[2], 110, 'over'),
+          L(byGame[0], 130, 'over', { key: byGame[0].gid + '|' + byGame[0].pid + '|dup' }),        /* same player again */
+          L(byGame[1], 1600, 'over', { key: 'long' }),                                              /* too long a price */
+          L(byGame[2], -110, 'under', { key: 'under' }),                                            /* against his nudge */
+          L(weak, 150, 'over', { key: 'weak' })];                                                   /* a stat the matchup has not earned */
         w.__legs = legs; w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }');
         const r = w.eval('eloPicks()');
         const t2 = r.tiers[0], t3 = r.tiers[1];
-        chk(r.tiers.length === 2 && t2.legs.length === 2 && t3.legs.length === 3, 'Elo picks should make a 2- and a 3-leg parlay from these lines: ' + JSON.stringify(r.tiers.map(t => t.legs.length)));
+        chk(r.tiers.length === 2 && t2.legs.length === 2 && t3.legs.length === 3, 'Elo picks should make a 2- and a 3-leg parlay from these lines: ' + JSON.stringify(r.tiers.map(t => t.legs.map(l => l.key))));
         chk(t3 && t3.legs[0].price > 0 && t3.legs[1].price > 0 && t3.legs[2].price < 0, 'Elo picks do not put plus money first');
         chk(t3 && new Set(t3.legs.map(l => l.gid)).size === 3 && new Set(t3.legs.map(l => l.pid)).size === 3, 'Elo picks took two legs from one game or one player');
-        chk(t3 && t3.legs.every(l => l.price >= -200 && l.price <= 300 && l.pid !== low[0] && l.side === 'over'), 'Elo picks took a line they should have passed on');
+        chk(t3 && t3.legs.every(l => !['long', 'under', 'weak'].includes(l.key)), 'Elo picks took a line they should have passed on: ' + JSON.stringify(t3 && t3.legs.map(l => l.key)));
         chk(t2 && Math.abs(t2.dec - t2.legs.reduce((a, l) => a * w.eval('mlToDec')(l.price), 1)) < 1e-9, 'an Elo parlay is not priced as its legs multiplied');
+        /* the chance: the book's with its margin out, moved by the nudge in the stat's typical miss */
+        { const l = t3.legs[0], a = MU.players[l.pid].stats[l.stat], sd = MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
+          const fair = w.eval(`mlProb(${l.price})`) / 1.045, want = w.eloMatchupP(l, w.eval(`mlProb(${l.price})`));
+          /* the normal curve by hand: the fair chance moved a[2]/sd standard deviations */
+          const erf = x => { const t = 1 / (1 + 0.3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
+          const Phi = z => 0.5 * (1 + erf(z / Math.SQRT2));
+          let lo = -8, hi = 8; for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Phi(m) < fair) lo = m; else hi = m; }
+          const byHand = Phi(lo + a[2] / sd);
+          chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair, `an Elo pick's chance is not the book's fair chance moved by the matchup: ${l.pe} vs ${byHand}`); }
         w.eval('openSuggest()'); await wait(40);
         const card = d.querySelector('#suggView .pe-sugg');
         chk(!!card && card.querySelectorAll('.sugg-tier').length === 2 && card.querySelectorAll('.sugg-legs .pe-badge').length === 5, 'the Elo picks card is missing, or its legs lack their shields');
@@ -539,7 +556,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           'saving an Elo parlay did not add it to Saved parlays cleanly');
         chk(!!d.querySelector('#suggView .pe-sugg [data-elo-save="elo2"][disabled]'), 'a saved Elo parlay does not say Saved');
         w.eval('S.saved.pop(); save(); closeSuggest()');
-      } else chk(false, 'the smoke could not find the players and games it needs for Elo picks');
+      } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
+      /* the Matchups card: every expected starter at the position, faded where the Elo part has not held up */
+      [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(40);
+      const mc = d.querySelector('#peBody .pe-mcard');
+      const nWR = Object.values(MU.players).filter(v => v.group === 'WR').length;
+      chk(!!mc && mc.querySelectorAll('tbody')[0].querySelectorAll('tr').length === nWR, `the Matchups card does not list the ${nWR} receivers`);
+      chk(!!mc && mc.querySelectorAll('tbody')[1].querySelectorAll('tr').length === MU.stats.WR.length, 'the Matchups record lacks a row per stat');
+      [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'K').click(); await wait(40);
+      chk(!d.querySelector('#peBody .pe-mcard'), 'kickers show a Matchups card they have no formula for');
+      [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'QB').click(); await wait(40);
     }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
