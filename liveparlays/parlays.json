@@ -1,6 +1,6 @@
 {
  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet. A whole-game bet takes line 0, team set to the side you are on, and player set to whatever you want it called.",
- "updated": "2026-09-22T00:30:00Z",
+ "updated": "2026-09-24T17:00:00Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -10,7 +10,8 @@
   "2026_02_CIN_HOU",
   "2026_02_GB_NYJ",
   "2026_02_IND_KC",
-  "2026_02_NYG_LA"
+  "2026_02_NYG_LA",
+  "2026_03_ATL_GB"
  ],
  "parlays": [
   {
@@ -187,6 +188,125 @@
      "team": "LA",
      "stat": "passing_yards",
      "line": 240,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-sgp-5",
+   "week": 3,
+   "stake": 1,
+   "price": 2100,
+   "payout": 22.0,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 9,
+     "player": "Packers",
+     "team": "GB",
+     "stat": "ats",
+     "line": -5.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 9,
+     "player": "Michael Penix Jr.",
+     "team": "ATL",
+     "stat": "passing_interceptions",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Skyy Moore",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 10,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Jordan Love",
+     "team": "GB",
+     "stat": "completions",
+     "line": 18.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 9,
+     "player": "Jordan Love",
+     "team": "GB",
+     "stat": "passing_tds",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-sgp-6",
+   "week": 3,
+   "stake": 1,
+   "price": 4200,
+   "payout": 43.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 9,
+     "player": "Jordan Love",
+     "team": "GB",
+     "stat": "passing_yards",
+     "line": 220,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Matthew Golden",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 50,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Christian Watson",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 71,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Christian Watson",
+     "team": "GB",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Tucker Kraft",
+     "team": "GB",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Skyy Moore",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 9,
      "side": "over",
      "main": false
     }
