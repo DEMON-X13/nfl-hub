@@ -925,7 +925,8 @@ const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1
    (chance x payout, real correlations) that keeps the parlay above the floor. */
 const SUGGEST_TIERS=[['safe','Safe',0.50,3],['med','Medium',0.30,5],['aggr','Aggressive',0.15,8]];
 let SUGGEST_CACHE=null;
-function suggestCandidates(games){
+/* every line this week with a real sportsbook price, game bets and players, unjudged */
+function pricedLegs(games){
   const w=currentWeek(); const out=[];
   for(const g of (games||gamesIn(w))){
     if(gameStarted(g)) continue;
@@ -957,6 +958,10 @@ function suggestCandidates(games){
       }
     }
   }
+  return out;
+}
+function suggestCandidates(games){
+  const out=pricedLegs(games);
   const edge=c=>c.p-mlProb(c.price);
   return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&edge(c)>=0.03).sort((a,b)=>edge(b)-edge(a)).slice(0,40);
 }

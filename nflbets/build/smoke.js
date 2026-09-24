@@ -503,6 +503,40 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(w.eval(`eloPre(${JSON.stringify(pid)},1)`) === v.s0 && w.eval(`eloPre(${JSON.stringify(pid)},${v.h[0][0] + 1})`) === v.h[0][1],
             'eloPre does not read the rating a player took into the week'); } }
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
+    /* Elo picks: ranked players whose rating beats the book's price, plus money first, one leg
+       a game and a player, prices held between -200 and +300, saved like any suggestion */
+    { const top = Object.entries(eloP.players).filter(([, v]) => v.elo >= 1560).slice(0, 5);
+      const low = Object.entries(eloP.players).find(([, v]) => v.elo <= 1440);
+      const gs = w.eval('JSON.stringify(gamesIn(currentWeek()).filter(g=>!gameStarted(g)).map(g=>g.id))');
+      const gids = JSON.parse(gs);
+      if (top.length === 5 && low && gids.length >= 4) {
+        const L = (pid, gid, price, side, extra) => Object.assign({ key: gid + '|' + pid + '|receptions', gid, pid, stat: 'receptions', k: 4.5, side, main: true, p: 0.5, price,
+          src: 'real', mu: 4, name: eloP.players[pid].name, pos: 'WR', grp: 'WR', team: 'X', opp: 'Y', week: 1, label: (side === 'over' ? 'Over' : 'Under') + ' 4.5 receptions' }, extra || {});
+        const legs = [L(top[0][0], gids[0], 120, 'over'), L(top[1][0], gids[0], 130, 'over'),      /* same game: one of them */
+          L(top[2][0], gids[1], 1600, 'over'),                                                    /* too long a price */
+          L(top[3][0], gids[2], -110, 'over'), L(top[4][0], gids[3], 110, 'over'),
+          L(top[4][0], gids[3], -105, 'over', { stat: 'rec_yards', key: gids[3] + '|' + top[4][0] + '|rec_yards' }),   /* same player again */
+          L(low[0], gids[1], 105, 'over'),                                                         /* rated below 1500: no pick on his over */
+          L(top[2][0], gids[1], -115, 'under')];                                                   /* a top player's under: no pick */
+        w.__legs = legs; w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }');
+        const r = w.eval('eloPicks()');
+        const t2 = r.tiers[0], t3 = r.tiers[1];
+        chk(r.tiers.length === 2 && t2.legs.length === 2 && t3.legs.length === 3, 'Elo picks should make a 2- and a 3-leg parlay from these lines: ' + JSON.stringify(r.tiers.map(t => t.legs.length)));
+        chk(t3 && t3.legs[0].price > 0 && t3.legs[1].price > 0 && t3.legs[2].price < 0, 'Elo picks do not put plus money first');
+        chk(t3 && new Set(t3.legs.map(l => l.gid)).size === 3 && new Set(t3.legs.map(l => l.pid)).size === 3, 'Elo picks took two legs from one game or one player');
+        chk(t3 && t3.legs.every(l => l.price >= -200 && l.price <= 300 && l.pid !== low[0] && l.side === 'over'), 'Elo picks took a line they should have passed on');
+        chk(t2 && Math.abs(t2.dec - t2.legs.reduce((a, l) => a * w.eval('mlToDec')(l.price), 1)) < 1e-9, 'an Elo parlay is not priced as its legs multiplied');
+        w.eval('openSuggest()'); await wait(40);
+        const card = d.querySelector('#suggView .pe-sugg');
+        chk(!!card && card.querySelectorAll('.sugg-tier').length === 2 && card.querySelectorAll('.sugg-legs .pe-badge').length === 5, 'the Elo picks card is missing, or its legs lack their shields');
+        const nSaved = w.eval('S.saved.length');
+        card.querySelector('[data-elo-save="elo2"]').click(); await wait(40);
+        chk(w.eval('S.saved.length') === nSaved + 1 && w.eval('S.saved[S.saved.length-1].suggested') === 'Elo' && w.eval('S.saved[S.saved.length-1].legs.every(l=>l.pe===undefined)'),
+          'saving an Elo parlay did not add it to Saved parlays cleanly');
+        chk(!!d.querySelector('#suggView .pe-sugg [data-elo-save="elo2"][disabled]'), 'a saved Elo parlay does not say Saved');
+        w.eval('S.saved.pop(); save(); closeSuggest()');
+      } else chk(false, 'the smoke could not find the players and games it needs for Elo picks');
+    }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
     const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
