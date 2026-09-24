@@ -1083,7 +1083,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v64 \u00b7 2026-09-22';
+const APP_BUILD='app v65 \u00b7 2026-09-24';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1848,11 +1848,11 @@ function winMark(g,t){ if(!gameFinal(g)||!hasScore(g)||g.as===g.hs) return ''; r
 function tag(t,mini){const bg=tagBg(tagColor(t));
   return `<span class="ttag${mini?' mini':''}" style="background:${bg};color:${textOn(bg)};border-color:${darken(bg,.72)}">${t}</span>`;}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* the schedule's times are US Eastern; they are shown in the viewer's own zone */
 function fmtDate(g){ if(!g.d) return {day:'',t:''};
-  const dt=new Date(g.d+'T12:00:00');
+  const k=g.t?kickoff(g):null, dt=k||new Date(g.d+'T12:00:00');
   const day=dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-  let t=''; if(g.t){ const [H,M]=g.t.split(':').map(Number);
-    const h=((H+11)%12)+1, ap=H<12?'am':'pm'; t=`${h}:${String(M).padStart(2,'0')}${ap} ET`; }
+  const t=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
   return {day,t}; }
 function fmtML(ml){ return ml==null?'\u2013':(ml>0?'+'+ml:''+ml); }
 function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?ml/100+1:100/Math.abs(ml)+1; }
@@ -3983,12 +3983,20 @@ window.pkTag=tag; window.pkTagColor=BET.tagColor; window.pkTierBadge=BET.tierBad
    live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
 const mkt=gid=>(typeof S==='object'&&S&&S.sched||[]).find(x=>x.id===gid)||null;
 
+/* the schedule's kickoff (US Eastern) as an instant: Eastern's offset on that day is read
+   from the browser's own zone tables, so the clock change needs no date written in here */
+function kickAt(d,t){
+  const guess=new Date(`${d}T${t}:00Z`);
+  const inZone=z=>new Date(guess.toLocaleString('en-US',{timeZone:z}));
+  const k=new Date(guess.getTime()+(inZone('UTC')-inZone('America/New_York')));
+  return isNaN(k)?null:k;
+}
+/* the date and kickoff in the viewer's own time zone, with the zone's short name */
 function fmtDate(g){
   if(!g.gameday) return ['',''];
-  const d=new Date(g.gameday+'T12:00:00');
+  const k=g.gametime?kickAt(g.gameday,g.gametime):null, d=k||new Date(g.gameday+'T12:00:00');
   const day=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
-  let t=g.gametime||'';
-  if(t){ const [h,m]=t.split(':').map(Number); const ap=h>=12?'PM':'AM'; const h12=h%12||12; t=`${h12}:${String(m).padStart(2,'0')} ${ap} ET`; }
+  const t=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
   return [day,t];
 }
 const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
