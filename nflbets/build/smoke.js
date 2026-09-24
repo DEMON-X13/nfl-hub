@@ -107,6 +107,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(700);                                  /* the scoreboard is read once on load, after the prop model is up */
 
   chk(!timedOut, 'the prop model never said app-ready');
+  /* the preview is the same page with the NBA Hub theme laid over it, and the live page has none of it */
+  { const PV = fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), LIVE = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
+    chk(/id="previewTheme"/.test(PV) && /<script>window\.PREVIEW_FRAME_HEAD=/.test(PV) && /<em>Bets and Stats<\/em>/.test(PV), 'nflbets/preview.html is missing its theme');
+    chk(!/id="previewTheme"/.test(LIVE) && !/<script>window\.PREVIEW_FRAME_HEAD=/.test(LIVE), 'the preview theme leaked into the live page'); }
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
   chk(d.title === 'X NFL Bets and Stats' && /X NFL Bets and Stats/.test(txt(d.querySelector('h1'))), 'the page is not headed X NFL Bets and Stats');
 

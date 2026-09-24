@@ -156,6 +156,11 @@ node nflbets/build/smoke_live.js  # the Live Parlays section; must end "0 failur
 
 `nflbets/build/sync.js` (the sync layer) is inlined by the build, so a change to it is a rebuild too.
 
+The build also writes `nflbets/preview.html`: the same page with `nflbets/build/preview_theme.css`
+(the NBA Hub's look) laid over it and passed into the betting frames. It is a look to try, not a
+second site; delete the file, the stylesheet and the build's preview block to drop it, or fold the
+stylesheet into the parts to adopt it.
+
 A parlay every device should see goes in `liveparlays/parlays.json`, by hand, as its `how`
 field describes.
 

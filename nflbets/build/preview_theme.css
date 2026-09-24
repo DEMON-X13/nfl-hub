@@ -1,0 +1,101 @@
+/* The NBA Hub look, laid over the Bets and Stats page for nflbets/preview.html only.
+   build.js appends this after every other style, so it wins by order; nothing here reaches
+   nflbets/index.html. Colours and type are the NBA Hub's own tokens (demon-x13/nba-hub). */
+:root{
+  --bg:#1E2230; --bg-2:#242938; --panel:#2A2F40; --panel-2:#313749; --panel-3:#3A4155;
+  --ink:#F6F7FB; --ink-2:#C5CAD8; --muted:#8F96AB; --line:#3C4358; --line-2:#4A5269;
+  --hot:#FF6A1F; --hot-2:#FF8C4A; --hot-soft:rgba(255,106,31,.14);
+  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);
+  --gold:#FF8C4A; --gold-soft:rgba(255,106,31,.16);
+  --miss:#FF3D6B; --miss-soft:rgba(255,61,107,.14);
+  --away:#5FD4FF; --home:#CDFF4F;
+  --r-lg:18px; --r-md:14px; --r-sm:11px;
+  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);
+  --ring:0 0 0 3px rgba(255,106,31,.35);
+  --display:"Unbounded",ui-sans-serif,system-ui,sans-serif;
+  --body:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+body{background:
+  radial-gradient(900px 520px at 12% -8%,rgba(255,106,31,.18),transparent 60%),
+  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),
+  linear-gradient(180deg,#252A3B 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}
+::selection{background:var(--hot);color:#000}
+a{color:#5FD4FF}
+
+/* header: no slab, the page's own glow behind a big two-tone wordmark and pill tabs */
+header{background:transparent;padding:26px 22px 0;max-width:1240px;margin:0 auto}
+header::after{display:none}
+.brand{align-items:flex-end}
+.brand h1{font-weight:900;font-size:clamp(28px,5vw,48px);letter-spacing:-.02em;line-height:.95;text-transform:uppercase}
+.brand h1 em{font-style:normal;color:var(--hot)}
+.brand h1::after{width:.42em;height:.42em;margin-left:.14em;vertical-align:.08em;background:radial-gradient(circle at 35% 30%,#FFB27A,var(--hot) 60%,#B33F00);box-shadow:0 0 22px rgba(255,106,31,.55)}
+.brand .sub{color:var(--muted);font-size:12px}
+nav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto}
+nav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}
+nav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}
+nav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}
+main{max-width:1240px;padding:18px 22px 90px}
+
+/* surfaces */
+.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--hot),transparent);pointer-events:none}
+.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}
+table{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}
+th{background:var(--panel-2);color:var(--muted)}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}
+
+/* controls */
+select,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}
+select:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}
+input[type=checkbox]{accent-color:var(--hot)}
+.btn{background:var(--hot);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--hot)}
+.btn:hover{background:var(--hot-2);box-shadow:none}
+.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}
+.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}
+.btn.go{background:#CDFF4F;border-color:#CDFF4F;color:#1E2230}
+.btn.danger{background:var(--miss);border-color:var(--miss);color:#1E2230}
+.bar .rec,.pill,.conf.low,.pays .box.tier.low,.statblk h4 em.actual,.side,.side-res.push,.side.pass{background:var(--panel-3);color:var(--ink-2)}
+.bar .rec b{color:var(--ink)}
+.side.under,.side-res.under{background:rgba(95,212,255,.14);color:#5FD4FF}
+.game.final .pill.ok{background:rgba(95,212,255,.14);color:#5FD4FF}
+.finchip.live{background:var(--hot-soft);color:var(--hot-2);border-color:rgba(255,106,31,.5)}
+.bar-track,.pk-prob,.pe-bar{background:var(--panel-3);box-shadow:none}
+.rungs tr.on td{background:var(--hot-soft)}
+.rungs tr.hit td{background:var(--pick-soft)}
+.pays .box.tier.med{border-color:rgba(255,106,31,.5)}
+.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}
+.pk-game::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--hot),transparent)}
+.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}
+.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}
+.pk-tier{background:var(--panel-3);color:var(--ink-2)}
+.pk-tier.pk-high{background:var(--pick-soft);color:#CDFF4F} .pk-tier.pk-med{background:var(--hot-soft);color:var(--hot-2)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}
+.pk-sc{font-weight:900}
+.pk-matchup .pk-res{background:var(--panel)}
+.pe-pos button[aria-selected="true"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+.pk-note{background:var(--hot-soft);color:var(--hot-2)}
+.pk-result .pk-mwin.pk-ok{color:#CDFF4F}
+/* the Live Parlays section and the builder's heading button */
+#lpCard .pill{background:var(--panel-3);color:var(--ink-2)}
+#lpCard .pill.warn,#lpCard .note{background:var(--hot-soft);color:var(--hot-2)}
+#lpCard .pill.ok{background:var(--pick-soft);color:#CDFF4F} #lpCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
+/* inside the framed betting tabs (html.embed): the page's glow shows through */
+html.embed body{background:transparent}
+.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}
+.tbtn.on{background:var(--hot);border-color:var(--hot);color:#1E2230;box-shadow:none}
+.bk-in,.bres.won{background:var(--pick-soft);color:#CDFF4F}
+.prob{background:var(--panel-3);box-shadow:none}
+.tier{background:var(--panel-3);color:var(--ink-2)}
+.tier.high{background:var(--pick-soft);color:#CDFF4F} .tier.med{background:var(--hot-soft);color:var(--hot-2)}
+.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}
+.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}
+.vg.differs{background:var(--miss-soft)}
+/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */
+polyline[stroke="#0F1B2D"]{stroke:#F6F7FB} circle[fill="#0F1B2D"]{fill:#F6F7FB}
+[style*="background:#0F1B2D"]{background:#F6F7FB!important}
+line[stroke="#E6EAEF"]{stroke:#3C4358}
+/* the preview says what it is */
+.pv-flag{display:inline-block;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--hot-soft);color:var(--hot-2);vertical-align:middle}
+@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }

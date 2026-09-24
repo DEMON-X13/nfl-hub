@@ -344,7 +344,10 @@ function frames(){
       fit();
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
     });
-    f.setAttribute('srcdoc',BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed)));
+    let doc=BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed));
+    /* nflbets/preview.html sets a theme for the frames too; the live page sets none */
+    if(typeof window.PREVIEW_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.PREVIEW_FRAME_HEAD+doc.slice(i); }
+    f.setAttribute('srcdoc',doc);
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));

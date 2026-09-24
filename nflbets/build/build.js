@@ -264,5 +264,23 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
 </script>`;
 const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
 fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
+
+/* the preview: the same page in the NBA Hub's look, beside the real one so every relative
+   address still works. Only preview_theme.css (laid over everything, last) and the wordmark's
+   markup differ, so the preview is the live page and nothing else. */
+{
+  const THEME = fs.readFileSync(path.join(__dirname, 'preview_theme.css'), 'utf8');
+  const once = (s, a, b, what) => { if (s.split(a).length !== 2) throw new Error('preview: ' + what + ' is not in the page once'); return s.replace(a, b); };
+  let pv = out;
+  const head = pv.indexOf('</head>');
+  if (head < 0 || head > pv.indexOf('<body')) throw new Error('preview: the page has no head of its own');
+  const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
+  pv = pv.slice(0, head) + FONTS + '\n<style id="previewTheme">\n' + THEME + '</style>\n'
+    + '<script>window.PREVIEW_FRAME_HEAD=' + JSON.stringify(FONTS + '<style>' + THEME + '</style>').replace(/</g, '\\u003c') + ';</script>\n' + pv.slice(head);
+  pv = once(pv, '<h1>X NFL Bets and Stats</h1>', '<h1>X NFL <em>Bets and Stats</em></h1>', 'the heading');
+  pv = once(pv, '<span class="sub" id="buildTag"></span>', '<span class="sub" id="buildTag"></span><span class="pv-flag">Preview</span>', 'the build tag');
+  pv = once(pv, '<title>X NFL Bets and Stats</title>', '<title>X NFL Bets and Stats (preview)</title>', 'the title');
+  fs.writeFileSync(path.join(ROOT, 'nflbets', 'preview.html'), pv);
+}
 console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB `
   + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
