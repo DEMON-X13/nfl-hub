@@ -497,6 +497,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(trs.every(tr => tr.querySelectorAll('td').length === 11 && /0\.\d{3}/.test(txt(tr))), 'a row lacks its eleven cells or its Brier scores');
       w.eval('renderTrack()'); await wait(40);
       chk(d.querySelectorAll('#trackBody .pe-track').length === 1, 'redrawing the Prop Record doubled the card');
+      /* past weeks are graded on the rating each player took into the week, not today's */
+      { const pl = Object.entries(eloP.players).find(([, v]) => (v.h || []).length >= 2);
+        if (pl) { const [pid, v] = pl;
+          chk(w.eval(`eloPre(${JSON.stringify(pid)},1)`) === v.s0 && w.eval(`eloPre(${JSON.stringify(pid)},${v.h[0][0] + 1})`) === v.h[0][1],
+            'eloPre does not read the rating a player took into the week'); } }
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
