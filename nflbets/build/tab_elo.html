@@ -53,6 +53,13 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
 /* Elo picks, in the Suggested parlays window under the model's own */
 .pe-sugg{margin-top:14px}
+.pe-nud{display:block;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.pe-nud.up{color:var(--pick)} .pe-nud.dn{color:var(--miss)} .pe-nud.flat{color:var(--muted);font-weight:500}
+.pe-mcard td.pe-n b{font-family:var(--display);font-size:14px}
+.pe-mcard .pe-name .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-3px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pe-mcard .pe-name .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+.pe-mcard .pe-def{font-size:11px;color:var(--muted);white-space:nowrap}
+.pe-mcard th.pe-weak,.pe-mcard td.pe-weak{opacity:.55}
 .pe-sugg .sugg-legs .nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 .pe-sugg .sugg-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 .pe-track table{margin-top:6px}
@@ -76,7 +83,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 </section>
 <script>
 /* ---------- the Player Elo tab ----------
-   Every player rated by position, game by game since 2020, and a third game model built on
+   Every player rated by position, game by game since 2012, and a third game model built on
    nothing but those ratings. elo/build.py does the work on the job's schedule and writes
    elo/data/players.json and elo/data/model.json; this reads them on every load. The model's
    calls and its record live on the Pick'em Record tab beside the other models'; this tab is
@@ -84,8 +91,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
    draw the week's calls, the season's graded games and the season-end top tens, and are not
    used. */
 (function(){
-const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', STATE_URL='../betting/state.json';
-const D={players:null,model:null,picks:{},processed:{},pos:'QB',more:false};
+const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', MU_URL='../elo/data/matchups.json', STATE_URL='../betting/state.json';
+const D={players:null,model:null,mu:null,picks:{},processed:{},pos:'QB',more:false};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pct=p=>Math.round(p*100)+'%';
@@ -163,11 +170,45 @@ function weights(){
   const walk=`<table class="pe-t"><thead><tr><th>Season</th><th class="pe-n">Games</th><th class="pe-n">Right</th><th class="pe-n pe-m0">If who played were known</th><th class="pe-n">Home won</th></tr></thead><tbody>`
     +Object.keys(wf).sort().map(s=>`<tr><td>${s}</td><td class="pe-n">${wf[s].games}</td><td class="pe-n"><b>${pct(wf[s].accuracy)}</b></td><td class="pe-n pe-m0">${wp[s]?pct(wp[s].accuracy):'\u2013'}</td><td class="pe-n">${pct(wf[s].home_wins)}</td></tr>`).join('')+'</tbody></table>';
   return `<div class="card"><h2>What each position is worth <span class="pill">fitted on ${esc(m.trained_on.games)} games</span></h2>
-    <p class="pe-sub">The model's weight on a 100-point edge at each position, in log-odds of winning. Fitted one season at a time underneath, which is the six-year story of which positions decided games. A home-field term (${m.coef.home.toFixed(2)}) sits alongside.</p>
+    <p class="pe-sub">The model's weight on a 100-point edge at each position, in log-odds of winning. Fitted one season at a time underneath, which is the story of which positions decided games. A home-field term (${m.coef.home.toFixed(2)}) sits alongside.</p>
     <div class="pe-w">${cells}</div>
     <h2 style="margin-top:22px">By season</h2>${heat}
     <h2 style="margin-top:22px">Walk-forward record</h2>
     <p class="pe-sub">Each season called by the model fitted on the seasons before it only, so no season is graded on itself, from the lineups as they were known before kickoff: the week's depth chart with the injury report's Outs removed. The hindsight column scores the same model on who actually played, which nobody knows in advance.</p>${walk}</div>`;
+}
+/* ---- matchups: the coming week's projections from form, Elo and the defenders faced ----
+   elo/build.py fits, for every position and stat, a player's next game on his recent average
+   (half-life four games), home, what the defence has allowed, his own Elo and the Elo of the
+   opposing DL, LB and DB he will face, on every regular's game since 2016, and the same
+   without the two Elo terms. The difference between the two is the Elo nudge. A stat's
+   nudge is trusted when, called season by season by the fit on the seasons before, it
+   lowered the error and its biggest fifth of nudges landed on their side 53% of the time
+   or better; the others are shown faded and are not used for Elo picks. */
+const MU_LBL={passing_yards:'Pass yds',passing_tds:'Pass TD',attempts:'Att',completions:'Comp',passing_interceptions:'INT',
+  rushing_yards:'Rush yds',carries:'Carries',receptions:'Rec',receiving_yards:'Rec yds',targets:'Tgt',scrim_yards:'Rush+rec',any_td:'TDs'};
+function muTrusted(g,st){ const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; const p=r&&r.past;
+  return !!p&&p.rmse_elo<p.rmse_form&&p.right_top>=0.53; }
+function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl||!pl.stats[st]||!muTrusted(pl.group,st)) return null;
+  const f=D.mu.fit[pl.group+'|'+st]; return f?{nudge:pl.stats[st][2],sd:f.sd,proj:pl.stats[st][1],form:pl.stats[st][0]}:null; }
+window.eloMatchup=muNudge;
+function matchupsCard(){
+  const M=D.mu, g=D.pos; if(!M||!M.stats||!M.stats[g]) return '';
+  const stats=M.stats[g], rows=Object.entries(M.players||{}).filter(([,v])=>v.group===g).sort((a,b)=>b[1].elo-a[1].elo);
+  if(!rows.length) return '';
+  const dec=v=>Math.abs(v)>=10?v.toFixed(0):v.toFixed(1);
+  const cell=(st,a)=>{ if(!a) return '<td class="pe-n">–</td>'; const [form,proj,n]=a, weak=!muTrusted(g,st);
+    const shown=dec(Math.abs(n)), zero=/^0(\.0)?$/.test(shown), cls=zero?'flat':(n>0?'up':'dn');
+    return `<td class="pe-n${weak?' pe-weak':''}"><b>${dec(proj)}</b><span class="pe-nud ${cls}" title="Recent form ${dec(form)}; the Elo matchup moves it ${n>=0?'+':''}${n.toFixed(2)}">${zero?'0.0':(n>0?'+':'−')+shown}</span></td>`; };
+  const body=rows.map(([pid,v])=>`<tr><td class="pe-name">${badge(pid)}${esc((D.players.players[pid]||{}).name||pid)}<small>${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}</small></td>
+    <td class="pe-def pe-m0">DL ${v.opp_def.DL} · LB ${v.opp_def.LB} · DB ${v.opp_def.DB}</td>${stats.map(st=>cell(st,v.stats[st])).join('')}</tr>`).join('');
+  const rec=stats.map(st=>{ const r=(M.record[g+'|'+st]||{}), p=r.past, t=r.this;
+    return `<tr class="${muTrusted(g,st)?'':'pe-weak'}"><td>${MU_LBL[st]||st}</td><td class="pe-n">${p?p.games:'–'}</td><td class="pe-n">${p?p.rmse_form+' → '+p.rmse_elo:'–'}</td><td class="pe-n"><b>${p?pct(p.right_top):'–'}</b></td><td class="pe-n">${t?pct(t.right_top)+' of '+Math.round(t.games/5):'–'}</td><td>${muTrusted(g,st)?'used':'not used'}</td></tr>`; }).join('');
+  return `<div class="card pe-mcard"><h2>Week ${esc(M.week)} matchups <span class="pill">${esc(D.players.groups[g].label)}</span></h2>
+    <p class="pe-sub">Each expected starter's projection for the coming game: his recent average, moved by his own Elo and the Elo of the defenders he will face (the opposing line, linebackers and secondary, as the depth chart has them). The small number is what Elo adds or takes away. Faded columns are stats where the Elo part has not held up, season by season since 2017.</p>
+    <table class="pe-t"><thead><tr><th>Player</th><th class="pe-m0">Facing</th>${stats.map(st=>`<th class="pe-n${muTrusted(g,st)?'':' pe-weak'}">${MU_LBL[st]||st}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>
+    <h2 style="margin-top:22px">Has the Elo part held up?</h2>
+    <p class="pe-sub">Every season since 2017 projected by the formula fitted on the seasons before it. Error is the typical miss without and with Elo; "biggest nudges right" is how often, on the fifth of games Elo moved most, the result landed on the side it moved.</p>
+    <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Games</th><th class="pe-n">Error</th><th class="pe-n">Biggest nudges right</th><th class="pe-n">This season</th><th>Elo picks</th></tr></thead><tbody>${rec}</tbody></table></div>`;
 }
 function rankings(){
   const P=D.players, g=D.pos, grp=P.groups[g];
@@ -275,6 +316,8 @@ function decorateAlt(){
     const p=altP(l.pid,l.side,l.price,l.src); if(p==null) return;
     any=true; prod*=p; prodM*=l.p; n++;
     cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
+    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(l.price)):null;
+    if(mp!=null) cell.insertAdjacentHTML('beforeend',`<small class="pe-alt pe-muleg" title="His Elo against the defenders he faces this week moves his projection ${mn.nudge>=0?'+':''}${mn.nudge.toFixed(1)}; the book's chance moved by that.">Elo matchup ${mn.nudge>=0?'+':'−'}${Math.abs(mn.nudge).toFixed(1)} <b>${Math.round(mp*100)}%</b></small>`);
   });
   const table=document.querySelector('#parlayBody tr.legrow')&&document.querySelector('#parlayBody tr.legrow').closest('table');
   const old=document.querySelector('#parlayBody .pe-altsum'); if(old) old.remove();
@@ -301,18 +344,34 @@ function trackAlt(){
 }
 /* ---- Elo picks: parlays of ranked players whose rating says they beat the book's price ----
    Each leg is a line the book has priced for a ranked player. The player's chance is the
-   book's own (its price read as a chance) moved by his rating on the side of the bet, the
-   same 0.3 a 40-point step as market + form but with nothing pulled toward 50%: so a player
-   rated above 1500 is given more than the book on his overs and less on his unders, and the
-   reverse below. A leg is a pick when that chance times the payout comes out above the
+   book's own (its price read as a chance) moved by his Elo matchup: the nudge the matchup
+   formula (above) gives that stat this week, his own Elo against the defenders he faces, in
+   units of the stat's typical miss. Only stats where that nudge has held up season by
+   season are used. A leg is a pick when that chance times the payout comes out above the
    stake. Plus-money legs come first, then the best expected return; prices are held
    between -200 and +300 and the chance at 30% or better, because an alt line at +1600 is
    where the rating's nudge is least trustworthy and a parlay of them almost never lands.
    One leg a player and one a game, so the book pays the legs multiplied and the chance is
-   the chances multiplied. Replayed on weeks 1 and 2 with the ratings each week began with,
-   the singles lost (plus money -30%, the rest -6%) while the two-leg parlay landed both
-   weeks: a small sample, a fun model, not an edge. */
-const EP={form:0.3,step:40,lo:-200,hi:300,floor:0.30,sizes:[2,3,4]};
+   the chances multiplied. The first version (the player's own Elo, no matchup) was replayed
+   on weeks 1 and 2 and its singles lost; the matchup nudge is small by design, so few legs
+   clear the book's cut. A fun model, not an edge. */
+const EP={lo:-200,hi:300,floor:0.30,sizes:[2,3,4],vig:1.045};
+/* the normal curve and its inverse (Acklam's), for moving a chance by a nudge in sd units */
+const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
+function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
+  b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],
+  c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+  d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416], lo=0.02425;
+  if(p<lo){ const q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p>1-lo){ const q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  const q=p-0.5, r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+/* a leg's chance by the Elo matchup: the book's chance with a typical two-way margin
+   (4.5%) taken out, moved by the nudge in the stat's typical miss toward the side it
+   favours. So a leg is only a pick when the matchup outweighs what the book keeps. */
+function muP(l,imp){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)) return null;
+  const fair=Math.min(0.99,Math.max(0.01,imp/EP.vig));
+  return ncdf(nq(fair)+(l.side==='under'?-1:1)*m.nudge/m.sd); }
+window.eloMatchupP=muP;
 function eloPicks(){
   if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function') return null;
   let legs; try{ legs=pricedLegs(); }catch(e){ return null; }
@@ -321,7 +380,7 @@ function eloPicks(){
     if(l.grp==='TEAM'||l.src!=='real'||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
     const e=window.eloOf(l.pid); if(!e) continue;
     const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
-    const s=l.side==='under'?-1:1, pe=sgm(lgt(imp)+EP.form*(e.elo-1500)/EP.step*s);
+    const pe=muP(l,imp); if(pe==null) continue;
     const ev=pe*mlToDec(l.price)-1;
     if(pe>=EP.floor&&ev>0) c.push({...l,pe,ev,imp});
   }
@@ -346,7 +405,7 @@ function eloSuggest(){
   let body;
   if(!r.tiers.length) body=`<p class="muted" style="margin:0">No Elo picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price so far'
     :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices arrive with the Thursday and Saturday pulls; Sunday's games come with Saturday's.</p>`;
-  else body=`<p class="muted" style="margin:0 0 14px">Ranked players whose Elo says they beat the book's price, plus money first, one leg a game. The chance is the book's moved by the player's rating on the side of the bet. Payouts on a $${stake.toFixed(2)} bet.</p>
+  else body=`<p class="muted" style="margin:0 0 14px">Ranked players whose Elo matchup says they beat the book's price, plus money first, one leg a game. The chance is the book's moved by the matchup: the player's Elo against the defenders he faces this week (Player Elo tab, Matchups). Payouts on a $${stake.toFixed(2)} bet.</p>
     <div class="sugg-grid">${r.tiers.map((t,i)=>{
       const ev=t.p*t.dec-1, saved=(S.saved||[]).some(x=>x.suggestSig===t.sig);
       return `<div class="sugg-tier ${cls[i]}">
@@ -360,7 +419,7 @@ function eloSuggest(){
         <ul class="sugg-legs">${t.legs.map(l=>`<li><span class="nm">${badge(l.pid)}${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.pe*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
         <button class="btn ${saved?'quiet':'go'}" data-elo-save="${t.id}" ${saved?'disabled':''}>${saved?'Saved':'Add to saved parlays'}</button>
       </div>`; }).join('')}</div>
-    <p class="muted" style="margin:12px 0 0;font-size:12px">A fun model, not an edge: replayed on weeks 1 and 2, the single legs lost money and the two-leg parlay landed both weeks. The Prop Record keeps grading.</p>`;
+    <p class="muted" style="margin:12px 0 0;font-size:12px">A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs.</p>`;
   v.insertAdjacentHTML('beforeend',`<div class="card sugg pe-sugg"><div class="sugg-hd"><h2>Elo picks</h2><span class="pill">week ${w}</span></div>${body}</div>`);
   v.querySelectorAll('[data-elo-save]').forEach(b=>b.addEventListener('click',()=>{
     const t=r.tiers.find(x=>x.id===b.dataset.eloSave); if(!t) return;
@@ -387,7 +446,7 @@ function draw(){
   const body=el('peBody');
   if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>Player Elo</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
   defs(); decorate(); trackAlt();
-  body.innerHTML=rankings()+weights();
+  body.innerHTML=rankings()+matchupsCard()+weights();
   body.querySelectorAll('.pe-pos button').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
@@ -404,6 +463,7 @@ async function boot(){
     D.players=p; D.model=m;
   }catch(e){ D.err='The ratings could not be loaded: '+(e.message||e); }
   try{ const st=await get(STATE_URL); D.picks=st.picks||{}; D.processed=st.processed||{}; }catch(e){}
+  try{ D.mu=await get(MU_URL); }catch(e){}
   draw();
 }
 draw();
