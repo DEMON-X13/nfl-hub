@@ -4409,18 +4409,30 @@ function decorate(){
 }
 window.eloBadge=badge;
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
+/* a player's rating as it stood before week w of this season: after his last game before
+   it, or where the season began. Grading a past week on today's rating would be hindsight. */
+function preElo(pid,w){
+  const e=window.eloOf(pid); if(!e) return null;
+  let v=e.s0!=null?e.s0:e.elo;
+  for(const [o,r] of (e.h||[])) if(o<w) v=r;
+  return v;
+}
+window.eloPre=preElo;
 
 /* ---- market + form: a second price on every player leg the book has priced ----
    The prop model's own chance on a book line has run over-confident: on weeks 1 and 2 it
    said 62% and 51% happened, while the book's own price said 54%. What did carry signal
-   was the player's rating: overs on the top players hit, unders on them missed, and the
-   reverse below. So this price starts from the book's chance and moves it by the player's
-   Elo on the side of the bet: logit p = -0.05 + 0.8 logit(book) + 0.3 z s, z the rating's
-   distance from 1500 in 40-point steps, s +1 for an over and -1 for an under. Fitted on
-   weeks 1 and 2 of 2026 (765 lines); fitted on either week alone it beats the model and
-   the book on the other. It is shown beside the model's chance, not in its place, and the
-   Prop Record tab grades both, so a switch has to be earned. Legs without a real book
-   price, and team legs, have no second price. */
+   looked to be the player's rating: overs on the top players hit, unders on them missed,
+   and the reverse below. So this price starts from the book's chance and moves it by the
+   player's Elo on the side of the bet: logit p = -0.05 + 0.8 logit(book) + 0.3 z s, z the
+   rating's distance from 1500 in 40-point steps, s +1 for an over and -1 for an under.
+   Fitted on weeks 1 and 2 of 2026 (765 lines), but with the ratings as they stood after
+   those weeks, which had already seen the games. Replayed on the ratings each week began
+   with, the pull is nothing in week 1 (-0.03 +/- 0.13), real in week 2 (+0.29 +/- 0.13),
+   and the price about ties the book (Brier 0.2486 against 0.2498). So the Prop Record grades
+   it on the rating each player took into the week (preElo), and it stays beside the model's
+   chance, not in its place, until it earns more. Legs without a real book price, and team
+   legs, have no second price. */
 const ALT={c:-0.05,book:0.8,form:0.3,step:40};
 const lgt=p=>Math.log(p/(1-p)), sgm=x=>1/(1+Math.exp(-x));
 function altP(pid,side,price,src){
@@ -4451,7 +4463,7 @@ function trackAlt(){
   const old=body.querySelector('.pe-track'); if(old) old.remove();
   let rows; try{ rows=trackRecord().filter(r=>r.kind==='main'&&r.imp!=null&&r.side); }catch(e){ return; }
   if(!rows.length) return;
-  for(const r of rows){ const e=window.eloOf(r.pid), z=e?(e.elo-1500)/ALT.step:0, s=r.side==='under'?-1:1; r.alt=sgm(ALT.c+ALT.book*lgt(r.imp)+ALT.form*z*s); }
+  for(const r of rows){ const v=preElo(r.pid,r.w), z=v!=null?(v-1500)/ALT.step:0, s=r.side==='under'?-1:1; r.alt=sgm(ALT.c+ALT.book*lgt(r.imp)+ALT.form*z*s); }
   const brier=(rs,k)=>rs.reduce((a,r)=>a+(r[k]-r.hit)**2,0)/rs.length;
   const right=(rs,k)=>rs.filter(r=>(r[k]>=0.5)===(r.hit===1)).length;
   const hit=rs=>rs.reduce((a,r)=>a+r.hit,0)/rs.length;
@@ -4459,7 +4471,7 @@ function trackAlt(){
   const weeks=[...new Set(rows.map(r=>r.w))].sort((a,b)=>a-b);
   const line=(lab,rs)=>`<tr><td>${lab}</td><td class="num">${rs.length}</td><td class="num">${(said(rs,'p')*100).toFixed(0)}%</td><td class="num">${(said(rs,'imp')*100).toFixed(0)}%</td><td class="num">${(said(rs,'alt')*100).toFixed(0)}%</td><td class="num">${(hit(rs)*100).toFixed(1)}%</td><td class="num">${brier(rs,'p').toFixed(3)}</td><td class="num">${brier(rs,'imp').toFixed(3)}</td><td class="num"><b>${brier(rs,'alt').toFixed(3)}</b></td><td class="num">${right(rs,'p')}</td><td class="num">${right(rs,'alt')}</td></tr>`;
   const html=`<div class="card pe-track"><h2>Market + form against the model</h2>
-    <p class="muted" style="margin:0 0 8px">Every book line graded so far, three chances on each: the model's, the book's own, and market + form (the book's chance moved by the player's Elo on the side of the bet). Lower Brier is better; "side right" counts lines where the side a chance favoured is the side that happened. The second price is shown in the Parlay Builder beside the model's; it replaces nothing until it has held for more than two weeks.</p>
+    <p class="muted" style="margin:0 0 8px">Every book line graded so far, three chances on each: the model's, the book's own, and market + form (the book's chance moved by the Elo the player took into that week, on the side of the bet). Lower Brier is better; "side right" counts lines where the side a chance favoured is the side that happened. The second price is shown in the Parlay Builder beside the model's; it replaces nothing until it has held for more than two weeks.</p>
     <table><thead><tr><th>Week</th><th class="num">Lines</th><th class="num">Model said</th><th class="num">Book said</th><th class="num">M+F said</th><th class="num">Happened</th><th class="num">Model Brier</th><th class="num">Book Brier</th><th class="num">M+F Brier</th><th class="num">Model side right</th><th class="num">M+F side right</th></tr></thead>
     <tbody>${weeks.map(w=>line('Week '+w,rows.filter(r=>r.w===w))).join('')}${line('All',rows)}</tbody></table></div>`;
   body.insertAdjacentHTML('afterbegin',html);

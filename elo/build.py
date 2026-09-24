@@ -569,7 +569,10 @@ def main():
                          'this_season': h.get(last, []), 'last_season': latest_season[pid]})
         groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
         for row in rows:
-            players[row['id']] = {'name': row['name'], 'pos': row['pos'], 'group': g, 'team': row['team'], 'elo': row['elo'], 'rank': row['rank']}
+            # s0 and h are the season so far, so a rating can be read as it stood before any week:
+            # the last game before it, or the season's start. The Prop Record grades on those.
+            players[row['id']] = {'name': row['name'], 'pos': row['pos'], 'group': g, 'team': row['team'], 'elo': row['elo'], 'rank': row['rank'],
+                                  's0': row['start_elo'], 'h': [[o, round(r)] for o, r in row['this_season']]}
     # season-end top tens, every season: the six-year story
     ends = {}
     for s in seasons:
