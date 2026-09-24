@@ -103,7 +103,9 @@ its tag into the page. The tab's script also puts a second price, "market + form
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the Prop
-Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
+Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The Suggested parlays window also carries its Elo picks: 2-, 3- and 4-leg parlays of ranked
+players whose rating says they beat the book's price (plus money first, -200 to +300, one leg a
+game), built from `pricedLegs()` in the props parts beside the model's own suggestions. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
 grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season

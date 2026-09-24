@@ -51,6 +51,10 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
 .pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
+/* Elo picks, in the Suggested parlays window under the model's own */
+.pe-sugg{margin-top:14px}
+.pe-sugg .sugg-legs .nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.pe-sugg .sugg-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
 @media(max-width:900px){
@@ -295,6 +299,80 @@ function trackAlt(){
     <tbody>${weeks.map(w=>line('Week '+w,rows.filter(r=>r.w===w))).join('')}${line('All',rows)}</tbody></table></div>`;
   body.insertAdjacentHTML('afterbegin',html);
 }
+/* ---- Elo picks: parlays of ranked players whose rating says they beat the book's price ----
+   Each leg is a line the book has priced for a ranked player. The player's chance is the
+   book's own (its price read as a chance) moved by his rating on the side of the bet, the
+   same 0.3 a 40-point step as market + form but with nothing pulled toward 50%: so a player
+   rated above 1500 is given more than the book on his overs and less on his unders, and the
+   reverse below. A leg is a pick when that chance times the payout comes out above the
+   stake. Plus-money legs come first, then the best expected return; prices are held
+   between -200 and +300 and the chance at 30% or better, because an alt line at +1600 is
+   where the rating's nudge is least trustworthy and a parlay of them almost never lands.
+   One leg a player and one a game, so the book pays the legs multiplied and the chance is
+   the chances multiplied. Replayed on weeks 1 and 2 with the ratings each week began with,
+   the singles lost (plus money -30%, the rest -6%) while the two-leg parlay landed both
+   weeks: a small sample, a fun model, not an edge. */
+const EP={form:0.3,step:40,lo:-200,hi:300,floor:0.30,sizes:[2,3,4]};
+function eloPicks(){
+  if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function') return null;
+  let legs; try{ legs=pricedLegs(); }catch(e){ return null; }
+  const c=[];
+  for(const l of legs){
+    if(l.grp==='TEAM'||l.src!=='real'||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
+    const e=window.eloOf(l.pid); if(!e) continue;
+    const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
+    const s=l.side==='under'?-1:1, pe=sgm(lgt(imp)+EP.form*(e.elo-1500)/EP.step*s);
+    const ev=pe*mlToDec(l.price)-1;
+    if(pe>=EP.floor&&ev>0) c.push({...l,pe,ev,imp});
+  }
+  c.sort((a,b)=>((a.price<0)-(b.price<0))||(b.ev-a.ev));
+  const best=[], seen=new Set();
+  for(const l of c){ if(seen.has(l.pid)) continue; seen.add(l.pid); best.push(l); }
+  const tiers=[];
+  for(const n of EP.sizes){
+    const pick=[], games=new Set();
+    for(const l of best){ if(pick.length>=n) break; if(games.has(l.gid)) continue; games.add(l.gid); pick.push(l); }
+    if(pick.length<n) break;
+    const p=pick.reduce((a,l)=>a*l.pe,1), d=pick.reduce((a,l)=>a*mlToDec(l.price),1);
+    tiers.push({id:'elo'+n,label:`Elo ${n}-leg`,legs:pick,p,dec:d,sig:'elo|'+pick.map(l=>l.key+'|'+l.side+'|'+l.k).join(',')});
+  }
+  return {tiers,candidates:best.length};
+}
+function eloSuggest(){
+  const v=document.getElementById('suggView'); if(!v) return;
+  const old=v.querySelector('.pe-sugg'); if(old) old.remove();
+  const r=eloPicks(); if(!r) return;
+  const w=typeof currentWeek==='function'?currentWeek():'', stake=Math.max(0,+S.stake||0), cls=['safe','med','aggr'];
+  let body;
+  if(!r.tiers.length) body=`<p class="muted" style="margin:0">No Elo picks for week ${w} yet: ${r.candidates?`only ${r.candidates} ranked player${r.candidates===1?'':'s'} beat${r.candidates===1?'s':''} a book price`:'no ranked player beats a book price'} so far. Player prices arrive with the Thursday and Saturday pulls.</p>`;
+  else body=`<p class="muted" style="margin:0 0 14px">Ranked players whose Elo says they beat the book's price, plus money first, one leg a game. The chance is the book's moved by the player's rating on the side of the bet. Payouts on a $${stake.toFixed(2)} bet.</p>
+    <div class="sugg-grid">${r.tiers.map((t,i)=>{
+      const ev=t.p*t.dec-1, saved=(S.saved||[]).some(x=>x.suggestSig===t.sig);
+      return `<div class="sugg-tier ${cls[i]}">
+        <div class="sugg-top"><span class="sugg-name">${t.label}</span></div>
+        <div class="sugg-nums">
+          <div><b>${(t.p*100).toFixed(0)}%</b><span>Elo chance all land</span></div>
+          <div><b>${fmtML(decToML(t.dec))}</b><span>book price</span></div>
+          <div><b class="payout">$${(stake*t.dec).toFixed(2)}</b><span>returns if it lands</span></div>
+          <div><b class="${ev>=0?'delta up':'delta down'}">${ev>=0?'+':'−'}${Math.abs(ev*100).toFixed(0)}%</b><span>expected return</span></div>
+        </div>
+        <ul class="sugg-legs">${t.legs.map(l=>`<li><span class="nm">${badge(l.pid)}${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.pe*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
+        <button class="btn ${saved?'quiet':'go'}" data-elo-save="${t.id}" ${saved?'disabled':''}>${saved?'Saved':'Add to saved parlays'}</button>
+      </div>`; }).join('')}</div>
+    <p class="muted" style="margin:12px 0 0;font-size:12px">A fun model, not an edge: replayed on weeks 1 and 2, the single legs lost money and the two-leg parlay landed both weeks. The Prop Record keeps grading.</p>`;
+  v.insertAdjacentHTML('beforeend',`<div class="card sugg pe-sugg"><div class="sugg-hd"><h2>Elo picks</h2><span class="pill">week ${w}</span></div>${body}</div>`);
+  v.querySelectorAll('[data-elo-save]').forEach(b=>b.addEventListener('click',()=>{
+    const t=r.tiers.find(x=>x.id===b.dataset.eloSave); if(!t) return;
+    const stake=Math.max(0,+S.stake||0);
+    if(!confirm(`Save the ${t.label} parlay at ${fmtML(decToML(t.dec))} for $${stake.toFixed(2)}?\n\nIt goes to Saved parlays and settles like any other.`)) return;
+    S.saved.push({id:'sp'+Date.now(),saved:new Date().toISOString(),week:t.legs[0].week,
+      legs:t.legs.map(l=>{ const {pe,ev,imp,...x}=l; return x; }),
+      stake,price:decToML(t.dec),priceSrc:'real',pCorr:t.p,pIndep:t.p,payout:stake*t.dec,suggested:'Elo',suggestSig:t.sig});
+    save(); renderParlay(); if(typeof suggestOpen==='function'&&suggestOpen()) fillSuggest(); }));
+}
+window.eloPicks=eloPicks;
+if(typeof fillSuggest==='function'){ const drawSugg=fillSuggest;
+  fillSuggest=function(){ const r=drawSugg.apply(this,arguments); eloSuggest(); return r; }; }
 if(typeof renderTrack==='function'){ const drawTrack=renderTrack;
   renderTrack=function(){ const r=drawTrack.apply(this,arguments); trackAlt(); return r; }; }
 if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
