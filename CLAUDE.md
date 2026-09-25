@@ -114,7 +114,7 @@ rebuild of the page. The Elo model also stands on the Pick'em Record chart, tabl
 grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season
 in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
 `S.elo`) and widens the app's own Joker lines to draw it, at build time, each edit asserted
-to land once. The app source is never touched. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
+to land once. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record), which the build puts in front of the app's script and `renderRecord()` calls last. The app source is never touched. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
 `elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 
