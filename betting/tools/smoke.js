@@ -153,21 +153,28 @@ function load(picks) {
     const rec = de.getElementById('modelChart'), rtxt = rec.textContent.replace(/\s+/g, ' ');
     const want = gradedIds.filter(id => SE.processed[id].elo.correct).length;
     check(/Wins against Vegas/.test(rtxt) && !!rec.querySelector('svg.rv-chart') && !rec.querySelector('svg.wowchart'), 'embed: the record does not draw Wins against Vegas: ' + rtxt.slice(0, 120));
-    check(new RegExp('Elo model ' + want + '\u2013' + (gradedIds.length - want)).test(rtxt), `embed: the legend should give the Elo model ${want}\u2013${gradedIds.length - want}: ` + rtxt.slice(0, 300));
+    check(new RegExp('ELO based ' + want + '\u2013' + (gradedIds.length - want)).test(rtxt), `embed: the legend should give ELO based ${want}\u2013${gradedIds.length - want}: ` + rtxt.slice(0, 300));
     check(rec.querySelectorAll('svg.rv-chart polyline[stroke="#E8730A"]').length === 1, 'embed: the Elo model has no line on the chart');
+    /* Vegas is the baseline: the headline tiles are its record, and the old names are gone */
+    { const win = r => r.result > 0 ? r.home : r.away, im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+      let c = 0, n = 0; for (const [gid, r] of Object.entries(SE.processed)) { if (r.result == null || r.result === 0) continue; const o = (SE.odds || {})[gid];
+        if (!o || !o.home || !o.away) continue; const ph = im(o.home) / (im(o.home) + im(o.away)); n++; if ((ph >= 0.5 ? r.home : r.away) === win(r)) c++; }
+      const tiles = de.getElementById('recordStats').textContent.replace(/\s+/g, ' ');
+      check(n > 0 && tiles.includes(`Vegas straight-up, ${c} of ${n}`), `embed: the headline tiles should be Vegas's ${c} of ${n}: ` + tiles.slice(0, 120)); }
+    check(!/Main Model|main model/.test(de.body.textContent), 'embed: the page still says Main Model somewhere');
     check(/= Vegas/.test(rec.querySelector('svg.rv-chart').textContent), 'embed: the zero line is not marked as Vegas');
     /* the Main Model against Vegas, counted here from the published games */
     { const win = r => r.result > 0 ? r.home : r.away, vp = r => !r.line ? null : (r.line > 0 ? r.home : r.away);
       let net = 0; for (const r of Object.values(SE.processed)) { if (r.correct === null || vp(r) === null) continue; net += (r.correct ? 1 : 0) - (vp(r) === win(r) ? 1 : 0); }
       const sg = net > 0 ? '+' + net : (net < 0 ? '\u2212' + Math.abs(net) : '0');
-      check(rtxt.includes('Main Model') && new RegExp('Main Model \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: the Main Model should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
+      check(rtxt.includes('Model A') && new RegExp('Model A \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: Model A should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
     const gridRows = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].map(tr => tr.querySelector('th').textContent.trim());
-    check(gridRows.includes('Elo model') && gridRows.indexOf('Elo model') === gridRows.indexOf('The Joker') + 1 && gridRows[gridRows.length - 1] === 'Vegas', 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|'));
-    { const eloRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'Elo model');
+    check(gridRows.includes('ELO based') && gridRows.indexOf('ELO based') === gridRows.indexOf('The Joker') + 1 && gridRows[gridRows.length - 1] === 'Vegas', 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|'));
+    { const eloRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'ELO based');
       check(!!eloRow && eloRow.querySelector('td.rv-season b').textContent === `${want}\u2013${gradedIds.length - want}`, 'embed: the grid\'s Elo season cell is wrong'); }
     de.getElementById('picksToggle').click(); await sleep(80);
     const gridHead = [...de.querySelector('.pickgrid').querySelectorAll('thead th')].map(th => th.textContent.trim());
-    check(gridHead.includes('Elo model'), 'embed: the pick grid has no Elo model column: ' + gridHead.join('|'));
+    check(gridHead.includes('ELO based') && gridHead.includes('Model A') && !gridHead.includes('Main Model'), 'embed: the pick grid has no ELO based column: ' + gridHead.join('|'));
     const firstRow = de.querySelector('.pickgrid tbody tr');
     check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
     /* one week at a time: this week by default, the weeks before it in the picker, nothing beyond */

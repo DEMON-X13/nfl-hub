@@ -562,7 +562,7 @@ patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\
   'the pick grid, this week by default, earlier weeks by the picker');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
 `  const elo=S.elo||{};
-  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Elo model','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+  const cols=[['Model A','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['ELO based','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null;
     const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
@@ -577,8 +577,13 @@ void TRIM;
    it says (window.STATE_URL) and opening on the tab it names (window.EMBED_TAB). Both are
    set by a script the page puts in before this one; on its own the app reads state.json
    beside it and routes by hash. */
+/* the models' names as the page shows them: the main model is Model A, the Elo game model
+   ELO based. Only the words a reader sees change, at build time; the app source is not edited. */
+const RENAME = [[/Main Model/g, 'Model A'], [/\bthe main model\b/g, 'Model A'], [/\bmain model\b/g, 'Model A'], [/'Elo model'/g, "'ELO based'"],
+  [/(lgd\('#E8730A',)'Elo model'/g, "$1'ELO based'"], [/>Elo model</g, '>ELO based<'], [/(\$\{w\} )Elo model:/g, '$1ELO based:'], [/no Elo model record/g, 'no ELO based record']];
 function buildApp() {
-  const out = html.replace(anchor, HOOK + ADMIN + LIVE + VIZ + anchor);
+  let out = html.replace(anchor, HOOK + ADMIN + LIVE + VIZ + anchor);
+  for (const [re, to] of RENAME) out = out.replace(re, to);
   for (const need of ['function recordViz(', 'recordViz(rows);', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
   return out;

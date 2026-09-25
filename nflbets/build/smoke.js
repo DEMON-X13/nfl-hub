@@ -132,7 +132,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const want = state.schedule.filter(g => +g.week === week).length;
   chk(cards.length === want, `expected ${want} games in week ${week}, got ${cards.length}`);
   chk(+d.getElementById('pkWeek').value === week, 'the board did not open on the week with calls to show');
-  chk(/Week \d+ \d+–\d+/.test(txt(d.getElementById('pkWeekRec'))), 'no week record: ' + txt(d.getElementById('pkWeekRec')));
+  chk(/Vegas · week \d+ \d+–\d+/.test(txt(d.getElementById('pkWeekRec'))), 'no week record: ' + txt(d.getElementById('pkWeekRec')));
+  /* Vegas is the board's baseline: the favourite by the moneylines with the margin out */
+  const vegasPick = g => { const o = (state.odds || {})[g.game_id], im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+    if (!o || !o.home || !o.away) return null; return im(o.home) / (im(o.home) + im(o.away)) >= 0.5 ? g.home_team : g.away_team; };
   chk(/Season \d+–\d+/.test(txt(d.getElementById('pkSeasonRec'))), 'no season record');
 
   /* the row is the betting app's: header, split bar, band, final-score cell */
@@ -143,19 +146,23 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(cards.every(c => c.querySelector('.pk-ttag.pk-win')), 'no pick is marked on a matchup tag');
   chk(!d.querySelector('#tab-pickems .ttag'), 'a betting tag came through in the prop model\'s class names');
   chk(cards.every(c => c.querySelector('.pk-result')), 'a game is missing its final-score cell');
-  /* the score prediction: the model's margin split around the book's total, whole points */
+  /* every pick on the board is the Vegas favourite */
+  { const bad = cards.filter(c => { const g = state.schedule.find(x => x.game_id === c.dataset.game), v = vegasPick(g), w = c.querySelector('.pk-ttag.pk-win');
+      return v && (!w || txt(w) !== v); });
+    chk(bad.length === 0, `the board's picks are not the Vegas favourites on ${bad.length} games`); }
+  /* the score prediction: the spread split around the book's total, whole points */
   const PAYLOAD = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8'));
   let predOk = 0, predAll = 0;
   for (const c of cards) {
-    const g = state.schedule.find(x => x.game_id === c.dataset.game), pk = state.picks[g.game_id] || state.processed[g.game_id];
+    const g = state.schedule.find(x => x.game_id === c.dataset.game), v = vegasPick(g);
     const row = PAYLOAD.sched.find(x => x.id === g.game_id);
-    if (!pk || !row || row.tot == null) continue;
+    if (!v || g.spread_line == null || !row || row.tot == null) continue;
     predAll++;
-    let hs = Math.round((row.tot + pk.margin) / 2), as = Math.round((row.tot - pk.margin) / 2);
-    if (hs === as) { if (pk.pick === g.home_team) hs++; else as++; }
+    let hs = Math.round((row.tot + g.spread_line) / 2), as = Math.round((row.tot - g.spread_line) / 2);
+    if (hs === as) { if (v === g.home_team) hs++; else as++; }
     if (txt(c.querySelector('.pk-pred .pk-psc')) === `${as}–${hs}`) predOk++;
   }
-  chk(predAll > 0 && predOk === predAll, `score predictions are the model's margin around the book's total: ${predOk} of ${predAll}`);
+  chk(predAll > 0 && predOk === predAll, `score predictions are the spread around the book's total: ${predOk} of ${predAll}`);
   const pend = cards.filter(c => /0 : 0/.test(txt(c.querySelector('.pk-result')))).length;
   const done = cards.filter(c => / won /.test(txt(c.querySelector('.pk-result')))).length;
   const on = cards.filter(c => / leading |Tied /.test(txt(c.querySelector('.pk-result')))).length;
@@ -164,17 +171,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const ungraded = state.schedule.filter(g => +g.week === week && !state.processed[g.game_id]);
   chk(/scores \d/.test(txt(d.getElementById('pkStamp'))), 'the Pick\'ems stamp does not say when the scoreboard was read: ' + txt(d.getElementById('pkStamp')));
   if (ungraded.length) {
-    const g0 = ungraded[0], c0 = cards.find(c => c.dataset.game === g0.game_id);
-    chk(new RegExp(`${g0.home_team} won 20–27`).test(txt(c0.querySelector('.pk-result'))) && /Pick hit/.test(txt(c0.querySelector('.pk-result'))),
-      'a game finished on the scoreboard does not read "HOME won 20–27 / Pick hit": ' + txt(c0.querySelector('.pk-result')));
-    chk(!!c0.querySelector('.pk-tw.pk-home .pk-res.pk-ok') && c0.classList.contains('pk-played'), 'the scoreboard winner carries no tick');
-    chk(c0.querySelector('.pk-result .pk-mwin').classList.contains('pk-ok'), 'a landed call is not green');
+    const g0 = ungraded[0], c0 = cards.find(c => c.dataset.game === g0.game_id), hit0 = vegasPick(g0) === g0.home_team;
+    chk(new RegExp(`${g0.home_team} won 20–27`).test(txt(c0.querySelector('.pk-result'))) && new RegExp(hit0 ? 'Pick hit' : 'Pick missed').test(txt(c0.querySelector('.pk-result'))),
+      'a game finished on the scoreboard does not read "HOME won 20–27" with the favourite\'s result: ' + txt(c0.querySelector('.pk-result')));
+    chk(!!c0.querySelector(`.pk-tw.pk-home .pk-res.${hit0 ? 'pk-ok' : 'pk-bad'}`) && c0.classList.contains('pk-played'), 'the scoreboard winner carries no tick or cross');
+    chk(c0.querySelector('.pk-result .pk-mwin').classList.contains(hit0 ? 'pk-ok' : 'pk-bad'), 'a finished call is not coloured by whether it landed');
   }
   if (ungraded.length > 1) {
     const g1 = ungraded[1], c1 = cards.find(c => c.dataset.game === g1.game_id);
     chk(new RegExp(`${g1.away_team} leading 14–10`).test(txt(c1.querySelector('.pk-result'))) && /Q3 5:44/.test(txt(c1.querySelector('.pk-result'))),
       'a game on now does not read "AWAY leading 14–10 / Q3 5:44": ' + txt(c1.querySelector('.pk-result')));
-    chk(c1.querySelector('.pk-result .pk-mwin').classList.contains('pk-bad') && !c1.querySelector('.pk-res'), 'a call behind is not red, or a game on now carries a mark');
+    const behind = vegasPick(g1) === g1.home_team;
+    chk(c1.querySelector('.pk-result .pk-mwin').classList.contains(behind ? 'pk-bad' : 'pk-ok') && !c1.querySelector('.pk-res'), 'a call on now is not coloured by whether it leads, or a game on now carries a mark');
   }
   /* the button reads again (the Live Parlays section reads the scoreboard too, so count the delta) */
   const sbReads = () => fetched.filter(u => u.includes('/scoreboard')).length;
