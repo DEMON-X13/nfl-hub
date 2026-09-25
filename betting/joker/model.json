@@ -1,8 +1,8 @@
 {
  "name": "The Joker",
  "formula": "gradient boosted trees, depth 4, 25 rounds, learning rate 0.1, min leaf 5",
- "fitted_on": "2019-2025 regular season and playoffs",
- "fitted_at": "2026-09-15T19:04+00:00",
+ "fitted_on": "2019-2025 regular season and playoffs, plus 2026 weeks 1-2 (weight 0.9)",
+ "fitted_at": "2026-09-25T03:53+00:00",
  "inputs_numeric": 565,
  "inputs_categorical": 11,
  "inputs_after_encoding": 1135,
@@ -589,5 +589,7 @@
   "stadium",
   "home_qb_name",
   "away_qb_name"
- ]
+ ],
+ "fit_2026_weeks": "1-2: 25-7, fitted after the fact",
+ "refit_by": "tune_2026.py"
 }
