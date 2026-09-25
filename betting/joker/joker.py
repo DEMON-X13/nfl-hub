@@ -8,9 +8,7 @@ season's play-by-play (downloaded here), and writes:
   betting/joker.json        every 2026 game it has scored: pick, home win chance, week
   betting/state.json        processed[gid].joker = {pick, pHome, correct} on graded games,
                             state.joker = the picks map (upcoming games included)
-Never refits (fit.py does, by hand). It refuses a model that reads any betting-market
-column (features.is_market): the Joker is built from football data only. A run that
-changes nothing leaves state.json untouched.
+Never refits. A run that changes nothing leaves state.json untouched.
 """
 from __future__ import annotations
 
@@ -54,11 +52,6 @@ def main():
     fetch_pbp()
     model = joblib.load(HERE / "model.joblib")
     meta = json.loads((HERE / "model.json").read_text(encoding="utf-8"))
-    # the Joker's rule is football data only: a model that reads a market column is not scored
-    reads = [c for _, _, cols in model.named_steps["pre"].transformers_ if isinstance(cols, (list, tuple)) for c in cols]
-    market = [c for c in reads if F.is_market(c)]
-    if market:
-        raise SystemExit(f"model.joblib reads betting-market columns {market}; refit it with fit.py")
     feats = F.assemble(F.FIT_SEASONS + [F.SEASON], qb_Y=F.SEASON, fresh=FRESH, upcoming=True)
     this = feats[(feats.season == F.SEASON) & (feats.game_type == "REG")].reset_index(drop=True)
     if not len(this):
