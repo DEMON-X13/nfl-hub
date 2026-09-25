@@ -148,13 +148,23 @@ function load(picks) {
     check(embedFetched.some(u => /\.\.\/elo\/data\/model\.json/.test(u)), 'embed: the Elo model was not read from ../elo/data/model.json');
     check(gradedIds.length > 0 && gradedIds.every(id => SE.processed[id] && SE.processed[id].elo && typeof SE.processed[id].elo.correct === 'boolean'), 'embed: the Elo model\'s graded calls are not on the processed games');
     check(Object.keys(SE.elo || {}).length >= gradedIds.length + ((EM.next && EM.next.games) || []).length, 'embed: S.elo does not carry the graded and coming calls');
-    const rec = de.getElementById('modelChart');
-    check(/Elo model/.test(rec.textContent) && /Elo model\s*\d+%\s*\(\d+ of \d+\)/.test(rec.textContent.replace(/\s+/g, ' ')), 'embed: the Season accuracy legend has no Elo model entry: ' + rec.textContent.replace(/\s+/g, ' ').slice(0, 200));
+    /* the record's pictures: wins against Vegas (each model's wins minus the Vegas favourite's on
+       the same games, week by week) and the week-by-week grid, the Elo model in both */
+    const rec = de.getElementById('modelChart'), rtxt = rec.textContent.replace(/\s+/g, ' ');
     const want = gradedIds.filter(id => SE.processed[id].elo.correct).length;
-    check(new RegExp('Elo model\\s*' + Math.round(100 * want / gradedIds.length) + '%\\s*\\(' + want + ' of ' + gradedIds.length + '\\)').test(rec.textContent.replace(/\s+/g, ' ')), `embed: the Elo model's record should read ${want} of ${gradedIds.length}`);
-    check(rec.querySelectorAll('svg path[stroke="#E8730A"], svg polyline[stroke="#E8730A"], svg [stroke="#E8730A"]').length > 0, 'embed: the Elo model has no line on the chart');
-    const head = [...de.querySelectorAll('#recordTable thead th')].map(th => th.textContent.trim());
-    check(head.includes('Elo model') && head.indexOf('Elo model') === head.indexOf('The Joker') + 1, 'embed: the week-by-week table has no Elo model column after the Joker: ' + head.join('|'));
+    check(/Wins against Vegas/.test(rtxt) && !!rec.querySelector('svg.rv-chart') && !rec.querySelector('svg.wowchart'), 'embed: the record does not draw Wins against Vegas: ' + rtxt.slice(0, 120));
+    check(new RegExp('Elo model ' + want + '\u2013' + (gradedIds.length - want)).test(rtxt), `embed: the legend should give the Elo model ${want}\u2013${gradedIds.length - want}: ` + rtxt.slice(0, 300));
+    check(rec.querySelectorAll('svg.rv-chart polyline[stroke="#E8730A"]').length === 1, 'embed: the Elo model has no line on the chart');
+    check(/= Vegas/.test(rec.querySelector('svg.rv-chart').textContent), 'embed: the zero line is not marked as Vegas');
+    /* the Main Model against Vegas, counted here from the published games */
+    { const win = r => r.result > 0 ? r.home : r.away, vp = r => !r.line ? null : (r.line > 0 ? r.home : r.away);
+      let net = 0; for (const r of Object.values(SE.processed)) { if (r.correct === null || vp(r) === null) continue; net += (r.correct ? 1 : 0) - (vp(r) === win(r) ? 1 : 0); }
+      const sg = net > 0 ? '+' + net : (net < 0 ? '\u2212' + Math.abs(net) : '0');
+      check(rtxt.includes('Main Model') && new RegExp('Main Model \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: the Main Model should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
+    const gridRows = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].map(tr => tr.querySelector('th').textContent.trim());
+    check(gridRows.includes('Elo model') && gridRows.indexOf('Elo model') === gridRows.indexOf('The Joker') + 1 && gridRows[gridRows.length - 1] === 'Vegas', 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|'));
+    { const eloRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'Elo model');
+      check(!!eloRow && eloRow.querySelector('td.rv-season b').textContent === `${want}\u2013${gradedIds.length - want}`, 'embed: the grid\'s Elo season cell is wrong'); }
     de.getElementById('picksToggle').click(); await sleep(80);
     const gridHead = [...de.querySelector('.pickgrid').querySelectorAll('thead th')].map(th => th.textContent.trim());
     check(gridHead.includes('Elo model'), 'embed: the pick grid has no Elo model column: ' + gridHead.join('|'));

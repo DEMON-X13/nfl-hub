@@ -487,6 +487,33 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 `;
 
+/* the Pick'em Record's pictures (record_viz.js): wins against Vegas and the week-by-week grid,
+   drawn over renderRecord()'s own, which calls recordViz(rows) last (patched below) */
+const VIZ_JS = fs.readFileSync(path.join(__dirname, 'record_viz.js'), 'utf8');
+if (/<\/script/i.test(VIZ_JS)) throw new Error('record_viz.js must not contain a closing script tag');
+const VIZ = `<style>
+.rv-wrap{position:relative;margin:4px 0 0}
+.rv-chart{display:block;width:100%;height:auto;overflow:visible}
+.rv-hit{cursor:crosshair}
+.rv-tip{position:absolute;top:6px;z-index:2;background:var(--panel);border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--ink-2);box-shadow:0 8px 24px -10px rgba(15,27,45,.35);pointer-events:none;white-space:nowrap}
+.rv-tip b{display:block;color:var(--ink);margin-bottom:4px}
+.rv-tip div{display:flex;align-items:center;gap:2px;line-height:1.6}
+.rv-gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.rv-grid{border-collapse:separate;border-spacing:3px;width:auto;min-width:100%}
+table.rv-grid th,table.rv-grid td{border:0;padding:7px 10px;border-radius:8px}
+table.rv-grid thead th{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:none;text-align:center;white-space:nowrap}
+table.rv-grid thead th small{display:block;text-transform:none;letter-spacing:0;font-weight:400}
+table.rv-grid th.rv-m{text-align:left;white-space:nowrap;font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--panel);position:sticky;left:0;z-index:1}
+table.rv-grid td.rv-c{text-align:center;min-width:64px;font-variant-numeric:tabular-nums;color:var(--ink)}
+table.rv-grid td.rv-c b{display:block;font-family:var(--display);font-size:14px}
+table.rv-grid td.rv-c small{display:block;font-size:11px;color:var(--ink-2)}
+table.rv-grid td.rv-none{color:var(--muted)}
+table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
+</style>
+<script>
+${VIZ_JS}
+</script>
+`;
 const anchor = '<script>\nconst MODEL = ';
 if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
 
@@ -539,6 +566,11 @@ patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null;
     const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
+patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
+  renderBets();`,
+`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
+  recordViz(rows);
+  renderBets();`, 'the record pictures, drawn over the app\'s own');
 /* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around
@@ -546,8 +578,8 @@ void TRIM;
    set by a script the page puts in before this one; on its own the app reads state.json
    beside it and routes by hash. */
 function buildApp() {
-  const out = html.replace(anchor, HOOK + ADMIN + LIVE + anchor);
-  for (const need of ['window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
+  const out = html.replace(anchor, HOOK + ADMIN + LIVE + VIZ + anchor);
+  for (const need of ['function recordViz(', 'recordViz(rows);', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
   return out;
 }
