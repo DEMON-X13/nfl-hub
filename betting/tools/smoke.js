@@ -161,8 +161,8 @@ function load(picks) {
     const firstRow = de.querySelector('.pickgrid tbody tr');
     check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
     /* one week at a time: this week by default, the weeks before it in the picker, nothing beyond */
-    const gradedWeeks = [...new Set(Object.values(SE.processed).filter(r => r.correct !== null).map(r => +r.week))];
-    const played = Math.max(...gradedWeeks), cur = SE.schedule.some(g => +g.week === played + 1) ? played + 1 : played;
+    const weeksAll = [...new Set(SE.schedule.map(g => +g.week))].sort((x, y) => x - y);
+    const cur = weeksAll.find(w => SE.schedule.some(g => +g.week === w && g.result == null)) || weeksAll[weeksAll.length - 1];
     const sel = de.getElementById('picksWeek');
     check(!!sel && +sel.value === cur && /this week/.test(sel.selectedOptions[0].textContent), 'embed: the pick grid does not open on this week: ' + (sel && sel.selectedOptions[0].textContent));
     const opts = [...sel.options].map(o => +o.value);
@@ -172,7 +172,15 @@ function load(picks) {
     check(!!thisWeekGame && de.querySelector('.pickgrid').textContent.includes(thisWeekGame.away_team + ' at ' + thisWeekGame.home_team), 'embed: the grid shown is not this week\'s');
     sel.value = String(cur - 1); sel.dispatchEvent(new e.window.Event('change', { bubbles: true })); await sleep(80);
     const prevGame = SE.schedule.find(g => +g.week === cur - 1);
-    check(+de.getElementById('picksWeek').value === cur - 1 && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it'); }
+    check(+de.getElementById('picksWeek').value === cur - 1 && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it');
+    /* a week part played (Thursday's game graded, Sunday's to come) is still this week */
+    { const g = SE.schedule.find(x => +x.week === cur);
+      e.window.eval(`(()=>{ const g=S.schedule.find(x=>x.game_id===${JSON.stringify(g.game_id)}); g.result=7; g.home_score=24; g.away_score=17;
+        S.processed[g.game_id]={week:${cur},home:g.home_team,away:g.away_team,pick:g.home_team,conf:0.6,margin:3,pHome:0.6,result:7,correct:true,h:null,news:[]};
+        S.picksWeek=null; renderRecord(); })()`); await sleep(80);
+      const s2 = de.getElementById('picksWeek');
+      check(!!s2 && +s2.value === cur && /this week/.test(s2.selectedOptions[0].textContent) && ![...s2.options].some(o => +o.value > cur),
+        'embed: one graded game moved the picker past this week: ' + (s2 && s2.selectedOptions[0].textContent)); } }
   /* clicking a tab inside the frame must not throw on the address it cannot write */
   { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
     de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);

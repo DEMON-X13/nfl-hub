@@ -231,7 +231,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
 
     const done = await run({ state: 'post' });
     chk(!done.d.getElementById('clear').hidden, 'with every game final, Clear settled should be offered');
-    chk(done.d.querySelectorAll('.pill.ok, .pill.bad').length === 2, 'a finished parlay should still say landed or gone');
+    chk(done.d.querySelectorAll('#lpCard .pill.ok, #lpCard .pill.bad').length === 2, 'a finished parlay should still say landed or gone');   /* the section only: the Props list has its own FINAL pills */
     done.d.getElementById('clear').click();
     await wait(60);
     chk(done.d.querySelectorAll('.savedp').length === 0, 'Clear settled did not delete the settled parlays: ' + done.d.querySelectorAll('.savedp').length);
