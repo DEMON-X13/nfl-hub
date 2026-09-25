@@ -271,7 +271,7 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 12x/week: 4 price pulls (Mon/Wed/Thu/Sat), 8 post-game and stats runs | `weekly.py`, commits `props/data` to `main` |
-| `update.yml` | Fri/Mon/Tue mornings ET, with an afternoon catch-up each | betting `update.js` + `build.js` (a check) + `smoke.js`, commits `state.json` and `joker.json` |
+| `update.yml` | every hour (the Joker follows the lines), plus Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game and injury-report runs | betting `update.js` + `build.js` (a check) + `smoke.js`, commits `state.json` and `joker.json` |
 | `news.yml` | Fri/Mon/Tue 8am ET | `run-auto.js` |
 | `elo.yml` | Tue/Fri 8:40am ET | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `smoke.js`, commits `cfb/state.json` |
