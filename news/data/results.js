@@ -129,5 +129,9 @@ const RESULTS = {
  "wk2:NYG-LAR": [
   6,
   28
+ ],
+ "wk3:ATL-GB": [
+  35,
+  14
  ]
 };
