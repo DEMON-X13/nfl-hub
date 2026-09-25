@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-24T17:22+00:00",
+ "generated": "2026-09-25T03:13+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1670,7 +1670,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -245.0,
+     "v": -230.0,
      "c": 0.4809
     },
     {
@@ -1772,7 +1772,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 160.0,
+     "v": 154.0,
      "c": -0.6444
     },
     {
@@ -1807,7 +1807,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -192.0,
+     "v": -185.0,
      "c": 0.091
     }
    ]
@@ -1925,7 +1925,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -345.0,
+     "v": -325.0,
      "c": 0.893
     },
     {
@@ -2078,7 +2078,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 270.0,
+     "v": 280.0,
      "c": -1.1236
     },
     {
@@ -2108,7 +2108,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -340.0,
+     "v": -355.0,
      "c": -0.0933
     },
     {
@@ -2377,30 +2377,25 @@
    "week": 3,
    "home": "DEN",
    "away": "LA",
-   "pick": "DEN",
-   "pHome": 0.5308,
+   "pick": "LA",
+   "pHome": 0.4858,
    "played": false,
    "base": 0.1727,
    "why": [
-    {
-     "f": "home_moneyline",
-     "v": 114.0,
-     "c": -0.3981
-    },
-    {
-     "f": "td_def_tackles_with_assist_A",
-     "v": 0.0,
-     "c": 0.3532
-    },
     {
      "f": "td_kickoff_return_yards_H",
      "v": 111.0,
      "c": -0.2014
     },
     {
-     "f": "td_completions_A",
-     "v": 19.5,
-     "c": 0.1218
+     "f": "home_moneyline",
+     "v": 110.0,
+     "c": -0.1818
+    },
+    {
+     "f": "td_def_tackles_with_assist_A",
+     "v": 0.0,
+     "c": 0.141
     },
     {
      "f": "sr_away",
@@ -2421,6 +2416,11 @@
      "f": "td_pt_yards_H",
      "v": 225.5,
      "c": -0.0472
+    },
+    {
+     "f": "away_moneyline",
+     "v": -130.0,
+     "c": 0.043
     }
    ]
   },
