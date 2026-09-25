@@ -212,7 +212,8 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(live.d.getElementById('clear').hidden, 'with nothing settled there is nothing to clear');
     chk(/\[hidden\]\{display:none!important\}/.test(HTML), 'a hidden button is still drawn: the .btn display rule beats the hidden attribute without this');
     chk(live.d.querySelectorAll('.savedp [data-rm]').length === 2, 'every parlay should carry its own delete button');
-    chk(!live.d.querySelector('.pill.warn') && !/\d of \d in/.test(txt(live.d.getElementById('app'))), 'a running parlay still carries the "n of m in" tag');
+    /* the section only: the Props game list carries its own LIVE pill once a real game has kicked off */
+    chk(!live.d.querySelector('#lpCard .pill.warn') && !/\d of \d in/.test(txt(live.d.getElementById('lpCard'))), 'a running parlay still carries the "n of m in" tag');
     live.d.querySelector('.savedp [data-rm]').click();
     await wait(60);
     chk(live.d.querySelectorAll('.savedp').length === 1, 'deleting one parlay did not take it off the page');

@@ -5,7 +5,11 @@ Everything is known before kickoff:
     overall, passing and rushing, success rate, explosiveness, turnovers, offence and
     defence, games played, rest edge, neutral site
   * the quarterback adjustment (K3): expected starter versus actual, faded
-  * the market: closing spread, both moneylines, the total, the preseason win total
+  * NOT the market. No spread, moneyline, total, odds or preseason win total goes in, nor
+    anything built from one: the Joker's rule is football data only. The harness's game
+    table carries the spread and both moneylines, and games.csv the total and the odds, so
+    they are in the frame; columns() leaves out everything is_market() names, and
+    test_no_market.py fails the job if one ever gets through
   * the setting: week, weekday, kickoff hour, division game, roof, surface, temperature,
     wind, stadium, referee
   * the people: both head coaches, both starting quarterbacks by name
@@ -20,6 +24,7 @@ games.csv, stats_team_week_2026.csv and play_by_play_2026.parquet.
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -42,7 +47,19 @@ CATEGORICAL = ["home_team", "away_team", "roof", "surface", "weekday", "home_coa
                "referee", "stadium", "home_qb_name", "away_qb_name"]
 NOT_FEATURES = {"game_id", "game_type", "gameday", "home_score", "away_score", "result", "home_win",
                 "qb_home", "qb_away", "usual_home", "usual_away", "played"}
-RAW_EXTRA = ["game_id", "spread_line", "home_moneyline", "away_moneyline", "total_line", "div_game",
+# the betting market, by name and by pattern: kept out of the Joker's inputs (see columns())
+MARKET = {"spread_line", "total_line", "home_moneyline", "away_moneyline", "home_spread_odds", "away_spread_odds",
+          "over_odds", "under_odds", "wt_home", "wt_away", "exp_wins"}
+_MARKET_PAT = re.compile(r"moneyline|spread_line|spread_odds|total_line|(^|_)odds($|_)|over_odds|under_odds|win_total|"
+                         r"exp_wins|^wt_|implied|vig|market|vegas|closing_line|(^|_)ml_", re.I)
+
+
+def is_market(col: str) -> bool:
+    """a betting-market column, or one named as built from one"""
+    return col in MARKET or bool(_MARKET_PAT.search(str(col)))
+
+
+RAW_EXTRA = ["game_id", "div_game",
              "roof", "surface", "temp", "wind", "weekday", "gametime", "home_coach", "away_coach",
              "referee", "stadium", "home_qb_name", "away_qb_name"]
 
@@ -199,13 +216,17 @@ def assemble(seasons, qb_Y, fresh: Path | None = None, upcoming: bool = False):
             feats = pd.concat([feats, uf], ignore_index=True)
     feats = qb.augment(feats, qb_Y, with_def=False, fade=qb.FADE)
     feats = raw_extras(feats, games_all)
-    feats = win_totals(feats)
     feats = previous_game_stats(feats, seasons, fresh)
     feats["home_win"] = (feats.result > 0).astype(int)
     return feats
 
 
-def columns(feats):
-    cat = [c for c in CATEGORICAL if c in feats.columns]
-    num = [c for c in feats.columns if c not in NOT_FEATURES and c not in cat and pd.api.types.is_numeric_dtype(feats[c])]
+def columns(feats, allow_market: bool = False):
+    """the model's inputs: every numeric column but the bookkeeping, and the categoricals.
+    The market is left out; allow_market exists only so fit.py --report can reproduce the
+    Joker as it was fitted before, for the comparison."""
+    keep = (lambda c: True) if allow_market else (lambda c: not is_market(c))
+    cat = [c for c in CATEGORICAL if c in feats.columns and keep(c)]
+    num = [c for c in feats.columns if c not in NOT_FEATURES and c not in cat and keep(c)
+           and pd.api.types.is_numeric_dtype(feats[c])]
     return num, cat
