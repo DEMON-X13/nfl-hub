@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-25T19:29+00:00",
+ "generated": "2026-09-25T20:10+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -2027,7 +2027,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -305.0,
+     "v": -310.0,
      "c": 0.8572
     },
     {
@@ -2078,7 +2078,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 285.0,
+     "v": 295.0,
      "c": -1.1606
     },
     {
@@ -2282,7 +2282,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 142.0,
+     "v": 145.0,
      "c": -0.6137
     },
     {
@@ -2312,7 +2312,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -170.0,
+     "v": -175.0,
      "c": 0.0668
     },
     {
@@ -2333,7 +2333,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -185.0,
+     "v": -192.0,
      "c": 0.4854
     },
     {
