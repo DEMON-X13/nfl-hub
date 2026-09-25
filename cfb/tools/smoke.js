@@ -115,6 +115,7 @@ async function main() {
   /* state invariants the page relies on */
   for (const g of S.games) {
     chk(g.pHome > 0 && g.pHome < 1, `chance in (0,1) on ${g.id}`);
+    chk(isFinite(g.mu) && g.mu !== null, `an expected margin on ${g.id} (${g.state}, frozen ${g.frozen})`);
     if (g.line && g.line.homeLine !== null) chk(g.cover && Math.abs(g.cover.home + g.cover.push + g.cover.away - 1) < 0.01, `cover chances sum to one on ${g.id} (${g.state}, mu ${g.mu}, line ${JSON.stringify(g.line)}, cover ${JSON.stringify(g.cover)})`);
     if (g.state === 'final') chk(!!g.result, `a final game is graded: ${g.id}`);
     if (g.state !== 'pre' && g.result && g.result.ats) chk(!!g.line, `an ATS grade has a line: ${g.id}`);

@@ -232,11 +232,14 @@ async function main() {
       neutral: g.neutral, conf: g.conf, note: g.note, venue: g.venue, hrank: g.hrank, arank: g.arank, hrec: g.hrec, arec: g.arec };
     let view;
     if (g.state === 'pre') { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, frozen: now }; }
-    else if (p && p.frozen) view = { pHome: p.pHome, diff: p.diff, rh: p.rh, ra: p.ra, frozen: p.frozen };
+    /* a call frozen before kickoff keeps its view after. A frozen row carries its rating gap (diff);
+       ones frozen before it did are rebuilt from the frozen ratings and home field, which is how
+       the gap was made, so a game frozen on Thursday and final on Friday still has its margin */
+    else if (p && p.frozen) view = { pHome: p.pHome, diff: p.diff ?? (p.rh - p.ra + (g.neutral ? 0 : model.params.hfa)), rh: p.rh, ra: p.ra, frozen: p.frozen };
     else if (replayed[g.id]) { const v = replayed[g.id]; view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, frozen: null }; }
     else { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, frozen: null }; }   // live with no frozen call: the current view
     const mu = spreadOf(view.diff, model);
-    Object.assign(row, { pHome: +view.pHome.toFixed(4), rh: +view.rh.toFixed(1), ra: +view.ra.toFixed(1), mu: +mu.toFixed(2), spread: roundHalf(-mu), frozen: view.frozen });
+    Object.assign(row, { pHome: +view.pHome.toFixed(4), rh: +view.rh.toFixed(1), ra: +view.ra.toFixed(1), diff: +view.diff.toFixed(2), mu: +mu.toFixed(2), spread: roundHalf(-mu), frozen: view.frozen });
     /* the line: taken while the game is still to come, kept once it is not */
     let line = null;
     if (g.state === 'pre' && g.odds) line = Object.assign({}, g.odds, { at: now });
