@@ -109,7 +109,7 @@ function renderSlate(){
       <div class="winner">${(()=>{
         if(ca.implied===ch.implied&&!hasScore(g)) return '<span class="none">\u2013</span><small>even</small>';
         const pick=ca.implied>ch.implied?g.a:g.h, by=Math.abs(ca.implied-ch.implied).toFixed(0);
-        if(!hasScore(g)) return tag(pick)+`<small>by ${by}</small>`;
+        if(!hasScore(g)) return tag(pick)+`<small>by ${by}</small>`+(ca.src==='model'?'<small class="muted">no line yet, our model</small>':'');
         if(g.as===g.hs) return tag(pick)+`<small>by ${by}</small><small class="act">(tie)</small>`;
         const real=g.as>g.hs?g.a:g.h, right=real===pick;
         return tag(pick)+`<small>by ${by}</small><small class="act ${right?'right':'wrong'}">${right?'\u2713 ':'\u2717 '}${real} by ${Math.abs(g.as-g.hs)}</small>`;

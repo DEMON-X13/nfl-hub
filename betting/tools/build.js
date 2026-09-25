@@ -489,7 +489,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 /* the Pick'em Record's pictures (record_viz.js): wins against Vegas and the week-by-week grid,
    drawn over renderRecord()'s own, which calls recordViz(rows) last (patched below) */
-const VIZ_JS = fs.readFileSync(path.join(__dirname, 'record_viz.js'), 'utf8');
+const VIZ_JS = fs.readFileSync(path.join(__dirname, 'record_viz.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'ratings_viz.js'), 'utf8');
 if (/<\/script/i.test(VIZ_JS)) throw new Error('record_viz.js must not contain a closing script tag');
 const VIZ = `<style>
 .rv-wrap{position:relative;margin:4px 0 0}
@@ -509,6 +509,12 @@ table.rv-grid td.rv-c b{display:block;font-family:var(--display);font-size:14px}
 table.rv-grid td.rv-c small{display:block;font-size:11px;color:var(--ink-2)}
 table.rv-grid td.rv-none{color:var(--muted)}
 table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
+.rt-switch{margin:0 0 12px}
+table.rt-v{width:100%;max-width:640px}
+table.rt-v td.num b{font-family:var(--display);font-variant-numeric:tabular-nums}
+.rt-barcell{width:45%;position:relative}
+.rt-bar{display:block;height:8px;border-radius:0 4px 4px 0;background:var(--pick);margin-left:50%}
+.rt-bar.neg{background:var(--miss);border-radius:4px 0 0 4px;margin-left:auto;margin-right:50%}
 </style>
 <script>
 ${VIZ_JS}
@@ -571,6 +577,12 @@ patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></
 `  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   recordViz(rows);
   renderBets();`, 'the record pictures, drawn over the app\'s own');
+patch(`
+}
+function renderAdjust(){`, `
+  ratingsViz();
+}
+function renderAdjust(){`, 'Power Ratings, Vegas by default');
 /* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around
@@ -584,7 +596,7 @@ const RENAME = [[/Main Model/g, 'Model A'], [/\bthe main model\b/g, 'Model A'], 
 function buildApp() {
   let out = html.replace(anchor, HOOK + ADMIN + LIVE + VIZ + anchor);
   for (const [re, to] of RENAME) out = out.replace(re, to);
-  for (const need of ['function recordViz(', 'recordViz(rows);', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
+  for (const need of ['function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
   return out;
 }
