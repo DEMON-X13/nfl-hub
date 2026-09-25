@@ -215,12 +215,7 @@ fetch), `qb`, `injuries`, `depth`, `joker`, `published`.
 
 **The Joker** (`betting/joker/`) is a separate gradient-boosted-trees model,
 fitted 2019-2025, whose per-game picks ship in `joker.json` and show next to the
-main model's. It takes football data only: no spread, moneyline, total, odds or
-preseason win total (`features.MARKET` / `is_market()`), which `columns()` leaves
-out, `joker.py` refuses to score and `test_no_market.py` (run by the job before
-scoring) fails on. `fit.py` refits it by hand; `fit.py --report` writes
-`walkforward.json`, the 2021-2025 walk-forward beside the Main Model, the
-Challenger, Vegas and the Joker as it was with the market.
+main model's.
 
 Gate: the app's embedded model numbers must equal `reference_models.json` or the
 publish aborts. Shipping a model change means passing the release gate in

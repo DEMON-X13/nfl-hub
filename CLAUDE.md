@@ -84,13 +84,6 @@ node nflbets/build/build.js      # the app changed, so the page that carries it 
 Gate: the app's embedded model numbers must equal
 `betting/tools/reference_models.json`, or the publish aborts.
 
-The Joker (`betting/joker/`) is built from football data only: no betting-market column
-(spread, moneyline, total, odds, preseason win totals, or anything built from one) may be
-an input. `features.is_market()` names them, `columns()` leaves them out, `joker.py`
-refuses a model that reads one, and `python betting/joker/test_no_market.py` fails the job
-if one comes back. Refit by hand with `python betting/joker/fit.py` (`--report` adds the
-walk-forward comparison, `walkforward.json`), then `joker.py` to rescore the season.
-
 ## Player Elo: the loop
 
 ```
