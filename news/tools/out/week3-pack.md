@@ -44,6 +44,7 @@ Atlanta Falcons, injuries:
 Atlanta Falcons, ESPN headlines:
 
 Green Bay Packers, injuries:
+- Jacob Monk (C) Questionable, Undisclosed: questionable
 - MarShawn Lloyd (RB) Active: Lloyd rushed four times for 11 yards and brought in two of three targets for seven yards in the Packers' 35-14 loss to the Falcons on Thursday.
 - Tucker Kraft (TE) Active: Kraft secured four of eight targets for 26 yards in the Packers' 35-14 loss to the Falcons on Thursday. He also recovered a fumble.
 - Trey Smack (PK) Active: Smack went 0-for-1 on field-goal tries and 2-for-2 on extra-point attempts in Thursday's 35-14 loss to the Falcons.
@@ -68,7 +69,6 @@ Green Bay Packers, injuries:
 - Benjamin St-Juste (CB) Active: St-Juste (hamstring) was a full participant in Monday's estimated practice, Tom Silverstein of the Milwaukee Journal Sentinel reports.
 - Evan Williams (S) Active: Williams made 10 tackles (seven solo) and defensed two passes during Sunday's 20-17 overtime win over the Jets.
 - Lukas Van Ness (DE) Active: Van Ness made 10 tackles (seven solo), including 1.5 sacks, in Sunday's 20-17 overtime win over the Jets.
-- Bo Melton (WR) Active: Melton (neck) was a full participant in Monday's estimated practice, Tom Silverstein of the Milwaukee Journal Sentinel reports.
 
 Green Bay Packers, ESPN headlines:
 
@@ -113,8 +113,8 @@ Los Angeles Chargers, ESPN headlines:
 
 Buffalo Bills, injuries:
 - Ed Oliver (DT) Questionable, Hip: Oliver (hip) was limited during Thursday's practice.
-- DJ Moore (WR) Questionable, Shoulder - AC Joint: Moore (shoulder) was listed as a non-participant in Thursday's practice.
 - Keon Coleman (WR) Questionable, Ankle: Coleman (ankle) wasn't spotted at the start of Thursday's practice, Joe Buscaglia of The Athletic reports.
+- DJ Moore (WR) Questionable, Shoulder - AC Joint: Moore (shoulder) was not spotted on the practice field at the beginning of Thursday's session, Joe Buscaglia of The Athletic reports.
 - Ty Johnson (RB) Active: Johnson (hamstring) practiced fully Wednesday.
 - T.J. Sanders (DT) Questionable: Sanders (appendix) did not participate in Wednesday's practice, Katherine Fitzgerald of The Buffalo News reports.
 - Ar'maj Reed-Adams (G) Questionable, Elbow: questionable
@@ -154,7 +154,7 @@ Carolina Panthers, injuries:
 - Jaelan Phillips (LB) Active: Phillips (back) was a full participant in Thursday's practice.
 - Devin Lloyd (LB) Questionable, Calf: Lloyd (calf) did not practice Thursday.
 - Xavier Legette (WR) Questionable, Knee: Legette (knee) was listed as a non-participant at Thursday's practice.
-- Jalen Coker (WR) Questionable, Ankle: Coker (ankle) was listed as a non-participant on Thursday's injury report.
+- Jalen Coker (WR) Questionable, Ankle: Coker (ankle) was spotted using an exercise bike at the beginning of Thursday's practice, Mike Kaye of ESPN.com reports.
 - Trevis Gipson (LB) Active: Gipson (head) was a full participant in Wednesday's practice.
 - Bobby Brown III (DT) Active: Brown (back) was a full participant in Wednesday's practice.
 - Isaiah Simmons (S) Active: The Panthers signed Simmons to the active roster from their practice squad Wednesday, Darin Gantt of the team's official site reports.
@@ -180,7 +180,7 @@ Carolina Panthers, injuries:
 Carolina Panthers, ESPN headlines:
 
 Cleveland Browns, injuries:
-- Quinshon Judkins (RB) Active: Judkins (personal) was a limited participant at Thursday's practice, Daniel Oyefusi of ESPN.com reports.
+- Quinshon Judkins (RB) Active: Judkins (personal) was in uniform for the start of Friday's practice, Zac Jackson reports.
 - Tytus Howard (OT) Active
 - Mason Graham (DT) Active
 - Tyson Campbell (CB) Questionable, Hip: Campbell (ankle/hip) was a limited participant at practice Wednesday, Daniel Oyefusi of ESPN.com reports.
@@ -219,11 +219,12 @@ Searches to run:
 - "NFL week 3 picks NYJ DET"
 
 New York Jets, injuries:
-- Kiko Mauigoa (LB) Questionable, Quadriceps: Mauigoa (quadriceps) missed practice for the second day in a row Thursday.
+- Jason Sanders (PK) Active: Sanders will kick for the Jets this Sunday at Detroit, Brian Costello of the New York Post reports.
+- Mason Taylor (TE) Out, Thumb: Taylor (thumb) has been ruled out for Sunday's game at Detroit.
+- Adonai Mitchell (WR) Questionable, Finger: Mitchell (finger) will be limited in Friday's practice, according to the Jets' official X account.
+- Minkah Fitzpatrick (S) Out, Groin: out
+- Kiko Mauigoa (LB) Out, Quadriceps: Mauigoa (quadriceps) missed practice for the second day in a row Thursday.
 - Kene Nwangwu (RB) Questionable, Back: Nwangwu (back) did not participate in practice Thursday.
-- Mason Taylor (TE) Doubtful, Thumb: Taylor (thumb) didn't participate in Thursday's practice.
-- Adonai Mitchell (WR) Questionable, Finger: Mitchell was a limited participant in Thursday's practice due to a finger injury, Rich Cimini of ESPN.com reports.
-- Minkah Fitzpatrick (S) Questionable, Groin: Fitzpatrick (groin) did not participate in Wednesday's practice.
 - Joseph Ossai (DE) Questionable, Foot: Ossai (foot) was a limited participant in Wednesday's practice, Rich Cimini of ESPN.com reports.
 - Arian Smith (WR) Injured Reserve, Knee - ACL: Smith (knee) underwent surgery Wednesday to repair a torn ACL and will miss the rest of the season, Antwan V. Staley of the New York Daily News reports.
 - David Onyemata (DT) Injured Reserve, Groin: Onyemata (groin) underwent core-muscle surgery Wednesday, Antwan V. Staley of the New York Daily News reports.
@@ -236,7 +237,6 @@ New York Jets, injuries:
 - Malik McClain (WR) Active: The Jets signed McClain from the practice squad to the active roster Tuesday.
 - Braelon Allen (RB) Active: Allen rushed five times for seven yards and a touchdown while catching his only target for eight yards in Sunday's 20-17 overtime loss to the Packers.
 - Kenyon Sadiq (TE) Active: Sadiq caught two of three targets for 17 yards during Sunday's 20-17 overtime loss to the Packers.
-- Jason Sanders (PK) Active: Sanders reverted to the Jets' practice squad Monday, per the NFL's official transaction log.
 - Isaiah Williams (WR) Active: Williams caught all six of his targets for 34 yards and added a 14-yard carry during the Jets' 20-17 overtime loss to the Packers on Sunday. He also returned three punts for two yards and five kickoffs for 124 yards.
 - Trevin Wallace (LB) Active
 - D'Angelo Ponds (CB) Active
@@ -287,9 +287,9 @@ Searches to run:
 - "NFL week 3 picks HOU IND"
 
 Houston Texans, injuries:
+- Nico Collins (WR) Doubtful, Hamstring: Collins (hamstring) isn't practicing Friday and is slated to miss a second game in a row, Aaron Wilson reports.
 - Jadeveon Clowney (DE) Questionable, Knee: Clowney (knee) did not participate in practice Thursday.
 - Logan Hall (DE) Active
-- Nico Collins (WR) Questionable, Hamstring: Collins (hamstring) was listed as a non-participant at Thursday's practice.
 - M.J. Stewart (S) Out, Quadriceps: The Texans designated Stewart (quadriceps) for return from their reserve/PUP list Wednesday.
 - Trent Brown (OT) Questionable, Knee: questionable
 - Will Anderson Jr. (DE) Active: Anderson compiled eight total tackles (four solo), including 1.0 sacks, while also adding a pass defensed in Sunday's 20-6 loss to Cincinnati.
@@ -384,11 +384,11 @@ Kansas City Chiefs, injuries:
 Kansas City Chiefs, ESPN headlines:
 
 Miami Dolphins, injuries:
+- Jaylen Wright (RB) Doubtful, Foot: Wright (foot) is considered doubtful for Sunday's game against Kansas City, Travis Wingfield of the Dolphins' official site reports.
+- Caleb Douglas (WR) Out, Ankle: Douglas (ankle) won't play Sunday against the Chiefs, C. Isaiah Smalls II of the Miami Herald reports.
 - Chop Robinson (LB) Active: Robinson has cleared the concussion protocol and is available to play in Sunday's matchup with the Chiefs, Marcel Louis-Jacques of ESPN.com reports.
-- Jaylen Wright (RB) Questionable, Foot: Wright (foot) was a limited participant in Thursday's practice.
 - Ryan Miller (WR) Questionable, Hip: Miller (hip) did not practice Thursday.
-- Caleb Douglas (WR) Questionable, Ankle: Douglas (ankle) didn't practice Thursday, David Furones of the South Florida Sun Sentinel reports.
-- Chris Bell (WR) Questionable, Knee: Bell (knee) said Thursday that he'll be ready to play Sunday against the Chiefs, C. C. Isaiah Smalls II of the Miami Herald reports.
+- Chris Bell (WR) Questionable, Knee: Bell (knee) "mostly worked on the side" during the media-viewing portion of Thursday's practice, David Furones of the South Florida Sun Sentinel reports.
 - Robert Beal Jr. (DE) Questionable, Hamstring: Beal (hamstring) did not participate in Wednesday's practice, C. Isaiah Smalls II of the Miami Herald reports.
 - JuJu Brents (CB) Questionable, Knee: questionable
 - Tucker Addington (LS) Questionable, Shoulder: questionable
@@ -423,10 +423,10 @@ Searches to run:
 - "NFL week 3 picks TEN NYG"
 
 Tennessee Titans, injuries:
+- Tyjae Spears (RB) Questionable, Ankle: Spears (ankle) was listed as limited for Friday's practice, Terry McCormick of TitanInsider reports.
+- Tony Pollard (RB) Questionable, Ankle: Pollard (ankle) will be a full participant in Friday's practice, Jim Wyatt of the Titans' official site reports.
 - Daniel Bellinger (TE) Questionable, Illness: Bellinger (illness) did not participate in practice Thursday, Turron Davenport of ESPN.com reports.
-- Tony Pollard (RB) Questionable, Ankle: Pollard (ankle) was a limited participant in Thursday's practice, Turron Davenport of ESPN.com reports.
 - Micah Robinson (CB) Questionable, Groin: questionable
-- Tyjae Spears (RB) Questionable, Ankle: Spears (ankle) wasn't seen on the field during the open portion of Thursday's practice, Turron Davenport of ESPN reports.
 - Fernando Carmona (G) Active: Carmona (shoulder) was a full participant in Wednesday's practice.
 - Cor'Dale Flott (CB) Questionable, Quadriceps: Flott (quadriceps) was a limited participant in Wednesday's practice.
 - James Williams Sr. (LB) Active: Williams (elbow) was a full participant in Wednesday's practice.
@@ -520,10 +520,10 @@ Cincinnati Bengals, injuries:
 Cincinnati Bengals, ESPN headlines:
 
 Pittsburgh Steelers, injuries:
+- Rico Dowdle (RB) Questionable, Toe: Dowdle (toe) was not spotted during the open viewing window of Friday's practice, Ray Fittipaldo reports.
 - Michael Pittman Jr. (WR) Questionable, Foot: Pittman (foot) was a limited participant at Thursday's practice, Alan Saunders of Steelers Now reports.
-- Rico Dowdle (RB) Questionable, Toe: Dowdle (toe) didn't practice Thursday, Alan Saunders of Steelers Now reports.
-- Jaylen Warren (RB) Questionable, Shoulder: Warren (shoulder) was a limited participant at practice Thursday while Rico Dowdle (toe) didn't practice, Alan Saunders of Steelers Now reports.
 - Gennings Dunker (G) Questionable, Knee: questionable
+- Jaylen Warren (RB) Questionable, Shoulder: Warren (shoulder) was in uniform and participating during the portion of Thursday's practice open to the media, Nick Farabaugh of PennLive.com reports.
 - Jamel Dean (CB) Questionable, Ankle: Dean (ankle) did not participate in Wednesday's practice, Brooke Pryor of ESPN.com reports.
 - Joey Porter Jr. (CB) Questionable, Undisclosed: Porter (undisclosed) was a limited participant at practice Wednesday, Mike DeFabo of The Athletic reports.
 - Patrick Queen (LB) Active: Queen recorded two tackles (zero solo) and an interception in Sunday's 20-3 loss to the Patriots.
@@ -588,10 +588,11 @@ Seattle Seahawks, injuries:
 Seattle Seahawks, ESPN headlines:
 
 Washington Commanders, injuries:
+- Chig Okonkwo (TE) Doubtful, Hamstring: Commanders coach Dan Quinn said Friday that Okonkwo (hamstring) is a long shot to play Sunday against the Seahawks, Tashan Reed of The Washington Post reports.
+- Jayden Daniels (QB) Out, Elbow: Commanders GM Adam Peters, via JP Finlay of NBC Sports Washington, said Friday morning that "as of right now surgery is not on the table" for Daniels (elbow) and that the team "has not discussed" placing him on injured reserve.
 - Jeremy Reaves (S) Active: Reaves (knee) was a full participant in practice Thursday.
 - Tyler Owens (S) Active
 - Kaytron Allen (RB) Active
-- Chig Okonkwo (TE) Questionable, Hamstring: Okonkwo (hamstring) remained sidelined at practice Thursday, Tashan Reed of the Washington Post reports.
 - Brandon Coleman (G) Active: Coleman (finger) was a full participant at the Commanders' practice Wednesday.
 - Leo Chenal (LB) Questionable, Chest: Chenal (chest) was a limited participant in Wednesday's practice.
 - Frankie Luvu (LB) Questionable, Groin: Luvu (groin) did not participate in Wednesday's practice.
@@ -600,7 +601,6 @@ Washington Commanders, injuries:
 - Dorance Armstrong (DE) Questionable, Knee: questionable
 - Javon Kinlaw (DT) Questionable, Shoulder: Kinlaw (shoulder) did not practice Wednesday, John Keim of ESPN.com reports.
 - Nick Cross (S) Out, Undisclosed: Commanders head coach Dan Quinn said that Cross (internal injury) won't play in Sunday's game versus the Seahawks, Tashan Reed of The Washington Post reports.
-- Jayden Daniels (QB) Out, Elbow: Commanders head coach Dan Quinn confirmed that Daniels will be out for Sunday's game against the Seahawks, but the quarterback remains without a precise timeline for a return while he continues to receive more medical opinions on his left elbow injury, Ben Standig of The Team 980 Washington D.C. reports.
 - Jaylin Lane (WR) Questionable, Groin: Lane returned six kickoffs for 120 yards and one punt for 14 yards in Sunday's 37-20 loss to the Cowboys.
 - Colson Yankoff (TE) Active: Yankoff caught his only target for 14 yards in Sunday's Week 2 loss to Dallas.
 - Treylon Burks (WR) Active: Burks failed to catch his lone target in Sunday's 37-20 loss to the Cowboys.
@@ -617,7 +617,7 @@ Washington Commanders, injuries:
 Washington Commanders, ESPN headlines:
 
 ### New England Patriots at Jacksonville Jaguars
-Sun, Sep 27, 1:00 PM ET, CBS, EverBank Stadium, Jacksonville. Line: JAX -3, O/U 46.5
+Sun, Sep 27, 1:00 PM ET, CBS, EverBank Stadium, Jacksonville. Line: JAX -3, O/U 45.5
 
 Searches to run:
 - "New England Patriots Jacksonville Jaguars preview week 3"
@@ -724,8 +724,8 @@ Arizona Cardinals, injuries:
 Arizona Cardinals, ESPN headlines:
 
 San Francisco 49ers, injuries:
+- Nick Bosa (DE) Doubtful, Calf: Bosa injured his calf during Thursday's practice and is expected to miss "a few weeks," according to Adam Schefter of ESPN.
 - Romello Height (DE) Questionable, Hand: Height (hand) did not participate in Thursday's practice, Jennifer Lee Chan of NBC Sports Bay Area reports.
-- Nick Bosa (DE) Questionable, Calf: Bosa (calf/knee) did not participate in Thursday's practice, Jennifer Lee Chan of NBC Sports Bay Area reports.
 - Mike Evans (WR) Questionable, Hip: Evans (hip) didn't participate in Thursday's practice, Harrison Rich of the San Francisco Chronicle reports.
 - Naquan Jones (DT) Active: The 49ers signed Jones to the active roster Wednesday from the Vikings' practice squad.
 - C.J. West (DT) Injured Reserve, Undisclosed: The 49ers placed West (undisclosed) on injured reserve Wednesday.
@@ -766,7 +766,7 @@ Minnesota Vikings, injuries:
 - Tyrion Ingram-Dawkins (DE) Active: Ingram-Dawkins (oblique) was a full participant in Thursday's practice.
 - DeeJay Dallas (RB) Questionable, Toe: Dallas (toe) was a limited participant in Thursday's practice.
 - Brian O'Neill (OT) Active
-- Aaron Jones Sr. (RB) Questionable, Knee: Jones (knee) was a limited participant at Thursday's practice, Alec Lewis of The Athletic reports.
+- Aaron Jones Sr. (RB) Questionable, Knee: Jones (knee) was present for the open portion of Thursday's practice, Kevin Seifert of ESPN.com reports.
 - Jauan Jennings (WR) Active: Jennings (personal) was not listed on the Vikings' injury report Wednesday.
 - Jalen Redmond (DT) Questionable, Elbow: questionable
 - Nick Samac (C) Questionable, Knee: questionable
@@ -957,7 +957,7 @@ New Orleans Saints, injuries:
 New Orleans Saints, ESPN headlines:
 
 ### Los Angeles Rams at Denver Broncos
-Sun, Sep 27, 8:20 PM ET, NBC, Empower Field at Mile High, Denver. Line: LAR -2.5, O/U 44.5
+Sun, Sep 27, 8:20 PM ET, NBC, Empower Field at Mile High, Denver. Line: LAR -2.5, O/U 43.5
 
 Searches to run:
 - "Los Angeles Rams Denver Broncos preview week 3"
