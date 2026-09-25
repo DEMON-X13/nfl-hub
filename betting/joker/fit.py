@@ -3,7 +3,9 @@
     python betting/joker/fit.py              (from the hub root; writes the model)
     python betting/joker/fit.py --report     (also scores the comparison models, writes walkforward.json)
 
-The Joker is gradient-boosted trees (depth 4, 25 rounds, learning rate 0.1, min leaf 5) on
+The Joker is the fun one: a formula fitted to the last seasons to match as many of their
+games as it can (it fits 84% of 2020-2025's regular season), then applied to this year. It is
+gradient-boosted trees (depth 4, 25 rounds, learning rate 0.1, min leaf 5) on
 everything features.py builds from football data: the rating state, the quarterback
 adjustment, the setting, the people and both teams' stat lines. It takes no betting-market
 input: no spread, no moneyline, no total, no odds of any kind and no preseason win total,
@@ -155,16 +157,23 @@ def main():
     assert not [c for c in num + cat if F.is_market(c)], "a market column reached the fit"
     model = fit(feats, num, cat)
     joblib.dump(model, HERE / "model.joblib")
+    # how much of 2020-2025 the formula reproduces: the number it is built to push up
+    seen = decided(feats[feats.season >= 2020]).copy()
+    for c in cat:
+        seen[c] = seen[c].astype(str)
+    fit_acc = grade(model.predict_proba(seen[num + cat])[:, 1], seen.home_win)
     wf = grade(new.p, new.home_win) if len(new) else None
     meta = {"name": "The Joker", "formula": FORMULA, "fitted_on": "2019-2025 regular season and playoffs",
             "fitted_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
             "inputs_numeric": len(num), "inputs_categorical": len(cat),
+            "fit_accuracy_2020_2025_reg": fit_acc["accuracy"], "fit_games_2020_2025_reg": fit_acc["games"],
             "honest_walk_forward_2021_2025_reg": wf["accuracy"] if wf else None,
             "honest_walk_forward_log_loss": wf["log_loss"] if wf else None,
             "market_inputs": "none: see features.MARKET",
             "sklearn": sklearn.__version__, "pandas": pd.__version__, "numeric": num, "categorical": cat}
     (HERE / "model.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
-    print(f"model.joblib and model.json written: {len(num)} numeric, {len(cat)} categorical inputs; walk-forward {wf}")
+    print(f"model.joblib and model.json written: {len(num)} numeric, {len(cat)} categorical inputs; "
+          f"fits {fit_acc['accuracy']:.1%} of {fit_acc['games']} games 2020-2025; walk-forward {wf}")
 
 
 if __name__ == "__main__":
