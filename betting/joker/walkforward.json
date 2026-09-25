@@ -1,0 +1,174 @@
+{
+ "test_seasons": [
+  2021,
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "games": 1355,
+ "overall": {
+  "joker_no_market": {
+   "games": 1355,
+   "accuracy": 0.6399,
+   "log_loss": 0.6516
+  },
+  "joker_with_market": {
+   "games": 1355,
+   "accuracy": 0.6325,
+   "log_loss": 0.636
+  },
+  "main_model": {
+   "games": 1355,
+   "accuracy": 0.6458,
+   "log_loss": 0.6351
+  },
+  "challenger": {
+   "games": 1355,
+   "accuracy": 0.6399,
+   "log_loss": 0.6352
+  },
+  "vegas": {
+   "games": 1355,
+   "accuracy": 0.6649,
+   "log_loss": 0.6109
+  }
+ },
+ "by_season": {
+  "joker_no_market": {
+   "2021": {
+    "games": 271,
+    "accuracy": 0.5978,
+    "log_loss": 0.6979
+   },
+   "2022": {
+    "games": 269,
+    "accuracy": 0.6097,
+    "log_loss": 0.6638
+   },
+   "2023": {
+    "games": 272,
+    "accuracy": 0.6471,
+    "log_loss": 0.6539
+   },
+   "2024": {
+    "games": 272,
+    "accuracy": 0.7022,
+    "log_loss": 0.6033
+   },
+   "2025": {
+    "games": 271,
+    "accuracy": 0.6421,
+    "log_loss": 0.6392
+   }
+  },
+  "joker_with_market": {
+   "2021": {
+    "games": 271,
+    "accuracy": 0.6162,
+    "log_loss": 0.6361
+   },
+   "2022": {
+    "games": 269,
+    "accuracy": 0.6468,
+    "log_loss": 0.6347
+   },
+   "2023": {
+    "games": 272,
+    "accuracy": 0.5956,
+    "log_loss": 0.663
+   },
+   "2024": {
+    "games": 272,
+    "accuracy": 0.6765,
+    "log_loss": 0.6171
+   },
+   "2025": {
+    "games": 271,
+    "accuracy": 0.6273,
+    "log_loss": 0.6288
+   }
+  },
+  "main_model": {
+   "2021": {
+    "games": 271,
+    "accuracy": 0.6236,
+    "log_loss": 0.6543
+   },
+   "2022": {
+    "games": 269,
+    "accuracy": 0.6357,
+    "log_loss": 0.6443
+   },
+   "2023": {
+    "games": 272,
+    "accuracy": 0.614,
+    "log_loss": 0.6536
+   },
+   "2024": {
+    "games": 272,
+    "accuracy": 0.6985,
+    "log_loss": 0.6016
+   },
+   "2025": {
+    "games": 271,
+    "accuracy": 0.6568,
+    "log_loss": 0.6219
+   }
+  },
+  "challenger": {
+   "2021": {
+    "games": 271,
+    "accuracy": 0.6162,
+    "log_loss": 0.6536
+   },
+   "2022": {
+    "games": 269,
+    "accuracy": 0.6394,
+    "log_loss": 0.6363
+   },
+   "2023": {
+    "games": 272,
+    "accuracy": 0.614,
+    "log_loss": 0.6532
+   },
+   "2024": {
+    "games": 272,
+    "accuracy": 0.6691,
+    "log_loss": 0.6123
+   },
+   "2025": {
+    "games": 271,
+    "accuracy": 0.6605,
+    "log_loss": 0.6204
+   }
+  },
+  "vegas": {
+   "2021": {
+    "games": 271,
+    "accuracy": 0.6236,
+    "log_loss": 0.6216
+   },
+   "2022": {
+    "games": 269,
+    "accuracy": 0.6543,
+    "log_loss": 0.6085
+   },
+   "2023": {
+    "games": 272,
+    "accuracy": 0.6765,
+    "log_loss": 0.6273
+   },
+   "2024": {
+    "games": 272,
+    "accuracy": 0.7169,
+    "log_loss": 0.5875
+   },
+   "2025": {
+    "games": 271,
+    "accuracy": 0.6531,
+    "log_loss": 0.6094
+   }
+  }
+ }
+}
