@@ -22,10 +22,10 @@ function recordViz(rows){
   const vOk=r=>vPick(r)===null?null:vPick(r)===winner(r);
   const flag=v=>v===true||v===false?v:null;
   const MODELS=[
-    {id:'main',name:'Main Model',color:'#1F6F4A',ok:r=>flag(r.correct)},
+    {id:'main',name:'Model A',color:'#1F6F4A',ok:r=>flag(r.correct)},
     {id:'chal',name:'Challenger',color:'#3B6FB6',all:true,ok:r=>r.h?flag(r.h.correct):null},
     {id:'joker',name:'The Joker',color:'#C0392B',all:true,ok:r=>r.joker?flag(r.joker.correct):null},
-    {id:'elo',name:'Elo model',color:'#E8730A',all:true,ok:r=>r.elo?flag(r.elo.correct):null}];
+    {id:'elo',name:'ELO based',color:'#E8730A',all:true,ok:r=>r.elo?flag(r.elo.correct):null}];
   const weeks=[...new Set(rows.map(r=>+r.week))].sort((a,b)=>a-b);
   const wkName=w=>w>18?'Playoffs '+(w-18):'Week '+w;
   const tally=(ok,rs)=>{ let w=0,l=0; for(const r of rs){ const v=ok(r); if(v===true) w++; else if(v===false) l++; } return {w,l}; };
@@ -37,6 +37,23 @@ function recordViz(rows){
     weeks.forEach(w=>{ for(const r of rows.filter(x=>+x.week===w)){ const a=m.ok(r), v=vOk(r); if(a===null||v===null) continue; net+=(a?1:0)-(v?1:0); } pts.push({w,net}); });
     return {...m,season,byWeek,pts,net};
   }).filter(m=>m.season.w+m.season.l>0);
+  /* ---- 0. the headline tiles are Vegas's: it is the baseline every model is measured against ---- */
+  { const tiles=document.getElementById('recordStats');
+    const games=Object.entries(S.processed||{}).filter(([,r])=>r.result!=null&&r.result!==0).map(([gid,r])=>{
+      const o=(S.odds||{})[gid]; let ph=null;
+      if(o&&isFinite(o.home)&&isFinite(o.away)&&o.home&&o.away){ const im=x=>x<0?-x/(-x+100):100/(x+100), h=im(+o.home), a=im(+o.away); ph=h/(h+a); }
+      else if(r.line) ph=r.line>0?0.6:0.4;
+      if(ph==null) return null;
+      const pick=ph>=0.5?r.home:r.away;
+      return {ok:pick===winner(r),conf:Math.max(ph,1-ph),err:r.line!=null?Math.abs(r.line-r.result):null}; }).filter(Boolean);
+    if(tiles&&games.length&&typeof tier==='function'){
+      const c=games.filter(g=>g.ok).length, band={high:[0,0],med:[0,0],low:[0,0],coin:[0,0]};
+      games.forEach(g=>{ const t=tier(g.conf)[0]; if(band[t]){ band[t][1]++; if(g.ok) band[t][0]++; } });
+      const errs=games.filter(g=>g.err!=null), mae=errs.length?errs.reduce((a,g)=>a+g.err,0)/errs.length:null;
+      const b=(k,lab)=>`<div class="stat"><b>${band[k][1]?Math.round(100*band[k][0]/band[k][1])+'%':'\u2013'}</b><span>${lab}, ${band[k][0]}/${band[k][1]}</span></div>`;
+      tiles.innerHTML=`<div class="stat"><b>${(100*c/games.length).toFixed(1)}%</b><span>Vegas straight-up, ${c} of ${games.length}</span></div>`
+        +b('high','high confidence')+b('med','medium')+b('low','low')+b('coin','50/50')
+        +(mae!=null?`<div class="stat"><b>${mae.toFixed(1)}</b><span>spread's avg miss, pts</span></div>`:''); } }
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const sign=n=>n>0?'+'+n:(n<0?'−'+Math.abs(n):'0');
   const rec=t=>`${t.w}–${t.l}`;

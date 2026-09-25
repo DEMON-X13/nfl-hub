@@ -95,9 +95,11 @@
 </section>
 <script>
 /* ---------- the Pick'ems tab ----------
-   Two models, one board. The call on each game is the betting model's, published by its own
-   job in state.json because re-deriving it here would mean a second copy of a model that
-   already exists. Open a game and the prop model's Game Bets sit underneath: the chance each
+   Vegas is the baseline. The call on each game is the Vegas favourite: the chance each side
+   wins from the closing moneylines nflverse publishes (state.json's odds, the book's margin
+   taken out), the spread when a game has no moneyline, and the spread and total for the
+   score it expects. The models (Model A, the Challenger, the Joker, ELO based) are measured
+   against it on the Pick'em Record. Open a game and the prop model's Game Bets sit underneath: the chance each
    side wins and covers, off its own team ratings, against what a book is charging. The prop
    model is the rest of this page, so its prices are its own functions on its own state.
 
@@ -105,7 +107,7 @@
 (function(){
 /*BETTING*/
 const STATE_URL='../betting/state.json';
-const ST={sched:[],processed:{},picks:{}};
+const ST={sched:[],processed:{},picks:{},odds:{}};
 /* the scoreboard as last read, by game id: nothing here is saved anywhere */
 const PK_LIVE={games:{},at:0,err:null,busy:false};
 const el=id=>document.getElementById(id);
@@ -144,13 +146,22 @@ function outcome(g){
   return {final:s.state==='post',live:s.state==='live',as:s.as,hs:s.hs,winner,clock:s.clock||''};
 }
 
-/* what the betting model says: the published call for an ungraded game, what was logged for
-   a graded one */
+/* what Vegas says: the home side's chance from the two moneylines with the book's margin
+   taken out, or from the spread (a margin spread 13.5 points about it) where a game has no
+   moneyline. The spread is the margin it expects, home side positive. Graded once the game
+   has a published result. */
+const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), q=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-q:q; };
+const mlImp=x=>x<0?-x/(-x+100):100/(x+100);
 function call(g){
-  const done=ST.processed[g.game_id];
-  if(done) return {pick:done.pick,conf:done.conf,pHome:done.pHome,margin:done.margin,graded:true,correct:done.correct};
-  const p=ST.picks[g.game_id];
-  return p?{pick:p.pick,conf:p.conf,pHome:p.pHome,margin:p.margin,graded:false,correct:null}:null;
+  const o=ST.odds[g.game_id], sp=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null;
+  let pHome=null;
+  if(o&&isFinite(o.home)&&isFinite(o.away)&&o.home&&o.away){ const h=mlImp(+o.home), a=mlImp(+o.away); pHome=h/(h+a); }
+  else if(sp!=null&&sp!==0) pHome=ncdf(sp/13.5);
+  if(pHome==null) return null;
+  const pick=pHome>=0.5?g.home_team:g.away_team, conf=Math.max(pHome,1-pHome);
+  const margin=sp!=null?sp:13.5*Math.log(pHome/(1-pHome))/1.7;
+  const graded=g.result!=null&&isFinite(g.result);
+  return {pick,conf,pHome,margin,graded,correct:graded&&+g.result!==0?pick===winnerOf(g):null};
 }
 
 /* the prop model's Game bets card for this game, exactly as the game's own page draws it:
@@ -193,10 +204,9 @@ function landed(c,o){
   if(c.graded) return c.correct;
   return o.winner?c.pick===o.winner:null;
 }
-/* the score the model expects: its margin (the one logged at the call, for a graded game)
-   split around the game's total. The total is the book's, posted before kickoff, when there
+/* the score Vegas expects: the spread split around the game's total. The total is the book's, posted before kickoff, when there
    is one, and otherwise the prop model's own points for each side, so nothing here knows the
-   result. Whole points, and never a tie against the model's own pick. */
+   result. Whole points, and never a tie against the favourite. */
 function predicted(g,c){
   if(!c||c.margin==null||!isFinite(c.margin)) return null;
   const row=mkt(g.game_id);
@@ -304,18 +314,17 @@ window.slateStamp=function(){
   s.textContent=LIVE.err?'scores not loading':(LIVE.at?'scores '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):(LIVE.busy?'reading…':''));
 };
 
-/* the betting model's record, counted the way its own Records tab counts it */
+/* Vegas's record: the favourite against the result, game by game */
 function records(w){
-  const rows=Object.values(ST.processed);
-  const line=f=>{ const r=rows.filter(f); const won=r.filter(x=>x.correct===true).length, lost=r.filter(x=>x.correct===false).length;
+  const rows=ST.sched.map(g=>({week:+g.week,c:call(g)})).filter(r=>r.c&&r.c.graded);
+  const line=f=>{ const r=rows.filter(f); const won=r.filter(x=>x.c.correct===true).length, lost=r.filter(x=>x.c.correct===false).length;
     return `${won}–${lost}`; };
-  el('pkWeekRec').innerHTML=`Week ${w} <b>${line(r=>+r.week===w)}</b>`;
+  el('pkWeekRec').innerHTML=`Vegas · week ${w} <b>${line(r=>r.week===w)}</b>`;
   el('pkSeasonRec').innerHTML=`Season <b>${line(()=>true)}</b>`;
 }
 
 function foot(){
-  el('pkFoot').innerHTML=`The call on each game is the betting model's, published by its own job. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging. Two models, neither of them changed to sit here.
-    <br>Nothing is picked on this tab yet.`;
+  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Model A, the Challenger, the Joker and ELO based are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging.`;
 }
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was */
@@ -361,7 +370,7 @@ async function boot(){
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
-    ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{};
+    ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{}; ST.odds=st.odds||{};
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
     failed=true;
@@ -370,10 +379,8 @@ async function boot(){
   frames();
   if(failed){ foot(); return; }
   const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
-  const graded=new Set(Object.values(ST.processed).map(r=>+r.week));
-  const openOn=Object.keys(ST.picks).length
-    ? +ST.sched.find(g=>ST.picks[g.game_id]).week
-    : (weeks.filter(x=>graded.has(x)).pop()||weeks[0]);
+  /* this week: the first with a game still to play */
+  const openOn=weeks.find(w=>ST.sched.some(g=>+g.week===w&&g.result==null))||weeks[weeks.length-1];
   el('pkWeek').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${x>18?'Playoffs '+(x-18):'Week '+x}</option>`).join('');
   el('pkWeek').addEventListener('change',render);
   el('pkNow').addEventListener('click',readScores);
