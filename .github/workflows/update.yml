@@ -26,6 +26,11 @@ on:
     # repo's scheduled runs land hours late and :00 is the minute most often dropped.
     - cron: "23 12 * * 4"   # Thursday 8:23am ET: Wednesday's report, for Thursday night
     - cron: "23 12 * * 6"   # Saturday 8:23am ET: Friday's report, for Sunday and Monday
+    # every hour: nflverse's games.csv carries the spread, moneylines and total, and the
+    # Joker reads them, so its picks follow the line within the hour. Free like the rest;
+    # a run that finds nothing new writes nothing and commits nothing. The runs above stay
+    # as the ones that matter, since this repo's scheduled runs are sometimes dropped.
+    - cron: "37 * * * *"
   workflow_dispatch:
     inputs:
       rebuild:
