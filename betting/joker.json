@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-25T10:29+00:00",
+ "generated": "2026-09-25T15:29+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1772,7 +1772,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 154.0,
+     "v": 145.0,
      "c": -0.6137
     },
     {
@@ -1874,7 +1874,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 470.0,
+     "v": 440.0,
      "c": -1.1606
     },
     {
@@ -1894,7 +1894,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -650.0,
+     "v": -600.0,
      "c": -0.1114
     },
     {
@@ -2027,7 +2027,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -298.0,
+     "v": -290.0,
      "c": 0.8572
     },
     {
@@ -2062,7 +2062,7 @@
     },
     {
      "f": "total_line",
-     "v": 47.5,
+     "v": 48.5,
      "c": -0.0683
     }
    ]
@@ -2378,19 +2378,24 @@
    "home": "DEN",
    "away": "LA",
    "pick": "DEN",
-   "pHome": 0.5093,
+   "pHome": 0.5088,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 110.0,
-     "c": -0.162
+     "v": 114.0,
+     "c": -0.3199
     },
     {
      "f": "td_fg_missed_40_49_A",
      "v": 0.5,
      "c": 0.1557
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 2.5,
+     "c": 0.0937
     },
     {
      "f": "td_def_tackle_assists_A",
@@ -2403,6 +2408,11 @@
      "c": -0.0642
     },
     {
+     "f": "td_def_tackles_with_assist_A",
+     "v": 0.0,
+     "c": 0.0557
+    },
+    {
      "f": "td_pt_yards_H",
      "v": 225.5,
      "c": -0.0535
@@ -2411,16 +2421,6 @@
      "f": "pg_receiving_16_H",
      "v": 8.0,
      "c": -0.0528
-    },
-    {
-     "f": "pg_passing_yards_H",
-     "v": 288.0,
-     "c": -0.0502
-    },
-    {
-     "f": "td_fumble_recovery_yards_own_H",
-     "v": -2.5,
-     "c": 0.0464
     }
    ]
   },
