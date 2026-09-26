@@ -279,6 +279,10 @@ nhl/
   tools/fit.js        coordinate search on the history, last season held out
   tools/update.js     the job; tools/smoke.js the gate; tools/simulate.js a fabricated season
                       played through the job in a scratch folder, run first by the workflow
+  tools/fetch_box.js  ESPN box scores into data/box_<season>.jsonl (2021-22 on) and data/injuries.json
+  tools/starters.js   DailyFaceoff's announced goalies into data/starters.json (GitHub's runners only)
+  tools/players.js    THE PLAYER MODEL: skaters' offence and defence, goalies' saves, lineups by ice
+                      time; fit, holdout, walk-forward, tonight -> data/players.json
 ```
 
 The job reads every day of the season (skipping the days already complete in the last state),
