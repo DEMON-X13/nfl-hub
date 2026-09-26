@@ -110,6 +110,14 @@ tr.major td{font-weight:500}
 .slot .when{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
 .slot .vs{font:700 17px var(--display);letter-spacing:-.02em;margin:5px 0 4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .slot .vs i,.ovhd i{display:inline-block;width:4px;height:15px;border-radius:1px;flex:0 0 4px}
+.slot .team{display:inline-flex;align-items:center;gap:5px;padding:3px 8px 3px 4px;border:1px solid var(--line);border-radius:999px;background:var(--panel-2);font:700 13.5px var(--display);letter-spacing:-.01em;color:var(--ink);line-height:1}
+.slot .team img{width:20px;height:20px;object-fit:contain}
+.slot .team .rk{color:var(--gold);font-size:11px}
+.slot .team.won{border-color:var(--pick);background:var(--pick-soft);color:var(--pick)}
+.slot .team.lost{color:var(--muted)}
+.slot.final{background:var(--panel-2)}
+.slot .when .fin{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--ink);color:#fff;letter-spacing:.08em}
+.slot .when .liv{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--miss);color:#fff;letter-spacing:.08em}
 .slot .vs em{font:500 12.5px var(--body);color:var(--muted);font-style:normal}
 .slot .vs .rk{color:var(--gold);font-size:12px}
 .slot .vs .score{margin-left:auto;font-size:16px;font-variant-numeric:tabular-nums}
@@ -275,7 +283,7 @@ tr.major td{font-weight:500}
 <div class="ov" id="ov"><div class="ovbox" id="ovbox"></div></div>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v8 · 2026-09-26';
+const APP_BUILD = 'cfb v9 · 2026-09-26';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -467,10 +475,12 @@ async function renderNews() {
     const live = LIVE[n.id]; const state = live ? live.state : g.state; const hs = live ? live.hs : g.hs, as = live ? live.as : g.as;
     const done = state === 'final' && hs !== null && hs !== undefined;
     const d = new Date(n.kick);
-    const when = done ? `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · Final` : `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-    return `<button class="slot" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}">
-      <div class="when">${esc(when)}${state === 'live' ? ' · <span style="color:var(--miss)">live</span>' : ''}</div>
-      <div class="vs"><i style="background:${esc(a.color || '#999')}"></i>${a.ap ? `<span class="rk">${a.ap}</span>` : ''}${esc(a.abbr)}<em>${g.neutral ? 'vs' : 'at'}</em><i style="background:${esc(h.color || '#999')}"></i>${h.ap ? `<span class="rk">${h.ap}</span>` : ''}${esc(h.abbr)}${done || state === 'live' ? `<span class="score">${as} - ${hs}</span>` : ''}</div>
+    const when = done ? d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+    const won = id => done && ((id === n.home) === (hs > as)) && hs !== as;
+    const team = (t, id) => `<span class="team ${done ? (won(id) ? 'won' : 'lost') : ''}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.style.visibility='hidden'">` : ''}${t.ap ? `<span class="rk">${t.ap}</span>` : ''}${esc(t.abbr)}</span>`;
+    return `<button class="slot ${done ? 'final' : ''}" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}">
+      <div class="when">${esc(when)}${done ? '<span class="fin">Final</span>' : state === 'live' ? '<span class="liv">Live</span>' : ''}</div>
+      <div class="vs">${team(a, n.away)}<em>${g.neutral ? 'vs' : 'at'}</em>${team(h, n.home)}${done || state === 'live' ? `<span class="score">${as} - ${hs}</span>` : ''}</div>
       <div class="meta" title="${[n.tv, n.venue].filter(Boolean).map(esc).join(' · ')}">${[n.tv, n.venue].filter(Boolean).map(esc).join(' · ')}</div>
       <div class="hook">${esc(n.note || '')}${n.credit ? ` <small class="muted">(${esc(n.credit)})</small>` : ''}</div>
       <div class="more">Full breakdown ›</div>

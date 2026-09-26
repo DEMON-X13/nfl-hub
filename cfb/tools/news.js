@@ -114,10 +114,10 @@ function storyOf(sum) {
   const machine = /^\S.*\(\d+-\d+\).* at .*\(\d+-\d+\)/.test(paras[0]) || /^Opening Line:/.test(paras[1] || '');
   if (machine) {
     /* the two "last game" paragraphs read "Baylor won 36-19 over Louisiana Tech on Sept. 19. Bennett led..." */
-    const last = paras.filter(p => /^[A-Z][^.]{2,60} (won|beat|was beaten by|lost to|defeated|fell to) .*\d+-\d+.* on (Jan|Feb|March|April|May|June|July|Aug|Sept|Oct|Nov|Dec)\.? \d+\./.test(p)).slice(0, 2);
+    const last = paras.filter(p => /^[A-Z][^.]{2,60} (won|beat|was beaten by|lost|defeated|fell) .*\d+-\d+.* on (Jan|Feb|March|April|May|June|July|Aug|Sept|Oct|Nov|Dec)\.? \d+\./.test(p)).slice(0, 2);
     if (!last.length) return null;
     /* one sentence each, the score line, without the stat lines that follow it */
-    return { headline: null, kind: 'machine', lead: null, lastGame: last.map(p => p.split(/(?<=\.)\s/)[0]).join(' '), paragraphs: [], source: 'AP, via ESPN' };
+    return { headline: null, kind: 'machine', lead: null, lastGame: last.map(p => p.split(/(?<=\d\.)\s(?=[A-Z])/)[0]).join(' '), paragraphs: [], source: 'AP, via ESPN' };
   }
   const cut = (t, n) => { if (t.length <= n) return t; const i = t.lastIndexOf('. ', n); return i > 60 ? t.slice(0, i + 1) : t.slice(0, n).replace(/\s+\S*$/, '') + '…'; };
   const body = paras.filter(p => !/^(Key stats|How to watch|Opening Line)/i.test(p)).slice(0, 4);
