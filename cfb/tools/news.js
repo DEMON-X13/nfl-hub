@@ -21,6 +21,7 @@ const ARGS = new Set(process.argv.slice(2));
 const SUMMARY = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/summary?event=';
 const TEAMSTAT = (season, id) => `https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/${season}/types/2/teams/${id}/statistics`;
 const INJURIES = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/injuries';
+const TEAMNEWS = id => `https://site.api.espn.com/apis/site/v2/sports/football/college-football/news?team=${id}&limit=12`;
 const log = m => console.log(new Date().toISOString().slice(11, 19), m);
 
 async function cached(name, url) {
@@ -77,6 +78,47 @@ function venueOf(sum, g) {
   return city ? `${name}, ${city}` : name;
 }
 
+/* ESPN's game summary carries the AP's preview, and once the game is played its recap. A
+   written one opens with a dateline and a real first paragraph; the machine-made kind opens
+   with "Team (2-1) at Team (3-0), Sept. 26 at 12 p.m." and lists numbers, which the page has
+   already. The lead goes on the tile, a few paragraphs in the window, credited. */
+function storyOf(sum) {
+  const a = sum?.article; if (!a || !a.story) return null;
+  const clean = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&rsquo;|&lsquo;/g, "'").replace(/&ldquo;|&rdquo;/g, '"').replace(/\s+/g, ' ').trim();
+  let paras = a.story.split(/<\/p>|\n\s*\n/).map(clean).filter(p => p.length > 30);
+  if (!paras.length) return null;
+  paras[0] = paras[0].replace(/^[A-Z][A-Za-z.' ]+,? ?[A-Za-z.]*\s*--\s*—?\s*/, '').replace(/^—\s*/, '');
+  const machine = /^\S.*\(\d+-\d+\).* at .*\(\d+-\d+\)/.test(paras[0]) || /^Opening Line:/.test(paras[1] || '');
+  if (machine) {
+    paras = paras.filter(p => /^(Last game|Last time out|Next game|Bottom line|The takeaway|Injur)/i.test(p));
+    if (!paras.length) return null;
+  }
+  const cut = (t, n) => { if (t.length <= n) return t; const i = t.lastIndexOf('. ', n); return i > 60 ? t.slice(0, i + 1) : t.slice(0, n).replace(/\s+\S*$/, '') + '…'; };
+  const body = paras.filter(p => !/^(Key stats|How to watch|Opening Line)/i.test(p)).slice(0, 4);
+  return { headline: a.headline || null, kind: a.type || null, lead: cut(paras[0], 300), paragraphs: body.map(p => cut(p, 600)), source: 'AP, via ESPN' };
+}
+
+/* a team's own headlines from the last eight days: what the program is talking about. The
+   feed mixes in league-wide pieces (bubble watches, uniform rankings, recruiting classes),
+   so only a headline that names the school, its nickname or its coach is kept, and ESPN's
+   own preview of this game is left out since the story above carries it */
+function headlinesOf(j, t, since) {
+  const names = [t.short, t.nick, t.name, (t.short || '').replace(/ St$/, ' State')].filter(Boolean).map(x => x.toLowerCase());
+  const out = [];
+  for (const a of j?.articles || []) {
+    if (!a.headline || a.type === 'Preview' || a.type === 'Recap') continue;
+    if ((a.published || '') < since) continue;
+    const h = a.headline.toLowerCase();
+    if (!names.some(n => n.length > 2 && h.includes(n))) continue;
+    if (/rankings|bubble watch|projections|power rankings|best uniforms|betting|odds|picks|all-portal|takeaways|what we learned|highlights/i.test(a.headline)) continue;
+    if (out.some(x => x.headline === a.headline.trim())) continue;
+    out.push({ headline: a.headline.trim(), description: (a.description || '').replace(/\s+/g, ' ').trim(), date: (a.published || '').slice(0, 10), kind: a.type || null });
+  }
+  /* written pieces before clips, two on the tile and the bullet, three kept */
+  const rank = x => x.kind === 'Media' ? 1 : 0;
+  return out.sort((a, b) => rank(a) - rank(b) || (a.date < b.date ? 1 : -1)).slice(0, 3);
+}
+
 /* ---------- the writing ---------- */
 function streakOf(S, id, games) {
   const mine = games.filter(g => g.state === 'final' && g.hs !== null && (g.home === id || g.away === id)).sort((a, b) => a.date < b.date ? 1 : -1);
@@ -108,7 +150,6 @@ function writeNote(S, g, ctx) {
   if (L && L.homeLine !== null && L.homeLine !== undefined) {
     const fav = L.homeLine < 0 ? h : L.homeLine > 0 ? a : null; const n = Math.abs(L.homeLine);
     let s = fav ? `${open}, ${fav === h ? 'the home side' : 'the visitor'} favored by ${fmtHalf(n)}` : `${open}, a pick'em`;
-    if (L.total) s += ` with the total at ${L.total}`;
     if (g.edge !== undefined && Math.abs(g.edge) >= 3 && !g.noAts) {
       const side = g.edge > 0 ? h : a; const ms = Math.abs(g.spread);
       s += g.spread === 0 ? `; the model calls it even` : `; the model ${(g.spread < 0 ? h : a) === side ? 'has' : 'leans'} ${side.abbr} ${g.spread < 0 && side === h || g.spread > 0 && side === a ? `by ${fmtHalf(ms)}` : 'to cover'}`;
@@ -116,13 +157,12 @@ function writeNote(S, g, ctx) {
     parts.push(s + '.');
   } else parts.push(open + (g.pHome >= 0.5 ? `, the model giving ${h.short} ${Math.round(g.pHome * 100)} percent.` : `, the model giving ${a.short} ${Math.round((1 - g.pHome) * 100)} percent.`));
   /* the form */
+  const words = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
   const form = (t, id, st, sk) => {
     const rec = t.fbs ? `${t.w}-${t.l}` : ((id === g.home ? g.hrec : g.arec) || `${t.w}-${t.l}`);
-    const bits = [];
-    if (sk && sk.n >= 3) bits.push(sk.win ? `on ${plural(sk.n, 'straight win')}` : `on ${plural(sk.n, 'straight loss', 'straight losses')}`);
-    else if (sk) bits.push(sk.win ? `off a ${sk.last.my}-${sk.last.their} win over ${sk.last.opp}` : `off a ${sk.last.their}-${sk.last.my} loss to ${sk.last.opp}`);
-    if (st.ppg !== null && st.pa !== null) bits.push(`scoring ${fmtHalf(st.ppg)} a game and allowing ${fmtHalf(st.pa)}`);
-    return `${t.short} is ${rec}${bits.length ? ', ' + bits.join(', ') : ''}`;
+    if (!sk) return `${t.short} is ${rec}`;
+    if (sk.n >= 3) return `${t.short} (${rec}) has ${sk.win ? 'won' : 'lost'} ${words[sk.n] || sk.n} straight`;
+    return `${t.short} (${rec}) is ${sk.win ? `off a ${sk.last.my}-${sk.last.their} win over ${sk.last.opp}` : `off a ${sk.last.their}-${sk.last.my} loss to ${sk.last.opp}`}`;
   };
   parts.push(`${form(a, g.away, sa, ctx.away.streak)}; ${form(h, g.home, sh, ctx.home.streak)}.`);
   return parts.join(' ');
@@ -172,6 +212,7 @@ function writeBullets(S, g, side, ctx) {
     out.push(s);
   }
   if (other.stats.ppg !== null && st.pa !== null) out.push(`<strong>The matchup.</strong> ${them.short}'s offense averages ${fmtHalf(other.stats.ppg)}${other.stats.ypg !== null ? ` and ${Math.round(other.stats.ypg)} yards` : ''}; this defense has allowed ${fmtHalf(st.pa)}${st.ypga !== null ? ` and ${Math.round(st.ypga)}` : ''}${st.sk !== null ? `, with ${plural(st.sk, 'sack')}` : ''}.`);
+  if (c.headlines.length) out.push(`<strong>Around the program.</strong> ${c.headlines.slice(0, 2).map(x => `${x.headline}${x.description && x.description !== x.headline && x.description.length <= 140 && !x.description.startsWith(x.headline) ? ` (${x.description.replace(/\.$/, '')})` : ''}`).join('; ')}.`);
   if (c.leaders.length) out.push(`<strong>Leaders.</strong> ${c.leaders.map(l => `<strong>${l.name}</strong> (${l.pos}) ${l.line.toLowerCase()} ${l.cat}`).join('; ')}.`);
   if (c.injuries.length) out.push(`<strong>Injuries.</strong> ${c.injuries.slice(0, 5).map(i => `<strong>${i.name}</strong> (${i.pos}) ${i.status.toLowerCase()}`).join(', ')}.`);
   return out;
@@ -187,6 +228,8 @@ async function main() {
   const sums = await inBatches(slate, 4, g => cached(`summary_${g.id}`, SUMMARY + g.id));
   const teamIds = [...new Set(slate.flatMap(g => [g.home, g.away]))];
   const tstats = {}; await inBatches(teamIds, 4, async id => { tstats[id] = statsFromTeam(await cached(`teamstat_${S.season}_${id}`, TEAMSTAT(S.season, id))); });
+  const since = new Date(Date.now() - 8 * 86400000).toISOString().slice(0, 10);
+  const heads = {}; await inBatches(teamIds, 4, async id => { heads[id] = headlinesOf(await cached(`teamnews_${id}`, TEAMNEWS(id)), T[id] || {}, since); });
   const inj = {}; const ij = await cached('injuries', INJURIES);
   for (const t of ij?.injuries || []) inj[String(t.id)] = (t.injuries || []).map(x => ({ name: x.athlete?.displayName || '', pos: x.athlete?.position?.abbreviation || '', status: x.status || '' })).filter(x => x.name);
 
@@ -197,11 +240,13 @@ async function main() {
     const started = g.state !== 'pre' || (sum && !sum.predictor && !(sum.lastFiveGames || []).length);
     if (started && prevGame.has(g.id)) return prevGame.get(g.id);
     const recap = g.state === 'final' && g.hs !== null;
-    const side = s => { const id = g[s]; return { stats: Object.assign(statsFromSummary(sum, id), tstats[id] || {}), lastFive: lastFive(sum, id), ats: atsOf(sum, id), fpi: fpiOf(sum, s), leaders: leadersOf(sum, id), injuries: inj[id] || [], streak: streakOf(S, id, S.games) }; };
+    const side = s => { const id = g[s]; return { stats: Object.assign(statsFromSummary(sum, id), tstats[id] || {}), lastFive: lastFive(sum, id), ats: atsOf(sum, id), fpi: fpiOf(sum, s), leaders: leadersOf(sum, id), injuries: inj[id] || [], headlines: heads[id] || [], streak: streakOf(S, id, S.games) }; };
     const ctx = { home: side('home'), away: side('away') };
     const L = g.line;
     const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}` : null;
-    return { id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText,
+    const story = storyOf(sum);
+    const around = [ctx.away, ctx.home].flatMap(c => c.headlines.slice(0, 1)).map(x => x.headline);
+    return { id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story, around,
       note: recap ? writeRecap(S, g) : writeNote(S, g, ctx),
       teams: { home: Object.assign({ bullets: writeBullets(S, g, 'home', ctx) }, ctx.home, { streak: undefined }), away: Object.assign({ bullets: writeBullets(S, g, 'away', ctx) }, ctx.away, { streak: undefined }) } };
   });
