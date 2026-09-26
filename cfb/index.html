@@ -68,7 +68,9 @@ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1
 .tag.loss{background:var(--miss-soft);color:var(--miss);border-color:transparent}
 .tag.push{background:var(--gold-soft);color:#8A6412;border-color:transparent}
 .tag.replay{background:var(--blue-soft);color:var(--blue);border-color:transparent}
-.legbtns{display:flex;gap:6px;flex-wrap:wrap}
+.legbtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.legbtns .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-right:2px}
+.linesTable td{padding:5px 6px;white-space:normal} .linesTable .btn{margin:1px 2px;white-space:nowrap}
 .legbtns .btn.on{background:var(--gold-soft);border-color:var(--gold)}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -175,7 +177,7 @@ tr.major td{font-weight:500}
   <section id="tab-parlays" hidden>
     <div class="card">
       <h2>Parlay builder</h2>
-      <p class="small muted">Add moneylines and spreads from the Games tab. Priced at DraftKings' numbers as ESPN showed them when the job last ran; the model's chance is its own view of the same legs, multiplied, one leg a game.</p>
+      <p class="small muted">Add moneylines and spreads with the + buttons below, or on any game card on the Games tab. Priced at DraftKings' numbers as ESPN showed them when the job last ran; the model's chance is its own view of the same legs, multiplied, one leg a game.</p>
       <div class="legs" id="legs"></div>
       <div class="totals" id="parlayTotals"></div>
       <div class="row">
@@ -183,6 +185,12 @@ tr.major td{font-weight:500}
         <button class="btn primary" id="saveParlay">Save parlay</button>
         <button class="btn quiet" id="clearParlay">Clear</button>
       </div>
+    </div>
+    <div class="card">
+      <div class="toolbar"><h2 style="margin:0">This week's lines</h2>
+        <div class="seg" id="plScope"><button data-scope="major" class="on">Major schools</button><button data-scope="ranked">Ranked</button><button data-scope="all">All FBS</button></div>
+        <span class="small muted" id="plNote"></span></div>
+      <div class="scroll"><table class="linesTable" id="plLines"></table></div>
     </div>
     <div class="card">
       <h2>Saved parlays</h2>
@@ -207,7 +215,7 @@ tr.major td{font-weight:500}
 </main>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v1 · 2026-09-23';
+const APP_BUILD = 'cfb v2 · 2026-09-26';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -315,15 +323,7 @@ function gameCard(g) {
     if (g.result.ats) result += ` <span class="tag ${g.result.ats}">ATS ${g.result.ats}</span>`;
     if (!g.frozen) result += ` <span class="tag replay" title="this game was over before the job first ran; the call is the replay's">replayed</span>`;
   }
-  const legBtn = (sd, kind) => {
-    if (!line || final || state === 'live') return '';
-    const odds = kind === 'ml' ? (sd === 'home' ? line.homeML : line.awayML) : (sd === 'home' ? line.homeSpreadOdds : line.awaySpreadOdds);
-    const ln = sd === 'home' ? line.homeLine : (line.homeLine === null ? null : -line.homeLine);
-    if (odds === null || odds === undefined) return '';
-    if (kind === 'spread' && (ln === null || ln === undefined)) return '';
-    const label = kind === 'ml' ? `${T(g[sd]).abbr} ML ${fmtOdds(odds)}` : `${T(g[sd]).abbr} ${fmtLine(ln)} ${fmtOdds(odds)}`;
-    return `<button class="btn tiny ${hasLeg(g, sd, kind) ? 'on' : ''}" data-leg="${g.id}|${sd}|${kind}">${esc(label)}</button>`;
-  };
+  const legBtn = (sd, kind) => legButton(g, sd, kind, line, final || state === 'live');
   return `<div class="game" data-id="${g.id}">
     <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span class="${state === 'live' ? 'live' : ''}">${state === 'pre' ? '' : esc(live ? live.detail : g.detail)}</span></div>
     ${side(g.away, g.arank, g.arec, pAway, as, g.pick === 'away', awayWon)}
@@ -334,10 +334,23 @@ function gameCard(g) {
       <div><div class="k">Moneyline</div><div class="v">${ml}</div></div>
       <div><div class="k">${g.result ? 'Result' : 'Against the spread'}</div><div class="v">${g.result ? result : (callTag || '<span class="muted">no line yet</span>')}</div></div>
     </div>
-    ${g.result ? '' : `<div class="legbtns">${legBtn('away', 'ml')}${legBtn('home', 'ml')}${legBtn('away', 'spread')}${legBtn('home', 'spread')}</div>`}
+    ${g.result ? '' : `<div class="legbtns"><span class="k">Add to parlay</span>${legBtn('away', 'ml')}${legBtn('home', 'ml')}${legBtn('away', 'spread')}${legBtn('home', 'spread')}</div>`}
   </div>`;
 }
-$('games').addEventListener('click', e => {
+/* one button for one bet on one game: a moneyline or a spread, either side. Empty when the
+   game has started or the book has no number for it */
+function legButton(g, sd, kind, line, started) {
+  if (!line || started) return '';
+  const odds = kind === 'ml' ? (sd === 'home' ? line.homeML : line.awayML) : (sd === 'home' ? line.homeSpreadOdds : line.awaySpreadOdds);
+  const ln = sd === 'home' ? line.homeLine : (line.homeLine === null ? null : -line.homeLine);
+  if (odds === null || odds === undefined) return '';
+  if (kind === 'spread' && (ln === null || ln === undefined)) return '';
+  const label = kind === 'ml' ? `${T(g[sd]).abbr} ML ${fmtOdds(odds)}` : `${T(g[sd]).abbr} ${fmtLine(ln)} ${fmtOdds(odds)}`;
+  const on = hasLeg(g, sd, kind);
+  return `<button class="btn tiny ${on ? 'on' : ''}" data-leg="${g.id}|${sd}|${kind}" title="${on ? 'in the parlay: click to take it out' : 'add to the parlay'}">${on ? '✓' : '+'} ${esc(label)}</button>`;
+}
+/* a leg button anywhere on the page adds or removes that bet */
+document.addEventListener('click', e => {
   const b = e.target.closest('button[data-leg]'); if (!b) return;
   const [gid, side, kind] = b.dataset.leg.split('|'); const g = gameById()[gid];
   const i = P.legs.findIndex(l => l.game === gid && l.side === side && l.kind === kind);
@@ -350,7 +363,9 @@ $('games').addEventListener('click', e => {
     const p = kind === 'ml' ? (side === 'home' ? g.pHome : 1 - g.pHome) : (side === 'home' ? g.cover.home : g.cover.away);
     P.legs.push({ game: gid, side, kind, odds, line: ln, p, label: `${T(g.away).abbr} @ ${T(g.home).abbr}`, team: T(g[side]).abbr, week: g.week, type: g.type });
   }
-  save(); renderGames(); updateLegCount();
+  save(); updateLegCount();
+  if (!$('tab-games').hidden) renderGames();
+  if (!$('tab-parlays').hidden) renderParlays();
 });
 function updateLegCount() { const n = P.legs.length; $('legCount').hidden = !n; $('legCount').textContent = n; }
 
@@ -439,8 +454,25 @@ function gradeLeg(l) {
   if (l.kind === 'ml') return margin > 0 ? 'win' : 'loss';
   const c = margin + l.line; return c > 0 ? 'win' : c < 0 ? 'loss' : 'push';
 }
+$('plScope').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; P.ui.plScope = b.dataset.scope; save(); renderParlays(); });
+/* every game still to come this week that the book has a number on, each with its four buttons */
+function renderParlayLines() {
+  const scope = P.ui.plScope || 'major';
+  for (const b of $('plScope').querySelectorAll('button')) b.classList.toggle('on', b.dataset.scope === scope);
+  let gs = S.games.filter(g => (S.week === 'post' ? g.type === 3 : g.type === 2 && g.week === S.week) && g.state === 'pre' && g.line);
+  if (scope === 'major') gs = gs.filter(isMajorGame); else if (scope === 'ranked') gs = gs.filter(isRankedGame);
+  gs.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  $('plNote').textContent = gs.length ? `${gs.length} games still to come with a DraftKings number, as of the job's last run. The green figure is the model's chance for the side listed first.` : '';
+  if (!gs.length) { $('plLines').innerHTML = '<tbody><tr><td class="empty">Nothing left to bet this week: every lined game has kicked off. The Friday run posts next week\'s lines.</td></tr></tbody>'; return; }
+  $('plLines').innerHTML = '<thead><tr><th>Game</th><th>Kickoff</th><th>Model</th><th>Moneyline</th><th>Spread</th></tr></thead><tbody>' + gs.map(g => `<tr>
+    <td>${teamCell(g.away, g.arank)} <span class="muted">@</span> ${teamCell(g.home, g.hrank)}</td>
+    <td class="muted small">${when(g)}</td>
+    <td class="small"><span style="color:var(--pick);font-weight:600">${T(g.away).abbr} ${pct(1 - g.pHome)}</span> · ${g.spread === 0 ? 'PK' : (g.spread < 0 ? `${T(g.home).abbr} ${g.spread}` : `${T(g.away).abbr} ${-g.spread}`)}</td>
+    <td>${legButton(g, 'away', 'ml', g.line, false)}${legButton(g, 'home', 'ml', g.line, false)}</td>
+    <td>${legButton(g, 'away', 'spread', g.line, false)}${legButton(g, 'home', 'spread', g.line, false)}</td></tr>`).join('') + '</tbody>';
+}
 function renderParlays() {
-  updateLegCount();
+  updateLegCount(); renderParlayLines();
   $('legs').innerHTML = P.legs.length ? P.legs.map((l, i) => `<div class="leg"><span>${esc(l.label)} · ${legText(l)}</span><span class="muted small">${weekLabel(l)}</span><span class="n" title="the model's chance">${pct(l.p)}</span><button class="x" data-i="${i}" title="remove">×</button></div>`).join('') : '<div class="empty">No legs yet. Pick moneylines and spreads on the Games tab.</div>';
   const pr = priceLegs(P.legs); const stake = +$('stake').value || 0;
   $('parlayTotals').innerHTML = pr ? `
