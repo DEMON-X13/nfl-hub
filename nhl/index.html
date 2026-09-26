@@ -130,6 +130,12 @@ select,input[type=number]{background:var(--panel-3);border:1px solid var(--line-
 .saved .top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
 .empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r);padding:28px 20px;text-align:center;color:var(--ink-2)}
 .empty b{display:block;font-family:var(--display);font-size:22px;color:var(--ink);margin-bottom:6px}
+.spark{display:inline-block;vertical-align:middle;height:22px;width:90px}
+.spark polyline{fill:none;stroke:var(--ice);stroke-width:1.5}
+.spark circle{fill:var(--lime)}
+.lineup{margin-top:2px;font-size:12px;color:var(--ink-2);display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;border-top:1px solid var(--line);padding-top:8px}
+.lineup .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+.lineup .who{color:var(--rose);font-weight:700}
 .countdown{font-family:var(--display);font-size:clamp(36px,8vw,72px);font-weight:900;color:var(--ice);line-height:1;letter-spacing:-.03em;margin:6px 0 4px}
 @media (max-width:640px){.bracket{grid-template-columns:1fr}}
 </style>
@@ -149,6 +155,7 @@ select,input[type=number]{background:var(--panel-3);border:1px solid var(--line-
     <button data-tab="standings">Standings</button>
     <button data-tab="ratings">Power Ratings</button>
     <button data-tab="playoff">Playoff</button>
+    <button data-tab="players">Players</button>
     <button data-tab="parlays">Parlays <span id="legCount" class="n" hidden>0</span></button>
     <button data-tab="record">Record</button>
   </nav>
@@ -192,6 +199,24 @@ select,input[type=number]{background:var(--panel-3);border:1px solid var(--line-
     </div>
   </section>
 
+  <section id="tab-players" hidden>
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0">Player rankings</h2>
+        <div class="seg" id="plKind"><button data-kind="skaters" class="on">Skaters</button><button data-kind="goalies">Goalies</button></div>
+        <select id="plTeam"><option value="">Every club</option></select>
+        <input type="text" id="plSearch" placeholder="Search a name" style="background:var(--panel-3);border:1px solid var(--line-2);border-radius:10px;padding:7px 10px;color:var(--ink)">
+        <span class="small muted" id="plNoteP"></span>
+      </div>
+      <p class="small muted" id="plModelNote"></p>
+      <div class="scroll"><table class="tbl" id="plTable"></table></div>
+    </div>
+    <div class="card">
+      <h2>Club strength tonight <small>who dressed last, minus the injury report, and the goalie</small></h2>
+      <div class="scroll"><table class="tbl" id="plTeams"></table></div>
+    </div>
+  </section>
+
   <section id="tab-parlays" hidden>
     <div class="card">
       <h2>Parlay builder</h2>
@@ -231,7 +256,7 @@ select,input[type=number]{background:var(--panel-3);border:1px solid var(--line-
 </main>
 <script>
 'use strict';
-const APP_BUILD = 'nhl v1 · 2026-09-26';
+const APP_BUILD = 'nhl v2 · 2026-09-26';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
 const KEY = 'nhl_v1';
@@ -269,7 +294,7 @@ function showTab(name) {
   for (const s of document.querySelectorAll('main > section')) s.hidden = s.id !== 'tab-' + name;
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   P.ui.tab = name; save();
-  ({ games: renderGames, standings: renderStandings, ratings: renderRatings, playoff: renderPlayoff, parlays: renderParlays, record: renderRecord })[name]();
+  ({ games: renderGames, standings: renderStandings, ratings: renderRatings, playoff: renderPlayoff, players: renderPlayers, parlays: renderParlays, record: renderRecord })[name]();
 }
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.tab); });
 window.addEventListener('hashchange', () => { const n = location.hash.slice(1); if (n && $('tab-' + n)) showTab(n); });
@@ -352,8 +377,16 @@ function gameCard(g) {
       <div><div class="k">Total</div><div class="v">${tot}</div></div>
       <div style="grid-column:1/-1"><div class="k">${g.result ? 'Result' : 'The call'}</div><div class="v chips">${g.result ? result : calls}</div></div>
     </div>
+    ${lineupBlock(g)}
     ${g.result || started ? '' : `<div class="legbtns"><span class="k">Add to parlay</span>${legBtn('away', 'ml')}${legBtn('home', 'ml')}${legBtn('away', 'pl')}${legBtn('home', 'pl')}${legBtn('over', 'ou')}${legBtn('under', 'ou')}</div>`}
   </div>`;
+}
+/* the player model's side of a card: each goalie and how he was chosen, who is out, and the two models' chances when the call is one of them */
+function lineupBlock(g) {
+  const pm = g.pm; if (!pm) return '';
+  const side = (code, t) => `<div><div class="k">${esc(T(code).abbr)}</div>${t.goalie ? `<div>${esc(t.goalie.name)} <span class="muted">in goal · ${esc(t.goalie.how)}</span></div>` : '<div class="muted">goalie unknown</div>'}${t.out && t.out.length ? `<div><span class="who">out</span> ${t.out.map(o => esc(o.name)).join(', ')}</div>` : ''}</div>`;
+  const both = g.elo ? `<div style="grid-column:1/-1" class="muted">Players ${pct(pm.pHome)} · ${pm.xt.toFixed(1)} goals; team Elo ${pct(g.elo.pHome)} · ${g.elo.xt.toFixed(1)}. The call is the ${g.by === 'players' ? 'player model' : 'team Elo'}.</div>` : `<div style="grid-column:1/-1" class="muted">Player model ${pct(pm.pHome)} · ${pm.xt.toFixed(1)} goals, shown beside the call; the team Elo makes it.</div>`;
+  return `<div class="lineup">${side(g.away, pm.away)}${side(g.home, pm.home)}${both}</div>`;
 }
 /* the price, the number and the model's chance for one bet on one game: null when the book has no number for it */
 function betOf(g, side, kind) {
@@ -449,6 +482,39 @@ function renderPlayoff() {
   const bar = p => `<span class="tw"><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span>${pct1(p)}</span>`;
   $('poTable').innerHTML = '<thead><tr><th>Team</th><th>Div</th><th class="n">Record</th><th class="n">PTS</th><th class="n">Exp. pts</th><th>Playoff</th><th class="n">Division</th><th class="n">Conference</th><th class="n">Stanley Cup</th></tr></thead><tbody>' +
     ids.map(id => { const t = T(id), o = PO.odds[id]; return `<tr><td>${teamCell(id)}</td><td class="muted">${esc(t.div)}</td><td class="n">${rec(t)}</td><td class="n">${t.pts}</td><td class="n">${o.expPts}</td><td>${bar(o.playoff)}</td><td class="n">${pct(o.div)}</td><td class="n">${pct(o.conf)}</td><td class="n">${pct1(o.cup)}</td></tr>`; }).join('') + '</tbody>';
+}
+
+/* ---------- Players ---------- */
+$('plKind').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; P.ui.plKind = b.dataset.kind; save(); renderPlayers(); });
+$('plTeam').addEventListener('change', renderPlayers); $('plSearch').addEventListener('input', renderPlayers);
+function spark(seasons, now) {
+  const ks = Object.keys(seasons).sort(); const vs = ks.map(k => seasons[k]).concat([now]);
+  if (vs.length < 2) return '';
+  const lo = Math.min(...vs), hi = Math.max(...vs), span = hi - lo || 1;
+  const pts = vs.map((v, i) => `${(i / (vs.length - 1) * 86 + 2).toFixed(1)},${(20 - (v - lo) / span * 18).toFixed(1)}`);
+  const [lx, ly] = pts[pts.length - 1].split(',');
+  return `<svg class="spark" viewBox="0 0 90 22" title="${ks.map((k, i) => `${k - 1}-${String(k).slice(2)}: ${vs[i]}`).join(', ')}, now ${now}"><polyline points="${pts.join(' ')}"></polyline><circle cx="${lx}" cy="${ly}" r="2"></circle></svg>`;
+}
+function renderPlayers() {
+  const PL = S.players;
+  if (!PL) { $('plModelNote').textContent = 'No player model yet: the box scores have not been pulled.'; $('plTable').innerHTML = ''; $('plTeams').innerHTML = ''; return; }
+  const kind = P.ui.plKind || 'skaters';
+  for (const b of $('plKind').querySelectorAll('button')) b.classList.toggle('on', b.dataset.kind === kind);
+  if ($('plTeam').options.length === 1) $('plTeam').innerHTML += Object.keys(S.teams).sort().map(c => `<option value="${c}">${esc(T(c).short)}</option>`).join('');
+  const R = PL.report; const w = R.walk || {}; const ws = Object.keys(w).sort();
+  $('plModelNote').innerHTML = `Every skater carries an offence and a defence rating, every goalie a save rating, in goals a game for a player on the ice all game (shown ×100). A club is its lineup weighted by ice time plus its goalie. Fitted on ${R.fitSeasons}; held out ${R.holdout - 1}-${String(R.holdout).slice(2)}: player model ${pct1(R.holdoutKnown.acc)} of winners (log loss ${R.holdoutKnown.logloss}) against the team Elo's ${pct1(R.holdoutTeam.acc)} (${R.holdoutTeam.logloss}). Walk-forward, each season called cold: ${ws.map(s => `${s - 1}-${String(s).slice(2)} ${w[s].player.logloss} vs ${w[s].team.logloss}`).join('; ')}. <b>${PL.use ? 'The site\'s call is the player model\'s.' : 'The team Elo keeps the call until the player model beats it cold.'}</b> Ratings as of ${esc(PL.asOf)}.`;
+  const team = $('plTeam').value, q = $('plSearch').value.trim().toLowerCase();
+  let rows = Object.entries(PL.players).map(([id, p]) => Object.assign({ id }, p)).filter(p => kind === 'goalies' ? p.pos === 'G' : p.pos !== 'G');
+  if (team) rows = rows.filter(p => p.team === team); if (q) rows = rows.filter(p => p.name.toLowerCase().includes(q));
+  rows = rows.filter(p => team || q || p.gp >= (kind === 'goalies' ? 10 : 20)).sort((a, b) => b.v - a.v);
+  $('plNoteP').textContent = `${rows.length} ${kind}`;
+  const x100 = v => (v * 100).toFixed(1);
+  const head = kind === 'goalies' ? '<thead><tr><th class="n">#</th><th>Goalie</th><th>Club</th><th class="n">Rating</th><th class="n">Starts</th><th>Five seasons</th></tr></thead>' : '<thead><tr><th class="n">#</th><th>Player</th><th>Club</th><th>Pos</th><th class="n">Rating</th><th class="n">Offence</th><th class="n">Defence</th><th class="n">Games</th><th class="n">TOI</th><th>Five seasons</th></tr></thead>';
+  $('plTable').innerHTML = head + '<tbody>' + rows.slice(0, 400).map((p, i) => kind === 'goalies'
+    ? `<tr><td class="n">${i + 1}</td><td>${esc(p.name)}</td><td>${teamCell(p.team)}</td><td class="n"><b>${x100(p.v)}</b></td><td class="n">${p.gp}</td><td>${spark(p.seasons, p.v)}</td></tr>`
+    : `<tr><td class="n">${i + 1}</td><td>${esc(p.name)}</td><td>${teamCell(p.team)}</td><td class="muted">${esc(p.pos)}</td><td class="n"><b>${x100(p.v)}</b></td><td class="n">${x100(p.o)}</td><td class="n">${x100(p.d)}</td><td class="n">${p.gp}</td><td class="n">${Math.floor(p.toi / 60)}:${String(p.toi % 60).padStart(2, '0')}</td><td>${spark(p.seasons, p.v)}</td></tr>`).join('') + '</tbody>';
+  const ts = Object.entries(PL.teams).sort((a, b) => b[1].strength - a[1].strength);
+  $('plTeams').innerHTML = '<thead><tr><th class="n">#</th><th>Club</th><th class="n">Strength</th><th class="n">Attack</th><th class="n">Defence</th><th>Goalie</th><th>Out</th></tr></thead><tbody>' + ts.map(([c, t], i) => `<tr><td class="n">${i + 1}</td><td>${teamCell(c)}</td><td class="n"><b>${x100(t.strength)}</b></td><td class="n">${x100(t.offence)}</td><td class="n">${x100(t.defence)}</td><td>${t.goalie ? `${esc(t.goalie.name)} <span class="muted small">${x100(t.goalie.gk)} · ${esc(t.goalie.how)}</span>` : '—'}</td><td class="small">${(t.out || []).map(o => esc(o.name)).join(', ') || '<span class="muted">nobody</span>'}</td></tr>`).join('') + '</tbody>';
 }
 
 /* ---------- Parlays ---------- */

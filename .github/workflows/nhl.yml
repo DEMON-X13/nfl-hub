@@ -30,6 +30,12 @@ jobs:
         working-directory: nhl/tools
       - name: Play a fabricated season through the job, in a scratch folder
         run: node nhl/tools/simulate.js
+      - name: Pull last night's box scores and the injury report
+        run: node nhl/tools/fetch_box.js
+      - name: Tonight's announced goalies, where DailyFaceoff names them
+        run: node nhl/tools/starters.js
+      - name: Replay the player and goalie model and line up tonight
+        run: node nhl/tools/players.js
       - name: Read the season, rate, call, grade and write state.json
         run: node nhl/tools/update.js
       - name: Smoke test the page over the new state
@@ -38,7 +44,7 @@ jobs:
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add nhl/state.json nhl/data/teams.json
+          git add nhl/state.json nhl/data/teams.json nhl/data/box_*.jsonl nhl/data/injuries.json nhl/data/starters.json nhl/data/players.json
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "nhl: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             ok=0

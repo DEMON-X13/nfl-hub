@@ -176,6 +176,9 @@ async function main() {
   const prev = fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : null;
   const prevGames = new Map(((prev && prev.season === SEASON && prev.games) || []).map(g => [g.id, g]));
   const model = JSON.parse(fs.readFileSync(path.join(DATA, 'model.json'), 'utf8'));
+  /* the player model's numbers on the games to come, when players.js has run; `use` says whose call the page carries */
+  const PM = fs.existsSync(path.join(DATA, 'players.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'players.json'), 'utf8')) : null;
+  const usePM = !!(PM && PM.report && PM.report.use);
   const { games, teams: T } = await pullSeason(prev);
   log(`${games.length} games this season, ${games.filter(g => g.state === 'final').length} final`);
 
@@ -207,14 +210,22 @@ async function main() {
     const row = { id: g.id, type: g.type, date: g.date, start: g.start, state: g.state, detail: g.detail, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods,
       neutral: g.neutral, note: g.note, venue: g.venue, hrec: g.hrec, arec: g.arec };
     let view;
-    if (g.state === 'pre') { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: now }; }
+    if (g.state === 'pre') {
+      const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: now, elo: { pHome: v.pHome, xt: rates.total(g.home, g.away) } };
+      /* the player model's view, frozen with the rest; the call is its when it has earned it */
+      const u = PM && PM.upcoming && PM.upcoming[g.id];
+      if (u) { view.pm = { pHome: u.pHome, mu: u.mu, xt: u.total, home: u.home, away: u.away }; if (usePM) { view.pHome = u.pHome; view.xt = u.total; view.pmMu = u.mu; } }
+    }
     /* a call frozen before puck drop keeps its view after */
-    else if (p && p.frozen) view = { pHome: p.pHome, diff: p.diff, rh: p.rh, ra: p.ra, xt: p.xt, frozen: p.frozen };
+    else if (p && p.frozen) view = { pHome: p.pHome, diff: p.diff, rh: p.rh, ra: p.ra, xt: p.xt, frozen: p.frozen, pm: p.pm, elo: p.elo, pmMu: p.pmMu };
     else if (replayed[g.id]) { const v = replayed[g.id]; view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: v.xt, frozen: null }; }
     else { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: null }; }   // live with no frozen call: the current view
-    const mu = spreadOf(view.diff, model);
+    const mu = view.pmMu !== undefined && view.pmMu !== null ? view.pmMu : spreadOf(view.diff, model);
     const G = goals(view.xt, mu, view.diff, model.pull);
     Object.assign(row, { pHome: +view.pHome.toFixed(4), rh: +view.rh.toFixed(1), ra: +view.ra.toFixed(1), diff: +view.diff.toFixed(2), mu: +mu.toFixed(2), xt: +view.xt.toFixed(2), tie: r3(G.tie), frozen: view.frozen });
+    if (view.pm) row.pm = view.pm;
+    if (view.elo && view.pmMu !== undefined && view.pmMu !== null) row.elo = { pHome: +view.elo.pHome.toFixed(4), xt: +view.elo.xt.toFixed(2) };
+    if (view.pmMu !== undefined && view.pmMu !== null) row.by = 'players';
     /* the lines: taken while the game is still to come, kept once it is not */
     let line = null;
     if (g.state === 'pre' && g.odds) line = Object.assign({}, g.odds, { at: now });
@@ -276,7 +287,9 @@ async function main() {
   const top = E.TEAMS.slice().sort((a, b) => playoff.odds[b].cup - playoff.odds[a].cup).slice(0, 4).map(t => `${t} ${Math.round(playoff.odds[t].cup * 100)}%`).join(', ');
   log(`playoff picture: ${top} for the Cup; ${SIMS} sims over ${playoff.remaining} games left`);
 
-  const state = { published: new Date().toISOString(), season: SEASON, today: TODAY, model, clubs: E.CLUBS, teams, games: out, record, playoff, edge: EDGE };
+  /* the player rankings, for the Players tab: every rated player, the club strengths, the report */
+  const players = PM ? { asOf: PM.asOf, generated: PM.generated, use: usePM, report: PM.report, params: PM.params, players: PM.players, teams: PM.teams } : null;
+  const state = { published: new Date().toISOString(), season: SEASON, today: TODAY, model, clubs: E.CLUBS, teams, games: out, record, playoff, edge: EDGE, players };
   const before = prev ? JSON.stringify(Object.assign({}, prev, { published: null, today: null })) : null;
   const after = JSON.stringify(Object.assign({}, state, { published: null, today: null }));
   if (before === after) { log('nothing changed; state.json left alone'); return; }

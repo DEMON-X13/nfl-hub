@@ -43,7 +43,7 @@ at the next refresh:
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
 - `cfb/state.json`, `cfb/data/teams.json`
-- `nhl/state.json`, `nhl/data/teams.json`
+- `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
@@ -140,6 +140,9 @@ numbers with it. `.github/workflows/cfb.yml` runs six times a week on ESPN's fre
 ```
 cd nhl/tools && npm ci
 node nhl/tools/simulate.js        # a fabricated season through the job in a scratch folder; must end "0 failures"
+node nhl/tools/fetch_box.js       # ESPN box scores (one a game, five seasons back) + the injury report
+node nhl/tools/starters.js        # tonight's announced goalies from DailyFaceoff (answers GitHub's runners only)
+node nhl/tools/players.js         # the player and goalie model: replay, report, tonight's lineups -> nhl/data/players.json ("fit" to refit)
 node nhl/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> nhl/state.json
 node nhl/tools/smoke.js           # must end "0 failures"
 ```
@@ -160,6 +163,17 @@ through three offline runs of the job (lines up, the next morning, a quiet rerun
 freeze, the grades, the record, the standings and the page, so a change to the job is proved on a
 season in progress even in September. `NHL_TODAY`, `NHL_STATE`, `NHL_OUT` and `NHL_TEAMS` are the
 environment hooks it uses; the real files are never touched.
+
+The player model (`tools/players.js`) is the NBA Hub's idea: every skater an offence and a defence
+rating, every goalie a save rating, in goals a game for a player on the ice all game; a club is its
+lineup weighted by ice time plus its goalie; after a final the surprise in regulation goals moves
+who was on the ice. Fitted on 2022-23 to 2024-25 with 2025-26 held out, and scored cold season by
+season (walk-forward); `report.use` in `players.json` is whether it beat the team Elo cold, and only
+then does the page's call switch to it (`by: 'players'` on the game row, the Elo's view kept beside
+it as `elo`). Do not tune it on the season in progress. Tonight's lineup is who dressed last minus
+the injury report; the goalie is DailyFaceoff's announced starter when `starters.json` has one, else
+the other goalie on a back to back, else the usual starter, and the card says which. The Players
+tab shows the rankings with a five-season line each.
 
 ## Bets and Stats: the loop
 
