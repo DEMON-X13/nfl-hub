@@ -49,8 +49,7 @@ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1
 .seg button{border:0;background:var(--panel);padding:6px 10px;font:600 13px var(--display);color:var(--ink-2);cursor:pointer}
 .seg button.on{background:var(--ink);color:#fff}
 .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
-.game{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 12px 12px 14px;box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
-.game .edge,.slot .edge{position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(to bottom,var(--ca) 0 50%,var(--ch) 50% 100%)}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:12px;box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px}
 .game .when{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
 .game .when .live{color:var(--miss);font-weight:600}
 .side{display:grid;grid-template-columns:28px 1fr auto auto;gap:8px;align-items:center}
@@ -104,7 +103,7 @@ tr.major td{font-weight:500}
 .saved .top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
 .empty{color:var(--muted);padding:20px;text-align:center}
 .slate{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.slot{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:14px 14px 14px 18px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.slot{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:14px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:6px}
 .slot:hover{border-color:var(--line-2);transform:translateY(-1px)}
 .slot .when{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .slot .vs{font:700 17px var(--display);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -130,8 +129,8 @@ tr.major td{font-weight:500}
 .ovstory h5{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px}
 .ovstory p{margin:0 0 8px} .ovstory p:last-child{margin:0} .ovstory .src{font-size:12px;color:var(--muted)}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.tb{border:1px solid var(--line);border-radius:var(--r-md);padding:0 12px 12px;border-top:4px solid var(--tc);background:var(--panel)}
-.tb .tbhd{margin:0 -12px 8px;padding:10px 12px;background:color-mix(in srgb,var(--tc) 9%,var(--panel))}
+.tb{border:1px solid var(--line);border-radius:var(--r-md);padding:0 12px 12px;border-top:3px solid var(--tc);background:var(--panel)}
+.tb .tbhd{margin:0 -12px 8px;padding:10px 12px;background:var(--panel-2)}
 .tb .tbhd{display:flex;align-items:center;gap:10px}
 .tb .tbhd img{width:36px;height:36px;object-fit:contain}
 .tb .tbhd h4{font:700 16px var(--display);margin:0}
@@ -273,7 +272,7 @@ tr.major td{font-weight:500}
 <div class="ov" id="ov"><div class="ovbox" id="ovbox"></div></div>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v5 · 2026-09-26';
+const APP_BUILD = 'cfb v6 · 2026-09-26';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -384,7 +383,7 @@ function gameCard(g) {
     if (!g.frozen) result += ` <span class="tag replay" title="this game was over before the job first ran; the call is the replay's">replayed</span>`;
   }
   const legBtn = (sd, kind) => legButton(g, sd, kind, line, final || state === 'live');
-  return `<div class="game" data-id="${g.id}" style="--ca:${esc(ta.color || '#999')};--ch:${esc(th.color || '#999')}"><span class="edge"></span>
+  return `<div class="game" data-id="${g.id}">
     <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span class="${state === 'live' ? 'live' : ''}">${state === 'pre' ? '' : esc(live ? live.detail : g.detail)}</span></div>
     ${side(g.away, g.arank, g.arec, pAway, as, g.pick === 'away', awayWon)}
     ${side(g.home, g.hrank, g.hrec, g.pHome, hs, g.pick === 'home', homeWon)}
@@ -466,7 +465,7 @@ async function renderNews() {
     const done = state === 'final' && hs !== null && hs !== undefined;
     const d = new Date(n.kick);
     const when = done ? `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · Final` : `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-    return `<button class="slot" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}" style="--ca:${esc(a.color || '#999')};--ch:${esc(h.color || '#999')}"><span class="edge"></span>
+    return `<button class="slot" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}">
       <div class="when">${esc(when)}${state === 'live' ? ' · <span style="color:var(--miss)">live</span>' : ''}</div>
       <div class="vs"><i style="background:${esc(a.color || '#999')}"></i>${a.ap ? `<span class="rk">${a.ap}</span>` : ''}${esc(a.abbr)}<em>${g.neutral ? 'vs' : 'at'}</em><i style="background:${esc(h.color || '#999')}"></i>${h.ap ? `<span class="rk">${h.ap}</span>` : ''}${esc(h.abbr)}${done || state === 'live' ? `<span class="score">${as} - ${hs}</span>` : ''}</div>
       <div class="meta">${[n.tv, n.venue].filter(Boolean).map(esc).join(' · ')}</div>
