@@ -94,8 +94,19 @@ async function main() {
   const sumPlayoff = Object.values(S.playoff.odds).reduce((a, o) => a + o.playoff, 0);
   chk(Math.abs(sumPlayoff - 12) < 0.2, 'playoff chances sum to twelve: ' + sumPlayoff.toFixed(2));
 
-  /* Parlays: the leg added above is priced */
+  /* Parlays: the week's lines are offered with buttons, and the leg added above is priced */
   d.querySelector('#tabs button[data-tab="parlays"]').click();
+  const coming = S.games.filter(g => (S.week === 'post' ? g.type === 3 : g.type === 2 && g.week === S.week) && g.state === 'pre' && g.line && (S.teams[g.home].major || S.teams[g.away].major));
+  chk(d.querySelectorAll('#plLines tbody tr').length === Math.max(1, coming.length), `the Parlays tab lists the ${coming.length} lined games still to come`);
+  if (coming.length) {
+    chk(d.querySelectorAll('#plLines button[data-leg]').length >= coming.length, 'each listed game offers at least one button');
+    const before = (JSON.parse(w.localStorage.getItem('cfb_v1') || '{}').legs || []).length;
+    const pb = [...d.querySelectorAll('#plLines button[data-leg]')].find(b => !b.classList.contains('on'));
+    pb.click();
+    const after = (JSON.parse(w.localStorage.getItem('cfb_v1') || '{}').legs || []).length;
+    chk(after >= before, 'a button on the Parlays tab adds a leg');
+    chk(d.querySelectorAll('#legs .leg').length === after, 'the builder redraws with it');
+  }
   const legs = JSON.parse(w.localStorage.getItem('cfb_v1') || '{}').legs || [];
   chk(d.querySelectorAll('#legs .leg').length === legs.length, 'the builder lists the legs');
   if (legs.length) {
