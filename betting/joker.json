@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-25T22:43+00:00",
+ "generated": "2026-09-26T01:54+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1715,14 +1715,14 @@
    "home": "CLE",
    "away": "CAR",
    "pick": "CAR",
-   "pHome": 0.4161,
+   "pHome": 0.4532,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 130.0,
-     "c": -0.6137
+     "v": 120.0,
+     "c": -0.5447
     },
     {
      "f": "td_penalties_A",
@@ -1737,7 +1737,7 @@
     {
      "f": "td_passing_20_H",
      "v": 2.5,
-     "c": 0.1264
+     "c": 0.1092
     },
     {
      "f": "td_fumbles_not_forced_A",
@@ -1755,9 +1755,9 @@
      "c": 0.087
     },
     {
-     "f": "td_receiving_40_H",
-     "v": 1.0,
-     "c": 0.0774
+     "f": "expl_home",
+     "v": 0.0717,
+     "c": 0.0821
     }
    ]
   },
@@ -1874,7 +1874,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 425.0,
+     "v": 455.0,
      "c": -1.1606
     },
     {
@@ -1894,7 +1894,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -575.0,
+     "v": -625.0,
      "c": -0.1114
     },
     {
@@ -1925,7 +1925,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -340.0,
+     "v": -345.0,
      "c": 0.8572
     },
     {
@@ -2333,7 +2333,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -192.0,
+     "v": -185.0,
      "c": 0.4854
     },
     {
@@ -2378,24 +2378,19 @@
    "home": "DEN",
    "away": "LA",
    "pick": "DEN",
-   "pHome": 0.5088,
+   "pHome": 0.5093,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 114.0,
-     "c": -0.3199
+     "v": 110.0,
+     "c": -0.162
     },
     {
      "f": "td_fg_missed_40_49_A",
      "v": 0.5,
      "c": 0.1557
-    },
-    {
-     "f": "td_passing_20_H",
-     "v": 2.5,
-     "c": 0.0937
     },
     {
      "f": "td_def_tackle_assists_A",
@@ -2408,11 +2403,6 @@
      "c": -0.0642
     },
     {
-     "f": "td_def_tackles_with_assist_A",
-     "v": 0.0,
-     "c": 0.0557
-    },
-    {
      "f": "td_pt_yards_H",
      "v": 225.5,
      "c": -0.0535
@@ -2421,6 +2411,16 @@
      "f": "pg_receiving_16_H",
      "v": 8.0,
      "c": -0.0528
+    },
+    {
+     "f": "pg_passing_yards_H",
+     "v": 288.0,
+     "c": -0.0502
+    },
+    {
+     "f": "td_fumble_recovery_yards_own_H",
+     "v": -2.5,
+     "c": 0.0464
     }
    ]
   },
@@ -2428,15 +2428,15 @@
    "week": 3,
    "home": "CHI",
    "away": "PHI",
-   "pick": "CHI",
-   "pHome": 0.5146,
+   "pick": "PHI",
+   "pHome": 0.3599,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 185.0,
-     "c": -0.6137
+     "v": 195.0,
+     "c": -0.892
     },
     {
      "f": "td_pt_returned_A",
@@ -2444,18 +2444,8 @@
      "c": 0.1369
     },
     {
-     "f": "pg_fumbles_total_A",
-     "v": 0.0,
-     "c": 0.1303
-    },
-    {
-     "f": "td_pt_yards_H",
-     "v": 148.5,
-     "c": 0.1296
-    },
-    {
      "f": "away_moneyline",
-     "v": -225.0,
+     "v": -238.0,
      "c": -0.1114
     },
     {
@@ -2467,6 +2457,16 @@
      "f": "td_passing_20_H",
      "v": 3.0,
      "c": 0.1095
+    },
+    {
+     "f": "td_pt_inside_20_A",
+     "v": 3.0,
+     "c": -0.1084
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.0844
     },
     {
      "f": "td_def_tackles_solo_A",
