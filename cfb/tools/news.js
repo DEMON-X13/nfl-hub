@@ -189,7 +189,7 @@ function writeNote(S, g, ctx) {
   /* the anecdote: the AP's opening line, else the sides' headlines, else the AP's line on each
      side's last game, else each side's form in words */
   if (ctx.story && ctx.story.lead) parts.push(ctx.story.lead);
-  else if (ctx.around && ctx.around.length) parts.push(ctx.around.map(x => x.replace(/\.$/, '')).join('. ') + '.');
+  else if (ctx.around && ctx.around.length) parts.push(ctx.around.map(x => /[.!?]$/.test(x) ? x : x + '.').join(' '));
   else if (ctx.story && ctx.story.lastGame) parts.push(ctx.story.lastGame);
   else parts.push(`${form(a, g.away, sa, ctx.away.streak)}; ${form(h, g.home, sh, ctx.home.streak)}.`);
   return parts.join(' ');
@@ -271,7 +271,9 @@ async function main() {
     const L = g.line;
     const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}` : null;
     ctx.story = storyOf(sum);
-    ctx.around = [ctx.away, ctx.home].flatMap(c => c.headlines.slice(0, 1)).map(x => x.headline);
+    /* one headline a side, never the same one twice: a piece that names both teams comes
+       back from both feeds */
+    ctx.around = [...new Set([ctx.away, ctx.home].flatMap(c => c.headlines.slice(0, 1)).map(x => x.headline))];
     let note = recap ? writeRecap(S, g, ctx) : writeNote(S, g, ctx);
     if (recap && ctx.story && ctx.story.lead) note += ' ' + ctx.story.lead;
     const credit = ctx.story && ctx.story.lead ? ctx.story.source : ctx.around.length ? 'ESPN' : (ctx.story && ctx.story.lastGame) ? ctx.story.source : null;
