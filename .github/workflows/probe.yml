@@ -1,5 +1,8 @@
 name: Probe goalie sources
-on: workflow_dispatch
+on:
+  push:
+    branches: ["claude/**"]
+    paths: [".github/workflows/probe.yml"]
 jobs:
   probe:
     runs-on: ubuntu-latest
