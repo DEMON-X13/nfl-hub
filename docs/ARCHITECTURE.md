@@ -277,7 +277,8 @@ nhl/
   tools/elo.js        THE MODEL: Elo with home ice, back-to-back, rest, an overtime weight and a
                       goal-margin multiplier; a Poisson goals layer for the puck line and the total
   tools/fit.js        coordinate search on the history, last season held out
-  tools/update.js     the job; tools/smoke.js the gate
+  tools/update.js     the job; tools/smoke.js the gate; tools/simulate.js a fabricated season
+                      played through the job in a scratch folder, run first by the workflow
 ```
 
 The job reads every day of the season (skipping the days already complete in the last state),

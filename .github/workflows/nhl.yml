@@ -28,6 +28,8 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: nhl/tools
+      - name: Play a fabricated season through the job, in a scratch folder
+        run: node nhl/tools/simulate.js
       - name: Read the season, rate, call, grade and write state.json
         run: node nhl/tools/update.js
       - name: Smoke test the page over the new state

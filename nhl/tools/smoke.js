@@ -9,7 +9,7 @@ const fs = require('fs'), path = require('path');
 const { JSDOM } = require('jsdom');
 const ROOT = path.join(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-const STATE = fs.readFileSync(path.join(ROOT, 'state.json'), 'utf8');
+const STATE = fs.readFileSync(process.env.NHL_STATE || path.join(ROOT, 'state.json'), 'utf8');
 const S = JSON.parse(STATE);
 
 const fails = []; let checks = 0;
