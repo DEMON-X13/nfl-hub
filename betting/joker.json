@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-26T16:32+00:00",
+ "generated": "2026-09-26T17:22+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1828,7 +1828,7 @@
     },
     {
      "f": "home_moneyline",
-     "v": 105.0,
+     "v": 102.0,
      "c": -0.162
     },
     {
@@ -1874,7 +1874,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 470.0,
+     "v": 455.0,
      "c": -1.1606
     },
     {
@@ -1894,7 +1894,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -650.0,
+     "v": -625.0,
      "c": -0.1114
     },
     {
@@ -2428,15 +2428,15 @@
    "week": 3,
    "home": "CHI",
    "away": "PHI",
-   "pick": "PHI",
-   "pHome": 0.3599,
+   "pick": "CHI",
+   "pHome": 0.5519,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 195.0,
-     "c": -0.892
+     "v": 160.0,
+     "c": -0.6137
     },
     {
      "f": "td_pt_returned_A",
@@ -2444,9 +2444,14 @@
      "c": 0.1369
     },
     {
-     "f": "away_moneyline",
-     "v": -238.0,
-     "c": -0.1114
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.1303
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 148.5,
+     "c": 0.1296
     },
     {
      "f": "td_rushing_20_H",
@@ -2459,14 +2464,9 @@
      "c": 0.1095
     },
     {
-     "f": "td_pt_inside_20_A",
-     "v": 3.0,
-     "c": -0.1084
-    },
-    {
-     "f": "pg_fumbles_total_A",
-     "v": 0.0,
-     "c": 0.0844
+     "f": "away_moneyline",
+     "v": -192.0,
+     "c": 0.0668
     },
     {
      "f": "td_def_tackles_solo_A",
