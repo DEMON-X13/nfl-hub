@@ -1,0 +1,12 @@
+name: Probe goalie sources
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for u in "https://api-web.nhle.com/v1/schedule/now" "https://api-web.nhle.com/v1/score/now" "https://www.dailyfaceoff.com/starting-goalies/" "https://www.rotowire.com/hockey/nhl-lineups.php"; do
+            printf '%s -> ' "$u"; curl -sS -m 25 -A "Mozilla/5.0" -o /tmp/p -w '%{http_code} %{size_download}\n' "$u" || true
+          done
+          curl -sS -m 25 "https://api-web.nhle.com/v1/schedule/now" | head -c 1500; echo
+          curl -sS -m 25 -A "Mozilla/5.0" "https://www.dailyfaceoff.com/starting-goalies/" | grep -o 'Confirmed\|Likely\|Unconfirmed\|Expected' | sort | uniq -c
