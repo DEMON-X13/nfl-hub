@@ -139,6 +139,7 @@ numbers with it. `.github/workflows/cfb.yml` runs six times a week on ESPN's fre
 
 ```
 cd nhl/tools && npm ci
+node nhl/tools/simulate.js        # a fabricated season through the job in a scratch folder; must end "0 failures"
 node nhl/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> nhl/state.json
 node nhl/tools/smoke.js           # must end "0 failures"
 ```
@@ -153,7 +154,12 @@ it. The model is `tools/elo.js`: an Elo with home ice, back-to-back and rest ter
 result past regulation and a goal-margin multiplier, plus a Poisson goals layer (each club's
 scoring rates, shrunk to the league's) for the puck line and the total. A side is taken on the
 moneyline, the puck line or the total only where the model's chance beats DraftKings' implied by
-five points. `.github/workflows/nhl.yml` runs three times a day on ESPN's free feeds.
+five points. `.github/workflows/nhl.yml` runs three times a day on ESPN's free feeds, the
+simulation first: `tools/simulate.js` plays the real schedule with invented scores and lines
+through three offline runs of the job (lines up, the next morning, a quiet rerun) and checks the
+freeze, the grades, the record, the standings and the page, so a change to the job is proved on a
+season in progress even in September. `NHL_TODAY`, `NHL_STATE`, `NHL_OUT` and `NHL_TEAMS` are the
+environment hooks it uses; the real files are never touched.
 
 ## Bets and Stats: the loop
 

@@ -5,6 +5,9 @@
     node nhl/tools/update.js              the season, from ESPN
     node nhl/tools/update.js --offline    from the scoreboard files a previous run saved in nhl/tools/out/
 
+   NHL_TODAY, NHL_STATE, NHL_OUT and NHL_TEAMS in the environment move the day and the files, which
+   is how simulate.js plays a fabricated season through it without touching the real ones.
+
    Free: ESPN's public feeds only, nothing spends a credit. One request per day from the
    season's start to the end of June, skipping the days the last state already has complete,
    so the whole schedule is known and a run in season is a couple of hundred small requests. Idempotent: a call or a line made before puck drop is kept once
@@ -19,10 +22,11 @@ const E = require('./espn');
 const { Elo, expected, spreadOf, goals, coverProbs, totalProbs } = require('./elo');
 
 const ROOT = path.join(__dirname, '..');
-const DATA = path.join(ROOT, 'data'), OUT = path.join(__dirname, 'out');
-const STATE = path.join(ROOT, 'state.json');
+const DATA = path.join(ROOT, 'data'), OUT = process.env.NHL_OUT || path.join(__dirname, 'out');
+const STATE = process.env.NHL_STATE || path.join(ROOT, 'state.json');   // simulate.js points these at a scratch folder
+const TEAMS = process.env.NHL_TEAMS || path.join(DATA, 'teams.json');
 const ARGS = new Set(process.argv.slice(2));
-const TODAY = E.etDate(new Date());
+const TODAY = process.env.NHL_TODAY || E.etDate(new Date());
 const SEASON = +(process.env.NHL_SEASON || E.seasonOf(TODAY));
 const EDGE = 0.05;                                  // the model's chance must beat the book's implied by this to take a side
 const SIMS = 2000;
@@ -36,7 +40,7 @@ const r3 = x => +x.toFixed(3);
 /* ---------- the season, from ESPN ---------- */
 async function pullSeason(prev) {
   fs.mkdirSync(OUT, { recursive: true });
-  const teams = JSON.parse(fs.readFileSync(path.join(DATA, 'teams.json'), 'utf8'));
+  const teams = JSON.parse(fs.readFileSync(TEAMS, 'utf8'));
   const games = new Map();
   const complete = new Set();
   if (prev && prev.season === SEASON) {
@@ -68,7 +72,7 @@ async function pullSeason(prev) {
   }
   if (asked && !ok) throw new Error('ESPN scoreboard unreachable: every day asked for failed');
   log(`${days.length} days read (${complete.size} already complete), ${asked} asked, ${ok} answered`);
-  fs.writeFileSync(path.join(DATA, 'teams.json'), JSON.stringify(teams));
+  fs.writeFileSync(TEAMS, JSON.stringify(teams));
   return { games: [...games.values()].sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0), teams };
 }
 
@@ -196,7 +200,7 @@ async function main() {
   E.TEAMS.slice().sort((a, b) => teams[b].rating - teams[a].rating).forEach((id, i) => { teams[id].rank = i + 1; });
 
   /* every game's call and lines: frozen before puck drop, kept after */
-  const now = new Date().toISOString().slice(0, 16) + 'Z';
+  const now = (process.env.NHL_TODAY ? process.env.NHL_TODAY + 'T12:00' : new Date().toISOString().slice(0, 16)) + 'Z';
   const out = [];
   for (const g of games) {
     const p = prevGames.get(g.id);
@@ -278,6 +282,6 @@ async function main() {
   if (before === after) { log('nothing changed; state.json left alone'); return; }
   fs.writeFileSync(STATE, JSON.stringify(state));
   const fin = out.filter(g => g.result).length;
-  log(`wrote nhl/state.json: ${fin} graded (${record.su.w}-${record.su.l} straight up, ${record.pl.w}-${record.pl.l}-${record.pl.p} on the puck line, ${record.ou.w}-${record.ou.l}-${record.ou.p} on totals), ${out.length} games`);
+  log(`wrote ${path.relative(ROOT, STATE)}: ${fin} graded (${record.su.w}-${record.su.l} straight up, ${record.pl.w}-${record.pl.l}-${record.pl.p} on the puck line, ${record.ou.w}-${record.ou.l}-${record.ou.p} on totals), ${out.length} games`);
 }
 main().catch(e => { console.error(e); process.exit(1); });
