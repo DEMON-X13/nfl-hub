@@ -96,7 +96,7 @@ function broadcastOf(sum, g) {
 }
 function venueOf(sum, g) {
   const v = sum?.gameInfo?.venue; if (!v) return g.venue || null;
-  const city = v.address?.city ? `${v.address.city}${v.address.state ? ', ' + v.address.state : ''}` : '';
+  const city = v.address?.city || '';
   const name = (v.fullName || '').replace(/\s*\(.*\)$/, '');
   return city ? `${name}, ${city}` : name;
 }
@@ -113,8 +113,11 @@ function storyOf(sum) {
   paras[0] = paras[0].replace(/^[A-Z][A-Za-z.' ]+,? ?[A-Za-z.]*\s*--\s*—?\s*/, '').replace(/^—\s*/, '');
   const machine = /^\S.*\(\d+-\d+\).* at .*\(\d+-\d+\)/.test(paras[0]) || /^Opening Line:/.test(paras[1] || '');
   if (machine) {
-    paras = paras.filter(p => /^(Last game|Last time out|Next game|Bottom line|The takeaway|Injur)/i.test(p));
-    if (!paras.length) return null;
+    /* the two "last game" paragraphs read "Baylor won 36-19 over Louisiana Tech on Sept. 19. Bennett led..." */
+    const last = paras.filter(p => /^[A-Z][^.]{2,60} (won|beat|was beaten by|lost|defeated|fell) .*\d+-\d+.* on (Jan|Feb|March|April|May|June|July|Aug|Sept|Oct|Nov|Dec)\.? \d+\./.test(p)).slice(0, 2);
+    if (!last.length) return null;
+    /* one sentence each, the score line, without the stat lines that follow it */
+    return { headline: null, kind: 'machine', lead: null, lastGame: last.map(p => p.split(/(?<=\d\.)\s(?=[A-Z])/)[0]).join(' '), paragraphs: [], source: 'AP, via ESPN' };
   }
   const cut = (t, n) => { if (t.length <= n) return t; const i = t.lastIndexOf('. ', n); return i > 60 ? t.slice(0, i + 1) : t.slice(0, n).replace(/\s+\S*$/, '') + '…'; };
   const body = paras.filter(p => !/^(Key stats|How to watch|Opening Line)/i.test(p)).slice(0, 4);
@@ -131,7 +134,7 @@ function headlinesOf(j, t, since) {
   for (const a of j?.articles || []) {
     if (!a.headline || a.type === 'Preview' || a.type === 'Recap') continue;
     if ((a.published || '') < since) continue;
-    const h = a.headline.toLowerCase();
+    const h = (a.headline + ' ' + (a.description || '')).toLowerCase();
     if (!names.some(n => n.length > 2 && h.includes(n))) continue;
     if (/rankings|bubble watch|projections|power rankings|best uniforms|betting|odds|picks|all-portal|takeaways|what we learned|highlights/i.test(a.headline)) continue;
     if (out.some(x => x.headline === a.headline.trim())) continue;
@@ -183,9 +186,12 @@ function writeNote(S, g, ctx) {
     if (sk.n >= 3) return `${t.short} (${rec}) has ${sk.win ? 'won' : 'lost'} ${words[sk.n] || sk.n} straight`;
     return `${t.short} (${rec}) is ${sk.win ? `off a ${sk.last.my}-${sk.last.their} win over ${sk.last.opp}` : `off a ${sk.last.their}-${sk.last.my} loss to ${sk.last.opp}`}`;
   };
-  /* the anecdote: the AP's opening line, or the sides' headlines; the form is in the window */
+  /* the anecdote: the AP's opening line, else the sides' headlines, else the AP's line on each
+     side's last game, else each side's form in words */
   if (ctx.story && ctx.story.lead) parts.push(ctx.story.lead);
-  else if (ctx.around && ctx.around.length) parts.push(ctx.around.join('. ').replace(/\.\.$/, '.') + (ctx.around.join('').endsWith('.') ? '' : '.'));
+  else if (ctx.around && ctx.around.length) parts.push(ctx.around.map(x => x.replace(/\.$/, '')).join('. ') + '.');
+  else if (ctx.story && ctx.story.lastGame) parts.push(ctx.story.lastGame);
+  else parts.push(`${form(a, g.away, sa, ctx.away.streak)}; ${form(h, g.home, sh, ctx.home.streak)}.`);
   return parts.join(' ');
 }
 
@@ -248,7 +254,7 @@ async function main() {
   const sums = await inBatches(slate, 4, g => cached(`summary_${g.id}`, SUMMARY + g.id));
   const teamIds = [...new Set(slate.flatMap(g => [g.home, g.away]))];
   const tstats = {}; await inBatches(teamIds, 4, async id => { tstats[id] = statsFromTeam(await cached(`teamstat_${S.season}_${id}`, TEAMSTAT(S.season, id))); });
-  const since = new Date(Date.now() - 8 * 86400000).toISOString().slice(0, 10);
+  const since = new Date(Date.now() - 10 * 86400000).toISOString().slice(0, 10);
   const heads = {}; await inBatches(teamIds, 4, async id => { heads[id] = headlinesOf(await cached(`teamnews_${id}`, TEAMNEWS(id)), T[id] || {}, since); });
   const inj = {}; const ij = await cached('injuries', INJURIES);
   for (const t of ij?.injuries || []) inj[String(t.id)] = (t.injuries || []).map(x => ({ name: x.athlete?.displayName || '', pos: x.athlete?.position?.abbreviation || '', status: x.status || '' })).filter(x => x.name);
@@ -268,7 +274,7 @@ async function main() {
     ctx.around = [ctx.away, ctx.home].flatMap(c => c.headlines.slice(0, 1)).map(x => x.headline);
     let note = recap ? writeRecap(S, g, ctx) : writeNote(S, g, ctx);
     if (recap && ctx.story && ctx.story.lead) note += ' ' + ctx.story.lead;
-    const credit = ctx.story && ctx.story.lead ? ctx.story.source : (ctx.around.length ? 'ESPN' : null);
+    const credit = ctx.story && ctx.story.lead ? ctx.story.source : ctx.around.length ? 'ESPN' : (ctx.story && ctx.story.lastGame) ? ctx.story.source : null;
     return { id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story: ctx.story, around: ctx.around, credit,
       note,
       teams: { home: Object.assign({ bullets: writeBullets(S, g, 'home', ctx) }, ctx.home, { streak: undefined }), away: Object.assign({ bullets: writeBullets(S, g, 'away', ctx) }, ctx.away, { streak: undefined }) } };
