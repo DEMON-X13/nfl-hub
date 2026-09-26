@@ -241,7 +241,8 @@ cfb/
   tools/elo.js        THE MODEL: Elo with home field, a margin multiplier, preseason regression,
                       a points-per-Elo spread and a normal margin for cover chances
   tools/fit.js        grid search on the history, last season held out
-  tools/update.js     the job; tools/smoke.js the gate
+  tools/update.js     the job; tools/news.js the CFB News tab's file; tools/smoke.js the gate
+  news.json           generated: the week's slate as a newsletter, a card and a window per game
 ```
 
 The job replays the history and this season's finals in date order, so the ratings
@@ -254,7 +255,13 @@ The playoff picture is three thousand simulations of the rest of the season: eac
 conference's title game, a committee proxy (rating less a cost per loss, the polls
 where they exist), the five best-placed champions plus seven at large, straight seeding,
 the bracket played out. Tabs: Games, Rankings, Power Ratings, Playoff, Parlays (browser
-only, no sync), Record.
+only, no sync), Record, and CFB News: the week's slate as the NFL tracker shows it, a tile per
+game (kickoff, TV, venue, a note) opening a window with each side's matchup bullets, form,
+leaders and injuries and a stat breakdown in divided bars. Nobody writes forty college previews
+a week, so `tools/news.js` writes the note and the bullets from the numbers: ESPN's game
+summary (scoring and yardage per game and allowed, last five results, FPI, the spread record),
+its team statistics (yards per play, third downs, sacks, turnovers, penalties), the model's
+call and the frozen line. A game's preview is kept once it has started.
 
 `.github/workflows/cfb.yml` runs Tuesday, Friday, Saturday morning, Saturday night, Sunday
 and Monday; it commits `cfb/state.json` and `cfb/data/teams.json`.
@@ -314,7 +321,7 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 | `update.yml` | every hour (the Joker follows the lines), plus Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game and injury-report runs | betting `update.js` + `build.js` (a check) + `smoke.js`, commits `state.json` and `joker.json` |
 | `news.yml` | Fri/Mon/Tue 8am ET | `run-auto.js` |
 | `elo.yml` | Tue/Fri 8:40am ET | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
-| `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `smoke.js`, commits `cfb/state.json` |
+| `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json` and `cfb/news.json` |
 | `nhl.yml` | 3x/day | `nhl/tools/update.js` + `smoke.js`, commits `nhl/state.json` |
 
 Only `props.yml` spends money (`ODDS_API_KEY`, ~7 credits a game, ~112 a week,

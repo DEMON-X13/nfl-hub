@@ -229,7 +229,7 @@ async function main() {
   for (const g of games) {
     const p = prevGames.get(g.id);
     const row = { id: g.id, week: g.week, type: g.type, date: g.date, state: g.state, detail: g.detail, home: g.home, away: g.away, hs: g.hs, as: g.as,
-      neutral: g.neutral, conf: g.conf, note: g.note, venue: g.venue, hrank: g.hrank, arank: g.arank, hrec: g.hrec, arec: g.arec };
+      neutral: g.neutral, conf: g.conf, note: g.note, venue: g.venue, tv: g.tv, hrank: g.hrank, arank: g.arank, hrec: g.hrec, arec: g.arec };
     let view;
     if (g.state === 'pre') { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, frozen: now }; }
     /* a call frozen before kickoff keeps its view after. A frozen row carries its rating gap (diff);

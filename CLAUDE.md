@@ -42,7 +42,7 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
-- `cfb/state.json`, `cfb/data/teams.json`
+- `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json`
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
@@ -125,6 +125,7 @@ a model fitted on the seasons before it. Do not tune the formula on the season i
 ```
 cd cfb/tools && npm ci
 node cfb/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> cfb/state.json
+node cfb/tools/news.js            # the CFB News tab's file: the week's slate, written from the numbers -> cfb/news.json
 node cfb/tools/smoke.js           # must end "0 failures"
 ```
 
