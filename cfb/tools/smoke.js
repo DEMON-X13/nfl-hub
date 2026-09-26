@@ -11,6 +11,7 @@ const ROOT = path.join(__dirname, '..');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const STATE = fs.readFileSync(path.join(ROOT, 'state.json'), 'utf8');
 const S = JSON.parse(STATE);
+const NEWS = fs.existsSync(path.join(ROOT, 'news.json')) ? fs.readFileSync(path.join(ROOT, 'news.json'), 'utf8') : null;
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -24,6 +25,7 @@ async function main() {
     beforeParse(w) {
       w.fetch = async url => {
         if (String(url).startsWith('state.json')) return { ok: true, json: async () => JSON.parse(STATE) };
+        if (String(url).startsWith('news.json')) return NEWS ? { ok: true, json: async () => JSON.parse(NEWS) } : { ok: false, status: 404 };
         if (String(url).includes('espn.com')) return { ok: true, json: async () => ({ events: [] }) };
         return { ok: false, status: 404 };
       };
@@ -66,6 +68,27 @@ async function main() {
   const finals = [...d.querySelectorAll('#games .game')];
   chk(finals.length > 0 || !S.games.some(g => g.week === 1), 'week 1 renders');
   chk(finals.every(c => /call right|call wrong|no line yet|edge/.test(txt(c))), 'every card carries a call, a result or the reason there is none');
+
+  /* CFB News: a tile per game on the slate, each opening the breakdown window */
+  d.querySelector('#tabs button[data-tab="news"]').click();
+  await wait(200);
+  const N = NEWS ? JSON.parse(NEWS) : { games: [] };
+  const tiles = d.querySelectorAll('#slate button[data-news]');
+  chk(tiles.length === N.games.length, `a tile per game on the slate (${tiles.length} vs ${N.games.length})`);
+  for (const t of tiles) chk(/Full breakdown/.test(txt(t)) && txt(t.querySelector('.hook')).length > 20, 'a tile carries a note and the breakdown link');
+  if (tiles.length) {
+    tiles[0].click();
+    chk($('ov').classList.contains('on'), 'a tile opens the window');
+    chk(d.querySelectorAll('#ovbox .tb').length === 2, 'the window has a block per team');
+    chk(d.querySelectorAll('#ovbox .tb li').length >= 2, 'the blocks carry matchup bullets');
+    chk(d.querySelectorAll('#ovbox .sbar').length >= 10, 'the stat breakdown has its bars');
+    $('ovx').click();
+    chk(!$('ov').classList.contains('on'), 'the window closes');
+  }
+  for (const n of N.games) {
+    chk(!/losss|undefined|NaN|null/.test(n.note), 'a note reads cleanly: ' + n.note);
+    for (const side of ['home', 'away']) for (const b of n.teams[side].bullets) chk(!/undefined|NaN|losss/.test(b), 'a bullet reads cleanly: ' + b);
+  }
 
   /* Rankings */
   d.querySelector('#tabs button[data-tab="rankings"]').click();

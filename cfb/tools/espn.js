@@ -89,6 +89,7 @@ function gameRow(ev) {
     hrec: (home.records || [])[0]?.summary || null, arec: (away.records || [])[0]?.summary || null,
     note, odds: oddsOf(comp),
     venue: comp.venue?.fullName || null,
+    tv: [...new Set((comp.broadcasts || []).flatMap(b => b.names || []).concat((comp.geoBroadcasts || []).filter(b => b.market?.type === 'National').map(b => b.media?.shortName).filter(Boolean)))].join(' / ') || null,
   };
 }
 
