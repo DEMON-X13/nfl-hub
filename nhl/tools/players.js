@@ -1,17 +1,22 @@
-/* The player and goalie model: every skater carries an offence and a defence rating, every
-   goalie a save rating, in goals per game for a player on the ice all game. A club's attack for
-   a game is its skaters' offence weighted by their share of the ice time (five shares in all,
-   five men on the ice), its defence their defence the same way plus the goalie, so a club is
-   exactly the sum of who dressed, how much they played and who was in the net. Each side's
-   expected goals is half the league's total plus its attack less the other side's defence and
-   goalie, plus home ice for the home side; the goals layer in elo.js turns the two means into a
-   win chance, a puck line and a total, and a fitted share of the team Elo's chance is blended in.
+/* The player and goalie model: every skater carries an offence and a defence rating in shots on
+   goal per game for a player on the ice all game, every goalie a save rating in goals per game.
+   Goals are too rare to rate a skater on (a first try on goal surprises was worse than the team
+   Elo at every step size), so the skaters are rated on the shots their side takes and allows,
+   which come thirty a game a side, and the goalie on the goals he concedes against the shots he
+   faces. A club's attack for a game is its skaters' offence weighted by their share of the ice
+   time (five shares in all, five men on the ice), its defence their defence the same way, so a
+   club is exactly the sum of who dressed and how much they played. Each side's expected shots is
+   half the league's plus its attack less the other side's defence; its expected goals is those
+   shots at the league's conversion, less the other goalie's saves, plus home ice for the home
+   side; the goals layer in elo.js turns the two means into a win chance, a puck line and a total,
+   and a fitted share of the team Elo's chance is blended in.
 
-   After a final, each side's regulation goals against what was expected is the surprise: it moves
-   the offence of the skaters who scored it and the defence of the skaters and the goalie who
-   conceded it, each by his share of the ice time to a fitted power (so a fourth-liner moves
-   relatively more than his minutes say), the goalie by his own share. A player's first rating is
-   a rookie's, below average; ratings carry part way toward zero between seasons.
+   After a final, each side's shots against what was expected is the surprise: it moves the
+   offence of the skaters who took them and the defence of the skaters who allowed them, each by
+   his share of the ice time to a fitted power (so a fourth-liner moves relatively more than his
+   minutes say). The goalie moves on his own surprise, the goals he conceded against the shots he
+   faced at the league's conversion. A player's first rating is a rookie's, below average; ratings
+   carry part way toward zero between seasons.
 
    Fit on 2022-23 to 2024-25 by coordinate search on log loss with the lineup known and minutes
    projected from each player's last eight games; 2021-22 warms up; 2025-26 is held out and scored
@@ -33,19 +38,21 @@ const { Elo, expected, goals, homeByGoals, spreadOf } = require('./elo');
 const ROOT = path.join(__dirname, '..'), DATA = path.join(ROOT, 'data');
 const OUTF = path.join(DATA, 'players.json');
 const WARM = 2022, FIT_TO = 2025;
-const DEFAULT = { K: 0.06, gShare: 0.5, pow: 0.5, carry: 0.8, rookie: -0.05, hfa: 0.12, blend: 0.3, clip: 3, recent: 8 };
+const DEFAULT = { K: 0.3, Kg: 0.03, pow: 0.5, carry: 0.8, rookie: -0.5, rookieG: -0.05, hfa: 0.12, blend: 0.3, clip: 12, clipG: 3, recent: 8 };
 const GRID = {
-  K: [0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.14],
-  gShare: [0, 0.25, 0.5, 0.75, 1, 1.5],
+  K: [0.05, 0.1, 0.2, 0.3, 0.5, 0.8],
+  Kg: [0, 0.01, 0.02, 0.03, 0.05, 0.08],
   pow: [0.5, 0.75, 1],
   carry: [0.5, 0.6, 0.7, 0.8, 0.9, 1],
-  rookie: [0, -0.02, -0.05, -0.08, -0.12],
+  rookie: [0, -0.25, -0.5, -1],
+  rookieG: [0, -0.03, -0.06, -0.1],
   hfa: [0.06, 0.09, 0.12, 0.15, 0.18],
   blend: [0, 0.1, 0.2, 0.3, 0.5, 0.7, 1],
-  clip: [2, 3, 4, 6],
+  clip: [8, 12, 20],
 };
 const log = m => console.log(new Date().toISOString().slice(11, 19), m);
 const model = JSON.parse(fs.readFileSync(path.join(DATA, 'model.json'), 'utf8'));
+const LEAGUE = { shots: 60, conv: 0.095 };
 
 /* ---------- the data: every game with a box score, in date order, with its score and the team Elo's view ---------- */
 function loadGames() {
@@ -61,6 +68,10 @@ function loadGames() {
     games.push(Object.assign(b, r));
   }
   games.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.id < b.id ? -1 : 1);
+  /* the league's shots a game (both sides) and goals per shot, from the box scores: the goalies' shots against */
+  let shots = 0, gl = 0, n = 0;
+  for (const g of games) { const sa = g.goalies.reduce((a, x) => a + x.sa, 0); if (sa > 20) { shots += sa; gl += regGoals(g, 'home') + regGoals(g, 'away'); n++; } }
+  LEAGUE.shots = shots / n; LEAGUE.conv = gl / shots;
   /* the team Elo's chance on every game, replayed over the whole history, for the blend */
   const m = new Elo(model.params); const elo = {};
   const all = H.rows.map(r => ({ id: r[col.id], season: r[col.season], date: r[col.date], home: r[col.home], away: r[col.away], hs: r[col.hs], as: r[col.as], periods: r[col.periods], neutral: r[col.neutral] }));
@@ -72,17 +83,19 @@ function loadGames() {
 
 /* ---------- the replay ---------- */
 const regGoals = (g, side) => { const w = g.hs > g.as ? 'home' : 'away'; const n = side === 'home' ? g.hs : g.as; return g.periods > 3 && side === w ? n - 1 : n; };
+/* a side's shots on goal: what the other side's goalies faced */
+const shotsFor = (g, side) => g.goalies.filter(x => x.team === g[side === 'home' ? 'away' : 'home']).reduce((a, x) => a + x.sa, 0);
 
 class Model {
   constructor(P) { this.p = P; this.r = {}; this.season = null; this.hist = {}; this.last = {}; }
   player(id, name, pos, team) {
     let x = this.r[id];
-    if (!x) x = this.r[id] = { name, pos, team, o: this.p.rookie, d: this.p.rookie, gk: pos === 'G' ? this.p.rookie : 0, gp: 0, toi: [], seasons: {} };
+    if (!x) x = this.r[id] = { name, pos, team, o: pos === 'G' ? 0 : this.p.rookie, d: pos === 'G' ? 0 : this.p.rookie, gk: pos === 'G' ? this.p.rookieG : 0, gp: 0, toi: [], seasons: {} };
     x.name = name; x.pos = pos; x.team = team; return x;
   }
   newSeason(season) {
     if (this.season !== null && season !== this.season) {
-      for (const [id, x] of Object.entries(this.r)) { x.seasons[this.season] = +(x.pos === 'G' ? x.gk : x.o + x.d).toFixed(3); x.o *= this.p.carry; x.d *= this.p.carry; x.gk *= this.p.carry; }
+      for (const [id, x] of Object.entries(this.r)) { x.seasons[this.season] = +(x.pos === 'G' ? x.gk : (x.o + x.d) * LEAGUE.conv).toFixed(3); x.o *= this.p.carry; x.d *= this.p.carry; x.gk *= this.p.carry; }
     }
     this.season = season;
   }
@@ -108,30 +121,37 @@ class Model {
   static goalieOf(box, team) { const gs = box.goalies.filter(g => g.team === team).sort((a, b) => b.toi - a.toi); return gs[0] ? gs[0].id : null; }
   /* expected goals each side, from strengths */
   means(H, A, neutral) {
-    const half = model.leagueTotal / 2;
-    return { lh: Math.max(0.5, half + H.o - A.d - A.gk + (neutral ? 0 : this.p.hfa)), la: Math.max(0.5, half + A.o - H.d - H.gk) };
+    const sh = Math.max(10, LEAGUE.shots / 2 + H.o - A.d), sa = Math.max(10, LEAGUE.shots / 2 + A.o - H.d);
+    return { sh, sa, lh: Math.max(0.5, sh * LEAGUE.conv - A.gk + (neutral ? 0 : this.p.hfa)), la: Math.max(0.5, sa * LEAGUE.conv - H.gk) };
   }
   /* the view of a game before it is played, on the shares given */
   predict(g, hs, as, hg, ag, eloDiff) {
     const H = this.strength(hs, hg), A = this.strength(as, ag);
-    const { lh, la } = this.means(H, A, g.neutral);
+    const { lh, la, sh, sa } = this.means(H, A, g.neutral);
     const G = goals(lh + la, lh - la, eloDiff, model.pull);
     const pG = homeByGoals(G), pE = expected(eloDiff);
-    return { lh, la, pHome: (1 - this.p.blend) * pG + this.p.blend * pE, pGoals: pG, mu: lh - la, total: lh + la, tie: G.tie };
+    return { lh, la, sh, sa, pHome: (1 - this.p.blend) * pG + this.p.blend * pE, pGoals: pG, mu: lh - la, total: lh + la, tie: G.tie };
   }
   /* rate a finished game: the surprise on each side moves who was on the ice */
   play(box, view) {
     const P = this.p;
     for (const side of ['home', 'away']) {
       const team = box[side], other = side === 'home' ? 'away' : 'home';
-      const exp = side === 'home' ? view.lh : view.la;
-      const surprise = Math.max(-P.clip, Math.min(P.clip, regGoals(box, side) - exp));
-      const own = Model.actualShares(box, team), opp = Model.actualShares(box, box[other]);
-      const w = l => Math.pow(l.share / 5, P.pow);
-      const wo = own.reduce((a, l) => a + w(l), 0) || 1, wd = opp.reduce((a, l) => a + w(l), 0) || 1;
-      for (const l of own) { const x = this.r[l.id]; if (x) x.o += P.K * surprise * w(l) / wo * 5; }
-      for (const l of opp) { const x = this.r[l.id]; if (x) x.d -= P.K * surprise * w(l) / wd * 5 * (1 / (1 + P.gShare)); }
-      const gk = this.r[Model.goalieOf(box, box[other])]; if (gk) gk.gk -= P.K * surprise * P.gShare / (1 + P.gShare) * 5;
+      const shots = shotsFor(box, side);
+      if (shots > 5) {
+        const surprise = Math.max(-P.clip, Math.min(P.clip, shots - (side === 'home' ? view.sh : view.sa)));
+        const own = Model.actualShares(box, team), opp = Model.actualShares(box, box[other]);
+        const w = l => Math.pow(l.share / 5, P.pow);
+        const wo = own.reduce((a, l) => a + w(l), 0) || 1, wd = opp.reduce((a, l) => a + w(l), 0) || 1;
+        for (const l of own) { const x = this.r[l.id]; if (x) x.o += P.K * surprise * w(l) / wo * 5; }
+        for (const l of opp) { const x = this.r[l.id]; if (x) x.d -= P.K * surprise * w(l) / wd * 5; }
+      }
+      /* the goalies who played, each on the shots he faced: a save above the league's rate is his */
+      for (const gl of box.goalies.filter(x => x.team === box[other] && x.toi > 0)) {
+        const x = this.r[gl.id]; if (!x) continue;
+        const surprise = Math.max(-P.clipG, Math.min(P.clipG, gl.ga - (gl.sa * LEAGUE.conv - x.gk * gl.toi / 3600)));
+        x.gk -= P.Kg * surprise;
+      }
     }
     for (const s of box.skaters) { const x = this.player(s.id, s.name, s.pos, s.team); x.gp++; x.toi.push(s.toi); if (x.toi.length > P.recent) x.toi.shift(); }
     for (const gl of box.goalies) { const x = this.player(gl.id, gl.name, 'G', gl.team); if (gl.toi > 1200) x.gp++; }
@@ -204,9 +224,9 @@ function lineups(m, S, injuries, starters, today) {
       else { goalie = pick[0].id; how = 'the usual starter'; }
     }
     const S1 = m.strength(shares, goalie);
-    const outNames = out(code).map(id => m.r[id] ? { id, name: m.r[id].name, pos: m.r[id].pos, cost: +(m.r[id].pos === 'G' ? 0 : (m.r[id].o + m.r[id].d) * ((m.r[id].toi.reduce((a, b) => a + b, 0) / Math.max(1, m.r[id].toi.length)) / (tot / Math.max(1, est.length)) / Math.max(1, est.length) * 5)).toFixed(2) } : null).filter(Boolean);
-    teams[code] = { offence: +S1.o.toFixed(3), defence: +S1.d.toFixed(3), goalie: goalie ? { id: goalie, name: m.r[goalie].name, gk: +m.r[goalie].gk.toFixed(3), how } : null, strength: +(S1.o + S1.d + S1.gk).toFixed(3), out: outNames,
-      lineup: shares.map(s => ({ id: s.id, name: m.r[s.id].name, pos: m.r[s.id].pos, share: +s.share.toFixed(2), v: +((m.r[s.id].o + m.r[s.id].d) * s.share).toFixed(3) })).sort((a, b) => b.share - a.share), _shares: shares, _goalie: goalie };
+    const outNames = out(code).map(id => m.r[id] ? { id, name: m.r[id].name, pos: m.r[id].pos, cost: +(m.r[id].pos === 'G' ? 0 : (m.r[id].o + m.r[id].d) * LEAGUE.conv * 5 * (m.r[id].toi.length ? m.r[id].toi.reduce((a, b) => a + b, 0) / m.r[id].toi.length : 600) / (tot || 1)).toFixed(2) } : null).filter(Boolean);
+    teams[code] = { offence: +(S1.o * LEAGUE.conv).toFixed(3), defence: +(S1.d * LEAGUE.conv).toFixed(3), goalie: goalie ? { id: goalie, name: m.r[goalie].name, gk: +m.r[goalie].gk.toFixed(3), how } : null, strength: +((S1.o + S1.d) * LEAGUE.conv + S1.gk).toFixed(3), out: outNames,
+      lineup: shares.map(s => ({ id: s.id, name: m.r[s.id].name, pos: m.r[s.id].pos, share: +s.share.toFixed(2), v: +((m.r[s.id].o + m.r[s.id].d) * LEAGUE.conv * s.share).toFixed(3) })).sort((a, b) => b.share - a.share), _shares: shares, _goalie: goalie };
   }
   return { teams };
 }
@@ -259,9 +279,9 @@ function main() {
   const players = {};
   for (const [id, x] of Object.entries(m.r)) {
     if (x.gp < 5 && Object.keys(x.seasons).length === 0) continue;
-    players[id] = { name: x.name, pos: x.pos, team: x.team, o: +x.o.toFixed(3), d: +x.d.toFixed(3), gk: +x.gk.toFixed(3), v: +(x.pos === 'G' ? x.gk : x.o + x.d).toFixed(3), gp: x.gp, toi: x.toi.length ? Math.round(x.toi.reduce((a, b) => a + b, 0) / x.toi.length) : 0, seasons: x.seasons };
+    players[id] = { name: x.name, pos: x.pos, team: x.team, o: +(x.o * LEAGUE.conv).toFixed(3), d: +(x.d * LEAGUE.conv).toFixed(3), gk: +x.gk.toFixed(3), v: +(x.pos === 'G' ? x.gk : (x.o + x.d) * LEAGUE.conv).toFixed(3), gp: x.gp, toi: x.toi.length ? Math.round(x.toi.reduce((a, b) => a + b, 0) / x.toi.length) : 0, seasons: x.seasons };
   }
-  const out = { params: P, report, asOf: games[games.length - 1].date, season: last, games: games.length, players, teams, upcoming, generated: prev ? prev.generated : null };
+  const out = { params: P, league: { shots: +LEAGUE.shots.toFixed(2), conv: +LEAGUE.conv.toFixed(4) }, report, asOf: games[games.length - 1].date, season: last, games: games.length, players, teams, upcoming, generated: prev ? prev.generated : null };
   const same = prev && JSON.stringify(Object.assign({}, prev, { generated: null })) === JSON.stringify(Object.assign({}, out, { generated: null }));
   out.generated = same ? prev.generated : new Date().toISOString().slice(0, 16) + 'Z';
   if (!same) fs.writeFileSync(OUTF, JSON.stringify(out));
