@@ -9,8 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EDF0F4; --panel:#FFFFFF; --panel-2:#F7F9FB;
-  --ink:#0F1B2D; --ink-2:#4F607A; --muted:#657386; --line:#E4E9F0; --line-2:#D5DCE6;
+  --bg:#E6E2DA; --panel:#FBFAF7; --panel-2:#F1EEE7; --panel-3:#E9E5DC; --bar:#1F3556; --bar-2:#2A4570;
+  --ink:#1B2433; --ink-2:#4A5A72; --muted:#6B7686; --line:#DDD8CE; --line-2:#C9C3B7;
   --pick:#1B7A4E; --pick-soft:#DDF3E6; --gold:#D39A1F; --gold-soft:#FBEFD3;
   --miss:#C0392B; --miss-soft:#FAE1DE; --blue:#3F5F8F; --blue-soft:#E3EAF5;
   --r-lg:16px; --r-md:12px; --r-sm:9px;
@@ -21,18 +21,20 @@
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4}
 a{color:var(--blue)}
-header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 16px 0}
+header{background:var(--bar);color:#fff;padding:14px 16px 0;box-shadow:0 2px 12px -6px rgba(0,0,0,.5)}
 .hdr{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 16px}
-.hdr h1{font-family:var(--display);font-size:22px;margin:0;letter-spacing:-.01em}
-.hdr .stamp{color:var(--muted);font-size:12px}
-.hdr .stamp b{color:var(--ink-2);font-weight:600}
+.hdr h1{font-family:var(--display);font-size:22px;margin:0;letter-spacing:-.01em;color:#fff}
+.hdr .stamp{color:#B7C3D6;font-size:12px}
+.hdr .stamp b{color:#fff;font-weight:600}
 nav.tabs{max-width:1100px;margin:10px auto 0;display:flex;gap:4px;overflow-x:auto}
-nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;font:600 14px var(--display);color:var(--ink-2);cursor:pointer;white-space:nowrap}
-nav.tabs button.on{color:var(--ink);border-bottom-color:var(--gold)}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;font:600 14px var(--display);color:#B7C3D6;cursor:pointer;white-space:nowrap}
+nav.tabs button:hover{color:#fff}
+nav.tabs button.on{color:#fff;border-bottom-color:var(--gold)}
+nav.tabs .tag{background:var(--gold);color:var(--ink);border-color:transparent}
 main{max-width:1100px;margin:0 auto;padding:16px}
 section[hidden]{display:none}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:14px 16px;margin-bottom:14px}
-.card h2{font-family:var(--display);font-size:17px;margin:0 0 8px}
+.card h2{font-family:var(--display);font-size:17px;margin:0 0 8px;padding-left:10px;border-left:3px solid var(--gold)}
 .card h3{font-family:var(--display);font-size:14px;margin:12px 0 6px;color:var(--ink-2)}
 .muted{color:var(--muted)} .small{font-size:12px}
 .row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
@@ -47,7 +49,8 @@ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1
 .seg button{border:0;background:var(--panel);padding:6px 10px;font:600 13px var(--display);color:var(--ink-2);cursor:pointer}
 .seg button.on{background:var(--ink);color:#fff}
 .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
-.game{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:12px;box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px}
+.game{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 12px 12px 14px;box-shadow:var(--sh-sm);display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.game .edge,.slot .edge{position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(to bottom,var(--ca) 0 50%,var(--ch) 50% 100%)}
 .game .when{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
 .game .when .live{color:var(--miss);font-weight:600}
 .side{display:grid;grid-template-columns:28px 1fr auto auto;gap:8px;align-items:center}
@@ -58,7 +61,7 @@ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1
 .side .wp{font-variant-numeric:tabular-nums;font-weight:600;min-width:46px;text-align:right}
 .side.picked .wp{color:var(--pick)}
 .side.won .nm{color:var(--pick)}
-.lines{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px;border-top:1px solid var(--line);padding-top:8px}
+.lines{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:13px;background:var(--panel-2);border-radius:var(--r-sm);padding:8px 10px;margin:0 -2px}
 .lines .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
 .lines .v{font-variant-numeric:tabular-nums}
 .tag{display:inline-block;font:600 11px var(--display);padding:2px 8px;border-radius:999px;background:var(--panel-2);color:var(--ink-2);border:1px solid var(--line)}
@@ -74,7 +77,8 @@ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1
 .legbtns .btn.on{background:var(--gold-soft);border-color:var(--gold)}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-th{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0;background:var(--panel)}
+th{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);position:sticky;top:0;background:var(--panel-2)}
+tbody tr:nth-child(even) td{background:rgba(0,0,0,.025)}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 tr.major td{font-weight:500}
 .tw{display:inline-flex;align-items:center;gap:6px}
@@ -100,7 +104,7 @@ tr.major td{font-weight:500}
 .saved .top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
 .empty{color:var(--muted);padding:20px;text-align:center}
 .slate{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.slot{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:14px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:6px}
+.slot{text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:14px 14px 14px 18px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
 .slot:hover{border-color:var(--line-2);transform:translateY(-1px)}
 .slot .when{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .slot .vs{font:700 17px var(--display);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -108,22 +112,28 @@ tr.major td{font-weight:500}
 .slot .vs em{font:500 12px var(--body);color:var(--muted);font-style:normal}
 .slot .vs .rk{color:var(--gold);font-size:12px}
 .slot .vs .score{margin-left:auto;font-variant-numeric:tabular-nums}
-.slot .meta{font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px}
-.slot .hook{font-size:13.5px;color:var(--ink-2);line-height:1.45;flex:1}
+.slot .meta{font-size:12px;color:var(--muted)}
+.slot .hook{font-size:13.5px;color:var(--ink);line-height:1.5;flex:1;background:var(--panel-2);border-radius:var(--r-sm);padding:8px 10px}
+.slot .hook .story{display:block;color:var(--ink-2);margin-top:6px;padding-top:6px;border-top:1px solid var(--line);font-size:13px}
+.slot .hook .story small{color:var(--muted)}
 .slot .more{font:600 12px var(--display);color:var(--blue)}
 .ov{position:fixed;inset:0;background:rgba(15,27,45,.55);display:none;z-index:50;overflow:auto;padding:24px 12px}
 .ov.on{display:block}
 .ovbox{max-width:1000px;margin:0 auto;background:var(--panel);border-radius:var(--r-lg);box-shadow:0 20px 60px -20px #000}
-.ovhd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.ovhd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);background:var(--panel-2);border-radius:var(--r-lg) var(--r-lg) 0 0}
 .ovhd h3{font:700 20px var(--display);margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ovhd h3 em{font:500 13px var(--body);color:var(--muted);font-style:normal}
 .ovhd .sub{font-size:12.5px;color:var(--muted);margin-top:4px}
 .ovhd .x{background:none;border:0;font-size:26px;line-height:1;color:var(--muted);cursor:pointer}
 .ovbody{padding:16px 18px}
-.ovnote{font-size:14.5px;color:var(--ink-2);margin:0 0 14px;line-height:1.5}
+.ovnote{font-size:14.5px;color:var(--ink);margin:0 0 14px;line-height:1.55;padding:10px 14px;border-left:3px solid var(--gold);background:var(--panel-2);border-radius:0 var(--r-sm) var(--r-sm) 0}
+.ovstory{margin:0 0 14px;padding:12px 14px;background:var(--panel-2);border-radius:var(--r-sm);font-size:14px;line-height:1.55;color:var(--ink-2)}
+.ovstory h5{font:600 11px var(--display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 6px}
+.ovstory p{margin:0 0 8px} .ovstory p:last-child{margin:0} .ovstory .src{font-size:12px;color:var(--muted)}
 .duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.tb{border:1px solid var(--line);border-radius:var(--r-md);padding:12px;border-top:3px solid var(--tc)}
-.tb .tbhd{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tb{border:1px solid var(--line);border-radius:var(--r-md);padding:0 12px 12px;border-top:4px solid var(--tc);background:var(--panel)}
+.tb .tbhd{margin:0 -12px 8px;padding:10px 12px;background:color-mix(in srgb,var(--tc) 9%,var(--panel))}
+.tb .tbhd{display:flex;align-items:center;gap:10px}
 .tb .tbhd img{width:36px;height:36px;object-fit:contain}
 .tb .tbhd h4{font:700 16px var(--display);margin:0}
 .tb .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}
@@ -264,7 +274,7 @@ tr.major td{font-weight:500}
 <div class="ov" id="ov"><div class="ovbox" id="ovbox"></div></div>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v3 · 2026-09-26';
+const APP_BUILD = 'cfb v4 · 2026-09-26';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -375,7 +385,7 @@ function gameCard(g) {
     if (!g.frozen) result += ` <span class="tag replay" title="this game was over before the job first ran; the call is the replay's">replayed</span>`;
   }
   const legBtn = (sd, kind) => legButton(g, sd, kind, line, final || state === 'live');
-  return `<div class="game" data-id="${g.id}">
+  return `<div class="game" data-id="${g.id}" style="--ca:${esc(ta.color || '#999')};--ch:${esc(th.color || '#999')}"><span class="edge"></span>
     <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span class="${state === 'live' ? 'live' : ''}">${state === 'pre' ? '' : esc(live ? live.detail : g.detail)}</span></div>
     ${side(g.away, g.arank, g.arec, pAway, as, g.pick === 'away', awayWon)}
     ${side(g.home, g.hrank, g.hrec, g.pHome, hs, g.pick === 'home', homeWon)}
@@ -457,11 +467,11 @@ async function renderNews() {
     const done = state === 'final' && hs !== null && hs !== undefined;
     const d = new Date(n.kick);
     const when = done ? `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · Final` : `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
-    return `<button class="slot" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}">
+    return `<button class="slot" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}" style="--ca:${esc(a.color || '#999')};--ch:${esc(h.color || '#999')}"><span class="edge"></span>
       <div class="when">${esc(when)}${state === 'live' ? ' · <span style="color:var(--miss)">live</span>' : ''}</div>
       <div class="vs"><i style="background:${esc(a.color || '#999')}"></i>${a.ap ? `<span class="rk">${a.ap}</span>` : ''}${esc(a.abbr)}<em>${g.neutral ? 'vs' : 'at'}</em><i style="background:${esc(h.color || '#999')}"></i>${h.ap ? `<span class="rk">${h.ap}</span>` : ''}${esc(h.abbr)}${done || state === 'live' ? `<span class="score">${as} - ${hs}</span>` : ''}</div>
       <div class="meta">${[n.tv, n.venue].filter(Boolean).map(esc).join(' · ')}</div>
-      <div class="hook">${esc(n.note || '')}</div>
+      <div class="hook">${esc(n.note || '')}${n.story && n.story.lead ? `<span class="story">${esc(n.story.lead)} <small>(${esc(n.story.source)})</small></span>` : (n.around && n.around.length ? `<span class="story">${n.around.map(esc).join(' · ')} <small>(ESPN)</small></span>` : '')}</div>
       <div class="more">Full breakdown ›</div>
     </button>`;
   }).join('');
@@ -513,6 +523,7 @@ function openNews(id) {
   };
   $('ovbox').innerHTML = `<div class="ovhd"><div><h3><i style="background:${esc(a.color || '#999')}"></i>${esc(a.name)}<em>${g.neutral ? 'vs' : 'at'}</em><i style="background:${esc(h.color || '#999')}"></i>${esc(h.name)}</h3><div class="sub">${meta}</div></div><button class="x" id="ovx" aria-label="Close">×</button></div>
     <div class="ovbody">${n.note ? `<p class="ovnote">${esc(n.note)}</p>` : ''}
+      ${n.story && n.story.paragraphs && n.story.paragraphs.length ? `<div class="ovstory"><h5>${esc(n.story.headline || 'The story')}</h5>${n.story.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}<p class="src">${esc(n.story.source)}</p></div>` : ''}
       <div class="duo">${block('away')}${block('home')}</div>
       <div class="ovsec">Full stat breakdown<small>${NEWS.season} season to date</small></div>
       <div class="ovlegend"><span><i style="background:${esc(a.color || '#999')}"></i>${esc(a.name)}</span><span><i style="background:${esc(h.color || '#999')}"></i>${esc(h.name)}</span><span>Green marks the better number</span></div>
