@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 news/tools/out/*-part*.json
 cfb/tools/out/
+nhl/tools/out/

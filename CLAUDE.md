@@ -31,6 +31,7 @@ build and its own scheduled workflow.
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with Live Parlays as a section of the Parlay Builders tab | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app |
 | `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
+| `nhl/` | X NHL Bets: the NBA Hub's idea on hockey, moneylines, puck lines and totals. Its own page, job and data; nothing shared with the other sites | `nhl/index.html` (hand-written), `nhl/tools/` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is the file the section reads, and `build/page.html` is the section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json` |
 | `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
 
@@ -42,6 +43,7 @@ at the next refresh:
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
 - `cfb/state.json`, `cfb/data/teams.json`
+- `nhl/state.json`, `nhl/data/teams.json`
 - `nflbets/index.html`
 - `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
@@ -132,6 +134,26 @@ job's. `cfb/data/history.json` is twelve seasons of results pulled once by
 `tools/history.js`; `tools/fit.js` chooses the model's parameters on it and writes
 `cfb/data/model.json`. Refit only for a deliberate model change, and commit the new
 numbers with it. `.github/workflows/cfb.yml` runs six times a week on ESPN's free feeds.
+
+## Hockey: the loop
+
+```
+cd nhl/tools && npm ci
+node nhl/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> nhl/state.json
+node nhl/tools/smoke.js           # must end "0 failures"
+```
+
+The page is `nhl/index.html`, hand-written, one file, the NBA Hub's look; it fetches `state.json` on
+every load, so a page change is just an edit (bump `APP_BUILD` in it) and a data change is the
+job's. The NHL has no weeks: the unit is the day (Eastern), and the page opens on a day strip.
+`nhl/data/history.json` is fifteen seasons of results (2011-12 on, with the period count) pulled
+once by `tools/history.js`; `tools/fit.js` chooses the model's parameters on it and writes
+`nhl/data/model.json`. Refit only for a deliberate model change, and commit the new numbers with
+it. The model is `tools/elo.js`: an Elo with home ice, back-to-back and rest terms, a weight for a
+result past regulation and a goal-margin multiplier, plus a Poisson goals layer (each club's
+scoring rates, shrunk to the league's) for the puck line and the total. A side is taken on the
+moneyline, the puck line or the total only where the model's chance beats DraftKings' implied by
+five points. `.github/workflows/nhl.yml` runs three times a day on ESPN's free feeds.
 
 ## Bets and Stats: the loop
 

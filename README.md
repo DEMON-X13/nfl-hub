@@ -12,6 +12,8 @@ the results. GitHub Pages serves the repo root:
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
 | `elo/` | Player Elo: every player rated by position since 2012, a third game model built on those ratings and a matchup formula for each player's next game, shown on the Player Elo tab | `elo/build.py`; `.github/workflows/elo.yml` re-rates twice a week |
 | `live/` | Live Parlays, one small page that watches the parlays saved in the two models | built from `live/build/page.html` plus logic lifted out of the prop model |
+| `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
+| `nhl/` | X NHL Bets: a rating model on every NHL game, moneylines, puck lines and totals, the standings and the playoff picture | `nhl/index.html`, `nhl/tools/`; `.github/workflows/nhl.yml` runs three times a day |
 
 ## Betting site
 
