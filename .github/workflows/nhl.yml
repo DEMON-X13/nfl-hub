@@ -1,0 +1,48 @@
+name: Update NHL site
+
+on:
+  schedule:
+    # In UTC (Eastern is UTC-4 until November, UTC-5 after). The NHL plays nearly every day,
+    # most games at 7pm Eastern and the last West Coast final around 1am. ESPN's public feeds
+    # are the only source: free, no credits. Off the hour, because this repo's scheduled runs
+    # land late and :00 is the minute most often dropped.
+    - cron: "17 7 * * *"    # 3:17am ET: every game is final, the day is graded
+    - cron: "17 14 * * *"   # 10:17am ET: the day's lines are up, the calls are frozen on them
+    - cron: "17 21 * * *"   # 5:17pm ET: the last read of the lines before the evening's puck drops
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  nhl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: nhl/tools
+      - name: Read the season, rate, call, grade and write state.json
+        run: node nhl/tools/update.js
+      - name: Smoke test the page over the new state
+        run: node nhl/tools/smoke.js
+      - name: Commit if anything changed
+        run: |
+          git config user.name "nfl-hub bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add nhl/state.json nhl/data/teams.json
+          if git diff --cached --quiet; then echo "nothing changed"; else
+            git commit -m "nhl: update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
+          fi
