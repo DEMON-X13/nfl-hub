@@ -50,8 +50,31 @@ function statsFromTeam(j) {
   const gp = get('general', 'gamesPlayed') || get('passing', 'teamGamesPlayed') || null;
   const per = v => (v === null || !gp) ? null : r1(v / gp);
   return { ypp: get('passing', 'avgGain'), third: get('miscellaneous', 'thirdDownConvPct'), sk: get('defensive', 'sacks'), ska: get('passing', 'sacks'),
+    ppg2: get('scoring', 'totalPointsPerGame'), ypg2: per(get('passing', 'netTotalYards')), passg2: get('passing', 'passingYardsPerGame'), rushg2: get('rushing', 'rushingYardsPerGame'),
     to: (get('miscellaneous', 'totalTakeaways') !== null && get('miscellaneous', 'totalGiveaways') !== null && gp) ? r1((get('miscellaneous', 'totalTakeaways') - get('miscellaneous', 'totalGiveaways')) / gp) : null,
     pen: per(get('general', 'totalPenaltyYards')), rz: get('miscellaneous', 'redzoneTouchdownPct') || null, gp };
+}
+/* what the site's own results say: games played, points for and against; the whole season,
+   every opponent, so it holds for a lower-division side too */
+function ownStats(S, id) {
+  let gp = 0, pf = 0, pa = 0;
+  for (const g of S.games) { if (g.state !== 'final' || g.hs === null || (g.home !== id && g.away !== id)) continue; gp++; pf += g.home === id ? g.hs : g.as; pa += g.home === id ? g.as : g.hs; }
+  return gp ? { ppg: r1(pf / gp), pa: r1(pa / gp) } : { ppg: null, pa: null };
+}
+/* the box score's season averages when the summary still carries them (before kickoff), the
+   team feed's and the site's own when it no longer does */
+function seasonStats(sum, S, id) {
+  const box = statsFromSummary(sum, id), own = ownStats(S, id);
+  return { box, own, fill(t) {
+    const st = Object.assign({}, box, t);
+    if (st.ppg === null) st.ppg = t.ppg2 ?? own.ppg;
+    if (st.pa === null) st.pa = own.pa;
+    if (st.ypg === null) st.ypg = t.ypg2 ?? null;
+    if (st.passg === null) st.passg = t.passg2 ?? null;
+    if (st.rushg === null) st.rushg = t.rushg2 ?? null;
+    for (const k of ['ppg2', 'ypg2', 'passg2', 'rushg2']) delete st[k];
+    return st;
+  } };
 }
 function lastFive(sum, teamId) {
   const t = (sum?.lastFiveGames || []).find(x => String(x.team?.id) === String(teamId));
@@ -237,7 +260,7 @@ async function main() {
     const started = g.state !== 'pre' || (sum && !sum.predictor && !(sum.lastFiveGames || []).length);
     if (started && prevGame.has(g.id)) return prevGame.get(g.id);
     const recap = g.state === 'final' && g.hs !== null;
-    const side = s => { const id = g[s]; return { stats: Object.assign(statsFromSummary(sum, id), tstats[id] || {}), lastFive: lastFive(sum, id), ats: atsOf(sum, id), fpi: fpiOf(sum, s), leaders: leadersOf(sum, id), injuries: inj[id] || [], headlines: heads[id] || [], streak: streakOf(S, id, S.games) }; };
+    const side = s => { const id = g[s]; return { stats: seasonStats(sum, S, id).fill(tstats[id] || {}), lastFive: lastFive(sum, id), ats: atsOf(sum, id), fpi: fpiOf(sum, s), leaders: leadersOf(sum, id), injuries: inj[id] || [], headlines: heads[id] || [], streak: streakOf(S, id, S.games) }; };
     const ctx = { home: side('home'), away: side('away') };
     const L = g.line;
     const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}` : null;
