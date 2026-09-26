@@ -150,12 +150,8 @@ function writeNote(S, g, ctx) {
   if (L && L.homeLine !== null && L.homeLine !== undefined) {
     const fav = L.homeLine < 0 ? h : L.homeLine > 0 ? a : null; const n = Math.abs(L.homeLine);
     let s = fav ? `${open}, ${fav === h ? 'the home side' : 'the visitor'} favored by ${fmtHalf(n)}` : `${open}, a pick'em`;
-    if (g.edge !== undefined && Math.abs(g.edge) >= 3 && !g.noAts) {
-      const side = g.edge > 0 ? h : a; const ms = Math.abs(g.spread);
-      s += g.spread === 0 ? `; the model calls it even` : `; the model ${(g.spread < 0 ? h : a) === side ? 'has' : 'leans'} ${side.abbr} ${g.spread < 0 && side === h || g.spread > 0 && side === a ? `by ${fmtHalf(ms)}` : 'to cover'}`;
-    }
     parts.push(s + '.');
-  } else parts.push(open + (g.pHome >= 0.5 ? `, the model giving ${h.short} ${Math.round(g.pHome * 100)} percent.` : `, the model giving ${a.short} ${Math.round((1 - g.pHome) * 100)} percent.`));
+  } else parts.push(open + '.');
   /* the form */
   const words = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
   const form = (t, id, st, sk) => {
@@ -164,11 +160,13 @@ function writeNote(S, g, ctx) {
     if (sk.n >= 3) return `${t.short} (${rec}) has ${sk.win ? 'won' : 'lost'} ${words[sk.n] || sk.n} straight`;
     return `${t.short} (${rec}) is ${sk.win ? `off a ${sk.last.my}-${sk.last.their} win over ${sk.last.opp}` : `off a ${sk.last.their}-${sk.last.my} loss to ${sk.last.opp}`}`;
   };
-  parts.push(`${form(a, g.away, sa, ctx.away.streak)}; ${form(h, g.home, sh, ctx.home.streak)}.`);
+  /* the anecdote: the AP's opening line, or the sides' headlines; the form is in the window */
+  if (ctx.story && ctx.story.lead) parts.push(ctx.story.lead);
+  else if (ctx.around && ctx.around.length) parts.push(ctx.around.join('. ').replace(/\.\.$/, '.') + (ctx.around.join('').endsWith('.') ? '' : '.'));
   return parts.join(' ');
 }
 
-function writeRecap(S, g) {
+function writeRecap(S, g, ctx) {
   const T = S.teams, h = T[g.home], a = T[g.away];
   const hw = g.hs > g.as; const w = hw ? h : a, l = hw ? a : h; const ws = hw ? g.hs : g.as, ls = hw ? g.as : g.hs;
   let s = `${teamName(S, w === h ? g.home : g.away)} beat ${teamName(S, l === h ? g.home : g.away)} ${ws}-${ls}${g.neutral ? ' on a neutral field' : w === h ? ' at home' : ' on the road'}`;
@@ -178,8 +176,7 @@ function writeRecap(S, g) {
     if (fav) { const covered = (g.hs - g.as + L.homeLine) > 0 ? h : (g.hs - g.as + L.homeLine) < 0 ? a : null; s += `, ${fav === w ? 'as' : 'against'} a ${fmtHalf(Math.abs(L.homeLine))}-point favorite${covered ? (covered === fav ? ' that covered' : ' that did not cover') : ', a push'}`; }
     if (L.total) s += `; the total of ${L.total} went ${g.hs + g.as > L.total ? 'over' : g.hs + g.as < L.total ? 'under' : 'exactly'}`;
   }
-  s += `. The model had ${g.pick === 'home' ? h.short : a.short} at ${Math.round(Math.max(g.pHome, 1 - g.pHome) * 100)} percent${g.result ? (g.result.su ? ', right' : ', wrong') : ''}.`;
-  return s;
+  return s + '.';
 }
 
 function writeBullets(S, g, side, ctx) {
@@ -244,10 +241,13 @@ async function main() {
     const ctx = { home: side('home'), away: side('away') };
     const L = g.line;
     const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}` : null;
-    const story = storyOf(sum);
-    const around = [ctx.away, ctx.home].flatMap(c => c.headlines.slice(0, 1)).map(x => x.headline);
-    return { id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story, around,
-      note: recap ? writeRecap(S, g) : writeNote(S, g, ctx),
+    ctx.story = storyOf(sum);
+    ctx.around = [ctx.away, ctx.home].flatMap(c => c.headlines.slice(0, 1)).map(x => x.headline);
+    let note = recap ? writeRecap(S, g, ctx) : writeNote(S, g, ctx);
+    if (recap && ctx.story && ctx.story.lead) note += ' ' + ctx.story.lead;
+    const credit = ctx.story && ctx.story.lead ? ctx.story.source : (ctx.around.length ? 'ESPN' : null);
+    return { id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story: ctx.story, around: ctx.around, credit,
+      note,
       teams: { home: Object.assign({ bullets: writeBullets(S, g, 'home', ctx) }, ctx.home, { streak: undefined }), away: Object.assign({ bullets: writeBullets(S, g, 'away', ctx) }, ctx.away, { streak: undefined }) } };
   });
   const dates = slate.length ? [slate[0].date, slate[slate.length - 1].date].map(d => new Date(d)) : [];
