@@ -491,6 +491,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(d.querySelectorAll('#parlayBody .pe-alt:not(.pe-muleg)').length === 2 && d.querySelectorAll('#parlayBody .pe-altsum').length === 1
         && d.querySelectorAll('#parlayBody .pe-muleg').length === nMu, 'a redraw doubled or lost the second prices');
       delete S.parlay[key]; delete S.parlay[key2]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
+    /* the suggestions: with the ratings in, a player leg is a candidate only where market + form beats the book */
+    { chk(w.eval('window.eloLoaded()') === true, 'the Elo tab does not say its files are in');
+      const cands = w.eval('suggestCandidates()'), mlProb = w.eval('mlProb'), altP = w.eval('window.eloAltP');
+      chk(cands.filter(c => c.grp !== 'TEAM').every(c => altP(c.pid, c.side, c.price, c.src) - mlProb(c.price) >= 0.03), 'a suggested player leg does not clear market + form');
+      chk(w.eval('getSuggestions().sig').endsWith('|form'), 'the week\'s suggestion signature does not carry the Elo state: ' + w.eval('getSuggestions().sig')); }
     /* the Props game view: the same shield on a ranked player's row */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
       const S = w.eval('S'); const top = eloP.groups.QB.top[0];

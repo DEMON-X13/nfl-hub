@@ -337,6 +337,7 @@ function altP(pid,side,price,src){
   return sgm(ALT.c+ALT.book*lgt(imp)+ALT.form*z*s);
 }
 window.eloAltP=altP;
+window.eloLoaded=()=>!!D.players;
 function decorateAlt(){
   if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
   let any=false, prod=1, prodM=1, n=0;
