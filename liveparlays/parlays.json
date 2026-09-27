@@ -1,6 +1,6 @@
 {
  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet. A whole-game bet takes line 0, team set to the side you are on, and player set to whatever you want it called.",
- "updated": "2026-09-27T16:30:00Z",
+ "updated": "2026-09-27T16:45:00Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -25,6 +25,61 @@
   "2026_03_LAC_BUF"
  ],
  "parlays": [
+  {
+   "id": "w3-dk-sgp-5",
+   "week": 3,
+   "stake": 1,
+   "price": 3450,
+   "payout": 35.5,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 18,
+     "player": "Kyren Williams",
+     "team": "LA",
+     "stat": "rushing_yards",
+     "line": 54,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Davante Adams",
+     "team": "LA",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "rushing_yards",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_yards",
+     "line": 239.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
   {
    "id": "w3-dk-2",
    "week": 3,
