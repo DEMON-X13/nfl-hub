@@ -325,6 +325,17 @@ setTimeout(async()=>{
     chk(d.getElementById('suggModal').hidden,'a click on the background did not shut the window');
     d.getElementById('suggOpen').click(); chk(!d.getElementById('suggModal').hidden,'the window would not open a second time');
     d.getElementById('suggClose').click();
+    /* market + form gates the player legs when the Elo tab is on the page: a second price
+       under the book empties them, one above it changes nothing, team legs are untouched */
+    { const base=F('suggestCandidates')(); w.eloLoaded=()=>true;
+      w.eloAltP=()=>0.01; const shut=F('suggestCandidates')();
+      const teamBar=F('pricedLegs')().filter(c=>c.grp==='TEAM'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&c.p-F('mlProb')(c.price)>=0.03).length;
+      chk(shut.every(c=>c.grp==='TEAM')&&shut.length===Math.min(40,teamBar),'a second price under the book should leave only the team legs');
+      w.eloAltP=()=>0.999; const open=F('suggestCandidates')();
+      chk(open.length===base.length&&open.every((c,i)=>c.key===base[i].key&&c.side===base[i].side&&c.k===base[i].k),'a second price above the book should change nothing');
+      w.eloLoaded=()=>false; chk(F('suggestCandidates')().every(c=>c.grp==='TEAM'),'before the Elo files load no player leg should qualify');
+      chk(F('formSig')()==='noform'&&(w.eloLoaded=()=>true,F('formSig')()==='form'),'the suggestion signature does not follow the Elo files');
+      delete w.eloAltP; delete w.eloLoaded; chk(F('formSig')()===''&&F('suggestCandidates')().length===base.length,'without the Elo tab the bar should be the model\'s alone'); }
     console.log(`M. suggested parlays: ${SG.candidates} qualifying lines, tiers ${tiers.map(t=>t.label+' '+t.legs.length+' legs '+(t.corr*100).toFixed(0)+'%').join(', ')||'none'}`); }
 
   /* ---- P. the bet box on the suggested parlays ---- */
