@@ -25,7 +25,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-27T14:14+00:00",
+ "generated": "2026-09-27T18:38+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -1772,7 +1772,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 154.0,
+     "v": 150.0,
      "c": -0.6137
     },
     {
@@ -1874,7 +1874,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 400.0,
+     "v": 440.0,
      "c": -1.1606
     },
     {
@@ -1894,7 +1894,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -535.0,
+     "v": -600.0,
      "c": -0.1114
     },
     {
@@ -1976,7 +1976,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -155.0,
+     "v": -162.0,
      "c": 0.1769
     },
     {
@@ -2027,7 +2027,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -305.0,
+     "v": -325.0,
      "c": 0.8572
     },
     {
@@ -2037,7 +2037,7 @@
     },
     {
      "f": "spread_line",
-     "v": 6.5,
+     "v": 7.0,
      "c": -0.125
     },
     {
@@ -2062,7 +2062,7 @@
     },
     {
      "f": "total_line",
-     "v": 48.5,
+     "v": 49.5,
      "c": -0.0683
     }
    ]
@@ -2282,7 +2282,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 136.0,
+     "v": 140.0,
      "c": -0.6137
     },
     {
@@ -2312,7 +2312,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -162.0,
+     "v": -166.0,
      "c": 0.0668
     },
     {
@@ -2333,7 +2333,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -198.0,
+     "v": -192.0,
      "c": 0.4854
     },
     {
@@ -2435,7 +2435,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 164.0,
+     "v": 180.0,
      "c": -0.6137
     },
     {
@@ -2465,7 +2465,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -198.0,
+     "v": -218.0,
      "c": 0.0668
     },
     {
