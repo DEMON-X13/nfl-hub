@@ -60,7 +60,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-mm-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;padding:10px 0 0 10px}
 .pe-mm-b{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:16px;padding:14px 12px 10px;display:flex;flex-direction:column;gap:6px;min-width:0;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,transform .15s}
 .pe-mm-b:hover{border-color:var(--line-2);transform:translateY(-1px)}
-.pe-mm-top{display:flex;align-items:center;gap:6px;min-width:0}
+.pe-mm-top{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
 .pe-mm-n{position:absolute;top:-10px;left:-10px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#fff;color:#0F1B2D;border:1px solid var(--line-2);box-shadow:0 1px 3px rgba(15,27,45,.18);font-family:var(--display);font-weight:700;font-size:12px}
 .pe-mm-sh{display:inline-flex;flex:none}
 .pe-mm-sh .tierbadge{width:16px;height:18px}
@@ -68,7 +68,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-mm-nm{font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pe-mm-nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:4px;vertical-align:-3px;font-size:11px;font-weight:600;color:var(--muted)}
 .pe-mm-nm .pe-badge .tierbadge,.pe-mm-t .pe-badge .tierbadge{width:16px;height:18px;flex:none}
-.pe-mm-vs{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2)}
+.pe-mm-vs{display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;color:var(--ink-2)}
 .pe-mm-score{display:flex;align-items:center;gap:8px}
 .pe-mm-score b{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink)}
 .pe-mm-bar{flex:1;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
@@ -77,6 +77,11 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-mm-sub b{color:var(--ink-2);font-weight:600}
 .pe-mm-more{margin-top:12px;display:flex;justify-content:center}
 .pe-mm-t td,.pe-mm-t th{white-space:nowrap}
+.pe-mm-t .pe-c{text-align:center}
+.pe-mm-nm small{font-weight:600;color:var(--muted);margin-left:3px}
+/* the edge, coloured by how big it is */
+.pe-g4{color:var(--pick)!important} .pe-g3{color:#3F8F5E!important} .pe-g2{color:#8A5E05!important} .pe-g1{color:var(--muted)!important}
+.pe-mm-t .pe-edge b{font-family:var(--display);font-size:15px} .pe-mm-t .pe-edge small{display:block;font-size:11px;font-weight:600}
 .pe-mm-t .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-3px;font-size:11px;font-weight:600;color:var(--muted)}
 @media(max-width:900px){ .pe-mm-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:78%;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px 0 4px 10px} .pe-mm-b{scroll-snap-align:start} }
 .pe-nud{display:block;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -471,7 +476,9 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
    back against the line and linebackers. The top five sit over the Props game list as
    bubbles; Show more opens the top thirty. Each carries the matchup formula's projection for
    the player's leading stat. Only on the week the matchups are for. */
-const MM_UNIT={QB:{units:['DB','DL'],name:'pass D'},WR:{units:['DB'],name:'secondary'},TE:{units:['DB'],name:'secondary'},RB:{units:['DL','LB'],name:'run D'}};
+const MM_UNIT={QB:{units:['DB','DL'],name:'pass defense'},WR:{units:['DB'],name:'pass defense'},TE:{units:['DB'],name:'pass defense'},RB:{units:['DL','LB'],name:'run defense'}};
+/* how big an edge is, in words and a colour: 3 and up huge, 2 big, 1 solid, less slight */
+const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1'];};
 const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
 function mismatches(){
   const M=D.mu; if(!M||!M.players) return [];
@@ -494,7 +501,7 @@ function mismatches(){
 const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
 const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
 /* the plain words: a Diamond RB against a run D ranked 30th */
-const mmLine=v=>`${esc(tierName(v.elo))} ${esc(v.group)} against a ${esc(v.unitName)} ranked ${ordinal(v.defRank)}`;
+const mmLine=v=>`vs a ${esc(v.unitName)} ranked ${ordinal(v.defRank)}`;
 const mmProj=v=>v.proj==null?'':`<b>${Math.round(v.proj)} ${MM_LBL[v.lead]}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}`;
 function mmName(pid){ return (D.players&&D.players.players&&D.players.players[pid]&&D.players.players[pid].name)||pid; }
 function mmOpen(gid){ if(typeof S!=='object'||!S||!S.ui||typeof renderGame!=='function') return; S.ui.game=gid; S.ui.open={}; if(typeof forgetGameAlternates==='function') forgetGameAlternates(); if(typeof save==='function') save(); renderGame(); }
@@ -507,9 +514,9 @@ function mismatchCard(){
   const max=rows[0].score||1, pos=v=>`${esc(v.group)} · ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}`;
   const bubble=(v,i)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" title="Open ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
       <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>
-      <div class="pe-mm-top"><span class="pe-mm-sh" title="${esc(tierName(v.elo))}">${shield(v.elo)}</span><span class="pe-mm-nm">${esc(mmName(v.pid))}</span></div>
+      <div class="pe-mm-top"><span class="pe-mm-sh" title="${esc(tierName(v.elo))}">${shield(v.elo)}</span><span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
       <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
-      <div class="pe-mm-score"><b>${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
+      <div class="pe-mm-score"><b class="${mmGrade(v.score)[1]}" title="${mmGrade(v.score)[0]} edge">${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
       <div class="pe-mm-sub">${mmLine(v)}.<br>${mmProj(v)}.</div></button>`;
   const html=`<div class="card pe-mm" id="peMism"><h2>Mismatches <small>week ${esc(D.mu.week)}: the best players against the weakest units they face</small></h2>
     <div class="pe-mm-row">${rows.slice(0,5).map(bubble).join('')}</div>
@@ -526,12 +533,12 @@ function mismatchModal(rows){
     (document.getElementById('tab-slate')||document.body).appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m) mmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) mmClose(); }); }
-  const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))}<small>${esc(v.group)} · ${esc(v.team)}</small></td>
-    <td>${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td>${esc(tierName(v.elo))}</td><td class="pe-n">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
-    <td class="pe-n"><b>${v.score.toFixed(1)}</b></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
+  const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
+    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
+    <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <p class="pe-sub">Each expected starter against the unit he faces this week: the mismatch adds how far above his position's average he stands to how far below the league's average that unit stands, both in standard deviations. Units are ranked among this week's defences, 1st the best. Quarterbacks face the secondary and the pass rush together, receivers and tight ends the secondary, backs the line and linebackers. Click a row to open the game.</p>
-    <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th>Game</th><th>Tier</th><th class="pe-n">Facing</th><th class="pe-n">Mismatch</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among this week's, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game.</p>
+    <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
   m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame); }));
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
