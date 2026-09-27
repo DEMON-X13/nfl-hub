@@ -8,24 +8,30 @@
   {
    "col": "kickoff_return_yards",
    "fit": 49.111,
-   "now": 106.5,
-   "z": 1.27
+   "now": 105.821,
+   "z": 1.26
   },
   {
    "col": "kickoff_returns",
    "fit": 2.037,
-   "now": 4.03,
-   "z": 1.17
+   "now": 4.0,
+   "z": 1.15
   },
   {
    "col": "def_tackles_with_assist",
    "fit": 4.44,
-   "now": 0.773,
+   "now": 0.762,
    "z": -0.99
+  },
+  {
+   "col": "def_tackle_assists",
+   "fit": 24.034,
+   "now": 30.69,
+   "z": 0.78
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-27T18:38+00:00",
+ "generated": "2026-09-27T22:32+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -216,7 +222,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.2118,
+     "v": 1.212,
      "c": -0.044
     },
     {
@@ -257,7 +263,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.7424,
+     "v": 1.7426,
      "c": -0.044
     },
     {
@@ -318,12 +324,12 @@
     },
     {
      "f": "to_away",
-     "v": 1.393,
+     "v": 1.3932,
      "c": -0.044
     },
     {
      "f": "sr_away",
-     "v": 0.03,
+     "v": 0.0299,
      "c": 0.0426
     },
     {
@@ -456,7 +462,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.2549,
+     "v": 1.2551,
      "c": -0.044
     },
     {
@@ -604,7 +610,7 @@
     },
     {
      "f": "to_away",
-     "v": 0.8106,
+     "v": 0.8108,
      "c": 0.0454
     },
     {
@@ -782,7 +788,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.2209,
+     "v": 1.2211,
      "c": -0.044
     },
     {
@@ -818,7 +824,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.1681,
+     "v": 1.1683,
      "c": -0.044
     },
     {
@@ -1017,7 +1023,7 @@
     },
     {
      "f": "d_expl_home",
-     "v": 0.1004,
+     "v": 0.1003,
      "c": -0.1238
     },
     {
@@ -1093,7 +1099,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.1079,
+     "v": 1.1081,
      "c": 0.0454
     }
    ]
@@ -1716,7 +1722,7 @@
    "away": "CAR",
    "pick": "CLE",
    "pHome": 0.5089,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -1767,7 +1773,7 @@
    "away": "CIN",
    "pick": "CIN",
    "pHome": 0.3965,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -1818,7 +1824,7 @@
    "away": "HOU",
    "pick": "HOU",
    "pHome": 0.4108,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -1853,7 +1859,7 @@
     },
     {
      "f": "def_home",
-     "v": 0.1134,
+     "v": 0.1133,
      "c": 0.066
     },
     {
@@ -1869,7 +1875,7 @@
    "away": "KC",
    "pick": "KC",
    "pHome": 0.2051,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -1920,7 +1926,7 @@
    "away": "LAC",
    "pick": "BUF",
    "pHome": 0.5878,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -1971,7 +1977,7 @@
    "away": "NE",
    "pick": "JAX",
    "pHome": 0.5447,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2022,7 +2028,7 @@
    "away": "NYJ",
    "pick": "DET",
    "pHome": 0.5634,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2073,7 +2079,7 @@
    "away": "SEA",
    "pick": "SEA",
    "pHome": 0.3342,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2124,7 +2130,7 @@
    "away": "TEN",
    "pick": "NYG",
    "pHome": 0.5249,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2236,7 +2242,7 @@
     },
     {
      "f": "home_moneyline",
-     "v": -105.0,
+     "v": -108.0,
      "c": -0.162
     },
     {
@@ -2282,7 +2288,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 140.0,
+     "v": 142.0,
      "c": -0.6137
     },
     {
@@ -2312,7 +2318,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -166.0,
+     "v": -170.0,
      "c": 0.0668
     },
     {
@@ -2384,7 +2390,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 110.0,
+     "v": -105.0,
      "c": -0.162
     },
     {
@@ -2435,7 +2441,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 180.0,
+     "v": 170.0,
      "c": -0.6137
     },
     {
@@ -2465,7 +2471,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -218.0,
+     "v": -205.0,
      "c": 0.0668
     },
     {
