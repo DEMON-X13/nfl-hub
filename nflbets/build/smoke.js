@@ -575,6 +575,28 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(!d.querySelector('#peBody .pe-mcard'), 'kickers show a Matchups card they have no formula for');
       [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'QB').click(); await wait(40);
     }
+    /* mismatches over the Props game list: five bubbles, biggest first, the top thirty in a window */
+    { const MU = JSON.parse(ELO_MU); [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
+      w.eval('renderSlate()'); await wait(60);
+      const onWeek = +d.getElementById('weekSel').value === +MU.week, card = d.getElementById('peMism');
+      if (onWeek) {
+        const rows = w.eloMismatches(), bubbles = [...card.querySelectorAll('.pe-mm-b')];
+        chk(rows.length > 0 && bubbles.length === Math.min(5, rows.length) && rows.every((r, i) => i === 0 || r.score <= rows[i - 1].score) && rows.every(r => r.zp > 0 && r.zd < 0),
+          'the mismatch bubbles are not the five biggest favourable gaps');
+        chk(bubbles[0].textContent.includes(rows[0].score.toFixed(1)) && card === d.querySelector('#slateView .bar').nextElementSibling, 'the mismatches card is not first under the Props bar');
+        w.eval('renderSlate()'); await wait(40);
+        chk(d.querySelectorAll('#peMism').length === 1, 'redrawing the Props list doubled the mismatches');
+        const more = d.getElementById('peMmMore');
+        if (rows.length > 5) { more.click(); await wait(40);
+          const m = d.getElementById('peMmModal');
+          chk(!!m && !m.hidden && m.querySelectorAll('tbody tr').length === Math.min(30, rows.length), 'Show more does not open the top thirty');
+          d.getElementById('peMmClose').click(); await wait(20); chk(m.hidden, 'the mismatches window does not close'); }
+        const opts = [...d.getElementById('weekSel').options].map(o => +o.value), other = opts.find(v => v !== +MU.week);
+        if (other) { d.getElementById('weekSel').value = String(other); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60);
+          chk(!d.getElementById('peMism'), 'mismatches show on a week they are not for');
+          d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
+      } else chk(!card, 'mismatches show on a week they are not for');
+      [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
     const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
