@@ -61,6 +61,10 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .sp-head .grow{flex:1}
 .sp-title{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
+.lp-win{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.lp-win:first-child{margin-top:4px}
+.lp-win b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink)}
+.lp-win span{font-size:12px;color:var(--muted)}
 .sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
 .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
 .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -535,8 +539,26 @@ function draw(){
   const endsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick>k) k=g.kick; } return k; };
   const startsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick<k) k=g.kick; } return k; };
   const FAR=Number.MAX_SAFE_INTEGER;
-  const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isDone(p)?1:0,e===null?FAR:e,s2===null?FAR:s2,p.week||0]; };
+  /* sections by kickoff window, the way a Sunday runs: a parlay sits under the window of its
+     first game (so the early games show everything riding on them), with a pill when it runs
+     on into a later one. The windows are the league's, read in Eastern time (before 3pm early,
+     before 7pm late, then night); the time shown is the viewer's own. Finished ones go last. */
+  const ET=k=>{ const o={}; for(const x of new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'long',year:'numeric',month:'2-digit',day:'2-digit',hour:'numeric',hourCycle:'h23'}).formatToParts(new Date(k))) o[x.type]=x.value; return o; };
+  const WIN=['early','late','night'];
+  const winOf=k=>{ if(k===null) return null; const o=ET(k), h=+o.hour; return {key:`${o.year}${o.month}${o.day}-${h<15?0:h<19?1:2}`,day:o.weekday,w:WIN[h<15?0:h<19?1:2]}; };
+  const localT=k=>new Date(k).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isDone(p)?1:0,s2===null?FAR:s2,e===null?FAR:e,p.week||0]; };
+  let lastKey;
   for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); })){
+    const s0=startsAt(p), w0=winOf(s0), w1=winOf(endsAt(p));
+    const key=isDone(p)?'done':(w0?w0.key:'none');
+    if(key!==lastKey){
+      lastKey=key;
+      html+=key==='done'?'<div class="lp-win"><b>Finished</b><span>every game over</span></div>'
+        :key==='none'?'<div class="lp-win"><b>Kickoff not known yet</b></div>'
+        :`<div class="lp-win"><b>${esc(w0.day)} ${w0.w} games</b><span>first kickoff ${esc(localT(s0))}</span></div>`;
+    }
+    const runs=!isDone(p)&&w0&&w1&&w1.key!==w0.key?`<span class="pill">runs into ${w1.day===w0.day?'':esc(w1.day)+' '}${w1.w} games</span>`:'';
     const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
     const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
     const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':'');
@@ -546,7 +568,7 @@ function draw(){
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
-        ${tag}<span class="grow"></span>${p.id==='prop-builder'?'':`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
+        ${runs}${tag}<span class="grow"></span>${p.id==='prop-builder'?'':`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
       <div class="sp-money">
         <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
         <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
