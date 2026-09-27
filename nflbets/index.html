@@ -4433,9 +4433,16 @@ function muTrusted(g,st){ const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; cons
 function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl||!pl.stats[st]||!muTrusted(pl.group,st)) return null;
   const f=D.mu.fit[pl.group+'|'+st]; return f?{nudge:pl.stats[st][2],sd:f.sd,proj:pl.stats[st][1],form:pl.stats[st][0]}:null; }
 window.eloMatchup=muNudge;
+/* the matchups file is built Friday morning from that week's injury report; the props job
+   refreshes the report after it (Saturday's pull, and the Monday and Thursday runs), and the
+   page keeps the week's Out and Doubtful in S.inactive. A player ruled out since the build is
+   still an expected starter in the file, so the Matchups card and the Mismatches leave him out
+   here rather than show a matchup he will not play. */
+const ruledOut=pid=>!!(typeof S==='object'&&S&&S.inactive&&S.inactive[pid]);
+window.eloRuledOut=ruledOut;
 function matchupsCard(){
   const M=D.mu, g=D.pos; if(!M||!M.stats||!M.stats[g]) return '';
-  const stats=M.stats[g], rows=Object.entries(M.players||{}).filter(([,v])=>v.group===g).sort((a,b)=>b[1].elo-a[1].elo);
+  const stats=M.stats[g], rows=Object.entries(M.players||{}).filter(([pid,v])=>v.group===g&&!ruledOut(pid)).sort((a,b)=>b[1].elo-a[1].elo);
   if(!rows.length) return '';
   const dec=v=>Math.abs(v)>=10?v.toFixed(0):v.toFixed(1);
   const cell=(st,a)=>{ if(!a) return '<td class="pe-n">–</td>'; const [form,proj,n]=a, weak=!muTrusted(g,st);
@@ -4694,7 +4701,7 @@ const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2
 const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
 function mismatches(){
   const M=D.mu; if(!M||!M.players) return [];
-  const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]);
+  const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]&&!ruledOut(v.pid));
   const unitOf=v=>MM_UNIT[v.group].units.reduce((a,u)=>a+v.opp_def[u],0)/MM_UNIT[v.group].units.length;
   const zs=(arr)=>{ const m=arr.reduce((a,x)=>a+x,0)/arr.length, sd=Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,arr.length-1))||1; return x=>(x-m)/sd; };
   const pz={}, dz={};

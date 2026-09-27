@@ -573,7 +573,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       /* the Matchups card: every expected starter at the position, faded where the Elo part has not held up */
       [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(40);
       const mc = d.querySelector('#peBody .pe-mcard');
-      const nWR = Object.values(MU.players).filter(v => v.group === 'WR').length;
+      /* every expected starter in the file, less anyone the week's injury report has ruled out since it was built */
+      const nWR = Object.entries(MU.players).filter(([pid, v]) => v.group === 'WR' && !w.eloRuledOut(pid)).length;
       chk(!!mc && mc.querySelectorAll('tbody')[0].querySelectorAll('tr').length === nWR, `the Matchups card does not list the ${nWR} receivers`);
       chk(!!mc && mc.querySelectorAll('tbody')[1].querySelectorAll('tr').length === MU.stats.WR.length, 'the Matchups record lacks a row per stat');
       [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'K').click(); await wait(40);
@@ -591,6 +592,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(bubbles[0].textContent.includes(rows[0].score.toFixed(1)) && card === d.querySelector('#slateView .bar').nextElementSibling, 'the mismatches card is not first under the Props bar');
         w.eval('renderSlate()'); await wait(40);
         chk(d.querySelectorAll('#peMism').length === 1, 'redrawing the Props list doubled the mismatches');
+        /* a player the week's injury report has ruled out since the file was built is left off */
+        { const S = w.eval('S'), top = rows[0].pid, was = S.inactive[top];
+          S.inactive[top] = { week: +MU.week, status: 'Out' }; w.eval('renderSlate()'); await wait(40);
+          const after = w.eloMismatches();
+          chk(!after.some(r => r.pid === top) && after.length === rows.length - 1 && !txt(d.getElementById('peMism')).includes(rows[0].name || '\u0000'), 'a player ruled Out is still on the mismatches');
+          chk(w.eloRuledOut(top) === true, 'the tab does not read the page\'s inactive list');
+          if (was) S.inactive[top] = was; else delete S.inactive[top]; w.eval('renderSlate()'); await wait(40);
+          chk(w.eloMismatches().length === rows.length, 'the mismatches did not come back once the player was cleared'); }
         const more = d.getElementById('peMmMore');
         if (rows.length > 5) { more.click(); await wait(40);
           const m = d.getElementById('peMmModal');
