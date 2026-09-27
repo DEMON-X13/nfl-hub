@@ -1,6 +1,6 @@
 {
  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet. A whole-game bet takes line 0, team set to the side you are on, and player set to whatever you want it called.",
- "updated": "2026-09-24T17:00:00Z",
+ "updated": "2026-09-27T16:30:00Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -11,9 +11,228 @@
   "2026_02_GB_NYJ",
   "2026_02_IND_KC",
   "2026_02_NYG_LA",
-  "2026_03_ATL_GB"
+  "2026_03_ATL_GB",
+  "2026_03_NYJ_DET",
+  "2026_03_SEA_WAS",
+  "2026_03_KC_MIA",
+  "2026_03_HOU_IND",
+  "2026_03_CAR_CLE",
+  "2026_03_LV_NO",
+  "2026_03_MIN_TB",
+  "2026_03_BAL_DAL",
+  "2026_03_LA_DEN",
+  "2026_03_ARI_SF",
+  "2026_03_LAC_BUF"
  ],
  "parlays": [
+  {
+   "id": "w3-dk-2",
+   "week": 3,
+   "stake": 1,
+   "price": 212,
+   "payout": 3.12,
+   "legs": [
+    {
+     "game": 10,
+     "player": "Amon-Ra St. Brown",
+     "team": "DET",
+     "stat": "receiving_yards",
+     "line": 80,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 11,
+     "player": "Jaxon Smith-Njigba",
+     "team": "SEA",
+     "stat": "receiving_yards",
+     "line": 80,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-lines-3",
+   "week": 3,
+   "stake": 1,
+   "price": 905,
+   "payout": 10.05,
+   "note": "+50% boost",
+   "legs": [
+    {
+     "game": 12,
+     "player": "Chiefs",
+     "team": "KC",
+     "stat": "ats",
+     "line": -10,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 13,
+     "player": "Colts",
+     "team": "IND",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 14,
+     "player": "Panthers",
+     "team": "CAR",
+     "stat": "ats",
+     "line": -1.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-ml-3",
+   "week": 3,
+   "stake": 1,
+   "price": 675,
+   "payout": 7.75,
+   "legs": [
+    {
+     "game": 15,
+     "player": "Raiders",
+     "team": "LV",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 16,
+     "player": "Vikings",
+     "team": "MIN",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 17,
+     "player": "Ravens",
+     "team": "BAL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-sgpx-4",
+   "week": 3,
+   "stake": 1,
+   "price": 1546,
+   "payout": 16.46,
+   "note": "SGPx · +50% boost",
+   "legs": [
+    {
+     "game": 16,
+     "player": "Jalen McMillan",
+     "team": "TB",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 17,
+     "player": "Justice Hill",
+     "team": "BAL",
+     "stat": "rushing_yards",
+     "line": 15,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Terrance Ferguson",
+     "team": "LA",
+     "stat": "receiving_yards",
+     "line": 50.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 18,
+     "player": "Terrance Ferguson",
+     "team": "LA",
+     "stat": "receptions",
+     "line": 3.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-props-6",
+   "week": 3,
+   "stake": 1,
+   "note": "top of the slip not in the screenshot",
+   "legs": [
+    {
+     "game": 17,
+     "player": "Derrick Henry",
+     "team": "BAL",
+     "stat": "rushing_yards",
+     "line": 92,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 19,
+     "player": "Trey McBride",
+     "team": "ARI",
+     "stat": "receiving_yards",
+     "line": 60,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 10,
+     "player": "Jahmyr Gibbs",
+     "team": "DET",
+     "stat": "rushing_yards",
+     "line": 70,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 20,
+     "player": "Josh Allen",
+     "team": "BUF",
+     "stat": "passing_yards",
+     "line": 250,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 20,
+     "player": "Josh Allen",
+     "team": "BUF",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 20,
+     "player": "Josh Allen",
+     "team": "BUF",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
   {
    "id": "w2-ml-4",
    "week": 2,
