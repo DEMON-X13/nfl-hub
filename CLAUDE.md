@@ -107,7 +107,7 @@ player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`)
 beside the model's chance and graded against it, week by week, at the top of the Prop
 Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; the tab shows
-it as Matchups, each leg in the builder carries its Elo matchup chance, and the Suggested parlays
+it as Matchups, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
 window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
 they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
 game), built from `pricedLegs()` in the props parts beside the model's own suggestions. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
