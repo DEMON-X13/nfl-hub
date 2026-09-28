@@ -419,6 +419,7 @@ function eloPicks(){
   const c=[];
   for(const l of legs){
     if(l.grp==='TEAM'||l.src!=='real'||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
+    if(typeof sideAllows==='function'&&!sideAllows(l)) continue;   /* the window's side switch */
     const e=window.eloOf(l.pid); if(!e) continue;
     const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
     const pe=muP(l,imp); if(pe==null) continue;

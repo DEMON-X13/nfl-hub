@@ -336,6 +336,18 @@ setTimeout(async()=>{
       w.eloLoaded=()=>false; chk(F('suggestCandidates')().every(c=>c.grp==='TEAM'),'before the Elo files load no player leg should qualify');
       chk(F('formSig')()==='noform'&&(w.eloLoaded=()=>true,F('formSig')()==='form'),'the suggestion signature does not follow the Elo files');
       delete w.eloAltP; delete w.eloLoaded; chk(F('formSig')()===''&&F('suggestCandidates')().length===base.length,'without the Elo tab the bar should be the model\'s alone'); }
+    /* the side switch: overs keep only player overs, unders only player unders, Any everything */
+    { const any=F('suggestCandidates')(); const setSide=s=>{ S.ui.suggestSide=s; };
+      setSide('over'); const ov=F('suggestCandidates')(); chk(ov.every(c=>c.grp!=='TEAM'&&c.side==='over')&&ov.length===Math.min(40,F('pricedLegs')().filter(c=>c.grp!=='TEAM'&&c.side==='over'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&c.p-F('mlProb')(c.price)>=0.03).length),'player overs should be the player over legs and nothing else');
+      setSide('under'); const un=F('suggestCandidates')(); chk(un.every(c=>c.grp!=='TEAM'&&c.side==='under'),'player unders let something else through');
+      chk(F('getSuggestions')().sig.endsWith('|under')&&F('getSuggestions')().tiers.every(t=>t.legs.every(l=>l.side==='under'&&l.grp!=='TEAM')),'the tiers do not follow the side switch');
+      setSide('bogus'); chk(F('suggestSide')()==='any'&&F('suggestCandidates')().length===any.length,'an unknown side should read as Any');
+      d.getElementById('suggOpen').click();
+      const sw=[...d.querySelectorAll('#suggView [data-suggest-side]')]; chk(sw.length===3&&sw.filter(b=>b.classList.contains('on')).length===1&&sw.find(b=>b.classList.contains('on')).dataset.suggestSide==='any','the side switch is not in the window with Any on');
+      sw.find(b=>b.dataset.suggestSide==='under').click();
+      chk(S.ui.suggestSide==='under'&&d.querySelector('#suggView [data-suggest-side="under"]').classList.contains('on')&&/player-under suggestions|player unders only/.test(d.getElementById('suggView').textContent),'clicking a side did not take or did not redraw the window');
+      d.querySelector('#suggView [data-suggest-side="any"]').click(); chk(S.ui.suggestSide==='any','Any did not come back');
+      d.getElementById('suggClose').click(); }
     console.log(`M. suggested parlays: ${SG.candidates} qualifying lines, tiers ${tiers.map(t=>t.label+' '+t.legs.length+' legs '+(t.corr*100).toFixed(0)+'%').join(', ')||'none'}`); }
 
   /* ---- P. the bet box on the suggested parlays ---- */
