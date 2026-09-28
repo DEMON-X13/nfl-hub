@@ -19,7 +19,21 @@ const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
-const ELO_MU = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8');
+/* the matchups as published, except in a thin week (a lone Monday game has one or two players
+   whose nudge clears the Elo picks' bar): then three real players' strongest trusted nudges are
+   raised to clear it, in this copy only, so the Elo picks checks run on any day of the week */
+const ELO_MU = (() => {
+  const raw = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8'), M = JSON.parse(raw);
+  const ok = (g, st) => { const q = ((M.record[g + '|' + st] || {}).past); return !!q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53; };
+  const best = {};
+  for (const [pid, v] of Object.entries(M.players || {})) for (const [st, a] of Object.entries(v.stats)) {
+    if (!ok(v.group, st)) continue; const z = a[2] / M.fit[v.group + '|' + st].sd;
+    if (!best[pid] || z > best[pid].z) best[pid] = { pid, st, z }; }
+  const top = Object.values(best).sort((x, y) => y.z - x.z);
+  if (top.filter(x => x.z >= 0.12).length >= 3) return raw;
+  for (const x of top.slice(0, 3)) { const v = M.players[x.pid]; v.stats[x.st][2] = 0.2 * M.fit[v.group + '|' + x.st].sd; }
+  return JSON.stringify(M);
+})();
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -537,8 +551,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       for (const [pid, v] of Object.entries(MU.players)) for (const [st, a] of Object.entries(v.stats))
         if (trusted(v.group, st) && eloP.players[pid] && a[2] / MU.fit[v.group + '|' + st].sd >= 0.12) cand.push({ pid, st, gid: v.game_id, z: a[2] / MU.fit[v.group + '|' + st].sd });
       cand.sort((a, b) => b.z - a.z);
-      const byGame = []; for (const c of cand) if (!byGame.some(x => x.gid === c.gid)) byGame.push(c);
-      const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st, gid: v.game_id })))[0];
+      /* one leg a game is the rule under test, so the three legs are given three games of their
+         own: the coming week can be a single Monday game, which must not fail the smoke */
+      const byGame = []; for (const c of cand) if (!byGame.some(x => x.pid === c.pid)) byGame.push(c);
+      byGame.forEach((c, i) => { c.gid = c.gid + '#' + i; });
+      const weak = Object.entries(MU.players).flatMap(([pid, v]) => Object.keys(v.stats).filter(st => !trusted(v.group, st) && eloP.players[pid]).map(st => ({ pid, st, gid: v.game_id + '#w' })))[0];
       if (byGame.length >= 3 && weak) {
         const L = (c, price, side, extra) => Object.assign({ key: c.gid + '|' + c.pid + '|' + c.st, gid: c.gid, pid: c.pid, stat: c.st, k: 4.5, side, main: true, p: 0.5, price,
           src: 'real', mu: 4, name: eloP.players[c.pid].name, pos: 'X', grp: eloP.players[c.pid].group, team: 'X', opp: 'Y', week: 3, label: side + ' test line' }, extra || {});
@@ -566,7 +583,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair, `an Elo pick's chance is not the book's fair chance moved by the matchup: ${l.pe} vs ${byHand}`); }
         w.eval('openSuggest()'); await wait(40);
         const card = d.querySelector('#suggView .pe-sugg');
-        chk(!!card && card.querySelectorAll('.sugg-tier').length === 2 && card.querySelectorAll('.sugg-legs .pe-badge').length === 5, 'the Elo picks card is missing, or its legs lack their shields');
+        /* a leg carries a shield where its player is ranked this season, and only there */
+        const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
+        chk(!!card && card.querySelectorAll('.sugg-tier').length === 2 && card.querySelectorAll('.sugg-legs .pe-badge').length === wantBadges, `the Elo picks card is missing, or its legs' shields are wrong: ${card ? card.querySelectorAll('.sugg-legs .pe-badge').length : 'no card'} for ${wantBadges}`);
         const nSaved = w.eval('S.saved.length');
         card.querySelector('[data-elo-save="elo2"]').click(); await wait(40);
         chk(w.eval('S.saved.length') === nSaved + 1 && w.eval('S.saved[S.saved.length-1].suggested') === 'Elo' && w.eval('S.saved[S.saved.length-1].legs.every(l=>l.pe===undefined)'),
@@ -623,6 +642,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))), 'the tab bar does not carry the walk-forward record: ' + txt(d.getElementById('peWalkRec')));
     /* the data has the shape the tab relies on */
     chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1300 && r.elo < 1800)), 'a group has fewer than ten rated players or a rating out of range');
+    /* the rankings are this season's: everyone ranked has played enough of it, and a badge's place is that rank */
+    chk(eloM.groups.every(g => eloP.groups[g].min_games >= 1 && eloP.groups[g].top.every(r => r.games >= eloP.groups[g].min_games && Array.isArray(r.this_season) && r.this_season.length >= 1)), 'a ranked player has too few games this season');
+    chk(Object.values(eloP.players).every(v => (v.rank == null) === (v.se == null)) && eloM.groups.every(g => eloP.groups[g].top.every(r => eloP.players[r.id] && eloP.players[r.id].rank === r.rank && eloP.players[r.id].se === r.elo)), 'the players map and the table disagree on a season rank');
     chk(Object.values(eloM.walk_forward).every(x => x.accuracy > 0.5 && x.games > 0), 'the walk-forward record should beat a coin on every season: ' + JSON.stringify(eloM.walk_forward));
     chk(eloM.coef.QB > 0 && eloM.coef.DB > 0, 'the fitted weights lost their sign');
     [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'pickems').click(); await wait(40); }

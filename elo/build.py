@@ -28,7 +28,10 @@ starter moves fully: volume over a per-position norm, capped at 1. A game a regu
 early is not rated at all: when a player's involvement falls below 35% of his median over
 his last five rated games, and that median is a starter's, the game is skipped rather than
 scored as a bad one -- a quarterback hurt after eight throws did not have a bad day, he had
-a short one. Every season every rating is pulled a quarter of the way back to 1500, since
+a short one. Only one such game in a row is skipped: a second straight short game is rated,
+because that is a smaller role, not an injury (Colston Loveland's first two games of 2026,
+two and three targets after a season of eight or nine, were both skipped before this, and
+his rating stood frozen at 2025's). Every season every rating is pulled a quarter of the way back to 1500, since
 rosters, schemes and ages change.
 
 THE SCORES. For a QB, RB, WR or TE the score is expected points added on the plays he
@@ -79,6 +82,16 @@ touchdowns (their biggest nudges right 53-63% of the time); it adds nothing to r
 quarterback rushing, interceptions or running back receiving, and the page fades those. The
 coming week's projections are for the expected starters, from the latest ratings, the
 depth charts and the injury report, with the formula fitted on every completed season.
+
+THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
+one that starts the season at 1500 and moves only on this season's games, by the same
+formula against the same units; the table ranks that one, and a player needs enough rated games
+this season to be ranked -- games in a real role (at least half his position's normal
+workload) in at least half the weeks played so far, so the table is not filled with players
+a few snaps have left near 1500. The models -- the game model, the matchups and the page's market
++ form -- read the rating with every season behind it, which is what their records were
+proven on: three games is too little to price from. players.json carries both for every
+player the models may price: `elo` (career), `se` and `rank` (this season, where he has one).
 
 Everything it writes is data the X NFL Bets and Stats page reads on load:
     elo/data/players.json   rankings by position, every rated player's rating, season-end top tens
@@ -474,6 +487,9 @@ def main():
     season_start = {}      # (season, player) -> rating at the start of the season
     peak = {}              # player -> (rating, season)
     game_feat = []         # per game: features from pre-game ratings
+    RS, NS, HS = {}, {}, {}  # the season in progress alone: rating, rated games, [[ord, rating], ...]
+    NQ = {}                # this season's rated games in a real role (weight at least 0.5)
+    short_prev = {}        # player -> his last game was a short one, skipped
     played = {}            # (season, team) -> last game's participants by group [(pid, group)]
     ord_weeks = games[['season', 'ord']].drop_duplicates().sort_values(['season', 'ord'])
     by_game = {gid: d for gid, d in stats.groupby('game_id')}
@@ -559,11 +575,14 @@ def main():
                     mu_log.append({'season': int(season), 'ord': int(ordw), 'game_id': row.game_id, 'pid': pid, 'group': g,
                                    'team': r.team, 'opp': r.opponent_team, 'home': int(r.team == row.home_team), 'R': R[pid],
                                    'vol': float(r.vol), **{c: (0.0 if pd.isna(getattr(r, c, 0)) else float(getattr(r, c, 0))) for c in MU_COLS}})
-                if len(rv) >= 3 and np.median(rv) >= 0.8 * VOLUME[g] and r.vol < LEFT_EARLY * np.median(rv):
+                if (len(rv) >= 3 and np.median(rv) >= 0.8 * VOLUME[g] and r.vol < LEFT_EARLY * np.median(rv)
+                        and not short_prev.get(pid)):
                     skipped += 1
+                    short_prev[pid] = True
                     rv.append(r.vol)
                     del rv[:-5]
                     continue
+                short_prev[pid] = False
                 rv.append(r.vol)
                 del rv[:-5]
                 mu, sd = norm[(season, g)]
@@ -575,6 +594,14 @@ def main():
                 K = K_NEW if N[pid] < SETTLED else K_SET
                 R[pid] += K * r.w * (S - E)
                 N[pid] += 1
+                if int(season) == last:
+                    # the same game played again on a rating that knows only this season
+                    rs = RS.get(pid, 1500.0)
+                    Es = 1 / (1 + 10 ** ((Uv - rs) / 400))
+                    RS[pid] = rs + (K_NEW if NS.get(pid, 0) < SETTLED else K_SET) * r.w * (S - Es)
+                    NS[pid] = NS.get(pid, 0) + 1
+                    NQ[pid] = NQ.get(pid, 0) + (1 if r.w >= 0.5 else 0)
+                    HS.setdefault(pid, []).append([int(ordw), round(RS[pid], 1)])
                 if f:
                     unit_delta.setdefault((r.opponent_team, f), []).append(r.w * (S - E))
                 hist.setdefault(pid, {}).setdefault(int(season), []).append([int(ordw), round(R[pid], 1)])
@@ -676,17 +703,33 @@ def main():
     }
 
     # ---- the rankings ----
-    active_cut = last - 1          # rated in this season or the last to be ranked now
+    # The table ranks this season alone: every player starts the season at 1500 and only his
+    # games this season move him (RS), so a place is earned this year and a player with no
+    # rated game this season is not ranked. The models (the game model, the matchups, market +
+    # form) keep the rating with every season behind it (R), which is what their records were
+    # proven on; the players map carries both, `elo` the career one they read.
+    active_cut = last - 1          # career ratings: rated in this season or the last
     latest_season = {pid: max(h) for pid, h in hist.items()}
+    last_ord = int(played_weeks.ord.max()) if len(played_weeks) else None
     players = {}
     groups_out = {}
     def why_out(pid):
         if pid in out_now:
             return out_now[pid]
         return 'a free agent' if on_roster else None
+    def before_last(pid):
+        """his season rating before the latest week's games, for the movement column"""
+        v = 1500.0
+        for o, r in HS.get(pid, []):
+            if last_ord is not None and o < last_ord:
+                v = r
+        return v
+    # enough of a season to rank: games in a real role in at least half the weeks played so far
+    weeks_played = played_weeks.ord.nunique()
+    min_games = max(1, math.ceil(weeks_played / 2))
     for g in GROUPS:
-        rated = [pid for pid in R if info[pid]['group'] == g and latest_season[pid] >= active_cut and N[pid] >= 3]
-        rated.sort(key=lambda p: -R[p])
+        rated = [pid for pid in RS if info[pid]['group'] == g and NQ.get(pid, 0) >= min_games]
+        rated.sort(key=lambda p: -RS[p])
         # the rankings are of players who can play: the injured, the retired and the unsigned
         # are listed under the table instead, where they would have stood
         sidelined = []
@@ -696,28 +739,34 @@ def main():
             if w:
                 if len(pool) < 25:
                     sidelined.append({'id': pid, 'name': info[pid]['name'], 'team': team_now.get(pid, info[pid]['team']),
-                                      'elo': round(R[pid]), 'would_rank': len(pool) + 1, 'why': w})
+                                      'elo': round(RS[pid]), 'would_rank': len(pool) + 1, 'why': w})
             else:
                 pool.append(pid)
-        for pid in rated:
+        career = [pid for pid in R if info[pid]['group'] == g and latest_season[pid] >= active_cut and N[pid] >= 3 and not why_out(pid)]
+        for pid in set(rated) | set(career):
             if pid in team_now:
                 info[pid]['team'] = team_now[pid]
-        # where everyone stood when this season began, for the movement column
-        start = {pid: season_start.get((last, pid), 1500.0) for pid in pool}
-        start_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: -start[p]))}
+        # the movement column: against where each stood before the latest week's games
+        prev = {pid: before_last(pid) for pid in pool}
+        prev_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: -prev[p]))}
+        rank = {pid: i + 1 for i, pid in enumerate(pool)}
         rows = []
-        for i, pid in enumerate(pool):
-            h = hist[pid]
+        for pid in pool:
             rows.append({'id': pid, 'name': info[pid]['name'], 'pos': info[pid]['pos'], 'team': info[pid]['team'], 'head': info[pid]['head'],
-                         'elo': round(R[pid]), 'rank': i + 1, 'start_rank': start_rank[pid], 'start_elo': round(start[pid]),
-                         'games': N[pid], 'peak': round(peak[pid][0]), 'peak_season': peak[pid][1],
-                         'this_season': h.get(last, []), 'last_season': latest_season[pid]})
-        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
-        for row in rows:
-            # s0 and h are the season so far, so a rating can be read as it stood before any week:
-            # the last game before it, or the season's start. The Prop Record grades on those.
-            players[row['id']] = {'name': row['name'], 'pos': row['pos'], 'group': g, 'team': row['team'], 'elo': row['elo'], 'rank': row['rank'],
-                                  's0': row['start_elo'], 'h': [[o, round(r)] for o, r in row['this_season']]}
+                         'elo': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid], 'start_elo': round(prev[pid]),
+                         'games': NS[pid], 'career': round(R[pid]), 'peak': round(peak[pid][0]), 'peak_season': peak[pid][1],
+                         'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])], 'last_season': latest_season[pid]})
+        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'min_games': min_games, 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
+        # the players map: every player the models may price, on his career rating (elo, with s0
+        # and h the season so far, so a rating can be read as it stood before any week: the Prop
+        # Record grades on those), and his place this season where he has one (se, rank)
+        for pid in sorted(set(career) | set(pool)):
+            if pid not in R:
+                continue
+            h = hist[pid]
+            players[pid] = {'name': info[pid]['name'], 'pos': info[pid]['pos'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
+                            's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
+                            'se': round(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
     # season-end top tens, every season
     ends = {}
     for s in seasons:
