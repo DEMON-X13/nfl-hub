@@ -1030,8 +1030,14 @@ function gameSuggestion(g){
   if(hit&&hit.sig===sig) return hit.val;
   const cands=suggestCandidates([g]);
   const dec=legs=>legs.reduce((a,l)=>a*(mlToDec(l.price)||1),1);
-  let cur=[];
-  while(cur.length<GAME_SUGGEST_CAP){
+  /* the first leg is the best-scoring one that can be paired above the floor: the best leg
+     alone can be a long price nothing lifts over it, which left the card empty beside good pairs */
+  const pairs=c1=>cands.some(c2=>c2.key!==c1.key&&!(c1.grp==='TEAM'&&c2.grp==='TEAM')
+    &&parlayProb([c1,c2],3000).corr>=GAME_SUGGEST_FLOOR);
+  const single=c=>c.p*parlayDec([{leg:c,ml:c.price}],2000);
+  const seed=[...cands].map(c=>({c,s:single(c)})).sort((a,b)=>b.s-a.s).map(x=>x.c).find(pairs);
+  let cur=seed?[seed]:[];
+  while(seed&&cur.length<GAME_SUGGEST_CAP){
     let best=null;
     for(const c of cands){
       if(cur.some(l=>l.key===c.key)) continue;

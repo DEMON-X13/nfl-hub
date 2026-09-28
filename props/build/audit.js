@@ -498,6 +498,13 @@ setTimeout(async()=>{
     w.eval('GAME_SUGGEST_CACHE={}');
     const s2=F('gameSuggestion')(g);
     chk(put===0||s2.legs.length>=2,'priced lines are available and still no suggestion');
+    /* a pair above the floor among the candidates means the card is not empty */
+    { const cs=F('suggestCandidates')([g]).slice(0,15), fl=w.eval('GAME_SUGGEST_FLOOR');
+      let pairOk=false;
+      for(let i=0;i<cs.length&&!pairOk;i++) for(let j=i+1;j<cs.length&&!pairOk;j++){
+        if(cs[i].key===cs[j].key||(cs[i].grp==='TEAM'&&cs[j].grp==='TEAM')) continue;
+        if(F('parlayProb')([cs[i],cs[j]],20000).corr>=fl+0.02) pairOk=true; }
+      chk(!pairOk||s2.legs.length>=2,'two of the game\'s lines clear the floor together and the card is empty'); }
     chk(s2.legs.length<=3,`the suggestion ran to ${s2.legs.length} legs with prices available`);
     chk(s2.legs.every(l=>l.gid===g.id),'a priced suggestion pulled in another game');
     chk(s2.legs.every(l=>s2.legs.filter(x=>x.pid===l.pid).length<=2),'three legs landed on one player');
