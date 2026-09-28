@@ -1135,7 +1135,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v69 \u00b7 2026-09-28';
+const APP_BUILD='app v70 \u00b7 2026-09-28';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2906,8 +2906,14 @@ function gameSuggestion(g){
   if(hit&&hit.sig===sig) return hit.val;
   const cands=suggestCandidates([g]);
   const dec=legs=>legs.reduce((a,l)=>a*(mlToDec(l.price)||1),1);
-  let cur=[];
-  while(cur.length<GAME_SUGGEST_CAP){
+  /* the first leg is the best-scoring one that can be paired above the floor: the best leg
+     alone can be a long price nothing lifts over it, which left the card empty beside good pairs */
+  const pairs=c1=>cands.some(c2=>c2.key!==c1.key&&!(c1.grp==='TEAM'&&c2.grp==='TEAM')
+    &&parlayProb([c1,c2],3000).corr>=GAME_SUGGEST_FLOOR);
+  const single=c=>c.p*parlayDec([{leg:c,ml:c.price}],2000);
+  const seed=[...cands].map(c=>({c,s:single(c)})).sort((a,b)=>b.s-a.s).map(x=>x.c).find(pairs);
+  let cur=seed?[seed]:[];
+  while(seed&&cur.length<GAME_SUGGEST_CAP){
     let best=null;
     for(const c of cands){
       if(cur.some(l=>l.key===c.key)) continue;
