@@ -130,6 +130,58 @@ const RESULTS = {
   6,
   28
  ],
+ "wk3:LAC-BUF": [
+  16,
+  24
+ ],
+ "wk3:CAR-CLE": [
+  18,
+  21
+ ],
+ "wk3:NYJ-DET": [
+  24,
+  31
+ ],
+ "wk3:HOU-IND": [
+  17,
+  19
+ ],
+ "wk3:KC-MIA": [
+  24,
+  10
+ ],
+ "wk3:TEN-NYG": [
+  7,
+  12
+ ],
+ "wk3:CIN-PIT": [
+  27,
+  30
+ ],
+ "wk3:SEA-WAS": [
+  31,
+  33
+ ],
+ "wk3:NE-JAX": [
+  6,
+  35
+ ],
+ "wk3:ARI-SF": [
+  30,
+  36
+ ],
+ "wk3:MIN-TB": [
+  23,
+  16
+ ],
+ "wk3:BAL-DAL": [
+  34,
+  31
+ ],
+ "wk3:LV-NO": [
+  35,
+  27
+ ],
  "wk3:ATL-GB": [
   35,
   14
