@@ -219,10 +219,10 @@ Searches to run:
 - "NFL week 3 picks NYJ DET"
 
 New York Jets, injuries:
+- Breece Hall (RB) Questionable, Thigh: Jets head coach Aaron Glenn said that he won't have an update on Hall's (thigh) status until Wednesday, Zack Rosenblatt of The Athletic reports.
 - Kenyon Sadiq (TE) Active: Sadiq caught seven of eight passes for 105 yards and a touchdown in Sunday's 31-24 loss to the Lions.
 - Geno Smith (QB) Active: Smith completed 31 of 37 passes for 321 yards and three touchdowns in Sunday's 31-24 loss to the Lions. He added 12 rushing yards on two carries and threw a two-point conversion.
 - Garrett Wilson (WR) Active: Wilson caught 10 of 13 targets for 107 yards and a touchdown in Sunday's 31-24 loss to Detroit.
-- Breece Hall (RB) Questionable, Thigh: Hall (thigh) outlined that he "felt something" when running before departing Sunday's 31-24 loss to the Lions, Brian Costello of the New York Post reports.
 - Dylan Parham (G) Questionable, Knee: Parham (knee) has been ruled out for the rest of Sunday's game against the Lions.
 - Qwan'tez Stiggers (CB) Active: Stiggers (hand) returned to Sunday's game versus the Lions, Brian Costello of the New York Post reports.
 - Joseph Ossai (DE) Active: Ossai (foot) is active for Sunday's game against the Lions.
@@ -423,6 +423,7 @@ Searches to run:
 - "NFL week 3 picks TEN NYG"
 
 Tennessee Titans, injuries:
+- Jackson Slater (G) Questionable, Foot: questionable
 - Fernando Carmona (G) Questionable, Ankle: questionable
 - Wan'Dale Robinson (WR) Active: Robinson caught seven of 11 targets for 57 yards and a touchdown in Sunday's 12-7 loss to the Giants.
 - Carnell Tate (WR) Active: Tate caught six of nine targets for 58 yards in Sunday's 12-7 loss to the Giants.
@@ -447,16 +448,15 @@ Tennessee Titans, injuries:
 - Anthony Hill Jr. (LB) Active: Hill recorded 10 tackles (six solo) in Sunday's 24-20 loss to the Eagles.
 - Elic Ayomanor (WR) Active: Ayomanor caught two of three targets for 69 yards during the Titans' 24-20 loss to the Eagles on Sunday.
 - Calvin Ridley (WR) Active: Ridley caught both of his targets for 35 yards during the Titans' 24-20 loss to the Eagles on Sunday.
-- Gunnar Helm (TE) Active: Helm caught both of his targets for 13 yards in the Titans' 24-20 loss to the Eagles on Sunday.
 
 Tennessee Titans, ESPN headlines:
 
 New York Giants, injuries:
+- Brian Burns (LB) Questionable, Knee: The Giants fear that Burns sustained a torn ACL in his right knee during Sunday's 12-7 win over the Titans, Jeff Howe and Jonathan Jones of The Athletic report.
 - Dominic Zvada (PK) Active: Zvada made all four of his field-goal attempts during the Giants' 12-7 win over the Titans on Sunday.
 - Jameis Winston (QB) Active: Winston completed 14 of 22 passes for 118 yards in Sunday's 12-7 win over Tennessee. He added 14 rushing yards on two carries.
 - Malik Nabers (WR) Active: Nabers caught five of six targets for 26 yards in Sunday's 12-7 win over the Titans.
 - Cam Skattebo (RB) Active: Skattebo carried the ball 20 times for 60 yards and caught three of four targets for 40 yards in Sunday's 12-7 win over the Titans.
-- Brian Burns (LB) Questionable, Knee: Burns will undergo an MRI for a right knee injury that he sustained during the Giants' 12-7 win over the Titans on Sunday, Pat Leonard of the New York Daily News reports.
 - Deonte Banks (CB) Out, Calf: Banks (calf) is inactive for Sunday's game against the Titans, Dan Salomone of the Giants' official site reports.
 - Tyler Nubin (S) Out, Calf: Nubin (calf) is inactive for Sunday's game against the Titans, Dan Salomone of the Giants' official site reports.
 - Devin Singletary (RB) Out, Coach's Decision: Singletary (coach's decision) is inactive for Sunday's game against the Titans, Dan Salomone of the Giants' official site reports.
@@ -525,7 +525,7 @@ Pittsburgh Steelers, injuries:
 - Aaron Rodgers (QB) Active: Rodgers completed 19 of 34 passes for 292 yards with three touchdowns and one interception while adding three rushes for 10 yards in the Steelers' 30-27 win over the Bengals on Sunday.
 - DK Metcalf (WR) Active: Metcalf brought in three of five targets for 31 yards and a touchdown in the Steelers' 30-27 win over the Bengals on Sunday.
 - Jaylen Warren (RB) Active: Warren rushed 17 times for 127 yards and secured three of four targets for 49 yards in the Steelers' 30-27 win over the Bengals on Sunday.
-- Brandin Echols (CB) Questionable, Head: Echols is being evaluated for a possible concussion and is questionable to return to Sunday's game against the Bengals, Alan Saunders of SteelersNow.com reports.
+- Brandin Echols (CB) Questionable, Concussion: Echols is being evaluated for a possible concussion and is questionable to return to Sunday's game against the Bengals, Alan Saunders of SteelersNow.com reports.
 - Will Howard (QB) Out, Coach's Decision: Howard (coach's decision) is inactive but will serve as the emergency third quarterback against the Bengals on Sunday.
 - Jamel Dean (CB) Active: Dean (ankle) is active for Sunday's game against Cincinnati.
 - Joey Porter Jr. (CB) Out, Undisclosed: Porter (conditioning) is inactive for Sunday's game against the Bengals.
@@ -593,7 +593,7 @@ Washington Commanders, injuries:
 - Terry McLaurin (WR) Active: McLaurin caught six of nine targets for 77 yards and a touchdown in Sunday's 33-31 win over the Seahawks.
 - Jacory Croskey-Merritt (RB) Active: Croskey-Merritt carried the ball 19 times for 36 yards and caught his only target for seven yards in Sunday's 33-31 win over the Seahawks.
 - Marcus Mariota (QB) Active: Mariota completed 19 of 31 passes for 183 yards and three touchdowns in Sunday's 33-31 win over the Seahawks. He added 11 rushing yards on five carries.
-- Leo Chenal (LB) Questionable, Neck: Chenal (neck) won't return to Sunday's game against the Seahawks, Nicki Jhabvala of The Athletic reports.
+- Leo Chenal (LB) Out, Neck: Chenal (neck) won't return to Sunday's game against the Seahawks, Nicki Jhabvala of The Athletic reports.
 - Javontae Jean-Baptiste (LB) Out, Coach's Decision: Jean-Baptiste (coach's decision) is inactive for Sunday's game against the Seahawks.
 - Frankie Luvu (LB) Out, Groin: inactive
 - Chig Okonkwo (TE) Out, Hamstring: inactive
@@ -768,7 +768,7 @@ Minnesota Vikings, injuries:
 - Aaron Jones Sr. (RB) Active: Jones tallied 17 carries for 58 yards and reeled in five of six targets for 34 yards during Sunday's 23-16 win in Tampa Bay.
 - Kyler Murray (QB) Active: Murray (concussion) completed 15 of 29 passes for 168 yards, one touchdown and one interception and took two carries for 17 yards during Sunday's 23-16 win at Tampa Bay.
 - Justin Jefferson (WR) Questionable, Ankle: Jefferson (ankle) "got close a couple times" to returning to Sunday's 23-16 win over the Buccaneers, head coach Kevin O'Connell said after the game, Ben Goessling of the Minnesota Star Tribune reports.
-- Josh Oliver (TE) Questionable, Arm: Oliver (arm) has been ruled out for the rest of Sunday's game against the Buccaneers, Kevin Seifert of ESPN.com reports.
+- Josh Oliver (TE) Doubtful, Biceps: Oliver (arm) has been ruled out for the rest of Sunday's game against the Buccaneers, Kevin Seifert of ESPN.com reports.
 - Charles Demmings (CB) Questionable, Hamstring: Demmings (hamstring) has been ruled out for the remainder of Sunday's contest against the Buccaneers.
 - Ivan Pace Jr. (LB) Active: Pace (personal) is active for Sunday's game against the Buccaneers.
 - Zemaiah Vaughn (CB) Out, Coach's Decision: inactive
@@ -975,7 +975,7 @@ Los Angeles Rams, injuries:
 - Matthew Stafford (QB) Active: Stafford completed 30 of 55 passes for 390 yards, two touchdowns and two interceptions in Sunday's 30-26 loss to the Broncos. He also rushed twice for 13 yards.
 - Jaylen Watson (CB) Questionable, Shoulder: questionable
 - Colby Parkinson (TE) Active: Parkinson (shoulder) has returned to Sunday's game against the Broncos, Stu Jackson of the Rams' official site reports.
-- Terrance Ferguson (TE) Active: Ferguson (ankle) went to the locker room in the first quarter of Sunday night's game against the Broncos, James Palmer of NFL on Prime Video reports.
+- Terrance Ferguson (TE) Active: Ferguson (ankle) has returned to Sunday's game against the Broncos, Stu Jackson of the Rams' official site reports.
 - Kamren Kinchens (S) Out, Hamstring: Kinchens (hamstring) is inactive for Sunday night's contest against Denver, Sarah Barshop of ESPN.com reports.
 - Ty Simpson (QB) Out, Coach's Decision: Simpson (coach's decision) is inactive but will serve as the Rams' emergency third quarterback for Sunday night's contest against the Broncos, Sarah Barshop of ESPN.com reports.
 - Maximus Pulley (S) Out, Coach's Decision: inactive
@@ -1065,7 +1065,7 @@ Philadelphia Eagles, ESPN headlines:
 
 Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Out, Undisclosed: out
-- Tyson Bagent (QB) Active: Bagent (concussion) cleared the NFL's concussion protocol Sunday and doesn't have a designation for Monday's game against the Eagles.
+- Tyson Bagent (QB) Active: Bagent (concussion) is expected to remain the Bears' backup quarterback for Monday's game against the Eagles, while Case Keenum starts in place of the injured Caleb Williams (hamstring), Ian Rapoport of NFL Network reports.
 - Case Keenum (QB) Active: Keenum is in line to start Monday's game against the Eagles, Jay Glazer reported on "Fox NFL Sunday."
 - Caleb Williams (QB) Out, Hamstring: Williams, who is ruled out for Monday's game against the Eagles, has been diagnosed with a Grade 2 hamstring strain, which doctors consider a 3-to-4-week injury, Adam Schefter and Ian Rapoport of ESPN report.
 - Tyrique Stevenson Sr. (CB) Active: Stevenson (hamstring) does not have any injury designation ahead of Monday's game against the Eagles.
