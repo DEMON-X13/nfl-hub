@@ -8,30 +8,30 @@
   {
    "col": "kickoff_return_yards",
    "fit": 49.111,
-   "now": 105.821,
-   "z": 1.26
+   "now": 105.359,
+   "z": 1.25
   },
   {
    "col": "kickoff_returns",
    "fit": 2.037,
-   "now": 4.0,
-   "z": 1.15
+   "now": 4.022,
+   "z": 1.16
   },
   {
    "col": "def_tackles_with_assist",
    "fit": 4.44,
-   "now": 0.762,
-   "z": -0.99
+   "now": 0.739,
+   "z": -1.0
   },
   {
    "col": "def_tackle_assists",
    "fit": 24.034,
-   "now": 30.69,
-   "z": 0.78
+   "now": 30.87,
+   "z": 0.8
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-27T22:32+00:00",
+ "generated": "2026-09-28T00:49+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -523,7 +523,7 @@
     },
     {
      "f": "off_home",
-     "v": 0.0751,
+     "v": 0.0752,
      "c": 0.0279
     },
     {
@@ -824,7 +824,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.1683,
+     "v": 1.1682,
      "c": -0.044
     },
     {
@@ -1859,7 +1859,7 @@
     },
     {
      "f": "def_home",
-     "v": 0.1133,
+     "v": 0.1134,
      "c": 0.066
     },
     {
@@ -2181,7 +2181,7 @@
    "away": "ARI",
    "pick": "SF",
    "pHome": 0.6993,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2211,7 +2211,7 @@
     },
     {
      "f": "pg_fg_pct_A",
-     "v": 0.8,
+     "v": 0.4795,
      "c": 0.0434
     },
     {
@@ -2232,7 +2232,7 @@
    "away": "MIN",
    "pick": "TB",
    "pHome": 0.552,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2283,7 +2283,7 @@
    "away": "BAL",
    "pick": "BAL",
    "pHome": 0.3888,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2334,7 +2334,7 @@
    "away": "LV",
    "pick": "NO",
    "pHome": 0.6331,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2384,13 +2384,13 @@
    "home": "DEN",
    "away": "LA",
    "pick": "DEN",
-   "pHome": 0.5093,
+   "pHome": 0.5178,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": -105.0,
+     "v": -112.0,
      "c": -0.162
     },
     {
@@ -2402,11 +2402,6 @@
      "f": "td_def_tackle_assists_A",
      "v": 33.0,
      "c": 0.0721
-    },
-    {
-     "f": "spread_line",
-     "v": -1.5,
-     "c": -0.0642
     },
     {
      "f": "td_pt_yards_H",
@@ -2427,6 +2422,11 @@
      "f": "td_fumble_recovery_yards_own_H",
      "v": -2.5,
      "c": 0.0464
+    },
+    {
+     "f": "to_away",
+     "v": 1.3712,
+     "c": -0.044
     }
    ]
   },
