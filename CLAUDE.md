@@ -94,7 +94,11 @@ python3 elo/build.py             # downloads nflverse player stats 2012-now into
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 ```
 
-The rankings are of players who can play: the season's latest weekly roster (only `ACT`
+The rankings are of this season alone: each player's second rating (`RS` in the build) starts
+the season at 1500 and moves only on this season's games, and a player is ranked only with games
+in a real role in at least half the weeks played; the models (game model, matchups, market + form,
+Mismatches) keep the career rating, `elo` in `players.json` beside the season's `se` and `rank`.
+They are of players who can play: the season's latest weekly roster (only `ACT`
 counts) and the coming week's injury report (`Out`) sideline the rest, who are listed under
 the table where they would have stood. The game model scores every game, past and coming,
 on the lineup known before kickoff: that week's depth chart (weekly files through 2024, the

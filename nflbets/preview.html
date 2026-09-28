@@ -4616,17 +4616,17 @@ function rankings(){
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${k===g}">${esc(P.groups[k].label)}</button>`).join(''):'';
   const rows=grp.top.slice(0,D.more?25:10).map(r=>{
     return `<tr><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
-      <td class="pe-name">${esc(r.name)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} rated games</small></td>
+      <td class="pe-name">${esc(r.name)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
       <td class="pe-m0">${tag(r.team,true)}</td>
       <td class="pe-n"><span class="pe-elo">${r.elo}</span></td>
       <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
-      <td class="pe-n">${r.elo-r.start_elo>=0?'+':''}${r.elo-r.start_elo}</td>
+      <td class="pe-n" title="The rating with every season behind it, which the game model, matchups and market + form use">${r.career!=null?r.career:'–'}</td>
       <td class="pe-m0">${spark(r.this_season)}</td>
       <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
   return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} through week ${esc(P.through_week)}</span></h2>
-    <p class="pe-sub">${esc(grp.active)} ${esc(grp.label.toLowerCase())} rated this season or last and able to play. Movement is against the rank each held when the season began; the line is this season's rating, game by game. Tiers are the same shields the teams wear, on the same scale.</p>
+    <p class="pe-sub">This season only: every player started ${esc(P.season)} at 1500 and only this season's games move him. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least ${esc(grp.min_games||1)} game${(grp.min_games||1)===1?'':'s'}, enough to be ranked. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, which the game model, the matchups and market + form use. Tiers are the same shields the teams wear, on the same scale.</p>
     <div class="pe-pos" role="tablist">${btns}</div>
-    <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Season</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
+    <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Career</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div>
     ${sidelined(grp)}</div>`;
 }
@@ -4655,8 +4655,9 @@ function defs(){
    The leg's key carries his id (game|player|stat); a team leg has none. Runs after every
    builder redraw and once the ratings arrive. */
 function badge(pid){
-  const e=D.players&&D.players.players&&D.players.players[pid]; if(!e) return '';
-  return `<span class="pe-badge" title="${esc(tierName(e.elo))} · #${e.rank} at ${esc(e.group)} · Elo ${e.elo}">${shield(e.elo)}#${e.rank}</span>`;
+  /* the place is this season's; a player without enough of a season has none and no badge */
+  const e=D.players&&D.players.players&&D.players.players[pid]; if(!e||!e.rank||e.se==null) return '';
+  return `<span class="pe-badge" title="${esc(tierName(e.se))} · #${e.rank} at ${esc(e.group)} this season · Elo ${e.se} (career ${e.elo})">${shield(e.se)}#${e.rank}</span>`;
 }
 function decorate(){
   if(!D.players) return; defs();
