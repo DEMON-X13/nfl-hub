@@ -8,30 +8,30 @@
   {
    "col": "kickoff_return_yards",
    "fit": 49.111,
-   "now": 105.359,
+   "now": 105.457,
    "z": 1.25
   },
   {
    "col": "kickoff_returns",
    "fit": 2.037,
-   "now": 4.022,
-   "z": 1.16
+   "now": 4.032,
+   "z": 1.17
   },
   {
    "col": "def_tackles_with_assist",
    "fit": 4.44,
-   "now": 0.739,
+   "now": 0.723,
    "z": -1.0
   },
   {
    "col": "def_tackle_assists",
    "fit": 24.034,
-   "now": 30.87,
+   "now": 30.851,
    "z": 0.8
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-28T00:49+00:00",
+ "generated": "2026-09-28T07:31+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -824,7 +824,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.1682,
+     "v": 1.1683,
      "c": -0.044
     },
     {
@@ -2385,7 +2385,7 @@
    "away": "LA",
    "pick": "DEN",
    "pHome": 0.5178,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2425,7 +2425,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.3712,
+     "v": 1.3713,
      "c": -0.044
     }
    ]
@@ -2441,7 +2441,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 170.0,
+     "v": 164.0,
      "c": -0.6137
     },
     {
@@ -2471,7 +2471,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -205.0,
+     "v": -198.0,
      "c": 0.0668
     },
     {
