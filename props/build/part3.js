@@ -383,6 +383,9 @@ function renderGame(){
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
+  /* the same side switch as the Suggested parlays window, one setting for both */
+  $('gameView').querySelectorAll('[data-gsugg-side]').forEach(b=>b.addEventListener('click',()=>{
+    S.ui.suggestSide=b.dataset.gsuggSide; save(); renderGame(); renderParlay(); if(suggestOpen()) fillSuggest(); }));
   /* a different parlay of the same confidence, kept in memory only */
   $('gameView').querySelector('[data-suggest-shuffle]')?.addEventListener('click',()=>{
     const alt=shuffleSuggestion(g);
@@ -1135,8 +1138,9 @@ function shuffleSuggestion(g){
 function gameSuggestCard(g,locked){
   if(locked) return '';
   const alt=gameAlternate(g), s=shownSuggestion(g);
-  if(!s.legs.length) return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlay</h2></div>
-    <p class="muted" style="margin:0">Nothing here clears the bar yet${suggestSide()==='any'?'':' among player '+suggestSide()+'s, the side set in Suggested parlays'}: a suggestion needs two legs with a real sportsbook price that the model rates at least three points above that price, and that market + form (the book's chance moved by the player's Elo) also rates three points above it${s.candidates===1?', and only one qualifies':''}. Player prices arrive with the Thursday and Saturday pulls.</p></div>`;
+  const side=`<div class="gsugg-side"><span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-gsugg-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span></div>`;
+  if(!s.legs.length) return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlay</h2></div>${side}
+    <p class="muted" style="margin:0">Nothing here clears the bar yet${suggestSide()==='any'?'':' among player '+suggestSide()+'s, the side set above'}: a suggestion needs two legs with a real sportsbook price that the model rates at least three points above that price, and that market + form (the book's chance moved by the player's Elo) also rates three points above it${s.candidates===1?', and only one qualifies':''}. Player prices arrive with the Thursday and Saturday pulls.</p></div>`;
   const stake=Math.max(0,+S.stake||0), ml=decToML(s.dec);
   const nLock=s.legs.filter(suggestLegOn).length, free=s.legs.length-nLock;
   return `<div class="card gsugg"><div class="gsugg-hd">
@@ -1144,7 +1148,7 @@ function gameSuggestCard(g,locked){
       <button class="btn quiet gsugg-alt" data-suggest-shuffle="${g.id}"${s.candidates>s.legs.length&&free?'':' disabled'} aria-label="Shuffle the legs that are not locked, keeping the same confidence">\u21bb Shuffle</button>
       <button class="btn quiet gsugg-all" data-suggest-all="${g.id}">${free?'Add all':'On the parlay'}</button>
       <span class="gsugg-nums"><b>${(s.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*s.dec).toFixed(2)}</span>`:''}</span>
-    </div>
+    </div>${side}
     <ul class="gsugg-legs">${s.legs.map(l=>{
       const on=suggestLegOn(l);
       return `<li><label class="gsugg-pick${on?' on':''}">
