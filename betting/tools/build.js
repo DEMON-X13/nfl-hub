@@ -67,7 +67,14 @@ const HOOK = `<script>
         const r2=await fetch((window.ELO_URL||'../elo/data/model.json')+'?t='+Date.now(),{cache:'no-store'});
         if(r2.ok){ const M=await r2.json();
           for(const g of (M.graded||[])){ const e={pick:g.pick,pHome:g.p_home,correct:g.correct}; S.elo[g.game_id]=e; if(S.processed&&S.processed[g.game_id]) S.processed[g.game_id].elo=e; }
-          for(const g of ((M.next&&M.next.games)||[])) S.elo[g.game_id]={pick:g.pick,pHome:g.p_home,correct:null};
+          /* the coming week's calls were made when the ratings were last built (Tue and Fri,
+             before the games), so each is graded here the moment the season has its score:
+             otherwise a Sunday's results wait for Tuesday's re-rating to count */
+          for(const g of ((M.next&&M.next.games)||[])){
+            const p=S.processed&&S.processed[g.game_id];
+            const winner=p&&p.result!=null?(p.result>0?p.home:p.result<0?p.away:null):null;
+            const e={pick:g.pick,pHome:g.p_home,correct:winner?g.pick===winner:null};
+            S.elo[g.game_id]=e; if(p&&e.correct!==null) p.elo=e; }
           window.__eloRecord=M.walk_forward||null; }
       }catch(e){}
       window.__published=S.published;

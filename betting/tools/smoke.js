@@ -150,10 +150,14 @@ function load(picks) {
   /* the Elo model rides along: read from elo/data/model.json beside the season, graded onto
      the games it called, and drawn on Records like the Joker */
   { const EM = JSON.parse(eloModel), SE = e.window.eval('S');
-    const gradedIds = EM.graded.filter(g => g.correct !== null).map(g => g.game_id);
+    /* graded: what the file graded, plus the coming week's calls whose games the season has scored */
+    const gradedIds = EM.graded.filter(g => g.correct !== null).map(g => g.game_id)
+      .concat(((EM.next && EM.next.games) || []).filter(g => { const p = SE.processed[g.game_id]; return p && p.result != null && p.result !== 0; }).map(g => g.game_id));
+    check(gradedIds.every(id => { const p = SE.processed[id], n = ((EM.next && EM.next.games) || []).find(g => g.game_id === id);
+      return !n || p.elo.correct === (n.pick === (p.result > 0 ? p.home : p.away)); }), 'embed: a coming-week Elo call was graded against the wrong winner');
     check(embedFetched.some(u => /\.\.\/elo\/data\/model\.json/.test(u)), 'embed: the Elo model was not read from ../elo/data/model.json');
     check(gradedIds.length > 0 && gradedIds.every(id => SE.processed[id] && SE.processed[id].elo && typeof SE.processed[id].elo.correct === 'boolean'), 'embed: the Elo model\'s graded calls are not on the processed games');
-    check(Object.keys(SE.elo || {}).length >= gradedIds.length + ((EM.next && EM.next.games) || []).length, 'embed: S.elo does not carry the graded and coming calls');
+    check(Object.keys(SE.elo || {}).length >= EM.graded.length + ((EM.next && EM.next.games) || []).length, 'embed: S.elo does not carry the graded and coming calls');
     /* the record's pictures: wins against Vegas (each model's wins minus the Vegas favourite's on
        the same games, week by week) and the week-by-week grid, the Elo model in both */
     const rec = de.getElementById('modelChart'), rtxt = rec.textContent.replace(/\s+/g, ' ');
