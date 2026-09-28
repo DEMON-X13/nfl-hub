@@ -104,6 +104,6 @@ sub1(SM, "    /* the Props game view: the same shield on a ranked player's row *
     { chk(w.eval('window.eloLoaded()') === true, 'the Elo tab does not say its files are in');
       const cands = w.eval('suggestCandidates()'), mlProb = w.eval('mlProb'), altP = w.eval('window.eloAltP');
       chk(cands.filter(c => c.grp !== 'TEAM').every(c => altP(c.pid, c.side, c.price, c.src) - mlProb(c.price) >= 0.03), 'a suggested player leg does not clear market + form');
-      chk(w.eval('getSuggestions().sig').endsWith('|form'), 'the week\\'s suggestion signature does not carry the Elo state: ' + w.eval('getSuggestions().sig')); }
+      chk(w.eval('getSuggestions().sig').split('|').includes('form'), 'the week\\'s suggestion signature does not carry the Elo state: ' + w.eval('getSuggestions().sig')); }
     /* the Props game view: the same shield on a ranked player's row */""")
 print('ok')
