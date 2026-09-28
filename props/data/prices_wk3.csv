@@ -903,3 +903,66 @@ game_id,player,market,threshold,odds
 2026_03_TEN_NYG,Wan'Dale Robinson,any_td,1,390
 2026_03_TEN_NYG,Wan'Dale Robinson,receiving_yards,30,-116
 2026_03_TEN_NYG,Wan'Dale Robinson,receptions,4,-103
+2026_03_PHI_CHI,Britain Covey,any_td,1,2200
+2026_03_PHI_CHI,Case Keenum,any_td,1,1600
+2026_03_PHI_CHI,Case Keenum,passing_tds,1,-208
+2026_03_PHI_CHI,Case Keenum,passing_yards,169,-114
+2026_03_PHI_CHI,Case Keenum,rushing_yards,5,-118
+2026_03_PHI_CHI,Chicago Bears D/ST,any_td,1,600
+2026_03_PHI_CHI,Cole Kmet,any_td,1,600
+2026_03_PHI_CHI,Cole Kmet,receiving_yards,9,-111
+2026_03_PHI_CHI,Cole Kmet,receptions,2,112
+2026_03_PHI_CHI,Colston Loveland,any_td,1,370
+2026_03_PHI_CHI,Colston Loveland,receiving_yards,32,-113
+2026_03_PHI_CHI,Colston Loveland,receptions,4,122
+2026_03_PHI_CHI,D'Andre Swift,any_td,1,-105
+2026_03_PHI_CHI,D'Andre Swift,receiving_yards,15,-108
+2026_03_PHI_CHI,D'Andre Swift,receptions,3,144
+2026_03_PHI_CHI,D'Andre Swift,rushing_yards,62,-111
+2026_03_PHI_CHI,Darius Cooper,any_td,1,800
+2026_03_PHI_CHI,DeVonta Smith,any_td,1,175
+2026_03_PHI_CHI,DeVonta Smith,receiving_yards,71,-114
+2026_03_PHI_CHI,DeVonta Smith,receptions,6,-115
+2026_03_PHI_CHI,Dontayvion Wicks,any_td,1,285
+2026_03_PHI_CHI,Dontayvion Wicks,receiving_yards,44,-110
+2026_03_PHI_CHI,Dontayvion Wicks,receptions,4,120
+2026_03_PHI_CHI,E.J. Jenkins,any_td,1,2200
+2026_03_PHI_CHI,Elijah Moore,any_td,1,2000
+2026_03_PHI_CHI,Jahdae Walker,any_td,1,2000
+2026_03_PHI_CHI,Jalen Hurts,any_td,1,155
+2026_03_PHI_CHI,Jalen Hurts,passing_tds,2,128
+2026_03_PHI_CHI,Jalen Hurts,passing_yards,216,-111
+2026_03_PHI_CHI,Jalen Hurts,rushing_yards,25,-114
+2026_03_PHI_CHI,Johnny Mundt,any_td,1,850
+2026_03_PHI_CHI,Johnny Mundt,receiving_yards,10,-108
+2026_03_PHI_CHI,Johnny Mundt,receptions,2,136
+2026_03_PHI_CHI,Kalif Raymond,any_td,1,600
+2026_03_PHI_CHI,Kalif Raymond,receiving_yards,24,-115
+2026_03_PHI_CHI,Kalif Raymond,receptions,3,-118
+2026_03_PHI_CHI,Kyle Monangai,any_td,1,185
+2026_03_PHI_CHI,Kyle Monangai,receiving_yards,9,-114
+2026_03_PHI_CHI,Kyle Monangai,receptions,2,116
+2026_03_PHI_CHI,Kyle Monangai,rushing_yards,40,-115
+2026_03_PHI_CHI,Luther Burden III,any_td,1,425
+2026_03_PHI_CHI,Luther Burden III,receiving_yards,37,-112
+2026_03_PHI_CHI,Luther Burden III,receptions,4,-109
+2026_03_PHI_CHI,Makai Lemon,any_td,1,450
+2026_03_PHI_CHI,Makai Lemon,receiving_yards,29,-110
+2026_03_PHI_CHI,Makai Lemon,receptions,3,-126
+2026_03_PHI_CHI,Philadelphia Eagles D/ST,any_td,1,550
+2026_03_PHI_CHI,Rome Odunze,any_td,1,500
+2026_03_PHI_CHI,Rome Odunze,receiving_yards,26,-113
+2026_03_PHI_CHI,Rome Odunze,receptions,3,115
+2026_03_PHI_CHI,Roschon Johnson,any_td,1,2000
+2026_03_PHI_CHI,Sam Roush,any_td,1,3000
+2026_03_PHI_CHI,Saquon Barkley,any_td,1,100
+2026_03_PHI_CHI,Saquon Barkley,receiving_yards,13,-114
+2026_03_PHI_CHI,Saquon Barkley,receptions,3,144
+2026_03_PHI_CHI,Saquon Barkley,rushing_yards,72,-110
+2026_03_PHI_CHI,Tank Bigsby,any_td,1,650
+2026_03_PHI_CHI,Tank Bigsby,rushing_yards,12,-117
+2026_03_PHI_CHI,Will Shipley,any_td,1,650
+2026_03_PHI_CHI,Zach Ertz,any_td,1,600
+2026_03_PHI_CHI,Zach Ertz,receiving_yards,10,-112
+2026_03_PHI_CHI,Zach Ertz,receptions,2,108
+2026_03_PHI_CHI,Zavion Thomas,any_td,1,4000
