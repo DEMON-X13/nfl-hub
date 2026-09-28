@@ -12,7 +12,7 @@ const STATS26 = {
   "ska": 1.7,
   "third": 40.9,
   "rz": 54.6,
-  "expl": 1
+  "expl": 0.7
  },
  "ATL": {
   "ppg": 17,
@@ -36,7 +36,7 @@ const STATS26 = {
   "ska": 1.7,
   "third": 37,
   "rz": 66.7,
-  "expl": 4
+  "expl": 5
  },
  "BUF": {
   "ppg": 33.7,
@@ -48,7 +48,7 @@ const STATS26 = {
   "ska": 2.7,
   "third": 54.6,
   "rz": 75,
-  "expl": 6.5
+  "expl": 5.7
  },
  "CAR": {
   "ppg": 29.7,
@@ -60,7 +60,7 @@ const STATS26 = {
   "ska": 2.3,
   "third": 36.8,
   "rz": 61.5,
-  "expl": 5.5
+  "expl": 4.7
  },
  "CHI": {
   "ppg": 31,
@@ -84,7 +84,7 @@ const STATS26 = {
   "ska": 2.3,
   "third": 46.3,
   "rz": 50,
-  "expl": 3.5
+  "expl": 3.7
  },
  "CLE": {
   "ppg": 18,
@@ -96,7 +96,7 @@ const STATS26 = {
   "ska": 3,
   "third": 30.6,
   "rz": 37.5,
-  "expl": 2.5
+  "expl": 2.3
  },
  "DAL": {
   "ppg": 29.3,
@@ -111,16 +111,16 @@ const STATS26 = {
   "expl": 2
  },
  "DEN": {
-  "ppg": 15,
-  "pa": 22,
-  "ypp": 5.4,
-  "yppa": 5.4,
-  "to": -0.5,
-  "sk": 2,
-  "ska": 2,
-  "third": 26.1,
-  "rz": 42.9,
-  "expl": 2.5
+  "ppg": 20,
+  "pa": 23.3,
+  "ypp": 5,
+  "yppa": 5.6,
+  "to": 0,
+  "sk": 2.7,
+  "ska": 1.7,
+  "third": 36.1,
+  "rz": 60,
+  "expl": 2.7
  },
  "DET": {
   "ppg": 31,
@@ -132,7 +132,7 @@ const STATS26 = {
   "ska": 2.3,
   "third": 41.2,
   "rz": 78.6,
-  "expl": 3.5
+  "expl": 3.3
  },
  "GB": {
   "ppg": 18.7,
@@ -156,7 +156,7 @@ const STATS26 = {
   "ska": 3.3,
   "third": 36.4,
   "rz": 50,
-  "expl": 4.5
+  "expl": 3.7
  },
  "IND": {
   "ppg": 24,
@@ -168,7 +168,7 @@ const STATS26 = {
   "ska": 2,
   "third": 40.5,
   "rz": 66.7,
-  "expl": 3
+  "expl": 3.3
  },
  "JAX": {
   "ppg": 27.3,
@@ -180,7 +180,7 @@ const STATS26 = {
   "ska": 1.3,
   "third": 52.9,
   "rz": 88.9,
-  "expl": 3.5
+  "expl": 2.7
  },
  "KC": {
   "ppg": 29.3,
@@ -192,7 +192,7 @@ const STATS26 = {
   "ska": 1.3,
   "third": 46,
   "rz": 60,
-  "expl": 4.5
+  "expl": 4.3
  },
  "LV": {
   "ppg": 29.3,
@@ -204,7 +204,7 @@ const STATS26 = {
   "ska": 1.7,
   "third": 41,
   "rz": 61.5,
-  "expl": 2.5
+  "expl": 2.7
  },
  "LAC": {
   "ppg": 14.7,
@@ -216,19 +216,19 @@ const STATS26 = {
   "ska": 2.7,
   "third": 35.1,
   "rz": 55.6,
-  "expl": 1.5
+  "expl": 2.7
  },
  "LAR": {
-  "ppg": 17.5,
-  "pa": 16.5,
-  "ypp": 6.6,
-  "yppa": 4.7,
+  "ppg": 20.3,
+  "pa": 21,
+  "ypp": 6.3,
+  "yppa": 4.6,
   "to": -1,
   "sk": 1,
-  "ska": 0.5,
-  "third": 38.9,
-  "rz": 66.7,
-  "expl": 4
+  "ska": 1.7,
+  "third": 42.9,
+  "rz": 50,
+  "expl": 5
  },
  "MIA": {
   "ppg": 12,
@@ -240,7 +240,7 @@ const STATS26 = {
   "ska": 3,
   "third": 41.5,
   "rz": 28.6,
-  "expl": 3.5
+  "expl": 3.3
  },
  "MIN": {
   "ppg": 23.7,
@@ -252,7 +252,7 @@ const STATS26 = {
   "ska": 3,
   "third": 30.2,
   "rz": 80,
-  "expl": 2.5
+  "expl": 2.7
  },
  "NE": {
   "ppg": 12,
@@ -264,7 +264,7 @@ const STATS26 = {
   "ska": 3,
   "third": 32.5,
   "rz": 16.7,
-  "expl": 3
+  "expl": 3.7
  },
  "NO": {
   "ppg": 27,
@@ -276,7 +276,7 @@ const STATS26 = {
   "ska": 3.3,
   "third": 53.2,
   "rz": 81.8,
-  "expl": 5.5
+  "expl": 4.3
  },
  "NYG": {
   "ppg": 15.3,
@@ -300,7 +300,7 @@ const STATS26 = {
   "ska": 3,
   "third": 37.2,
   "rz": 66.7,
-  "expl": 2.5
+  "expl": 3.7
  },
  "PHI": {
   "ppg": 24,
@@ -324,7 +324,7 @@ const STATS26 = {
   "ska": 2.7,
   "third": 32.4,
   "rz": 33.3,
-  "expl": 2
+  "expl": 3.7
  },
  "SF": {
   "ppg": 32.7,
@@ -336,7 +336,7 @@ const STATS26 = {
   "ska": 0,
   "third": 63,
   "rz": 90,
-  "expl": 3
+  "expl": 4
  },
  "SEA": {
   "ppg": 25,
@@ -348,7 +348,7 @@ const STATS26 = {
   "ska": 1,
   "third": 33.3,
   "rz": 58.3,
-  "expl": 3
+  "expl": 3.3
  },
  "TB": {
   "ppg": 20.7,
@@ -372,7 +372,7 @@ const STATS26 = {
   "ska": 1.7,
   "third": 39.5,
   "rz": 50,
-  "expl": 2.5
+  "expl": 2
  },
  "WAS": {
   "ppg": 25,
@@ -384,7 +384,7 @@ const STATS26 = {
   "ska": 1,
   "third": 38.1,
   "rz": 66.7,
-  "expl": 2.5
+  "expl": 2.3
  }
 };
 const STATS26_THROUGH = "Week 2";

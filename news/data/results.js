@@ -130,6 +130,10 @@ const RESULTS = {
   6,
   28
  ],
+ "wk3:ATL-GB": [
+  35,
+  14
+ ],
  "wk3:LAC-BUF": [
   16,
   24
@@ -182,8 +186,8 @@ const RESULTS = {
   35,
   27
  ],
- "wk3:ATL-GB": [
-  35,
-  14
+ "wk3:LAR-DEN": [
+  26,
+  30
  ]
 };
