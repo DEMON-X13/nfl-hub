@@ -3634,7 +3634,7 @@ function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml
 function decToML(d){ if(!isFinite(d)||d<=1) return null; return d>=2?Math.round((d-1)*100):-Math.round(100/(d-1)); }
 function num(x,d){ return x==null||!isFinite(x)?'–':(+x).toFixed(d); }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const isGameLeg=l=>l.stat==='ml'||l.stat==='ats';
+const isGameLeg=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total';
 const SEASON=2026;
 
 
@@ -3772,7 +3772,7 @@ function gidParts(gid){
 }
 const STAT_CODE={passing_yards:'py',passing_tds:'pt',passing_interceptions:'pi',attempts:'pa',
   completions:'pc',carries:'ra',rushing_yards:'ry',receptions:'rc',receiving_yards:'re',
-  targets:'tg',scrim_yards:'sy',any_td:'td',fg_made:'fm',fg_att:'fa',kick_pts:'kp',ml:'ml',ats:'as'};
+  targets:'tg',scrim_yards:'sy',any_td:'td',fg_made:'fm',fg_att:'fa',kick_pts:'kp',ml:'ml',ats:'as',total:'tt'};
 const CODE_STAT={}; for(const k in STAT_CODE) CODE_STAT[STAT_CODE[k]]=k;
 /* the file's own shape: games listed once, legs pointing at them. Long names are spelled out
    so the file stays something a person can read and edit by hand. */
@@ -3844,8 +3844,17 @@ function zeroStats(l){
   else if(l.stat==='scrim_yards') Object.assign(s2,{carries:0,rushing_yards:0,receptions:0,receiving_yards:0,targets:0});
   return s2;
 }
+/* a game total, over or under: points clear of the line on the side bet, which is the shape
+   liveGameLeg hands a spread over in, so the row, the bar and the chip treat it the same way */
+function liveTotal(l,g){
+  if(!g||g.state==='pre') return {val:null,k:+l.k||0,need:null,state:'pending'};
+  if(g.hs==null||g.as==null) return {val:null,k:+l.k||0,need:null,state:'unknown'};
+  const m=(l.side==='under'?-1:1)*((g.hs+g.as)-(+l.k||0));
+  return {val:m,k:0,need:null,state:g.state==='post'?(m>0?'hit':(m===0?'push':'missed')):'live'};
+}
 function liveFor(l){
   const g=STATE.games[l.gid]; if(!g) return null;
+  if(l.stat==='total') return Object.assign({},liveTotal(l,g),{game:g});
   if(isGameLeg(l)) return Object.assign({},liveGameLeg(l,g),{game:g});
   if(g.state==='pre') return Object.assign({},liveLeg(l,0,'pre'),{val:0,need:+l.k,game:g,stats:zeroStats(l)});
   const sum=STATE.box[l.gid]; if(!sum) return null;
@@ -3909,7 +3918,7 @@ function gameStrip(p){
 const STAT_NAME={passing_yards:'Passing Yards',passing_tds:'Passing TDs',passing_interceptions:'Interceptions',
   attempts:'Pass Attempts',completions:'Completions',carries:'Rushing Attempts',rushing_yards:'Rushing Yards',
   receptions:'Receptions',receiving_yards:'Receiving Yards',targets:'Targets',scrim_yards:'Scrimmage Yards',
-  any_td:'Touchdowns',fg_made:'Field Goals',fg_att:'FG Attempts',kick_pts:'Kicking Points',ml:'To Win',ats:'To Cover'};
+  any_td:'Touchdowns',fg_made:'Field Goals',fg_att:'FG Attempts',kick_pts:'Kicking Points',ml:'To Win',ats:'To Cover',total:'Total Points'};
 const statName=l=>STAT_NAME[l.stat]||l.stat;
 const targetLabel=(l,k)=>(l.side==='under'&&l.main)?`under ${num(k,k%1?1:0)}`:`${num(k,k%1?1:0)}+`;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -3952,7 +3961,7 @@ function legRow(p,leg,i){
     /* liveGameLeg folds the line into the margin, so leg.k is the line as the book wrote it
        from this side. A money line has none: the target is simply to win. */
     const bk=+l.k||0;
-    const tgt=l.stat==='ml'?'Win':`${bk>0?'+':''}${num(bk,bk%1?1:0)}`;
+    const tgt=l.stat==='ml'?'Win':(l.stat==='total'?`${l.side==='under'?'Under':'Over'} ${num(bk,bk%1?1:0)}`:`${bk>0?'+':''}${num(bk,bk%1?1:0)}`);
     const word=!r?'waiting'
       :(r.state==='unknown'?'not reported'
         :(r.state==='hit'?'won':(r.state==='missed'?'lost':(r.state==='push'?'level'

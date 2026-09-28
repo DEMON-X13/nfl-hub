@@ -313,6 +313,16 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     const pc = await chip(propOnly, 'in');
     chk(/\btie\b/.test(pc.className), 'a leg still short with the game running is not yellow');
     chk(!!pc.closest('.games'), 'a prop-only game lost its score strip');
+    /* a game total: CAR 17, ATL 20 is 37 points, clear of 36.5 over and short of 42.5 */
+    const tot = (line, side) => ({ updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 't', week: 2, stake: 1, legs: [{ game: 0, player: 'Total', team: 'ATL', stat: 'total', line, side, main: true }] }] });
+    { const x = await run({ file: tot(36.5, 'over'), state: 'in' }), row = x.d.querySelector('.sp-leg');
+      chk(!!row && target(row) === 'Over 36.5' && /Total Points/.test(txt(row)) && knob(row) === '+0.5', 'a game total over its line does not read Over 36.5, +0.5: ' + txt(row));
+      chk(/\bgood\b/.test(row.querySelector('.gm').className) && x.calls.filter(u => u.includes('/summary?')).length === 0, 'a total being won is not green, or it fetched a box score'); }
+    { const x = await run({ file: tot(42.5, 'over'), state: 'post' }), row = x.d.querySelector('.sp-leg');
+      chk(/\bloss\b/.test(row.querySelector('.res').className) && knob(row) === '-5.5', 'a total that finished under an over bet is not lost: ' + txt(row)); }
+    { const x = await run({ file: tot(42.5, 'under'), state: 'post' }), row = x.d.querySelector('.sp-leg');
+      chk(/\bwin\b/.test(row.querySelector('.res').className) && target(row) === 'Under 42.5', 'an under that finished under is not won: ' + txt(row)); }
     const pre = await chip(winning, 'pre');
     chk(!/good|bad|tie/.test(pre.className), 'a game that has not kicked off is coloured');
   }
