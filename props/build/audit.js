@@ -470,8 +470,18 @@ setTimeout(async()=>{
     console.log(`Q. same-game pricing: 2 legs multiply to ${mult.toFixed(2)}, priced together ${sgp.toFixed(2)} (${(100*(1-sgp/mult)).toFixed(0)}% shorter)`); }
 
   /* ---- O. one suggested parlay on the game page ---- */
-  { const g=openUpcoming(); const card=d.querySelector('.gsugg');
+  { const g=openUpcoming(); let card=d.querySelector('.gsugg');
     chk(!!card,'the game page has no suggested parlay section');
+    { const sw=[...card.querySelectorAll('[data-gsugg-side]')];
+      chk(sw.length===3&&sw.filter(b=>b.classList.contains('on')).length===1,'the game card has no side switch, or not one side on');
+      const was=S.ui.suggestSide;
+      sw.find(b=>b.dataset.gsuggSide==='over').click();
+      chk(S.ui.suggestSide==='over'&&d.querySelector('.gsugg [data-gsugg-side="over"]')?.classList.contains('on'),'the game card switch did not take or did not redraw');
+      chk(F('gameSuggestion')(g).legs.every(l=>l.grp!=='TEAM'&&l.side==='over'),'with overs on, the game card still has a leg that is not a player over');
+      d.querySelector('.gsugg [data-gsugg-side="any"]').click();
+      chk(S.ui.suggestSide==='any','Any did not come back on the game card');
+      S.ui.suggestSide=was; }
+    card=d.querySelector('.gsugg');
     const s=F('gameSuggestion')(g);
     chk(s.legs.length===0||s.legs.length<=3,`a game suggestion ran to ${s.legs.length} legs`);
     chk(s.legs.every(l=>l.src==='real'),'a game suggestion used a line with no real price');
