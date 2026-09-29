@@ -189,5 +189,9 @@ const RESULTS = {
  "wk3:LAR-DEN": [
   26,
   30
+ ],
+ "wk3:PHI-CHI": [
+  7,
+  27
  ]
 };
