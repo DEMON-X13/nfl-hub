@@ -8,30 +8,30 @@
   {
    "col": "kickoff_return_yards",
    "fit": 49.111,
-   "now": 105.457,
-   "z": 1.25
+   "now": 104.323,
+   "z": 1.22
   },
   {
    "col": "kickoff_returns",
    "fit": 2.037,
-   "now": 4.032,
-   "z": 1.17
+   "now": 3.99,
+   "z": 1.14
   },
   {
    "col": "def_tackles_with_assist",
    "fit": 4.44,
-   "now": 0.723,
-   "z": -1.0
+   "now": 0.75,
+   "z": -0.99
   },
   {
    "col": "def_tackle_assists",
    "fit": 24.034,
-   "now": 30.851,
+   "now": 30.833,
    "z": 0.8
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-28T22:15+00:00",
+ "generated": "2026-09-29T08:58+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -222,7 +222,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.212,
+     "v": 1.2121,
      "c": -0.044
     },
     {
@@ -324,7 +324,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.3932,
+     "v": 1.3933,
      "c": -0.044
     },
     {
@@ -523,7 +523,7 @@
     },
     {
      "f": "off_home",
-     "v": 0.0752,
+     "v": 0.0751,
      "c": 0.0279
     },
     {
@@ -788,7 +788,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.2211,
+     "v": 1.2212,
      "c": -0.044
     },
     {
@@ -2436,7 +2436,7 @@
    "away": "PHI",
    "pick": "CHI",
    "pHome": 0.5519,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2478,6 +2478,822 @@
      "f": "td_def_tackles_solo_A",
      "v": 40.0,
      "c": 0.0619
+    }
+   ]
+  },
+  "2026_04_PIT_CLE": {
+   "week": 4,
+   "home": "CLE",
+   "away": "PIT",
+   "pick": "CLE",
+   "pHome": 0.5051,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": 124.0,
+     "c": -0.6137
+    },
+    {
+     "f": "pg_passing_tds_H",
+     "v": 2.0,
+     "c": 0.1761
+    },
+    {
+     "f": "td_def_fumbles_forced_A",
+     "v": 1.6667,
+     "c": 0.1436
+    },
+    {
+     "f": "td_pt_returned_A",
+     "v": 2.6667,
+     "c": 0.1369
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.1303
+    },
+    {
+     "f": "pg_fg_made_distance_H",
+     "v": 93.0,
+     "c": -0.1258
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 2.0,
+     "c": 0.1092
+    },
+    {
+     "f": "td_fumble_recovery_opp_A",
+     "v": 1.0,
+     "c": 0.1044
+    }
+   ]
+  },
+  "2026_04_IND_WAS": {
+   "week": 4,
+   "home": "WAS",
+   "away": "IND",
+   "pick": "IND",
+   "pHome": 0.4265,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": 154.0,
+     "c": -0.6137
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 2.0,
+     "c": 0.1095
+    },
+    {
+     "f": "td_rushing_40_H",
+     "v": 0.0,
+     "c": -0.0904
+    },
+    {
+     "f": "wt_away",
+     "v": 7.5,
+     "c": 0.087
+    },
+    {
+     "f": "pg_fg_made_distance_H",
+     "v": 93.0,
+     "c": -0.0797
+    },
+    {
+     "f": "td_def_tackle_assists_A",
+     "v": 35.3333,
+     "c": 0.0721
+    },
+    {
+     "f": "sr_home",
+     "v": 0.0446,
+     "c": 0.065
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 3.0,
+     "c": -0.0641
+    }
+   ]
+  },
+  "2026_04_ARI_NYG": {
+   "week": 4,
+   "home": "NYG",
+   "away": "ARI",
+   "pick": "ARI",
+   "pHome": 0.4362,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -105.0,
+     "c": -0.162
+    },
+    {
+     "f": "pg_fg_made_distance_H",
+     "v": 135.0,
+     "c": -0.1258
+    },
+    {
+     "f": "td_receiving_fumbles_H",
+     "v": 0.6667,
+     "c": -0.097
+    },
+    {
+     "f": "td_penalty_yards_H",
+     "v": 74.0,
+     "c": -0.0862
+    },
+    {
+     "f": "td_passing_40_A",
+     "v": 0.0,
+     "c": -0.0783
+    },
+    {
+     "f": "spread_line",
+     "v": -1.5,
+     "c": -0.0642
+    },
+    {
+     "f": "pg_passing_16_H",
+     "v": 1.0,
+     "c": 0.0637
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 221.3333,
+     "c": -0.0535
+    }
+   ]
+  },
+  "2026_04_DAL_HOU": {
+   "week": 4,
+   "home": "HOU",
+   "away": "DAL",
+   "pick": "DAL",
+   "pHome": 0.4929,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "pg_passing_yards_after_catch_H",
+     "v": 30.0,
+     "c": -0.1753
+    },
+    {
+     "f": "d_sr_home",
+     "v": 0.0915,
+     "c": 0.1512
+    },
+    {
+     "f": "td_def_qb_hits_A",
+     "v": 4.3333,
+     "c": -0.115
+    },
+    {
+     "f": "home_moneyline",
+     "v": -142.0,
+     "c": 0.105
+    },
+    {
+     "f": "td_kickoff_return_yards_H",
+     "v": 143.3333,
+     "c": -0.0926
+    },
+    {
+     "f": "spread_line",
+     "v": 2.5,
+     "c": -0.0673
+    },
+    {
+     "f": "total_line",
+     "v": 47.5,
+     "c": -0.0665
+    },
+    {
+     "f": "td_def_tackles_solo_A",
+     "v": 41.0,
+     "c": 0.0619
+    }
+   ]
+  },
+  "2026_04_GB_TB": {
+   "week": 4,
+   "home": "TB",
+   "away": "GB",
+   "pick": "GB",
+   "pHome": 0.3969,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": 160.0,
+     "c": -0.6137
+    },
+    {
+     "f": "td_fumble_recovery_yards_own_A",
+     "v": 1.6667,
+     "c": 0.2383
+    },
+    {
+     "f": "pg_fg_made_distance_H",
+     "v": 120.0,
+     "c": -0.1258
+    },
+    {
+     "f": "td_fumbles_not_forced_A",
+     "v": 0.6667,
+     "c": 0.1061
+    },
+    {
+     "f": "td_kickoff_return_yards_H",
+     "v": 173.6667,
+     "c": -0.0926
+    },
+    {
+     "f": "td_receiving_40_H",
+     "v": 0.6667,
+     "c": 0.0774
+    },
+    {
+     "f": "td_pt_fair_caught_H",
+     "v": 2.0,
+     "c": -0.0711
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 1.0,
+     "c": -0.0641
+    }
+   ]
+  },
+  "2026_04_JAX_CIN": {
+   "week": 4,
+   "home": "CIN",
+   "away": "JAX",
+   "pick": "CIN",
+   "pHome": 0.5533,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -148.0,
+     "c": 0.1769
+    },
+    {
+     "f": "spread_line",
+     "v": 2.5,
+     "c": -0.085
+    },
+    {
+     "f": "td_def_tackle_assists_A",
+     "v": 31.6667,
+     "c": 0.0721
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 160.0,
+     "c": 0.071
+    },
+    {
+     "f": "pg_passing_cpoe_A",
+     "v": 5.9629,
+     "c": -0.0683
+    },
+    {
+     "f": "td_def_fumbles_forced_H",
+     "v": 1.3333,
+     "c": -0.0642
+    },
+    {
+     "f": "off_away",
+     "v": 0.1226,
+     "c": 0.0639
+    },
+    {
+     "f": "td_def_sacks_A",
+     "v": 2.3333,
+     "c": -0.04
+    }
+   ]
+  },
+  "2026_04_LA_PHI": {
+   "week": 4,
+   "home": "PHI",
+   "away": "LA",
+   "pick": "LA",
+   "pHome": 0.4779,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": 124.0,
+     "c": -0.6137
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.1303
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 2.6667,
+     "c": 0.1264
+    },
+    {
+     "f": "td_receiving_40_H",
+     "v": 0.6667,
+     "c": 0.0774
+    },
+    {
+     "f": "away_moneyline",
+     "v": -148.0,
+     "c": 0.0668
+    },
+    {
+     "f": "td_fumbles_not_forced_A",
+     "v": 0.0,
+     "c": -0.0663
+    },
+    {
+     "f": "td_def_tackles_with_assist_A",
+     "v": 0.0,
+     "c": 0.0557
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 212.6667,
+     "c": -0.0535
+    }
+   ]
+  },
+  "2026_04_NE_BUF": {
+   "week": 4,
+   "home": "BUF",
+   "away": "NE",
+   "pick": "BUF",
+   "pHome": 0.694,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -305.0,
+     "c": 0.8572
+    },
+    {
+     "f": "spread_line",
+     "v": 7.0,
+     "c": -0.125
+    },
+    {
+     "f": "d_expl_home",
+     "v": 0.109,
+     "c": -0.1238
+    },
+    {
+     "f": "td_pt_fair_caught_A",
+     "v": 1.3333,
+     "c": -0.1091
+    },
+    {
+     "f": "pg_pt_long_A",
+     "v": 73.0,
+     "c": 0.0872
+    },
+    {
+     "f": "pg_fg_pct_A",
+     "v": 0.6667,
+     "c": 0.067
+    },
+    {
+     "f": "td_sack_fumbles_lost_H",
+     "v": 0.3333,
+     "c": -0.0592
+    },
+    {
+     "f": "td_def_fg_blocks_H",
+     "v": 0.0,
+     "c": -0.0404
+    }
+   ]
+  },
+  "2026_04_NYJ_CHI": {
+   "week": 4,
+   "home": "CHI",
+   "away": "NYJ",
+   "pick": "CHI",
+   "pHome": 0.5865,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -198.0,
+     "c": 0.4985
+    },
+    {
+     "f": "spread_line",
+     "v": 3.5,
+     "c": -0.125
+    },
+    {
+     "f": "td_def_tackle_assists_H",
+     "v": 27.3333,
+     "c": -0.1073
+    },
+    {
+     "f": "td_def_fumbles_forced_A",
+     "v": 1.6667,
+     "c": -0.1013
+    },
+    {
+     "f": "td_fumble_recovery_yards_own_A",
+     "v": -5.6667,
+     "c": -0.0808
+    },
+    {
+     "f": "td_fg_blocked_H",
+     "v": 0.3333,
+     "c": 0.0749
+    },
+    {
+     "f": "pg_passing_cpoe_A",
+     "v": 14.7828,
+     "c": -0.0683
+    },
+    {
+     "f": "td_fg_blocked_distance_H",
+     "v": 7.6667,
+     "c": 0.0555
+    }
+   ]
+  },
+  "2026_04_TEN_BAL": {
+   "week": 4,
+   "home": "BAL",
+   "away": "TEN",
+   "pick": "BAL",
+   "pHome": 0.7982,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -750.0,
+     "c": 0.8572
+    },
+    {
+     "f": "pg_fg_pct_A",
+     "v": 0.0,
+     "c": -0.4727
+    },
+    {
+     "f": "spread_line",
+     "v": 11.5,
+     "c": 0.4667
+    },
+    {
+     "f": "pg_def_tackles_for_loss_H",
+     "v": 6.0,
+     "c": -0.1865
+    },
+    {
+     "f": "td_def_fg_blocks_H",
+     "v": 0.3333,
+     "c": 0.1444
+    },
+    {
+     "f": "pg_sack_yards_lost_A",
+     "v": 0.0,
+     "c": 0.14
+    },
+    {
+     "f": "pg_punt_return_yards_A",
+     "v": 38.0,
+     "c": -0.1265
+    },
+    {
+     "f": "pg_passing_yards_after_catch_H",
+     "v": 91.0,
+     "c": 0.0948
+    }
+   ]
+  },
+  "2026_04_MIA_MIN": {
+   "week": 4,
+   "home": "MIN",
+   "away": "MIA",
+   "pick": "MIN",
+   "pHome": 0.7854,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -750.0,
+     "c": 0.8572
+    },
+    {
+     "f": "td_fumble_recovery_yards_own_A",
+     "v": -3.6667,
+     "c": -0.6159
+    },
+    {
+     "f": "spread_line",
+     "v": 10.5,
+     "c": 0.4667
+    },
+    {
+     "f": "td_fg_made_30_39_H",
+     "v": 1.0,
+     "c": 0.2692
+    },
+    {
+     "f": "pg_def_tackles_solo_A",
+     "v": 27.0,
+     "c": -0.1614
+    },
+    {
+     "f": "td_def_fg_blocks_H",
+     "v": 0.3333,
+     "c": 0.1444
+    },
+    {
+     "f": "pg_passing_yards_after_catch_H",
+     "v": 76.0,
+     "c": 0.0948
+    },
+    {
+     "f": "pg_fg_made_distance_H",
+     "v": 153.0,
+     "c": -0.0797
+    }
+   ]
+  },
+  "2026_04_DEN_SF": {
+   "week": 4,
+   "home": "SF",
+   "away": "DEN",
+   "pick": "SF",
+   "pHome": 0.5326,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "pg_def_tackle_assists_H",
+     "v": 48.0,
+     "c": -0.1857
+    },
+    {
+     "f": "home_moneyline",
+     "v": -148.0,
+     "c": 0.1769
+    },
+    {
+     "f": "pg_punt_return_yards_H",
+     "v": 7.0,
+     "c": -0.1066
+    },
+    {
+     "f": "spread_line",
+     "v": 3.0,
+     "c": -0.085
+    },
+    {
+     "f": "d_to_home",
+     "v": 0.7496,
+     "c": -0.0736
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 110.6667,
+     "c": 0.071
+    },
+    {
+     "f": "def_home",
+     "v": 0.0235,
+     "c": 0.066
+    },
+    {
+     "f": "pg_def_interception_yards_A",
+     "v": 66.0,
+     "c": 0.0613
+    }
+   ]
+  },
+  "2026_04_KC_LV": {
+   "week": 4,
+   "home": "LV",
+   "away": "KC",
+   "pick": "KC",
+   "pHome": 0.3137,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": 190.0,
+     "c": -0.892
+    },
+    {
+     "f": "td_rushing_epa_H",
+     "v": -7.7036,
+     "c": -0.1285
+    },
+    {
+     "f": "away_moneyline",
+     "v": -230.0,
+     "c": -0.1114
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 2.3333,
+     "c": 0.1095
+    },
+    {
+     "f": "td_fumbles_not_forced_A",
+     "v": 0.6667,
+     "c": 0.1061
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.0844
+    },
+    {
+     "f": "pg_fg_made_distance_H",
+     "v": 103.0,
+     "c": -0.0843
+    },
+    {
+     "f": "td_def_qb_hits_A",
+     "v": 3.3333,
+     "c": -0.0813
+    }
+   ]
+  },
+  "2026_04_LAC_SEA": {
+   "week": 4,
+   "home": "SEA",
+   "away": "LAC",
+   "pick": "SEA",
+   "pHome": 0.7087,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -355.0,
+     "c": 0.8572
+    },
+    {
+     "f": "td_timeouts_H",
+     "v": 5.6667,
+     "c": -0.1297
+    },
+    {
+     "f": "spread_line",
+     "v": 7.0,
+     "c": -0.125
+    },
+    {
+     "f": "pg_passing_first_downs_H",
+     "v": 22.0,
+     "c": 0.1147
+    },
+    {
+     "f": "d_pass_epa_away",
+     "v": 0.0741,
+     "c": -0.0983
+    },
+    {
+     "f": "pg_fg_pct_A",
+     "v": 0.75,
+     "c": 0.0434
+    },
+    {
+     "f": "td_def_fg_blocks_H",
+     "v": 0.0,
+     "c": -0.0404
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 164.6667,
+     "c": 0.038
+    }
+   ]
+  },
+  "2026_04_DET_CAR": {
+   "week": 4,
+   "home": "CAR",
+   "away": "DET",
+   "pick": "DET",
+   "pHome": 0.3244,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": 160.0,
+     "c": -0.6137
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 4.3333,
+     "c": -0.2371
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.1303
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 159.6667,
+     "c": 0.1296
+    },
+    {
+     "f": "td_fumble_recovery_yards_own_A",
+     "v": -5.6667,
+     "c": -0.1094
+    },
+    {
+     "f": "td_fumble_recovery_opp_A",
+     "v": 0.6667,
+     "c": 0.1044
+    },
+    {
+     "f": "td_passing_40_A",
+     "v": 0.3333,
+     "c": -0.0783
+    },
+    {
+     "f": "td_receiving_epa_A",
+     "v": 14.8362,
+     "c": -0.0774
+    }
+   ]
+  },
+  "2026_04_ATL_NO": {
+   "week": 4,
+   "home": "NO",
+   "away": "ATL",
+   "pick": "NO",
+   "pHome": 0.5394,
+   "played": false,
+   "base": 0.1738,
+   "why": [
+    {
+     "f": "home_moneyline",
+     "v": -155.0,
+     "c": 0.1769
+    },
+    {
+     "f": "spread_line",
+     "v": 3.0,
+     "c": -0.085
+    },
+    {
+     "f": "td_pt_yards_H",
+     "v": 162.3333,
+     "c": 0.071
+    },
+    {
+     "f": "pg_passing_cpoe_A",
+     "v": 8.7743,
+     "c": -0.0683
+    },
+    {
+     "f": "td_passing_epa_H",
+     "v": 2.0982,
+     "c": 0.0676
+    },
+    {
+     "f": "td_def_fumbles_forced_H",
+     "v": 1.3333,
+     "c": -0.0642
+    },
+    {
+     "f": "td_targets_A",
+     "v": 24.3333,
+     "c": -0.0608
+    },
+    {
+     "f": "td_fumble_recovery_yards_own_H",
+     "v": -2.0,
+     "c": 0.0378
     }
    ]
   }
