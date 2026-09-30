@@ -31,7 +31,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-30T19:36+00:00",
+ "generated": "2026-09-30T23:11+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -2588,14 +2588,14 @@
    "home": "NYG",
    "away": "ARI",
    "pick": "ARI",
-   "pHome": 0.4362,
+   "pHome": 0.4859,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 110.0,
-     "c": -0.162
+     "v": 114.0,
+     "c": -0.3199
     },
     {
      "f": "pg_fg_made_distance_H",
@@ -2603,19 +2603,19 @@
      "c": -0.1258
     },
     {
-     "f": "td_receiving_fumbles_H",
-     "v": 0.6667,
-     "c": -0.097
-    },
-    {
-     "f": "td_penalty_yards_H",
-     "v": 74.0,
-     "c": -0.0862
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.0975
     },
     {
      "f": "td_passing_40_A",
      "v": 0.0,
      "c": -0.0783
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 0.6667,
+     "c": 0.0767
     },
     {
      "f": "spread_line",
@@ -2628,9 +2628,9 @@
      "c": 0.0637
     },
     {
-     "f": "td_pt_yards_H",
-     "v": 221.3333,
-     "c": -0.0535
+     "f": "td_def_tackles_with_assist_A",
+     "v": 1.0,
+     "c": 0.0557
     }
    ]
   },
@@ -2639,10 +2639,15 @@
    "home": "HOU",
    "away": "DAL",
    "pick": "DAL",
-   "pHome": 0.4929,
+   "pHome": 0.4427,
    "played": false,
    "base": 0.1738,
    "why": [
+    {
+     "f": "home_moneyline",
+     "v": -162.0,
+     "c": 0.1769
+    },
     {
      "f": "pg_passing_yards_after_catch_H",
      "v": 30.0,
@@ -2659,9 +2664,14 @@
      "c": -0.115
     },
     {
-     "f": "home_moneyline",
-     "v": -142.0,
-     "c": 0.105
+     "f": "td_def_tackle_assists_H",
+     "v": 33.0,
+     "c": -0.1073
+    },
+    {
+     "f": "td_def_fumbles_forced_A",
+     "v": 2.0,
+     "c": -0.1013
     },
     {
      "f": "td_kickoff_return_yards_H",
@@ -2670,18 +2680,8 @@
     },
     {
      "f": "spread_line",
-     "v": 2.5,
-     "c": -0.0673
-    },
-    {
-     "f": "total_line",
-     "v": 48.5,
-     "c": -0.0665
-    },
-    {
-     "f": "td_def_tackles_solo_A",
-     "v": 41.0,
-     "c": 0.0619
+     "v": 3.0,
+     "c": -0.085
     }
    ]
   },
@@ -2696,7 +2696,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 154.0,
+     "v": 145.0,
      "c": -0.6137
     },
     {
@@ -2900,7 +2900,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -180.0,
+     "v": -175.0,
      "c": 0.1769
     },
     {
@@ -3206,7 +3206,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 154.0,
+     "v": 150.0,
      "c": -0.6137
     },
     {
