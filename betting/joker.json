@@ -26,12 +26,12 @@
   {
    "col": "def_tackle_assists",
    "fit": 24.034,
-   "now": 30.833,
+   "now": 30.854,
    "z": 0.8
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-30T07:18+00:00",
+ "generated": "2026-09-30T14:10+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -2849,12 +2849,12 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -298.0,
+     "v": -290.0,
      "c": 0.8572
     },
     {
      "f": "spread_line",
-     "v": 7.0,
+     "v": 6.5,
      "c": -0.125
     },
     {
@@ -2951,7 +2951,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -750.0,
+     "v": -700.0,
      "c": 0.8572
     },
     {
@@ -3257,7 +3257,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -155.0,
+     "v": -148.0,
      "c": 0.1769
     },
     {
