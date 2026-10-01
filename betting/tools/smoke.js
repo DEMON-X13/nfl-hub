@@ -172,20 +172,29 @@ function load(picks) {
       const tiles = de.getElementById('recordStats').textContent.replace(/\s+/g, ' ');
       check(n > 0 && tiles.includes(`Vegas straight-up, ${c} of ${n}`), `embed: the headline tiles should be Vegas's ${c} of ${n}: ` + tiles.slice(0, 120)); }
     check(!/Main Model|main model/.test(de.body.textContent), 'embed: the page still says Main Model somewhere');
-    /* the Bet Log: the running-profit chart with a solid, labelled zero line, the balance first
-       among the figures under it (deposit plus every week's net), and the table's running total
-       with the balance after each week beside it */
+    /* the Bet Log as a bankroll: a Balance view (the account from the deposit, its reference line
+       labelled, the latest balance at the line's end) and a Weekly P&L view (a column a week from $0,
+       each labelled with its signed amount, a week off saying so), switched in place; the balance
+       first among the figures; the table's running total with the balance beside it */
     { const SB = e.window.eval('S'); const keepB = JSON.stringify(SB.bets || {}), keepK = JSON.stringify(SB.bank || {});
+      const M = '\u2212', tx = el => el.textContent.replace(/\s+/g, ' ');
       SB.bets = { 1: { staked: 10, returned: 8.71, note: '' }, 3: { staked: 11, returned: 14.66, note: '' } };
-      SB.bank = Object.assign({}, SB.bank || {}, { deposit: 100 }); e.window.eval('renderRecord()');
-      const bc = de.getElementById('betChart'), bt = de.getElementById('betTable'), bctx = bc.textContent.replace(/\s+/g, ' ');
-      const zl = [...bc.querySelectorAll('svg line')].find(l => l.getAttribute('stroke') === '#3B4552');
-      check(!!bc.querySelector('svg.wowchart') && !!zl && !zl.getAttribute('stroke-dasharray') && /break even/.test(bc.querySelector('svg').textContent), 'embed: the Bet Log chart is gone or its zero line is not solid and labelled');
-      check(bc.querySelector('.stat-strip .stat').classList.contains('bv-balance') && bc.querySelector('.bv-balance b').textContent === '$102.37' && /\+\$2\.37/.test(bctx) && /total staked/.test(bctx) && /1 of 2/.test(bctx), 'embed: the figures do not lead with the balance $102.37 beside net +$2.37: ' + bctx.slice(0, 200));
-      const heads = [...bt.querySelectorAll('thead th')].map(th => th.textContent), cells = i => [...bt.querySelectorAll('tbody tr')].map(tr => tr.children[i].textContent).join('|');
-      check(heads.includes('Running') && heads.includes('Balance') && cells(4) === '-$1.29|+$2.37' && cells(5) === '$98.71|$102.37', 'embed: the table does not carry the running total and the balance: ' + cells(4) + ' / ' + cells(5));
-      de.getElementById('betDeposit').value = ''; de.getElementById('betDepositSave').click();
-      check(SB.bank.deposit === null && de.querySelector('#betChart .bv-balance b').textContent === '–' && ![...de.querySelectorAll('#betTable thead th')].some(th => th.textContent === 'Balance'), 'embed: clearing the deposit does not drop the balance');
+      SB.bank = Object.assign({}, SB.bank || {}, { deposit: 100, betView: 'balance' }); e.window.eval('renderRecord()');
+      let bc = de.getElementById('betChart');
+      check(!!bc.querySelector('svg.bv-balance') && /Deposited \$100\.00/.test(tx(bc.querySelector('svg'))) && tx(bc.querySelector('.bv-end')) === '$102.37'
+        && ['Start', 'Wk 1', 'Wk 2', 'Wk 3'].every(l => tx(bc.querySelector('svg')).includes(l)) && bc.querySelectorAll('svg circle').length === 3,
+        'embed: the Balance view does not run Start to week 3 from the $100 deposit to $102.37, week 2 included: ' + tx(bc.querySelector('svg') || bc).slice(0, 160));
+      check(bc.querySelector('.stat-strip .stat').classList.contains('bv-balance') && tx(bc.querySelector('.bv-balance b')) === '$102.37' && /\+\$2\.37/.test(tx(bc)) && /1 of 2/.test(tx(bc)), 'embed: the figures do not lead with the balance $102.37');
+      bc.querySelector('[data-bv="pnl"]').click(); bc = de.getElementById('betChart');
+      const ptxt = tx(bc.querySelector('svg') || bc);
+      check(SB.bank.betView === 'pnl' && !!bc.querySelector('svg.bv-pnl') && ptxt.includes(M + '$1.29') && ptxt.includes('+$3.66') && /no bets/.test(ptxt) && bc.querySelectorAll('svg path').length === 2,
+        'embed: the Weekly P&L view does not show a labelled column for weeks 1 and 3 and say week 2 had no bets: ' + ptxt.slice(0, 160));
+      bc.querySelector('.bv-hit[data-i="2"]').dispatchEvent(new e.window.Event('mouseenter'));
+      check(/Week 3/.test(tx(bc.querySelector('.bv-tip'))) && /Balance \$102\.37/.test(tx(bc.querySelector('.bv-tip'))), 'embed: hovering week 3 does not show its money and the balance: ' + tx(bc.querySelector('.bv-tip')));
+      const bt = de.getElementById('betTable'), cells = i => [...bt.querySelectorAll('tbody tr')].map(tr => tr.children[i].textContent).join('|');
+      check(cells(4) === M + '$1.29|+$2.37' && cells(5) === '$98.71|$102.37', 'embed: the table does not carry the running total and the balance: ' + cells(4) + ' / ' + cells(5));
+      SB.bank.betView = 'balance'; de.getElementById('betDeposit').value = ''; de.getElementById('betDepositSave').click();
+      check(SB.bank.deposit === null && tx(de.querySelector('#betChart .bv-balance b')) === '–' && /Break even/.test(tx(de.querySelector('#betChart svg'))) && ![...de.querySelectorAll('#betTable thead th')].some(th => th.textContent === 'Balance'), 'embed: without a deposit the chart does not fall back to break even');
       SB.bets = JSON.parse(keepB); SB.bank = JSON.parse(keepK); e.window.eval('renderRecord()'); }
     check(/= Vegas/.test(rec.querySelector('svg.rv-chart').textContent), 'embed: the zero line is not marked as Vegas');
     /* the Main Model against Vegas, counted here from the published games */
