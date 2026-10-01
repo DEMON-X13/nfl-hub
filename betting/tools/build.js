@@ -502,12 +502,9 @@ if (/<\/script/i.test(VIZ_JS)) throw new Error('record_viz.js must not contain a
 /* the scripts go in with String.replace, where $' $` $& and $$ are patterns, not text */
 if (/\$['`&$]/.test(VIZ_JS)) throw new Error('a viz script contains a $ pattern that String.replace would expand; write the dollar sign as \\u0024');
 const VIZ = `<style>
-.bv-top{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.bv-bal{flex:1;min-width:200px}
-.bv-bal b{display:block;font-family:var(--display,inherit);font-size:34px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
-.bv-bal span{font-size:13px;color:var(--muted)}
-.bv-dep{font-size:13px;color:var(--ink-2)}
-.bv-dep input{width:110px;margin-left:4px}
+.bv-dep{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 0;font-size:13px;color:var(--ink-2)}
+.bv-dep input{width:100px;margin-left:4px}
+.bv-dep .muted{font-size:12px}
 .rv-wrap{position:relative;margin:4px 0 0}
 .rv-chart{display:block;width:100%;height:auto;overflow:visible}
 .rv-hit{cursor:crosshair}
@@ -599,12 +596,14 @@ function renderAdjust(){`, `
   ratingsViz();
 }
 function renderAdjust(){`, 'Power Ratings, Vegas by default');
-/* the Bet Log: the app draws its chart and table, then betsViz() (bets_viz.js) puts the
-   balance in their place */
+/* the Bet Log: the app draws its chart and table, then betsViz() (bets_viz.js) redraws them
+   with the balance among the figures */
 patch(`function renderBets(){`, `function renderBets(){ renderBetsApp(); betsViz(); }
 function renderBetsApp(){`, 'the Bet Log balance');
-patch(`Enter what you actually staked and what came back, and the chart above the table tracks your balance.`,
-  `Enter what you actually staked and what came back, and your balance below updates.`, 'the Bet Log intro');
+/* the Bet Log chart's zero line (the only chart with zero:true): solid and labelled, so up and
+   down read at a glance, instead of a faint dash */
+patch(`  const zero=(opts.zero&&lo<0&&hi>0)?\`<line x1="\${padL}" x2="\${W-padR}" y1="\${Y(0).toFixed(1)}" y2="\${Y(0).toFixed(1)}" stroke="#9AA4B0" stroke-dasharray="4 4"/>\`:'';`,
+  `  const zero=(opts.zero&&lo<0&&hi>0)?\`<line x1="\${padL}" x2="\${W-padR}" y1="\${Y(0).toFixed(1)}" y2="\${Y(0).toFixed(1)}" stroke="#3B4552" stroke-width="1.5"/><text x="\${W-padR}" y="\${(Y(0)-5).toFixed(1)}" text-anchor="end" font-size="10.5" font-weight="700" fill="#3B4552">break even</text>\`:'';`, 'the Bet Log zero line');
 /* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around
