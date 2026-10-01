@@ -524,6 +524,19 @@ setTimeout(async()=>{
     chk(s2.legs.every(l=>s2.legs.filter(x=>x.pid===l.pid).length<=2),'three legs landed on one player');
     chk(!s2.legs.length||(s2.corr>=0.30||s2.legs.length===2),'a suggestion above two legs fell under the Medium floor');
     chk(!s2.legs.length||(s2.dec>1&&isFinite(s2.dec)),'the suggested price is not a real payout');
+    /* High and Low beside it: High lands at least half the time on two or three legs, Low is
+       Medium with more legs at 15% or better, both from this game alone, priced as one */
+    if(s2.legs.length){ w.eval('GAME_TIER_CACHE={}'); const T=F('gameTiers')(g);
+      const rules=t=>t.legs.every(l=>l.gid===g.id)&&t.legs.filter(l=>l.grp==='TEAM').length<=1&&t.legs.every(l=>t.legs.filter(x=>x.pid===l.pid).length<=2)&&new Set(t.legs.map(l=>l.key)).size===t.legs.length&&t.dec>1;
+      if(T.high) chk(T.high.legs.length>=2&&T.high.legs.length<=3&&T.high.corr>=0.48&&rules(T.high),'the High hand breaks its rules: '+T.high.legs.length+' legs at '+T.high.corr);
+      if(T.low) chk(T.low.legs.length>s2.legs.length&&T.low.legs.length<=5&&s2.legs.every(l=>T.low.legs.some(x=>x.key===l.key))&&T.low.corr>=0.14&&T.low.dec>s2.dec&&rules(T.low),'the Low hand is not Medium grown to a bigger price');
+      chk(F('gameTiers')(g)===T,'the High and Low hands are not cached between renders');
+      d.querySelector('[data-game="'+g.id+'"]').click();
+      chk(d.querySelectorAll('.gsugg .gsugg-tier').length===2,'the card does not show High and Low beside Medium');
+      if(T.high){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
+        d.querySelector('[data-gtier-add="high"]').click();
+        chk(T.high.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add all on High did not put its legs on the parlay');
+        S.parlay=keepP; F('save')(); } }
     if(s2.legs.length){ d.querySelector('[data-game="'+g.id+'"]').click();
       const c2=d.querySelector('.gsugg');
       chk([...c2.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'the card and the suggestion disagree on legs');
