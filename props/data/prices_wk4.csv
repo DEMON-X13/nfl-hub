@@ -1,1 +1,68 @@
 game_id,player,market,threshold,odds
+2026_04_PIT_CLE,Aaron Rodgers,any_td,1,1400
+2026_04_PIT_CLE,Aaron Rodgers,passing_tds,2,152
+2026_04_PIT_CLE,Aaron Rodgers,passing_yards,216,-113
+2026_04_PIT_CLE,Aaron Rodgers,rushing_yards,2,-121
+2026_04_PIT_CLE,Ben Skowronek,any_td,1,1400
+2026_04_PIT_CLE,Blake Whiteheart,any_td,1,950
+2026_04_PIT_CLE,Blake Whiteheart,receiving_yards,4,-111
+2026_04_PIT_CLE,Carsen Ryan,any_td,1,5000
+2026_04_PIT_CLE,Cleveland Browns D/ST,any_td,1,500
+2026_04_PIT_CLE,DK Metcalf,any_td,1,230
+2026_04_PIT_CLE,DK Metcalf,receiving_yards,46,-109
+2026_04_PIT_CLE,DK Metcalf,receptions,4,-140
+2026_04_PIT_CLE,Darnell Washington,any_td,1,600
+2026_04_PIT_CLE,Darnell Washington,receiving_yards,19,-109
+2026_04_PIT_CLE,Darnell Washington,receptions,3,138
+2026_04_PIT_CLE,Denzel Boston,any_td,1,310
+2026_04_PIT_CLE,Denzel Boston,receiving_yards,38,-110
+2026_04_PIT_CLE,Denzel Boston,receptions,3,-141
+2026_04_PIT_CLE,Deshaun Watson,any_td,1,400
+2026_04_PIT_CLE,Deshaun Watson,passing_tds,1,-224
+2026_04_PIT_CLE,Deshaun Watson,passing_yards,187,-112
+2026_04_PIT_CLE,Deshaun Watson,rushing_yards,29,-114
+2026_04_PIT_CLE,Eli Heidenreich,any_td,1,2500
+2026_04_PIT_CLE,Germie Bernard,any_td,1,850
+2026_04_PIT_CLE,Germie Bernard,receiving_yards,10,-115
+2026_04_PIT_CLE,Germie Bernard,receptions,2,139
+2026_04_PIT_CLE,Harold Fannin Jr.,any_td,1,295
+2026_04_PIT_CLE,Harold Fannin Jr.,receiving_yards,41,-111
+2026_04_PIT_CLE,Harold Fannin Jr.,receptions,5,102
+2026_04_PIT_CLE,Isaiah Bond,any_td,1,2200
+2026_04_PIT_CLE,Jaleel McLaughlin,any_td,1,1900
+2026_04_PIT_CLE,Jaylen Warren,any_td,1,-105
+2026_04_PIT_CLE,Jaylen Warren,receiving_yards,26,-116
+2026_04_PIT_CLE,Jaylen Warren,receptions,4,-104
+2026_04_PIT_CLE,Jaylen Warren,rushing_yards,76,-110
+2026_04_PIT_CLE,Jerry Jeudy,any_td,1,1000
+2026_04_PIT_CLE,Jerry Jeudy,receiving_yards,15,-112
+2026_04_PIT_CLE,Jerry Jeudy,receptions,2,125
+2026_04_PIT_CLE,KC Concepcion,any_td,1,310
+2026_04_PIT_CLE,KC Concepcion,receiving_yards,36,-115
+2026_04_PIT_CLE,KC Concepcion,receptions,4,-156
+2026_04_PIT_CLE,KC Concepcion,rushing_yards,1,-103
+2026_04_PIT_CLE,Kaden Wetjen,any_td,1,2000
+2026_04_PIT_CLE,Malachi Corley,any_td,1,2800
+2026_04_PIT_CLE,Michael Burton,any_td,1,4500
+2026_04_PIT_CLE,Michael Pittman Jr.,any_td,1,360
+2026_04_PIT_CLE,Michael Pittman Jr.,receiving_yards,32,-115
+2026_04_PIT_CLE,Michael Pittman Jr.,receptions,4,104
+2026_04_PIT_CLE,Pat Freiermuth,any_td,1,400
+2026_04_PIT_CLE,Pat Freiermuth,receiving_yards,30,-111
+2026_04_PIT_CLE,Pat Freiermuth,receptions,4,112
+2026_04_PIT_CLE,Pittsburgh Steelers D/ST,any_td,1,500
+2026_04_PIT_CLE,Quinshon Judkins,any_td,1,130
+2026_04_PIT_CLE,Quinshon Judkins,receiving_yards,13,-113
+2026_04_PIT_CLE,Quinshon Judkins,receptions,3,148
+2026_04_PIT_CLE,Quinshon Judkins,rushing_yards,56,-110
+2026_04_PIT_CLE,Raheim Sanders,any_td,1,650
+2026_04_PIT_CLE,Raheim Sanders,receiving_yards,13,-114
+2026_04_PIT_CLE,Raheim Sanders,receptions,2,-164
+2026_04_PIT_CLE,Raheim Sanders,rushing_yards,6,-117
+2026_04_PIT_CLE,Riley Nowakowski,any_td,1,2200
+2026_04_PIT_CLE,Robert Tonyan,any_td,1,3000
+2026_04_PIT_CLE,Roman Wilson,any_td,1,475
+2026_04_PIT_CLE,Roman Wilson,receiving_yards,20,-114
+2026_04_PIT_CLE,Roman Wilson,receptions,3,131
+2026_04_PIT_CLE,Travis Homer,any_td,1,1300
+2026_04_PIT_CLE,Travis Homer,rushing_yards,7,-120

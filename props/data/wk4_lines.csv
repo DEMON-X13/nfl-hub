@@ -1,1 +1,39 @@
 stat,player,line,over,under
+passing_tds,Aaron Rodgers,1.5,152,-196
+passing_tds,Deshaun Watson,0.5,-224,173
+passing_yards,Aaron Rodgers,215.5,-113,-111
+passing_yards,Deshaun Watson,186.5,-112,-112
+receiving_yards,DK Metcalf,45.5,-109,-115
+receiving_yards,Harold Fannin Jr.,40.5,-111,-113
+receiving_yards,Denzel Boston,37.5,-110,-114
+receiving_yards,KC Concepcion,35.5,-115,-109
+receiving_yards,Michael Pittman Jr.,31.5,-115,-109
+receiving_yards,Pat Freiermuth,29.5,-111,-113
+receiving_yards,Jaylen Warren,25.5,-116,-108
+receiving_yards,Roman Wilson,19.5,-114,-110
+receiving_yards,Darnell Washington,18.5,-109,-115
+receiving_yards,Jerry Jeudy,14.5,-112,-112
+receiving_yards,Raheim Sanders,12.5,-114,-110
+receiving_yards,Quinshon Judkins,12.5,-113,-111
+receiving_yards,Germie Bernard,9.5,-115,-109
+receiving_yards,Blake Whiteheart,3.5,-111,-113
+receptions,Harold Fannin Jr.,4.5,102,-130
+receptions,KC Concepcion,3.5,-156,122
+receptions,DK Metcalf,3.5,-140,110
+receptions,Jaylen Warren,3.5,-104,-122
+receptions,Michael Pittman Jr.,3.5,104,-132
+receptions,Pat Freiermuth,3.5,112,-143
+receptions,Denzel Boston,2.5,-141,111
+receptions,Roman Wilson,2.5,131,-168
+receptions,Darnell Washington,2.5,138,-177
+receptions,Quinshon Judkins,2.5,148,-191
+receptions,Raheim Sanders,1.5,-164,128
+receptions,Jerry Jeudy,1.5,125,-160
+receptions,Germie Bernard,1.5,139,-179
+rushing_yards,Jaylen Warren,75.5,-110,-114
+rushing_yards,Quinshon Judkins,55.5,-110,-114
+rushing_yards,Deshaun Watson,28.5,-114,-110
+rushing_yards,Travis Homer,6.5,-120,-104
+rushing_yards,Raheim Sanders,5.5,-117,-107
+rushing_yards,Aaron Rodgers,1.5,-121,-104
+rushing_yards,KC Concepcion,0.5,-103,-122
