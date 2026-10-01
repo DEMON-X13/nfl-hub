@@ -1136,7 +1136,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v71 \u00b7 2026-09-28';
+const APP_BUILD='app v72 \u00b7 2026-10-01';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2863,6 +2863,13 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
 function suggestCandidates(games){
   const out=pricedLegs(games);
   const edge=c=>c.p-mlProb(c.price);
+  /* Player overs has no minimum: the best overs on offer, ranked by how far the model and
+     market + form together put each above the book, whether or not either clears it */
+  if(suggestSide()==='over'){
+    const both=c=>{ const a=typeof window.eloAltP==='function'?window.eloAltP(c.pid,c.side,c.price,c.src):null;
+      return a==null?edge(c):(edge(c)+(a-mlProb(c.price)))/2; };
+    return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&sideAllows(c)).sort((a,b)=>both(b)-both(a)).slice(0,40);
+  }
   return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&edge(c)>=0.03&&formAgrees(c)&&sideAllows(c)).sort((a,b)=>edge(b)-edge(a)).slice(0,40);
 }
 function buildSuggestions(){
@@ -3032,7 +3039,7 @@ function gameSuggestCard(g,locked){
         <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}, and ${on?'take it off':'put it on'} the parlay">
         <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>${on?'<span class="lk">locked</span>':''}
         <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
-    <p class="muted gsugg-ft">Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
+    <p class="muted gsugg-ft">${suggestSide()==='over'?'Player overs, best available: no minimum, so a leg can sit below the book\u2019s price. ':''}Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
@@ -3055,7 +3062,7 @@ function suggestCard(inModal){
       body=`<p class="muted" style="margin:0">No ${suggestSide()==='any'?'':'player-'+suggestSide()+' '}suggestions for week ${w} yet. They use only lines with a real sportsbook price that the model rates above the book and that market + form, the book's chance moved by the player's Elo, also rates three points above it, ${s.candidates?`and only ${s.candidates} line${s.candidates===1?'':'s'} qualify so far`:'and none qualify yet'}. Player prices arrive with the Thursday and Saturday pulls.${suggestSide()==='any'?'':' Any switches the game bets and the other side back on.'}</p>`;
     } else {
       const tag={safe:'high',med:'med',aggr:'low'};
-      body=`<p class="muted" style="margin:0 0 14px">Built from week ${w} lines with a real sportsbook price that the model rates above the book and that market + form, the book's chance moved by the player's Elo, also rates three points above it${suggestSide()==='any'?'':`, player ${suggestSide()}s only`}. Safe is the most likely pair, kept at 50% or better when the lines allow it; Medium and Aggressive add legs to the same core for a bigger payout. Payouts are on a $${stake.toFixed(2)} bet, which you can change above.${s.tiers[s.tiers.length-1].legs.every(l=>l.grp==='TEAM')?' Only game bets qualify so far; player lines join when this week’s prices are pulled on Thursday and Saturday.':''}</p>
+      body=`<p class="muted" style="margin:0 0 14px">${suggestSide()==='over'?`The best player overs on offer in week ${w}, with no minimum: every over with a real sportsbook price, ranked by how far the model and market + form, the book's chance moved by the player's Elo, together put it above the book. Some sit below the book's price, and the expected return on each parlay says so.`:`Built from week ${w} lines with a real sportsbook price that the model rates above the book and that market + form, the book's chance moved by the player's Elo, also rates three points above it${suggestSide()==='any'?'':`, player ${suggestSide()}s only`}.`} Safe is the most likely pair, kept at 50% or better when the lines allow it; Medium and Aggressive add legs to the same core for a bigger payout. Payouts are on a $${stake.toFixed(2)} bet, which you can change above.${s.tiers[s.tiers.length-1].legs.every(l=>l.grp==='TEAM')?' Only game bets qualify so far; player lines join when this week’s prices are pulled on Thursday and Saturday.':''}</p>
       <div class="sugg-grid">`+s.tiers.map((t,i)=>{
         const payout=stake*t.dec, ev=t.corr*t.dec-1, ml=decToML(t.dec);
         const saved=(S.saved||[]).some(p=>p.suggestSig===SUGGEST_CACHE.sig+'|'+t.id);
