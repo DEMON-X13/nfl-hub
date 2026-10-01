@@ -496,9 +496,18 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 /* the Pick'em Record's pictures (record_viz.js): wins against Vegas and the week-by-week grid,
    drawn over renderRecord()'s own, which calls recordViz(rows) last (patched below) */
-const VIZ_JS = fs.readFileSync(path.join(__dirname, 'record_viz.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'ratings_viz.js'), 'utf8');
+const VIZ_JS = fs.readFileSync(path.join(__dirname, 'record_viz.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'ratings_viz.js'), 'utf8')
+  + '\n' + fs.readFileSync(path.join(__dirname, 'bets_viz.js'), 'utf8');
 if (/<\/script/i.test(VIZ_JS)) throw new Error('record_viz.js must not contain a closing script tag');
+/* the scripts go in with String.replace, where $' $` $& and $$ are patterns, not text */
+if (/\$['`&$]/.test(VIZ_JS)) throw new Error('a viz script contains a $ pattern that String.replace would expand; write the dollar sign as \\u0024');
 const VIZ = `<style>
+.bv-top{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.bv-bal{flex:1;min-width:200px}
+.bv-bal b{display:block;font-family:var(--display,inherit);font-size:34px;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.bv-bal span{font-size:13px;color:var(--muted)}
+.bv-dep{font-size:13px;color:var(--ink-2)}
+.bv-dep input{width:110px;margin-left:4px}
 .rv-wrap{position:relative;margin:4px 0 0}
 .rv-chart{display:block;width:100%;height:auto;overflow:visible}
 .rv-hit{cursor:crosshair}
@@ -590,6 +599,12 @@ function renderAdjust(){`, `
   ratingsViz();
 }
 function renderAdjust(){`, 'Power Ratings, Vegas by default');
+/* the Bet Log: the app draws its chart and table, then betsViz() (bets_viz.js) puts the
+   balance in their place */
+patch(`function renderBets(){`, `function renderBets(){ renderBetsApp(); betsViz(); }
+function renderBetsApp(){`, 'the Bet Log balance');
+patch(`Enter what you actually staked and what came back, and the chart above the table tracks your balance.`,
+  `Enter what you actually staked and what came back, and your balance below updates.`, 'the Bet Log intro');
 /* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around
@@ -603,7 +618,7 @@ const RENAME = [[/Main Model/g, 'Model A'], [/\bthe main model\b/g, 'Model A'], 
 function buildApp() {
   let out = html.replace(anchor, HOOK + ADMIN + LIVE + VIZ + anchor);
   for (const [re, to] of RENAME) out = out.replace(re, to);
-  for (const need of ['function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
+  for (const need of ['function betsViz(', 'renderBetsApp(); betsViz();', 'function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
   return out;
 }

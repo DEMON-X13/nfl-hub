@@ -172,6 +172,19 @@ function load(picks) {
       const tiles = de.getElementById('recordStats').textContent.replace(/\s+/g, ' ');
       check(n > 0 && tiles.includes(`Vegas straight-up, ${c} of ${n}`), `embed: the headline tiles should be Vegas's ${c} of ${n}: ` + tiles.slice(0, 120)); }
     check(!/Main Model|main model/.test(de.body.textContent), 'embed: the page still says Main Model somewhere');
+    /* the Bet Log reads as a balance: deposit plus every week's net, net and winning weeks as
+       figures, no chart, the table's last money column the balance after each week */
+    { const SB = e.window.eval('S'); const keepB = JSON.stringify(SB.bets || {}), keepK = JSON.stringify(SB.bank || {});
+      SB.bets = { 1: { staked: 10, returned: 8.71, note: '' }, 3: { staked: 11, returned: 14.66, note: '' } };
+      SB.bank = Object.assign({}, SB.bank || {}, { deposit: 100 }); e.window.eval('renderRecord()');
+      const bc = de.getElementById('betChart'), bt = de.getElementById('betTable'), bctx = bc.textContent.replace(/\s+/g, ' ');
+      check(/Balance/.test(bctx) && bc.querySelector('.bv-bal b').textContent === '$102.37' && /\+\$2\.37/.test(bctx) && /1 of 2/.test(bctx), 'embed: the Bet Log does not show the balance $102.37, net +$2.37 and 1 of 2 winning weeks: ' + bctx.slice(0, 160));
+      check(!bc.querySelector('svg') && !/total staked/.test(bctx), 'embed: the Bet Log still draws the chart or the total staked');
+      const heads = [...bt.querySelectorAll('thead th')].map(th => th.textContent), last = [...bt.querySelectorAll('tbody tr')].map(tr => tr.children[4].textContent);
+      check(heads.includes('Balance') && last.join('|') === '$98.71|$102.37', 'embed: the Bet Log table does not carry the balance after each week: ' + last.join('|'));
+      de.getElementById('betDeposit').value = ''; de.getElementById('betDepositSave').click();
+      check(SB.bank.deposit === null && de.querySelector('#betChart .bv-bal b').textContent === '–' && [...de.querySelectorAll('#betTable thead th')].some(th => th.textContent === 'Running'), 'embed: clearing the deposit does not fall back to the net alone');
+      SB.bets = JSON.parse(keepB); SB.bank = JSON.parse(keepK); e.window.eval('renderRecord()'); }
     check(/= Vegas/.test(rec.querySelector('svg.rv-chart').textContent), 'embed: the zero line is not marked as Vegas');
     /* the Main Model against Vegas, counted here from the published games */
     { const win = r => r.result > 0 ? r.home : r.away, vp = r => !r.line ? null : (r.line > 0 ? r.home : r.away);
