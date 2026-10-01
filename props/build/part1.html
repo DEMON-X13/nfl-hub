@@ -286,6 +286,9 @@ body.modal-open{overflow:hidden}
 .gsugg-legs .pr em{font-style:normal;color:var(--ink-2);font-size:12px;margin-left:7px}
 .gsugg-ft{margin:8px 0 0;font-size:12px}
 .gsugg-tiers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.gsugg-tiers.g3{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:4px}
+.gsugg-legs .pr .est{font-style:normal;font-size:10.5px;color:var(--muted);margin-left:2px}
+@media(max-width:980px){.gsugg-tiers.g3{grid-template-columns:1fr}}
 .gsugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;min-width:0}
 .gsugg-tier-hd{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;flex-wrap:wrap}
 .gsugg-tier-hd .grow{flex:1}

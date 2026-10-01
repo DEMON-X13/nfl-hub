@@ -387,7 +387,9 @@ setTimeout(async()=>{
 
 
   /* ---- S. the threshold ladder toggle ---- */
-  { openUpcoming();
+  /* from an empty parlay: a threshold leg left on it by an earlier section (the game card's
+     ladder legs tick like any other) would keep the hidden-ladder note up on its own */
+  { const keepS=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; openUpcoming();
     [...d.querySelectorAll('.plrbtn')][0].click();        /* rungs only render for an open player */
     const box=d.getElementById('rungCb');
     chk(!!box&&box.checked===false,'no threshold ladder toggle, or it does not default to hidden');
@@ -408,6 +410,7 @@ setTimeout(async()=>{
       chk(/nothing counts out of sight/.test(d.getElementById('gameView').textContent),'a pinned rung is not explained');
       if(back) back.click();
       chk(!/nothing counts out of sight/.test(d.getElementById('gameView').textContent),'the note outstayed the pinned rung'); }
+    S.parlay=keepS;
     /* the model still builds every rung: hiding is a display choice, not a data one */
     const g2=openUpcoming(); const roster=rosterFor(g2,false); let built=0;
     for(const tm in roster) for(const x of roster[tm].players) for(const l of statLines(x)) built+=(l.rungs||[]).length;
@@ -473,7 +476,7 @@ setTimeout(async()=>{
     chk(F('sameGame')([{gid:'a'},{gid:'a'}])===true&&F('sameGame')([{gid:'a'},{gid:'b'}])===false,'sameGame does not spot a shared game');
     console.log(`Q. same-game pricing: 2 legs multiply to ${mult.toFixed(2)}, priced together ${sgp.toFixed(2)} (${(100*(1-sgp/mult)).toFixed(0)}% shorter)`); }
 
-  /* ---- O. one suggested parlay on the game page ---- */
+  /* ---- O. the game page's suggested parlays: High, Medium, Low ---- */
   { const g=openUpcoming(); let card=d.querySelector('.gsugg');
     chk(!!card,'the game page has no suggested parlay section');
     { const sw=[...card.querySelectorAll('[data-gsugg-side]')];
@@ -481,171 +484,54 @@ setTimeout(async()=>{
       const was=S.ui.suggestSide;
       sw.find(b=>b.dataset.gsuggSide==='over').click();
       chk(S.ui.suggestSide==='over'&&d.querySelector('.gsugg [data-gsugg-side="over"]')?.classList.contains('on'),'the game card switch did not take or did not redraw');
-      chk(F('gameSuggestion')(g).legs.every(l=>l.grp!=='TEAM'&&l.side==='over'),'with overs on, the game card still has a leg that is not a player over');
+      const To=F('gameTiers')(g);
+      chk(['high','med','low'].every(id=>!To[id]||To[id].legs.every(l=>l.grp!=='TEAM'&&l.side==='over')),'with overs on, a game tier has a leg that is not a player over');
       d.querySelector('.gsugg [data-gsugg-side="any"]').click();
       chk(S.ui.suggestSide==='any','Any did not come back on the game card');
-      S.ui.suggestSide=was; }
-    card=d.querySelector('.gsugg');
-    const s=F('gameSuggestion')(g);
-    chk(s.legs.length===0||s.legs.length<=3,`a game suggestion ran to ${s.legs.length} legs`);
-    chk(s.legs.every(l=>l.src==='real'),'a game suggestion used a line with no real price');
-    chk(s.legs.every(l=>l.gid===g.id),'a game suggestion pulled in another game');
-    chk(s.legs.filter(l=>l.grp==='TEAM').length<=1,'a game suggestion stacked two team bets');
-    if(s.legs.length){
-      chk(s.corr>0&&s.corr<1,'the game suggestion has a nonsense chance');
-      chk([...card.querySelectorAll('.gsugg-legs li')].length===s.legs.length,'the card shows a different number of legs');
-      chk(new RegExp(`${Math.round(s.corr*100)}% to land`).test(card.textContent.replace(/\s+/g,' ')),'the card does not show the chance');
-    } else chk(/Nothing here clears the bar/.test(card.textContent),'an empty suggestion says nothing useful');
-    /* the overlay re-renders whenever a player is expanded: that must not rebuild it */
-    const before=F('gameSuggestion')(g); chk(before===s,'the game suggestion is not cached between renders');
-    /* week 2 has no player prices until Saturday's pull, so price this game's rungs
-       8 points worse than the model to exercise the populated path too */
-    const keepOdds=JSON.parse(JSON.stringify(S.odds[g.id]||{}));
-    const toML=p=>p<0.5?Math.round(100/p-100):-Math.round(100*p/(1-p));
-    const rost=rosterFor(g,false); let put=0;
-    for(const tm in rost) for(const x of rost[tm].players){
-      if(x.gp<3) continue;
-      for(const l of statLines(x)){ if(l.prob) continue;
-        for(const r of l.rungs){ if(r.p<0.55||r.p>0.85||put>=12) continue;
-          ((((S.odds[g.id]??={})[x.pl.id]??={})[l.stat]??={}))[String(r.k)]=toML(r.p-0.08); put++; } }
-    }
-    w.eval('GAME_SUGGEST_CACHE={}');
-    const s2=F('gameSuggestion')(g);
-    chk(put===0||s2.legs.length>=2,'priced lines are available and still no suggestion');
-    /* a pair above the floor among the candidates means the card is not empty */
-    { const cs=F('suggestCandidates')([g]).slice(0,15), fl=w.eval('GAME_SUGGEST_FLOOR');
-      let pairOk=false;
-      for(let i=0;i<cs.length&&!pairOk;i++) for(let j=i+1;j<cs.length&&!pairOk;j++){
-        if(cs[i].key===cs[j].key||(cs[i].grp==='TEAM'&&cs[j].grp==='TEAM')) continue;
-        if(F('parlayProb')([cs[i],cs[j]],20000).corr>=fl+0.02) pairOk=true; }
-      chk(!pairOk||s2.legs.length>=2,'two of the game\'s lines clear the floor together and the card is empty'); }
-    chk(s2.legs.length<=3,`the suggestion ran to ${s2.legs.length} legs with prices available`);
-    chk(s2.legs.every(l=>l.gid===g.id),'a priced suggestion pulled in another game');
-    chk(s2.legs.every(l=>s2.legs.filter(x=>x.pid===l.pid).length<=2),'three legs landed on one player');
-    chk(!s2.legs.length||(s2.corr>=0.30||s2.legs.length===2),'a suggestion above two legs fell under the Medium floor');
-    chk(!s2.legs.length||(s2.dec>1&&isFinite(s2.dec)),'the suggested price is not a real payout');
-    /* High and Low beside it: High lands at least half the time on two or three legs, Low is
-       Medium with more legs at 15% or better, both from this game alone, priced as one */
-    if(s2.legs.length){ w.eval('GAME_TIER_CACHE={}'); const T=F('gameTiers')(g);
-      const rules=t=>t.legs.every(l=>l.gid===g.id)&&t.legs.filter(l=>l.grp==='TEAM').length<=1&&t.legs.every(l=>t.legs.filter(x=>x.pid===l.pid).length<=2)&&new Set(t.legs.map(l=>l.key)).size===t.legs.length&&t.dec>1;
-      if(T.high) chk(T.high.legs.length>=2&&T.high.legs.length<=3&&T.high.corr>=0.48&&rules(T.high),'the High hand breaks its rules: '+T.high.legs.length+' legs at '+T.high.corr);
-      if(T.low) chk(T.low.legs.length>s2.legs.length&&T.low.legs.length<=5&&s2.legs.every(l=>T.low.legs.some(x=>x.key===l.key))&&T.low.corr>=0.14&&T.low.dec>s2.dec&&rules(T.low),'the Low hand is not Medium grown to a bigger price');
-      chk(F('gameTiers')(g)===T,'the High and Low hands are not cached between renders');
+      S.ui.suggestSide=was; d.querySelector('[data-game="'+g.id+'"]').click(); }
+    w.eval('GAME_TIER_CACHE={}');
+    const T=F('gameTiers')(g), MIN=w.eval('GAME_LEG_MIN'), spec=w.eval('GAME_TIERS');
+    /* always there while the game has lines, the right size, and to the rules */
+    chk(T.pool>=4?spec.every(([id])=>!!T[id]):true,`a game with ${T.pool} lines left a tier empty`);
+    for(const [id,,n,floor,minP] of spec){ const t=T[id]; if(!t) continue;
+      chk(t.relaxed||t.corr>=minP-0.03,`the ${id} tier lands ${(t.corr*100).toFixed(0)}%, under its ${minP*100}% floor, without saying so`);
+      chk(t.legs.every(l=>l.p>=0.40),`the ${id} tier has a leg under a 40% chance`);
+      chk(t.legs.length===n,`the ${id} tier has ${t.legs.length} legs, not ${n}`);
+      chk(t.legs.every(l=>l.gid===g.id)&&t.legs.filter(l=>l.grp==='TEAM').length<=1&&t.legs.every(l=>t.legs.filter(x=>x.pid===l.pid).length<=2)&&new Set(t.legs.map(l=>l.key)).size===n,`the ${id} tier breaks the leg rules`);
+      chk(t.legs.every(l=>l.price>=MIN&&isFinite(l.price)),`the ${id} tier has a leg shorter than ${MIN}`);
+      chk(t.corr>0&&t.corr<1&&t.dec>1,`the ${id} tier has a nonsense chance or price`);
+      chk(t.relaxed||t.dec>=1+floor/100-0.02,`the ${id} tier pays ${t.dec.toFixed(2)}, under its +${floor} floor, without saying so`); }
+    /* each tier grows the one before */
+    if(T.high&&T.med) chk(T.high.legs.every(l=>T.med.legs.some(x=>x.key===l.key&&x.k===l.k)),'Medium does not grow High');
+    if(T.med&&T.low) chk(T.med.legs.every(l=>T.low.legs.some(x=>x.key===l.key&&x.k===l.k)),'Low does not grow Medium');
+    /* the pool: book prices where they exist, the model's estimate on the rest, ladders included */
+    { const pool=F('gameLegPool')(g);
+      chk(pool.every(c=>c.gid===g.id&&c.price>=MIN&&(c.src==='real'||c.src==='est')),'the leg pool has a line from another game, too short a price or no source');
+      chk(pool.some(c=>!c.main&&c.grp!=='TEAM'&&c.stat!=='any_td'),'the leg pool has no threshold ladders'); }
+    /* the high pair is the best payout for its chance among its seeds, not a safe nothing */
+    if(T.high){ const one=c=>c.p*F('mlToDec')(c.price), pool=F('gameLegPool')(g).sort((a,b)=>one(b)-one(a));
+      const a=pool[0], b=pool.find(c=>c.key!==a.key&&!(c.grp==='TEAM'&&a.grp==='TEAM'));
+      if(a&&b){ const pd=F('parlayDec')([{leg:a,ml:a.price},{leg:b,ml:b.price}]), pr=F('parlayProb')([a,b],20000).corr;
+        chk(pd<2||T.high.corr*T.high.dec>=pr*pd-0.06,'the High pair returns less than the two best single legs together'); } }
+    chk(F('gameTiers')(g)===T,'the tiers are not cached between renders');
+    /* the card: three blocks, each with its chance, its legs and an Add all that works */
+    d.querySelector('[data-game="'+g.id+'"]').click(); card=d.querySelector('.gsugg');
+    const blocks=[...card.querySelectorAll('.gsugg-tier')];
+    chk(blocks.length===3,'the card does not show High, Medium and Low');
+    spec.forEach(([id,,n],i)=>{ const t=T[id]; if(!t) return;
+      chk(blocks[i].querySelectorAll('.gsugg-legs li').length===n&&new RegExp(`${Math.round(t.corr*100)}% to land`).test(blocks[i].textContent.replace(/\s+/g,' ')),`the ${id} block does not show its ${n} legs and its chance`); });
+    chk(!card.querySelector('[data-suggest-shuffle]'),'Shuffle is still on the card');
+    if(T.med){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
+      d.querySelector('[data-gtier-add="med"]').click();
+      chk(T.med.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add all on Medium did not put its legs on the parlay');
       d.querySelector('[data-game="'+g.id+'"]').click();
-      chk(d.querySelectorAll('.gsugg .gsugg-tier').length===2,'the card does not show High and Low beside Medium');
-      if(T.high){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-        d.querySelector('[data-gtier-add="high"]').click();
-        chk(T.high.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add all on High did not put its legs on the parlay');
-        S.parlay=keepP; F('save')(); } }
-    if(s2.legs.length){ d.querySelector('[data-game="'+g.id+'"]').click();
-      const c2=d.querySelector('.gsugg');
-      chk([...c2.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'the card and the suggestion disagree on legs');
-      chk(new RegExp(`${Math.round(s2.corr*100)}% to land`).test(c2.textContent.replace(/\s+/g,' ')),'the card does not show the chance'); }
-    /* the legs are clickable, and share the toggle the tables below use */
-    if(s2.legs.length){
-      const keepParlay=JSON.parse(JSON.stringify(S.parlay||{}));
-      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-      const boxes=[...d.querySelectorAll('.gsugg-legs input[data-leg]')];
-      chk(boxes.length===s2.legs.length,'the suggested legs are not all tickable');
-      chk(boxes.every(b=>b.dataset.k!==undefined&&b.dataset.side),'a suggested leg is missing its threshold or side');
-      chk(boxes.every(b=>!b.checked),'a suggested leg looks ticked with an empty parlay');
-      boxes[0].click();
-      chk(Object.keys(S.parlay).length===1,'ticking a suggested leg did not put it on the parlay');
-      const first=s2.legs[0], put=S.parlay[first.key];
-      chk(!!put&&put.k===first.k&&put.side===first.side,'the leg on the parlay is not the leg that was shown');
-      chk(d.querySelector('.gsugg-legs input[data-leg]').checked,'the tick did not survive the re-render');
-      chk(!!d.querySelector('.gsugg-pick.on'),'a ticked leg is not marked as on');
-      d.querySelector('.gsugg-legs input[data-leg]').click();
-      chk(Object.keys(S.parlay).length===0,'ticking a suggested leg again did not take it off');
-      /* Add all, twice: the second press must not undo the first */
-      d.querySelector('[data-suggest-all]').click();
-      chk(Object.keys(S.parlay).length===s2.legs.length,'Add all did not add every leg');
-      d.querySelector('[data-suggest-all]').click();
-      chk(Object.keys(S.parlay).length===s2.legs.length,'Add all pressed twice toggled legs back off');
-      chk(/On the parlay/.test(d.querySelector('[data-suggest-all]').textContent),'the button does not say the parlay is already on');
-      /* Add all has just locked every leg; the plain shuffle is tested with none locked */
-      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-      /* Shuffle: a different parlay of the same confidence, and the original still there */
-      const sh=d.querySelector('[data-suggest-shuffle]');
-      chk(!!sh,'no shuffle button on the game suggestion');
-      chk(sh.disabled===!(s2.candidates>s2.legs.length),'the shuffle button is not disabled in step with the pool it has');
-      const sig=ls=>ls.map(l=>l.key+'@'+l.k+l.side).sort().join(',');
-      let shuffled=0;
-      for(let i=0;i<4;i++){
-        d.querySelector('[data-suggest-shuffle]').click();
-        const a=F('gameAlternate')(g);
-        chk(!!a,'shuffle left no answer at all');
-        if(!a.val){ chk(a.miss&&/Nothing else in this game/.test(d.querySelector('.gsugg').textContent),'a shuffle that found nothing does not say so'); continue; }
-        shuffled++;
-        chk(a.val.legs.length>=2&&a.val.legs.length<=3,`a shuffled parlay ran to ${a.val.legs.length} legs`);
-        chk(a.val.legs.every(l=>l.gid===g.id),'a shuffled parlay pulled in another game');
-        chk(a.val.legs.every(l=>l.src==='real'),'a shuffled parlay used a line with no real price');
-        chk(a.val.legs.filter(l=>l.grp==='TEAM').length<=1,'a shuffled parlay stacked two team bets');
-        chk(a.val.legs.every(l=>a.val.legs.filter(x=>x.pid===l.pid).length<=2),'three shuffled legs landed on one player');
-        chk(new Set(a.val.legs.map(l=>l.key)).size===a.val.legs.length,'a shuffled parlay repeated a line');
-        chk(sig(a.val.legs)!==sig(s2.legs),'shuffle dealt the same parlay back');
-        chk(Math.abs(a.val.corr-s2.corr)<=0.12,`a shuffled parlay is ${(Math.abs(a.val.corr-s2.corr)*100).toFixed(0)} points off the original's confidence`);
-        chk(a.val.legs.length===2||a.val.corr>=0.30,'a shuffled parlay above two legs fell under the Medium floor');
-        const card3=d.querySelector('.gsugg');
-        chk([...card3.querySelectorAll('.gsugg-legs li')].length===a.val.legs.length,'the card and the shuffled parlay disagree on legs');
-        chk(new RegExp(`${Math.round(a.val.corr*100)}% to land`).test(card3.textContent.replace(/\s+/g,' ')),'the card does not show the shuffled chance');
-        chk(sig(F('gameSuggestion')(g).legs)===sig(s2.legs),'shuffling changed the model\'s own suggestion');
-        /* opening the game again is the whole way back now, so it has to work every time */
-        d.querySelector('[data-game="'+g.id+'"]').click();
-        chk(!F('gameAlternate')(g),'reopening the game did not drop the shuffled parlay');
-        chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'reopening the game did not bring back the suggestion');
-      }
-      /* a thin pool has no second parlay at the same confidence to find, and the app
-         says so rather than inventing one: demand an alternative only where there is
-         plainly room for one, so a lean week cannot fail the audit and stop a publish */
-      const pool=F('suggestCandidates')([g]).slice(0,18);
-      const roomy=pool.length>=s2.legs.length+3&&new Set(pool.map(c=>c.pid)).size>=3;
-      chk(!roomy||shuffled>0,`four shuffles found nothing in a pool of ${pool.length} lines over ${new Set(pool.map(c=>c.pid)).size} players`);
-      console.log(`O2. shuffle: ${shuffled} of 4 dealt an alternative, pool ${pool.length} lines over ${new Set(pool.map(c=>c.pid)).size} players`);
-      /* a ticked leg is locked: every shuffle has to keep it */
-      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-      const lockBox=d.querySelector('.gsugg-legs input[data-leg]'), lockKey=lockBox.dataset.leg;
-      lockBox.click();
-      chk(Object.keys(S.parlay).length===1,'ticking a suggested leg did not lock it on the parlay');
-      chk(!!d.querySelector('.gsugg-legs .lk'),'a locked leg is not marked locked');
-      let keptAll=true, lockedAlts=0;
-      for(let i=0;i<4;i++){
-        const b=d.querySelector('[data-suggest-shuffle]'); if(!b||b.disabled) break;
-        b.click();
-        const a=F('gameAlternate')(g); if(!a||!a.val) continue;
-        lockedAlts++;
-        if(!a.val.legs.some(l=>l.key===lockKey)) keptAll=false;
-        chk(a.val.legs.length===s2.legs.length,'a shuffle around a locked leg changed the parlay size');
-      }
-      chk(keptAll,'shuffle dropped a locked leg');
-      if(lockedAlts) chk(!!d.querySelector('.gsugg-legs input[data-leg]:checked'),'the locked leg lost its tick after a shuffle');
-      /* every leg locked leaves shuffle nothing to do, and it says so rather than pretending */
-      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-      d.querySelector('[data-suggest-all]').click();
-      chk(d.querySelector('[data-suggest-shuffle]').disabled,'shuffle is still live with every leg locked');
-      chk(/Every leg is locked/.test(d.querySelector('.gsugg').textContent),'an all-locked card does not say why shuffle is dead');
-      chk(F('shuffleSuggestion')(g)===null,'shuffle dealt a parlay with every leg locked');
-      S.parlay={}; d.querySelector('[data-game="'+g.id+'"]').click();
-      /* leaving the game and opening it again starts back at the model's own pick */
-      d.querySelector('[data-suggest-shuffle]').click();
-      if(F('gameAlternate')(g)){
-        d.getElementById('backBtn').click();
-        d.querySelector('[data-game="'+g.id+'"]').click();
-        chk(!F('gameAlternate')(g),'a shuffled parlay survived leaving the game');
-        chk([...d.querySelectorAll('.gsugg-legs li')].length===s2.legs.length,'reopening the game did not show the original suggestion');
-      }
-      /* the alternative is held outside S, so nothing about it is ever saved */
-      chk(!/"alt":true/.test(JSON.stringify(S)),'a shuffled parlay reached the saved state');
-      S.parlay=keepParlay;
-    }
-    S.odds[g.id]=keepOdds; if(!Object.keys(keepOdds).length) delete S.odds[g.id];
-    w.eval('GAME_SUGGEST_CACHE={}');
+      chk([...d.querySelectorAll('.gsugg-tier')][1].querySelectorAll('input[data-leg]:checked').length===3,'the Medium legs on the parlay are not ticked');
+      S.parlay=keepP; F('save')(); d.querySelector('[data-game="'+g.id+'"]').click(); }
     /* the suggestion is the summary, the game bets table is the detail */
     { const cards=[...d.querySelectorAll('#gameView .card')];
       const iS=cards.findIndex(c=>c.classList.contains('gsugg')), iB=cards.findIndex(c=>c.classList.contains('gbets'));
-      chk(iS>=0&&iB>=0&&iS<iB,'the suggested parlay is not above the game bets'); }
-    console.log(`O. game suggestion: ${s.legs.length} leg(s) live, ${s2.legs.length} from ${put} priced rungs, capped at two legs a player`); }
-
+      chk(iS>=0&&iB>=0&&iS<iB,'the suggested parlays are not above the game bets'); }
+    console.log(`O. game tiers: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */
   { const box=d.getElementById('pricePull');
     chk(!!box,'the Weekly Update tab has no credit-pull panel');
