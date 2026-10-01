@@ -31,7 +31,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-09-30T23:11+00:00",
+ "generated": "2026-10-01T02:20+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -2588,14 +2588,19 @@
    "home": "NYG",
    "away": "ARI",
    "pick": "ARI",
-   "pHome": 0.4859,
+   "pHome": 0.4462,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 114.0,
-     "c": -0.3199
+     "v": 120.0,
+     "c": -0.5447
+    },
+    {
+     "f": "pg_fumbles_total_A",
+     "v": 0.0,
+     "c": 0.1303
     },
     {
      "f": "pg_fg_made_distance_H",
@@ -2603,9 +2608,14 @@
      "c": -0.1258
     },
     {
-     "f": "pg_fumbles_total_A",
-     "v": 0.0,
-     "c": 0.0975
+     "f": "td_fumble_recovery_opp_A",
+     "v": 1.0,
+     "c": 0.1044
+    },
+    {
+     "f": "td_passing_20_H",
+     "v": 0.6667,
+     "c": 0.0922
     },
     {
      "f": "td_passing_40_A",
@@ -2613,19 +2623,9 @@
      "c": -0.0783
     },
     {
-     "f": "td_passing_20_H",
-     "v": 0.6667,
-     "c": 0.0767
-    },
-    {
-     "f": "spread_line",
-     "v": -2.5,
-     "c": -0.0642
-    },
-    {
-     "f": "pg_passing_16_H",
-     "v": 1.0,
-     "c": 0.0637
+     "f": "away_moneyline",
+     "v": -142.0,
+     "c": 0.0668
     },
     {
      "f": "td_def_tackles_with_assist_A",
@@ -2696,7 +2696,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 145.0,
+     "v": 150.0,
      "c": -0.6137
     },
     {
@@ -2741,19 +2741,14 @@
    "home": "CIN",
    "away": "JAX",
    "pick": "CIN",
-   "pHome": 0.5533,
+   "pHome": 0.5488,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": -148.0,
-     "c": 0.1769
-    },
-    {
-     "f": "spread_line",
-     "v": 2.5,
-     "c": -0.085
+     "v": -142.0,
+     "c": 0.105
     },
     {
      "f": "td_def_tackle_assists_A",
@@ -2771,6 +2766,11 @@
      "c": -0.0683
     },
     {
+     "f": "spread_line",
+     "v": 2.5,
+     "c": -0.0673
+    },
+    {
      "f": "td_def_fumbles_forced_H",
      "v": 1.3333,
      "c": -0.0642
@@ -2781,9 +2781,9 @@
      "c": 0.0639
     },
     {
-     "f": "td_def_sacks_A",
-     "v": 2.3333,
-     "c": -0.04
+     "f": "to_away",
+     "v": 0.9368,
+     "c": 0.0454
     }
    ]
   },
@@ -2951,7 +2951,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -700.0,
+     "v": -675.0,
      "c": 0.8572
     },
     {
@@ -3002,7 +3002,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -625.0,
+     "v": -600.0,
      "c": 0.8572
     },
     {
@@ -3098,13 +3098,13 @@
    "home": "LV",
    "away": "KC",
    "pick": "KC",
-   "pHome": 0.4087,
+   "pHome": 0.4998,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": 185.0,
+     "v": 180.0,
      "c": -0.6137
     },
     {
@@ -3123,11 +3123,6 @@
      "c": -0.1258
     },
     {
-     "f": "away_moneyline",
-     "v": -225.0,
-     "c": -0.1114
-    },
-    {
      "f": "td_passing_20_H",
      "v": 2.3333,
      "c": 0.1095
@@ -3136,6 +3131,11 @@
      "f": "td_fumbles_not_forced_A",
      "v": 0.6667,
      "c": 0.1061
+    },
+    {
+     "f": "td_fumble_recovery_opp_A",
+     "v": 0.6667,
+     "c": 0.1044
     },
     {
      "f": "td_fumble_recovery_opp_H",
@@ -3155,7 +3155,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -380.0,
+     "v": -375.0,
      "c": 0.8572
     },
     {
