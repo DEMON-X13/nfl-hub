@@ -285,6 +285,17 @@ body.modal-open{overflow:hidden}
 .gsugg-legs .pr{font-family:var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .gsugg-legs .pr em{font-style:normal;color:var(--ink-2);font-size:12px;margin-left:7px}
 .gsugg-ft{margin:8px 0 0;font-size:12px}
+.gsugg-tiers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.gsugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;min-width:0}
+.gsugg-tier-hd{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;flex-wrap:wrap}
+.gsugg-tier-hd .grow{flex:1}
+.gsugg-tl{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid var(--line)}
+.gsugg-tl li{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.gsugg-tl .nm{flex:1;min-width:0}
+.gsugg-tl .nm small{display:block;color:var(--ink-2);font-size:11.5px}
+.gsugg-tl .pr{font-family:var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gsugg-tl .pr em{font-style:normal;color:var(--ink-2);font-size:11.5px;margin-left:6px}
+@media(max-width:700px){.gsugg-tiers{grid-template-columns:1fr}}
 .sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sugg-nums div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px}
 .sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -1241,7 +1252,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v72 \u00b7 2026-10-01';
+const APP_BUILD='app v73 \u00b7 2026-10-01';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2373,6 +2384,15 @@ function renderGame(){
     const alt=shuffleSuggestion(g);
     GAME_SUGGEST_ALT[g.id]={sig:gameSuggestSig(g),val:alt,miss:!alt};
     renderGame(); });
+  /* High or Low: every leg of that hand on the parlay, skipping any already there */
+  $('gameView').querySelectorAll('[data-gtier-add]').forEach(b=>b.addEventListener('click',()=>{
+    const t=gameTiers(g)[b.dataset.gtierAdd]; if(!t) return;
+    for(const l of t.legs){
+      const cur=S.parlay[l.key];
+      if(cur&&cur.k===l.k&&cur.side===l.side&&!!cur.main===!!l.main) continue;
+      toggleLeg(l.key,l.k,g,l.side,l.main);
+    }
+  }));
   /* the whole suggestion at once, skipping any leg already on so it cannot toggle one off */
   $('gameView').querySelector('[data-suggest-all]')?.addEventListener('click',()=>{
     for(const l of shownSuggestion(g).legs){
@@ -3067,6 +3087,64 @@ function gameSuggestion(g){
 const GAME_SHUFFLE_BAND=0.06,    /* close enough to the original's chance to stop looking */
       GAME_SHUFFLE_LIMIT=0.12,   /* further than this is a different bet, not an alternative */
       GAME_SHUFFLE_TRIES=10, GAME_SHUFFLE_POOL=18, GAME_SHUFFLE_TOP=4;
+/* High and Low beside the card's own Medium: the likeliest pair (plus a third where it keeps
+   50%), and Medium grown by the best-paying legs down to 15% */
+const GAME_TIER_HIGH=0.50, GAME_TIER_LOW=0.15, GAME_TIER_LOW_CAP=5;
+let GAME_TIER_CACHE={};
+function gameTiers(g){
+  const sig=gameSuggestSig(g), hit=GAME_TIER_CACHE[g.id];
+  if(hit&&hit.sig===sig) return hit.val;
+  const mid=gameSuggestion(g), cands=suggestCandidates([g]);
+  const fits=(cur,c)=>!cur.some(l=>l.key===c.key)&&!(c.grp==='TEAM'&&cur.some(l=>l.grp==='TEAM'))&&cur.filter(l=>l.pid===c.pid).length<2;
+  const priced=legs=>({legs,corr:parlayProb(legs,20000).corr,dec:parlayDec(legs.map(l=>({leg:l,ml:l.price})))});
+  const pay=legs=>parlayDec(legs.map(l=>({leg:l,ml:l.price})),2000);
+  let high=null, low=null;
+  if(mid.legs.length){
+    const top=[...cands].sort((a,b)=>b.p-a.p).slice(0,12);
+    let best=null;
+    for(let i=0;i<top.length;i++) for(let j=i+1;j<top.length;j++){
+      if(!fits([top[i]],top[j])) continue;
+      const pr=parlayProb([top[i],top[j]],3000).corr;
+      if(pr>=GAME_TIER_HIGH&&(!best||pr>best.pr)) best={pr,legs:[top[i],top[j]]};
+    }
+    if(best){
+      let add=null;
+      for(const c of cands){ if(!fits(best.legs,c)) continue;
+        const next=[...best.legs,c], pr=parlayProb(next,3000).corr; if(pr<GAME_TIER_HIGH) continue;
+        const sc=pr*pay(next); if(!add||sc>add.sc) add={sc,next}; }
+      let t=priced(add?add.next:best.legs);
+      while(t.legs.length>2&&t.corr<GAME_TIER_HIGH) t=priced(t.legs.slice(0,-1));
+      if(t.corr>=GAME_TIER_HIGH-0.02) high=t;
+    }
+    let cur=[...mid.legs];
+    while(cur.length<GAME_TIER_LOW_CAP){
+      let b=null;
+      for(const c of cands){ if(!fits(cur,c)) continue;
+        const next=[...cur,c], pr=parlayProb(next,3000).corr; if(pr<GAME_TIER_LOW) continue;
+        const sc=pr*pay(next); if(!b||sc>b.sc) b={sc,c}; }
+      if(!b) break; cur=[...cur,b.c];
+    }
+    if(cur.length>mid.legs.length){
+      let t=priced(cur);
+      while(t.legs.length>mid.legs.length+1&&t.corr<GAME_TIER_LOW) t=priced(t.legs.slice(0,-1));
+      if(t.corr>=GAME_TIER_LOW-0.01) low=t;
+    }
+  }
+  const val={high,low};
+  GAME_TIER_CACHE[g.id]={sig,val};
+  return val;
+}
+function gameTierBlock(id,label,chip,t,stake,none){
+  if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${chip}</span></div><p class="muted" style="margin:6px 0 0;font-size:12px">${none}</p></div>`;
+  const ml=decToML(t.dec);
+  return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${chip}</span><span class="grow"></span><button class="btn quiet gsugg-all" data-gtier-add="${id}">Add all</button></div>
+    <div class="gsugg-nums"><b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">\u00b7</span> <b>${fmtML(ml)}</b>${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''} <span class="muted">\u00b7 ${t.legs.length} legs</span></div>
+    <ul class="gsugg-tl">${t.legs.map(l=>`<li><span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></li>`).join('')}</ul></div>`;
+}
+function gameTiersHTML(g,stake){
+  const T=gameTiers(g);
+  return `<div class="gsugg-tiers">${gameTierBlock('high','High','most likely',T.high,stake,'No pair in this game lands 50% of the time.')}${gameTierBlock('low','Low','bigger payout',T.low,stake,'Nothing more to add that keeps it at 15% or better.')}</div>`;
+}
 let GAME_SUGGEST_ALT={};         /* gid -> {sig,val,miss} */
 let GAME_SHUFFLE_N=0;
 function forgetGameAlternates(){ GAME_SUGGEST_ALT={}; }
@@ -3144,7 +3222,7 @@ function gameSuggestCard(g,locked){
         <input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}, and ${on?'take it off':'put it on'} the parlay">
         <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>${on?'<span class="lk">locked</span>':''}
         <span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`;}).join('')}</ul>
-    <p class="muted gsugg-ft">${suggestSide()==='over'?'Player overs, best available: no minimum, so a leg can sit below the book\u2019s price. ':''}Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p></div>`;
+    <p class="muted gsugg-ft">${suggestSide()==='over'?'Player overs, best available: no minimum, so a leg can sit below the book\u2019s price. ':''}Chance that every leg lands, correlations included. These legs share a game, so the price is what a book pays for them together${s.mult&&s.mult>s.dec*1.02?`, not the ${fmtML(decToML(s.mult))} multiplying them would suggest`:''}. Tick a leg to put it on the parlay and lock it there.${nLock===0?' Shuffle changes all three; lock the ones you want and it deals the rest around them.':(free?` <b>${nLock} locked</b>, so Shuffle changes the other ${free}.`:' <b>Every leg is locked</b>, so Shuffle has nothing left to change \u2014 untick one to free it.')}${s.alt?' The model\u2019s own pick comes back when you leave the game and open it again.':''}${alt&&alt.miss?(nLock?' <b>Nothing else clears the same confidence around those locked legs \u2014 untick one to give Shuffle more room.</b>':' <b>Nothing else in this game comes out at the same confidence, so the model\u2019s own pick stands.</b>'):''}</p>${gameTiersHTML(g,stake)}</div>`;
 }
 function getSuggestions(){
   const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
