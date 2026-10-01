@@ -338,8 +338,12 @@ setTimeout(async()=>{
       delete w.eloAltP; delete w.eloLoaded; chk(F('formSig')()===''&&F('suggestCandidates')().length===base.length,'without the Elo tab the bar should be the model\'s alone'); }
     /* the side switch: overs keep only player overs, unders only player unders, Any everything */
     { const any=F('suggestCandidates')(); const setSide=s=>{ S.ui.suggestSide=s; };
-      setSide('over'); const ov=F('suggestCandidates')(); chk(ov.every(c=>c.grp!=='TEAM'&&c.side==='over')&&ov.length===Math.min(40,F('pricedLegs')().filter(c=>c.grp!=='TEAM'&&c.side==='over'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&c.p-F('mlProb')(c.price)>=0.03).length),'player overs should be the player over legs and nothing else');
-      setSide('under'); const un=F('suggestCandidates')(); chk(un.every(c=>c.grp!=='TEAM'&&c.side==='under'),'player unders let something else through');
+      setSide('over'); const ov=F('suggestCandidates')();
+      const allOv=F('pricedLegs')().filter(c=>c.grp!=='TEAM'&&c.side==='over'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97);
+      chk(ov.every(c=>c.grp!=='TEAM'&&c.side==='over')&&ov.length===Math.min(40,allOv.length),'player overs should be every priced player over, with no minimum, and nothing else');
+      { const im=F('mlProb'), sc=c=>{ const a=w.eloAltP?w.eloAltP(c.pid,c.side,c.price,c.src):null; return a==null?c.p-im(c.price):((c.p-im(c.price))+(a-im(c.price)))/2; };
+        chk(ov.every((c,i)=>i===0||sc(ov[i-1])>=sc(c)-1e-12),'player overs are not ranked best first'); }
+      setSide('under'); const un=F('suggestCandidates')(); chk(un.every(c=>c.grp!=='TEAM'&&c.side==='under'&&c.p-F('mlProb')(c.price)>=0.03),'player unders let something else through, or dropped the bar');
       chk(F('getSuggestions')().sig.endsWith('|under')&&F('getSuggestions')().tiers.every(t=>t.legs.every(l=>l.side==='under'&&l.grp!=='TEAM')),'the tiers do not follow the side switch');
       setSide('bogus'); chk(F('suggestSide')()==='any'&&F('suggestCandidates')().length===any.length,'an unknown side should read as Any');
       d.getElementById('suggOpen').click();
