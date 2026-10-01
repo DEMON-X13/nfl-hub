@@ -185,6 +185,13 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(/\$40\.00/.test(txt(card[0])), "the builder parlay should carry the builder's stake");
     chk(knob(card[0].querySelector('.sp-leg')) === '86', 'a builder leg is not tracked live');
     chk(Object.keys(b.w.eval('S').parlay).length === 2, 'the seeded builder legs were lost across the prop model\'s boot');
+    /* it has an x too: cancelled it keeps the builder, confirmed it clears it */
+    const x = card[0].querySelector('[data-rm][data-builder]');
+    chk(!!x, 'the builder parlay has no delete button');
+    if (x) { b.w.confirm = () => false; x.click(); await wait(60);
+      chk(Object.keys(b.w.eval('S').parlay).length === 2 && b.d.querySelectorAll('.savedp').length === 1, 'cancelling the clear still cleared the builder');
+      b.w.confirm = () => true; b.d.querySelector('.savedp [data-rm][data-builder]').click(); await wait(60);
+      chk(Object.keys(b.w.eval('S').parlay).length === 0 && !b.d.querySelector('.savedp'), 'the x did not clear the builder and its card'); }
     /* saved and building at once: both show, and the saved one keeps its price */
     const both = JSON.parse(propBlob()); both.parlay = JSON.parse(workBlob()).parlay;
     const c2 = await run({ seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(both));

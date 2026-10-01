@@ -3663,6 +3663,9 @@ function removeParlay(p){
      somebody else's copy, and is only taken off this device. */
   if(p.src==='prop'&&p.id!=='prop-builder'&&typeof S==='object'&&S&&Array.isArray(S.saved)&&typeof save==='function'){
     S.saved=S.saved.filter(x=>String(x.id)!==String(p.id)); save(); return; }
+  /* the builder's own legs: clearing them here clears the Parlay Builder, the one copy */
+  if(p.src==='prop'&&p.id==='prop-builder'&&typeof S==='object'&&S&&S.parlay&&typeof save==='function'){
+    S.parlay={}; save(); if(typeof renderParlay==='function') renderParlay(); return; }
   const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
 function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
@@ -4018,7 +4021,7 @@ function draw(){
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
-        ${runs}${tag}<span class="grow"></span>${p.id==='prop-builder'?'':`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
+        ${runs}${tag}<span class="grow"></span>${p.id==='prop-builder'?`<button class="hidebtn" data-rm="${esc(rmKey(p))}" data-builder="1" title="Clear the builder" aria-label="Clear the Parlay Builder">\u00d7</button>`:`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
       <div class="sp-money">
         <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
         <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
@@ -4029,6 +4032,8 @@ function draw(){
   }
   app.innerHTML=html; wireLines(app); foot();
   app.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
+    /* the builder is work in progress, so clearing it asks first; a saved parlay goes at once */
+    if(b.dataset.builder&&!confirm('Clear the Parlay Builder? Its legs come off the parlay you are building.')) return;
     const q=b.dataset.rm.split('|'); removeParlay({src:q[0],id:q.slice(1).join('|')}); draw(); }));
 }
 /* landed or gone: nothing left to watch */
