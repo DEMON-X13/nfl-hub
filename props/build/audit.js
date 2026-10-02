@@ -512,7 +512,9 @@ setTimeout(async()=>{
     if(T.high){ const one=c=>c.p*F('mlToDec')(c.price), pool=F('gameLegPool')(g).sort((a,b)=>one(b)-one(a));
       const a=pool[0], b=pool.find(c=>c.key!==a.key&&!(c.grp==='TEAM'&&a.grp==='TEAM'));
       if(a&&b){ const pd=F('parlayDec')([{leg:a,ml:a.price},{leg:b,ml:b.price}]), pr=F('parlayProb')([a,b],20000).corr;
-        chk(pd<2||T.high.corr*T.high.dec>=pr*pd-0.06,'the High pair returns less than the two best single legs together'); } }
+        const [,,,hf,hp]=spec[0];
+        /* only a pair High could take: the tier's own payout and chance floors, with room for simulation noise */
+        chk(pd<1+hf/100||pr<hp+0.03||T.high.corr*T.high.dec>=pr*pd-0.06,'the High pair returns less than the two best single legs together'); } }
     chk(F('gameTiers')(g)===T,'the tiers are not cached between renders');
     /* the card: three blocks, each with its chance, its legs and an Add all that works */
     d.querySelector('[data-game="'+g.id+'"]').click(); card=d.querySelector('.gsugg');
