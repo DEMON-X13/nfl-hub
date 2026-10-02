@@ -193,5 +193,9 @@ const RESULTS = {
  "wk3:PHI-CHI": [
   7,
   27
+ ],
+ "wk4:PIT-CLE": [
+  24,
+  27
  ]
 };
