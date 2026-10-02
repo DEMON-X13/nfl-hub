@@ -8,7 +8,7 @@
   {
    "col": "kickoff_return_yards",
    "fit": 49.111,
-   "now": 104.323,
+   "now": 104.184,
    "z": 1.22
   },
   {
@@ -20,18 +20,18 @@
   {
    "col": "def_tackles_with_assist",
    "fit": 4.44,
-   "now": 0.75,
+   "now": 0.765,
    "z": -0.99
   },
   {
    "col": "def_tackle_assists",
    "fit": 24.034,
-   "now": 30.854,
-   "z": 0.8
+   "now": 30.806,
+   "z": 0.79
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-10-02T01:47+00:00",
+ "generated": "2026-10-02T08:54+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -263,7 +263,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.7426,
+     "v": 1.7427,
      "c": -0.044
     },
     {
@@ -462,7 +462,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.2551,
+     "v": 1.2552,
      "c": -0.044
     },
     {
@@ -523,7 +523,7 @@
     },
     {
      "f": "off_home",
-     "v": 0.0751,
+     "v": 0.0752,
      "c": 0.0279
     },
     {
@@ -610,7 +610,7 @@
     },
     {
      "f": "to_away",
-     "v": 0.8108,
+     "v": 0.8109,
      "c": 0.0454
     },
     {
@@ -824,7 +824,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.1683,
+     "v": 1.1684,
      "c": -0.044
     },
     {
@@ -1099,7 +1099,7 @@
     },
     {
      "f": "to_away",
-     "v": 1.1081,
+     "v": 1.1082,
      "c": 0.0454
     }
    ]
@@ -2487,7 +2487,7 @@
    "away": "PIT",
    "pick": "CLE",
    "pHome": 0.5051,
-   "played": false,
+   "played": true,
    "base": 0.1738,
    "why": [
     {
@@ -2782,7 +2782,7 @@
     },
     {
      "f": "to_away",
-     "v": 0.9368,
+     "v": 0.9369,
      "c": 0.0454
     }
    ]
@@ -2798,7 +2798,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 154.0,
+     "v": 150.0,
      "c": -0.6137
     },
     {
@@ -2818,7 +2818,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -185.0,
+     "v": -180.0,
      "c": 0.0668
     },
     {
@@ -2849,7 +2849,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -305.0,
+     "v": -298.0,
      "c": 0.8572
     },
     {
@@ -3073,7 +3073,7 @@
     },
     {
      "f": "d_to_home",
-     "v": 0.7496,
+     "v": 0.7497,
      "c": -0.0736
     },
     {
