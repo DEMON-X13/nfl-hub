@@ -31,7 +31,7 @@
   }
  ],
  "drift_note": "Inputs whose season mean has moved more than 0.75 fitted standard deviations. The model is frozen, so nothing is corrected for them; a pick that turns on one of these is leaning on an input that no longer means what it did when it was fitted.",
- "generated": "2026-10-01T21:58+00:00",
+ "generated": "2026-10-02T01:47+00:00",
  "games": {
   "2026_01_NE_SEA": {
    "week": 1,
@@ -2696,7 +2696,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 150.0,
+     "v": 154.0,
      "c": -0.6137
     },
     {
@@ -2798,7 +2798,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": 142.0,
+     "v": 154.0,
      "c": -0.6137
     },
     {
@@ -2818,7 +2818,7 @@
     },
     {
      "f": "away_moneyline",
-     "v": -170.0,
+     "v": -185.0,
      "c": 0.0668
     },
     {
@@ -3155,7 +3155,7 @@
    "why": [
     {
      "f": "home_moneyline",
-     "v": -380.0,
+     "v": -375.0,
      "c": 0.8572
     },
     {
@@ -3251,19 +3251,19 @@
    "home": "NO",
    "away": "ATL",
    "pick": "NO",
-   "pHome": 0.5394,
+   "pHome": 0.5276,
    "played": false,
    "base": 0.1738,
    "why": [
     {
      "f": "home_moneyline",
-     "v": -148.0,
-     "c": 0.1769
+     "v": -142.0,
+     "c": 0.105
     },
     {
-     "f": "spread_line",
-     "v": 2.5,
-     "c": -0.085
+     "f": "td_fumble_recovery_yards_own_H",
+     "v": -2.0,
+     "c": 0.0841
     },
     {
      "f": "td_pt_yards_H",
@@ -3281,6 +3281,11 @@
      "c": 0.0676
     },
     {
+     "f": "spread_line",
+     "v": 2.5,
+     "c": -0.0673
+    },
+    {
      "f": "td_def_fumbles_forced_H",
      "v": 1.3333,
      "c": -0.0642
@@ -3289,11 +3294,6 @@
      "f": "td_targets_A",
      "v": 24.3333,
      "c": -0.0608
-    },
-    {
-     "f": "td_fumble_recovery_yards_own_H",
-     "v": -2.0,
-     "c": 0.0378
     }
    ]
   }
