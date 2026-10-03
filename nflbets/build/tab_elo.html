@@ -79,6 +79,11 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-mm-sub{font-size:12px;color:var(--ink-2);line-height:1.4}
 .pe-mm-sub b{color:var(--ink-2);font-weight:600}
 .pe-mm-more{margin-top:12px;display:flex;justify-content:center}
+/* the player a mismatch opened, in his game: ringed in the pick colour, with a short pulse */
+.plrbtn.pe-hl{border-color:var(--pick);background:var(--pick-soft);box-shadow:0 0 0 2px var(--pick);animation:pe-hl 1.6s ease-out 2}
+.plrbody.pe-hl{border-color:var(--pick);box-shadow:0 0 0 2px var(--pick)}
+@keyframes pe-hl{0%{box-shadow:0 0 0 2px var(--pick),0 0 0 0 rgba(27,122,78,.45)}100%{box-shadow:0 0 0 2px var(--pick),0 0 0 12px rgba(27,122,78,0)}}
+@media (prefers-reduced-motion:reduce){.plrbtn.pe-hl{animation:none}}
 .pe-mm-t td,.pe-mm-t th{white-space:nowrap}
 .pe-mm-t{width:100%}
 .pe-mm-t .pe-c{text-align:center;width:17%}
@@ -585,7 +590,17 @@ const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)
 const mmLine=v=>`vs a ${esc(v.unitName)} ranked ${ordinal(v.defRank)}`;
 const mmProj=v=>v.proj==null?'':`<b>${Math.round(v.proj)} ${MM_LBL[v.lead]}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}`;
 function mmName(pid){ return (D.players&&D.players.players&&D.players.players[pid]&&D.players.players[pid].name)||pid; }
-function mmOpen(gid){ if(typeof S!=='object'||!S||!S.ui||typeof renderGame!=='function') return; S.ui.game=gid; S.ui.open={}; if(typeof forgetGameAlternates==='function') forgetGameAlternates(); if(typeof save==='function') save(); renderGame(); }
+/* a click on a player opens his game with his stats already open, scrolled to and highlighted */
+function mmOpen(gid,pid){ if(typeof S!=='object'||!S||!S.ui||typeof renderGame!=='function') return;
+  S.ui.game=gid; S.ui.open=pid?{[pid]:true}:{}; if(typeof save==='function') save(); renderGame(); if(pid) mmFocus(pid); }
+function mmFocus(pid){
+  const view=document.getElementById('gameView'), modal=document.getElementById('gameModal'); if(!view) return;
+  const row=[...view.querySelectorAll('[data-open]')].find(b=>b.dataset.open===pid); if(!row) return;
+  const body=row.nextElementSibling&&row.nextElementSibling.classList.contains('plrbody')?row.nextElementSibling:null;
+  for(const n of [row,body]) if(n) n.classList.add('pe-hl');
+  if(modal&&!modal.hidden) modal.scrollTop+=row.getBoundingClientRect().top-modal.getBoundingClientRect().top-72;
+  else row.scrollIntoView({block:'start'});
+}
 function mismatchCard(){
   const view=document.getElementById('slateView'); if(!view) return;
   const old=document.getElementById('peMism'); if(old) old.remove();
@@ -593,7 +608,7 @@ function mismatchCard(){
   if(!D.mu||!D.players||!wk||+D.mu.week!==wk) return;
   const rows=mismatches(); if(!rows.length) return;
   const max=rows[0].score||1, pos=v=>`${esc(v.group)} · ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}`;
-  const bubble=(v,i)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" title="Open ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
+  const bubble=(v,i)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" title="Open ${esc(mmName(v.pid))}'s stats in ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
       <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>
       <div class="pe-mm-top"><span class="pe-mm-sh" title="${esc(tierName(v.elo))}">${shield(v.elo)}</span><span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
       <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
@@ -604,7 +619,7 @@ function mismatchCard(){
     ${rows.length>5?`<div class="pe-mm-more"><button class="btn quiet" id="peMmMore">Show the top ${Math.min(30,rows.length)}</button></div>`:''}</div>`;
   const bar=view.querySelector('.bar'); if(bar) bar.insertAdjacentHTML('afterend',html); else view.insertAdjacentHTML('afterbegin',html);
   const card=document.getElementById('peMism');
-  card.querySelectorAll('[data-mm-game]').forEach(b=>b.addEventListener('click',()=>mmOpen(b.dataset.mmGame)));
+  card.querySelectorAll('[data-mm-game]').forEach(b=>b.addEventListener('click',()=>mmOpen(b.dataset.mmGame,b.dataset.mmPid)));
   const more=document.getElementById('peMmMore'); if(more) more.addEventListener('click',()=>mismatchModal(rows.slice(0,30)));
 }
 function mismatchModal(rows){
@@ -614,14 +629,14 @@ function mismatchModal(rows){
     (document.getElementById('tab-slate')||document.body).appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m) mmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) mmClose(); }); }
-  const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
+  const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
     <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
     <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among this week's, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game.</p>
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among this week's, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
     <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
-  m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame); }));
+  m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
 }
 function mmClose(){ const m=document.getElementById('peMmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }

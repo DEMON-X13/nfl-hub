@@ -634,6 +634,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(bubbles[0].textContent.includes(rows[0].score.toFixed(1)) && card === d.querySelector('#slateView .bar').nextElementSibling, 'the mismatches card is not first under the Props bar');
         w.eval('renderSlate()'); await wait(40);
         chk(d.querySelectorAll('#peMism').length === 1, 'redrawing the Props list doubled the mismatches');
+        /* a click on a mismatch opens his game with his stats open, scrolled to and highlighted */
+        { const b0 = d.querySelector('#peMism .pe-mm-b'), pid = b0.dataset.mmPid; b0.click(); await wait(80);
+          const S = w.eval('S'), row = [...d.querySelectorAll('#gameView [data-open]')].find(x => x.dataset.open === pid);
+          chk(S.ui.game === rows[0].game_id && pid === rows[0].pid && Object.keys(S.ui.open).join() === pid && !d.getElementById('gameModal').hidden, 'a mismatch did not open its game with the player open');
+          chk(!!row && row.getAttribute('aria-expanded') === 'true' && row.classList.contains('pe-hl') && !!row.nextElementSibling && row.nextElementSibling.classList.contains('plrbody') && row.nextElementSibling.classList.contains('pe-hl'),
+            'the player\'s stats are not open and highlighted in his game');
+          chk(d.querySelectorAll('#gameView .pe-hl').length === 2, 'more than the one player is highlighted');
+          w.eval('closeGame()'); await wait(60); }
         /* a player the week's injury report has ruled out since the file was built is left off */
         { const S = w.eval('S'), top = rows[0].pid, was = S.inactive[top];
           S.inactive[top] = { week: +MU.week, status: 'Out' }; w.eval('renderSlate()'); await wait(40);
