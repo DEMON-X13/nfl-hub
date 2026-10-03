@@ -73,7 +73,7 @@ Cleveland Browns, injuries:
 Cleveland Browns, ESPN headlines:
 
 ### Indianapolis Colts at Washington Commanders
-Sun, Oct 4, 9:30 AM ET, NFL Net, Tottenham Hotspur Stadium, London. Line: IND -4.5, O/U 47.5
+Sun, Oct 4, 9:30 AM ET, NFL Net, Tottenham Hotspur Stadium, London. Line: IND -4.5, O/U 46.5
 
 Searches to run:
 - "Indianapolis Colts Washington Commanders preview week 4"
@@ -83,7 +83,7 @@ Searches to run:
 - "NFL week 4 picks IND WAS"
 
 Indianapolis Colts, injuries:
-- Keenan Allen (WR) Questionable, Groin: Allen (groin) was listed as a non-participant for Friday's practice and is questionable for Sunday's game against the Commanders, Nathan Brown of The Indianapolis Star reports.
+- Keenan Allen (WR) Out, Groin: Allen (groin) has been downgraded to out for Sunday's game against Washington.
 - Mo Alie-Cox (TE) Questionable, Illness: Alie-Cox (illness) did not participate in practice Thursday.
 - Ashton Dulin (WR) Active: Dulin (ankle) was a full participant in practice Thursday.
 - Akeem Davis-Gaither (LB) Active
@@ -112,6 +112,8 @@ Indianapolis Colts, injuries:
 Indianapolis Colts, ESPN headlines:
 
 Washington Commanders, injuries:
+- Stefon Diggs (WR) Active: Ben Standig of The Team 980 Washington D.C. reports that Terry McLaurin (hamstring) is expected to miss Sunday's game against the Colts in London, which would leave Diggs as the top wide receiver for the Commanders.
+- Terry McLaurin (WR) Doubtful, Hamstring: McLaurin (hamstring) is now likely to miss Sunday's game against the Colts in London, Ben Standig of The Team 980 Washington D.C. reports.
 - Jacory Croskey-Merritt (RB) Active: Croskey-Merritt has served as the Commanders' RB1 this season, but his backfield snap count for Week 4 against the Colts figures to be larger due to the absence of Rachaad White (shoulder).
 - Frankie Luvu (LB) Active: Luvu has no injury designation heading into Sunday's game against the Colts.
 - Ben Sinnott (TE) Active: Sinnott (ribs) doesn't have an injury designation for Sunday's game against the Colts.
@@ -121,7 +123,6 @@ Washington Commanders, injuries:
 - Charles Omenihu (DE) Active
 - Javon Kinlaw (DT) Active
 - Lucas Patrick (G) Active
-- Terry McLaurin (WR) Questionable, Hamstring: McLaurin (hamstring) was added to the injury report Friday and is listed as questionable for Sunday's game against the Colts, Nicki Jhabvala of The Athletic reports.
 - Marcus Mariota (QB) Active: Mariota will start at quarterback for the Commanders in Sunday's game against the Colts in London, Nicki Jhabvala of The Athletic reports.
 - Jayden Daniels (QB) Out, Elbow: Daniels (elbow), per head coach Dan Quinn, has been ruled out for Sunday's game against the Colts in London, Nicki Jhabvala of The Athletic reports.
 - Amik Robertson (CB) Active
@@ -134,7 +135,6 @@ Washington Commanders, injuries:
 - Percy Butler (S) Questionable, Concussion: Butler is recovering from a concussion ahead of the Commanders' matchup in London against the Colts in Week 4, Ben Standig of The Team 980 Washington D.C. reports.
 - Leo Chenal (LB) Injured Reserve, Neck: The Commanders placed Chenal (neck) on injured reserve Tuesday.
 - Austin Ekeler (RB) Active: Ekeler signed a one-year contract with the Commanders on Tuesday, Zach Selby of the team's official site reports.
-- Stefon Diggs (WR) Active: Diggs caught four of seven targets for 33 yards during Sunday's 33-31 win over the Seahawks.
 - Javontae Jean-Baptiste (LB) Active
 - Drew Stevens (PK) Active: Stevens hit both field-goal attempts, including a 57-yarder, and went 3-for-4 on extra-point tries in Sunday's 33-31 win over the Seahawks.
 
@@ -250,7 +250,7 @@ New York Jets, ESPN headlines:
 Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Out, Undisclosed: out
 - Braxton Jones (OT) Out, Knee: Jones (knee) has been ruled out for Sunday's game against the Jets.
-- Case Keenum (QB) Active: Ian Rapoport of NFL Network reports that Keenum is expected to serve as the backup quarterback to Tyson Bagent against the Jets on Sunday.
+- Case Keenum (QB) Active: Keenum is expected to serve as the Bears' No. 2 quarterback behind Tyson Bagent in Sunday's game against the Jets, Ian Rapoport of NFL Network reports.
 - Tyson Bagent (QB) Active: Bagent is expected to start Sunday versus the Jets after getting most of the first-team reps in practice, Ian Rapoport of NFL Network reports. However, coach Ben Johnson has not yet confirmed the plan.
 - Cam Lewis (CB) Doubtful, Leg: Lewis (leg) is listed as doubtful for Sunday's game against the Jets.
 - D'Andre Swift (RB) Active: Swift (knee) was a full participant in Friday's practice and doesn't have a designation for Sunday's game against the Jets.
@@ -724,11 +724,11 @@ Miami Dolphins, injuries:
 Miami Dolphins, ESPN headlines:
 
 Minnesota Vikings, injuries:
+- Justin Jefferson (WR) Out, Ankle: Jefferson (ankle) has been already been ruled out for Sunday's game against the Dolphins, but the Vikings are hopeful that the superstar wide receiver will return for Week 5 against the Saints, Jeremy Fowler of ESPN reports.
 - Brett Thorson (P) Out, Hamstring: Thorson (hamstring) has been ruled out ahead of Sunday's game against the Dolphins.
 - Charles Demmings (CB) Out, Hamstring: Demmings (hamstring) has been ruled out ahead of Sunday's game against the Dolphins.
 - Jordan Addison (WR) Active: Addison will serve as the Vikings' top wide receiver against the Dolphins on Sunday due to the absence of Justin Jefferson (ankle), Craig Peters of the Vikings' official site reports.
 - Blake Cashman (LB) Active: Cashman (elbow) does not carry an injury designation ahead of Sunday's game against the Dolphins, Ben Goessling of The Minnesota Star Tribune reports.
-- Justin Jefferson (WR) Out, Ankle: Jefferson (ankle) has been ruled out for Sunday's game versus the Dolphins.
 - Joshua Metellus (S) Active: Metellus recorded nine tackles (four solo), including 0.5 sacks, and a defensed pass Sunday against Tampa Bay in a 23-16 victory.
 - Isaiah Rodgers (CB) Active: Rodgers logged six tackles (two solo) and an interception in Sunday's 23-16 victory over Tampa Bay.
 - Eric Wilson (LB) Active: Wilson finished Sunday's 23-16 victory over Tampa Bay with 10 tackles, including 1.5 sacks, and one defensed pass.
