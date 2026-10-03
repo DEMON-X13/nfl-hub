@@ -67,6 +67,9 @@ dom.window.addEventListener('load', () => {
   { const RK = g('typeof RANKS26 === "undefined" ? null : RANKS26');
     const chips = [...d.querySelectorAll('.tbhd .chips .pill.big b')].map(b => b.textContent);
     check('rank chip is the power rank', !RK || chips.join(' ') === [first.away, first.home].map(t => RK[t].rank + ['th','st','nd','rd'][(RK[t].rank % 100 - 20) % 10] || '').join(' ') || chips.join(' ') === [first.away, first.home].map(t => String(RK[t].rank) + ((v => ['th','st','nd','rd'][(v - 20) % 10] || ['th','st','nd','rd'][v] || 'th')(RK[t].rank % 100))).join(' '), chips.join(' ')); }
+  // the preseason write-ups from data/teams.js, one per team, closed until opened
+  { const pre = [...d.querySelectorAll('.duo2 details.dd')].filter(x => /Preseason write-up/.test(x.textContent));
+    check('each team shows its preseason write-up', pre.length === 2 && pre.every(x => !x.open && x.querySelectorAll('.pre li').length >= 3), pre.length + ' write-ups'); }
   // positions after player names, scoped to the two teams, never doubled
   { const PL = g('typeof PLAYERS26 === "undefined" ? null : PLAYERS26');
     const text = [...d.querySelectorAll('.duo2 .tbsec li')].map(li => li.textContent).join(' \n ');

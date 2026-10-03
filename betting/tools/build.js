@@ -96,6 +96,11 @@ const HOOK = `<script>
       +'<li><b>Import backup</b> restores one of those files, or moves your picks and bets to another computer.</li>'
       +'<li>Ratings, results and odds are not your data to lose: the GitHub job rebuilds them and the site reloads them every time.</li></ul>'
       +'<p class="muted" style="margin:10px 0 0">The note above turns red once your last backup is more than a week old. Backups land in your Downloads folder.</p>');
+    /* the Backup tab is on no page's bar: the card stands at the foot of the Bet Log, whose
+       bets and bankroll are most of what it saves */
+    const bets=document.getElementById('tab-bets'); if(bets){ card.id='backupCard'; bets.appendChild(card); }
+    /* the model build line is for whoever ships the app, not for a visitor saving bets */
+    card.querySelector('#buildNote')?.remove();
   });
   document.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>{ const el=document.getElementById('saveState'); if(el&&window.__published){ const d=new Date(window.__published); el.textContent='Updated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); } },600);
@@ -422,6 +427,17 @@ function renderAdjust(){`, `
   ratingsViz();
 }
 function renderAdjust(){`, 'Power Ratings, the ELO based model\'s');
+/* Import on a published page: the file's ratings and results are old by the time it is
+   read, and the job's are current, so only the visitor's own entries come from it (picks,
+   bets, the bankroll and Bet Build, odds they loaded themselves); the season stays the
+   published one. The confirm says so. */
+patch(`The file you pick will REPLACE everything currently in the app: ratings, results, your picks, bankroll history and odds. This cannot be undone. Export a backup first if you are unsure.`,
+`The file you pick REPLACES your picks, Bet Log, bankroll and Bet Build in this browser. Ratings and results stay the published ones. Save a backup first if you are unsure.`, 'the import warning');
+patch(`S=s; save(); buildCheck(); renderAll(); log('State imported.','ok');`,
+`if(window.PUBLISHED){ S.myPicks=s.myPicks||{}; S.bets=s.bets||{}; if(s.bank) S.bank=s.bank; S.lastBackup=s.lastBackup||null; S.lastBackupHow=s.lastBackupHow||null;
+      const own={}; for(const [gid,o] of Object.entries(s.odds||{})) if(o&&o.src!=='nflverse') own[gid]=o; S.odds=Object.assign({},S.odds||{},own); }
+    else S=s;
+    save(); buildCheck(); renderAll(); renderBackupState(); log('Backup imported.','ok');`, 'the import, the visitor\'s entries only');
 /* the Bet Log: the app draws its chart and table, then betsViz() (bets_viz.js) redraws them
    as a bankroll chart (balance or weekly P&L) with the balance among the figures */
 patch(`function renderBets(){`, `function renderBets(){ renderBetsApp(); betsViz(); }

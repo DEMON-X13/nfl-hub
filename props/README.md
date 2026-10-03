@@ -199,7 +199,7 @@ pulls prices for the games kicking off before the next scheduled pull if `ODDS_A
 is set (`PULL_TIMES`, plus an hour of slack) and bakes the main lines in; rebuilds the
 payload; bakes every finished game's player stats, this week's injury report and every
 price file INTO the payload; assembles; audits; leaves the commit to the workflow
-(`--no-commit`; run by hand without it, it commits locally); prints a REPORT block. Only games
+(it never commits; off GitHub it skips the price pull unless given `--local`); prints a REPORT block. Only games
 with a final score in games.csv are baked, so a game in progress is never graded.
 
 The app applies baked data at boot through the same ingest functions an upload uses
@@ -211,9 +211,10 @@ anything. Audit section I covers it.
 
 Scheduled by `.github/workflows/props.yml`: four price pulls (Mon/Wed/Thu/Sat) and eight
 post-game and stats runs a week (`--no-odds`, no credits); the key is the `ODDS_API_KEY`
-repository secret. (Before the workflow, `weekly.py` ran from a schedule in the Claude
-desktop app, Thursday and Saturday 8:00 local, with the key set by `setx`. If that
-schedule still exists it spends credits alongside the workflow, so turn it off.)
+repository secret. Off GitHub Actions `weekly.py` skips the price pull unless given
+`--local`, and it never commits, so the schedule that ran it from the Claude desktop app
+before the workflow (Thursday and Saturday 8:00 local) spends nothing and changes nothing
+if it still fires; it can be deleted in the desktop app.
 
 ## Manual fallback
 
