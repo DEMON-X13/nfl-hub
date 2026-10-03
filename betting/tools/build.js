@@ -532,6 +532,10 @@ table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
 .rt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.rt-v{width:100%}
 #ratingsTable table.rt-v th,#ratingsTable table.rt-v td{width:auto}
+/* the table is fixed-layout: the rank and the team get their widths, the rest share what is left */
+#ratingsTable table.rt-v th:first-child,#ratingsTable table.rt-v td:first-child{width:46px;padding-right:2px;white-space:nowrap}
+#ratingsTable table.rt-v th:nth-child(2),#ratingsTable table.rt-v td:nth-child(2){width:230px;padding-left:4px}
+#ratingsTable table.rt-v{min-width:720px}
 #ratingsTable table.rt-v th:nth-child(n+3),#ratingsTable table.rt-v td:nth-child(n+3){text-align:center}
 table.rt-v td.rt-pct{font-variant-numeric:tabular-nums}
 </style>
@@ -601,11 +605,13 @@ patch(`
 function renderAdjust(){`, `
   ratingsViz();
 }
-function renderAdjust(){`, 'Power Ratings, Vegas by default');
+function renderAdjust(){`, 'Power Ratings, the ELO based model\'s');
 /* the Bet Log: the app draws its chart and table, then betsViz() (bets_viz.js) redraws them
    as a bankroll chart (balance or weekly P&L) with the balance among the figures */
 patch(`function renderBets(){`, `function renderBets(){ renderBetsApp(); betsViz(); }
 function renderBetsApp(){`, 'the Bet Log balance');
+/* the Elo tiers: Challenger renamed Elite, and HOF above it from 1750, worn as a gem (tiers.js) */
+html = require('./tiers.js')(html, 'the built app');
 /* the viewer trim is kept for a revert; nothing uses it */
 void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around

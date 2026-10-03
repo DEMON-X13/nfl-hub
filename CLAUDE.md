@@ -108,13 +108,17 @@ on the lineup known before kickoff: that week's depth chart (weekly files throug
 last daily snapshot before the game from 2025) minus the week's Outs, falling back to who
 played last game where a chart is silent; `walk_forward` in `model.json` is that honest
 number and `walk_forward_who_played` the hindsight one, kept for comparison only. Tiers are the betting app's Elo shields, lifted with
-its tag into the page. The tab's script also puts a second price, "market + form", on every
+its tag into the page and reshaped at build time by `betting/tools/tiers.js` (both builds apply it): Wood League under 1350,
+Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger, renamed so it is not taken for the
+Challenger model) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card alone: a bell-curve
+histogram of the position by shield over the table, and a click on a player opens his window (his rating, then his
+matchup this week). The tab's script also puts a second price, "market + form", on every
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the Prop
 Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
-starter's stats from his recent form, his Elo and the Elo of the defenders he faces; the tab shows
-it as Matchups, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
+starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
 window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
 they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
 game), built from `pricedLegs()` in the props parts beside the model's own suggestions. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what

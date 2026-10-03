@@ -85,7 +85,7 @@ const BET = [
   lift(betting, 'function hex2rgb(', 'function predict(', 'tag colours and tag()'),
   lift(betting, 'function tier(', 'function statsFromRow', 'betting confidence bands'),
   /* the Elo tiers and their shields, so a player's rating wears the same badge a team's does */
-  lift(betting, 'const TIERS=', 'function tierLegend(', 'Elo tiers and shields'),
+  require(path.join(ROOT, 'betting', 'tools', 'tiers.js'))(lift(betting, 'const TIERS=', 'function tierLegend(', 'Elo tiers and shields'), 'the Bets and Stats page'),
 ].join('\n');
 for (const need of ['function tag(', 'function tagColor(', 'const PROB_HI', 'function tier(', 'function eloTier(', 'function tierBadge(', 'const TIER_DEFS'])
   if (!BET.includes(need)) throw new Error('the lifted betting block is missing ' + need);

@@ -122,8 +122,10 @@ function load(picks) {
       check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the ELO based ratings do not average 1500');
       check(rows.every(tr => tr.children.length === 7 && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its tier shield, Elo change and chance against an average team');
       check(!rt.querySelector('[data-rv]') && !/Vegas|Model A/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Model A switch');
-      check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them'); }
-    check(!rt.querySelector('.tierlegend') && !/Challenger 1700/.test(rt.textContent), 'admin: the tier key is still on the ratings table'); }
+      check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them');
+      const T = e => a.window.eval('eloTier(' + e + ')[0]');
+      check(T(1760) === 'HOF' && T(1720) === 'Elite' && T(1360) === 'Iron' && T(1300) === 'Wood' && /tier-hof/.test(a.window.eval('tierBadge(1760)')), 'admin: the built app does not carry the Wood to HOF ladder'); }
+    check(!rt.querySelector('.tierlegend') && !/Elite 1700/.test(rt.textContent), 'admin: the tier key is still on the ratings table'); }
   const dv = dom.window.document;
   check(!!dv.querySelector('#tab-ratings #injCard #injSuggest') && !/Rank tags and the Elo change column/.test(dv.getElementById('ratingsTable').textContent), 'viewer: Power Ratings does not carry the absences table, or still carries the note');
   check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');

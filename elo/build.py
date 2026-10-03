@@ -124,9 +124,10 @@ THE LADDER. Player Elo at a position spreads far less than team Elo (a standard 
 was Silver or Gold. What is shown is the season rating put on a bell curve within the
 position: 1500 plus 100 points for every standard deviation above the position's ranked
 players (the career and peak columns the same way, on the position's career pool). The shields then
-split a position the way a ranked ladder splits its players: Challenger (2 sd up) about 2%,
-Master 4%, Diamond 9%, Platinum 15%, Gold and Silver 19% each, Bronze 15%, Iron 16%, the
-average player on the line between Silver and Gold. The order is untouched; only the scale
+split a position the way a ranked ladder splits its players (the tiers as betting/tools/tiers.js
+sets them): HOF (2.5 sd up, a gem) well under 1%, Elite about 2%, Master 4%, Diamond 9%,
+Platinum 15%, Gold and Silver 19% each, Bronze 15%, Iron 9% and the Wood League (1.5 sd down)
+7%, the average player on the line between Silver and Gold. The order is untouched; only the scale
 moves. The raw ratings stay in `raw` and `career_raw`, and the models never read the shown
 ones. The team power ratings below are put on the same curve across the 32 teams.
 
