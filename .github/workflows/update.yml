@@ -67,6 +67,8 @@ jobs:
       - run: pip install -r betting/joker/requirements.txt
       - name: Score The Joker and write its picks into state.json
         run: python betting/joker/joker.py
+      - name: Score the Broly Model and write its picks into state.json
+        run: python betting/broly/broly.py
       - name: Viewer smoke test
         run: node betting/tools/smoke.js
       - name: Commit if anything changed

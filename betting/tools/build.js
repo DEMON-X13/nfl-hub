@@ -411,11 +411,11 @@ patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\
     \${S.picksOpen?(()=>{ const cur=currentWeekDefault(); const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur; return pickGrid(pw,showAll); })():''}`,
   'the pick grid, this week by default, earlier weeks by the picker');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
-`  const elo=S.elo||{};
-  const cols=[['Model A','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['ELO based','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+`  const elo=S.elo||{}, brl=S.broly||{};
+  const cols=[['Model A','#1F6F4A'],...(showAll?[['Challenger Model','#3B6FB6'],['The Joker','#C0392B'],['ELO Model','#E8730A'],['Broly Model','#7A3FB0'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
-`    const ek=(done&&done.elo)||elo[g.game_id]||null;
-    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
+`    const ek=(done&&done.elo)||elo[g.game_id]||null, bk=(done&&done.broly)||brl[g.game_id]||null;
+    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
 patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   renderBets();`,
 `  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
@@ -426,7 +426,7 @@ patch(`
 function renderAdjust(){`, `
   ratingsViz();
 }
-function renderAdjust(){`, 'Power Ratings, the ELO based model\'s');
+function renderAdjust(){`, 'Power Ratings, the ELO Model\'s');
 /* Import on a published page: the file's ratings and results are old by the time it is
    read, and the job's are current, so only the visitor's own entries come from it (picks,
    bets, the bankroll and Bet Build, odds they loaded themselves); the season stays the

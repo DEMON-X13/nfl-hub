@@ -50,6 +50,8 @@ betting/
                                  joker/joker.py) -- the season
   events.json                    hand-written: team news the job cannot infer
   joker/                         the Joker: python, fitted model, the vendored rating/QB pieces of the harness
+  broly/                         the Broly Model: the betting line plus six team stats (stats.py),
+                                 frozen weights (model.json, by fit.py), the weekly run broly.py
   tools/update.js                download + grade + write state.json
   tools/build.js                 the app, built: buildApp() for nflbets/build/build.js;
                                  run on its own it checks and writes nothing
@@ -93,7 +95,7 @@ elo/
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls and the coming week's (the Pick'em
-                                 Record's ELO based model), and `teams`, each team's expected
+                                 Record's ELO Model model), and `teams`, each team's expected
                                  lineup on this season's player Elo (Power Ratings)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
@@ -159,7 +161,7 @@ season line. A click on a player opens his window: his rating, then his matchup 
 The same script puts the Mismatches card on the Props tab, a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
-and the Elo picks in the Suggested parlays window. The ELO based model's calls and record
+and the Elo picks in the Suggested parlays window. The ELO Model model's calls and record
 are on the Pick'em Record and its team ratings on Power Ratings, both through
 `betting/tools/build.js`. It borrows the Pick'ems tab's team tag and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
@@ -276,7 +278,7 @@ games whose stats are not out yet wait for the next run.
 
 `state.json` holds `teams`/`teamsH` (the team ratings and EPA of Model A and of the
 Challenger, `MODEL_H`: Power Ratings shows Model A's EPA, but its order and Elo are the
-ELO based model's, from `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
+ELO Model model's, from `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
 moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injuries`
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`,
 `prevElo`/`prevRanks`, `published`, and the app's own bookkeeping (`gamesPlayed`,
@@ -393,7 +395,7 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 12x/week: 4 price pulls (Mon/Wed/Thu/Sat), 8 post-game and stats runs with `--no-odds` | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main`; afterwards the run fails if `weekly.py` reported problems |
-| `update.yml` (the betting job) | every hour at :37 (the Joker follows the lines), plus Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game and injury-report runs, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py`, `smoke.js` (which builds the app); commits `betting/state.json` |
+| `update.yml` (the betting job) | every hour at :37 (the Joker follows the lines), plus Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game and injury-report runs, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py`, `broly/broly.py`, `smoke.js` (which builds the app); commits `betting/state.json` |
 | `news.yml` | Fri/Mon/Tue 8am ET, five post-game runs, and on a push to its pull code | `run-auto.js` (`pull-week.js`, which runs `context.js`), `smoke.js`; commits `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
 | `elo.yml` | Tue/Fri 8:40am ET | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json`, `cfb/news.json` and `cfb/data/teams.json` |
