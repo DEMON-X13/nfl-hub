@@ -5,10 +5,10 @@
    the latest week counting most (each week back 0.8 of the one after), gently pulled to zero
    (ridge 0.1) so a team with few lines is not pushed to an extreme. Through week 3 of 2026 they
    reproduce the lines to within 0.9 points on average (1.3 at ridge 0.5, which squashed them). Movement is against the
-   same fit a week earlier. A switch above the table shows Model A's own ratings, which the
-   app draws as before. renderRatings() calls ratingsViz() last; betting/tools/build.js puts
-   this file in front of the app's script. */
-let RATINGS_VIEW = 'vegas';
+   same fit a week earlier. Beside each rating stand Model A's numbers for the team, which used to
+   be a table of their own behind a switch: its Elo with the tier shield, the Elo change since
+   the last graded week, and the EPA a play each way. renderRatings() calls ratingsViz() last;
+   betting/tools/build.js puts this file in front of the app's script. */
 function vegasRatings(throughWeek){
   const games=(S.schedule||[]).filter(g=>+g.week<=throughWeek&&g.spread_line!=null&&isFinite(g.spread_line)&&g.game_type!=='PRE');
   const teams=[...new Set((S.schedule||[]).flatMap(g=>[g.home_team,g.away_team]))].sort();
@@ -36,28 +36,26 @@ function vegasRatings(throughWeek){
 }
 function ratingsViz(){
   const el=document.getElementById('ratingsTable'); if(!el||!S.schedule) return;
-  const bar=`<div class="bar rt-switch"><span class="seg"><button data-rv="vegas" class="${RATINGS_VIEW==='vegas'?'on':''}">Vegas</button><button data-rv="model" class="${RATINGS_VIEW==='model'?'on':''}">Model A</button></span></div>`;
-  if(RATINGS_VIEW==='vegas'){
-    const weeks=[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b);
-    const cur=typeof currentWeekDefault==='function'?currentWeekDefault():weeks[weeks.length-1];
-    const now=vegasRatings(cur), before=cur>weeks[0]?vegasRatings(cur-1):null;
-    const rankBefore=before?Object.fromEntries(before.teams.map((x,i)=>[x.t,i+1])):null;
-    const top=Math.max(...now.teams.map(x=>Math.abs(x.r)),1);
-    const mv=(t,i)=>{ if(!rankBefore||!rankBefore[t]) return ''; const d=rankBefore[t]-(i+1);
-      if(d===0) return '<span class="rankmv flat" title="No change since week '+(cur-1)+'’s lines">·</span>';
-      return `<span class="rankmv ${d>0?'up':'down'}" title="${d>0?'Up':'Down'} ${Math.abs(d)} since week ${cur-1}’s lines"><i>${d>0?'▲':'▼'}</i>${Math.abs(d)}</span>`; };
-    const pts=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(1);
-    el.innerHTML=bar+`<h2>Power ratings <span class="pill">Vegas</span></h2>
-      <p class="muted" style="margin:0 0 10px">Points better or worse than an average team on a neutral field, read out of this season's point spreads through week ${cur} (${now.games} lines, the latest counting most). Home field is worth ${now.hfa.toFixed(1)} points in them. A game's line is home field plus the home side's rating minus the away side's, which reproduces the lines to within ${now.miss.toFixed(1)} points on average.</p>
-      <table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Rating</th><th></th></tr></thead><tbody>`
-      +now.teams.map((x,i)=>`<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td>
-        <td class="num"><b>${pts(x.r)}</b></td><td class="rt-barcell"><span class="rt-bar ${x.r<0?'neg':''}" style="width:${(Math.abs(x.r)/top*50).toFixed(1)}%"></span></td></tr>`).join('')
-      +'</tbody></table>';
-  } else {
-    /* the app's own table, tidied as the page tidies it on load: no tier key, no rank-tag note */
-    el.querySelectorAll('.tierlegend').forEach(n=>n.remove());
-    el.querySelectorAll('p.muted').forEach(p=>{ if(/^Rank tags and the Elo change column/.test(p.textContent.trim())) p.remove(); });
-    el.insertAdjacentHTML('afterbegin',bar);
-  }
-  el.querySelectorAll('[data-rv]').forEach(btn=>btn.addEventListener('click',()=>{ RATINGS_VIEW=btn.dataset.rv; renderRatings(); }));
+  const weeks=[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b);
+  const cur=typeof currentWeekDefault==='function'?currentWeekDefault():weeks[weeks.length-1];
+  const now=vegasRatings(cur), before=cur>weeks[0]?vegasRatings(cur-1):null;
+  const rankBefore=before?Object.fromEntries(before.teams.map((x,i)=>[x.t,i+1])):null;
+  const mv=(t,i)=>{ if(!rankBefore||!rankBefore[t]) return ''; const d=rankBefore[t]-(i+1);
+    if(d===0) return '<span class="rankmv flat" title="No change since week '+(cur-1)+'’s lines">·</span>';
+    return `<span class="rankmv ${d>0?'up':'down'}" title="${d>0?'Up':'Down'} ${Math.abs(d)} since week ${cur-1}’s lines"><i>${d>0?'▲':'▼'}</i>${Math.abs(d)}</span>`; };
+  const pts=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(1);
+  /* Model A's Elo, moved against the board at the last graded week as the app measures it */
+  const since=S.prevRanks?(S.prevRanksWeek?'end of week '+S.prevRanksWeek:'preseason'):'preseason';
+  const pe=S.prevElo||Object.fromEntries(Object.keys(MODEL.teams).map(k=>[k,MODEL.teams[k].elo]));
+  const eloMv=(t,e)=>{ const was=pe[t]; if(was==null) return ''; const d=Math.round(e)-Math.round(was);
+    if(d===0) return '<span class="elomv flat" title="No change since '+since+'">·</span>';
+    return `<span class="elomv ${d>0?'up':'down'}" title="${d>0?'Gained':'Lost'} ${Math.abs(d)} Elo since ${since}">${d>0?'+':'−'}${Math.abs(d)}</span>`; };
+  const epa=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(3);
+  const row=(x,i)=>{ const m=S.teams[x.t];
+    const a=m?`<td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(m.elo)}<b>${Math.round(m.elo)}</b></span></td><td class="movecell">${eloMv(x.t,m.elo)}</td><td class="num">${epa(stateVal(m,'off_epa','off_epa'))}</td><td class="num">${epa(stateVal(m,'d_off_epa','off_epa'))}</td>`:'<td class="muted">–</td><td></td><td></td><td></td>';
+    return `<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num rt-pts">${pts(x.r)}</td>${a}</tr>`; };
+  el.innerHTML=TIER_DEFS+`<h2>Power ratings <span class="pill">Vegas</span></h2>
+    <p class="muted" style="margin:0 0 10px">Points better or worse than an average team on a neutral field, read out of this season's point spreads through week ${cur} (${now.games} lines, the latest counting most). Home field is worth ${now.hfa.toFixed(1)} points in them. Beside each, the team's Elo with its tier shield, its Elo change since the ${since}, and its EPA a play on offence and allowed on defence.</p>
+    <div class="rt-wrap"><table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Rating</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th></tr></thead><tbody>`
+    +now.teams.map(row).join('')+'</tbody></table></div>';
 }

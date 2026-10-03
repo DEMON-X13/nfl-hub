@@ -529,12 +529,11 @@ table.rv-grid td.rv-c b{display:block;font-family:var(--display);font-size:14px}
 table.rv-grid td.rv-c small{display:block;font-size:11px;color:var(--ink-2)}
 table.rv-grid td.rv-none{color:var(--muted)}
 table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
-.rt-switch{margin:0 0 12px}
-table.rt-v{width:100%;max-width:640px}
-table.rt-v td.num b{font-family:var(--display);font-variant-numeric:tabular-nums}
-.rt-barcell{width:45%;position:relative}
-.rt-bar{display:block;height:8px;border-radius:0 4px 4px 0;background:var(--pick);margin-left:50%}
-.rt-bar.neg{background:var(--miss);border-radius:4px 0 0 4px;margin-left:auto;margin-right:50%}
+.rt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.rt-v{width:100%}
+#ratingsTable table.rt-v th,#ratingsTable table.rt-v td{width:auto}
+#ratingsTable table.rt-v th:nth-child(n+3),#ratingsTable table.rt-v td:nth-child(n+3){text-align:center}
+table.rt-v td.rt-pts{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums}
 </style>
 <script>
 ${VIZ_JS}
