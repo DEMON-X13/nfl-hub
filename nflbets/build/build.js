@@ -158,8 +158,9 @@ renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
-/* the sync stamp in the header: synced and when the document last changed, saving, failed
-   and retrying, or not set up */
+/* the sync stamp, in the Live Parlays card (the parlays are what it syncs; the header keeps
+   only when the site's data was updated): synced and when the shared parlays last changed,
+   saving, failed and retrying, or not set up; when this page last checked is in its tooltip */
 (function(){
   const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
   const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
@@ -169,11 +170,12 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
      with nothing new to show. */
   const put=s=>{ let t, cls='';
     if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced \u2014 this browser only'; cls='off'; }
-    else if(s.ok===false){ t='Sync failed: '+s.err+' \u2014 retrying'; cls='bad'; }
+    else if(s.ok===false){ t='Sync failed \u2014 retrying'; cls='bad'; }
     else if(s.pending){ t='Saving\u2026'; cls='ok'; }
     else if(!s.applied){ t='Connecting\u2026'; }
-    else { t='Synced'+(s.at?' \u00b7 changed '+when(s.at):'')+(s.checked?' \u00b7 checked '+clock(s.checked):''); cls='ok'; }
-    el.textContent=t; el.dataset.state=cls; el.title=s.url?'Every device reads and writes the same parlays, through '+s.url:'nflbets/sync.json has no store address, so parlays stay in this browser'; };
+    else { t='Synced'+(s.at?' \u00b7 last change '+when(s.at):''); cls='ok'; }
+    el.textContent=t; el.dataset.state=cls;
+    el.title=(s.url?'Your parlays are the same on every device'+(s.checked?'; this page last checked at '+clock(s.checked):''):'nflbets/sync.json has no store address, so parlays stay in this browser')+(s.ok===false&&s.err?' ('+s.err+')':''); };
   NFLSYNC.onChange(put); put(NFLSYNC.state());
 })();
 </script>`;
@@ -182,10 +184,7 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>X NFL Bets and Stats</title>', 'title');
 html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 'heading');
-/* the sync stamp, beside the data stamp */
-html = sub1(html, '<span class="sub grow" id="saveState" style="margin-left:auto"></span>',
-  '<span class="sub grow" id="saveState" style="margin-left:auto"></span>\n    <span class="sub" id="syncStamp" title="Whether this page shares its parlays with your other devices"></span>', 'the save stamp');
-html = sub1(html, '</style>\n</head>', '</style>\n<style>#syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>\n</head>', 'the sync stamp style');
+html = sub1(html, '</style>\n</head>', '</style>\n<style>#syncStamp{margin-left:10px;font-size:12px} #syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>\n</head>', 'the sync stamp style');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here stays in the page, unshown. */

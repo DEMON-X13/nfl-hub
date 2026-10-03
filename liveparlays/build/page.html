@@ -137,6 +137,7 @@ footer a{color:var(--ink-2)}
 <main>
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
+    <span class="sub" id="syncStamp"></span>
     <span class="grow"></span>
     <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
@@ -514,7 +515,7 @@ function draw(){
   document.getElementById('clear').hidden=!ps.some(settledP);
   let html='';
   if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
-  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
+  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
   if(!ps.length){
     /* empty says so and no more; the one thing worth a line is the way back for what was deleted */
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${removedCount()?';margin-bottom:8px':''}">Nothing to watch yet</b>${removedCount()?`<a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>`:''}</div>`;

@@ -370,7 +370,7 @@ body.modal-open{overflow:hidden}
   color:var(--away);letter-spacing:.01em}
 .winner small.act.right{color:var(--pick)} .winner small.act.wrong{color:var(--miss)}
 </style>
-<style>#syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>
+<style>#syncStamp{margin-left:10px;font-size:12px} #syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>
 <style>
 /* the board row: the betting app's columns -- date, matchup, split bar, confidence, final
    score -- at the Props tab's size and type, so the two tabs read as one page: the same
@@ -650,7 +650,6 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
     <h1>X NFL Bets and Stats</h1>
     <span class="sub" id="buildTag"></span>
     <span class="sub grow" id="saveState" style="margin-left:auto"></span>
-    <span class="sub" id="syncStamp" title="Whether this page shares its parlays with your other devices"></span>
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
@@ -723,6 +722,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
     <h2 style="display:flex;align-items:center;gap:10px">Live Parlays<span class="grow" style="flex:1"></span></h2>
     <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
+    <span class="sub" id="syncStamp"></span>
     <span class="grow"></span>
     <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
@@ -3785,7 +3785,7 @@ function draw(){
   document.getElementById('clear').hidden=!ps.some(settledP);
   let html='';
   if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
-  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading: ${esc(STATE.err)}</b> The parlays below are still right; only the numbers against them are stale.</div>`;
+  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
   if(!ps.length){
     /* empty says so and no more; the one thing worth a line is the way back for what was deleted */
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${removedCount()?';margin-bottom:8px':''}">Nothing to watch yet</b>${removedCount()?`<a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>`:''}</div>`;
@@ -3889,8 +3889,9 @@ renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
-/* the sync stamp in the header: synced and when the document last changed, saving, failed
-   and retrying, or not set up */
+/* the sync stamp, in the Live Parlays card (the parlays are what it syncs; the header keeps
+   only when the site's data was updated): synced and when the shared parlays last changed,
+   saving, failed and retrying, or not set up; when this page last checked is in its tooltip */
 (function(){
   const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
   const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
@@ -3900,11 +3901,12 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
      with nothing new to show. */
   const put=s=>{ let t, cls='';
     if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced — this browser only'; cls='off'; }
-    else if(s.ok===false){ t='Sync failed: '+s.err+' — retrying'; cls='bad'; }
+    else if(s.ok===false){ t='Sync failed — retrying'; cls='bad'; }
     else if(s.pending){ t='Saving…'; cls='ok'; }
     else if(!s.applied){ t='Connecting…'; }
-    else { t='Synced'+(s.at?' · changed '+when(s.at):'')+(s.checked?' · checked '+clock(s.checked):''); cls='ok'; }
-    el.textContent=t; el.dataset.state=cls; el.title=s.url?'Every device reads and writes the same parlays, through '+s.url:'nflbets/sync.json has no store address, so parlays stay in this browser'; };
+    else { t='Synced'+(s.at?' · last change '+when(s.at):''); cls='ok'; }
+    el.textContent=t; el.dataset.state=cls;
+    el.title=(s.url?'Your parlays are the same on every device'+(s.checked?'; this page last checked at '+clock(s.checked):''):'nflbets/sync.json has no store address, so parlays stay in this browser')+(s.ok===false&&s.err?' ('+s.err+')':''); };
   NFLSYNC.onChange(put); put(NFLSYNC.state());
 })();
 </script>
