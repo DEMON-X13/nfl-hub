@@ -59,6 +59,15 @@ from the latest depth charts and injury report. The same walk-forward is also ru
 actually played, for comparison: that number is flattered by hindsight and is not the
 model's.
 
+THE POWER RATINGS. Each team rated on its own by the same model: its expected lineup for the
+coming week scored against a team of 1500s (the sum over groups of the group's coefficient
+times its strength less 1500, in hundreds), a log-odds that is put on the Elo scale (400/ln 10
+points to one unit) and centred so the league averages 1500. The order is the game model's, and
+the betting app's tier shields read on it as they do on a player. `teams` in model.json carries
+it with the rating going into the team's last game (`before`), the chance against an average
+team on a neutral field (`p_avg`) and the group strengths; the Bets and Stats page's Power
+Ratings tab is drawn from it.
+
 THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
 his next game beyond what his recent games already say? For every QB, RB, WR and TE game
 since 2016 in which the player was a regular (involvement at least 80% of the position's
@@ -689,6 +698,35 @@ def main():
                           'edges': {g: round(x[g] * 100, 1) for g in GROUPS}, 'charted': bool(ch and ca),
                           'home_qb': qb(eh), 'away_qb': qb(ea),
                           'home_strength': {g: round(sh[g]) for g in GROUPS}, 'away_strength': {g: round(sa[g]) for g in GROUPS}})
+    # ---- each team on its own: the power ratings ----
+    # A team's rating is what the game model makes of its lineup against a team of 1500s,
+    # sum of coef[g] * (strength[g] - 1500) / 100, a log-odds; put on the Elo scale
+    # (400 / ln 10 Elo points to one unit of log-odds) and centred so the league averages 1500,
+    # the order is the model's and the tier shields read the same as a player's. Now is the
+    # lineup expected for the coming week (a team on its bye or already played this week: who
+    # took the field last game, minus anyone off the active list); before is the lineup it took into its last game, on
+    # the ratings it had then, so the change is that game and the lineup moving since.
+    w_logit = lambda st: sum(coef[g] * (st[g] - 1500) / 100 for g in GROUPS)
+    now_st = {}
+    for c in calls:
+        now_st[c['home']] = c['home_strength']
+        now_st[c['away']] = c['away_strength']
+    not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
+    for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
+        if t not in now_st and played.get((last, t)):
+            now_st[t] = strength([(pid, g) for pid, g in played[(last, t)] if pid not in not_active])
+    before_st = {}
+    for r in sorted((r for r in game_feat if r['season'] == last and r['result'] is not None), key=lambda r: r['ord']):
+        before_st[r['home']], before_st[r['away']] = r['sh'], r['sa']
+    def to_elo(st):
+        lg = {t: w_logit(v) for t, v in st.items()}
+        mean = sum(lg.values()) / len(lg) if lg else 0
+        return {t: 1500 + 400 / np.log(10) * (v - mean) for t, v in lg.items()}, {t: v - mean for t, v in lg.items()}
+    e_now, lg_now = to_elo(now_st)
+    e_before, _ = to_elo(before_st)
+    team_rows = {t: {'elo': round(e_now[t]), 'before': round(e_before[t]) if t in e_before else None,
+                     'p_avg': round(float(1 / (1 + np.exp(-lg_now[t]))), 4),
+                     'groups': {g: round(now_st[t][g]) for g in GROUPS}} for t in e_now}
     n_ok = sum(1 for g in graded if g['correct'] is True)
     n_gr = sum(1 for g in graded if g['correct'] is not None)
     model = {
@@ -698,6 +736,7 @@ def main():
         'by_season': by_season, 'walk_forward': walk, 'walk_forward_who_played': walk_played,
         'record': {'season': last, 'graded': n_gr, 'correct': n_ok, 'accuracy': round(n_ok / n_gr, 4) if n_gr else None},
         'graded': graded, 'next': {'week': int(upcoming[upcoming.ord == next_ord].week.min()) if next_ord is not None else None, 'games': calls},
+        'teams': team_rows,
         'units': {f'{t}|{f}': round(v) for (t, f), v in sorted(U.items())},
         'how': 'see elo/build.py',
     }

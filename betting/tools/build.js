@@ -75,7 +75,7 @@ const HOOK = `<script>
             const winner=p&&p.result!=null?(p.result>0?p.home:p.result<0?p.away:null):null;
             const e={pick:g.pick,pHome:g.p_home,correct:winner?g.pick===winner:null};
             S.elo[g.game_id]=e; if(p&&e.correct!==null) p.elo=e; }
-          window.__eloRecord=M.walk_forward||null; }
+          window.__eloRecord=M.walk_forward||null; window.__eloTeams=M.teams||null; }
       }catch(e){}
       window.__published=S.published;
       return {value:JSON.stringify(S)};
@@ -533,7 +533,7 @@ table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
 table.rt-v{width:100%}
 #ratingsTable table.rt-v th,#ratingsTable table.rt-v td{width:auto}
 #ratingsTable table.rt-v th:nth-child(n+3),#ratingsTable table.rt-v td:nth-child(n+3){text-align:center}
-table.rt-v td.rt-pts{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums}
+table.rt-v td.rt-pct{font-variant-numeric:tabular-nums}
 </style>
 <script>
 ${VIZ_JS}

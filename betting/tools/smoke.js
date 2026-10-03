@@ -87,7 +87,7 @@ function load(picks) {
   // 3. the app on its own: same published season, every tab, private things from the same store
   const adminHtml = html;
   const a = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/admin.html',
-    beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
+    beforeParse(w2) { w2.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w2.fetch = async url => /elo\/data\/model\.json/.test(String(url)) ? { ok: true, status: 200, json: async () => JSON.parse(eloModel) } : ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
       w2.confirm = () => true; w2.alert = () => {}; w2.scrollTo = () => {};
       w2.localStorage.setItem('x_nfl_viewer_picks_2026', JSON.stringify({ myPicks: { [first]: loser }, bank: { lastAmt: 35, filter: 'all', build: [], mode: 'straight' }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } })); } });
   await sleep(600);
@@ -116,13 +116,12 @@ function load(picks) {
   check(!injFiles || /Impact absences, week \d+/.test(injText), 'admin: dropping the note took the absences heading with it');
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
-    /* Vegas's ratings by default: every team, rated from the season's spreads, best first */
-    { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => parseFloat(tr.querySelector('td.rt-pts').textContent.replace('\u2212', '-')));
-      check(rows.length === 32 && vals.every((v, i) => i === 0 || v <= vals[i - 1]) && /Home field is worth/.test(rt.textContent), 'admin: Power Ratings does not open on Vegas\'s 32 ratings, best first');
-      check(Math.abs(vals.reduce((x, v) => x + v, 0)) < 1, 'admin: the Vegas ratings are not centred on an average team');
-      /* one table: no switch to Model A, whose Elo, shield, change and EPA stand beside each Vegas rating */
-      check(!rt.querySelector('[data-rv]') && !/Model A/.test(rt.textContent), 'admin: Power Ratings still has the Model A switch');
-      check(rows.every(tr => tr.children.length === 7 && tr.querySelector('.tierbadge') && /^\d{4}$/.test(tr.querySelector('.elocell b').textContent) && tr.querySelector('.movecell .elomv')), 'admin: every Vegas row should carry its Elo, tier shield and Elo change');
+    /* the ELO based model's ratings: every team, best first, each with its shield and its change since its last game */
+    { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => +tr.querySelector('.elocell b').textContent), want = JSON.parse(eloModel).teams;
+      check(rows.length === 32 && rows.length === Object.keys(want).length && vals.every((v, i) => i === 0 || v <= vals[i - 1]), 'admin: Power Ratings does not show the ELO based model\'s 32 ratings, best first');
+      check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the ELO based ratings do not average 1500');
+      check(rows.every(tr => tr.children.length === 7 && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its tier shield, Elo change and chance against an average team');
+      check(!rt.querySelector('[data-rv]') && !/Vegas|Model A/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Model A switch');
       check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them'); }
     check(!rt.querySelector('.tierlegend') && !/Challenger 1700/.test(rt.textContent), 'admin: the tier key is still on the ratings table'); }
   const dv = dom.window.document;
