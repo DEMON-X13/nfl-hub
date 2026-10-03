@@ -2,13 +2,14 @@ name: elo
 
 # The Player Elo ratings and the roster model: every player rated by position, game by game
 # since 2012, the matchup formula, and the game model fitted on those ratings, re-run once the week's player stats
-# are on nflverse. Two mornings: Tuesday for the week (Monday night included), Friday to pick
-# up any late correction and call the coming week on the latest depth charts and that week's
-# injury report (who last took the field only where a chart is silent).
+# are on nflverse. Every morning, so the coming week is called on the latest depth charts and
+# that day's injury report (who last took the field only where a chart is silent): Friday's
+# final report is on nflverse overnight into Saturday, and a twice-a-week job never saw it.
+# Tuesday's run takes in Monday night; the other mornings re-rate nothing new and only move
+# who is expected to play.
 on:
   schedule:
-    - cron: "40 12 * * 2"    # Tue 08:40 ET
-    - cron: "40 12 * * 5"    # Fri 08:40 ET
+    - cron: "40 12 * * *"    # 08:40 ET daily
   workflow_dispatch:
 
 permissions:

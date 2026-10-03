@@ -171,9 +171,9 @@ function muTrusted(g,st){ const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; cons
   return !!p&&p.rmse_elo<p.rmse_form&&p.right_top>=0.53; }
 function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl||!pl.stats[st]||!muTrusted(pl.group,st)) return null;
   const f=D.mu.fit[pl.group+'|'+st]; return f?{nudge:pl.stats[st][2],sd:f.sd,proj:pl.stats[st][1],form:pl.stats[st][0]}:null; }
-/* the matchups file is built Friday morning from that week's injury report; the props job
-   refreshes the report after it (Saturday's pull, and the Monday and Thursday runs), and the
-   page keeps the week's Out and Doubtful in S.inactive. A player ruled out since the build is
+/* the matchups file is rebuilt every morning from that day's injury report (its Outs only),
+   and the props payload too, from which the page keeps the week's Out and Doubtful in
+   S.inactive. A Doubtful player, or one ruled out since the Elo build, is
    still an expected starter in the file, so a player's window and the Mismatches leave him out
    here rather than show a matchup he will not play. */
 const ruledOut=pid=>!!(typeof S==='object'&&S&&S.inactive&&S.inactive[pid]);

@@ -394,10 +394,10 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 
 | Workflow | When | Does |
 |---|---|---|
-| `props.yml` | 12x/week: 4 price pulls (Mon/Wed/Thu/Sat), 8 post-game and stats runs with `--no-odds` | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main`; afterwards the run fails if `weekly.py` reported problems |
+| `props.yml` | 4 price pulls a week (Mon/Wed/Thu/Sat); with `--no-odds`, 8 post-game and stats runs and a daily 5:07am ET run for the day's injury report | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main`; afterwards the run fails if `weekly.py` reported problems |
 | `update.yml` (the betting job) | every hour at :37 (the Joker follows the lines), plus Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game and injury-report runs, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py`, `broly/broly.py`, `smoke.js` (which builds the app); commits `betting/state.json` |
 | `news.yml` | Fri/Mon/Tue 8am ET, five post-game runs, and on a push to its pull code | `run-auto.js` (`pull-week.js`, which runs `context.js`), `smoke.js`; commits `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
-| `elo.yml` | Tue/Fri 8:40am ET | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
+| `elo.yml` | daily 8:40am ET (Tuesday's takes in Monday night; the rest move who is expected to play) | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json`, `cfb/news.json` and `cfb/data/teams.json` |
 | `nhl.yml` | 3x/day | `simulate.js`, `fetch_box.js`, `starters.js`, `players.js`, `update.js`, `smoke.js`; commits `nhl/state.json`, `nhl/data/teams.json`, `box_*.jsonl`, `injuries.json`, `starters.json`, `players.json` |
 
