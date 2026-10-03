@@ -7,8 +7,8 @@
    2. Week by week: models down the side, weeks across, each cell that week's record shaded
       from red (under .500) through clear to green (over), the season in the last column.
 
-   Colours follow the model, as everywhere else on the tab (Main green, Challenger blue, Joker
-   red, Elo orange); every line carries a label at its end beside the legend. Your own picks
+   Colours follow the model, as everywhere else on the tab (Model A green, Challenger Model blue,
+   Joker red, ELO Model orange, Broly Model purple); every line carries a label at its end beside the legend. Your own picks
    are not drawn: My Picks is retired, and so is the You column. (A dashed series with hollow
    dots is still supported, through dash:true.)
    Text is in the page's ink, never a line's colour. renderRecord() calls recordViz(rows) last;
@@ -23,9 +23,10 @@ function recordViz(rows){
   const flag=v=>v===true||v===false?v:null;
   const MODELS=[
     {id:'main',name:'Model A',color:'#1F6F4A',ok:r=>flag(r.correct)},
-    {id:'chal',name:'Challenger',color:'#3B6FB6',all:true,ok:r=>r.h?flag(r.h.correct):null},
+    {id:'chal',name:'Challenger Model',color:'#3B6FB6',all:true,ok:r=>r.h?flag(r.h.correct):null},
     {id:'joker',name:'The Joker',color:'#C0392B',all:true,ok:r=>r.joker?flag(r.joker.correct):null},
-    {id:'elo',name:'ELO based',color:'#E8730A',all:true,ok:r=>r.elo?flag(r.elo.correct):null}];
+    {id:'elo',name:'ELO Model',color:'#E8730A',all:true,ok:r=>r.elo?flag(r.elo.correct):null},
+    {id:'broly',name:'Broly Model',color:'#7A3FB0',all:true,ok:r=>r.broly?flag(r.broly.correct):null}];
   const weeks=[...new Set(rows.map(r=>+r.week))].sort((a,b)=>a-b);
   const wkName=w=>w>18?'Playoffs '+(w-18):'Week '+w;
   const tally=(ok,rs)=>{ let w=0,l=0; for(const r of rs){ const v=ok(r); if(v===true) w++; else if(v===false) l++; } return {w,l}; };
