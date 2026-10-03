@@ -1,7 +1,7 @@
 /* Power Ratings, the ELO based model's: every team rated by the Elo game model in elo/build.py,
    its expected lineup for the coming week, on this season's player ratings alone, scored
-   against a team of 1500s and put on the Elo
-   scale, centred on 1500 (`teams` in elo/data/model.json, which the published-mode hook reads
+   against a team of 1500s and shown on a bell curve across the teams (1500 the average, 100
+   points a standard deviation) (`teams` in elo/data/model.json, which the published-mode hook reads
    into window.__eloTeams). The order is that model's, so the tier shields follow it. The change
    and the rank arrows are against the same lineup on its ratings going into the team's last game; the chance is
    against an average team on a neutral field. The EPA a play each way is Model A's, from the
@@ -24,7 +24,7 @@ function ratingsViz(){
     const e=m?`<td class="num">${epa(stateVal(m,'off_epa','off_epa'))}</td><td class="num">${epa(stateVal(m,'d_off_epa','off_epa'))}</td>`:'<td></td><td></td>';
     return `<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(x.elo)}<b>${x.elo}</b></span></td><td class="movecell">${eloMv(x)}</td><td class="num rt-pct">${Math.round(x.p_avg*100)}%</td>${e}</tr>`; };
   el.innerHTML=TIER_DEFS+`<h2>Power ratings <span class="pill">ELO based</span></h2>
-    <p class="muted" style="margin:0 0 10px">The ELO based model's rating of each team: its expected lineup for the coming week, every starter's player Elo from this season alone (everyone started the season at 1500, nothing carried over) weighted by what the model says each position is worth, on the Elo scale with the league averaging 1500. The change and the arrows are since the team's last game. Vs average is its chance against an average team on a neutral field.</p>
+    <p class="muted" style="margin:0 0 10px">The ELO based model's rating of each team: its expected lineup for the coming week, every starter's player Elo from this season alone (everyone started the season at 1500, nothing carried over) weighted by what the model says each position is worth, on a bell curve across the 32 teams: 1500 is an average team and every 100 points a standard deviation better, so most teams are Silver or Gold and only the best reach the top shields. The change and the arrows are since the team's last game. Vs average is its chance against an average team on a neutral field.</p>
     <div class="rt-wrap"><table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Vs average</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th></tr></thead><tbody>`
     +rows.map(row).join('')+'</tbody></table></div>';
 }

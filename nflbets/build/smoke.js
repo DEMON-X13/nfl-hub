@@ -619,7 +619,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         { const S = w.eval('S'), top = rows[0].pid, was = S.inactive[top];
           S.inactive[top] = { week: +MU.week, status: 'Out' }; w.eval('renderSlate()'); await wait(40);
           const after = w.eloMismatches();
-          chk(!after.some(r => r.pid === top) && after.length === rows.length - 1 && !txt(d.getElementById('peMism')).includes(rows[0].name || '\u0000'), 'a player ruled Out is still on the mismatches');
+          /* the rest are scored again without him (the position's spread moves), so the count is not fixed: only his absence is */
+          const nm = (JSON.parse(ELO_P).players[top] || {}).name || '\u0000';
+          chk(!after.some(r => r.pid === top) && !txt(d.getElementById('peMism')).includes(nm), 'a player ruled Out is still on the mismatches');
           chk(w.eloRuledOut(top) === true, 'the tab does not read the page\'s inactive list');
           if (was) S.inactive[top] = was; else delete S.inactive[top]; w.eval('renderSlate()'); await wait(40);
           chk(w.eloMismatches().length === rows.length, 'the mismatches did not come back once the player was cleared'); }
