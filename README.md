@@ -48,7 +48,7 @@ Local run:
 ```
 cd betting/tools && npm install
 node betting/tools/update.js            # download + grade + write state.json
-python3 betting/joker/joker.py          # the Joker's picks into state.json and joker.json
+python3 betting/joker/joker.py          # the Joker's picks into state.json
 node betting/tools/build.js             # checks the app builds; writes nothing
 node betting/tools/smoke.js             # the built app, plain and embedded
 node nflbets/build/build.js             # the page that carries the app
@@ -115,7 +115,7 @@ with an afternoon catch-up each, post-game and injury-report runs, and on
 demand with a "rebuild" switch that replays the betting season from the
 preseason board, for the next time a model correction ships. It runs
 `update.js`, `joker.py` and `smoke.js` (which builds the app), and commits
-`betting/state.json` and `betting/joker.json` only if something changed. Free
+`betting/state.json` only if something changed. Free
 nflverse files only.
 
 ## Shipping a model change to the betting site
