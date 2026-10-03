@@ -4,7 +4,7 @@
    points a standard deviation) (`teams` in elo/data/model.json, which the published-mode hook reads
    into window.__eloTeams). The order is that model's, so the tier shields follow it. The change
    and the rank arrows are against the same lineup on its ratings going into the team's last game; the chance is
-   against an average team on a neutral field. The EPA a play each way is Model A's, from the
+   against an average team on a neutral field. The EPA a play each way is Alpha Model's, from the
    season. renderRatings() calls ratingsViz() last; betting/tools/build.js puts this file in
    front of the app's script. */
 function ratingsViz(){

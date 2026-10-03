@@ -120,7 +120,7 @@ function load(picks) {
       check(rows.length === 32 && rows.length === Object.keys(want).length && vals.every((v, i) => i === 0 || v <= vals[i - 1]), 'admin: Power Ratings does not show the ELO Model model\'s 32 ratings, best first');
       check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the ELO Model ratings do not average 1500');
       check(rows.every(tr => tr.children.length === 7 && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its tier shield, Elo change and chance against an average team');
-      check(!rt.querySelector('[data-rv]') && !/Vegas|Model A/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Model A switch');
+      check(!rt.querySelector('[data-rv]') && !/Vegas|Alpha Model/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Alpha Model switch');
       check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them');
       const T = e => a.window.eval('eloTier(' + e + ')[0]');
       check(T(1760) === 'HOF' && T(1720) === 'Elite' && T(1360) === 'Iron' && T(1300) === 'Wood' && /tier-hof/.test(a.window.eval('tierBadge(1760)')), 'admin: the built app does not carry the Wood to HOF ladder'); }
@@ -219,7 +219,7 @@ function load(picks) {
     { const win = r => r.result > 0 ? r.home : r.away, vp = r => !r.line ? null : (r.line > 0 ? r.home : r.away);
       let net = 0; for (const r of Object.values(SE.processed)) { if (r.correct === null || vp(r) === null) continue; net += (r.correct ? 1 : 0) - (vp(r) === win(r) ? 1 : 0); }
       const sg = net > 0 ? '+' + net : (net < 0 ? '\u2212' + Math.abs(net) : '0');
-      check(rtxt.includes('Model A') && new RegExp('Model A \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: Model A should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
+      check(rtxt.includes('Alpha Model') && new RegExp('Alpha Model \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: Alpha Model should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
     const gridRows = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].map(tr => tr.querySelector('th').textContent.trim());
     check(gridRows.includes('ELO Model') && gridRows.indexOf('ELO Model') === gridRows.indexOf('The Joker') + 1 && gridRows[gridRows.length - 1] === 'Vegas', 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|'));
     check(!Object.values(SE.processed).some(r => r.broly) || gridRows.indexOf('Broly Model') === gridRows.indexOf('ELO Model') + 1, 'embed: the Broly Model is not in the week-by-week grid after the ELO Model: ' + gridRows.join('|'));
@@ -227,7 +227,7 @@ function load(picks) {
       check(!!eloRow && eloRow.querySelector('td.rv-season b').textContent === `${want}\u2013${gradedIds.length - want}`, 'embed: the grid\'s Elo season cell is wrong'); }
     de.getElementById('picksToggle').click(); await sleep(80);
     const gridHead = [...de.querySelector('.pickgrid').querySelectorAll('thead th')].map(th => th.textContent.trim());
-    check(gridHead.includes('ELO Model') && gridHead.includes('Broly Model') && gridHead.includes('Challenger Model') && gridHead.includes('Model A') && !gridHead.includes('Main Model'), 'embed: the pick grid lacks a model column: ' + gridHead.join('|'));
+    check(gridHead.includes('ELO Model') && gridHead.includes('Broly Model') && gridHead.includes('Challenger Model') && gridHead.includes('Alpha Model') && !gridHead.includes('Main Model'), 'embed: the pick grid lacks a model column: ' + gridHead.join('|'));
     const firstRow = de.querySelector('.pickgrid tbody tr');
     check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
     /* one week at a time: this week by default, the weeks before it in the picker, nothing beyond */
