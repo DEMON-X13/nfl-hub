@@ -1,5 +1,6 @@
 """Weekly refresh, run unattended by .github/workflows/props.yml: four price pulls a week
-(Mon/Wed/Thu/Sat, PULL_TIMES below) and eight post-game and stats runs with --no-odds.
+(Mon/Wed/Thu/Sat, PULL_TIMES below), and post-game, stats and daily injury-report runs
+with --no-odds.
 
     python weekly.py                 (from props/build)
     python weekly.py --no-odds       skip the price pull

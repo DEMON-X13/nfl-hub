@@ -26,6 +26,10 @@ on:
     - cron: "7 16 * * 5"    # Thursday night's stats
     - cron: "7 16 * * 1"    # Sunday's stats
     - cron: "7 16 * * 2"    # Monday night's stats
+    # every morning, score only: nflverse posts the day's injury report about 03:07 ET, so
+    # the Props tab, the game pages and the builder drop whoever was ruled out the same
+    # morning. Without it Friday's final report waited for Saturday evening's price pull.
+    - cron: "7 9 * * *"     # 05:07 ET daily: the injury report, rosters and depth charts
   workflow_dispatch:
     inputs:
       no_odds:
