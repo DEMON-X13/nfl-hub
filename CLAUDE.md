@@ -47,7 +47,6 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
-- `betting/joker.json` (by `betting/joker/joker.py`)
 - `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json`
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
@@ -84,7 +83,7 @@ that spend nothing. It commits straight to `main`.
 ```
 cd betting/tools && npm install
 node betting/tools/update.js     # download + grade + write state.json
-python3 betting/joker/joker.py   # the Joker's picks into state.json and joker.json (pip install -r betting/joker/requirements.txt)
+python3 betting/joker/joker.py   # the Joker's picks into state.json (pip install -r betting/joker/requirements.txt)
 node betting/tools/build.js      # checks the app builds; writes nothing (nflbets/build/build.js sets it into the page)
 node betting/tools/smoke.js      # the built app, on its own and embedded
 node nflbets/build/build.js      # the app changed, so the page that carries it is rebuilt
@@ -97,7 +96,7 @@ Gate: the app's embedded model numbers must equal
 job ran every site): hourly at :37, so the Vegas lines and the Joker follow nflverse within
 the hour, plus the Fri/Mon/Tue morning and afternoon, post-game and injury-report runs, kept
 in case an hourly run is dropped. It runs `update.js`, `joker.py` and `smoke.js` (which
-builds the app itself), and commits `betting/state.json` and `betting/joker.json`.
+builds the app itself), and commits `betting/state.json`.
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 

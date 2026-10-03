@@ -4,18 +4,20 @@
 
 Reads the frozen model (model.joblib), rebuilds its inputs for every 2026 game from the
 betting job's downloads (data/games.csv, data/stats_team_week_2026.csv) plus this
-season's play-by-play (downloaded here), and writes:
-  betting/joker.json        every 2026 game it has scored: pick, home win chance, week
-  betting/state.json        processed[gid].joker = {pick, pHome, correct} on graded games,
-                            state.joker = {pick, pHome} for every game (upcoming included)
-Never refits. A run that changes nothing leaves state.json untouched.
+season's play-by-play (downloaded here), and writes into betting/state.json:
+  processed[gid].joker = {pick, pHome, correct} on graded games,
+  state.joker = {pick, pHome} for every game (upcoming included).
+It also logs, to the job's output, any input that has drifted from the scale it was fitted on.
+Never refits. A run that changes nothing leaves state.json untouched. (Until 2026-10-03 it
+also wrote betting/joker.json, a per-game attribution nothing on the site read; it went in
+the cleanup, and explain.py with it.)
 """
 from __future__ import annotations
 
 import json
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 import joblib
@@ -25,12 +27,10 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 FRESH = ROOT / "data"
 STATE = ROOT / "betting" / "state.json"
-OUT = ROOT / "betting" / "joker.json"
 PBP_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2026.parquet"
 
 sys.path.insert(0, str(HERE))
 import features as F  # noqa: E402
-import explain as X  # noqa: E402
 import drift as D  # noqa: E402
 
 
@@ -51,26 +51,11 @@ def main():
     FRESH.mkdir(exist_ok=True)
     fetch_pbp()
     model = joblib.load(HERE / "model.joblib")
-    meta = json.loads((HERE / "model.json").read_text(encoding="utf-8"))
     feats = F.assemble(F.FIT_SEASONS + [F.SEASON], qb_Y=F.SEASON, fresh=FRESH, upcoming=True)
     this = feats[(feats.season == F.SEASON) & (feats.game_type == "REG")].reset_index(drop=True)
     if not len(this):
         log("no 2026 games to score"); return
     p = model.predict_proba(this)[:, 1]
-    # why each game came out where it did: every tree walked down this game's own path, the
-    # value change at each split credited to the feature that made it. It has to add back up
-    # to what the model said, so it is checked here and dropped rather than shipped wrong.
-    try:
-        made = X.contributions(model, this, top=8)
-        err, _ = X.check(model, this, made)
-        if err > 1e-3:
-            log(f"attribution does not reconstruct the model (max error {err:.2e}); shipping picks without it")
-            made = None
-        else:
-            log(f"attribution checks out on {len(made)} games (max error {err:.1e})")
-    except Exception as e:
-        log(f"attribution failed ({type(e).__name__}: {e}); shipping picks without it")
-        made = None
     # an input that no longer arrives on the scale it was fitted on is something the model
     # cannot tell you about itself: it extrapolates and still reports a confident number
     moved = D.report(F.FROZEN, FRESH, F.FIT_SEASONS, F.SEASON)
@@ -78,41 +63,17 @@ def main():
         log(f"input drifted: {m['col']} fitted mean {m['fit']}, this season {m['now']} ({m['z']:+} sd)")
     if not moved:
         log("no input has moved more than 0.75 sd from its fitted mean")
-    games = {}
-    for i, ((_, g), ph) in enumerate(zip(this.iterrows(), p)):
-        rec = dict(week=int(g.week), home=g.home_team, away=g.away_team,
-                   pick=g.home_team if ph >= 0.5 else g.away_team, pHome=round(float(ph), 4), played=bool(g.played))
-        if made:
-            rec["base"] = made[i]["base"]
-            rec["why"] = made[i]["why"]
-        games[g.game_id] = rec
-    out = dict(name=meta["name"], formula=meta["formula"], fitted_on=meta["fitted_on"], fitted_at=meta["fitted_at"],
-               why_note=("Per game: base is what the model says before any split, why lists the inputs that moved it "
-                         "most, in log-odds. base plus every contribution reconstructs the model's raw output; only "
-                         "the eight largest are kept here."),
-               drift=moved,
-               drift_note=("Inputs whose season mean has moved more than 0.75 fitted standard deviations. "
-                           "The model is frozen, so nothing is corrected for them; a pick that turns on one "
-                           "of these is leaning on an input that no longer means what it did when it was fitted."),
-               generated=datetime.now(timezone.utc).isoformat(timespec="minutes"), games=games)
-    prev = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else None
-    if prev is None or prev.get("games") != games:
-        OUT.write_text(json.dumps(out, indent=1), encoding="utf-8")
-        log(f"joker.json written: {len(games)} games, {sum(1 for v in games.values() if not v['played'])} upcoming")
-    else:
-        log("joker.json unchanged")
+    games = {g.game_id: dict(pick=g.home_team if ph >= 0.5 else g.away_team, pHome=round(float(ph), 4))
+             for (_, g), ph in zip(this.iterrows(), p)}
+    log(f"scored {len(games)} games, {int((~this.played.astype(bool)).sum())} upcoming")
 
     # into the published state
     if not STATE.exists():
         log("no state.json to patch"); return
     st = json.loads(STATE.read_text(encoding="utf-8"))
     changed = False
-    # only the pick and the home win chance go into state.json, which the site fetches on every
-    # load: the reasons (eight contributions a game, 190KB) and the week, teams and played flag
-    # stay in joker.json, since the schedule in the state already has those
-    lean = {gid: {"pick": rec["pick"], "pHome": rec["pHome"]} for gid, rec in games.items()}
-    if st.get("joker") != lean:
-        st["joker"] = lean; changed = True
+    if st.get("joker") != games:
+        st["joker"] = games; changed = True
     for gid, rec in st.get("processed", {}).items():
         j = games.get(gid)
         if not j or rec.get("result") is None:
