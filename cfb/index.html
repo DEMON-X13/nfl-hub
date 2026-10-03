@@ -283,7 +283,7 @@ tr.major td{font-weight:500}
 <div class="ov" id="ov"><div class="ovbox" id="ovbox"></div></div>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v9 · 2026-09-26';
+const APP_BUILD = 'cfb v10 · 2026-10-03';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -345,7 +345,6 @@ $('weekSel').addEventListener('change', renderGames);
 $('confSel').addEventListener('change', () => { P.ui.conf = $('confSel').value; save(); renderGames(); });
 $('scope').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; P.ui.scope = b.dataset.scope; save(); renderGames(); });
 
-function legKey(g, side, kind) { return `${g.id}|${side}|${kind}`; }
 function hasLeg(g, side, kind) { return P.legs.some(l => l.game === g.id && l.side === side && l.kind === kind); }
 
 function renderGames() {

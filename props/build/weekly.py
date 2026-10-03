@@ -1,20 +1,22 @@
-"""Weekly refresh, meant to run unattended on Thursday and Saturday mornings.
+"""Weekly refresh, run unattended by .github/workflows/props.yml: four price pulls a week
+(Mon/Wed/Thu/Sat, PULL_TIMES below) and eight post-game and stats runs with --no-odds.
 
-    python weekly.py                 (from pkg/build)
+    python weekly.py                 (from props/build)
     python weekly.py --no-odds       skip the price pull
     python weekly.py --hours 36      override the price-pull window
+    python weekly.py --no-commit     leave the commit to the caller (the workflow passes it)
 
 What it does, in order, continuing past anything that fails and saying so at the end:
   1. downloads scores/lines, this season's player stats, rosters, injuries and depth charts
      from nflverse into raw/ (an old copy is kept if a download fails)
   2. works out the current week: the earliest week with an unplayed game
-  3. if ODDS_API_KEY is set, pulls prices for games kicking off soon (36h on a Thursday,
-     otherwise 120h) with data/oddsfetch.py, merges them into that week's files and bakes
-     the main lines in with mktbuild.py
+  3. if ODDS_API_KEY is set, pulls prices for the games kicking off before the next scheduled
+     pull (hours_to_next_pull) with data/oddsfetch.py, merges them into that week's files and
+     bakes the main lines in with mktbuild.py
   4. rebuilds the payload (rosters, depth charts, schedule) and bakes in every week's player
      stats, this week's injury report and every price file, so the app needs no uploads
   5. assembles the page and runs the audit
-  6. commits the result locally as DEMON
+  6. commits the result locally, unless --no-commit (the workflow commits props/data itself)
   7. prints a REPORT block
 Nothing here ever prints the key.
 """
@@ -32,7 +34,7 @@ STATCOLS=['player_id','player_display_name','position','season','week','season_t
  'completions','attempts','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','rushing_tds',
  'receptions','targets','receiving_yards','receiving_tds','fg_att','fg_made','pat_made','pat_att',
  'fg_made_0_19','fg_made_20_29','fg_made_30_39','fg_made_40_49','fg_made_50_59','fg_made_60_']
-INJCOLS=['season','week','team','gsis_id','full_name','position','report_status','game_status']
+INJCOLS=['season','week','gsis_id','report_status','game_status']   # what ingestInjuries reads, and no more: the payload is fetched on every load
 report=[]; problems=[]
 def say(s): print(s,flush=True); report.append(s)
 def run(args,cwd,label,soft=False):
@@ -200,8 +202,6 @@ def main():
     audit=last[-1].strip() if last else 'audit produced no summary line'
     say('  '+audit)
     if '0 failures' not in audit or '0 runtime errors' not in audit: problems.append('AUDIT NOT CLEAN: '+audit)
-    try: os.remove(os.path.join(PKG,'app','app.js'))
-    except OSError: pass
     # 6. commit
     if any(p.startswith('AUDIT') for p in problems): say('  not committed: the audit is not clean')
     elif not a.no_commit and shutil.which('git') and os.path.isdir(os.path.join(ROOT,'.git')):

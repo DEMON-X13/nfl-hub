@@ -82,10 +82,9 @@ tdefg={}
 for (t,g),gg in oa.sort_values('week').groupby(['opponent_team','grp']):
     tdefg.setdefault(t,{})[g]={s:round(float(gg[s].ewm(span=8,min_periods=1).mean().iloc[-1]),3) for s in ALL}
 
-# ---- normalization constants (2025 league means) ----
-norm={'toff':{c:round(float(np.mean([v[c] for v in toff.values()])),3) for c in TC},
-      'tdef':{c:round(float(np.mean([v[c] for v in tdef.values()])),3) for c in DC},
-      'oag':{},'implied_mean':0,'implied_sd':0}
+# ---- normalization constants (2025 league means): the app rebuilds the team ones from its
+# own state, so only the position-group means and the implied-points spread are carried ----
+norm={'oag':{},'implied_mean':0,'implied_sd':0}
 for g in ['QB','RB','WR','TE','K']:
     norm['oag'][g]={s:round(float(np.mean([tdefg[t][g][s] for t in tdefg if g in tdefg[t]])),3) for s in ALL}
 i25=d[d.season==2025]
@@ -127,12 +126,18 @@ if _os.path.exists('../raw/dc26.csv'):
     print('depth',len(_depth),'players ranked as of',_depth_dt)
 else:
     print('depth: raw/dc26.csv not found, carrying the previous table forward')
-out={'roster_season':2026,'mkt':_prev.get('mkt',{}),'mkt_meta':_prev.get('mkt_meta',{}),'grid':json.load(open('../data/grid_model.json')),'pts':json.load(open('../data/pts_model.json')),'corr':json.load(open('../data/corr.json')),'players':players,'toff':toff,'tdef':tdef,'tdefg':tdefg,'norm':norm,'sched':sched,
+out={'mkt':_prev.get('mkt',{}),'mkt_meta':_prev.get('mkt_meta',{}),'grid':json.load(open('../data/grid_model.json')),'pts':json.load(open('../data/pts_model.json')),'corr':json.load(open('../data/corr.json')),'players':players,'toff':toff,'tdef':tdef,'tdefg':tdefg,'norm':norm,'sched':sched,
      'model':FM['model'],'dist':FM['dist'],'qs':FM['qs'],'prior':FM['prior'],'k':FM['k']}
+# the fitted per-stat market scale and touchdown-per-touch rates: data/ is their source, as it
+# is the model's, so a payload rebuilt from nothing still has them (tdrate at five decimals)
+out['mkt_scale']=json.load(open('../data/scale.json'))
+out['tdrate']={g:{k:round(float(v),5) for k,v in r.items()} for g,r in json.load(open('../data/tdrate.json')).items()}
 if _depth is not None: out['depth']=_depth; out['depth_dt']=_depth_dt
-# carry forward anything the build does not regenerate, so one-off additions survive rebuilds
+# carry forward anything the build does not regenerate, so one-off additions survive rebuilds;
+# a key nothing reads any more is retired here, or the carry would keep it for ever
+_RETIRED={'roster_season'}
 for _k,_v in _prev.items():
-    if _k not in out: out[_k]=_v
+    if _k not in out and _k not in _RETIRED: out[_k]=_v
 # DATA_BUILD (bug 3): derived from the roster/schedule content, so it changes exactly when a
 # browser's cached state needs rebuilding and never when only scores or lines moved.
 import hashlib, datetime

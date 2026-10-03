@@ -290,4 +290,3 @@ function main() {
   log(`players.json: ${Object.keys(players).length} players, ${Object.keys(upcoming).length} upcoming, ${same ? 'unchanged' : 'written'}. Top skaters: ${top}. Top goalies: ${topG}`);
 }
 if (require.main === module) main();
-module.exports = { Model, replay, score };

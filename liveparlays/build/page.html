@@ -52,7 +52,6 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .empty{padding:44px 24px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg);line-height:1.7}
 .empty a{color:var(--ink)}
 .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#E9EEF4;color:var(--ink-2)}
-.pill.warn{background:var(--gold-soft);color:#8A5E05}
 .pill.ok{background:var(--pick-soft);color:var(--pick)}
 .pill.bad{background:var(--miss-soft);color:var(--miss)}
 .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
@@ -107,9 +106,6 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .ln.moved{color:var(--gold);border-color:var(--gold);border-style:solid}
 .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
 .movedNote a{color:var(--gold)}
-.tokRow{display:flex;gap:8px;align-items:center;margin-top:8px}
-.tokBox{width:auto;flex:1;margin-top:0}
-.shareBox{width:100%;margin-top:8px;padding:8px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);font-size:12px;background:var(--panel);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
 .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
 .gm{display:inline-block;background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:4px 11px;font-family:var(--display);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px}
@@ -123,18 +119,12 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 /* on a phone the row tightens before it gives up anything */
 @media(max-width:430px){ .gm{font-size:12px;padding:3px 9px} }
 .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
-.sp-leg .nm{font-weight:600;min-width:0} .sp-leg .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
-.sp-leg .rs{font-family:var(--display);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;font-size:14px}
-.sp-leg .rs em{font-style:normal;display:block;font-family:var(--body);font-size:11px;color:var(--ink-2);font-weight:400}
-.sp-leg .rs.win{color:var(--pick);font-weight:700} .sp-leg .rs.lose{color:var(--miss);font-weight:700}
-.sp-leg .rs.tie{color:#8A5E05;font-weight:700}
-.sp-leg .rs.clock{text-align:center;color:var(--ink-2);font-weight:500;font-size:13px}
 .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
 .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
 .stamp.ok{color:var(--pick)} .stamp.bad{color:#8A5E05}
 .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-.src{border-left:4px solid #6E5AA8} .src.prop{border-left-color:var(--pick)} .src.bet{border-left-color:var(--gold)} .src.prop{border-left-color:var(--pick)} .src.shared{border-left-color:#3F5F8F} .src.cloud{border-left-color:#6E5AA8}
+.src{border-left:4px solid #6E5AA8} .src.prop{border-left-color:var(--pick)} .src.bet{border-left-color:var(--gold)}
 footer{max-width:900px;margin:0 auto;padding:0 28px 48px;color:var(--muted);font-size:12px;line-height:1.7}
 footer a{color:var(--ink-2)}
 @media(max-width:620px){ header{padding:18px 16px 16px} .brand h1{font-size:27px} main{padding:18px 16px 56px} footer{padding:0 16px 40px} .card{padding:16px 15px} }
@@ -157,34 +147,26 @@ footer a{color:var(--ink-2)}
   <div id="app"></div>
 </main>
 <script>
-/* ---- lifted from props/build/part2.js by live/build/build.js: one source of truth ---- */
+/* ---- the section's own copies of a few of the prop model's helpers (props/build/part2.js):
+   inside the Bets and Stats page the section runs in a closure, so these are its own and the
+   page's stay the page's. Everything else it uses -- the scoreboard and box score readers,
+   the live leg maths, the betting slips -- is the page's own, from part2. ---- */
 const PROP_KEY='props_2026_v1';
-const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Panthers",CHI:"Bears",CIN:"Bengals",CLE:"Browns",DAL:"Cowboys",DEN:"Broncos",DET:"Lions",GB:"Packers",HOU:"Texans",IND:"Colts",JAX:"Jaguars",KC:"Chiefs",LA:"Rams",LAC:"Chargers",LV:"Raiders",MIA:"Dolphins",MIN:"Vikings",NE:"Patriots",NO:"Saints",NYG:"Giants",NYJ:"Jets",PHI:"Eagles",PIT:"Steelers",SEA:"Seahawks",SF:"49ers",TB:"Buccaneers",TEN:"Titans",WAS:"Commanders"};
 function fmtML(ml){ return ml==null?'–':(ml>0?'+'+ml:''+ml); }
-function mlToDec(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?ml/100+1:100/Math.abs(ml)+1; }
 function decToML(d){ if(!isFinite(d)||d<=1) return null; return d>=2?Math.round((d-1)*100):-Math.round(100/(d-1)); }
 function num(x,d){ return x==null||!isFinite(x)?'–':(+x).toFixed(d); }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const isGameLeg=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total';
 const SEASON=2026;
 
-/*SHARED*/
-
-/* ---- this page ----
-   Every parlay lives in the repository, in parlays.json beside this file, and this page only
-   reads it. That is the whole design: no token, because reading a public file needs none; no
-   sending, because there is nothing to move between devices; and nothing kept in the browser,
-   because every device reads the same file and therefore shows the same thing.
-
-   Writing is the part a page like this cannot do. A browser has no way to commit to GitHub
-   without a credential, and a static page has nowhere safe to keep one, so the file is edited
-   in the repository instead and the page picks the change up on the next load. */
+/* ---- the section ----
+   The parlays every device should see are in the repository, in liveparlays/parlays.json,
+   which the section reads on every load and never writes: a browser has no way to commit to
+   GitHub without a credential, and a static page has nowhere safe to keep one, so the file is
+   edited in the repository and the section picks the change up on the next load. What the
+   visitor does here -- a corrected line, a deletion -- is kept under the section's own key,
+   below. */
 const DATA='parlays.json';
-
-/* Stamped by build.js. It is on the page for one reason: when the page looks wrong, the first
-   thing worth knowing is whether the browser is even showing the current build, and from the
-   outside a stale cached copy and a broken one look identical. */
-const PAGE_BUILD='live v5 \u00b7 __BUILT__';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
@@ -201,7 +183,6 @@ const PAGE_BUILD='live v5 \u00b7 __BUILT__';
    is on all of them. On its own the section keeps the key in this browser. */
 const LIVE_KEY='live_parlays_v1';
 const LIVE_IO=(typeof window!=='undefined'&&window.LIVE_IO)||{get:()=>localStorage.getItem(LIVE_KEY),set:v=>{ localStorage.setItem(LIVE_KEY,v); return true; }};
-const synced=()=>!!(window.NFLSYNC&&NFLSYNC.state().live);
 function liveStore(){
   let v=null; try{ v=JSON.parse(LIVE_IO.get()||'null'); }catch(e){}
   if(!v||typeof v!=='object') v={};
@@ -240,14 +221,12 @@ function setLine(p,i,val){
 }
 const legAt=(p,i,l)=>{ const k=lineOf(p,i,l); return k===+l.k?l:Object.assign({},l,{k}); };
 
-/* The two models keep what you save in the browser that saved it, which is theirs to do:
-   picks and bets are the visitor's and never leave the machine. So this page shows both --
-   the file, which every device sees, and whatever the prop and betting models on THIS device
-   have saved, picked up on their own with nothing to press.
-
-   The gap that leaves is worth being straight about: a parlay built on one machine shows
-   there and not on the next one, because nothing carries it across. Getting it into the file
-   means editing the file. */
+/* The two models keep what you save under their own keys, and the section shows both -- the
+   file, which every device sees, and whatever the prop and betting models have saved, picked
+   up on their own with nothing to press. Inside the Bets and Stats page the prop model's
+   builder and saved parlays go through the sync layer, so with a store named in
+   nflbets/sync.json a parlay saved on one device shows on all of them; the betting model's
+   slips stay in the browser that made them. */
 function propState(){
   /* inside the Bets and Stats page this runs beside the prop model itself, whose state in
      memory is ahead of what it has written to storage; that one wins */
@@ -255,7 +234,7 @@ function propState(){
   try{ return JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return null; }
 }
 const propLeg=l=>({gid:l.gid,stat:l.stat,k:+l.k,side:l.side||'over',main:!!l.main,
-  name:l.name,team:l.team,label:''});
+  name:l.name,team:l.team});
 
 /* Saved and locked is not the only parlay worth watching, and on a Sunday it is usually not
    the one you are watching: the prop model will not let you lock a parlay until it has a
@@ -304,33 +283,27 @@ function gidParts(gid){
   const m=/^(\d{4})_(\d{2})_([A-Z0-9]+)_([A-Z0-9]+)$/.exec(String(gid||''));
   return m?{season:+m[1],w:+m[2],a:m[3],h:m[4],id:String(gid)}:null;
 }
-const STAT_CODE={passing_yards:'py',passing_tds:'pt',passing_interceptions:'pi',attempts:'pa',
-  completions:'pc',carries:'ra',rushing_yards:'ry',receptions:'rc',receiving_yards:'re',
-  targets:'tg',scrim_yards:'sy',any_td:'td',fg_made:'fm',fg_att:'fa',kick_pts:'kp',ml:'ml',ats:'as',total:'tt'};
-const CODE_STAT={}; for(const k in STAT_CODE) CODE_STAT[STAT_CODE[k]]=k;
-/* the file's own shape: games listed once, legs pointing at them. Long names are spelled out
-   so the file stays something a person can read and edit by hand. */
+/* the file's own shape: games listed once, legs pointing at them by their place in that
+   list. Long names are spelled out so the file stays something a person can read and edit by
+   hand. */
 function readFile(v){
   if(!v) return [];
-  const games=Array.isArray(v.games)?v.games:(Array.isArray(v.g)?v.g:[]);
-  const rows=Array.isArray(v.parlays)?v.parlays:(Array.isArray(v.p)?v.p:[]);
+  const games=Array.isArray(v.games)?v.games:[];
+  const rows=Array.isArray(v.parlays)?v.parlays:[];
   return rows.map((o,ix)=>({
-    id:String(o.id||o.i||('p'+ix)),
-    week:+(o.week||o.w)||null,
-    stake:+(o.stake!=null?o.stake:o.k)||0,
-    price:(o.price!=null?o.price:(o.r!=null?o.r:null)),
-    payout:+(o.payout!=null?o.payout:o.y)||0,
+    id:String(o.id||('p'+ix)),
+    week:+o.week||null,
+    stake:+o.stake||0,
+    price:o.price!=null?o.price:null,
+    payout:+o.payout||0,
     note:o.note||'',
-    legs:(o.legs||o.l||[]).map(q=>{
-      const gid=q.game!=null?games[q.game]:(q.g!=null&&typeof q.g==='number'?games[q.g]:(q.gid||q.g));
-      const stat=q.stat||CODE_STAT[q.t]||q.t;
-      return {gid:String(gid||''),stat:String(stat||''),k:+(q.line!=null?q.line:q.n),
-        side:(q.side||(q.d==='u'?'under':'over')),main:q.main!=null?!!q.main:!!q.m,
-        name:String(q.player||q.a||''),team:String(q.team||q.e||''),label:''};
-    }).filter(l=>l.gid&&l.stat&&isFinite(l.k))
+    legs:(o.legs||[]).map(q=>({gid:String((q.game!=null&&games[q.game])||''),stat:String(q.stat||''),
+      k:q.line!=null?+q.line:NaN,side:q.side||'over',main:!!q.main,
+      name:String(q.player||''),team:String(q.team||'')}))
+      .filter(l=>l.gid&&l.stat&&isFinite(l.k))
   })).filter(x=>x.legs.length);
 }
-const STATE={parlays:[],updated:null,games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false};
+const STATE={parlays:[],games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false};
 const legGames=ps=>{ const s2=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s2.add(l.gid); return s2; };
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -339,7 +312,7 @@ async function refresh(){
   /* the file first: it is the list of what to watch */
   try{
     const f=await getJSON(DATA+'?t='+Date.now());
-    STATE.parlays=readFile(f); STATE.updated=f.updated||null; STATE.dataErr=null;
+    STATE.parlays=readFile(f); STATE.dataErr=null;
   }catch(e){ STATE.dataErr=String(e&&e.message||e); }
   STATE.loaded=true;
   const ps=allParlays();
@@ -627,7 +600,6 @@ function wireLines(app){
   }));
 }
 function foot(){
-  const when=STATE.updated?new Date(STATE.updated):null;
   document.getElementById('stamp').textContent=STATE.err||STATE.dataErr?'not updating'
     :(STATE.at?'updated '+new Date(STATE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
       :(STATE.loaded?'loaded':'idle'));
@@ -636,8 +608,6 @@ document.getElementById('now').addEventListener('click',refresh);
 document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
 document.getElementById('app').addEventListener('click',e=>{
   if(e.target&&e.target.id==='restoreAll'){ e.preventDefault(); restoreAll(); draw(); } });
-/* the build this browser is showing, for a "blank on every device" day: in the markup, not the bar */
-document.documentElement.dataset.build=PAGE_BUILD;
 draw(); refresh();
 </script>
 </body>

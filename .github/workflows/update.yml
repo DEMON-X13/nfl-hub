@@ -1,4 +1,4 @@
-name: Update sites
+name: Update betting model
 
 on:
   schedule:
@@ -13,7 +13,7 @@ on:
     - cron: "0 11 * * 2"    # Tuesday 7am ET: Monday night game, week rolls over
     - cron: "0 17 * * 2"    # Tuesday 1pm ET: catch-up
     # post-game: about an hour after the latest finish each slot sees all season,
-    # so AI Picks and the records update the same night. nflverse posts a final
+    # so the Pick'ems board and the Pick'em Record update the same night. nflverse posts a final
     # within minutes of the whistle. Free, like everything else in this job.
     - cron: "47 5 * * 5"    # Thursday night game
     - cron: "17 22 * * 0"   # Sunday early games
@@ -67,8 +67,6 @@ jobs:
       - run: pip install -r betting/joker/requirements.txt
       - name: Score The Joker and write its picks into state.json
         run: python betting/joker/joker.py
-      - name: Build the pages
-        run: node betting/tools/build.js
       - name: Viewer smoke test
         run: node betting/tools/smoke.js
       - name: Commit if anything changed

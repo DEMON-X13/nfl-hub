@@ -56,12 +56,12 @@ input[type=checkbox]{accent-color:var(--hot)}
 .btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}
 .btn.go{background:#CDFF4F;border-color:#CDFF4F;color:#1E2230}
 .btn.danger{background:var(--miss);border-color:var(--miss);color:#1E2230}
-.bar .rec,.pill,.conf.low,.pays .box.tier.low,.statblk h4 em.actual,.side,.side-res.push,.side.pass{background:var(--panel-3);color:var(--ink-2)}
+.bar .rec,.pill,.conf.low,.pays .box.tier.low,.side-res.push{background:var(--panel-3);color:var(--ink-2)}
 .bar .rec b{color:var(--ink)}
-.side.under,.side-res.under{background:rgba(95,212,255,.14);color:#5FD4FF}
+.side-res.under{background:rgba(95,212,255,.14);color:#5FD4FF}
 .game.final .pill.ok{background:rgba(95,212,255,.14);color:#5FD4FF}
 .finchip.live{background:var(--hot-soft);color:var(--hot-2);border-color:rgba(255,106,31,.5)}
-.bar-track,.pk-prob,.pe-bar{background:var(--panel-3);box-shadow:none}
+.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}
 .rungs tr.on td{background:var(--hot-soft)}
 .rungs tr.hit td{background:var(--pick-soft)}
 .pays .box.tier.med{border-color:rgba(255,106,31,.5)}
@@ -78,13 +78,12 @@ input[type=checkbox]{accent-color:var(--hot)}
 .pk-result .pk-mwin.pk-ok{color:#CDFF4F}
 /* the Live Parlays section and the builder's heading button */
 #lpCard .pill{background:var(--panel-3);color:var(--ink-2)}
-#lpCard .pill.warn,#lpCard .note{background:var(--hot-soft);color:var(--hot-2)}
+#lpCard .note{background:var(--hot-soft);color:var(--hot-2)}
 #lpCard .pill.ok{background:var(--pick-soft);color:#CDFF4F} #lpCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
 .card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
 /* inside the framed betting tabs (html.embed): the page's glow shows through */
 html.embed body{background:transparent}
 .seg button.on,.wk-chip{background:var(--ink);color:#1E2230}
-.tbtn.on{background:var(--hot);border-color:var(--hot);color:#1E2230;box-shadow:none}
 .bk-in,.bres.won{background:var(--pick-soft);color:#CDFF4F}
 .prob{background:var(--panel-3);box-shadow:none}
 .tier{background:var(--panel-3);color:var(--ink-2)}

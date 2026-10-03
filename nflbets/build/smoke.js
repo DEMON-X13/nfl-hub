@@ -41,17 +41,10 @@ const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
 
-/* the shape the betting job publishes: a call on every game of the week it will predict */
-function withPicks(st) {
-  const s = JSON.parse(JSON.stringify(st));
-  const graded = new Set(Object.keys(s.processed));
-  const wk = Math.min(...s.schedule.filter(g => !graded.has(g.game_id)).map(g => +g.week));
-  s.picks = {};
-  for (const g of s.schedule) {
-    if (+g.week !== wk || graded.has(g.game_id)) continue;
-    s.picks[g.game_id] = { pick: g.home_team, pHome: 0.62, conf: 0.62, margin: 3.1 };
-  }
-  return { state: s, week: wk };
+/* the week the board opens on: the first with a game the job has not graded */
+function firstOpenWeek(st) {
+  const graded = new Set(Object.keys(st.processed));
+  return Math.min(...st.schedule.filter(g => !graded.has(g.game_id)).map(g => +g.week));
 }
 
 /* what ESPN's scoreboard says about the week: for the games the job has not graded, the
@@ -118,7 +111,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 }
 
 (async () => {
-  const { state, week } = withPicks(STATE);
+  const state = STATE, week = firstOpenWeek(STATE);
   const { w, d, errs, fetched, timedOut } = await run(state, undefined, wk => scoreboard(state, wk));
   await wait(700);                                  /* the scoreboard is read once on load, after the prop model is up */
 
@@ -130,8 +123,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
   chk(d.title === 'X NFL Bets and Stats' && /X NFL Bets and Stats/.test(txt(d.querySelector('h1'))), 'the page is not headed X NFL Bets and Stats');
 
-  /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
-     page but not on the bar */
+  /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
+     bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
   chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Power Ratings|Player Elo|Pick'em Record|Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
@@ -423,11 +416,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!s2.d.getElementById('tab-slate').hidden && s2.d.getElementById('tab-pickems').hidden, 'opening on #slate did not open the Props tab');
   chk(s2.d.querySelectorAll('#gamesList .game').length > 0, 'opened on #slate, the Props tab has no games');
 
-  /* a state with no published calls still draws the board */
-  const bare = JSON.parse(JSON.stringify(STATE)); delete bare.picks;
-  const b = await run(bare);
-  chk(b.errs.length === 0, 'the page threw without published calls: ' + b.errs.join('; '));
-  chk(b.d.querySelectorAll('.pk-game').length > 0, 'no board without published calls');
+  /* the page with no scoreboard to read (checked below, once it has had time to try) */
+  const b = await run(state);
 
   /* the betting tabs do not depend on this tab's fetch: with state.json gone they still frame */
   const noState = await run(state, undefined, null, true);
@@ -449,9 +439,6 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
     chk(body.querySelectorAll('.card').length === 1 && /Rankings/.test(txt(body.querySelector('.card h2'))), 'the Elo tab should draw its rankings card and nothing else: ' + body.querySelectorAll('.card').length);
-    chk(![...body.querySelectorAll('h2')].some(h => /matchups|held up|position is worth|Walk-forward record|By season/i.test(txt(h))), 'the matchups, record or weights cards are still on the Elo tab');
-    chk(![...body.querySelectorAll('h2')].some(h => /season by season/.test(txt(h))), 'the season-by-season card is still on the Elo tab');
-    chk(!body.querySelector('.pe-calls') && ![...body.querySelectorAll('h2')].some(h => /^\d{4} so far/.test(txt(h))), 'the week\'s calls or the season record are still on the Elo tab; they live on Pick\'em Record');
     const posBtns = [...body.querySelectorAll('.pe-pos button')];
     chk(posBtns.map(b => b.dataset.pos).join() === eloM.groups.join(), 'the position picker does not list every rated group: ' + posBtns.map(b => b.dataset.pos).join());
     const rankRows = () => [...body.querySelectorAll('.card')].find(c => /Rankings/.test(txt(c.querySelector('h2')))).querySelectorAll('tbody tr');

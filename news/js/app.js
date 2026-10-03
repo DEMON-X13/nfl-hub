@@ -6,7 +6,6 @@ const esc  = s => String(s).replace(/<[^>]+>/g,"").replace(/"/g,"");
 const li   = a => a.map(x=>`<li>${x}</li>`).join("");
 const txt  = c => { const r=parseInt(c.slice(1,3),16),g=parseInt(c.slice(3,5),16),b=parseInt(c.slice(5,7),16); return (r*299+g*587+b*114)/1000 > 140 ? "#332E29" : "#fff"; };
 const ORD  = n => { const s=["th","st","nd","rd"], v=n%100; return n + "<sup>" + (s[(v-20)%10]||s[v]||s[0]) + "</sup>"; };
-const TZFMT = (()=>{ try { return new Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch(e){ return ""; } })();
 function kickOf(g){
   const done = g.awayScore != null && g.homeScore != null;
   if (done) return { day: g.day, time: "Final" };
@@ -94,33 +93,6 @@ function deepDive(ab, opp, row){
     ${rows}</details>`;
 }
 
-/* ============================ ranks ============================ */
-/* Preseason fallbacks computed from TEAMS. A week's own "ranks" block overrides these. */
-const BASE = (()=>{
-  const rankBy = (arr, key, desc) => {
-    const s = [...arr].sort((a,b)=> desc ? b[key]-a[key] : a[key]-b[key]);
-    const m = {}; s.forEach((t,i)=> m[t.ab] = i+1); return m;
-  };
-  const off = rankBy(TEAMS,"pf",true);      // most points scored in 2025
-  const def = rankBy(TEAMS,"pa",false);     // fewest points allowed in 2025
-  const ppg = rankBy(TEAMS,"pf",true);      // points per game, 2025
-  const tom = rankBy(TEAMS,"to",true);      // turnover differential, 2025
-  const m = {}; TEAMS.forEach(t => m[t.ab] = {off:off[t.ab], def:def[t.ab], ppg:ppg[t.ab], tom:tom[t.ab], ppgv:Math.round(t.pf/17*10)/10, tov:t.to});
-  return m;
-})();
-function rk(ab, w){
-  const t = T[ab], b = BASE[ab];
-  const entry = (w.teams||{})[ab] || {};
-  const g = entry.ranks || {};
-  return {
-    overall: g.overall || {rank:powerRank(ab).rank},
-    offense: g.offense || {rank:b.off},
-    defense: g.defense || {rank:b.def},
-    ppg:     g.ppg     || {rank:b.ppg, val:b.ppgv},
-    turnover:g.turnover|| {rank:b.tom, val:(b.tov>0?"+":"")+b.tov}
-  };
-}
-
 /* 2026 record from every played game in WEEKS. 0-0 until a team has a result. */
 function record(ab){
   let w = 0, l = 0, t = 0;
@@ -158,7 +130,6 @@ function render(){
 
 /* ============================ the page: one week, the slate ============================ */
 function renderWeek(w){
-  const recap = w.type === "recap";
   /* the page is the slate: the week's label and dates are in the app bar, and the headline
      and intro a week file carries are kept in the file but not shown */
   return `

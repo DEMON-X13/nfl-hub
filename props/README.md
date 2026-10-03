@@ -2,17 +2,20 @@
 
 A single-file NFL player prop app. Projects every starter's stat line, turns each
 projection into the chance of clearing thresholds (20+, 30+ pass attempts, etc),
-prices those, and builds correlated parlays. All state lives in the browser.
+prices those, and builds correlated parlays. A visitor's own state lives in the browser
+(the parlays are shared across devices by the Bets and Stats page's sync layer).
 
-Built in chat over ~30 rounds. This package is everything needed to rebuild it.
+Built in chat over ~30 rounds. This package is everything needed to rebuild the page and
+its payload; the research scripts behind the fitted model were not carried over (see How
+the model works).
 
 ---
 
 ## Run it
 
-```
-open app/prop_model_2026.html      # nothing to install
-```
+The prop model has no page of its own: its parts are the source of `nflbets/index.html`
+(`node ../../nflbets/build/build.js` from `build/`). `assemble.py` writes
+`app/prop_model_2026.html` (gitignored) for the audit only.
 
 ## Rebuild it
 
@@ -20,8 +23,8 @@ open app/prop_model_2026.html      # nothing to install
 cd build
 npm install                        # once: jsdom + papaparse for the audit (package.json)
 python3 payload.py                 # regenerates data/payload.json (needs raw/feat.pkl: cd research && python3 features.py)
-python3 assemble.py                # part1+2+3 + payload -> the HTML
-node audit.js                      # ~28,400 checks. must be 0 failures.
+python3 assemble.py                # part1+2+3 -> the audit's page (payload.json is fetched at boot, only checked here)
+node audit.js                      # ~26,000 checks. must be 0 failures.
 ```
 
 `payload.py` regenerates players, team tables, schedule (with any scores games.csv has)
@@ -29,8 +32,9 @@ and the depth-chart table from `raw/dc26.csv`, derives the data build string fro
 content, and carries forward market lines and the one-off keys it does not build.
 
 `assemble.py` concatenates `part1.html` (markup + CSS), `part2.js` (engine),
-`part3.js` (rendering and wiring), with the payload injected as a `const`.
-Never edit the built HTML — edit the parts.
+`part3.js` (rendering and wiring), with `let PAY=null` and a `DATA_URL` in front of
+part2: the app fetches `../data/payload.json` when it boots. Never edit the built
+HTML — edit the parts.
 
 ---
 
@@ -62,6 +66,10 @@ or users silently keep stale data.
 
 ## How the model works
 
+The research scripts named below (fit4.py, walkfwd.py, walkcal.py, starters.py, corr.py,
+corr2.py, pts.py, vol.py, boom3.py, boom4.py, blendcheck.py, calfix.py) were part of the
+original handoff package and are not in this repo; only `research/features.py` is.
+
 **Projection** (`research/fit4.py`, fitted 2019-2024, tested on 2025):
 eleven features — the player's 5-game and 3-game weighted averages, career rate and
 prior-season rate (both shrunk toward the position mean by 4 games, which is what
@@ -79,9 +87,10 @@ it was cut from 51 to 26 points once and count stats stopped anchoring.
 (`walkfwd.py`). Calibration within ~2 points in all five holdout seasons
 (`walkcal.py`). Unbiased on established starters (`starters.py`).
 
-**Market anchoring** (`data/wk1_lines.csv`, `mktbuild.py`): where a real line exists,
-the distribution is shifted until it agrees with the market at that number, vig
-stripped first. Elsewhere a per-stat scale factor (`scale.json`) is applied. Then a
+**Market anchoring** (`data/wk{W}_lines.csv` from the price pulls, `mktbuild.py`): where a
+real line exists, the distribution is shifted until it agrees with the market at that
+number, vig stripped first. Elsewhere a per-stat scale factor (`data/scale.json`, carried
+into the payload as `mkt_scale`) is applied. Then a
 bookmaker's cut goes on top — the tail shape of that cut is an ASSUMPTION, not a
 measurement, because no free source publishes alternate-line prices.
 
@@ -137,18 +146,20 @@ with that day's rosters and depth charts, so browsers holding the September 8 bu
 rebuild their state on first load and need week 1 re-uploaded. On Windows run the
 steps with `python`, not `python3`, and expect CRLF in the built HTML.
 
-**Odds feed (`data/oddsfetch.py`, untested against the live API).** With a free key in
-`ODDS_API_KEY` it writes `wk{W}_lines.csv` for `mktbuild.py` and `prices_wk{W}.csv` for
-the Weekly Update upload: every Over as the app's X+ rungs, and the main line read off
-each ladder as the point where over and under are closest to even, best price each side.
-`--events` lists the slate for free; start there and check the output before trusting it.
-The free tier is 500 credits a MONTH, about 115 a week. The default pull is 7 markets a
-game (main line plus ladder for passing, rushing and receiving yards, and anytime TD),
-~112 credits for a 16-game week split across the Thursday and Saturday runs. That is the
-free tier almost exactly, so a five-week month runs short at the end and the report says
-so. Alternate markets carry Over prices only (checked live 2026-09-13), which is why the
-base markets are pulled for the main lines. `--full` adds receptions, attempts,
-completions, TDs, interceptions and carries at 18 a game and needs a paid tier. Verified
+**Odds feed (`data/oddsfetch.py`, run by `weekly.py` on every price pull).** With the key
+in `ODDS_API_KEY` it writes `wk{W}_lines.csv` for `mktbuild.py`, `prices_wk{W}.csv`
+(every Over as the app's X+ rungs) and `gamelines_wk{W}.csv` (DraftKings' moneylines and
+spreads), and `weekly.py` bakes them into the payload; the main lines come from the base
+markets (with `--full` the alternate ladders come too, Over prices only).
+`--events` lists the slate for free. The free tier is 500 credits a MONTH, about 115 a
+week. The default pull is 6 markets a game (the main lines for passing, rushing and
+receiving yards, receptions and passing TDs, plus anytime TD; the alternate ladders were
+dropped on 2026-09-17) and one call for the slate's moneylines and spreads, about 7
+credits a game in all, ~112 for a 16-game week split across the four weekly pulls. That is
+the free tier almost exactly, so a five-week month runs short at the end and the report
+says so. Alternate markets carry Over prices only (checked live 2026-09-13), which is why the
+base markets are pulled for the main lines. `--full` adds the alternate ladders and
+attempts, completions, interceptions and carries, 18 markets a game in all, and needs a paid tier. Verified
 live on one game: 574 rung prices and the main lines came through correctly.
 
 **Optimism lean — tested 2026-09-13, left alone.** `research/calfix.py` fits a
@@ -165,7 +176,7 @@ Shown but marked.
 
 ---
 
-## Track Record tab (v27, 2026-09-13)
+## Track Record (v27, 2026-09-13; the Prop Record, now in the page without a tab button)
 
 Every threshold, book main line (the side the model favoured) and touchdown chance
 shown before kickoff is scored against the result: by confidence band (the High/Med/Low labels on the game pages), by
@@ -174,7 +185,7 @@ parlays. It reads only `S.projections` and `S.actuals`, so it cannot drift (bug 
 `gradeGame` now freezes each rung's chance and the main-line chance next to the
 projection; snapshots from before v27 are scored from their frozen projection with the
 same static tables, which is the identical number. Lines that carried a real price (the
-built-in main lines, or a price sheet you uploaded) are also scored against the book:
+main lines and the prices the job pulled) are also scored against the book:
 hit rate and flat-stake return, split by whether the model saw value. Every row carries a noise margin
 (two standard errors) and rows under 30 lines are greyed out, so a thin week is not
 read as a trend. `audit.js` section G3 checks the frozen chances against the frozen
@@ -184,31 +195,30 @@ projection, the band partition, the old-snapshot path and the render.
 
 `python weekly.py` does the whole week unattended: downloads scores and lines, this
 season's player stats, rosters, injuries and depth charts; works out the current week;
-pulls prices for the games kicking off soon if `ODDS_API_KEY` is set (36h window on a
-Thursday, 120h otherwise) and bakes the main lines in; rebuilds the payload; bakes every
-finished game's player stats, this week's injury report and every price file INTO the
-payload; assembles; audits; commits locally as DEMON; prints a REPORT block. Only games
+pulls prices for the games kicking off before the next scheduled pull if `ODDS_API_KEY`
+is set (`PULL_TIMES`, plus an hour of slack) and bakes the main lines in; rebuilds the
+payload; bakes every finished game's player stats, this week's injury report and every
+price file INTO the payload; assembles; audits; leaves the commit to the workflow
+(`--no-commit`; run by hand without it, it commits locally); prints a REPORT block. Only games
 with a final score in games.csv are baked, so a game in progress is never graded.
 
 The app applies baked data at boot through the same ingest functions an upload uses
 (`applyBaked` in part3.js), so grading happens at the same point and a second boot is a
-no-op. A price sheet you uploaded yourself wins over the baked one for that week. When
-the data build changes, parlays, stake, saved tickets and uploaded prices carry over and
-the baked weeks replay, so a rebuild no longer costs anything. Audit section I covers it.
+no-op. Prices are reloaded whenever the build that carried them changes; there is no
+price-sheet upload any more. When the data build changes, the visitor's parlays, stake and
+saved tickets carry over and the baked weeks replay, so a rebuild no longer costs
+anything. Audit section I covers it.
 
-Scheduled in the Claude desktop app: Thursday 8:00 and Saturday 8:00 local, running
-`weekly.py` and reporting. The app must be open (or it runs at next launch), and the
-key must have been set with `setx` BEFORE the app was last started.
+Scheduled by `.github/workflows/props.yml`: four price pulls (Mon/Wed/Thu/Sat) and eight
+post-game and stats runs a week (`--no-odds`, no credits); the key is the `ODDS_API_KEY`
+repository secret. (Before the workflow, `weekly.py` ran from a schedule in the Claude
+desktop app, Thursday and Saturday 8:00 local, with the key set by `setx`. If that
+schedule still exists it spends credits alongside the workflow, so turn it off.)
 
-## Weekly routine (manual fallback)
+## Manual fallback
 
-0. The slate warns when spreads and totals are more than three days old with games
-   inside three days, because expected points are the biggest single input.
-1. Tuesday: fetch scores in-app, download + upload player stats, roster, injuries.
-   Uploads are tracked PER GAME, so partial-week files are fine.
-2. Market lines. Either hand-transcribe a published article into `wk1_lines.csv`
-   format, or run `data/oddsfetch.py` with a free key from the-odds-api.com (hyphens;
-   the unhyphenated domain is an impersonator): Thursday morning with `--teams` for the
-   Thursday game, Saturday for the rest. Then `mktbuild.py W wk{W}_lines.csv "source"
-   date`, `assemble.py`, `audit.js`, and upload `prices_wk{W}.csv` on the Weekly Update
-   tab so the Track Record can score against real prices.
+Run the props workflow by hand (workflow_dispatch; tick `no_odds` to spend nothing).
+The Weekly Update tab's uploads are still in the page but have no button on the site;
+everything is baked by `weekly.py`. The slate still warns when spreads and totals are
+more than three days old with games inside three days, because expected points are the
+biggest single input.

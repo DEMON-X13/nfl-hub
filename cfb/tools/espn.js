@@ -120,10 +120,9 @@ async function rankings() {
     if (!/AP Top 25|AFCA Coaches|College Football Playoff|CFP/i.test(r.name)) continue;
     const key = /AP/.test(r.name) ? 'ap' : /Coaches/.test(r.name) ? 'coaches' : 'cfp';
     out[key] = { name: r.name, week: r.occurrence?.displayValue || null, date: (r.date || '').slice(0, 10),
-      ranks: (r.ranks || []).map(x => ({ rank: x.current, prev: x.previous ?? null, team: x.team?.id, record: x.recordSummary || null })),
-      others: (r.others || []).map(x => ({ team: x.team?.id, points: x.points ?? null })) };
+      ranks: (r.ranks || []).map(x => ({ rank: x.current, prev: x.previous ?? null, team: x.team?.id, record: x.recordSummary || null })) };
   }
   return out;
 }
 
-module.exports = { getJSON, scoreboard, gameRow, teamsOf, conferences, rankings, SB };
+module.exports = { getJSON, scoreboard, gameRow, teamsOf, conferences, rankings };

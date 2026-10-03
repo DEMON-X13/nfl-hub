@@ -3,7 +3,8 @@ name: elo
 # The Player Elo ratings and the roster model: every player rated by position, game by game
 # since 2012, the matchup formula, and the game model fitted on those ratings, re-run once the week's player stats
 # are on nflverse. Two mornings: Tuesday for the week (Monday night included), Friday to pick
-# up any late correction and call the coming week on the rosters as they last took the field.
+# up any late correction and call the coming week on the latest depth charts and that week's
+# injury report (who last took the field only where a chart is silent).
 on:
   schedule:
     - cron: "40 12 * * 2"    # Tue 08:40 ET

@@ -34,7 +34,7 @@ const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDa
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 
-const games = real.games.filter(g => g.type === 2).map(g => ({ id: g.id, date: g.date, start: g.start, home: g.home, away: g.away, neutral: g.neutral, venue: g.venue, mu: g.mu, xt: g.xt, diff: g.diff }));
+const games = real.games.filter(g => g.type === 2).map(g => ({ id: g.id, date: g.date, start: g.start, home: g.home, away: g.away, neutral: g.neutral, mu: g.mu, xt: g.xt, diff: g.diff }));
 const first = games[0].date;
 const T0 = addDays(first, 45);                        // six weeks in: the day the lines are up
 const T1 = addDays(T0, 1);
@@ -62,7 +62,7 @@ const team = code => ({ id: E.CLUBS[code].id, abbreviation: code, displayName: E
 function event(g, r, ods) {
   const done = !!r;
   const ls = n => done ? Array.from({ length: r.periods }, (_, i) => ({ value: i === 0 ? n : 0 })) : [];
-  return { id: g.id, date: g.start, season: { year: real.season, type: 2 }, competitions: [{ date: g.start, neutralSite: g.neutral, venue: { fullName: g.venue },
+  return { id: g.id, date: g.start, season: { year: real.season, type: 2 }, competitions: [{ date: g.start, neutralSite: g.neutral,
     status: { type: done ? { state: 'post', name: 'STATUS_FINAL', completed: true, shortDetail: r.periods === 5 ? 'Final/SO' : r.periods === 4 ? 'Final/OT' : 'Final' } : { state: 'pre', name: 'STATUS_SCHEDULED', shortDetail: 'tonight' }, period: done ? r.periods : 0 },
     competitors: [{ homeAway: 'home', team: team(g.home), score: done ? String(r.hs) : '0', linescores: ls(done ? r.hs : 0), records: [{ summary: '0-0-0' }] },
       { homeAway: 'away', team: team(g.away), score: done ? String(r.as) : '0', linescores: ls(done ? r.as : 0), records: [{ summary: '0-0-0' }] }],

@@ -14,7 +14,7 @@
  *
  * Inside the frame there is no address to carry a tab, so the page sets window.EMBED_TAB
  * before the app runs: it marks the document embedded (no header, no tab bar) and opens
- * that tab. The ?embed and #tab forms are still honoured, for a copy opened on its own.
+ * that tab.
  */
 'use strict';
 const fs = require('fs');
@@ -64,18 +64,18 @@ const HOOK = `<script>
          processed games, the coming week's onto S.elo, so Records can show it like the Joker */
       S.elo={};
       try{
-        const r2=await fetch((window.ELO_URL||'../elo/data/model.json')+'?t='+Date.now(),{cache:'no-store'});
+        const r2=await fetch('../elo/data/model.json?t='+Date.now(),{cache:'no-store'});
         if(r2.ok){ const M=await r2.json();
-          for(const g of (M.graded||[])){ const e={pick:g.pick,pHome:g.p_home,correct:g.correct}; S.elo[g.game_id]=e; if(S.processed&&S.processed[g.game_id]) S.processed[g.game_id].elo=e; }
+          for(const g of (M.graded||[])){ const e={pick:g.pick,correct:g.correct}; S.elo[g.game_id]=e; if(S.processed&&S.processed[g.game_id]) S.processed[g.game_id].elo=e; }
           /* the coming week's calls were made when the ratings were last built (Tue and Fri,
              before the games), so each is graded here the moment the season has its score:
              otherwise a Sunday's results wait for Tuesday's re-rating to count */
           for(const g of ((M.next&&M.next.games)||[])){
             const p=S.processed&&S.processed[g.game_id];
             const winner=p&&p.result!=null?(p.result>0?p.home:p.result<0?p.away:null):null;
-            const e={pick:g.pick,pHome:g.p_home,correct:winner?g.pick===winner:null};
+            const e={pick:g.pick,correct:winner?g.pick===winner:null};
             S.elo[g.game_id]=e; if(p&&e.correct!==null) p.elo=e; }
-          window.__eloRecord=M.walk_forward||null; window.__eloTeams=M.teams||null; }
+          window.__eloTeams=M.teams||null; }
       }catch(e){}
       window.__published=S.published;
       return {value:JSON.stringify(S)};
@@ -104,53 +104,19 @@ const HOOK = `<script>
 </script>
 `;
 
-const TRIM = `<script>
-/* viewer only: no Downloads, Upload, Records or Bet Log, and no odds fetch/upload card; Backup stays, since a visitor's picks and bets live only in their browser */
-window.VIEWER=true;
-document.addEventListener('DOMContentLoaded',()=>{
-  for(const t of ['upload','record','bets']){ const b=document.querySelector('#tabs button[data-tab="'+t+'"]'); if(b) b.remove(); }
-  const ml=[...document.querySelectorAll('#tab-bank .card h2')].find(h=>h.textContent.trim()==='Moneylines'); if(ml&&ml.closest('.card')) ml.closest('.card').remove();
-});
-</script>
-`;
-
-const ADMIN = `<script>
-/* admin only: the job's Run workflow page. It used to sit in the header, where it read as
-   the refresh button and was pressed as one -- it is not: it runs the weekly job, takes a
-   minute and fails outright while games are being played. Refresh scores owns that corner
-   now, and this lives with the rest of the housekeeping in Backup. */
-document.addEventListener('DOMContentLoaded',()=>{
-  const bs=document.getElementById('backupState'); if(!bs) return;
-  const ul=bs.parentElement.querySelector('ul'); if(!ul) return;
-  const li=document.createElement('li');
-  li.innerHTML='<b>Rebuild the site</b> \u2014 <a href="https://github.com/DEMON-X13/nfl-hub/actions/workflows/update.yml" target="_blank" rel="noopener">run the update job on GitHub \u2197</a>. '
-    +'It downloads the nflverse files, grades the week and republishes. It does not fetch live scores, and it fails while games are still being played because the stats are not posted yet \u2014 for scores during a game use <b>Refresh scores</b> in the header.';
-  ul.appendChild(li);
-});
-</script>
-`;
-/* Live scores, read from ESPN in this browser: free, no odds-API credits, no job. It fills
- * the "0 : 0" the board shows for a game with no result yet and colours it by whether that
- * row's pick is currently ahead. Nothing is stored and nothing is graded on it: the week is
- * still settled by the job, from nflverse, on the next run.
+/* Finished games, read from ESPN in this browser: free, no odds-API credits, no job. A game
+ * the scoreboard reports as over is settled on the published board, so Records counts it
+ * before the job has graded it. Nothing is stored and nothing is graded on it for good: the
+ * week is still settled by the job, from nflverse, on the next run.
  *
  * This is injected ahead of the app's own script, so everything it does happens on
- * DOMContentLoaded, by which time S, predict and the two boards exist. */
+ * DOMContentLoaded, by which time S, predict and the boards exist. */
 const LIVE = `<style>
-.lvwrap{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:inherit;opacity:.85;font-variant-numeric:tabular-nums}
-header .lvwrap,header label.muted{color:#B9C5D4}
-header #lvEvery{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:5px 8px}
-header #lvNow{background:#D39A1F;color:#0F1B2D;border:0;font-weight:700}
-.lvdot{width:8px;height:8px;border-radius:50%;background:#D5DCE6;display:inline-block}
-.lvdot.on{background:#1B7A4E;box-shadow:0 0 8px rgba(27,122,78,.6)}
-.lvdot.bad{background:#C0392B}
-.mwin.tie,.mres.tie{color:#8A5E05}
-.pickdot.lockd{opacity:.45;cursor:not-allowed}
 /* A wide table scrolls inside its card rather than stretching the page behind it: Power
    Ratings is eight columns and 672px, which on a 390px phone pushed everything else out
    with it. */
 @media(max-width:560px){
-  #tab-record table,#tab-ratings table,#tab-upload table,#tab-bets table,.pickgrid table{
+  #tab-record table,#tab-ratings table,#tab-bets table,.pickgrid table{
     display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;max-width:100%}
   #tab-record table th,#tab-record table td,
   #tab-ratings table th,#tab-ratings table td{padding:7px 9px}
@@ -164,23 +130,22 @@ html.embed main{padding:4px 0 16px;max-width:none}
 </style>
 <script>
 (function(){
-/* embedded -- window.EMBED_TAB set by the page around this one, or ?embed on the address:
-   no header, no tab bar, no background; EMBED_TAB or the hash says which tab shows */
-if(window.EMBED_TAB||/[?&]embed(=|&|$)/.test(location.search)) document.documentElement.classList.add('embed');
+/* embedded -- window.EMBED_TAB set by the page around this one: no header, no tab bar, no
+   background, and that tab shows */
+if(window.EMBED_TAB) document.documentElement.classList.add('embed');
 ${ESPN}
-const L={games:{},at:0,err:null,busy:false,on:false};
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const L={games:{},busy:false};
 const el=id=>document.getElementById(id);
-/* the same sort both boards render in, so a row and a game line up by position */
+/* the week's games, in kickoff order */
 const weekGames=w=>S.schedule.filter(g=>+g.week===w)
   .sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
 const weekOf=id=>{ const s=el(id); const v=s&&+s.value; return isFinite(v)&&v?v:null; };
 const seasonOf=w=>{ const g=weekGames(w)[0]; return g?+String(g.game_id).slice(0,4):new Date().getFullYear(); };
 async function read(){
   if(L.busy) return;
-  const weeks=[...new Set([weekOf('weekSel'),weekOf('myWeekSel')].filter(Boolean))];
+  const weeks=[weekOf('weekSel')].filter(Boolean);
   if(!weeks.length) return;
-  L.busy=true; L.err=null; stamp();
+  L.busy=true;
   try{
     const games={};
     for(const w of weeks){
@@ -189,77 +154,18 @@ async function read(){
       Object.assign(games,espnGames(await r.json(),
         weekGames(w).map(g=>({id:g.game_id,h:g.home_team,a:g.away_team}))));
     }
-    L.games=games; L.at=Date.now(); L.on=true;
-  }catch(e){ L.err=String(e&&e.message||e); }
+    L.games=games;
+  }catch(e){}
   finally{ L.busy=false; }
   /* a finished game becomes a result; the boards are redrawn by the app so that records,
      ticks and crosses all follow from it */
   if(settleFinished()){
     /* Records too: it reads the same S.processed and was left showing the counts from
        before the games settled until you happened to switch tabs. */
-    for(const n of ['renderPicks','renderMine','renderRecord'])
+    for(const n of ['renderPicks','renderRecord'])
       if(typeof window[n]==='function'){ try{ window[n](); }catch(e){} }
     tidyStats();
   }
-  paintAll(); stamp();
-}
-function stamp(){
-  const s=el('lvStamp'), d=el('lvDot'); if(!s) return;
-  if(d){ d.classList.toggle('on',L.busy); d.classList.toggle('bad',!!L.err); }
-  s.textContent=L.err?'scores not loading':(L.busy?'reading\u2026':(L.at
-    ?'scores '+new Date(L.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'})
-    :'scores not read yet'));
-}
-/* fill the placeholder score on any row whose game has no result yet */
-function paint(rootId,w){
-  const root=el(rootId); if(!root||!w) return;
-  const gs=weekGames(w), rows=[...root.querySelectorAll('.game')];
-  if(!rows.length||rows.length!==gs.length) return;   /* a future week or an empty board: leave it */
-  rows.forEach((row,i)=>{
-    const g=gs[i]; if(!g||g.result!=null) return;
-    const s=L.games[g.game_id]; if(!s||s.state==='pre'||s.hs==null||s.as==null) return;
-    /* the same two spans the app writes for a finished game, in the same box, so a game
-       being played and one that is over read identically rather than in two type sizes */
-    const box=row.querySelector('.result'); if(!box) return;
-    box.innerHTML='<span class="mwin '+tone(g,s)+'">'+line(g,s)+'</span>'
-      +(s.clock?'<span class="muted">'+esc(s.clock)+'</span>':'');
-  });
-}
-/* Kickoff, from the schedule's Eastern times, the same way the prop model works it out.
-   The clocks go back on the first Sunday of November, which is close enough to the first
-   of the month for a kickoff time. */
-function kickoff(g){
-  if(!g.gameday) return null;
-  const yr=g.gameday.slice(0,4);
-  const off=(g.gameday>=yr+'-11-01')?'-05:00':'-04:00';
-  const d=new Date(g.gameday+'T'+(g.gametime||'13:00')+':00'+off);
-  return isNaN(d)?null:d.getTime();
-}
-/* a game that has started, by the scoreboard if it has been read and by the clock otherwise */
-function started(g){
-  const s=L.games[g.game_id];
-  if(s&&s.state&&s.state!=='pre') return true;
-  const k=kickoff(g);
-  return !!k&&Date.now()>=k;
-}
-/* A pick cannot be made or changed once the game has kicked off. The app already refuses
-   once a game is graded, but grading happens when the job next runs and nflverse has
-   posted -- hours after the whistle, and not at all until the next morning for a Sunday
-   night game. In that gap every game played today was still editable, which is not a pick,
-   it is a result being written down afterwards. */
-function lockPlayed(){
-  const root=el('myGames'); if(!root) return;
-  const by={}; for(const g of S.schedule) by[g.game_id]=g;
-  let n=0;
-  root.querySelectorAll('button[data-my]').forEach(b=>{
-    if(b.disabled) return;                       /* graded: the app locked it already */
-    const g=by[b.dataset.my]; if(!g||!started(g)) return;
-    b.disabled=true; b.classList.add('lockd'); n++;
-    b.title=b.getAttribute('aria-checked')==='true'
-      ? 'Locked: this game has kicked off. Your pick stands.'
-      : 'Locked: this game has kicked off, so it can no longer be picked.';
-  });
-  return n;
 }
 
 /* A finished game does not need the weekly job to say who won.
@@ -315,46 +221,9 @@ function settleFinished(){
   }
   return n;
 }
-/* the graded rows read "BUF won 31-41"; a game still being played reads the same way, with
-   the side that is ahead and leading instead of won, so the two say the same kind of thing */
-function line(g,s){
-  const lead=s.hs>s.as?g.home_team:(s.as>s.hs?g.away_team:null);
-  return lead?esc(lead)+' leading '+s.as+'\u2013'+s.hs
-            :'Tied '+s.as+'\u2013'+s.hs;
-}
-/* green while the row's pick is ahead, red while it is behind, yellow level */
-function tone(g,s){
-  const done=S.processed&&S.processed[g.game_id];
-  let pick=done?done.pick:null;
-  if(!pick&&typeof window.predict==='function'){ try{ pick=window.predict(g,S.teams).pick; }catch(e){} }
-  if(!pick) return '';
-  const m=pick===g.home_team?s.hs-s.as:s.as-s.hs;
-  return m>0?'ok':(m<0?'bad':'tie');
-}
-/* My Picks draws a card per game with the result in its header, not a board row */
-function paintMine(w){
-  const root=el('myGames'); if(!root||!w) return;
-  const gs=weekGames(w), cards=[...root.querySelectorAll('.mycard')];
-  if(!cards.length||cards.length!==gs.length) return;
-  cards.forEach((card,i)=>{
-    const g=gs[i]; if(!g||g.result!=null) return;
-    const s=L.games[g.game_id]; if(!s||s.state==='pre'||s.hs==null||s.as==null) return;
-    const head=card.querySelector('.myhead'); if(!head) return;
-    /* My Picks puts the result in the card's header, separated by a middle dot: the same
-       span the app uses for a final, with the clock as another of the header's own bits */
-    let sp=head.querySelector('.mres.lv');
-    if(!sp){ head.appendChild(document.createTextNode(' \u00b7 '));
-      sp=document.createElement('span'); sp.className='mres lv'; head.appendChild(sp);
-      head.appendChild(document.createTextNode('')); }
-    sp.className='mres lv '+tone(g,s);
-    sp.textContent=line(g,s).replace(/&amp;/g,'&');
-    sp.nextSibling.textContent=s.clock?' \u00b7 '+s.clock:'';
-  });
-}
-function paintAll(){ paint('gamesList',weekOf('weekSel')); paintMine(weekOf('myWeekSel')); }
 
-/* My Picks is gone: the tab, the column in both tables, the line on the chart and its
-   legend. Nothing is deleted from storage -- the picks key is left exactly as it is, so
+/* My Picks is gone: the tab, its section and the You column wherever the app still draws
+   one. Nothing is deleted from storage -- the picks key is left exactly as it is, so
    turning this back on is one build away and loses nothing. */
 function stripCol(table,label){
   if(!table) return;
@@ -376,28 +245,18 @@ function stripMine(){
     if(typeof window.renderMyRecords==='function') window.renderMyRecords=function(){};
   }
   document.querySelectorAll('.pickgrid table, #tab-record table').forEach(t=>stripCol(t,'You'));
-  /* the chart's own line and its legend entry, both drawn in the picks colour. A legend
-     item is a span wrapping a colour swatch, the name and the count, so it is the swatch's
-     colour that identifies it rather than the text, which is spread across children. */
-  document.querySelectorAll('.lgdrow > span').forEach(sp=>{
-    const sw=sp.querySelector('i.lgd');
-    const col=sw?(sw.getAttribute('style')||''):'';
-    if(/#C98B0F/i.test(col)||/^You\b/.test(sp.textContent.trim())) sp.remove(); });
-  document.querySelectorAll('#modelChart [stroke="#C98B0F"], #modelChart [fill="#C98B0F"]')
-    .forEach(n=>n.remove());
 }
-/* after anything redraws a board: the lock does not wait for a score to be read, since it
-   is a rule about the clock rather than about the scoreboard */
-/* three paragraphs of method under Records and Power Ratings that nobody reads twice: the
-   note under the accuracy chart, the small-samples note under the week-by-week table, and
-   the paragraph that explains the absences table. The app redraws them; this drops them. */
-const DROP=[/^Early weeks bounce around on small samples/,/^Running season accuracy after each week/,/^Two absences carry a measured effect/];
+/* two paragraphs of method under Records and Power Ratings that nobody reads twice: the
+   small-samples note under the record chart and the paragraph that explains the absences
+   table. The app redraws them; this drops them. (The chart's own intro is rewritten by
+   record_viz.js.) */
+const DROP=[/^Early weeks bounce around on small samples/,/^Two absences carry a measured effect/];
 function dropNotes(){
   document.querySelectorAll('#tab-record p.muted, #tab-ratings p.muted').forEach(p=>{
     const t=p.textContent.trim(); if(DROP.some(re=>re.test(t))) p.remove();
   });
 }
-function after(){ lockPlayed(); stripMine(); allModels(); tidyStats(); ratingsExtras(); dropNotes(); if(L.on) paintAll(); }
+function after(){ stripMine(); allModels(); tidyStats(); ratingsExtras(); dropNotes(); }
 /* Records shows every model, always. The toggle defaulted to off, so the challenger, the
    joker and Vegas were hidden behind a checkbox on the one tab that exists to compare them. */
 function allModels(){
@@ -443,47 +302,24 @@ function ratingsExtras(){
   }
 }
 
-/* The tab you are on goes in the address, so a refresh, a bookmark or the back button all
-   land where you were instead of dropping you on AI Picks. replaceState rather than a hash
-   assignment, so setting it does not fire hashchange and bounce back into the same tab. */
+/* the frame opens on the tab the page around it names */
 function routeTabs(){
   const tabs=document.getElementById('tabs'); if(!tabs) return;
-  const go=name=>{ const b=tabs.querySelector('button[data-tab="'+name+'"]'); if(b){ b.click(); return true; } return false; };
-  /* a srcdoc frame has no address of its own to write to, and the browser refuses the write */
-  const replace=u=>{ try{ history.replaceState(null,'',u); }catch(e){} };
-  tabs.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>{
-    const h='#'+b.dataset.tab;
-    if(location.hash!==h) replace(h);
-  }));
-  const want=window.EMBED_TAB||decodeURIComponent((location.hash||'').slice(1));
-  if(want&&!go(want)&&!window.EMBED_TAB) replace(location.pathname+location.search);
-  window.addEventListener('hashchange',()=>{
-    const n=decodeURIComponent((location.hash||'').slice(1)); if(n) go(n);
-  });
+  const go=name=>{ const b=tabs.querySelector('button[data-tab="'+name+'"]'); if(b) b.click(); };
+  if(window.EMBED_TAB) go(window.EMBED_TAB);
 }
-/* both boards are redrawn on every pick, week change and upload, which wipes what we
-   painted, so repaint after whatever redrew them rather than chasing each caller */
+/* the tabs are redrawn on every pick, week change and upload, which brings back what was
+   stripped, so tidy up after whatever redrew them rather than chasing each caller */
 function hook(name){
   const f=window[name]; if(typeof f!=='function') return;
   window[name]=function(){ const r=f.apply(this,arguments); setTimeout(after,0); return r; };
 }
 document.addEventListener('DOMContentLoaded',()=>{
-  /* in the header, beside the Updated stamp: this is the first thing looked at during a
-     game, and the week bar put it a screen and a half down a phone */
-  const host=el('saveState')&&el('saveState').parentElement;
-  const sel=el('weekSel'), bar=host||(sel&&sel.closest('.bar')); if(!bar) return;
-  const wrap=document.createElement('span');
-  wrap.style.cssText='display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap'
-    +(host?';margin:8px 0 0;width:100%;justify-content:flex-end':';margin-left:auto');
-  wrap.innerHTML='<span class="lvwrap"><span class="lvdot" id="lvDot"></span><span id="lvStamp">scores not read yet</span></span>'
-    +'<button class="btn" id="lvNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>';
-  bar.appendChild(wrap);
-  el('lvNow').addEventListener('click',read);
-  setTimeout(after,0);                            /* lock what has kicked off on first load */
+  setTimeout(after,0);
   /* read once on load, so a finished game shows its result without being asked and does not
      vanish again on the next reload */
   setTimeout(read,300);
-  for(const n of ['renderPicks','renderMine','renderRecord','renderRatings','renderAdjust']) hook(n);
+  for(const n of ['renderPicks','renderRecord','renderRatings','renderAdjust']) hook(n);
   stripMine();
   allModels();
   ratingsExtras();
@@ -546,38 +382,18 @@ ${VIZ_JS}
 const anchor = '<script>\nconst MODEL = ';
 if (!html.includes(anchor)) throw new Error('could not find the main script start to inject the hook');
 
-/* The Elo model on Records. The app's renderRecord and pickGrid draw the Joker from
-   processed[gid].joker; the same lines are widened here, at build time, to draw the Elo
-   model from processed[gid].elo, which the hook above fills from elo/data/model.json. Each
-   edit must land exactly once, so a change to the app that moves these lines stops the
-   build rather than dropping the Elo model from the chart. The app file itself is not
-   touched: it is the source shipped from nfl-model-lab. */
+/* The Elo model in the pick grid. The app's pickGrid draws the Joker from
+   processed[gid].joker or S.joker; the same lines are widened here, at build time, to draw
+   the Elo model from processed[gid].elo or S.elo, which the hook above fills from
+   elo/data/model.json. (The record's chart and week-by-week table are record_viz.js's, which
+   draws the Elo model itself.) Each edit must land exactly once, so a change to the app that
+   moves these lines stops the build rather than dropping the Elo model from the grid. The
+   app file itself is not touched: it is the source shipped from nfl-model-lab. */
 const patch = (from, to, what) => {
   const n = html.split(from).length - 1;
   if (n !== 1) throw new Error(`the Elo model patch "${what}": expected exactly one match, found ${n}`);
   html = html.replace(from, () => to);
 };
-patch(`  const jDis=jRows.filter(r=>r.joker.pick!==r.pick); const jDisA=jDis.filter(r=>r.correct).length, jDisJ=jDis.filter(r=>r.joker.correct).length;`,
-`  const jDis=jRows.filter(r=>r.joker.pick!==r.pick); const jDisA=jDis.filter(r=>r.correct).length, jDisJ=jDis.filter(r=>r.joker.correct).length;
-  /* the Elo model: every player rated by position, the roster scored from those ratings; published as processed[gid].elo from elo/data/model.json */
-  const eRows=rows.filter(r=>r.elo&&r.elo.correct!==null&&r.elo.correct!==undefined); let eRun=0,eRunN=0; const ePts=[];
-  wks.forEach(w=>{ const wr=eRows.filter(r=>+r.week===w); const wc=wr.filter(r=>r.elo.correct).length; eRun+=wc; eRunN+=wr.length;
-    ePts.push({x:w, y:eRunN?100*eRun/eRunN:null, tip:wr.length?\`Week \${w} Elo model: \${wc} of \${wr.length} that week, \${(100*eRun/eRunN).toFixed(1)}% season to date\`:\`Week \${w}: no Elo model record\`}); });`,
-  'the Elo model series');
-patch(`      \${showAll?lgd('#C0392B','The Joker',jRun,jRunN):''}
-      \${showAll?lgd('#0F1B2D','Vegas',vRun,vRunN):''}`,
-`      \${showAll?lgd('#C0392B','The Joker',jRun,jRunN):''}
-      \${showAll?lgd('#E8730A','Elo model',eRun,eRunN):''}
-      \${showAll?lgd('#0F1B2D','Vegas',vRun,vRunN):''}`, 'the legend');
-patch(`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`,
-`...(showAll&&jRunN?[{pts:jPts,color:'#C0392B'}]:[]),...(showAll&&eRunN?[{pts:ePts,color:'#E8730A'}]:[]),...(showAll&&vRunN?[{pts:vPts,color:'#0F1B2D'}]:[])]})}`, 'the chart lines');
-patch(`\${showAll&&jRunN?'<th class="num">The Joker</th>':''}\${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>\`;`,
-`\${showAll&&jRunN?'<th class="num">The Joker</th>':''}\${showAll&&eRunN?'<th class="num">Elo model</th>':''}\${showAll&&vRunN?'<th class="num">Vegas</th>':''}<th class="num">You</th></tr></thead><tbody>\`;`, 'the table head');
-patch(`    const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length; const vCell=vw.length?\`\${Math.round(100*vc/vw.length)}%\`:'<span class="muted">–</span>';`,
-`    const vw=wr.filter(r=>vPick(r)!==null); const vc=vw.filter(r=>vPick(r)===(r.result>0?r.home:r.away)).length; const vCell=vw.length?\`\${Math.round(100*vc/vw.length)}%\`:'<span class="muted">–</span>';
-    const ew=wr.filter(r=>r.elo&&r.elo.correct!=null); const ec=ew.filter(r=>r.elo.correct).length; const eCell=ew.length?\`\${Math.round(100*ec/ew.length)}%\`:'<span class="muted">–</span>';`, 'the table row counts');
-patch(`\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`,
-`\${showAll&&jRunN?\`<td class="num">\${jCell}</td>\`:''}\${showAll&&eRunN?\`<td class="num">\${eCell}</td>\`:''}\${showAll&&vRunN?\`<td class="num">\${vCell}</td>\`:''}<td class="num \${cls}">\${meCell}</td></tr>\`; }`, 'the table row');
 /* one week of picks behind a picker that opens on this week (the app's currentWeekDefault:
    the first week with a game not yet played, so a graded Thursday game does not move it on)
    and offers only the weeks reached: the app's picker offered every scheduled week, where the main model and the
@@ -612,18 +428,16 @@ patch(`function renderBets(){`, `function renderBets(){ renderBetsApp(); betsViz
 function renderBetsApp(){`, 'the Bet Log balance');
 /* the Elo tiers: Challenger renamed Elite, and HOF above it from 1750, worn as a gem (tiers.js) */
 html = require('./tiers.js')(html, 'the built app');
-/* the viewer trim is kept for a revert; nothing uses it */
-void TRIM;
 /* the built app: every tab, on the published season, reading it from where the page around
    it says (window.STATE_URL) and opening on the tab it names (window.EMBED_TAB). Both are
    set by a script the page puts in before this one; on its own the app reads state.json
-   beside it and routes by hash. */
-/* the models' names as the page shows them: the main model is Model A, the Elo game model
-   ELO based. Only the words a reader sees change, at build time; the app source is not edited. */
-const RENAME = [[/Main Model/g, 'Model A'], [/\bthe main model\b/g, 'Model A'], [/\bmain model\b/g, 'Model A'], [/'Elo model'/g, "'ELO based'"],
-  [/(lgd\('#E8730A',)'Elo model'/g, "$1'ELO based'"], [/>Elo model</g, '>ELO based<'], [/(\$\{w\} )Elo model:/g, '$1ELO based:'], [/no Elo model record/g, 'no ELO based record']];
+   beside it and opens on its first tab. */
+/* the main model's name as the page shows it: Model A (the Elo game model is written as ELO
+   based wherever the build draws it). Only the words a reader sees change, at build time;
+   the app source is not edited. */
+const RENAME = [[/Main Model/g, 'Model A'], [/\bthe main model\b/g, 'Model A'], [/\bmain model\b/g, 'Model A']];
 function buildApp() {
-  let out = html.replace(anchor, HOOK + ADMIN + LIVE + VIZ + anchor);
+  let out = html.replace(anchor, HOOK + LIVE + VIZ + anchor);
   for (const [re, to] of RENAME) out = out.replace(re, to);
   for (const need of ['function betsViz(', 'renderBetsApp(); betsViz();', 'function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);

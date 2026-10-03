@@ -137,4 +137,4 @@ function totalProbs(G, line) {
 /* the chance the home side wins by the goals layer's own reckoning, reported beside the Elo's */
 const homeByGoals = G => Object.entries(G.margin).reduce((a, [k, p]) => a + (+k > 0 ? p : 0), 0);
 
-module.exports = { Elo, DEFAULTS, MEAN, expected, fitSpread, spreadOf, goals, coverProbs, totalProbs, homeByGoals, otChance, daysBetween };
+module.exports = { Elo, DEFAULTS, expected, fitSpread, spreadOf, goals, coverProbs, totalProbs, homeByGoals, daysBetween };

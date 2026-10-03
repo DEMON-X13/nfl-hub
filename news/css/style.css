@@ -17,7 +17,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
   font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;letter-spacing:-.003em}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 26px}
-h1,h2,h3,h4,h5,.num{font-family:"Space Grotesk","Manrope",sans-serif;margin:0;letter-spacing:-.02em}
+h1,h2,h3,h4,h5{font-family:"Space Grotesk","Manrope",sans-serif;margin:0;letter-spacing:-.02em}
 button{font-family:inherit}
 a{color:inherit}
 
@@ -32,18 +32,11 @@ a{color:inherit}
 
 /* ---------- page head ---------- */
 .pagehead{padding:30px 0 4px}
-.eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin-bottom:12px}
-.eyebrow i{width:5px;height:5px;border-radius:50%;background:var(--up)}
-.eyebrow.sample i{background:var(--down)}
-.pagehead h2{font-size:clamp(26px,3.6vw,36px);font-weight:700;line-height:1.1;max-width:22ch}
 .pagehead p{max-width:72ch;color:var(--ink-2);margin:10px 0 0;font-size:14.5px}
 .sampleflag{margin-top:14px;border-radius:var(--r-s);background:var(--sunk);border:1px solid var(--line-2);border-left:3px solid var(--down);color:var(--ink-2);padding:11px 14px;font-size:13.5px;max-width:70ch}
 
 /* ---------- section heads ---------- */
 .sec{padding-top:24px}
-.sec-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.sec-head h3{font-size:17px;font-weight:700;letter-spacing:-.01em}
-.sec-head p{margin:0;font-size:13px;color:var(--ink-3)}
 
 /* ---------- slate: each game is a button ---------- */
 .slate{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:10px}
@@ -71,7 +64,6 @@ a{color:inherit}
 .pill.big{background:var(--surface);border:1px solid var(--line-2)}
 .pill.big b{font-size:13.5px}
 .pill.big b sup{font-size:8px;font-weight:600;color:var(--ink-3);top:-.6em}
-.pending{font-size:12.5px;color:var(--ink-3)}
 
 /* ---------- overlay shell ---------- */
 .ov{position:fixed;inset:0;z-index:100;display:none;align-items:flex-start;justify-content:center;padding:26px 16px;overflow-y:auto;background:rgba(26,24,20,.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -89,14 +81,7 @@ a{color:inherit}
 .ovnote{font-size:14px;color:var(--ink-2);margin:14px 0 0;max-width:90ch}
 .ovsec{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px}
 .ovsec::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ink-3);flex:0 0 6px}
-.ovsec.up::before{background:var(--up)}
-.ovsec.down::before{background:var(--down)}
-.ovsec.info::before{background:var(--info)}
 .ovsec .ovsub{margin-left:auto;font-weight:600;letter-spacing:.06em;text-transform:none;font-size:10.5px}
-.ovkeys{margin:0;padding:0;list-style:none}
-.ovkeys li{position:relative;padding-left:13px;margin-bottom:8px;font-size:13.8px;line-height:1.55}
-.ovkeys li::before{content:"";position:absolute;left:0;top:8px;width:4px;height:4px;border-radius:50%;background:var(--line-2)}
-.ovkeys li strong{font-weight:700}
 
 /* ---------- overlay: the two teams, one shared grid so rows line up ---------- */
 .duo2{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;margin-top:20px}
@@ -176,7 +161,6 @@ a{color:inherit}
 
 /* ---------- footer, misc ---------- */
 footer{margin:48px 0 0;padding-top:20px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3);max-width:80ch}
-footer h4{font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:7px;letter-spacing:.02em}
 footer p{margin:0 0 10px;line-height:1.6}
 main{padding-bottom:90px}
 .top{position:fixed;right:20px;bottom:20px;z-index:40;width:40px;height:40px;border-radius:11px;background:var(--surface);

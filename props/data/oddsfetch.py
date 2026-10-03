@@ -1,12 +1,12 @@
-"""Pull NFL player-prop prices from the-odds-api.com (hyphens) into the two files the app uses.
+"""Pull NFL player-prop prices from the-odds-api.com (hyphens) into the files the payload is baked from.
 
-STATUS: written 2026-09-13 against the documented v4 API; NOT yet run against the live service,
-because no key was available. Run --events first, which costs no credits, and check the output.
+Run by props/build/weekly.py on every price pull of .github/workflows/props.yml (the key is the
+ODDS_API_KEY repository secret). By hand, run --events first, which costs no credits.
 
 Usage (never put the key on the command line; the shell history would keep it):
     set ODDS_API_KEY=...            (Windows)      export ODDS_API_KEY=...   (mac/linux)
     python oddsfetch.py --events                    list this week's events, free
-    python oddsfetch.py --week 2                    write wk2_lines.csv and prices_wk2.csv
+    python oddsfetch.py --week 2                    write wk2_lines.csv, prices_wk2.csv and gamelines_wk2.csv
     python oddsfetch.py --week 2 --sample saved.json   parse a saved event response instead (no key)
 
     python oddsfetch.py --week 2 --teams NE,SEA          only the games those teams play (Thursday)
@@ -16,13 +16,16 @@ pull add up; a game pulled twice keeps the newer prices:
                        closest to even, best price each side.
                        Feed it to mktbuild.py:  python mktbuild.py W wk{W}_lines.csv "the-odds-api" YYYY-MM-DD
     prices_wk{W}.csv   game_id,player,market,threshold,odds   every Over as the app's X+ rungs.
-                       Upload it on the Weekly Update tab as the price sheet for week W.
+                       weekly.py bakes every week's file into payload.json (prices); the app
+                       reads it from there.
+    gamelines_wk{W}.csv  the book's moneylines and spreads for the slate (--no-game-lines skips it)
 Credits: one event request costs (markets requested) x (regions); the free tier is 500 a MONTH,
-about 115 a week. The default pull is 7 markets a game (main line and ladder for passing,
-rushing and receiving yards, plus anytime TD): 7 credits a game, ~112 for a 16-game week split
-across a Thursday and a Saturday pull. That is the free tier almost exactly; a month with five
-game weeks runs short at the end. --full adds receptions, attempts, completions, TDs,
-interceptions and carries at 18 a game, which needs a paid tier. Every call prints what is left.
+about 115 a week. The default pull is 6 markets a game (DEFAULT below: the main lines for
+passing, rushing and receiving yards, receptions and passing TDs, plus anytime TD) and 2 for the
+slate's game lines, about 7 credits a game, ~112 for a 16-game week split across the week's
+pulls. That is the free tier almost exactly; a month with five game weeks runs short at the end.
+--full adds the alternate ladders and attempts, completions, interceptions and carries, which
+needs a paid tier. Every call prints what is left.
 """
 import os, sys, json, csv, math, argparse, urllib.request, urllib.parse, urllib.error, collections
 from datetime import datetime, timezone
@@ -161,9 +164,9 @@ def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--week',type=int); ap.add_argument('--events',action='store_true')
     ap.add_argument('--sample',help='a saved event-odds JSON (list of events) to parse instead of calling the API')
-    ap.add_argument('--regions',default='us'); ap.add_argument('--no-game-lines',action='store_true',help='skip the moneyline and spread pull (saves 2 credits for the whole slate)'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull attempts, completions, TDs, interceptions, carries (15 credits a game)')
+    ap.add_argument('--regions',default='us'); ap.add_argument('--no-game-lines',action='store_true',help='skip the moneyline and spread pull (saves 2 credits for the whole slate)'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull the alternate ladders and attempts, completions, interceptions, carries (18 credits a game)')
     ap.add_argument('--teams',help='comma-separated abbreviations; only games involving them (e.g. NE,SEA for the Thursday game)')
-    ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (36 on Thursday morning, 120 on Saturday)')
+    ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (weekly.py passes the hours to the next scheduled pull)')
     a=ap.parse_args()
     pay=json.load(open('payload.json',encoding='utf-8'))
     key=os.environ.get('ODDS_API_KEY')
@@ -229,7 +232,7 @@ def main():
     prices=[{'game_id':gid,'player':player,'market':stat,'threshold':k,'odds':price} for (gid,player,stat,k),price in sorted(alts.items())]
     done={p['game_id'] for p in prices}
     n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices,done)
-    print(f"prices_wk{a.week}.csv: {len(prices)} threshold prices from this pull, {n} in the file (upload on the Weekly Update tab)")
+    print(f"prices_wk{a.week}.csv: {len(prices)} threshold prices from this pull, {n} in the file (weekly.py bakes it into the payload)")
     print(f"next: python mktbuild.py {a.week} wk{a.week}_lines.csv \"{a.book if book else 'best of '+a.regions}\" {datetime.now(timezone.utc).date()}")
 
 if __name__=='__main__': main()

@@ -97,4 +97,4 @@ function coverProbs(mu, sd, homeLine) {
 
 const roundHalf = x => Math.round(x * 2) / 2;
 
-module.exports = { Elo, DEFAULTS, expected, Phi, fitSpread, spreadOf, coverProbs, roundHalf };
+module.exports = { Elo, expected, fitSpread, spreadOf, coverProbs, roundHalf };

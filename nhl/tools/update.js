@@ -208,7 +208,7 @@ async function main() {
   for (const g of games) {
     const p = prevGames.get(g.id);
     const row = { id: g.id, type: g.type, date: g.date, start: g.start, state: g.state, detail: g.detail, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods,
-      neutral: g.neutral, note: g.note, venue: g.venue, hrec: g.hrec, arec: g.arec };
+      neutral: g.neutral, note: g.note, hrec: g.hrec, arec: g.arec };
     let view;
     if (g.state === 'pre') {
       const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: now, elo: { pHome: v.pHome, xt: rates.total(g.home, g.away) } };
@@ -289,7 +289,7 @@ async function main() {
 
   /* the player rankings, for the Players tab: every rated player, the club strengths, the report */
   const players = PM ? { asOf: PM.asOf, generated: PM.generated, use: usePM, report: PM.report, params: PM.params, players: PM.players, teams: PM.teams } : null;
-  const state = { published: new Date().toISOString(), season: SEASON, today: TODAY, model, clubs: E.CLUBS, teams, games: out, record, playoff, edge: EDGE, players };
+  const state = { published: new Date().toISOString(), season: SEASON, today: TODAY, model, teams, games: out, record, playoff, edge: EDGE, players };
   const before = prev ? JSON.stringify(Object.assign({}, prev, { published: null, today: null })) : null;
   const after = JSON.stringify(Object.assign({}, state, { published: null, today: null }));
   if (before === after) { log('nothing changed; state.json left alone'); return; }

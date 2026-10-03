@@ -12,13 +12,14 @@
  * name prefixed pk- so nothing of it collides with the app around it.
  *
  * The board draws the betting app's row, so the betting app's tag and confidence-band code is
- * lifted from it at build time, the way live/build and betting/tools lift from part2: the same
+ * lifted from it at build time, the way betting/tools/build.js lifts from part2: the same
  * code, not a copy that can drift. It is scoped inside the closure because the prop model has
  * its own TEAM_COLORS and tag().
  *
- * Nothing is baked in. The page fetches props/data/payload.json and betting/state.json when it
- * opens, so it is rebuilt when a source changes, never when the data does. Neither site is
- * touched. This page reads what they publish.
+ * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json,
+ * liveparlays/parlays.json, elo/data/*.json and nflbets/sync.json when it opens, so it is
+ * rebuilt when a source changes, never when the data does. Neither site is touched. This page
+ * reads what they publish.
  */
 'use strict';
 const fs = require('fs');
@@ -107,7 +108,7 @@ let LIVE_JS = lpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
    and touch nothing outside it. Handles one level of @media. */
 function scopeCss(css, scope) {
   css = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const DROP = /^(\*|:root|html|body|html,body|header|header::after|main|footer|footer a|button,input,select|select|select:focus,button:focus-visible|\.brand.*|\.btn.*|\.card|\.card h2|\.bar|\.bar \.grow|\.muted|\.tokBox|\.tokRow|\.shareBox)$/;
+  const DROP = /^(\*|:root|html|body|header|header::after|main|footer|footer a|select|\.brand.*|\.btn.*|\.card|\.card h2|\.bar|\.bar \.grow|\.muted)$/;
   const block = str => {
     let out = '', pos = 0;
     for (;;) {
@@ -132,10 +133,7 @@ for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#
   if (!LIVE_SCOPED.includes(need)) throw new Error('the scoped live styles lost ' + need);
 if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
 const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
-/* the shared block is the prop model's own part2, which this page already carries */
-lsub('/*SHARED*/', '', 'shared slot');
 lsub("const DATA='parlays.json';", "const DATA='../liveparlays/parlays.json';", 'file path');
-lsub("document.documentElement.dataset.build=PAGE_BUILD;", '', 'build stamp');
 /* the section redraws whenever the prop model redraws its builder, and once the model is up */
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
@@ -149,7 +147,7 @@ const LIVE_SECTION = `<div class="card" id="lpCard">
   </div>`;
 const LIVE_SCRIPT = `<script>
 /* the Live Parlays section: liveparlays/build/page.html, in a closure. Names it shares with
-   the prop model -- esc, num, fmtML, the team names -- are its own copies inside it. */
+   the prop model -- esc, num, fmtML -- are its own copies inside it. */
 (function(){
 ${LIVE_JS}
 })();
@@ -188,16 +186,9 @@ html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 
 html = sub1(html, '<span class="sub grow" id="saveState" style="margin-left:auto"></span>',
   '<span class="sub grow" id="saveState" style="margin-left:auto"></span>\n    <span class="sub" id="syncStamp" title="Whether this page shares its parlays with your other devices"></span>', 'the save stamp');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>#syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}</style>\n</head>', 'the sync stamp style');
-/* the Props tab's timed score refresh goes: the button stays, the "scores off" stamp and
-   the every-30s picker do not. Their code is null-safe on both. */
-html = sub1(html, '<span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>\n',
-  '<span class="livestamp" id="slateStamp"></span>\n', 'the scores stamp');
-html = sub1(html, `<label class="muted">Scores <select id="slateEvery">
-        <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
-      </select></label>\n`, '', 'the scores picker');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
-   names. One tab at a time: a section with no button here is in the page but not yet shown. */
+   names. One tab at a time: a section with no button here stays in the page, unshown. */
 /* A betting tab is the betting app itself, one tab of it, in a frame: the app as
    betting/tools/build.js builds it is carried in this page as a string and set into the
    frame as its srcdoc when the tab is first opened, with the tab's name in front of it. No
@@ -232,7 +223,7 @@ const FRAMES = TABS.filter(t => t[2]).map(([t, label, embed]) =>
 const navFrom = html.indexOf('<nav role="tablist" id="tabs">'), navTo = html.indexOf('</nav>', navFrom);
 if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/build expects it in part1.html');
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
-for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay|track)$/) && html.includes(`id="tab-${t}"`))
+for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 /* the Live Parlays section, under the builder, where the Saved parlays card was */
@@ -241,15 +232,10 @@ if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by 
 /* the sync layer runs first: the prop model reads its state through it at boot */
 html = html.slice(0, -'<script>\n'.length) + '<script>\n' + SYNC_JS + '\n</script>\n<script>\n';
 
-/* the app, as assemble.py assembles it, one directory further from its payload. One thing
-   is left out of a game on this page: the Game bets card, since the same bets open under
-   every game on the Pick'ems tab, from the same function. A game here is its players. */
-const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n'
-  + sub1(sub1(part3, '  html+=gameBetsCard(g,locked);\n', '', 'the Game bets card in the game view'),
-      /      <ul style="margin:0">\n        <li>You can pick <b>one line per stat per player<\/b>[\s\S]*?<\/ul>/, '', 'the how-to list under Nothing picked yet');
+/* the app, as assemble.py assembles it, one directory further from its payload */
+const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n' + part3;
 /* the public prop page's header note: when the data was last built, not "Autosaved" */
 const NOTE = `<script>
-window.VIEWER=true;
 /* which build of this page you are looking at. Without it there is no way to tell a page
    the browser cached last week from the one the job published this morning. */
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');

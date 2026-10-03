@@ -1,17 +1,18 @@
 # nfl-hub
 
-One repo, one scheduled job, three sites. The job downloads the week's nflverse
-files once, runs each app on them without anyone clicking anything, and commits
-the results. GitHub Pages serves the repo root:
+One repo, six scheduled jobs (one per model or site, in `.github/workflows/`) and
+four sites with pages. Each job downloads its sources, runs its model without
+anyone clicking anything, and commits the data; the pages fetch it on load.
+GitHub Pages serves the repo root:
 
 | Path | What | Source |
 |---|---|---|
-| `nflbets/` | X NFL Bets and Stats, the one site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app and the Live Parlays section |
+| `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app, the Live Parlays section and the Player Elo tab; rebuilt by hand when a source changes, never by a job |
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
-| `elo/` | Player Elo: every player rated by position since 2012, a third game model built on those ratings and a matchup formula for each player's next game, shown on the Player Elo tab | `elo/build.py`; `.github/workflows/elo.yml` re-rates twice a week |
-| `live/` | Live Parlays, one small page that watches the parlays saved in the two models | built from `live/build/page.html` plus logic lifted out of the prop model |
+| `elo/` | Player Elo: every player rated by position since 2012, and the game model and matchup formula built on those ratings | `elo/build.py`; `.github/workflows/elo.yml` re-rates twice a week |
+| `liveparlays/` | the Live Parlays section's source and the parlays every device sees; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` (hand-edited) |
 | `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
 | `nhl/` | X NHL Bets: a rating model on every NHL game, moneylines, puck lines and totals, the standings and the playoff picture | `nhl/index.html`, `nhl/tools/`; `.github/workflows/nhl.yml` runs three times a day |
 
@@ -27,17 +28,15 @@ the results. GitHub Pages serves the repo root:
   exported. A mismatch aborts the publish.
 - `betting/tools/build.js` builds the app from the one app file for
   `nflbets/build/build.js`, which carries it inside the Bets and Stats page and
-  shows its Records, Power Ratings and Bet Log tabs in frames. It loads the
-  published season from `betting/state.json`. Picks, bankroll and bets are kept
-  in the browser under one key. Uploads grade for that session only; the job's
-  published state wins on the next load. To carry picks over from a local copy
-  of the app, use Import backup on the Bet Log tab. (The viewer trim below is
-  kept for a revert:) it removes the Downloads, Upload,
-  Record & Bets and Backup tabs, loads `state.json`, and keeps the visitor's own
-  picks, bankroll, bets and any odds they load in their browser only. Picks are
-  graded against the published results. Moneylines from nflverse are published
-  with the state so the Bank Roll tab works without a fetch. Nothing a visitor does can change what anyone else sees; only a
-  commit to this repo changes the site.
+  shows its Records (as Pick'em Record), Power Ratings and Bet Log tabs in
+  frames, the app's own header and tab bar hidden. It loads the published
+  season from `betting/state.json` and keeps the visitor's own picks, bankroll,
+  bets and any odds they load in their browser only, under one key; the job's
+  published state wins on every load. Picks are graded against the published
+  results. nflverse's moneylines, spreads and totals are published with the
+  state (`odds`): they are the Pick'ems board's Vegas baseline. Nothing a
+  visitor does in the app changes what anyone else sees; only a commit to this
+  repo changes it.
 - `betting/events.json`: manual team news the job cannot infer (resting
   starters). One entry per line, applied once by id:
   `{"id":"2026-wk18-KC-rest","type":"rest","team":"KC","week":18,"note":"clinched"}`.
@@ -49,6 +48,7 @@ Local run:
 ```
 cd betting/tools && npm install
 node betting/tools/update.js            # download + grade + write state.json
+python3 betting/joker/joker.py          # the Joker's picks into state.json and joker.json
 node betting/tools/build.js             # checks the app builds; writes nothing
 node betting/tools/smoke.js             # the built app, plain and embedded
 node nflbets/build/build.js             # the page that carries the app
@@ -60,83 +60,63 @@ node nflbets/build/build.js             # the page that carries the app
 lockfile so the job can install it. `props/build/weekly.py` downloads the five
 nflverse files, pulls prop prices from the-odds-api (needs the `ODDS_API_KEY`
 repository secret; about 7 credits a game, 500 free a month), rebuilds the
-payload, bakes stats, injuries and prices into the page, assembles it and runs
+payload, bakes stats, injuries and prices into it, assembles the page and runs
 the 26,000-check audit against the assembled page, which is gitignored: the prop
 model has no pages of its own, its parts are the source of `nflbets/index.html`.
 `raw/feat.pkl` (43MB, the fitted feature table for 2019-2025) is committed so
 the job does not rebuild it. Visitors' parlays and bets stay in their browser.
 
-Its workflow, `.github/workflows/props.yml`, runs Thursday and Saturday at
-10am Eastern only, because those two runs are the ones that spend credits. The
-betting job never touches the key.
+Its workflow, `.github/workflows/props.yml`, runs twelve times a week: four
+price pulls (Mon/Wed/Thu/Sat, the only runs that spend credits) and eight
+post-game and stats runs with `--no-odds`. It runs `weekly.py --no-commit` and
+commits `props/data` itself. The betting job never touches the key.
 
 ## Season tracker
 
 `news/` is the tracker as it was. `tools/run-auto.js` works out the current
 week from the nflverse schedule and runs `tools/pull-week.js`, which refreshes
 `data/results.js` (scores, records) and `data/stats2026.js` (the stat bars)
-from ESPN and TeamRankings, drafts `data/weekN.js` if it does not exist, and
-writes the reading pack to `tools/out/`. The narrative half of a week is still
-written by a person: the draft is not shown until it is added to
-`data/weeks.js` and `index.html` (see `HANDOFF.md`). Free sources, no credits.
-Workflow `.github/workflows/news.yml`: Friday, Monday and Tuesday, 8am Eastern.
+from ESPN and TeamRankings, rebuilds the context files (`data/ranks2026.js`,
+`players2026.js`, `units2026.js`) with `tools/context.js`, drafts
+`data/weekN.js` if it does not exist, and writes the reading pack to
+`tools/out/`. The narrative half of a week is still written by a person: the
+draft is not shown until it is added to `data/weeks.js` and `index.html` (see
+`HANDOFF.md`). Free sources, no credits. Workflow `.github/workflows/news.yml`:
+Friday, Monday and Tuesday at 8am Eastern, five post-game runs, and once on a
+push to the pull code.
 
 ## Live parlays
 
-`live/` is one page, about 31KB, that shows where the parlays in `live/parlays.json` stand
-while the games are on. It is a reader and nothing else.
+Live Parlays is a section of the Parlay Builders tab on `nflbets/` (`live/` and
+`liveparlays/` redirect there). Its source is `liveparlays/build/page.html`,
+lifted in by `nflbets/build/build.js` with its styles scoped to `#lpCard` and
+its script in a closure. It reads `liveparlays/parlays.json` (parlays every
+device sees, edited by hand as its `how` field says), the two models' saved
+parlays and ESPN's public scoreboard and box scores in the browser, and its
+corrected lines and deletions go through the same sync document as the parlays
+(`nflbets/sync.json`, see `CLAUDE.md`). No odds-API credits are spent and no
+job runs for it.
 
-- It shows **two sources, both picked up on their own**, with nothing to press.
-  `live/parlays.json` beside the page, which every device sees; and whatever the prop model
-  and the betting model have saved **in the browser it is opened in**, read straight out of
-  their own keys (`props_2026_v1`, `x_nfl_viewer_picks_2026`). Each card says which it came
-  from. A parlay in both is shown once, and the browser's own copy wins.
-- **The file is the only part that travels.** Change it and every device shows the change on
-  its next load. It is written to be edited by hand: games listed once, legs pointing at them
-  by index, stats spelled out, and a `how` field at the top saying what a leg needs.
-- **The page never writes anything** -- not to the two models' keys, not anywhere. No token,
-  no sending, no codes.
-- The gap is stated rather than papered over: a parlay saved in the prop or betting model
-  lives in that browser, because that is where those apps keep a visitor's own data, so it
-  shows on that device and not the next one. Getting it to follow you means putting it in the
-  file, and a browser cannot write to GitHub without a credential.
-- **A browser cannot write to GitHub without a credential**, and a static page has nowhere
-  safe to keep one, so the file is edited in the repository rather than from the page. That is
-  the one thing this design gives up, deliberately.
-- It loads no season data: a leg's game id (`2026_02_CAR_ATL`) carries the week and both
-  teams, which is all it needs to find the game.
-- A player leg is drawn the way a book draws it: the target as a heading (`43.5+`, or
-  `under 54.5`), the man and the stat under it, his whole box-score line, and a progress bar
-  with his number in a pill, a tick at the line and the line labelled beneath. The bar runs a
-  quarter past the line, so the tick sits at 80%. Gold while running, green once landed, red
-  once gone. Nothing reads as a blank: before kickoff it is 0-0 and `0 / 43.5`.
-- Parlays sit in the order the day runs: still to finish first, then by when each can settle --
-  its **last** kickoff, so one carrying a four o'clock leg sits below one made only of one
-  o'clock games.
-- Scores come from ESPN's public feeds, fetched by the reader's browser. **No odds-API credits
-  are ever spent here** and no job runs for it. Auto-refresh starts **off**: one fetch on open,
-  then only on `Refresh now` or once an interval is turned on. A finished game's box score is
-  fetched once and kept.
-
-The ESPN parsing is not copied into the page. `live/build/build.js` lifts it out of
-`props/build/part2.js` between two banners and refuses to build if it has moved, so there is
-one source of truth and the prop model's audit keeps testing it.
+The ESPN parsing is not copied into the section: inside the page it uses the
+prop model's own readers from `props/build/part2.js`, so there is one source of
+truth and the prop model's audit keeps testing it.
 
 ```
-node live/build/build.js        # -> live/index.html
-node live/build/smoke.js        # hands the page a file and a stubbed ESPN, checks what renders
+node nflbets/build/build.js         # -> nflbets/index.html
+node nflbets/build/smoke_live.js    # hands the section a file and a stubbed ESPN, checks what renders
 ```
 
 ## The betting job
 
-`.github/workflows/update.yml` runs three windows a week, Friday, Monday and
-Tuesday mornings (Eastern) with an afternoon catch-up each, covering the
-Thursday, Sunday and Monday games, and on demand (with a "rebuild" switch that
-replays the betting season from the preseason board, for the next time a model
-correction ships). It commits only if something changed. nflverse publishes
-the stats files overnight after games. This job downloads free nflverse files
-only; when the prop model and news tracker join, each gets its own workflow
-and schedule so any pull that spends API credits runs only when it should.
+`.github/workflows/update.yml` is the betting job (the file name is a leftover
+from when one job ran every site): hourly at :37, so the Vegas lines and the Joker follow
+nflverse within the hour, plus Friday, Monday and Tuesday mornings (Eastern)
+with an afternoon catch-up each, post-game and injury-report runs, and on
+demand with a "rebuild" switch that replays the betting season from the
+preseason board, for the next time a model correction ships. It runs
+`update.js`, `joker.py` and `smoke.js` (which builds the app), and commits
+`betting/state.json` and `betting/joker.json` only if something changed. Free
+nflverse files only.
 
 ## Shipping a model change to the betting site
 

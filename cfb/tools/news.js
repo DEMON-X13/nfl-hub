@@ -34,7 +34,6 @@ async function inBatches(items, n, fn) { const out = []; for (let i = 0; i < ite
 
 const num = v => { if (v === null || v === undefined) return null; const n = parseFloat(String(v).replace(/,/g, '')); return isFinite(n) ? n : null; };
 const r1 = v => v === null ? null : Math.round(v * 10) / 10;
-const ORD = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : Math.min(n % 10, 4) % 4] || 'th');
 const plural = (n, s, p) => `${n} ${n === 1 ? s : (p || s + 's')}`;
 const fmtHalf = n => (Math.abs(n) % 1 ? n.toFixed(1) : String(Math.round(n)));
 
@@ -244,6 +243,15 @@ function writeBullets(S, g, side, ctx) {
   return out;
 }
 
+/* What the file carries is what the page reads: the tile, the window and the bullets. The rest
+   of ctx (the AP's lead and last-game line, the headlines, leaders, injuries, FPI and ATS) feeds
+   the writers above and stays here. A started game reuses last run's entry, trimmed the same way. */
+const publishSide = t => t && { bullets: t.bullets, stats: t.stats, lastFive: t.lastFive };
+const publish = n => ({ id: n.id, away: n.away, home: n.home, kick: n.kick, tv: n.tv, venue: n.venue, line: n.line,
+  story: n.story ? { headline: n.story.headline, paragraphs: n.story.paragraphs, source: n.story.source } : null,
+  credit: n.credit, note: n.note,
+  teams: n.teams && { home: publishSide(n.teams.home), away: publishSide(n.teams.away) } });
+
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const S = JSON.parse(fs.readFileSync(STATE, 'utf8'));
@@ -264,7 +272,7 @@ async function main() {
   const games = slate.map((g, i) => {
     const sum = sums[i];
     const started = g.state !== 'pre' || (sum && !sum.predictor && !(sum.lastFiveGames || []).length);
-    if (started && prevGame.has(g.id)) return prevGame.get(g.id);
+    if (started && prevGame.has(g.id)) return publish(prevGame.get(g.id));
     const recap = g.state === 'final' && g.hs !== null;
     const side = s => { const id = g[s]; return { stats: seasonStats(sum, S, id).fill(tstats[id] || {}), lastFive: lastFive(sum, id), ats: atsOf(sum, id), fpi: fpiOf(sum, s), leaders: leadersOf(sum, id), injuries: inj[id] || [], headlines: heads[id] || [], streak: streakOf(S, id, S.games) }; };
     const ctx = { home: side('home'), away: side('away') };
@@ -277,9 +285,9 @@ async function main() {
     let note = recap ? writeRecap(S, g, ctx) : writeNote(S, g, ctx);
     if (recap && ctx.story && ctx.story.lead) note += ' ' + ctx.story.lead;
     const credit = ctx.story && ctx.story.lead ? ctx.story.source : ctx.around.length ? 'ESPN' : (ctx.story && ctx.story.lastGame) ? ctx.story.source : null;
-    return { id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story: ctx.story, around: ctx.around, credit,
+    return publish({ id: g.id, away: g.away, home: g.home, kick: g.date, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story: ctx.story, credit,
       note,
-      teams: { home: Object.assign({ bullets: writeBullets(S, g, 'home', ctx) }, ctx.home, { streak: undefined }), away: Object.assign({ bullets: writeBullets(S, g, 'away', ctx) }, ctx.away, { streak: undefined }) } };
+      teams: { home: Object.assign({ bullets: writeBullets(S, g, 'home', ctx) }, ctx.home), away: Object.assign({ bullets: writeBullets(S, g, 'away', ctx) }, ctx.away) } });
   });
   const dates = slate.length ? [slate[0].date, slate[slate.length - 1].date].map(d => new Date(d)) : [];
   const fmt = d => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York' });
