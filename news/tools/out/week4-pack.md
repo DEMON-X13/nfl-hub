@@ -112,6 +112,7 @@ Indianapolis Colts, injuries:
 Indianapolis Colts, ESPN headlines:
 
 Washington Commanders, injuries:
+- Antonio Williams (WR) Active: Williams and Stefon Diggs are both in line for larger roles against the Colts on Sunday in London, with Ben Standig of The Team 980 Washington D.C. reporting that Terry McLaurin (hamstring) is now expected to be ruled out.
 - Stefon Diggs (WR) Active: Ben Standig of The Team 980 Washington D.C. reports that Terry McLaurin (hamstring) is expected to miss Sunday's game against the Colts in London, which would leave Diggs as the top wide receiver for the Commanders.
 - Terry McLaurin (WR) Doubtful, Hamstring: McLaurin (hamstring) is now likely to miss Sunday's game against the Colts in London, Ben Standig of The Team 980 Washington D.C. reports.
 - Jacory Croskey-Merritt (RB) Active: Croskey-Merritt has served as the Commanders' RB1 this season, but his backfield snap count for Week 4 against the Colts figures to be larger due to the absence of Rachaad White (shoulder).
@@ -129,7 +130,6 @@ Washington Commanders, injuries:
 - Sonny Styles (LB) Active: Styles recorded five tackles (four solo) and two passes defensed, including one interception, as well as a forced fumble in the Commanders' 33-31 win over the Seahawks on Sunday.
 - Kain Medrano (LB) Active: Medrano logged five tackles (three solo) and a 50-yard pick-six in the Commanders' 33-31 win over the Seahawks on Sunday.
 - Nick Cross (S) Out, Illness: Cross (illness) won't travel to London with the Commanders and has been ruled out for Sunday's matchup against the Colts.
-- Antonio Williams (WR) Active: Williams caught two passes on four targets for 15 yards during the Commanders' 33-31 win over the Seahawks on Sunday.
 - Sam Cosmi (G) Out, Concussion: Cosmi (concussion) isn't traveling with the Commanders to London and won't play Sunday versus Indianapolis.
 - Kaytron Allen (RB) Active: Allen played 15 snaps exclusively on special teams during the Commanders' 33-31 win over the Seahawks on Sunday.
 - Percy Butler (S) Questionable, Concussion: Butler is recovering from a concussion ahead of the Commanders' matchup in London against the Colts in Week 4, Ben Standig of The Team 980 Washington D.C. reports.
