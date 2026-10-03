@@ -117,12 +117,13 @@ function load(picks) {
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
     /* Vegas's ratings by default: every team, rated from the season's spreads, best first */
-    { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => parseFloat(tr.querySelector('td.num b').textContent.replace('\u2212', '-')));
+    { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => parseFloat(tr.querySelector('td.rt-pts').textContent.replace('\u2212', '-')));
       check(rows.length === 32 && vals.every((v, i) => i === 0 || v <= vals[i - 1]) && /Home field is worth/.test(rt.textContent), 'admin: Power Ratings does not open on Vegas\'s 32 ratings, best first');
-      check(Math.abs(vals.reduce((x, v) => x + v, 0)) < 1, 'admin: the Vegas ratings are not centred on an average team'); }
-    rt.querySelector('[data-rv="model"]').click();
-    check(!rt.querySelector('table.rt-v') && !!rt.querySelector('[data-rv="vegas"]'), 'admin: the switch does not show Model A\'s ratings');
-    check(rt.querySelectorAll('tbody tr').length === 32 && rt.querySelectorAll('tbody .tierbadge').length === 32, 'admin: every Elo should carry its tier shield');
+      check(Math.abs(vals.reduce((x, v) => x + v, 0)) < 1, 'admin: the Vegas ratings are not centred on an average team');
+      /* one table: no switch to Model A, whose Elo, shield, change and EPA stand beside each Vegas rating */
+      check(!rt.querySelector('[data-rv]') && !/Model A/.test(rt.textContent), 'admin: Power Ratings still has the Model A switch');
+      check(rows.every(tr => tr.children.length === 7 && tr.querySelector('.tierbadge') && /^\d{4}$/.test(tr.querySelector('.elocell b').textContent) && tr.querySelector('.movecell .elomv')), 'admin: every Vegas row should carry its Elo, tier shield and Elo change');
+      check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them'); }
     check(!rt.querySelector('.tierlegend') && !/Challenger 1700/.test(rt.textContent), 'admin: the tier key is still on the ratings table'); }
   const dv = dom.window.document;
   check(!!dv.querySelector('#tab-ratings #injCard #injSuggest') && !/Rank tags and the Elo change column/.test(dv.getElementById('ratingsTable').textContent), 'viewer: Power Ratings does not carry the absences table, or still carries the note');
