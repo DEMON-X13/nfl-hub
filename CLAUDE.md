@@ -115,8 +115,8 @@ histogram of the position by shield over the table, and a click on a player open
 matchup this week). The tab's script also puts a second price, "market + form", on every
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
-beside the model's chance and graded against it, week by week, at the top of the Prop
-Record, each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
+beside the model's chance and graded against it, week by week, at the top of the prop
+model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
 shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
 window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
@@ -189,6 +189,8 @@ tab shows the rankings with a five-season line each.
 
 ## Bets and Stats: the loop
 
+The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, Parlay Builders, Power Ratings, Player Elo,
+Pick'em Record, Bet Log; a prop model section with no button there stays in the page, unshown.
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
 front of it as its own `pk-` prefixed section, the Live Parlays section lifted out of
