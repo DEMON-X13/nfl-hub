@@ -214,15 +214,16 @@ for (const gone of ['index.html', 'admin.html']) if (fs.existsSync(path.join(ROO
 /* the app as a script string: JSON is JavaScript, once a closing script tag and a comment
    opener inside it are broken so the HTML parser does not act on them */
 const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
+/* the prop model's Track Record (Prop Record) is off the bar: its section stays in the page,
+   unshown, since the prop model draws into it on every render */
 const TABS = [
   ['pickems', "Pick'ems"],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builders'],
   ['ratings', 'Power Ratings', 'ratings'],
-  ['record', "Pick'em Record", 'record'],
-  ['track', 'Prop Record'],
-  ['bets', 'Bet Log', 'bets'],
   ['elo', 'Player Elo'],
+  ['record', "Pick'em Record", 'record'],
+  ['bets', 'Bet Log', 'bets'],
 ];
 const NAV = `<nav role="tablist" id="tabs">\n` + TABS.map(([t, label], i) =>
   `    <button role="tab" data-tab="${t}"${i === 0 ? ' aria-selected="true"' : ''}>${label}</button>`).join('\n') + '\n  </nav>';

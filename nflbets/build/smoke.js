@@ -133,7 +133,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the tab bar: the two tabs built so far, Pick'ems open, the rest of the prop model in the
      page but not on the bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Power Ratings|Pick'em Record|Prop Record|Bet Log|Player Elo", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Power Ratings|Player Elo|Pick'em Record|Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
@@ -377,15 +377,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(/data-tab="record"/.test(adminHtml), 'the framed app has no Records tab');
   chk(!/betting\/(admin|index)\.html/.test(adminHtml) && !/<\/script>[\s\S]*const BET_APP=/.test(adminHtml), 'the framed app carries a copy of itself or points at a betting page');
 
-  /* ---- Prop Record: the prop model's Track Record, market and line-type filters and all ---- */
-  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'track').click();
-  await wait(60);
-  chk(!d.getElementById('tab-track').hidden && d.getElementById('tab-record').hidden, 'the Prop Record tab did not open');
-  chk(w.location.hash === '#track', 'the Prop Record tab did not become the address');
-  chk(/Track record/.test(txt(d.querySelector('#tab-track h2'))), 'the Track Record card is not there');
-  chk(!!d.getElementById('trackMarket') && !!d.getElementById('trackKind') && d.getElementById('trackMarket').options.length > 1, 'the Track Record filters are missing or empty');
-  chk(txt(d.getElementById('trackBody')).length > 100, 'the track record is empty');
-  chk(!!d.querySelector('#trackBody table') || /Nothing graded yet/.test(txt(d.getElementById('trackBody'))), 'the track record has neither a table nor its empty note');
+  /* ---- Prop Record: off the bar. The prop model's Track Record section stays in the page,
+     unshown, and no address opens it ---- */
+  chk(!d.querySelector('#tabs button[data-tab="track"]') && !!d.getElementById('tab-track') && d.getElementById('tab-track').hidden, 'the Prop Record is still on the bar, or its section left the page');
+  { const was = w.location.hash; w.location.hash = '#track'; w.dispatchEvent(new w.HashChangeEvent('hashchange')); await wait(40);
+    chk(d.getElementById('tab-track').hidden, 'an address of #track opened the Prop Record');
+    w.location.hash = was; }
 
   /* ---- Power Ratings: the betting site's Power Ratings tab, framed ---- */
   const ratFrame = d.querySelector('#tab-ratings iframe.pk-frame');
@@ -532,8 +529,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       w.eval('renderGame()'); await wait(60);
       chk(d.querySelectorAll(`button.plrbtn[data-open="${top.id}"] .pe-badge`).length === 1, 'redrawing the game doubled or lost the shield');
       S.ui.game = null; w.eval('renderSlate()'); }
-    /* the Prop Record grades the three chances on every book line, week by week */
-    { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'track').click(); await wait(80);
+    /* the market + form card is still drawn at the top of the Track Record, which is off the bar */
+    { w.eval('renderTrack()'); await wait(80);
       const card = d.querySelector('#trackBody .pe-track');
       chk(!!card && card === d.getElementById('trackBody').firstElementChild, 'the market + form card is not at the top of the Prop Record');
       const trs = card ? [...card.querySelectorAll('tbody tr')] : [];
