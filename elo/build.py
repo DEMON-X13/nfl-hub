@@ -59,12 +59,13 @@ from the latest depth charts and injury report. The same walk-forward is also ru
 actually played, for comparison: that number is flattered by hindsight and is not the
 model's.
 
-THE POWER RATINGS. Each team rated on its own by the same model: its expected lineup for the
-coming week scored against a team of 1500s (the sum over groups of the group's coefficient
+THE POWER RATINGS. Each team rated on its own by the same model, on this season's player
+ratings alone (each player 1500 at the season's start, nothing carried over, as in the
+rankings): its expected lineup for the coming week scored against a team of 1500s (the sum over groups of the group's coefficient
 times its strength less 1500, in hundreds), a log-odds that is put on the Elo scale (400/ln 10
 points to one unit) and centred so the league averages 1500. The order is the game model's, and
 the betting app's tier shields read on it as they do on a player. `teams` in model.json carries
-it with the rating going into the team's last game (`before`), the chance against an average
+it with the same lineup's rating going into the team's last game (`before`), the chance against an average
 team on a neutral field (`p_avg`) and the group strengths; the Bets and Stats page's Power
 Ratings tab is drawn from it.
 
@@ -702,22 +703,39 @@ def main():
     # A team's rating is what the game model makes of its lineup against a team of 1500s,
     # sum of coef[g] * (strength[g] - 1500) / 100, a log-odds; put on the Elo scale
     # (400 / ln 10 Elo points to one unit of log-odds) and centred so the league averages 1500,
-    # the order is the model's and the tier shields read the same as a player's. Now is the
-    # lineup expected for the coming week (a team on its bye or already played this week: who
-    # took the field last game, minus anyone off the active list); before is the lineup it took into its last game, on
-    # the ratings it had then, so the change is that game and the lineup moving since.
+    # so the tier shields read the same as a player's. The players are rated on this season
+    # alone (RS, every player 1500 at the start of the season, as the rankings are), not on the
+    # career rating the game model's calls use, so the table moves on this season's games and
+    # nothing carries over. The lineup is the one expected for the coming week (a team on its
+    # bye or already played this week: who took the field last game, minus anyone off the
+    # active list); before is the same lineup on the season ratings it had going into the
+    # team's last game, so the change is what that game did to the players who will start.
     w_logit = lambda st: sum(coef[g] * (st[g] - 1500) / 100 for g in GROUPS)
-    now_st = {}
-    for c in calls:
-        now_st[c['home']] = c['home_strength']
-        now_st[c['away']] = c['away_strength']
+    def rs_at(pid, before_ord=None):
+        if before_ord is None:
+            return RS.get(pid, 1500.0)
+        prior = [v for o, v in HS.get(pid, []) if o < before_ord]
+        return prior[-1] if prior else 1500.0
+    def season_strength(parts, before_ord=None):
+        out = {}
+        for g in GROUPS:
+            rs = sorted((rs_at(p, before_ord) for p, gg in parts if gg == g), reverse=True)
+            wts = DEPTH[g]
+            rs = (rs + [1500.0] * len(wts))[:len(wts)]
+            out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
+        return out
+    lineup = {c['team']: c['parts'] for c in coming}
     not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
     for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
-        if t not in now_st and played.get((last, t)):
-            now_st[t] = strength([(pid, g) for pid, g in played[(last, t)] if pid not in not_active])
-    before_st = {}
-    for r in sorted((r for r in game_feat if r['season'] == last and r['result'] is not None), key=lambda r: r['ord']):
-        before_st[r['home']], before_st[r['away']] = r['sh'], r['sa']
+        if t not in lineup and played.get((last, t)):
+            lineup[t] = [(pid, g) for pid, g in played[(last, t)] if pid not in not_active]
+    last_game = {}
+    for r in game_feat:
+        if r['season'] == last and r['result'] is not None:
+            for t in (r['home'], r['away']):
+                last_game[t] = max(last_game.get(t, 0), r['ord'])
+    now_st = {t: season_strength(parts) for t, parts in lineup.items()}
+    before_st = {t: season_strength(lineup[t], last_game[t]) for t in lineup if t in last_game}
     def to_elo(st):
         lg = {t: w_logit(v) for t, v in st.items()}
         mean = sum(lg.values()) / len(lg) if lg else 0
