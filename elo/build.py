@@ -21,7 +21,18 @@ opponent is a fixed 1500, so his rating is his own consistency.
     expected  E = 1 / (1 + 10^((U - R) / 400))          R player, U opposing unit
     result    S = 1 / (1 + e^(-1.5 z))                    z clipped to +-3
     update    R += K * w * (S - E)                        K = 56 for the first 8 rated games, 32 after
-              U -= 20 * mean over the unit's opponents that game of w * (S - E)
+              U -= 120 * mean over the unit's opponents that game of w * (S - E)
+
+The opponent is what makes a result mean something: E is the result a player is expected to
+get against that unit, so a big game against the league's worst pass defence is barely above
+what was expected and moves him little, and a quiet game against the best one can still gain.
+That only works if the units are rated as far apart as they really are. A unit's step is the
+mean over the several players it faced, so it is a quiet signal, and at a K of 20 the units
+never got near their level before the offseason pulled them back: the best and worst pass
+defences stood about 40 points apart, and opponents hardly counted. At 120 they spread about
+three times as wide (a standard deviation of 31 for pass defences, 43 for run defences), and
+the record is no worse for it: walk-forward 2013-2025 62.8% and log loss 0.6397 at 20, 63.1%
+and 0.6394 at 120, the matchups' errors unchanged.
 
 w is the game's weight by involvement, so a backup with two carries barely moves and a
 starter moves fully: volume over a per-position norm, capped at 1. A game a regular left
@@ -62,9 +73,9 @@ model's.
 THE POWER RATINGS. Each team rated on its own by the same model, on this season's player
 ratings alone (each player 1500 at the season's start, nothing carried over, as in the
 rankings): its expected lineup for the coming week scored against a team of 1500s (the sum over groups of the group's coefficient
-times its strength less 1500, in hundreds), a log-odds that is put on the Elo scale (400/ln 10
-points to one unit) and centred so the league averages 1500. The order is the game model's, and
-the betting app's tier shields read on it as they do on a player. `teams` in model.json carries
+times its strength less 1500, in hundreds), a log-odds, shown on the ladder's bell curve across the
+32 teams (1500 plus 100 points a standard deviation), so an average team sits between Silver
+and Gold and one or two stand in the top tiers. The order is the game model's. `teams` in model.json carries
 it with the same lineup's rating going into the team's last game (`before`), the chance against an average
 team on a neutral field (`p_avg`) and the group strengths; the Bets and Stats page's Power
 Ratings tab is drawn from it.
@@ -95,13 +106,29 @@ depth charts and the injury report, with the formula fitted on every completed s
 
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
-formula against the same units; the table ranks that one, and a player needs enough rated games
+formula against the same units but with placement games, as Glicko and the ranked ladders of
+games do it: a new rating is uncertain, so its K starts at 160 and shrinks with every game
+(160, 109, 78, 60, 49, 42 ... toward 32), and a player's first few games carry him most of
+the way to his level, after which he moves only as far as his play keeps proving. Everyone
+starts at 1500 with that uncertainty rather than at the bottom: a start at the bottom would
+rank players by how many games they have had, not how well they played. The table ranks that one, and a player needs enough rated games
 this season to be ranked -- games in a real role (at least half his position's normal
 workload) in at least half the weeks played so far, so the table is not filled with players
 a few snaps have left near 1500. The models -- the game model, the matchups and the page's market
 + form -- read the rating with every season behind it, which is what their records were
 proven on: three games is too little to price from. players.json carries both for every
 player the models may price: `elo` (career), `se` and `rank` (this season, where he has one).
+
+THE LADDER. Player Elo at a position spreads far less than team Elo (a standard deviation of
+20 to 60 points, where the shields' bands are 50 wide), so on the raw number nearly everyone
+was Silver or Gold. What is shown is the season rating put on a bell curve within the
+position: 1500 plus 100 points for every standard deviation above the position's ranked
+players (the career and peak columns the same way, on the position's career pool). The shields then
+split a position the way a ranked ladder splits its players: Challenger (2 sd up) about 2%,
+Master 4%, Diamond 9%, Platinum 15%, Gold and Silver 19% each, Bronze 15%, Iron 16%, the
+average player on the line between Silver and Gold. The order is untouched; only the scale
+moves. The raw ratings stay in `raw` and `career_raw`, and the models never read the shown
+ones. The team power ratings below are put on the same curve across the 32 teams.
 
 Everything it writes is data the X NFL Bets and Stats page reads on load:
     elo/data/players.json   rankings by position, every rated player's rating, season-end top tens
@@ -147,7 +174,12 @@ DEPTH = {'QB': [1.0], 'RB': [1.0, 0.5], 'WR': [1.0, 0.7, 0.45], 'TE': [1.0], 'K'
          'DL': [1.0, 0.8, 0.6, 0.4], 'LB': [1.0, 0.7, 0.4], 'DB': [1.0, 0.8, 0.6, 0.5, 0.4]}
 # a game's weight is involvement over this norm, capped at one
 VOLUME = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
-K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 20.0, 8
+K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 120.0, 8
+# the season rating's placement: K = K_SET + (K_PLACE - K_SET) * K_DECAY^games, so the first
+# games move it hard (160, 109, 78, 60, 49 ...) and it settles toward 32, as Glicko's shrinking
+# uncertainty does; the shown rating puts each position on a bell curve, 100 points a standard
+# deviation from 1500 (see THE RANKINGS)
+K_PLACE, K_DECAY, SHOW_SD = 160.0, 0.6, 100.0
 REPLACEMENT = 1450.0
 LEFT_EARLY = 0.35   # involvement under this share of a regular's recent median: the game is not rated
 CARRY = 0.75      # share of the distance from 1500 a rating keeps across an offseason
@@ -608,7 +640,7 @@ def main():
                     # the same game played again on a rating that knows only this season
                     rs = RS.get(pid, 1500.0)
                     Es = 1 / (1 + 10 ** ((Uv - rs) / 400))
-                    RS[pid] = rs + (K_NEW if NS.get(pid, 0) < SETTLED else K_SET) * r.w * (S - Es)
+                    RS[pid] = rs + (K_SET + (K_PLACE - K_SET) * K_DECAY ** NS.get(pid, 0)) * r.w * (S - Es)
                     NS[pid] = NS.get(pid, 0) + 1
                     NQ[pid] = NQ.get(pid, 0) + (1 if r.w >= 0.5 else 0)
                     HS.setdefault(pid, []).append([int(ordw), round(RS[pid], 1)])
@@ -701,9 +733,8 @@ def main():
                           'home_strength': {g: round(sh[g]) for g in GROUPS}, 'away_strength': {g: round(sa[g]) for g in GROUPS}})
     # ---- each team on its own: the power ratings ----
     # A team's rating is what the game model makes of its lineup against a team of 1500s,
-    # sum of coef[g] * (strength[g] - 1500) / 100, a log-odds; put on the Elo scale
-    # (400 / ln 10 Elo points to one unit of log-odds) and centred so the league averages 1500,
-    # so the tier shields read the same as a player's. The players are rated on this season
+    # sum of coef[g] * (strength[g] - 1500) / 100, a log-odds; shown on the ladder's bell curve
+    # across the 32 teams, 1500 plus SHOW_SD a standard deviation (see THE LADDER). The players are rated on this season
     # alone (RS, every player 1500 at the start of the season, as the rankings are), not on the
     # career rating the game model's calls use, so the table moves on this season's games and
     # nothing carries over. The lineup is the one expected for the coming week (a team on its
@@ -739,7 +770,8 @@ def main():
     def to_elo(st):
         lg = {t: w_logit(v) for t, v in st.items()}
         mean = sum(lg.values()) / len(lg) if lg else 0
-        return {t: 1500 + 400 / np.log(10) * (v - mean) for t, v in lg.items()}, {t: v - mean for t, v in lg.items()}
+        sd = float(np.std(list(lg.values()))) or 1.0
+        return {t: 1500 + SHOW_SD * (v - mean) / sd for t, v in lg.items()}, {t: v - mean for t, v in lg.items()}
     e_now, lg_now = to_elo(now_st)
     e_before, _ = to_elo(before_st)
     team_rows = {t: {'elo': round(e_now[t]), 'before': round(e_before[t]) if t in e_before else None,
@@ -796,7 +828,7 @@ def main():
             if w:
                 if len(pool) < 25:
                     sidelined.append({'id': pid, 'name': info[pid]['name'], 'team': team_now.get(pid, info[pid]['team']),
-                                      'elo': round(RS[pid]), 'would_rank': len(pool) + 1, 'why': w})
+                                      'raw': RS[pid], 'would_rank': len(pool) + 1, 'why': w})
             else:
                 pool.append(pid)
         career = [pid for pid in R if info[pid]['group'] == g and latest_season[pid] >= active_cut and N[pid] >= 3 and not why_out(pid)]
@@ -807,13 +839,24 @@ def main():
         prev = {pid: before_last(pid) for pid in pool}
         prev_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: -prev[p]))}
         rank = {pid: i + 1 for i, pid in enumerate(pool)}
+        # the ladder: each rating shown on the position's bell curve (THE LADDER)
+        def curve(vals):
+            vals = list(vals)
+            m = float(np.mean(vals)) if vals else 1500.0
+            sd = float(np.std(vals)) if len(vals) > 1 else 0.0
+            return lambda v: round(1500 + SHOW_SD * (v - m) / sd) if sd > 0 else round(v)
+        show = curve(RS[p] for p in pool)
+        show_prev = curve(prev[p] for p in pool)
+        show_career = curve(R[p] for p in career if p in R)
         rows = []
         for pid in pool:
             rows.append({'id': pid, 'name': info[pid]['name'], 'pos': info[pid]['pos'], 'team': info[pid]['team'], 'head': info[pid]['head'],
-                         'elo': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid], 'start_elo': round(prev[pid]),
-                         'games': NS[pid], 'career': round(R[pid]), 'peak': round(peak[pid][0]), 'peak_season': peak[pid][1],
+                         'elo': show(RS[pid]), 'raw': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid], 'start_elo': show_prev(prev[pid]),
+                         'games': NS[pid], 'career': show_career(R[pid]), 'career_raw': round(R[pid]), 'peak': show_career(peak[pid][0]), 'peak_season': peak[pid][1],
                          'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])], 'last_season': latest_season[pid]})
-        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'min_games': min_games, 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
+        for x in sidelined:
+            x['elo'] = show(x.pop('raw'))
+        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'curve': [show(RS[p]) for p in pool], 'min_games': min_games, 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
         # the players map: every player the models may price, on his career rating (elo, with s0
         # and h the season so far, so a rating can be read as it stood before any week: the Prop
         # Record grades on those), and his place this season where he has one (se, rank)
@@ -823,7 +866,7 @@ def main():
             h = hist[pid]
             players[pid] = {'name': info[pid]['name'], 'pos': info[pid]['pos'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
                             's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
-                            'se': round(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
+                            'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
     # season-end top tens, every season
     ends = {}
     for s in seasons:

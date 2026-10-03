@@ -23,6 +23,14 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-shield .tierbadge{display:inline-block;width:20px;height:22px;vertical-align:middle;flex:none}
 .pe-mu{display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:13px}
 .pe-at{color:var(--muted);font-family:var(--body);font-weight:500;font-size:11px}
+.pe-curve{margin:0 0 16px;max-width:680px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pe-cv-in{position:relative;min-width:520px;padding-top:34px}
+.pe-curve svg{display:block;width:100%;height:auto;overflow:visible}
+.pe-curve .pe-cv-key{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin:6px 0 0}
+.pe-curve .pe-cv-key i{display:inline-block;width:14px;height:0;border-top:2px dashed var(--ink-2);vertical-align:middle;margin-right:6px}
+.pe-curve .pe-cv-key b{display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(90deg,#A05A2C,#D4A017,#3B82F6,#7C3AED);vertical-align:middle;margin-right:6px}
+.pe-cv-tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;line-height:1.45;padding:7px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-100%);opacity:0;transition:opacity .1s}
+.pe-cv-tip.on{opacity:1}
 .pe-bar{display:inline-block;width:110px;height:8px;border-radius:999px;background:#E9EEF4;overflow:hidden;vertical-align:middle;margin-right:8px}
 .pe-bar i{display:block;height:100%;background:var(--pick)}
 .pe-agree{color:var(--pick)} .pe-split{color:#8A5E05}
@@ -250,6 +258,45 @@ function matchupsCard(){
     <p class="pe-sub">Every season since 2017 projected by the formula fitted on the seasons before it. Error is the typical miss without and with Elo; "biggest nudges right" is how often, on the fifth of games Elo moved most, the result landed on the side it moved.</p>
     <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Games</th><th class="pe-n">Error</th><th class="pe-n">Biggest nudges right</th><th class="pe-n">This season</th><th>Elo picks</th></tr></thead><tbody>${rec}</tbody></table></div>`;
 }
+/* the ladder as a bell curve: how many of the position's ranked players wear each shield,
+   beside what a normal curve on the same scale expects (elo/build.py, THE LADDER) */
+function curveChart(vals,label){
+  if(!vals||vals.length<5||!window.pkEloTier) return '';
+  /* 50-point bins from 1200 to 1800 (six standard deviations), edges clamped in; each bin
+     wears the shield its range earns, and the dashed line is n players on a normal curve */
+  const n=vals.length, LO=1200, HI=1800, BW=50, W=640, H=200, padB=46, padT=22, nb=(HI-LO)/BW, cw=W/nb, gap=2;
+  const bins=Array.from({length:nb},(_,i)=>{ const lo=LO+i*BW, t=window.pkEloTier(lo+1);
+    const cnt=vals.filter(v=>Math.min(HI-1,Math.max(LO,v))>=lo&&Math.min(HI-1,Math.max(LO,v))<lo+BW).length;
+    return {lo,name:t[0],fill:t[2],cnt}; });
+  const dens=e=>n*BW*Math.exp(-(((e-1500)/100)**2)/2)/(100*Math.sqrt(2*Math.PI));
+  const top=Math.max(...bins.map(b=>b.cnt),dens(1500),1), y=v=>padT+(H-padT-padB)*(1-v/top), base=H-padB, X=e=>(e-LO)/(HI-LO)*W;
+  const bars=bins.map((b,i)=>{ const x=i*cw+gap/2, w=cw-gap, yy=y(b.cnt), h=base-yy, r=Math.min(4,h/2);
+    const path=h>0?`M${x} ${base}V${yy+r}Q${x} ${yy} ${x+r} ${yy}H${x+w-r}Q${x+w} ${yy} ${x+w} ${yy+r}V${base}Z`:'';
+    const range=i===0?`under ${b.lo+BW}`:i===nb-1?`${b.lo} and up`:`${b.lo}–${b.lo+BW-1}`;
+    const tip=`<b>${b.name}</b> · ${range}<br>${b.cnt} ${esc(label)} (${Math.round(b.cnt/n*100)}%)`;
+    return `<g class="pe-cv-bin" data-tip="${esc(tip)}" data-x="${(x+w/2)/W}" data-y="${yy/H}">
+      <rect x="${i*cw}" y="0" width="${cw}" height="${base}" fill="transparent"/>
+      ${path?`<path d="${path}" fill="${b.fill}"/>`:''}
+      ${b.cnt?`<text x="${x+w/2}" y="${yy-5}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${b.cnt}</text>`:''}</g>`; }).join('');
+  /* the tiers along the axis, each under its own stretch */
+  const bands=[[LO,1400],[1400,1450],[1450,1500],[1500,1550],[1550,1600],[1600,1650],[1650,1700],[1700,HI]].map(([lo,hi])=>{
+    const t=window.pkEloTier(lo+1), cx=(X(lo)+X(hi))/2;
+    return `<line x1="${X(lo)}" x2="${X(lo)}" y1="${base}" y2="${base+5}" stroke="var(--line-2)"/>
+      <text x="${cx}" y="${base+18}" text-anchor="middle" font-size="9.5" font-weight="600" fill="var(--ink-2)">${t[0]}</text>
+      <text x="${cx}" y="${base+31}" text-anchor="middle" font-size="9.5" fill="var(--muted)">${lo===LO?'<1400':hi===HI?'1700+':lo}</text>`; }).join('');
+  const pts=[]; for(let k=0;k<=96;k++){ const e=LO+k*(HI-LO)/96; pts.push(`${k?'L':'M'}${X(e).toFixed(1)} ${y(dens(e)).toFixed(1)}`); }
+  return `<div class="pe-curve" role="img" aria-label="${esc(label)} by rating: ${bins.filter(b=>b.cnt).map(b=>b.lo+' '+b.cnt).join(', ')}">
+    <div class="pe-cv-in"><svg viewBox="0 0 ${W} ${H}">${bars}<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="var(--line-2)"/>${bands}
+      <path d="${pts.join(' ')}" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/></svg><div class="pe-cv-tip"></div></div>
+    <div class="pe-cv-key"><span><b></b>${n} ranked ${esc(label)}, coloured by shield</span><span><i></i>a bell curve: 1500 the average, 100 points a standard deviation</span></div></div>`;
+}
+function curveHover(root){
+  const box=root.querySelector('.pe-cv-in'); if(!box) return; const tip=box.querySelector('.pe-cv-tip');
+  box.querySelectorAll('.pe-cv-bin').forEach(g=>{
+    g.addEventListener('mouseenter',()=>{ const r=box.querySelector('svg').getBoundingClientRect();
+      const bt=box.getBoundingClientRect(); tip.innerHTML=g.dataset.tip; tip.style.left=(r.left-bt.left+(+g.dataset.x)*r.width)+'px'; tip.style.top=(r.top-bt.top+(+g.dataset.y)*r.height-6)+'px'; tip.classList.add('on'); });
+    g.addEventListener('mouseleave',()=>tip.classList.remove('on')); });
+}
 function rankings(){
   const P=D.players, g=D.pos, grp=P.groups[g];
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${k===g}">${esc(P.groups[k].label)}</button>`).join(''):'';
@@ -257,14 +304,15 @@ function rankings(){
     return `<tr><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
       <td class="pe-name">${esc(r.name)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
       <td class="pe-m0">${tag(r.team,true)}</td>
-      <td class="pe-n"><span class="pe-elo">${r.elo}</span></td>
+      <td class="pe-n"><span class="pe-elo"${r.raw!=null?` title="Raw season rating ${r.raw}"`:''}>${r.elo}</span></td>
       <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
-      <td class="pe-n" title="The rating with every season behind it, which the game model, matchups and market + form use">${r.career!=null?r.career:'–'}</td>
+      <td class="pe-n" title="The rating with every season behind it, which the game model, matchups and market + form use${r.career_raw!=null?' (raw '+r.career_raw+')':''}">${r.career!=null?r.career:'–'}</td>
       <td class="pe-m0">${spark(r.this_season)}</td>
       <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
   return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} through week ${esc(P.through_week)}</span></h2>
-    <p class="pe-sub">This season only: every player started ${esc(P.season)} at 1500 and only this season's games move him. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least ${esc(grp.min_games||1)} game${(grp.min_games||1)===1?'':'s'}, enough to be ranked. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, which the game model, the matchups and market + form use. Tiers are the same shields the teams wear, on the same scale.</p>
+    <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 160 points a game) and each game after moves him less as his level settles. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least ${esc(grp.min_games||1)} game${(grp.min_games||1)===1?'':'s'}, enough to be ranked. The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
     <div class="pe-pos" role="tablist">${btns}</div>
+    ${curveChart(grp.curve,grp.label.toLowerCase())}
     <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Career</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div>
     ${sidelined(grp)}</div>`;
@@ -571,6 +619,7 @@ function draw(){
   body.innerHTML=rankings()+matchupsCard()+weights();
   body.querySelectorAll('.pe-pos button').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
+  curveHover(body);
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
   const prior=ws.filter(s=>+s<r.season);
   if(prior.length){ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
