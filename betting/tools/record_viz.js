@@ -7,7 +7,7 @@
    2. Week by week: models down the side, weeks across, each cell that week's record shaded
       from red (under .500) through clear to green (over), the season in the last column.
 
-   Colours follow the model, as everywhere else on the tab (Model A green, Challenger Model blue,
+   Colours follow the model, as everywhere else on the tab (Alpha Model green, Challenger Model blue,
    Joker red, ELO Model orange, Broly Model purple); every line carries a label at its end beside the legend. Your own picks
    are not drawn: My Picks is retired, and so is the You column. (A dashed series with hollow
    dots is still supported, through dash:true.)
@@ -22,7 +22,7 @@ function recordViz(rows){
   const vOk=r=>vPick(r)===null?null:vPick(r)===winner(r);
   const flag=v=>v===true||v===false?v:null;
   const MODELS=[
-    {id:'main',name:'Model A',color:'#1F6F4A',ok:r=>flag(r.correct)},
+    {id:'main',name:'Alpha Model',color:'#1F6F4A',ok:r=>flag(r.correct)},
     {id:'chal',name:'Challenger Model',color:'#3B6FB6',all:true,ok:r=>r.h?flag(r.h.correct):null},
     {id:'joker',name:'The Joker',color:'#C0392B',all:true,ok:r=>r.joker?flag(r.joker.correct):null},
     {id:'elo',name:'ELO Model',color:'#E8730A',all:true,ok:r=>r.elo?flag(r.elo.correct):null},

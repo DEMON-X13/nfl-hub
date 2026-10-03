@@ -276,8 +276,8 @@ same upload path the owner would use by hand, starting from the last published
 bankroll, the owner's picks). It is idempotent: already-graded games are skipped,
 games whose stats are not out yet wait for the next run.
 
-`state.json` holds `teams`/`teamsH` (the team ratings and EPA of Model A and of the
-Challenger, `MODEL_H`: Power Ratings shows Model A's EPA, but its order and Elo are the
+`state.json` holds `teams`/`teamsH` (the team ratings and EPA of Alpha Model and of the
+Challenger, `MODEL_H`: Power Ratings shows Alpha Model's EPA, but its order and Elo are the
 ELO Model model's, from `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
 moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injuries`
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`,
@@ -287,7 +287,7 @@ moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injur
 **The Joker** (`betting/joker/`) is a separate gradient-boosted-trees model,
 fitted 2019-2025, whose picks `joker.py` writes into `state.json` (`joker`, the pick
 and home win chance for every game, and `processed[gid].joker` once graded) and show
-beside Model A's on the Pick'em Record. Each run also logs, in the job's output, any
+beside Alpha Model's on the Pick'em Record. Each run also logs, in the job's output, any
 input that has drifted from the scale it was fitted on (`drift.py`).
 
 Gate: the app's embedded model numbers must equal `reference_models.json` or the

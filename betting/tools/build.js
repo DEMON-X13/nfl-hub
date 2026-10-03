@@ -412,7 +412,7 @@ patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\
   'the pick grid, this week by default, earlier weeks by the picker');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
 `  const elo=S.elo||{}, brl=S.broly||{};
-  const cols=[['Model A','#1F6F4A'],...(showAll?[['Challenger Model','#3B6FB6'],['The Joker','#C0392B'],['ELO Model','#E8730A'],['Broly Model','#7A3FB0'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+  const cols=[['Alpha Model','#1F6F4A'],...(showAll?[['Challenger Model','#3B6FB6'],['The Joker','#C0392B'],['ELO Model','#E8730A'],['Broly Model','#7A3FB0'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null, bk=(done&&done.broly)||brl[g.game_id]||null;
     const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
@@ -448,10 +448,10 @@ html = require('./tiers.js')(html, 'the built app');
    it says (window.STATE_URL) and opening on the tab it names (window.EMBED_TAB). Both are
    set by a script the page puts in before this one; on its own the app reads state.json
    beside it and opens on its first tab. */
-/* the main model's name as the page shows it: Model A (the Elo game model is written as ELO
+/* the main model's name as the page shows it: Alpha Model (the Elo game model is written as ELO
    based wherever the build draws it). Only the words a reader sees change, at build time;
    the app source is not edited. */
-const RENAME = [[/Main Model/g, 'Model A'], [/\bthe main model\b/g, 'Model A'], [/\bmain model\b/g, 'Model A']];
+const RENAME = [[/Main Model/g, 'Alpha Model'], [/\bthe main model\b/g, 'Alpha Model'], [/\bmain model\b/g, 'Alpha Model']];
 function buildApp() {
   let out = html.replace(anchor, HOOK + LIVE + VIZ + anchor);
   for (const [re, to] of RENAME) out = out.replace(re, to);

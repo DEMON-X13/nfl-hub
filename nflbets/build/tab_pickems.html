@@ -98,7 +98,7 @@
    Vegas is the baseline. The call on each game is the Vegas favourite: the chance each side
    wins from the closing moneylines nflverse publishes (state.json's odds, the book's margin
    taken out), the spread when a game has no moneyline, and the spread and total for the
-   score it expects. The models (Model A, the Challenger Model, the Joker, the ELO Model, the Broly Model) are measured
+   score it expects. The models (Alpha Model, the Challenger Model, the Joker, the ELO Model, the Broly Model) are measured
    against it on the Pick'em Record. Open a game and the prop model's Game Bets sit underneath: the chance each
    side wins and covers, off its own team ratings, against what a book is charging. The prop
    model is the rest of this page, so its prices are its own functions on its own state.
@@ -324,7 +324,7 @@ function records(w){
 }
 
 function foot(){
-  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Model A, the Challenger Model, the Joker, the ELO Model and the Broly Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging.`;
+  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Challenger Model, the Joker, the ELO Model and the Broly Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging.`;
 }
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was */
