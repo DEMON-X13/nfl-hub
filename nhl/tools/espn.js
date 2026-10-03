@@ -86,7 +86,7 @@ function oddsOf(comp) {
   const o = (comp.odds || [])[0];
   if (!o) return null;
   const ml = o.moneyline, ps = o.pointSpread, tot = o.total;
-  const out = { book: o.provider?.name || null, details: o.details || null, total: num(o.overUnder) };
+  const out = { book: o.provider?.name || null, total: num(o.overUnder) };
   out.homeML = ml?.home?.close?.odds !== undefined ? american(ml.home.close.odds) : null;
   out.awayML = ml?.away?.close?.odds !== undefined ? american(ml.away.close.odds) : null;
   if (ps?.home?.close?.line !== undefined) out.homeLine = num(String(ps.home.close.line).replace('+', ''));
@@ -119,7 +119,7 @@ function gameRow(ev) {
     home: H, away: A, hs: state === 'pre' ? null : num(home.score), as: state === 'pre' ? null : num(away.score),
     periods, neutral: !!comp.neutralSite,
     hrec: (home.records || [])[0]?.summary || null, arec: (away.records || [])[0]?.summary || null,
-    note: (comp.notes || [])[0]?.headline || null, odds: oddsOf(comp), venue: comp.venue?.fullName || null,
+    note: (comp.notes || [])[0]?.headline || null, odds: oddsOf(comp),
   };
 }
 
@@ -128,10 +128,10 @@ function teamsOf(json, into = {}) {
   for (const ev of json.events || []) for (const c of (ev.competitions?.[0]?.competitors || [])) {
     const code = codeOf(c.team); if (!code) continue;
     const t = c.team;
-    into[code] = { abbr: t.abbreviation, name: t.displayName, short: t.shortDisplayName || t.name, nick: t.name || null,
-      color: t.color ? '#' + t.color : null, alt: t.alternateColor ? '#' + t.alternateColor : null, logo: t.logo || null };
+    into[code] = { abbr: t.abbreviation, name: t.displayName, short: t.shortDisplayName || t.name,
+      color: t.color ? '#' + t.color : null, logo: t.logo || null };
   }
   return into;
 }
 
-module.exports = { getJSON, scoreboard, gameRow, teamsOf, oddsOf, CLUBS, TEAMS, codeOf, seasonOf, etDate, SB };
+module.exports = { getJSON, scoreboard, gameRow, teamsOf, CLUBS, TEAMS, codeOf, seasonOf, etDate };

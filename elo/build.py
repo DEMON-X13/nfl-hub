@@ -63,12 +63,11 @@ and where a chart says nothing about a group, the players who took the field for
 team's last game. The home-minus-away difference per group, in hundreds of Elo points, feeds
 a logistic regression for the home team winning, fitted on every earlier season and tested
 on the next (walk-forward), and the coefficient of each group is what the data says that
-position is worth in a matchup. Fitting one season at a time shows how that has moved. For
-the season in progress the model is fitted on all completed seasons, graded on the games
-played so far (pre-game ratings and pre-game lineups) and asked about the next week's games
-from the latest depth charts and injury report. The same walk-forward is also run on who
-actually played, for comparison: that number is flattered by hindsight and is not the
-model's.
+position is worth in a matchup. For the season in progress the model is fitted on all
+completed seasons, graded on the games played so far (pre-game ratings and pre-game lineups)
+and asked about the next week's games from the latest depth charts and injury report. The
+same walk-forward is also run on who actually played, for comparison: that number is
+flattered by hindsight and is not the model's.
 
 THE POWER RATINGS. Each team rated on its own by the same model, on this season's player
 ratings alone (each player 1500 at the season's start, nothing carried over, as in the
@@ -77,8 +76,8 @@ times its strength less 1500, in hundreds), a log-odds, shown on the ladder's be
 32 teams (1500 plus 100 points a standard deviation), so an average team sits between Silver
 and Gold and one or two stand in the top tiers. The order is the game model's. `teams` in model.json carries
 it with the same lineup's rating going into the team's last game (`before`), the chance against an average
-team on a neutral field (`p_avg`) and the group strengths; the Bets and Stats page's Power
-Ratings tab is drawn from it.
+team on a neutral field (`p_avg`); the Bets and Stats page's Power Ratings tab is drawn
+from it.
 
 THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
 his next game beyond what his recent games already say? For every QB, RB, WR and TE game
@@ -93,16 +92,16 @@ included), allowed what the defence has given the position per game (half-life s
 league's, p his pre-game Elo and dl, lb, db the pre-game strengths of the opposing defensive
 line, linebackers and secondary from the game model's expected lineups, all in hundreds of
 points from 1500. The same fit without the last four terms is the form-only projection; the
-difference is the Elo nudge. Seasons 2012-2015 only warm the ratings up (from 2020 to 2012 in
-this change, so the fit has a decade behind it); nothing is fitted on them. The record is
-walk-forward: each season from 2017 projected by the fit on the seasons before it, graded on
-the typical miss with and without Elo and on how often the fifth of games Elo moved most
-landed on the side it moved. Through 2025 the Elo part helps passing yards, passing TDs and
-completions, running back carries, and receivers' and tight ends' catches, targets, yards and
-touchdowns (their biggest nudges right 53-63% of the time); it adds nothing to rushing yards,
-quarterback rushing, interceptions or running back receiving, and the page fades those. The
-coming week's projections are for the expected starters, from the latest ratings, the
-depth charts and the injury report, with the formula fitted on every completed season.
+difference is the Elo nudge. Seasons 2012-2015 only warm the ratings up; nothing is fitted on
+them. The record is walk-forward: each season from 2017 projected by the fit on the seasons
+before it, graded on the typical miss with and without Elo and on how often the fifth of
+games Elo moved most landed on the side it moved. Through 2025 the Elo part helps passing
+yards, passing TDs and completions, running back carries, and receivers' and tight ends'
+catches, targets, yards and touchdowns (their biggest nudges right 53-63% of the time); it
+adds nothing to rushing yards, quarterback rushing, interceptions or running back receiving,
+and the page fades those. The coming week's projections are for the expected starters, from
+the latest ratings, the depth charts and the injury report, with the formula fitted on every
+completed season.
 
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
@@ -131,14 +130,17 @@ Platinum 15%, Gold and Silver 19% each, Bronze 15%, Iron 9% and the Wood League 
 moves. The raw ratings stay in `raw` and `career_raw`, and the models never read the shown
 ones. The team power ratings below are put on the same curve across the 32 teams.
 
-Everything it writes is data the X NFL Bets and Stats page reads on load:
-    elo/data/players.json   rankings by position, every rated player's rating, season-end top tens
-    elo/data/model.json     the fitted weights, by season and overall, the walk-forward record,
-                            this season's graded picks and the coming week's calls
+Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
+(the fitted weights and the who-played walk-forward are kept for the record and the smoke
+test; no page draws them):
+    elo/data/players.json   rankings by position, every rated player's rating
+    elo/data/model.json     the fitted weights, the walk-forward record (pre-game lineups, and
+                            who played), this season's graded picks, the coming week's calls
+                            and the teams' power ratings
     elo/data/matchups.json  the matchup formula per position and stat, its walk-forward record and
                             the coming week's projections for every expected starter
 """
-import argparse, datetime, json, math, os, sys, urllib.request
+import argparse, datetime, json, math, os, urllib.request
 import numpy as np
 import pandas as pd
 
@@ -243,7 +245,6 @@ def load(offline):
     inj = injuries.get(last)
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
-    # the week's order within a season: regular weeks, then the playoffs in order
     stats = stats[stats.game_id.notna()]
     return games, stats, roster, inj, charts, injuries
 
@@ -254,7 +255,7 @@ def build_lineups(charts, injuries):
     as {(season, week): set(pid)}"""
     weekly, daily, outs = {}, {}, {}
     for y, d in charts.items():
-        if 'depth_team' in d.columns:            # 2020-2024: one chart per team per week
+        if 'depth_team' in d.columns:            # 2012-2024: one chart per team per week
             d = d[d.gsis_id.notna() & d.week.notna()]
             d = d.assign(group=d.position.map(SLOT))
             d = d[d.group.notna() & (d.formation != 'Special Teams') | (d.group == 'K')]
@@ -467,8 +468,7 @@ def matchups(log, game_feat, coming, last):
             w1 = np.linalg.lstsq(X1[done], y[done], rcond=None)[0]
             w0 = np.linalg.lstsq(X0[done], y[done], rcond=None)[0]
             sd = float(np.sqrt(np.mean((y[done] - X1[done] @ w1) ** 2)))
-            out['fit'][f'{g}|{st}'] = {'coef': [round(float(v), 5) for v in w1], 'coef_form': [round(float(v), 5) for v in w0],
-                                       'sd': round(sd, 3), 'mean': round(mean, 3)}
+            out['fit'][f'{g}|{st}'] = {'coef': [round(float(v), 5) for v in w1], 'sd': round(sd, 3)}
             # the coming week's regulars: the expected lineup, each against the defenders he will face
             for c in coming:
                 for pid, gg in c['parts']:
@@ -609,8 +609,7 @@ def main():
                 if pid not in R:
                     R[pid], N[pid] = 1500.0, 0
                     season_start[(season, pid)] = 1500.0
-                info[pid] = {'name': r.player_display_name, 'pos': r.position, 'group': g, 'team': r.team,
-                             'head': r.headshot_url if isinstance(r.headshot_url, str) else None}
+                info[pid] = {'name': r.player_display_name, 'pos': r.position, 'group': g, 'team': r.team}
                 # a regular who left early: his involvement collapsed against his own recent
                 # norm, so the game says nothing about how good he is and is not rated
                 rv = recent.setdefault(pid, [])
@@ -675,19 +674,10 @@ def main():
             y = Y(test)
             acc = float(((p > 0.5) == (y > 0.5)).mean())
             ll = float(-np.mean(y * np.log(np.clip(p, 1e-9, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-9, 1))))
-            home = float(y.mean())
-            walk[int(s)] = {'games': len(test), 'accuracy': round(acc, 4), 'logloss': round(ll, 4), 'home_wins': round(home, 4),
-                            'coef': {'home': round(float(w[0]), 4), **{g: round(float(w[i + 1]), 4) for i, g in enumerate(GROUPS)}}}
+            walk[int(s)] = {'games': len(test), 'accuracy': round(acc, 4), 'logloss': round(ll, 4)}
         return walk
     walk = walk_forward('x')
     walk_played = walk_forward('x_played')
-    by_season = {}
-    for s in seasons:
-        rows = [r for r in feats if r['season'] == s]
-        if len(rows) < 100:
-            continue
-        w = logistic_fit(X(rows), Y(rows), l2=2.0)
-        by_season[int(s)] = {'games': len(rows), 'home': round(float(w[0]), 4), **{g: round(float(w[i + 1]), 4) for i, g in enumerate(GROUPS)}}
     done = [r for r in feats if r['season'] < last]
     w_all = logistic_fit(X(done), Y(done))
     coef = {'home': round(float(w_all[0]), 4), **{g: round(float(w_all[i + 1]), 4) for i, g in enumerate(GROUPS)}}
@@ -698,10 +688,8 @@ def main():
         if r['result'] is None:
             continue
         p = float(predict(w_all, X([r]))[0])
-        graded.append({'game_id': r['game_id'], 'week': r['week'], 'away': r['away'], 'home': r['home'], 'p_home': round(p, 4),
-                       'pick': r['home'] if p >= 0.5 else r['away'], 'result': r['result'],
-                       'correct': (p >= 0.5) == (r['result'] > 0) if r['result'] != 0 else None,
-                       'edges': {g: round(r['x'][g] * 100, 1) for g in GROUPS}})
+        graded.append({'game_id': r['game_id'], 'p_home': round(p, 4), 'pick': r['home'] if p >= 0.5 else r['away'],
+                       'correct': (p >= 0.5) == (r['result'] > 0) if r['result'] != 0 else None})
     # the coming week: each team as its latest depth chart and the week's injury report have it,
     # and as it last took the field where they are silent
     played_weeks = games[(games.season == last) & games.home_score.notna()]
@@ -710,14 +698,15 @@ def main():
     if len(upcoming):
         next_ord = int(upcoming.ord.min())
     calls = []
+    shown = []      # the console's line per call: the teams and the quarterbacks expected to start
     coming = []
     if next_ord is not None:
         for row in upcoming[upcoming.ord == next_ord].itertuples(index=False):
             # this week's lineups also drop anyone the latest roster carries off the active
             # list (injured reserve and the rest), which a depth chart can lag behind
             not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
-            eh, ch = expected(last, row.week, row.home_team, row.gameday, played.get((last, row.home_team)), not_active)
-            ea, ca = expected(last, row.week, row.away_team, row.gameday, played.get((last, row.away_team)), not_active)
+            eh, _ = expected(last, row.week, row.home_team, row.gameday, played.get((last, row.home_team)), not_active)
+            ea, _ = expected(last, row.week, row.away_team, row.gameday, played.get((last, row.away_team)), not_active)
             if not eh or not ea:
                 continue
             sh, sa = strength(eh), strength(ea)
@@ -727,11 +716,9 @@ def main():
             x = {g: (sh[g] - sa[g]) / 100 for g in GROUPS}
             p = float(predict(w_all, np.array([[x[g] for g in GROUPS]]))[0])
             qb = lambda parts: next((info[pid]['name'] for pid, g in parts if g == 'QB' and pid in info), None)
-            calls.append({'game_id': row.game_id, 'week': int(row.week), 'gameday': row.gameday, 'away': row.away_team, 'home': row.home_team,
-                          'p_home': round(p, 4), 'pick': row.home_team if p >= 0.5 else row.away_team,
-                          'edges': {g: round(x[g] * 100, 1) for g in GROUPS}, 'charted': bool(ch and ca),
-                          'home_qb': qb(eh), 'away_qb': qb(ea),
-                          'home_strength': {g: round(sh[g]) for g in GROUPS}, 'away_strength': {g: round(sa[g]) for g in GROUPS}})
+            pick = row.home_team if p >= 0.5 else row.away_team
+            calls.append({'game_id': row.game_id, 'p_home': round(p, 4), 'pick': pick})
+            shown.append(f"{row.away_team}@{row.home_team} {pick} {max(p, 1 - p):.0%} ({qb(ea)} v {qb(eh)})")
     # ---- each team on its own: the power ratings ----
     # A team's rating is what the game model makes of its lineup against a team of 1500s,
     # sum of coef[g] * (strength[g] - 1500) / 100, a log-odds; shown on the ladder's bell curve
@@ -776,20 +763,15 @@ def main():
     e_now, lg_now = to_elo(now_st)
     e_before, _ = to_elo(before_st)
     team_rows = {t: {'elo': round(e_now[t]), 'before': round(e_before[t]) if t in e_before else None,
-                     'p_avg': round(float(1 / (1 + np.exp(-lg_now[t]))), 4),
-                     'groups': {g: round(now_st[t][g]) for g in GROUPS}} for t in e_now}
+                     'p_avg': round(float(1 / (1 + np.exp(-lg_now[t]))), 4)} for t in e_now}
     n_ok = sum(1 for g in graded if g['correct'] is True)
     n_gr = sum(1 for g in graded if g['correct'] is not None)
     model = {
         'built_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='minutes'),
-        'season': last, 'groups': GROUPS, 'labels': LABEL, 'depth': DEPTH,
-        'coef': coef, 'trained_on': {'seasons': [int(s) for s in seasons if s < last], 'games': len(done)},
-        'by_season': by_season, 'walk_forward': walk, 'walk_forward_who_played': walk_played,
-        'record': {'season': last, 'graded': n_gr, 'correct': n_ok, 'accuracy': round(n_ok / n_gr, 4) if n_gr else None},
+        'season': last, 'groups': GROUPS, 'coef': coef,
+        'walk_forward': walk, 'walk_forward_who_played': walk_played, 'record': {'season': last},
         'graded': graded, 'next': {'week': int(upcoming[upcoming.ord == next_ord].week.min()) if next_ord is not None else None, 'games': calls},
         'teams': team_rows,
-        'units': {f'{t}|{f}': round(v) for (t, f), v in sorted(U.items())},
-        'how': 'see elo/build.py',
     }
 
     # ---- the rankings ----
@@ -847,17 +829,16 @@ def main():
             sd = float(np.std(vals)) if len(vals) > 1 else 0.0
             return lambda v: round(1500 + SHOW_SD * (v - m) / sd) if sd > 0 else round(v)
         show = curve(RS[p] for p in pool)
-        show_prev = curve(prev[p] for p in pool)
         show_career = curve(R[p] for p in career if p in R)
         rows = []
         for pid in pool:
-            rows.append({'id': pid, 'name': info[pid]['name'], 'pos': info[pid]['pos'], 'team': info[pid]['team'], 'head': info[pid]['head'],
-                         'elo': show(RS[pid]), 'raw': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid], 'start_elo': show_prev(prev[pid]),
+            rows.append({'id': pid, 'name': info[pid]['name'], 'pos': info[pid]['pos'], 'team': info[pid]['team'],
+                         'elo': show(RS[pid]), 'raw': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid],
                          'games': NS[pid], 'career': show_career(R[pid]), 'career_raw': round(R[pid]), 'peak': show_career(peak[pid][0]), 'peak_season': peak[pid][1],
-                         'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])], 'last_season': latest_season[pid]})
+                         'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])]})
         for x in sidelined:
             x['elo'] = show(x.pop('raw'))
-        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'curve': [show(RS[p]) for p in pool], 'min_games': min_games, 'top': rows[:25], 'sidelined': sidelined, 'facet': FACET[g], 'volume': VOLUME[g]}
+        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'curve': [show(RS[p]) for p in pool], 'min_games': min_games, 'top': rows[:25], 'sidelined': sidelined}
         # the players map: every player the models may price, on his career rating (elo, with s0
         # and h the season so far, so a rating can be read as it stood before any week: the Prop
         # Record grades on those), and his place this season where he has one (se, rank)
@@ -865,33 +846,20 @@ def main():
             if pid not in R:
                 continue
             h = hist[pid]
-            players[pid] = {'name': info[pid]['name'], 'pos': info[pid]['pos'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
+            players[pid] = {'name': info[pid]['name'], 'group': g, 'elo': round(R[pid]),
                             's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
                             'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
-    # season-end top tens, every season
-    ends = {}
-    for s in seasons:
-        ends[int(s)] = {}
-        for g in GROUPS:
-            end = []
-            for pid, h in hist.items():
-                if info[pid]['group'] == g and int(s) in h and len(h[int(s)]) >= 4:
-                    end.append((h[int(s)][-1][1], pid))
-            end.sort(reverse=True)
-            ends[int(s)][g] = [{'id': pid, 'name': info[pid]['name'], 'team': info[pid]['team'], 'elo': round(e)} for e, pid in end[:10]]
     last_week = int(played_weeks.week.max()) if len(played_weeks) else 0
     out = {
-        'built_at': model['built_at'], 'season': last, 'through_week': last_week, 'seasons': [int(s) for s in seasons],
-        'groups': groups_out, 'players': players, 'season_end_top10': ends,
-        'norm': {f'{s}|{g}': [round(m, 3), round(sd, 3)] for (s, g), (m, sd) in norm.items()},
-        'how': 'see elo/build.py',
+        'built_at': model['built_at'], 'season': last, 'through_week': last_week,
+        'groups': groups_out, 'players': players,
     }
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, 'players.json'), 'w') as f:
         json.dump(out, f, separators=(',', ':'))
     mu = matchups(mu_log, game_feat, coming, last)
     if mu:
-        mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'], 'defenders': MU_DEF,
+        mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'],
                    'columns': ['1', 'home x form', 'form', 'form x allowed', 'form x player Elo'] + [f'form x opposing {u} Elo' for u in MU_DEF]})
         with open(os.path.join(OUT, 'matchups.json'), 'w') as f:
             json.dump(mu, f, separators=(',', ':'))
@@ -906,8 +874,8 @@ def main():
         print(f'  {LABEL[g]}: ' + ', '.join(f"{r['name']} {r['elo']}" for r in groups_out[g]['top'][:5]))
     print('  walk-forward, pre-game lineups: ' + ', '.join(f"{s}: {w['accuracy']:.3f} ({w['games']})" for s, w in walk.items()))
     print('  walk-forward, who played (hindsight): ' + ', '.join(f"{s}: {w['accuracy']:.3f}" for s, w in walk_played.items()))
-    if calls:
-        print('  ' + '; '.join(f"{c['away']}@{c['home']} {c['pick']} {max(c['p_home'], 1 - c['p_home']):.0%} ({c['away_qb']} v {c['home_qb']})" for c in calls[:6]))
+    if shown:
+        print('  ' + '; '.join(shown[:6]))
     print(f"  weights: {coef}")
     if n_gr:
         print(f"  {last}: {n_ok}/{n_gr} graded; next week {model['next']['week']}: {len(calls)} calls")

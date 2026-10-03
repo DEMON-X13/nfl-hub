@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v74 \u00b7 2026-10-01';
+const APP_BUILD='app v75 \u00b7 2026-10-03';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -70,9 +70,9 @@ const ewm=acc=>acc[1]>0?acc[0]/acc[1]:0;
 
 /* ---------- fresh state built from the embedded 2025 baseline ---------- */
 function freshState(){
-  const st={season:SEASON,build:MODEL_BUILD,dataBuild:DATA_BUILD,dataStamp:DATA_STAMP,week:1,players:{},teams:{},defs:{},defg:{},
+  const st={build:MODEL_BUILD,dataBuild:DATA_BUILD,dataStamp:DATA_STAMP,players:{},teams:{},defs:{},defg:{},
     sched:JSON.parse(JSON.stringify(PAY.sched)),processed:{},processedGames:{},
-    accuracy:{},inactive:{},depth:{},odds:{},parlay:{},saved:[],actuals:{},projections:{},headlines:{},stake:20,bookPrice:null,margin:'typical',
+    inactive:{},depth:{},odds:{},parlay:{},saved:[],actuals:{},projections:{},headlines:{},stake:20,bookPrice:null,margin:'typical',
     ui:{game:null,open:{},showAll:false}};
   for(const p of PAY.players){
     const o={id:p.id,n:p.n,pos:p.p,grp:p.g,team:p.t,gp:0,base_gp:p.gp,e5:{},e3:{},car:{},py:{}};
@@ -150,7 +150,7 @@ function gameCtx(g,team){
   const teamSpread=(sp!=null)?(isHome?-sp:sp)
     :(isHome?-modelMargin(g):modelMargin(g));
   return {home:isHome?1:0, sprd:clip(teamSpread/7,-3,3), implied, src,
-    imp:clip((implied-PAY.norm.implied_mean)/(PAY.norm.implied_sd||1),-3,3), hasLine:sp!=null&&tot!=null};
+    imp:clip((implied-PAY.norm.implied_mean)/(PAY.norm.implied_sd||1),-3,3)};
 }
 
 /* ---------- game bets: a team to win, a team to cover ----------
@@ -219,7 +219,7 @@ function project(pl,stat,opp,ctx){
     }
     return {p};
   }
-  return {mu:Math.max(dot(m.coef,x),0), count:!!m.count};
+  return {mu:Math.max(dot(m.coef,x),0)};
 }
 
 /* ---------- projection to probability, via the stored outcome shape ---------- */
@@ -248,15 +248,6 @@ function pOver(grp,stat,mu,line){
   const F=cdfBlend(grp,stat,mu,line/Math.max(mu,0.05)); if(F==null) return null;
   return clip(1-F,0.001,0.999);
 }
-function fairLine(grp,stat,mu){
-  /* the line where the blended chance of going over is 50% */
-  let lo=mu*0.2, hi=mu*3+1;
-  for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(pOver(grp,stat,mu,mid)>0.5) lo=mid; else hi=mid; }
-  return (lo+hi)/2;
-}
-
-/* ---------- odds helpers ---------- */
-function mlToProb(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?100/(ml+100):Math.abs(ml)/(Math.abs(ml)+100); }
 
 /* ---------- build every playable line for one game ---------- */
 function playersFor(team){
@@ -317,10 +308,8 @@ function parlayProb(legs,sims=40000){
     for(let i=0;i<n&&ok;i++){ let z=0; for(let k=0;k<=i;k++) z+=L[i][k]*g[k]; if(dir[i]*z<=thr[i]) ok=false; }
     if(ok) hits++;
   }
-  return {indep,corr:hits/sims,pairs,shrunk:lam>0};
+  return {indep,corr:hits/sims,pairs};
 }
-
-/* every play the model would actually bet, strongest first */
 
 /* ---------- threshold ladders: "10+, 20+, 30+" style ---------- */
 const LADDER={
@@ -441,14 +430,12 @@ function gameHeadline(g){
      recomputed from results that now include this very game */
   const kept=(S.headlines&&S.headlines[String(g.w)]&&S.headlines[String(g.w)][g.id])||null;
   if(gameFinal(g)&&kept) return kept.map(x=>({k:x.k,v:{mu:x.mu,pl:S.players[x.pid]||{id:x.pid,n:x.n},team:x.team}}));
-  const snap=null, frozen=false;
   const pick=(grps,stat)=>{
     let best=null;
     for(const team in roster) for(const x of roster[team].players){
       if(!grps.includes(x.pl.grp)) continue;
-      let mu;
-      if(frozen){ const s0=snap[x.pl.id]&&snap[x.pl.id][stat]; if(!s0||s0.mu==null) continue; mu=s0.mu; }
-      else { const r=project(x.pl,stat,x.opp,x.ctx); if(!r||r.mu==null||!isFinite(r.mu)) continue; mu=r.mu; }
+      const r=project(x.pl,stat,x.opp,x.ctx); if(!r||r.mu==null||!isFinite(r.mu)) continue;
+      const mu=r.mu;
       if(!best||mu>best.mu) best={mu,pl:x.pl,team};
     }
     return best;
@@ -693,7 +680,7 @@ function bettingParlays(raw){
    v27 hold just the projection; their rungs are rebuilt from it with the same static tables,
    which gives the identical pre-game chance. A player with no stat line is skipped, as a
    leg would be. A book main line is scored on the side the model favoured; a push is skipped.
-   Where a price exists (a sheet you uploaded, or the built-in main-line price) it rides along as
+   Where a price exists (a rung price the job pulled, or the book's main-line price) it rides along as
    ml (American) and imp (the book's implied chance, cut included). */
 function trackRecord(){
   const out=[]; const P=S.projections||{};

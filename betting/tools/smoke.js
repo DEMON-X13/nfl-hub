@@ -4,7 +4,7 @@
  *   node betting/tools/smoke.js
  *
  * Loads the built app in jsdom with fetch stubbed to serve betting/state.json, and checks:
- * the published season is shown, the private tabs are gone, a visitor's pick is kept in
+ * the published season is shown, every tab but My Picks is there, a visitor's pick is kept in
  * their own storage and graded against the published result, and the embedded form (the
  * page around it sets window.EMBED_TAB and window.STATE_URL before the app runs) opens the
  * tab it is told to, headless, reading the season from where it is told.
@@ -111,9 +111,8 @@ function load(picks) {
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
   check(da.getElementById('injCard').hidden === !injText, 'admin: the absences card is not hidden exactly when it is empty');
-  for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['recordTable', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/]])
+  for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['modelChart', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/]])
     check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
-  check(!injFiles || /Impact absences, week \d+/.test(injText), 'admin: dropping the note took the absences heading with it');
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
     /* the ELO based model's ratings: every team, best first, each with its shield and its change since its last game */
@@ -238,12 +237,6 @@ function load(picks) {
   { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
     de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);
     check(!threw && !de.getElementById('tab-bets').hidden, 'embed: switching tabs inside the frame failed: ' + threw); }
-  /* the old ?embed#tab form still works for a copy opened on its own */
-  const e2 = new JSDOM(adminHtml, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'http://localhost/betting/app.html?embed=1#record',
-    beforeParse(w4) { w4.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) }; w4.fetch = async url => ({ ok: /state\.json/.test(String(url)), status: 200, json: async () => JSON.parse(state) });
-      w4.confirm = () => true; w4.alert = () => {}; w4.scrollTo = () => {}; } });
-  await sleep(600);
-  check(e2.window.document.documentElement.classList.contains('embed') && !e2.window.document.getElementById('tab-record').hidden, 'embed: ?embed#record on its own no longer works');
   const plain = a.window.document.documentElement;
   check(!plain.classList.contains('embed'), 'a page opened normally is not embedded');
   console.log(fails ? `${fails} check(s) failed` : `betting app smoke test passed (${graded.length} graded games in the published state)`);

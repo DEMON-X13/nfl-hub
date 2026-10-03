@@ -31,7 +31,6 @@ const SIMS = 3000;
 const LOSS_COST = 55;                               // the committee proxy: Elo minus this per loss
 
 const log = m => console.log(new Date().toISOString().slice(11, 19), m);
-const num = v => (v === null || v === undefined ? null : +v);
 
 function rec(w, l) { return `${w}-${l}`; }
 

@@ -55,7 +55,7 @@ The exact field list and schema are in `tools/week-request.md`.
 ## 5. The Wednesday run, start to finish
 
 ```bash
-npm install --no-save jsdom
+npm ci
 ```
 
 ```bash

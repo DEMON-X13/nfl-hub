@@ -208,7 +208,6 @@ function units(team25, team26, player26, snaps26, out, rosterPos = {}) {
   for (const t of teams) {
     const m = M[t];
     U[t] = {
-      g26: m.g26,
       qb: { rank: R.qb[t], who: top(t, isQB, 'att', 1), stats: [['EPA per dropback', r2(m.pass_epa), sub.pass_epa(t)]] },
       ol: { rank: R.ol[t], who: top(t, isOL, 'osn', 5), stats: [['sack rate allowed', pc(m.sack_rate), sub.sack_rate(t), '%'], ['yards per carry', r1(m.ypc), sub.ypc(t)]] },
       rb: { rank: R.rb[t], who: top(t, isRB, 'car', 2), stats: [['rush EPA per carry', r2(m.rush_epa), sub.rush_epa(t)], ['yards per carry', r1(m.ypc), sub.ypc(t)]] },

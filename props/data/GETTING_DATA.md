@@ -13,15 +13,14 @@ returns 404 for recent seasons — that cost an hour once.
 
 ## Market lines
 
-`wk1_lines.csv` is hand-transcribed from a published weekly props article
-(stat,player,line,over,under). `mktbuild.py` matches names onto player IDs and
-embeds them. ~95% match; misses are players with no NFL history.
+`wk{W}_lines.csv` (stat,player,line,over,under) is written by `oddsfetch.py` from
+the-odds-api.com (with hyphens: the unhyphenated domain is a confirmed impersonator
+reselling the same data at 3x) on each of `build/weekly.py`'s price pulls, with
+`prices_wk{W}.csv` and `gamelines_wk{W}.csv` beside it. `mktbuild.py` matches names onto
+player IDs and embeds them. ~95% match; misses are players with no NFL history.
+`mkt_meta` in `payload.json` records each week's source.
 
-These are BEST AVAILABLE across several books, so they are fine for spotting
+Week 1 was the best price across the US books, which is fine for spotting
 disagreement and wrong for parlay pricing, since you cannot combine legs across
-four sportsbooks.
-
-The real fix is a free key from the-odds-api.com (with hyphens — the unhyphenated
-domain is a confirmed impersonator reselling the same data at 3x). Its
-`*_alternate` markets are exactly the X+ ladder format the app uses. ~5 credits per
-game, 500/month free, which covers a full slate weekly if pulled once.
+several sportsbooks; from week 2 the pull takes DraftKings alone (`--book`). The key
+is the `ODDS_API_KEY` repository secret: about 7 credits a game, 500 a month free.

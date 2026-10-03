@@ -24,7 +24,7 @@ const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const knob = row => txt(row.querySelector('.knob'));
 const lineAt = row => txt(row.querySelector('.lineLbl'));
 const status = row => txt(row.querySelector('.status'));
-const who = row => txt(row.querySelector('.who') || row.querySelector('.nm'));
+const who = row => txt(row.querySelector('.who'));
 const target = row => txt(row.querySelector('.tgt'));
 const wait = ms => new Promise(r => setTimeout(r, ms));
 
@@ -138,10 +138,8 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   chk(!/api\.github\.com/.test(HTML), 'the page still talks to the GitHub API');
   /* the page may write its own key and no other: the two models' storage is theirs */
   {
-    /* the builder sends a saved parlay by writing its id into this page's own key */
-    const SENT = JSON.stringify({ lines: {}, removed: {}, sent: { 'prop|mine': 1 } });
     const seed = w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob());
-      w.localStorage.setItem('live_parlays_v1', SENT); };
+      w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {} })); };
     /* a saved parlay is watched the moment it is saved: nothing has to be sent */
     const plain = await run({ seed: w => { w.localStorage.setItem(PROP_KEY, propBlob()); w.localStorage.setItem(BET_KEY, betBlob()); } });
     chk([...plain.d.querySelectorAll('.savedp')].some(c => /prop model/.test(txt(c.querySelector('.pill')))),
@@ -195,7 +193,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     /* saved and building at once: both show, and the saved one keeps its price */
     const both = JSON.parse(propBlob()); both.parlay = JSON.parse(workBlob()).parlay;
     const c2 = await run({ seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(both));
-        w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {}, sent: { 'prop|mine': 1 } })); },
+        w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {} })); },
       file: { updated: null, games: [], parlays: [] } });
     chk(c2.d.querySelectorAll('.savedp').length === 2, 'saved and building should be two parlays');
   }
@@ -227,12 +225,12 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(!live.d.getElementById('showHidden') && !/\u00b7 show/.test(txt(live.d.body)), 'a deleted parlay is offered back');
     const st = JSON.parse(live.w.localStorage.getItem('live_parlays_v1') || '{}');
     chk(st.removed && Object.keys(st.removed).length === 1 && /^file\|/.test(Object.keys(st.removed)[0]), 'the deleted parlay is not kept under this page\'s own key: ' + JSON.stringify(st));
-    /* the builder's watchlist shares this key: a deletion here must not wipe it */
-    { const keep = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: { 'a|b|0': 44 }, removed: {}, sent: { 'prop|keepme': 1 } })) });
+    /* a key another page put here is carried through: a deletion here must not wipe it */
+    { const keep = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: { 'a|b|0': 44 }, removed: {}, other: { x: 1 } })) });
       keep.d.querySelector('.savedp [data-rm]').click();
       await wait(60);
       const after = JSON.parse(keep.w.localStorage.getItem('live_parlays_v1') || '{}');
-      chk(after.sent && after.sent['prop|keepme'] === 1, 'deleting a parlay wiped the builder\'s watchlist: ' + JSON.stringify(after));
+      chk(after.other && after.other.x === 1, 'deleting a parlay wiped a key another page put here: ' + JSON.stringify(after));
       chk(after.lines && after.lines['a|b|0'] === 44, 'deleting a parlay wiped a corrected line'); }
     chk(live.w.localStorage.getItem(BET_KEY) === null, 'deleting a file parlay wrote to the betting model\'s key');
 
@@ -249,7 +247,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     chk(mixed.d.getElementById('clear').hidden, 'a running parlay is offered for clearing');
     /* an emptied page is never a dead end: it says why, and the way back is on it */
     { const all = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1',
-        JSON.stringify({ lines: {}, sent: {}, removed: { 'file|night': 1, 'file|early': 1 } })) });
+        JSON.stringify({ lines: {}, removed: { 'file|night': 1, 'file|early': 1 } })) });
       chk(all.d.querySelectorAll('.savedp').length === 0, 'the fixture should leave nothing to watch');
       const txtAll = txt(all.d.getElementById('app'));
       chk(/^Nothing to watch yet\s*bring back the 2 deleted$/.test(txtAll), 'an emptied page should say only that, and the way back: ' + txtAll.slice(0, 160));

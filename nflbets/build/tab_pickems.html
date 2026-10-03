@@ -107,7 +107,7 @@
 (function(){
 /*BETTING*/
 const STATE_URL='../betting/state.json';
-const ST={sched:[],processed:{},picks:{},odds:{}};
+const ST={sched:[],odds:{}};
 /* the scoreboard as last read, by game id: nothing here is saved anywhere */
 const PK_LIVE={games:{},at:0,err:null,busy:false};
 const el=id=>document.getElementById(id);
@@ -370,7 +370,7 @@ async function boot(){
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
-    ST.sched=st.schedule||[]; ST.processed=st.processed||{}; ST.picks=st.picks||{}; ST.odds=st.odds||{};
+    ST.sched=st.schedule||[]; ST.odds=st.odds||{};
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
     failed=true;

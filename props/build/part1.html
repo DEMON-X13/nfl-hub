@@ -84,11 +84,10 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .empty{padding:44px 20px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg)}
 .delta.up{color:var(--pick)} .delta.down{color:var(--miss)}
 .ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:12px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
-.ttag.mini{font-size:12px;padding:4px 5px;min-width:40px;vertical-align:-1px}
 /* game rows */
 .gamehead,.game{display:grid;grid-template-columns:120px 175px 1fr 138px 78px 78px 26px;gap:14px;align-items:center}
 .gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.gamehead .c{text-align:center} .gamehead .r{text-align:right}
+.gamehead .c{text-align:center}
 .game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease)}
 .game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
 .game>div{min-width:0}
@@ -106,12 +105,6 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 /* prop tables */
 .plr{font-weight:600}
 .plr small{display:block;font-weight:400;color:var(--ink-2);font-size:11px}
-.side{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:#E3E8EE;color:var(--ink-2)}
-.side.over{background:var(--pick-soft);color:var(--pick)}
-.side.under{background:#E7EDF6;color:var(--away)}
-.side.pass{background:#EEF1F4;color:var(--muted)}
-.edge{font-variant-numeric:tabular-nums;font-weight:600}
-.edge.good{color:var(--pick)} .edge.bad{color:var(--miss)} .edge.flat{color:var(--ink-2);font-weight:400}
 .teamhdr{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:-.3px;margin:20px 0 10px;display:flex;align-items:center;gap:10px}
 .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#E9EEF4;color:var(--ink-2)}
 .pill.warn{background:var(--gold-soft);color:#8A5E05}
@@ -141,7 +134,6 @@ body.modal-open{overflow:hidden}
   .game .totpts{grid-column:2;grid-row:4;text-align:left}
   .game .totpts b{font-size:18px}
   .game .chev{display:none}
-  .two{grid-template-columns:1fr}
   main{padding:14px} header{padding:14px 14px 0}
   table{font-size:13px} th,td{padding:7px 6px}
   .brand h1{font-size:27px}
@@ -162,9 +154,6 @@ body.modal-open{overflow:hidden}
   background:#CFE0F4;color:#1E3D66;border:1px solid #9DBBDC}
 .finchip.live{background:#FCF1D6;color:#8A5E05;border-color:#E8D49A}
 .livestamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
-.livedot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
-.livedot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
-.livedot.bad{background:var(--miss)}
 .when .sc{display:block;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
 .when .cl{display:block;font-size:11px;color:#8A5E05;font-weight:600}
 .tot .lv,.totpts .lv{display:block;font-size:11px;color:#8A5E05;font-weight:600;font-variant-numeric:tabular-nums}
@@ -208,7 +197,7 @@ body.modal-open{overflow:hidden}
   .conf{min-width:0;font-size:9px;padding:3px 7px}
   .conf::before{display:none}
   /* wide tables scroll rather than squash */
-  #parlayBody table,#accTable table,#modelValidation table,#modelSeason table,#marketList table,#trackBody table{display:block;overflow-x:auto;white-space:nowrap}
+  #parlayBody table,#trackBody table{display:block;overflow-x:auto;white-space:nowrap}
   .bigp{grid-template-columns:1fr 1fr}
   .bigp b{font-size:21px}
   .bar{gap:8px}
@@ -251,7 +240,6 @@ body.modal-open{overflow:hidden}
 .sugg-hd{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
 .sugg-hd h2{margin:0}
 .sugg-hd .pill{white-space:nowrap}
-.sugg.min .sugg-hd{margin-bottom:0}
 .sugg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .sugg-tier{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .sugg-tier.safe{border-top:3px solid var(--pick)} .sugg-tier.med{border-top:3px solid var(--gold)} .sugg-tier.aggr{border-top:3px solid var(--miss)}
@@ -278,13 +266,11 @@ body.modal-open{overflow:hidden}
 .gsugg-pick:hover{background:var(--panel)}
 .gsugg-pick.on{background:var(--pick-soft)}
 .gsugg-pick input{margin:0;flex:none;align-self:center;cursor:pointer}
-.gsugg-all,.gsugg-alt{padding:5px 11px;font-size:12px}
+.gsugg-all{padding:5px 11px;font-size:12px}
 .gsugg-legs .nm{flex:1;min-width:0}
 .gsugg-legs .nm small{display:block;color:var(--ink-2);font-size:12px}
-.gsugg-legs .lk{flex:none;align-self:center;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pick);white-space:nowrap}
 .gsugg-legs .pr{font-family:var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
 .gsugg-legs .pr em{font-style:normal;color:var(--ink-2);font-size:12px;margin-left:7px}
-.gsugg-ft{margin:8px 0 0;font-size:12px}
 .gsugg-tiers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
 .gsugg-tiers.g3{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:4px}
 .gsugg-legs .pr .est{font-style:normal;font-size:10.5px;color:var(--muted);margin-left:2px}
@@ -292,13 +278,6 @@ body.modal-open{overflow:hidden}
 .gsugg-tier{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;min-width:0}
 .gsugg-tier-hd{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;flex-wrap:wrap}
 .gsugg-tier-hd .grow{flex:1}
-.gsugg-tl{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid var(--line)}
-.gsugg-tl li{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
-.gsugg-tl .nm{flex:1;min-width:0}
-.gsugg-tl .nm small{display:block;color:var(--ink-2);font-size:11.5px}
-.gsugg-tl .pr{font-family:var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
-.gsugg-tl .pr em{font-style:normal;color:var(--ink-2);font-size:11.5px;margin-left:6px}
-@media(max-width:700px){.gsugg-tiers{grid-template-columns:1fr}}
 .sugg-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sugg-nums div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 9px}
 .sugg-nums b{display:block;font-family:var(--display);font-size:18px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -345,7 +324,6 @@ body.modal-open{overflow:hidden}
 .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
 .res.win{color:var(--pick)} .res.loss{color:var(--miss)}
 .rungs tr.hit td{background:#EEF7F1} .rungs tr.miss td{background:#FBF0EF}
-.statblk h4 em.actual{color:var(--ink);font-weight:700;background:#E9EEF4;padding:2px 8px;border-radius:999px}
 .pill.bad{background:var(--miss-soft);color:var(--miss)}
 .savedp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
 .sp-live{display:inline-flex;align-items:center;gap:5px;font-size:13px;white-space:nowrap}
@@ -418,10 +396,7 @@ body.modal-open{overflow:hidden}
       <span class="rec" id="weekRec" title="The model's side of every sportsbook main line in this week, graded from the numbers frozen before kickoff"></span>
       <span class="rec" id="seasonRec" title="The model's side of every sportsbook main line this season, graded from the numbers frozen before kickoff"></span>
       <span class="grow"></span>
-      <span class="livestamp"><span class="livedot" id="slateDot"></span><span id="slateStamp">scores off</span></span>
-      <label class="muted">Scores <select id="slateEvery">
-        <option value="0" selected>off</option><option value="30">every 30s</option><option value="60">every 60s</option>
-      </select></label>
+      <span class="livestamp" id="slateStamp"></span>
       <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>

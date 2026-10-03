@@ -14,8 +14,8 @@ const fails=[]; let checks=0;
 const chk=(ok,msg)=>{checks++; if(!ok) fails.push(msg);};
 setTimeout(async()=>{
   const S=w.eval('S'); const F=n=>w.eval(n);
-  const [gameCtx,rosterFor,statLines,project,pOver,fairLine,rungView,marketLine,marketMu,devigOver,bookImplied,bookPrice,probToAmerican,mlToDec,parlayProb,modelMargin,modelPoints,legRho,gameBet,settleLeg,gameMu,tdPlus]=
-   ['gameCtx','rosterFor','statLines','project','pOver','fairLine','rungView','marketLine','marketMu','devigOver','bookImplied','bookPrice','probToAmerican','mlToDec','parlayProb','modelMargin','modelPoints','legRho','gameBet','settleLeg','gameMu','tdPlus'].map(F);
+  const [gameCtx,rosterFor,statLines,project,pOver,rungView,marketLine,marketMu,devigOver,bookImplied,probToAmerican,mlToDec,parlayProb,modelMargin,legRho,gameBet,settleLeg,gameMu,tdPlus]=
+   ['gameCtx','rosterFor','statLines','project','pOver','rungView','marketLine','marketMu','devigOver','bookImplied','probToAmerican','mlToDec','parlayProb','modelMargin','legRho','gameBet','settleLeg','gameMu','tdPlus'].map(F);
   const PAY=F('PAY');
   /* open the first game that has not kicked off, in any open week (the audit must not depend on the date) */
   const openUpcoming=()=>{ const g=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w)).sort((a,b)=>(a.w-b.w)||((a.d+a.t).localeCompare(b.d+b.t)))[0];
@@ -173,12 +173,15 @@ setTimeout(async()=>{
     chk(settleLeg({gid:'jtest',team:fin.h,stat:'ats',k:-3})==='win'&&settleLeg({gid:'jtest',team:fin.h,stat:'ats',k:-7})==='push'&&settleLeg({gid:'jtest',team:fin.a,stat:'ats',k:3})==='loss','to-cover settlement wrong');
     S.sched.pop();
     chk(legRho({gid:'g',stat:'ml',team:'SEA',grp:'TEAM'},{gid:'g',stat:'ml',team:'KC',grp:'TEAM'})<0&&legRho({gid:'g',stat:'ml',team:'SEA',grp:'TEAM'},{gid:'g',pid:'p',stat:'passing_yards',team:'SEA',grp:'QB'})===0,'game-leg correlations wrong');
-    const gopen=openUpcoming();
-    const gcb=d.querySelector('[data-leg$="|ml"]'); chk(!!gcb,'no to-win checkbox in the game overlay');
-    if(gcb){ gcb.checked=true; gcb.dispatchEvent(new w.Event('change')); const L=Object.values(S.parlay).find(l=>l.stat==='ml'); chk(!!L&&L.grp==='TEAM'&&L.p>0&&L.p<1&&L.label==='To win','to-win leg did not land in the parlay');
+    /* the card is drawn under each game on the Pick'ems tab of the Bets and Stats page, which
+       sends a tick through toggleLeg: draw it and tick it the same way */
+    const gopen=S.sched.find(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w));
+    const gbox=d.createElement('div'); gbox.innerHTML=F('gameBetsCard')(gopen,false);
+    const gcb=gbox.querySelector('[data-leg$="|ml"]'); chk(!!gcb,'no to-win checkbox on the Game bets card');
+    const gtick=()=>F('toggleLeg')(gcb.dataset.leg,+gcb.dataset.k,gopen,gcb.dataset.side||'over',gcb.dataset.main==='1');
+    if(gcb){ gtick(); const L=Object.values(S.parlay).find(l=>l.stat==='ml'); chk(!!L&&L.grp==='TEAM'&&L.p>0&&L.p<1&&L.label==='To win','to-win leg did not land in the parlay');
       chk(/To win/.test(d.getElementById('parlayBody').textContent),'to-win leg not shown in the parlay builder');
-      gcb.checked=false; gcb.dispatchEvent(new w.Event('change')); chk(!Object.values(S.parlay).some(l=>l.stat==='ml'),'to-win leg did not come back out'); }
-    d.getElementById('backBtn').click();
+      gtick(); chk(!Object.values(S.parlay).some(l=>l.stat==='ml'),'to-win leg did not come back out'); }
     console.log(`J. game bets: home win ${(hw.p*100).toFixed(0)}% at +3, cover ${(hc.p*100).toFixed(0)}%, settlement and toggling ok`); }
 
   /* ---- K. two or more touchdowns ---- */
@@ -217,8 +220,6 @@ setTimeout(async()=>{
     const more=rows.filter(x=>{const g=S.sched.find(y=>+y.w===+x.week&&(y.h===x.team||y.a===x.team)); return g&&!S.processedGames[g.id];});
     const r3=F('ingestStats')(more);
     chk(more.length===0||r3.done.length>0,'a second upload for the same week was wrongly skipped'); }
-  chk(Object.keys(S.accuracy).length>=10,'accuracy not graded');
-  for(const k in S.accuracy){ const a=S.accuracy[k]; chk(a.n>0&&isFinite(a.ae/a.n),`accuracy bad ${k}`); }
   chk(Object.keys(S.parlay).length===legsBefore,'parlay legs lost on upload');
   d.getElementById('backBtn').click();
   chk(d.getElementById('gameModal').hidden&&S.ui.game==null&&!d.body.classList.contains('modal-open'),'overlay did not close');
@@ -227,7 +228,7 @@ setTimeout(async()=>{
   chk(d.getElementById('gameModal').hidden,'Escape did not close the overlay');
   const snap=JSON.stringify(S); const S2=JSON.parse(snap);
   chk(JSON.stringify(S2.parlay)===JSON.stringify(S.parlay)&&JSON.stringify(S2.processed)===JSON.stringify(S.processed),'backup round-trip changed state');
-  console.log(`G. state flow: ingest ok, week stays on ${F('currentWeek')()} (schedule-driven), re-upload skipped, ${Object.keys(S.accuracy).length} stats graded, legs preserved, backup round-trips`);
+  console.log(`G. state flow: ingest ok, week stays on ${F('currentWeek')()} (schedule-driven), re-upload skipped, legs preserved, backup round-trips`);
 
   /* ---- G2. a played game's projections must not move once results land ---- */
   {
@@ -529,10 +530,8 @@ setTimeout(async()=>{
       d.querySelector('[data-game="'+g.id+'"]').click();
       chk([...d.querySelectorAll('.gsugg-tier')][1].querySelectorAll('input[data-leg]:checked').length===3,'the Medium legs on the parlay are not ticked');
       S.parlay=keepP; F('save')(); d.querySelector('[data-game="'+g.id+'"]').click(); }
-    /* the suggestion is the summary, the game bets table is the detail */
-    { const cards=[...d.querySelectorAll('#gameView .card')];
-      const iS=cards.findIndex(c=>c.classList.contains('gsugg')), iB=cards.findIndex(c=>c.classList.contains('gbets'));
-      chk(iS>=0&&iB>=0&&iS<iB,'the suggested parlays are not above the game bets'); }
+    /* the game bets open under each game on the Pick'ems tab; a game page here is its players */
+    chk(!!d.querySelector('#gameView .gsugg')&&!d.querySelector('#gameView .gbets'),'the game page still carries the Game bets card');
     console.log(`O. game tiers: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */
   { const box=d.getElementById('pricePull');
@@ -735,11 +734,11 @@ setTimeout(async()=>{
 
     /* ---- T2. the Games tab reads the scoreboard when asked, and not before ---- */
     { const LIVE=F('LIVE');
-      chk(!!d.getElementById('slateNow')&&!!d.getElementById('slateEvery')&&!!d.getElementById('slateStamp'),
-        'the Games tab has no scores control');
-      chk(d.getElementById('slateEvery').value==='0','the Games tab should not poll until it is asked to');
+      chk(!!d.getElementById('slateNow')&&!!d.getElementById('slateStamp'),'the Games tab has no Refresh scores button');
+      chk(!d.getElementById('slateEvery')&&!d.getElementById('slateDot'),'the Games tab still has the timed scores picker');
       chk(LIVE.slate===false,'the Games tab starts with the scoreboard off');
-      chk(d.getElementById('slateStamp').textContent==='scores off','the stamp does not say the scores are off');
+      { const st0=d.getElementById('slateStamp').textContent;
+        chk(st0===''||st0==='scores off','the stamp claims a scoreboard read before one was asked for: '+st0); }
       /* with it off, a started game reads exactly as it did before there was a scoreboard */
       const started=S.sched.filter(g=>F('gameStarted')(g)&&!F('gameFinal')(g));
       const wk=started.length?started[0].w:null;
@@ -865,7 +864,7 @@ setTimeout(async()=>{
         console.log('T3. game modal: '+(g3?'live box score on the button, one call, nothing settled':'no game in progress to drive'));
       }
       w.fetch=realFetch;
-      console.log(`T2. games tab scores: control present and off, ${wk==null?'no live game this week to drive':'score and clock on the card, one scoreboard call, no box scores'}`); }
+      console.log(`T2. games tab scores: button present, no timed picker, off, ${wk==null?'no live game this week to drive':'score and clock on the card, one scoreboard call, no box scores'}`); }
 
     /* ---- U. the betting model's parlays, read across from its key ---- */
     { const bp=F('bettingParlays');
@@ -898,8 +897,4 @@ setTimeout(async()=>{
     fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
     errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));
   })();
-  return;
-  console.log(`\n${checks} checks, ${fails.length} failures, ${errs.length} runtime errors`);
-  fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
-  errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));
 },1800);

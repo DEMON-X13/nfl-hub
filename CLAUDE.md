@@ -19,10 +19,15 @@ without narrating the steps:
 - A change is not done until the audit or smoke test for that site passes and the
   built pages are regenerated and committed.
 
-## The three sites
+## The sites and their parts
 
-GitHub Pages serves the repo root. Each site is a separate app with its own
-build and its own scheduled workflow.
+GitHub Pages serves the repo root. Four sites have pages: `nflbets/`, `news/`, `cfb/` and
+`nhl/` (the root `index.html` links them). `pickems/` and `live/` hold only redirects for old
+bookmarks; `liveparlays/` holds a redirect beside the Live Parlays section's source and its
+`parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
+with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
+by hand when a source changes, and reads the models' data on every load. `news/`, `cfb/` and
+`nhl/` each have their own job too (`news.yml`, `cfb.yml`, `nhl.yml`).
 
 | Path | What | Source of truth |
 |---|---|---|
@@ -42,10 +47,12 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
+- `betting/joker.json` (by `betting/joker/joker.py`)
 - `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json`
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
-- `nflbets/index.html`
-- `props/data/payload.json`, `news/data/results.js`, `news/data/stats2026.js`
+- `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
+- `props/data/payload.json`
+- `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md` (a drafted `news/data/weekN.js` is finished by hand)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
@@ -56,9 +63,8 @@ source, shipped in from `nfl-model-lab`, not generated here.
 Edit the parts, then from `props/build/`:
 
 ```
-python3 assemble.py        # part1 + payload.json + part2 + part3 -> ../app/prop_model_2026.html (gitignored)
+python3 assemble.py        # part1 + part2 + part3 -> ../app/prop_model_2026.html (gitignored; payload.json is fetched at boot, only checked here)
 node audit.js              # the gate: must end "0 failures, 0 runtime errors"
-rm -f ../app/app.js        # gitignored build leftover; weekly.py removes it too
 node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's source: rebuild it (see below)
 ```
 
@@ -78,6 +84,7 @@ that spend nothing. It commits straight to `main`.
 ```
 cd betting/tools && npm install
 node betting/tools/update.js     # download + grade + write state.json
+python3 betting/joker/joker.py   # the Joker's picks into state.json and joker.json (pip install -r betting/joker/requirements.txt)
 node betting/tools/build.js      # checks the app builds; writes nothing (nflbets/build/build.js sets it into the page)
 node betting/tools/smoke.js      # the built app, on its own and embedded
 node nflbets/build/build.js      # the app changed, so the page that carries it is rebuilt
@@ -85,6 +92,14 @@ node nflbets/build/build.js      # the app changed, so the page that carries it 
 
 Gate: the app's embedded model numbers must equal
 `betting/tools/reference_models.json`, or the publish aborts.
+
+`.github/workflows/update.yml` is the betting job (the file name is a leftover from when one
+job ran every site): hourly at :37, so the Vegas lines and the Joker follow nflverse within
+the hour, plus the Fri/Mon/Tue morning and afternoon, post-game and injury-report runs, kept
+in case an hourly run is dropped. It runs `update.js`, `joker.py` and `smoke.js` (which
+builds the app itself), and commits `betting/state.json` and `betting/joker.json`.
+`joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
+play-by-play, so it runs after it and needs the network.
 
 ## Player Elo: the loop
 
@@ -126,8 +141,8 @@ moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
 grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season
 in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
-`S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating) and widens the app's own Joker lines to draw it, at build time, each edit asserted
-to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings is the ELO based model's (each team's expected lineup, on this season's player ratings alone, scored by the Elo game model and shown on the same bell curve across the 32 teams, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with the tier shields, the change since each team's last game and the chance against an average team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Model A (the main model), the Challenger, the Joker and ELO based (the Elo game model); `betting/tools/build.js` renames them in the built app (`RENAME`), never in its source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record), which the build puts in front of the app's script and `renderRecord()` calls last. The Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the deposit and the chosen view are the visitor's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
+`S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating); `record_viz.js` (below) draws it on the chart and the table, and the build widens the app's own Joker lines in the pick grid to draw it there, each edit asserted
+to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings is the ELO based model's (each team's expected lineup, on this season's player ratings alone, scored by the Elo game model and shown on the same bell curve across the 32 teams, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with the tier shields, the change since each team's last game and the chance against an average team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Model A (the main model), the Challenger, the Joker and ELO based (the Elo game model); `betting/tools/build.js` renames the main model in the built app (`RENAME`) and writes ELO based wherever the build draws the Elo game model, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record), which the build puts in front of the app's script and `renderRecord()` calls last. The Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the deposit and the chosen view are the visitor's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates Tue and Fri mornings and commits
 `elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 
@@ -283,7 +298,7 @@ may quietly outrank what the job published:
   never written to the repo. Picks, bankroll, bets and odds live in the browser's local
   storage only; the parlays and the section's key are shared through the sync document above
   when `nflbets/sync.json` names one. Anything held per-session and not meant to persist
-  (for example a shuffled parlay alternative) is kept outside the saved state object `S`, so
+  (for example the game pages' suggested parlays, cached in `GAME_TIER_CACHE` in `part3.js`) is kept outside the saved state object `S`, so
   it is never serialised.
 - **No secrets in the repo.** `ODDS_API_KEY` is a repository secret and only the
   props workflow touches it.

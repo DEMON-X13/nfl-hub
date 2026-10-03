@@ -7,7 +7,7 @@ betting job's downloads (data/games.csv, data/stats_team_week_2026.csv) plus thi
 season's play-by-play (downloaded here), and writes:
   betting/joker.json        every 2026 game it has scored: pick, home win chance, week
   betting/state.json        processed[gid].joker = {pick, pHome, correct} on graded games,
-                            state.joker = the picks map (upcoming games included)
+                            state.joker = {pick, pHome} for every game (upcoming included)
 Never refits. A run that changes nothing leaves state.json untouched.
 """
 from __future__ import annotations
@@ -107,10 +107,10 @@ def main():
         log("no state.json to patch"); return
     st = json.loads(STATE.read_text(encoding="utf-8"))
     changed = False
-    # the reasons stay in joker.json: state.json is fetched by the site on every load, and
-    # eight contributions a game put 190KB on it for something only one game at a time is
-    # ever read for
-    lean = {gid: {k: v for k, v in rec.items() if k not in ("why", "base")} for gid, rec in games.items()}
+    # only the pick and the home win chance go into state.json, which the site fetches on every
+    # load: the reasons (eight contributions a game, 190KB) and the week, teams and played flag
+    # stay in joker.json, since the schedule in the state already has those
+    lean = {gid: {"pick": rec["pick"], "pHome": rec["pHome"]} for gid, rec in games.items()}
     if st.get("joker") != lean:
         st["joker"] = lean; changed = True
     for gid, rec in st.get("processed", {}).items():

@@ -1,6 +1,6 @@
 /* Smoke test for the tracker. Renders index.html in jsdom with the split css/js/data files,
    then asserts the counts and interactions that every change should keep working.
-   Run from the repo root:  npm install --no-save jsdom && node tools/smoke.js            */
+   Run from news/:  npm ci && node tools/smoke.js                                          */
 const fs = require('fs'), path = require('path');
 const { JSDOM, requestInterceptor, VirtualConsole } = require('jsdom');
 

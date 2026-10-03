@@ -45,12 +45,11 @@ window.NFLSYNC=(function(){
   const CONF='sync.json', PROP_KEY='props_2026_v1', LIVE_KEY='live_parlays_v1', SEEN_KEY='nflsync_v1';
   const PROP_KEYS=['parlay','saved','stake','bookPrice','margin'];
   const POLL_MS=8000, PUSH_MS=400, BOOT_WAIT_MS=6000, GET_MS=12000, PUT_MS=20000;
-  const st={url:null, conf:null, rev:null, doc:null, applied:false, live:false, ready:false, ok:null, err:null,
+  const st={url:null, rev:null, doc:null, applied:false, live:false, ready:false, ok:null, err:null,
     at:null, checked:null, pending:false, pushing:false, dirty:false, joined:0, pulls:0, pushes:0};
   const listeners=[];
-  const emit=()=>{ for(const f of listeners){ try{ f(state()); }catch(e){} }
-    try{ document.dispatchEvent(new CustomEvent('nflsync',{detail:state()})); }catch(e){} };
-  const state=()=>({url:st.url, conf:st.conf, rev:st.rev, applied:st.applied, live:st.live, ready:st.ready, ok:st.ok,
+  const emit=()=>{ for(const f of listeners){ try{ f(state()); }catch(e){} } };
+  const state=()=>({url:st.url, rev:st.rev, applied:st.applied, live:st.live, ready:st.ready, ok:st.ok,
     err:st.err, at:st.at, checked:st.checked, pending:st.pending, pushing:st.pushing, joined:st.joined, pulls:st.pulls, pushes:st.pushes});
   const ls={
     get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
@@ -94,7 +93,7 @@ window.NFLSYNC=(function(){
     try{
       const r=await fetchT(CONF+'?t='+Date.now(),null,GET_MS);
       if(!r.ok) throw new Error('HTTP '+r.status);
-      const c=await r.json(); st.conf=c;
+      const c=await r.json();
       let u=String((c&&c.url)||'').trim();
       if(u){ u=u.replace(/\.json$/,'').replace(/\/+$/,''); if(!/^https:\/\//.test(u)) throw new Error('the store address must start with https://'); }
       st.url=u||null;
@@ -262,5 +261,5 @@ window.NFLSYNC=(function(){
     else if(st.url&&st.applied&&st.live) schedulePush();
     tick(); }); });
 
-  return {state, boot, poll, push, onChange(f){ listeners.push(f); }, PROP_KEYS, POLL_MS};
+  return {state, poll, onChange(f){ listeners.push(f); }};
 })();
