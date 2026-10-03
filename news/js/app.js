@@ -93,6 +93,21 @@ function deepDive(ab, opp, row){
     ${rows}</details>`;
 }
 
+/* the preseason write-up in data/teams.js: last season, the market's win total, what
+   changed, and the cases for and against. Shown for now so it can be judged; it is the
+   summer's view and does not move with the season. */
+function preseason(ab, row){
+  const t = T[ab];
+  if (!t || !(t.facts || t.up || t.down || t.sub)) return `<div class="tbsec empty ${row}"></div>`;
+  const nums = [t.rec ? `${t.rec} in 2025` : "", t.pd != null ? `${t.pd > 0 ? "+" : ""}${t.pd} point differential` : "",
+    t.srs != null ? `SRS ${t.srs}` : "", t.wt != null ? `win total ${t.wt}` : "", t.rank ? `preseason rank ${ORD(t.rank)}` : ""].filter(Boolean).join(" &middot; ");
+  const list = (h, items) => items && items.length ? `<div class="pre"><h6>${h}</h6><ul>${li(items.map(x => withPos(x, [ab])))}</ul></div>` : "";
+  return `<details class="tbsec dd ${row}"><summary><span class="ddlbl">Preseason write-up</span><span class="ddhint">summer</span></summary>
+    ${t.sub ? `<p class="ddbasis"><b>${withPos(t.sub, [ab])}</b></p>` : ""}
+    ${nums ? `<p class="ddbasis">${nums}</p>` : ""}
+    ${list("The offseason", t.facts)}${list("Reasons for optimism", t.up)}${list("Concerns", t.down)}</details>`;
+}
+
 /* 2026 record from every played game in WEEKS. 0-0 until a team has a result. */
 function record(ab){
   let w = 0, l = 0, t = 0;
@@ -184,6 +199,7 @@ function openGame(key){
       ${block("r4", "Negatives", "down", e.weaknesses)}
       ${block("r5", "Keys to victory", "info", e.keys)}
       ${deepDive(ab, home ? g.away : g.home, "r6")}
+      ${preseason(ab, "r7")}
     </div>`;
   };
 
@@ -251,9 +267,10 @@ function openGame(key){
       ${rows.map(bar).join("")}
     </div>`;
   const ov = document.getElementById("ov");
-  /* the two Deep Dives open and close together so they stay side by side */
+  /* the two Deep Dives (and the two write-ups) open and close together so they stay side by side */
   const dds = [...document.querySelectorAll("#ovbox details.dd")];
-  dds.forEach(d => d.addEventListener("toggle", () => dds.forEach(x => { if (x !== d && x.open !== d.open) x.open = d.open; })));
+  const row = d => [...d.classList].find(c => /^r\d$/.test(c));
+  dds.forEach(d => d.addEventListener("toggle", () => dds.forEach(x => { if (x !== d && row(x) === row(d) && x.open !== d.open) x.open = d.open; })));
   ov.classList.add("on"); ov.scrollTop = 0;
   document.body.style.overflow = "hidden";
   document.getElementById("ovx").addEventListener("click", closeOv);

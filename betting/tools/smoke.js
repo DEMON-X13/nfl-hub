@@ -128,7 +128,17 @@ function load(picks) {
   const dv = dom.window.document;
   check(!!dv.querySelector('#tab-ratings #injCard #injSuggest') && !/Rank tags and the Elo change column/.test(dv.getElementById('ratingsTable').textContent), 'viewer: Power Ratings does not carry the absences table, or still carries the note');
   check(!da.getElementById('rebuildBtn') && !da.getElementById('resetBtn') && !!da.getElementById('exportBtn') && !!da.getElementById('importBtn'), 'admin: Backup keeps save and import, drops rebuild and reset');
-  check(/your picks, Bet Log, bankroll and Bet Build/.test(da.getElementById('tab-backup').textContent), 'admin: Backup says what it covers');
+  check(/your picks, Bet Log, bankroll and Bet Build/.test(da.getElementById('backupCard').textContent) && !!da.querySelector('#tab-bets #backupCard #exportBtn') && !!da.querySelector('#tab-bets #backupCard #importBtn'), 'admin: Save and Import are not on the Bet Log, or the card does not say what it covers');
+  /* an import on the published page takes the visitor's entries from the file and keeps the published season */
+  { const pub = JSON.stringify(a.window.eval('S.teams')), file = JSON.parse(JSON.stringify(a.window.eval('S')));
+    file.teams = { OLD: { elo: 1 } }; file.myPicks = { imported_game: 'BUF' }; file.bets = { 7: { staked: 10, returned: 0, note: 'from the file' } };
+    a.window.confirm = () => true;
+    const inp = da.getElementById('importInput');
+    Object.defineProperty(inp, 'files', { value: [{ text: async () => JSON.stringify(file) }], configurable: true });
+    inp.dispatchEvent(new a.window.Event('change'));
+    await sleep(100);
+    const S2 = a.window.eval('S');
+    check(S2.myPicks.imported_game === 'BUF' && S2.bets[7] && S2.bets[7].note === 'from the file' && JSON.stringify(S2.teams) === pub, 'admin: an import did not take the visitor\'s entries and keep the published season'); }
   a.window.eval('S.lastBackup=Date.now()-3*86400000; S.lastBackupHow="downloaded"; save()'); await sleep(900);
   const kept = JSON.parse(a.window.localStorage.getItem('x_nfl_viewer_picks_2026') || '{}');
   check(kept.lastBackup && Date.now() - kept.lastBackup > 2 * 86400000, 'admin: the last-backup time is kept in the browser store');

@@ -4,20 +4,24 @@
     python weekly.py                 (from props/build)
     python weekly.py --no-odds       skip the price pull
     python weekly.py --hours 36      override the price-pull window
-    python weekly.py --no-commit     leave the commit to the caller (the workflow passes it)
+    python weekly.py --local         allow the price pull off GitHub (it spends credits)
+
+Credits are spent only by the props workflow: off GitHub Actions the price pull is skipped
+unless --local says otherwise, so the old schedule in the Claude desktop app, if it still
+fires, spends nothing. Nothing commits here either: the workflow commits props/data
+itself (--no-commit is still accepted, and does nothing).
 
 What it does, in order, continuing past anything that fails and saying so at the end:
   1. downloads scores/lines, this season's player stats, rosters, injuries and depth charts
      from nflverse into raw/ (an old copy is kept if a download fails)
   2. works out the current week: the earliest week with an unplayed game
-  3. if ODDS_API_KEY is set, pulls prices for the games kicking off before the next scheduled
+  3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking off before the next scheduled
      pull (hours_to_next_pull) with data/oddsfetch.py, merges them into that week's files and
      bakes the main lines in with mktbuild.py
   4. rebuilds the payload (rosters, depth charts, schedule) and bakes in every week's player
      stats, this week's injury report and every price file, so the app needs no uploads
   5. assembles the page and runs the audit
-  6. commits the result locally, unless --no-commit (the workflow commits props/data itself)
-  7. prints a REPORT block
+  6. prints a REPORT block
 Nothing here ever prints the key.
 """
 import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
@@ -73,7 +77,7 @@ def problems_file():
     return os.path.join(base,'props-build-problems.txt')
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true')
+    ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here'); ap.add_argument('--local',action='store_true',help='allow the price pull off GitHub Actions')
     a=ap.parse_args()
     today=datetime.date.today(); say(f"weekly refresh {datetime.datetime.now():%Y-%m-%d %H:%M} ({today:%A})")
     # 1. downloads
@@ -99,6 +103,7 @@ def main():
     except Exception as e: problems.append(f"week detection: {e}"); week=1
     # 3. prices
     if a.no_odds: say("  price pull skipped (--no-odds)")
+    elif not os.environ.get('GITHUB_ACTIONS') and not a.local: say("  price pull skipped: credits are spent only by the props workflow (pass --local to pull from this machine)")
     elif not os.environ.get('ODDS_API_KEY'): say("  price pull skipped: ODDS_API_KEY is not set in this environment"); problems.append("no ODDS_API_KEY; prices not pulled")
     else:
         hours=a.hours or hours_to_next_pull()
@@ -202,16 +207,8 @@ def main():
     audit=last[-1].strip() if last else 'audit produced no summary line'
     say('  '+audit)
     if '0 failures' not in audit or '0 runtime errors' not in audit: problems.append('AUDIT NOT CLEAN: '+audit)
-    # 6. commit
-    if any(p.startswith('AUDIT') for p in problems): say('  not committed: the audit is not clean')
-    elif not a.no_commit and shutil.which('git') and os.path.isdir(os.path.join(ROOT,'.git')):
-        subprocess.run(['git','add','-A'],cwd=ROOT,capture_output=True)
-        st=subprocess.run(['git','status','--porcelain'],cwd=ROOT,capture_output=True,text=True).stdout.strip()
-        if st:
-            msg=f"weekly refresh {today} week {week}\n\n"+'\n'.join(report)+"\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\n"
-            r=subprocess.run(['git','-c','core.safecrlf=false','commit','-q','-F','-'],cwd=ROOT,input=msg,text=True,capture_output=True)
-            say('  committed' if r.returncode==0 else f"  commit failed: {r.stderr.strip()[-300:]}")
-        else: say('  nothing new to commit')
+    # 6. the workflow commits props/data; a run elsewhere leaves the working tree as it is
+    if any(p.startswith('AUDIT') for p in problems): say('  the audit is not clean: the workflow will not commit this')
     # 7. report
     print("\nREPORT")
     for s in report: print(s)
