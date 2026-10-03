@@ -451,7 +451,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
-    chk(body.querySelectorAll('.card').length === 3 && !!body.querySelector('.card.pe-mcard'), 'the Elo tab should draw its rankings, matchups and weights cards and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(body.querySelectorAll('.card').length === 1 && /Rankings/.test(txt(body.querySelector('.card h2'))), 'the Elo tab should draw its rankings card and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(![...body.querySelectorAll('h2')].some(h => /matchups|held up|position is worth|Walk-forward record|By season/i.test(txt(h))), 'the matchups, record or weights cards are still on the Elo tab');
     chk(![...body.querySelectorAll('h2')].some(h => /season by season/.test(txt(h))), 'the season-by-season card is still on the Elo tab');
     chk(!body.querySelector('.pe-calls') && ![...body.querySelectorAll('h2')].some(h => /^\d{4} so far/.test(txt(h))), 'the week\'s calls or the season record are still on the Elo tab; they live on Pick\'em Record');
     const posBtns = [...body.querySelectorAll('.pe-pos button')];
@@ -460,8 +461,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(rankRows().length === 10, 'the rankings should open on the top ten: ' + rankRows().length);
     chk(txt(rankRows()[0]).includes(eloP.groups.QB.top[0].name) && txt(rankRows()[0]).includes(String(eloP.groups.QB.top[0].elo)), 'the top quarterback is not first: ' + txt(rankRows()[0]));
     chk(rankRows()[0].querySelector('svg.pe-spark') !== null, 'the season trend line is missing');
-    chk([...rankRows()].every(tr => tr.querySelector('svg.tierbadge') && /Challenger|Master|Diamond|Platinum|Gold|Silver|Bronze|Iron/.test(txt(tr))), 'a ranked player has no tier shield on the team scale');
+    chk([...rankRows()].every(tr => tr.querySelector('svg.tierbadge') && /HOF|Elite|Master|Diamond|Platinum|Gold|Silver|Bronze|Iron|Wood/.test(txt(tr))), 'a ranked player has no tier shield on the team scale');
     chk(!!d.querySelector('#peDefs svg defs linearGradient[id^="tg-"]'), 'the tier shields have no gradient definitions on the page');
+    /* the ladder as betting/tools/tiers.js sets it: Wood under 1350, Iron from 1350, Elite from 1700, HOF from 1750 as a gem */
+    { const T = e => w.pkEloTier(e)[0];
+      chk(T(1760) === 'HOF' && T(1749) === 'Elite' && T(1700) === 'Elite' && T(1699) === 'Master' && T(1350) === 'Iron' && T(1349) === 'Wood' && T(1100) === 'Wood', 'the tiers are not Wood, Iron ... Elite, HOF at their lines');
+      chk(/tier-hof/.test(w.pkTierBadge(1760)) && /tier-wood/.test(w.pkTierBadge(1300)) && !/tier-hof|tier-wood/.test(w.pkTierBadge(1720)) && /tg-hof-gem/.test(w.pkTierDefs), 'HOF is not a gem or Wood not its plain shield');
+      chk(![1800, 1720, 1600, 1500, 1400, 1300].some(e => /Challenger/.test(T(e) + w.pkTierBadge(e))), 'a tier is still called Challenger'); }
     /* the sidelined are out of the rankings and listed where they would have stood */
     chk(eloM.groups.every(g => Array.isArray(eloP.groups[g].sidelined)), 'a group has no sidelined list');
     { const sideIds = new Set(eloM.groups.flatMap(g => eloP.groups[g].sidelined.map(x => x.id)));
@@ -593,15 +599,31 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(!!d.querySelector('#suggView .pe-sugg [data-elo-save="elo2"][disabled]'), 'a saved Elo parlay does not say Saved');
         w.eval('S.saved.pop(); save(); closeSuggest()');
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
-      /* the Matchups card: every expected starter at the position, faded where the Elo part has not held up */
-      [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(40);
-      const mc = d.querySelector('#peBody .pe-mcard');
-      /* every expected starter in the file, less anyone the week's injury report has ruled out since it was built */
-      const nWR = Object.entries(MU.players).filter(([pid, v]) => v.group === 'WR' && !w.eloRuledOut(pid)).length;
-      chk(!!mc && mc.querySelectorAll('tbody')[0].querySelectorAll('tr').length === nWR, `the Matchups card does not list the ${nWR} receivers`);
-      chk(!!mc && mc.querySelectorAll('tbody')[1].querySelectorAll('tr').length === MU.stats.WR.length, 'the Matchups record lacks a row per stat');
-      [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'K').click(); await wait(40);
-      chk(!d.querySelector('#peBody .pe-mcard'), 'kickers show a Matchups card they have no formula for');
+      /* a player's window: a click on his row in the rankings opens his rating and his matchup this week, a row a stat */
+      { const plOpen = () => { const m = d.getElementById('pePlModal'); return !!m && !m.hidden; };
+        [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'WR').click(); await wait(40);
+        const rowsWR = [...d.querySelectorAll('#peBody tr.pe-plrow')];
+        chk(rowsWR.length === 10 && rowsWR.every(tr => tr.querySelector('button.pe-plbtn')), 'the receivers in the rankings are not clickable');
+        const withMu = rowsWR.find(tr => MU.players[tr.dataset.pePl] && !w.eloRuledOut(tr.dataset.pePl));
+        if (withMu) { withMu.click(); await wait(40);
+          const view = d.getElementById('pePlView'), pid = withMu.dataset.pePl, v = MU.players[pid];
+          chk(plOpen() && txt(view).includes(eloP.players[pid].name) && view.querySelectorAll('.pe-pl-tiles div').length === 4, 'clicking a receiver did not open his window with his rating');
+          const statRows = [...view.querySelectorAll('tbody tr')];
+          chk(statRows.length === MU.stats.WR.filter(st => v.stats[st]).length && txt(view).includes(v.opp), 'the window does not show a row per stat and the opponent: ' + statRows.length);
+          { const sts = MU.stats.WR.filter(st => v.stats[st]), trusted = st => { const p = (MU.record['WR|' + st] || {}).past; return !!p && p.rmse_elo < p.rmse_form && p.right_top >= 0.53; };
+            chk(statRows.every((tr, i) => tr.classList.contains('pe-weak') === !trusted(sts[i])), 'a stat is faded where it should not be, or the other way round'); }
+          chk(view.querySelectorAll('.pe-pl-def span').length === 3 && /of \d+/.test(txt(view.querySelector('.pe-pl-def'))), 'the window does not rank the three units he faces');
+          d.getElementById('pePlClose').click(); await wait(20);
+          chk(!plOpen(), 'Close did not close the player window');
+          withMu.querySelector('button.pe-plbtn').click(); await wait(20);
+          chk(plOpen(), 'the name button did not open the window');
+          d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+          chk(!plOpen(), 'Escape did not close the player window');
+        } else chk(false, 'no ranked receiver has a matchup this week to open');
+        [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'K').click(); await wait(40);
+        d.querySelector('#peBody tr.pe-plrow').click(); await wait(20);
+        chk(plOpen() && /no matchup formula for kickers/.test(txt(d.getElementById('pePlView'))) && !d.querySelector('#pePlView tbody tr'), 'a kicker\'s window does not say there is no formula');
+        d.getElementById('pePlClose').click(); await wait(20); }
       [...d.querySelectorAll('#peBody .pe-pos button')].find(b => b.dataset.pos === 'QB').click(); await wait(40);
     }
     /* mismatches over the Props game list: five bubbles, biggest first, the top thirty in a window */
@@ -638,12 +660,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
-    const wts = [...body.querySelectorAll('.card')].find(c => /What each position is worth/.test(txt(c.querySelector('h2'))));
-    chk(!!wts && wts.querySelectorAll('.pe-w div').length === eloM.groups.length, 'the weights card does not show one weight per group');
-    chk(!!wts && wts.querySelectorAll('.pe-heat tbody tr').length === Object.keys(eloM.by_season).length, 'the by-season table is not one row per season');
     chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))), 'the tab bar does not carry the walk-forward record: ' + txt(d.getElementById('peWalkRec')));
     /* the data has the shape the tab relies on */
-    chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1300 && r.elo < 1800)), 'a group has fewer than ten rated players or a rating out of range');
+    chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1100 && r.elo < 1900)), 'a group has fewer than ten rated players or a rating out of range');
     /* the rankings are this season's: everyone ranked has played enough of it, and a badge's place is that rank */
     chk(eloM.groups.every(g => eloP.groups[g].min_games >= 1 && eloP.groups[g].top.every(r => r.games >= eloP.groups[g].min_games && Array.isArray(r.this_season) && r.this_season.length >= 1)), 'a ranked player has too few games this season');
     chk(Object.values(eloP.players).every(v => (v.rank == null) === (v.se == null)) && eloM.groups.every(g => eloP.groups[g].top.every(r => eloP.players[r.id] && eloP.players[r.id].rank === r.rank && eloP.players[r.id].se === r.elo)), 'the players map and the table disagree on a season rank');
