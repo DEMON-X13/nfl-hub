@@ -178,15 +178,24 @@ def assemble(seasons, qb_Y, fresh: Path | None = None, upcoming: bool = False):
     point_harness_at_frozen()
     games_all = games_table(fresh)
     games_all = games_all[games_all.season.isin(seasons)]
-    played = games_all[games_all.result.notna()].reset_index(drop=True)
     stats = stats_table(seasons, fresh)
+    # a final whose team stats are not on nflverse yet (the score lands within minutes, the
+    # play-by-play hours later, as a London game's did) is scored as still to come and taken
+    # in on a later run, rather than stopping the job; a past season missing rows still fails
+    have = set(zip(stats.game_id, stats.team))
+    pending = games_all.result.notna() & (games_all.season == SEASON) & ~pd.Series(
+        [(g, h) in have and (g, a) in have for g, h, a in zip(games_all.game_id, games_all.home_team, games_all.away_team)],
+        index=games_all.index)
+    if pending.any():
+        print(f"waiting on stats for {', '.join(games_all[pending].game_id)}: scored as upcoming", flush=True)
+    played = games_all[games_all.result.notna() & ~pending].reset_index(drop=True)
     passers(fresh)
     cols = sources.APP_STAT_COLS
     lm = sources.league_means(stats, cols)
     feats, state = build_features(played[data.GAME_COLS], stats, cols, lm, Params(warm=0))
     feats["played"] = True
     if upcoming:
-        un = games_all[games_all.result.isna() & (games_all.season == SEASON) & (games_all.game_type == "REG")]
+        un = games_all[(games_all.result.isna() | pending) & (games_all.season == SEASON) & (games_all.game_type == "REG")]
         if len(un):
             wk = int(un.week.min())
             un = un[un.week == wk].reset_index(drop=True)
