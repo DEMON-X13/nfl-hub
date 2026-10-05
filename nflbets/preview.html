@@ -321,6 +321,7 @@ body.modal-open{overflow:hidden}
 
 .game.locked{background:var(--panel)}
 .game.final .pill.ok{background:#E1EBF7;color:#1E3D66}
+.slatesep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
 .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
 .res.win{color:var(--pick)} .res.loss{color:var(--miss)}
 .rungs tr.hit td{background:#EEF7F1} .rungs tr.miss td{background:#FBF0EF}
@@ -379,6 +380,7 @@ body.modal-open{overflow:hidden}
 /* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
 .pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
 .pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pk-sep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
 .pk-gamehead .pk-c{text-align:center}
 .pk-game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
 .pk-game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
@@ -1226,7 +1228,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v75 \u00b7 2026-10-03';
+const APP_BUILD='app v76 \u00b7 2026-10-05';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2044,7 +2046,7 @@ function renderSlate(){
     </div>`;
     return;
   }
-  const rows=gs.map(g=>{
+  const card=g=>{
     const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
@@ -2068,7 +2070,10 @@ function renderSlate(){
         return tag(pick)+`<small>by ${by}</small><small class="act ${right?'right':'wrong'}">${right?'\u2713 ':'\u2717 '}${real} by ${Math.abs(g.as-g.hs)}</small>`;
       })()}</div>
       <div class="chev">\u203a</div></button>`;
-  }).join('');
+  };
+  /* the games still to play, live ones too, first in kickoff order; the finals under a heading */
+  const todo=gs.filter(g=>!gameFinal(g)), done=gs.filter(g=>gameFinal(g));
+  const rows=todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
     S.ui.game=b.dataset.game; S.ui.open={}; save(); renderGame(); }));
@@ -4221,7 +4226,7 @@ function render(){
   if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
   const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Score prediction</div><div class="pk-c">Final score</div></div>';
   const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
-  el('pkBoard').innerHTML=HEAD+games.map(g=>{
+  const row=g=>{
     const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
     const pick=c?c.pick:null;
     const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
@@ -4244,7 +4249,12 @@ function render(){
       <div class="pk-pred">${predCell(g,c)}</div>
       <div class="pk-result">${resultCell(g,c)}</div>
     </div>`;
-  }).join('');
+  };
+  /* the games still to play, live ones too, first in kickoff order; the finals under a heading,
+     so the evening's games are not below a screen of results */
+  const fin=g=>{ const o=outcome(g); return !!(o&&o.final); };
+  const todo=games.filter(g=>!fin(g)), done=games.filter(fin);
+  el('pkBoard').innerHTML=HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
   el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
     if(e.target.closest('.pk-gbody')) return;          /* the prices are not a toggle */
     const open=card.classList.toggle('pk-open');
@@ -4461,7 +4471,7 @@ function playerModal(pid){
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
       <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
       <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Recent form</th><th class="pe-n">Elo matchup</th><th class="pe-n">Projection</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="pe-note">Recent form is his recent average (the latest games count most). The Elo matchup is what his own rating and the ratings of the ${esc(v.opp)} defenders he faces add or take away; the defences are ranked among this week's, 1st the best. Faded rows are stats where the Elo part has not held up in past seasons, and are not used for Elo picks.</p>`;
+      <p class="pe-note">Recent form is his recent average (the latest games count most). The Elo matchup is what his own rating and the ratings of the ${esc(v.opp)} defenders he faces add or take away; the defences are ranked among all 32, 1st the best. Faded rows are stats where the Elo part has not held up in past seasons, and are not used for Elo picks.</p>`;
   }
   el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span><span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
     <div class="pe-pl-tiles">
@@ -4761,7 +4771,7 @@ function mismatches(){
   const byTeam={}; for(const v of P) byTeam[v.opp]=v.opp_def;
   if(L.defs) Object.assign(byTeam,L.defs);
   for(const g of Object.keys(MM_UNIT)){ const vals=Object.values(byTeam).map(d=>MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length); dz[g]=zs(vals); }
-  /* each unit ranked among this week's defences, 1 the best */
+  /* each unit ranked among the league's defences (this week's without league.defs), 1 the best */
   const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]).sort((x,y)=>y[1]-x[1]);
     rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t],i)=>[t,i+1]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
@@ -4818,7 +4828,7 @@ function mismatchModal(rows){
     <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
     <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among this week's, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among all 32, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
     <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
   m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));

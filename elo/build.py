@@ -958,13 +958,28 @@ def main():
         # the whole league beside the coming games, so the page's Mismatches measure a starter
         # and the unit he faces against every team, not just the games still to play this week
         # (on a Monday that is two teams, and the weaker of two defences read as "ranked 2nd"):
-        # each team's defensive units on its expected lineup, and each position's starters
-        # (the DEPTH best of every team's lineup by career rating) as a mean and a spread
-        tops = {g: [r for parts in lineup.values()
+        # every team on the same rule, its expected starters for its next game (that game's
+        # depth chart minus the Outs and the inactive, as the coming games are), or for a team
+        # with none left its last game's; each team's defensive units on them, and each
+        # position's starters (the DEPTH best of every lineup by career rating) as a mean and
+        # a spread
+        not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
+        league = {}
+        for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
+            nxt = upcoming[(upcoming.home_team == t) | (upcoming.away_team == t)].sort_values('ord')
+            if len(nxt):
+                r0 = nxt.iloc[0]
+                league[t], _ = expected(last, r0.week, t, r0.gameday, played.get((last, t)), not_active)
+            else:
+                gone = [k for k in mu_lineups if k[1] == t and k[0].startswith(f'{last}_')]
+                if gone:
+                    league[t] = mu_lineups[max(gone)]
+        league = {t: parts for t, parts in league.items() if parts}
+        tops = {g: [r for parts in league.values()
                     for r in sorted((R.get(p, REPLACEMENT) for p, gg in parts if gg == g), reverse=True)[:len(DEPTH[g])]]
                 for g in MU_STATS}
-        mu['league'] = {'defs': {t: {u: round(v) for u, v in strength(parts).items() if u in MU_DEF}
-                                 for t, parts in sorted(lineup.items())},
+        mu['league'] = {'defs': {t: {u: round(v, 1) for u, v in strength(parts).items() if u in MU_DEF}   # a tenth: whole points tie a third of the league
+                                 for t, parts in sorted(league.items())},
                         'norms': {g: [round(float(np.mean(v)), 1), round(float(np.std(v, ddof=1)), 1)]
                                   for g, v in tops.items() if len(v) > 1}}
         mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'],

@@ -89,7 +89,7 @@ function renderSlate(){
     </div>`;
     return;
   }
-  const rows=gs.map(g=>{
+  const card=g=>{
     const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
@@ -113,7 +113,10 @@ function renderSlate(){
         return tag(pick)+`<small>by ${by}</small><small class="act ${right?'right':'wrong'}">${right?'\u2713 ':'\u2717 '}${real} by ${Math.abs(g.as-g.hs)}</small>`;
       })()}</div>
       <div class="chev">\u203a</div></button>`;
-  }).join('');
+  };
+  /* the games still to play, live ones too, first in kickoff order; the finals under a heading */
+  const todo=gs.filter(g=>!gameFinal(g)), done=gs.filter(g=>gameFinal(g));
+  const rows=todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
     S.ui.game=b.dataset.game; S.ui.open={}; save(); renderGame(); }));

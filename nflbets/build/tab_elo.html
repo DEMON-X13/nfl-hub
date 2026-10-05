@@ -214,7 +214,7 @@ function playerModal(pid){
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
       <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
       <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Recent form</th><th class="pe-n">Elo matchup</th><th class="pe-n">Projection</th></tr></thead><tbody>${rows}</tbody></table>
-      <p class="pe-note">Recent form is his recent average (the latest games count most). The Elo matchup is what his own rating and the ratings of the ${esc(v.opp)} defenders he faces add or take away; the defences are ranked among this week's, 1st the best. Faded rows are stats where the Elo part has not held up in past seasons, and are not used for Elo picks.</p>`;
+      <p class="pe-note">Recent form is his recent average (the latest games count most). The Elo matchup is what his own rating and the ratings of the ${esc(v.opp)} defenders he faces add or take away; the defences are ranked among all 32, 1st the best. Faded rows are stats where the Elo part has not held up in past seasons, and are not used for Elo picks.</p>`;
   }
   el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span><span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
     <div class="pe-pl-tiles">
@@ -514,7 +514,7 @@ function mismatches(){
   const byTeam={}; for(const v of P) byTeam[v.opp]=v.opp_def;
   if(L.defs) Object.assign(byTeam,L.defs);
   for(const g of Object.keys(MM_UNIT)){ const vals=Object.values(byTeam).map(d=>MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length); dz[g]=zs(vals); }
-  /* each unit ranked among this week's defences, 1 the best */
+  /* each unit ranked among the league's defences (this week's without league.defs), 1 the best */
   const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]).sort((x,y)=>y[1]-x[1]);
     rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t],i)=>[t,i+1]))}; }
   return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
@@ -571,7 +571,7 @@ function mismatchModal(rows){
     <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
     <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
   document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
-    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among this week's, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among all 32, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
     <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   document.getElementById('peMmClose').addEventListener('click',mmClose);
   m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));
