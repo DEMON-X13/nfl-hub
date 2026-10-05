@@ -123,6 +123,28 @@ function renderSlate(){
   if(S.ui.game) renderGame();
 }
 
+/* ---------- a player's season, week by week (the Show stats button) ---------- */
+const WEEK_COLS={
+  QB:[['C/Att',a=>`${a.completions}/${a.attempts}`,null],['Pass yds','passing_yards'],['Pass TD','passing_tds'],['INT','passing_interceptions'],['Rush yds','rushing_yards']],
+  RB:[['Car','carries'],['Rush yds','rushing_yards'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
+  WR:[['Tgt','targets'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
+  TE:[['Tgt','targets'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
+  K:[['FG',a=>`${a.fg_made}/${a.fg_att}`,null],['XP','pat_made'],['Pts','kick_pts']]};
+function weekStats(pl){
+  const cols=WEEK_COLS[pl.grp]||WEEK_COLS.WR;
+  const wks=Object.keys(S.actuals||{}).map(Number).filter(w=>actualFor(w,pl.id)).sort((a,b)=>a-b);
+  if(!wks.length) return '<div class="wkstats"><p class="muted" style="margin:0">No games with stats this season yet.</p></div>';
+  const cell=(a,c)=>typeof c[1]==='function'?c[1](a):num(a[c[1]]||0,0);
+  const rows=wks.map(w=>{ const a=actualFor(w,pl.id);
+    return `<tr><td>Wk ${w}</td><td>${a.opp?tag(a.opp):''}</td>${cols.map(c=>`<td class="num">${cell(a,c)}</td>`).join('')}</tr>`; }).join('');
+  /* the average a game, for the columns that are a single number */
+  const avg=cols.map(c=>{ if(typeof c[1]==='function') return '<td class="num muted">\u2013</td>';
+    const s=wks.reduce((t,w)=>t+(actualFor(w,pl.id)[c[1]]||0),0)/wks.length;
+    return `<td class="num"><b>${num(s,s<10?1:0)}</b></td>`; }).join('');
+  return `<div class="wkstats"><table><thead><tr><th>Week</th><th>Opp</th>${cols.map(c=>`<th class="num">${c[0]}</th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><td colspan="2">Per game (${wks.length})</td>${avg}</tr></tfoot></table></div>`;
+}
+
 /* ---------- one game ---------- */
 function summaryOf(x,lines){
   const want=HEADLINE[x.pl.grp]||[];
@@ -242,14 +264,15 @@ function renderGame(){
     for(const x of t.players){
       const lines=statLines(x);
       if(!lines.length) continue;
-      const open=!!S.ui.open[x.pl.id];
+      const open=!!S.ui.open[x.pl.id], stOpen=!!(S.ui.stats&&S.ui.stats[x.pl.id]);
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
-        <div class="who">${esc(x.pl.n)}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span></div>
+        <div class="who">${esc(x.pl.n)}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span><span class="stbtn${stOpen?' on':''}" role="button" tabindex="0" data-stats="${x.pl.id}" aria-pressed="${stOpen}">${stOpen?'Hide stats':'Show stats'}</span></div>
         <div class="sum">${locked?`<span class="finchip${fin?'':' live'}">${fin?'FINAL':'LIVE'}</span>`:''}${
           (locked&&haveStats)?actualSummary(x,lines,g.w)
           :(locked&&liveOn?actualSummary(x,lines,g.w,liveStatsFor(g.id,team,x.pl.n))
           :(locked?'<span class="muted">projected</span> '+summaryOf(x,lines):summaryOf(x,lines)))}</div>
         <div class="arrow">${open?'\u2303':'\u2304'}</div></button>`;
+      if(stOpen) html+=weekStats(x.pl);
       if(!open) continue;
       html+='<div class="plrbody">';
       if(locked){
@@ -365,7 +388,11 @@ function renderGame(){
   $('gameStatsNow')?.addEventListener('click',()=>refreshGameStats(g));
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
-  $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+  $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',e=>{
+    const st=e.target.closest&&e.target.closest('[data-stats]');
+    if(st){ const sid=st.dataset.stats, U=(S.ui.stats??={});
+      if(U[sid]) delete U[sid]; else U[sid]=true;
+      renderGame.anchor=sid; save(); renderGame(); return; }
     const id=b.dataset.open;
     /* one player open at a time: opening a player closes whoever else was open */
     S.ui.open=S.ui.open[id]?{}:{[id]:true};
