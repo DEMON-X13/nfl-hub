@@ -588,7 +588,7 @@ document.addEventListener('click',()=>setTimeout(decorate,0),true);
 document.addEventListener('app-ready',decorate);
 function draw(){
   const body=el('peBody');
-  if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>Player Elo</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
+  if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>ELO Ratings</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
   defs(); decorate(); trackAlt();
   body.innerHTML=rankings();
   body.querySelectorAll('tr.pe-plrow').forEach(tr=>tr.addEventListener('click',()=>playerModal(tr.dataset.pePl)));

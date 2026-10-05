@@ -210,8 +210,8 @@ const TABS = [
   ['pickems', "Pick'ems"],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builders'],
-  ['ratings', 'Power Ratings', 'ratings'],
-  ['elo', 'Player Elo'],
+  ['ratings', 'Team Rankings', 'ratings'],
+  ['elo', 'ELO Ratings'],
   ['record', "Pick'em Record", 'record'],
   ['bets', 'Bet Log', 'bets'],
 ];
