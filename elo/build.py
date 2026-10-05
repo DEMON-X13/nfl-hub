@@ -77,7 +77,12 @@ Elo in which every team starts the season at 0 (shown as 1500) and, after each f
 with K 1.3461, H 30.02 (0 at a neutral site), D 25, C 21. A favourite that wins by less than
 it was expected to loses points and the underdog gains them, both toward the middle; a
 blowout beyond 21 counts as 21. The chance against an average team on a neutral field is
-1 / (1 + 10^(-S * R / 400)) with S 1.5771, so it follows the order. Shown as
+1 / (1 + 10^(-S * R / 400)) with S 1.5771, so it follows the order. The players count too, at
+three tenths: the rating used is 0.7 of R and 0.3 of each team's expected lineup on this
+season's player Elo (the game model's weights, a log-odds against a team of 1500s, centred on
+the league, turned into these points), which walk-forward took the log loss from 0.648 to 0.643
+on 2018-2025 and from 0.686 to 0.681 in weeks 2-6 (0.25 to 0.4 all did as well; less than the
+results, as the owner asked). Shown as
 1500 + 100 * R / 79 (79 Elo is the usual spread across the teams by the end of a regular
 season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season does.
 Why not the lineups: rated walk-forward on 2018-2025 (weeks 2 on, parameters fitted on
@@ -261,11 +266,12 @@ def load(offline):
     return games, stats, roster, inj, charts, injuries
 
 
-PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0
+PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.3
 
 
-def power_ratings(season_games):
-    """The teams' power ratings: this season's margin Elo (see THE POWER RATINGS)."""
+def power_ratings(season_games, lineup=None, lineup_before=None):
+    """The teams' power ratings: this season's margin Elo with the lineups' player Elo blended
+    in at PR_W, in log-odds (see THE POWER RATINGS)."""
     g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
     g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
     g = g.sort_values(['kick', 'game_id'], kind='mergesort')
@@ -283,9 +289,13 @@ def power_ratings(season_games):
             rec[r.away_team][1 if m > 0 else 0 if m < 0 else 2] += 1
         R[r.home_team] += PR_K * d
         R[r.away_team] -= PR_K * d
+    to_pts = 400 / (PR_S * math.log(10))      # a log-odds in the margin Elo's points
+    mix = lambda r, lg: (1 - PR_W) * r + PR_W * lg * to_pts if lg is not None else r
+    now = {t: mix(R[t], (lineup or {}).get(t)) for t in teams}
+    then = {t: mix(before[t], (lineup_before or {}).get(t)) for t in before}
     show = lambda v: round(1500 + 100 * v / PR_SPREAD)
-    return {t: {'elo': show(R[t]), 'before': show(before[t]) if t in before else None,
-                'p_avg': round(1 / (1 + 10 ** (-PR_S * R[t] / 400)), 4), 'record': rec[t]} for t in sorted(teams)}
+    return {t: {'elo': show(now[t]), 'before': show(then[t]) if t in then else None,
+                'p_avg': round(1 / (1 + 10 ** (-PR_S * now[t] / 400)), 4), 'record': rec[t]} for t in sorted(teams)}
 
 
 def build_lineups(charts, injuries):
@@ -759,7 +769,42 @@ def main():
             calls.append({'game_id': row.game_id, 'p_home': round(p, 4), 'pick': pick})
             shown.append(f"{row.away_team}@{row.home_team} {pick} {max(p, 1 - p):.0%} ({qb(ea)} v {qb(eh)})")
     # ---- each team on its own: the power ratings (see THE POWER RATINGS) ----
-    team_rows = power_ratings(games[games.season == last])
+    # the lineup part: each team's expected lineup for the coming week (a team on its bye or
+    # already played this week: who took the field last game, minus anyone off the active list)
+    # scored on this season's player ratings (RS) by the game model's weights, a log-odds against
+    # a team of 1500s centred on the league; before is the same lineup on the ratings it had
+    # going into the team's last game
+    w_logit = lambda st: sum(coef[g] * (st[g] - 1500) / 100 for g in GROUPS)
+    def rs_at(pid, before_ord=None):
+        if before_ord is None:
+            return RS.get(pid, 1500.0)
+        prior = [v for o, v in HS.get(pid, []) if o < before_ord]
+        return prior[-1] if prior else 1500.0
+    def season_strength(parts, before_ord=None):
+        out = {}
+        for g in GROUPS:
+            rs = sorted((rs_at(p, before_ord) for p, gg in parts if gg == g), reverse=True)
+            wts = DEPTH[g]
+            rs = (rs + [1500.0] * len(wts))[:len(wts)]
+            out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
+        return out
+    lineup = {c['team']: c['parts'] for c in coming}
+    not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
+    for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
+        if t not in lineup and played.get((last, t)):
+            lineup[t] = [(pid, g) for pid, g in played[(last, t)] if pid not in not_active]
+    last_game = {}
+    for r in game_feat:
+        if r['season'] == last and r['result'] is not None:
+            for t in (r['home'], r['away']):
+                last_game[t] = max(last_game.get(t, 0), r['ord'])
+    now_st = {t: season_strength(parts) for t, parts in lineup.items()}
+    before_st = {t: season_strength(lineup[t], last_game[t]) for t in lineup if t in last_game}
+    def centred(st):
+        lg = {t: w_logit(v) for t, v in st.items()}
+        mean = sum(lg.values()) / len(lg) if lg else 0
+        return {t: v - mean for t, v in lg.items()}
+    team_rows = power_ratings(games[games.season == last], centred(now_st), centred(before_st))
     n_ok = sum(1 for g in graded if g['correct'] is True)
     n_gr = sum(1 for g in graded if g['correct'] is not None)
     model = {
