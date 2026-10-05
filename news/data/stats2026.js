@@ -12,7 +12,7 @@ const STATS26 = {
   "ska": 1.8,
   "third": 39.3,
   "rz": 57.1,
-  "expl": 0.7
+  "expl": 1.3
  },
  "ATL": {
   "ppg": 17,
@@ -36,7 +36,7 @@ const STATS26 = {
   "ska": 1.8,
   "third": 32.4,
   "rz": 73.3,
-  "expl": 5
+  "expl": 4.8
  },
  "BUF": {
   "ppg": 31.8,
@@ -48,19 +48,19 @@ const STATS26 = {
   "ska": 2.3,
   "third": 53.3,
   "rz": 68.8,
-  "expl": 5.7
+  "expl": 5.5
  },
  "CAR": {
-  "ppg": 29.7,
-  "pa": 27.7,
-  "ypp": 6,
-  "yppa": 5.5,
-  "to": 1,
-  "sk": 2.3,
-  "ska": 2.3,
-  "third": 36.8,
-  "rz": 61.5,
-  "expl": 4.7
+  "ppg": 30.3,
+  "pa": 27.3,
+  "ypp": 6.1,
+  "yppa": 5.8,
+  "to": 0.8,
+  "sk": 2,
+  "ska": 2.5,
+  "third": 38,
+  "rz": 64.7,
+  "expl": 5
  },
  "CHI": {
   "ppg": 28,
@@ -72,7 +72,7 @@ const STATS26 = {
   "ska": 1.8,
   "third": 47.4,
   "rz": 42.1,
-  "expl": 4.3
+  "expl": 4.8
  },
  "CIN": {
   "ppg": 24.3,
@@ -84,7 +84,7 @@ const STATS26 = {
   "ska": 2.3,
   "third": 45.3,
   "rz": 50,
-  "expl": 3.7
+  "expl": 3.5
  },
  "CLE": {
   "ppg": 20.3,
@@ -108,7 +108,7 @@ const STATS26 = {
   "ska": 1.5,
   "third": 51,
   "rz": 81.3,
-  "expl": 2
+  "expl": 2.5
  },
  "DEN": {
   "ppg": 18.5,
@@ -120,19 +120,19 @@ const STATS26 = {
   "ska": 1.3,
   "third": 39.6,
   "rz": 63.6,
-  "expl": 2.7
+  "expl": 2.5
  },
  "DET": {
-  "ppg": 31,
-  "pa": 31.7,
-  "ypp": 5.6,
-  "yppa": 5.8,
-  "to": 1,
-  "sk": 4,
-  "ska": 2.3,
-  "third": 41.2,
-  "rz": 78.6,
-  "expl": 3.3
+  "ppg": 29.8,
+  "pa": 31.8,
+  "ypp": 5.8,
+  "yppa": 5.9,
+  "to": 0.8,
+  "sk": 3.8,
+  "ska": 2,
+  "third": 39.1,
+  "rz": 72.2,
+  "expl": 3.5
  },
  "GB": {
   "ppg": 18.3,
@@ -144,7 +144,7 @@ const STATS26 = {
   "ska": 2,
   "third": 26.1,
   "rz": 46.7,
-  "expl": 4
+  "expl": 3.8
  },
  "HOU": {
   "ppg": 21,
@@ -156,7 +156,7 @@ const STATS26 = {
   "ska": 3,
   "third": 35.2,
   "rz": 57.1,
-  "expl": 3.7
+  "expl": 4.8
  },
  "IND": {
   "ppg": 25.5,
@@ -168,7 +168,7 @@ const STATS26 = {
   "ska": 2,
   "third": 37.7,
   "rz": 75,
-  "expl": 3.3
+  "expl": 2.8
  },
  "JAX": {
   "ppg": 26,
@@ -180,7 +180,7 @@ const STATS26 = {
   "ska": 2,
   "third": 51.1,
   "rz": 81.8,
-  "expl": 2.7
+  "expl": 3.3
  },
  "KC": {
   "ppg": 29.5,
@@ -192,7 +192,7 @@ const STATS26 = {
   "ska": 1.5,
   "third": 44,
   "rz": 63.2,
-  "expl": 4.3
+  "expl": 4.8
  },
  "LV": {
   "ppg": 28.8,
@@ -204,7 +204,7 @@ const STATS26 = {
   "ska": 1.3,
   "third": 39.6,
   "rz": 53.3,
-  "expl": 2.7
+  "expl": 3.5
  },
  "LAC": {
   "ppg": 16.8,
@@ -216,7 +216,7 @@ const STATS26 = {
   "ska": 3,
   "third": 34.6,
   "rz": 58.3,
-  "expl": 2.7
+  "expl": 3.3
  },
  "LAR": {
   "ppg": 21.3,
@@ -228,7 +228,7 @@ const STATS26 = {
   "ska": 1.5,
   "third": 43.1,
   "rz": 53.3,
-  "expl": 5
+  "expl": 4.8
  },
  "MIA": {
   "ppg": 11.5,
@@ -240,7 +240,7 @@ const STATS26 = {
   "ska": 2.8,
   "third": 38,
   "rz": 33.3,
-  "expl": 3.3
+  "expl": 2.8
  },
  "MIN": {
   "ppg": 21.5,
@@ -252,7 +252,7 @@ const STATS26 = {
   "ska": 3.3,
   "third": 34.4,
   "rz": 50,
-  "expl": 2.7
+  "expl": 2.8
  },
  "NE": {
   "ppg": 16.3,
@@ -264,7 +264,7 @@ const STATS26 = {
   "ska": 2.5,
   "third": 34.6,
   "rz": 44.4,
-  "expl": 3.7
+  "expl": 3.8
  },
  "NO": {
   "ppg": 27,
@@ -288,7 +288,7 @@ const STATS26 = {
   "ska": 2.8,
   "third": 43.4,
   "rz": 54.6,
-  "expl": 1
+  "expl": 2
  },
  "NYJ": {
   "ppg": 19,
@@ -300,7 +300,7 @@ const STATS26 = {
   "ska": 3,
   "third": 32,
   "rz": 54.6,
-  "expl": 3.7
+  "expl": 3
  },
  "PHI": {
   "ppg": 18.8,
@@ -312,7 +312,7 @@ const STATS26 = {
   "ska": 3,
   "third": 35.9,
   "rz": 61.5,
-  "expl": 3.7
+  "expl": 2.8
  },
  "PIT": {
   "ppg": 19.3,
@@ -348,7 +348,7 @@ const STATS26 = {
   "ska": 1.5,
   "third": 31.1,
   "rz": 56.3,
-  "expl": 3.3
+  "expl": 3.8
  },
  "TB": {
   "ppg": 19,
@@ -360,7 +360,7 @@ const STATS26 = {
   "ska": 4,
   "third": 34.6,
   "rz": 41.7,
-  "expl": 3
+  "expl": 2.8
  },
  "TEN": {
   "ppg": 13.8,
@@ -372,7 +372,7 @@ const STATS26 = {
   "ska": 1.5,
   "third": 35.4,
   "rz": 50,
-  "expl": 2
+  "expl": 2.8
  },
  "WAS": {
   "ppg": 22,
@@ -384,7 +384,7 @@ const STATS26 = {
   "ska": 1.3,
   "third": 31.6,
   "rz": 54.6,
-  "expl": 2.3
+  "expl": 2.8
  }
 };
 const STATS26_THROUGH = "Week 3";

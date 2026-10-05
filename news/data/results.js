@@ -194,6 +194,10 @@ const RESULTS = {
   7,
   27
  ],
+ "wk4:PIT-CLE": [
+  24,
+  27
+ ],
  "wk4:IND-WAS": [
   30,
   13
@@ -246,8 +250,8 @@ const RESULTS = {
   23,
   30
  ],
- "wk4:PIT-CLE": [
-  24,
-  27
+ "wk4:DET-CAR": [
+  26,
+  32
  ]
 };
