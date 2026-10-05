@@ -198,6 +198,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(200);
   chk(sbReads() === sbBefore + 1, `Refresh scores did not read the scoreboard again: ${sbBefore} -> ${sbReads()}`);
   cards = [...d.querySelectorAll('.pk-game')];        /* the board is redrawn on every read */
+  /* the games still to play first, the finals under one Completed heading right above them */
+  { const kids = [...d.getElementById('pkBoard').children].filter(n => n.matches('.pk-game,.pk-sep'));
+    const firstFin = kids.findIndex(n => n.matches('.pk-game.pk-played')), seps = kids.filter(n => n.matches('.pk-sep'));
+    const lastTodo = kids.map(n => n.matches('.pk-game:not(.pk-played)')).lastIndexOf(true);
+    chk(firstFin < 0 || lastTodo < firstFin, 'a game still to play sits below a final on the board');
+    chk(firstFin < 0 ? seps.length === 0 : (seps.length === 1 && kids[firstFin - 1] === seps[0] && /Completed/.test(txt(seps[0]))),
+      'the board\'s Completed heading is missing, doubled or not right above the first final'); }
   const graded = cards.find(c => c.classList.contains('pk-played'));
   if (graded) chk(!!graded.querySelector('.pk-matchup .pk-res') && /Pick (hit|missed)/.test(txt(graded.querySelector('.pk-result'))),
     'a graded game shows no tick or cross and no Pick hit/missed');
@@ -614,8 +621,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     { const MU = JSON.parse(ELO_MU); [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
       w.eval('renderSlate()'); await wait(60);
       const onWeek = +d.getElementById('weekSel').value === +MU.week, card = d.getElementById('peMism');
-      if (onWeek) {
-        const rows = w.eloMismatches(), bubbles = [...card.querySelectorAll('.pe-mm-b')];
+      /* a lean week, a Monday with one game say, can have no starter above his position's
+         league average facing a unit below the league's: then there is no card, and no failure */
+      const rows0 = onWeek ? w.eloMismatches() : [];
+      if (onWeek && !rows0.length) chk(!card, 'a week with no mismatches still draws the card');
+      if (onWeek && rows0.length) {
+        const rows = rows0, bubbles = [...card.querySelectorAll('.pe-mm-b')];
         chk(rows.length > 0 && bubbles.length === Math.min(5, rows.length) && rows.every((r, i) => i === 0 || r.score <= rows[i - 1].score) && rows.every(r => r.zp > 0 && r.zd < 0),
           'the mismatch bubbles are not the five biggest favourable gaps');
         chk(bubbles[0].textContent.includes(rows[0].score.toFixed(1)) && card === d.querySelector('#slateView .bar').nextElementSibling, 'the mismatches card is not first under the Props bar');

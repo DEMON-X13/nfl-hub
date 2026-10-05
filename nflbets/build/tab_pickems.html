@@ -9,6 +9,7 @@
 /* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
 .pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
 .pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pk-sep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
 .pk-gamehead .pk-c{text-align:center}
 .pk-game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
 .pk-game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
@@ -247,7 +248,7 @@ function render(){
   if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
   const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Score prediction</div><div class="pk-c">Final score</div></div>';
   const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
-  el('pkBoard').innerHTML=HEAD+games.map(g=>{
+  const row=g=>{
     const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
     const pick=c?c.pick:null;
     const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
@@ -270,7 +271,12 @@ function render(){
       <div class="pk-pred">${predCell(g,c)}</div>
       <div class="pk-result">${resultCell(g,c)}</div>
     </div>`;
-  }).join('');
+  };
+  /* the games still to play, live ones too, first in kickoff order; the finals under a heading,
+     so the evening's games are not below a screen of results */
+  const fin=g=>{ const o=outcome(g); return !!(o&&o.final); };
+  const todo=games.filter(g=>!fin(g)), done=games.filter(fin);
+  el('pkBoard').innerHTML=HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
   el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
     if(e.target.closest('.pk-gbody')) return;          /* the prices are not a toggle */
     const open=card.classList.toggle('pk-open');

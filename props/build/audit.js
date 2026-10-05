@@ -230,6 +230,20 @@ setTimeout(async()=>{
   chk(JSON.stringify(S2.parlay)===JSON.stringify(S.parlay)&&JSON.stringify(S2.processed)===JSON.stringify(S.processed),'backup round-trip changed state');
   console.log(`G. state flow: ingest ok, week stays on ${F('currentWeek')()} (schedule-driven), re-upload skipped, legs preserved, backup round-trips`);
 
+  /* ---- G4. the list puts the games still to play first and the finals under a heading ---- */
+  { const ws=d.getElementById('weekSel'), keep=ws.value, seen=[];
+    for(const wk of ['1',String(F('currentWeek')())]){
+      if(![...ws.options].some(o=>o.value===wk)) continue;
+      ws.value=wk; F('renderSlate')();
+      const kids=[...d.getElementById('gamesList').children].filter(n=>n.matches('.game,.slatesep'));
+      const firstFinal=kids.findIndex(n=>n.matches('.game.final')), seps=kids.filter(n=>n.matches('.slatesep'));
+      const lastTodo=kids.map(n=>n.matches('.game:not(.final)')).lastIndexOf(true);
+      chk(firstFinal<0||lastTodo<firstFinal,`week ${wk}: a game still to play sits below a final`);
+      chk(firstFinal<0?seps.length===0:(seps.length===1&&kids[firstFinal-1]===seps[0]),`week ${wk}: the Completed heading is missing, doubled or not right above the first final`);
+      seen.push(`week ${wk} ${kids.filter(n=>n.matches('.game:not(.final)')).length} to play, ${kids.filter(n=>n.matches('.game.final')).length} final`); }
+    ws.value=keep; F('renderSlate')();
+    console.log(`G4. slate order: ${seen.join('; ')}`); }
+
   /* ---- G2. a played game's projections must not move once results land ---- */
   {
     const gp=S.sched.find(x=>x.w===1&&F('gameFinal')(x));
