@@ -220,7 +220,7 @@ Searches to run:
 
 New York Jets, injuries:
 - Jason Sanders (PK) Active: Sanders made both of his field-goal tries and went 1-for-2 on PATs during Sunday's 23-12 loss to the Bears.
-- Jarvis Brownlee Jr. (CB) Questionable, Head: questionable
+- Jarvis Brownlee Jr. (CB) Questionable, Concussion: questionable
 - Isaiah Williams (WR) Active: Williams caught two of three targets for 73 yards and a touchdown in Sunday's 23-12 loss to the Bears.
 - Braiden McGregor (DE) Questionable, Chest: McGregor exited Sunday's game against the Bears with a chest injury and did not return.
 - Geno Smith (QB) Active: Smith completed eight of 15 pass attempts for 119 yards and a touchdown in Sunday's 23-12 loss to the Bears.
@@ -248,7 +248,7 @@ New York Jets, injuries:
 New York Jets, ESPN headlines:
 
 Chicago Bears, injuries:
-- Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
 - Cairo Santos (PK) Active: Santos went 3-for-3 on field-goal tries and made both of his PATs in Sunday's 23-12 win over the Jets.
 - Colston Loveland (TE) Active: Loveland caught six of nine targets for 57 yards in Sunday's 23-12 win over the Jets.
 - Luther Burden III (WR) Active: Burden caught four of six targets for 63 yards and added an 11-yard rush in Sunday's 23-12 win over the Jets.
@@ -363,7 +363,7 @@ Arizona Cardinals, injuries:
 - Jacoby Brissett (QB) Active: Brissett completed 21 of 35 passes for 166 yards and two touchdowns with three interceptions in Sunday's 36-24 loss to the Giants. He added 18 yards on four carries.
 - Jeremiyah Love (RB) Active: Love carried the ball 14 times for 63 yards and caught his only target for minus-8 yards in Sunday's 36-24 loss to the Giants.
 - Trey McBride (TE) Active: McBride caught seven of 12 targets for 31 yards in Sunday's 36-24 loss to the Giants.
-- Paris Johnson Jr. (OT) Questionable, Biceps: Cardinals coach Mike LaFleur said that Johnson is dealing with a biceps injury after Sunday's 36-24 loss to the Giants, Darren Urban of the team's official sitereports.
+- Paris Johnson Jr. (OT) Questionable, Biceps: Cardinals coach Mike LaFleur said that Johnson is dealing with a biceps injury after Sunday's 36-24 loss to the Giants, Darren Urban of the team's official site reports.
 - Hunter Long (TE) Questionable, Knee: Long (knee) is questionable to return against the Giants on Sunday.
 - Andrew Wingard (S) Questionable, Knee: Wingard (knee) has been ruled out for the rest of Sunday's game against the Giants.
 - Reggie Virgil (WR) Out, Coach's Decision: Virgil (coach's decision) is inactive for Sunday's battle against the Giants.
@@ -452,15 +452,15 @@ Los Angeles Rams, injuries:
 Los Angeles Rams, ESPN headlines:
 
 Philadelphia Eagles, injuries:
+- Quinyon Mitchell (CB) Questionable, Knee: Mitchell is scheduled to undergo testing on his knee Monday after he was forced out of Sunday's 24-20 loss to the Rams, Ian Rapoport of NFL Network reports.
+- Saquon Barkley (RB) Questionable, Hamstring: Barkley will undergo further testing Monday, but the right hamstring injury he sustained in Sunday's 24-20 loss to the Rams isn't believed to be "overly serious," Ian Rapoport of NFL Network reports.
 - Darius Cooper (WR) Active: Cooper caught three of seven targets for 33 yards and two touchdowns in Sunday's 24-20 loss to the Rams.
 - Jake Elliott (PK) Active: Elliott converted both field-goal attempts and both PATs in Sunday's 24-20 loss to the Rams.
 - Will Shipley (RB) Active: Shipley rushed six times for 23 yards and didn't catch his only target in Sunday's 24-20 loss to the Rams. He also returned three kickoffs for 65 yards.
 - Lane Johnson (OT) Out, Personal: Johnson was inactive for Sunday's 24-20 loss to the Rams due to a personal issue, Zach Berman of The Athletic reports.
 - Jalen Hurts (QB) Active: Hurts completed 12 of 27 passes for 93 yards and two touchdowns while rushing five times for 18 yards in Sunday's 24-20 loss to the Rams.
 - Jonathan Greenard (LB) Questionable, Ankle: Greenard (ankle) won't return to Sunday's game against the Rams.
-- Tank Bigsby (RB) Questionable, Undisclosed: Bigsby (undisclosed) left Sunday's game in the fourth quarter and went to the sideline tent, Jimmy Kempski of PhillyVoice.com reports.
-- Quinyon Mitchell (CB) Questionable, Knee: Mitchell (knee) is questionable to return against the Rams on Sunday.
-- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring) has been ruled out for the rest of Sunday's game against the Rams, Zach Berman of The Athletic reports.
+- Tank Bigsby (RB) Questionable, Lower Body: Bigsby left Sunday's game against the Rams late in the fourth quarter with an apparent lower-body injury and went into the Eagles' tent on the sideline, Jimmy Kempski of PhillyVoice.com reports.
 - Cole Payton (QB) Out, Coach's Decision: inactive
 - Fred Johnson (OT) Out, Knee: inactive
 - Marcus Epps (S) Out, Groin: inactive
@@ -589,13 +589,13 @@ Tennessee Titans, ESPN headlines:
 
 Baltimore Ravens, injuries:
 - Chris Moore (WR) Out, Ankle: inactive
+- Lamar Jackson (QB) Questionable, Ankle: Jackson (ankle) will undergo an MRI on Monday and is considered day-to-day after exiting Sunday's 24-18 win over the Titans, but the Ravens are hopeful he'll be ready to play Week 5 versus the Falcons, Ian Rapoport of NFL Network reports.
 - Tyler Loop (PK) Active: Loop went 1-for-2 on field-goal tries and made all three of his PATs during Sunday's 24-18 win over Tennessee.
 - Mark Andrews (TE) Active: Andrews caught five of six targets for 27 yards and a touchdown in Sunday's 24-18 win over Tennessee.
 - Tyler Huntley (QB) Active: Huntley completed eight of nine passes for 63 yards while adding 16 yards on four carries in Sunday's 24-18 win over the Titans.
 - Zay Flowers (WR) Active: Flowers caught eight of 10 targets for 118 yards and a touchdown in Sunday's 24-18 win over the Titans.
 - Derrick Henry (RB) Active: Henry carried the ball 23 times for 73 yards and a touchdown in Sunday's 24-18 win over the Titans. He also caught both his targets for six yards.
 - Ronnie Stanley (OT) Questionable, Toe: Stanley (toe) was able to complete Sunday's 24-18 win over Tennessee, Jonas Shaffer of TheBaltimoreBanner.com reports.
-- Lamar Jackson (QB) Questionable, Ankle: Jackson (ankle) was seen wearing a walking boot on his left foot after Sunday's 24-18 victory against the Titans, Brian Wacker of The Baltimore Sun reports.
 - Durham Smythe (TE) Questionable, Achilles: Smythe (Achilles) won't return to Sunday's game against the Titans.
 - Marlon Humphrey (CB) Questionable, Calf: Humphrey (calf) has been ruled out for the rest of Sunday's game against the Titans.
 - Andrew Vorhees (G) Questionable, Foot: Vorhees (foot) won't return to Sunday's game against the Titans, Brian Wacker of The Baltimore Sun reports.
@@ -764,11 +764,11 @@ Searches to run:
 
 Kansas City Chiefs, injuries:
 - Harrison Butker (PK) Active: Butker converted his only field-goal attempt and all three of his PATs during Sunday's 30-27 win over the Raiders.
+- Tyquan Thornton (WR) Out, Ankle: Thornton is viewed as out indefinitely after dislocating his ankle during Sunday's 30-27 win over the Raiders, Ian Rapoport of NFL Network reports.
 - Travis Kelce (TE) Active: Kelce caught two of four targets for 15 yards in Sunday's 30-27 win over the Raiders.
 - Xavier Worthy (WR) Active: Worthy caught four of seven targets for 70 yards in Sunday's 30-27 win over the Raiders.
 - Patrick Mahomes (QB) Active: Mahomes completed 15 of 30 passes for 225 yards and two touchdowns in Sunday's 30-27 win over the Raiders. He also rushed twice for no gain.
 - Kenneth Walker III (RB) Active: Walker rushed 22 times for 177 yards and two touchdowns while catching his only target for two yards in Sunday's 30-27 win over the Raiders.
-- Tyquan Thornton (WR) Out, Ankle: Thornton exited Sunday's game against the Raiders due to a left ankle injury and will not return.
 - Rashee Rice (WR) Questionable, Hamstring: Rice (hamstring) is doubtful to return to Sunday's contest in Las Vegas.
 - Jared Wiley (TE) Out, Coach's Decision: Wiley (coach's decision) is inactive against the Raiders on Sunday.
 - Garrett Nussmeier (QB) Out, Coach's Decision: Nussmeier (coach's decision) is inactive but will serve as the emergency third quarterback against the Raiders on Sunday.
@@ -831,15 +831,15 @@ Searches to run:
 - "NFL week 4 picks DEN SF"
 
 Denver Broncos, injuries:
+- Pat Surtain II (CB) Doubtful, Ankle: Surtain (ankle) will undergo an MRI on Monday, and while the cornerback is believed to have avoid a season-ending injury, he's expected to miss time, Ian Rapoport of NFL Network reports.
 - Courtland Sutton (WR) Active: Sutton caught just one of six targets for four yards in Sunday's 24-14 loss to the 49ers.
-- Pat Surtain II (CB) Questionable, Ankle: Surtain (ankle) is believed to have avoided a serious injury after exiting Sunday's game against the 49ers, Tom Pelissero of Netflix reports.
 - Wil Lutz (PK) Active: Lutz went 2-for-3 on field-goal attempts in Sunday's 24-14 loss to the 49ers.
 - J.K. Dobbins (RB) Active: Dobbins rushed 11 times for 40 yards and brought in both targets for 12 yards in the Broncos' 24-14 loss to the 49ers on Sunday.
 - Bo Nix (QB) Active: Nix completed 25 of 42 passes for 214 yards with one touchdown and no interceptions while rushing twice for 10 yards in the Broncos' 24-14 loss to the 49ers on Sunday.
 - Jaylen Waddle (WR) Active: Waddle secured five of six targets for 35 yards and a touchdown in the Broncos' 24-14 loss to the 49ers on Sunday.
 - RJ Harvey (RB) Active: Harvey rushed seven times for 25 yards and secured all 10 targets for 68 yards in the Broncos' 24-14 loss to the 49ers on Sunday. He also returned two kickoffs for 64 yards and committed a fumble recovered by Denver.
 - Pat Bryant (WR) Questionable, Ankle: Bryant (ankle) is questionable to return to Sunday's game against the 49ers, Chris Tomasson of The Denver Gazette reports.
-- Riley Moss (CB) Questionable, Ribs: Moss (ribs) won't return to Sunday's game against the 49ers, Chris Tomasson of The Denver Gazette reports.
+- Riley Moss (CB) Questionable, Ribs: Moss (ribs) is questionable to return to Sunday's game against San Francisco, Parker Gabriel of The Denver Post reports.
 - Dallen Bentley (TE) Out, Coach's Decision: Bentley (coach's decision) is inactive for Sunday's game against the 49ers.
 - Dondrea Tillman (LB) Out, Hamstring: inactive
 - Tyler Onyedim (DT) Out, Coach's Decision: inactive
@@ -860,6 +860,7 @@ Denver Broncos, injuries:
 Denver Broncos, ESPN headlines:
 
 San Francisco 49ers, injuries:
+- Kyle Juszczyk (FB) Doubtful, Knee: Juszczyk is believed to have sustained a sprained right knee in Sunday's 24-14 win over the Broncos and is likely to miss "several weeks," Ian Rapoport of NFL Network reports.
 - Eddy Pineiro (PK) Active: Pineiro went 1-for-2 on field-goal attempts and made all three of his PATs during Sunday's 24-14 win over Denver.
 - George Kittle (TE) Active: Kittle secured four of six targets for 70 yards and a touchdown in the 49ers' 24-14 win over the Broncos on Sunday.
 - Deebo Samuel Sr. (WR) Active: Samuel caught five of six targets for 26 yards and a touchdown while also adding 44 yards on three carries and 49 kickoff-return yards during Sunday's 24-14 win over the Broncos.
@@ -868,7 +869,6 @@ San Francisco 49ers, injuries:
 - Christian McCaffrey (RB) Active: McCaffrey rushed 15 times for 52 yards and a touchdown and brought in three of five targets for 18 yards in the 49ers' 24-14 win over the Broncos on Sunday.
 - Marques Sigle (S) Questionable, Ankle: Sigle suffered an ankle injury during Sunday's 24-14 win over the Broncos.
 - Upton Stout (CB) Active: Stout (shoulder) returned to Sunday's game against the Broncos, Nick Wagoner of ESPN.com reports.
-- Kyle Juszczyk (FB) Questionable, Knee: Juszczyk (knee) has been ruled out for the remainder of Sunday's game against the Broncos, Eric Branch of the San Francisco Chronicle reports.
 - Dre Greenlaw (LB) Active: Greenlaw (quadriceps) is active for Sunday's game against the Broncos.
 - Jordan James (RB) Out, Coach's Decision: James (coach's decision) is inactive against Denver on Sunday.
 - James Thompson Jr. (DT) Out, Ankle: inactive
@@ -906,7 +906,7 @@ Los Angeles Chargers, injuries:
 - Keaton Mitchell (RB) Active: Mitchell tallied 10 carries for 39 yards and five catches (on six targets) for 24 yards during Sunday's 30-23 defeat at Seattle.
 - Justin Herbert (QB) Active: Herbert was 19-for-31 passing for 189 yards, one touchdown and two interceptions, took six carries for 40 yards and lost a fumble during Sunday's 30-23 loss in Seattle.
 - Omarion Hampton (RB) Active: Hampton had nine carries for 45 yards and one touchdown and two catches (on two targets) for eight yards during Sunday's 30-23 loss at Seattle.
-- Trevor Penning (G) Questionable, Head: Penning (head) exited Sunday's contest against Seattle in the fourth quarter.
+- Trevor Penning (G) Questionable, Concussion: Penning (head) exited Sunday's contest against Seattle in the fourth quarter.
 - Rashawn Slater (OT) Questionable, Ankle: Slater (ankle) is questionable to return to Sunday's game against the Seahawks.
 - Ladd McConkey (WR) Questionable, Foot: McConkey won't return to Sunday's contest at Seattle due to a foot injury.
 - Joe Alt (OT) Questionable, Neck: Alt (neck) has been ruled out for the remainder of Sunday's matchup with the Seahawks.
@@ -1064,6 +1064,7 @@ Atlanta Falcons, injuries:
 Atlanta Falcons, ESPN headlines:
 
 New Orleans Saints, injuries:
+- Jordyn Tyson (WR) Injured Reserve, Hamstring: Tyson (hamstring) is said to be making progress and feeling good but isn't expected to be activated from injured reserve until Week 7 at the soonest, Adam Schefter of ESPN reports.
 - Christen Miller (DT) Active: Miller (toe) does not have an injury designation for Monday's matchup against the Falcons.
 - Anfernee Jennings (LB) Out, Knee: Jennings (knee) won't play Monday against the Falcons, Matthew Paras of The New Orleans Times-Picayune reports.
 - Barion Brown (WR) Active: Brown (hamstring) has no injury designation ahead of Monday's Week 4 matchup against Atlanta.
@@ -1076,7 +1077,6 @@ New Orleans Saints, injuries:
 - Julian Blackmon (S) Active: Blackmon (calf) was a full participant in Friday's practice.
 - Martin Emerson Jr. (CB) Active: Emerson (shoulder) was a full participant in Thursday's practice.
 - Kevin Austin Jr. (WR) Active: The Saints signed Austin from their practice squad to their active roster Thursday.
-- Jordyn Tyson (WR) Injured Reserve, Hamstring: Head coach Kellen Moore said Thursday that he doesn't expect Tyson (hamstring) to practice next week, Matthew Paras of The New Orleans Times-Picayune reports.
 - Travis Etienne Jr. (RB) Injured Reserve, Hamstring: The Saints are placing Etienne (hamstring) on injured reserve, Katherine Terrell of ESPN.com reports.
 - Devaughn Vele (WR) Active: Vele caught three of six targets for 39 yards Sunday in a loss to Las Vegas.
 - Daniel Carlson (PK) Active: Carlson made three of his four PATs and attempted no field goals in the Saints' 35-27 loss to the Raiders on Sunday.
