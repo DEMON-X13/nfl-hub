@@ -78,11 +78,11 @@ with K 1.3461, H 30.02 (0 at a neutral site), D 25, C 21. A favourite that wins 
 it was expected to loses points and the underdog gains them, both toward the middle; a
 blowout beyond 21 counts as 21. The chance against an average team on a neutral field is
 1 / (1 + 10^(-S * R / 400)) with S 1.5771, so it follows the order. The players count too, at
-three tenths: the rating used is 0.7 of R and 0.3 of each team's expected lineup on this
+four tenths: the rating used is 0.6 of R and 0.4 of each team's expected lineup on this
 season's player Elo (the game model's weights, a log-odds against a team of 1500s, centred on
 the league, turned into these points), which walk-forward took the log loss from 0.648 to 0.643
-on 2018-2025 and from 0.686 to 0.681 in weeks 2-6 (0.25 to 0.4 all did as well; less than the
-results, as the owner asked). Shown as
+on 2018-2025 and from 0.686 to 0.681 in weeks 2-6 (0.3 and 0.4 tie overall, 0.4 the best early;
+still less than the results, as the owner asked). Shown as
 1500 + 100 * R / 79 (79 Elo is the usual spread across the teams by the end of a regular
 season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season does.
 Why not the lineups: rated walk-forward on 2018-2025 (weeks 2 on, parameters fitted on
@@ -266,7 +266,7 @@ def load(offline):
     return games, stats, roster, inj, charts, injuries
 
 
-PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.3
+PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.4
 
 
 def power_ratings(season_games, lineup=None, lineup_before=None):

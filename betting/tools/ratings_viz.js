@@ -1,5 +1,5 @@
-/* Power Ratings, a team Elo of this season's results (0.7) blended with each team's expected
-   lineup on this season's player Elo (0.3): every team 1500 at the start, moved
+/* Power Ratings, a team Elo of this season's results (0.6) blended with each team's expected
+   lineup on this season's player Elo (0.4): every team 1500 at the start, moved
    after each final by how far the margin beat or missed the one expected (THE POWER RATINGS in
    elo/build.py; `teams` in elo/data/model.json, which the published-mode hook reads into
    window.__eloTeams), so the tier shields follow it. The change and the rank arrows are since
@@ -25,7 +25,7 @@ function ratingsViz(){
     const e=m?`<td class="num">${epa(stateVal(m,'off_epa','off_epa'))}</td><td class="num">${epa(stateVal(m,'d_off_epa','off_epa'))}</td>`:'<td></td><td></td>';
     return `<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num rt-rec">${wl(x.t)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(x.elo)}<b>${x.elo}</b></span></td><td class="movecell">${eloMv(x)}</td><td class="num rt-pct">${Math.round(x.p_avg*100)}%</td>${e}</tr>`; };
   el.innerHTML=TIER_DEFS+`<h2>Power ratings <span class="pill">Team Elo</span></h2>
-    <p class="muted" style="margin:0 0 10px">Each team rated on this season's results alone: everyone started at 1500, and after every game both teams move by how far the score beat or missed what was expected, home field counted. A favourite that only scrapes past a weaker team loses points and the underdog gains them; a blowout counts no more than 21 points. The players count for three tenths: each team's expected lineup on this season's player Elo is blended in, so injuries and who starts move it too. The ratings spread out as the season goes, so the top shields are earned. The change and the arrows are since the team's last game. Vs average is its chance against an average team on a neutral field.</p>
+    <p class="muted" style="margin:0 0 10px">Each team rated on this season's results alone: everyone started at 1500, and after every game both teams move by how far the score beat or missed what was expected, home field counted. A favourite that only scrapes past a weaker team loses points and the underdog gains them; a blowout counts no more than 21 points. The players count for four tenths: each team's expected lineup on this season's player Elo is blended in, so injuries and who starts move it too. The ratings spread out as the season goes, so the top shields are earned. The change and the arrows are since the team's last game. Vs average is its chance against an average team on a neutral field.</p>
     <div class="rt-wrap"><table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Record</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Vs average</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th></tr></thead><tbody>`
     +rows.map(row).join('')+'</tbody></table></div>';
 }
