@@ -378,7 +378,7 @@ table.rt-v{width:100%}
 #ratingsTable table.rt-v th:nth-child(2),#ratingsTable table.rt-v td:nth-child(2){width:230px;padding-left:4px}
 #ratingsTable table.rt-v{min-width:720px}
 #ratingsTable table.rt-v th:nth-child(n+3),#ratingsTable table.rt-v td:nth-child(n+3){text-align:center}
-table.rt-v td.rt-pct{font-variant-numeric:tabular-nums}
+table.rt-v td.rt-pct,table.rt-v td.rt-rec{font-variant-numeric:tabular-nums}
 </style>
 <script>
 ${VIZ_JS}

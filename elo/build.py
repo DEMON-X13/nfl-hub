@@ -69,15 +69,27 @@ and asked about the next week's games from the latest depth charts and injury re
 same walk-forward is also run on who actually played, for comparison: that number is
 flattered by hindsight and is not the model's.
 
-THE POWER RATINGS. Each team rated on its own by the same model, on this season's player
-ratings alone (each player 1500 at the season's start, nothing carried over, as in the
-rankings): its expected lineup for the coming week scored against a team of 1500s (the sum over groups of the group's coefficient
-times its strength less 1500, in hundreds), a log-odds, shown on the ladder's bell curve across the
-32 teams (1500 plus 100 points a standard deviation), so an average team sits between Silver
-and Gold and one or two stand in the top tiers. The order is the game model's. `teams` in model.json carries
-it with the same lineup's rating going into the team's last game (`before`), the chance against an average
-team on a neutral field (`p_avg`); the Bets and Stats page's Power Ratings tab is drawn
-from it.
+THE POWER RATINGS. Each team rated on its results this season, not on its players: a margin
+Elo in which every team starts the season at 0 (shown as 1500) and, after each final,
+    e = (R_home - R_away + H * home) / D          the home margin it expected, in points
+    d = clip(home margin, -C, C) - e
+    R_home += K * d,  R_away -= K * d             (zero-sum: the league stays centred)
+with K 1.3461, H 30.02 (0 at a neutral site), D 25, C 21. A favourite that wins by less than
+it was expected to loses points and the underdog gains them, both toward the middle; a
+blowout beyond 21 counts as 21. The chance against an average team on a neutral field is
+1 / (1 + 10^(-S * R / 400)) with S 1.5771, so it follows the order. Shown as
+1500 + 100 * R / 79 (79 Elo is the usual spread across the teams by the end of a regular
+season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season does.
+Why not the lineups: rated walk-forward on 2018-2025 (weeks 2 on, parameters fitted on
+2012-2017), the old table, each team's expected lineup on this season's player Elo, had a log
+loss of 0.658 on the next game, and in weeks 2-6 0.696, no better than always taking the home
+team; this one 0.649 and 0.689 (Vegas 0.607 and 0.630). Last season carried in as a hidden
+prior fading game by game would take another 0.011 off (0.03 early), but the table is this
+season's alone, as asked. The ELO Model's game calls stay on the lineups and career ratings,
+which predict better still. `teams` in model.json carries the rating, the rating going into
+the team's last game (`before`), that chance (`p_avg`) and the regular-season record the
+rating was built on (`record`, wins, losses, ties); the Bets and Stats page's Power
+Ratings tab is drawn from it.
 
 THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
 his next game beyond what his recent games already say? For every QB, RB, WR and TE game
@@ -128,7 +140,7 @@ sets them): HOF (2.5 sd up, a gem) well under 1%, Elite about 2%, Master 4%, Dia
 Platinum 15%, Gold and Silver 19% each, Bronze 15%, Iron 9% and the Wood League (1.5 sd down)
 7%, the average player on the line between Silver and Gold. The order is untouched; only the scale
 moves. The raw ratings stay in `raw` and `career_raw`, and the models never read the shown
-ones. The team power ratings below are put on the same curve across the 32 teams.
+ones.
 
 Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
 (the fitted weights and the who-played walk-forward are kept for the record and the smoke
@@ -247,6 +259,33 @@ def load(offline):
     stats['group'] = stats.position.map(GROUP)
     stats = stats[stats.game_id.notna()]
     return games, stats, roster, inj, charts, injuries
+
+
+PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0
+
+
+def power_ratings(season_games):
+    """The teams' power ratings: this season's margin Elo (see THE POWER RATINGS)."""
+    g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
+    g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
+    g = g.sort_values(['kick', 'game_id'], kind='mergesort')
+    teams = set(g.home_team) | set(g.away_team)
+    R = {t: 0.0 for t in teams}
+    before, rec = {}, {t: [0, 0, 0] for t in teams}
+    for r in g[g.home_score.notna() & g.away_score.notna()].itertuples(index=False):
+        home = 0.0 if r.location == 'Neutral' else 1.0
+        e = (R[r.home_team] - R[r.away_team] + PR_H * home) / PR_D
+        d = max(-PR_C, min(PR_C, float(r.home_score - r.away_score))) - e
+        before[r.home_team], before[r.away_team] = R[r.home_team], R[r.away_team]
+        if r.game_type == 'REG':
+            m = r.home_score - r.away_score
+            rec[r.home_team][0 if m > 0 else 1 if m < 0 else 2] += 1
+            rec[r.away_team][1 if m > 0 else 0 if m < 0 else 2] += 1
+        R[r.home_team] += PR_K * d
+        R[r.away_team] -= PR_K * d
+    show = lambda v: round(1500 + 100 * v / PR_SPREAD)
+    return {t: {'elo': show(R[t]), 'before': show(before[t]) if t in before else None,
+                'p_avg': round(1 / (1 + 10 ** (-PR_S * R[t] / 400)), 4), 'record': rec[t]} for t in sorted(teams)}
 
 
 def build_lineups(charts, injuries):
@@ -719,51 +758,8 @@ def main():
             pick = row.home_team if p >= 0.5 else row.away_team
             calls.append({'game_id': row.game_id, 'p_home': round(p, 4), 'pick': pick})
             shown.append(f"{row.away_team}@{row.home_team} {pick} {max(p, 1 - p):.0%} ({qb(ea)} v {qb(eh)})")
-    # ---- each team on its own: the power ratings ----
-    # A team's rating is what the game model makes of its lineup against a team of 1500s,
-    # sum of coef[g] * (strength[g] - 1500) / 100, a log-odds; shown on the ladder's bell curve
-    # across the 32 teams, 1500 plus SHOW_SD a standard deviation (see THE LADDER). The players are rated on this season
-    # alone (RS, every player 1500 at the start of the season, as the rankings are), not on the
-    # career rating the game model's calls use, so the table moves on this season's games and
-    # nothing carries over. The lineup is the one expected for the coming week (a team on its
-    # bye or already played this week: who took the field last game, minus anyone off the
-    # active list); before is the same lineup on the season ratings it had going into the
-    # team's last game, so the change is what that game did to the players who will start.
-    w_logit = lambda st: sum(coef[g] * (st[g] - 1500) / 100 for g in GROUPS)
-    def rs_at(pid, before_ord=None):
-        if before_ord is None:
-            return RS.get(pid, 1500.0)
-        prior = [v for o, v in HS.get(pid, []) if o < before_ord]
-        return prior[-1] if prior else 1500.0
-    def season_strength(parts, before_ord=None):
-        out = {}
-        for g in GROUPS:
-            rs = sorted((rs_at(p, before_ord) for p, gg in parts if gg == g), reverse=True)
-            wts = DEPTH[g]
-            rs = (rs + [1500.0] * len(wts))[:len(wts)]
-            out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
-        return out
-    lineup = {c['team']: c['parts'] for c in coming}
-    not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
-    for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
-        if t not in lineup and played.get((last, t)):
-            lineup[t] = [(pid, g) for pid, g in played[(last, t)] if pid not in not_active]
-    last_game = {}
-    for r in game_feat:
-        if r['season'] == last and r['result'] is not None:
-            for t in (r['home'], r['away']):
-                last_game[t] = max(last_game.get(t, 0), r['ord'])
-    now_st = {t: season_strength(parts) for t, parts in lineup.items()}
-    before_st = {t: season_strength(lineup[t], last_game[t]) for t in lineup if t in last_game}
-    def to_elo(st):
-        lg = {t: w_logit(v) for t, v in st.items()}
-        mean = sum(lg.values()) / len(lg) if lg else 0
-        sd = float(np.std(list(lg.values()))) or 1.0
-        return {t: 1500 + SHOW_SD * (v - mean) / sd for t, v in lg.items()}, {t: v - mean for t, v in lg.items()}
-    e_now, lg_now = to_elo(now_st)
-    e_before, _ = to_elo(before_st)
-    team_rows = {t: {'elo': round(e_now[t]), 'before': round(e_before[t]) if t in e_before else None,
-                     'p_avg': round(float(1 / (1 + np.exp(-lg_now[t]))), 4)} for t in e_now}
+    # ---- each team on its own: the power ratings (see THE POWER RATINGS) ----
+    team_rows = power_ratings(games[games.season == last])
     n_ok = sum(1 for g in graded if g['correct'] is True)
     n_gr = sum(1 for g in graded if g['correct'] is not None)
     model = {
