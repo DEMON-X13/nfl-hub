@@ -67,8 +67,8 @@ model has no pages of its own, its parts are the source of `nflbets/index.html`.
 the job does not rebuild it. Visitors' parlays and bets stay in their browser.
 
 Its workflow, `.github/workflows/props.yml`, runs four price pulls a week
-(Mon/Wed/Thu/Sat, the only runs that spend credits) and, with `--no-odds`, eight
-post-game and stats runs and one every morning for the day's injury report. It runs `weekly.py --no-commit` and
+(Mon/Wed/Thu/Sat) and eight post-game and stats runs and one every morning for the
+day's injury report, which spend credits only on a game a dropped pull left unpriced. It runs `weekly.py --no-commit` and
 commits `props/data` itself. The betting job never touches the key.
 
 ## Season tracker

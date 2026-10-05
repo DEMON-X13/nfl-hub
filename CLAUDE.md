@@ -75,9 +75,11 @@ failed. Write audit checks against the app's invariants, never against whatever
 the week's data happens to offer -- a lean week must not fail the build.
 
 `.github/workflows/props.yml` runs four price pulls a week (Mon/Wed/Thu/Sat, ~7
-odds-API credits a game) and, spending nothing, eight post-game and stats runs and one
-every morning that picks up the day's injury report, so a player ruled out leaves the
-Props tab and the builder the same morning. It commits straight to `main`.
+odds-API credits a game) and eight post-game and stats runs and one every morning that
+picks up the day's injury report, so a player ruled out leaves the Props tab and the builder
+the same morning. Those nine are catch-ups (`weekly.py --catch-up`): GitHub drops scheduled
+runs, so each prices any game up to the next pull that has no prices and has not kicked off,
+once a pull's slot is eight hours gone, and spends nothing when every pull ran. It commits straight to `main`.
 
 ## Betting: the loop
 

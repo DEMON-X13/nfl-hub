@@ -10,6 +10,9 @@ Usage (never put the key on the command line; the shell history would keep it):
     python oddsfetch.py --week 2 --sample saved.json   parse a saved event response instead (no key)
 
     python oddsfetch.py --week 2 --teams NE,SEA          only the games those teams play (Thursday)
+    python oddsfetch.py --week 2 --hours 40 --missing    only games not yet priced and not yet started:
+                       the catch-up weekly.py runs on every score-only run, so a scheduled pull that
+                       GitHub dropped costs a game its prices only until the next run of the job
 Outputs (in data/), MERGED into existing files for the week so a Thursday pull and a Saturday
 pull add up; a game pulled twice keeps the newer prices:
     wk{W}_lines.csv    stat,player,line,over,under   main lines: the point where over and under are
@@ -167,6 +170,7 @@ def main():
     ap.add_argument('--regions',default='us'); ap.add_argument('--no-game-lines',action='store_true',help='skip the moneyline and spread pull (saves 2 credits for the whole slate)'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull the alternate ladders and attempts, completions, interceptions, carries (18 credits a game)')
     ap.add_argument('--teams',help='comma-separated abbreviations; only games involving them (e.g. NE,SEA for the Thursday game)')
     ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (weekly.py passes the hours to the next scheduled pull)')
+    ap.add_argument('--missing',action='store_true',help='only games with no prices in prices_wk{W}.csv that have not kicked off; nothing else is spent')
     a=ap.parse_args()
     pay=json.load(open('payload.json',encoding='utf-8'))
     key=os.environ.get('ODDS_API_KEY')
@@ -189,13 +193,16 @@ def main():
     alts={}; matched=0
     now=datetime.now(timezone.utc)
     book=None if a.book=='all' else a.book
+    have=set()
+    if a.missing and os.path.exists(f'prices_wk{a.week}.csv'):
+        with open(f'prices_wk{a.week}.csv',newline='',encoding='utf-8') as f: have={r['game_id'] for r in csv.DictReader(f)}
     for ev in events:
         gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
         if not gid: continue
-        if a.hours:
-            try: ko=datetime.fromisoformat(str(ev.get('commence_time','')).replace('Z','+00:00'))
-            except ValueError: ko=None
-            if ko and (ko-now).total_seconds()>a.hours*3600: continue
+        try: ko=datetime.fromisoformat(str(ev.get('commence_time','')).replace('Z','+00:00'))
+        except ValueError: ko=None
+        if a.hours and ko and (ko-now).total_seconds()>a.hours*3600: continue
+        if a.missing and (gid in have or (ko and ko<=now)): continue
         matched+=1
         if a.sample: parse_event(ev,gid,mains,alts,book); continue
         for markets in ([DEFAULT] + ([FULL_EXTRA] if a.full else [])):
@@ -220,7 +227,7 @@ def main():
         if m: lines.append({'stat':stat,'player':player,'line':m[1],'over':m[2],'under':m[3]})
     n=merge_csv(f'wk{a.week}_lines.csv',['stat','player','line','over','under'],lambda r:(r['stat'],r['player']),lines)
     print(f"wk{a.week}_lines.csv: {len(lines)} main lines from this pull, {n} in the file")
-    if not a.no_game_lines and not a.sample and key:
+    if not a.no_game_lines and not a.sample and key and not (a.missing and not matched):
         try:
             gl=game_lines(key,book,a.regions,ids)
             n=merge_csv(f'gamelines_wk{a.week}.csv',
