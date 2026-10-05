@@ -194,6 +194,58 @@ const RESULTS = {
   7,
   27
  ],
+ "wk4:IND-WAS": [
+  30,
+  13
+ ],
+ "wk4:NE-BUF": [
+  29,
+  26
+ ],
+ "wk4:NYJ-CHI": [
+  12,
+  23
+ ],
+ "wk4:JAX-CIN": [
+  22,
+  17
+ ],
+ "wk4:ARI-NYG": [
+  24,
+  36
+ ],
+ "wk4:LAR-PHI": [
+  24,
+  20
+ ],
+ "wk4:GB-TB": [
+  17,
+  14
+ ],
+ "wk4:TEN-BAL": [
+  18,
+  24
+ ],
+ "wk4:DAL-HOU": [
+  34,
+  30
+ ],
+ "wk4:MIA-MIN": [
+  10,
+  15
+ ],
+ "wk4:KC-LV": [
+  30,
+  27
+ ],
+ "wk4:DEN-SF": [
+  14,
+  24
+ ],
+ "wk4:LAC-SEA": [
+  23,
+  30
+ ],
  "wk4:PIT-CLE": [
   24,
   27
