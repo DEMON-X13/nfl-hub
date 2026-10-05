@@ -115,11 +115,11 @@ function load(picks) {
     check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
-    /* the ELO Model model's ratings: every team, best first, each with its shield and its change since its last game */
+    /* the team Elo of this season's results: every team, best first, each with its record, shield and change since its last game */
     { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => +tr.querySelector('.elocell b').textContent), want = JSON.parse(eloModel).teams;
-      check(rows.length === 32 && rows.length === Object.keys(want).length && vals.every((v, i) => i === 0 || v <= vals[i - 1]), 'admin: Power Ratings does not show the ELO Model model\'s 32 ratings, best first');
-      check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the ELO Model ratings do not average 1500');
-      check(rows.every(tr => tr.children.length === 7 && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its tier shield, Elo change and chance against an average team');
+      check(rows.length === 32 && rows.length === Object.keys(want).length && vals.every((v, i) => i === 0 || v <= vals[i - 1]), 'admin: Power Ratings does not show the 32 team ratings, best first');
+      check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the team ratings do not average 1500');
+      check(rows.every(tr => tr.children.length === 8 && /^\d+-\d+(-\d+)?$/.test(tr.querySelector('.rt-rec').textContent) && tr.querySelector('.tierbadge') && tr.querySelector('.movecell .elomv') && /^\d+%$/.test(tr.querySelector('.rt-pct').textContent)), 'admin: every row should carry its record, tier shield, Elo change and chance against an average team');
       check(!rt.querySelector('[data-rv]') && !/Vegas|Alpha Model/.test(rt.textContent), 'admin: Power Ratings still shows Vegas or a Alpha Model switch');
       check(!!rt.querySelector('svg defs linearGradient[id^="tg-"]'), 'admin: the tier shields have no gradients to fill them');
       const T = e => a.window.eval('eloTier(' + e + ')[0]');
@@ -161,8 +161,10 @@ function load(picks) {
   /* the Elo model rides along: read from elo/data/model.json beside the season, graded onto
      the games it called, and drawn on Records like the Joker */
   { const EM = JSON.parse(eloModel), SE = e.window.eval('S');
-    /* graded: what the file graded, plus the coming week's calls whose games the season has scored */
-    const gradedIds = EM.graded.filter(g => g.correct !== null).map(g => g.game_id)
+    /* graded: what the file graded, plus the coming week's calls whose games the season has scored.
+       The Elo build grades a game on its score alone and the season only once the game's team
+       stats are posted, hours later, so a game the season has not processed yet is left out */
+    const gradedIds = EM.graded.filter(g => g.correct !== null && SE.processed[g.game_id]).map(g => g.game_id)
       .concat(((EM.next && EM.next.games) || []).filter(g => { const p = SE.processed[g.game_id]; return p && p.result != null && p.result !== 0; }).map(g => g.game_id));
     check(gradedIds.every(id => { const p = SE.processed[id], n = ((EM.next && EM.next.games) || []).find(g => g.game_id === id);
       return !n || p.elo.correct === (n.pick === (p.result > 0 ? p.home : p.away)); }), 'embed: a coming-week Elo call was graded against the wrong winner');

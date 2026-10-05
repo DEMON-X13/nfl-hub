@@ -95,8 +95,8 @@ elo/
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls and the coming week's (the Pick'em
-                                 Record's ELO Model model), and `teams`, each team's expected
-                                 lineup on this season's player Elo (Power Ratings)
+                                 Record's ELO Model model), and `teams`, the team Elo of
+                                 this season's results (Power Ratings)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
                                  projections
@@ -162,7 +162,7 @@ The same script puts the Mismatches card on the Props tab, a ranked player's shi
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks in the Suggested parlays window. The ELO Model model's calls and record
-are on the Pick'em Record and its team ratings on Power Ratings, both through
+are on the Pick'em Record and the build's team Elo of results on Power Ratings, both through
 `betting/tools/build.js`. It borrows the Pick'ems tab's team tag and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
 `window.pkTag`, `pkTagColor`, `pkTierBadge`, `pkEloTier` and `pkTierDefs`.
@@ -278,7 +278,7 @@ games whose stats are not out yet wait for the next run.
 
 `state.json` holds `teams`/`teamsH` (the team ratings and EPA of Alpha Model and of the
 Challenger, `MODEL_H`: Power Ratings shows Alpha Model's EPA, but its order and Elo are the
-ELO Model model's, from `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
+team Elo of results in `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
 moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injuries`
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`,
 `prevElo`/`prevRanks`, `published`, and the app's own bookkeeping (`gamesPlayed`,
