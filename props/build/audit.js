@@ -228,6 +228,17 @@ setTimeout(async()=>{
   chk(d.getElementById('gameModal').hidden,'Escape did not close the overlay');
   const snap=JSON.stringify(S); const S2=JSON.parse(snap);
   chk(JSON.stringify(S2.parlay)===JSON.stringify(S.parlay)&&JSON.stringify(S2.processed)===JSON.stringify(S.processed),'backup round-trip changed state');
+  /* ---- G5. Show stats: a player's season week by week, under his row, without opening his props ---- */
+  { openUpcoming(); const b=d.querySelector('#gameView [data-stats]'); chk(!!b,'no Show stats button beside a player');
+    if(b){ const pid=b.dataset.stats; b.click();
+      const box=d.querySelector('#gameView .wkstats'), wks=Object.keys(S.actuals||{}).filter(w=>F('actualFor')(w,pid));
+      chk(!!box&&box.querySelectorAll('tbody tr').length===wks.length&&(wks.length===0||!!box.querySelector('tfoot')),'Show stats did not list one row per week he has stats for');
+      chk(!S.ui.open[pid],'Show stats opened the props as well');
+      const b2=d.querySelector(`#gameView [data-stats="${pid}"]`); chk(/Hide stats/.test(b2.textContent),'the button does not offer to hide the stats');
+      b2.click(); chk(!d.querySelector('#gameView .wkstats'),'Hide stats did not close the table');
+      console.log(`G5. show stats: ${wks.length} week(s) listed for ${pid}, the props stayed shut, hides again`); }
+    d.getElementById('backBtn').click(); }
+
   console.log(`G. state flow: ingest ok, week stays on ${F('currentWeek')()} (schedule-driven), re-upload skipped, legs preserved, backup round-trips`);
 
   /* ---- G4. the list puts the games still to play first and the finals under a heading ---- */

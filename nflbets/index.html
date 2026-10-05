@@ -149,6 +149,15 @@ body.modal-open{overflow:hidden}
 .plrbtn .who{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:-.2px;line-height:1.15}
 .plrbtn .who span{font-family:var(--body);font-size:12px;font-weight:500;color:var(--ink-2);margin-left:8px}
 .plrbtn .sum{font-size:12px;color:var(--ink-2);text-align:right;line-height:1.4}
+.plrbtn .who .stbtn{display:inline-block;margin-left:10px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:600;color:var(--ink-2);background:var(--bg);cursor:pointer;vertical-align:2px;line-height:1.3}
+.plrbtn .who .stbtn:hover{border-color:var(--ink-2);color:var(--ink)}
+.plrbtn .who .stbtn.on{background:var(--ink);border-color:var(--ink);color:var(--panel)}
+.wkstats{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;margin:-2px 0 10px;overflow-x:auto}
+.wkstats table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.wkstats th{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+.wkstats td{padding:5px 8px;border-bottom:1px solid var(--line)}
+.wkstats .num{text-align:right}
+.wkstats tfoot td{border-bottom:0;color:var(--ink-2)}
 .finchip{display:inline-block;font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:.06em;
   line-height:1;padding:4px 8px;border-radius:5px;margin-right:10px;vertical-align:1px;
   background:#CFE0F4;color:#1E3D66;border:1px solid #9DBBDC}
@@ -1124,7 +1133,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v76 \u00b7 2026-10-05';
+const APP_BUILD='app v77 \u00b7 2026-10-05';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -1976,6 +1985,28 @@ function renderSlate(){
   if(S.ui.game) renderGame();
 }
 
+/* ---------- a player's season, week by week (the Show stats button) ---------- */
+const WEEK_COLS={
+  QB:[['C/Att',a=>`${a.completions}/${a.attempts}`,null],['Pass yds','passing_yards'],['Pass TD','passing_tds'],['INT','passing_interceptions'],['Rush yds','rushing_yards']],
+  RB:[['Car','carries'],['Rush yds','rushing_yards'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
+  WR:[['Tgt','targets'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
+  TE:[['Tgt','targets'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
+  K:[['FG',a=>`${a.fg_made}/${a.fg_att}`,null],['XP','pat_made'],['Pts','kick_pts']]};
+function weekStats(pl){
+  const cols=WEEK_COLS[pl.grp]||WEEK_COLS.WR;
+  const wks=Object.keys(S.actuals||{}).map(Number).filter(w=>actualFor(w,pl.id)).sort((a,b)=>a-b);
+  if(!wks.length) return '<div class="wkstats"><p class="muted" style="margin:0">No games with stats this season yet.</p></div>';
+  const cell=(a,c)=>typeof c[1]==='function'?c[1](a):num(a[c[1]]||0,0);
+  const rows=wks.map(w=>{ const a=actualFor(w,pl.id);
+    return `<tr><td>Wk ${w}</td><td>${a.opp?tag(a.opp):''}</td>${cols.map(c=>`<td class="num">${cell(a,c)}</td>`).join('')}</tr>`; }).join('');
+  /* the average a game, for the columns that are a single number */
+  const avg=cols.map(c=>{ if(typeof c[1]==='function') return '<td class="num muted">\u2013</td>';
+    const s=wks.reduce((t,w)=>t+(actualFor(w,pl.id)[c[1]]||0),0)/wks.length;
+    return `<td class="num"><b>${num(s,s<10?1:0)}</b></td>`; }).join('');
+  return `<div class="wkstats"><table><thead><tr><th>Week</th><th>Opp</th>${cols.map(c=>`<th class="num">${c[0]}</th>`).join('')}</tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><td colspan="2">Per game (${wks.length})</td>${avg}</tr></tfoot></table></div>`;
+}
+
 /* ---------- one game ---------- */
 function summaryOf(x,lines){
   const want=HEADLINE[x.pl.grp]||[];
@@ -2095,14 +2126,15 @@ function renderGame(){
     for(const x of t.players){
       const lines=statLines(x);
       if(!lines.length) continue;
-      const open=!!S.ui.open[x.pl.id];
+      const open=!!S.ui.open[x.pl.id], stOpen=!!(S.ui.stats&&S.ui.stats[x.pl.id]);
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
-        <div class="who">${esc(x.pl.n)}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span></div>
+        <div class="who">${esc(x.pl.n)}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span><span class="stbtn${stOpen?' on':''}" role="button" tabindex="0" data-stats="${x.pl.id}" aria-pressed="${stOpen}">${stOpen?'Hide stats':'Show stats'}</span></div>
         <div class="sum">${locked?`<span class="finchip${fin?'':' live'}">${fin?'FINAL':'LIVE'}</span>`:''}${
           (locked&&haveStats)?actualSummary(x,lines,g.w)
           :(locked&&liveOn?actualSummary(x,lines,g.w,liveStatsFor(g.id,team,x.pl.n))
           :(locked?'<span class="muted">projected</span> '+summaryOf(x,lines):summaryOf(x,lines)))}</div>
         <div class="arrow">${open?'\u2303':'\u2304'}</div></button>`;
+      if(stOpen) html+=weekStats(x.pl);
       if(!open) continue;
       html+='<div class="plrbody">';
       if(locked){
@@ -2218,7 +2250,11 @@ function renderGame(){
   $('gameStatsNow')?.addEventListener('click',()=>refreshGameStats(g));
   $('allCb').addEventListener('change',e=>{ S.ui.showAll=e.target.checked; save(); renderGame(); });
   $('marginSel').addEventListener('change',e=>{ S.margin=e.target.value; save(); renderGame(); renderParlay(); });
-  $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>{
+  $('gameView').querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',e=>{
+    const st=e.target.closest&&e.target.closest('[data-stats]');
+    if(st){ const sid=st.dataset.stats, U=(S.ui.stats??={});
+      if(U[sid]) delete U[sid]; else U[sid]=true;
+      renderGame.anchor=sid; save(); renderGame(); return; }
     const id=b.dataset.open;
     /* one player open at a time: opening a player closes whoever else was open */
     S.ui.open=S.ui.open[id]?{}:{[id]:true};
