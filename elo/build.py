@@ -955,6 +955,18 @@ def main():
         cols = lambda g, st: (['1', 'home x form', 'form', 'form x allowed']
                               + [f'form x {g}{i + 1}' for i in range(MU_RANK.get(g, 0) if st in MU_RANK_STATS else 0)]
                               + ['form x player Elo'] + [f'form x opposing {u} Elo' for u in MU_DEF])
+        # the whole league beside the coming games, so the page's Mismatches measure a starter
+        # and the unit he faces against every team, not just the games still to play this week
+        # (on a Monday that is two teams, and the weaker of two defences read as "ranked 2nd"):
+        # each team's defensive units on its expected lineup, and each position's starters
+        # (the DEPTH best of every team's lineup by career rating) as a mean and a spread
+        tops = {g: [r for parts in lineup.values()
+                    for r in sorted((R.get(p, REPLACEMENT) for p, gg in parts if gg == g), reverse=True)[:len(DEPTH[g])]]
+                for g in MU_STATS}
+        mu['league'] = {'defs': {t: {u: round(v) for u, v in strength(parts).items() if u in MU_DEF}
+                                 for t, parts in sorted(lineup.items())},
+                        'norms': {g: [round(float(np.mean(v)), 1), round(float(np.std(v, ddof=1)), 1)]
+                                  for g, v in tops.items() if len(v) > 1}}
         mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'],
                    'columns': {f'{g}|{st}': cols(g, st) for g, sts in MU_STATS.items() for st in sts}})
         with open(os.path.join(OUT, 'matchups.json'), 'w') as f:

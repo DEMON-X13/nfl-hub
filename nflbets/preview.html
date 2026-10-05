@@ -4425,9 +4425,11 @@ function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl
    here rather than show a matchup he will not play. */
 const ruledOut=pid=>!!(typeof S==='object'&&S&&S.inactive&&S.inactive[pid]);
 window.eloRuledOut=ruledOut;
-/* each defence's units ranked among this week's, 1st the best (the highest rated) */
+/* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
+   highest rated); a file without it falls back to the teams playing this week */
 function defRanks(){
   const byTeam={}; for(const v of Object.values((D.mu&&D.mu.players)||{})) if(v.opp_def) byTeam[v.opp]=v.opp_def;
+  if(D.mu&&D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
   const teams=Object.keys(byTeam), out={n:teams.length};
   for(const u of ['DL','LB','DB']){ const order=teams.slice().sort((a,b)=>byTeam[b][u]-byTeam[a][u]); out[u]=Object.fromEntries(order.map((t,i)=>[t,i+1])); }
   return out;
@@ -4734,8 +4736,10 @@ if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
   renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
 /* ---- mismatches: where a player's Elo meets a weak unit ----
    Each expected starter this week (matchups.json) scored as how far his Elo stands above
-   his position's (in standard deviations, among this week's starters) plus how far the unit
-   he faces stands below the league's (among this week's defences): a quarterback against the
+   his position's (in standard deviations, among every team's starters) plus how far the unit
+   he faces stands below the league's (among all 32 defences, `league` in matchups.json; the
+   games still to play alone were the pool before, and on a Monday that was two teams, the
+   weaker of two defences shown as "ranked 2nd"): a quarterback against the
    opposing secondary and line together, a receiver or tight end against the secondary, a
    back against the line and linebackers. The top five sit over the Props game list as
    bubbles; Show more opens the top thirty. Each carries the matchup formula's projection for
@@ -4749,10 +4753,13 @@ function mismatches(){
   const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]&&!ruledOut(v.pid));
   const unitOf=v=>MM_UNIT[v.group].units.reduce((a,u)=>a+v.opp_def[u],0)/MM_UNIT[v.group].units.length;
   const zs=(arr)=>{ const m=arr.reduce((a,x)=>a+x,0)/arr.length, sd=Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,arr.length-1))||1; return x=>(x-m)/sd; };
-  const pz={}, dz={};
-  for(const g of Object.keys(MM_UNIT)){ const grp=P.filter(v=>v.group===g); if(grp.length>1) pz[g]=zs(grp.map(v=>v.elo)); }
-  /* each defence once per unit mix, across the teams playing this week */
+  const pz={}, dz={}, L=M.league||{};
+  const norm=(m,sd)=>x=>(x-m)/(sd||1);
+  for(const g of Object.keys(MM_UNIT)){ const n=L.norms&&L.norms[g];
+    if(n) pz[g]=norm(n[0],n[1]); else { const grp=P.filter(v=>v.group===g); if(grp.length>1) pz[g]=zs(grp.map(v=>v.elo)); } }
+  /* each defence once per unit mix: the whole league when the file carries it, else the teams playing this week */
   const byTeam={}; for(const v of P) byTeam[v.opp]=v.opp_def;
+  if(L.defs) Object.assign(byTeam,L.defs);
   for(const g of Object.keys(MM_UNIT)){ const vals=Object.values(byTeam).map(d=>MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length); dz[g]=zs(vals); }
   /* each unit ranked among this week's defences, 1 the best */
   const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]).sort((x,y)=>y[1]-x[1]);
