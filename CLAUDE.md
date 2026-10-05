@@ -136,9 +136,12 @@ played last game where a chart is silent; `walk_forward` in `model.json` is that
 number and `walk_forward_who_played` the hindsight one, kept for comparison only. Tiers are the betting app's Elo shields, lifted with
 its tag into the page and reshaped at build time by `betting/tools/tiers.js` (both builds apply it): Wood League under 1350,
 Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger, renamed so it is not taken for the
-Challenger model) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card alone: a bell-curve
+Challenger model) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card: a bell-curve
 histogram of the position by shield over the table, and a click on a player opens his window (his rating, then his
-matchup this week). The tab's script also puts a second price, "market + form", on every
+matchup this week); under it, Total Offense and Total Defense in the same format (`units` in `model.json`, TOTAL
+OFFENSE AND TOTAL DEFENSE in the build: each unit a this-season Elo on a game score of two parts points and one part
+EPA a play, which walk-forward on 2018-2025 predicted the next game's points best, total yards worse; it reads
+nflverse's `stats_team_week` for the season). The tab's script also puts a second price, "market + form", on every
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the prop
@@ -216,8 +219,8 @@ tab shows the rankings with a five-season line each.
 
 ## Bets and Stats: the loop
 
-The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, Parlay Builders, Power Ratings, Player Elo,
-Pick'em Record, Bet Log; a prop model section with no button there stays in the page, unshown.
+The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, Parlay Builders, Team Rankings (the Power Ratings
+frame, renamed), ELO Ratings (the Player Elo tab, renamed), Pick'em Record, Bet Log; a prop model section with no button there stays in the page, unshown.
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
 front of it as its own `pk-` prefixed section, the Live Parlays section lifted out of

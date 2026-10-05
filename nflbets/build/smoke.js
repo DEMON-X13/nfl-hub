@@ -445,8 +445,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
-    chk(body.querySelectorAll('.card').length === 1 && /Rankings/.test(txt(body.querySelector('.card h2'))), 'the Elo tab should draw its rankings card and nothing else: ' + body.querySelectorAll('.card').length);
-    const posBtns = [...body.querySelectorAll('.pe-pos button')];
+    const wantCards = 1 + (eloM.units && Object.values(eloM.units.off).some(v => v.games) ? 1 : 0);
+    chk(body.querySelectorAll('.card').length === wantCards && /Rankings/.test(txt(body.querySelector('.card h2'))), 'the Elo tab should draw its rankings card, then Total Offense and Defense, and nothing else: ' + body.querySelectorAll('.card').length);
+    const posBtns = [...body.querySelectorAll('.pe-pos button[data-pos]')];
     chk(posBtns.map(b => b.dataset.pos).join() === eloM.groups.join(), 'the position picker does not list every rated group: ' + posBtns.map(b => b.dataset.pos).join());
     const rankRows = () => [...body.querySelectorAll('.card')].find(c => /Rankings/.test(txt(c.querySelector('h2')))).querySelectorAll('tbody tr');
     chk(rankRows().length === 10, 'the rankings should open on the top ten: ' + rankRows().length);
@@ -661,6 +662,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
       } else chk(!card, 'mismatches show on a week they are not for');
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
+    /* Total Offense and Total Defense: every team that has played, best first, each with its shield, and the switch */
+    { const U = eloM.units, played = U ? Object.values(U.off).filter(v => v.games).length : 0, card = () => d.getElementById('peUnits');
+      if (!played) chk(!card(), 'Total Offense shows with no games rated');
+      else {
+        for (const side of ['off', 'def']) {
+          const btn = card() && card().querySelector(`[data-unit="${side}"]`); chk(!!btn, 'no Total ' + side + ' button'); if (!btn) break;
+          btn.click(); await wait(30);
+          const rows = [...card().querySelectorAll('tbody tr')], vals = rows.map(r => +txt(r.querySelector('.pe-elo')));
+          chk(rows.length === played && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield')),
+            `Total ${side === 'off' ? 'Offense' : 'Defense'} is not every team that has played, best first, with shields`);
+          chk(new RegExp(side === 'off' ? 'Total Offense' : 'Total Defense').test(txt(card().querySelector('h2'))) && !!card().querySelector('.pe-curve'), 'the unit card has the wrong title or no curve');
+        }
+        card().querySelector('[data-unit="off"]').click(); await wait(30); } }
     d.getElementById('peMore').click(); await wait(40);
     chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
     chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))), 'the tab bar does not carry the walk-forward record: ' + txt(d.getElementById('peWalkRec')));
