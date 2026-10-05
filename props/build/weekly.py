@@ -1,9 +1,10 @@
 """Weekly refresh, run unattended by .github/workflows/props.yml: four price pulls a week
 (Mon/Wed/Thu/Sat, PULL_TIMES below), and post-game, stats and daily injury-report runs
-with --no-odds.
+with --catch-up: they price only a game a dropped pull left unpriced, and spend nothing otherwise.
 
     python weekly.py                 (from props/build)
     python weekly.py --no-odds       skip the price pull
+    python weekly.py --catch-up      price only games up to the next pull with no prices yet, not yet started
     python weekly.py --hours 36      override the price-pull window
     python weekly.py --local         allow the price pull off GitHub (it spends credits)
 
@@ -54,6 +55,21 @@ def run(args,cwd,label,soft=False):
 # contended minute on the platform and the likeliest to be dropped.
 PULL_TIMES={0:(8,17), 2:(8,17), 3:(8,17), 5:(23,17)}   # Mon, Wed, Thu 08:17; Sat 23:17
 
+CATCH_UP_WAIT=8   # hours after a scheduled pull's slot before a catch-up treats it as dropped
+
+def hours_since_last_pull(now=None):
+    """How long ago the latest scheduled pull's slot was. Scheduled runs land 2-4.5 hours late,
+    so a catch-up inside CATCH_UP_WAIT of a slot leaves the game to the pull that is probably
+    still coming, rather than price it and have that pull price it again."""
+    now=now or datetime.datetime.now(datetime.timezone.utc)
+    for d in range(8):
+        t=now-datetime.timedelta(days=d)
+        hm=PULL_TIMES.get(t.weekday())
+        if hm is None: continue
+        slot=t.replace(hour=hm[0],minute=hm[1],second=0,microsecond=0)
+        if slot<=now: return (now-slot).total_seconds()/3600
+    return 999.0
+
 def hours_to_next_pull(now=None):
     """How far ahead to price: up to the next scheduled pull, plus an hour of slack
     for a late runner. Every game is then priced by the last pull before it kicks
@@ -78,7 +94,7 @@ def problems_file():
     return os.path.join(base,'props-build-problems.txt')
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here'); ap.add_argument('--local',action='store_true',help='allow the price pull off GitHub Actions')
+    ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here'); ap.add_argument('--local',action='store_true',help='allow the price pull off GitHub Actions'); ap.add_argument('--catch-up',action='store_true',help='price only the games up to the next pull that have no prices yet and have not kicked off: a dropped scheduled pull made up, nothing else spent')
     a=ap.parse_args()
     today=datetime.date.today(); say(f"weekly refresh {datetime.datetime.now():%Y-%m-%d %H:%M} ({today:%A})")
     # 1. downloads
@@ -106,10 +122,12 @@ def main():
     if a.no_odds: say("  price pull skipped (--no-odds)")
     elif not os.environ.get('GITHUB_ACTIONS') and not a.local: say("  price pull skipped: credits are spent only by the props workflow (pass --local to pull from this machine)")
     elif not os.environ.get('ODDS_API_KEY'): say("  price pull skipped: ODDS_API_KEY is not set in this environment"); problems.append("no ODDS_API_KEY; prices not pulled")
+    elif a.catch_up and hours_since_last_pull()<CATCH_UP_WAIT: say(f"  catch-up skipped: the last scheduled pull's slot was {hours_since_last_pull():.1f}h ago and may still be on its way")
     else:
         hours=a.hours or hours_to_next_pull()
-        say(f"  pricing week {week} games kicking off within {hours:.0f}h, which reaches the next scheduled pull")
-        rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',f'{hours:.1f}'],DATA,'oddsfetch')
+        if a.catch_up: say(f"  catch-up: pricing only week {week} games within {hours:.0f}h that have no prices yet and have not kicked off")
+        else: say(f"  pricing week {week} games kicking off within {hours:.0f}h, which reaches the next scheduled pull")
+        rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',f'{hours:.1f}']+(['--missing'] if a.catch_up else []),DATA,'oddsfetch')
         for line in out.splitlines():
             if 'credits' in line or 'main lines' in line or 'threshold prices' in line or 'matched' in line: say('  '+line.strip())
         left=re.findall(r'remaining (\d+)',out); used=re.findall(r'credits used (\d+)',out)

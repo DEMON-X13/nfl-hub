@@ -13,9 +13,9 @@ on:
     - cron: "17 8 * * 3"    # Wednesday 04:17 ET: holiday games, nothing in an ordinary week
     - cron: "17 8 * * 4"    # Thursday 04:17 ET: Thursday night, and Thanksgiving's early game
     - cron: "17 23 * * 6"   # Saturday 19:17 ET: the Sunday slate, priced ~18h out
-    # post-game, score only: finals, game bets settled, started games out of the
-    # suggestions. Every one of these sits on minute 7, and the run step passes
-    # --no-odds for any schedule starting "7 ", so none of them spends a credit.
+    # post-game: finals, game bets settled, started games out of the suggestions.
+    # Every one of these sits on minute 7, and the run step passes --catch-up for any
+    # schedule starting "7 ": a credit is spent only on a game a dropped pull left unpriced.
     - cron: "7 6 * * 5"     # after Thursday night
     - cron: "7 23 * * 0"    # after Sunday early
     - cron: "7 2 * * 1"     # after Sunday late
@@ -26,7 +26,7 @@ on:
     - cron: "7 16 * * 5"    # Thursday night's stats
     - cron: "7 16 * * 1"    # Sunday's stats
     - cron: "7 16 * * 2"    # Monday night's stats
-    # every morning, score only: nflverse posts the day's injury report about 03:07 ET, so
+    # every morning (a catch-up like the runs above): nflverse posts the day's injury report about 03:07 ET, so
     # the Props tab, the game pages and the builder drop whoever was ruled out the same
     # morning. Without it Friday's final report waited for Saturday evening's price pull.
     - cron: "7 9 * * *"     # 05:07 ET daily: the injury report, rosters and depth charts
@@ -66,8 +66,12 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           PYTHONUTF8: "1"
         # a scheduled run cannot carry the no_odds input, so the post-game crons are
-        # recognised by their minute: they all start "7 ", the price pulls start "17 "
-        run: python weekly.py --no-commit ${{ (inputs.no_odds || startsWith(github.event.schedule, '7 ')) && '--no-odds' || '' }}
+        # recognised by their minute: they all start "7 ", the price pulls start "17 ". The
+        # "7 " runs catch up: GitHub drops scheduled runs (Monday 5 October's 08:17 pull never
+        # ran, so the Monday night game had no prices), and a catch-up prices only a game up to
+        # the next pull that has none and has not kicked off, so it spends nothing in a week
+        # where every pull ran. A manual run with no_odds ticked spends nothing at all.
+        run: python weekly.py --no-commit ${{ inputs.no_odds && '--no-odds' || (startsWith(github.event.schedule, '7 ') && '--catch-up' || '') }}
       - name: Commit if anything changed
         run: |
           git config user.name "nfl-hub bot"
