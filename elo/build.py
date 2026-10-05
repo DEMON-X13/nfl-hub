@@ -95,6 +95,39 @@ the team's last game (`before`), that chance (`p_avg`) and the regular-season re
 rating was built on (`record`, wins, losses, ties); the Bets and Stats page's Power
 Ratings tab is drawn from it.
 
+TOTAL OFFENSE AND TOTAL DEFENSE (the ELO Ratings tab). Each team's offense and defense rated on this season's games
+alone, in the same Elo format as the power ratings: every unit starts the season at 0 (shown as
+1500) and moves after each final by how far the game beat or missed what it expected.
+
+The measure is a game score for an offense, two parts points and one part EPA per play, each put
+in standard deviations of a team-game on 2012-2017:
+
+    g = (2 * (points - 22.73) / 10.13 + (EPA/play + 0.0092) / 0.1899) / 3
+
+points the offense's final score (games.csv) and EPA/play its passing EPA (sacks included) plus
+rushing EPA over attempts + carries + sacks (nflverse's stats_team_week file). A defense is rated
+on the same game score allowed. After each final, for each side of the ball,
+
+    e = O[off] - D[def] + H * home                 home +1, away -1, 0 at a neutral site
+    O[off] += K * (g - e),  D[def] -= K * (g - e)
+
+with K 0.08 and H 0.086. The league mean is held at its 2012-2017 value (0 by construction): a
+season that scores more pushes every offense up and every defense down alike, which the bell
+curve takes out of the shown number. Shown as 1500 + 100 * z across the teams, so 1500 is the
+average unit and 100 points a standard deviation, as the player rankings are; a defense's number
+is higher the better it is. `before` is the unit's rating going into its last game put on today's
+curve, so `change` is its own movement and not the league's.
+
+Why this measure: rated walk-forward on 2018-2025 (weeks 2 on, every parameter fitted on
+2012-2017), the two ratings predict the offense's next-game points with an RMSE of 9.516 against
+9.992 for the league average with home field; points alone 9.537, EPA/play 9.567, total yards
+(the NFL's "total offense") 9.615, yards per play 9.620, success rate 9.667. The blend beats
+points alone by 0.021 (SE 0.010) and in six seasons of eight, mostly early in the season, where
+EPA settles faster than the scoreboard; on defense the two are level and yards allowed is
+worse. The end-of-season order agrees with points per game at 0.96 (offense) and 0.93 (defense,
+Spearman) and with yards per game at 0.87 and 0.74.
+`units` in model.json carries both, with each unit's points, yards and EPA a play per game.
+
 THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
 his next game beyond what his recent games already say? For every QB, RB, WR and TE game
 since 2016 in which the player was a regular (involvement at least 80% of the position's
@@ -186,6 +219,7 @@ STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_p
 ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_{y}.csv'
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
 DC_URL = 'https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_{y}.csv'
+TEAM_WEEK_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_{y}.csv'
 # the depth chart's own labels to the rated groups: the weekly files name positions, the daily
 # ones name slots. Returners, holders, punters, snappers and the offensive line are not rated.
 SLOT = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'HB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K', 'PK': 'K',
@@ -277,13 +311,99 @@ def load(offline):
     except Exception as e:
         print(f'  no roster file for {last} ({e}); nobody is marked out')
     inj = injuries.get(last)
+    # the season's team stats, for Total Offense and Total Defense; re-read every run
+    team_week = None
+    dest = os.path.join(CACHE, f'stats_team_week_{last}.csv')
+    if not offline and os.path.exists(dest):
+        os.remove(dest)
+    try:
+        team_week = pd.read_csv(fetch(TEAM_WEEK_URL.format(y=last), dest, offline), low_memory=False)
+    except (Exception, SystemExit) as e:      # offline without the file raises SystemExit
+        print(f'  no team stats file for {last} ({e}); every offense and defense shows 1500')
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
     stats = stats[stats.game_id.notna()]
-    return games, stats, roster, inj, charts, injuries
+    return games, stats, roster, inj, charts, injuries, team_week
 
 
 PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.2
+
+
+OD_PTS_MU, OD_PTS_SD = 22.7288, 10.1297      # points per team-game, 2012-2017
+OD_EPA_MU, OD_EPA_SD = -0.0092, 0.1899       # EPA per play per team-game, 2012-2017
+OD_W_PTS = 2 / 3                             # the game score's weight on points (EPA/play the rest)
+OD_K, OD_H = 0.08, 0.086                     # step per final, home field in game-score units
+
+
+def offdef_ratings(season_games, team_week):
+    """Total Offense and Total Defense for one season: season_games is games.csv cut to the
+    season, team_week that season's stats_team_week file (REG and POST rows)."""
+    g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
+    g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
+    g = g.sort_values(['kick', 'game_id'], kind='mergesort')
+    teams = sorted(set(g.home_team) | set(g.away_team))
+    if team_week is None or not len(team_week):      # before the season's first file: everyone 1500
+        team_week = pd.DataFrame(columns=['game_id', 'team', 'passing_yards', 'sack_yards_lost', 'rushing_yards',
+                                          'attempts', 'carries', 'sacks_suffered', 'passing_epa', 'rushing_epa'])
+    n = lambda c: pd.to_numeric(team_week[c], errors='coerce').fillna(0.0)
+    tw = pd.DataFrame({'game_id': team_week.game_id, 'team': team_week.team,
+                       'yds': n('passing_yards') - n('sack_yards_lost').abs() + n('rushing_yards'),
+                       'plays': n('attempts') + n('carries') + n('sacks_suffered'),
+                       'epa': n('passing_epa') + n('rushing_epa')})
+    tw = {(r.game_id, r.team): r for r in tw.itertuples(index=False) if r.plays > 0}
+    O = {t: 0.0 for t in teams}
+    D = {t: 0.0 for t in teams}
+    Ob, Db = {}, {}                                   # each unit's rating going into its last game
+    acc = {t: {'g': 0, 'pts': 0.0, 'yds': 0.0, 'epa': 0.0, 'plays': 0.0,
+               'pa': 0.0, 'ya': 0.0, 'epa_a': 0.0, 'plays_a': 0.0} for t in teams}
+    pending = []
+    for r in g[g.home_score.notna() & g.away_score.notna()].itertuples(index=False):
+        sides = [(r.home_team, r.away_team, float(r.home_score), 0.0 if r.location == 'Neutral' else 1.0),
+                 (r.away_team, r.home_team, float(r.away_score), 0.0 if r.location == 'Neutral' else -1.0)]
+        stat = [tw.get((r.game_id, a)) for a, *_ in sides]
+        if any(s is None for s in stat):              # the team stats lag the score by a day or so
+            pending.append(r.game_id)
+            continue
+        step = []
+        for (a, b, pts, home), s in zip(sides, stat):
+            ep = s.epa / s.plays
+            gs = OD_W_PTS * (pts - OD_PTS_MU) / OD_PTS_SD + (1 - OD_W_PTS) * (ep - OD_EPA_MU) / OD_EPA_SD
+            step.append((a, b, OD_K * (gs - (O[a] - D[b] + OD_H * home))))
+            for k, v in (('pts', pts), ('yds', s.yds), ('epa', s.epa), ('plays', s.plays)):
+                acc[a][k] += v
+            for k, v in (('pa', pts), ('ya', s.yds), ('epa_a', s.epa), ('plays_a', s.plays)):
+                acc[b][k] += v
+        for a, b, d in step:
+            Ob[a], Db[b] = O[a], D[b]
+            O[a] += d
+            D[b] -= d
+            acc[a]['g'] += 1
+    played = [t for t in teams if acc[t]['g']]
+
+    def curve(R, before):
+        v = np.array([R[t] for t in played]) if played else np.zeros(1)
+        mu, sd = float(v.mean()), float(v.std())
+        show = lambda x: round(1500 + 100 * (x - mu) / sd) if sd > 1e-9 else 1500
+        out = {}
+        for t in teams:
+            now, then = show(R[t]), (show(before[t]) if t in before else None)
+            out[t] = {'elo': now, 'before': then, 'change': None if then is None else now - then, 'raw': round(R[t], 4)}
+        order = sorted(teams, key=lambda t: -R[t])
+        for i, t in enumerate(order):
+            out[t]['rank'] = i + 1
+        return out
+
+    off, dfn = curve(O, Ob), curve(D, Db)
+    for t in teams:
+        a, k = acc[t], max(acc[t]['g'], 1)
+        off[t].update(games=a['g'], ppg=round(a['pts'] / k, 1), ypg=round(a['yds'] / k, 1),
+                      epa_play=round(a['epa'] / a['plays'], 3) if a['plays'] else None)
+        dfn[t].update(games=a['g'], ppg=round(a['pa'] / k, 1), ypg=round(a['ya'] / k, 1),
+                      epa_play=round(a['epa_a'] / a['plays_a'], 3) if a['plays_a'] else None)
+    return {'off': off, 'def': dfn, 'pending': pending,
+            'measure': 'game score: two parts points, one part EPA per play, each in SDs of a 2012-2017 team-game',
+            'params': {'K': OD_K, 'H': OD_H, 'w_points': round(OD_W_PTS, 4), 'pts': [OD_PTS_MU, OD_PTS_SD],
+                       'epa': [OD_EPA_MU, OD_EPA_SD], 'shown': '1500 + 100 * z across the teams'}}
 
 
 def power_ratings(season_games, lineup=None, lineup_before=None):
@@ -595,7 +715,7 @@ def main():
     ap.add_argument('--offline', action='store_true')
     a = ap.parse_args()
     print('loading')
-    games, stats, roster, inj, charts, injuries = load(a.offline)
+    games, stats, roster, inj, charts, injuries, team_week = load(a.offline)
     games = week_order(games)
     weekly, daily, outs = build_lineups(charts, injuries)
     print(f'  depth charts: {len(weekly)} weekly team-charts, {sum(len(v) for v in daily.values())} daily snapshots; {sum(len(v) for v in outs.values())} players ruled out across {len(outs)} weeks')
@@ -865,6 +985,7 @@ def main():
         'walk_forward': walk, 'walk_forward_who_played': walk_played, 'record': {'season': last},
         'graded': graded, 'next': {'week': int(upcoming[upcoming.ord == next_ord].week.min()) if next_ord is not None else None, 'games': calls},
         'teams': team_rows,
+        'units': offdef_ratings(games[games.season == last], team_week),
     }
 
     # ---- the rankings ----

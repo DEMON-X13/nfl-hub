@@ -10,7 +10,7 @@
 function ratingsViz(){
   const el=document.getElementById('ratingsTable'); if(!el||!S.teams) return;
   const T=window.__eloTeams;
-  if(!T||!Object.keys(T).length){ el.innerHTML='<h2>Power ratings <span class="pill">Team Elo</span></h2><p class="muted">The team ratings did not load. Refresh the page to try again.</p>'; return; }
+  if(!T||!Object.keys(T).length){ el.innerHTML='<h2>Team rankings <span class="pill">Team Elo</span></h2><p class="muted">The team ratings did not load. Refresh the page to try again.</p>'; return; }
   const rows=Object.entries(T).map(([t,v])=>({t,...v})).sort((a,b)=>b.elo-a.elo);
   const prior=rows.filter(x=>x.before!=null).sort((a,b)=>b.before-a.before), rankBefore=Object.fromEntries(prior.map((x,i)=>[x.t,i+1]));
   const mv=(t,i)=>{ if(!rankBefore[t]) return ''; const d=rankBefore[t]-(i+1);
@@ -24,7 +24,7 @@ function ratingsViz(){
   const row=(x,i)=>{ const m=S.teams[x.t];
     const e=m?`<td class="num">${epa(stateVal(m,'off_epa','off_epa'))}</td><td class="num">${epa(stateVal(m,'d_off_epa','off_epa'))}</td>`:'<td></td><td></td>';
     return `<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num rt-rec">${wl(x.t)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(x.elo)}<b>${x.elo}</b></span></td><td class="movecell">${eloMv(x)}</td><td class="num rt-pct">${Math.round(x.p_avg*100)}%</td>${e}</tr>`; };
-  el.innerHTML=TIER_DEFS+`<h2>Power ratings <span class="pill">Team Elo</span></h2>
+  el.innerHTML=TIER_DEFS+`<h2>Team rankings <span class="pill">Team Elo</span></h2>
     <p class="muted" style="margin:0 0 10px">Each team rated on this season's results alone: everyone started at 1500, and after every game both teams move by how far the score beat or missed what was expected, home field counted. A favourite that only scrapes past a weaker team loses points and the underdog gains them; a blowout counts no more than 21 points. The players count for two tenths: each team's expected lineup on this season's player Elo is blended in, so injuries and who starts move it too. The ratings spread out as the season goes, so the top shields are earned. The change and the arrows are since the team's last game. Vs average is its chance against an average team on a neutral field.</p>
     <div class="rt-wrap"><table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Record</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Vs average</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th></tr></thead><tbody>`
     +rows.map(row).join('')+'</tbody></table></div>';
