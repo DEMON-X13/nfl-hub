@@ -109,8 +109,26 @@ league's, p his pre-game Elo and dl, lb, db the pre-game strengths of the opposi
 line, linebackers and secondary from the game model's expected lineups, all in hundreds of
 points from 1500. The same fit without the last four terms is the form-only projection; the
 difference is the Elo nudge. Seasons 2012-2015 only warm the ratings up; nothing is fitted on
-them. The record is walk-forward: each season from 2017 projected by the fit on the seasons
-before it, graded on the typical miss with and without Elo and on how often the fifth of
+them.
+
+A receiver's catches, targets and yards also depend on where he stands in his own team's
+pecking order: a WR1 averaging five catches keeps more of them than a WR3 who has averaged five
+lately. So for those three stats a wide receiver's row carries f*WR1 and f*WR2 and a tight end's
+f*TE1, his place among the expected starters at his position and himself, ranked on targets
+going into the game (the same half-life four, every game he played). The rank is not Elo, so it
+sits on the form side, in both fits, and the Elo nudge is not credited with it. Walk-forward
+2017-2025 it took the typical miss on a wide receiver's yards from 35.594 to 35.445 (0.149, a
+standard error of 0.040 over a bootstrap of players, better in 7 of 9 seasons), catches 2.143 to
+2.137, targets 2.557 to 2.550; a tight end's yards 26.972 to 26.947, catches 1.955 to 1.951,
+targets 2.239 to 2.234. It did nothing for touchdowns, which are left without it. Matching each
+receiver to the corner most likely covering him (WR1 on the best expected corner by Elo, WR2 the
+second, the slot the nickel) in place of the secondary's average was tried beside it and added
+nothing once the rank was in: a defensive back's box score is a poor record of his coverage.
+Nor did the opposing pass rush (sacks and QB hits per dropback, over the league) or the
+receiver's own line's sacks allowed, for receivers or quarterbacks: what they say is already in
+the defensive line's Elo and in what the defence has allowed.
+
+The record is walk-forward: each season from 2017 projected by the fit on the seasons before it, graded on the typical miss with and without Elo and on how often the fifth of
 games Elo moved most landed on the side it moved. Through 2025 the Elo part helps passing
 yards, passing TDs and completions, running back carries, and receivers' and tight ends'
 catches, targets, yards and touchdowns (their biggest nudges right 53-63% of the time); it
@@ -156,7 +174,7 @@ test; no page draws them):
     elo/data/matchups.json  the matchup formula per position and stat, its walk-forward record and
                             the coming week's projections for every expected starter
 """
-import argparse, datetime, json, math, os, urllib.request
+import argparse, bisect, datetime, json, math, os, urllib.request
 import numpy as np
 import pandas as pd
 
@@ -440,25 +458,50 @@ MU_COLS = ['completions', 'attempts', 'passing_yards', 'passing_tds', 'passing_i
 MU_FIRST = 2016          # the seasons before this are the ratings' warm-up, not fitted on
 MU_FORM_HL, MU_ALLOWED_HL, MU_MIN_GAMES = 4, 6, 3
 MU_DEF = ['DL', 'LB', 'DB']
+# a receiver's place among his team's expected receivers, on targets going into the game:
+# the wide receivers' WR1 and WR2 (a WR3 or lower is the base), the tight ends' TE1
+MU_RANK = {'WR': 2, 'TE': 1}
+MU_RANK_STATS = {'receptions', 'receiving_yards', 'targets'}      # the volume it decides; not the touchdowns
 
 
-def mu_design(b, home, allowed, pz, dz, elo=True):
-    """the regression's columns: the recent average, home, what the defence has allowed, and
+def mu_design(b, home, allowed, pz, dz, elo=True, rk=None):
+    """the regression's columns: the recent average, home, what the defence has allowed, the
+    receiver's place in his team's pecking order (rk, one column per rank, WR and TE only), and
     (with elo) the player's rating and the opposing defenders' ratings, each scaling the average"""
     cols = [np.ones(len(b)), home * b, b, b * (allowed - 1)]
+    if rk is not None:
+        cols += [b * rk[:, i] for i in range(rk.shape[1])]
     if elo:
         cols += [b * pz] + [b * dz[:, i] for i in range(dz.shape[1])]
     return np.column_stack(cols)
 
 
-def matchups(log, game_feat, coming, last):
-    """fit, check and apply the matchup formula (see the docstring's MATCHUPS)"""
+def matchups(log, game_feat, coming, last, lineups=None):
+    """fit, check and apply the matchup formula (see the docstring's MATCHUPS); lineups is each
+    game's expected lineup by team, {(game_id, team): [(pid, group)]}"""
     d = pd.DataFrame(log)
     if d.empty:
         return None
     d['scrim_yards'] = d.rushing_yards + d.receiving_yards
     d['any_td'] = d.rushing_tds + d.receiving_tds
     d = d.sort_values(['season', 'ord']).reset_index(drop=True)
+    # every player's targets going into each game: the average (half-life four games, every game
+    # he played) after each of his games, looked up by the last one before the game in question
+    d['tgt_after'] = d.groupby('pid').targets.transform(lambda v: v.ewm(halflife=MU_FORM_HL).mean())
+    tgt = {}
+    for pid, key, v in zip(d.pid, d.season * 1000 + d.ord, d.tgt_after):
+        h = tgt.setdefault(pid, ([], []))
+        h[0].append(int(key))
+        h[1].append(float(v))
+    def before(pid, key):
+        h = tgt.get(pid)
+        i = (bisect.bisect_left(h[0], key) if key is not None else len(h[0])) if h else 0
+        return h[1][i - 1] if i else 0.0
+    def rank(pid, mates, key, k):
+        """his place among the group's expected starters and himself, as k indicator columns"""
+        mine = before(pid, key)
+        r = sum(1 for q in set(mates) if q != pid and before(q, key) > mine)
+        return [1.0 if r == i else 0.0 for i in range(k)]
     opp = {}
     for f in game_feat:
         opp[(f['game_id'], f['home'])] = f['sa']
@@ -481,13 +524,20 @@ def matchups(log, game_feat, coming, last):
         for u in MU_DEF:
             x['o' + u] = [((opp.get((gid, t)) or {}).get(u, np.nan) - 1500) / 100 for gid, t in zip(x.game_id, x.team)]
         x['pz'] = (x.R - 1500) / 100
+        nr = MU_RANK.get(g, 0)
+        rk_cols = [f'rk{i}' for i in range(nr)]
+        if nr:
+            ranks = [rank(pid, [p for p, gg in (lineups or {}).get((gid, t), []) if gg == g], s * 1000 + o, nr)
+                     for pid, gid, t, s, o in zip(x.pid, x.game_id, x.team, x.season, x.ord)]
+            x[rk_cols] = np.array(ranks)
         fit_rows = x[(x.season >= MU_FIRST) & (x.n >= MU_MIN_GAMES) & x.oDB.notna()]
         latest = x.groupby('pid').tail(1).set_index('pid')
         for st in stats:
             y = fit_rows[st].values
             mean = float(np.nanmean(y))
             args = lambda r: (r['b_' + st].values, r.home.values, r['a_' + st].fillna(mean).values / mean, r.pz.values, r[['o' + u for u in MU_DEF]].values)
-            X1, X0 = mu_design(*args(fit_rows)), mu_design(*args(fit_rows), elo=False)
+            rk = fit_rows[rk_cols].values if nr and st in MU_RANK_STATS else None
+            X1, X0 = mu_design(*args(fit_rows), rk=rk), mu_design(*args(fit_rows), elo=False, rk=rk)
             ok = ~np.isnan(X1).any(1)
             seas = fit_rows.season.values
             # walk-forward: every season called by the formula fitted on the seasons before it
@@ -530,8 +580,9 @@ def matchups(log, game_feat, coming, last):
                     dz = np.array([[(c['opp_strength'][u] - 1500) / 100 for u in MU_DEF]])
                     pz = (c['rating'][pid] - 1500) / 100
                     arr = lambda v: np.array([v])
-                    e1 = float((mu_design(arr(b), arr(c["home"]), arr(a), arr(pz), dz) @ w1)[0])
-                    e0 = float((mu_design(arr(b), arr(c["home"]), arr(a), arr(pz), dz, elo=False) @ w0)[0])
+                    rk = np.array([rank(pid, [p for p, gg in c['parts'] if gg == g], None, nr)]) if nr and st in MU_RANK_STATS else None
+                    e1 = float((mu_design(arr(b), arr(c["home"]), arr(a), arr(pz), dz, rk=rk) @ w1)[0])
+                    e0 = float((mu_design(arr(b), arr(c["home"]), arr(a), arr(pz), dz, elo=False, rk=rk) @ w0)[0])
                     pl = out['players'].setdefault(pid, {'group': g, 'game_id': c['game_id'], 'team': c['team'], 'opp': c['opp'],
                                                          'home': c['home'], 'elo': round(c['rating'][pid]),
                                                          'opp_def': {u: round(c['opp_strength'][u]) for u in MU_DEF}, 'stats': {}})
@@ -610,6 +661,7 @@ def main():
         return parts, chart is not None
 
     mu_log = []             # every offensive player-game: pre-game rating, opponent, box score
+    mu_lineups = {}         # (game_id, team) -> the expected lineup, for the receivers' pecking order
     cur_season = None
     for season, ordw in ord_weeks.itertuples(index=False):
         if season != cur_season:
@@ -639,6 +691,7 @@ def main():
             ea, ca = expected(season, row.week, row.away_team, row.gameday, played.get((int(season), row.away_team)))
             sh, sa = strength(eh), strength(ea)
             ph, pa = strength(parts[row.home_team]), strength(parts[row.away_team])
+            mu_lineups[(row.game_id, row.home_team)], mu_lineups[(row.game_id, row.away_team)] = eh, ea
             game_feat.append({'game_id': row.game_id, 'season': int(season), 'ord': int(ordw), 'week': int(row.week),
                               'home': row.home_team, 'away': row.away_team, 'charted': bool(ch and ca),
                               'result': None if pd.isna(row.home_score) else float(row.home_score) - float(row.away_score),
@@ -897,10 +950,13 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, 'players.json'), 'w') as f:
         json.dump(out, f, separators=(',', ':'))
-    mu = matchups(mu_log, game_feat, coming, last)
+    mu = matchups(mu_log, game_feat, coming, last, mu_lineups)
     if mu:
+        cols = lambda g, st: (['1', 'home x form', 'form', 'form x allowed']
+                              + [f'form x {g}{i + 1}' for i in range(MU_RANK.get(g, 0) if st in MU_RANK_STATS else 0)]
+                              + ['form x player Elo'] + [f'form x opposing {u} Elo' for u in MU_DEF])
         mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'],
-                   'columns': ['1', 'home x form', 'form', 'form x allowed', 'form x player Elo'] + [f'form x opposing {u} Elo' for u in MU_DEF]})
+                   'columns': {f'{g}|{st}': cols(g, st) for g, sts in MU_STATS.items() for st in sts}})
         with open(os.path.join(OUT, 'matchups.json'), 'w') as f:
             json.dump(mu, f, separators=(',', ':'))
         for k in ('QB|passing_yards', 'WR|receiving_yards', 'RB|rushing_yards', 'TE|receiving_yards'):
