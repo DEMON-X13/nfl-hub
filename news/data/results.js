@@ -253,5 +253,9 @@ const RESULTS = {
  "wk4:DET-CAR": [
   26,
   32
+ ],
+ "wk4:ATL-NO": [
+  45,
+  24
  ]
 };
