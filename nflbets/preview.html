@@ -3737,7 +3737,7 @@ async function refresh(){
     try{
       const sched=[...want].map(gidParts).filter(Boolean), games={};
       for(const w of [...new Set(sched.map(g=>g.w))]){
-        const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON);
+        const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON+'&_='+Date.now());
         Object.assign(games,espnGames(sb,sched));
       }
       STATE.games=games;
@@ -3751,7 +3751,8 @@ async function refresh(){
       for(const gid of wantBox){ const g=games[gid];
         if(!g||g.state==='pre') continue;
         if(STATE.settled[gid]&&box[gid]) continue;        /* a final box score cannot change */
-        try{ box[gid]=await getJSON(ESPN_SUM+g.eid); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
+        /* the time on the end keeps any cache between here and ESPN from handing back an old box score */
+        try{ box[gid]=await getJSON(ESPN_SUM+g.eid+'&_='+Date.now()); if(g.state==='post') STATE.settled[gid]=true; }catch(e){}
       }
       STATE.box=box; STATE.err=null; STATE.at=Date.now();
     }catch(e){ STATE.err=String(e&&e.message||e); }
@@ -4021,6 +4022,13 @@ function foot(){
       :(STATE.loaded?'loaded':'idle'));
 }
 document.getElementById('now').addEventListener('click',refresh);
+/* while a game with a leg on it is being played, read the scores again every 30 seconds, as long
+   as the page is on screen. Nothing else polls: before kickoff and after the final there is
+   nothing to read, and a hidden page reads nothing. Bijan's yards froze at whatever they were
+   when the page opened, which is what this is for. */
+const LIVE_EVERY=30000;
+setInterval(()=>{ if(document.visibilityState!=='visible'||STATE.busy) return;
+  if(Object.values(STATE.games).some(g=>g&&g.state==='live')) refresh(); },LIVE_EVERY);
 document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
 document.getElementById('app').addEventListener('click',e=>{
   if(e.target&&e.target.id==='restoreAll'){ e.preventDefault(); restoreAll(); draw(); } });
