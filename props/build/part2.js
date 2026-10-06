@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v77 \u00b7 2026-10-05';
+const APP_BUILD='app v78 \u00b7 2026-10-06';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -568,14 +568,21 @@ const ESPN_COL={
 function espnNum(s){ if(s==null) return null; const v=parseFloat(String(s).replace(/,/g,'')); return isFinite(v)?v:null; }
 /* one player's line out of a summary payload, keyed by our own stat names */
 function espnStats(sum,team,who){
-  const want=nameKey(who), tm=espnAb(team), out={}; let seen=false;
-  for(const b of ((sum&&sum.boxscore&&sum.boxscore.players)||[])){
-    if(espnAb(b.team&&b.team.abbreviation)!==tm) continue;
+  const tm=espnAb(team), out={}; let seen=false;
+  const sides=((sum&&sum.boxscore&&sum.boxscore.players)||[]).filter(b=>espnAb(b.team&&b.team.abbreviation)===tm);
+  const nmOf=a=>(a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
+  /* the whole name first: two on one team can share a last name and an initial (Bijan and
+     Brian Robinson), and matching on that alone hands one of them the other's numbers. Last
+     name plus initial only when nobody on the team carries the whole name. */
+  const full=normName(who);
+  const whole=sides.some(b=>(b.statistics||[]).some(g=>(g.athletes||[]).some(a=>normName(nmOf(a))===full)));
+  const want=whole?full:nameKey(who), keyOf=whole?normName:nameKey;
+  for(const b of sides){
     for(const grp of (b.statistics||[])){
       const labels=(grp.labels||[]).map(x=>String(x).toUpperCase());
       for(const a of (grp.athletes||[])){
-        const nm=(a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
-        if(nameKey(nm)!==want) continue;
+        const nm=nmOf(a);
+        if(keyOf(nm)!==want) continue;
         seen=true;
         for(const stat in ESPN_COL){
           const c=ESPN_COL[stat]; if(c[0]!==grp.name) continue;

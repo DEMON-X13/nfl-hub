@@ -17,6 +17,13 @@ setTimeout(async()=>{
   const [gameCtx,rosterFor,statLines,project,pOver,rungView,marketLine,marketMu,devigOver,bookImplied,probToAmerican,mlToDec,parlayProb,modelMargin,legRho,gameBet,settleLeg,gameMu,tdPlus]=
    ['gameCtx','rosterFor','statLines','project','pOver','rungView','marketLine','marketMu','devigOver','bookImplied','probToAmerican','mlToDec','parlayProb','modelMargin','legRho','gameBet','settleLeg','gameMu','tdPlus'].map(F);
   const PAY=F('PAY');
+  /* the checks open games that have not kicked off; between the week's last kickoff and its
+     final reaching the data (a Monday night) there are none, so the page's clock goes back to
+     an hour before that kickoff rather than the audit depending on the hour it runs */
+  if(!S.sched.some(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w))){
+    const wk=F('currentWeek')(), ks=S.sched.filter(x=>+x.w===wk).map(x=>F('kickoff')(x)).filter(Boolean).map(k=>k.getTime());
+    if(ks.length){ const off=Math.max(...ks)-3600e3-Date.now(), now0=w.Date.now.bind(w.Date); w.Date.now=()=>now0()+off; F('renderAll')();
+      console.log(`clock: no game left to start, set back ${(-off/3600e3).toFixed(1)}h to before week ${wk}'s last kickoff`); } }
   /* open the first game that has not kicked off, in any open week (the audit must not depend on the date) */
   const openUpcoming=()=>{ const g=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w)).sort((a,b)=>(a.w-b.w)||((a.d+a.t).localeCompare(b.d+b.t)))[0];
     const ws=d.getElementById('weekSel'); if(ws.value!==String(g.w)){ ws.value=String(g.w); ws.dispatchEvent(new w.Event('change')); }
@@ -238,6 +245,19 @@ setTimeout(async()=>{
       b2.click(); chk(!d.querySelector('#gameView .wkstats'),'Hide stats did not close the table');
       console.log(`G5. show stats: ${wks.length} week(s) listed for ${pid}, the props stayed shut, hides again`); }
     d.getElementById('backBtn').click(); }
+
+  /* ---- G6. two on one team with the same last name and initial each keep their own box score ---- */
+  { const es=F('espnStats');
+    const sum={boxscore:{players:[{team:{abbreviation:'ATL'},statistics:[
+      {name:'rushing',labels:['CAR','YDS','AVG','TD','LONG'],athletes:[
+        {athlete:{displayName:'Bijan Robinson'},stats:['24','131','5.5','1','40']},
+        {athlete:{displayName:'Brian Robinson Jr.'},stats:['6','22','3.7','0','9']}]}]}]}};
+    const bij=es(sum,'ATL','Bijan Robinson'), bri=es(sum,'ATL','Brian Robinson');
+    chk(bij&&bij.rushing_yards===131&&bij.carries===24&&bij.tds===1,'Bijan Robinson was handed someone else\'s rushing line: '+JSON.stringify(bij));
+    chk(bri&&bri.rushing_yards===22&&bri.tds===0,'Brian Robinson was handed someone else\'s rushing line: '+JSON.stringify(bri));
+    const aj=es({boxscore:{players:[{team:{abbreviation:'LAC'},statistics:[{name:'receiving',labels:['REC','YDS','AVG','TD','LONG','TGTS'],athletes:[{athlete:{displayName:'A.J. Brown'},stats:['5','70','14','0','30','8']}]}]}]}},'LAC','AJ Brown');
+    chk(aj&&aj.receptions===5,'the initials fallback no longer matches "A.J." to "AJ"');
+    console.log(`G6. box-score names: Bijan ${bij&&bij.rushing_yards} and Brian ${bri&&bri.rushing_yards} rushing yards kept apart, A.J./AJ still matched`); }
 
   console.log(`G. state flow: ingest ok, week stays on ${F('currentWeek')()} (schedule-driven), re-upload skipped, legs preserved, backup round-trips`);
 
