@@ -607,13 +607,6 @@ function foot(){
       :(STATE.loaded?'loaded':'idle'));
 }
 document.getElementById('now').addEventListener('click',refresh);
-/* while a game with a leg on it is being played, read the scores again every 30 seconds, as long
-   as the page is on screen. Nothing else polls: before kickoff and after the final there is
-   nothing to read, and a hidden page reads nothing. Bijan's yards froze at whatever they were
-   when the page opened, which is what this is for. */
-const LIVE_EVERY=30000;
-setInterval(()=>{ if(document.visibilityState!=='visible'||STATE.busy) return;
-  if(Object.values(STATE.games).some(g=>g&&g.state==='live')) refresh(); },LIVE_EVERY);
 document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
 document.getElementById('app').addEventListener('click',e=>{
   if(e.target&&e.target.id==='restoreAll'){ e.preventDefault(); restoreAll(); draw(); } });
