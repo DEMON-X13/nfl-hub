@@ -354,11 +354,15 @@ function zeroStats(l){
   return s2;
 }
 /* a game total, over or under: points clear of the line on the side bet, which is the shape
-   liveGameLeg hands a spread over in, so the row, the bar and the chip treat it the same way */
+   liveGameLeg hands a spread over in, so the row, the bar and the chip treat it the same way.
+   Points only go up, so it is settled the moment the total passes the line, as a player's
+   over is: an over is won and an under lost there and then, without waiting for the final */
 function liveTotal(l,g){
   if(!g||g.state==='pre') return {val:null,k:+l.k||0,need:null,state:'pending'};
   if(g.hs==null||g.as==null) return {val:null,k:+l.k||0,need:null,state:'unknown'};
   const m=(l.side==='under'?-1:1)*((g.hs+g.as)-(+l.k||0));
+  const over=l.side!=='under', past=(g.hs+g.as)>(+l.k||0);
+  if(g.state!=='post'&&past) return {val:m,k:0,need:null,state:over?'hit':'missed'};
   return {val:m,k:0,need:null,state:g.state==='post'?(m>0?'hit':(m===0?'push':'missed')):'live'};
 }
 function liveFor(l){
