@@ -1,6 +1,6 @@
 {
  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under.",
- "updated": "2026-10-04T00:00:00Z",
+ "updated": "2026-10-06T00:00:00Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -25,9 +25,112 @@
   "2026_03_LAC_BUF",
   "2026_03_PHI_CHI",
   "2026_04_PIT_CLE",
-  "2026_04_DET_CAR"
+  "2026_04_DET_CAR",
+  "2026_04_ATL_NO"
  ],
  "parlays": [
+  {
+   "id": "w4-dk-atlno-ml-over",
+   "week": 4,
+   "stake": 1,
+   "price": 238,
+   "payout": 3.38,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 24,
+     "player": "Falcons",
+     "team": "ATL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Falcons at Saints",
+     "team": "ATL",
+     "stat": "total",
+     "line": 47.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-atlno-3-boost",
+   "week": 4,
+   "stake": 1,
+   "price": 750,
+   "payout": 8.5,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 24,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "rushing_yards",
+     "line": 88,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Drake London",
+     "team": "ATL",
+     "stat": "receiving_yards",
+     "line": 81,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Chris Olave",
+     "team": "NO",
+     "stat": "receptions",
+     "line": 7,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-atlno-3-td",
+   "week": 4,
+   "stake": 1,
+   "price": 296,
+   "payout": 3.96,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 24,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "rushing_yards",
+     "line": 88,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Chris Olave",
+     "team": "NO",
+     "stat": "receptions",
+     "line": 7,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
   {
    "id": "w4-dk-detcar-3a",
    "week": 4,
