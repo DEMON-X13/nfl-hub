@@ -5,7 +5,7 @@ Generated 2026-10-06. Facts below are pulled; everything narrative still has to 
 ## Games
 
 ### Tampa Bay Buccaneers at Dallas Cowboys
-Thu, Oct 8, 8:15 PM ET, Prime Video, AT&T Stadium, Arlington. Line: DAL -9.5, O/U 47.5
+Thu, Oct 8, 8:15 PM ET, Prime Video, AT&T Stadium, Arlington. Line: DAL -8.5, O/U 47.5
 
 Searches to run:
 - "Tampa Bay Buccaneers Dallas Cowboys preview week 5"
@@ -15,7 +15,7 @@ Searches to run:
 - "NFL week 5 picks TB DAL"
 
 Tampa Bay Buccaneers, injuries:
-- Tez Johnson (WR) Active: Johnson caught two passes for 17 yards during Tampa Bay's loss versus the Packers on Sunday.
+- Tez Johnson (WR) Active: Johnson brought in both targets for 17 yards, rushed once for 10 yards and returned one punt for 13 yards during Tampa Bay's loss versus the Packers on Sunday.
 - Ted Hurst III (WR) Active: Hurst caught two of his three targets for 25 yards in the Buccaneers' 17-14 loss to the Packers on Sunday.
 - Sean Tucker (RB) Active: Tucker rushed three times for 10 yards and a touchdown in Sunday's 17-14 loss to the Packers.
 - SirVocea Dennis (LB) Questionable, Ankle: Dennis (ankle) underwent an MRI after the Buccaneers' Week 4 loss to the Packers, Jenna Laine of ESPN.com reported Monday.
@@ -87,8 +87,8 @@ Philadelphia Eagles, injuries:
 - Zach Ertz (TE) Active: Ertz reverted to the Eagles' practice squad Monday, per the NFL's transaction log.
 - Cam Jurgens (C) Questionable, Concussion: Jurgens entered the NFL's five-step concussion protocol Monday, Mike Garafolo of NFL Network reports.
 - Makai Lemon (WR) Active: Lemon caught three of six targets for 27 yards during Sunday's 24-20 loss to the Rams.
-- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring) is considered week-to-week, though the Eagles don't view the injury as long term, Ian Rapoport of NFL Network reports.
 - Jonathan Greenard (LB) Questionable, Ankle: Greenard (ankle) is considered day-to-day after exiting Sunday's game against the Rams, Ian Rapoport of NFL Network reports.
+- Saquon Barkley (RB) Questionable, Hamstring: Eagles head coach Nick Sirianni didn't provide an update on Barkley's status Monday when asked about the hamstring injury the running back sustained during Sunday's loss to the Rams, Zach Berman of The Athletic reports. "We'll have more answers Wednesday probably with that stuff," Sirianni added.
 - Tank Bigsby (RB) Out, Abdomen: Bigsby will undergo core muscle surgery and be placed on injured reserve, Ian Rapoport of NFL Network reports.
 - DeVonta Smith (WR) Out, Hamstring: out
 - Fred Johnson (OT) Out, Knee: out
@@ -162,7 +162,7 @@ Chicago Bears, injuries:
 - Jayden Loving (DT) Active
 - Jamree Kromah (DE) Active
 - James Lynch (DT) Active
-- Case Keenum (QB) Active: Keenum is expected to remain in a backup role for Sunday's game against the Packers after head coach Ben Johnson said that Tyson Bagent will start at quarterback Week 5, Sean Hammond of the Chicago Tribune reports.
+- Case Keenum (QB) Active: Keenum is expected to remain in a backup role for Sunday's game against the Packers after head coach Ben Johnson said that Tyson Bagent will start at quarterback in Week 5, Sean Hammond of the Chicago Tribune reports.
 - Tyson Bagent (QB) Active: Bears head coach Ben Johnson said that Bagent will start Sunday's game against the Packers in Green Bay, Sean Hammond of the Chicago Tribune reports.
 - Cairo Santos (PK) Active: Santos went 3-for-3 on field-goal tries and made both of his PATs in Sunday's 23-12 win over the Jets.
 - Colston Loveland (TE) Active: Loveland caught six of nine targets for 57 yards in Sunday's 23-12 win over the Jets.
@@ -181,9 +181,9 @@ Chicago Bears, ESPN headlines:
 
 Green Bay Packers, injuries:
 - Jonnu Smith (TE) Active: Smith caught his only target for 19 yards during Green bay win Sunday versus the Falcons.
-- Skyy Moore (WR) Active: Moore caught one of two targets for minus-two yards while also adding 52 kickoff-return yards and 19 yards as a punt returner during Sunday's 17-14 win over the Buccaneers.
+- Skyy Moore (WR) Active: Moore caught one of two targets for minus-2 yards while also adding 52 kickoff-return yards and 19 yards as a punt returner during Sunday's 17-14 win over the Buccaneers.
 - Kaleb Johnson (RB) Active: Johnson logged eight carries for 42 yards and lost one fumble in the Packers' 17-14 win over the Buccaneers on Sunday.
-- Brandon Cisse (CB) Questionable, Neck: Cisse (neck) was not placed in the league's concussion protocol following Sunday's 17-14 win over the Buccaneers, Weston Hodkiewicz of the Packers' official site reports.
+- Brandon Cisse (CB) Questionable, Neck: Packers head coach Matt LaFleur said that Cisse isn't in the concussion protocol but is tending to what is believed to be a short-term neck injury coming out of Sunday's 17-14 win over the Buccaneers, Weston Hodkiewicz of the team's official site reports.
 - Micah Parsons (DE) Out, Knee - ACL: Parsons (knee), per head coach Matt LaFleur, will not practice this week, Weston Hodkiewicz of the Packers' official site reports.
 - Jacob Monk (C) Out, Quadriceps: out
 - Kevin Zeitler (G) Active
@@ -209,7 +209,7 @@ Green Bay Packers, injuries:
 Green Bay Packers, ESPN headlines:
 
 ### Houston Texans at Tennessee Titans
-Sun, Oct 11, 1:00 PM ET, CBS, Nissan Stadium, Nashville. Line: HOU -7, O/U 39.5
+Sun, Oct 11, 1:00 PM ET, CBS, Nissan Stadium, Nashville. Line: HOU -6.5, O/U 38.5
 
 Searches to run:
 - "Houston Texans Tennessee Titans preview week 5"
@@ -249,10 +249,10 @@ Houston Texans, ESPN headlines:
 
 Tennessee Titans, injuries:
 - Elic Ayomanor (WR) Active: Ayomanor caught his lone target for 22 yards in Sunday's loss to the Ravens.
-- Calvin Ridley (WR) Active: Ridley caught one pass on two targets for 13 yards during Sunday's 24-18 loss to the Ravens.
+- Calvin Ridley (WR) Active: Ridley caught one pass (on two targets) for 13 yards during Sunday's 24-18 loss to the Ravens.
 - Nicholas Singleton (RB) Active: Singleton turned three carries into two yards during the Titans' 24-18 loss to the Ravens on Sunday.
 - Gunnar Helm (TE) Active: Helm hauled in his lone pass for five yards and caught a two-point conversion during the Titans' 24-18 loss to the Ravens on Sunday.
-- Tyjae Spears (RB) Active: Spears turned two carries into seven yards and hauled in his lone target for minus-one yard during the Titans' 24-18 loss to the Ravens on Sunday.
+- Tyjae Spears (RB) Active: Spears turned two carries into seven yards and hauled in his lone target for minus-1 yard during the Titans' 24-18 loss to the Ravens on Sunday.
 - Brandon Crenshaw-Dickson (OT) Active
 - Jaylon Jones (CB) Active
 - Drew Moss (G) Active
@@ -413,7 +413,7 @@ New England Patriots, injuries:
 New England Patriots, ESPN headlines:
 
 ### Minnesota Vikings at New Orleans Saints
-Sun, Oct 11, 1:00 PM ET, Fox, Caesars Superdome, New Orleans. Line: MIN -1.5, O/U 41.5
+Sun, Oct 11, 1:00 PM ET, Fox, Caesars Superdome, New Orleans. Line: MIN -1.5, O/U 42.5
 
 Searches to run:
 - "Minnesota Vikings New Orleans Saints preview week 5"
@@ -561,7 +561,7 @@ Searches to run:
 Indianapolis Colts, injuries:
 - Seth McGowan (RB) Active: McGowan turned six carries into 31 yards and caught one of two targets for seven yards during Sunday's 30-13 win over the Commanders in London. He also returned four kickoffs for 102 yards.
 - Laquon Treadwell (WR) Active: Treadwell caught five of six targets for 42 yards in Sunday's 30-13 win over the Commanders.
-- Arden Key (DE) Out, Hamstring: Key (hamstring) has been ruled out for the Colts' matchup with Pittsburgh in Week 5, James Boyd of The Athletic reports.
+- Arden Key (DE) Out, Hamstring: Colts head coach Shane Steichen said Monday that Key (hamstring) will "miss some time," James Boyd of The Athletic reports.
 - George Gumbs Jr. (LB) Active
 - Darius Slayton (WR) Active
 - Dalton Tucker (G) Active
@@ -617,7 +617,7 @@ Pittsburgh Steelers, injuries:
 Pittsburgh Steelers, ESPN headlines:
 
 ### New York Giants at Washington Commanders
-Sun, Oct 11, 1:00 PM ET, Fox, Northwest Stadium, Landover. Line: WSH -3, O/U 43.5
+Sun, Oct 11, 1:00 PM ET, Fox, Northwest Stadium, Landover. Line: WSH -3.5, O/U 43.5
 
 Searches to run:
 - "New York Giants Washington Commanders preview week 5"
@@ -656,18 +656,18 @@ New York Giants, injuries:
 New York Giants, ESPN headlines:
 
 Washington Commanders, injuries:
-- Austin Ekeler (RB) Active: Ekeler turned four carries into 29 yards and added an 11-yard catch on two targets during the Commanders' 30-13 loss to the Colts on Sunday in London.
+- Austin Ekeler (RB) Active: Ekeler turned four carries into 29 yards and added an 11-yard catch (on two targets) during the Commanders' 30-13 loss to the Colts on Sunday in London.
 - Kaytron Allen (RB) Active: Allen turned three carries into one yard during the Commanders' 30-13 loss to the Colts on Sunday in London.
 - Chig Okonkwo (TE) Active: Okonkwo caught two of four targets for five yards in Sunday's loss to the Colts.
 - Jaylin Lane (WR) Out, Ankle: Head coach Dan Quinn confirmed Monday that Lane (ankle) will miss the remainder of the season.
 - Rachaad White (RB) Out, Shoulder: Coach Dan Quinn said Monday that White (shoulder) "should" practice this week, Tashan Reed of The Washington Post reports.
 - Terry McLaurin (WR) Out, Hamstring: Coach Dan Quinn said Monday that the Commanders continue to assess what McLaurin (hamstring) may be able to do at Wednesday's practice, John Keim of ESPN.com reports.
 - Jayden Daniels (QB) Out, Elbow: Coach Dan Quinn said Monday that the Commanders are aiming for Daniels (left elbow) to have a full practice week and then start Sunday's game against the Giants, Zach Selby of the Commanders' official site reports.
-- Marcus Mariota (QB) Doubtful, Knee - MCL: Coach Dan Quinn confirmed Monday that Mariota has been diagnosed with a sprained MCL in his right knee, and the quarterback's recovery timeline is to be determined, Ben Standig of The Team 980 Washington D.C. reports.
 - Sam Cosmi (G) Out, Concussion: out
 - Nick Cross (S) Out, Illness: out
 - Luke McCaffrey (WR) Active
 - Javontae Jean-Baptiste (LB) Active
+- Marcus Mariota (QB) Doubtful, Knee - MCL: Mariota has been diagnosed with an MCL sprain in his right knee after he was forced out of Sunday's loss to the Colts in London, Nicki Jhabvala of The Athletic reports.
 - Drew Stevens (PK) Active: Stevens made both of his field-goal attempts and converted his only PAT during Sunday's 30-13 loss to the Colts.
 - Treylon Burks (WR) Active: Burks caught one of three targets for a 47-yard touchdown in Sunday's 30-13 loss to the Colts.
 - Antonio Williams (WR) Active: Williams caught three of eight targets for 21 yards in Sunday's 30-13 loss to the Colts.
@@ -695,6 +695,7 @@ Searches to run:
 - "NFL week 5 picks DEN LAC"
 
 Denver Broncos, injuries:
+- Pat Bryant (WR) Doubtful, Ankle: The Broncos are confident that Bryant avoided a long-term right ankle injury after an MRI on Monday yielded good news, Ian Rapoport of NFL Network reports.
 - Tyler Badie (RB) Active: Badie carried twice for seven yards, caught both of his targets for 32 yards, ran in a two-point conversion and returned one kickoff for 21 yards in a loss to San Francisco in Week 4.
 - Evan Engram (TE) Active: Engram caught one of five targets for six yards during Sunday's 24-14 loss to the 49ers.
 - Riley Moss (CB) Questionable, Ribs: Moss had imaging done on his ribs Monday, Ian Rapoport of NFL Network reports.
@@ -703,7 +704,6 @@ Denver Broncos, injuries:
 - Kage Casey (OT) Active
 - Tyler Onyedim (DT) Active
 - Pat Surtain II (CB) Doubtful, Ankle: Surtain (ankle) is expected to miss "about two weeks," Jeremy Fowler of ESPN reports.
-- Pat Bryant (WR) Doubtful, Ankle: Bryant is expected to miss "a few weeks" after spraining his right ankle in Sunday's 24-14 loss to the 49ers, Adam Schefter of ESPN reports.
 - Courtland Sutton (WR) Active: Sutton caught just one of six targets for four yards in Sunday's 24-14 loss to the 49ers.
 - Wil Lutz (PK) Active: Lutz went 2-for-3 on field-goal attempts in Sunday's 24-14 loss to the 49ers.
 - J.K. Dobbins (RB) Active: Dobbins rushed 11 times for 40 yards and brought in both targets for 12 yards in the Broncos' 24-14 loss to the 49ers on Sunday.
@@ -725,8 +725,8 @@ Denver Broncos, ESPN headlines:
 
 Los Angeles Chargers, injuries:
 - Tre' Harris (WR) Active: Harris caught three of five targets for 60 yards during Sunday's 30-23 loss to the Seahawks.
-- Scott Matlock (FB) Injured Reserve, Undisclosed: The Chargers opened Matlock's (undisclosed) 21-day return window Monday, Alex Insdorf of BoltBeat.com reports.
-- Derwin James Jr. (S) Out, Hamstring: James (hamstring) is considered week-to-week ahead of the team's Week 5 matchup with Denver, Alex Insdorf of BoltBeat.com reports.
+- Scott Matlock (FB) Injured Reserve, Undisclosed: The Chargers opened Matlock's (undisclosed) 21-day practice window Monday, Alex Insdorf of BoltBeat.com reports.
+- Derwin James Jr. (S) Out, Hamstring: James (hamstring) is considered week-to-week ahead of the Chargers' Week 5 matchup with Denver, Alex Insdorf of BoltBeat.com reports.
 - Rashawn Slater (OT) Out, Ankle: Slater suffered a high-ankle sprain Sunday against the Seahawks, and he is expected to miss 4-to-6 weeks, Ian Rapoport of NFL Network reports.
 - Ladd McConkey (WR) Questionable, Foot: McConkey (foot), per head coach Jim Harbaugh, is "week-to-week," Alex Insdorf of BoltBeat.com reports.
 - Brenen Thompson (WR) Out, Quadriceps: out
@@ -821,7 +821,7 @@ Arizona Cardinals, injuries:
 Arizona Cardinals, ESPN headlines:
 
 ### San Francisco 49ers at Seattle Seahawks
-Sun, Oct 11, 4:25 PM ET, Fox, Lumen Field, Seattle. Line: SEA -2.5, O/U 47.5
+Sun, Oct 11, 4:25 PM ET, Fox, Lumen Field, Seattle. Line: SEA -3, O/U 47.5
 
 Searches to run:
 - "San Francisco 49ers Seattle Seahawks preview week 5"
@@ -889,7 +889,7 @@ Seattle Seahawks, injuries:
 Seattle Seahawks, ESPN headlines:
 
 ### Baltimore Ravens at Atlanta Falcons
-Sun, Oct 11, 8:20 PM ET, NBC, Mercedes-Benz Stadium, Atlanta. Line: ATL -1.5, O/U 44.5
+Sun, Oct 11, 8:20 PM ET, NBC, Mercedes-Benz Stadium, Atlanta. Line: ATL -3, O/U 43.5
 
 Searches to run:
 - "Baltimore Ravens Atlanta Falcons preview week 5"
@@ -899,8 +899,9 @@ Searches to run:
 - "NFL week 5 picks BAL ATL"
 
 Baltimore Ravens, injuries:
-- Lamar Jackson (QB) Questionable, Ankle: Jackson (ankle) is not dealing with a long-term injury, but he has "only an outside chance to play" in Week 5 and "could end up missing multiple games," Ian Rapoport of NFL Network reports.
+- Durham Smythe (TE) Out, Achilles: out
 - Chris Moore (WR) Out, Ankle: out
+- Lamar Jackson (QB) Questionable, Ankle: Jackson (ankle) is not dealing with a long-term injury, but he has "only an outside chance to play" in Week 5 and "could end up missing multiple games," Ian Rapoport of NFL Network reports.
 - Devontez Walker (WR) Active: Walker caught one of his two targets for 19 yards during Baltimore's win over the Titans on Sunday.
 - Elijah Sarratt (WR) Active: Sarratt reeled in one of two targets for 13 yards in a 24-18 win against Tennessee on Sunday.
 - Matthew Hibner (TE) Active: Hibner caught both of his targets for 34 yards in Sunday's 24-18 win over the Titans.
@@ -915,7 +916,6 @@ Baltimore Ravens, injuries:
 - Zay Flowers (WR) Active: Flowers caught eight of 10 targets for 118 yards and a touchdown in Sunday's 24-18 win over the Titans.
 - Derrick Henry (RB) Active: Henry carried the ball 23 times for 73 yards and a touchdown in Sunday's 24-18 win over the Titans. He also caught both his targets for six yards.
 - Ronnie Stanley (OT) Questionable, Toe: Stanley (toe) was able to complete Sunday's 24-18 win over Tennessee, Jonas Shaffer of TheBaltimoreBanner.com reports.
-- Durham Smythe (TE) Questionable, Achilles: Smythe (Achilles) won't return to Sunday's game against the Titans.
 - Marlon Humphrey (CB) Questionable, Calf: Humphrey (calf) has been ruled out for the rest of Sunday's game against the Titans.
 - Andrew Vorhees (G) Questionable, Foot: Vorhees (foot) won't return to Sunday's game against the Titans, Brian Wacker of The Baltimore Sun reports.
 - Ethan Pocic (C) Injured Reserve, Knee: Baltimore placed Pocic (knee) on injured reserve Saturday.
@@ -997,7 +997,7 @@ Buffalo Bills, ESPN headlines:
 
 Los Angeles Rams, injuries:
 - Tyler Higbee (TE) Active: Higbee caught five of six targets for 67 yards in Sunday's 24-20 win over the Eagles.
-- Jaylen Watson (CB) Out, Shoulder: The Rams are hopeful that Watson (shoulder) will return to practice for Week 5 preparation, Adam Grosbard of The Orange County Register reported Monday.
+- Jaylen Watson (CB) Out, Shoulder: The Rams are hopeful that Watson (shoulder) will return to practice this week, Adam Grosbard of The Orange County Register reported Monday.
 - Konata Mumpfield (WR) Questionable, Shoulder: Mumpfield suffered a rotator cuff contusion during Sunday's 24-20 win over the Eagles, Adam Grosbard of The Orange County Register reports.
 - Aaron Donald (DT) Out, Back: Head coach Sean McVay is hopeful that Donald (back) will play in his team's Monday night matchup against the Bills in Week 5, Stu Jackson of the Rams' official site reports. "That's the direction it looks like it's trending in," McVay said.
 - Colby Parkinson (TE) Out, Shoulder - AC Joint: out
