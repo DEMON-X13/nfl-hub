@@ -70,7 +70,7 @@ label and dates.
 
 ```
 App bar: brand, week label, dates
-The slate: 16 tiles, one per game, each a <button class="slot">
+The slate: one tile per game (16, fewer on a bye week), each a <button class="slot">
     (no page head and no section heading since September 23, 2026: the owner asked for the
     dates line, the week headline and intro, and "The slate" heading and its kickoff note to
     go. The week file still carries headline and intro; the page does not show them.)
@@ -268,7 +268,7 @@ node tools/smoke.js
 ```
 
 It renders `index.html` with the split files, then asserts: no script errors, the last week in
-`data/weeks.js` shown in the bar, 16 game tiles, one score per game that has a final, no tabs
+`data/weeks.js` shown in the bar, a tile for every game on the slate (15 on Week 5's bye week), one score per game that has a final, no tabs
 or search or cards, the game overlay opens with both team blocks, keys sections and eleven
 stat bars, Escape and X close it, and a synthetic later week takes over the page.
 Run it before every commit. `node_modules` is ignored by git.

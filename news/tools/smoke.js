@@ -49,7 +49,8 @@ dom.window.addEventListener('load', () => {
 
   check('no script errors', errs.length === 0, errs.join(' | ') || 'none');
   check('shows the last week in data/weeks.js', g('ACTIVE') === g('WEEKS[WEEKS.length-1].id') && d.getElementById('barweek').textContent.includes(g('currentWeek().label')), d.getElementById('barweek').textContent);
-  check('16 game tiles', n('.slot') === 16, n('.slot'));
+  // a tile for every game on the slate: 16 most weeks, fewer on a bye week (Week 5 was the first, 15)
+  check('a tile for every game on the slate', n('.slot') === WK.games.length && WK.games.length >= 13 && WK.games.length <= 16, n('.slot') + ' of ' + WK.games.length);
   check('no tabs, search, cards, or data tools on the page', n('.wtab') === 0 && !d.getElementById('q') && n('.card') === 0 && !d.getElementById('tools'));
   // one score per game that has a final, none on an upcoming slate, never more than the slate
   check('played games show a score', n('.slot .score') === played && played <= n('.slot'), n('.slot .score') + ' of ' + n('.slot'));
