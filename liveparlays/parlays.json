@@ -1,6 +1,6 @@
 {
  "how": "Every parlay the Live Parlays page shows. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under.",
- "updated": "2026-10-06T00:00:00Z",
+ "updated": "2026-10-08T00:00:00Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -26,9 +26,130 @@
   "2026_03_PHI_CHI",
   "2026_04_PIT_CLE",
   "2026_04_DET_CAR",
-  "2026_04_ATL_NO"
+  "2026_04_ATL_NO",
+  "2026_05_TB_DAL"
  ],
  "parlays": [
+  {
+   "id": "w5-dk-tbdal-3-unders",
+   "week": 5,
+   "stake": 2,
+   "price": 550,
+   "payout": 13.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 25,
+     "player": "Kenneth Gainwell",
+     "team": "TB",
+     "stat": "rushing_yards",
+     "line": 12.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 25,
+     "player": "Bucky Irving",
+     "team": "TB",
+     "stat": "receiving_yards",
+     "line": 12.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 25,
+     "player": "Javonte Williams",
+     "team": "DAL",
+     "stat": "rushing_yards",
+     "line": 67.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-tbdal-2",
+   "week": 5,
+   "stake": 2,
+   "price": 244,
+   "payout": 6.88,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 25,
+     "player": "Chris Godwin",
+     "team": "TB",
+     "stat": "receiving_yards",
+     "line": 34.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 25,
+     "player": "KaVontae Turpin",
+     "team": "DAL",
+     "stat": "receptions",
+     "line": 0.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-tbdal-5-boost",
+   "week": 5,
+   "stake": 2,
+   "price": 1275,
+   "payout": 27.5,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 25,
+     "player": "Buccaneers",
+     "team": "TB",
+     "stat": "ats",
+     "line": 13.5,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Jalon Daniels",
+     "team": "TB",
+     "stat": "passing_interceptions",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Chris Godwin",
+     "team": "TB",
+     "stat": "receptions",
+     "line": 4,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Dak Prescott",
+     "team": "DAL",
+     "stat": "passing_yards",
+     "line": 250,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Buccaneers at Cowboys",
+     "team": "DAL",
+     "stat": "total",
+     "line": 44.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
   {
    "id": "w4-dk-atlno-ml-over",
    "week": 4,
