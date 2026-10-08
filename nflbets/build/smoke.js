@@ -346,6 +346,22 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(lp.querySelectorAll('.savedp').length === before + 1, 'a saved parlay did not appear in the section on its own');
     const mine = [...lp.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
     chk(!!mine, 'the saved parlay is not labelled as the prop model\'s');
+    /* its stake is the one thing on it you can change: tap, type, Enter, and the payout follows the locked price */
+    { const pill = mine.querySelector('[data-stake-of="live-smoke"]');
+      chk(!!pill && /\$3\.00/.test(txt(pill)), 'the saved parlay\'s stake is not a tap-to-change pill');
+      if (pill) { pill.click();
+        const box = mine.querySelector('input.lineInput');
+        chk(!!box && +box.value === 3, 'tapping the stake did not open a box holding it');
+        if (box) { box.value = '1'; box.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
+          const sp = S.saved.find(p => p.id === 'live-smoke');
+          chk(sp && sp.stake === 1 && sp.payout === 3, `the new stake did not land or the payout did not follow: ${sp && sp.stake} / ${sp && sp.payout}`);
+          const again = [...lp.querySelectorAll('.savedp')].find(c => c.querySelector('[data-stake-of="live-smoke"]'));
+          chk(!!again && /\$1\.00/.test(txt(again.querySelector('[data-stake-of]'))) && /\$3\.00/.test(txt(again.querySelector('.sp-money'))), 'the card did not redraw with the new stake and payout'); } }
+      /* a file parlay is someone else's copy and keeps its stake */
+      const filed = [...lp.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
+      chk(!filed || !filed.querySelector('[data-stake-of]'), 'a file parlay offers to change its stake'); }
+    /* the builder and the suggestions window carry the one-tap amounts */
+    chk(/data-stake-chip/.test(HTML) && /function stakeChips\(/.test(HTML), 'the amount buttons are not in the built page');
     /* and deleting it here deletes the parlay itself */
     mine.querySelector('[data-rm]').click();
     await wait(80);

@@ -419,8 +419,36 @@ setTimeout(async()=>{
       const pS=d.getElementById('pStake'); if(pS) chk(+pS.value===55,'the builder and the suggestions disagree on the stake');
       box.value=String(was); box.dispatchEvent(new w.Event('change'));
       chk(S.stake===was,'the stake did not go back');
+      /* one tap on an amount in the window: the stake, the box and the pressed chip follow */
+      const chip1=d.querySelector('#suggView [data-stake-chip="1"]');
+      chk(!!chip1,'no amount buttons in the suggested parlays window');
+      if(chip1){ chip1.click();
+        chk(S.stake===1&&+d.getElementById('suggStake').value===1,'tapping $1 in the window did not set the stake');
+        const on=[...d.querySelectorAll('#suggView [data-stake-chip].on')];
+        chk(on.length===1&&on[0].dataset.stakeChip==='1','the window does not show $1 pressed, and only $1');
+        const s1=F('getSuggestions')();
+        if(s1.tiers.length) chk(d.getElementById('suggCard').textContent.replace(/\s+/g,' ').includes(`$${(1*s1.tiers[0].dec).toFixed(2)}`),'the payout did not follow the $1 tap'); }
+      d.getElementById('suggClose').click();
+      /* and in the builder, with a leg in it so What it pays is drawn */
+      const keep=JSON.stringify(S.parlay||{}); S.parlay={};
+      openUpcoming();
+      const tick=d.querySelector('#gameView input[data-leg]');
+      chk(!!tick,'no leg to tick on the coming game');
+      if(tick){ tick.click(); d.querySelector('#tabs button[data-tab="parlay"]').click();
+        const chip5=d.querySelector('#parlayBody [data-stake-chip="5"]');
+        chk(!!chip5,'no amount buttons beside the stake in What it pays');
+        if(chip5){ chip5.click();
+          chk(S.stake===5&&+d.getElementById('pStake').value===5,'tapping $5 in the builder did not set the stake');
+          chk(d.querySelector('#parlayBody [data-stake-chip="5"]').classList.contains('on')&&d.querySelectorAll('#parlayBody [data-stake-chip].on').length===1,'the builder does not show $5 pressed, and only $5');
+          chk(/\$\d+\.\d\d/.test(d.querySelector('#parlayBody .payout').textContent)&&+d.querySelector('#parlayBody .payout').textContent.replace(/[^\d.]/g,'')>5,'the builder payout did not redraw from the $5 stake'); }
+        /* a typed amount that is none of them presses none */
+        const pS=d.getElementById('pStake'); pS.value='7'; pS.dispatchEvent(new w.Event('change'));
+        chk(S.stake===7&&!d.querySelector('#parlayBody [data-stake-chip].on'),'a typed $7 left a chip pressed');
+        S.parlay=JSON.parse(keep); }
+      S.stake=was; F('save')(); F('renderParlay')();
+      chk(S.stake===was,'the stake did not go back after the amount buttons');
     }
-    console.log('P. bet box: drives the suggested payouts and shares the builder stake'); }
+    console.log('P. bet box: drives the suggested payouts and shares the builder stake; the amount buttons set it in one tap'); }
 
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;
