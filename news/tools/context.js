@@ -9,18 +9,26 @@
      data/players2026.js   PLAYERS26: team -> { name: position } from the nflverse roster,
                            keyed by full name, football name and first name, so the page
                            can write "(QB)" after a player's name.
-     data/units2026.js     UNITS26: the Deep Dive. Six units per team with a league rank,
-                           the numbers behind it, and who is playing there:
-                             qb     passing offense       EPA per dropback
-                             ol     offensive line        sack rate allowed, yards per carry
-                             rb     run game              rushing EPA per carry, yards per carry
-                             rec    receivers             YAC per catch, share of throws gaining 20+
-                             front  pass and run rush     sacks + QB hits per dropback, rush EPA allowed
-                             db     defensive backs       pass EPA allowed per dropback, INT + PD rate
+     data/units2026.js     UNITS26: the Deep Dive. Six units per team, each with a rating in league
+                           standard deviations (z), its rank, the numbers behind it, who is playing
+                           there and who is not. Every row sets a unit against the unit it really
+                           plays, measured on the same numbers from both sides:
+                             qb     vs passD   pass EPA per dropback, made / allowed
+                             ol     vs front   sack rate and QB-hit rate, allowed / forced
+                             rb     vs runD    EPA and yards per carry, QB runs, scrambles and
+                                               kneel-downs taken out, made / allowed
+                             rec    vs db      EPA and yards per target, made / allowed
+                           The page tags a row by the gap between the two ratings (app.js difficulty()).
                            Team numbers blend 2025 (weighted as PRIOR_GAMES games) with every
                            2026 game so far, so each week this season counts for more.
-   Sources: nflverse-data releases (team stats 2025 and 2026, player stats 2026, snap counts
-   2026, roster 2026). A source that cannot be reached leaves its file as it was.        */
+                           Until 2026-10-08 the receivers were rated on YAC per catch and 20+ throws
+                           (a style, not how well they play), the line and the front on different
+                           stats, sacks were counted twice in pressure, and the who-lists were
+                           season usage with no injury check (TB's QB row named an injured
+                           Baker Mayfield). See lineups() for how the names are chosen now.
+   Sources: nflverse-data releases (team and player stats 2025 and 2026, snap counts, roster,
+   injury report and depth charts 2026) and, when pull-week.js passes it, ESPN's injury list.
+   A source that cannot be reached leaves its file as it was, or thins only the lineup check.  */
 'use strict';
 const fs = require('fs'), path = require('path');
 
@@ -32,6 +40,10 @@ const URLS = {
   player26: `${REL}/stats_player/stats_player_week_${SEASON}.csv`,
   snaps26: `${REL}/snap_counts/snap_counts_${SEASON}.csv`,
   roster26: `${REL}/rosters/roster_${SEASON}.csv`,
+  player25: `${REL}/stats_player/stats_player_week_${PRIOR}.csv`,
+  injuries26: `${REL}/injuries/injuries_${SEASON}.csv`,
+  depth26: `${REL}/depth_charts/depth_charts_${SEASON}.csv`,
+  games: 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv',
 };
 /* the tracker uses LAR for the Rams; nflverse uses LA (and a few old codes) */
 const AB = { LA: 'LAR', STL: 'LAR', OAK: 'LV', SD: 'LAC', WSH: 'WAS', JAC: 'JAX' };
@@ -105,19 +117,35 @@ function players(roster, out) {
   return P;
 }
 
-/* ---------------- Deep Dive unit grades ---------------- */
-function teamTotals(rows) {
+/* ---------------- Deep Dive: the ratings ---------------- */
+/* QB runs, scrambles and kneel-downs come out of the run game: they are a quarterback's, not the
+   backs', and a scramble is a dropback. Summed per team and week from the player file. */
+function qbRushing(players) {
+  const Q = {};
+  for (const r of players || []) {
+    if (r.season_type && r.season_type !== 'REG') continue;
+    if (r.position !== 'QB') continue;
+    const e = (Q[ab(r.team) + '|' + r.week] ??= { car: 0, ryd: 0, repa: 0 });
+    e.car += num(r.carries); e.ryd += num(r.rushing_yards); e.repa += num(r.rushing_epa);
+  }
+  return Q;
+}
+function teamTotals(rows, qbr = {}) {
   /* per team: offence totals from its own rows, defence-allowed totals from opponents' rows */
-  const T = {};
-  const get = t => (T[t] ??= { g: 0, att: 0, sk: 0, pepa: 0, comp: 0, yac: 0, p20: 0, car: 0, ryd: 0, repa: 0,
-    oatt: 0, osk: 0, opepa: 0, ocar: 0, oryd: 0, orepa: 0, dsk: 0, dhit: 0, dint: 0, dpd: 0 });
+  const T = {}, NONE = { car: 0, ryd: 0, repa: 0 };
+  const get = t => (T[t] ??= { g: 0, att: 0, sk: 0, pepa: 0, tgt: 0, tepa: 0, tyd: 0, hitA: 0, car: 0, ryd: 0, repa: 0,
+    oatt: 0, osk: 0, opepa: 0, otgt: 0, otepa: 0, otyd: 0, ocar: 0, oryd: 0, orepa: 0, dhit: 0 });
   for (const r of rows) {
     if (r.season_type && r.season_type !== 'REG') continue;
-    const t = get(ab(r.team)), o = get(ab(r.opponent_team));
-    t.g++; t.att += num(r.attempts); t.sk += num(r.sacks_suffered); t.pepa += num(r.passing_epa); t.comp += num(r.completions);
-    t.yac += num(r.passing_yards_after_catch); t.p20 += num(r.passing_20); t.car += num(r.carries); t.ryd += num(r.rushing_yards); t.repa += num(r.rushing_epa);
-    t.dsk += num(r.def_sacks); t.dhit += num(r.def_qb_hits); t.dint += num(r.def_interceptions); t.dpd += num(r.def_pass_defended);
-    o.oatt += num(r.attempts); o.osk += num(r.sacks_suffered); o.opepa += num(r.passing_epa); o.ocar += num(r.carries); o.oryd += num(r.rushing_yards); o.orepa += num(r.rushing_epa);
+    const t = get(ab(r.team)), o = get(ab(r.opponent_team)), q = qbr[ab(r.team) + '|' + r.week] || NONE;
+    t.g++; t.att += num(r.attempts); t.sk += num(r.sacks_suffered); t.pepa += num(r.passing_epa);
+    t.tgt += num(r.targets); t.tepa += num(r.receiving_epa); t.tyd += num(r.receiving_yards);
+    t.car += num(r.carries) - q.car; t.ryd += num(r.rushing_yards) - q.ryd; t.repa += num(r.rushing_epa) - q.repa;
+    t.dhit += num(r.def_qb_hits);
+    o.hitA += num(r.def_qb_hits);   // the hits this defence put on the other team's quarterback
+    o.oatt += num(r.attempts); o.osk += num(r.sacks_suffered); o.opepa += num(r.passing_epa);
+    o.otgt += num(r.targets); o.otepa += num(r.receiving_epa); o.otyd += num(r.receiving_yards);
+    o.ocar += num(r.carries) - q.car; o.oryd += num(r.rushing_yards) - q.ryd; o.orepa += num(r.rushing_epa) - q.repa;
   }
   return T;
 }
@@ -136,19 +164,27 @@ function blend(prior, cur) {
 const div = (a, b) => b > 0 ? a / b : null;
 function rankOf(values, t, higherBetter) {
   const arr = Object.entries(values).filter(([, v]) => v != null).sort((a, b) => higherBetter ? b[1] - a[1] : a[1] - b[1]);
-  return arr.findIndex(([k]) => k === t) + 1;
+  const i = arr.findIndex(([k]) => k === t);
+  return i < 0 ? null : i + 1;
 }
-function units(team25, team26, player26, snaps26, out, rosterPos = {}) {
-  const B = blend(teamTotals(team25), teamTotals(team26));
+/* Eight ratings, each in league standard deviations (0 is average, + is better for that side).
+   Every row on the page sets one against its mirror, measured on the same numbers:
+     qb    vs passD   pass EPA per dropback, made and allowed
+     ol    vs front   sack rate and QB-hit rate (sacks included), allowed and forced
+     rb    vs runD    EPA and yards per carry by anyone but a quarterback, made and allowed
+     rec   vs db      EPA and yards per target, made and allowed                            */
+function ratings(team25, team26, player25, player26) {
+  const B = blend(teamTotals(team25, qbRushing(player25)), teamTotals(team26, qbRushing(player26)));
   const teams = Object.keys(B).filter(t => t.length >= 2 && t.length <= 3);
   const M = {};
   for (const t of teams) {
     const x = B[t], db = x.att + x.sk, odb = x.oatt + x.osk;
     M[t] = {
-      pass_epa: div(x.pepa, db), sack_rate: div(x.sk, db), ypc: div(x.ryd, x.car), rush_epa: div(x.repa, x.car),
-      yac: div(x.yac, x.comp), expl: div(x.p20, x.att),
-      press: div(x.dsk + x.dhit, odb), o_rush_epa: div(x.orepa, x.ocar), o_ypc: div(x.oryd, x.ocar),
-      o_pass_epa: div(x.opepa, odb), ballhawk: div(x.dint + x.dpd, odb), g26: x.g26,
+      pass_epa: div(x.pepa, db), o_pass_epa: div(x.opepa, odb),
+      sack_rate: div(x.sk, db), hit_rate: div(x.hitA, db), o_sack_rate: div(x.osk, odb), o_hit_rate: div(x.dhit, odb),
+      rush_epa: div(x.repa, x.car), ypc: div(x.ryd, x.car), o_rush_epa: div(x.orepa, x.ocar), o_ypc: div(x.oryd, x.ocar),
+      rec_epa: div(x.tepa, x.tgt), rec_ypt: div(x.tyd, x.tgt), o_rec_epa: div(x.otepa, x.otgt), o_rec_ypt: div(x.otyd, x.otgt),
+      g26: x.g26,
     };
   }
   const col = k => Object.fromEntries(teams.map(t => [t, M[t][k]]));
@@ -157,87 +193,331 @@ function units(team25, team26, player26, snaps26, out, rosterPos = {}) {
     const sd = Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length) || 1;
     return t => M[t][k] == null ? 0 : sign * (M[t][k] - mu) / sd;
   };
-  const score = {
+  const RATE = {
     qb: t => z('pass_epa', 1)(t),
-    ol: t => (z('sack_rate', -1)(t) + z('ypc', 1)(t)) / 2,
+    passD: t => z('o_pass_epa', -1)(t),
+    ol: t => (z('sack_rate', -1)(t) + z('hit_rate', -1)(t)) / 2,
+    front: t => (z('o_sack_rate', 1)(t) + z('o_hit_rate', 1)(t)) / 2,
     rb: t => (z('rush_epa', 1)(t) + z('ypc', 1)(t)) / 2,
-    rec: t => (z('yac', 1)(t) + z('expl', 1)(t)) / 2,
-    front: t => (z('press', 1)(t) + z('o_rush_epa', -1)(t)) / 2,
-    db: t => (z('o_pass_epa', -1)(t) + z('ballhawk', 1)(t)) / 2,
+    runD: t => (z('o_rush_epa', -1)(t) + z('o_ypc', -1)(t)) / 2,
+    rec: t => (z('rec_epa', 1)(t) + z('rec_ypt', 1)(t)) / 2,
+    db: t => (z('o_rec_epa', -1)(t) + z('o_rec_ypt', -1)(t)) / 2,
   };
-  score.passD = t => (z('o_pass_epa', -1)(t) + z('ballhawk', 1)(t) + z('press', 1)(t)) / 3;
-  score.runD = t => (z('o_rush_epa', -1)(t) + z('o_ypc', -1)(t)) / 2;
-  const S = {}, R = {};
-  for (const u of Object.keys(score)) { S[u] = Object.fromEntries(teams.map(t => [t, score[u](t)])); }
-  for (const u of Object.keys(score)) { R[u] = Object.fromEntries(teams.map(t => [t, rankOf(S[u], t, true)])); }
-  /* sub-ranks for the numbers shown */
-  const sub = {
-    pass_epa: t => rankOf(col('pass_epa'), t, true), sack_rate: t => rankOf(col('sack_rate'), t, false), ypc: t => rankOf(col('ypc'), t, true),
-    rush_epa: t => rankOf(col('rush_epa'), t, true), yac: t => rankOf(col('yac'), t, true), expl: t => rankOf(col('expl'), t, true),
-    press: t => rankOf(col('press'), t, true), o_rush_epa: t => rankOf(col('o_rush_epa'), t, false), o_pass_epa: t => rankOf(col('o_pass_epa'), t, false),
-    ballhawk: t => rankOf(col('ballhawk'), t, true),
-  };
-
-  /* who is playing each unit, from 2026 player stats and snap counts */
-  const P = {};
-  const add = (t, n, pos, k, v) => { const e = ((P[t] ??= {})[n] ??= { pos, att: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, int: 0, pd: 0, osn: 0, dsn: 0 }); e[k] += v; if (!e.pos && pos) e.pos = pos; };
-  for (const r of player26) {
-    if (r.season_type && r.season_type !== 'REG') continue;
-    const t = ab(r.team), n = r.player_display_name || r.player_name, pos = r.position;
-    add(t, n, pos, 'att', num(r.attempts)); add(t, n, pos, 'car', num(r.carries)); add(t, n, pos, 'tgt', num(r.targets));
-    add(t, n, pos, 'sk', num(r.def_sacks)); add(t, n, pos, 'hit', num(r.def_qb_hits)); add(t, n, pos, 'tfl', num(r.def_tackles_for_loss));
-    add(t, n, pos, 'int', num(r.def_interceptions)); add(t, n, pos, 'pd', num(r.def_pass_defended));
+  /* each rating restandardised, so a gap of 1 means one league standard deviation on every row */
+  const Z = {}, R = {};
+  for (const u of Object.keys(RATE)) {
+    const raw = Object.fromEntries(teams.map(t => [t, RATE[u](t)]));
+    const v = Object.values(raw), mu = v.reduce((a, b) => a + b, 0) / v.length;
+    const sd = Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length) || 1;
+    Z[u] = Object.fromEntries(teams.map(t => [t, Math.round((raw[t] - mu) / sd * 100) / 100]));
+    R[u] = Object.fromEntries(teams.map(t => [t, rankOf(Z[u], t, true)]));
   }
-  for (const r of snaps26) {
-    if (r.game_type && r.game_type !== 'REG') continue;
-    const t = ab(r.team), n = r.player, pos = r.position;
-    add(t, n, pos, 'osn', num(r.offense_snaps)); add(t, n, pos, 'dsn', num(r.defense_snaps));
-    const e = P[t][n]; if (pos) e.pos = e.pos && e.pos !== pos && ['DB', 'DL', 'OL', 'LB'].includes(e.pos) ? pos : (e.pos || pos);
-  }
-  /* the position shown is the roster's where we have it; the stat feeds use codes like SAF, OT and HB */
-  const FEED = { SAF: 'S', OT: 'T', OG: 'G', HB: 'RB', EDGE: 'OLB' };
-  const shown = (t, n, pos) => (rosterPos[t] && rosterPos[t][n]) || FEED[pos] || pos;
-  const top = (t, filter, key, k) => Object.entries(P[t] || {}).filter(([, e]) => filter(e.pos || '') && e[key] > 0).sort((a, b) => b[1][key] - a[1][key]).slice(0, k).map(([n, e]) => ({ n, pos: shown(t, n, e.pos) }));
-  const isQB = p => p === 'QB', isRB = p => ['RB', 'HB', 'FB'].includes(p), isRec = p => ['WR', 'TE'].includes(p);
-  const isOL = p => ['T', 'G', 'C', 'OL', 'OT', 'OG'].includes(p), isFront = p => ['DE', 'DT', 'NT', 'DL', 'LB', 'OLB', 'ILB', 'MLB', 'EDGE'].includes(p);
-  const isDB = p => ['CB', 'S', 'FS', 'SS', 'DB', 'SAF'].includes(p);
-  const frontKey = (t) => Object.entries(P[t] || {}).filter(([, e]) => isFront(e.pos || '')).map(([n, e]) => [n, e, 2 * e.sk + e.hit + e.tfl + e.dsn / 100]).sort((a, b) => b[2] - a[2]).slice(0, 3).map(([n, e]) => ({ n, pos: shown(t, n, e.pos) }));
-
-  const U = {};
+  const sub = (k, higherBetter) => t => rankOf(col(k), t, higherBetter);
   const r2 = v => v == null ? null : Math.round(v * 100) / 100, pc = v => v == null ? null : Math.round(v * 1000) / 10, r1 = v => v == null ? null : Math.round(v * 10) / 10;
+  const S = {};
   for (const t of teams) {
     const m = M[t];
-    U[t] = {
-      qb: { rank: R.qb[t], who: top(t, isQB, 'att', 1), stats: [['EPA per dropback', r2(m.pass_epa), sub.pass_epa(t)]] },
-      ol: { rank: R.ol[t], who: top(t, isOL, 'osn', 5), stats: [['sack rate allowed', pc(m.sack_rate), sub.sack_rate(t), '%'], ['yards per carry', r1(m.ypc), sub.ypc(t)]] },
-      rb: { rank: R.rb[t], who: top(t, isRB, 'car', 2), stats: [['rush EPA per carry', r2(m.rush_epa), sub.rush_epa(t)], ['yards per carry', r1(m.ypc), sub.ypc(t)]] },
-      rec: { rank: R.rec[t], who: top(t, isRec, 'tgt', 3), stats: [['YAC per catch', r1(m.yac), sub.yac(t)], ['throws gaining 20+', pc(m.expl), sub.expl(t), '%']] },
-      front: { rank: R.front[t], who: frontKey(t), stats: [['pressure (sacks and QB hits) per dropback', pc(m.press), sub.press(t), '%'], ['rush EPA allowed per carry', r2(m.o_rush_epa), sub.o_rush_epa(t)]] },
-      db: { rank: R.db[t], who: top(t, isDB, 'dsn', 3), stats: [['pass EPA allowed per dropback', r2(m.o_pass_epa), sub.o_pass_epa(t)], ['INT + passes defended per dropback', pc(m.ballhawk), sub.ballhawk(t), '%']] },
-      /* what the opposing offence faces: whole pass defence (coverage and rush) and run defence */
-      vs: { passD: R.passD[t], runD: R.runD[t] },
+    S[t] = {
+      qb: [['EPA per dropback', r2(m.pass_epa), sub('pass_epa', true)(t)]],
+      ol: [['sack rate allowed', pc(m.sack_rate), sub('sack_rate', false)(t), '%'], ['QB hits allowed per dropback', pc(m.hit_rate), sub('hit_rate', false)(t), '%']],
+      rb: [['EPA per carry, QB runs out', r2(m.rush_epa), sub('rush_epa', true)(t)], ['yards per carry, QB runs out', r1(m.ypc), sub('ypc', true)(t)]],
+      rec: [['EPA per target', r2(m.rec_epa), sub('rec_epa', true)(t)], ['yards per target', r1(m.rec_ypt), sub('rec_ypt', true)(t)]],
+      front: [['sack rate', pc(m.o_sack_rate), sub('o_sack_rate', true)(t), '%'], ['QB hits per dropback', pc(m.o_hit_rate), sub('o_hit_rate', true)(t), '%']],
+      db: [['EPA per target allowed', r2(m.o_rec_epa), sub('o_rec_epa', false)(t)], ['yards per target allowed', r1(m.o_rec_ypt), sub('o_rec_ypt', false)(t)]],
     };
   }
-  if (teams.length < 32) { console.log(`units2026.js kept: stats covered ${teams.length} teams`); return; }
-  const g26 = Math.max(...teams.map(t => M[t].g26));
-  writeData(path.join(out, 'units2026.js'), 'UNITS26', U,
-    `const UNITS26_BASIS = ${JSON.stringify(`2025 season counted as ${PRIOR_GAMES} games, plus ${g26} game${g26 === 1 ? '' : 's'} of 2026`)};\n`);
-  console.log(`units2026.js: ${teams.length} teams, ${g26} 2026 game(s) blended with 2025`);
+  return { teams, Z, R, S, g26: Math.max(0, ...teams.map(t => M[t].g26)) };
 }
 
+/* ---------------- Deep Dive: who is playing ---------------- */
+/* Each unit's names are the coming game's lineup: the team's latest depth chart before kickoff,
+   passing over anyone who will not play, in this order (the first source that speaks wins):
+     1. the roster: anyone not ACT on it, or now on another team (INA, inactive for the last game,
+        waits for the report: practising this week clears it, otherwise he is out)
+     2. the week's injury report: Out or Doubtful is out, Questionable is tagged
+     3. ESPN's injury list, where the report has no game status yet (pull-week.js passes it in)
+     4. neither: Out last week and not practising this week is out
+   A team with no chart within ten days of kickoff falls back on 2026 usage, still minus the out.
+   A chart starter passed over is kept as out, so the page can say who is missing and why. */
+const STATUS = { RES: 'on injured reserve', PUP: 'on the PUP list', NON: 'on the non-football injury list', SUS: 'suspended',
+  RET: 'retired', CUT: 'released', DEV: 'on the practice squad', EXE: 'on the exempt list', TRD: 'traded', TRT: 'traded' };
+const normName = s => String(s || '').toLowerCase().replace(/[.'’,]/g, '').replace(/-/g, ' ')
+  .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
+const lc = s => String(s || '').trim().toLowerCase();
+const CHART_DAYS = 10;
+const isQB = p => p === 'QB', isRB = p => ['RB', 'HB', 'FB'].includes(p), isRec = p => ['WR', 'TE'].includes(p);
+const isOL = p => ['T', 'G', 'C', 'OL', 'OT', 'OG'].includes(p), isFront = p => ['DE', 'DT', 'NT', 'DL', 'LB', 'OLB', 'ILB', 'MLB', 'EDGE'].includes(p);
+const isDB = p => ['CB', 'S', 'FS', 'SS', 'DB', 'SAF'].includes(p);
+const FRONT_SLOTS = ['LDE', 'LDT', 'NT', 'RDT', 'RDE', 'DE', 'DT', 'WLB', 'LILB', 'MLB', 'RILB', 'SLB', 'LOLB', 'ROLB', 'OLB', 'ILB', 'LB'];
+const DB_SLOTS = ['LCB', 'RCB', 'SS', 'FS', 'NB', 'CB', 'S'];
+const OL_SLOTS = ['LT', 'LG', 'C', 'RG', 'RT'];
+
+function lineups(src) {
+  const { roster, injuries, chart, espn, player26, snaps26, week, kicks, teams } = src;
+  /* the roster, by id and by team and name */
+  const byId = {}, byTeamName = {}, byPfr = {};
+  for (const r of roster || []) {
+    if (!r.gsis_id) continue;
+    const e = { id: r.gsis_id, n: r.full_name, team: ab(r.team), status: r.status, pos: r.depth_chart_position || r.position };
+    byId[r.gsis_id] = e;
+    for (const nm of new Set([r.full_name, `${r.football_name || r.first_name} ${r.last_name}`])) byTeamName[`${e.team}|${normName(nm)}`] ??= r.gsis_id;
+    if (r.pfr_id) byPfr[r.pfr_id] = r.gsis_id;
+  }
+  const idOf = (team, name, id) => (id && byId[id]) ? id : (byTeamName[`${team}|${normName(name)}`] || null);
+  /* this week's report and last week's */
+  const rep = {}, prev = {};
+  for (const r of injuries || []) {
+    if (r.season_type && r.season_type !== 'REG') continue;
+    if (+r.week === week) rep[r.gsis_id] = r; else if (+r.week === week - 1) prev[r.gsis_id] = r;
+  }
+  const esp = {};
+  for (const e of espn || []) esp[`${e.team}|${normName(e.name)}`] = e;
+  const reported = Object.keys(rep).length > 0;
+
+  function avail(id, team, name) {
+    const r = id && byId[id];
+    if (r) {
+      if (r.team !== team) return { out: true, why: `with ${r.team} now` };
+      if (r.status && r.status !== 'ACT' && r.status !== 'INA') return { out: true, why: STATUS[r.status] || 'off the active roster' };
+    }
+    const a = reportSays(id, team, name, r), x = id && rep[id];
+    if (a) return a;
+    if (r && r.status === 'INA') return /full|limited/i.test((x && x.practice_status) || '') ? { out: false } : { out: true, why: 'inactive last game' };
+    return { out: false };
+  }
+  function reportSays(id, team, name, r) {
+    const x = id && rep[id];
+    if (x && x.report_status) {
+      const st = lc(x.report_status), what = lc(x.report_primary_injury);
+      if (st === 'out' || st === 'doubtful') return { out: true, why: `${st}${what ? ` (${what})` : ''}` };
+      if (st === 'questionable') return { out: false, q: `questionable${what ? `: ${what}` : ''}` };
+      return { out: false };
+    }
+    const e = esp[`${team}|${normName(name || (r && r.n))}`];
+    if (e) {
+      const st = lc(e.status), what = lc(e.type);
+      if (st === 'injured reserve') return { out: true, why: 'on injured reserve' };
+      if (st === 'out' || st === 'doubtful' || st === 'suspension') return { out: true, why: `${st === 'suspension' ? 'suspended' : st}${what && st !== 'suspension' ? ` (${what})` : ''}, per ESPN` };
+      if (st === 'questionable') return { out: false, q: `questionable${what ? `: ${what}` : ''}` };
+      return { out: false };
+    }
+    const p = id && prev[id];
+    if (p && lc(p.report_status) === 'out' && x && /did not participate/i.test(x.practice_status || '')) {
+      const what = lc(x.practice_primary_injury || p.report_primary_injury);
+      return { out: true, why: `out in week ${week - 1} and not practising${what ? ` (${what})` : ''}` };
+    }
+    return null;
+  }
+
+  /* 2026 usage on this team, by id: the order inside a unit, and the fallback */
+  const use = {};
+  const U = (team, id) => ((use[team] ??= {})[id] ??= { att: 0, db: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, osn: 0, dsn: 0, lastWk: 0, lastAtt: 0 });
+  for (const r of player26 || []) {
+    if (r.season_type && r.season_type !== 'REG') continue;
+    const team = ab(r.team), id = idOf(team, r.player_display_name || r.player_name, r.player_id) || r.player_id; if (!id) continue;
+    const e = U(team, id);
+    e.att += num(r.attempts); e.db += num(r.attempts) + num(r.sacks_suffered); e.car += num(r.carries); e.tgt += num(r.targets);
+    e.sk += num(r.def_sacks); e.hit += num(r.def_qb_hits); e.tfl += num(r.def_tackles_for_loss);
+    if (num(r.attempts) > 0 && +r.week >= e.lastWk) { e.lastWk = +r.week; e.lastAtt = num(r.attempts); }
+    e.pos ??= r.position; e.n ??= r.player_display_name || r.player_name;
+  }
+  for (const r of snaps26 || []) {
+    if (r.game_type && r.game_type !== 'REG') continue;
+    const team = ab(r.team), id = (r.pfr_player_id && byPfr[r.pfr_player_id]) || idOf(team, r.player, null) || `pfr:${r.pfr_player_id || r.player}`;
+    const e = U(team, id); e.osn += num(r.offense_snaps); e.dsn += num(r.defense_snaps); e.pos ??= r.position; e.n ??= r.player;
+  }
+  const lastGame = {};
+  for (const t of Object.keys(use)) lastGame[t] = Math.max(0, ...Object.values(use[t]).map(e => e.lastWk));
+  const usage = (team, id) => (use[team] && use[team][id]) || { att: 0, db: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, osn: 0, dsn: 0, lastWk: 0, lastAtt: 0 };
+  const frontKey = e => 2 * e.sk + e.hit + e.tfl + e.dsn / 100;
+
+  /* the chart: each team's latest snapshot before its kickoff */
+  const snap = {};
+  for (const r of chart || []) {
+    if (r.pos_grp === 'Special Teams') continue;
+    const team = ab(r.team), k = kicks[team];
+    if (k && r.dt >= k) continue;
+    if (!snap[team] || r.dt > snap[team].dt) snap[team] = { dt: r.dt, rows: [] };
+    if (r.dt === snap[team].dt) snap[team].rows.push(r);
+  }
+  let repaired = 0, chartUsed = '';
+  const out = {}, passedLog = [];
+  for (const team of teams) {
+    const s = snap[team], kick = kicks[team] || new Date().toISOString();
+    const fresh = s && (Date.parse(kick) - Date.parse(s.dt)) / 864e5 <= CHART_DAYS;
+    const person = (id, name, chartPos) => {
+      const r = id && byId[id], a = avail(id, team, name);
+      return { id, n: (r && r.n) || name, pos: (r && r.pos) || chartPos, ...a };
+    };
+    const used = new Set(), passed = {};
+    const entry = (p, unit) => {
+      if (!p.out) return { n: p.n, pos: p.pos, ...(p.q ? { q: p.q } : {}) };
+      ((passed[unit] ??= []).some(x => x.n === p.n)) || passed[unit].push({ n: p.n, pos: p.pos, why: p.why });
+      return null;
+    };
+    const L = {};
+    if (fresh) {
+      chartUsed = chartUsed > s.dt ? chartUsed : s.dt;
+      const rows = s.rows.map(r => {
+        let id = r.gsis_id && byId[r.gsis_id] ? r.gsis_id : null;
+        if (!id) { id = idOf(team, r.player_name, null); if (id) repaired++; }
+        /* no roster to check it against: the chart's own id still finds him in the injury report */
+        if (!id && /^00-\d{7}$/.test(r.gsis_id || '')) id = r.gsis_id;
+        return { id, name: r.player_name, slot: r.pos_abb, rank: +r.pos_rank || 99, grp: r.pos_grp || '' };
+      });
+      const key = r => r.id || `name:${normName(r.name)}`;
+      /* the first available player in each slot, in the slots' order; anyone ahead of him is out */
+      const fill = (slots, unit, per = 1, filter = () => true) => {
+        const picks = [];
+        for (const slot of slots) {
+          const inSlot = rows.filter(r => r.slot === slot && filter(r)).sort((a, b) => a.rank - b.rank);
+          let got = 0;
+          for (const r of inSlot) {
+            if (got >= per) break;
+            if (used.has(key(r))) continue;
+            const p = person(r.id, r.name, r.slot), e = entry(p, unit);
+            if (!e) continue;
+            used.add(key(r)); picks.push({ ...e, u: usage(team, r.id) }); got++;
+          }
+        }
+        return picks;
+      };
+      const strip = arr => arr.map(({ u, ...e }) => e);
+      L.qb = strip(fill(['QB'], 'qb'));
+      L.ol = strip(fill(OL_SLOTS, 'ol'));
+      L.rb = strip(fill(['RB'], 'rb', 2));
+      /* receivers: the chart ranks wide receivers 1..n across its three WR slots; the starters are the first three */
+      const wr = rows.filter(r => r.slot === 'WR').sort((a, b) => a.rank - b.rank);
+      const recPicks = [];
+      for (const r of wr) { if (recPicks.length >= 3) break; if (used.has(key(r))) continue; const p = person(r.id, r.name, 'WR'), e = entry(p, 'rec'); if (!e) continue; used.add(key(r)); recPicks.push({ ...e, u: usage(team, r.id) }); }
+      recPicks.push(...fill(['TE'], 'rec'));
+      L.rec = strip(recPicks.sort((a, b) => b.u.tgt - a.u.tgt).slice(0, 3));
+      const defSlots = [...new Set(rows.filter(r => /^Base/.test(r.grp) || /D$/.test(r.grp)).map(r => r.slot))];
+      L.front = strip(fill(defSlots.filter(x => FRONT_SLOTS.includes(x)), 'front').sort((a, b) => frontKey(b.u) - frontKey(a.u)).slice(0, 3));
+      L.db = strip(fill(defSlots.filter(x => DB_SLOTS.includes(x)), 'db').sort((a, b) => b.u.dsn - a.u.dsn).slice(0, 3));
+    } else {
+      /* no chart: 2026 usage on this team, current roster only, minus the out */
+      const mine = Object.entries(use[team] || {});
+      const top = (filter, score, k, unit) => {
+        const picks = [];
+        for (const [id, e] of mine.filter(([id, e]) => filter((byId[id] && byId[id].pos) || e.pos || '') && score(e) > 0).sort((a, b) => score(b[1]) - score(a[1]))) {
+          if (picks.length >= k) break;
+          const p = person(byId[id] ? id : null, e.n, e.pos), x = entry(p, unit);
+          if (x) picks.push(x);
+        }
+        return picks;
+      };
+      /* the quarterback: whoever threw most in the team's last game, then the season */
+      L.qb = top(isQB, e => (e.lastWk === lastGame[team] ? 1e6 * e.lastAtt : 0) + e.att, 1, 'qb');
+      L.ol = top(isOL, e => e.osn, 5, 'ol');
+      L.rb = top(isRB, e => e.car, 2, 'rb');
+      L.rec = top(isRec, e => e.tgt, 3, 'rec');
+      L.front = top(isFront, frontKey, 3, 'front');
+      L.db = top(isDB, e => e.dsn, 3, 'db');
+    }
+    for (const u of Object.keys(passed)) for (const p of passed[u]) passedLog.push(`${team} ${u}: ${p.n} (${p.pos}) ${p.why}`);
+    /* whose numbers the passing rank mostly is, when that is not the starter's */
+    let note = null;
+    const qbs = Object.entries(use[team] || {}).filter(([, e]) => isQB(e.pos || '') && e.db > 0).sort((a, b) => b[1].db - a[1].db);
+    const tot = qbs.reduce((a, [, e]) => a + e.db, 0);
+    if (L.qb[0] && qbs.length && tot > 0) {
+      const [lid, le] = qbs[0], ln = (byId[lid] && byId[lid].n) || le.n;
+      if (ln !== L.qb[0].n && le.db / tot > 0.5) note = `The passing numbers are the team's, mostly ${ln}'s dropbacks.`;
+    }
+    out[team] = { L, out: passed, note, chart: fresh ? s.dt : null };
+  }
+  return { teams: out, chart: chartUsed, reported, repaired, passedLog };
+}
+
+function units(src, out) {
+  const RT = ratings(src.team25, src.team26, src.player25, src.player26);
+  const { teams, Z, R, S, g26 } = RT;
+  if (teams.length < 32) { console.log(`units2026.js kept: stats covered ${teams.length} teams`); return; }
+  const LU = lineups({ ...src, teams });
+  const U = {};
+  for (const t of teams) {
+    const lu = LU.teams[t];
+    const unit = u => ({ rank: R[u][t], z: Z[u][t], who: lu.L[u] || [], ...(lu.out[u] ? { out: lu.out[u] } : {}), stats: S[t][u] });
+    U[t] = {
+      qb: { ...unit('qb'), ...(lu.note ? { note: lu.note } : {}) }, ol: unit('ol'), rb: unit('rb'), rec: unit('rec'), front: unit('front'), db: unit('db'),
+      vs: { passD: { rank: R.passD[t], z: Z.passD[t] }, runD: { rank: R.runD[t], z: Z.runD[t] } },
+    };
+  }
+  const day = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' }) : '';
+  const lineSrc = [LU.chart ? `depth charts of ${day(LU.chart)}` : 'season usage (no current depth chart)',
+    LU.reported ? `the week ${src.week} injury report` : null, src.espn && src.espn.length ? 'ESPN injuries' : null].filter(Boolean);
+  writeData(path.join(out, 'units2026.js'), 'UNITS26', U,
+    `const UNITS26_BASIS = ${JSON.stringify(`2025 season counted as ${PRIOR_GAMES} games, plus ${g26} game${g26 === 1 ? '' : 's'} of 2026`)};\n` +
+    `const UNITS26_LINEUPS = ${JSON.stringify(`Lineups from ${lineSrc.length > 1 ? lineSrc.slice(0, -1).join(', ') + ' and ' + lineSrc[lineSrc.length - 1] : lineSrc[0]}`)};\n`);
+  console.log(`units2026.js: ${teams.length} teams, ${g26} 2026 game(s) blended with 2025; lineups from ${lineSrc.join(', ')}; ${LU.repaired} chart id(s) repaired by name`);
+  for (const l of LU.passedLog) console.log('  passed over: ' + l);
+  return U;
+}
+
+/* ---------------- the week and its kickoffs ---------------- */
+/* Eastern wall time to UTC: try both offsets and keep the one New York agrees with */
+function etToISO(day, time) {
+  if (!day) return null;
+  for (const off of ['-04:00', '-05:00']) {
+    const d = new Date(`${day}T${time || '13:00'}:00${off}`);
+    const hh = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'America/New_York' }).format(d);
+    if (hh === (time || '13:00')) return d.toISOString();
+  }
+  return new Date(`${day}T${time || '13:00'}:00-05:00`).toISOString();
+}
+/* the first regular-season week with an unplayed game (run-auto.js's rule) and each team's kickoff in it */
+async function weekAndKicks() {
+  const rows = (await getCSV(URLS.games)).filter(r => r.season === String(SEASON) && r.game_type === 'REG');
+  const open = rows.filter(r => !String(r.home_score || '').trim()).map(r => +r.week);
+  const week = open.length ? Math.min(...open) : Math.max(...rows.map(r => +r.week));
+  const kicks = {};
+  for (const r of rows.filter(r => +r.week === week)) { const k = etToISO(r.gameday, r.gametime); kicks[ab(r.away_team)] = k; kicks[ab(r.home_team)] = k; }
+  return { week, kicks };
+}
+
+async function getText(url) {
+  let last;
+  for (const headers of [{ 'User-Agent': 'nfl-hub-season-tracker/1.0 (+https://github.com/DEMON-X13/nfl-hub)' }, {}]) {
+    try { const r = await fetch(url, { headers, redirect: 'follow' }); if (r.ok) return await r.text(); last = new Error(r.status + ' ' + url); }
+    catch (e) { last = e; }
+  }
+  throw last;
+}
+/* the chart file holds every snapshot since March (60 MB): keep the header and the last few weeks before parsing */
+async function getChart(sinceISO) {
+  const text = await getText(URLS.depth26);
+  const nl = text.indexOf('\n'), since = sinceISO.slice(0, 10);
+  const keep = [text.slice(0, nl)];
+  for (const line of text.slice(nl + 1).split('\n')) if (line.slice(0, 10) >= since) keep.push(line);
+  return parseCSV(keep.join('\n') + '\n');
+}
+
+/* opts: out, root, and from pull-week.js the week, its games ({away, home, kick}) and ESPN's injury
+   list ([{team, name, pos, status, type}]). Run alone, it works the week and kickoffs out itself. */
 async function build(opts = {}) {
   const root = opts.root || path.resolve(__dirname, '..');
   const out = opts.out || path.join(root, 'data');
   fs.mkdirSync(out, { recursive: true });
   try { ranks(root, out); } catch (e) { console.log('ranks2026.js kept:', e.message); }
-  let roster = null, t25 = null, t26 = null, p26 = null, s26 = null;
+  let week = opts.week || null, kicks = {};
+  if (opts.games) for (const g of opts.games) { if (g.kick) { kicks[g.away] = g.kick; kicks[g.home] = g.kick; } }
+  if (!week || !opts.games) { try { const wk = await weekAndKicks(); week ??= wk.week; if (!opts.games) kicks = wk.kicks; } catch (e) { console.log('schedule unavailable:', e.message); } }
+  let roster = null;
   try { roster = await getCSV(URLS.roster26); } catch (e) { console.log('roster unavailable:', e.message); }
-  let rosterPos = {};
-  if (roster) { try { rosterPos = players(roster, out) || {}; } catch (e) { console.log('players2026.js kept:', e.message); } }
-  try { [t25, t26, p26, s26] = await Promise.all([getCSV(URLS.team25), getCSV(URLS.team26), getCSV(URLS.player26), getCSV(URLS.snaps26).catch(() => [])]); }
+  if (roster) { try { players(roster, out); } catch (e) { console.log('players2026.js kept:', e.message); } }
+  let t25, t26, p25, p26, s26;
+  try { [t25, t26, p25, p26, s26] = await Promise.all([getCSV(URLS.team25), getCSV(URLS.team26), getCSV(URLS.player25), getCSV(URLS.player26), getCSV(URLS.snaps26).catch(() => [])]); }
   catch (e) { console.log('units2026.js kept: stats unavailable:', e.message); return; }
-  try { units(t25, t26, p26, s26, out, rosterPos); } catch (e) { console.log('units2026.js kept:', e.message); }
+  /* the lineup sources are each optional: one that cannot be reached thins the check, never the file */
+  let injuries = null, chart = null;
+  try { injuries = await getCSV(URLS.injuries26); } catch (e) { console.log('injury report unavailable:', e.message); }
+  /* no schedule and no week passed in: the injury report's latest week is the coming one */
+  if (!week && injuries) { const wks = injuries.filter(r => r.season_type === 'REG').map(r => +r.week).filter(Boolean); if (wks.length) { week = Math.max(...wks); console.log(`week ${week}, from the injury report`); } }
+  const firstKick = Object.values(kicks).filter(Boolean).sort()[0] || new Date().toISOString();
+  try { chart = await getChart(new Date(Date.parse(firstKick) - CHART_DAYS * 864e5).toISOString()); } catch (e) { console.log('depth charts unavailable:', e.message); }
+  try { units({ team25: t25, team26: t26, player25: p25, player26: p26, snaps26: s26, roster, injuries, chart, espn: opts.espn || null, week: week || 0, kicks }, out); }
+  catch (e) { console.log('units2026.js kept:', e.message); }
 }
 
-module.exports = { build };
+module.exports = { build, units, ratings, lineups, normName, etToISO };
 if (require.main === module) build().catch(e => { console.error(e); process.exit(1); });

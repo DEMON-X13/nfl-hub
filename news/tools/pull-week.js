@@ -192,12 +192,21 @@ async function draftWeek(games){
   console.log(`week${WEEK}.js drafted:`, sorted.length, 'games');
 }
 
+/* ESPN's injury list, kept for the pack and handed to context.js for the Deep Dive's lineups:
+   it is the only injury source this job sees before nflverse files the week's game statuses */
+let espnInjuries = null;
 async function pack(games){
   const dir = path.join(ROOT, 'tools', 'out'); fs.mkdirSync(dir, { recursive: true });
   let inj = {};
   try {
     const j = await getJSON('https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries');
-    (j.injuries || []).forEach(t => { const key = ab((t.abbreviation || '').toUpperCase()) || Object.keys(NAME).find(k => NAME[k] === t.displayName); inj[key || t.displayName] = (t.injuries || []).map(i => `${i.athlete.displayName} (${i.athlete.position ? i.athlete.position.abbreviation : '?'}) ${i.status}${i.details && i.details.type ? ', ' + i.details.type : ''}${i.shortComment ? ': ' + i.shortComment : ''}`); });
+    espnInjuries = [];
+    (j.injuries || []).forEach(t => {
+      const key = ab((t.abbreviation || '').toUpperCase()) || Object.keys(NAME).find(k => NAME[k] === t.displayName);
+      inj[key || t.displayName] = (t.injuries || []).map(i => `${i.athlete.displayName} (${i.athlete.position ? i.athlete.position.abbreviation : '?'}) ${i.status}${i.details && i.details.type ? ', ' + i.details.type : ''}${i.shortComment ? ': ' + i.shortComment : ''}`);
+      if (key) for (const i of (t.injuries || [])) if (i.athlete && i.athlete.displayName)
+        espnInjuries.push({ team: key, name: i.athlete.displayName, pos: i.athlete.position ? i.athlete.position.abbreviation : '', status: i.status || '', type: (i.details && i.details.type) || '' });
+    });
   } catch (e) { console.log('injuries feed unavailable:', e.message); }
   const news = {};
   for (const team of TEAMS) {
@@ -229,6 +238,6 @@ async function pack(games){
   await draftWeek(games);
   await pack(games);
   /* power ranks, player positions and the Deep Dive units, beside the week files */
-  try { await require('./context').build({ out: OUT }); } catch (e) { console.log('context files kept:', e.message); }
+  try { await require('./context').build({ out: OUT, week: WEEK, games, espn: espnInjuries }); } catch (e) { console.log('context files kept:', e.message); }
   console.log('done. Next: read tools/out/week' + WEEK + '-pack.md and fill data/week' + WEEK + '.js');
 })().catch(e => { console.error(e); process.exit(1); });

@@ -85,10 +85,32 @@ dom.window.addEventListener('load', () => {
       const dds = [...d.querySelectorAll('.duo2 details.dd.r6')];
       check('deep dive under keys to victory, one per team', dds.length === 2 && dds.every(x => x.previousElementSibling && x.previousElementSibling.classList.contains('r5')), dds.length);
       check('deep dive starts closed', dds.every(x => !x.open));
-      check('deep dive has six matchups each', dds.every(x => x.querySelectorAll('.ddrow').length === 6) && [...d.querySelectorAll('.dd .ddunit')].slice(0, 6).map(e => e.textContent).join('|') === 'Quarterback|Offensive line|Running backs|Receivers|Pass and run rush|Defensive backs');
+      check('deep dive has six matchups each', dds.every(x => x.querySelectorAll('.ddrow').length === 6) && [...d.querySelectorAll('.dd .ddunit')].slice(0, 6).map(e => e.textContent).join('|') === 'Quarterback|Offensive line|Running backs|Receivers|Pass rush|Defensive backs');
       check('deep dive tags are the five levels', [...d.querySelectorAll('.dd .dtag')].every(e => ['Easy','Favorable','Even','Tough','Very tough'].includes(e.textContent)), [...new Set([...d.querySelectorAll('.dd .dtag')].map(e => e.textContent))].join(','));
       const qbRank = d.querySelector('.tb.c1 .dd .ddrow .ddvs b').textContent;
       check('deep dive ranks come from units2026.js', parseInt(qbRank, 10) === U[first.away].qb.rank, qbRank + ' vs ' + U[first.away].qb.rank);
+      // each row's tag is the edge between the two ratings it shows, and the mirrored rows agree
+      const LV = ['Very tough', 'Tough', 'Even', 'Favorable', 'Easy'];
+      const tagOf = e => e >= 1.5 ? 'Easy' : e >= 0.5 ? 'Favorable' : e > -0.5 ? 'Even' : e > -1.5 ? 'Tough' : 'Very tough';
+      const pairs = (A, O) => [[A.qb, O.vs.passD], [A.ol, O.front], [A.rb, O.vs.runD], [A.rec, O.db], [A.front, O.ol], [A.db, O.rec]].map(([u, v]) => tagOf(u.z - v.z));
+      const shown = i => [...dds[i].querySelectorAll('.dtag')].map(e => e.textContent);
+      const want = [pairs(U[first.away], U[first.home]), pairs(U[first.home], U[first.away])];
+      check('deep dive tags are the edge between the ratings shown', shown(0).join('|') === want[0].join('|') && shown(1).join('|') === want[1].join('|'), shown(0).join(',') + ' / ' + want[0].join(','));
+      const mirror = t => LV[4 - LV.indexOf(t)];
+      check('mirrored rows agree: pass rush against pass protection, coverage against receivers', shown(0)[4] === mirror(shown(1)[1]) && shown(1)[4] === mirror(shown(0)[1]) && shown(0)[5] === mirror(shown(1)[3]) && shown(1)[5] === mirror(shown(0)[3]), shown(0).join(',') + ' / ' + shown(1).join(','));
+      // every team's ratings: a full league of ranks per unit, a finite rating each
+      const UN = ['qb', 'ol', 'rb', 'rec', 'front', 'db'];
+      const teamsU = Object.keys(U);
+      check('every unit ranks the whole league once', teamsU.length === 32 && UN.every(u => teamsU.map(t => U[t][u].rank).sort((a, b) => a - b).join() === Array.from({ length: 32 }, (_, i) => i + 1).join() && teamsU.every(t => isFinite(U[t][u].z))) && ['passD', 'runD'].every(k => teamsU.every(t => isFinite(U[t].vs[k].z))));
+      // nobody listed to play is also listed as out, and every unit missing a starter says so on the page
+      check('no player is both listed and out', teamsU.every(t => UN.every(u => !(U[t][u].out || []).some(p => (U[t][u].who || []).some(x => x.n === p.n)))));
+      const dd = g('deepDive');
+      const slateMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a]).filter(([a, o]) => {
+        const html = dd(a, o, 'r6'), rowsH = html.split('class="ddrow"').slice(1);
+        return UN.some((u, i) => (U[a][u].out || []).length && !(rowsH[i] || '').includes('class="ddout"'))
+          || ((U[a].qb.out || []).length && U[a].qb.who.length && !(rowsH[0] || '').includes(U[a].qb.who[0].n + ' starts;'));
+      });
+      check('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
       dds[0].open = true; dds[0].dispatchEvent(new w.Event('toggle'));
       check('opening one team opens the other', dds[1].open);
       dds[1].open = false; dds[1].dispatchEvent(new w.Event('toggle'));
