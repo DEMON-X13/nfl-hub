@@ -371,6 +371,25 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' }));
         const sp = S.saved.find(p => p.id === 'live-smoke');
         chk(!lp.querySelector('input.lineInput') && sp.stake === 7, 'Escape did not close the box and keep the stake'); }
+      /* a parlay locked at a price that is not a round number (a suggestion's) keeps its exact payout:
+         opening the box and leaving it writes nothing, a change while it was open (another device's,
+         applied underneath) stands, and a real change scales the exact locked ratio */
+      { S.saved.push({ id: 'odd', saved: new Date().toISOString(), week: g.w, stake: 20, payout: 149.134, price: 646,
+          legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: TEAM(g.a), team: g.a, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.3, price: 150, src: 'real' }] });
+        w.eval('save(); renderParlay();'); await wait(80);
+        const odd = () => S.saved.find(p => p.id === 'odd');
+        const box = () => { const pl = lp.querySelector('[data-stake-of="odd"]'); if (!pl) return null; pl.click(); return lp.querySelector('input.lineInput'); };
+        let bx = box(); chk(!!bx, 'no stake pill on the second saved parlay');
+        if (bx) { bx.dispatchEvent(new w.Event('blur'));
+          chk(odd().stake === 20 && odd().payout === 149.134, `leaving an untouched box rewrote the parlay: ${odd().stake} / ${odd().payout}`); }
+        bx = box();
+        if (bx) { odd().stake = 30; odd().payout = 223.701;          /* another device's change, applied while the box is open */
+          bx.dispatchEvent(new w.Event('blur'));
+          chk(odd().stake === 30 && odd().payout === 223.701, 'leaving an untouched box put back the stake another device had changed'); }
+        bx = box();
+        if (bx) { bx.value = '10'; bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
+          chk(odd().stake === 10 && Math.abs(odd().payout - 74.567) < 1e-9, `$10 should pay exactly half the locked $20 payout, 74.567: ${odd().payout}`); }
+        S.saved = S.saved.filter(p => p.id !== 'odd'); w.eval('save(); renderParlay();'); await wait(80); }
       /* a file parlay is someone else's copy and keeps its stake */
       const filed = [...lp.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
       chk(!filed || !filed.querySelector('[data-stake-of]'), 'a file parlay offers to change its stake'); }

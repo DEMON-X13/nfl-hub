@@ -218,13 +218,17 @@ const canStake=p=>p.src==='prop'&&typeof S==='object'&&!!S&&Array.isArray(S.save
 const mlDec=ml=>{ const m=+ml; return !isFinite(m)||!m?null:(m>0?1+m/100:1+100/-m); };
 function setStake(id,v){
   if(!(isFinite(v)&&v>=0)||typeof S!=='object'||!S||typeof save!=='function') return false;
-  if(id==='prop-builder') S.stake=v;
-  else { const x=(S.saved||[]).find(q=>String(q.id)===String(id)); if(!x) return false;
-    /* the locked price sets what it pays, so changing the stake twice cannot drift it and a
-       stake taken to $0 can come back; a parlay saved without a price keeps its own ratio */
-    const dec=mlDec(x.price)||((+x.stake>0&&+x.payout>0)?(+x.payout/+x.stake):null);
-    x.stake=v; x.payout=dec?v*dec:0; }
-  save(); if(typeof renderParlay==='function') renderParlay(); return true; }
+  /* the builder's stake is the builder's: its box, its amount buttons and its payouts redraw */
+  if(id==='prop-builder'){ if(v===+S.stake) return false;
+    S.stake=v; save(); if(typeof renderParlay==='function') renderParlay(); return true; }
+  const x=(S.saved||[]).find(q=>String(q.id)===String(id)); if(!x||v===+x.stake) return false;
+  /* the payout keeps the exact ratio it was locked at, unrounded, so changing the stake again
+     and again cannot move it; only a parlay brought back from $0 falls back to its price.
+     Nothing in the builder shows a saved stake, so the builder is not redrawn: a tap that
+     closed the box on one of its buttons still lands. */
+  const dec=(+x.stake>0&&+x.payout>0)?(+x.payout/+x.stake):mlDec(x.price);
+  x.stake=v; x.payout=dec?v*dec:0;
+  save(); return true; }
 function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
 const removedCount=()=>allParlays().filter(isRemoved).length;
@@ -615,7 +619,8 @@ function wireLines(app){
       let gone=false;
       const done=save=>{ if(gone) return; gone=true; EDITING=null;
         if(save){ const v=parseFloat(inp.value), q=key.split('|');
-          if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
+          /* only what was typed: a box left as it opened writes nothing */
+          if(isFinite(v)&&v!==+cur) setLine({src:q[0],id:q[1]},+q[2],v); }
         draw(); };
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
         else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
@@ -634,7 +639,7 @@ function wireLines(app){
       b.replaceWith(inp); EDITING=inp; inp.focus(); inp.select();
       let gone=false;
       const done=keep=>{ if(gone) return; gone=true; EDITING=null;
-        if(keep){ const v=parseFloat(inp.value); if(isFinite(v)&&v>=0) setStake(id,v); }
+        if(keep){ const v=parseFloat(inp.value); if(isFinite(v)&&v>=0&&v!==+b.dataset.k) setStake(id,v); }
         draw(); };
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
         else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
