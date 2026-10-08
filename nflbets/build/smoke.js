@@ -346,6 +346,55 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(lp.querySelectorAll('.savedp').length === before + 1, 'a saved parlay did not appear in the section on its own');
     const mine = [...lp.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
     chk(!!mine, 'the saved parlay is not labelled as the prop model\'s');
+    /* its stake is the one thing on it you can change: tap, type, Enter, and the payout follows the locked price */
+    { const pill = mine.querySelector('[data-stake-of="live-smoke"]');
+      chk(!!pill && /\$3\.00/.test(txt(pill)), 'the saved parlay\'s stake is not a tap-to-change pill');
+      if (pill) { pill.click();
+        const box = mine.querySelector('input.lineInput');
+        chk(!!box && +box.value === 3, 'tapping the stake did not open a box holding it');
+        if (box) { box.value = '1'; box.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
+          const sp = S.saved.find(p => p.id === 'live-smoke');
+          chk(sp && sp.stake === 1 && sp.payout === 3, `the new stake did not land or the payout did not follow: ${sp && sp.stake} / ${sp && sp.payout}`);
+          const again = [...lp.querySelectorAll('.savedp')].find(c => c.querySelector('[data-stake-of="live-smoke"]'));
+          chk(!!again && /\$1\.00/.test(txt(again.querySelector('[data-stake-of]'))) && /\$3\.00/.test(txt(again.querySelector('.sp-money'))), 'the card did not redraw with the new stake and payout'); } }
+      /* the locked price sets the payout every time: down to $0 and back up to $7 pays $21, not a drifted figure */
+      const edit = v => { const pl = lp.querySelector('[data-stake-of="live-smoke"]'); if (!pl) return false; pl.click();
+        const bx = lp.querySelector('input.lineInput'); if (!bx) return false; bx.value = String(v);
+        bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' })); return true; };
+      chk(edit(0) && edit(7), 'the stake could not be changed twice in a row');
+      { const sp = S.saved.find(p => p.id === 'live-smoke'); chk(sp && sp.stake === 7 && Math.abs(sp.payout - 21) < 1e-9, `$0 then $7 at +200 should pay $21: ${sp && sp.payout}`); }
+      /* a redraw from elsewhere (the shared document re-read) waits while a box is open, and Escape drops the typing */
+      { const pl = lp.querySelector('[data-stake-of="live-smoke"]'); pl.click();
+        const bx = lp.querySelector('input.lineInput'); bx.value = '99';
+        w.eval('window.lpDraw()');
+        chk(lp.querySelector('input.lineInput') === bx, 'a redraw took the stake box away while it was being typed in');
+        bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' }));
+        const sp = S.saved.find(p => p.id === 'live-smoke');
+        chk(!lp.querySelector('input.lineInput') && sp.stake === 7, 'Escape did not close the box and keep the stake'); }
+      /* a parlay locked at a price that is not a round number (a suggestion's) keeps its exact payout:
+         opening the box and leaving it writes nothing, a change while it was open (another device's,
+         applied underneath) stands, and a real change scales the exact locked ratio */
+      { S.saved.push({ id: 'odd', saved: new Date().toISOString(), week: g.w, stake: 20, payout: 149.134, price: 646,
+          legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: TEAM(g.a), team: g.a, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.3, price: 150, src: 'real' }] });
+        w.eval('save(); renderParlay();'); await wait(80);
+        const odd = () => S.saved.find(p => p.id === 'odd');
+        const box = () => { const pl = lp.querySelector('[data-stake-of="odd"]'); if (!pl) return null; pl.click(); return lp.querySelector('input.lineInput'); };
+        let bx = box(); chk(!!bx, 'no stake pill on the second saved parlay');
+        if (bx) { bx.dispatchEvent(new w.Event('blur'));
+          chk(odd().stake === 20 && odd().payout === 149.134, `leaving an untouched box rewrote the parlay: ${odd().stake} / ${odd().payout}`); }
+        bx = box();
+        if (bx) { odd().stake = 30; odd().payout = 223.701;          /* another device's change, applied while the box is open */
+          bx.dispatchEvent(new w.Event('blur'));
+          chk(odd().stake === 30 && odd().payout === 223.701, 'leaving an untouched box put back the stake another device had changed'); }
+        bx = box();
+        if (bx) { bx.value = '10'; bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
+          chk(odd().stake === 10 && Math.abs(odd().payout - 74.567) < 1e-9, `$10 should pay exactly half the locked $20 payout, 74.567: ${odd().payout}`); }
+        S.saved = S.saved.filter(p => p.id !== 'odd'); w.eval('save(); renderParlay();'); await wait(80); }
+      /* a file parlay is someone else's copy and keeps its stake */
+      const filed = [...lp.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
+      chk(!filed || !filed.querySelector('[data-stake-of]'), 'a file parlay offers to change its stake'); }
+    /* the builder and the suggestions window carry the one-tap amounts */
+    chk(/data-stake-chip/.test(HTML) && /function stakeChips\(/.test(HTML), 'the amount buttons are not in the built page');
     /* and deleting it here deletes the parlay itself */
     mine.querySelector('[data-rm]').click();
     await wait(80);

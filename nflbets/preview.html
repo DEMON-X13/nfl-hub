@@ -257,10 +257,11 @@ body.modal-open{overflow:hidden}
 .sugg-add{font-size:11px;margin-left:auto}
 .sugg-tier .conf::before{display:none}
 .sugg-tier.aggr .conf{background:var(--miss-soft);color:var(--miss)}
-.sugg-side{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;box-shadow:var(--sh-xs)}
-.sugg-side button{background:var(--panel);color:var(--muted);border:0;border-left:1px solid var(--line-2);padding:7px 11px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap}
-.sugg-side button:first-child{border-left:0}
-.sugg-side button.on{background:linear-gradient(180deg,#1A2B45,#0F1B2D);color:#fff}
+.sugg-side,.stake-chips{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;box-shadow:var(--sh-xs)}
+.sugg-side button,.stake-chips button{background:var(--panel);color:var(--muted);border:0;border-left:1px solid var(--line-2);padding:7px 11px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+.sugg-side button:first-child,.stake-chips button:first-child{border-left:0}
+.sugg-side button.on,.stake-chips button.on{background:linear-gradient(180deg,#1A2B45,#0F1B2D);color:#fff}
+.stake-chips button{font-variant-numeric:tabular-nums;padding:7px 10px}
 .sugg-stake{display:inline-flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap}
 .sugg-stake input{width:76px;padding:6px 8px;font-family:var(--display);font-variant-numeric:tabular-nums}
 .gsugg .gsugg-hd{display:flex;align-items:center;gap:10px;margin:0 0 10px;flex-wrap:wrap}
@@ -629,6 +630,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 #lpCard .ln.moved{color:var(--gold);border-color:var(--gold);border-style:solid}
 #lpCard .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
 #lpCard .movedNote a{color:var(--gold)}
+#lpCard .sp-money .ln.edit.stk{font-size:15px;letter-spacing:0;text-transform:none;color:var(--ink);padding:2px 9px}
 #lpCard .lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
 #lpCard .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
 #lpCard .gm{display:inline-block;background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:4px 11px;font-family:var(--display);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px}
@@ -1237,7 +1239,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v78 \u00b7 2026-10-06';
+const APP_BUILD='app v79 \u00b7 2026-10-08';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3132,6 +3134,7 @@ function suggestCard(){
     <div class="sugg-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span><span class="grow"></span>
       <span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-suggest-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span>
       <label class="muted sugg-stake">Bet $<input type="number" id="suggStake" value="${stake}" min="0" step="1" inputmode="decimal" aria-label="Amount to bet on a suggested parlay"></label>
+      ${stakeChips()}
       <button class="btn quiet" id="suggClose">Close</button></div>
     ${body}</div>`;
 }
@@ -3143,7 +3146,17 @@ function openSuggest(){ const m=$('suggModal'); if(!m) return; fillSuggest();
 function closeSuggest(){ const m=$('suggModal'); if(!m) return;
   m.hidden=true; document.body.classList.remove('modal-open'); }
 const suggestOpen=()=>{ const m=$('suggModal'); return !!m&&!m.hidden; };
+/* one tap swaps the amount you are betting. It is the one stake the builder and the
+   suggestions both price with, so every payout on the tab follows it. */
+const STAKE_CHIPS=[1,5,10,20,50,100];
+function stakeChips(){ const s=Math.max(0,+S.stake||0);
+  return `<span class="stake-chips" role="group" aria-label="Amount to bet">${STAKE_CHIPS.map(v=>`<button type="button" class="${s===v?'on':''}" data-stake-chip="${v}" aria-pressed="${s===v}">$${v}</button>`).join('')}</span>`; }
+function wireStakeChips(){
+  document.querySelectorAll('[data-stake-chip]').forEach(b=>{ if(b.dataset.wired) return; b.dataset.wired='1';
+    b.addEventListener('click',()=>{ S.stake=+b.dataset.stakeChip; save(); renderParlay(); if(suggestOpen()) fillSuggest(); }); });
+}
 function wireSuggest(){
+  wireStakeChips();
   $('suggClose')?.addEventListener('click',closeSuggest);
   $('suggOpen')?.addEventListener('click',openSuggest);
   document.querySelectorAll('[data-suggest-side]').forEach(b=>b.addEventListener('click',()=>{
@@ -3209,6 +3222,7 @@ function renderParlay(){
   html+=`<div class="pays"><h3>What it pays</h3>
     <div class="bar">
       <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
+      ${stakeChips()}
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?S.bookPrice:''}" style="width:110px"></label>
       <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
     </div>
@@ -3630,6 +3644,25 @@ function removeParlay(p){
   if(p.src==='prop'&&p.id==='prop-builder'&&typeof S==='object'&&S&&S.parlay&&typeof save==='function'){
     S.parlay={}; save(); if(typeof renderParlay==='function') renderParlay(); return; }
   const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
+/* What you bet is yours to change on a parlay the prop model holds: a saved one, whose price
+   stays as it was locked so the payout follows the stake, or the one still in the builder,
+   whose stake is the builder's own. A parlay from the file or the betting model is somebody
+   else's copy and keeps its stake. */
+const canStake=p=>p.src==='prop'&&typeof S==='object'&&!!S&&Array.isArray(S.saved)&&typeof save==='function';
+const mlDec=ml=>{ const m=+ml; return !isFinite(m)||!m?null:(m>0?1+m/100:1+100/-m); };
+function setStake(id,v){
+  if(!(isFinite(v)&&v>=0)||typeof S!=='object'||!S||typeof save!=='function') return false;
+  /* the builder's stake is the builder's: its box, its amount buttons and its payouts redraw */
+  if(id==='prop-builder'){ if(v===+S.stake) return false;
+    S.stake=v; save(); if(typeof renderParlay==='function') renderParlay(); return true; }
+  const x=(S.saved||[]).find(q=>String(q.id)===String(id)); if(!x||v===+x.stake) return false;
+  /* the payout keeps the exact ratio it was locked at, unrounded, so changing the stake again
+     and again cannot move it; only a parlay brought back from $0 falls back to its price.
+     Nothing in the builder shows a saved stake, so the builder is not redrawn: a tap that
+     closed the box on one of its buttons still lands. */
+  const dec=(+x.stake>0&&+x.payout>0)?(+x.payout/+x.stake):mlDec(x.price);
+  x.stake=v; x.payout=dec?v*dec:0;
+  save(); return true; }
 function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
 const removedCount=()=>allParlays().filter(isRemoved).length;
@@ -3937,7 +3970,13 @@ function legRow(p,leg,i){
     </div></div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
+/* while a line or a stake is being typed, a redraw from elsewhere (the shared document
+   re-read from another device) waits: it would take the box away mid-number, and a browser
+   that blurs a removed box would keep the half-typed value. Closing the box draws; a box
+   that has lost focus some other way holds nothing back. */
+let EDITING=null;
 function draw(){
+  if(EDITING&&EDITING.isConnected&&document.activeElement===EDITING) return;
   const app=document.getElementById('app'), ps=allParlays().filter(p=>!isRemoved(p));
   document.getElementById('clear').hidden=!ps.some(settledP);
   let html='';
@@ -3983,7 +4022,7 @@ function draw(){
         ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
         ${runs}${tag}<span class="grow"></span>${p.id==='prop-builder'?`<button class="hidebtn" data-rm="${esc(rmKey(p))}" data-builder="1" title="Clear the builder" aria-label="Clear the Parlay Builder">\u00d7</button>`:`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
       <div class="sp-money">
-        <div><b>$${(+p.stake||0).toFixed(2)}</b><span>staked</span></div>
+        <div><b>${canStake(p)?`<span class="ln edit stk" role="button" tabindex="0" data-stake-of="${esc(p.id)}" data-k="${esc(String(+p.stake||0))}" title="Bet a different amount? Tap and set it.">$${(+p.stake||0).toFixed(2)}</span>`:`$${(+p.stake||0).toFixed(2)}`}</b><span>staked</span></div>
         <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
         <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'\u2013'}</b><span>pays</span></div>
       </div>
@@ -4010,11 +4049,31 @@ function wireLines(app){
       inp.type='number'; inp.step='0.5'; inp.className='lineInput'; inp.value=cur;
       inp.setAttribute('inputmode','decimal');
       inp.setAttribute('aria-label','the line you actually bet');
-      b.replaceWith(inp); inp.focus(); inp.select();
+      b.replaceWith(inp); EDITING=inp; inp.focus(); inp.select();
       let gone=false;
-      const done=save=>{ if(gone) return; gone=true;
+      const done=save=>{ if(gone) return; gone=true; EDITING=null;
         if(save){ const v=parseFloat(inp.value), q=key.split('|');
-          if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
+          /* only what was typed: a box left as it opened writes nothing */
+          if(isFinite(v)&&v!==+cur) setLine({src:q[0],id:q[1]},+q[2],v); }
+        draw(); };
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
+        else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
+      inp.addEventListener('blur',()=>done(true));
+    });
+  });
+  /* the stake, the same way: tap the amount, type, Enter or leave to keep it, Escape to drop it */
+  app.querySelectorAll('[data-stake-of]').forEach(b=>{
+    b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); b.click(); } });
+    b.addEventListener('click',()=>{
+      const id=b.dataset.stakeOf;
+      const inp=document.createElement('input');
+      inp.type='number'; inp.step='1'; inp.min='0'; inp.className='lineInput'; inp.value=b.dataset.k;
+      inp.setAttribute('inputmode','decimal');
+      inp.setAttribute('aria-label','the amount you actually bet');
+      b.replaceWith(inp); EDITING=inp; inp.focus(); inp.select();
+      let gone=false;
+      const done=keep=>{ if(gone) return; gone=true; EDITING=null;
+        if(keep){ const v=parseFloat(inp.value); if(isFinite(v)&&v>=0&&v!==+b.dataset.k) setStake(id,v); }
         draw(); };
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
         else if(e.key==='Escape'){ e.preventDefault(); done(false); } });

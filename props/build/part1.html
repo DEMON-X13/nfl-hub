@@ -257,10 +257,11 @@ body.modal-open{overflow:hidden}
 .sugg-add{font-size:11px;margin-left:auto}
 .sugg-tier .conf::before{display:none}
 .sugg-tier.aggr .conf{background:var(--miss-soft);color:var(--miss)}
-.sugg-side{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;box-shadow:var(--sh-xs)}
-.sugg-side button{background:var(--panel);color:var(--muted);border:0;border-left:1px solid var(--line-2);padding:7px 11px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap}
-.sugg-side button:first-child{border-left:0}
-.sugg-side button.on{background:linear-gradient(180deg,#1A2B45,#0F1B2D);color:#fff}
+.sugg-side,.stake-chips{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;box-shadow:var(--sh-xs)}
+.sugg-side button,.stake-chips button{background:var(--panel);color:var(--muted);border:0;border-left:1px solid var(--line-2);padding:7px 11px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;white-space:nowrap}
+.sugg-side button:first-child,.stake-chips button:first-child{border-left:0}
+.sugg-side button.on,.stake-chips button.on{background:linear-gradient(180deg,#1A2B45,#0F1B2D);color:#fff}
+.stake-chips button{font-variant-numeric:tabular-nums;padding:7px 10px}
 .sugg-stake{display:inline-flex;align-items:center;gap:4px;font-size:13px;white-space:nowrap}
 .sugg-stake input{width:76px;padding:6px 8px;font-family:var(--display);font-variant-numeric:tabular-nums}
 .gsugg .gsugg-hd{display:flex;align-items:center;gap:10px;margin:0 0 10px;flex-wrap:wrap}

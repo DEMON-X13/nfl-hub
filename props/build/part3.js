@@ -1159,6 +1159,7 @@ function suggestCard(){
     <div class="sugg-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span><span class="grow"></span>
       <span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-suggest-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span>
       <label class="muted sugg-stake">Bet $<input type="number" id="suggStake" value="${stake}" min="0" step="1" inputmode="decimal" aria-label="Amount to bet on a suggested parlay"></label>
+      ${stakeChips()}
       <button class="btn quiet" id="suggClose">Close</button></div>
     ${body}</div>`;
 }
@@ -1170,7 +1171,17 @@ function openSuggest(){ const m=$('suggModal'); if(!m) return; fillSuggest();
 function closeSuggest(){ const m=$('suggModal'); if(!m) return;
   m.hidden=true; document.body.classList.remove('modal-open'); }
 const suggestOpen=()=>{ const m=$('suggModal'); return !!m&&!m.hidden; };
+/* one tap swaps the amount you are betting. It is the one stake the builder and the
+   suggestions both price with, so every payout on the tab follows it. */
+const STAKE_CHIPS=[1,5,10,20,50,100];
+function stakeChips(){ const s=Math.max(0,+S.stake||0);
+  return `<span class="stake-chips" role="group" aria-label="Amount to bet">${STAKE_CHIPS.map(v=>`<button type="button" class="${s===v?'on':''}" data-stake-chip="${v}" aria-pressed="${s===v}">$${v}</button>`).join('')}</span>`; }
+function wireStakeChips(){
+  document.querySelectorAll('[data-stake-chip]').forEach(b=>{ if(b.dataset.wired) return; b.dataset.wired='1';
+    b.addEventListener('click',()=>{ S.stake=+b.dataset.stakeChip; save(); renderParlay(); if(suggestOpen()) fillSuggest(); }); });
+}
 function wireSuggest(){
+  wireStakeChips();
   $('suggClose')?.addEventListener('click',closeSuggest);
   $('suggOpen')?.addEventListener('click',openSuggest);
   document.querySelectorAll('[data-suggest-side]').forEach(b=>b.addEventListener('click',()=>{
@@ -1236,6 +1247,7 @@ function renderParlay(){
   html+=`<div class="pays"><h3>What it pays</h3>
     <div class="bar">
       <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
+      ${stakeChips()}
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?S.bookPrice:''}" style="width:110px"></label>
       <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
     </div>
