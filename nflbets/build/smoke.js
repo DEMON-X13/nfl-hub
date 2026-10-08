@@ -357,6 +357,20 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(sp && sp.stake === 1 && sp.payout === 3, `the new stake did not land or the payout did not follow: ${sp && sp.stake} / ${sp && sp.payout}`);
           const again = [...lp.querySelectorAll('.savedp')].find(c => c.querySelector('[data-stake-of="live-smoke"]'));
           chk(!!again && /\$1\.00/.test(txt(again.querySelector('[data-stake-of]'))) && /\$3\.00/.test(txt(again.querySelector('.sp-money'))), 'the card did not redraw with the new stake and payout'); } }
+      /* the locked price sets the payout every time: down to $0 and back up to $7 pays $21, not a drifted figure */
+      const edit = v => { const pl = lp.querySelector('[data-stake-of="live-smoke"]'); if (!pl) return false; pl.click();
+        const bx = lp.querySelector('input.lineInput'); if (!bx) return false; bx.value = String(v);
+        bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' })); return true; };
+      chk(edit(0) && edit(7), 'the stake could not be changed twice in a row');
+      { const sp = S.saved.find(p => p.id === 'live-smoke'); chk(sp && sp.stake === 7 && Math.abs(sp.payout - 21) < 1e-9, `$0 then $7 at +200 should pay $21: ${sp && sp.payout}`); }
+      /* a redraw from elsewhere (the shared document re-read) waits while a box is open, and Escape drops the typing */
+      { const pl = lp.querySelector('[data-stake-of="live-smoke"]'); pl.click();
+        const bx = lp.querySelector('input.lineInput'); bx.value = '99';
+        w.eval('window.lpDraw()');
+        chk(lp.querySelector('input.lineInput') === bx, 'a redraw took the stake box away while it was being typed in');
+        bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape' }));
+        const sp = S.saved.find(p => p.id === 'live-smoke');
+        chk(!lp.querySelector('input.lineInput') && sp.stake === 7, 'Escape did not close the box and keep the stake'); }
       /* a file parlay is someone else's copy and keeps its stake */
       const filed = [...lp.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
       chk(!filed || !filed.querySelector('[data-stake-of]'), 'a file parlay offers to change its stake'); }

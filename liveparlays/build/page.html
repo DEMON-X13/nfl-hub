@@ -220,8 +220,10 @@ function setStake(id,v){
   if(!(isFinite(v)&&v>=0)||typeof S!=='object'||!S||typeof save!=='function') return false;
   if(id==='prop-builder') S.stake=v;
   else { const x=(S.saved||[]).find(q=>String(q.id)===String(id)); if(!x) return false;
-    const dec=(+x.stake>0&&+x.payout>0)?(+x.payout/+x.stake):mlDec(x.price);
-    x.stake=v; x.payout=dec?Math.round(v*dec*100)/100:0; }
+    /* the locked price sets what it pays, so changing the stake twice cannot drift it and a
+       stake taken to $0 can come back; a parlay saved without a price keeps its own ratio */
+    const dec=mlDec(x.price)||((+x.stake>0&&+x.payout>0)?(+x.payout/+x.stake):null);
+    x.stake=v; x.payout=dec?v*dec:0; }
   save(); if(typeof renderParlay==='function') renderParlay(); return true; }
 function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
 /* how many of the parlays this device can see have been deleted on it */
@@ -530,7 +532,13 @@ function legRow(p,leg,i){
     </div></div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
+/* while a line or a stake is being typed, a redraw from elsewhere (the shared document
+   re-read from another device) waits: it would take the box away mid-number, and a browser
+   that blurs a removed box would keep the half-typed value. Closing the box draws; a box
+   that has lost focus some other way holds nothing back. */
+let EDITING=null;
 function draw(){
+  if(EDITING&&EDITING.isConnected&&document.activeElement===EDITING) return;
   const app=document.getElementById('app'), ps=allParlays().filter(p=>!isRemoved(p));
   document.getElementById('clear').hidden=!ps.some(settledP);
   let html='';
@@ -603,9 +611,9 @@ function wireLines(app){
       inp.type='number'; inp.step='0.5'; inp.className='lineInput'; inp.value=cur;
       inp.setAttribute('inputmode','decimal');
       inp.setAttribute('aria-label','the line you actually bet');
-      b.replaceWith(inp); inp.focus(); inp.select();
+      b.replaceWith(inp); EDITING=inp; inp.focus(); inp.select();
       let gone=false;
-      const done=save=>{ if(gone) return; gone=true;
+      const done=save=>{ if(gone) return; gone=true; EDITING=null;
         if(save){ const v=parseFloat(inp.value), q=key.split('|');
           if(isFinite(v)) setLine({src:q[0],id:q[1]},+q[2],v); }
         draw(); };
@@ -623,9 +631,9 @@ function wireLines(app){
       inp.type='number'; inp.step='1'; inp.min='0'; inp.className='lineInput'; inp.value=b.dataset.k;
       inp.setAttribute('inputmode','decimal');
       inp.setAttribute('aria-label','the amount you actually bet');
-      b.replaceWith(inp); inp.focus(); inp.select();
+      b.replaceWith(inp); EDITING=inp; inp.focus(); inp.select();
       let gone=false;
-      const done=keep=>{ if(gone) return; gone=true;
+      const done=keep=>{ if(gone) return; gone=true; EDITING=null;
         if(keep){ const v=parseFloat(inp.value); if(isFinite(v)&&v>=0) setStake(id,v); }
         draw(); };
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
