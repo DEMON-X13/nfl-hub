@@ -725,7 +725,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         }
         card().querySelector('[data-unit="off"]').click(); await wait(30); } }
     d.getElementById('peMore').click(); await wait(40);
-    chk(rankRows().length === Math.min(25, eloP.groups.DL.top.length), 'Show the top 25 did not: ' + rankRows().length);
+    /* against the position on screen, whichever it is by now: a week with fewer than 25 ranked at
+       one position (24 quarterbacks after a run of injuries) is a lean week, not a broken tab */
+    { const on = d.querySelector('.pe-pos [aria-selected="true"]'), pos = on && on.dataset.pos;
+      chk(!!pos && !!eloP.groups[pos], 'no position is selected on the rankings');
+      if (pos && eloP.groups[pos]) chk(rankRows().length === Math.min(25, eloP.groups[pos].top.length), `Show the top 25 did not for ${pos}: ${rankRows().length} of ${eloP.groups[pos].top.length}`); }
     chk(/walk-forward/.test(txt(d.getElementById('peWalkRec'))), 'the tab bar does not carry the walk-forward record: ' + txt(d.getElementById('peWalkRec')));
     /* the data has the shape the tab relies on */
     chk(eloM.groups.every(g => eloP.groups[g] && eloP.groups[g].top.length >= 10 && eloP.groups[g].top.every(r => r.elo > 1100 && r.elo < 1900)), 'a group has fewer than ten rated players or a rating out of range');
