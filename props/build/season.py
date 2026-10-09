@@ -9,8 +9,13 @@ built for another.
 
 At a rollover: change that line in part2.js (and the key in nflbets/build/sync.js and the
 assert in nflbets/build/build.js with it), refit the model on the season just finished, and
-rebuild raw/feat.pkl; nothing in props/ needs a second edit. The baselines are the season
-before (BASE), and the raw files are named after the season they hold.
+rebuild raw/feat.pkl (a runner rebuilds it, since raw/ is not committed); nothing in props/
+needs a second edit. The baselines are the season before (BASE), and the raw files are named
+after the season they hold. The data/ files are not: weekly.py moves last season's week files
+(wk*_lines.csv, prices_wk*.csv, gamelines_wk*.csv) to data/archive/<season>/ on its first run
+of the new season, bakes only this season's games wherever a row sits, and carries none of a
+last-season payload's main lines forward. Until nflverse posts the new season's stats and
+injury files the job publishes without them and the page says so (not_posted).
 """
 import os, re
 

@@ -11,6 +11,11 @@ Lines files written before the lines carried their game (weeks 1-5 of 2026) find
 week's prices file, which has the game on every row; a name the prices do not place is matched
 only exactly among the players who played that week.
 
+Only this season's games are baked. The files are named by week alone, so at a rollover last
+season's wk5_lines.csv sits where this season's week 5 will be: a row whose game is another
+season's is dropped, never matched onto this season's game of the same week, and a row with no
+game at all is trusted only when every game in its week's files is this season's.
+
 By hand, from data/ (no credits; rewrites one week of payload.json):
     python mktbuild.py W wk{W}_lines.csv "DraftKings via the-odds-api" YYYY-MM-DD
 """
@@ -21,18 +26,27 @@ sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'build'))
 import names  # noqa: E402
 
 
-def build_week(week, lines, prices, pool, open_games=()):
+def build_week(week, lines, prices, pool, open_games=(), games=None):
     """{pid: {stat: {line, over, under, n, g}}}, plus what could not be placed.
 
+    prices: the week's whole prices file, other seasons' rows included, so a name priced only in
+    last season's game resolves to that game and is dropped rather than left without one.
+    games: this season's game ids (None: every game the pool knows).
     problems: names on a game still to be played that matched nobody or more than one player
     (weekly.py reports them, so a run goes red rather than a line going missing quietly).
-    notes: the same for games already played, and lines two rows gave the same player."""
+    notes: the same for games already played, and lines two rows gave the same player.
+    how counts the rows by outcome; 'another season' is the rows dropped for their game."""
     where = names.game_of(prices)
+    ids = {(r.get('game_id') or '').strip() for r in list(prices) + list(lines)} - {''}
+    legacy_ok = games is None or (bool(ids) and ids <= set(games))
     out, problems, notes, how = {}, [], [], {}
     for r in lines:
         book = (r.get('player') or '').strip()
         if not book or names.is_team_row(book): continue
         gid = (r.get('game_id') or '').strip() or where.get(book)
+        if games is not None and ((gid and gid not in games) or (not gid and not legacy_ok)):
+            how['another season'] = how.get('another season', 0) + 1
+            continue
         pid, h = pool.match(book, week, gid)
         how[h] = how.get(h, 0) + 1
         if not pid:
@@ -59,7 +73,8 @@ def main():
     pay = json.load(open(pp, encoding='utf-8'))
     raw = os.path.join(os.path.dirname(HERE), 'raw')
     pool = names.Pool(names.read_csv(os.path.join(raw, season.ROSTER)), names.read_csv(os.path.join(raw, season.STATS)), pay['sched'])
-    out, problems, notes, how = build_week(week, names.read_csv(src), names.read_csv(os.path.join(HERE, f'prices_wk{week}.csv')), pool)
+    out, problems, notes, how = build_week(week, names.read_csv(src), names.read_csv(os.path.join(HERE, f'prices_wk{week}.csv')), pool,
+                                           games={g['id'] for g in pay['sched']})
     pay.setdefault('mkt', {})[str(week)] = out
     if len(sys.argv) > 3:
         pay.setdefault('mkt_meta', {})[str(week)] = {'src': sys.argv[3], 'asof': sys.argv[4] if len(sys.argv) > 4 else ''}

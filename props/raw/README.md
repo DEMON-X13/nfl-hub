@@ -5,7 +5,9 @@ downloads this season's files on every run, named after the season `SEASON` in
 `build/part2.js` sets (`build/season.py` has the list): `games.csv`, `pw_<season>.csv`,
 `roster_<season>.csv`, `injuries_<season>.csv`, `depth_charts_<season>.csv`. A runner starts
 with this folder empty, so a required file that fails to download stops the run before
-anything is published; `weekly.py --offline` reuses the files already here, for testing.
+anything is published (a stats or injury file nflverse has not posted yet, with none of this
+season's published, is the exception: the run goes on without it and the payload says so in
+`not_posted`); `weekly.py --offline` reuses the files already here, for testing.
 The audit compares the payload with them when `PROPS_AUDIT_RAW=1` (weekly.py sets it).
 
 The earlier seasons, which only rebuilding `feat.pkl` needs, fetch with:

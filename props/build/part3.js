@@ -117,7 +117,7 @@ function renderSlate(){
   /* the games still to play, live ones too, first in kickoff order; the finals under a heading */
   const todo=gs.filter(g=>!gameFinal(g)), done=gs.filter(g=>gameFinal(g));
   const over=seasonOver()?`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:12px"><b>The ${SEASON} regular season is over.</b> <span class="muted">This model covers the regular season only: playoff games are not projected or priced, and no prices are pulled until next season. Every week stays here to look back on.</span></div>`:'';
-  const rows=over+todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
+  const rows=over+notPostedNote()+todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
     S.ui.game=b.dataset.game; S.ui.open={}; save(); renderGame(); }));
@@ -562,6 +562,15 @@ function ingestRoster(rows){
 /* Questionable players stay on the page with a Q and out of every suggested parlay: about half
    of them have not played this season. true lets them into the suggestions. */
 const SUGGEST_QUESTIONABLE=false;
+/* the nflverse files the job found not posted yet (PAY.not_posted): before the season, or the
+   stats until the first games are processed. An empty report is then said to be missing, not
+   shown as a week with nobody hurt */
+function notPostedNote(){
+  const np=new Set((PAY&&PAY.not_posted)||[]), say=[];
+  if(np.has('injuries')) say.push(`nflverse has not posted the ${SEASON} injury report yet, so no player is marked out, doubtful or questionable.`);
+  if(np.has('stats')&&S.sched.some(g=>gameFinal(g))) say.push(`nflverse has not posted this season's player stats yet, so the finished games are not graded and every projection stands on last season.`);
+  return say.length?`<div class="card notposted" style="border-left:4px solid var(--gold);margin-bottom:12px">${say.map(t=>`<div class="muted">${t}</div>`).join('')}</div>`:'';
+}
 function practiceOf(s){ s=String(s||''); return /did not/i.test(s)?'DNP':(/limited/i.test(s)?'Limited':(/full/i.test(s)?'Full':'')); }
 /* the week a team played before this one, past its bye */
 function prevTeamWeek(team,w){ let p=null; for(const g of S.sched) if((g.a===team||g.h===team)&&+g.w<w&&(p==null||+g.w>p)) p=+g.w; return p; }
@@ -596,6 +605,7 @@ function ingestInjuries(rows,week,replay){
   if(!replay) for(const id in before){
     const b=before[id], tm=(cur[id]&&cur[id].team)||b.team, pw=prevTeamWeek(tm,w);
     if(pw==null||!b.weeks[pw]||S.inactive[id]) continue;
+    if(actualFor(pw,id)) continue;                  /* listed, but his stat line says he played */
     const r=cur[id], st=r?String(r.report_status||r.game_status||'').trim():'';
     if(st||final[tm]) continue;
     if(!filed[tm]) rule(id,'Pending',{why:'no report yet this week'});
@@ -1629,11 +1639,12 @@ function ingestOdds(rows,week){
     const mk=marketKey(row.market); if(!mk) continue;
     const k=parseFloat(row.threshold); if(!isFinite(k)) continue;
     const gid=(row.game_id||'').trim();
+    if(gid&&!gids.has(gid)) continue;   /* a game this week does not have: last season's file at a rollover */
     let hit=null;
-    if(row.pid&&gids.has(gid)) hit={gid,pid:row.pid};
+    if(row.pid&&gid) hit={gid,pid:row.pid};
     else { const cands=names()[normName(row.player)]||[];
-      hit=gids.has(gid)?cands.find(c=>c.gid===gid):null;
-      if(!hit&&cands.length===1) hit=cands[0]; }
+      hit=gid?cands.find(c=>c.gid===gid):null;
+      if(!hit&&!gid&&cands.length===1) hit=cands[0]; }
     if(!hit) continue;
     ((((S.odds[hit.gid]??={})[hit.pid]??={})[mk]??={}))[String(k)]=ml;
     n++;

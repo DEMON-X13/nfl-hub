@@ -20,22 +20,32 @@ What it does, in order:
      fails to download, or downloads wrong, stops the run here and nothing is published (the
      last good payload stays live, and the run goes red). The depth charts are the one optional
      file: without them the last payload's chart is carried forward and the page says how old it
-     is. Before the season's first kickoff a stats or injury file nflverse has not posted yet is
-     no failure.
+     is. The stats and the injury report are judged by what has been published: a 404 on one
+     that none of this season's data has come from yet is a file nflverse has not posted (before
+     the season, and the stats until the first games are processed), so the run publishes
+     without it, the payload lists it in not_posted and the page says so; the run goes red after
+     its commit once that is overdue (the injury report after the first kickoff, the stats two
+     days after the first game). A 404 on one the site has published from is a failure.
   2. works out the current week: the earliest week with an unplayed regular-season game, or,
-     once every one is final, the season is over: no prices are pulled and the page says so
+     once every one is final, the season is over: no prices are pulled and the page says so.
+     At a rollover last season's price files move to data/archive/<season>/, and the stats,
+     injury report and roster are read and checked (shape, a whole league, stats that would
+     shrink) here, before any credit is spent
+     Then the payload's rosters, depth charts and schedule are rebuilt (payload.py), still
+     before the pull, which names its games from that schedule
   3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking
      off before the next scheduled pull is likely to land (hours_to_next_pull) with
      data/oddsfetch.py and merges them into that week's files
-  4. rebuilds the payload (rosters, depth charts, schedule) and bakes in every week's player
+  4. bakes into the payload every week's player
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
-     and every price file with the player each row belongs to. A bake whose stats would cover
-     fewer games than the published payload's is refused, as a wiped season would be.
+     and every price file with the player each row belongs to: this season's games only, and
+     nothing of a payload of another season carried forward
   5. assembles the page and runs the audit, which checks the payload against the raw files
   6. prints a REPORT block
-A run that is refused (a required download, the bake, the audit) exits 1 before the workflow's
-commit step; anything else wrong is a problem that fails the run after the commit.
+A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
+before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
+Anything else wrong is a problem that fails the run after the commit.
 Nothing here ever prints the key.
 """
 import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
@@ -149,6 +159,85 @@ def check_shape(name,rows,need):
     if rows and not set(need)<=set(rows[0]): return f"{name} lacks {sorted(set(need)-set(rows[0]))}"
     return None
 
+# the two files nflverse cannot have before the season does: the payload says which of them were
+# not posted yet (not_posted), the audit then expects none of it, and the page says so
+NOT_POSTED_KIND={STATS:'stats',INJURIES:'injuries'}
+
+def published(prev,name):
+    """Does the published payload hold any of this season's stats (or injury report)? A 404 on a
+    file the site has already published from is a source that vanished, and publishing without it
+    would wipe it off the page; a 404 on one it never had is a file nflverse has not posted yet:
+    before the season, and for the stats until the first games are processed (a day or so)."""
+    if prev.get('season',SEASON)!=SEASON: return False      # last season's payload, at a rollover
+    if name==STATS: return any((prev.get('stats') or {}).values())
+    return any(str(r.get('season'))==str(SEASON) for r in prev.get('injuries') or [])
+
+WEEK_FILE=re.compile(r'(?:wk(\d+)_lines|prices_wk(\d+)|gamelines_wk(\d+))\.csv$')
+
+def archive_other_seasons():
+    """At a rollover, last season's price files leave data/ for data/archive/<season>/.
+
+    The files are named by week only (wk5_lines.csv, prices_wk5.csv, gamelines_wk5.csv), so
+    without this the new season's first pull would merge into last season's week-1 files. A
+    week's files move together, and only when every game id in them is another season's; a lines
+    file from before the lines carried their game goes with its prices file. The bake drops
+    another season's rows wherever they are, so this keeps data/ tidy rather than correct."""
+    weeks={}
+    for fn in os.listdir(DATA):
+        m=WEEK_FILE.match(fn)
+        if m: weeks.setdefault(next(x for x in m.groups() if x),[]).append(fn)
+    moved=[]
+    for w,fns in sorted(weeks.items(),key=lambda x:int(x[0])):
+        seen={(r.get('game_id') or '').strip().split('_')[0] for fn in fns for r in names.read_csv(os.path.join(DATA,fn))}
+        seen.discard('')
+        if not seen or str(SEASON) in seen: continue
+        old='-'.join(sorted(seen)); dest=os.path.join(DATA,'archive',old); os.makedirs(dest,exist_ok=True)
+        for fn in fns: os.replace(os.path.join(DATA,fn),os.path.join(dest,fn))
+        moved.append(f"week {w} ({old})")
+    pa=os.path.join(DATA,'priced_at.json')
+    if moved and os.path.exists(pa):
+        try:
+            pr=json.load(open(pa,encoding='utf-8'))
+            json.dump({k:v for k,v in sorted(pr.items()) if k.startswith(f"{SEASON}_")},open(pa,'w',encoding='utf-8'),indent=0)
+        except Exception: pass
+    if moved: say(f"  a new season: last season's price files moved to data/archive/ ({', '.join(moved)})")
+    return moved
+
+def read_raw(prev,gs):
+    """The stats, injury report and roster the bake needs, read and checked before any credit is
+    spent: a run these refuse must not buy prices it then throws away."""
+    finished={r['game_id'] for r in gs if r['home_score'].strip()}
+    srows=read_rows(STATS)
+    bad=check_shape(STATS,srows,['player_id','week','season','season_type','game_id','team','position'])
+    if bad: refuse(bad); return None
+    stats={}; skipped_live=set()
+    for r in srows:
+        if r.get('season')!=str(SEASON) or r.get('season_type')!='REG': continue
+        if r.get('game_id') and r['game_id'] not in finished: skipped_live.add(r['game_id']); continue
+        if r.get('position','').upper() not in SKILL: continue
+        row={}
+        for c in STATCOLS:
+            v=r.get(c,'')
+            if c in ('player_id','player_display_name','position','season_type','team','opponent_team'): row[c]=v
+            else:
+                try: row[c]=float(v) if v!='' else 0
+                except ValueError: row[c]=0
+        stats.setdefault(str(int(float(r['week']))),[]).append(row)
+    # a bake must never hold fewer games of stats than the one already published: that is a
+    # failed or truncated download, not a quieter week, and publishing it wipes the season
+    if prev.get('season',SEASON)==SEASON and prev.get('stats'):
+        had={(w,r.get('team')) for w,rs in prev['stats'].items() for r in rs}
+        now_={(w,r.get('team')) for w,rs in stats.items() for r in rs}
+        lost=sorted(had-now_)
+        if lost: refuse(f"the stats would shrink: {len(lost)} team-games the published payload has are missing ({', '.join(f'wk{w} {t}' for w,t in lost[:6])}); the published payload stays"); return None
+    irows=read_rows(INJURIES)
+    bad=check_shape(INJURIES,irows,['season','week','gsis_id','team','report_status','practice_status'])
+    if bad: refuse(bad); return None
+    rrows=read_rows(ROSTER)
+    bad=check_shape(ROSTER,rrows,['gsis_id','team','status','position','full_name'])
+    if bad or len(rrows)<1200 or len({r['team'] for r in rrows})<30: refuse(bad or f"{ROSTER} has {len(rrows)} rows over {len({r['team'] for r in rrows})} teams, not a whole league"); return None
+    return {'srows':srows,'stats':stats,'skipped_live':skipped_live,'irows':irows,'rrows':rrows}
+
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here'); ap.add_argument('--local',action='store_true',help='allow the price pull off GitHub Actions'); ap.add_argument('--catch-up',action='store_true',help='price only the games up to the next pull that have no prices yet and have not kicked off: a dropped scheduled pull made up, nothing else spent')
     ap.add_argument('--offline',action='store_true',help='use the files already in raw/ (testing); a missing required file still refuses the run')
@@ -174,20 +263,49 @@ def main():
         week=min(unplayed) if unplayed else max(int(r['week']) for r in gs)
         kos=[kickoff({'d':r['gameday'],'t':r['gametime']}) for r in gs]; kos=[k for k in kos if k]
         first_ko=min(kos) if kos else None
+        fkos=[kickoff({'d':r['gameday'],'t':r['gametime']}) for r in gs if r['home_score'].strip()]; fkos=[k for k in fkos if k]
+        first_final=min(fkos) if fkos else None
         say(f"  current week {week} ({len(unplayed)} games still to play this season)"+(' -- the regular season is over' if season_over else ''))
     except Exception as e:
         refuse(f"schedule ({GAMES}): {e}; the week cannot be worked out, so nothing is baked")
+        first_final=None
     started=bool(first_ko and now>=first_ko)
+    not_posted=[]
     for name,(what,url,req) in RAW_FILES.items():
         if name==GAMES or got.get(name): continue
         err=got.get(name+':err','missing')
-        if got.get(name) is None and not started and name in (STATS,INJURIES):
-            say(f"  {name}: not posted yet ({err}); the season has not started, so that is expected")
+        if got.get(name) is None and name in NOT_POSTED_KIND and not published(prev,name):
+            # a 404 on a file nothing has been published from yet: nflverse has not posted it.
+            # The run publishes without it (the page says so), and once it is overdue the run
+            # goes red after its commit, so a file that never comes is seen, not lived with
+            not_posted.append(name)
+            say(f"  {name}: not posted yet ({err}); none of this season's {what} has been published either, so the page goes on without it and says so")
+            if name==INJURIES and started:
+                problems.append(f"{name} ({what}) is not posted yet, {(now-first_ko).total_seconds()/3600:.0f}h after the season's first kickoff: the page marks nobody out")
+            if name==STATS and first_final and (now-first_final).total_seconds()>48*3600:
+                problems.append(f"{name} ({what}) is not posted yet, {(now-first_final).total_seconds()/3600:.0f}h after the season's first game: no game of the season is graded")
+        elif name==DEPTH and got.get(name) is None and not started and str(prev.get('depth_dt') or '')<f"{SEASON}-03-01":
+            # nflverse starts the season's charts in the summer: until the first kickoff last
+            # season's chart is carried forward (the game pages say its date), with no red run
+            say(f"  {name}: not posted yet ({err}); before the season last season's chart is carried forward, and the game pages say its date")
         elif req: refuse(f"download {name} ({what}): {err}. A required source: nothing is published from this run, and the last good payload stays live")
         else: problems.append(f"download {name} ({what}): {err}. The last payload's depth charts are carried forward; the page shows their date")
     if blocked(): return finish(a)
+    # 2b. a rollover: last season's price files out of the way of this season's first pull
+    archive_other_seasons()
+    # 2c. the files the bake reads, checked now, before a credit is spent on prices
+    raw=read_raw(prev,gs)
+    if blocked(): return finish(a)
+    # 2d. the rosters, depth charts and this season's schedule, rebuilt before the pull: the pull
+    # names its games from this schedule (at a rollover the published one is last season's), and
+    # a run payload.py cannot finish is refused before a credit is spent
+    if not os.path.exists(os.path.join(RAW,'feat.pkl')):
+        say("  raw/feat.pkl missing: building features (a few minutes)"); run([PY,'features.py'],RES,'features')
+    rc,out=run([PY,'payload.py'],HERE,'payload')
+    for line in out.splitlines():
+        if line.startswith(('players','depth','build')): say('  '+line.strip())
+    if rc!=0: refuse('payload.py failed, so the rosters and schedule could not be rebuilt'); return finish(a)
     # 3. prices
-    pulled=None
     if a.no_odds: say("  price pull skipped (--no-odds)")
     elif season_over: say("  price pull skipped: the regular season is over")
     elif not os.environ.get('GITHUB_ACTIONS') and not a.local: say("  price pull skipped: credits are spent only by the props workflow (pass --local to pull from this machine)")
@@ -207,19 +325,12 @@ def main():
             spent=int(used[-1])-int(used[0])
             json.dump({'at':now.strftime('%Y-%m-%dT%H:%M'),'week':week,'credits_left':int(left[-1]) if left else None,'credits_spent':spent},
                       open(os.path.join(DATA,'pricepull.json'),'w',encoding='utf-8'))
-            pulled=week
         elif rc==0: say('  nothing kicks off before the next pull; no credits spent')
     # 3b. the odds-API balance. /v4/sports does not count against the quota.
     rc,out=run([PY,'credits.py'],DATA,'credits',soft=True)
     say('  '+(out.strip().splitlines()[-1] if out.strip() else 'balance not checked'))
-    # 4. payload + bake
-    if not os.path.exists(os.path.join(RAW,'feat.pkl')):
-        say("  raw/feat.pkl missing: building features (a few minutes)"); run([PY,'features.py'],RES,'features')
-    rc,out=run([PY,'payload.py'],HERE,'payload')
-    for line in out.splitlines():
-        if line.startswith(('players','depth','build')): say('  '+line.strip())
-    if rc!=0: refuse('payload.py failed, so the rosters and schedule could not be rebuilt'); return finish(a)
-    try: bake(pp,prev,gs,week,season_over,now,pulled)
+    # 4. bake
+    try: bake(pp,prev,gs,week,season_over,now,raw,not_posted)
     except Exception as e:
         import traceback; traceback.print_exc()
         refuse(f"bake: {e}")
@@ -234,10 +345,14 @@ def main():
         problems.append('AUDIT NOT CLEAN: '+audit+'\n'+'\n'.join(l for l in out.splitlines() if l.strip().startswith(('FAIL','ERROR')))[:3000])
     return finish(a)
 
-def bake(pp,prev,gs,week,season_over,now,pulled=None):
+def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     pay=json.load(open(pp,encoding='utf-8'))
-    if pulled is not None: pay.setdefault('mkt_meta',{})[str(pulled)]={'src':'DraftKings via the-odds-api','asof':now.strftime('%Y-%m-%d')}
-    byid={g['id']:g for g in pay['sched']}
+    byid={g['id']:g for g in pay['sched']}      # this season's games: nothing of another season is baked
+    # a rollover: the published payload is last season's, so none of its lines, nor the dates
+    # they were priced, carry into this one (payload.py carries every key it does not rebuild)
+    if prev.get('season',SEASON)!=SEASON:
+        pay['mkt']={}; pay['mkt_meta']={}
+        say(f"  a new season: season {prev.get('season')}'s main lines are not carried into {SEASON}")
     started={gid for gid,g in byid.items() if (kickoff(g) or now)<=now}
     open_games={gid for gid,g in byid.items() if int(g['w'])==week and gid not in started}
     # DraftKings' moneylines, spreads and totals over nflverse's, but only while fresh: a snapshot
@@ -274,38 +389,14 @@ def bake(pp,prev,gs,week,season_over,now,pulled=None):
     for k,fn in (('price_pull','pricepull.json'),('credits','credits.json')):
         try: pay[k]=json.load(open(os.path.join(DATA,fn),encoding='utf-8'))
         except Exception: pass
-    # player stats: only games that games.csv shows as finished; a game in progress is never graded
-    finished={r['game_id'] for r in gs if r['home_score'].strip()}
-    srows=read_rows(STATS)
-    bad=check_shape(STATS,srows,['player_id','week','season','season_type','game_id','team','position'])
-    if bad: refuse(bad); return
-    stats={}; skipped_live=set()
-    for r in srows:
-        if r.get('season')!=str(SEASON) or r.get('season_type')!='REG': continue
-        if r.get('game_id') and r['game_id'] not in finished: skipped_live.add(r['game_id']); continue
-        if r.get('position','').upper() not in SKILL: continue
-        row={}
-        for c in STATCOLS:
-            v=r.get(c,'')
-            if c in ('player_id','player_display_name','position','season_type','team','opponent_team'): row[c]=v
-            else:
-                try: row[c]=float(v) if v!='' else 0
-                except ValueError: row[c]=0
-        stats.setdefault(str(int(float(r['week']))),[]).append(row)
-    # a bake must never hold fewer games of stats than the one already published: that is a
-    # failed or truncated download, not a quieter week, and publishing it wipes the season
-    if prev.get('season',SEASON)==SEASON and prev.get('stats'):
-        had={(w,r.get('team')) for w,rs in prev['stats'].items() for r in rs}
-        now_={(w,r.get('team')) for w,rs in stats.items() for r in rs}
-        lost=sorted(had-now_)
-        if lost: refuse(f"the stats would shrink: {len(lost)} team-games the published payload has are missing ({', '.join(f'wk{w} {t}' for w,t in lost[:6])}); the published payload stays"); return
+    # player stats: only games that games.csv shows as finished (read_raw); a game in progress is
+    # never graded, and a bake with fewer games than the published one was refused before the pull
+    srows,stats,skipped_live=raw['srows'],raw['stats'],raw['skipped_live']
     pay['stats']=stats
     # the injury report: this week's in full (every position: the Elo tab reads it too), and the
     # Outs and Doubtfuls of earlier weeks for the positions the page projects, so a past week is
     # graded on its own report and a player out last week is known this week
-    irows=read_rows(INJURIES)
-    bad=check_shape(INJURIES,irows,['season','week','gsis_id','team','report_status','practice_status'])
-    if bad: refuse(bad); return
+    irows=raw['irows']
     inj=[]; cur=0
     for r in irows:
         if r.get('season')!=str(SEASON) or (r.get('game_type') or r.get('season_type') or 'REG')!='REG': continue
@@ -321,9 +412,7 @@ def bake(pp,prev,gs,week,season_over,now,pulled=None):
     # every skill player's roster status and team, today's: the page takes players on a reserve
     # list or released off the board, practice-squad players off the starters, and puts a
     # player traded or signed elsewhere on his new team
-    rrows=read_rows(ROSTER)
-    bad=check_shape(ROSTER,rrows,['gsis_id','team','status','position','full_name'])
-    if bad or len(rrows)<1200 or len({r['team'] for r in rrows})<30: refuse(bad or f"{ROSTER} has {len(rrows)} rows over {len({r['team'] for r in rrows})} teams, not a whole league"); return
+    rrows=raw['rrows']
     # [team, status, name, the week the row is for, and the football name with the surname when it
     # differs]: INA (a game-day inactive) holds for that week only; the audit checks a book's name
     # against the name and the football name the way the matcher does
@@ -332,23 +421,50 @@ def bake(pp,prev,gs,week,season_over,now,pulled=None):
         fb=(r.get('football_name') or '').strip()
         if fb and fb!=(r.get('first_name') or '').strip(): e.append(f"{fb} {r.get('last_name') or ''}".strip())
         return e
-    pay['roster']={r['gsis_id']:entry(r) for r in rrows if r.get('gsis_id') and (r.get('position') or '').upper() in SKILL}
+    # a skill position on the roster, or any player the page can show (his stats, last season's
+    # table, the depth chart) whatever position the roster gives him: the page rules a player out
+    # as "on no roster" when the table lacks him, so it must not lack one who is on a roster
+    shown={r.get('player_id') for r in srows if (r.get('position') or '').upper() in SKILL}|{p['id'] for p in pay.get('players') or []}|set(pay.get('depth') or {})
+    pay['roster']={r['gsis_id']:entry(r) for r in rrows if r.get('gsis_id') and ((r.get('position') or '').upper() in SKILL or r['gsis_id'] in shown)}
     # every week's main lines, matched within their own game
     pool=names.Pool(rrows,[r for r in srows if r.get('season')==str(SEASON) and r.get('season_type')=='REG'],pay['sched'])
-    prices={}
+    # the week files as they are in data/, and the same rows of this season's games only: a row
+    # of another season's game (last season's files at a rollover) is never baked, whatever name
+    # it carries, and never re-homed onto this season's game of the same week
+    files={}; prices={}; foreign=0
     for fn in sorted(os.listdir(DATA)):
         m=re.match(r'prices_wk(\d+)\.csv$',fn)
-        if m: prices[m.group(1)]=names.read_csv(os.path.join(DATA,fn))
-    mkt=pay.get('mkt') or {}; nl=0
+        if not m: continue
+        files[m.group(1)]=names.read_csv(os.path.join(DATA,fn))
+        prices[m.group(1)]=[r for r in files[m.group(1)] if (r.get('game_id') or '').strip() in byid]
+        foreign+=len(files[m.group(1)])-len(prices[m.group(1)])
+    prices={w:rs for w,rs in prices.items() if rs}
+    mkt={w:v for w,v in (pay.get('mkt') or {}).items()}; nl=0
     for fn in sorted(os.listdir(DATA)):
         m=re.match(r'wk(\d+)_lines\.csv$',fn)
         if not m: continue
-        w=int(m.group(1))
-        out,probs,notes,how=mktbuild.build_week(w,names.read_csv(os.path.join(DATA,fn)),prices.get(str(w),[]),pool,open_games)
-        mkt[str(w)]=out; nl+=sum(len(v) for v in out.values())
+        w=int(m.group(1)); rows=names.read_csv(os.path.join(DATA,fn))
+        out,probs,notes,how=mktbuild.build_week(w,rows,files.get(str(w),[]),pool,open_games,set(byid))
+        foreign+=how.get('another season',0)
+        if out or str(w) in mkt: mkt[str(w)]=out
+        nl+=sum(len(v) for v in out.values())
         problems.extend(probs)
         if notes: say(f"  week {w} lines: {len(notes)} not placed on a played game ({'; '.join(notes[:3])}{'...' if len(notes)>3 else ''})")
+    # a week carried from the published payload keeps only its lines of this season's games
+    for w in list(mkt):
+        mkt[w]={pid:v for pid,v in ((pid,{st:L for st,L in sts.items() if not L.get('g') or L['g'] in byid}) for pid,sts in mkt[w].items()) if v}
+        if not mkt[w]: del mkt[w]
     pay['mkt']=mkt; pay['mkt_v']=2
+    if foreign: say(f"  not baked: {foreign} price and line rows of another season's games")
+    # when each week's book lines were priced: the latest pull of any of its games
+    try: priced=json.load(open(os.path.join(DATA,'priced_at.json'),encoding='utf-8'))
+    except Exception: priced={}
+    meta=pay.setdefault('mkt_meta',{})
+    for w,rows in prices.items():
+        at=[priced[g] for g in {r['game_id'] for r in rows} if g in priced]
+        if at: meta[w]={'src':'DraftKings via the-odds-api','asof':max(at)[:10]}
+    for w in list(meta):
+        if w not in mkt and w not in prices: del meta[w]
     # every price row with the player it belongs to, so the page matches by id, not by name
     unmatched=[]; npid=0
     for w,rows in prices.items():
@@ -360,6 +476,9 @@ def bake(pp,prev,gs,week,season_over,now,pulled=None):
     for u in sorted(set(unmatched)): problems.append('price row not placed on a player: '+u)
     pay['prices']=prices; pay['unmatched']=sorted(set(unmatched))
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over
+    # the files nflverse has not posted yet: the audit expects none of them in the payload, and the
+    # page says so rather than show an empty report as a quiet week
+    pay['not_posted']=[NOT_POSTED_KIND[n] for n in RAW_FILES if n in not_posted]
     pay['baked_at']=now.isoformat(timespec='minutes')   # UTC with offset, so the page shows the right local time
     json.dump(pay,open(pp,'w',encoding='utf-8'),separators=(',',':'),ensure_ascii=False)
     if skipped_live: say(f"  not baked (no final score yet): {', '.join(sorted(skipped_live))}")

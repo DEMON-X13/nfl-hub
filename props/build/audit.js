@@ -323,13 +323,16 @@ setTimeout(async()=>{
     const a=TR.filter(r=>r.pid===pid0&&r.kind==='rung').map(r=>[r.stat,r.k,+r.p.toFixed(4),r.hit]).sort();
     const b=TR2.filter(r=>r.pid===pid0&&r.kind==='rung').map(r=>[r.stat,r.k,+r.p.toFixed(4),r.hit]).sort();
     chk(JSON.stringify(a)===JSON.stringify(b),'old-style snapshot scores differently from a frozen one');
-    const priced=TR.filter(r=>r.ml!=null); chk(priced.length>0,'no priced lines in the track record (built-in main lines should carry prices)');
+    /* week 1 is graded on the fake file above; its main lines carry prices when the payload has
+       any for week 1 (before the season's first pull it has none, and that is no failure) */
+    const wk1Lines=Object.keys((w.eval('PAY').mkt||{})['1']||{}).length;
+    const priced=TR.filter(r=>r.ml!=null); chk(!wk1Lines||priced.length>0,'no priced lines in the track record (built-in main lines should carry prices)');
     chk(priced.every(r=>r.imp>0&&r.imp<1&&isFinite(F('mlToDec')(r.ml))),'priced line with a bad implied chance');
     chk(priced.every(r=>r.kind!=='main'||marketLine(1,r.pid,r.stat)),'main-line price without a market line');
     chk(!!d.getElementById('lineNote'),'line-freshness note element missing');
     F('renderTrack')(); const body=d.getElementById('trackBody');
-    chk(body.textContent.includes('Against the book'),'book table did not render');
-    chk(body&&body.querySelectorAll('table').length>=4,'track record tab did not render its tables');
+    chk(!priced.length||body.textContent.includes('Against the book'),'book table did not render');
+    chk(body&&body.querySelectorAll('table').length>=(priced.length?4:3),'track record tab did not render its tables');
     chk(d.getElementById('trackMarket').options.length>1,'market filter not populated');
     const kinds={}; for(const r of TR) kinds[r.kind]=(kinds[r.kind]||0)+1;
     console.log(`G3. track record: ${priced.length} priced; ${TR.length} graded lines (${Object.entries(kinds).map(([k,v])=>k+' '+v).join(', ')}), said ${(t.said*100).toFixed(1)}% happened ${(t.hit*100).toFixed(1)}%, ${stored} snapshots carry frozen rungs, ${faithful} rung chances all match the frozen projection`);
@@ -975,8 +978,13 @@ setTimeout(async()=>{
     try{ await (async()=>{
       const NEED=process.env.PROPS_AUDIT_RAW==='1', path=require('path'), SKILL=new Set(['QB','RB','WR','TE','K','FB','HB']);
       const PAY=w.eval('PAY');   /* the page's own: section I re-booted it, so the one read at the top is an older copy */
-      const SEASON=F('SEASON'), skipped=[];
+      const SEASON=F('SEASON'), skipped=[], notPosted=[];
+      /* the two files nflverse has no copy of before the season: weekly.py lists one it found not
+         posted yet (a 404, with none of it published this season) in PAY.not_posted, and then it
+         is not compared; V0b checks the payload holds none of it and the page says so */
+      const NP=new Set(PAY.not_posted||[]), KIND={[`pw_${SEASON}.csv`]:'stats',[`injuries_${SEASON}.csv`]:'injuries'};
       const raw=f=>{ if(!NEED){ skipped.push(f); return null; } const p=path.join(__dirname,'..','raw',f);
+        if(KIND[f]&&NP.has(KIND[f])){ notPosted.push(f); chk(!fs.existsSync(p),`raw/${f} is in the payload's not_posted, yet the job downloaded it`); return null; }
         if(!fs.existsSync(p)){ chk(false,`raw/${f} is missing: the job downloads it before the audit runs`); return null; }
         return Papa.parse(fs.readFileSync(p,'utf8'),{header:true,skipEmptyLines:true}).data; };
       const dataCsv=f=>{ const p=path.join(__dirname,'..','data',f); return fs.existsSync(p)?Papa.parse(fs.readFileSync(p,'utf8'),{header:true,skipEmptyLines:true}).data:null; };
@@ -996,7 +1004,7 @@ setTimeout(async()=>{
         return {name:(e&&e[2])||(r&&r.full_name)||(p&&p.n)||'', alias:(e&&e[4])||(r&&r.football_name&&r.football_name!==r.first_name?`${r.football_name} ${r.last_name}`:null)}; };
       const rstat=pid=>{ const e=R&&R[pid]; if(e) return {st:e[1],wk:+e[3]}; const r=rawRo[pid]; return r?{st:r.status,wk:+r.week}:null; };
       const cw=F('currentWeek')(), openG=SV.sched.filter(g=>+g.w===cw&&!F('gameStarted')(g));
-      const gOf=id=>SV.sched.find(g=>g.id===id);
+      const gOf=id=>SV.sched.find(g=>g.id===id), gamesInWeek=wk=>SV.sched.filter(g=>+g.w===+wk).map(g=>g.id);
 
       /* V0. one season, one week: the payload is for the page's SEASON and the schedule's week */
       { chk(PAY.season==null?!NEED:+PAY.season===SEASON,`the payload is for season ${PAY.season}, the page for ${SEASON}`);
@@ -1010,6 +1018,22 @@ setTimeout(async()=>{
           chk(pfin===fin,`the payload has ${pfin} final scores, the downloaded schedule ${fin}`); }
         console.log(`V0. season ${PAY.season} for a page built for ${SEASON}; week ${PAY.week} is the schedule's ${wk}${PAY.season_over?'; the season is over':''}`); }
 
+      /* V0b. a file not posted yet: only the stats or the injury report (nflverse has neither
+         before the season), the payload then holds none of it, and the slate says it is missing
+         rather than show an empty report as a week with nobody hurt */
+      { const np=[...NP];
+        chk(np.every(k=>k==='stats'||k==='injuries'),`not_posted lists ${np.join(', ')}: only the stats and the injury report can be not posted yet`);
+        if(NP.has('stats')) chk(!Object.values(PAY.stats||{}).some(r=>r&&r.length),'the stats are said to be not posted, yet the payload carries some');
+        if(NP.has('injuries')) chk(!(PAY.injuries||[]).length,'the injury report is said to be not posted, yet the payload carries rows');
+        const keep=PAY.not_posted, txt=()=>d.getElementById('gamesList').textContent, anyFinal=SV.sched.some(g=>F('gameFinal')(g));
+        try{ PAY.not_posted=['injuries','stats']; F('renderSlate')();
+          chk(/has not posted the \d{4} injury report yet/.test(txt()),'the slate does not say the injury report is not posted yet');
+          chk(/has not posted this season's player stats yet/.test(txt())===anyFinal,'the slate says the stats are not posted when no game is final, or does not say it once one is');
+          PAY.not_posted=[]; F('renderSlate')();
+          chk(!/has not posted/.test(txt()),'the slate says a file is not posted when the payload lists none'); }
+        finally{ PAY.not_posted=keep; F('renderSlate')(); }
+        console.log(`V0b. not posted yet: ${np.length?np.join(' and ')+', none of it in the payload, and the slate says so':'nothing; the slate says so only when the payload lists a file'}`); }
+
       /* V1. who is listed: nobody on a reserve list, released, retired or inactive this week; a
          practice-squad player starts only with a chart place or a game in the two weeks before */
       { let listed=0; const bad=[], dev=[];
@@ -1021,7 +1045,11 @@ setTimeout(async()=>{
         chk(!dev.length,`practice-squad players with no chart place and no recent game start: ${dev.slice(0,5).join('; ')}`);
         if(rRoster){ let diff=0, n=0;
           for(const r of rRoster){ if(!r.gsis_id||!SKILL.has(String(r.position).toUpperCase())) continue; n++; const e=R&&R[r.gsis_id]; if(!e||e[0]!==r.team||e[1]!==r.status) diff++; }
-          chk(diff===0,`${diff} of ${n} skill players' team or status in the payload differ from the downloaded roster`); }
+          chk(diff===0,`${diff} of ${n} skill players' team or status in the payload differ from the downloaded roster`);
+          /* the page rules a player out as "on no roster" when the payload's table lacks him, so it
+             must hold everyone the page has who is on a roster, whatever position the roster gives */
+          const lacks=Object.values(SV.players).filter(p=>rawRo[p.id]&&!(R&&R[p.id])).map(p=>`${p.n} (${rawRo[p.id].position})`);
+          chk(!lacks.length,`${lacks.length} players on the page and on the downloaded roster are not in the payload's roster table, so they read "on no roster": ${lacks.slice(0,4).join(', ')}`); }
         /* the rule on any week: a starter put on a reserve list leaves the page, and the same man on
            the practice squad with no chart place and no recent game is no starter */
         const g0=openG[0]||SV.sched[SV.sched.length-1], t0=g0.h, st=F('rosterFor')(g0,false)[t0].players.find(x=>x.starter&&x.pl.grp!=='K');
@@ -1055,9 +1083,10 @@ setTimeout(async()=>{
 
       /* V3. prices: every row the job placed on a player reaches the page, under that player, and a
          row on a game still to play that no player took is reported, never dropped quietly */
-      { let rows=0, expect=0, landed=0; const bad=[];
+      { let rows=0, expect=0, landed=0; const bad=[], foreign=[];
         const mk=F('marketKey');
         for(const wk in (PAY.prices||{})) for(const r of PAY.prices[wk]){ rows++; const g=gOf(r.game_id);
+          if(!g||+g.w!==+wk) foreign.push(`wk${wk} ${r.player} (${r.game_id})`);
           if(r.pid){ const p=who(r.pid); if(!nameRule(r.player,p.name,p.alias)) bad.push(`${r.player} placed on ${p.name||r.pid}`);
             const o=parseFloat(r.odds), k=parseFloat(r.threshold), m=mk(r.market);
             if(g&&m&&isFinite(o)&&o!==0&&isFinite(k)){ expect++; const v=SV.odds[g.id]&&SV.odds[g.id][r.pid]&&SV.odds[g.id][r.pid][m]; if(v&&v[String(k)]!=null) landed++; } }
@@ -1065,7 +1094,15 @@ setTimeout(async()=>{
             bad.push(`${r.player} (${r.game_id}) is on no player and not reported`); }
         chk(!bad.length,`price rows: ${bad.length} wrong or unreported (${bad.slice(0,4).join('; ')})`);
         chk(landed===expect,`${expect-landed} of ${expect} price rows placed on a player never reached the page`);
-        console.log(`V3. prices: ${rows} rows, ${expect} placed on a player and all ${landed} on the page`); }
+        chk(!foreign.length,`${foreign.length} price rows are for a game not in their week of this season's schedule (${foreign.slice(0,4).join('; ')}): last season's files at a rollover?`);
+        /* the rule on any week: a row naming a game the week does not have (last season's game of
+           the same week, at a rollover) is dropped, never matched by name onto this week's game */
+        const g=openG[0]||SV.sched.find(x=>+x.w===cw), x=g&&Object.values(F('rosterFor')(g,true)).flatMap(t=>t.players).find(x=>x.pl.grp!=='K');
+        if(x){ const other=g.id.replace(/^\d{4}/,String(SEASON-1)), wk=+g.w;
+          try{ F('ingestOdds')([{game_id:other,player:x.pl.n,market:'receptions',threshold:'3',odds:'-150'},{game_id:other,player:x.pl.n,pid:x.pl.id,market:'receptions',threshold:'4',odds:'+150'}],wk);
+            chk(!Object.keys(SV.odds).some(id=>gamesInWeek(wk).includes(id)&&SV.odds[id]&&SV.odds[id][x.pl.id]),`a price row for ${other} was put on this season's ${g.id}`); }
+          finally{ F('ingestOdds')((PAY.prices||{})[String(wk)]||[],wk); } }
+        console.log(`V3. prices: ${rows} rows, all of this season's games, ${expect} placed on a player and all ${landed} on the page; a row for another season's game is not shown`); }
 
       /* V4. a ruled-out player is never "not enough games played", and the man the chart moves up
          starts however few games he has */
@@ -1116,8 +1153,11 @@ setTimeout(async()=>{
         const g2=SV.sched.find(g=>+g.w>=2&&F('prevTeamWeek')(g.h,+g.w)!=null);
         if(g2){ const T=g2.h, W=+g2.w, PW=F('prevTeamWeek')(T,W), row=(id,wk,st,pr)=>({season:SEASON,week:wk,gsis_id:id,team:T,report_status:st||'',practice_status:pr||'',injury:'Knee'});
           const ii=F('ingestInjuries'), inact=()=>w.eval('S').inactive, tag=id=>(w.eval('INJ')[id]||{}).k||null, sug=F('suggestable');
-          const base=[row('V1',PW,'Out'),row('V2',PW,'Out'),row('V3',PW,'Out')];
-          ii(base,W); chk(['V1','V2','V3'].every(id=>inact()[id]&&inact()[id].status==='Pending'),'out last game with no report yet is not pending');
+          const base=[row('V1',PW,'Out'),row('V2',PW,'Out'),row('V3',PW,'Out'),row('V8',PW,'Doubtful'),row('V10',PW,'Doubtful')];
+          const A=(SV.actuals[String(PW)]??={}); A.V8={team:T,receptions:2};   /* V8 was listed doubtful, and played */
+          try{ ii(base,W); }finally{ delete A.V8; }
+          chk(['V1','V2','V3','V10'].every(id=>inact()[id]&&inact()[id].status==='Pending'),'out or doubtful last game with no report yet is not pending');
+          chk(!inact().V8,'a player listed doubtful last game who has a stat line in it is held out as pending');
           chk(/^ruled out until his status is filed/.test(F('inactiveWhy')(inact().V1)),'a pending player does not read "ruled out until his status is filed"');
           /* filed, no game statuses yet (a Wednesday or Thursday report) */
           const filed=[...base,row('V2',W,'','Did Not Participate In Practice'),row('V3',W,'','Limited Participation in Practice'),
@@ -1183,14 +1223,15 @@ setTimeout(async()=>{
          stats (or, by hand, every game final four days before the bake) */
       { const have=new Set(); for(const wk in (PAY.stats||{})) for(const r of PAY.stats[wk]) have.add(String(+wk)+'|'+r.team);
         let lost=[];
-        if(rStats){ const fin=new Set(PAY.sched.filter(g=>g.hs!=null).map(g=>g.id)), l=new Set();
+        if(NP.has('stats')){ /* not posted yet: V0b holds the payload to none, and weekly.py reports a stats file still missing two days after the first game */ }
+        else if(rStats){ const fin=new Set(PAY.sched.filter(g=>g.hs!=null).map(g=>g.id)), l=new Set();
           for(const r of rStats){ if(+r.season!==SEASON||r.season_type!=='REG'||!fin.has(r.game_id)||!SKILL.has(String(r.position).toUpperCase())) continue;
             if(!have.has(String(+r.week)+'|'+r.team)) l.add(`${r.game_id} ${r.team}`); }
           lost=[...l]; }
         else { const bk=Date.parse(PAY.baked_at||'');
           lost=PAY.sched.filter(g=>{ const k=F('kickoff')(g); return g.hs!=null&&isFinite(bk)&&k&&bk-k.getTime()>4*864e5&&!have.has(g.w+'|'+g.a)&&!have.has(g.w+'|'+g.h); }).map(g=>g.id); }
         chk(!lost.length,`${lost.length} finished team-games have no stats in the payload (${lost.slice(0,4).join(', ')})`);
-        console.log(`V10. completeness: ${have.size} team-games of stats, none missing ${rStats?'against the downloaded file':'among games final four days before the bake'}`); }
+        console.log(`V10. completeness: ${have.size} team-games of stats, ${NP.has('stats')?'the stats file is not posted yet':'none missing '+(rStats?'against the downloaded file':'among games final four days before the bake')}`); }
 
       /* V11. the end of the regular season is said, not left on week 18 */
       { const keep=SV.sched.map(g=>[g.hs,g.as]); SV.sched.forEach(g=>{ if(g.hs==null){ g.hs=20; g.as=17; } });
@@ -1240,6 +1281,7 @@ setTimeout(async()=>{
         console.log(`V14. tags: ${did?'Q on the game page, ruled out in the builder with what a book does':'no game to show them on'}`); }
 
       if(skipped.length) console.log(`V. raw files not compared (PROPS_AUDIT_RAW is not set; weekly.py sets it): ${skipped.join(', ')}`);
+      if(notPosted.length) console.log(`V. raw files not compared because nflverse has not posted them yet: ${notPosted.join(', ')}`);
     })(); }catch(e){ chk(false,'section V threw: '+(e&&e.stack||e)); }
 
     console.log(`\n${checks} checks, ${fails.length} failures, ${errs.length} runtime errors`);

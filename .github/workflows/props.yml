@@ -7,7 +7,7 @@ on:
     # October 2026: props median 7.2h, a catch-up 9.2h), so each pull prices every game that
     # kicks off before the next slot plus 10 hours (LATE in weekly.py): no game is left to a
     # pull that lands after its kickoff. A game that has kicked off is never priced, and one
-    # priced in the last four hours is not bought again. About 7 credits a game, ~112 a week;
+    # priced in the last twelve hours is not bought again. About 7 credits a game, ~112 a week;
     # a pull with no game to price spends nothing. Never on the hour: :00 is the minute most
     # likely to be dropped under load.
     - cron: "17 8 * * 1"    # Monday (lands ~noon-5pm UTC): Monday night
@@ -66,6 +66,7 @@ jobs:
       - run: npm ci
         working-directory: props/build
       - name: Weekly refresh (downloads, prices, bake, assemble, audit)
+        id: weekly
         working-directory: props/build
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -78,8 +79,10 @@ jobs:
         # kicked off, so it spends nothing in a week where every pull ran. A manual run with
         # no_odds ticked spends nothing at all.
         # weekly.py exits 1 when it refuses the run: a required nflverse download failed or came
-        # back wrong, the stats would cover fewer games than the published payload, or the audit
-        # is not clean. Then the commit step below is skipped and the last good data stays live.
+        # back wrong, the stats would cover fewer games than the published payload (both checked
+        # before any credit is spent), or the audit is not clean. Then the commit step below is
+        # skipped and the last good data stays live; the step after it keeps any prices the
+        # refused run bought, without publishing them.
         run: python weekly.py --no-commit ${{ inputs.no_odds && '--no-odds' || (startsWith(github.event.schedule, '7 ') && '--catch-up' || '') }}
       - name: Commit if anything changed
         run: |
@@ -90,6 +93,27 @@ jobs:
             git commit -m "props: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:
             # retry the pull-and-push, and fail honestly if all three attempts lose
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
+          fi
+      - name: Keep the prices a refused run bought (nothing is published)
+        # The page reads payload.json alone, and a refused run never commits it (weekly.py has put
+        # the published one back; the checkout below makes sure). The price files and
+        # priced_at.json are the job's inputs: kept, the next run bakes them and does not buy
+        # the same games again, where dropping them would throw the credits away.
+        if: failure() && steps.weekly.outcome == 'failure'
+        run: |
+          git checkout -- props/data/payload.json
+          git add props/data
+          git reset -q -- props/data/payload.json
+          if git diff --cached --quiet; then echo "the refused run bought nothing"; else
+            git config user.name "nfl-hub bot"
+            git config user.email "bot@users.noreply.github.com"
+            git commit -m "props: prices kept from a refused run $(date -u +'%Y-%m-%d %H:%M UTC') (nothing published)"
             ok=0
             for i in 1 2 3; do
               if git pull --rebase && git push; then ok=1; break; fi

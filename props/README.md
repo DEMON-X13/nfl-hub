@@ -152,7 +152,10 @@ in `ODDS_API_KEY` it writes `wk{W}_lines.csv` (each line with its game), `prices
 spreads and totals, stamped with the time of the pull), and `weekly.py` bakes them into the
 payload; the main lines come from the base markets (with `--full` the alternate ladders
 come too, Over prices only). A game that has kicked off is never priced, in any mode, and a
-game priced in the last four hours is not bought again (`priced_at.json`; `--force` to).
+game priced in the last twelve hours is not bought again (`priced_at.json`; `--force` to), so
+two pulls the same day whose windows overlap, or a manual pull and the scheduled one that lands
+after it, do not buy one game twice; a day apart (Thanksgiving's early game, by the Wednesday
+and Thursday pulls) the fresher prices are bought.
 `--events` lists the slate for free. The free tier is 500 credits a MONTH, about 115 a
 week. The default pull is 6 markets a game (the main lines for passing, rushing and
 receiving yards, receptions and passing TDs, plus anytime TD; the alternate ladders were
@@ -213,6 +216,11 @@ for `weekly.py`, `payload.py` and `mktbuild.py` (the baselines are the season be
 files are named after it (`pw_<season>.csv`, `roster_<season>.csv`, `injuries_<season>.csv`,
 `depth_charts_<season>.csv`), the payload carries it and the audit checks the two agree.
 Kickoffs are turned into instants by the US daylight-time rule for each game's own year.
+The data/ week files are named by week alone, so at a rollover `weekly.py` moves last
+season's (`wk*_lines.csv`, `prices_wk*.csv`, `gamelines_wk*.csv`, every game id another
+season's) to `data/archive/<season>/` before the new season's first pull, bakes only rows of
+this season's games wherever they are, and carries none of a last-season payload's lines
+forward; the page drops a price row that names a game its week does not have.
 Once every regular-season game is final the page says the season is over and the job stops
 pulling prices: playoff games are neither projected nor priced.
 
@@ -221,8 +229,22 @@ fall back on. The schedule, the player stats, the roster and the injury report a
 if one fails or comes back wrong, `weekly.py` exits 1 before the workflow's commit step, so
 nothing is published and the last good payload stays live (the run goes red and says why).
 A bake whose stats would cover fewer team-games than the published payload's is refused the
-same way. The depth charts are the one optional file: the last payload's are carried forward,
-the run goes red, and the game page says how old the chart is.
+same way. These are all checked before the price pull, so a refused run spends nothing on
+prices; one refused later (the audit) has the prices it bought kept by the workflow, which
+commits the price files but never `payload.json`. The depth charts are the one optional file:
+the last payload's are carried forward, the run goes red (before the season's first kickoff,
+while last season's chart is all there is, it does not), and the game page says how old the
+chart is.
+
+**Before nflverse posts a file.** The stats file cannot exist before the season's first game
+is processed, and the injury file before the first report. A 404 on either is judged by what
+has been published: with none of this season's yet it is a file not posted, so the run
+publishes without it (prices, schedule and roster still move), the payload lists it in
+`not_posted`, the slate says "nflverse has not posted the 2026 injury report yet", and the
+audit checks the payload holds none of it instead of comparing the file. Once that is overdue
+(the injury report after the first kickoff, the stats two days after the first game) the run
+goes red after its commit. A 404 on a file the site has already published from is a source
+that vanished, and is refused like any failed download.
 
 **Who is playing** (`patch_who_plays.py`). The page takes the roster's status for every
 skill player from the payload (`roster`): a reserve list, a release or a retirement takes a
@@ -231,7 +253,8 @@ two weeks before; every player is on the team the roster says. From the injury r
 and Doubtful are ruled out; Questionable is shown with a Q and kept out of every suggested
 parlay (`SUGGEST_QUESTIONABLE`); Questionable without practice is ruled out; a player out in
 his team's last game with no status yet is "pending" and treated as out until a status
-clears him (his team has filed nothing, or he did not practise); did not practise with no
+clears him (his team has filed nothing, or he did not practise) and his stat line does not
+show he played after all (a Doubtful who played is not pending); did not practise with no
 status yet is tagged and kept out of the suggestions; limited practice is tagged. A team
 whose report carries a game status has filed its final report, so a player it lists with
 none is cleared. A ruled-out starter's note says why, and the charted player he leaves the

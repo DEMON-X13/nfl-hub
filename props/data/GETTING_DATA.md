@@ -26,7 +26,9 @@ a guess: the old league-wide surname-and-initial fallback put Tampa's Jalon Dani
 Washington's Jayden Daniels. Each line keeps the book's name and game (`n`, `g`) beside the
 price, and the audit checks them. Files from before the lines carried their game (weeks 1-5
 of 2026) find it in the same week's prices file. `mkt_meta` in `payload.json` records each
-week's source.
+week's source and the date of its latest pull (`priced_at.json`). The files are named by week
+alone; only rows of this season's games are baked, and at a rollover `weekly.py` moves last
+season's files to `archive/<season>/`.
 
 Week 1 was the best price across the US books, which is fine for spotting
 disagreement and wrong for parlay pricing, since you cannot combine legs across

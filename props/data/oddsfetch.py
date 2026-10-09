@@ -15,7 +15,11 @@ Usage (never put the key on the command line; the shell history would keep it):
                        GitHub dropped costs a game its prices only until the next run of the job
 A game that has kicked off is never priced, in any mode: an in-play price is not a pre-game line.
 A game priced less than REPRICE_HOURS ago is skipped too (--force prices it anyway), so a manual
-pull followed by the scheduled one GitHub delivered hours late does not buy the same game twice.
+pull followed by the scheduled one GitHub delivered hours late does not buy the same game twice,
+nor do two pulls the same day whose windows overlap (each prices up to the next slot plus the
+lateness allowance, so Saturday morning's pull reaches Saturday night's game, and Saturday
+evening's would buy it again if it landed on time). A day apart, as the Wednesday and Thursday
+pulls are for Thanksgiving's early game, the second pull's fresher prices are worth the credits.
 Outputs (in data/), MERGED into existing files for the week so a Thursday pull and a Saturday
 pull add up; a game pulled twice keeps the newer prices:
     wk{W}_lines.csv    game_id,stat,player,line,over,under   main lines: the point where over and
@@ -79,7 +83,7 @@ def get(path,params,key):
         if left is not None: print(f"   credits used {used}, remaining {left}",file=sys.stderr)
         return data
 
-REPRICE_HOURS=4   # a game priced this recently is not bought again unless --force says so
+REPRICE_HOURS=12  # a game priced this recently is not bought again unless --force says so
 GAMELINE_COLS=['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds','total_line','pulled_at']
 def game_lines(key,book,regions,ids,now=None):
     """Moneylines, spreads and totals for the whole slate in one call. The bulk /odds endpoint
