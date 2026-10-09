@@ -5,7 +5,9 @@ published before. Run after the build and before the commit; any failure exits 1
 commits nothing, so the last good files stay live.
 
     python3 elo/check.py                      # elo/data against elo/cache, the last commit's files as "before"
-    python3 elo/check.py --data D --cache C --prev P --history H    (tests: another build's output)
+    python3 elo/check.py --data D --cache C --prev P --history H    (tests: another build's output;
+                                              P is a players.json, read with the model.json and
+                                              calls.json beside it as the last publish)
 
 Every check is an invariant of the data, never this week's particulars: a bye week, a lean
 Monday, week 1, a week whose injury report is not filed yet, or a game already played must
@@ -13,7 +15,8 @@ all pass. What each one would have caught is said beside it.
 
   ROSTER     a player on his club's current roster (its own latest week: a club on its bye has
              no rows for the bye week) is not a free agent; every club keeps its players in the
-             players map; no club has more than a handful of free agents among the sidelined.
+             players map; in season, no club has more than a handful of free agents among the
+             sidelined (in the offseason they are real).
              (Mahomes, Kelce and Bryce Young were "free agents" every bye week.)
   REPORT     nobody the report has Out or Doubtful for his club's next game is in that game's
              expected lineup or projected; nor, before the club files its statuses, anybody Out
@@ -24,11 +27,16 @@ all pass. What each one would have caught is said beside it.
              one with a final game; nothing is projected for a game that had kicked off when the
              files were built. (One Thursday game made it "week 5" and raised the games bar.)
   CARRY      a top-ten player of the last published rankings (same season, same formula) is
-             still ranked or listed as sidelined unless his club has played since. (The #1 tight
-             end and four top-15 quarterbacks vanished on a Friday with no note.)
-  RECORD     every graded call is the one in the ledger, and every call published before kickoff
-             in the history is graded as published; a call in the ledger marked published was
-             made before its kickoff. (2026_03_SEA_WAS was shown as WAS and graded as SEA.)
+             still ranked or listed as sidelined unless his club has played since, or has had a
+             game rated since (nflverse's player stats come in a night after the score, so a
+             Sunday game a Sunday build saw final is rated on Tuesday), or he changed clubs. (The
+             #1 tight end and four top-15 quarterbacks vanished on a Friday with no note.)
+  RECORD     every graded call is the one in the ledger; every call in the history is graded as
+             it stands there (its pick and whether it was published or a backtest) unless the
+             ledger has a later call that was itself published before kickoff; every call the
+             last publish had for a game this build could no longer call is kept as it was; a
+             call in the ledger marked published was made before its kickoff. (2026_03_SEA_WAS
+             was shown as WAS and graded as SEA; a build that regrades the season must fail.)
   SOURCES    the season's injury report, roster and team stats are present; Total Offense and
              Total Defense are not all 1500 once games are rated; no group is empty.
   UNITS      the build's own functions on fixtures: two equal teams at a neutral site are 50/50;
@@ -60,12 +68,15 @@ def load_json(path):
         return json.load(f)
 
 
-def prev_players(arg):
-    """the rankings as last published: the file given, else the last commit's"""
-    if arg:
-        return load_json(arg) if os.path.exists(arg) else None
+def published(name, prev_arg):
+    """elo/data/<name> as last published: beside the players.json given with --prev (tests), else
+    the last commit's (in the job, HEAD is what the site serves until this run commits). None
+    when there is none: the first run after a file is added has nothing to hold it against."""
+    if prev_arg:
+        p = prev_arg if name == 'players.json' else os.path.join(os.path.dirname(os.path.abspath(prev_arg)), name)
+        return load_json(p) if os.path.exists(p) else None
     try:
-        out = subprocess.run(['git', '-C', ROOT, 'show', 'HEAD:elo/data/players.json'], capture_output=True, text=True, check=True).stdout
+        out = subprocess.run(['git', '-C', ROOT, 'show', f'HEAD:elo/data/{name}'], capture_output=True, text=True, check=True).stdout
         return json.loads(out)
     except (subprocess.CalledProcessError, ValueError, OSError):
         return None
@@ -237,7 +248,10 @@ def main():
                         chk(False, f'ROSTER: {x["name"]} is on {t_st[0]}\'s current roster ({t_st[1]}) but called a free agent')
                     fa_by_club[x['team']] = fa_by_club.get(x['team'], 0) + 1
         worst = max(fa_by_club.items(), key=lambda kv: kv[1], default=(None, 0))
-        chk(worst[1] <= 4, f'ROSTER: {worst[1]} of {worst[0]}\'s players are listed as free agents: the club\'s roster was not read')
+        # (in season only: from the Super Bowl to the new season's rankings, last season's
+        # players really do leave their clubs in numbers, and are free agents until they sign)
+        if P.get('phase', 'regular') in ('regular', 'postseason'):
+            chk(worst[1] <= 4, f'ROSTER: {worst[1]} of {worst[0]}\'s players are listed as free agents: the club\'s roster was not read')
         ir = {pid for pid, (t, st) in current.items() if st == 'RES'}
         for g in groups:
             bad = [r['name'] for r in P['groups'][g]['top'] if r['id'] in ir]
@@ -285,20 +299,29 @@ def main():
             chk(not bad, f'REPORT: {t} week {w}: expected to start though out, or out last week and not practising: {[nm.get(p, p) for p in bad]}')
 
     # ---- CARRY ----
-    prev = prev_players(a.prev)
+    prev = published('players.json', a.prev)
+    prev_model = published('model.json', a.prev)
     if prev and prev.get('season') == P.get('season') and prev.get('formula') == P.get('formula') and prev.get('built_at') != P.get('built_at'):
         pb = datetime.datetime.fromisoformat(prev['built_at'])
         since = games[(games.kick > pb - datetime.timedelta(hours=4)) & (games.kick <= built)]
         moved = set(since.home_team) | set(since.away_team)
+        # a club whose game was rated by this build and not by the last: its games played, and
+        # so the rankings' bar (half of them), can move although it kicked off long before the
+        # last publish, because nflverse's player stats land a night after the score
+        rated_before = {c['game_id'] for c in ((prev_model or {}).get('graded') or [])}
+        for gid in {c['game_id'] for c in (M.get('graded') or [])} - rated_before:
+            r = games[games.game_id == gid]
+            if len(r):
+                moved |= {r.home_team.iloc[0], r.away_team.iloc[0]}
         for g in groups:
             now_ids = {r['id'] for r in P['groups'][g]['top']} | {x['id'] for x in P['groups'][g]['sidelined']}
             for r in prev['groups'][g]['top'][:10]:
                 if r['id'] in now_ids:
                     continue
                 club = (players.get(r['id']) or {}).get('team') or r['team']
-                chk(club in moved or r['team'] in moved,
-                    f'CARRY: {r["name"]} ({r["team"]}) was #{r["rank"]} at {g} and is neither ranked nor sidelined now, though his club has not played since')
-    elif prev:
+                chk(club in moved or r['team'] in moved or club != r['team'],
+                    f'CARRY: {r["name"]} ({r["team"]}) was #{r["rank"]} at {g} and is neither ranked nor sidelined now, though his club has not played or had a game rated since')
+    elif prev and prev.get('built_at') != P.get('built_at'):
         notes.append('the last published rankings are of another season or formula: the carry check is skipped once')
 
     # ---- RECORD ----
@@ -306,20 +329,49 @@ def main():
     chk(L is not None, 'RECORD: no calls.json: the record is not graded on calls frozen at kickoff')
     ledger = (L or {}).get('calls', {})
     kick = dict(zip(games.game_id, games.kick))
+    lead = datetime.timedelta(minutes=build.CALL_LEAD)
+    at = lambda e: datetime.datetime.fromisoformat(e['at'])
+    # a call that counts as published before its game: marked so, and made CALL_LEAD before kickoff
+    in_time = lambda gid, e: bool(e) and e.get('src') == 'published' and gid in kick and at(e) <= kick[gid] - lead
     for c in graded:
         e = ledger.get(c['game_id'])
-        if e is None or e['pick'] != c['pick']:
-            chk(False, f'RECORD: {c["game_id"]} is graded as {c["pick"]} but the ledger has {e and e["pick"]}')
+        if e is None or e['pick'] != c['pick'] or e.get('src') != c.get('src'):
+            chk(False, f'RECORD: {c["game_id"]} is graded as {c["pick"]} ({c.get("src")}) but the ledger has {e and e["pick"]} ({e and e.get("src")})')
             break
     hist_path = os.path.join(a.history, f'calls_{season}.json')
     hist = (load_json(hist_path).get('calls', {}) if os.path.exists(hist_path) else {})
     byid = {c['game_id']: c for c in graded}
-    # (a later call, still before kickoff, supersedes the history's: the ledger then has a later time)
-    wrong = [gid for gid, e in hist.items() if e['src'] == 'published' and gid in byid and byid[gid]['pick'] != e['pick']
-             and (ledger.get(gid) or {}).get('at', '') <= e['at']]
-    chk(not wrong, f'RECORD: graded against a pick other than the one published before kickoff: {wrong[:5]}')
-    late = [gid for gid, e in ledger.items() if e.get('src') == 'published' and gid in kick
-            and datetime.datetime.fromisoformat(e['at']) > kick[gid] - datetime.timedelta(minutes=build.CALL_LEAD)]
+    # the history is what was published before the ledger began, and the record grades it as it
+    # stands there. Only a later call that was itself published before kickoff supersedes it: a
+    # call recomputed after the game (a build that regrades the season writes those with today's
+    # time) never does
+    wrong = []
+    for gid, e in hist.items():
+        if gid not in byid:
+            continue
+        cur = ledger.get(gid)
+        want = cur if in_time(gid, cur) and at(cur) > at(e) else e
+        if byid[gid]['pick'] != want['pick'] or byid[gid].get('src') != want['src']:
+            wrong.append(gid)
+    chk(not wrong, f'RECORD: graded other than as published (or as first called, for a backtest): {sorted(wrong)[:6]}{" ..." if len(wrong) > 6 else ""} of {len(wrong)}')
+    # the ledger against the last publish's: a game this build could not call again (kicked off,
+    # or within CALL_LEAD of it, when built) keeps the call the last publish had for it, its pick
+    # and its src; only a game still to come may be called afresh. (Skipped the first time, when
+    # the last publish has no calls.json.)
+    prev_calls = published('calls.json', a.prev)
+    if prev_calls and isinstance(prev_calls.get('calls'), dict):
+        keep_from = int((L or {}).get('season', season)) - 1        # the ledger keeps this season and the one before
+        moved_calls = []
+        for gid, e in prev_calls['calls'].items():
+            if gid not in kick or int(gid[:4]) < keep_from or kick[gid] > built + lead:
+                continue
+            cur = ledger.get(gid)
+            if cur is None or cur['pick'] != e['pick'] or cur.get('src') != e.get('src'):
+                moved_calls.append(gid)
+        chk(not moved_calls, f'RECORD: calls the last publish had frozen were changed or dropped: {sorted(moved_calls)[:6]}{" ..." if len(moved_calls) > 6 else ""} of {len(moved_calls)}')
+    elif L is not None:
+        notes.append('the last publish has no calls.json: the ledger is not held against it this once')
+    late = [gid for gid, e in ledger.items() if e.get('src') == 'published' and gid in kick and not in_time(gid, e)]
     chk(not late, f'RECORD: calls marked published that were made at or after kickoff: {late[:5]}')
     for c in graded:
         if 'src' not in c:

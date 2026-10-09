@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The ELO Model's calls as they were published, recovered from the history of elo/data/model.json.
 
-    python3 elo/tools/seed_calls.py 2026      # writes elo/history/calls_2026.json
+    python3 elo/tools/seed_calls.py 2026              # writes elo/history/calls_2026.json
+    python3 elo/tools/seed_calls.py 2026 origin/main  # from another ref's history (default HEAD)
 
 Until 2026-10-09 the build regraded the whole season on every run, on whatever formula and tie
 order it had that day, so the Pick'em Record graded calls nobody had seen before kickoff
@@ -17,6 +18,10 @@ changed model.json is read in order, its commit time taken as the time it went l
     was first published with, src "backtest": pre-game ratings, but made after the game.
 
 It is run once per season to seed the ledger; the build reads the file and never changes it.
+Run it again (on main, or with main as the ref) if the job published with the old build after the
+file was written: a call published only in such a commit, for a game since kicked off, is
+otherwise not in the ledger and would be graded as a backtest. (The model.json the job finds
+live is read by the build too, so only a commit before the latest one can be missed.)
 """
 import datetime, json, os, subprocess, sys
 
@@ -35,10 +40,11 @@ def git(*args):
 
 def main():
     season = int(sys.argv[1]) if len(sys.argv) > 1 else 2026
+    ref = sys.argv[2] if len(sys.argv) > 2 else 'HEAD'
     games = pd.read_csv(os.path.join(ELO, 'cache', 'games.csv'), low_memory=False)
     games = games[games.season == season]
     kick = {g: kickoff(d, t) for g, d, t in zip(games.game_id, games.gameday, games.gametime)}
-    log = [line.split(' ', 1) for line in git('log', '--reverse', '--format=%H %cI', '--', 'elo/data/model.json').split('\n') if line]
+    log = [line.split(' ', 1) for line in git('log', '--reverse', '--format=%H %cI', ref, '--', 'elo/data/model.json').split('\n') if line]
     published, backtest = {}, {}
     for sha, when in log:
         at = datetime.datetime.fromisoformat(when).astimezone(datetime.timezone.utc)

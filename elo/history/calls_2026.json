@@ -453,99 +453,99 @@
   "2026_05_BAL_ATL": {
    "pick": "BAL",
    "p_home": 0.3667,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_BUF_LA": {
    "pick": "LA",
    "p_home": 0.5087,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_CHI_GB": {
    "pick": "GB",
    "p_home": 0.5754,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_CIN_MIA": {
    "pick": "CIN",
    "p_home": 0.3367,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_CLE_NYJ": {
    "pick": "NYJ",
    "p_home": 0.5237,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_DEN_LAC": {
    "pick": "DEN",
    "p_home": 0.4609,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_DET_ARI": {
    "pick": "DET",
    "p_home": 0.2822,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_HOU_TEN": {
    "pick": "HOU",
    "p_home": 0.2854,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_IND_PIT": {
    "pick": "PIT",
    "p_home": 0.5522,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_LV_NE": {
    "pick": "NE",
    "p_home": 0.5892,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_MIN_NO": {
    "pick": "NO",
    "p_home": 0.5031,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_NYG_WAS": {
    "pick": "WAS",
    "p_home": 0.7049,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_PHI_JAX": {
    "pick": "JAX",
    "p_home": 0.6637,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_SF_SEA": {
    "pick": "SF",
    "p_home": 0.484,
-   "at": "2026-10-08T19:03+00:00",
-   "commit": "15e740c",
+   "at": "2026-10-09T19:01+00:00",
+   "commit": "7b7c256",
    "src": "published"
   },
   "2026_05_TB_DAL": {

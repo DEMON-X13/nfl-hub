@@ -1453,7 +1453,10 @@ def main():
         if nxt:
             wr = reg[reg.week == nxt[0]]
             partial = {'week': nxt[0], 'played': int(wr.game_id.isin(rated).sum()), 'games': int(len(wr))}
-        label = f'through week {tw}' + (f", and {partial['played']} of {partial['games']} week-{partial['week']} games" if partial else '')
+        if partial and not tw:      # week 1 under way: there is no "week 0" to be through
+            label = f"{partial['played']} of {partial['games']} week-{partial['week']} games"
+        else:
+            label = f'through week {tw}' + (f", and {partial['played']} of {partial['games']} week-{partial['week']} games" if partial else '')
         return tw, label, partial
     tw, tlabel, partial = through(rank_season)
     out = {

@@ -91,12 +91,15 @@ elo/
                                  player stats into cache/ (gitignored) and writes data/; exits 1
                                  and writes nothing when a required source cannot be had
   check.py                       the gate: data/ against the roster, the injury report, the
-                                 schedule and the published calls, plus the build's functions
-                                 on fixtures; the job runs it before committing
+                                 schedule and what was published (the last commit's data/
+                                 and history/: the top ten carried, frozen calls kept), plus
+                                 the build's functions on fixtures; the job runs it before
+                                 committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree
   tools/seed_calls.py            recovers the calls published before the ledger began, from
-                                 the commits that changed data/model.json, into history/
+                                 the commits that changed data/model.json (HEAD's history, or
+                                 a ref given), into history/
   history/calls_<season>.json    source: those calls (the ledger's start); never regenerated
   data/players.json              generated: the rankings by position (this season's rating,
                                  the bell curve, who is sidelined and why, a Q for questionable)

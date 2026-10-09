@@ -127,7 +127,12 @@ charts, injury report, roster, team stats) or any past season's cannot be downlo
 last good files stay live. The season comes from games.csv alone (a new schedule becomes the season in
 play once its first game is 36 hours old; until then the finished season stays, and its week 1 is called
 in the fortnight before; the rankings switch once 16 clubs have a rated game); the playoffs are rated as
-they come and `phase` says regular, postseason, over or opening.
+they come and `phase` says regular, postseason, over or opening. `elo/check.py` holds the new files against
+their sources and against the last publish (the last commit's `elo/data`, which the site serves until the run
+commits): a top-ten player of the published rankings is still ranked or sidelined unless his club has played, had a
+game rated (the player stats land a night after the score) or he changed clubs; every call the published ledger had
+for a game this run can no longer call keeps its pick and its `src`; and a call in `elo/history/` is graded as it
+stands there unless a later call, itself published before kickoff, replaced it.
 
 The rankings are of this season alone: each player's second rating (`RS` in the build) starts
 the season at 1500 with placement games (K 160 shrinking toward 32, Glicko's idea) and moves only on this season's games;
