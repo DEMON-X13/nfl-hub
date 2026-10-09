@@ -148,7 +148,7 @@ LIVE_JS = sub1(LIVE_JS, /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringi
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
 lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
-for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'LIVE_IO.get()', 'LIVE_IO.set('])
+for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'LIVE_IO.get()', 'LIVE_IO.set(', 'window.lpKeep=', 'function espnWeek('])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
 const LIVE_SECTION = `<div class="card" id="lpCard">
     <h2 style="display:flex;align-items:center;gap:10px">Live Parlays<span class="grow" style="flex:1"></span></h2>
@@ -162,11 +162,14 @@ const LIVE_SCRIPT = `<script>
 ${LIVE_JS}
 })();
 /* the Saved parlays card and the betting-slips card it also covered are drawn by the section
-   now; the builder keeps its place above it and the section follows every redraw */
+   now; the builder keeps its place above it and the section follows every redraw. Before each
+   redraw the section keeps a copy of a builder about to lose a leg to a kickoff (lpKeep), so a
+   parlay bet and never locked is still watched once its first game starts. */
 renderSaved=function(){ return ''; };
 renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
-  renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
+  renderParlay=function(){ try{ if(window.lpKeep) window.lpKeep(); }catch(e){}
+    const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
 /* the sync stamp, in the Live Parlays card (the parlays are what it syncs; the header keeps
    only when the site's data was updated): synced and when the shared parlays last changed,

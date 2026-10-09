@@ -161,7 +161,9 @@ function decToML(d){ if(!isFinite(d)||d<=1) return null; return d>=2?Math.round(
 function num(x,d){ return x==null||!isFinite(x)?'–':(+x).toFixed(d); }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const isGameLeg=l=>l.stat==='ml'||l.stat==='ats'||l.stat==='total';
-const SEASON=2026;
+const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+/* a name both sources can agree on: the page's own normName (part2) when it is there */
+const nameOf=n=>typeof normName==='function'?normName(n):String(n||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
 
 /* ---- the section ----
    The parlays every device should see are in the repository, in liveparlays/parlays.json,
@@ -210,6 +212,8 @@ function removeParlay(p){
   /* the builder's own legs: clearing them here clears the Parlay Builder, the one copy */
   if(p.src==='prop'&&p.id==='prop-builder'&&typeof S==='object'&&S&&S.parlay&&typeof save==='function'){
     S.parlay={}; save(); if(typeof renderParlay==='function') renderParlay(); return; }
+  /* a builder kept at kickoff is this section's own copy: deleting it deletes it */
+  if(p.src==='kept'){ const st=liveStore(); if(isObj(st.kept)) delete st.kept[p.id]; writeStore(st); return; }
   const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
 /* What you bet is yours to change on a parlay the prop model holds: a saved one, whose price
    stays as it was locked so the payout follows the stake, or the one still in the builder,
@@ -257,7 +261,7 @@ function propState(){
   try{ return JSON.parse(localStorage.getItem(PROP_KEY)||'null'); }catch(e){ return null; }
 }
 const propLeg=l=>({gid:l.gid,stat:l.stat,k:+l.k,side:l.side||'over',main:!!l.main,
-  name:l.name,team:l.team});
+  name:l.name,team:l.team,pid:l.pid&&!String(l.pid).startsWith('team:')?String(l.pid):undefined,week:+l.week||undefined});
 
 /* Saved and locked is not the only parlay worth watching, and on a Sunday it is usually not
    the one you are watching: the prop model will not let you lock a parlay until it has a
@@ -283,14 +287,50 @@ function propParlays(){
   }
   return out;
 }
+/* The builder drops a leg once its game has kicked off, since it can no longer be bet. But a
+   parlay bet at the book and never locked here is still a bet, and the one this section most
+   needs to follow on a Sunday: so the moment the builder is about to drop a started leg, the
+   section keeps its own copy of the builder as it stood -- every leg, the stake, a price typed
+   in -- under its own key (kept), shared like the rest of the key, and watches that. Kept by
+   its legs, so two devices that both see the kickoff keep one copy; deleted with its x. The
+   page calls this before every redraw of the builder. */
+const hashStr=s2=>{ let h=5381; for(let i=0;i<s2.length;i++) h=((h<<5)+h+s2.charCodeAt(i))|0; return 'k'+(h>>>0).toString(36); };
+function keepBuilder(){
+  if(typeof S!=='object'||!S||!isObj(S.parlay)||!Array.isArray(S.sched)||typeof gameStarted!=='function') return false;
+  const legs=Object.keys(S.parlay).map(k=>S.parlay[k]).filter(l=>l&&l.gid&&l.stat);
+  const started=legs.filter(l=>{ const g=S.sched.find(x=>x.id===l.gid); return g&&gameStarted(g); });
+  if(!started.length) return false;
+  const kl=legs.map(propLeg), id=hashStr(legPrint({legs:kl})), st=liveStore();
+  st.kept=isObj(st.kept)?st.kept:{};
+  if(st.kept[id]) return false;
+  let w=null; for(const l of legs) if(+l.week&&(w===null||+l.week<w)) w=+l.week;
+  const price=(S.bookPrice!=null&&isFinite(S.bookPrice)&&+S.bookPrice)?+S.bookPrice:null, stake=+S.stake||0, dec=price!=null?mlDec(price):null;
+  st.kept[id]={at:new Date().toISOString(),week:w,stake,price,payout:dec?stake*dec:0,legs:kl};
+  return writeStore(st);
+}
+window.lpKeep=keepBuilder;
+function keptParlays(){
+  const k=liveStore().kept; if(!isObj(k)) return [];
+  return Object.keys(k).map(id=>{ const v=k[id]; if(!v||!Array.isArray(v.legs)||!v.legs.length) return null;
+    return {src:'kept',id,week:+v.week||null,stake:+v.stake||0,price:v.price!=null?v.price:null,payout:+v.payout||0,
+      note:'builder at kickoff',legs:v.legs.map(propLeg)}; }).filter(Boolean);
+}
 function localParlays(){
   const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
     price:p.priced?decToML(p.dec):null,payout:p.payout,note:'',legs:p.legs}));
-  return propParlays().concat(bet);
+  const kept=keptParlays(), props=propParlays();
+  /* what is left in the builder after the kickoff is part of the kept parlay, not a second one,
+     until a leg is added to it; a kept copy of a parlay that was saved after all is the saved one */
+  const inKept=p=>kept.some(k=>{ const ks=new Set(k.legs.map(legOf)); return p.legs.every(l=>ks.has(legOf(l))); });
+  const saved=new Set(props.filter(p=>p.id!=='prop-builder').map(legPrint));
+  return props.filter(p=>p.id!=='prop-builder'||!inKept(p)).concat(kept.filter(k=>!saved.has(legPrint(k)))).concat(bet);
 }
 /* the same parlay written twice is the same parlay: ids never match across the file and the
-   two models, so a copy is recognised by its legs instead */
-const legPrint=p=>p.legs.map(l=>[l.gid,l.stat,l.k,l.side].join('|')).sort().join(' + ');
+   two models, so a copy is recognised by its legs instead -- the game, the bet, the line, the
+   side, and whose it is: the player, or the team for a team bet (the Saints' money line and
+   the Falcons' are not one leg) */
+const legOf=l=>[l.gid,l.stat,l.k,l.side,isGameLeg(l)?(l.stat==='total'?'':String(l.team||'')):nameOf(l.name)].join('|');
+const legPrint=p=>p.legs.map(legOf).sort().join(' + ');
 function allParlays(){
   const mine=localParlays(), seen={};
   for(const p of mine){ seen[String(p.id)]=1; seen[legPrint(p)]=1; }
@@ -300,8 +340,12 @@ function allParlays(){
     .map(p=>Object.assign({},p,{src:'file'})));
 }
 
-/* a game id carries everything this page needs: 2026_02_CAR_ATL is week 2, CAR at ATL,
-   so no season payload is loaded here either */
+/* a game id carries everything this page needs: 2026_02_CAR_ATL is the 2026 season, week 2,
+   CAR at ATL, so no season is written in here and no season payload is loaded either */
+/* ESPN numbers the regular season seasontype 2, weeks 1-18, and the playoffs seasontype 3 with
+   weeks of their own: wild card 1, divisional 2, conference 3, the Super Bowl 5 (4 is the Pro
+   Bowl). nflverse runs the playoffs on as weeks 19-22. */
+function espnWeek(w){ w=+w; return w<=18?{type:2,week:w}:{type:3,week:w>=22?5:w-18}; }
 function gidParts(gid){
   const m=/^(\d{4})_(\d{2})_([A-Z0-9]+)_([A-Z0-9]+)$/.exec(String(gid||''));
   return m?{season:+m[1],w:+m[2],a:m[3],h:m[4],id:String(gid)}:null;
@@ -343,9 +387,12 @@ async function refresh(){
   if(want.size){
     try{
       const sched=[...want].map(gidParts).filter(Boolean), games={};
-      for(const w of [...new Set(sched.map(g=>g.w))]){
-        const sb=await getJSON(ESPN_SB+'?seasontype=2&week='+w+'&dates='+SEASON+'&_='+Date.now());
-        Object.assign(games,espnGames(sb,sched));
+      /* one scoreboard per season and week, each read in ESPN's own numbering */
+      const keyOf=g=>{ const e=espnWeek(g.w); return g.season+'|'+e.type+'|'+e.week; };
+      for(const key of [...new Set(sched.map(keyOf))]){
+        const [season,type,week]=key.split('|');
+        const sb=await getJSON(ESPN_SB+'?seasontype='+type+'&week='+week+'&dates='+season+'&_='+Date.now());
+        Object.assign(games,espnGames(sb,sched.filter(g=>keyOf(g)===key)));
       }
       STATE.games=games;
       const box=Object.assign({},STATE.box);
@@ -387,6 +434,30 @@ function liveTotal(l,g){
   if(g.state!=='post'&&past) return {val:m,k:0,need:null,state:over?'hit':'missed'};
   return {val:m,k:0,need:null,state:g.state==='post'?(m>0?'hit':(m===0?'push':'missed')):'live'};
 }
+/* Who a leg is on, as the prop model knows him: his id when the leg carries it, else his name
+   and team among the page's players. */
+function legPid(l){
+  if(l.pid) return String(l.pid);
+  const nm=nameOf(l.name); if(!nm) return null;
+  const P=(typeof S==='object'&&S&&S.players)||{};
+  for(const id in P){ const x=P[id]; if(x&&nameOf(x.n)===nm&&(!l.team||x.team===l.team)) return id; }
+  const L=(typeof PAY==='object'&&PAY&&Array.isArray(PAY.players))?PAY.players:[];
+  const y=L.find(x=>nameOf(x.n)===nm&&(!l.team||x.t===l.team)); return y?y.id:null;
+}
+/* the official word that he was not playing that week: the injury report as published (Out or
+   Doubtful), or the page's own record of who is out (a game-day inactive; a reserve list or a
+   release, for this week). A Questionable player, or one the prop model only expects to sit,
+   is not this: he may play. */
+function ruledOut(l){
+  const gp=gidParts(l.gid), pid=legPid(l); if(!gp||!pid) return null;
+  for(const r of ((typeof PAY==='object'&&PAY&&Array.isArray(PAY.injuries))?PAY.injuries:[])){
+    if(String(r.gsis_id||r.player_id||'')!==pid||+r.week!==gp.w||(r.season!=null&&r.season!==''&&+r.season!==gp.season)) continue;
+    const s2=String(r.report_status||r.game_status||'').trim(); if(s2==='Out'||s2==='Doubtful') return s2.toLowerCase(); }
+  const r=(typeof S==='object'&&S&&S.inactive)?S.inactive[pid]:null;
+  if(r&&+r.week===gp.w&&/^(Out|Doubtful|Inactive)$/.test(String(r.status))) return String(r.status).toLowerCase();
+  if(r&&r.week==='season'&&typeof currentWeek==='function'&&gp.w===currentWeek()) return 'on '+({RES:'a reserve list',CUT:'no roster (released)'}[r.status]||'no active roster');
+  return null;
+}
 function liveFor(l){
   const g=STATE.games[l.gid]; if(!g) return null;
   if(l.stat==='total') return Object.assign({},liveTotal(l,g),{game:g});
@@ -394,7 +465,16 @@ function liveFor(l){
   if(g.state==='pre') return Object.assign({},liveLeg(l,0,'pre'),{val:0,need:+l.k,game:g,stats:zeroStats(l)});
   const sum=STATE.box[l.gid]; if(!sum) return null;
   const st=espnStats(sum,l.team,l.name);
-  if(st===null) return Object.assign({},liveLeg(l,0,g.state),{game:g,stats:zeroStats(l)});
+  if(st===null){
+    /* Not on the box score at all. A player who played but has no line in a category is
+       missing from that category only, and is rightly graded on nothing; missing from the whole
+       sheet with the official word that he was not playing, he did not play, and a book voids
+       the leg rather than grading it. Without that word he is graded on nothing, and the row
+       says he is not on the box score. */
+    const why=ruledOut(l);
+    if(why) return {val:null,k:+l.k,need:null,state:'void',game:g,stats:null,why};
+    return Object.assign({},liveLeg(l,0,g.state),{game:g,stats:zeroStats(l),absent:true});
+  }
   return Object.assign({},liveLeg(l,st[l.stat]==null?0:st[l.stat],g.state),{game:g,stats:st});
 }
 function statLine(st){
@@ -425,9 +505,10 @@ function gameTone(p,gid){
   const g=STATE.games[gid]; if(!g||g.state==='pre') return '';
   let good=0, bad=0, n=0;
   p.legs.forEach((leg,i)=>{
-    if(leg.gid!==gid) return; n++;
+    if(leg.gid!==gid) return;
     const l=legAt(p,i,leg);
-    const r=liveFor(l); if(!r) return;
+    const r=liveFor(l); if(r&&r.state==='void') return;        /* a void leg rides on nothing */
+    n++; if(!r) return;
     if(r.state==='hit'){ good++; return; }
     if(r.state==='missed'){ bad++; return; }
     /* a team bet while the game runs is decided by the scoreboard, not by a final state */
@@ -481,7 +562,7 @@ function marginBar(val,state){
     <span class="knob${tone}" style="left:${clamp(at,3,97).toFixed(2)}%">${val==null?'\u2013':(v>0?'+':'')+n0(v)}</span>
     <span class="lineLbl" style="left:${mid}%">line</span></div></div>`;
 }
-const MARK={hit:'\u2713',missed:'\u2717',push:'P'};
+const MARK={hit:'\u2713',missed:'\u2717',push:'P',void:'V'};
 function legRow(p,leg,i){
   const l=legAt(p,i,leg), k=+l.k, moved=k!==+leg.k;
   const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
@@ -520,10 +601,11 @@ function legRow(p,leg,i){
       </div></div>`;
   }
   const state=r?r.state:'pending', room=l.main&&l.side==='under';
-  const status=!r?'waiting':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':
+  const status=!r?'waiting':(state==='void'?'void':(state==='hit'?'hit':(state==='missed'?'missed':(state==='push'?'push':
     (state==='pending'?esc((r.game&&r.game.clock)||'not started')
-      :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live')))));
-  const line=(r&&r.stats)?statLine(r.stats):'';
+      :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live'))))));
+  const line=state==='void'?`did not play (${r.why}): a book voids this leg`
+    :((r&&r.absent)?'not on the box score':((r&&r.stats)?statLine(r.stats):''));
   const lineHTML=`<span class="ln edit${moved?' moved':''}" role="button" tabindex="0"
     data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}"
     title="The book moved this line? Tap and set what you actually bet.">${esc(num(k,k%1?1:0))}</span>`;
@@ -578,15 +660,18 @@ function draw(){
         :`<div class="lp-win"><b>${esc(w0.day)} ${w0.w} games</b><span>first kickoff ${esc(localT(s0))}</span></div>`;
     }
     const runs=!isDone(p)&&w0&&w1&&w1.key!==w0.key?`<span class="pill">runs into ${w1.day===w0.day?'':esc(w1.day)+' '}${w1.w} games</span>`:'';
-    const done=isDone(p), hit=p.legs.filter(l=>{const r=liveFor(l);return r&&r.state==='hit';}).length;
-    const gone=p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';});
-    const tag=gone?'<span class="pill bad">gone</span>':(done?'<span class="pill ok">landed</span>':'');
-    const from={prop:'prop model',bet:'betting model',file:'in the repository'}[p.src]||'in the repository';
-    html+=`<div class="savedp src ${esc(p.src==='prop'?'prop':(p.src==='bet'?'bet':'file'))}">
+    /* the legs as this page measures them, corrected lines and all */
+    const states=p.legs.map((l,i)=>{ const r=liveFor(legAt(p,i,l)); return r?r.state:null; });
+    const done=isDone(p), gone=states.includes('missed'), voids=states.filter(x=>x==='void').length;
+    const allVoid=voids>0&&states.every(x=>x==='void'||x==='push');
+    const tag=gone?'<span class="pill bad">gone</span>':(done?(allVoid?'<span class="pill">void</span>':'<span class="pill ok">landed</span>'):'')
+      +(voids&&!gone&&!allVoid?`<span class="pill">${voids} void</span>`:'');
+    const from={prop:'prop model',kept:'prop model',bet:'betting model',file:'in the repository'}[p.src]||'in the repository';
+    html+=`<div class="savedp src ${esc(p.src==='prop'||p.src==='kept'?'prop':(p.src==='bet'?'bet':'file'))}">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
         <span class="pill">${esc(from)}</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
-        ${p.note?`<span class="pill">${esc(p.note)}</span>`:''}
+        ${p.note?`<span class="pill"${p.src==='kept'?' title="The builder as it stood when its first game kicked off: the builder drops a started leg, so this copy is what is watched. Delete it if it was never bet."':''}>${esc(p.note)}</span>`:''}
         ${runs}${tag}<span class="grow"></span>${p.id==='prop-builder'?`<button class="hidebtn" data-rm="${esc(rmKey(p))}" data-builder="1" title="Clear the builder" aria-label="Clear the Parlay Builder">\u00d7</button>`:`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
       <div class="sp-money">
         <div><b>${canStake(p)?`<span class="ln edit stk" role="button" tabindex="0" data-stake-of="${esc(p.id)}" data-k="${esc(String(+p.stake||0))}" title="Bet a different amount? Tap and set it.">$${(+p.stake||0).toFixed(2)}</span>`:`$${(+p.stake||0).toFixed(2)}`}</b><span>staked</span></div>
@@ -603,7 +688,7 @@ function draw(){
     const q=b.dataset.rm.split('|'); removeParlay({src:q[0],id:q.slice(1).join('|')}); draw(); }));
 }
 /* landed or gone: nothing left to watch */
-function settledP(p){ return isDone(p)||p.legs.some(l=>{const r=liveFor(l);return r&&r.state==='missed';}); }
+function settledP(p){ return isDone(p)||p.legs.some((l,i)=>{const r=liveFor(legAt(p,i,l));return r&&r.state==='missed';}); }
 /* Edit a line in place: the number under the bar becomes a box, Enter or leaving it commits,
    Escape puts it back. It is drawn where the line actually is, on the bar, rather than as a
    button repeating the number beside it. */

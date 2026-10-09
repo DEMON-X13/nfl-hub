@@ -58,7 +58,8 @@ const FILE = {
       legF(0, 'Kyle Pitts', 'ATL', 'receptions', 3, 'over', false),
       legF(0, 'Michael Penix Jr.', 'ATL', 'passing_yards', 225.5, 'over', true)] }] };
 
-const PROP_KEY = 'props_2026_v1', BET_KEY = 'x_nfl_viewer_picks_2026';
+/* the prop model's own key, from part2, as the build hands it to the page */
+const PROP_KEY = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=\d{4}, KEY='([^']+)';/)[1], BET_KEY = 'x_nfl_viewer_picks_2026';
 /* the two models' own storage, written exactly as they write it */
 const propBlob = () => JSON.stringify({ stake: 55, saved: [
   { id: 'mine', week: 2, stake: 15, price: 250, payout: 52, legs: [
@@ -78,7 +79,7 @@ const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
     { game_id: '2026_02_CAR_ATL', away: 'CAR', home: 'ATL', pick: 'ATL', ml: -150 },
     { game_id: '2026_02_NO_BAL', away: 'NO', home: 'BAL', pick: 'BAL', ml: 130 }] }] } });
 
-function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {} } = {}) {
+function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x } = {}) {
   return new Promise(resolve => {
     const calls = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_,
@@ -90,7 +91,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
             ? Promise.resolve({ ok: true, status: 200, json: async () => file })
             : Promise.resolve({ ok: false, status: 404 });
           /* the page around the section: its own season and the betting model's */
-          if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
+          if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => pay(JSON.parse(PAYLOAD)) });
           if (s.includes('state.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(STATE) });
           if (!/espn\.com/.test(s)) return Promise.resolve({ ok: false, status: 404 });
           return espn === 'ok'
@@ -196,6 +197,100 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
         w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {} })); },
       file: { updated: null, games: [], parlays: [] } });
     chk(c2.d.querySelectorAll('.savedp').length === 2, 'saved and building should be two parlays');
+  }
+
+  // ---- C3. a builder parlay whose first game kicks off is kept and watched, not dropped ----
+  {
+    /* Bijan's leg is on week 2, long kicked off, so the builder drops it on load; the Falcons'
+       money line is on week 18 and stays. The section keeps the builder as it stood. */
+    const atKick = () => JSON.stringify({ stake: 40, saved: [], parlay: {
+      '2026_02_CAR_ATL|bij|rushing_yards': { gid: '2026_02_CAR_ATL', pid: '00-0038542', stat: 'rushing_yards', k: 43.5, side: 'over', main: true,
+        name: 'Bijan Robinson', team: 'ATL', week: 2 },
+      '2026_18_ATL_CAR|team:ATL|ml': { gid: '2026_18_ATL_CAR', pid: 'team:ATL', stat: 'ml', k: 0, side: 'over', main: false,
+        name: 'Falcons', team: 'ATL', grp: 'TEAM', week: 18 } } });
+    const k = await run({ seed: w => w.localStorage.setItem(PROP_KEY, atKick()), file: { updated: null, games: [], parlays: [] } });
+    const cards = [...k.d.querySelectorAll('.savedp')], S = k.w.eval('S');
+    chk(Object.keys(S.parlay).length === 1 && !!S.parlay['2026_18_ATL_CAR|team:ATL|ml'], 'the builder should drop the leg whose game kicked off: ' + Object.keys(S.parlay).join(', '));
+    chk(cards.length === 1 && /builder at kickoff/.test(txt(cards[0])) && cards[0].querySelectorAll('.sp-leg').length === 2,
+      'a builder parlay that lost a leg at kickoff is not kept whole and watched: ' + cards.map(c => txt(c).slice(0, 60)).join(' | '));
+    { const pl = cards.length === 1 ? cards[0].querySelector('.sp-leg.prop') : null;
+      chk(!!pl && knob(pl) === '86' && /\$40\.00/.test(txt(cards[0])), 'the kept parlay is not tracked live, or lost its stake'); }
+    const st = JSON.parse(k.w.localStorage.getItem('live_parlays_v1') || '{}');
+    chk(st.kept && Object.keys(st.kept).length === 1 && Object.values(st.kept)[0].legs.length === 2, 'the kept parlay is not under the section\'s own (shared) key: ' + JSON.stringify(st.kept));
+    /* a redraw keeps one copy; a new leg in the builder is a parlay of its own again */
+    k.w.eval('renderParlay()'); await wait(60);
+    chk(Object.keys(JSON.parse(k.w.localStorage.getItem('live_parlays_v1') || '{}').kept || {}).length === 1, 'a redraw kept the builder twice');
+    const g18 = S.sched.find(x => +x.w === 18 && x.id !== '2026_18_ATL_CAR');
+    S.parlay[g18.id + '|team:' + g18.h + '|ml'] = { gid: g18.id, pid: 'team:' + g18.h, stat: 'ml', k: 0, side: 'over', main: false, name: g18.h, team: g18.h, grp: 'TEAM', week: 18 };
+    k.w.eval('save(); renderParlay()'); await wait(80);
+    chk(k.d.querySelectorAll('.savedp').length === 2 && [...k.d.querySelectorAll('.savedp .pill')].some(x => /in the builder/.test(txt(x))), 'a builder with a new leg is not shown beside the kept parlay');
+    /* the x deletes the kept copy and nothing else */
+    const kc = [...k.d.querySelectorAll('.savedp')].find(c => /builder at kickoff/.test(txt(c)));
+    if (kc) { kc.querySelector('[data-rm]').click(); await wait(60); }
+    chk(!!kc && Object.keys(JSON.parse(k.w.localStorage.getItem('live_parlays_v1') || '{}').kept || {}).length === 0 && Object.keys(S.parlay).length === 2,
+      'deleting the kept parlay did not delete it, or touched the builder');
+  }
+
+  // ---- C4. two parlays alike but for the side or the player are two parlays ----
+  {
+    const ml = (gi, team) => ({ game: gi, player: { ATL: 'Falcons', CAR: 'Panthers' }[team], team, stat: 'ml', line: 0, side: 'over', main: false });
+    const file = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'falcons-over', week: 2, stake: 5, legs: [ml(0, 'ATL'), { game: 0, player: 'Total', team: 'ATL', stat: 'total', line: 36.5, side: 'over', main: true }] },
+      { id: 'pitts-3', week: 2, stake: 5, legs: [legF(0, 'Kyle Pitts', 'ATL', 'receptions', 3, 'over', true)] }] };
+    const mine = JSON.stringify({ stake: 5, saved: [
+      { id: 'panthers-over', week: 2, stake: 5, price: 300, payout: 20, legs: [
+        { gid: '2026_02_CAR_ATL', pid: 'team:CAR', stat: 'ml', k: 0, side: 'over', main: false, name: 'Panthers', team: 'CAR', week: 2 },
+        { gid: '2026_02_CAR_ATL', pid: 'total', stat: 'total', k: 36.5, side: 'over', main: true, name: 'Total', team: 'ATL', week: 2 }] },
+      { id: 'bijan-3', week: 2, stake: 5, price: 150, payout: 12.5, legs: [
+        { gid: '2026_02_CAR_ATL', stat: 'receptions', k: 3, side: 'over', main: true, name: 'Bijan Robinson', team: 'ATL', week: 2 }] }] });
+    const x = await run({ file, seed: w => w.localStorage.setItem(PROP_KEY, mine) });
+    const t = [...x.d.querySelectorAll('.savedp')].map(c => txt(c));
+    chk(t.length === 4 && t.some(c => /Falcons To Win/.test(c)) && t.some(c => /Panthers To Win/.test(c)), 'the file\'s Falcons parlay was hidden as a copy of a saved Panthers one: ' + t.length + ' cards');
+    chk(t.some(c => /Kyle Pitts Receptions/.test(c)) && t.some(c => /Bijan Robinson Receptions/.test(c)), 'two players at the same line were taken for one parlay');
+  }
+
+  // ---- C5. a player who did not play: the leg is void, not lost ----
+  {
+    /* Drake London is ruled Out for week 2 on the injury report the page reads, and is on no
+       line of the final box score. Jahan Dotson has no such word: he is graded on nothing, and
+       the row says he is not on the box score. */
+    const pay = P => { P.injuries = (P.injuries || []).concat([{ season: '2026', week: '2', gsis_id: '00-0037238', report_status: 'Out', game_status: '' }]); return P; };
+    const file = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+      { id: 'dnp-over', week: 2, stake: 10, legs: [legF(0, 'Drake London', 'ATL', 'receiving_yards', 50.5, 'over', true), legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 43.5, 'over', true)] },
+      { id: 'dnp-under', week: 2, stake: 10, legs: [legF(0, 'Drake London', 'ATL', 'receptions', 4.5, 'under', true)] },
+      { id: 'quiet', week: 2, stake: 10, legs: [legF(0, 'Jahan Dotson', 'ATL', 'receiving_yards', 30.5, 'over', true)] }] };
+    const v = await run({ file, state: 'post', pay });
+    const card = id => [...v.d.querySelectorAll('.savedp')].find(c => [...c.querySelectorAll('.who')].some(x => new RegExp(id).test(txt(x))));
+    const over = [...v.d.querySelectorAll('.savedp')].find(c => c.querySelectorAll('.sp-leg').length === 2);
+    const drake = over && [...over.querySelectorAll('.sp-leg')].find(r => /Drake London/.test(who(r)));
+    chk(!!drake && status(drake) === 'void' && txt(drake.querySelector('.res')) === 'V' && /did not play \(out\)/.test(txt(drake)),
+      'a player ruled out and missing from the box score is not void: ' + (drake ? txt(drake) : 'no row'));
+    chk(!!over && !/\bgone\b/.test(txt(over.querySelector('.sp-head'))) && /landed/.test(txt(over.querySelector('.sp-head'))) && /1 void/.test(txt(over.querySelector('.sp-head'))),
+      'a parlay with a void leg and the rest won is not "landed, 1 void": ' + (over ? txt(over.querySelector('.sp-head')) : ''));
+    const under = [...v.d.querySelectorAll('.savedp')].find(c => /Drake London Receptions/.test(txt(c)));
+    chk(!!under && status(under.querySelector('.sp-leg')) === 'void' && !/landed|gone/.test(txt(under.querySelector('.sp-head'))) && /\bvoid\b/.test(txt(under.querySelector('.sp-head'))),
+      'an under on a player who did not play is graded instead of void: ' + (under ? txt(under.querySelector('.sp-head')) + ' / ' + status(under.querySelector('.sp-leg')) : ''));
+    const quiet = card('Jahan Dotson');
+    chk(!!quiet && status(quiet.querySelector('.sp-leg')) === 'missed' && /not on the box score/.test(txt(quiet)) && /gone/.test(txt(quiet.querySelector('.sp-head'))),
+      'a player with no word that he sat is not graded on nothing and said to be off the box score: ' + (quiet ? txt(quiet) : ''));
+    /* the same leg while the game is on: void too, since he was ruled out */
+    const live = await run({ file, state: 'in', pay });
+    const d2 = [...live.d.querySelectorAll('.sp-leg')].find(r => /Drake London Receiving/.test(who(r)));
+    chk(!!d2 && status(d2) === 'void', 'a ruled-out player\'s leg is not void while the game is on: ' + (d2 ? status(d2) : ''));
+  }
+
+  // ---- C6. the scoreboard asked for in each game's own season and week, playoffs too ----
+  {
+    const file = { updated: null, games: ['2026_02_CAR_ATL', '2026_20_CAR_ATL', '2026_22_CAR_ATL', '2027_01_CAR_ATL'], parlays: [
+      { id: 'reg', week: 2, stake: 1, legs: [{ game: 0, player: 'Falcons', team: 'ATL', stat: 'ml', line: 0, side: 'over', main: false }] },
+      { id: 'div', week: 20, stake: 1, legs: [{ game: 1, player: 'Falcons', team: 'ATL', stat: 'ml', line: 0, side: 'over', main: false }] },
+      { id: 'sb', week: 22, stake: 1, legs: [{ game: 2, player: 'Falcons', team: 'ATL', stat: 'ml', line: 0, side: 'over', main: false }] },
+      { id: 'next', week: 1, stake: 1, legs: [{ game: 3, player: 'Falcons', team: 'ATL', stat: 'ml', line: 0, side: 'over', main: false }] }] };
+    const q = await run({ file });
+    const sbq = q.calls.filter(u => /\/scoreboard\?/.test(u)).map(u => (u.match(/seasontype=\d+&week=\d+&dates=\d+/) || [''])[0]);
+    for (const want of ['seasontype=2&week=2&dates=2026', 'seasontype=3&week=2&dates=2026', 'seasontype=3&week=5&dates=2026', 'seasontype=2&week=1&dates=2027'])
+      chk(sbq.includes(want), 'the scoreboard was not asked for ' + want + ': ' + sbq.join(', '));
+    chk(q.d.querySelectorAll('.sp-leg.team .gm').length === 4, 'a playoff or next-season game was not tracked: ' + q.d.querySelectorAll('.sp-leg.team .gm').length);
   }
 
   // ---- D. the buttons are gone ----
