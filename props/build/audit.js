@@ -966,6 +966,282 @@ setTimeout(async()=>{
       chk(!(S.saved||[]).some(p=>p.id==='b1'),'a betting parlay was copied into our saved parlays');
       console.log(`U. betting parlays: ${got.length} read from a fixture, singles and malformed entries skipped`); }
 
+    /* ---- V. reality: the page a browser builds from this payload, checked against the files the
+       job downloads into raw/ and against rules that hold in any week. None is about this week's
+       particulars: a lean week, a bye, week 1, a week whose report is not filed yet or a game
+       already played cannot fail one. The raw comparisons run when PROPS_AUDIT_RAW=1, which
+       weekly.py sets once it has downloaded raw/ for the payload it just baked (they are the same
+       moment, so the two must agree); by hand they are skipped, and the rest still run. ---- */
+    try{ await (async()=>{
+      const NEED=process.env.PROPS_AUDIT_RAW==='1', path=require('path'), SKILL=new Set(['QB','RB','WR','TE','K','FB','HB']);
+      const PAY=w.eval('PAY');   /* the page's own: section I re-booted it, so the one read at the top is an older copy */
+      const SEASON=F('SEASON'), skipped=[];
+      const raw=f=>{ if(!NEED){ skipped.push(f); return null; } const p=path.join(__dirname,'..','raw',f);
+        if(!fs.existsSync(p)){ chk(false,`raw/${f} is missing: the job downloads it before the audit runs`); return null; }
+        return Papa.parse(fs.readFileSync(p,'utf8'),{header:true,skipEmptyLines:true}).data; };
+      const dataCsv=f=>{ const p=path.join(__dirname,'..','data',f); return fs.existsSync(p)?Papa.parse(fs.readFileSync(p,'utf8'),{header:true,skipEmptyLines:true}).data:null; };
+      const rRoster=raw(`roster_${SEASON}.csv`), rInj=raw(`injuries_${SEASON}.csv`), rStats=raw(`pw_${SEASON}.csv`), rGames=raw('games.csv');
+      /* the page exactly as a browser builds it on a first visit */
+      w.eval('S=freshState(); NORM=null; INJ={}; RSTAT={}; GAME_TIER_CACHE={}; SUGGEST_CACHE=null');
+      w.eval('applyBaked()'); const SV=w.eval('S');
+      /* a book's name against a player's, the rule build/names.py matches with: the same name, his
+         football name with his surname, or only a short first name (Cam for Cameron) */
+      const nrm=s=>String(s||'').normalize('NFKD').replace(/[^ -~]/g,'').toLowerCase().replace(/[.'`-]/g,'').replace(/\s+/g,' ').trim().replace(/\s+(jr|sr|ii|iii|iv|v)$/,'').trim();
+      const shortForm=(a,b)=>{ if(!a||!b) return false; const [lo,hi]=a.length<=b.length?[a,b]:[b,a]; let c=0; while(c<a.length&&c<b.length&&a[c]===b[c]) c++; return (lo.length>=3&&hi.startsWith(lo))||c>=4; };
+      const nameRule=(book,full,alias)=>{ const b=nrm(book), f=nrm(full), al=alias?nrm(alias):null; if(!b) return null; if(b===f||(al&&b===al)) return 'exact';
+        const bp=b.split(' '), pp=f.split(' '); if(bp.length<2||pp.length<2||bp.slice(1).join(' ')!==pp.slice(1).join(' ')) return null; return shortForm(bp[0],pp[0])?'short':null; };
+      chk(nameRule('Cam Ward','Cameron Ward')&&nameRule('Kenny Gainwell','Kenneth Gainwell')&&nameRule('A.J. Brown','AJ Brown')==='exact'&&!nameRule('Jalon Daniels','Jayden Daniels')&&!nameRule('Jeremiyah Love','Jordan Love')&&!nameRule('Kevin Coleman Jr.','Keon Coleman')&&!nameRule('Brian Robinson Jr.','Bijan Robinson'),'the name rule lets a different player through, or stops a short name');
+      const R=PAY.roster||null, rawRo={}; for(const r of (rRoster||[])) if(r.gsis_id) rawRo[r.gsis_id]=r;
+      const who=pid=>{ const e=R&&R[pid], r=rawRo[pid], p=SV.players[pid];
+        return {name:(e&&e[2])||(r&&r.full_name)||(p&&p.n)||'', alias:(e&&e[4])||(r&&r.football_name&&r.football_name!==r.first_name?`${r.football_name} ${r.last_name}`:null)}; };
+      const rstat=pid=>{ const e=R&&R[pid]; if(e) return {st:e[1],wk:+e[3]}; const r=rawRo[pid]; return r?{st:r.status,wk:+r.week}:null; };
+      const cw=F('currentWeek')(), openG=SV.sched.filter(g=>+g.w===cw&&!F('gameStarted')(g));
+      const gOf=id=>SV.sched.find(g=>g.id===id);
+
+      /* V0. one season, one week: the payload is for the page's SEASON and the schedule's week */
+      { chk(PAY.season==null?!NEED:+PAY.season===SEASON,`the payload is for season ${PAY.season}, the page for ${SEASON}`);
+        const unplayed=PAY.sched.filter(g=>!(g.hs!=null&&g.as!=null)).map(g=>+g.w);
+        const wk=unplayed.length?Math.min(...unplayed):Math.max(...PAY.sched.map(g=>+g.w));
+        if(PAY.week!=null) chk(+PAY.week===wk,`the payload was baked for week ${PAY.week}, its schedule says ${wk}`); else chk(!NEED,'the payload does not say which week it was baked for');
+        if(PAY.season_over!=null) chk(!!PAY.season_over===!unplayed.length,'season_over does not match the schedule');
+        if(rGames){ const gs=rGames.filter(r=>+r.season===SEASON&&r.game_type==='REG');
+          chk(gs.length===PAY.sched.length&&gs.every(r=>!!gOf(r.game_id)),`the payload's schedule (${PAY.sched.length} games) is not games.csv's ${SEASON} regular season (${gs.length})`);
+          const fin=gs.filter(r=>String(r.home_score).trim()!=='').length, pfin=PAY.sched.filter(g=>g.hs!=null).length;
+          chk(pfin===fin,`the payload has ${pfin} final scores, the downloaded schedule ${fin}`); }
+        console.log(`V0. season ${PAY.season} for a page built for ${SEASON}; week ${PAY.week} is the schedule's ${wk}${PAY.season_over?'; the season is over':''}`); }
+
+      /* V1. who is listed: nobody on a reserve list, released, retired or inactive this week; a
+         practice-squad player starts only with a chart place or a game in the two weeks before */
+      { let listed=0; const bad=[], dev=[];
+        for(const g of openG){ const r=F('rosterFor')(g,true);
+          for(const t in r) for(const x of r[t].players){ listed++; const s=rstat(x.pl.id);
+            if(s&&s.st!=='ACT'&&s.st!=='DEV'&&!(s.st==='INA'&&s.wk!==cw)) bad.push(`${g.id} ${x.pl.n} ${s.st}`);
+            if(x.starter&&s&&s.st==='DEV'&&x.rank==null&&![cw-1,cw-2].some(k=>F('actualFor')(k,x.pl.id))) dev.push(`${g.id} ${x.pl.n}`); } }
+        chk(!bad.length,`players the roster has on a reserve list, released or inactive are on this week's pages: ${bad.length} (${bad.slice(0,5).join('; ')})`);
+        chk(!dev.length,`practice-squad players with no chart place and no recent game start: ${dev.slice(0,5).join('; ')}`);
+        if(rRoster){ let diff=0, n=0;
+          for(const r of rRoster){ if(!r.gsis_id||!SKILL.has(String(r.position).toUpperCase())) continue; n++; const e=R&&R[r.gsis_id]; if(!e||e[0]!==r.team||e[1]!==r.status) diff++; }
+          chk(diff===0,`${diff} of ${n} skill players' team or status in the payload differ from the downloaded roster`); }
+        /* the rule on any week: a starter put on a reserve list leaves the page, and the same man on
+           the practice squad with no chart place and no recent game is no starter */
+        const g0=openG[0]||SV.sched[SV.sched.length-1], t0=g0.h, st=F('rosterFor')(g0,false)[t0].players.find(x=>x.starter&&x.pl.grp!=='K');
+        if(st){ const id=st.pl.id, fake=Object.assign({},PAY.roster||{});
+          fake[id]=[t0,'RES',st.pl.n,cw]; F('applyRoster')(fake);
+          const r1=F('rosterFor')(g0,false)[t0];
+          chk(!F('rosterFor')(g0,true)[t0].players.some(x=>x.pl.id===id),`a starter put on a reserve list (${st.pl.n}) is still on his game's page`);
+          const gap=r1.gaps.find(x=>x.id===id); chk(!gap||/^ruled out \(on a reserve list\)/.test(gap.why),`a starter on a reserve list reads "${gap&&gap.why}"`);
+          fake[id]=[t0,'DEV',st.pl.n,cw]; F('applyRoster')(fake);
+          const dep=PAY.depth&&PAY.depth[id], a1=SV.actuals[String(cw-1)]&&SV.actuals[String(cw-1)][id], a2=SV.actuals[String(cw-2)]&&SV.actuals[String(cw-2)][id];
+          if(dep) delete PAY.depth[id]; if(a1) delete SV.actuals[String(cw-1)][id]; if(a2) delete SV.actuals[String(cw-2)][id];
+          try{ chk(!F('rosterFor')(g0,false)[t0].players.some(x=>x.pl.id===id),`a practice-squad player with no chart place and no recent game (${st.pl.n}) starts`); }
+          finally{ if(dep) PAY.depth[id]=dep; if(a1) SV.actuals[String(cw-1)][id]=a1; if(a2) SV.actuals[String(cw-2)][id]=a2; F('applyRoster')(PAY.roster); } }
+        console.log(`V1. roster status: ${listed} listed on ${openG.length} games still to play, none on a reserve list or released; ${R?Object.keys(R).length:0} statuses${rRoster?', equal to the downloaded roster':''}; a reserve-list starter and an unelevated practice-squad player both leave the starters`); }
+
+      /* V2. every main line on the page is the book's line for that player: its name is his, its
+         game is his, and the book's own file agrees */
+      { let n=0, named=0; const bad=[];
+        for(const wk in (PAY.mkt||{})){ const lines=dataCsv(`wk${wk}_lines.csv`);
+          for(const pid in PAY.mkt[wk]) for(const st in PAY.mkt[wk][pid]){ const L=PAY.mkt[wk][pid][st]; n++; const p=who(pid);
+            if(L.n!=null||PAY.mkt_v>=2){ named++;
+              const g=L.g?gOf(L.g):null, act=SV.actuals[wk]&&SV.actuals[wk][pid];
+              const team=act?act.team:(+wk>=cw?((R&&R[pid]&&R[pid][0])||(SV.players[pid]&&SV.players[pid].team)):null);
+              if(!L.n||!nameRule(L.n,p.name,p.alias)) bad.push(`wk${wk} ${p.name||pid} ${st} carries ${L.n||'no'} book name`);
+              else if(L.g&&(!g||+g.w!==+wk||(team&&g.a!==team&&g.h!==team))) bad.push(`wk${wk} ${p.name} ${st}: ${L.g} is not his game`); }
+            if(lines){ const rows=lines.filter(r=>r.stat===st&&+r.line===+L.line&&+r.over===+L.over&&+r.under===+L.under);
+              if(rows.length&&!rows.some(r=>nameRule(r.player,p.name,p.alias))) bad.push(`wk${wk} ${p.name||pid} ${st} ${L.line} is ${[...new Set(rows.map(r=>r.player))].join('/')}'s line in wk${wk}_lines.csv`); } } }
+        chk(!bad.length,`main lines on the wrong player: ${bad.length} (${bad.slice(0,4).join('; ')})`);
+        chk(!NEED||PAY.mkt_v>=2,'the job baked main lines that do not carry the book\'s name and game');
+        console.log(`V2. main lines: ${n} checked against the book's own files, ${named} carry the book's name and game, ${bad.length} on the wrong player`); }
+
+      /* V3. prices: every row the job placed on a player reaches the page, under that player, and a
+         row on a game still to play that no player took is reported, never dropped quietly */
+      { let rows=0, expect=0, landed=0; const bad=[];
+        const mk=F('marketKey');
+        for(const wk in (PAY.prices||{})) for(const r of PAY.prices[wk]){ rows++; const g=gOf(r.game_id);
+          if(r.pid){ const p=who(r.pid); if(!nameRule(r.player,p.name,p.alias)) bad.push(`${r.player} placed on ${p.name||r.pid}`);
+            const o=parseFloat(r.odds), k=parseFloat(r.threshold), m=mk(r.market);
+            if(g&&m&&isFinite(o)&&o!==0&&isFinite(k)){ expect++; const v=SV.odds[g.id]&&SV.odds[g.id][r.pid]&&SV.odds[g.id][r.pid][m]; if(v&&v[String(k)]!=null) landed++; } }
+          else if(PAY.mkt_v>=2&&g&&!F('gameStarted')(g)&&!/(d\/st|defen[cs]e)$/i.test(String(r.player).trim())&&!(PAY.unmatched||[]).some(u=>u.startsWith(r.player+' (')))
+            bad.push(`${r.player} (${r.game_id}) is on no player and not reported`); }
+        chk(!bad.length,`price rows: ${bad.length} wrong or unreported (${bad.slice(0,4).join('; ')})`);
+        chk(landed===expect,`${expect-landed} of ${expect} price rows placed on a player never reached the page`);
+        console.log(`V3. prices: ${rows} rows, ${expect} placed on a player and all ${landed} on the page`); }
+
+      /* V4. a ruled-out player is never "not enough games played", and the man the chart moves up
+         starts however few games he has */
+      { let n=0; const bad=[];
+        for(const g of SV.sched.filter(x=>+x.w===cw)){ const r=F('rosterFor')(g,false);
+          for(const t in r) for(const gp of r[t].gaps){ n++; const off=gp.id&&SV.inactive[gp.id];
+            if(off&&!/^ruled out/.test(gp.why)) bad.push(`${gp.name} (${gp.slot}): ${gp.why}`);
+            if(!off&&/^ruled out/.test(gp.why)) bad.push(`${gp.name} is not out but reads "${gp.why}"`); } }
+        chk(!bad.length,`gap notes that misstate why a player is not shown: ${bad.slice(0,4).join('; ')}`);
+        const D=PAY.depth||{}; let tried=0, ok=0;
+        for(const team of new Set(Object.values(D).map(d=>d[0]))){
+          const q=rk=>Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===rk&&SV.players[id]&&SV.players[id].team===team&&!SV.inactive[id]);
+          const one=q(1), two=q(2), g=SV.sched.find(x=>+x.w===cw&&(x.a===team||x.h===team))||SV.sched.find(x=>x.a===team||x.h===team);
+          if(!one||!two||!g) continue;
+          tried++; const P2=SV.players[two], keep=[P2.gp,P2.base_gp]; P2.gp=1; P2.base_gp=0;
+          SV.inactive[one]={week:cw,status:'Out',inj:'Thumb'};
+          try{ const r=F('rosterFor')(g,false)[team], qb=r.players.filter(x=>x.pl.grp==='QB'&&x.starter), gap=r.gaps.find(x=>x.id===one);
+            if(qb.length===1&&qb[0].pl.id===two&&gap&&gap.why==='ruled out, thumb') ok++;
+            else chk(false,`${team}: QB1 ruled out and a one-game QB2: the starter shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, and QB1 reads "${gap?gap.why:'nothing'}"`);
+          } finally { P2.gp=keep[0]; P2.base_gp=keep[1]; delete SV.inactive[one]; }
+          if(tried>=4) break; }
+        chk(tried>0,'no team on the chart has a QB1 and a QB2 to test the next man up with');
+        console.log(`V4. ruled out: ${n} gap notes this week, each giving the real reason; ${ok} of ${tried} teams start a one-game QB2 when QB1 is ruled out`); }
+
+      /* V5. the injury report: the payload carries the downloaded one, its Outs leave the page, its
+         Questionables wear a Q; and the rules, on a made-up report for a real team */
+      { let msg='';
+        if(rInj){ const isReg=r=>+r.season===SEASON&&String(r.game_type||r.season_type||'REG')==='REG';
+          const cur=rInj.filter(r=>isReg(r)&&+r.week===+PAY.week), pc=(PAY.injuries||[]).filter(r=>+r.week===+PAY.week).length;
+          chk(pc===cur.length,`the payload has ${pc} injury rows for week ${PAY.week}, the downloaded report ${cur.length}`);
+          const past=rInj.filter(r=>isReg(r)&&+r.week<+PAY.week&&['Out','Doubtful'].includes(r.report_status)&&SKILL.has(String(r.position).toUpperCase())).length;
+          const ppast=(PAY.injuries||[]).filter(r=>+r.week<+PAY.week).length;
+          chk(ppast===past,`the payload has ${ppast} earlier Outs, the downloaded report ${past}`);
+          const miss=[], listed=[];
+          if(+PAY.week===cw){
+            for(const r of cur){ const id=r.gsis_id, st=r.report_status; if(!SV.players[id]) continue;
+              if((st==='Out'||st==='Doubtful')&&!SV.inactive[id]) miss.push(`${r.full_name} ${st}`);
+              if(st==='Questionable'&&!SV.inactive[id]&&(F('injTag')(id)||{}).k!=='q') miss.push(`${r.full_name} Questionable without a Q`); }
+            const out=new Set(cur.filter(r=>r.report_status==='Out'||r.report_status==='Doubtful').map(r=>r.gsis_id));
+            for(const g of openG){ const ro=F('rosterFor')(g,true); for(const t in ro) for(const x of ro[t].players) if(out.has(x.pl.id)) listed.push(`${g.id} ${x.pl.n}`); } }
+          chk(!miss.length,`the report is not on the page: ${miss.slice(0,5).join('; ')}`);
+          chk(!listed.length,`players ruled out are on this week's pages: ${listed.slice(0,5).join('; ')}`);
+          msg=`${pc} rows for week ${PAY.week} and ${ppast} earlier Outs, as downloaded; every Out off the page, every Questionable tagged; `; }
+        /* the rules: out in his team's last game and no word yet is pending (treated as out); not on
+           his team's report once it is filed, or with a final report that gives him no status, he is
+           cleared; Questionable with no practice is out; Questionable wears a Q and, like a player who
+           did not practise, stays out of the suggestions; limited practice is only a tag */
+        const g2=SV.sched.find(g=>+g.w>=2&&F('prevTeamWeek')(g.h,+g.w)!=null);
+        if(g2){ const T=g2.h, W=+g2.w, PW=F('prevTeamWeek')(T,W), row=(id,wk,st,pr)=>({season:SEASON,week:wk,gsis_id:id,team:T,report_status:st||'',practice_status:pr||'',injury:'Knee'});
+          const ii=F('ingestInjuries'), inact=()=>w.eval('S').inactive, tag=id=>(w.eval('INJ')[id]||{}).k||null, sug=F('suggestable');
+          const base=[row('V1',PW,'Out'),row('V2',PW,'Out'),row('V3',PW,'Out')];
+          ii(base,W); chk(['V1','V2','V3'].every(id=>inact()[id]&&inact()[id].status==='Pending'),'out last game with no report yet is not pending');
+          chk(/^ruled out until his status is filed/.test(F('inactiveWhy')(inact().V1)),'a pending player does not read "ruled out until his status is filed"');
+          /* filed, no game statuses yet (a Wednesday or Thursday report) */
+          const filed=[...base,row('V2',W,'','Did Not Participate In Practice'),row('V3',W,'','Limited Participation in Practice'),
+            row('V7',W,'','Did Not Participate In Practice'),row('V9',W,'','Full Participation in Practice')];
+          ii(filed,W);
+          chk(!inact().V1,'a player off his filed team report is still held out');
+          chk(inact().V2&&inact().V2.status==='Pending','out last game and not practising is not pending');
+          chk(!inact().V3&&tag('V3')==='lim'&&sug('V3'),'out last game and practising (limited) is held out, untagged or kept from the suggestions');
+          chk(!inact().V7&&tag('V7')==='dnp'&&!sug('V7'),'did not practise with no status yet is not tagged, or is suggested');
+          /* the final report: game statuses filed */
+          const fin=[...filed,row('V4',W,'Questionable','Did Not Participate In Practice'),row('V5',W,'Questionable','Limited Participation in Practice'),row('V6',W,'Out','')];
+          ii(fin,W);
+          chk(inact().V4&&inact().V6,'Questionable with no practice, or Out, is not ruled out');
+          chk(!inact().V5&&tag('V5')==='q'&&!sug('V5'),'Questionable is not tagged Q, or is suggested');
+          chk(!inact().V2&&!tag('V7')&&sug('V7'),'a final report that gives a player no status does not clear him');
+          ii([],W); chk(!Object.values(inact()).some(r=>r&&r.week!=='season'),'an empty report left someone ruled out for the week');
+          ii(fin,W,true); chk(inact().V6&&!inact().V2&&!inact().V4,'a past week is not graded on its final report\'s game statuses alone');
+          ii(PAY.injuries||[]); F('applyRoster')(PAY.roster); }
+        console.log(`V5. injury report: ${msg}pending, cleared, Q, no-practice and limited each behave on a made-up report for ${g2?g2.h:'no team'}`); }
+
+      /* V6. nobody out, pending, Questionable or missing practice is in a suggested parlay */
+      { const legs=[]; for(const t of F('buildSuggestions')().tiers) legs.push(...t.legs);
+        for(const g of openG){ const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T[id]) legs.push(...T[id].legs); }
+        const pool=[...F('pricedLegs')(),...openG.flatMap(g=>F('gameLegPool')(g))];
+        const bad=[...new Set([...legs,...pool].filter(l=>l.grp!=='TEAM'&&!F('suggestable')(l.pid)).map(l=>l.name))];
+        chk(!bad.length,`suggested legs on players who may not play: ${bad.slice(0,5).join(', ')}`);
+        const g=openG.find(x=>F('gameLegPool')(x).some(l=>l.grp!=='TEAM'));
+        if(g){ const pid=F('gameLegPool')(g).find(l=>l.grp!=='TEAM').pid, INJ=w.eval('INJ'), keep=INJ[pid];
+          INJ[pid]={k:'q',t:'Q',title:'Questionable'}; w.eval('GAME_TIER_CACHE={}');
+          chk(!F('gameLegPool')(g).some(l=>l.pid===pid)&&!F('pricedLegs')([g]).some(l=>l.pid===pid),'a Questionable player stayed in a game\'s suggestions');
+          if(keep) INJ[pid]=keep; else delete INJ[pid]; w.eval('GAME_TIER_CACHE={}'); }
+        console.log(`V6. suggestions: ${legs.length} suggested legs and ${pool.length} candidates, none on a player who may not play; a Questionable tag takes a player out of the pool`); }
+
+      /* V7. every player is on the team the roster says, whatever team his last game was for */
+      { const tbl=R||(rRoster?Object.fromEntries(Object.entries(rawRo).map(([k,r])=>[k,[r.team,r.status]])):null);
+        if(tbl){ const off=Object.values(SV.players).filter(p=>tbl[p.id]&&tbl[p.id][0]&&tbl[p.id][0]!==p.team).map(p=>`${p.n} ${p.team}, roster ${tbl[p.id][0]}`);
+          chk(!off.length,`players on the wrong team: ${off.slice(0,5).join('; ')}`); }
+        console.log(`V7. teams: ${tbl?'every player on his roster team':'no roster table to check against'}`); }
+
+      /* V8. kickoffs in US Eastern, by the rule for any year: the page's clock against Intl's */
+      { const ny=(d,t)=>{ const guess=Date.parse(`${d}T${t}:00Z`);
+          const pt=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date(guess)).map(p=>[p.type,p.value]));
+          return guess-(Date.UTC(+pt.year,+pt.month-1,+pt.day,+pt.hour,+pt.minute)-guess); };
+        const ko=F('kickoff'); const bad=[];
+        const tests=[...SV.sched.map(g=>[g.d,g.t||'13:00']),...['2026-10-31','2026-11-01','2027-01-03','2027-03-13','2027-03-14','2027-09-12','2027-11-06','2027-11-07','2028-11-04','2028-11-05'].map(d=>[d,'13:00'])];
+        for(const [d,t] of tests){ const k=ko({d,t}); if(!k||k.getTime()!==ny(d,t)) bad.push(`${d} ${t}`); }
+        chk(!bad.length,`kickoffs an hour out: ${bad.slice(0,5).join(', ')}`);
+        console.log(`V8. kickoffs: ${tests.length} dates, this season's games and 2027-28's clock changes, all on US Eastern`); }
+
+      /* V9. a leg on a player who did not play is void once his game's stats are in, and a won
+         parlay with a void leg pays on the rest at their own prices */
+      { const g=SV.sched.find(x=>SV.processedGames[x.id]&&x.hs!=null&&x.hs!==x.as);
+        if(g){ const leg={week:+g.w,gid:g.id,pid:'00-NOT-A-PLAYER',team:g.h,stat:'receptions',k:3,side:'over',main:false,price:-110};
+          const win={week:+g.w,gid:g.id,team:g.hs>g.as?g.h:g.a,stat:'ml',k:0,price:-150};
+          chk(F('settleLeg')(leg)==='void','a leg on a player with no stat line in a graded game is not void');
+          chk(F('settleLeg')({...leg,gid:'not-graded-yet'})===null,'a leg whose game has no stats yet should wait');
+          const p={stake:10,payout:10*F('mlToDec')(-110)*F('mlToDec')(-150),legs:[leg,win]}, s=F('settleParlay')(p);
+          chk(s.status==='won'&&Math.abs(F('settledReturn')(p,s)-10*F('mlToDec')(-150))<1e-9,'a won parlay with a void leg does not pay the rest at their prices');
+          const pv={stake:10,payout:19,legs:[leg]}; chk(F('settleParlay')(pv).status==='void'&&F('settledReturn')(pv)===10,'an all-void parlay does not return the stake'); }
+        console.log(`V9. void legs: ${g?'settle void, and the rest of the parlay pays at its own prices':'no graded game to test on'}`); }
+
+      /* V10. nothing the job downloaded is missing from what it published: every finished game's
+         stats (or, by hand, every game final four days before the bake) */
+      { const have=new Set(); for(const wk in (PAY.stats||{})) for(const r of PAY.stats[wk]) have.add(String(+wk)+'|'+r.team);
+        let lost=[];
+        if(rStats){ const fin=new Set(PAY.sched.filter(g=>g.hs!=null).map(g=>g.id)), l=new Set();
+          for(const r of rStats){ if(+r.season!==SEASON||r.season_type!=='REG'||!fin.has(r.game_id)||!SKILL.has(String(r.position).toUpperCase())) continue;
+            if(!have.has(String(+r.week)+'|'+r.team)) l.add(`${r.game_id} ${r.team}`); }
+          lost=[...l]; }
+        else { const bk=Date.parse(PAY.baked_at||'');
+          lost=PAY.sched.filter(g=>{ const k=F('kickoff')(g); return g.hs!=null&&isFinite(bk)&&k&&bk-k.getTime()>4*864e5&&!have.has(g.w+'|'+g.a)&&!have.has(g.w+'|'+g.h); }).map(g=>g.id); }
+        chk(!lost.length,`${lost.length} finished team-games have no stats in the payload (${lost.slice(0,4).join(', ')})`);
+        console.log(`V10. completeness: ${have.size} team-games of stats, none missing ${rStats?'against the downloaded file':'among games final four days before the bake'}`); }
+
+      /* V11. the end of the regular season is said, not left on week 18 */
+      { const keep=SV.sched.map(g=>[g.hs,g.as]); SV.sched.forEach(g=>{ if(g.hs==null){ g.hs=20; g.as=17; } });
+        const ws=d.getElementById('weekSel'); F('renderSlate')();
+        chk(F('seasonOver')()&&/regular season is over/.test(d.getElementById('gamesList').textContent),'a season with every game final does not say it is over');
+        SV.sched.forEach((g,i)=>{ g.hs=keep[i][0]; g.as=keep[i][1]; }); F('renderSlate')();
+        chk(F('seasonOver')()===/regular season is over/.test(d.getElementById('gamesList').textContent),'the season-over note shows mid-season');
+        console.log(`V11. season over: said once every game is final${ws?'':''}`); }
+
+      /* V12. a game's lines are DraftKings' only while the pull is under a day old, and say so */
+      { let dk=0, nv=0; const stale=[], bad=[]; const bk=Date.parse(PAY.baked_at||'');
+        for(const g of PAY.sched){ if(g.ls==='dk'){ dk++; if(g.lat){ const k=F('kickoff')(g), ref=Math.min(isFinite(bk)?bk:Date.now(),k?k.getTime():Infinity);
+            if(ref-Date.parse(g.lat)>24*3600e3+60e3) stale.push(g.id); } }
+          else if(g.ls==='nflverse') nv++;
+          if(g.ls&&!F('lineSource')(g)) bad.push(g.id); }
+        if(rGames) for(const r of rGames){ const g=gOf(r.game_id); if(!g||g.ls!=='nflverse') continue;
+          const sp=parseFloat(r.spread_line), tot=parseFloat(r.total_line);
+          if((isFinite(sp)&&g.sp!==sp)||(isFinite(tot)&&g.tot!==tot)) bad.push(`${g.id} says nflverse but carries ${g.sp}/${g.tot}, games.csv ${sp}/${tot}`); }
+        chk(!stale.length,`DraftKings lines more than a day old are on the page: ${stale.slice(0,4).join(', ')}`);
+        chk(!bad.length,`line sources wrong: ${bad.slice(0,4).join('; ')}`);
+        console.log(`V12. line sources: DraftKings on ${dk} games, every pull within a day of its kickoff; nflverse on ${nv}`); }
+
+      /* V13. depth charts carried forward from an older payload say how old they are */
+      { const g=openG[0]||null, keep=PAY.depth_dt; let ok=null;
+        if(g&&PAY.baked_at&&keep){ const txt=()=>d.getElementById('gameView').textContent;
+          PAY.depth_dt=new Date(Date.parse(PAY.baked_at)-10*864e5).toISOString().slice(0,10); SV.ui.game=g.id; F('renderGame')(); const old=/Depth charts as of/.test(txt());
+          PAY.depth_dt=keep; F('renderGame')(); const now=/Depth charts as of/.test(txt()); F('closeGame')();
+          ok=old&&now===(Date.parse(PAY.baked_at)-Date.parse(keep+'T12:00:00Z')>3*864e5);
+          chk(ok,'depth charts ten days old do not say so on the game page, or fresh ones do'); }
+        console.log(`V13. depth charts: ${ok==null?'no game to show them on':'a chart carried forward says its date'}`); }
+
+      /* V14. the tags a reader sees: a Q beside a Questionable player's name, and a leg in the
+         builder on a player ruled out marked, with what a book does with it */
+      { const g=openG[0]||null; let did=false;
+        if(g){ const r=F('rosterFor')(g,false), x=Object.values(r).flatMap(t=>t.players).find(x=>x.starter&&x.pl.grp!=='K'&&!F('injTag')(x.pl.id));
+          if(x){ const INJ=w.eval('INJ'), keepP=JSON.stringify(SV.parlay||{});
+            INJ[x.pl.id]={k:'q',t:'Q',title:'Questionable'}; SV.ui.game=g.id; SV.ui.open={}; F('renderGame')();
+            const row=d.querySelector(`#gameView .plrbtn[data-open="${x.pl.id}"] .inj`);
+            chk(!!row&&row.textContent==='Q','a Questionable player has no Q beside his name on the game page');
+            delete INJ[x.pl.id];
+            SV.parlay={}; const l=F('statLines')(x).find(l=>!l.prob&&l.rungs.length);
+            F('toggleLeg')(F('legKey')(g.id,x.pl.id,l.stat),l.rungs[0].k,g,'over',false);
+            SV.inactive[x.pl.id]={week:cw,status:'Out',inj:'Ankle'}; F('renderParlay')();
+            const body=d.getElementById('parlayBody');
+            chk(/not expected to play/.test(body.textContent)&&!!body.querySelector('.legrow .inj.inj-out'),'a builder leg on a player ruled out is not marked');
+            delete SV.inactive[x.pl.id]; SV.parlay=JSON.parse(keepP); F('closeGame')(); F('renderParlay')(); did=true; } }
+        console.log(`V14. tags: ${did?'Q on the game page, ruled out in the builder with what a book does':'no game to show them on'}`); }
+
+      if(skipped.length) console.log(`V. raw files not compared (PROPS_AUDIT_RAW is not set; weekly.py sets it): ${skipped.join(', ')}`);
+    })(); }catch(e){ chk(false,'section V threw: '+(e&&e.stack||e)); }
+
     console.log(`\n${checks} checks, ${fails.length} failures, ${errs.length} runtime errors`);
     fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
     errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));
