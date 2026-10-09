@@ -20,6 +20,20 @@ const URL_ = 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay';
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
+/* how the smoke ends, whichever way: the count, every failure, an exit code. A mistake in the
+   smoke's own code stops it here with the stack (the .catch at the bottom), and a run still
+   going after ten minutes (it takes about one) stops with what it has, so it never waits on
+   the windows it left open */
+let ended = false;
+function finish(why) {
+  if (ended) return; ended = true;
+  if (why) { checks++; fails.push(why); }
+  console.log(`${checks} checks, ${fails.length} failures`);
+  fails.forEach(f => console.log('  FAIL:', f));
+  process.exit(fails.length ? 1 : 0);
+}
+const SMOKE_LIMIT_MS = 10 * 60 * 1000;
+setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const knob = row => txt(row.querySelector('.knob'));
 const lineAt = row => txt(row.querySelector('.lineLbl'));
@@ -263,9 +277,13 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   {
     /* An Atlanta player (out of the payload, so any season) is ruled Out for the week on the
        injury report the page reads, and is on no line of the final box score. A second has no
-       such word: he is graded on nothing, and the row says he is not on the box score. */
+       such word: he is graded on nothing, and the row says he is not on the box score. The
+       second is one the real payload says nothing about either (no row on any week's injury
+       report, no roster status but active), so a real Out later in the season cannot void him. */
     const onSheet = ['Bijan Robinson', 'Kyle Pitts', 'Michael Penix Jr.', 'Chuba Hubbard'];
-    const [OUT, QUIET] = JSON.parse(PAYLOAD).players.filter(x => x.t === 'ATL' && !onSheet.includes(x.n)).slice(0, 2);
+    const P0 = JSON.parse(PAYLOAD), reported = new Set((P0.injuries || []).map(r => r.gsis_id));
+    const atl = P0.players.filter(x => x.t === 'ATL' && !onSheet.includes(x.n));
+    const OUT = atl[0], QUIET = atl.find(x => x !== OUT && !reported.has(x.id) && (x.st == null || x.st === 'ACT'));
     const pay = P => { P.injuries = (P.injuries || []).concat([{ season: String(SEA), week: '2', gsis_id: OUT.id, report_status: 'Out', game_status: '' }]); return P; };
     const file = { updated: null, games: [`${SEA}_02_CAR_ATL`], parlays: [
       { id: 'dnp-over', week: 2, stake: 10, legs: [legF(0, OUT.n, 'ATL', 'receiving_yards', 50.5, 'over', true), legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 43.5, 'over', true)] },
@@ -528,7 +546,5 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   chk(shaped.d.querySelectorAll('.sp-leg').length === 1, 'a hand-written parlay did not render');
   chk(knob(shaped.d.querySelector('.sp-leg')) === '86', 'a hand-written parlay is not tracked');
 
-  console.log(`${checks} checks, ${fails.length} failures`);
-  fails.forEach(f => console.log('  FAIL:', f));
-  process.exit(fails.length ? 1 : 0);
-})();
+  finish();
+})().catch(e => finish('the smoke threw: ' + (e && e.stack || e)));

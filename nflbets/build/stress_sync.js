@@ -79,4 +79,4 @@ function boot(net) {
   console.log(`seed ${seed}: added ${added.size}, deleted ${deleted.size}, store holds ${docIds.size}, puts ${store.puts}; lost ${lost.join(',') || 'none'}; came back ${back.join(',') || 'none'}; devices agree ${agree}; stakes ${stakes.join('/')} store ${stakeDoc}; recovered ${W.map(w => w.NFLSYNC.state().recovered).join('/')}`);
   for (const w of W) w.close();
   process.exit(lost.length || back.length || !agree || stakes.some(x => x !== stakeDoc) ? 1 : 0);
-})();
+})().catch(e => { console.log('the stress run threw: ' + (e && e.stack || e)); process.exit(1); });

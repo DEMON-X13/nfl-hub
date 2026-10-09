@@ -240,8 +240,17 @@ rebuilding it too:
 ```
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"; includes the sync layer against a stubbed store
+node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the Live Parlays section; must end "0 failures"
 ```
+
+The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
+board's week the way the board does (the first with a game still to play, else the last), checks
+what needs a game to come only when there is one, and, once the payload's last game is about to
+kick off, boots the page two days before it so the builder and the sync checks still have a game
+to stand on. `--season-over` gives every game a result first; run it after a change to the smoke or
+to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
+with its stack, and a run still going after ten minutes stops and fails.
 
 `nflbets/build/sync.js` (the sync layer) is inlined by the build, so a change to it is a rebuild too.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless

@@ -1,6 +1,13 @@
 /* Check the built X NFL Bets and Stats page (nflbets/).
  *
- *   node nflbets/build/smoke.js        (from the hub root)
+ *   node nflbets/build/smoke.js                  (from the hub root)
+ *   node nflbets/build/smoke.js --season-over    the same, on this season with every game played
+ *
+ * The second is how the playoffs and the off-season look to the page: every game in
+ * betting/state.json has its result (24-17 to the home side where it has none yet, on a line of
+ * its own where it has none: the home side by 2.5, 44.5 points, -140/+120) and is graded. The elo
+ * job runs the plain smoke every morning, January included, so a change to this file or to the
+ * Pick'ems board is run both ways.
  *
  * Boots the real page against a stubbed state.json and payload.json: the Pick'ems board, the
  * call on each game, the prop model's prices that open underneath one, and the Props tab,
@@ -15,6 +22,20 @@ const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsd
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
 const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
+const SEASON_OVER = process.argv.includes('--season-over');
+if (SEASON_OVER) {
+  const proto = Object.values(STATE.processed)[0] || {};
+  STATE.odds = STATE.odds || {};
+  for (const g of STATE.schedule) {
+    if (g.result != null) continue;
+    if (g.spread_line == null) g.spread_line = 2.5;
+    if (g.total_line == null) g.total_line = 44.5;
+    if (!STATE.odds[g.game_id]) STATE.odds[g.game_id] = { home: -140, away: 120, src: 'smoke' };
+    Object.assign(g, { home_score: 24, away_score: 17, result: 7 });
+    STATE.processed[g.game_id] = Object.assign(JSON.parse(JSON.stringify(proto)),
+      { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, result: 7, correct: true, line: g.spread_line });
+  }
+}
 const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
@@ -39,8 +60,25 @@ const ELO_MU = (() => {
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
-/* a promise the page leaves rejected (an async handler that threw) is a failure, not a crash */
-process.on('unhandledRejection', e => { checks++; fails.push('the page threw in an async handler: ' + (e && e.message || e)); });
+/* how the smoke ends, whichever way it ends: the count, every failure, an exit code. The jsdom
+   windows it leaves open (the sync layer's polls, the Live Parlays section's refresh) keep the
+   process alive, so nothing ends it but this. */
+let ended = false;
+function finish(why) {
+  if (ended) return; ended = true;
+  if (why) { checks++; fails.push(why); }
+  console.log(`${checks} checks, ${fails.length} failures`);
+  fails.forEach(f => console.log('  FAIL:', f));
+  process.exit(fails.length ? 1 : 0);
+}
+/* a promise the page leaves rejected (an async handler that threw) is a failure, not a crash.
+   The smoke's own code never lands here: its body ends in a .catch that stops the run with the
+   stack, so a mistake in the smoke is a fast exit 1, never a run that waits on open windows. */
+process.on('unhandledRejection', e => { checks++; fails.push('the page threw in an async handler: ' + (e && e.stack || e)); });
+/* and it never hangs: the elo job runs it every morning with no time limit of its own, so a run
+   still going after ten minutes (it takes one or two) stops with what it has, and fails */
+const SMOKE_LIMIT_MS = 10 * 60 * 1000;
+setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
 
 /* ---- the published page is a fresh build of its sources ----
    Nothing rebuilds the page on a schedule: it is rebuilt by hand when a source changes. A
@@ -73,24 +111,55 @@ process.on('unhandledRejection', e => { checks++; fails.push('the page threw in 
     if (!close(QB, ref.QB, 1e-9)) bad.push('QB_MODEL'); }
   chk(app.length > 100000 && bad.length === 0, 'the betting app in the published page does not carry the reference model numbers: ' + bad.join(', '));
 }
+/* the page's clock. In the season the page runs on the real one. Once the prop model's last game
+   is about to kick off (its final weekend, the playoffs, the off-season, until next season's
+   schedule is in the payload) no game can take a builder leg, and much of what is checked here
+   (the builder, the badges and second prices on its legs, the sync layer's parlays) has nothing
+   to stand on; the page is then booted two days before that last kickoff, as it was on the
+   Friday of the season's final weekend. The board, the results and the grades come from the
+   files, so they are checked as they are. Schedule times are US Eastern, read through the time
+   zone database rather than a date the clocks change on. */
+const etKick = r => { const naive = Date.parse(`${r.d}T${r.t || '13:00'}:00Z`); if (!isFinite(naive)) return NaN;
+  const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(naive)).find(p => p.type === 'timeZoneName');
+  const m = tz && tz.value.match(/GMT([+-]\d+)/); return naive - (m ? +m[1] : -5) * 3600e3; };
+const LAST_KICK = Math.max(...(JSON.parse(PAYLOAD).sched || []).map(etKick).filter(isFinite));
+const PAGE_SHIFT_MS = isFinite(LAST_KICK) && Date.now() > LAST_KICK - 3600e3 ? Date.now() - (LAST_KICK - 2 * 86400e3) : 0;
+function shiftClock(w) {
+  if (!PAGE_SHIFT_MS) return;
+  const D0 = w.Date;
+  class D extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() - PAGE_SHIFT_MS); }
+    static now() { return D0.now() - PAGE_SHIFT_MS; } }
+  w.Date = D;
+}
+if (PAGE_SHIFT_MS) console.log(`the payload's last game kicks off within the hour or has: the page is run as at ${new Date(Date.now() - PAGE_SHIFT_MS).toISOString()}, two days before it`);
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
 
-/* the week the board opens on: the first with a game the job has not graded */
-function firstOpenWeek(st) {
-  const graded = new Set(Object.keys(st.processed));
-  return Math.min(...st.schedule.filter(g => !graded.has(g.game_id)).map(g => +g.week));
+/* the game the builder checks put their legs on: the season's last kickoff still to come, so
+   it does not kick off while the smoke runs (the prop model drops a builder leg whose game has
+   started), whatever day of the week the smoke runs on */
+function laterGame(w, S) {
+  const ko = x => { const k = w.eval('kickoff')(x); return k ? k.getTime() : -Infinity; }, started = w.eval('gameStarted');
+  return S.sched.filter(x => !started(x)).sort((a, b) => ko(b) - ko(a))[0] || null;
 }
 
-/* what ESPN's scoreboard says about the week: for the games the job has not graded, the
+/* the week the board opens on, taken the way the board takes it: the first week with a game
+   still to play (no published result), and once every game has one (the playoffs, the
+   off-season) the last week of the schedule. Never Infinity. */
+function openWeek(st) {
+  const weeks = [...new Set(st.schedule.map(g => +g.week))].sort((a, b) => a - b);
+  return weeks.find(wk => st.schedule.some(g => +g.week === wk && g.result == null)) || weeks[weeks.length - 1];
+}
+
+/* what ESPN's scoreboard says about the week: for the games with no published result, the
    first is over (the home side won 27-20), the second is on (the away side leads 14-10 in
-   the third quarter), the rest have not kicked off. Graded games are final. */
+   the third quarter), the rest have not kicked off. Games with a result are final. */
 function scoreboard(state, week) {
   const games = state.schedule.filter(g => +g.week === week);
   let n = 0;
   return { events: games.map(g => {
-    const graded = !!state.processed[g.game_id];
+    const graded = g.result != null;
     const kind = graded ? 'final' : (n++ === 0 ? 'post' : (n === 2 ? 'in' : 'pre'));
     const hs = kind === 'final' ? g.home_score : kind === 'post' ? 27 : kind === 'in' ? 10 : 0;
     const as = kind === 'final' ? g.away_score : kind === 'post' ? 20 : kind === 'in' ? 14 : 0;
@@ -126,6 +195,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
+        shiftClock(w);
         w.addEventListener('error', e => errs.push(e.message));
         if (seed) seed(w);
         w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, '')); urls.push(s);
@@ -149,7 +219,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 }
 
 (async () => {
-  const state = STATE, week = firstOpenWeek(STATE);
+  const state = STATE, week = openWeek(STATE);
+  /* whether that week has a game still to play: in the playoffs and the off-season every game
+     has its result, the board opens on the last week, and the checks that need a game to come
+     (the scoreboard's live and just-finished games) wait for next season */
+  const toPlay = state.schedule.filter(g => +g.week === week && g.result == null);
   const { w, d, errs, fetched, urls, timedOut } = await run(state, undefined, wk => scoreboard(state, wk));
   await wait(700);                                  /* the scoreboard is read once on load, after the prop model is up */
 
@@ -183,7 +257,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   let cards = [...d.querySelectorAll('.pk-game')];
   const want = state.schedule.filter(g => +g.week === week).length;
   chk(cards.length === want, `expected ${want} games in week ${week}, got ${cards.length}`);
-  chk(+d.getElementById('pkWeek').value === week, 'the board did not open on the week with calls to show');
+  chk(+d.getElementById('pkWeek').value === week, toPlay.length ? 'the board did not open on the first week with a game to play' : 'with every game played, the board did not open on the last week');
   chk(/Vegas · week \d+ \d+–\d+/.test(txt(d.getElementById('pkWeekRec'))), 'no week record: ' + txt(d.getElementById('pkWeekRec')));
   /* Vegas is the board's baseline: the favourite by the moneylines with the margin out */
   const vegasPick = g => { const o = (state.odds || {})[g.game_id], im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
@@ -194,8 +268,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!!d.querySelector('.pk-gamehead') && /Date.*Matchup.*Win probability.*Confidence.*Score prediction.*Final score/.test(txt(d.querySelector('.pk-gamehead'))),
     'the column header is not the betting board\'s');
   chk(cards.every(c => c.querySelector('.pk-probrow .pk-prob .pk-a') && c.querySelector('.pk-probrow .pk-prob .pk-h')), 'a game is missing its split bar');
-  chk(cards.every(c => /HIGH|MED|LOW|50\/50/.test(txt(c.querySelector('.pk-tier')))), 'a game is missing its confidence band');
-  chk(cards.every(c => c.querySelector('.pk-ttag.pk-win')), 'no pick is marked on a matchup tag');
+  /* the board makes a call wherever Vegas has priced the game (both moneylines, or a spread),
+     and says "no call yet" where it has not: a week whose lines are not posted is not a failure */
+  const gameOf = c => state.schedule.find(x => x.game_id === c.dataset.game);
+  const lined = g => { const o = (state.odds || {})[g.game_id];
+    return !!(o && isFinite(o.home) && isFinite(o.away) && o.home && o.away) || (g.spread_line != null && isFinite(g.spread_line) && +g.spread_line !== 0); };
+  chk(cards.every(c => lined(gameOf(c)) ? /HIGH|MED|LOW|50\/50/.test(txt(c.querySelector('.pk-tier'))) : /no call yet/.test(txt(c.querySelector('.pk-tier')))),
+    'a game Vegas has priced is missing its confidence band, or one it has not shows a band');
+  chk(cards.every(c => !!c.querySelector('.pk-ttag.pk-win') === lined(gameOf(c))), 'a game Vegas has priced has no pick marked on a matchup tag, or one it has not has a pick');
+  /* the week still to play has its lines: they are posted well before the board reaches it */
+  if (toPlay.length) chk(cards.some(c => lined(gameOf(c))), `no game in week ${week}, the week still to play, has a Vegas line`);
   chk(!d.querySelector('#tab-pickems .ttag'), 'a betting tag came through in the prop model\'s class names');
   chk(cards.every(c => c.querySelector('.pk-result')), 'a game is missing its final-score cell');
   /* every pick on the board is the Vegas favourite */
@@ -214,7 +296,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     if (hs === as) { if (v === g.home_team) hs++; else as++; }
     if (txt(c.querySelector('.pk-pred .pk-psc')) === `${as}–${hs}`) predOk++;
   }
-  chk(predAll > 0 && predOk === predAll, `score predictions are the spread around the book's total: ${predOk} of ${predAll}`);
+  chk((predAll > 0 || !toPlay.length) && predOk === predAll, `score predictions are the spread around the book's total: ${predOk} of ${predAll}`);
   /* a prediction's "by" is the gap between the two scores it shows */
   { const bad = cards.filter(c => { const m = txt(c.querySelector('.pk-pred .pk-psc')).match(/^(\d+)–(\d+)$/), by = txt(c.querySelector('.pk-pred .pk-pby')).match(/by (\d+)/);
       return m && (!by || +by[1] !== Math.abs(+m[1] - +m[2])); });
@@ -233,7 +315,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const on = cards.filter(c => / leading |Tied /.test(txt(c.querySelector('.pk-result')))).length;
   chk(pend + done + on === cards.length, `every result cell is 0 : 0, a result or a game on now: ${pend} + ${done} + ${on} of ${cards.length}`);
   /* the scoreboard was read on load: a game the job has not reached shows what ESPN says */
-  const ungraded = state.schedule.filter(g => +g.week === week && !state.processed[g.game_id]);
+  const ungraded = toPlay;
   chk(/scores \d/.test(txt(d.getElementById('pkStamp'))), 'the Pick\'ems stamp does not say when the scoreboard was read: ' + txt(d.getElementById('pkStamp')));
   if (ungraded.length) {
     const g0 = ungraded[0], c0 = cards.find(c => c.dataset.game === g0.game_id), hit0 = vegasPick(g0) === g0.home_team;
@@ -263,7 +345,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(firstFin < 0 || lastTodo < firstFin, 'a game still to play sits below a final on the board');
     chk(firstFin < 0 ? seps.length === 0 : (seps.length === 1 && kids[firstFin - 1] === seps[0] && /Completed/.test(txt(seps[0]))),
       'the board\'s Completed heading is missing, doubled or not right above the first final'); }
-  const graded = cards.find(c => c.classList.contains('pk-played'));
+  const graded = cards.find(c => c.classList.contains('pk-played') && lined(gameOf(c)));
   if (graded) chk(!!graded.querySelector('.pk-matchup .pk-res') && /Pick (hit|missed)/.test(txt(graded.querySelector('.pk-result'))),
     'a graded game shows no tick or cross and no Pick hit/missed');
 
@@ -279,9 +361,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!!body && !!body.querySelector('.gbets') && /Game bets/.test(txt(body.querySelector('.gbets h2'))), 'the opened game is not the prop model\'s Game bets card');
   chk(!body || !body.querySelector('.card'), 'the card chrome should come off inside the row');
   const rows = body ? [...body.querySelectorAll('tr')] : [];
-  chk(rows.length === 4, `expected to win and to cover for both sides, got ${rows.length} row(s): ${txt(body)}`);
+  /* to win for both sides, and to cover for both where the prop model has a spread (a game
+     whose spread is not posted yet offers the money line alone, and says so) */
+  const nLines = id => { const r = w.eval('S').sched.find(x => x.id === id); return r && w.gameBet(r, r.h, 'ats') ? 4 : 2; };
+  const firstLines = nLines(first.dataset.game);
+  chk(rows.length === firstLines, `expected ${firstLines === 4 ? 'to win and to cover' : 'to win'} for both sides, got ${rows.length} row(s): ${txt(body)}`);
   chk(rows.filter(r => /To win/.test(txt(r))).length === 2, 'both sides should have a to-win price');
-  chk(rows.filter(r => /To cover/.test(txt(r))).length === 2, 'both sides should have a to-cover price');
+  chk(rows.filter(r => /To cover/.test(txt(r))).length === firstLines - 2, 'both sides should have a to-cover price where there is a spread, and none where there is not');
+  chk(firstLines === 4 || /No spread posted yet/.test(txt(body)), 'a game with no spread does not say why it offers the money line alone');
   const pcts = rows.filter(r => /To win/.test(txt(r))).map(r => parseInt(txt(r.querySelector('.pct')), 10));
   chk(Math.abs(pcts[0] + pcts[1] - 100) <= 1, `the two win chances do not add up: ${pcts.join(' + ')}`);
   chk(rows.every(r => /[-+]\d+est\./.test(txt(r).replace(/\s/g, ''))), 'a row is missing our own price');
@@ -301,7 +388,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   if (openCard) {
     if (openCard !== first) { first.click(); await wait(30); openCard.click(); await wait(60); }
     const boxes = [...openCard.querySelectorAll('input[data-leg]')];
-    chk(boxes.length === 4 && boxes.every(b => !b.checked), `a game not yet kicked off should offer four unticked lines, got ${boxes.length}`);
+    chk(boxes.length === nLines(openCard.dataset.game) && boxes.every(b => !b.checked), `a game not yet kicked off should offer ${nLines(openCard.dataset.game)} unticked lines, got ${boxes.length}`);
     chk(/Tick one and it joins the parlay/.test(txt(openCard.querySelector('.gbets'))) && !!openCard.querySelector('.pk-tolegs a[href="#parlay"]'), 'no note pointing at Parlay Builders');
     const key = boxes[0].dataset.leg;
     boxes[0].click();
@@ -324,7 +411,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     /* resolved the way the game's own page resolves it: a tick or a cross on every line once the score is in */
     const scored = w.eval('hasScore')(w.eval('S').sched.find(x => x.id === lockedCard.dataset.game));
     const marks = [...lockedCard.querySelectorAll('td.pick .res')];
-    chk(marks.length === 4, `a kicked-off game should mark four lines, got ${marks.length}`);
+    chk(marks.length === nLines(lockedCard.dataset.game), `a kicked-off game should mark ${nLines(lockedCard.dataset.game)} lines, got ${marks.length}`);
     if (scored) chk(marks.every(m => /win|loss/.test(m.className) || /push/.test(txt(m))) && lockedCard.querySelectorAll('tr.hit, tr.miss').length >= 2, 'a game with a score is not marked won or lost line by line');
     else chk(marks.every(m => txt(m) === '–'), 'a game without a score should show dashes, not results');
     if (!wasOpen) { lockedCard.click(); await wait(30); } }
@@ -529,27 +616,31 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
   /* ---- the board on other seasons' shapes: a neutral site, two lines, the playoffs, the end ---- */
   { const alt = JSON.parse(JSON.stringify(state)), P0 = PAYLOAD;    /* the payload as parsed above */
-    const wkGames = alt.schedule.filter(g => +g.week === week);
-    const home = wkGames.find(g => !(g.location === 'Neutral' || g.gametime === '09:30'));
-    if (home) Object.assign(home, { location: 'Neutral', stadium: 'Wembley Stadium' });
-    /* a game the prop model has a spread for, in the open week when there is one (week 1 before
-       any line is posted has none: then the check waits for a week that does) */
-    const allPriced = alt.schedule.filter(g => { const r = P0.sched.find(x => x.id === g.game_id); return r && r.sp != null; });
-    const priced = allPriced.filter(g => +g.week === week).concat(allPriced.filter(g => +g.week !== week));
-    const moved = priced[0], kept = moved && priced.find(g => g !== moved && +g.week === +moved.week);
-    if (moved) moved.spread_line = P0.sched.find(x => x.id === moved.game_id).sp + 1;
-    if (kept) kept.spread_line = P0.sched.find(x => x.id === kept.game_id).sp;
-    /* two wild-card games after week 18 */
+    /* two wild-card games after week 18, still to play */
     for (const g of alt.schedule.filter(x => +x.week === 18).slice(0, 2)) {
       const x = JSON.parse(JSON.stringify(g)); x.game_id = x.game_id.replace(/_18_/, '_19_'); x.week = 19;
       for (const k of ['result', 'home_score', 'away_score']) delete x[k]; alt.schedule.push(x); }
+    /* the week this board opens on: this one in the season, the wild card once the regular
+       season is played */
+    const altWeek = openWeek(alt);
+    const home = alt.schedule.find(g => +g.week === altWeek && !(g.location === 'Neutral' || g.gametime === '09:30'));
+    if (home) Object.assign(home, { location: 'Neutral', stadium: 'Wembley Stadium' });
+    /* a game the prop model has a spread for, in the open week when there is one (week 1 before
+       any line is posted has none, and nor does a wild-card week: then the check goes to a week
+       that does) */
+    const allPriced = alt.schedule.filter(g => { const r = P0.sched.find(x => x.id === g.game_id); return r && r.sp != null; });
+    const priced = allPriced.filter(g => +g.week === altWeek).concat(allPriced.filter(g => +g.week !== altWeek));
+    const moved = priced[0], kept = moved && priced.find(g => g !== moved && +g.week === +moved.week);
+    if (moved) moved.spread_line = P0.sched.find(x => x.id === moved.game_id).sp + 1;
+    if (kept) kept.spread_line = P0.sched.find(x => x.id === kept.game_id).sp;
     const A = await run(alt, undefined, wk => scoreboard(alt, wk));
+    chk(+A.d.getElementById('pkWeek').value === altWeek, `with the wild card scheduled the board did not open on week ${altWeek}: ${A.d.getElementById('pkWeek').value}`);
     chk(!A.timedOut && A.errs.length === 0, 'the board broke on a schedule with a neutral site and the playoffs: ' + A.errs.join('; '));
     const card = id => A.d.querySelector(`.pk-game[data-game="${id}"]`);
     if (home) chk(txt(card(home.game_id).querySelector('.pk-at')) === 'vs' && /Wembley/.test(card(home.game_id).querySelector('.pk-at').title), 'a game nflverse marks Neutral does not read "vs" with its stadium');
     const open1 = c => { c.click(); return wait(60); };
     if (moved) {
-      if (+moved.week !== week) { A.d.getElementById('pkWeek').value = String(moved.week); A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change')); await wait(40); }
+      if (+moved.week !== +A.d.getElementById('pkWeek').value) { A.d.getElementById('pkWeek').value = String(moved.week); A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change')); await wait(40); }
       await open1(card(moved.game_id));
       chk(/nflverse's line/.test(txt(card(moved.game_id).querySelector('.pk-lines'))), 'a game whose board and prop-model spreads differ does not say so when opened');
       if (kept) { await open1(card(kept.game_id)); chk(!card(kept.game_id).querySelector('.pk-lines'), 'a game on one line says it is on two'); } }
@@ -625,7 +716,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     posBtns.find(b => b.dataset.pos === 'DL').click(); await wait(40);
     chk(txt(rankRows()[0]).includes(eloP.groups.DL.top[0].name), 'switching to the defensive line did not redraw the rankings');
     /* a ranked player's shield and place stand in front of his name on his builder leg; a team leg has none */
-    { const S = w.eval('S'), top = eloP.groups.QB.top[0]; const wk = Math.max(...S.sched.map(x => +x.w)); const g = S.sched.find(x => +x.w === wk);
+    { const S = w.eval('S'), top = eloP.groups.QB.top[0]; const g = laterGame(w, S);
       const key = g.id + '|' + top.id + '|passing_yards';
       S.parlay[key] = { gid: g.id, pid: top.id, stat: 'passing_yards', k: 200, side: 'over', main: false, p: 0.5, price: -110, src: 'est', name: top.name, pos: 'QB', grp: 'QB', week: g.w, label: '200+ pass yds' };
       S.parlay[g.id + '|team:' + g.h + '|ml'] = { gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -120, src: 'real', name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win' };
@@ -845,7 +936,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(w.NFLSYNC && w.NFLSYNC.state().live === false && w.NFLSYNC.state().url === null, 'with sync.json unreachable the page should be local-only');
   chk(/Not synced/.test(txt(d.getElementById('syncStamp'))), 'the header does not say the page is not synced: ' + txt(d.getElementById('syncStamp')));
   /* a game that has not kicked off, so the builder keeps the leg */
-  const openGame = S => { const wk = Math.max(...S.sched.map(x => +x.w)); return S.sched.find(x => +x.w === wk); };
+  const openGame = S => laterGame(w, S);
   const teamLeg = g => ({ gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -120, src: 'real',
     name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win' });
   const settle = () => wait(900);
@@ -1066,7 +1157,5 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     for (const x of [P, R]) x.w.close();
   }
 
-  console.log(`${checks} checks, ${fails.length} failures`);
-  fails.forEach(f => console.log('  FAIL:', f));
-  process.exit(fails.length ? 1 : 0);
-})();
+  finish();
+})().catch(e => finish('the smoke threw: ' + (e && e.stack || e)));
