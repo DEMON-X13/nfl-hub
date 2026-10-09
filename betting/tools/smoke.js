@@ -157,10 +157,15 @@ async function reality() {
     } else console.log('  (5e skipped: no team this week has a graded game behind it)'); }
   console.log(`  5c: ${qbCases} quarterback${qbCases === 1 ? '' : 's'} held out this week on the report`);
 
-  /* 5f. no game played abroad keeps nflverse's 'Home' (betting/neutral_sites.json) */
+  /* 5f. no game played abroad keeps nflverse's 'Home' (betting/neutral_sites.json): on the page, and
+     in the state the job wrote (a state carrying atKickoff is this job's; one from before it is
+     read right by the page and rewritten by the next run) */
   { const N = PATCHES.NEUTRAL, st = new Set((N.stadiums || []).map(x => x.toLowerCase()));
-    const bad = S.schedule.filter(g => g.location === 'Home' && ((N.games || {})[g.game_id] === 'Neutral' || st.has(String(g.stadium || '').trim().toLowerCase())));
-    check(!bad.length, '5f: games played abroad still coded Home: ' + bad.map(g => g.game_id + ' (' + g.stadium + ')').join(', '));
+    const abroad = g => g.location === 'Home' && ((N.games || {})[g.game_id] === 'Neutral' || st.has(String(g.stadium || '').trim().toLowerCase()));
+    const bad = S.schedule.filter(abroad);
+    check(!bad.length, '5f: games played abroad still coded Home on the page: ' + bad.map(g => g.game_id + ' (' + g.stadium + ')').join(', '));
+    if ('atKickoff' in P) { const badP = P.schedule.filter(abroad);
+      check(!badP.length, '5f: the job wrote games played abroad as Home: ' + badP.map(g => g.game_id + ' (' + g.stadium + ')').join(', ')); }
     for (const g of S.schedule.filter(x => (N.games || {})[x.game_id] === 'Neutral'))
       check(w.eval(`features(S.schedule.find(x=>x.game_id===${J(g.game_id)}),S.teams).neutral`) === 1, `5f: ${g.game_id} is not neutral in Alpha's inputs`); }
 

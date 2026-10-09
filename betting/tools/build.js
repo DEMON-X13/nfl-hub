@@ -58,6 +58,9 @@ const HOOK = `<script>
     async get(key){
       const r=await fetch(window.STATE_URL||'state.json',{cache:'no-store'}); if(!r.ok) throw new Error('state.json '+r.status);
       const S=await r.json(); const mine=loadMine(); const picks=mine.myPicks||{};
+      /* a game abroad that nflverse codes 'Home' is neutral on the page whatever the state says
+         (patches.js neutralRow; the job writes it so too, and a state from before it is read right) */
+      if(Array.isArray(S.schedule)&&typeof neutralRow==='function') S.schedule=S.schedule.map(neutralRow);
       S.myPicks=picks; S.bets=mine.bets||{}; S.bank=mine.bank||{lastAmt:20,filter:'all',build:[],mode:'straight'};
       S.lastBackup=mine.lastBackup||null; S.lastBackupHow=mine.lastBackupHow||null;
       S.odds=Object.assign({},S.odds||{},mine.odds||{});
