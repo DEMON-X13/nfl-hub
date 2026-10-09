@@ -257,5 +257,9 @@ const RESULTS = {
  "wk4:ATL-NO": [
   45,
   24
+ ],
+ "wk5:TB-DAL": [
+  24,
+  16
  ]
 };
