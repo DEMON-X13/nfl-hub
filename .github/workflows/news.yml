@@ -2,29 +2,37 @@ name: Update season tracker
 
 on:
   schedule:
-    # After the Thursday, Sunday and Monday games (8am Eastern = 12:00 UTC in season).
-    # Free sources only (ESPN feeds, TeamRankings tables): no credits.
-    - cron: "0 12 * * 5"    # Friday
-    - cron: "0 12 * * 1"    # Monday
-    - cron: "0 12 * * 2"    # Tuesday
-    # the Deep Dive's lineups: nflverse files the week's game statuses about 14:30 UTC the day
-    # after each report, so these catch Wednesday's for Thursday night, Friday's for Sunday and
-    # late moves before the London game. Free sources only.
-    - cron: "7 15 * * 4"    # Thursday
-    - cron: "7 15 * * 6"    # Saturday
-    - cron: "7 11 * * 0"    # Sunday morning
-    # post-game: results and team stats the same night. The narrative is untouched;
-    # run-auto only refreshes the self-updating parts and drafts a week it cannot show.
-    - cron: "27 6 * * 5"    # after Thursday night
-    - cron: "27 23 * * 0"   # after Sunday early
-    - cron: "27 2 * * 1"    # after Sunday late
-    - cron: "27 6 * * 1"    # after Sunday night
-    - cron: "27 6 * * 2"    # after Monday night
+    # GitHub starts this repo's scheduled runs late: 2.3 to 9.4 hours after the cron time, median
+    # about 6.5 (every workflow here, measured Sep 17 to Oct 9, 2026), and now and then not at all.
+    # So a run that has to land before a kickoff is set early enough to make it 9.4 hours late, and
+    # has a twin. Times are UTC. Free sources only (ESPN feeds, TeamRankings tables, nflverse): no credits.
+    #
+    # post-game: results, records and team stats. The narrative is untouched; run-auto only
+    # refreshes the self-updating parts and drafts a week it cannot show.
+    - cron: "27 6 * * 5"    # Fri, after Thursday night
+    - cron: "27 23 * * 0"   # Sun, after the early games
+    - cron: "27 2 * * 1"    # Mon, after the late games
+    - cron: "27 6 * * 1"    # Mon, after Sunday night; also Saturday's report for Monday night
+    - cron: "27 6 * * 2"    # Tue, after Monday night
+    - cron: "47 11 * * 1,2,5"  # Mon, Tue, Fri: the day's refresh once the night's runs have settled
+    # the Deep Dive's lineups: nflverse files a day's injury report about 14:30 UTC the next morning,
+    # and ESPN shows the game statuses the evening they are filed (about 20:00 UTC)
+    - cron: "7 15 * * 2"    # Tue: Monday's report (a Wednesday game's statuses: week 12, Nov 25)
+    - cron: "7 15 * * 3"    # Wed: Tuesday's report
+    - cron: "7 21 * * 3"    # Wed: ESPN's Wednesday statuses for Thursday (lands by 06:30 Thu)
+    - cron: "7 3 * * 4"     # Thu: the same again, before Thanksgiving's 12:30pm ET kickoff
+    - cron: "47 14 * * 4"   # Thu: nflverse's Wednesday report, before Thursday night (lands by 00:10 Fri)
+    - cron: "7 21 * * 5"    # Fri: ESPN's Friday statuses for Sunday; nflverse's Thursday report
+    - cron: "7 15 * * 6"    # Sat: nflverse's Friday report, Sunday's game statuses ...
+    - cron: "7 19 * * 6"    # Sat ... with three more chances to land before Sunday morning
+    - cron: "7 23 * * 6"    # Sat
+    - cron: "7 3 * * 0"     # Sun: lands by 12:30 UTC, before the London kickoff (13:30 UTC)
+    - cron: "7 7 * * 0"     # Sun: lands by 16:30 UTC, before the 1pm ET games
   workflow_dispatch:
   push:
     # a change to the tracker's pull code runs it once, so a fix is proven straight away
     branches: [main]
-    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js"]
+    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "news/tools/lineup-checks.js"]
 
 permissions:
   contents: write
@@ -45,9 +53,12 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: news
+      # a required nflverse file that does not download fails this step (context.js writes nothing),
+      # so nothing below runs and the last good data stays live
       - name: Pull scores, stats and the week's reading pack
         working-directory: news
         run: node tools/run-auto.js
+      # the page, and the lineups against the injury report, roster and schedule they were built from
       - name: Smoke test the page
         working-directory: news
         run: node tools/smoke.js

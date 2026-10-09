@@ -62,6 +62,14 @@ For every one of the 32 TEAMS:
 Rules I want followed:
   - No em dashes and no double dashes anywhere in the text.
   - Bullets, not paragraphs. Every claim that is a number should carry the number.
+  - Never quote the site's own ranks: not the Deep Dive's ("26th in the site's units", "1st in the
+    tracker", a unit's EPA a dropback or sack rate rank) and not the rank chip ("9th in the power
+    ratings"). Both are shown right beside the text and move with every run, while the text stays as
+    written; on October 9, 2026, 146 of the 192 unit ranks the Week 5 file quoted had moved. Quote
+    outside numbers with their source (per nflverse, per TeamRankings, per Sharp) and records.
+    The smoke test fails a live week that quotes the site's ranks.
+  - Lines move. Say when a line is from ("3 on ESPN's feed Tuesday") or give the range; the overlay
+    shows the current line with its date and the posted one beside it.
   - Bold key names with <strong> tags.
   - Every game needs a "kick" field: the kickoff as a UTC ISO timestamp, so the page can show it in each
     reader's own time zone. Eastern is UTC-4 through early November, UTC-5 after. A 1:00 PM ET Sunday

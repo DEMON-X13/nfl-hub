@@ -21,36 +21,62 @@ function kickOf(g){
 }
 
 /* ============================ positions ============================ */
-/* "(QB)" after a player's name, from data/players2026.js. The two teams in the game take
-   priority; any other player is matched league wide unless two rosters share the name. A name
-   already followed by "(" is left alone, and a possessive keeps its 's: "Josh Allen's (QB)". */
-const POS_RX = {};
-function posScope(teams){
-  const key = teams.join(",");
-  if (key in POS_RX) return POS_RX[key];
-  if (typeof PLAYERS26 === "undefined") return (POS_RX[key] = null);
-  /* league wide first, dropping any name two players share; then the teams in play win */
-  const map = {};
-  Object.keys(PLAYERS26).forEach(t => Object.entries(PLAYERS26[t] || {}).forEach(([n, p]) => {
-    if (!(n in map)) map[n] = p; else if (map[n] !== p) map[n] = null;
-  }));
-  teams.forEach(t => Object.entries(PLAYERS26[t] || {}).forEach(([n, p]) => { map[n] = p; }));
-  const names = Object.keys(map).filter(n => map[n]).sort((a, b) => b.length - a.length);
-  if (!names.length) return (POS_RX[key] = null);
+/* "(QB)" after a player's name, from data/players2026.js. A name one roster holds, or several
+   rosters at the same position, is tagged wherever it appears. A name two rosters hold at different
+   positions takes the position of the team the words just before it name ("the Rams' Byron Young",
+   "Philadelphia's Byron Young"); with no team named, the position he has on whichever of the game's
+   two teams has him; otherwise none. (Until 2026-10-09 the game's teams won even over a named team,
+   which wrote "the Rams' Byron Young (DT)" in Philadelphia's game, the Eagles' Byron Young being the
+   tackle.) A name already followed by "(" is left alone, and a possessive keeps its 's: "Josh Allen's (QB)". */
+let POS_SCOPE;
+const TEAM_REF = (() => {
+  /* each team's nickname, abbreviation, and city where no other team shares it */
+  const refs = {}, city = {};
+  TEAMS.forEach(t => { const nick = t.name.split(" ").pop(), c = t.name.slice(0, -nick.length - 1); (city[c] ??= []).push(t.ab); refs[nick] = t.ab; refs[t.ab] = t.ab; });
+  Object.entries(city).forEach(([c, abs]) => { if (abs.length === 1 && c) refs[c] = abs[0]; });
+  const alt = Object.keys(refs).sort((a, b) => b.length - a.length).map(x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return { refs, rx: new RegExp("(?:^|[^\\w])(" + alt + ")(?:['’]s?)?\\s+(?:[a-z][\\w-]*\\s+){0,3}$") };
+})();
+function posScope(){
+  if (POS_SCOPE !== undefined) return POS_SCOPE;
+  if (typeof PLAYERS26 === "undefined") return (POS_SCOPE = null);
+  const byName = {};
+  Object.keys(PLAYERS26).forEach(t => Object.entries(PLAYERS26[t] || {}).forEach(([n, p]) => { (byName[n] ??= {})[t] = p; }));
+  const one = {}, clash = {};
+  Object.entries(byName).forEach(([n, at]) => { const ps = new Set(Object.values(at)); if (ps.size === 1) one[n] = [...ps][0]; else clash[n] = at; });
+  const names = Object.keys(byName).sort((a, b) => b.length - a.length);
+  if (!names.length) return (POS_SCOPE = null);
   const alt = names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
   const rx = new RegExp("(?<![\\w'.\\-])(" + alt + ")(?![\\w\\-])(?!(?:</strong>)?(?:['’]s)?\\s*\\()((?:</strong>)?)((?:['’]s(?!\\w))?)", "g");
-  return (POS_RX[key] = { rx, map });
+  return (POS_SCOPE = { rx, one, clash });
+}
+function posFor(s, name, before, teams){
+  if (s.one[name]) return s.one[name];
+  const at = s.clash[name]; if (!at) return null;
+  const m = before.replace(/<[^>]+>/g, "").slice(-60).match(TEAM_REF.rx);
+  const t = m && TEAM_REF.refs[m[1]];
+  if (t) return at[t] || null;
+  const mine = (teams || []).filter(x => at[x]);
+  return mine.length === 1 ? at[mine[0]] : null;
 }
 function withPos(html, teams){
-  const s = posScope(teams || []); if (!s || !html) return html;
-  return String(html).replace(s.rx, (m, name, close, poss) => `${name}${close}${poss} (${s.map[name]})`);
+  const s = posScope(); if (!s || !html) return html;
+  return String(html).replace(s.rx, (m, name, close, poss, at, str) => {
+    const p = posFor(s, name, str.slice(0, at), teams);
+    return p ? `${name}${close}${poss} (${p})` : m;
+  });
 }
 
-/* ============================ power rank ============================ */
-/* The betting site's Power Ratings rank by Elo (data/ranks2026.js), falling back to teams.js. */
+/* ============================ rank chip ============================ */
+/* The team's place on X NFL Bets' Team Rankings tab, the team Elo of this season's results
+   (data/ranks2026.js, read from elo/data/model.json), falling back to teams.js. Until 2026-10-09 it
+   was the Alpha Model's own Elo, called "power rank", which no page shows as a ranking. */
+const shortDay = d => { try { return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(d + "T12:00:00Z")); } catch (e) { return d; } };
 function powerRank(ab){
   const r = (typeof RANKS26 !== "undefined" && RANKS26[ab]) ? RANKS26[ab] : null;
-  return r ? { rank: r.rank, title: `Power Ratings rank by Elo (${r.elo}), from the betting model${typeof RANKS26_ASOF !== "undefined" && RANKS26_ASOF ? ", as of " + RANKS26_ASOF : ""}`, label: "power rank" }
+  const asof = typeof RANKS26_ASOF !== "undefined" && RANKS26_ASOF ? `, games through ${shortDay(RANKS26_ASOF)}` : "";
+  if (r && typeof RANKS26_SRC === "undefined") return { rank: r.rank, title: `Alpha Model team Elo (${r.elo})${asof}`, label: "Elo rank" };
+  return r ? { rank: r.rank, title: `Rank on X NFL Bets' Team Rankings, by team Elo (${r.elo})${asof}`, label: "Elo rank" }
            : { rank: T[ab].rank, title: "Preseason rank", label: "rank" };
 }
 
@@ -79,6 +105,8 @@ function deepDive(ab, opp, row){
     if (isQB && u.who && u.who[0]) return `<div class="ddout">${u.who[0].n} starts; ${out.map(p => `${p.n} is ${p.why}`).join(", ")}.</div>`;
     return `<div class="ddout">Not playing: ${out.map(p => `${p.n} (${p.pos}), ${p.why}`).join("; ")}.</div>`;
   };
+  /* a quarterback in doubt: who is next on the chart */
+  const nextQB = u => u.next && u.who && u.who[0] ? `<div class="ddout">${u.who[0].n} may not start (${u.who[0].q || "in doubt"}); next on the chart: ${u.next.n}.</div>` : "";
   const nums = st => (st || []).map(([label, v, r, unit]) => v == null ? "" : `${v}${unit || ""} ${label} (${ORD(r)})`).filter(Boolean).join(" &middot; ");
   const units = [
     ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD, true],
@@ -96,12 +124,14 @@ function deepDive(ab, opp, row){
       <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${cls}"${edge == null ? "" : ` title="Edge ${sd(edge)}: this unit's rating minus the one it faces, in league standard deviations"`}>${tag}</span></div>
       <div class="ddvs">${mine} <b>${ORD(u.rank)}</b> vs ${vs} <b>${ORD(v.rank)}</b>${edge == null ? "" : `<span class="ddedge">edge ${sd(edge)}</span>`}</div>
       ${u.who && u.who.length ? `<div class="ddwho">${names(u.who)}</div>` : ""}
-      ${missing(u, isQB)}
+      ${missing(u, isQB)}${isQB ? nextQB(u) : ""}
       <div class="ddnum">${nums(u.stats)}</div>
       ${u.note ? `<div class="ddnote">${u.note}</div>` : ""}
     </div>`;
   }).join("");
-  const basis = typeof UNITS26_BASIS !== "undefined" ? UNITS26_BASIS : "";
+  /* the sample is this team's own: a team that has played the week's Thursday game has one more */
+  const g26 = n => `${n} game${n === 1 ? "" : "s"}`;
+  const basis = (typeof UNITS26_BASIS !== "undefined" ? UNITS26_BASIS : "") + (U.g26 != null ? `, plus ${ab}'s ${g26(U.g26)} of 2026${O.g26 != null && O.g26 !== U.g26 ? ` (${opp}'s ${g26(O.g26)})` : ""}` : "");
   const lineups = typeof UNITS26_LINEUPS !== "undefined" ? ` ${UNITS26_LINEUPS}.` : "";
   return `<details class="tbsec dd ${row}"><summary><span class="ddlbl">Deep Dive</span><span class="ddhint">6 matchups</span></summary>
     <p class="ddbasis">League ranks from team stats, ${basis}. Each row rates a unit and the unit it faces on the same numbers. The tag is this unit's edge, its rating minus the other's in league standard deviations: Easy is 1.5 or more, Favorable 0.5 or more, Even within 0.5, Tough and Very tough the same the other way.${lineups}</p>
@@ -170,6 +200,19 @@ function renderWeek(w){
   ${FOOTER()}`;
 }
 
+/* ============================ the line ============================ */
+/* The overlay's line is the schedule's (data/results.js LINES, from nflverse), with its date; once a
+   game is played it is the closing line. Where it has moved from the line the week was written
+   against (the week file's), that one is shown too, so the narrative's numbers can be read against it.
+   Without LINES, the week file's line, said so. (Until 2026-10-09 the header showed the draft-day
+   line bare, up to 2 points off by kickoff.) */
+function lineOf(w, g, done){
+  const L = typeof LINES !== "undefined" ? LINES[w.id + ":" + g.away + "-" + g.home] : null;
+  const posted = g.line ? `${g.line} when the week was posted` : "";
+  if (L) return `${L} (${done ? "closing line" : "line " + (typeof LINES_ASOF !== "undefined" && LINES_ASOF ? shortDay(LINES_ASOF) : "now")}${posted && g.line !== L ? "; " + posted : ""})`;
+  return posted ? `${g.line} (line when the week was posted${w.updated ? ", " + w.updated : ""})` : "";
+}
+
 /* ============================ game overlay ============================ */
 /* Everything about one matchup: both teams in full with keys to victory, then the stat breakdown.
    The two team blocks share one grid so matching sections sit on the same row and have equal height. */
@@ -178,7 +221,7 @@ function openGame(key){
   const g = (w.games||[]).find(x=>x.away+"-"+x.home===key); if(!g) return;
   const a = T[g.away], hm = T[g.home], k = kickOf(g);
   const done = g.awayScore!=null && g.homeScore!=null;
-  const meta = [done ? `Final ${g.awayScore}-${g.homeScore}` : "", k.day, done ? "" : k.time, g.tv, g.venue, g.line||""].filter(Boolean).join(" &middot; ");
+  const meta = [done ? `Final ${g.awayScore}-${g.homeScore}` : "", k.day, done ? "" : k.time, g.tv, g.venue, lineOf(w, g, done)].filter(Boolean).join(" &middot; ");
 
   const teamBlock = (ab, col) => {
     const t = T[ab], e = (w.teams||{})[ab] || {};
@@ -210,8 +253,10 @@ function openGame(key){
   const BLANK = {ppg:null, pa:null, ypp:null, yppa:null, to:null, sk:null, ska:null, third:null, rz:null, expl:null};
   const statsOf = ab => Object.assign({}, s26(ab) ? BLANK : ZERO, s26(ab) || {}, ((w.teams||{})[ab]||{}).stats || {});
   const sa = statsOf(g.away), sh = statsOf(g.home);
+  /* each team's own game count where the file has it: the Thursday teams have one more than the rest */
   const through = (typeof STATS26_THROUGH !== "undefined" && STATS26_THROUGH) ? " through " + STATS26_THROUGH : "";
-  const basis = "2026 season" + through;
+  const counts = [[g.away, s26(g.away)], [g.home, s26(g.home)]].filter(([, s]) => s && s.g != null).map(([t, s]) => `${t} ${s.g} game${s.g === 1 ? "" : "s"}`);
+  const basis = "2026 season" + through + (counts.length ? ": " + counts.join(", ") : "");
   const r1 = v => (v == null || isNaN(v)) ? null : Math.round(v*10)/10;
   const rows = [
     {label:"Point differential", a:(sa.ppg==null||sa.pa==null)?null:r1(sa.ppg - sa.pa), h:(sh.ppg==null||sh.pa==null)?null:r1(sh.ppg - sh.pa), hi:"a", sign:true, note:"per game"},
@@ -279,8 +324,16 @@ function closeOv(){
 }
 
 /* ============================ footer ============================ */
+/* After week 18 there is no next week: the tracker does not cover the playoffs, and says so.
+   The regular season is over when the job says so (UNITS26_META.phase), or the week on screen is
+   Week 18 with every game final. */
+function seasonOver(){
+  const w = currentWeek();
+  if (typeof UNITS26_META !== "undefined" && UNITS26_META && UNITS26_META.phase && UNITS26_META.phase !== "regular" && w.id === "wk" + UNITS26_META.week) return true;
+  return w.id === "wk18" && (w.games || []).length > 0 && w.games.every(g => g.awayScore != null && g.homeScore != null);
+}
 const FOOTER = () => `<footer>
-  <p style="font-weight:600;color:var(--ink-2);margin-bottom:14px">Last updated ${currentWeek().updated || "September 13, 2026"}. New week posted each Wednesday.</p>
+  <p style="font-weight:600;color:var(--ink-2);margin-bottom:14px">Last updated ${currentWeek().updated || "September 13, 2026"}. ${seasonOver() ? "The regular season is complete; the tracker does not cover the playoffs." : "New week posted each Wednesday."}</p>
 </footer>`;
 
 /* ============================ boot ============================ */

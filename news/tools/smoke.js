@@ -1,10 +1,24 @@
 /* Smoke test for the tracker. Renders index.html in jsdom with the split css/js/data files,
-   then asserts the counts and interactions that every change should keep working.
-   Run from news/:  npm ci && node tools/smoke.js                                          */
+   then asserts the counts and interactions that every change should keep working, and holds the
+   generated files to the sources they come from:
+     - the Deep Dive's lineups against the nflverse injury report, roster and schedule they were
+       built from (tools/lineup-checks.js; the build's own snapshot in tools/.cache when it matches,
+       a fresh download otherwise), and to the week the schedule says is current;
+     - the rank chip against the X NFL Bets Team Rankings tab's own file, ../elo/data/model.json;
+     - each team's stat bars against its own game count in results.js;
+     - the live week's narrative: it never quotes the Deep Dive's or the rank chip's ranks, which
+       move with every run while the narrative stays as written (on 2026-10-09, 146 of the 192 unit
+       ranks the Week 5 file quoted had moved).
+   Run from news/:  npm ci && node tools/smoke.js
+   The lineup checks need the nflverse files: when the build's snapshot is missing and the network
+   is too, they fail, unless NEWS_SMOKE_OFFLINE=1 says to skip them (each skip is printed).          */
 const fs = require('fs'), path = require('path');
 const { JSDOM, requestInterceptor, VirtualConsole } = require('jsdom');
+const { SEASON } = require('./lib');
+const LC = require('./lineup-checks');
 
 const ROOT = path.resolve(__dirname, '..');
+const OFFLINE = process.env.NEWS_SMOKE_OFFLINE === '1';
 const TYPES = { '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json' };
 const resources = { interceptors: [ requestInterceptor(req => {
   const u = new URL(req.url);
@@ -31,8 +45,25 @@ const dom = new JSDOM(fs.readFileSync(indexPath, 'utf8'), {
 
 let failed = 0;
 const check = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'FAIL ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) failed++; };
+const skip = (label, why) => console.log('SKIP ' + label + '  (' + why + ')');
+const ord = v => v + ((x => ['th', 'st', 'nd', 'rd'][(x - 20) % 10] || ['th', 'st', 'nd', 'rd'][x] || 'th')(v % 100));
 
-dom.window.addEventListener('load', () => {
+/* the narrative never quotes the site's own ranks: the Deep Dive and the rank chip beside it move
+   with every run, the narrative does not. Third-party numbers ("per nflverse", "per TeamRankings")
+   are the writer's to quote. */
+const RANK_QUOTE = /\b(?:in the tracker|the tracker's|tracker's|site's units?|site's unit (?:grades|numbers)|unit grades?|in those grades|site's (?:run|pass) defense grade|site's lowest-graded|power ratings?|power rank\b|deep dive)/i;
+function narrativeStrings(week) {
+  const out = [];
+  const add = (where, v) => { if (typeof v === 'string' && v) out.push([where, v]); else if (Array.isArray(v)) v.forEach((x, i) => add(`${where}[${i}]`, x)); };
+  add('headline', week.headline); add('intro', week.intro);
+  (week.games || []).forEach(g => { const k = `${g.away}-${g.home}`; add(`${k} note`, g.note); add(`${k} preview`, g.preview); add(`${k} keys`, g.keys); });
+  Object.entries(week.teams || {}).forEach(([t, e]) => ['headline', 'matchup', 'last', 'strengths', 'weaknesses', 'keys'].forEach(f => add(`${t} ${f}`, e && e[f])));
+  return out;
+}
+
+dom.window.addEventListener('load', () => run().catch(e => { console.log('FAIL smoke test crashed  (' + (e && e.stack || e) + ')'); process.exit(1); }));
+
+async function run() {
   const w = dom.window, d = w.document;
   const n = sel => d.querySelectorAll(sel).length;
   const click = sel => { const el = d.querySelector(sel); if (!el) throw new Error('missing ' + sel); el.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); return el; };
@@ -46,6 +77,7 @@ dom.window.addEventListener('load', () => {
   const gameKey = x => x.away + '-' + x.home;
   const played = WK.games.filter(x => x.awayScore != null && x.homeScore != null).length;
   const first = WK.games[0], last = WK.games[WK.games.length - 1];
+  const META = g('typeof UNITS26_META === "undefined" ? null : UNITS26_META');
 
   check('no script errors', errs.length === 0, errs.join(' | ') || 'none');
   check('shows the last week in data/weeks.js', g('ACTIVE') === g('WEEKS[WEEKS.length-1].id') && d.getElementById('barweek').textContent.includes(g('currentWeek().label')), d.getElementById('barweek').textContent);
@@ -54,30 +86,73 @@ dom.window.addEventListener('load', () => {
   check('no tabs, search, cards, or data tools on the page', n('.wtab') === 0 && !d.getElementById('q') && n('.card') === 0 && !d.getElementById('tools'));
   // one score per game that has a final, none on an upcoming slate, never more than the slate
   check('played games show a score', n('.slot .score') === played && played <= n('.slot'), n('.slot .score') + ' of ' + n('.slot'));
+  // in the regular season the footer promises the next week; after week 18 it says the season is complete
+  { const foot = d.querySelector('footer').textContent, over = g('seasonOver()');
+    check('footer says what comes next', over ? /regular season is complete/.test(foot) : /New week posted each Wednesday/.test(foot), foot.trim()); }
+
+  // the live week's narrative quotes no site ranks: the Deep Dive and rank chip show them, and move
+  { const hits = narrativeStrings(WK).filter(([, v]) => RANK_QUOTE.test(v)).map(([k, v]) => `${k}: "${v.replace(/<[^>]+>/g, '').match(new RegExp('.{0,40}' + RANK_QUOTE.source + '.{0,20}', 'i'))[0]}"`);
+    check('the live week quotes no Deep Dive or rank chip ranks', hits.length === 0, hits.length ? `${hits.length}: ${hits.slice(0, 4).join(' | ')}` : 'none'); }
 
   click('.slot[data-game="' + gameKey(first) + '"]');
   const title = d.getElementById('ovtitle') ? d.getElementById('ovtitle').textContent : '';
   check('game overlay opens', ov.classList.contains('on') && title.includes(T[first.away].name) && title.includes(T[first.home].name), title);
+  // the header's line is the schedule's with its date (or the closing line), else the week file's, said so
+  { const sub = d.querySelector('.ovhd .sub').textContent, L = g('typeof LINES === "undefined" ? null : LINES'), key = WK.id + ':' + gameKey(first);
+    const done = first.awayScore != null && first.homeScore != null;
+    if (L && L[key]) check('the line in the header is dated', sub.includes(`${L[key]} (${done ? 'closing line' : 'line '}`), sub);
+    else check('the line in the header says when it was set', !first.line || sub.includes(`${first.line} (line when the week was posted`), sub); }
   check('both teams on one shared grid', n('.duo2 .tb.c1') === 1 && n('.duo2 .tb.c2') === 1 && n('.duo2 .r1') === 2 && n('.duo2 .r3.up') === 2 && n('.duo2 .r4.down') === 2);
   check('every row present for both teams', ['r1','r2','r3','r4','r5'].every(r => n('.duo2 .' + r) === 2) && n('.tbsec.n h5') === 2);
   check('keys to victory is a blue block per team', n('.duo2 .tb .tbsec.info.r5') === 2 && n('.duo2 .tbsec.info li') === 6, n('.duo2 .tbsec.info li') + ' keys');
   check('headlines carry a title for the one-line clamp', n('.tbhd .sub[title]') === 2);
   check('no setup section', ![...d.querySelectorAll('.ovbody .ovsec')].some(e => e.textContent.includes('How the game sets up')));
   check('record chips show the 2026 record', [...d.querySelectorAll('.tbhd .chips .pill:not(.big) b')].map(b => b.textContent).join(' ') === rec(first.away) + ' ' + rec(first.home) && d.querySelector('.tbhd .chips .pill:not(.big)').textContent.includes('2026'), [...d.querySelectorAll('.tbhd .chips .pill:not(.big)')].map(p => p.textContent).join(' | '));
-  // power rank chip follows data/ranks2026.js (the betting model's Power Ratings board)
-  { const RK = g('typeof RANKS26 === "undefined" ? null : RANKS26');
+  // the rank chip is the team's place on X NFL Bets' Team Rankings tab (../elo/data/model.json teams, by Elo,
+  // ties in the file's order, as betting/tools/ratings_viz.js draws it). Until 2026-10-09 it was the Alpha
+  // Model's Elo from ../betting/state.json, 6.4 places a team away from that tab.
+  { const RK = g('typeof RANKS26 === "undefined" ? null : RANKS26'), SRC = g('typeof RANKS26_SRC === "undefined" ? null : RANKS26_SRC');
     const chips = [...d.querySelectorAll('.tbhd .chips .pill.big b')].map(b => b.textContent);
-    check('rank chip is the power rank', !RK || chips.join(' ') === [first.away, first.home].map(t => RK[t].rank + ['th','st','nd','rd'][(RK[t].rank % 100 - 20) % 10] || '').join(' ') || chips.join(' ') === [first.away, first.home].map(t => String(RK[t].rank) + ((v => ['th','st','nd','rd'][(v - 20) % 10] || ['th','st','nd','rd'][v] || 'th')(RK[t].rank % 100))).join(' '), chips.join(' ')); }
+    check('rank chip shows ranks2026.js', !RK || chips.join(' ') === [first.away, first.home].map(t => ord(RK[t].rank)).join(' '), chips.join(' '));
+    let M = null; try { M = JSON.parse(fs.readFileSync(path.resolve(ROOT, '..', 'elo', 'data', 'model.json'), 'utf8')); } catch (e) { /* no hub file */ }
+    if (!RK || !M || !M.teams || Object.keys(M.teams).length < 32) skip('rank chip is the Team Rankings order', !RK ? 'no ranks2026.js' : 'no full team list in ../elo/data/model.json; the chip stays as it was');
+    else {
+      const ab = t => ({ LA: 'LAR', WSH: 'WAS', JAC: 'JAX', OAK: 'LV', SD: 'LAC', STL: 'LAR' })[t] || t;
+      const tab = Object.entries(M.teams).map(([t, v]) => [ab(t), v.elo]).sort((a, b) => b[1] - a[1]).map(([t], i) => [t, i + 1]);
+      const diffs = tab.map(([t, r]) => [t, r, RK[t] ? RK[t].rank : null]).filter(([, r, c]) => r !== c);
+      const same = SRC && SRC.built_at === M.built_at;
+      if (same || !SRC) check('rank chip is the Team Rankings order', !!SRC && diffs.length === 0, !SRC ? 'ranks2026.js names no source: it predates the Team Rankings chip, rebuild with node tools/context.js' : diffs.length ? diffs.slice(0, 6).map(([t, r, c]) => `${t} ${c} vs ${r}`).join(', ') : 'all 32');
+      else {
+        // the hub's file moved on since this build (the elo job runs daily): the order must still be that board's, a day behind at most
+        const nT = tab.length, d2 = tab.reduce((a, [t, r]) => a + (RK[t] ? (RK[t].rank - r) ** 2 : nT * nT), 0), rho = 1 - 6 * d2 / (nT * (nT * nT - 1));
+        check('rank chip is the Team Rankings order, a run behind', rho >= 0.9, `model.json rebuilt ${M.built_at} after the chip's ${SRC.built_at}; rank correlation ${rho.toFixed(3)}`);
+      } } }
   // the preseason write-ups are gone from the page and from data/teams.js
   check('no preseason write-up', ![...d.querySelectorAll('.duo2 details')].some(x => /Preseason write-up/.test(x.textContent)) && g('TEAMS.every(t => !t.facts && !t.up && !t.down && !t.sub)'));
-  // positions after player names, scoped to the two teams, never doubled
+  // positions after player names, never doubled, and a name two rosters share at different positions only with the team the text names
   { const PL = g('typeof PLAYERS26 === "undefined" ? null : PLAYERS26');
     const text = [...d.querySelectorAll('.duo2 .tbsec li')].map(li => li.textContent).join(' \n ');
     if (PL) {
-      const names = Object.entries(Object.assign({}, PL[first.home], PL[first.away])).sort((a, b) => b[0].length - a[0].length);
+      const one = g('posScope() ? posScope().one : {}');
+      const names = Object.entries(Object.assign({}, PL[first.home], PL[first.away])).filter(([nm]) => one[nm]).sort((a, b) => b[0].length - a[0].length);
       const hit = names.find(([nm]) => text.includes(nm));
       check('player names carry their position', !hit || new RegExp(hit[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "('s)? \\((QB|RB|WR|TE|FB|T|G|C|DE|DT|NT|OLB|ILB|MLB|LB|CB|FS|SS|S|DB|K|P|LS)\\)").test(text), hit ? hit[0] : 'no roster name in this game');
       check('positions are never doubled', !/\((QB|RB|WR|TE|CB|DE|DT|OLB|ILB|SS|FS|T|G|C)\) \((QB|RB|WR|TE|CB|DE|DT|OLB|ILB|SS|FS|T|G|C)\)/.test(text));
+      // every game of the live week: a name two rosters share at different positions carries the position of the
+      // team named just before it, else of the game's team that has him (on 2026-10-09 "the Rams' Byron Young"
+      // read "(DT)", the Eagles' tackle's, in Philadelphia's game)
+      const REF = g('TEAM_REF'), wp = g('withPos'), clash = g('posScope() ? posScope().clash : {}'), wrong = [];
+      for (const gm of WK.games) for (const [, v] of narrativeStrings({ games: [gm], teams: Object.fromEntries([gm.away, gm.home].map(t => [t, (WK.teams || {})[t]])) })) {
+        const html = wp(v, [gm.away, gm.home]).replace(/<[^>]+>/g, '');
+        for (const [nm, at] of Object.entries(clash)) for (let i = html.indexOf(nm); i >= 0; i = html.indexOf(nm, i + 1)) {
+          const tag = html.slice(i + nm.length).match(/^(?:'s|’s)? \(([A-Z]{1,4})\)/);
+          if (!tag) continue;
+          const ref = html.slice(0, i).slice(-60).match(REF.rx), team = ref && REF.refs[ref[1]];
+          const mine = [gm.away, gm.home].filter(t => at[t]), want = team ? at[team] : (mine.length === 1 ? at[mine[0]] : undefined);
+          if (tag[1] !== want) wrong.push(`${gm.away}-${gm.home}: ${ref ? ref[1] + "'s " : ''}${nm} (${tag[1]}), ${team ? team + ' has him at ' + (at[team] || 'no position') : 'should be ' + (want || 'untagged')}`);
+        }
+      }
+      check("a position after another team's player is that team's", wrong.length === 0, wrong.slice(0, 3).join(' | ') || 'none');
     } }
   // Deep Dive: collapsed by default, six unit matchups per team, both open together
   { const U = g('typeof UNITS26 === "undefined" ? null : UNITS26');
@@ -89,6 +164,10 @@ dom.window.addEventListener('load', () => {
       check('deep dive tags are the five levels', [...d.querySelectorAll('.dd .dtag')].every(e => ['Easy','Favorable','Even','Tough','Very tough'].includes(e.textContent)), [...new Set([...d.querySelectorAll('.dd .dtag')].map(e => e.textContent))].join(','));
       const qbRank = d.querySelector('.tb.c1 .dd .ddrow .ddvs b').textContent;
       check('deep dive ranks come from units2026.js', parseInt(qbRank, 10) === U[first.away].qb.rank, qbRank + ' vs ' + U[first.away].qb.rank);
+      // the basis line gives the team's own 2026 game count (the Thursday teams have one more)
+      if (U[first.away].g26 != null) { const b = dds[0].querySelector('.ddbasis').textContent;
+        check("deep dive basis is the team's own 2026 game count", b.includes(`${first.away}'s ${U[first.away].g26} game`), b.slice(0, 120)); }
+      else skip("deep dive basis is the team's own 2026 game count", 'units2026.js predates per-team game counts: rebuild with node tools/context.js');
       // each row's tag is the edge between the two ratings it shows, and the mirrored rows agree
       const LV = ['Very tough', 'Tough', 'Even', 'Favorable', 'Easy'];
       const tagOf = e => e >= 1.5 ? 'Easy' : e >= 0.5 ? 'Favorable' : e > -0.5 ? 'Even' : e > -1.5 ? 'Tough' : 'Very tough';
@@ -111,6 +190,9 @@ dom.window.addEventListener('load', () => {
           || ((U[a].qb.out || []).length && U[a].qb.who.length && !(rowsH[0] || '').includes(U[a].qb.who[0].n + ' starts;'));
       });
       check('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
+      // a quarterback in doubt has the next one named beside him, on every game of the slate
+      const qbMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a] && U[a].qb.next).filter(([a, o]) => !dd(a, o, 'r6').split('class="ddrow"')[1].includes('next on the chart: ' + U[a].qb.next.n));
+      check('a quarterback in doubt names the next one, on every game of the slate', qbMiss.length === 0, qbMiss.map(x => x[0]).join(',') || 'none');
       dds[0].open = true; dds[0].dispatchEvent(new w.Event('toggle'));
       check('opening one team opens the other', dds[1].open);
       dds[1].open = false; dds[1].dispatchEvent(new w.Event('toggle'));
@@ -122,8 +204,21 @@ dom.window.addEventListener('load', () => {
   const svals = [...d.querySelectorAll('.ovbody .sv')].map(e => e.textContent.trim());
   { const S26 = g('typeof STATS26 === "undefined" ? {} : STATS26');
     const blanks = [first.away, first.home].reduce((n, t) => n + (S26[t] ? ['ppg','pa','ypp','yppa','to','sk','ska','third','rz','expl'].filter(k => S26[t][k] == null).length : 0), 0);
-    const dashes = svals.filter(v => v === '\u2013').length;
-    check('2026 only: numeric stat values, a dash only where the stat file has none', svals.length > 0 && svals.every(v => v === '\u2013' || /^[+-]?\d+(\.\d+)?%?$/.test(v)) && dashes <= blanks + 2, `${dashes} dashes, ${blanks} blank stats`); }
+    const dashes = svals.filter(v => v === '–').length;
+    check('2026 only: numeric stat values, a dash only where the stat file has none', svals.length > 0 && svals.every(v => v === '–' || /^[+-]?\d+(\.\d+)?%?$/.test(v)) && dashes <= blanks + 2, `${dashes} dashes, ${blanks} blank stats`);
+    // each team's points per game and allowed are its first g finals in results.js, and the header says g
+    const teams = Object.keys(S26);
+    if (teams.length && teams.every(t => S26[t].g != null)) {
+      const bad = teams.filter(t => {
+        const games = Object.entries(R).map(([k, sc]) => { const [wk, p] = k.split(':'); const [a, h] = p.split('-'); return a === t ? [+wk.slice(2), sc[0], sc[1]] : h === t ? [+wk.slice(2), sc[1], sc[0]] : null; }).filter(Boolean).sort((x, y) => x[0] - y[0]).slice(0, S26[t].g);
+        if (games.length !== S26[t].g) return true;
+        const f = games.reduce((a, x) => a + x[1], 0) / (games.length || 1), ag = games.reduce((a, x) => a + x[2], 0) / (games.length || 1);
+        return S26[t].g > 0 && (Math.abs(f - S26[t].ppg) > 0.06 || Math.abs(ag - S26[t].pa) > 0.06);
+      });
+      check("each team's stats are its own game count", bad.length === 0, bad.length ? bad.map(t => `${t} g=${S26[t].g} ppg ${S26[t].ppg}`).join(', ') : `${teams.length} teams`);
+      const hd = d.querySelector('.ovbody .ovsub').textContent;
+      check('the stat header gives both teams their game counts', [first.away, first.home].filter(t => S26[t]).every(t => hd.includes(`${t} ${S26[t].g} game`)), hd);
+    } else skip("each team's stats are its own game count", 'stats2026.js predates per-team game counts; the next pull-week.js run writes them'); }
   const anyStat = svals.some(v => !/^0%?$/.test(v)); const widths = [...d.querySelectorAll('.ovbody .half i')].map(x => x.style.width);
   check(anyStat ? 'bars drawn once stats exist' : 'empty bars when both sides are zero', anyStat ? widths.some(w => w && w !== '0%') : widths.every(w => w === '0%'));
   d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -137,6 +232,15 @@ dom.window.addEventListener('load', () => {
   click('#ovx');
   check('X closes overlay', !ov.classList.contains('on'));
 
+  // positions, on made-up players: a name two rosters share at different positions takes the position of the team
+  // named before it, else of the game's team that has him, else none
+  { const before = g('JSON.stringify(PLAYERS26.PHI || null) + JSON.stringify(PLAYERS26.LAR || null)');
+    g('PLAYERS26.PHI["Zed Quux"] = "DT"; PLAYERS26.LAR["Zed Quux"] = "OLB"; PLAYERS26.KC["Quin Zorb"] = "WR"; POS_SCOPE = undefined;');
+    const got = g(`withPos("after the Rams' edge rusher Zed Quux had 2 sacks; Zed Quux again; Philadelphia's <strong>Zed Quux</strong> inside; Quin Zorb caught 3", ["PHI", "JAX"]) + " | " + withPos("Zed Quux", ["KC", "BUF"])`);
+    check("a shared name takes the named team's position, then the game's", got === "after the Rams' edge rusher Zed Quux (OLB) had 2 sacks; Zed Quux (DT) again; Philadelphia's <strong>Zed Quux</strong> (DT) inside; Quin Zorb (WR) caught 3 | Zed Quux", got);
+    g('delete PLAYERS26.PHI["Zed Quux"]; delete PLAYERS26.LAR["Zed Quux"]; delete PLAYERS26.KC["Quin Zorb"]; POS_SCOPE = undefined;');
+    check('made-up players removed', g('JSON.stringify(PLAYERS26.PHI || null) + JSON.stringify(PLAYERS26.LAR || null)') === before); }
+
   // a week with no writeups still renders: numbers only, placeholder in Positives
   w.eval('WEEKS.push({id:"wk99", label:"Week 99", type:"recap", status:"live", dates:"", headline:"Synthetic", intro:"", games:[{away:"DET",home:"BUF",day:"Thu",time:"8:15 PM ET",kick:"2026-09-18T00:15:00Z",tv:"Prime Video",venue:"Highmark Stadium",awayScore:20,homeScore:24}], teams:{}}); show("wk99");');
   check('a later week takes over the page', n('.slot') === 1 && d.getElementById('barweek').textContent.includes('Week 99'));
@@ -146,8 +250,35 @@ dom.window.addEventListener('load', () => {
   w.eval('RESULTS["wk99:DET-BUF"] = [3, 7]; WEEKS[WEEKS.length-1].games[0].awayScore = null; WEEKS[WEEKS.length-1].games[0].homeScore = null; applyResultsAgain();');
   check('results.js scores merge into a week', g('WEEKS[WEEKS.length-1].games[0].homeScore') === 7);
   check('footer date follows the week file', d.querySelector('footer').textContent.includes('Last updated'));
+  // after week 18 the footer stops promising a next week
+  w.eval('WEEKS.push({id:"wk18", label:"Week 18", type:"recap", status:"live", dates:"", headline:"", intro:"", games:[{away:"DET",home:"GB",day:"Sun",time:"1:00 PM ET",kick:"2027-01-10T18:00:00Z",tv:"",venue:"",awayScore:20,homeScore:24}], teams:{}}); show("wk18");');
+  check('after week 18 the page says the regular season is complete', /regular season is complete/.test(d.querySelector('footer').textContent) && !/New week posted/.test(d.querySelector('footer').textContent), d.querySelector('footer').textContent.trim());
   check('no errors after interactions', errs.length === 0, errs.join(' | ') || 'none');
+
+  // ---- the Deep Dive's lineups against the report, roster and schedule they were built from ----
+  { const U = g('typeof UNITS26 === "undefined" ? null : UNITS26');
+    let S = null, why = '';
+    try { S = await LC.loadSources(path.join(ROOT, 'tools', '.cache', 'lineup-sources.json'), META, fs); } catch (e) { why = e.message; }
+    if (!U) check('lineups: units2026.js loaded', false);
+    else if (!S && OFFLINE) skip('lineups against the injury report, roster and schedule', 'NEWS_SMOKE_OFFLINE=1 and no build snapshot: ' + why);
+    else if (!S) check('lineups: the injury report, roster and schedule could be read', false, why + ' (set NEWS_SMOKE_OFFLINE=1 to skip these checks offline)');
+    else {
+      const r = LC.check(U, META, S), RULES = {
+        week: 'the lineups are for the schedule\'s current week', official: 'nobody listed whom the report rules Out or Doubtful',
+        'q-dnp': 'nobody listed who is Questionable with no practice on the report', 'last-game': 'nobody listed who was Out last game and has not practised since',
+        roster: 'nobody listed who is off the active roster, elsewhere, or inactive and not practising', espn: "nobody listed whom ESPN rules out before the team files",
+        'next-qb': 'a quarterback in doubt has the next one named' };
+      console.log(`     (lineups checked against ${S.from}: ${r.listed} players listed for week ${r.week}${S.espn ? ', with ESPN\'s list' : ''})`);
+      for (const [k, label] of Object.entries(RULES)) {
+        if (k === 'espn' && !S.espn) { skip('lineups: ' + label, 'no ESPN list in these sources'); continue; }
+        const f = r.fails[k] || [];
+        check('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
+      }
+    }
+    // in the job the smoke runs straight after the build: a file more than 36 hours old there was kept, not built
+    if (process.env.GITHUB_ACTIONS === 'true') check('units2026.js was built on this run or the last day', !!META && Date.now() - Date.parse(META.built_at) < 36 * 3600e3, META ? META.built_at : 'no build stamp');
+  }
 
   console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');
   process.exit(failed ? 1 : 0);
-});
+}
