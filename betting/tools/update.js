@@ -18,9 +18,12 @@
  * exported). A mismatch aborts the publish.
  *
  * A file the season needs and cannot be had fails the run before anything is written, so the
- * last good state stays live and the job goes red: games.csv always; the roster, depth chart and
- * injury report from a week before the season's first game; both stats files once a game is a day
- * and a half old. A failed download is never covered by an older copy left in data/.
+ * last good state stays live and the job goes red: games.csv always; the roster and depth chart
+ * from a week before the season's first game; the injury report from its first kickoff (none is
+ * filed before the week of the opener, and nflverse's file is a 404 until one is: before then the
+ * run publishes without it and the absences card says there is no report yet); both stats files
+ * once a game is a day and a half old (patches.filesDue). A failed download is never covered by an
+ * older copy left in data/.
  *
  * BETTING_NOW (an ISO time) stands in for the clock, for tests.
  *
@@ -88,16 +91,11 @@ async function download() {
   return failed;
 }
 
-/* which files this run cannot do without, from where the season stands in games.csv */
+/* which files this run cannot do without, from where the season stands in games.csv
+   (patches.filesDue, the rule the smoke test holds the published state to as well) */
 function required(games) {
-  const mine = games.filter(r => +r.season === SEASON);
-  const kick = patches.kickoffMs;
-  const times = mine.map(kick).filter(t => t != null);
-  const first = times.length ? Math.min(...times) : null;
-  const near = first != null && first - NOW < 8 * 86400000;
-  const finals = mine.filter(r => r.home_score !== '' && r.home_score != null).map(kick).filter(t => t != null);
-  const stats = finals.some(t => NOW - t > 36 * 3600000);
-  return name => name === 'games.csv' || (/^(roster|depth_charts|injuries)_/.test(name) && near) || (/^stats_/.test(name) && stats);
+  const due = patches.filesDue(games.filter(r => +r.season === SEASON), NOW);
+  return name => name === 'games.csv' || (/^(roster|depth_charts)_/.test(name) && due.lineups) || (/^injuries_/.test(name) && due.injuries) || (/^stats_/.test(name) && due.stats);
 }
 
 function embedded(html, name) {

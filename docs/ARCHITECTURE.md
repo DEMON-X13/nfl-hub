@@ -312,7 +312,12 @@ Caleb Williams). The absences card names the starter a change replaced, says "no
 held quarterback, and ends with the date of the injury report and depth chart it was built from,
 flagging either when stale. A game abroad that nflverse codes 'Home' is neutral
 (`neutral_sites.json`). The season's phase: once every posted game is played the card waits for
-the next round, and after the Super Bowl it is empty.
+the next round, and after the Super Bowl it is empty. The smoke test holds in every phase: the
+week before the opener (no game graded, no injury report yet), a week part played, between
+playoff rounds, after the Super Bowl, and a season the Joker cannot call (`modelStatus`); a check
+with nothing to look at says it was skipped. Team Rankings stars a team whose regular-season
+finals outnumber its rating's record, or whose playoff final kicked off after the Elo file was
+built (the Elo file's record is the regular season's).
 
 Every call is frozen at kickoff: Alpha's and the Challenger's through `atKickoff`, the Joker's and
 Broly's through `jobkit.freeze` (a game that has kicked off keeps the call of the last run before
@@ -321,8 +326,11 @@ a call a reader saw. The page shows the frozen call for a game under way and set
 final on it, for every model at once (the ELO Model and Broly included).
 
 A required file that does not download fails `update.js` before anything is written: games.csv
-always, the roster, depth chart and injury report from a week before the season, both stats files
-once a final is a day and a half old. An older copy in `data/` is never used in its place. The
+always, the roster and depth chart from a week before the season, the injury report from its first
+kickoff (the league files none before the week of the opener and nflverse's file is a 404 until it
+does, so before then the run publishes without one and the absences card says "no injury report
+yet"), both stats files once a final is a day and a half old (`patches.filesDue`, the one rule the
+job and the smoke test both use). An older copy in `data/` is never used in its place. The
 Joker and Broly refuse the same way on their own inputs (the season's stats and play-by-play once
 a final is a day and a half old, Broly's prior), keep their last good picks, write `modelStatus`
 and exit 1; the workflow carries on past them (`continue-on-error`) and the Pick'em Record says so.
@@ -445,7 +453,7 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 4 price pulls a week (Mon/Wed/Thu/Sat); with `--catch-up` (a game a dropped pull left unpriced, nothing otherwise), 8 post-game and stats runs and a daily 5:07am ET run for the day's injury report | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main`; afterwards the run fails if `weekly.py` reported problems |
-| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py` and `broly/broly.py` (each may fail on its own without stopping the publish), `smoke.js` (which builds the app); commits `betting/state.json`; starts `elo.yml` when a final was graded |
+| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py` and `broly/broly.py` (each may fail on its own without stopping the publish), `smoke.js` (which builds the app); commits `betting/state.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
 | `news.yml` | Fri/Mon/Tue 8am ET, Thu and Sat 11am ET and Sun 7am ET (the Deep Dive's lineups, once the week's game statuses are filed), five post-game runs, and on a push to its pull code | `run-auto.js` (`pull-week.js`, which runs `context.js`), `smoke.js`; commits `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
 | `elo.yml` | daily 8:40am ET (Tuesday's takes in Monday night; the rest move who is expected to play) | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json`, `cfb/news.json` and `cfb/data/teams.json` |

@@ -35,7 +35,8 @@ on:
     - cron: "23 12 * * 4"   # Thursday 8:23am ET: Wednesday's report, for Thursday night (8:15pm ET)
     - cron: "23 8 * * 6"    # Saturday 4:23am ET: Friday's report, before December's Saturday games (1pm ET)
     - cron: "23 12 * * 6"   # Saturday 8:23am ET: Friday's report, for Sunday and Monday
-    - cron: "17 4 * * 0"    # Sunday 12:17am ET: lands by about 9am ET, before London's 9:30am ET kickoff
+    - cron: "17 2 * * 0"    # Saturday 10:17pm ET: backup for the next slot; 9 hours late is 7:17am ET, two hours before London
+    - cron: "17 4 * * 0"    # Sunday 12:17am ET: the latest lines; 9 hours late is 9:17am ET, just before London's 9:30am ET kickoff
     # every hour at :37 on paper; GitHub fires about six of the 24 a day, with gaps of up to about
     # 8 hours, so this is a background refresh of the lines in games.csv (which the Joker and
     # Broly read) and the injury report, not a promise of hourly updates. The slots above are
@@ -113,10 +114,11 @@ jobs:
           fi
       # Team Rankings' Elo and the ELO Model's calls are the Elo job's (elo.yml), whose own daily
       # slot lands many hours late: a newly graded final starts it now, so the tab catches up
-      # within the hour instead of the next afternoon. (A workflow_dispatch from this token does
-      # start a run; other events from it do not.)
+      # within the hour instead of the next afternoon. The Elo job reads nflverse, not this state,
+      # so it is started even when this run's smoke test or commit failed (always()). (A
+      # workflow_dispatch from this token does start a run; other events from it do not.)
       - name: Start the Elo job when a final was graded
-        if: steps.grade.outputs.graded_new != '' && steps.grade.outputs.graded_new != '0'
+        if: always() && steps.grade.outputs.graded_new != '' && steps.grade.outputs.graded_new != '0'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run elo.yml --ref "${{ github.ref_name }}" || echo "::warning::could not start the Elo job"

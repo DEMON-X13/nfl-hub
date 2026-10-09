@@ -100,7 +100,11 @@ the absences card, no quarterback who missed the last game on the report counted
 this week's report clears him, no 'Home' game abroad, a call from every model for every coming
 game (or `modelStatus` saying why), no call moved after its kickoff (against the last commit),
 scoreboard finals counted for every model on the frozen call, Team Rankings' record, and the
-record's disclosures. `BETTING_NOW` stands in for the clock and `BETTING_DATA`/`BETTING_STATE`/
+record's disclosures. The files it holds the state to are the ones `update.js` refuses without
+(`patches.filesDue`: the roster and depth chart from a week before the opener, the injury report
+from its first kickoff, the stats once a final is a day and a half old), and it passes in every
+phase of a season: the week before the opener, week 1, between playoff rounds and after the Super
+Bowl. `BETTING_NOW` stands in for the clock and `BETTING_DATA`/`BETTING_STATE`/
 `BETTING_PREV_STATE` for the files, for tests.
 
 The app source is never edited: its behaviour is changed by `betting/tools/patches.js`, applied
@@ -118,7 +122,8 @@ hourly" slot fires about six times a day with gaps of up to 8 hours: a backgroun
 an hourly promise. It runs `update.js`, `joker.py`, `broly.py` (each model step may fail alone:
 its last good picks stay, `modelStatus` says why on the Pick'em Record) and `smoke.js` (which
 builds the app itself), commits `betting/state.json`, and starts `elo.yml` when a final was
-graded, so Team Rankings' Elo does not wait for the Elo job's own late slot.
+graded (even if the smoke or the commit failed: the Elo job reads nflverse, not this state), so
+Team Rankings' Elo does not wait for the Elo job's own late slot.
 The **Broly Model** (`betting/broly/`) is the betting line plus six team stats: points per game,
 points allowed, turnover differential, third-down rate, red-zone touchdown rate and yards per
 play for and against, each the season to date with last season blended in early, in a

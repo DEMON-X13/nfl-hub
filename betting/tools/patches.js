@@ -27,7 +27,9 @@
  *  2. The absences card and the graded games' notes name the starter a change replaced
  *     (stint.from): a fading change read "Jalon Daniels -> Jalon Daniels". A quarterback held
  *     out says so ("C.Williams not cleared"), and "returning" is kept for a starter coming back,
- *     not a new one. Under it, the date of the injury report and depth chart it was built on.
+ *     not a new one. Under it, the date of the injury report and depth chart it was built on, or,
+ *     before the season's first kickoff, that there is no injury report yet (filesDue: none is
+ *     filed before the week of the opener, so its absence is not flagged as stale until then).
  *  3. Neutral sites (ingestGames): a game nflverse codes 'Home' that is played abroad is read
  *     as neutral (betting/neutral_sites.json), so PHI at JAX in London does not hand JAX home
  *     field in Alpha, the Challenger and the ratings.
@@ -58,6 +60,17 @@ function etOffsetMin(ms){ const p=Object.fromEntries(new Intl.DateTimeFormat('en
 function kickoffMs(g){ if(!g||!/^\d{4}-\d\d-\d\d$/.test(String(g.gameday||''))) return null;
   const [y,m,d]=g.gameday.split('-').map(Number), [hh,mm]=String(g.gametime||'13:00').split(':').map(Number);
   const local=Date.UTC(y,m-1,d,hh||0,mm||0); let t=local-etOffsetMin(local)*60000; t=local-etOffsetMin(t)*60000; return t; }
+/* which of the season's files a run cannot do without, from the season's schedule (games.csv's rows
+   or the state's) and a time. The roster and the depth chart from a week before the first kickoff.
+   The injury report from the first kickoff on: the league files none before the week of the opener
+   and nflverse has nothing to give until it does (injuries_<season>.csv is a 404 until then), so a
+   run before the opener without one is not stale, and the absences card says there is none yet.
+   The stats files once a final is a day and a half old. update.js refuses to publish without a
+   file that is due; the smoke test holds the published state to the same rule. */
+function filesDue(games,now){ const ks=games.map(kickoffMs).filter(t=>t!=null), first=ks.length?Math.min(...ks):null;
+  const fin=g=>g.home_score!=null&&g.home_score!=='';
+  const finals=games.filter(fin).map(kickoffMs).filter(t=>t!=null);
+  return {first,lineups:first!=null&&first-now<8*86400000,injuries:first!=null&&now>=first,stats:finals.some(t=>now-t>36*3600000)}; }
 
 function edit(html, from, to, what, times = 1) {
   const n = html.split(from).length - 1;
@@ -112,7 +125,7 @@ function qbStarted(team,id){ return Object.values(S.qb&&S.qb.starters||{}).some(
 function seasonPhase(){ const all=S.schedule||[]; if(!all.length) return 'on';
   if(all.some(g=>g.result==null)) return 'on';
   return all.some(g=>g.game_type==='SB')?'over':'waiting'; }
-/* a game's kickoff, as a time (patches.js keeps the one copy of these two, for the job and the smoke too) */
+/* a game's kickoff, as a time, and the files a run needs by then (patches.js keeps the one copy of these, for the job and the smoke too) */
 __KICKOFF__
 /* the call a reader saw before kickoff, once the game has kicked off and until it is graded */
 function frozenCall(g,now){ const ak=S.atKickoff&&S.atKickoff[g.game_id]; if(!ak) return null;
@@ -145,20 +158,20 @@ function injAsOf(now){ now=now??Date.now(); const w=currentWeekDefault(), bits=[
     const late=iw<w&&first!=null&&first-now<24*3600000;
     bits.push('the injury report through week '+iw+(S.injuries.loaded?' (read '+fmt(S.injuries.loaded)+')':'')
       +(iw<w?(late?' <b class="inj-stale">(week '+w+'\'s is not on nflverse yet: nobody is ruled out for it here)</b>':' (week '+w+'\'s is not out yet)'):'')); }
-  else if(S.schedule.length) bits.push('<b class="inj-stale">no injury report</b>');
+  else if(S.schedule.length) bits.push(filesDue(S.schedule,now).injuries?'<b class="inj-stale">no injury report</b>':'no injury report yet (the first is filed in the week of the opener)');
   if(S.depth&&S.depth.dt){ const d=new Date(S.depth.dt), old=now-d.getTime()>36*3600000;
     bits.push('the depth chart of '+fmt(d)+(old?' <b class="inj-stale">(more than a day and a half old)</b>':'')); }
   return bits.length?'<p class="muted inj-asof" style="margin:8px 0 0">From nflverse: '+bits.join(' and ')+'.</p>':''; }
 `;
 
-const HUB_PATCHES = 'hub patches 1 \\u00b7 2026-10-09';
+const HUB_PATCHES = 'hub patches 2 \\u00b7 2026-10-09';
 
 function logic(html) {
   { const m = html.match(/^const APP_BUILD='([^'\n]*)';$/mg) || [];
     if (m.length !== 1) throw new Error('betting app patch "the version line": expected 1 match, found ' + m.length);
     html = html.replace(m[0], () => m[0].replace(/';$/, () => ' + ' + HUB_PATCHES + "';")); }
   html = edit(html, '/* ---------- quarterback ratings (variant K3, nfl-model-lab) ---------- */',
-    HELPERS.replace('__NEUTRAL__', () => JSON.stringify(NEUTRAL)).replace('__KICKOFF__', () => etOffsetMin.toString() + '\n' + kickoffMs.toString())
+    HELPERS.replace('__NEUTRAL__', () => JSON.stringify(NEUTRAL)).replace('__KICKOFF__', () => [etOffsetMin, kickoffMs, filesDue].map(String).join('\n'))
       + '/* ---------- quarterback ratings (variant K3, nfl-model-lab) ---------- */', 'the helpers');
 
   /* 1. who starts at quarterback */
@@ -241,4 +254,5 @@ module.exports = logic;
 module.exports.season = season;
 module.exports.NEUTRAL = NEUTRAL;
 module.exports.kickoffMs = kickoffMs;
+module.exports.filesDue = filesDue;
 module.exports.HUB_PATCHES = HUB_PATCHES;

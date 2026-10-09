@@ -20,7 +20,10 @@
  * season's and a rating that predates a final says so; the Joker's fitted weeks and a model that
  * could not run are disclosed on the Pick'em Record. Each holds whatever the week offers: a check
  * with nothing to look at this week (no game graded yet, no Thursday game, a bye) is skipped, and
- * the rules themselves are also run on cases made up here, so they are tested every week.
+ * the rules themselves are also run on cases made up here, so they are tested every week. It holds
+ * in every phase of a season (the week before the opener with nothing graded and no injury report
+ * yet, week 1, between playoff rounds, after the Super Bowl, a season the Joker cannot call):
+ * BETTING_STATE names a made-up state to test one.
  */
 'use strict';
 const fs = require('fs');
@@ -29,7 +32,8 @@ const { JSDOM } = require('jsdom');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { buildApp } = require('./build.js');
 const html = buildApp().replace(/<script src="https:\/\/cdnjs[^"]*"><\/script>/, '');
-const state = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
+/* BETTING_STATE names another state to test (a made-up playoff round, say); the published one by default */
+const state = fs.readFileSync(process.env.BETTING_STATE || path.join(ROOT, 'betting', 'state.json'), 'utf8');
 const eloModel = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 const PATCHES = require('./patches.js');
 const { season: APP_SEASON, key: APP_KEY } = PATCHES.season(fs.readFileSync(path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html'), 'utf8'));
@@ -80,26 +84,38 @@ async function reality() {
   check(errors.length === 0, '5: runtime errors: ' + errors.join('; '));
   const S = w.eval('S'), cur = w.eval('currentWeekDefault()'), phase = w.eval('seasonPhase()');
   const weekGames = S.schedule.filter(g => +g.week === cur);
-  const firstKick = Math.min(...S.schedule.map(kick).filter(t => t != null));
-  const inSeason = firstKick - pub < 8 * DAY && phase !== 'over';
+  /* the files the job could not publish without at this state's publish time (patches.filesDue):
+     the roster and depth chart from a week before the first kickoff, the injury report from the
+     first kickoff (none exists before the week of the opener), until the Super Bowl is in */
+  const due = PATCHES.filesDue(S.schedule, pub);
 
   /* 5b. this run's files: the job refuses to publish without them, so a state whose report or
      roster was read more than a few minutes from its own publish time (the same run reads them
      seconds before it publishes) was built on a copy left over from another run */
-  if (inSeason) {
-    check(!!(S.injuries && S.roster && S.depth), '5b: in season the state has no injury report, roster or depth chart');
-    for (const [k, v] of [['injury report', S.injuries && S.injuries.loaded], ['roster', S.roster && S.roster.loaded]])
+  if (due.lineups && phase !== 'over') {
+    check(!!(S.roster && S.depth), '5b: in season the state has no roster or depth chart');
+    const fresh = [['roster', S.roster && S.roster.loaded]];
+    if (due.injuries) { check(!!(S.injuries && S.injuries.rows && S.injuries.rows.length), '5b: the season has kicked off and the state has no injury report');
+      fresh.push(['injury report', S.injuries && S.injuries.loaded]); }
+    for (const [k, v] of fresh)
       check(v && Math.abs(Date.parse(v) - pub) < 15 * 60000, `5b: the ${k} was read at ${v}, not by the run that published at ${P.published}`);
     /* stale upstream files are shown as stale: the report not reaching this week a day before its
-       first kickoff, a depth chart more than a day and a half old */
+       first kickoff, no report at all once one is due, a depth chart more than a day and a half
+       old; before the opener "no injury report yet" is said plainly, not flagged */
     const asof = w.eval(`injAsOf(${pub})`);
     const ks = weekGames.map(kick).filter(t => t != null), wk1 = ks.length ? Math.min(...ks) : null;
-    const repWeek = S.injuries && S.injuries.rows.length ? Math.max(...S.injuries.rows.map(r => +r.week || 0)) : 0;
-    const repLate = repWeek < cur && wk1 != null && wk1 - pub < DAY;
+    const hasRep = !!(S.injuries && S.injuries.rows && S.injuries.rows.length);
+    const repWeek = hasRep ? Math.max(...S.injuries.rows.map(r => +r.week || 0)) : 0;
+    const repLate = hasRep && repWeek < cur && wk1 != null && wk1 - pub < DAY;
+    const noRep = !hasRep && due.injuries;
     const depthOld = S.depth && S.depth.dt && pub - Date.parse(S.depth.dt) > 36 * 3600000;
-    check(/the injury report through week \d+/.test(asof) && /the depth chart of/.test(asof), '5b: the absences card does not say what it was built from: ' + asof.slice(0, 160));
-    check(/inj-stale/.test(asof) === !!(repLate || depthOld), `5b: the absences card ${repLate || depthOld ? 'does not flag' : 'flags'} a stale input (report through week ${repWeek}, week ${cur}, depth ${S.depth && S.depth.dt}): ` + asof.slice(0, 200));
-    check(!!d.querySelector('#injSuggest .inj-asof'), '5b: the absences card has no source line');
+    const repLine = hasRep ? /the injury report through week \d+/ : due.injuries ? /no injury report</ : /no injury report yet/;
+    check(repLine.test(asof) && /the depth chart of/.test(asof), '5b: the absences card does not say what it was built from: ' + asof.slice(0, 160));
+    check(/inj-stale/.test(asof) === !!(repLate || noRep || depthOld), `5b: the absences card ${repLate || noRep || depthOld ? 'does not flag' : 'flags'} a stale input (report ${hasRep ? 'through week ' + repWeek : 'none'}, week ${cur}, depth ${S.depth && S.depth.dt}): ` + asof.slice(0, 200));
+    /* the card itself, while there is a coming game to list absences for: between playoff rounds it
+       says it is waiting for the next one instead */
+    if (phase === 'on') check(!!d.querySelector('#injSuggest .inj-asof'), '5b: the absences card has no source line');
+    else check(/next round/.test(d.getElementById('injSuggest').textContent), '5b: with every posted game played the absences card does not say it waits for the next round');
   }
 
   /* 5c. who starts at quarterback, on the real report: a quarterback who did not start his team's
@@ -175,7 +191,9 @@ async function reality() {
     for (const [k, name] of [['joker', 'the Joker'], ['broly', 'the Broly Model']]) {
       if (ms[k]) { check(typeof ms[k].why === 'string' && ms[k].why && ms[k].since, `5g: ${name}'s status has no reason or time`); continue; }
       const calls = P[k] || {};
-      const need = weekGames.filter(g => g.result == null && (k !== 'broly' || g.spread_line != null || (P.odds || {})[g.game_id]));
+      /* Broly prices a game from both moneylines or, without them, the spread (betting/broly/stats.py market_prob) */
+      const both = o => !!o && o.home != null && o.away != null;
+      const need = weekGames.filter(g => g.result == null && (k !== 'broly' || g.spread_line != null || both((P.odds || {})[g.game_id])));
       const missing = need.filter(g => !calls[g.game_id]);
       check(!missing.length, `5g: ${name} has no call for ${missing.map(g => g.game_id).join(', ')} this week and no status saying why`);
       const off = Object.entries(P.processed).filter(([gid, r]) => r[k] && calls[gid] && r[k].pick !== calls[gid].pick).map(([gid]) => gid);
@@ -204,13 +222,17 @@ async function reality() {
       console.log(`  5h: ${n} calls on games kicked off by ${P.published} held from the state before it`); } }
 
   /* 5i. Team Rankings: the record is the season's results, and a rating that predates a final says so */
-  { const T = JSON.parse(eloModel).teams || {}, tr = [...d.querySelectorAll('#ratingsTable table.rt-v tbody tr')];
+  { const EM = JSON.parse(eloModel), T = EM.teams || {}, tr = [...d.querySelectorAll('#ratingsTable table.rt-v tbody tr')];
     const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18;
+    /* the Elo file's record counts the regular season only (elo/build.py power_ratings), so a
+       playoff final is behind when it kicked off after the file was built */
+    const built = Date.parse(EM.built_at || '');
     let lag = 0;
     for (const t of tr) { const tm = t.children[1].textContent.trim().split(/\s+/)[0];
       const fs2 = S.schedule.filter(g => g.result != null && reg(g) && (g.home_team === tm || g.away_team === tm));
       const r = [0, 0, 0]; for (const g of fs2) { const m = g.home_team === tm ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
-      const rr = (T[tm] && T[tm].record) || [0, 0, 0], behind = fs2.length > rr[0] + rr[1] + rr[2];
+      const rr = (T[tm] && T[tm].record) || [0, 0, 0];
+      const behind = fs2.length > rr[0] + rr[1] + rr[2] || S.schedule.some(g => g.result != null && !reg(g) && (g.home_team === tm || g.away_team === tm) && isFinite(built) && kick(g) > built);
       const use = fs2.length >= rr[0] + rr[1] + rr[2] ? r : rr, want = use[0] + '-' + use[1] + (use[2] ? '-' + use[2] : '');
       check(t.querySelector('.rt-rec').textContent === want, `5i: Team Rankings has ${tm} at ${t.querySelector('.rt-rec').textContent}, the season has ${want}`);
       if (behind) lag++;
@@ -220,7 +242,8 @@ async function reality() {
 
   /* 5j. the season's phase: with every game played the absences card stops listing a coming week */
   { const keep = J(S.schedule.map(g => [g.result, g.game_type]));
-    w.eval(`S.schedule.forEach(g=>{ if(g.result==null) g.result=3; })`);
+    /* every game played and no Super Bowl among them (a real one, once posted, is set aside here) */
+    w.eval(`S.schedule.forEach(g=>{ if(g.result==null) g.result=3; if(g.game_type==='SB') g.game_type='CON'; })`);
     check(w.eval('seasonPhase()') === 'waiting' && /next round/.test(w.eval('renderImpact()')), '5j: with every posted game played the absences card does not wait for the next round');
     w.eval(`(()=>{ const g=S.schedule[S.schedule.length-1]; g.game_type='SB'; })()`);
     check(w.eval('seasonPhase()') === 'over' && w.eval('renderImpact()') === '', '5j: after the Super Bowl the absences card still lists a coming week');
@@ -258,17 +281,29 @@ async function reality() {
       }
       b.d.getElementById('picksToggle').click(); await new Promise(r => setTimeout(r, 60));
       check(b.errors.length === 0, '5k: runtime errors: ' + b.errors.join('; '));
-      /* before the scoreboard has it, a game under way shows the frozen call in the grid */
-      const c = boot(st); await new Promise(r => setTimeout(r, 700));
+      /* before the scoreboard has it, a game under way shows the frozen call in the grid (which the
+         record draws once the season has a graded game: before the first, it says none is graded) */
+      if (!Object.keys(P.processed).length) console.log('  (5k grid skipped: no game graded yet, so the record has no pick grid)');
+      else { const c = boot(st); await new Promise(r => setTimeout(r, 700));
       c.w.eval(`S.picksOpen=true; S.picksWeek=${cur}; renderRecord()`);
       const tr = [...c.d.querySelectorAll('.pickgrid tbody tr')].find(t => t.textContent.includes(g.away_team + ' at ' + g.home_team));
-      check(!!tr && tr.children[1].textContent.trim().startsWith(other(board.pick)), `5k: the pick grid shows ${tr && tr.children[1].textContent.trim()} for a game under way, not the call frozen at its kickoff (${other(board.pick)})`);
+      check(!!tr && tr.children[1].textContent.trim().startsWith(other(board.pick)), `5k: the pick grid shows ${tr && tr.children[1].textContent.trim()} for a game under way, not the call frozen at its kickoff (${other(board.pick)})`); }
     } }
 
   /* 5l. the record says what it is: the Joker's fitted weeks, and a model that could not run */
   { const st = JSON.parse(state);
+    /* the notes sit on the record, which is drawn once a game is graded: before the first final, one made-up graded game */
+    if (!Object.keys(st.processed).length) { const g = st.schedule[0];
+      Object.assign(g, { result: 7, home_score: 24, away_score: 17 });
+      st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, h: null, news: [] }; }
     const wks = [...new Set(Object.values(st.processed).map(r => +r.week))].sort((x, y) => x - y);
+    /* the published fit when it is this season's, else one made up for the test */
+    if (!(st.jokerFit && +st.jokerFit.season === +st.season && (st.jokerFit.weeks || []).some(x => wks.includes(+x)))) delete st.jokerFit;
     st.jokerFit = st.jokerFit || { season: st.season, weeks: wks.slice(0, 1), fitted_on: 'made up for the smoke test' };
+    /* a season the Joker could not call (its status says why) still has the mark tested, on one made-up call */
+    if (!Object.values(st.processed).some(r => r.joker && st.jokerFit.weeks.includes(+r.week))) {
+      const r = Object.values(st.processed).find(x => st.jokerFit.weeks.includes(+x.week) && x.result != null && x.result !== 0);
+      if (r) r.joker = { pick: r.home, pHome: 0.6, correct: r.result > 0 }; }
     st.modelStatus = { broly: { since: P.published, why: 'made up for the smoke test' } };
     const b = boot(st); await new Promise(r => setTimeout(r, 700));
     const notes = b.d.querySelector('#modelChart .rv-notes'), nt = notes ? notes.textContent : '';
@@ -277,8 +312,9 @@ async function reality() {
     const jr = [...b.d.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(t => /The Joker/.test(t.querySelector('th').textContent));
     const fitted = jr ? jr.querySelectorAll('td.rv-fit').length : 0;
     check(fitted === st.jokerFit.weeks.filter(x => Object.values(st.processed).some(r => +r.week === x && r.joker)).length && fitted > 0, `5l: the Joker's fitted weeks are not marked in the grid (${fitted})`);
-    /* and the published state's own disclosure, when the job has written one */
-    if (P.jokerFit && (P.jokerFit.weeks || []).length) {
+    /* and the published state's own disclosure, when the job has written one for this season and
+       the Joker has a graded call in a fitted week for it to be about */
+    if (P.jokerFit && +P.jokerFit.season === +P.season && Object.values(P.processed).some(r => r.joker && (P.jokerFit.weeks || []).map(Number).includes(+r.week))) {
       const e = boot(P); await new Promise(r => setTimeout(r, 700));
       check(/fit, not a prediction/.test((e.d.querySelector('#modelChart .rv-notes') || {}).textContent || ''), '5l: the published Joker fit is not disclosed on the record');
     }
@@ -288,9 +324,13 @@ async function reality() {
 (async () => {
   const published = JSON.parse(state);
   const graded = Object.keys(published.processed);
-  const first = graded[0]; const p0 = published.processed[first];
+  /* the week before the opener nothing is graded yet: the visitor's storage is tested on the first
+     scheduled game, and the checks that need a graded game say they were skipped */
+  const g0 = published.schedule[0], first = graded[0] || g0.game_id;
+  const p0 = published.processed[first] || { home: g0.home_team, away: g0.away_team, result: null };
   const winner = p0.result > 0 ? p0.home : p0.result < 0 ? p0.away : null;
   const loser = winner === p0.home ? p0.away : p0.home;
+  if (!graded.length) console.log('  (no game graded yet this season: the checks on graded games are skipped)');
 
   // 1. fresh visitor
   const { dom, errors } = load(null); await sleep(300);
@@ -319,7 +359,7 @@ async function reality() {
   // 2. returning visitor: pick graded against the published result
   const r2 = load({ myPicks: { [first]: loser }, bank: { lastAmt: 35, filter: 'all', build: [], mode: 'straight' }, bets: { 1: { staked: 20, returned: 35, note: 'visitor' } } }); await sleep(300);
   const S2 = r2.dom.window.eval('S');
-  check(S2.processed[first].myPick === loser && S2.processed[first].myCorrect === (winner ? false : null), 'returning visitor: pick restored and graded as a miss');
+  check(!graded.length ? S2.myPicks[first] === loser : S2.processed[first].myPick === loser && S2.processed[first].myCorrect === (winner ? false : null), 'returning visitor: pick restored and graded as a miss');
   check(S2.bank.lastAmt === 35 && S2.bets[1] && S2.bets[1].returned === 35, 'returning visitor: stake and bets restored');
   check(r2.errors.length === 0, 'returning visitor: no runtime errors');
   const stamp = r2.dom.window.document.getElementById('saveState');
@@ -346,8 +386,8 @@ async function reality() {
   check(!da.getElementById('tab-mine'), 'admin: the My Picks section is gone with its tab');
   check(![...da.querySelectorAll('#tab-record th, .pickgrid th')].some(th => th.textContent.trim() === 'You'), 'admin: no You column survives');
   check(!!da.getElementById('oddsFetch'), 'admin: moneylines card kept');
-  check(SA.processed[first].myPick === loser && SA.bets[1].returned === 35 && SA.bank.lastAmt === 35, 'admin: picks, bets and stake come from the same browser store as the viewer');
-  check(/straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
+  check((graded.length ? SA.processed[first].myPick : SA.myPicks[first]) === loser && SA.bets[1].returned === 35 && SA.bank.lastAmt === 35, 'admin: picks, bets and stake come from the same browser store as the viewer');
+  check(!graded.length ? /No graded games yet/.test(da.getElementById('recordTable').textContent) : /straight-up, \d+ of \d+/.test(da.getElementById('recordStats').textContent) && !!da.querySelector('#modelChart svg'), 'admin: record and chart render from the published games');
 
   // Power Ratings carries the Impact absences table and not the rank-tag note
   // what the block says depends on the week's files, so the checks are on the shape: the element
@@ -356,7 +396,8 @@ async function reality() {
   check(!!da.querySelector('#tab-ratings #injCard #injSuggest'), 'admin: Impact absences is not under Power Ratings');
   const injText = da.getElementById('injSuggest').textContent.trim();
   const injFiles = !!((SA.roster || SA.injuries) && SA.depth);
-  check(!injFiles || /Impact absences, week \d+/.test(injText), 'admin: the state has the injury files but the absences block has no heading: ' + injText.slice(0, 80));
+  /* between playoff rounds and after the Super Bowl there is no coming week to head it (5j) */
+  check(!injFiles || a.window.eval('seasonPhase()') !== 'on' || /Impact absences, week \d+/.test(injText), 'admin: the state has the injury files but the absences block has no heading: ' + injText.slice(0, 80));
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
   check(da.getElementById('injCard').hidden === !injText, 'admin: the absences card is not hidden exactly when it is empty');
@@ -404,12 +445,13 @@ async function reality() {
   const de = e.window.document;
   check(de.documentElement.classList.contains('embed'), 'embed: the page marks itself embedded');
   check(!de.getElementById('tab-record').hidden && de.getElementById('tab-picks').hidden, 'embed: EMBED_TAB opens the Records tab');
-  check(/straight-up, \d+ of \d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
+  check(!graded.length || /straight-up, \d+ of \d+/.test(de.getElementById('recordStats').textContent), 'embed: the record renders');
   check(embedFetched.some(u => u === '../betting/state.json'), 'embed: the season is not read from ../betting/state.json: ' + embedFetched.join(', '));
   check(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml), 'embed: header and tab bar are hidden by the stylesheet');
   /* the Elo model rides along: read from elo/data/model.json beside the season, graded onto
      the games it called, and drawn on Records like the Joker */
-  { const EM = JSON.parse(eloModel), SE = e.window.eval('S');
+  if (!graded.length) check(/No graded games yet/.test(de.getElementById('recordTable').textContent), 'embed: before the first final the record does not say nothing is graded yet');
+  else { const EM = JSON.parse(eloModel), SE = e.window.eval('S');
     /* graded: what the file graded, plus the coming week's calls whose games the season has scored.
        The Elo build grades a game on its score alone and the season only once the game's team
        stats are posted, hours later, so a game the season has not processed yet is left out */
@@ -472,8 +514,12 @@ async function reality() {
       const sg = net > 0 ? '+' + net : (net < 0 ? '\u2212' + Math.abs(net) : '0');
       check(rtxt.includes('Alpha Model') && new RegExp('Alpha Model \\d+\u2013\\d+ ' + sg.replace('+', '\\+') + ' vs Vegas').test(rtxt), `embed: Alpha Model should read ${sg} vs Vegas: ` + rtxt.slice(0, 300)); }
     const gridRows = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].map(tr => tr.querySelector('th').textContent.trim());
-    check(gridRows.includes('ELO Model') && gridRows.indexOf('ELO Model') === gridRows.indexOf('The Joker') + 1 && gridRows[gridRows.length - 1] === 'Vegas', 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|'));
-    check(!Object.values(SE.processed).some(r => r.broly) || gridRows.indexOf('Broly Model') === gridRows.indexOf('ELO Model') + 1, 'embed: the Broly Model is not in the week-by-week grid after the ELO Model: ' + gridRows.join('|'));
+    /* every model with a decided game, in order, then Vegas: a model that has none (the Joker in a
+       season it could not call, say) is left out rather than shown empty */
+    { const dec = f => Object.values(SE.processed).some(r => { const v = f(r); return v === true || v === false; });
+      const order = [['Alpha Model', r => r.correct], ['Challenger Model', r => r.h && r.h.correct], ['The Joker', r => r.joker && r.joker.correct],
+        ['ELO Model', r => r.elo && r.elo.correct], ['Broly Model', r => r.broly && r.broly.correct]].filter(([n, f]) => (SE.showAllModels || n === 'Alpha Model') && dec(f)).map(([n]) => n).concat('Vegas');
+      check(gridRows.includes('ELO Model') && gridRows.join('|') === order.join('|'), 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|') + ' (want ' + order.join('|') + ')'); }
     { const eloRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'ELO Model');
       check(!!eloRow && eloRow.querySelector('td.rv-season b').textContent === `${want}\u2013${gradedIds.length - want}`, 'embed: the grid\'s Elo season cell is wrong'); }
     de.getElementById('picksToggle').click(); await sleep(80);
@@ -486,14 +532,17 @@ async function reality() {
     const cur = weeksAll.find(w => SE.schedule.some(g => +g.week === w && g.result == null)) || weeksAll[weeksAll.length - 1];
     const sel = de.getElementById('picksWeek');
     check(!!sel && +sel.value === cur && /this week/.test(sel.selectedOptions[0].textContent), 'embed: the pick grid does not open on this week: ' + (sel && sel.selectedOptions[0].textContent));
-    const opts = [...sel.options].map(o => +o.value);
-    check(opts.length === cur && Math.max(...opts) === cur && Math.min(...opts) === 1, 'embed: the picker should offer weeks 1-' + cur + ' only: ' + opts.join(','));
+    const opts = [...sel.options].map(o => +o.value), upTo = weeksAll.filter(x => x <= cur);
+    check(opts.slice().sort((x, y) => x - y).join() === upTo.join(), 'embed: the picker should offer weeks ' + upTo.join(',') + ' only: ' + opts.join(','));
     check(de.querySelectorAll('.pickgrid').length === 1, 'embed: more than one week of picks is drawn at once');
     const thisWeekGame = SE.schedule.find(g => +g.week === cur);
     check(!!thisWeekGame && de.querySelector('.pickgrid').textContent.includes(thisWeekGame.away_team + ' at ' + thisWeekGame.home_team), 'embed: the grid shown is not this week\'s');
-    sel.value = String(cur - 1); sel.dispatchEvent(new e.window.Event('change', { bubbles: true })); await sleep(80);
-    const prevGame = SE.schedule.find(g => +g.week === cur - 1);
-    check(+de.getElementById('picksWeek').value === cur - 1 && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it');
+    /* the week before this one, when there is one (week 1 has none) */
+    const before = upTo.length > 1 ? upTo[upTo.length - 2] : null;
+    if (before != null) {
+      sel.value = String(before); sel.dispatchEvent(new e.window.Event('change', { bubbles: true })); await sleep(80);
+      const prevGame = SE.schedule.find(g => +g.week === before);
+      check(+de.getElementById('picksWeek').value === before && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it'); }
     /* a week part played (Thursday's game graded, Sunday's to come) is still this week */
     { const g = SE.schedule.find(x => +x.week === cur);
       e.window.eval(`(()=>{ const g=S.schedule.find(x=>x.game_id===${JSON.stringify(g.game_id)}); g.result=7; g.home_score=24; g.away_score=17;
