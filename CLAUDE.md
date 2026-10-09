@@ -292,8 +292,13 @@ may quietly outrank what the job published:
   another device wrote since, merges three ways against the document both started from (what
   only one side changed is taken, a deletion holds, where both changed a thing the writer's
   change wins); a poll merges the same way, so a phone edited offline merges when it is back;
-  each document carries its last fifty revs, and a device whose write was overwritten by one
-  made at the same instant sees its rev missing on its next look and writes its change again. The document lives
+  a page going to the background or away looks first too (keepalive requests), and a change it
+  could not send waits for its next visit; each document carries its last fifty revs and each
+  device keeps the last few documents it read or wrote, so a device whose write was overwritten
+  by one made at the same instant (or on an older document) merges against the newest document
+  both sides share and writes its change again. After any change to `sync.js`, also run
+  `node nflbets/build/stress_sync.js [seed]` (not a gate: three devices, random moves, a store
+  that answers late so writes race; it fails if a parlay is lost or comes back). The document lives
   in a Firebase Realtime Database reached over plain HTTPS, whose address is in
   `nflbets/sync.json` (read at run time, so pasting it in needs no rebuild); with the address
   blank the page runs on the browser alone and the Live Parlays card says "Not synced". The layer is
@@ -301,7 +306,7 @@ may quietly outrank what the job published:
   the `window.LIVE_IO` the section's key goes through, pushes nothing until it has read the
   document once, adds a browser's own saved parlays to the document the first time that browser
   reads it, keeps the document at the rev it last took or wrote (`nflsync_v1`, and the document
-  under `nflsync_base_v1`) so its next visit merges what it had not sent (a deletion elsewhere
+  and the few before it under `nflsync_base_v1`) so its next visit merges what it had not sent (a deletion elsewhere
   still holds; a browser that remembers only the rev takes the document as it is), and `syncStamp`, in the
   Live Parlays card, says whether it is synced (with when the parlays last changed), saving or
   failing; the header carries only when the site's data was updated.

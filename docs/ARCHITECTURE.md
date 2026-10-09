@@ -124,6 +124,7 @@ nflbets/
   build/tab_pickems.html         the Pick'ems tab (pk- prefixed)
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
   build/sync.js                  the sync layer, inlined by the build
+  build/stress_sync.js           three devices at random against a late store (not a gate)
   build/smoke.js  smoke_live.js  the page, and the Live Parlays section, in jsdom: the gates
                                  (smoke.js also: the page is a fresh build, its tag's hash is
                                  its own, the served betting app carries the reference numbers)
@@ -210,17 +211,19 @@ game, the section and any open Pick'ems game. No write is blind: a push reads th
 when another device has written since, pulls and merges three ways against the document both
 started from (`merge3`: what only one side changed is taken, a deletion on either side holds,
 where both changed one thing the writer's change wins) before writing; a poll merges the same
-way and runs while a push is waiting, so a device edited offline merges when it is back; and each
-device keeps the document its last write was built on, so when a write made at the same instant
-lands over its own (its rev missing from the store's `revs`, its parent present) it merges
-against that parent and writes again. Nothing is pushed until the document has been read once, so a device that could not
+way and runs while a push is waiting, so a device edited offline merges when it is back; a page
+going to the background or away looks first as well, its requests sent keepalive, and a change it
+cannot send in time waits in the browser for its next visit; and each device keeps the last
+sixteen documents it read or wrote, by rev, so when a write made at the same instant (or built on
+an older document) lands over its own -- its rev missing from the store's `revs` -- it merges
+against the newest of them the store descends from and writes again. Nothing is pushed until the document has been read once, so a device that could not
 reach the store never replaces it with an empty builder. A browser's first read of the
 document joins rather than yields: its own saved parlays are added to the document by id,
 its builder stands in for an empty one, its corrected lines and deletions are kept where
 the document has none, and the result is pushed, so parlays saved before the store had an
 address are not lost to whichever device seeded it. The browser then remembers the rev it
-took or wrote under `nflsync_v1`, and the document at that rev under `nflsync_base_v1`, so its
-next visit merges three ways: a change it had not sent stays, and a parlay it lacks that the
+took or wrote under `nflsync_v1`, and the document at that rev and the few before it under
+`nflsync_base_v1`, so its next visit merges three ways: a change it had not sent stays, and a parlay it lacks that the
 remembered document had is one another device deleted. A browser that remembers the rev but not
 the document takes the document as it is. No Firebase-specific header (ETag, if-match) is used,
 so the store needs only GET and PUT. The store is a Firebase Realtime
@@ -228,7 +231,9 @@ Database over its REST interface; with `sync.json` blank the page runs on the br
 and the header stamp says so. `nflbets/build/smoke.js` runs two, then more, devices against
 one stubbed store and checks that each sees what the others did, including a device that writes
 without having looked, one that comes back from offline, a write overwritten by one made at the
-same instant, and a browser reopened with an unsent parlay.
+same instant or on an older document, and a browser reopened with an unsent parlay;
+`nflbets/build/stress_sync.js` (not a gate) does the same at random, with a store that answers
+late so writes cross, and fails if a parlay is lost or comes back.
 
 ## Props: how it fits together
 

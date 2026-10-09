@@ -1031,6 +1031,22 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     { const doc = storeDoc(store);
       chk(doc.prop.saved.some(p => p.id === 'race-P') && doc.prop.saved.some(p => p.id === 'race-Q'), 'a write overwritten by one made at the same moment was not written again: store has ' + ids(doc));
       chk(SP.saved.some(p => p.id === 'race-Q') && P.w.NFLSYNC.state().recovered >= 1, 'P did not take the other device\'s parlay, or did not notice its write was overwritten'); }
+    /* a write built on something older still: a device that had not looked for two writes
+       lands one over both. P merges against the newest document it knows that the store
+       descends from, so its own parlay and the one before it both survive */
+    { await P.w.NFLSYNC.poll(); await settle();
+      const r0 = JSON.parse(JSON.stringify(store.node));
+      const step = (from, id, tag) => { const doc = JSON.parse(from.doc.json); doc.prop.saved.push(parlayOf(id, g));
+        const rev = tag + '-' + Date.now(), at = new Date().toISOString();
+        return { rev, at, doc: { rev, at, revs: (from.doc.revs || [from.rev]).concat([rev]), json: JSON.stringify(doc) } }; };
+      store.node = step(r0, 'next-1', 'one');                        /* another device's write on r0, which P reads */
+      await P.w.NFLSYNC.poll(); await settle();
+      SP.saved.push(parlayOf('race-P2', g)); P.w.eval('save(); renderParlay();'); await settle();
+      store.node = step(r0, 'stale-1', 'stale');                     /* a write built on r0 lands over both */
+      await P.w.NFLSYNC.poll(); await settle();
+      const doc = storeDoc(store);
+      chk(['next-1', 'race-P2', 'stale-1'].every(id => doc.prop.saved.some(p => p.id === id)),
+        'a write built on an older document erased what was saved after it: store has ' + ids(doc)); }
     /* a browser closed with a change it had not sent: on its next visit what it changed stays
        and what another device deleted meanwhile stays deleted */
     const keep = k => P.w.localStorage.getItem(k);

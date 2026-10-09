@@ -36,11 +36,13 @@
  * sides started from: what only this device changed is kept, what only the other changed is
  * taken, a deletion on either side holds, and where both changed the same thing this device's
  * change wins. A poll merges the same way, so a phone that was edited offline and comes back
- * merges in what was saved elsewhere meanwhile instead of overwriting it. And since two
- * devices can still look at the same moment and both write, each device keeps the document its
- * own last write was built on: when the next document it reads does not descend from its write
- * (its rev is not in revs) but does from that one, its write was overwritten, and it merges
- * against that document and writes again, so nothing it saved is lost.
+ * merges in what was saved elsewhere meanwhile instead of overwriting it. A page on its way out
+ * looks too (its requests are sent keepalive); if it is gone before the write, the change waits
+ * in the browser for its next visit. And since two devices can still look at the same moment and
+ * both write, each device keeps the last few documents it has read or written, by rev: the base
+ * of a merge is the newest of them in the store's line of descent (revs), so when a write of its
+ * own was overwritten by one built beside it, or on something older, it merges against the
+ * document both really started from and writes again, and nothing it saved is lost.
  *
  * Nothing is pushed until the shared document has been read and applied once: a device that
  * has not seen the document yet must not replace it with its own empty builder. If the store
@@ -54,21 +56,21 @@
  * the document (by id; the document's own are kept as they are), its builder stands in for
  * an empty one, its corrected lines and deletions are kept where the document has none, and
  * the result is pushed. The browser remembers, under its own key, the rev it last took or
- * wrote, and beside it (nflsync_base_v1) the document at that rev, so its next visit merges
- * three ways too: what it changed since stays, and a parlay it lacks is one another device
- * deleted. A browser that remembers a rev but not the document wins nothing: the document
- * wins outright. */
+ * wrote, and beside it (nflsync_base_v1) the document at that rev and the few before it, so its
+ * next visit merges three ways too: what it changed since stays, and a parlay it lacks is one
+ * another device deleted. A browser that remembers a rev but not the document wins nothing: the
+ * document wins outright. */
 window.NFLSYNC=(function(){
   /* the prop model's key: the build writes part2's own KEY over this default, so the season
      is named in one place */
   const CONF='sync.json', PROP_KEY=/*PROP_KEY*/'props_2026_v1', LIVE_KEY='live_parlays_v1', SEEN_KEY='nflsync_v1', BASE_KEY='nflsync_base_v1';
   const PROP_KEYS=['parlay','saved','stake','bookPrice','margin'];
-  const POLL_MS=8000, PUSH_MS=400, BOOT_WAIT_MS=6000, GET_MS=12000, PUT_MS=20000, REVS=50;
+  const POLL_MS=8000, PUSH_MS=400, BOOT_WAIT_MS=6000, GET_MS=12000, PUT_MS=20000, REVS=50, HIST=16, HIST_KEPT=4;
   /* rev, revs, at, doc: the store's document as this device last saw it, read or written.
-     base: the document this device's last write was built on, kept until a later read shows
-     the write survived. view: what the page shows, the store's document with this device's
-     own changes merged in. */
-  const st={url:null, rev:null, revs:[], doc:null, base:null, view:null, applied:false, live:false, ready:false, ok:null, err:null,
+     hist: the documents it has read or written lately, by rev, oldest first: the bases a merge
+     can start from. view: what the page shows, the store's document with this device's own
+     changes merged in. */
+  const st={url:null, rev:null, revs:[], doc:null, hist:[], view:null, applied:false, live:false, ready:false, ok:null, err:null,
     at:null, checked:null, pending:false, pushing:false, joined:0, merged:0, recovered:0, pulls:0, pushes:0};
   const listeners=[];
   const emit=()=>{ for(const f of listeners){ try{ f(state()); }catch(e){} } };
@@ -103,13 +105,17 @@ window.NFLSYNC=(function(){
   /* whether this browser has ever taken or written the shared document */
   const shared=()=>ls.get(SEEN_KEY)!=null;
   const remember=rev=>{ if(rev) ls.set(SEEN_KEY,String(rev)); };
-  /* the document at the remembered rev, so the next visit can merge three ways */
-  function keepBase(){ if(st.rev&&st.doc) ls.set(BASE_KEY,JSON.stringify({rev:st.rev,revs:st.revs,doc:st.doc,base:st.base})); }
+  /* a document this device has read or written, kept by rev as a possible merge base */
+  function know(rev,doc){ if(!rev||!doc) return; st.hist=st.hist.filter(h=>h.rev!==rev); st.hist.push({rev,doc:deep(doc)}); if(st.hist.length>HIST) st.hist.shift(); }
+  /* the document at the remembered rev, and the few before it, so the next visit can merge
+     three ways */
+  function keepBase(){ if(st.rev&&st.doc) ls.set(BASE_KEY,JSON.stringify({rev:st.rev,revs:st.revs,doc:st.doc,hist:st.hist.slice(-HIST_KEPT)})); }
   function loadBase(){
     const seen=ls.get(SEEN_KEY), b=parse(ls.get(BASE_KEY));
     if(!seen||!isObj(b)||b.rev!==seen||!isObj(b.doc)) return;
     st.rev=b.rev; st.revs=Array.isArray(b.revs)?b.revs:[b.rev]; st.doc={prop:propPart(b.doc.prop), live:livePart(b.doc.live)};
-    st.base=isObj(b.base)&&b.base.rev&&isObj(b.base.doc)?b.base:null; }
+    for(const h of (Array.isArray(b.hist)?b.hist:[])) if(h&&h.rev&&isObj(h.doc)) know(String(h.rev),{prop:propPart(h.doc.prop), live:livePart(h.doc.live)});
+    know(st.rev,st.doc); }
 
   /* a browser's first read of a document another device seeded: what only this browser has
      joins the document. Returns the joined document and how many saved parlays it added. */
@@ -163,14 +169,15 @@ window.NFLSYNC=(function(){
       if(v!==undefined) live[k]=v; }
     return deep({prop,live});
   }
-  /* the document to merge against: the last one both sides shared */
+  /* the document to merge against: the newest one this device knows that is in the store's
+     line of descent -- the document both sides really started from */
   function baseFor(remote){
-    const has=r=>!!r&&remote.revs.indexOf(r)>=0;
     /* the store moved on from what this device last saw: the usual case */
-    if(remote.rev===st.rev||has(st.rev)) return st.doc;
-    /* this device's last write is not in the store's line of descent, but the document it was
-       built on is: another device wrote beside it, at the same moment, and overwrote it */
-    if(st.base&&has(st.base.rev)){ st.recovered++; return st.base.doc; }
+    if(remote.rev===st.rev||remote.revs.indexOf(st.rev)>=0) return st.doc;
+    /* this device's last write is not in the store's line of descent: another device wrote
+       beside it, or on something older, and overwrote it. The newest document of this device's
+       that the store does descend from is where the two parted. */
+    for(let i=remote.revs.length-1;i>=0;i--){ const h=st.hist.find(x=>x.rev===remote.revs[i]); if(h){ st.recovered++; return h.doc; } }
     /* too long ago to tell, or a page from before revs were kept: the last document seen */
     return st.doc;
   }
@@ -184,9 +191,8 @@ window.NFLSYNC=(function(){
     /* shared before, but the document it was at is not kept: the store wins outright, apart
        from section keys the store has never carried */
     else view=deep({prop:remote.doc.prop, live:Object.assign({},livePart(local.live),remote.doc.live)});
-    if(remote){ st.rev=remote.rev; st.revs=remote.revs; st.at=remote.at; st.doc=deep(remote.doc); }
+    if(remote){ st.rev=remote.rev; st.revs=remote.revs; st.at=remote.at; st.doc=deep(remote.doc); know(remote.rev,remote.doc); }
     else { st.rev=null; st.revs=[]; st.doc=null; }
-    st.base=null;
     return view;
   }
 
@@ -212,17 +218,17 @@ window.NFLSYNC=(function(){
     catch(e){ throw (e&&e.name==='AbortError')?new Error('no answer in '+Math.round(ms/1000)+'s'):e; }
     finally{ if(t) clearTimeout(t); }
   }
-  async function getJSON(path){
-    const r=await fetchT(st.url+path+'?t='+Date.now(),null,GET_MS);
+  async function getJSON(path,keepalive){
+    const r=await fetchT(st.url+path+'?t='+Date.now(),keepalive?{keepalive:true}:null,GET_MS);
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }
   const revOf=v=>v==null?'':String(v);
 
   /* read the whole document; null when the store is empty */
-  async function pull(){
+  async function pull(keepalive){
     if(!st.url) return null;
-    const d=await getJSON('/doc.json');
+    const d=await getJSON('/doc.json',keepalive);
     if(d==null) return null;
     const doc=parse(typeof d.json==='string'?d.json:null);
     if(!isObj(doc)) throw new Error('the shared document is not readable');
@@ -279,8 +285,10 @@ window.NFLSYNC=(function(){
       else if(!st.pushing){
         const rev=await getJSON('/rev.json'); st.pulls++;
         if(revOf(rev)!==(st.rev||'')){
-          const remote=await pull();
-          if(!st.pushing) apply(remote);
+          /* a write of this page's that landed while the document was on its way is newer than
+             it: the document is dropped, and the next look reads again */
+          const was=st.rev, remote=await pull();
+          if(!st.pushing&&st.rev===was) apply(remote);
         }
         else { st.ok=true; st.err=null; st.checked=new Date().toISOString(); emit(); }
       }
@@ -294,32 +302,34 @@ window.NFLSYNC=(function(){
     if(!st.url||!st.live) return;
     st.pending=true; clearTimeout(pushTimer); pushTimer=setTimeout(push,PUSH_MS); emit();
   }
-  async function push(keepalive){
+  /* leaving: the page is going to the background or away. It still looks before writing --
+     a blind write from a page that has not looked for a while is exactly what erases another
+     device's parlays -- with every request sent keepalive so it can finish after the page is
+     gone. If it does not get as far as the write, the change waits in the browser for its next
+     visit, which merges it. */
+  async function push(leaving){
     clearTimeout(pushTimer);
     if(!st.url||!st.live){ st.pending=false; emit(); return false; }
     /* one at a time, and nothing from a model still booting */
-    if(st.pushing||(!st.ready&&!keepalive)){ pushTimer=setTimeout(push,PUSH_MS); return false; }
+    if(st.pushing||(!st.ready&&!leaving)){ pushTimer=setTimeout(push,PUSH_MS); return false; }
     st.pushing=true;
     let ok=false;
+    const keepalive=!!leaving;
     try{
       /* look before writing: a document another device wrote since this one last looked is
-         merged in first. A page on its way out has no time to look; its write is checked by
-         the other devices' reads instead (see baseFor). */
-      if(!keepalive){
-        const rev=await getJSON('/rev.json'); st.pulls++;
-        if(revOf(rev)!==(st.rev||'')){ const remote=await pull(); st.pulls++;
-          const view=reconcile(remote); show(view); if(remote){ remember(remote.rev); keepBase(); } }
-      }
+         merged in first */
+      { const rev=await getJSON('/rev.json',keepalive); st.pulls++;
+        if(revOf(rev)!==(st.rev||'')){ const remote=await pull(keepalive); st.pulls++;
+          const view=reconcile(remote); show(view); if(remote){ remember(remote.rev); keepBase(); } } }
       const doc=localDoc();
       if(st.doc&&same(doc,st.doc)){ st.pending=false; st.ok=true; st.err=null; ok=true; }
       else {
         const rev=newRev(), at=new Date().toISOString(), revs=(st.revs||[]).concat([rev]).slice(-REVS);
-        const r=await fetchT(st.url+'.json?print=silent',{method:'PUT',keepalive:!!keepalive,
+        const r=await fetchT(st.url+'.json?print=silent',{method:'PUT',keepalive,
           headers:{'Content-Type':'application/json'},
           body:JSON.stringify({rev,at,doc:{rev,at,revs,json:JSON.stringify(doc)}})},PUT_MS);
         if(!r.ok) throw new Error('HTTP '+r.status);
-        st.base=st.doc?{rev:st.rev,doc:st.doc}:null;
-        st.rev=rev; st.revs=revs; st.at=at; st.doc=doc; st.view=deep(doc); st.pushes++; st.ok=true; st.err=null; st.pending=false; st.checked=at;
+        st.rev=rev; st.revs=revs; st.at=at; st.doc=doc; st.view=deep(doc); know(rev,doc); st.pushes++; st.ok=true; st.err=null; st.pending=false; st.checked=at;
         remember(rev); keepBase(); ok=true;
       }
     }catch(e){ st.ok=false; st.err=String(e&&e.message||e); st.pending=true; clearTimeout(pushTimer); pushTimer=setTimeout(push,POLL_MS); }
