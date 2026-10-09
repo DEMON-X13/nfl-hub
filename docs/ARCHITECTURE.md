@@ -88,19 +88,32 @@ props/
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
                                  explained in its docstring; downloads 2012-now nflverse
-                                 player stats into cache/ (gitignored) and writes data/
+                                 player stats into cache/ (gitignored) and writes data/; exits 1
+                                 and writes nothing when a required source cannot be had
+  check.py                       the gate: data/ against the roster, the injury report, the
+                                 schedule and the published calls, plus the build's functions
+                                 on fixtures; the job runs it before committing
+  check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
+                                 data/: kicked-off games leave the Mismatches, shields agree
+  tools/seed_calls.py            recovers the calls published before the ledger began, from
+                                 the commits that changed data/model.json, into history/
+  history/calls_<season>.json    source: those calls (the ledger's start); never regenerated
   data/players.json              generated: the rankings by position (this season's rating,
-                                 the bell curve, who is sidelined) and every player the models
-                                 may price, on his career rating with the season's path
+                                 the bell curve, who is sidelined and why, a Q for questionable)
+                                 and every player the models may price, on his career rating
+                                 with the season's path and his club
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
-                                 this season's graded calls and the coming week's (the Pick'em
-                                 Record's ELO Model model), and `teams`, the team Elo of
-                                 this season's results (Power Ratings)
+                                 this season's graded calls, frozen at kickoff, and the coming
+                                 week's (the Pick'em Record's ELO Model), `teams`, the team Elo
+                                 of this season's results (Power Ratings), `units`, `phase`,
+                                 and `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
-                                 projections
-  requirements.txt               pandas, numpy
+                                 projections, each club's expected lineup and who is out of it
+  data/calls.json                generated: the ledger of the ELO Model's calls as published
+                                 before each kickoff; the record grades these
+  requirements.txt               pandas, numpy, tzdata, pinned
 
 news/
   index.html  js/app.js  css/    the site, hand-maintained
@@ -158,7 +171,7 @@ The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closur
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's
 season line. A click on a player opens his window: his rating, then his matchup this week.
-The same script puts the Mismatches card on the Props tab, a ranked player's shield and his
+The same script puts the Mismatches card on the Props tab (games still to kick off only), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks in the Suggested parlays window. The ELO Model model's calls and record
@@ -397,7 +410,7 @@ person.** A draft is not live until it is added to `data/weeks.js` and
 | `props.yml` | 4 price pulls a week (Mon/Wed/Thu/Sat); with `--catch-up` (a game a dropped pull left unpriced, nothing otherwise), 8 post-game and stats runs and a daily 5:07am ET run for the day's injury report | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main`; afterwards the run fails if `weekly.py` reported problems |
 | `update.yml` (the betting job) | every hour at :37 (the Joker follows the lines), plus Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game and injury-report runs, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py`, `broly/broly.py`, `smoke.js` (which builds the app); commits `betting/state.json` |
 | `news.yml` | Fri/Mon/Tue 8am ET, Thu and Sat 11am ET and Sun 7am ET (the Deep Dive's lineups, once the week's game statuses are filed), five post-game runs, and on a push to its pull code | `run-auto.js` (`pull-week.js`, which runs `context.js`), `smoke.js`; commits `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
-| `elo.yml` | daily 8:40am ET (Tuesday's takes in Monday night; the rest move who is expected to play) | `elo/build.py`, then the nflbets smoke, commits `elo/data` |
+| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json`, `cfb/news.json` and `cfb/data/teams.json` |
 | `nhl.yml` | 3x/day | `simulate.js`, `fetch_box.js`, `starters.js`, `players.js`, `update.js`, `smoke.js`; commits `nhl/state.json`, `nhl/data/teams.json`, `box_*.jsonl`, `injuries.json`, `starters.json`, `players.json` |
 
