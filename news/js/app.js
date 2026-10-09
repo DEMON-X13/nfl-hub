@@ -105,8 +105,11 @@ function deepDive(ab, opp, row){
     if (isQB && u.who && u.who[0]) return `<div class="ddout">${u.who[0].n} starts; ${out.map(p => `${p.n} is ${p.why}`).join(", ")}.</div>`;
     return `<div class="ddout">Not playing: ${out.map(p => `${p.n} (${p.pos}), ${p.why}`).join("; ")}.</div>`;
   };
-  /* a quarterback in doubt: who is next on the chart */
-  const nextQB = u => u.next && u.who && u.who[0] ? `<div class="ddout">${u.who[0].n} may not start (${u.who[0].q || "in doubt"}); next on the chart: ${u.next.n}.</div>` : "";
+  /* a quarterback in doubt: who is next (on the chart, else the roster), or that nobody is */
+  const NEXT_FROM = { chart: "next on the chart", roster: "next on the roster", usage: "next by 2026 dropbacks" };
+  const nextQB = u => !(u.who && u.who[0]) ? ""
+    : u.next ? `<div class="ddout">${u.who[0].n} may not start (${u.who[0].q || "in doubt"}); ${NEXT_FROM[u.next.from] || "next on the chart"}: ${u.next.n}${u.next.q ? ` (${u.next.q})` : ""}.</div>`
+    : u.next_none ? `<div class="ddout">${u.who[0].n} may not start (${u.who[0].q || "in doubt"}); ${u.next_none}.</div>` : "";
   const nums = st => (st || []).map(([label, v, r, unit]) => v == null ? "" : `${v}${unit || ""} ${label} (${ORD(r)})`).filter(Boolean).join(" &middot; ");
   const units = [
     ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD, true],

@@ -26,8 +26,9 @@
                            2026 game so far, so each week this season counts for more; each team
                            carries its own 2026 game count (g26), since a team that has played the
                            week's Thursday game has one more than the rest.
-                           UNITS26_META says which week and season the lineups are for, when they were
-                           built and from what, and the smoke test holds them to it.
+                           UNITS26_META says which week and season the lineups are for, when they last
+                           changed (built_at: a run that changes nothing leaves the file alone) and
+                           from what, and the smoke test holds them to it.
                            Until 2026-10-08 the receivers were rated on YAC per catch and 20+ throws
                            (a style, not how well they play), the line and the front on different
                            stats, sacks were counted twice in pressure, and the who-lists were
@@ -38,7 +39,8 @@
                            changing at its kickoff), so a later run can grade them against who played
      tools/out/weekN-lineups-grade.md   that grade, once nflverse has the week's snap counts
      tools/.cache/lineup-sources.json   the injury report, roster and schedule this build read (not
-                           committed): the smoke test checks the lineups against the same files
+                           committed), stamped with the run (run_at): the smoke test checks the lineups
+                           against the same files, and in the job that they are this run's
 
    Sources: nflverse-data releases (team and player stats 2025 and 2026, snap counts, roster,
    injury report and depth charts 2026), the nflverse schedule and, when pull-week.js passes it,
@@ -50,7 +52,7 @@
    to the check: without either the build goes on, logs a warning and says so on the page.        */
 'use strict';
 const fs = require('fs'), path = require('path');
-const { SEASON, GAMES_URL, parseCSV, fetchText, ab, seasonState, etToISO } = require('./lib');
+const { SEASON, GAMES_URL, parseCSV, fetchText, ab, seasonState, etToISO, unplayed } = require('./lib');
 
 const PRIOR = SEASON - 1, PRIOR_GAMES = 4;
 const REL = 'https://github.com/nflverse/nflverse-data/releases/download';
@@ -66,6 +68,7 @@ const URLS = {
   snaps26: `${REL}/snap_counts/snap_counts_${SEASON}.csv`,
 };
 const OPTIONAL = new Set(['snaps26']);
+const PRESEASON = new Set(['team26', 'player26', 'injuries26', 'snaps26']);   // may not exist before the first game
 
 /* the job reads these lines in its log; a GitHub warning shows on the run's summary page */
 const warn = msg => console.log(process.env.GITHUB_ACTIONS ? `::warning::${msg}` : `warning: ${msg}`);
@@ -240,11 +243,14 @@ function ratings(team25, team26, player25, player26) {
    passing over anyone who will not play. The first rule that speaks wins:
      1. the roster: anyone not ACT on it, or now on another team. INA (inactive for the last game)
         waits for the report: practising this week (full or limited) clears it, otherwise he is out.
-     2. the official game status, once the team has filed it (a game status on the week's report, or a
-        report of the last practice before the game, two days before kickoff or later): Out or Doubtful
-        is out; Questionable with no practice on that report is out (in weeks 2 to 4, 6 of the 10
-        Questionable starters who had not practised sat); Questionable and practising is listed with a
-        tag; a filed report that does not designate him clears him.
+     2. the official game status, once the team has filed it: a team has filed when its rows on the
+        week's report carry a game status, and only then. Out or Doubtful is out; Questionable with no
+        practice on that report is out (in weeks 2 to 4, 6 of the 10 Questionable starters who had not
+        practised sat); Questionable and practising is listed with a tag; a filed report that does not
+        designate him clears him. A practice report does not count, however close to kickoff: for a
+        Thursday game, two days before is Tuesday's practice, which nflverse posts on Wednesday with no
+        game statuses, and counting it put Mayfield and Winfield (out per ESPN, not practising) back
+        in TB's lineup on the Wednesday before TB at DAL in a test of that rule.
      3. before the team files, ESPN's list where it says Out, Doubtful, injured reserve or suspended.
         ESPN's Questionable clears no one: from Tuesday to Friday it is a placeholder. (On 2026-10-07
         ESPN moved Hendrickson, Gonzalez, Elliss, Banks and DeVonta Smith from Tuesday's Out to
@@ -254,9 +260,14 @@ function ratings(team25, team26, player25, player26) {
         it is newer than the report or the report has no row for the team yet. With no practice
         reported at all this week he is still out.
      5. ESPN Questionable with no practice on the last practice day before kickoff (its note says so)
-        is out, as in rule 2.
+        is out, as in rule 2. The last practice day is the day before a Thursday game (the short week
+        files its game statuses with Wednesday's report) and two days before any other.
      6. anyone else not practising is listed, tagged "not practising"; and the quarterback row names
-        the next quarterback on the chart whenever the starter carries a tag.
+        the next quarterback whenever the starter carries a tag: the next one on the chart these rules
+        let play, else (a chart, or a team with no chart, with no such backup) the team's other active
+        quarterbacks these rules let play, most 2026 dropbacks first; with none, the row says so
+        (next_none). Until 2026-10-09 only the chart, or with no chart only a quarterback who had
+        thrown in 2026, was looked at, and a team whose chart carried an injured QB2 named nobody.
    A team with no chart within ten days of kickoff falls back on 2026 usage, still minus the out.
    A chart starter passed over is kept as out, so the page can say who is missing and why. */
 const STATUS = { RES: 'on injured reserve', PUP: 'on the PUP list', NON: 'on the non-football injury list', SUS: 'suspended',
@@ -277,6 +288,9 @@ const etDay = iso => { const d = new Date(iso); return isNaN(d) ? '' : new Intl.
 const addDays = (day, n) => { const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const weekdayOf = day => WEEKDAYS[new Date(day + 'T12:00:00Z').getUTCDay()];
+/* the last practice before a game: Wednesday for a Thursday game, two days before kickoff otherwise
+   (Friday for Sunday, Saturday for Monday, Thursday for Saturday, Monday for a Wednesday game) */
+const lastPracticeDay = kickDay => kickDay ? addDays(kickDay, weekdayOf(kickDay) === 'thursday' ? -1 : -2) : '';
 
 /* the report's practice column, and ESPN's practice notes ("did not participate at practice Thursday",
    "was a non-participant", "remained absent from practice", "was limited", "practiced in full") */
@@ -284,11 +298,21 @@ const practiceOf = (s, why) => /did not/i.test(s || '') ? (/not injury related/i
 const N_ANY = /practi[cs]|participa|warmups|walkthrough|workout|\bDNP\b/i;
 const N_DNP = /\b(did not|didn'?t|won'?t|will not|unable to) (participate|practice|take part)|non-?participant|\bmiss(?:ed|es|ing)?\b[^,.;]*practice|\babsent\b|\b(?:not|wasn'?t|weren'?t) (?:present|spotted|seen|on the field)|\bsat out\b|\b(?:held|kept) out\b|\bDNP\b/i;
 const N_LIM = /\blimited\b/i, N_FULL = /\bfull(?:[- ]go|y)?\b|\bin full\b/i;
+/* A note is cut into sentences and each sentence into clauses at its conjunctions; in a sentence that
+   speaks of practice, every clause with a practice status counts, the latest day winning ("didn't
+   practice Wednesday but returned limited Thursday" is a DNP Wednesday and a limited Thursday, and
+   "was limited Wednesday after missing practice Tuesday" a limited Wednesday; until 2026-10-09 a
+   clause was cut only at ", but" and had to name practice itself, so the first read as no practice on
+   Thursday and the second as no practice on Tuesday) */
+const CLAUSE = /,?\s*\b(?:and then|but|after|before|while|then)\s+|,\s*and\s+/i;
 function notePractice(text, noteDay) {
   if (!text || !noteDay) return null;
   let best = null;
-  for (const c of String(text).split(/(?<=[.;])\s+|,\s*(?:and|but|after|before|while)\s+|\s+(?:after|before|while|and then)\s+/i)) {
-    if (!N_ANY.test(c)) continue;
+  const clauses = [];
+  for (const sent of String(text).split(/(?<=[.;])\s+/)) {
+    if (N_ANY.test(sent)) clauses.push(...sent.split(CLAUSE));
+  }
+  for (const c of clauses) {
     const st = N_DNP.test(c) ? 'dnp' : N_LIM.test(c) ? 'limited' : N_FULL.test(c) ? 'full' : null;
     if (!st) continue;
     const days = c.toLowerCase().match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/g);
@@ -325,9 +349,10 @@ function lineups(src) {
     }
   }
   const kickDay = t => kicks[t] ? etDay(kicks[t]) : '';
-  /* filed: the team's report carries game statuses, or holds the last practice before the game */
+  /* filed: the team's rows on this week's report carry a game status. Nothing else counts: a practice
+     report, however close to kickoff, says who practised, not who will play */
   const filed = {};
-  for (const t of teams) filed[t] = !!(teamStatus[t] || (teamRows[t] && reportDay && kickDay(t) && reportDay >= addDays(kickDay(t), -2)));
+  for (const t of teams) filed[t] = !!teamStatus[t];
   const esp = {};
   for (const e of espn || []) esp[`${e.team}|${normName(e.name)}`] = e;
   const reported = Object.keys(rep).length > 0;
@@ -376,7 +401,7 @@ function lineups(src) {
     }
     /* 5. ESPN Questionable with no practice on the last practice day before kickoff */
     const eq = e && lc(e.status) === 'questionable';
-    if (eq && pr.src === 'espn' && pr.st === 'dnp' && kickDay(team) && pr.day >= addDays(kickDay(team), -2)) {
+    if (eq && pr.src === 'espn' && pr.st === 'dnp' && kickDay(team) && pr.day >= lastPracticeDay(kickDay(team))) {
       return { out: true, why: `questionable${w} and not practising ${weekdayOf(pr.day).replace(/^./, c => c.toUpperCase())}, per ESPN` };
     }
     /* 6. listed, with what is known */
@@ -482,7 +507,7 @@ function lineups(src) {
         for (const r of rows.filter(r => r.slot === 'QB').sort((a, b) => a.rank - b.rank)) {
           if (used.has(key(r))) continue;
           const p = person(r.id, r.name, r.slot);
-          if (!p.out) { next = shown(p); break; }
+          if (!p.out) { next = { ...shown(p), from: 'chart' }; break; }
         }
       }
       L.ol = strip(fill(OL_SLOTS, 'ol'));
@@ -511,12 +536,23 @@ function lineups(src) {
       /* the quarterback: whoever threw most in the team's last game, then the season */
       const qbScore = e => (e.lastWk === lastPass[team] ? 1e6 * e.lastAtt : 0) + e.att;
       L.qb = top(isQB, qbScore, 1, 'qb');
-      if (L.qb[0] && L.qb[0].q) next = top(isQB, qbScore, 2, 'qb', false).find(p => p.n !== L.qb[0].n) || null;
+      if (L.qb[0] && L.qb[0].q) { next = top(isQB, qbScore, 2, 'qb', false).find(p => p.n !== L.qb[0].n) || null; if (next) next.from = 'usage'; }
       L.ol = top(isOL, e => e.osn, 5, 'ol');
       L.rb = top(isRB, e => e.car, 2, 'rb');
       L.rec = top(isRec, e => e.tgt, 3, 'rec');
       L.front = top(isFront, frontKey, 3, 'front');
       L.db = top(isDB, e => e.dsn, 3, 'db');
+    }
+    /* a quarterback in doubt and no backup found above: the team's other active quarterbacks, by the
+       same rules, most 2026 dropbacks first; none available is said, not left blank */
+    let nextNone = null;
+    if (L.qb[0] && L.qb[0].q && !next) {
+      const starter = normName(L.qb[0].n);
+      const cands = Object.values(byId).filter(r => r.team === team && isQB(r.pos) && (r.status === 'ACT' || r.status === 'INA') && normName(r.n) !== starter)
+        .sort((a, b) => usage(team, b.id).db - usage(team, a.id).db || a.n.localeCompare(b.n));
+      const why = [];
+      for (const r of cands) { const p = person(r.id, r.n, 'QB'); if (!p.out) { next = { ...shown(p), from: 'roster' }; break; } why.push(`${p.n} is ${p.why}`); }
+      if (!next) nextNone = cands.length ? `no other quarterback on the roster can play (${why.join('; ')})` : 'no other quarterback on the active roster';
     }
     for (const u of Object.keys(passed)) for (const p of passed[u]) passedLog.push(`${team} ${u}: ${p.n} (${p.pos}) ${p.why}`);
     /* whose numbers the passing rank mostly is, when that is not the starter's */
@@ -527,7 +563,7 @@ function lineups(src) {
       const [lid, le] = qbs[0], ln = (byId[lid] && byId[lid].n) || le.n;
       if (ln !== L.qb[0].n && le.db / tot > 0.5) note = `The passing numbers are the team's, mostly ${ln}'s dropbacks.`;
     }
-    out[team] = { L, out: passed, next, note, chart: fresh ? s.dt : null };
+    out[team] = { L, out: passed, next, nextNone, note, chart: fresh ? s.dt : null };
   }
   return { teams: out, chart: chartUsed, reported, reportDay, filed, repaired, passedLog };
 }
@@ -543,7 +579,7 @@ function units(src) {
     const unit = u => ({ rank: R[u][t], z: Z[u][t], who: lu.L[u] || [], ...(lu.out[u] ? { out: lu.out[u] } : {}), stats: S[t][u] });
     U[t] = {
       g26: g26[t],
-      qb: { ...unit('qb'), ...(lu.next ? { next: lu.next } : {}), ...(lu.note ? { note: lu.note } : {}) }, ol: unit('ol'), rb: unit('rb'), rec: unit('rec'), front: unit('front'), db: unit('db'),
+      qb: { ...unit('qb'), ...(lu.next ? { next: lu.next } : {}), ...(lu.nextNone ? { next: null, next_none: lu.nextNone } : {}), ...(lu.note ? { note: lu.note } : {}) }, ol: unit('ol'), rb: unit('rb'), rec: unit('rec'), front: unit('front'), db: unit('db'),
       vs: { passD: { rank: R.passD[t], z: Z.passD[t] }, runD: { rank: R.runD[t], z: Z.runD[t] } },
     };
   }
@@ -583,6 +619,8 @@ function freezeLineups(file, week, U, kicks, nowISO) {
   for (const t of Object.keys(kicks)) {
     if (!U[t] || Date.parse(kicks[t]) <= Date.parse(nowISO)) continue;   // kicked off: keep what was shown before
     const names = Object.fromEntries(['qb', 'ol', 'rb', 'rec', 'front', 'db'].map(u => [u, U[t][u].who.map(p => ({ id: p.id || null, n: p.n, pos: p.pos, ...(p.q ? { q: p.q } : {}) }))]));
+    const was = F.teams[t];
+    if (was && was.kick === kicks[t] && JSON.stringify(was.units) === JSON.stringify(names)) continue;   // the same lineup: its time stays
     F.teams[t] = { kick: kicks[t], built_at: nowISO, units: names };
     changed++;
   }
@@ -644,11 +682,19 @@ async function build(opts = {}) {
   /* every required source first: nothing is written unless all of them arrived */
   const names = ['games', 'roster26', 'team25', 'team26', 'player25', 'player26', 'injuries26', 'snaps26'];
   const got = await Promise.allSettled(names.map(n => getCSV(n, opts.fetch)));
+  /* Before the season's first game nflverse has no current-season stats, snap counts or injury report:
+     those files answer 404 (not retried) until there is something in them. With the schedule in hand
+     and no game of the season played, such a 404 is "no games yet", not a failure; any other failure,
+     or a 404 once a game has been played, still stops the build. */
+  const gi = names.indexOf('games');
+  const noGamesYet = got[gi].status === 'fulfilled' && !got[gi].value.some(r => String(r.season) === String(SEASON) && r.game_type === 'REG' && !unplayed(r));
   const D = {}, failed = [];
   names.forEach((n, i) => {
+    const why = got[i].reason && got[i].reason.message;
     if (got[i].status === 'fulfilled') D[n] = got[i].value;
-    else if (OPTIONAL.has(n)) { D[n] = []; warn(`${n} unavailable (${got[i].reason && got[i].reason.message}): the Deep Dive lists keep the chart's order without snap counts`); }
-    else failed.push(`${n}: ${got[i].reason && got[i].reason.message}`);
+    else if (noGamesYet && PRESEASON.has(n) && /^404\b/.test(why || '')) { D[n] = []; console.log(`${n}: not published yet (404) and no ${SEASON} game played: none yet`); }
+    else if (OPTIONAL.has(n)) { D[n] = []; warn(`${n} unavailable (${why}): the Deep Dive lists keep the chart's order without snap counts`); }
+    else failed.push(`${n}: ${why}`);
   });
   if (failed.length) throw new Error(`required source unavailable, nothing written: ${failed.join('; ')}`);
   const S = schedule(D.games, now);
@@ -664,7 +710,8 @@ async function build(opts = {}) {
   catch (e) { throw new Error(`required source unavailable, nothing written: depth26: ${e.message}`); }
   for (const n of ['injuries26', 'depth26', 'roster26']) console.log(`${n}: Last-Modified ${LAST_MODIFIED[n] || 'not given'}`);
   const espn = Array.isArray(opts.espn) ? opts.espn : null;
-  if (!espn) warn('ESPN injury list not available: the lineups rest on the nflverse report alone');
+  /* an empty list is as good as none (pull-week.js passes [] when ESPN answered with nothing usable): warn either way */
+  if (!espn || !espn.length) warn(`ESPN injury list ${espn ? 'empty' : 'not available'}: the lineups rest on the nflverse report alone`);
 
   /* the chip is the hub's own file, not a download: if it is missing or short, keep the chip as it was and say so */
   let RK = null;
@@ -690,18 +737,29 @@ async function build(opts = {}) {
   }
   fs.writeFileSync(path.join(out, 'players2026.js'), dataFile('PLAYERS26', P));
   console.log(`players2026.js: ${Object.values(P).reduce((a, t) => a + Object.keys(t).length, 0)} names across ${Object.keys(P).length} teams`);
-  fs.writeFileSync(path.join(out, 'units2026.js'), dataFile('UNITS26', U,
-    `const UNITS26_BASIS = ${JSON.stringify(`2025 season counted as ${PRIOR_GAMES} games`)};\n` +
+  /* units2026.js is rewritten only when something in it besides its build time changed: built_at says
+     when the Deep Dive last changed, and a run that changes nothing commits nothing (until 2026-10-09
+     the stamp moved on every run, so all nineteen runs a week committed). The smoke test proves the
+     run itself from the snapshot below (run_at), not from this stamp. */
+  const unitsFile = path.join(out, 'units2026.js');
+  const unitsBody = m => dataFile('UNITS26', U,
+    `const UNITS26_BASIS = ${JSON.stringify(`${PRIOR} season counted as ${PRIOR_GAMES} games`)};\n` +
     `const UNITS26_LINEUPS = ${JSON.stringify(lineText)};\n` +
-    `const UNITS26_META = ${JSON.stringify(META)};\n`));
+    `const UNITS26_META = ${JSON.stringify(m)};\n`);
+  let oldBuilt = null;
+  try { const m = fs.readFileSync(unitsFile, 'utf8').match(/^const UNITS26_META = (.*);$/m); oldBuilt = m && JSON.parse(m[1]).built_at; } catch (e) { /* no file yet */ }
+  if (oldBuilt && fs.readFileSync(unitsFile, 'utf8') === unitsBody({ ...META, built_at: oldBuilt })) {
+    META.built_at = oldBuilt;
+    console.log(`units2026.js: unchanged since ${oldBuilt}, not rewritten`);
+  } else fs.writeFileSync(unitsFile, unitsBody(META));
   console.log(`units2026.js: ${Object.keys(U).length} teams, week ${week} (${S.phase}), 2026 games ${Math.min(...Object.values(U).map(u => u.g26))} to ${Math.max(...Object.values(U).map(u => u.g26))}; lineups from ${lineSrc.join(', ')}; ${LU.repaired} chart id(s) repaired by name; filed: ${META.report.filed.join(' ') || 'none'}`);
   for (const l of LU.passedLog) console.log('  passed over: ' + l);
-  for (const t of Object.keys(U)) if (U[t].qb.next) console.log(`  ${t} qb: ${U[t].qb.who[0].n} (${U[t].qb.who[0].q}); next ${U[t].qb.next.n}`);
+  for (const t of Object.keys(U)) if (U[t].qb.next || U[t].qb.next_none) console.log(`  ${t} qb: ${U[t].qb.who[0].n} (${U[t].qb.who[0].q}); ${U[t].qb.next ? `next ${U[t].qb.next.n} (from the ${U[t].qb.next.from})` : U[t].qb.next_none}`);
 
   /* the sources the smoke test checks the lineups against: the same files, not a later download */
   fs.mkdirSync(cacheDir, { recursive: true });
   const keepInj = D.injuries26.filter(r => r.season_type === 'REG' && (+r.week === week || Object.values(S.lastGame).some(g => g.week === +r.week)));
-  fs.writeFileSync(path.join(cacheDir, 'lineup-sources.json'), JSON.stringify({ built_at: now, season: SEASON, week, report_modified: LAST_MODIFIED.injuries26 || '',
+  fs.writeFileSync(path.join(cacheDir, 'lineup-sources.json'), JSON.stringify({ built_at: META.built_at, run_at: new Date().toISOString(), season: SEASON, week, report_modified: LAST_MODIFIED.injuries26 || '',
     injuries: keepInj, roster: D.roster26.map(r => ({ gsis_id: r.gsis_id, team: r.team, status: r.status, full_name: r.full_name, position: r.position })),
     games: D.games.filter(r => r.season === String(SEASON)).map(r => ({ game_id: r.game_id, season: r.season, game_type: r.game_type, week: r.week, gameday: r.gameday, gametime: r.gametime, away_team: r.away_team, home_team: r.home_team, away_score: r.away_score, home_score: r.home_score })),
     espn: espn || null, model_built_at: RK ? RK.built : null }));

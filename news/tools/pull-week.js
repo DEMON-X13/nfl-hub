@@ -23,7 +23,7 @@ const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const WEEK = parseInt(args.find(a => /^\d+$/.test(a)) || '', 10);
 const OUT = (() => { const i = args.indexOf('--out'); return i >= 0 ? path.resolve(args[i + 1]) : path.join(ROOT, 'data'); })();
-if (!WEEK) { console.error('usage: node tools/pull-week.js <week> [--out dir]'); process.exit(1); }
+if (!WEEK && require.main === module) { console.error('usage: node tools/pull-week.js <week> [--out dir]'); process.exit(1); }
 const SEASON = lib.SEASON;
 const UA = { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36', 'Accept': 'application/json,text/html' } };
 
@@ -60,11 +60,15 @@ try { const t = fs.readFileSync(path.join(ROOT, 'data', 'teams.js'), 'utf8'); fo
 
 /* ---------- fallback: schedule and scores from the nflverse games file ---------- */
 const NFLVERSE_GAMES = lib.GAMES_URL;
-let nflverseRows = null;
+let nflverseAll = null;
 const parseCSV = lib.parseCSV;
+/* the whole schedule (every season and game type), downloaded once */
+async function nflverseGames() {
+  if (!nflverseAll) nflverseAll = parseCSV((await lib.fetchText(NFLVERSE_GAMES)).text);
+  return nflverseAll;
+}
 async function nflverseSeason() {
-  if (!nflverseRows) nflverseRows = parseCSV((await lib.fetchText(NFLVERSE_GAMES)).text).filter(r => r.season === String(SEASON) && r.game_type === 'REG');
-  return nflverseRows;
+  return (await nflverseGames()).filter(r => r.season === String(SEASON) && r.game_type === 'REG');
 }
 /* an Eastern date and time ("2026-09-17", "20:15") as an ISO instant, daylight saving included */
 function easternISO(day, time) {
@@ -150,8 +154,9 @@ async function results(){
 
 /* How many of a team's games a season table covers: the count whose points per game and points
    allowed match the table's (TeamRankings' date= covers the games before that day, so a Sunday night
-   run may or may not hold the afternoon's). Falls back to the finals before today. */
-function gamesCovered(team, stat, res, today) {
+   run may or may not hold the afternoon's). A table that matches no count is not guessed at: g is
+   null and checked false (verifyCounts() below decides what is published). */
+function gamesCovered(team, stat, res) {
   const mine = Object.entries(res.out).map(([k, sc]) => {
     const [wk, pair] = k.split(':'); const [a, h] = pair.split('-');
     if (a !== team && h !== team) return null;
@@ -162,8 +167,48 @@ function gamesCovered(team, stat, res, today) {
     pf += mine[n - 1].pf; pa += mine[n - 1].pa;
     if (stat.ppg != null && stat.pa != null && Math.abs(pf / n - stat.ppg) <= 0.051 && Math.abs(pa / n - stat.pa) <= 0.051) match.push(n);
   }
-  const n = match.length ? match[match.length - 1] : mine.filter(g => g.day && g.day < today).length;
-  return { g: n, last: n ? mine[n - 1].day : '', checked: match.length > 0 };
+  if (!match.length) return { g: null, last: '', checked: false };
+  const n = match[match.length - 1];
+  return { g: n, last: mine[n - 1].day, checked: true };
+}
+
+/* The day the TeamRankings tables are asked for (their date= covers the games before that day).
+   In the regular season, today. Once it is over, the day after its last game: TeamRankings' season
+   column takes in the playoffs as they are played, while results.js and the page hold the regular
+   season only, so from the first wild card game a table asked for today matches no team's game
+   count (on a test schedule with a played Chiefs at Bills wild card, BUF and KC matched none and the
+   smoke test failed on every run until SEASON moved). */
+const addDay = day => { const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+function statsDate(rows, today) {
+  const st = lib.seasonState(rows || []);
+  if (st.phase === 'regular' || st.phase === 'none') return { date: today, phase: st.phase };
+  const last = (rows || []).filter(r => String(r.season) === String(SEASON) && r.game_type === 'REG').map(r => r.gameday).filter(Boolean).sort().pop();
+  return { date: last ? addDay(last) : today, phase: st.phase };
+}
+
+/* Each team's game count, verified against results.js. A team whose table matches no count of its
+   finals keeps its last verified line from the file on disk (prev, whose count is still a prefix of
+   results.js, which only grows); with none to keep it is published without a count, which the page
+   then does not claim. Returns the teams to write and who was carried or left uncounted. */
+function verifyCounts(out, complete, res, prev) {
+  const T = {}, carried = [], uncounted = [];
+  for (const t of complete) {
+    const c = gamesCovered(t, out[t], res);
+    if (c.checked) { T[t] = { ...out[t], g: c.g }; T[t].__last = c.last; continue; }
+    if (prev && prev[t] && prev[t].g != null) { T[t] = { ...prev[t] }; T[t].__last = lastDayOf(t, prev[t].g, res); carried.push(t); }
+    else { const { g, ...rest } = out[t]; T[t] = rest; uncounted.push(t); }
+  }
+  return { T, carried, uncounted };
+}
+function lastDayOf(team, n, res) {
+  const days = Object.entries(res.out).filter(([k]) => { const [a, h] = k.split(':')[1].split('-'); return a === team || h === team; })
+    .map(([k]) => [+k.split(':')[0].slice(2), res.kickOf[k] ? etDate(res.kickOf[k]) : '']).sort((x, y) => x[0] - y[0]);
+  return n && days[n - 1] ? days[n - 1][1] : '';
+}
+/* the STATS26 a previous run wrote, or null */
+function readStats(file) {
+  try { return require('vm').runInNewContext(fs.readFileSync(file, 'utf8') + '\n;({ S: typeof STATS26 === "undefined" ? null : STATS26 })').S; }
+  catch (e) { return null; }
 }
 
 async function stats(res){
@@ -171,9 +216,13 @@ async function stats(res){
   const SRC = { 'points-per-game':'ppg', 'opponent-points-per-game':'pa', 'yards-per-play':'ypp', 'opponent-yards-per-play':'yppa', 'turnover-margin-per-game':'to', 'sacks-per-game':'sk', 'qb-sacked-per-game':'ska', 'third-down-conversion-pct':'third', 'red-zone-scoring-pct':'rz' };
   const out = {}; TEAMS.forEach(t => out[t] = {});
   const today = new Date().toISOString().slice(0, 10);
+  let asked = { date: today, phase: 'regular' };
+  try { asked = statsDate(await nflverseGames(), today); }
+  catch (e) { console.log(`schedule unavailable for the stats date (${String(e.message).split(' ')[0]}); asking TeamRankings for ${today}`); }
+  if (asked.date !== today) console.log(`the ${SEASON} regular season is over (${asked.phase}): TeamRankings asked for ${asked.date}, its regular season only`);
   for (const [slug, field] of Object.entries(SRC)) {
     let html;
-    try { html = await getText(`https://www.teamrankings.com/nfl/stat/${slug}?date=${today}`); }
+    try { html = await getText(`https://www.teamrankings.com/nfl/stat/${slug}?date=${asked.date}`); }
     catch (e) { console.log(`TeamRankings ${slug} unavailable (${e.message.split(' ')[0]})`); continue; }
     const d = new JSDOM(html).window.document, t = d.querySelector('table'); if (!t) { console.log('no table for', slug); continue; }
     const hdr = [...t.querySelectorAll('thead th')].map(x => x.textContent.trim());
@@ -199,19 +248,20 @@ async function stats(res){
   const had = fs.existsSync(statsFile) ? (fs.readFileSync(statsFile, 'utf8').match(/^ "[A-Z]{2,3}": \{/gm) || []).length : 0;
   if (complete.length < had) { console.log(`stats2026.js kept: this pull has ${complete.length} complete teams, the file already has ${had}`); return; }
   /* each team's own game count: until 2026-10-09 the label said "Week N-1" for every team, while the
-     Thursday teams' numbers already held that week's game (TB's 20 points a game were over 5, shown as 4) */
+     Thursday teams' numbers already held that week's game (TB's 20 points a game were over 5, shown as 4).
+     A count is published only when the table matches it; see verifyCounts() */
+  const V = verifyCounts(out, complete, res, readStats(statsFile));
+  const warnLog = m => console.log(process.env.GITHUB_ACTIONS ? `::warning::${m}` : `warning: ${m}`);
+  if (V.carried.length) warnLog(`stats2026.js: ${V.carried.join(', ')} kept from the last run: TeamRankings' points per game match none of their game counts in results.js`);
+  if (V.uncounted.length) warnLog(`stats2026.js: ${V.uncounted.join(', ')} published without a game count: TeamRankings' points per game match none of their game counts, and no earlier verified line to keep`);
   let through = '';
-  for (const t of complete) {
-    const c = gamesCovered(t, out[t], res, etDate(new Date().toISOString()));
-    out[t].g = c.g;
-    if (!c.checked) console.log(`stats2026.js: ${t}'s points per game match none of its game counts; ${c.g} assumed (finals before today)`);
-    if (c.last > through) through = c.last;
-  }
+  for (const t of complete) { if (V.T[t].__last > through) through = V.T[t].__last; delete V.T[t].__last; }
   const thru = through ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(through + 'T12:00:00Z')) : '';
-  const body = `/* ${SEASON} season to date team stats, regenerated by tools/pull-week.js on ${today} (before Week ${WEEK}).
+  const body = `/* ${SEASON} season to date team stats, regenerated by tools/pull-week.js on ${today} (${asked.date === today ? `before Week ${WEEK}` : `the regular season, as of ${asked.date}`}).
    A team is listed once it has points for and against and 8 of the 10 stats; a stat left out shows a dash on the page.
-   Fields: ppg, pa, ypp, yppa, to, sk, ska, third, rz, expl (per game; third and rz are percentages), and g, the games they cover.
-   STATS26_THROUGH: the last game day they include. */\nconst STATS26 = ${JSON.stringify(Object.fromEntries(complete.map(t => [t, out[t]])), null, 1)};\nconst STATS26_THROUGH = ${JSON.stringify(thru)};\nconst STATS26_ASOF = ${JSON.stringify(today)};\n`;
+   Fields: ppg, pa, ypp, yppa, to, sk, ska, third, rz, expl (per game; third and rz are percentages), and g, the games they cover
+   (left out where TeamRankings' table matched no count of the team's finals and no earlier line could be kept).
+   STATS26_THROUGH: the last game day they include. */\nconst STATS26 = ${JSON.stringify(Object.fromEntries(complete.map(t => [t, V.T[t]])), null, 1)};\nconst STATS26_THROUGH = ${JSON.stringify(thru)};\nconst STATS26_ASOF = ${JSON.stringify(today)};\n`;
   fs.writeFileSync(path.join(OUT, 'stats2026.js'), body);
   console.log('stats2026.js:', complete.length, 'teams,', complete.filter(t => ['ppg', 'pa', 'ypp', 'yppa', 'to', 'sk', 'ska', 'third', 'rz', 'expl'].every(k => out[t][k] != null)).length, 'with all ten stats, through', thru || '(no games)');
 }
@@ -272,7 +322,9 @@ async function pack(games){
   console.log(`tools/out/week${WEEK}-pack.md written`);
 }
 
-(async () => {
+module.exports = { gamesCovered, statsDate, verifyCounts, readStats };
+
+if (require.main === module) (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const games = await scoreboard(WEEK);
   console.log(`week ${WEEK}: ${games.length} games on the schedule`);

@@ -9,12 +9,15 @@
      - the live week's narrative: it never quotes the Deep Dive's or the rank chip's ranks, which
        move with every run while the narrative stays as written (on 2026-10-09, 146 of the 192 unit
        ranks the Week 5 file quoted had moved).
+     - the fixed cases in tools/cases.js: the rules and their checks on weeks the real files produced
+       (the Wednesday before a Thursday game, a quarterback with no healthy backup, the postseason's
+       stat tables), each with the version a review caught fed to the checks, which must fail it.
    Run from news/:  npm ci && node tools/smoke.js
    The lineup checks need the nflverse files: when the build's snapshot is missing and the network
    is too, they fail, unless NEWS_SMOKE_OFFLINE=1 says to skip them (each skip is printed).          */
 const fs = require('fs'), path = require('path');
 const { JSDOM, requestInterceptor, VirtualConsole } = require('jsdom');
-const { SEASON } = require('./lib');
+const { SEASON, siteRankQuote } = require('./lib');
 const LC = require('./lineup-checks');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -48,10 +51,7 @@ const check = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'FAIL ') + la
 const skip = (label, why) => console.log('SKIP ' + label + '  (' + why + ')');
 const ord = v => v + ((x => ['th', 'st', 'nd', 'rd'][(x - 20) % 10] || ['th', 'st', 'nd', 'rd'][x] || 'th')(v % 100));
 
-/* the narrative never quotes the site's own ranks: the Deep Dive and the rank chip beside it move
-   with every run, the narrative does not. Third-party numbers ("per nflverse", "per TeamRankings")
-   are the writer's to quote. */
-const RANK_QUOTE = /\b(?:in the tracker|the tracker's|tracker's|site's units?|site's unit (?:grades|numbers)|unit grades?|in those grades|site's (?:run|pass) defense grade|site's lowest-graded|power ratings?|power rank\b|deep dive)/i;
+/* the narrative never quotes the site's own ranks (tools/lib.js siteRankQuote says which phrases) */
 function narrativeStrings(week) {
   const out = [];
   const add = (where, v) => { if (typeof v === 'string' && v) out.push([where, v]); else if (Array.isArray(v)) v.forEach((x, i) => add(`${where}[${i}]`, x)); };
@@ -91,7 +91,7 @@ async function run() {
     check('footer says what comes next', over ? /regular season is complete/.test(foot) : /New week posted each Wednesday/.test(foot), foot.trim()); }
 
   // the live week's narrative quotes no site ranks: the Deep Dive and rank chip show them, and move
-  { const hits = narrativeStrings(WK).filter(([, v]) => RANK_QUOTE.test(v)).map(([k, v]) => `${k}: "${v.replace(/<[^>]+>/g, '').match(new RegExp('.{0,40}' + RANK_QUOTE.source + '.{0,20}', 'i'))[0]}"`);
+  { const hits = narrativeStrings(WK).map(([k, v]) => [k, siteRankQuote(v)]).filter(([, q]) => q).map(([k, q]) => `${k}: "${q}"`);
     check('the live week quotes no Deep Dive or rank chip ranks', hits.length === 0, hits.length ? `${hits.length}: ${hits.slice(0, 4).join(' | ')}` : 'none'); }
 
   click('.slot[data-game="' + gameKey(first) + '"]');
@@ -191,8 +191,23 @@ async function run() {
       });
       check('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
       // a quarterback in doubt has the next one named beside him, on every game of the slate
-      const qbMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a] && U[a].qb.next).filter(([a, o]) => !dd(a, o, 'r6').split('class="ddrow"')[1].includes('next on the chart: ' + U[a].qb.next.n));
+      const NF = { chart: 'next on the chart: ', roster: 'next on the roster: ', usage: 'next by 2026 dropbacks: ' };
+      const qbMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a] && (U[a].qb.next || U[a].qb.next_none)).filter(([a, o]) => {
+        const row = dd(a, o, 'r6').split('class="ddrow"')[1], q = U[a].qb;
+        return !(q.next ? row.includes((NF[q.next.from] || NF.chart) + q.next.n) : row.includes(q.next_none));
+      });
       check('a quarterback in doubt names the next one, on every game of the slate', qbMiss.length === 0, qbMiss.map(x => x[0]).join(',') || 'none');
+      // the quarterback row on made-up states: a backup from the roster says so, and no backup is said, not left blank
+      { const keep = JSON.stringify(U[first.away].qb), q = U[first.away].qb;
+        q.who = [{ n: 'Zed Quux', pos: 'QB', q: 'questionable: ankle' }];
+        q.next = { n: 'Quin Zorb', pos: 'QB', from: 'roster' }; delete q.next_none;
+        const a = dd(first.away, first.home, 'r6').split('class="ddrow"')[1];
+        q.next = null; q.next_none = 'no other quarterback on the roster can play (Quin Zorb is out (knee))';
+        const b = dd(first.away, first.home, 'r6').split('class="ddrow"')[1];
+        U[first.away].qb = JSON.parse(keep);
+        check('the quarterback row says where the next one comes from, or that none can play',
+          a.includes('Zed Quux may not start (questionable: ankle); next on the roster: Quin Zorb.') && b.includes('Zed Quux may not start (questionable: ankle); no other quarterback on the roster can play (Quin Zorb is out (knee)).'),
+          a.match(/may not start[^<]*/) + ' | ' + b.match(/may not start[^<]*/)); }
       dds[0].open = true; dds[0].dispatchEvent(new w.Event('toggle'));
       check('opening one team opens the other', dds[1].open);
       dds[1].open = false; dds[1].dispatchEvent(new w.Event('toggle'));
@@ -206,9 +221,11 @@ async function run() {
     const blanks = [first.away, first.home].reduce((n, t) => n + (S26[t] ? ['ppg','pa','ypp','yppa','to','sk','ska','third','rz','expl'].filter(k => S26[t][k] == null).length : 0), 0);
     const dashes = svals.filter(v => v === '–').length;
     check('2026 only: numeric stat values, a dash only where the stat file has none', svals.length > 0 && svals.every(v => v === '–' || /^[+-]?\d+(\.\d+)?%?$/.test(v)) && dashes <= blanks + 2, `${dashes} dashes, ${blanks} blank stats`);
-    // each team's points per game and allowed are its first g finals in results.js, and the header says g
-    const teams = Object.keys(S26);
-    if (teams.length && teams.every(t => S26[t].g != null)) {
+    // each team's points per game and allowed are its first g finals in results.js, and the header says g.
+    // A team the pull could not verify carries no g (pull-week.js verifyCounts) and the page claims no count for it
+    const teams = Object.keys(S26).filter(t => S26[t].g != null), uncounted = Object.keys(S26).filter(t => S26[t].g == null);
+    if (uncounted.length && teams.length) console.log(`     (${uncounted.join(', ')}: no verified game count in stats2026.js, so none is claimed or checked)`);
+    if (teams.length) {
       const bad = teams.filter(t => {
         const games = Object.entries(R).map(([k, sc]) => { const [wk, p] = k.split(':'); const [a, h] = p.split('-'); return a === t ? [+wk.slice(2), sc[0], sc[1]] : h === t ? [+wk.slice(2), sc[1], sc[0]] : null; }).filter(Boolean).sort((x, y) => x[0] - y[0]).slice(0, S26[t].g);
         if (games.length !== S26[t].g) return true;
@@ -217,7 +234,7 @@ async function run() {
       });
       check("each team's stats are its own game count", bad.length === 0, bad.length ? bad.map(t => `${t} g=${S26[t].g} ppg ${S26[t].ppg}`).join(', ') : `${teams.length} teams`);
       const hd = d.querySelector('.ovbody .ovsub').textContent;
-      check('the stat header gives both teams their game counts', [first.away, first.home].filter(t => S26[t]).every(t => hd.includes(`${t} ${S26[t].g} game`)), hd);
+      check('the stat header gives both teams their game counts', [first.away, first.home].filter(t => S26[t] && S26[t].g != null).every(t => hd.includes(`${t} ${S26[t].g} game`)) && [first.away, first.home].filter(t => S26[t] && S26[t].g == null).every(t => !new RegExp(`\\b${t} \\d+ game`).test(hd)), hd);
     } else skip("each team's stats are its own game count", 'stats2026.js predates per-team game counts; the next pull-week.js run writes them'); }
   const anyStat = svals.some(v => !/^0%?$/.test(v)); const widths = [...d.querySelectorAll('.ovbody .half i')].map(x => x.style.width);
   check(anyStat ? 'bars drawn once stats exist' : 'empty bars when both sides are zero', anyStat ? widths.some(w => w && w !== '0%') : widths.every(w => w === '0%'));
@@ -255,6 +272,9 @@ async function run() {
   check('after week 18 the page says the regular season is complete', /regular season is complete/.test(d.querySelector('footer').textContent) && !/New week posted/.test(d.querySelector('footer').textContent), d.querySelector('footer').textContent.trim());
   check('no errors after interactions', errs.length === 0, errs.join(' | ') || 'none');
 
+  // ---- the cases the rules and their checks must keep, each from a week the real files produced (tools/cases.js) ----
+  for (const c of require('./cases').cases()) check(`case ${c.name}: ${c.label}`, c.ok, c.ok ? undefined : c.detail);
+
   // ---- the Deep Dive's lineups against the report, roster and schedule they were built from ----
   { const U = g('typeof UNITS26 === "undefined" ? null : UNITS26');
     let S = null, why = '';
@@ -275,8 +295,11 @@ async function run() {
         check('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
       }
     }
-    // in the job the smoke runs straight after the build: a file more than 36 hours old there was kept, not built
-    if (process.env.GITHUB_ACTIONS === 'true') check('units2026.js was built on this run or the last day', !!META && Date.now() - Date.parse(META.built_at) < 36 * 3600e3, META ? META.built_at : 'no build stamp');
+    // in the job the smoke runs straight after the build: the lineups must have been checked against this
+    // run's own download (the build's snapshot, written by this run), not a kept file. units2026.js's own
+    // stamp moves only when the Deep Dive changes, so it is not the proof of a run
+    if (process.env.GITHUB_ACTIONS === 'true') check("the lineups were built and checked on this run's download", !!S && S.from === "the build's own snapshot" && !!S.run_at && Date.now() - Date.parse(S.run_at) < 6 * 3600e3,
+      S ? `${S.from}${S.run_at ? ', written ' + S.run_at : ''}` : 'no sources');
   }
 
   console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');

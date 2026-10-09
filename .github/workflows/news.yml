@@ -30,9 +30,12 @@ on:
     - cron: "7 7 * * 0"     # Sun: lands by 16:30 UTC, before the 1pm ET games
   workflow_dispatch:
   push:
-    # a change to the tracker's pull code runs it once, so a fix is proven straight away
+    # a change to the tracker's pull code runs it once, so a fix is proven straight away; so does a change
+    # to the page or a week's narrative, so a narrative the smoke test refuses (it quotes the site's own
+    # ranks, say) fails on its own push, not on the next scheduled run hours later
     branches: [main]
-    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "news/tools/lineup-checks.js"]
+    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "news/tools/lineup-checks.js", "news/tools/cases.js",
+            "news/data/week*.js", "news/data/weeks.js", "news/js/app.js", "news/index.html"]
 
 permissions:
   contents: write

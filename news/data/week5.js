@@ -386,7 +386,7 @@ const WEEK5 = {
       ],
       "keys": [
         "<strong>Stop Kyren Williams first.</strong> 16 carries for 80 yards and 2 touchdowns plus 10 catches for 67 at Philadelphia, per ESPN's feed and nflverse; holding the Rams to field goals pays against an offense scoring touchdowns on 53.3 percent of red zone trips, tied 21st, with <strong>Harrison Mevis</strong> 5 of 7 on kicks.",
-        "<strong>Turn Rousseau loose on Stafford.</strong> <strong>Greg Rousseau</strong> leads the league with 6 sacks and 16 QB hits, per nflverse; <strong>Matthew Stafford</strong> has thrown 162 passes, tied 2nd most, with 6 interceptions, tied 2nd most, though the Rams allow only 1.5 sacks a game, tied 5th.",
+        "<strong>Turn Rousseau loose on Stafford.</strong> <strong>Greg Rousseau</strong> leads the league with 6 sacks and 16 QB hits, per nflverse; <strong>Matthew Stafford</strong> has thrown 162 passes, tied 2nd most, with 6 interceptions, tied 2nd most, though the Rams allow only 1.5 sacks a game, per TeamRankings.",
         "<strong>Protect Allen with the run game.</strong> <strong>Byron Young</strong> had 2.5 sacks Sunday, per Eagles.com and nflverse; <strong>James Cook</strong>'s 6.0 a carry keeps <strong>Dion Dawkins</strong> and <strong>Spencer Brown</strong> out of obvious passing downs against a secondary allowing 153.8 passing yards a game, 1st."
       ]
     },

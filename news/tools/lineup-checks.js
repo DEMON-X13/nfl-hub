@@ -11,13 +11,20 @@
      roster      nobody listed who is off the active roster (IR, PUP, practice squad, cut...) or now on
                  another team; nobody listed who was inactive last game without practising this week
      espn        nobody listed whom ESPN rules Out, Doubtful, on IR or suspended before the team files
-     next-qb     a quarterback carrying a tag has the next quarterback named beside him
+     next-qb     a quarterback carrying a tag has a next quarterback named beside him whenever the team
+                 has one these same rules let play, and the one named is one of those
+   "Filed" is official and nothing else: the team's rows on the week's report carry a game status.
+   (A version of these checks also counted a practice report two days before kickoff as filed, the
+   same shortcut the build took, so for a Thursday game Tuesday's practice report "filed" the team
+   and both the build and its check let ESPN's Out and the last-game rule go: Mayfield and Winfield
+   were listed on the Wednesday before TB at DAL and the checks passed. A check that shares the
+   build's shortcut cannot catch it.)
 
    Until 2026-10-09 the smoke test only checked the lineups against themselves, and they named
    Hendrickson, Gonzalez, Elliss, Banks and DeVonta Smith (each Out in week 4 and not practising in
    week 5) as playing, because ESPN's mid-week "Questionable" stopped the rule before it ran.       */
 'use strict';
-const { SEASON, ab, seasonState, etToISO, parseCSV, fetchText } = require('./lib');
+const { SEASON, ab, seasonState, etToISO, parseCSV, fetchText, unplayed } = require('./lib');
 const { notePractice } = require('./context');
 
 const norm = s => String(s || '').toLowerCase().replace(/[.'’,]/g, '').replace(/-/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
@@ -34,10 +41,16 @@ async function loadSources(cacheFile, meta, fs) {
     if (meta && S.built_at === meta.built_at) return { ...S, from: 'the build\'s own snapshot' };
   } catch (e) { /* no snapshot: download */ }
   const REL = 'https://github.com/nflverse/nflverse-data/releases/download';
-  const [g, i, r] = await Promise.all([
-    fetchText('https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'),
-    fetchText(`${REL}/injuries/injuries_${SEASON}.csv`), fetchText(`${REL}/rosters/roster_${SEASON}.csv`)]);
-  return { games: parseCSV(g.text), injuries: parseCSV(i.text), roster: parseCSV(r.text), espn: null, report_modified: i.lastModified, from: 'a fresh download' };
+  const [g, r] = await Promise.all([fetchText('https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'), fetchText(`${REL}/rosters/roster_${SEASON}.csv`)]);
+  const games = parseCSV(g.text);
+  /* no injury report before the season's first game: a 404 then is an empty report (context.js reads it the same way) */
+  let i;
+  try { i = await fetchText(`${REL}/injuries/injuries_${SEASON}.csv`); }
+  catch (e) {
+    if (/^404\b/.test(e.message || '') && !games.some(x => String(x.season) === String(SEASON) && x.game_type === 'REG' && !unplayed(x))) i = { text: '', lastModified: '' };
+    else throw e;
+  }
+  return { games, injuries: i.text ? parseCSV(i.text) : [], roster: parseCSV(r.text), espn: null, report_modified: i.lastModified, from: 'a fresh download' };
 }
 
 function check(U, meta, S) {
@@ -66,7 +79,7 @@ function check(U, meta, S) {
     if (+r.week === week) { rep[r.gsis_id] = r; teamRows[ab(r.team)] = true; if (lc(r.report_status)) teamStatus[ab(r.team)] = true; }
   }
   const practiceDay = S.report_modified && isFinite(Date.parse(S.report_modified)) ? addDays(etDay(S.report_modified), -1) : '';
-  const filed = t => !!(teamStatus[t] || (teamRows[t] && practiceDay && kick[t] && practiceDay >= addDays(etDay(kick[t]), -2)));
+  const filed = t => !!teamStatus[t];
   const roster = {}, rosterByName = {};
   for (const r of S.roster || []) { if (!r.gsis_id) continue; roster[r.gsis_id] = r; rosterByName[`${ab(r.team)}|${norm(r.full_name)}`] ??= r.gsis_id; }
   const espn = {};
@@ -87,33 +100,44 @@ function check(U, meta, S) {
     }
     return p;
   };
+  /* every rule a player can break, as [check, why]: an empty list means the rules let him play */
+  const verdicts = (id, team, name) => {
+    const v = [], x = id && rep[id], ro = id && roster[id], pr = practice(id, team, name);
+    const st2 = lc(x && x.report_status);
+    if (st2 === 'out' || st2 === 'doubtful') v.push(['official', `is ${st2} on the week ${week} report`]);
+    if (st2 === 'questionable' && pr === 'dnp') v.push(['q-dnp', `is questionable with no practice on the week ${week} report`]);
+    const prev = id && last[team] && wk[last[team]] && wk[last[team]][id];
+    if (!st2 && !filed(team) && prev && lc(prev.report_status) === 'out' && !(pr === 'practised' || pr === 'unlisted'))
+      v.push(['last-game', `was out in week ${last[team]} and has not practised since`]);
+    if (ro) {
+      if (ab(ro.team) !== team) v.push(['roster', `is on ${ab(ro.team)}'s roster now`]);
+      else if (OFF.has(ro.status)) v.push(['roster', `is ${ro.status} on the roster`]);
+      else if (ro.status === 'INA' && pr !== 'practised') v.push(['roster', 'was inactive last game and has not practised this week']);
+    }
+    const e = espn[`${team}|${norm(name)}`];
+    if (e && !st2 && !filed(team) && /^(out|doubtful|injured reserve|suspension)$/i.test(e.status || '')) v.push(['espn', `is ${e.status} on ESPN's list`]);
+    return v;
+  };
   let listed = 0;
   for (const [team, T] of Object.entries(U)) {
     if (!kick[team]) continue;   // no game this week (a bye): not on the page
     for (const u of UNITS) for (const p of (T[u] && T[u].who) || []) {
       listed++;
       const id = p.id || rosterByName[`${team}|${norm(p.n)}`];
-      const who = `${team} ${u}: ${p.n}`;
-      const x = id && rep[id], ro = id && roster[id], pr = practice(id, team, p.n);
-      const st2 = lc(x && x.report_status);
-      if (st2 === 'out' || st2 === 'doubtful') add('official', `${who} is ${st2} on the week ${week} report`);
-      if (st2 === 'questionable' && pr === 'dnp') add('q-dnp', `${who} is questionable with no practice on the week ${week} report`);
-      const prev = id && last[team] && wk[last[team]] && wk[last[team]][id];
-      if (!st2 && !filed(team) && prev && lc(prev.report_status) === 'out' && !(pr === 'practised' || pr === 'unlisted'))
-        add('last-game', `${who} was out in week ${last[team]} and has not practised since`);
-      if (ro) {
-        if (ab(ro.team) !== team) add('roster', `${who} is on ${ab(ro.team)}'s roster now`);
-        else if (OFF.has(ro.status)) add('roster', `${who} is ${ro.status} on the roster`);
-        else if (ro.status === 'INA' && pr !== 'practised') add('roster', `${who} was inactive last game and has not practised this week`);
-      }
-      const e = espn[`${team}|${norm(p.n)}`];
-      if (e && !st2 && !filed(team) && /^(out|doubtful|injured reserve|suspension)$/i.test(e.status || '')) add('espn', `${who} is ${e.status} on ESPN's list`);
+      for (const [k, why] of verdicts(id, team, p.n)) add(k, `${team} ${u}: ${p.n} ${why}`);
     }
+    /* a quarterback in doubt: the next one named whenever the team has one these rules let play */
     const q = T.qb && T.qb.who && T.qb.who[0];
-    if (q && q.q && !T.qb.next && !(T.qb.who.length > 1)) {
-      /* only a failure when the report shows another quarterback on the roster who could be named */
-      const others = Object.values(roster).filter(r => ab(r.team) === team && r.status === 'ACT' && /^QB$/.test(r.position || r.depth_chart_position || '') && norm(r.full_name) !== norm(q.n));
-      if (others.length) add('next-qb', `${team}: ${q.n} is ${q.q} and no next quarterback is named`);
+    if (q && q.q && !(T.qb.who.length > 1)) {
+      const nx = T.qb.next;
+      if (nx) {
+        const v = verdicts(nx.id || rosterByName[`${team}|${norm(nx.n)}`], team, nx.n);
+        if (v.length) add('next-qb', `${team}: the next quarterback named, ${nx.n}, ${v.map(x => x[1]).join(' and ')}`);
+      } else {
+        const free = Object.values(roster).filter(r => ab(r.team) === team && (r.status === 'ACT' || r.status === 'INA') && /^QB$/.test(r.position || r.depth_chart_position || '') && norm(r.full_name) !== norm(q.n))
+          .filter(r => !verdicts(r.gsis_id, team, r.full_name).length);
+        if (free.length) add('next-qb', `${team}: ${q.n} is ${q.q} and no next quarterback is named, though ${free.map(r => r.full_name).join(', ')} ${free.length > 1 ? 'are' : 'is'} available`);
+      }
     }
   }
   return { fails, listed, week, phase: st.phase };

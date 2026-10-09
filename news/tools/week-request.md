@@ -67,7 +67,10 @@ Rules I want followed:
     ratings"). Both are shown right beside the text and move with every run, while the text stays as
     written; on October 9, 2026, 146 of the 192 unit ranks the Week 5 file quoted had moved. Quote
     outside numbers with their source (per nflverse, per TeamRankings, per Sharp) and records.
-    The smoke test fails a live week that quotes the site's ranks.
+    The smoke test fails a live week that quotes the site's ranks, and the job runs it on the push.
+  - A league rank on a season-to-date stat ("1.5 sacks a game, tied 5th") is true only the day it
+    is written: the next game anyone plays can move it. Give the number and its source; add a place
+    only where the bullet needs it, and then say "through Week N".
   - Lines move. Say when a line is from ("3 on ESPN's feed Tuesday") or give the range; the overlay
     shows the current line with its date and the posted one beside it.
   - Bold key names with <strong> tags.

@@ -53,7 +53,8 @@ const unplayed = r => !String(r.home_score ?? '').trim() || !String(r.away_score
 
 /* Where the season stands, from the nflverse schedule:
      regular      week is the first regular season week with an unplayed game (the week to build)
-     postseason   the regular season is final and a playoff game is still to come (or not yet listed)
+     postseason   the regular season is final and the Super Bowl is not yet played (between rounds,
+                  before the next round is listed, included)
      over         the Super Bowl has been played
    Outside the regular season, week is the last regular season week: the tracker stays on it and
    says the regular season is complete. It does not cover the playoffs. `newer` lists any later
@@ -66,8 +67,10 @@ function seasonState(rows, season = SEASON) {
   if (!reg.length) return { season, phase: 'none', week: 0, lastWeek, newer };
   const open = reg.filter(unplayed).map(r => +r.week);
   if (open.length) return { season, phase: 'regular', week: Math.min(...open), lastWeek, newer };
-  const post = mine.filter(r => r.game_type !== 'REG');
-  return { season, phase: post.length && !post.some(unplayed) ? 'over' : 'postseason', week: lastWeek, lastWeek, newer };
+  /* over only once the Super Bowl is final: between rounds every listed playoff game can be played
+     while the next round is not listed yet (until 2026-10-09 that read as over) */
+  const sb = mine.filter(r => r.game_type === 'SB');
+  return { season, phase: sb.length && !sb.some(unplayed) ? 'over' : 'postseason', week: lastWeek, lastWeek, newer };
 }
 
 /* Eastern wall time to UTC: try both offsets and keep the one New York agrees with (no fixed dates) */
@@ -94,4 +97,25 @@ function lineText(r) {
 const ESPN_LINE_AB = { WSH: 'WAS', LA: 'LAR', JAC: 'JAX' };
 const fixLineAbbr = s => String(s || '').replace(/\b(WSH|LA|JAC)\b(?= [-+]|\s*$)/g, m => ESPN_LINE_AB[m] || m);
 
-module.exports = { SEASON, GAMES_URL, UA, parseCSV, fetchText, ab, unplayed, seasonState, etToISO, lineText, fixLineAbbr };
+/* The narrative never quotes the site's own ranks: the Deep Dive and the rank chip beside it move with
+   every run, the narrative does not (on 2026-10-09, 146 of the 192 unit ranks the Week 5 file quoted
+   had moved). The phrases are the ones the site's own voice uses: "in the tracker", "the site's units",
+   "the power ratings" (the chip's old name), "power rank", "Elo rank", "the Deep Dive". A third party's
+   numbers with their source are the writer's to quote, so "PFF's unit grade", "ESPN's FPI power
+   ratings", "the NFL.com power rankings" and "a deep dive into the tape" pass (until 2026-10-09 the
+   pattern also caught those, and a narrative quoting one would have stopped the job). */
+const RANK_QUOTE = [
+  /\bthe tracker\b|\btracker's\b/i,
+  /\b(?:the |our )?site's (?:units?|unit (?:grades?|numbers)|(?:run|pass) defen[cs]e grade|lowest-graded|grades?|numbers|ranks?|ratings?)\b/i,
+  /\bthe power (?:ratings?|rankings?)\b|\bpower rank\b|\bElo rank\b/i,
+  /\bDeep Dive\b/,
+];
+/* the first such phrase in a string, with a little of the text around it, or null */
+function siteRankQuote(text) {
+  const t = String(text || '').replace(/<[^>]+>/g, '');
+  let best = null;
+  for (const rx of RANK_QUOTE) { const m = rx.exec(t); if (m && (!best || m.index < best.index)) best = m; }
+  return best ? t.slice(Math.max(0, best.index - 40), best.index + best[0].length + 20) : null;
+}
+
+module.exports = { SEASON, GAMES_URL, UA, parseCSV, fetchText, ab, unplayed, seasonState, etToISO, lineText, fixLineAbbr, RANK_QUOTE, siteRankQuote };
