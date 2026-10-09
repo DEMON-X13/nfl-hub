@@ -591,5 +591,12 @@
   "away_qb_name"
  ],
  "fit_2026_weeks": "1-2: 25-7, fitted after the fact",
+ "fitted_weeks": {
+  "season": 2026,
+  "weeks": [
+   1,
+   2
+  ]
+ },
  "refit_by": "tune_2026.py"
 }

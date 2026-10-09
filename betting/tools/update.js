@@ -9,11 +9,22 @@
  * published state, so grading is idempotent: games already graded are skipped,
  * games whose stats are not published yet wait for the next run.
  *
+ * The app runs with the behaviour patches in betting/tools/patches.js (who starts at
+ * quarterback, neutral sites, the call frozen at kickoff), the same ones the page runs it with.
+ * The season is the app's own (freshState), so the files downloaded are that season's.
+ *
  * Gate: before writing, the app's embedded model numbers must equal
  * betting/tools/reference_models.json (the numbers the research harness
  * exported). A mismatch aborts the publish.
  *
- * Exit code 0 = state written (or unchanged); 1 = gate or runtime failure.
+ * A file the season needs and cannot be had fails the run before anything is written, so the
+ * last good state stays live and the job goes red: games.csv always; the roster, depth chart and
+ * injury report from a week before the season's first game; both stats files once a game is a day
+ * and a half old. A failed download is never covered by an older copy left in data/.
+ *
+ * BETTING_NOW (an ISO time) stands in for the clock, for tests.
+ *
+ * Exit code 0 = state written (or unchanged); 1 = gate, missing file or runtime failure.
  */
 'use strict';
 const fs = require('fs');
@@ -27,9 +38,13 @@ const STATE = path.join(ROOT, 'betting', 'state.json');
 const EVENTS = path.join(ROOT, 'betting', 'events.json');
 const DATA = path.join(ROOT, 'data');
 const REF = path.join(__dirname, 'reference_models.json');
-const KEY = 'x_nfl_betting_model_2026_v1';
-const SEASON = 2026;
+const patches = require('./patches.js');
+/* the season and the storage key are the app's own (freshState and KEY), the one place they are set */
+const { season: SEASON, key: KEY } = patches.season(fs.readFileSync(APP, 'utf8'));
 const args = new Set(process.argv.slice(2));
+const NOW = process.env.BETTING_NOW ? Date.parse(process.env.BETTING_NOW) : Date.now();
+if (!isFinite(NOW)) throw new Error('BETTING_NOW is not a time: ' + process.env.BETTING_NOW);
+const T0 = Date.now();
 
 const FILES = {
   'games.csv': 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv',
@@ -53,7 +68,7 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 async function download() {
   fs.mkdirSync(DATA, { recursive: true });
-  const got = [];
+  const failed = {};
   for (const [name, url] of Object.entries(FILES)) {
     const dest = path.join(DATA, name);
     try {
@@ -62,13 +77,27 @@ async function download() {
       const txt = await r.text();
       if (txt.length < 200 || /<html/i.test(txt.slice(0, 300))) throw new Error('not a CSV');
       fs.writeFileSync(dest, txt);
-      got.push(name); log(`downloaded ${name} (${(txt.length / 1048576).toFixed(1)} MB)`);
+      log(`downloaded ${name} (${(txt.length / 1048576).toFixed(1)} MB)`);
     } catch (e) {
-      if (fs.existsSync(dest)) log(`WARN ${name}: ${e.message}; keeping the previous copy`);
-      else log(`WARN ${name}: ${e.message}; no copy available, skipping`);
+      /* an older copy in data/ is last run's, not this one's: it is set aside, so a file that did not
+         come down this run is missing, and required() decides whether that stops the run */
+      if (fs.existsSync(dest)) fs.unlinkSync(dest);
+      failed[name] = e.message; log(`WARN ${name}: ${e.message}`);
     }
   }
-  return got;
+  return failed;
+}
+
+/* which files this run cannot do without, from where the season stands in games.csv */
+function required(games) {
+  const mine = games.filter(r => +r.season === SEASON);
+  const kick = patches.kickoffMs;
+  const times = mine.map(kick).filter(t => t != null);
+  const first = times.length ? Math.min(...times) : null;
+  const near = first != null && first - NOW < 8 * 86400000;
+  const finals = mine.filter(r => r.home_score !== '' && r.home_score != null).map(kick).filter(t => t != null);
+  const stats = finals.some(t => NOW - t > 36 * 3600000);
+  return name => name === 'games.csv' || (/^(roster|depth_charts|injuries)_/.test(name) && near) || (/^stats_/.test(name) && stats);
 }
 
 function embedded(html, name) {
@@ -92,11 +121,21 @@ function gate(html) {
 }
 
 async function main() {
-  const html = fs.readFileSync(APP, 'utf8');
-  gate(html);
-  if (!args.has('--offline')) await download();
+  const raw = fs.readFileSync(APP, 'utf8');
+  gate(raw);
+  const html = patches(raw);
+  const failed = args.has('--offline') ? {} : await download();
   const present = Object.keys(FILES).filter(n => fs.existsSync(path.join(DATA, n)));
-  if (!present.includes('games.csv')) throw new Error('no games.csv available');
+  if (!present.includes('games.csv')) throw new Error('no games.csv available' + (failed['games.csv'] ? ': ' + failed['games.csv'] : ''));
+  { const need = required(Papa.parse(fs.readFileSync(path.join(DATA, 'games.csv'), 'utf8'), { header: true, skipEmptyLines: true }).data);
+    const missing = Object.keys(FILES).filter(n => need(n) && !present.includes(n));
+    if (missing.length) throw new Error('the season needs ' + missing.map(n => n + (failed[n] ? ' (' + failed[n] + ')' : ' (not in data/)')).join(', ')
+      + ' and it could not be had: nothing is written, the last published state stays live');
+    /* a report that downloads but is not this season's is as good as missing */
+    if (present.includes(`injuries_${SEASON}.csv`) && need(`injuries_${SEASON}.csv`)) {
+      const rows = Papa.parse(fs.readFileSync(path.join(DATA, `injuries_${SEASON}.csv`), 'utf8'), { header: true, skipEmptyLines: true }).data;
+      if (!rows.some(r => +r.season === SEASON)) throw new Error(`injuries_${SEASON}.csv has no ${SEASON} rows: nothing is written`);
+    } }
 
   const saved = (!args.has('--rebuild') && fs.existsSync(STATE)) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : null;
   const errors = [];
@@ -117,6 +156,11 @@ async function main() {
       w.URL.createObjectURL = () => 'blob:x'; w.URL.revokeObjectURL = () => {};
       w.HTMLAnchorElement.prototype.click = function () {};
       w.fetch = () => Promise.reject(new Error('no network inside the app'));
+      /* BETTING_NOW: the app's own clock too, so what it stamps (the files' read times) agrees
+         with the publish time a test sets */
+      if (process.env.BETTING_NOW) { const Real = w.Date, t0 = Date.now();
+        const now = () => NOW + (Date.now() - t0);
+        w.Date = class extends Real { constructor(...a) { if (a.length) super(...a); else super(now()); } static now() { return now(); } }; }
       if (saved) w.localStorage.setItem(KEY, JSON.stringify(saved));
       w.addEventListener('error', e => errors.push(e.message));
     },
@@ -149,8 +193,22 @@ async function main() {
     for (const row of rows) { if (!known.has(row.game_id)) continue; const a = parseFloat(row.away_moneyline), h = parseFloat(row.home_moneyline);
       if (!isFinite(a) && !isFinite(h)) continue; st0.odds[row.game_id] = { away: isFinite(a) ? a : null, home: isFinite(h) ? h : null, src: 'nflverse' }; n++; }
     log(`moneylines: ${n} games`); }
+  /* each coming game's call, recorded until its kickoff and kept from then on (patches.js) */
+  const frozen = w.eval(`freezeAtKickoff(${NOW})`);
   w.eval('renderAll()');
   const st = S();
+  /* who the app expects at quarterback against who nflverse's schedule names, for the log: the
+     schedule's names are not trusted either way (it named Drew Lock for SEA while Darnold
+     started), but a disagreement is worth a look */
+  { const cur = w.eval('currentWeekDefault()'), last = s => String(s || '').toLowerCase().replace(/\b(jr|sr|ii|iii|iv|v)\b\.?/g, '').trim().split(/[\s.]+/).filter(Boolean).pop();
+    const off = [];
+    for (const g of st.schedule.filter(x => +x.week === cur && x.result == null))
+      for (const [team, named] of [[g.away_team, g.away_qb_name], [g.home_team, g.home_qb_name]]) {
+        const exp = w.eval(`expectedQB(${JSON.stringify(team)},${cur})`); if (!exp || !named) continue;
+        const nm = exp === '__none__' ? 'nobody' : w.eval(`qbName(${JSON.stringify(exp)})`);
+        if (last(nm) !== last(named)) off.push(`${team} ${nm} (nflverse's schedule: ${named})`);
+      }
+    log(`quarterbacks, week ${cur}: ${off.length ? 'the app and the schedule disagree on ' + off.join('; ') : 'the app and the schedule agree'} | calls held for kickoff: ${frozen}`); }
   const after = Object.keys(st.processed).length;
   const logText = w.document.getElementById('log').textContent.trim().split('\n').filter(Boolean).slice(0, 12).join(' | ');
   log(`graded: ${after} (was ${before}) | log: ${logText}`);
@@ -167,10 +225,12 @@ async function main() {
     if (c.depth) delete c.depth.diff; if (c.injuries) delete c.injuries.loaded; if (c.roster) delete c.roster.loaded;   // per-upload bookkeeping, not content
     return JSON.stringify(c); };
   const changed = !prev || strip(prev) !== strip(out);
-  out.published = changed || !prev ? new Date().toISOString() : prev.published;
+  out.published = changed || !prev ? new Date(NOW + (Date.now() - T0)).toISOString() : prev.published;
   const json = JSON.stringify(out);
   if (changed) fs.writeFileSync(STATE, json);
   log(`state.json ${changed ? 'written' : 'unchanged'} (${(json.length / 1024).toFixed(0)} KB, ${after} graded games, week ${w.eval('currentWeekDefault()')} next)`);
+  /* for the workflow: a newly graded game is what the Elo job's team ratings are waiting on */
+  if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `graded_new=${after - before}\n`);
   process.exit(0);
 }
 main().catch(e => { console.error('FAILED:', e.message); process.exit(1); });

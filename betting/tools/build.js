@@ -21,7 +21,13 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const APP = path.join(ROOT, 'betting', 'app', 'x_nfl_betting_model.html');
-let html = fs.readFileSync(APP, 'utf8');
+/* the app with the behaviour patches the job runs it with too (patches.js: who starts at
+   quarterback, neutral sites, the call frozen at kickoff, the season's phase), so the page and
+   the job's grading agree */
+const PATCHES = require('./patches.js');
+let html = PATCHES(fs.readFileSync(APP, 'utf8'));
+/* the season the app is built for (its freshState): the visitor's own store is keyed on it */
+const { season: SEASON } = PATCHES.season(fs.readFileSync(APP, 'utf8'));
 
 /* The scoreboard mapping is lifted out of props/build/part2.js at build time rather than
  * copied, the way nflbets/build/build.js lifts the same file. Both sites key games by the same
@@ -45,7 +51,7 @@ for (const need of ['const ESPN_SB', 'const espnAb', 'function espnNum', 'functi
 const HOOK = `<script>
 /* published mode: the season comes from state.json (written by the update job); this browser keeps only its own picks, bankroll, bets and odds */
 (function(){
-  const MINE='x_nfl_viewer_picks_2026';
+  const MINE='x_nfl_viewer_picks_${SEASON}';
   const loadMine=()=>{ try{ const v=JSON.parse(localStorage.getItem(MINE)||'{}'); return v.myPicks||v.bank||v.bets?v:{myPicks:v}; }catch(e){ return {}; } };
   window.PUBLISHED=true;
   window.storage={
@@ -75,7 +81,7 @@ const HOOK = `<script>
             const winner=p&&p.result!=null?(p.result>0?p.home:p.result<0?p.away:null):null;
             const e={pick:g.pick,correct:winner?g.pick===winner:null};
             S.elo[g.game_id]=e; if(p&&e.correct!==null) p.elo=e; }
-          window.__eloTeams=M.teams||null; }
+          window.__eloTeams=M.teams||null; window.__eloBuilt=M.built_at||null; }
       }catch(e){}
       window.__published=S.published;
       return {value:JSON.stringify(S)};
@@ -146,6 +152,9 @@ const weekGames=w=>S.schedule.filter(g=>+g.week===w)
   .sort((a,b)=>(a.gameday+a.gametime).localeCompare(b.gameday+b.gametime));
 const weekOf=id=>{ const s=el(id); const v=s&&+s.value; return isFinite(v)&&v?v:null; };
 const seasonOf=w=>{ const g=weekGames(w)[0]; return g?+String(g.game_id).slice(0,4):new Date().getFullYear(); };
+/* ESPN numbers the playoffs as their own season type: wild card week 1, divisional 2,
+   conference 3, the Super Bowl 5 (4 is the Pro Bowl); nflverse runs them on as weeks 19-22 */
+const espnWeek=w=>w>18?'seasontype=3&week='+(w===22?5:w-18):'seasontype=2&week='+w;
 async function read(){
   if(L.busy) return;
   const weeks=[weekOf('weekSel')].filter(Boolean);
@@ -154,7 +163,7 @@ async function read(){
   try{
     const games={};
     for(const w of weeks){
-      const r=await fetch(ESPN_SB+'?seasontype=2&week='+w+'&dates='+seasonOf(w),{cache:'no-store'});
+      const r=await fetch(ESPN_SB+'?'+espnWeek(w)+'&dates='+seasonOf(w),{cache:'no-store'});
       if(!r.ok) throw new Error('HTTP '+r.status);
       Object.assign(games,espnGames(await r.json(),
         weekGames(w).map(g=>({id:g.game_id,h:g.home_team,a:g.away_team}))));
@@ -196,18 +205,23 @@ function settleFinished(){
     if(g.result!=null||S.processed[g.game_id]) continue;     /* already settled or graded */
     const s=L.games[g.game_id];
     if(!s||s.state!=='post'||s.hs==null||s.as==null) continue;
-    let pr=null;
-    if(typeof window.predict==='function'){ try{ pr=window.predict(g,S.teams); }catch(e){} }
+    /* the call the job froze at kickoff when it has one (patches.js), else the board's own */
+    const fz=typeof window.frozenCall==='function'?window.frozenCall(g):null;
+    let pr=fz;
+    if(!pr&&typeof window.predict==='function'){ try{ pr=window.predict(g,S.teams); }catch(e){} }
     if(!pr) continue;
     /* Every model that has a column has to be in the row, not just the main one. The grid
        reads done.h for the challenger and has no fallback behind it, so a settled row
        without it blanks the challenger's pick and drops the game from its record. The joker
        falls back to S.joker and survived; the challenger had nothing to fall back to. */
-    let h=null;
-    if(S.teamsH&&typeof window.predict==='function'){
+    let h=fz&&fz.h?fz.h:null;
+    if(!h&&S.teamsH&&typeof window.predict==='function'){
       try{ h=window.predict(g,S.teamsH,(typeof MODEL_H!=='undefined'&&MODEL_H)?MODEL_H.pure:undefined); }catch(e){}
     }
     const jk=(S.joker&&S.joker[g.game_id])||null;
+    /* the ELO Model and Broly too: graded here from the scoreboard like the rest, or the record
+       compared them on fewer games than the others from the whistle until the job graded it */
+    const ek=(S.elo&&S.elo[g.game_id])||null, bk=(S.broly&&S.broly[g.game_id])||null;
     const result=s.hs-s.as;                                  /* home margin, as the job writes it */
     const winner=result>0?g.home_team:(result<0?g.away_team:null);
     const myPick=(S.myPicks&&S.myPicks[g.game_id])||null;
@@ -220,6 +234,8 @@ function settleFinished(){
            correct:winner?h.pick===winner:null}:undefined,
       joker:jk?{pick:jk.pick,pHome:jk.pHome,
                 correct:winner?jk.pick===winner:null}:undefined,
+      elo:ek&&ek.pick?{pick:ek.pick,correct:winner?ek.pick===winner:null}:undefined,
+      broly:bk&&bk.pick?{pick:bk.pick,pHome:bk.pHome,correct:winner?bk.pick===winner:null}:undefined,
       news:[],
       fromScoreboard:true};
     n++;
@@ -370,6 +386,9 @@ table.rv-grid td.rv-c b{display:block;font-family:var(--display);font-size:14px}
 table.rv-grid td.rv-c small{display:block;font-size:11px;color:var(--ink-2)}
 table.rv-grid td.rv-none{color:var(--muted)}
 table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
+table.rv-grid td.rv-fit{background:repeating-linear-gradient(135deg,var(--line-2) 0 2px,transparent 2px 7px)}
+table.rv-grid td.rv-fit small{font-style:italic}
+.rt-lag{margin-left:3px;color:var(--muted);font-weight:700;cursor:help}
 .rt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.rt-v{width:100%}
 #ratingsTable table.rt-v th,#ratingsTable table.rt-v td{width:auto}
