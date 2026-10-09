@@ -37,6 +37,8 @@ const ELO_MU = (() => {
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
+/* a promise the page leaves rejected (an async handler that threw) is a failure, not a crash */
+process.on('unhandledRejection', e => { checks++; fails.push('the page threw in an async handler: ' + (e && e.message || e)); });
 
 /* ---- the published page is a fresh build of its sources ----
    Nothing rebuilds the page on a schedule: it is rebuilt by hand when a source changes. A
@@ -118,13 +120,13 @@ const storeDoc = store => store.node ? JSON.parse(store.node.doc.json) : null;
 
 function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { sync = null, seed = null, net = null } = {}) {
   return new Promise(resolve => {
-    const errs = [], fetched = [];
+    const errs = [], fetched = [], urls = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
         w.addEventListener('error', e => errs.push(e.message));
         if (seed) seed(w);
-        w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, ''));
+        w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, '')); urls.push(s);
           /* a device of its own offline: the store does not answer it, whatever it answers others */
           if (sync && net && net.down && s.startsWith(STORE_URL)) return Promise.reject(new TypeError('Failed to fetch'));
           if (sync) { const r = storeFetch(sync, s, o); if (r) return r; }
@@ -138,15 +140,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           if (s.includes('elo/data/matchups.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_MU) });
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
-        w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched }), 300));
+        w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls }), 300));
       } });
-    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs, fetched, timedOut: true }), 20000);
+    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs, fetched, urls, timedOut: true }), 20000);
   });
 }
 
 (async () => {
   const state = STATE, week = firstOpenWeek(STATE);
-  const { w, d, errs, fetched, timedOut } = await run(state, undefined, wk => scoreboard(state, wk));
+  const { w, d, errs, fetched, urls, timedOut } = await run(state, undefined, wk => scoreboard(state, wk));
   await wait(700);                                  /* the scoreboard is read once on load, after the prop model is up */
 
   chk(!timedOut, 'the prop model never said app-ready');
@@ -203,14 +205,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   let predOk = 0, predAll = 0;
   for (const c of cards) {
     const g = state.schedule.find(x => x.game_id === c.dataset.game), v = vegasPick(g);
-    const row = PAYLOAD.sched.find(x => x.id === g.game_id);
-    if (!v || g.spread_line == null || !row || row.tot == null) continue;
+    const row = PAYLOAD.sched.find(x => x.id === g.game_id), tot = g.total_line != null ? g.total_line : (row && row.tot);
+    if (!v || g.spread_line == null || !row || tot == null) continue;
     predAll++;
-    let hs = Math.round((row.tot + g.spread_line) / 2), as = Math.round((row.tot - g.spread_line) / 2);
+    let hs = Math.round((tot + g.spread_line) / 2), as = Math.round((tot - g.spread_line) / 2);
     if (hs === as) { if (v === g.home_team) hs++; else as++; }
     if (txt(c.querySelector('.pk-pred .pk-psc')) === `${as}–${hs}`) predOk++;
   }
   chk(predAll > 0 && predOk === predAll, `score predictions are the spread around the book's total: ${predOk} of ${predAll}`);
+  /* a prediction's "by" is the gap between the two scores it shows */
+  { const bad = cards.filter(c => { const m = txt(c.querySelector('.pk-pred .pk-psc')).match(/^(\d+)–(\d+)$/), by = txt(c.querySelector('.pk-pred .pk-pby')).match(/by (\d+)/);
+      return m && (!by || +by[1] !== Math.abs(+m[1] - +m[2])); });
+    chk(bad.length === 0, `a predicted margin disagrees with its own score on ${bad.length} games`); }
+  /* the scoreboard is asked for in state.json's season, in ESPN's numbering of the week */
+  chk(urls.some(u => u.includes('/scoreboard?') && u.includes(`seasontype=2&week=${week}&dates=${state.season}`)), 'the Pick\'ems board did not read the scoreboard for its own season and week: ' + urls.filter(u => u.includes('/scoreboard?')).join(' '));
+  /* a neutral-site game reads "vs" and every other "at" */
+  { const neutralOf = g => g.location === 'Neutral' || g.gametime === '09:30';
+    const bad = cards.filter(c => { const g = state.schedule.find(x => x.game_id === c.dataset.game); return (txt(c.querySelector('.pk-at')) === 'vs') !== neutralOf(g); });
+    chk(bad.length === 0, 'a neutral-site game reads "at", or a home game "vs": ' + bad.map(c => c.dataset.game).join(', ')); }
+  /* the season-over note shows exactly when every game is graded and the schedule has no playoffs */
+  chk(!!d.getElementById('pkOver') === (state.schedule.every(g => g.result != null) && !state.schedule.some(g => +g.week > 18)), 'the season-over note is wrong for this season');
   const pend = cards.filter(c => /0 : 0/.test(txt(c.querySelector('.pk-result')))).length;
   const done = cards.filter(c => / won /.test(txt(c.querySelector('.pk-result')))).length;
   const on = cards.filter(c => / leading |Tied /.test(txt(c.querySelector('.pk-result')))).length;
@@ -273,6 +287,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const own = w.gameBet(row, row.a, 'ml');
   chk(own && Math.round(own.p * 100) === pcts[0], `the board's away win chance ${pcts[0]} is not the prop model's ${own && Math.round(own.p * 100)}`);
   chk(first.classList.contains('pk-open'), 'the card did not mark itself open');
+  /* the two lines: said where the board's spread and the prop model's differ, and only there */
+  { const g = state.schedule.find(x => x.game_id === gid), differ = g.spread_line != null && row.sp != null && +g.spread_line !== +row.sp;
+    chk(!!body.querySelector('.pk-lines') === differ, `the opened game ${differ ? 'does not say' : 'says'} its prices are on a different line from the board's`); }
 
   /* a line on a game that has not kicked off can be ticked onto the prop model's parlay */
   const started = gid => w.eval('gameStarted')(w.eval('S').sched.find(x => x.id === gid));
@@ -506,6 +523,43 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(fetched.includes('../betting/state.json') && fetched.includes('../props/data/payload.json'), 'the page did not fetch both sites: ' + fetched.join(', '));
   chk(!/const MKT=\{"|const PAY=\{grid:/.test(HTML), 'the page bakes data in, so it goes stale between builds');
   chk(!/api\.github\.com/.test(HTML), 'the page talks to the GitHub API');
+
+  /* ---- the board on other seasons' shapes: a neutral site, two lines, the playoffs, the end ---- */
+  { const alt = JSON.parse(JSON.stringify(state)), P0 = PAYLOAD;    /* the payload as parsed above */
+    const wkGames = alt.schedule.filter(g => +g.week === week);
+    const home = wkGames.find(g => !(g.location === 'Neutral' || g.gametime === '09:30'));
+    Object.assign(home, { location: 'Neutral', stadium: 'Wembley Stadium' });
+    const priced = wkGames.filter(g => { const r = P0.sched.find(x => x.id === g.game_id); return r && r.sp != null; });
+    const moved = priced[0], kept = priced[1];
+    moved.spread_line = P0.sched.find(x => x.id === moved.game_id).sp + 1;
+    if (kept) kept.spread_line = P0.sched.find(x => x.id === kept.game_id).sp;
+    /* two wild-card games after week 18 */
+    for (const g of alt.schedule.filter(x => +x.week === 18).slice(0, 2)) {
+      const x = JSON.parse(JSON.stringify(g)); x.game_id = x.game_id.replace(/_18_/, '_19_'); x.week = 19;
+      for (const k of ['result', 'home_score', 'away_score']) delete x[k]; alt.schedule.push(x); }
+    const A = await run(alt, undefined, wk => scoreboard(alt, wk));
+    chk(!A.timedOut && A.errs.length === 0, 'the board broke on a schedule with a neutral site and the playoffs: ' + A.errs.join('; '));
+    const card = id => A.d.querySelector(`.pk-game[data-game="${id}"]`);
+    chk(txt(card(home.game_id).querySelector('.pk-at')) === 'vs' && /Wembley/.test(card(home.game_id).querySelector('.pk-at').title), 'a game nflverse marks Neutral does not read "vs" with its stadium');
+    const open1 = c => { c.click(); return wait(60); };
+    await open1(card(moved.game_id));
+    chk(/nflverse's line/.test(txt(card(moved.game_id).querySelector('.pk-lines'))), 'a game whose board and prop-model spreads differ does not say so when opened');
+    if (kept) { await open1(card(kept.game_id)); chk(!card(kept.game_id).querySelector('.pk-lines'), 'a game on one line says it is on two'); }
+    const opt = [...A.d.getElementById('pkWeek').options].find(o => +o.value === 19);
+    chk(!!opt && txt(opt) === 'Wild Card', 'the first playoff week is not named Wild Card: ' + (opt ? txt(opt) : 'no option'));
+    A.d.getElementById('pkWeek').value = '19'; A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change'));
+    await wait(40);
+    chk(A.d.querySelectorAll('.pk-game').length === 2 && !A.d.getElementById('pkOver'), 'the wild-card week does not show its two games');
+    A.d.getElementById('pkNow').click(); await wait(200);
+    chk(A.urls.some(u => u.includes('/scoreboard?') && u.includes(`seasontype=3&week=1&dates=${alt.season}`)), 'a playoff week is not read from ESPN\'s postseason scoreboard: ' + A.urls.filter(u => u.includes('/scoreboard?')).slice(-2).join(' '));
+    A.w.close();
+    /* every game graded and no playoffs in the schedule: the season is over, and the board says so */
+    const over = JSON.parse(JSON.stringify(state));
+    for (const g of over.schedule) if (g.result == null) Object.assign(g, { home_score: 24, away_score: 17, result: 7 });
+    const O = await run(over, undefined, wk => scoreboard(over, wk));
+    chk(!!O.d.getElementById('pkOver') && new RegExp(`The ${over.season} regular season is over`).test(txt(O.d.getElementById('pkOver'))) && +O.d.getElementById('pkWeek').value === Math.max(...over.schedule.map(g => +g.week)),
+      'a finished regular season does not say it is over, or does not open on its last week');
+    O.w.close(); }
 
   /* opened on #slate, the Props tab is the one showing */
   const s2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#slate');

@@ -60,6 +60,10 @@
 .pk-tolegs{margin:10px 0 0;font-size:12px;color:var(--muted)}
 .pk-tolegs a{color:var(--ink-2)}
 .pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+/* the two lines a game is read on, when they differ: the board's and the prop model's */
+.pk-lines{margin:0 0 8px;font-size:12px;color:#8A5E05}
+/* a game at a neutral site: "vs", not "at" */
+.pk-matchup .pk-at.pk-neutral{color:var(--ink-2);font-weight:600}
 /* a framed betting tab: full width, no border, as tall as the tab it shows */
 .pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
 .pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
@@ -108,7 +112,8 @@
 (function(){
 /*BETTING*/
 const STATE_URL='../betting/state.json';
-const ST={sched:[],odds:{}};
+/* season: the betting job's own, from state.json (the board's one source), never written in here */
+const ST={sched:[],odds:{},season:null};
 /* the scoreboard as last read, by game id: nothing here is saved anywhere */
 const PK_LIVE={games:{},at:0,err:null,busy:false};
 const el=id=>document.getElementById(id);
@@ -137,6 +142,16 @@ function fmtDate(g){
   return [day,t];
 }
 const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
+/* a game at a neutral site. nflverse marks most of them Neutral, but not every one (2026's
+   PHI at JAX in London is down as a Jaguars home game), and every 9:30am Eastern kickoff is
+   one played abroad, so either says it */
+const neutral=g=>g.location==='Neutral'||g.gametime==='09:30';
+/* nflverse runs the playoffs on as weeks 19-22 */
+const PLAYOFF={19:'Wild Card',20:'Divisional',21:'Conference',22:'Super Bowl'};
+const weekName=w=>w>18?(PLAYOFF[w]||'Playoffs '+(w-18)):'Week '+w;
+/* ESPN's numbering: the regular season is seasontype 2, the playoffs seasontype 3 with weeks of
+   their own (wild card 1 ... the Super Bowl 5, after the Pro Bowl's 4) */
+const espnWeek=w=>w<=18?{type:2,week:w}:{type:3,week:w>=22?5:w-18};
 /* where a game stands: the published result when the job has graded it, otherwise what the
    scoreboard said when it was last read. final says the game is over; live says it is on. */
 function outcome(g){
@@ -177,6 +192,15 @@ function gameBody(g){
   let card=gameBetsCard(row,locked);
   if(card.split('class="card gbets"').length!==2) throw new Error("the Game bets card is not the shape this tab expects");
   card=card.replace('class="card gbets"','class="gbets"');
+  /* the board's call and score are on nflverse's line; these prices are on the prop model's,
+     which can be a different pull. Where the two spreads differ, say so, so a by-3 above and a
+     +3.5 below read as two lines rather than a mistake. */
+  const vs=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null, ps=row.sp!=null&&isFinite(row.sp)?+row.sp:null;
+  if(vs!=null&&ps!=null&&vs!==ps){
+    const fav=x=>x>0?`${g.home_team} \u2212${x}`:(x<0?`${g.away_team} \u2212${-x}`:'a pick\'em');
+    const meta=(typeof PAY==='object'&&PAY&&PAY.mkt_meta&&PAY.mkt_meta[String(row.w)])||null;
+    card=`<p class="pk-lines">The call and the score above are on nflverse's line, ${esc(fav(vs))}; these prices are on the prop model's, ${esc(fav(ps))}${meta&&meta.src?` (${esc(meta.src)}${meta.asof?', as of '+esc(meta.asof):''})`:''}.</p>`+card;
+  }
   const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')).length;
   const note=locked?''
     :`<p class="pk-tolegs">Ticked lines go to <a href="#parlay">Parlay Builders</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
@@ -211,7 +235,9 @@ function landed(c,o){
 function predicted(g,c){
   if(!c||c.margin==null||!isFinite(c.margin)) return null;
   const row=mkt(g.game_id);
-  let tot=row&&row.tot!=null&&isFinite(row.tot)?+row.tot:null, src='book total';
+  /* nflverse's total beside its spread when state.json carries one, so the score is one line */
+  let tot=g.total_line!=null&&isFinite(g.total_line)?+g.total_line:null, src='book total';
+  if(tot==null) tot=row&&row.tot!=null&&isFinite(row.tot)?+row.tot:null;
   if(tot==null&&row&&typeof modelPoints==='function'){
     tot=modelPoints(g.away_team,g.home_team,false)+modelPoints(g.home_team,g.away_team,true); src='model total'; }
   if(tot==null||!isFinite(tot)) return null;
@@ -246,6 +272,10 @@ function render(){
     .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
   records(w);
   if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
+  /* the regular season over and no playoff game in the betting job's schedule: say so, rather
+     than leave week 18 looking like a week still to come */
+  const over=ST.sched.length&&ST.sched.every(g=>g.result!=null)&&!ST.sched.some(g=>+g.week>18)
+    ?`<div class="pk-note" id="pkOver"><b>The ${esc(String(ST.season||''))} regular season is over.</b> The playoffs are not on this board: the betting job's schedule is the regular season. Every week stays here to look back on.</div>`:'';
   const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Score prediction</div><div class="pk-c">Final score</div></div>';
   const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
   const row=g=>{
@@ -261,7 +291,7 @@ function render(){
       if(win===g.away_team) markA=mk; else markH=mk; }
     return `<div class="pk-game${o&&o.final?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
       <div class="pk-when"><b>${esc(day)}</b>${esc(time)}</div>
-      <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span><span class="pk-at">at</span><span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
+      <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span>${neutral(g)?`<span class="pk-at pk-neutral" title="${esc('Neutral site'+(g.stadium?': '+g.stadium:''))}">vs</span>`:'<span class="pk-at">at</span>'}<span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
       <div class="pk-probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
         <span class="pk-tlab${pick===g.away_team?' pk-win':''}">${esc(g.away_team)}</span>
         <div class="pk-prob"><div class="pk-a" style="width:${pa}%;background:${pa>=ph?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.away_team?'pk-w':''}">${pa>=14?pa+'%':''}</span></div><div class="pk-h" style="width:${ph}%;background:${ph>pa?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.home_team?'pk-w':''}">${ph>=14?ph+'%':''}</span></div></div>
@@ -276,7 +306,7 @@ function render(){
      so the evening's games are not below a screen of results */
   const fin=g=>{ const o=outcome(g); return !!(o&&o.final); };
   const todo=games.filter(g=>!fin(g)), done=games.filter(fin);
-  el('pkBoard').innerHTML=HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
+  el('pkBoard').innerHTML=over+HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
   el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
     if(e.target.closest('.pk-gbody')) return;          /* the prices are not a toggle */
     const open=card.classList.toggle('pk-open');
@@ -285,21 +315,24 @@ function render(){
     if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
     else if(!open&&had) had.remove();
   }));
-  for(const gid of wasOpen){ const card=el('pkBoard').querySelector(`.pk-game[data-game="${CSS.escape(gid)}"]`); if(card) card.click(); }
+  for(const gid of wasOpen){ const card=[...el('pkBoard').querySelectorAll('.pk-game')].find(x=>x.dataset.game===gid); if(card) card.click(); }
 }
 
 /* the scoreboard, read from ESPN in this browser: free, no odds-API credits, no job. One
-   call covers the week on screen. The prop model's own ESPN reader maps the games, since
-   both sites key them the same way. Nothing read here is stored or graded: the week is
-   still settled by the betting job, from nflverse, on its next run. */
+   call covers the week on screen, asked for in the season state.json is for and in ESPN's own
+   numbering of the week, so a playoff week reads too. The prop model's own ESPN reader maps
+   the games onto this board's week (both sites key them the same way). Nothing read here is
+   stored or graded: the week is still settled by the betting job, from nflverse, on its next
+   run. */
 async function readScores(){
   if(PK_LIVE.busy) return;
   PK_LIVE.busy=true; stamp('reading…');
   try{
-    const wk=+el('pkWeek').value;
-    const r=await fetch(`${ESPN_SB}?seasontype=2&week=${wk}&dates=${SEASON}`,{cache:'no-store'});
+    const wk=+el('pkWeek').value, e=espnWeek(wk);
+    const season=ST.season||(typeof SEASON!=='undefined'?SEASON:'');
+    const r=await fetch(`${ESPN_SB}?seasontype=${e.type}&week=${e.week}&dates=${season}`,{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    PK_LIVE.games=espnGames(await r.json(),(typeof S==='object'&&S&&S.sched)||[]);
+    PK_LIVE.games=espnGames(await r.json(),ST.sched.filter(g=>+g.week===wk).map(g=>({id:g.game_id,h:g.home_team,a:g.away_team})));
     PK_LIVE.err=null; PK_LIVE.at=Date.now();
   }catch(e){ PK_LIVE.err=String(e&&e.message||e); }
   finally{ PK_LIVE.busy=false; }
@@ -325,7 +358,7 @@ function records(w){
   const rows=ST.sched.map(g=>({week:+g.week,c:call(g)})).filter(r=>r.c&&r.c.graded);
   const line=f=>{ const r=rows.filter(f); const won=r.filter(x=>x.c.correct===true).length, lost=r.filter(x=>x.c.correct===false).length;
     return `${won}–${lost}`; };
-  el('pkWeekRec').innerHTML=`Vegas · week ${w} <b>${line(r=>r.week===w)}</b>`;
+  el('pkWeekRec').innerHTML=`Vegas · ${w>18?esc(weekName(w)):'week '+w} <b>${line(r=>r.week===w)}</b>`;
   el('pkSeasonRec').innerHTML=`Season <b>${line(()=>true)}</b>`;
 }
 
@@ -377,6 +410,7 @@ async function boot(){
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
     ST.sched=st.schedule||[]; ST.odds=st.odds||{};
+    ST.season=+st.season||(ST.sched[0]?+String(ST.sched[0].game_id).slice(0,4):null);
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
     failed=true;
@@ -387,7 +421,7 @@ async function boot(){
   const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
   /* this week: the first with a game still to play */
   const openOn=weeks.find(w=>ST.sched.some(g=>+g.week===w&&g.result==null))||weeks[weeks.length-1];
-  el('pkWeek').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${x>18?'Playoffs '+(x-18):'Week '+x}</option>`).join('');
+  el('pkWeek').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${weekName(x)}</option>`).join('');
   el('pkWeek').addEventListener('change',render);
   el('pkNow').addEventListener('click',readScores);
   render(); foot();
