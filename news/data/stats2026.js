@@ -108,7 +108,7 @@ const STATS26 = {
   "ska": 1.2,
   "third": 49.2,
   "rz": 83.3,
-  "expl": 2.5
+  "expl": 3.2
  },
  "DEN": {
   "ppg": 18.5,
@@ -360,7 +360,7 @@ const STATS26 = {
   "ska": 3.4,
   "third": 38.2,
   "rz": 47.1,
-  "expl": 2.8
+  "expl": 3
  },
  "TEN": {
   "ppg": 13.8,

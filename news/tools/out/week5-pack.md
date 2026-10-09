@@ -15,6 +15,7 @@ Searches to run:
 - "NFL week 5 picks TB DAL"
 
 Tampa Bay Buccaneers, injuries:
+- Kenny Gainwell (RB) Active: Gainwell rushed four times for 18 yards and brought in three of four targets for 10 yards in the Buccaneers' 24-16 win over the Cowboys on Thursday night.
 - Chase McLaughlin (PK) Active: McLaughlin made his only field-goal attempt and all three extra-point tries Thursday in a 24-16 win against Dallas.
 - Jalon Daniels (QB) Active: Daniels completed 19 of 25 passes for 189 yards with one touchdown and no interceptions while rushing seven times for 23 yards in the Buccaneers' 24-16 win over the Cowboys on Thursday night.
 - Chris Godwin Jr. (WR) Active: Godwin secured all three targets for 37 yards and rushed once for three yards in the Buccaneers' 24-16 win over the Cowboys on Thursday night.
@@ -39,17 +40,18 @@ Tampa Bay Buccaneers, injuries:
 - Cade Otton (TE) Active: Otton caught four of six targets for 37 yards in Sunday's 17-14 loss to the Packers.
 - Ifeatu Melifonwu (S) Active: Head coach Todd Bowles said Melifonwu is likely to start at safety Thursday night against Dallas, Jenna Laine of ESPN.com reports.
 - Rueben Bain Jr. (LB) Active: Bain (groin) was listed as a full participant on the Buccaneers' estimated injury report Monday, Brianna Dix of the team's official site reports.
-- Kenny Gainwell (RB) Active: Gainwell rushed three times for five yards in Sunday's 17-14 loss to the Packers. He added two catches for 22 yards and a touchdown on two targets.
 
 Tampa Bay Buccaneers, ESPN headlines:
 
 Dallas Cowboys, injuries:
+- CeeDee Lamb (WR) Questionable, Quadriceps: Lamb is believed to be dealing with a "quad bruise" that is "not considered to be serious," Ian Rapoport of NFL Network reports.
+- Jake Ferguson (TE) Active: Ferguson brought in three of six targets for 19 yards in the Cowboys' 24-16 loss to the Buccaneers on Thursday night.
+- Ryan Flournoy (WR) Active: Flournoy brought in three of four targets for 90 yards in the Cowboys' 24-16 loss to the Buccaneers on Thursday night.
 - Tyler Guyton (OT) Questionable, Back: Guyton had X-rays on his back that "looked good" following Thursday's loss to Tampa Bay, Patrik Walker of the Cowboys' official site reports.
 - Brandon Aubrey (PK) Active: Aubrey made his only field-goal attempt and his lone extra-point try in a Week 5 loss to Tampa Bay on Thursday.
 - Dak Prescott (QB) Active: Prescott completed 24 of 42 passes for 316 yards with a touchdown and two interceptions in the Cowboys' 24-16 loss to the Buccaneers on Thursday night.
 - Javonte Williams (RB) Active: Williams rushed 12 times for 45 yards and a touchdown and brought in two of three targets for 17 yards in the Cowboys' 24-16 loss to the Buccaneers on Thursday night.
 - George Pickens (WR) Active: Pickens secured nine of 13 targets for 130 yards and a touchdown in the Cowboys' 24-16 loss to the Buccaneers on Thursday night.
-- CeeDee Lamb (WR) Questionable, Quadriceps: Lamb (quadriceps) is questionable to return to Thursday night's game against Tampa Bay, Todd Archer of ESPN.com reports.
 - Alijah Clark (S) Questionable, Hamstring: Clark (hamstring) has been ruled out for the remainder of Thursday night's contest against the Buccaneers, Calvin Watkins of The Dallas Morning News reports.
 - Tyler Smith (G) Active: Smith (thumb) is active for Thursday's game against the Buccaneers, Patrik Walker of the Cowboys' official site reports.
 - Jonathan Mingo (WR) Active: Mingo (illness) is active for Thursday's game against Tampa Bay, Patrik Walker of the Cowboys' official site reports.
@@ -61,9 +63,7 @@ Dallas Cowboys, injuries:
 - Joey Porter Jr. (CB) Out, Illness: Porter has been ruled out for Thursday's game against the Buccaneers due to an illness, Todd Archer of ESPN.com reports.
 - Drew Shelton (OT) Out, Hamstring: Shelton (hamstring) has been ruled out for Thursday's game against the Buccaneers, Tommy Yarrish of the Cowboys' official site reports.
 - Caleb Downs (S) Active: Downs recorded seven total tackles (five solo) during Sunday's 34-30 win over Houston.
-- Ryan Flournoy (WR) Active: Flournoy caught four of five targets for 37 yards in Dallas' 34-30 win over the Texans on Sunday.
 - Caelen Carson (CB) Active
-- Jake Ferguson (TE) Active: Ferguson caught three of four targets for 11 yards in Sunday's 34-30 win over the Texans.
 - Shavon Revel Jr. (CB) Active: Revel (knee, ankle) does not carry an injury designation heading into Sunday's game against the Texans.
 - Malik Hooker (S) Active: Hooker (forearm) does not carry an injury designation ahead of Sunday's game against Houston.
 - Jonathan Bullard (DT) Injured Reserve, Calf: The Cowboys placed Bullard (calf) on injured reserve Wednesday, Tommy Yarrish of the Cowboys' official site reports.
@@ -389,7 +389,7 @@ New England Patriots, injuries:
 - Christian Barmore (DT) Questionable, Shoulder: Barmore (shoulder) was a limited participant at the Patriots' practice Thursday.
 - Carlton Davis III (CB) Questionable, Neck: Davis (neck) did not participate at the Patriots' practice Thursday.
 - Rhamondre Stevenson (RB) Questionable, Knee: Stevenson (knee) was listed as a limited participant in Thursday's practice.
-- Mack Hollins (WR) Questionable, Calf: Hollins (calf) wasn't spotted during the portion of Thursday's practice available to media, Evan Lazar of the Patriots' official site reports.
+- Mack Hollins (WR) Questionable, Calf: Hollins (calf) wasn't spotted during the portion of Thursday's practice open to media, Evan Lazar of the Patriots' official site reports.
 - Eli Raridon (TE) Active: Raridon (ankle) was not listed in Wednesday's injury report ahead of Sunday's game against the Raiders.
 - Craig Woodson (S) Questionable, Shoulder: questionable
 - Morgan Moses (OT) Questionable, Foot: questionable
