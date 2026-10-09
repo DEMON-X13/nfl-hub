@@ -18,6 +18,8 @@ const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'
 const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
+/* the prop model's storage key, part2's own (the build hands it to the page) */
+const PROP_KEY = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=\d{4}, KEY='([^']+)';/)[1];
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
    whose nudge clears the Elo picks' bar): then three real players' strongest trusted nudges are
@@ -218,7 +220,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       return m && (!by || +by[1] !== Math.abs(+m[1] - +m[2])); });
     chk(bad.length === 0, `a predicted margin disagrees with its own score on ${bad.length} games`); }
   /* the scoreboard is asked for in state.json's season, in ESPN's numbering of the week */
-  chk(urls.some(u => u.includes('/scoreboard?') && u.includes(`seasontype=2&week=${week}&dates=${state.season}`)), 'the Pick\'ems board did not read the scoreboard for its own season and week: ' + urls.filter(u => u.includes('/scoreboard?')).join(' '));
+  const espnWk = wk => wk <= 18 ? `seasontype=2&week=${wk}` : `seasontype=3&week=${wk >= 22 ? 5 : wk - 18}`;
+  chk(urls.some(u => u.includes('/scoreboard?') && u.includes(`${espnWk(week)}&dates=${state.season}`)), 'the Pick\'ems board did not read the scoreboard for its own season and week: ' + urls.filter(u => u.includes('/scoreboard?')).join(' '));
   /* a neutral-site game reads "vs" and every other "at" */
   { const neutralOf = g => g.location === 'Neutral' || g.gametime === '09:30';
     const bad = cards.filter(c => { const g = state.schedule.find(x => x.game_id === c.dataset.game); return (txt(c.querySelector('.pk-at')) === 'vs') !== neutralOf(g); });
@@ -368,7 +371,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(50);
   chk(modal.hidden, 'the game did not close');
   /* the Games tab's own state saved, under the prop model's own key */
-  chk(!!w.localStorage.getItem('props_2026_v1'), 'the prop model did not save its state under its own key');
+  chk(!!w.localStorage.getItem(PROP_KEY), 'the prop model did not save its state under its own key');
 
   /* ---- Parlay Builders: the prop model's Parlay Builder, suggestions, saved parlays and all ---- */
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'parlay').click();
@@ -528,10 +531,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   { const alt = JSON.parse(JSON.stringify(state)), P0 = PAYLOAD;    /* the payload as parsed above */
     const wkGames = alt.schedule.filter(g => +g.week === week);
     const home = wkGames.find(g => !(g.location === 'Neutral' || g.gametime === '09:30'));
-    Object.assign(home, { location: 'Neutral', stadium: 'Wembley Stadium' });
-    const priced = wkGames.filter(g => { const r = P0.sched.find(x => x.id === g.game_id); return r && r.sp != null; });
-    const moved = priced[0], kept = priced[1];
-    moved.spread_line = P0.sched.find(x => x.id === moved.game_id).sp + 1;
+    if (home) Object.assign(home, { location: 'Neutral', stadium: 'Wembley Stadium' });
+    /* a game the prop model has a spread for, in the open week when there is one (week 1 before
+       any line is posted has none: then the check waits for a week that does) */
+    const allPriced = alt.schedule.filter(g => { const r = P0.sched.find(x => x.id === g.game_id); return r && r.sp != null; });
+    const priced = allPriced.filter(g => +g.week === week).concat(allPriced.filter(g => +g.week !== week));
+    const moved = priced[0], kept = moved && priced.find(g => g !== moved && +g.week === +moved.week);
+    if (moved) moved.spread_line = P0.sched.find(x => x.id === moved.game_id).sp + 1;
     if (kept) kept.spread_line = P0.sched.find(x => x.id === kept.game_id).sp;
     /* two wild-card games after week 18 */
     for (const g of alt.schedule.filter(x => +x.week === 18).slice(0, 2)) {
@@ -540,11 +546,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const A = await run(alt, undefined, wk => scoreboard(alt, wk));
     chk(!A.timedOut && A.errs.length === 0, 'the board broke on a schedule with a neutral site and the playoffs: ' + A.errs.join('; '));
     const card = id => A.d.querySelector(`.pk-game[data-game="${id}"]`);
-    chk(txt(card(home.game_id).querySelector('.pk-at')) === 'vs' && /Wembley/.test(card(home.game_id).querySelector('.pk-at').title), 'a game nflverse marks Neutral does not read "vs" with its stadium');
+    if (home) chk(txt(card(home.game_id).querySelector('.pk-at')) === 'vs' && /Wembley/.test(card(home.game_id).querySelector('.pk-at').title), 'a game nflverse marks Neutral does not read "vs" with its stadium');
     const open1 = c => { c.click(); return wait(60); };
-    await open1(card(moved.game_id));
-    chk(/nflverse's line/.test(txt(card(moved.game_id).querySelector('.pk-lines'))), 'a game whose board and prop-model spreads differ does not say so when opened');
-    if (kept) { await open1(card(kept.game_id)); chk(!card(kept.game_id).querySelector('.pk-lines'), 'a game on one line says it is on two'); }
+    if (moved) {
+      if (+moved.week !== week) { A.d.getElementById('pkWeek').value = String(moved.week); A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change')); await wait(40); }
+      await open1(card(moved.game_id));
+      chk(/nflverse's line/.test(txt(card(moved.game_id).querySelector('.pk-lines'))), 'a game whose board and prop-model spreads differ does not say so when opened');
+      if (kept) { await open1(card(kept.game_id)); chk(!card(kept.game_id).querySelector('.pk-lines'), 'a game on one line says it is on two'); } }
     const opt = [...A.d.getElementById('pkWeek').options].find(o => +o.value === 19);
     chk(!!opt && txt(opt) === 'Wild Card', 'the first playoff week is not named Wild Card: ' + (opt ? txt(opt) : 'no option'));
     A.d.getElementById('pkWeek').value = '19'; A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change'));
@@ -836,7 +844,6 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(fetched.includes('sync.json'), 'the page never read nflbets/sync.json for the store address');
   chk(w.NFLSYNC && w.NFLSYNC.state().live === false && w.NFLSYNC.state().url === null, 'with sync.json unreachable the page should be local-only');
   chk(/Not synced/.test(txt(d.getElementById('syncStamp'))), 'the header does not say the page is not synced: ' + txt(d.getElementById('syncStamp')));
-  const PROP_KEY = 'props_2026_v1';
   /* a game that has not kicked off, so the builder keeps the leg */
   const openGame = S => { const wk = Math.max(...S.sched.map(x => +x.w)); return S.sched.find(x => +x.w === wk); };
   const teamLeg = g => ({ gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -120, src: 'real',

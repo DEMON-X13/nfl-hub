@@ -244,6 +244,15 @@ node nflbets/build/smoke_live.js  # the Live Parlays section; must end "0 failur
 ```
 
 `nflbets/build/sync.js` (the sync layer) is inlined by the build, so a change to it is a rebuild too.
+`smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
+`nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the
+rebuild fails the gate, and the elo job, which runs this smoke every morning, stops on it. It
+also runs the betting job's `reference_models.json` gate on the copy of the betting app inside the
+page (`BET_APP`). The prop model's storage key is read from part2's `SEASON`/`KEY` line at build
+time and written into the sync layer and the Live Parlays section; the Pick'ems board takes its
+season from `state.json` and the Live Parlays section from each game id, both asking ESPN for the
+week in its own numbering (weeks 19-22 are the playoffs, seasontype 3), so nothing in
+`nflbets/build/` or `liveparlays/` names a season.
 
 The build also writes `nflbets/preview.html`: the same page with `nflbets/build/preview_theme.css`
 (the NBA Hub's look) laid over it and passed into the betting frames. It is a look to try, not a
@@ -266,24 +275,34 @@ may quietly outrank what the job published:
   rebuilds; the betting app already merges only the visitor's keys over the published state.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
   roster change is worth a banner.
-- **Every page says which build it is.** `buildTag` on the Bets and Stats header. Without it a
-  stale copy cannot be told from a current one.
+- **Every page says which build it is.** `buildTag` on the Bets and Stats header: `APP_BUILD`
+  (the prop model's parts) and the page's own hash (`PAGE_HASH`, the first seven hex of its
+  SHA-256), so any source change -- the Pick'ems tab, the Live Parlays section, the sync layer,
+  the betting app -- shows as a new tag. Without it a stale copy cannot be told from a current one.
 - **A frame's content is in the page.** The betting tabs are srcdoc frames filled from a
   string inside `nflbets/index.html`, so nothing is fetched or cached for them apart from
   the page itself: a refresh of the page is a refresh of the frames.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **The parlays are one document for every device.** The builder, the saved parlays, the
-  stake, the book price, the margin, and the Live Parlays section's corrected lines and
-  deletions are kept in a shared JSON document that every device reads when the page opens,
-  writes on every change and re-reads every few seconds while on screen. The document lives
+  stake, the book price, the margin, and the Live Parlays section's key (corrected lines,
+  deletions, the builder kept at kickoff) are kept in a shared JSON document that every device
+  reads when the page opens, writes on every change and re-reads every few seconds while on
+  screen. No device writes over another: every write reads the store's rev first and, if
+  another device wrote since, merges three ways against the document both started from (what
+  only one side changed is taken, a deletion holds, where both changed a thing the writer's
+  change wins); a poll merges the same way, so a phone edited offline merges when it is back;
+  each document carries its last fifty revs, and a device whose write was overwritten by one
+  made at the same instant sees its rev missing on its next look and writes its change again. The document lives
   in a Firebase Realtime Database reached over plain HTTPS, whose address is in
   `nflbets/sync.json` (read at run time, so pasting it in needs no rebuild); with the address
   blank the page runs on the browser alone and the Live Parlays card says "Not synced". The layer is
   `nflbets/build/sync.js`: it defines the `window.storage` the prop model saves through and
   the `window.LIVE_IO` the section's key goes through, pushes nothing until it has read the
   document once, adds a browser's own saved parlays to the document the first time that browser
-  reads it (after that the document wins, so a deletion elsewhere holds), and `syncStamp`, in the
+  reads it, keeps the document at the rev it last took or wrote (`nflsync_v1`, and the document
+  under `nflsync_base_v1`) so its next visit merges what it had not sent (a deletion elsewhere
+  still holds; a browser that remembers only the rev takes the document as it is), and `syncStamp`, in the
   Live Parlays card, says whether it is synced (with when the parlays last changed), saving or
   failing; the header carries only when the site's data was updated.
   Setting it up: Firebase console → new project → Realtime Database → rules
@@ -304,7 +323,9 @@ may quietly outrank what the job published:
   reported. Look at recent commits before writing one. End with the
   `Co-Authored-By` and `Claude-Session` lines the session provides.
 - **`live_parlays_v1` is the Live Parlays section's key.** It holds `lines` (a line you
-  corrected) and `removed` (a file or betting-model parlay you deleted). A saved parlay is
+  corrected), `removed` (a file or betting-model parlay you deleted) and `kept` (the builder as
+  it stood when a leg's game kicked off: the builder drops a started leg, so the section keeps
+  this copy, keyed by its legs, and watches it until it is deleted). A saved parlay is
   not in it: deleting one in the section deletes it from the prop model's own saved list,
   which is the only copy. The section reads the whole object and writes it back whole, so a
   key anything else puts there is carried through. Inside the Bets and Stats page the key is

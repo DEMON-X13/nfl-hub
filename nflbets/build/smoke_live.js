@@ -59,7 +59,8 @@ const FILE = {
       legF(0, 'Michael Penix Jr.', 'ATL', 'passing_yards', 225.5, 'over', true)] }] };
 
 /* the prop model's own key, from part2, as the build hands it to the page */
-const PROP_KEY = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=\d{4}, KEY='([^']+)';/)[1], BET_KEY = 'x_nfl_viewer_picks_2026';
+const PART2_SEASON = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=(\d{4}), KEY='([^']+)';/);
+const PROP_KEY = PART2_SEASON[2], SEA = +PART2_SEASON[1], BET_KEY = 'x_nfl_viewer_picks_2026';
 /* the two models' own storage, written exactly as they write it */
 const propBlob = () => JSON.stringify({ stake: 55, saved: [
   { id: 'mine', week: 2, stake: 15, price: 250, payout: 52, legs: [
@@ -201,16 +202,25 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
 
   // ---- C3. a builder parlay whose first game kicks off is kept and watched, not dropped ----
   {
-    /* Bijan's leg is on week 2, long kicked off, so the builder drops it on load; the Falcons'
-       money line is on week 18 and stays. The section keeps the builder as it stood. */
+    /* Bijan's leg is on CAR at ATL, which has kicked off, so the builder drops it on load; the
+       money line is on a game still to come and stays. The section keeps the builder as it
+       stood. The schedule is pinned so the case holds in any week of any season: CAR at ATL in
+       the past, two other games in the future. */
+    const G1 = `${SEA}_02_CAR_ATL`, P0 = JSON.parse(PAYLOAD), later = P0.sched.filter(x => x.id !== G1).slice(-2);
+    const pin = P => { let r = P.sched.find(x => x.id === G1);
+      if (!r) { r = { id: G1, w: 2, t: '13:00', a: 'CAR', h: 'ATL' }; P.sched.push(r); }
+      r.d = '2000-01-02';
+      for (const x of P.sched) if (later.some(y => y.id === x.id)) x.d = '2099-12-31';
+      return P; };
+    const L2 = later[0], L2key = `${L2.id}|team:${L2.h}|ml`;
     const atKick = () => JSON.stringify({ stake: 40, saved: [], parlay: {
-      '2026_02_CAR_ATL|bij|rushing_yards': { gid: '2026_02_CAR_ATL', pid: '00-0038542', stat: 'rushing_yards', k: 43.5, side: 'over', main: true,
+      [`${G1}|00-0038542|rushing_yards`]: { gid: G1, pid: '00-0038542', stat: 'rushing_yards', k: 43.5, side: 'over', main: true,
         name: 'Bijan Robinson', team: 'ATL', week: 2 },
-      '2026_18_ATL_CAR|team:ATL|ml': { gid: '2026_18_ATL_CAR', pid: 'team:ATL', stat: 'ml', k: 0, side: 'over', main: false,
-        name: 'Falcons', team: 'ATL', grp: 'TEAM', week: 18 } } });
-    const k = await run({ seed: w => w.localStorage.setItem(PROP_KEY, atKick()), file: { updated: null, games: [], parlays: [] } });
+      [L2key]: { gid: L2.id, pid: 'team:' + L2.h, stat: 'ml', k: 0, side: 'over', main: false,
+        name: L2.h, team: L2.h, grp: 'TEAM', week: L2.w } } });
+    const k = await run({ pay: pin, seed: w => w.localStorage.setItem(PROP_KEY, atKick()), file: { updated: null, games: [], parlays: [] } });
     const cards = [...k.d.querySelectorAll('.savedp')], S = k.w.eval('S');
-    chk(Object.keys(S.parlay).length === 1 && !!S.parlay['2026_18_ATL_CAR|team:ATL|ml'], 'the builder should drop the leg whose game kicked off: ' + Object.keys(S.parlay).join(', '));
+    chk(Object.keys(S.parlay).length === 1 && !!S.parlay[L2key], 'the builder should drop the leg whose game kicked off: ' + Object.keys(S.parlay).join(', '));
     chk(cards.length === 1 && /builder at kickoff/.test(txt(cards[0])) && cards[0].querySelectorAll('.sp-leg').length === 2,
       'a builder parlay that lost a leg at kickoff is not kept whole and watched: ' + cards.map(c => txt(c).slice(0, 60)).join(' | '));
     { const pl = cards.length === 1 ? cards[0].querySelector('.sp-leg.prop') : null;
@@ -220,8 +230,8 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     /* a redraw keeps one copy; a new leg in the builder is a parlay of its own again */
     k.w.eval('renderParlay()'); await wait(60);
     chk(Object.keys(JSON.parse(k.w.localStorage.getItem('live_parlays_v1') || '{}').kept || {}).length === 1, 'a redraw kept the builder twice');
-    const g18 = S.sched.find(x => +x.w === 18 && x.id !== '2026_18_ATL_CAR');
-    S.parlay[g18.id + '|team:' + g18.h + '|ml'] = { gid: g18.id, pid: 'team:' + g18.h, stat: 'ml', k: 0, side: 'over', main: false, name: g18.h, team: g18.h, grp: 'TEAM', week: 18 };
+    const g18 = later[1];
+    S.parlay[g18.id + '|team:' + g18.h + '|ml'] = { gid: g18.id, pid: 'team:' + g18.h, stat: 'ml', k: 0, side: 'over', main: false, name: g18.h, team: g18.h, grp: 'TEAM', week: g18.w };
     k.w.eval('save(); renderParlay()'); await wait(80);
     chk(k.d.querySelectorAll('.savedp').length === 2 && [...k.d.querySelectorAll('.savedp .pill')].some(x => /in the builder/.test(txt(x))), 'a builder with a new leg is not shown beside the kept parlay');
     /* the x deletes the kept copy and nothing else */
@@ -251,31 +261,33 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
 
   // ---- C5. a player who did not play: the leg is void, not lost ----
   {
-    /* Drake London is ruled Out for week 2 on the injury report the page reads, and is on no
-       line of the final box score. Jahan Dotson has no such word: he is graded on nothing, and
-       the row says he is not on the box score. */
-    const pay = P => { P.injuries = (P.injuries || []).concat([{ season: '2026', week: '2', gsis_id: '00-0037238', report_status: 'Out', game_status: '' }]); return P; };
-    const file = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
-      { id: 'dnp-over', week: 2, stake: 10, legs: [legF(0, 'Drake London', 'ATL', 'receiving_yards', 50.5, 'over', true), legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 43.5, 'over', true)] },
-      { id: 'dnp-under', week: 2, stake: 10, legs: [legF(0, 'Drake London', 'ATL', 'receptions', 4.5, 'under', true)] },
-      { id: 'quiet', week: 2, stake: 10, legs: [legF(0, 'Jahan Dotson', 'ATL', 'receiving_yards', 30.5, 'over', true)] }] };
+    /* An Atlanta player (out of the payload, so any season) is ruled Out for the week on the
+       injury report the page reads, and is on no line of the final box score. A second has no
+       such word: he is graded on nothing, and the row says he is not on the box score. */
+    const onSheet = ['Bijan Robinson', 'Kyle Pitts', 'Michael Penix Jr.', 'Chuba Hubbard'];
+    const [OUT, QUIET] = JSON.parse(PAYLOAD).players.filter(x => x.t === 'ATL' && !onSheet.includes(x.n)).slice(0, 2);
+    const pay = P => { P.injuries = (P.injuries || []).concat([{ season: String(SEA), week: '2', gsis_id: OUT.id, report_status: 'Out', game_status: '' }]); return P; };
+    const file = { updated: null, games: [`${SEA}_02_CAR_ATL`], parlays: [
+      { id: 'dnp-over', week: 2, stake: 10, legs: [legF(0, OUT.n, 'ATL', 'receiving_yards', 50.5, 'over', true), legF(0, 'Bijan Robinson', 'ATL', 'rushing_yards', 43.5, 'over', true)] },
+      { id: 'dnp-under', week: 2, stake: 10, legs: [legF(0, OUT.n, 'ATL', 'receptions', 4.5, 'under', true)] },
+      { id: 'quiet', week: 2, stake: 10, legs: [legF(0, QUIET.n, 'ATL', 'receiving_yards', 30.5, 'over', true)] }] };
+    const rx = n => new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
     const v = await run({ file, state: 'post', pay });
-    const card = id => [...v.d.querySelectorAll('.savedp')].find(c => [...c.querySelectorAll('.who')].some(x => new RegExp(id).test(txt(x))));
     const over = [...v.d.querySelectorAll('.savedp')].find(c => c.querySelectorAll('.sp-leg').length === 2);
-    const drake = over && [...over.querySelectorAll('.sp-leg')].find(r => /Drake London/.test(who(r)));
+    const drake = over && [...over.querySelectorAll('.sp-leg')].find(r => rx(OUT.n).test(who(r)));
     chk(!!drake && status(drake) === 'void' && txt(drake.querySelector('.res')) === 'V' && /did not play \(out\)/.test(txt(drake)),
       'a player ruled out and missing from the box score is not void: ' + (drake ? txt(drake) : 'no row'));
     chk(!!over && !/\bgone\b/.test(txt(over.querySelector('.sp-head'))) && /landed/.test(txt(over.querySelector('.sp-head'))) && /1 void/.test(txt(over.querySelector('.sp-head'))),
       'a parlay with a void leg and the rest won is not "landed, 1 void": ' + (over ? txt(over.querySelector('.sp-head')) : ''));
-    const under = [...v.d.querySelectorAll('.savedp')].find(c => /Drake London Receptions/.test(txt(c)));
+    const under = [...v.d.querySelectorAll('.savedp')].find(c => rx(OUT.n + ' Receptions').test(txt(c)));
     chk(!!under && status(under.querySelector('.sp-leg')) === 'void' && !/landed|gone/.test(txt(under.querySelector('.sp-head'))) && /\bvoid\b/.test(txt(under.querySelector('.sp-head'))),
       'an under on a player who did not play is graded instead of void: ' + (under ? txt(under.querySelector('.sp-head')) + ' / ' + status(under.querySelector('.sp-leg')) : ''));
-    const quiet = card('Jahan Dotson');
+    const quiet = [...v.d.querySelectorAll('.savedp')].find(c => [...c.querySelectorAll('.who')].some(x => rx(QUIET.n).test(txt(x))));
     chk(!!quiet && status(quiet.querySelector('.sp-leg')) === 'missed' && /not on the box score/.test(txt(quiet)) && /gone/.test(txt(quiet.querySelector('.sp-head'))),
       'a player with no word that he sat is not graded on nothing and said to be off the box score: ' + (quiet ? txt(quiet) : ''));
     /* the same leg while the game is on: void too, since he was ruled out */
     const live = await run({ file, state: 'in', pay });
-    const d2 = [...live.d.querySelectorAll('.sp-leg')].find(r => /Drake London Receiving/.test(who(r)));
+    const d2 = [...live.d.querySelectorAll('.sp-leg')].find(r => rx(OUT.n + ' Receiving').test(who(r)));
     chk(!!d2 && status(d2) === 'void', 'a ruled-out player\'s leg is not void while the game is on: ' + (d2 ? status(d2) : ''));
   }
 
