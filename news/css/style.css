@@ -113,6 +113,10 @@ a{color:inherit}
 .dtag.vtough{background:var(--down-bg);color:var(--down-ink)}
 .ddvs{font-size:12.5px;color:var(--ink-2);margin-top:3px}
 .ddvs b{font-family:"Space Grotesk","Manrope",sans-serif;color:var(--ink);font-weight:700}
+.ddedge{margin-left:8px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ddout{font-size:12px;line-height:1.45;color:var(--ink-2);margin-top:4px;padding-left:10px;position:relative}
+.ddout::before{content:"";position:absolute;left:0;top:.5em;width:5px;height:5px;border-radius:50%;background:var(--down)}
+.ddnote{font-size:11.5px;line-height:1.45;color:var(--ink-3);margin-top:3px}
 .ddvs b sup,.ddnum sup{font-size:8px}
 .ddwho{font-size:12.5px;color:var(--ink);margin-top:3px;line-height:1.45}
 .ddnum{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.45;font-variant-numeric:tabular-nums}

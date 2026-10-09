@@ -55,41 +55,56 @@ function powerRank(ab){
 }
 
 /* ============================ deep dive ============================ */
-/* Six units from data/units2026.js. Each faces the opposing unit it plays against; the tag says
-   how hard that is, from the gap between the two league ranks (1 is best, 32 worst). */
-function difficulty(mine, theirs){
-  const d = theirs - mine;   // positive: this unit ranks better than what it faces
-  if (d >= 11) return ["easy", "Easy"];
-  if (d >= 4)  return ["fav", "Favorable"];
-  if (d > -4)  return ["even", "Even"];
-  if (d > -11) return ["tough", "Tough"];
+/* Six units from data/units2026.js. Each faces the opposing unit it plays against, rated on the
+   same numbers from both sides (tools/context.js), each rating in league standard deviations.
+   The tag is the edge: this unit's rating minus the one it faces. 1.5 or more is Easy, 0.5 or more
+   Favorable, within 0.5 Even, and the same the other way. (Until 2026-10-08 it was the gap between
+   two ranks of different stats, which put the receivers against the coverage on unlike numbers.) */
+function difficulty(edge){
+  if (edge == null || !isFinite(edge)) return ["even", "Even"];
+  if (edge >= 1.5)  return ["easy", "Easy"];
+  if (edge >= 0.5)  return ["fav", "Favorable"];
+  if (edge > -0.5)  return ["even", "Even"];
+  if (edge > -1.5)  return ["tough", "Tough"];
   return ["vtough", "Very tough"];
 }
 function deepDive(ab, opp, row){
   if (typeof UNITS26 === "undefined" || !UNITS26[ab] || !UNITS26[opp]) return `<div class="tbsec empty ${row}"></div>`;
   const U = UNITS26[ab], O = UNITS26[opp];
-  const names = list => (list || []).map(p => `${p.n} (${p.pos})`).join(", ");
+  const names = list => (list || []).map(p => `${p.n} (${p.pos}${p.q ? ", " + p.q : ""})`).join(", ");
+  /* who is not playing: the quarterback row says who starts instead, the others list them */
+  const missing = (u, isQB) => {
+    const out = u.out || [];
+    if (!out.length) return "";
+    if (isQB && u.who && u.who[0]) return `<div class="ddout">${u.who[0].n} starts; ${out.map(p => `${p.n} is ${p.why}`).join(", ")}.</div>`;
+    return `<div class="ddout">Not playing: ${out.map(p => `${p.n} (${p.pos}), ${p.why}`).join("; ")}.</div>`;
+  };
   const nums = st => (st || []).map(([label, v, r, unit]) => v == null ? "" : `${v}${unit || ""} ${label} (${ORD(r)})`).filter(Boolean).join(" &middot; ");
   const units = [
-    ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD],
-    ["Offensive line", "Offensive line", U.ol, `${opp} pass and run rush`, O.front.rank],
+    ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD, true],
+    ["Offensive line", "Pass protection", U.ol, `${opp} pass rush`, O.front],
     ["Running backs", "Run game", U.rb, `${opp} run defense`, O.vs.runD],
-    ["Receivers", "Receivers", U.rec, `${opp} defensive backs`, O.db.rank],
-    ["Pass and run rush", "Front seven", U.front, `${opp} offensive line`, O.ol.rank],
-    ["Defensive backs", "Secondary", U.db, `${opp} receivers`, O.rec.rank],
+    ["Receivers", "Receivers", U.rec, `${opp} coverage`, O.db],
+    ["Pass rush", "Pass rush", U.front, `${opp} pass protection`, O.ol],
+    ["Defensive backs", "Coverage", U.db, `${opp} receivers`, O.rec],
   ];
-  const rows = units.map(([label, mine, u, vs, vr]) => {
-    const [cls, tag] = difficulty(u.rank, vr);
+  const sd = v => (v >= 0 ? "+" : "\u2212") + Math.abs(v).toFixed(1);
+  const rows = units.map(([label, mine, u, vs, v, isQB]) => {
+    const edge = u.z != null && v.z != null ? u.z - v.z : null;
+    const [cls, tag] = difficulty(edge);
     return `<div class="ddrow">
-      <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${cls}">${tag}</span></div>
-      <div class="ddvs">${mine} <b>${ORD(u.rank)}</b> vs ${vs} <b>${ORD(vr)}</b></div>
+      <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${cls}"${edge == null ? "" : ` title="Edge ${sd(edge)}: this unit's rating minus the one it faces, in league standard deviations"`}>${tag}</span></div>
+      <div class="ddvs">${mine} <b>${ORD(u.rank)}</b> vs ${vs} <b>${ORD(v.rank)}</b>${edge == null ? "" : `<span class="ddedge">edge ${sd(edge)}</span>`}</div>
       ${u.who && u.who.length ? `<div class="ddwho">${names(u.who)}</div>` : ""}
+      ${missing(u, isQB)}
       <div class="ddnum">${nums(u.stats)}</div>
+      ${u.note ? `<div class="ddnote">${u.note}</div>` : ""}
     </div>`;
   }).join("");
   const basis = typeof UNITS26_BASIS !== "undefined" ? UNITS26_BASIS : "";
+  const lineups = typeof UNITS26_LINEUPS !== "undefined" ? ` ${UNITS26_LINEUPS}.` : "";
   return `<details class="tbsec dd ${row}"><summary><span class="ddlbl">Deep Dive</span><span class="ddhint">6 matchups</span></summary>
-    <p class="ddbasis">League ranks from team stats, ${basis}. The tag is how hard the matchup is for this unit, from the gap between its rank and the rank of the unit it faces.</p>
+    <p class="ddbasis">League ranks from team stats, ${basis}. Each row rates a unit and the unit it faces on the same numbers. The tag is this unit's edge, its rating minus the other's in league standard deviations: Easy is 1.5 or more, Favorable 0.5 or more, Even within 0.5, Tough and Very tough the same the other way.${lineups}</p>
     ${rows}</details>`;
 }
 

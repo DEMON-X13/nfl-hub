@@ -7,6 +7,12 @@ on:
     - cron: "0 12 * * 5"    # Friday
     - cron: "0 12 * * 1"    # Monday
     - cron: "0 12 * * 2"    # Tuesday
+    # the Deep Dive's lineups: nflverse files the week's game statuses about 14:30 UTC the day
+    # after each report, so these catch Wednesday's for Thursday night, Friday's for Sunday and
+    # late moves before the London game. Free sources only.
+    - cron: "7 15 * * 4"    # Thursday
+    - cron: "7 15 * * 6"    # Saturday
+    - cron: "7 11 * * 0"    # Sunday morning
     # post-game: results and team stats the same night. The narrative is untouched;
     # run-auto only refreshes the self-updating parts and drafts a week it cannot show.
     - cron: "27 6 * * 5"    # after Thursday night
