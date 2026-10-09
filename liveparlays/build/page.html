@@ -154,7 +154,8 @@ footer a{color:var(--ink-2)}
    inside the Bets and Stats page the section runs in a closure, so these are its own and the
    page's stay the page's. Everything else it uses -- the scoreboard and box score readers,
    the live leg maths, the betting slips -- is the page's own, from part2. ---- */
-const PROP_KEY='props_2026_v1';
+/* the prop model's key: the Bets and Stats build writes part2's own KEY over this default */
+const PROP_KEY=/*PROP_KEY*/'props_2026_v1';
 function fmtML(ml){ return ml==null?'–':(ml>0?'+'+ml:''+ml); }
 function decToML(d){ if(!isFinite(d)||d<=1) return null; return d>=2?Math.round((d-1)*100):-Math.round(100/(d-1)); }
 function num(x,d){ return x==null||!isFinite(x)?'–':(+x).toFixed(d); }

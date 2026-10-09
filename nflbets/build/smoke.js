@@ -37,6 +37,38 @@ const ELO_MU = (() => {
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
+
+/* ---- the published page is a fresh build of its sources ----
+   Nothing rebuilds the page on a schedule: it is rebuilt by hand when a source changes. A
+   source committed without the rebuild would pass every other check while the site served the
+   old page, so the build is run here in memory and must match the published files byte for
+   byte. The elo job runs this smoke every morning, so a stale page stops it loudly. */
+{ let B = null;
+  try { B = require('./build.js'); } catch (e) { chk(false, 'the sources do not build: ' + e.message); }
+  if (B) {
+    chk(B.out === HTML, 'nflbets/index.html is not a fresh build of its sources: run node nflbets/build/build.js and commit the page');
+    chk(B.pv === fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), 'nflbets/preview.html is not a fresh build of its sources: run node nflbets/build/build.js');
+    chk(!/PROP_KEY=\/\*PROP_KEY\*\/'/.test(HTML) && (HTML.match(/PROP_KEY=\/\*PROP_KEY\*\/"([^"]+)"/g) || []).length === 2 && HTML.split(`PROP_KEY=/*PROP_KEY*/${JSON.stringify(B.PROP_KEY)}`).length === 3,
+      "the sync layer and the Live Parlays section are not both on part2's storage key " + B.PROP_KEY); }
+}
+/* ---- the betting app inside the page carries the gated model numbers ----
+   betting/tools/update.js gates the app source against reference_models.json; this is the same
+   gate on the copy the site actually serves, the BET_APP string in nflbets/index.html */
+{ const m = HTML.match(/\nconst BET_APP=("(?:[^"\\]|\\.)*");\n<\/script>/);
+  const app = m ? JSON.parse(m[1]) : '';
+  const ref = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'tools', 'reference_models.json'), 'utf8'));
+  const emb = name => { const x = app.match(new RegExp('^const ' + name + ' = (\\{.*?\\});$', 'm')); try { return x ? JSON.parse(x[1]) : null; } catch (e) { return null; } };
+  const close = (a, b, tol) => {
+    if (a && typeof a === 'object' && !Array.isArray(a)) { const ka = Object.keys(a), kb = Object.keys(b || {}); return ka.length === kb.length && ka.every(k => close(a[k], b[k], tol)); }
+    if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((x, i) => close(x, b[i], tol));
+    if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) <= tol;
+    return a === b; };
+  const A = emb('MODEL'), H = emb('MODEL_H'), QB = emb('QB_MODEL'), bad = [];
+  if (!A || !H || !QB) bad.push('the model constants are missing');
+  else { for (const k of ['params', 'league_means', 'pure', 'teams']) { if (!close(A[k], ref.A[k], 1e-9)) bad.push('MODEL.' + k); if (!close(H[k], ref.H[k], 1e-9)) bad.push('MODEL_H.' + k); }
+    if (!close(QB, ref.QB, 1e-9)) bad.push('QB_MODEL'); }
+  chk(app.length > 100000 && bad.length === 0, 'the betting app in the published page does not carry the reference model numbers: ' + bad.join(', '));
+}
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
@@ -84,7 +116,7 @@ function storeFetch(store, s, o) {
 }
 const storeDoc = store => store.node ? JSON.parse(store.node.doc.json) : null;
 
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { sync = null, seed = null } = {}) {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { sync = null, seed = null, net = null } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [];
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
@@ -93,6 +125,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         w.addEventListener('error', e => errs.push(e.message));
         if (seed) seed(w);
         w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, ''));
+          /* a device of its own offline: the store does not answer it, whatever it answers others */
+          if (sync && net && net.down && s.startsWith(STORE_URL)) return Promise.reject(new TypeError('Failed to fetch'));
           if (sync) { const r = storeFetch(sync, s, o); if (r) return r; }
           if (s.includes('state.json')) return noState
             ? Promise.resolve({ ok: false, status: 404 })
@@ -131,8 +165,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
-  chk(/^app v\d+ \u00b7 \d{4}-\d{2}-\d{2}$/.test(txt(d.getElementById('buildTag'))),
-    'the page does not say which build it is: ' + txt(d.getElementById('buildTag')));
+  /* which build: the prop model's version and the page's own hash, so a change to any source
+     (not only the prop model's parts) shows as a new tag */
+  { const m = HTML.match(/const PAGE_HASH='([0-9a-f]{7})';/);
+    chk(!!m && txt(d.getElementById('buildTag')) === w.eval('APP_BUILD') + ' \u00b7 ' + m[1],
+      'the page does not say which build it is, prop model and page hash: ' + txt(d.getElementById('buildTag')));
+    /* the hash is the page's own: taken out again, the page hashes to it */
+    const B = require('./build.js');
+    chk(!!m && require('crypto').createHash('sha256').update(HTML.replace(m[0], `const PAGE_HASH='${B.HASH_SLOT}';`)).digest('hex').slice(0, 7) === m[1],
+      'the build tag\'s hash is not the hash of this page: it was edited after it was built'); }
 
   /* ---- Pick'ems ---- */
   let cards = [...d.querySelectorAll('.pk-game')];
@@ -874,6 +915,78 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(fresh.puts.length === putsF && !storeDoc(fresh).prop.saved.some(p => p.id === 'ghost'), 'device F pushed a parlay another device had deleted');
     chk(F.w.localStorage.getItem('nflsync_v1') === fresh.node.rev, 'device F did not remember the rev it took');
     for (const x of [A, B, C, D, E, F]) x.w.close();
+  }
+
+  /* ---- two devices writing at once: nothing either saved is lost ----
+     A write is the whole document, so a device that wrote without looking would erase what
+     another device saved since it last read. Each write looks first and merges; a device that
+     was offline merges when it is back; and a write overwritten by one made at the same moment
+     is noticed by the device that made it and written again. */
+  { const store = mkStore(), netQ = { down: false };
+    const parlayOf = (id, g) => ({ id, saved: new Date().toISOString(), week: g.w, stake: 1, payout: 2, price: 100, legs: [teamLeg(g)] });
+    const setVis = (x, v) => { Object.defineProperty(x.d, 'visibilityState', { value: v, configurable: true }); x.d.dispatchEvent(new x.w.Event('visibilitychange')); };
+    const ids = st => (st && st.prop && st.prop.saved || []).map(p => p.id).join(',');
+    const P = await run(state, undefined, null, false, { sync: store });
+    await settle();
+    const Q = await run(state, undefined, null, false, { sync: store, net: netQ });
+    await settle();
+    chk(!P.timedOut && !Q.timedOut && P.errs.length === 0 && Q.errs.length === 0, 'devices P or Q broke: ' + P.errs.concat(Q.errs).join('; '));
+    const SP = P.w.eval('S'), SQ = Q.w.eval('S'), g = openGame(SP);
+    /* Q's tab goes to the background, so it has not looked since P saved */
+    setVis(Q, 'hidden');
+    SP.saved.push(parlayOf('from-P', g)); P.w.eval('save(); renderParlay();'); await settle();
+    chk(storeDoc(store).prop.saved.some(p => p.id === 'from-P'), 'P\'s saved parlay did not reach the store');
+    SQ.stake = 7; Q.w.eval('save();'); await settle();
+    { const doc = storeDoc(store);
+      chk(doc.prop.saved.some(p => p.id === 'from-P') && doc.prop.stake === 7, `a device that had not looked erased a parlay another device saved (store: saved ${ids(doc)}, stake ${doc.prop.stake})`);
+      chk(SQ.saved.some(p => p.id === 'from-P'), 'the device that merged did not take in the parlay it merged'); }
+    await P.w.NFLSYNC.poll(); await settle();
+    chk(SP.saved.some(p => p.id === 'from-P') && SP.stake === 7, 'P did not end with its parlay and Q\'s stake');
+    /* Q loses its signal and is edited; P saves meanwhile; Q comes back */
+    setVis(Q, 'visible'); await settle();
+    netQ.down = true;
+    SQ.stake = 33; Q.w.eval('save();'); await settle();
+    chk(Q.w.NFLSYNC.state().pending === true && /Sync failed|Saving/.test(txt(Q.d.getElementById('syncStamp'))), 'an offline device does not show its change waiting: ' + txt(Q.d.getElementById('syncStamp')));
+    SP.saved.push(parlayOf('laptop-parlay', g)); P.w.eval('save(); renderParlay();'); await settle();
+    chk(storeDoc(store).prop.saved.some(p => p.id === 'laptop-parlay'), 'P\'s second parlay did not reach the store');
+    netQ.down = false; Q.w.dispatchEvent(new Q.w.Event('online')); await settle(); await settle();
+    { const doc = storeDoc(store);
+      chk(doc.prop.saved.some(p => p.id === 'laptop-parlay') && doc.prop.stake === 33, `a device back online overwrote what was saved while it was away, or lost its own change (store: saved ${ids(doc)}, stake ${doc.prop.stake})`);
+      chk(SQ.saved.some(p => p.id === 'laptop-parlay') && /^Synced/.test(txt(Q.d.getElementById('syncStamp'))), 'the device back online did not take the parlay saved meanwhile, or does not say Synced'); }
+    await P.w.NFLSYNC.poll(); await settle();
+    chk(SP.saved.some(p => p.id === 'laptop-parlay') && SP.stake === 33, 'P lost its parlay to the device that came back');
+    Q.w.close();
+    /* P and another device look at the same moment and both write: the other's write lands
+       second, built on the same document, without P's. P sees on its next look that its write
+       is not in the store's line of descent and writes it again, merged */
+    await P.w.NFLSYNC.poll(); await settle();
+    const before = JSON.parse(JSON.stringify(store.node));
+    SP.saved.push(parlayOf('race-P', g)); P.w.eval('save(); renderParlay();'); await settle();
+    chk(storeDoc(store).prop.saved.some(p => p.id === 'race-P'), 'P\'s race parlay did not reach the store');
+    { const other = JSON.parse(before.doc.json); other.prop.saved.push(parlayOf('race-Q', g));
+      const rev = 'beside-' + Date.now(), at = new Date().toISOString();
+      store.node = { rev, at, doc: { rev, at, revs: (before.doc.revs || [before.rev]).concat([rev]), json: JSON.stringify(other) } }; }
+    await P.w.NFLSYNC.poll(); await settle();
+    { const doc = storeDoc(store);
+      chk(doc.prop.saved.some(p => p.id === 'race-P') && doc.prop.saved.some(p => p.id === 'race-Q'), 'a write overwritten by one made at the same moment was not written again: store has ' + ids(doc));
+      chk(SP.saved.some(p => p.id === 'race-Q') && P.w.NFLSYNC.state().recovered >= 1, 'P did not take the other device\'s parlay, or did not notice its write was overwritten'); }
+    /* a browser closed with a change it had not sent: on its next visit what it changed stays
+       and what another device deleted meanwhile stays deleted */
+    const keep = k => P.w.localStorage.getItem(k);
+    const snap = { prop: JSON.parse(keep(PROP_KEY)), seen: keep('nflsync_v1'), base: keep('nflsync_base_v1') };
+    chk(!!snap.base && JSON.parse(snap.base).rev === snap.seen, 'the browser does not keep the document at the rev it remembers');
+    SP.saved = SP.saved.filter(p => p.id !== 'race-Q'); P.w.eval('save(); renderParlay();'); await settle();
+    chk(!storeDoc(store).prop.saved.some(p => p.id === 'race-Q'), 'P\'s deletion did not reach the store');
+    snap.prop.saved.push(parlayOf('unsent', g));
+    const putsR = store.puts.length;
+    const R = await run(state, undefined, null, false, { sync: store, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(snap.prop));
+      w.localStorage.setItem('nflsync_v1', snap.seen); w.localStorage.setItem('nflsync_base_v1', snap.base); } });
+    await settle();
+    { const SR = R.w.eval('S'), doc = storeDoc(store);
+      chk(!R.timedOut && R.errs.length === 0, 'device R broke: ' + R.errs.join('; '));
+      chk(SR.saved.some(p => p.id === 'unsent') && !SR.saved.some(p => p.id === 'race-Q'), 'a browser\'s unsent parlay was lost on its next visit, or a parlay deleted elsewhere came back: ' + SR.saved.map(p => p.id).join(','));
+      chk(doc.prop.saved.some(p => p.id === 'unsent') && !doc.prop.saved.some(p => p.id === 'race-Q') && store.puts.length > putsR, 'the unsent parlay did not reach the store, or the deleted one came back: ' + ids(doc)); }
+    for (const x of [P, R]) x.w.close();
   }
 
   console.log(`${checks} checks, ${fails.length} failures`);
