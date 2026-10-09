@@ -7,11 +7,21 @@ points per game, points allowed, turnover differential, third-down rate, red-zon
 rate and yards per play for and against, each the season to date with last season blended in
 early. Frozen weights from fit.py (model.json); this script never refits.
 
-Reads the betting job's downloads (data/games.csv, data/play_by_play_<season>.parquet, which
-joker.py fetches; fetched here too if missing) and last season's per-game rates
-(prior_<season-1>.json, written by fit.py), and writes into betting/state.json:
+The season is the app's (state.json's `season`, which update.js publishes), never the newest one
+in games.csv, so a schedule nflverse posts early does not move it. Every game of it is scored,
+regular season and playoffs, as fit.py fitted it. Reads the betting job's downloads
+(data/games.csv, data/play_by_play_<season>.parquet, which joker.py fetches; fetched here too if
+missing) and last season's per-game rates (prior_<season-1>.json, written by fit.py), and writes
+into betting/state.json:
   processed[gid].broly = {pick, pHome, correct} on graded games,
-  state.broly = {pick, pHome} for every game of the season (upcoming included).
+  state.broly = {pick, pHome} for every game of the season it can price (upcoming included).
+A game keeps the call it had on the last run before its kickoff (betting/jobkit.py), so the record
+grades the pick a reader saw, never one rescored on a closing line posted after it.
+
+Before the season's play-by-play exists (its first week), the stats start from last season alone.
+Once a final is a day and a half old the play-by-play is required: without it, or without the prior,
+the run refuses, the last good picks stay, state.modelStatus.broly says why (the Pick'em Record
+prints it) and the step exits 1, which the workflow logs and carries on past.
 A run that changes nothing leaves state.json untouched.
 """
 from __future__ import annotations
@@ -19,46 +29,56 @@ from __future__ import annotations
 import json
 import sys
 import urllib.request
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent
-FRESH = ROOT / "data"
-STATE = ROOT / "betting" / "state.json"
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 import stats as B  # noqa: E402
+import jobkit as J  # noqa: E402
+from jobkit import log  # noqa: E402
 
-
-def log(msg):
-    print(datetime.now().strftime("%H:%M:%S"), msg, flush=True)
+PBP_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{season}.parquet"
 
 
 def main():
+    at = J.now()
+    st = J.load_state()
+    season = J.season_of(st)
     model = json.loads((HERE / "model.json").read_text(encoding="utf-8"))
-    games = pd.read_csv(FRESH / "games.csv", low_memory=False)
-    season = int(games.season.max())
-    games = games[(games.season == season) & (games.game_type == "REG")]
-    pbp_path = FRESH / f"play_by_play_{season}.parquet"
+    games_all = J.read_games()
+    games = games_all[games_all.season == season]
+    if not len(games):
+        raise J.Refuse(f"games.csv has no {season} games")
+    due = J.stats_due(games_all, season, at)
+    pbp_path = J.DATA / f"play_by_play_{season}.parquet"
     if not pbp_path.exists():
-        url = f"https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{season}.parquet"
         try:
-            urllib.request.urlretrieve(url, pbp_path); log(f"downloaded {pbp_path.name}")
-        except Exception as e:
-            log(f"play-by-play {season} not available ({e}); the stats start from last season alone")
+            urllib.request.urlretrieve(PBP_URL.format(season=season), pbp_path); log(f"downloaded {pbp_path.name}")
+        except Exception as e:  # noqa: BLE001
+            if pbp_path.exists():
+                pbp_path.unlink()
+            log(f"play-by-play {season} not available ({e})")
+    if not pbp_path.exists():
+        if due:
+            raise J.Refuse(f"play_by_play_{season}.parquet could not be downloaded")
+        log("no game is old enough to need it yet: the stats start from last season alone")
     pbp = pd.read_parquet(pbp_path, columns=B.PBP_COLS) if pbp_path.exists() else pd.DataFrame(columns=B.PBP_COLS)
     prior_path = HERE / f"prior_{season - 1}.json"
     if not prior_path.exists():
-        log(f"no {prior_path.name}: run fit.py on the seasons through {season - 1} before this season's picks"); return
+        raise J.Refuse(f"no {prior_path.name}: run fit.py on the seasons through {season - 1} before this season's picks")
     prior = json.loads(prior_path.read_text(encoding="utf-8"))
-    tg = B.team_games(pbp, games) if len(pbp) else pd.DataFrame(columns=["game_id", "season", "posteam"])
+    # with no play-by-play yet the team-game table is empty but keeps its columns, so a game reads
+    # as not played and the stats come from the prior alone (it used to have no `plays` and crash)
+    tg = B.team_games(pbp, games) if len(pbp) else pd.DataFrame(
+        columns=["game_id", "season", "week", "posteam", "defteam", "gameday"] + B.SUMS)
     # a team with no game played yet still needs a row for its next game: rows come from the schedule
     sched = pd.concat([games[["game_id", "season", "week", "gameday", "home_team", "away_team"]].rename(columns={"home_team": "posteam", "away_team": "defteam"}),
                        games[["game_id", "season", "week", "gameday", "away_team", "home_team"]].rename(columns={"away_team": "posteam", "home_team": "defteam"})])
-    sched = sched.merge(tg.drop(columns=["season", "week", "defteam", "gameday"], errors="ignore"), on=["game_id", "posteam"], how="left")
+    sched = sched.merge(tg.drop(columns=["season", "week", "defteam", "gameday", "pf", "pa"], errors="ignore"), on=["game_id", "posteam"], how="left")
     pts = pd.concat([games[["game_id", "home_team", "home_score", "away_score"]].rename(columns={"home_team": "posteam", "home_score": "pf2", "away_score": "pa2"}),
                      games[["game_id", "away_team", "away_score", "home_score"]].rename(columns={"away_team": "posteam", "away_score": "pf2", "home_score": "pa2"})])
     sched = sched.merge(pts, on=["game_id", "posteam"], how="left")
@@ -70,31 +90,29 @@ def main():
     pg = B.pregame(sched, prior)
     X = B.frame(games, pg)
     if not len(X):
-        log("no games to score"); return
+        raise J.Refuse("no game of the season could be scored")
     mu, sd, w = np.array(model["mu"]), np.array(model["sd"]), np.array(model["w"])
-    z = (X[B.COLS].values - mu) / sd
+    z = (X[B.COLS].values.astype(float) - mu) / sd
     p = 1 / (1 + np.exp(-(w[0] + z @ w[1:])))
     gm = games.set_index("game_id")
-    picks = {gid: {"pick": gm.at[gid, "home_team"] if ph >= 0.5 else gm.at[gid, "away_team"], "pHome": round(float(ph), 4)}
+    fresh = {gid: {"pick": gm.at[gid, "home_team"] if ph >= 0.5 else gm.at[gid, "away_team"], "pHome": round(float(ph), 4)}
              for gid, ph in zip(X.game_id, p)}
-    log(f"scored {len(picks)} games")
-    if not STATE.exists():
-        log("no state.json to patch"); return
-    st = json.loads(STATE.read_text(encoding="utf-8"))
+    log(f"scored {len(fresh)} games")
+    prev = st.get("broly") or {}
+    # a graded game it scored before and cannot score now means this run's inputs are incomplete
+    lost = [gid for gid, r in st.get("processed", {}).items() if r.get("result") is not None and gid in prev and gid not in fresh]
+    if lost:
+        raise J.Refuse(f"{len(lost)} graded games could not be scored ({', '.join(sorted(lost)[:3])}...)")
+    picks = J.freeze(prev, fresh, J.kickoffs(games), at)
+    kept = sum(1 for gid in fresh if picks[gid] is not fresh[gid])
     changed = False
     if st.get("broly") != picks:
         st["broly"] = picks; changed = True
-    for gid, rec in st.get("processed", {}).items():
-        b = picks.get(gid)
-        if not b or rec.get("result") is None:
-            continue
-        r = rec["result"]
-        winner = rec["home"] if r > 0 else rec["away"] if r < 0 else None
-        entry = dict(pick=b["pick"], pHome=b["pHome"], correct=None if winner is None else b["pick"] == winner)
-        if rec.get("broly") != entry:
-            rec["broly"] = entry; changed = True
+    changed |= J.grade(st, picks, "broly")
+    changed |= J.set_status(st, "broly", None, at)
+    log(f"{kept} calls held from before their kickoff")
     if changed:
-        STATE.write_text(json.dumps(st), encoding="utf-8")
+        J.save_state(st)
         graded = [r for r in st["processed"].values() if r.get("broly")]
         log(f"state.json patched: Broly on {len(graded)} graded games ({sum(1 for r in graded if r['broly']['correct'])} right)")
     else:
@@ -102,4 +120,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    J.run("broly", main)
