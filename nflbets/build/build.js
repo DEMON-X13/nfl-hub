@@ -319,6 +319,22 @@ let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>
    services, the owner link, the shared key, the sync stamp) is nowhere in the page */
 for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
   if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
+
+/* the Game snapshot (snapshot.html, every name gs-): the window an opened Pick'ems game opens, with
+   everything the site has on that game. Its styles go in after the others and its script runs
+   last, after the Player Elo tab's, whose files (window.eloFiles) and Mismatches it reads; the
+   board hands it the season and its own calls (window.pkBoard) */
+{ const snap = rd('nflbets', 'build', 'snapshot.html');
+  const SNAP_CSS = (snap.match(/<style>([\s\S]*?)<\/style>/) || [])[1], SNAP_JS = (snap.match(/<script>([\s\S]*?)<\/script>/) || [])[1];
+  if (!SNAP_CSS || !SNAP_JS) throw new Error('nflbets/build/snapshot.html has no <style> or <script> block');
+  if (/(^|\n)(body|header|main|:root|\.card|\.btn|\.modal|\.modal-panel|table|th|td)\{/.test(SNAP_CSS)) throw new Error('a page-level rule in the snapshot styles');
+  for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'"])
+    if (!SNAP_JS.includes(need)) throw new Error('nflbets/build/snapshot.html no longer has ' + need);
+  for (const need of ['data-snap="${esc(g.game_id)}"', 'window.gameSnapshot(b.dataset.snap,b)', 'window.pkBoard={', 'ST.state=st;'])
+    if (!js.includes(need)) throw new Error("the Pick'ems tab no longer opens the Game snapshot (" + need + ')');
+  if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
+  out = sub1(out, '</style>\n</head>', '</style>\n<style>' + SNAP_CSS + '</style>\n</head>', "the snapshot's styles");
+  out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>' + SNAP_JS + '</script>\n</body>\n</html>\n', "the snapshot's script"); }
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);

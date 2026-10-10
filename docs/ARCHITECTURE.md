@@ -203,6 +203,8 @@ nflbets/
                                  builds in memory and writes nothing: the smoke's freshness check)
   build/tab_pickems.html         the Pick'ems tab (pk- prefixed)
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
+  build/snapshot.html            the Game snapshot (gs-): the window an opened Pick'ems game opens,
+                                 everything the site has on that game; inlined after tab_elo.html
   build/card.html                the parlay card (pc-): Finish parlay, its window and its PNG
                                  download, on every device, for the builder and a suggested tier;
                                  the builder's pricing is lifted into it
@@ -270,6 +272,43 @@ to Super Bowl, are seasontype 3), says the regular season is over once every gam
 the schedule has no playoff game, reads "vs" for a neutral site (nflverse's Neutral or a 9:30am
 Eastern kickoff), and says, under an opened game, when the prop model's Game bets are priced on a
 different spread from the board's.
+An opened game has a **Game snapshot** button at its head, over the prices. It opens
+`nflbets/build/snapshot.html`'s window (`#gsModal`, every name `gs-`, its script one closure that
+the build sets in last, after the Player Elo tab's; the page's modal style, Escape, Close or a
+click outside closes it, Tab stays inside, the focus goes back to the button, full screen and
+scrolling on a phone) with everything the site has on that one game, in six cards: the matchup
+(each team's record as Team Rankings counts it, the kickoff in the viewer's time and the site, the
+Vegas line as the board reads it, and every model's pick and chance -- Vegas, Alpha Model, the
+Challenger Model, the Joker, the ELO Model, the Broly Model -- graded once the game is played:
+`processed` once the job has graded it, else `atKickoff`, `joker` and `broly` in `state.json` and
+`graded` or `next` in `elo/data/model.json`); Team Elo (each team's Power Rating, rank, shield,
+change and chance against an average team, from `teams`, ranked as Team Rankings ranks them);
+Overall Offense against Overall Defense both ways (`units`, rank, rating and the weighted stats);
+position by position (each team's expected starters, `lineups` in `matchups.json`, side by side
+under each position, each with his season Elo, rank and shield as on the ELO Ratings tab and a Q
+from the report, the defensive units the matchup formula reads ranked among the league's, and the
+team's ranked players out, each group's `sidelined`); the Mismatches in the game (the Props tab's
+own rows, `window.eloMismatches`, ranked among the week's); and when each file was published, with
+links that close the window and open Team Rankings, ELO Ratings, Props on this game and the Pick'em
+Record. It computes nothing of its own: the board hands it the season as loaded, its Vegas call and
+where a game stands (`window.pkBoard`), and the Player Elo tab its one read of `elo/data/`
+(`window.eloFiles`), so no file is fetched twice. A played game says the ratings and lineups are
+the files as they stand now; a game outside the matchups' week, a game under way, a lineup for a
+team's next game rather than this one, and a file that did not load are each said in their card,
+and the rest still draws. `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number to its
+file, on a game to come, a final on the scoreboard, a graded game and a playoff game, with
+matchups.json or the ratings missing. The position table is `table-layout: fixed` (each team half
+the card) and its names wrap: laid out automatically, a long name set a column's width and pushed
+the home side past the card on 34 of week 4-6's 45 games at 390px. A player's Q sits inside his
+name's own box (`.gs-pnm`), inline after the name: as a flex item of its own beside a wrapping
+name it was pushed to the inner edge of its half, beside the other team's player, on 69 of the
+season's 510 Q's at 390px and 109 at 360 in Chromium (NYG at WAS read "Malik Nabers Q" for Terry
+McLaurin's). jsdom lays nothing out, so the smoke holds the rules and the structure: every Q's
+parent is the box whose own text is its player's name, inline, in his team's column, checked on
+every game a questionable starter's lineup is for (a week with none on one side has one planted,
+in the smoke's copy of the matchups). The window's modal has no top padding (the panel's margin
+makes the gap), since a sticky header sticks inside its scroller's padding and the content showed
+in a band above it once scrolled.
 The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's
