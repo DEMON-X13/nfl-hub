@@ -86,6 +86,12 @@ jobs:
       - name: Score The Joker and write its picks into state.json
         continue-on-error: true
         run: python betting/joker/joker.py
+      # the Joker (long fit), a test beside the Joker: the same recipe fitted on 2010-2025. Its calls
+      # freeze at kickoff like the Joker's; a game since kickoff with no call (the weeks before it
+      # went live) is called from the data as it stood before that kickoff (betting/joker/long)
+      - name: Score the Joker (long fit) and write its picks into state.json
+        continue-on-error: true
+        run: python betting/joker/long/joker_long.py
       - name: Score the Broly Model and write its picks into state.json
         continue-on-error: true
         run: python betting/broly/broly.py

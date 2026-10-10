@@ -1,5 +1,5 @@
-"""What the Joker (joker/joker.py) and the Broly Model (broly/broly.py) share as steps of the
-betting job, after update.js has written state.json:
+"""What the Joker (joker/joker.py), the Joker (long fit) (joker/long/joker_long.py) and the Broly
+Model (broly/broly.py) share as steps of the betting job, after update.js has written state.json:
 
   * where things are: data/ (the job's downloads) and betting/state.json, with BETTING_DATA,
     BETTING_STATE and BETTING_NOW (an ISO time standing in for the clock) for tests;
@@ -136,6 +136,8 @@ def grade(st: dict, picks: dict, key: str) -> bool:
         entry = dict(pick=b["pick"], pHome=b["pHome"], correct=None if winner is None else b["pick"] == winner)
         if b.get("late"):           # first scored after kickoff: the record can say so
             entry["late"] = True
+        if b.get("backfill"):       # computed after the fact from the data before kickoff (joker/long)
+            entry["backfill"] = True
         if rec.get(key) != entry:
             rec[key] = entry
             changed = True
