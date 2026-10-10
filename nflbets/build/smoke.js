@@ -52,16 +52,25 @@ const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tool
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
    whose nudge clears the Elo picks' bar): then three real players' strongest trusted nudges are
-   raised to clear it, in this copy only, so the Elo picks checks run on any day of the week */
+   raised to clear it, in this copy only, so the Elo picks checks run on any day of the week; and a
+   week with no starter questionable on one side of the games (a report not out yet, a lone Monday
+   game) would leave the Game snapshot's Q with nothing to hold in that column, so the first starter
+   of each lineup on that side is made questionable, in this copy only */
 const ELO_MU = (() => {
   const raw = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8'), M = JSON.parse(raw);
+  let planted = false;
+  { const sideOf = (t, lu) => { const p = String(lu.game_id || '').split('_'); return p[3] === t ? 'home' : p[2] === t ? 'away' : null; };
+    const has = {};
+    for (const [t, lu] of Object.entries(M.lineups || {})) if ((lu.players || []).some(pid => (M.q || {})[pid])) has[sideOf(t, lu)] = true;
+    for (const [t, lu] of Object.entries(M.lineups || {})) { const sd = sideOf(t, lu);
+      if (sd && !has[sd] && (lu.players || []).length) { M.q = M.q || {}; M.q[lu.players[0]] = "questionable (the smoke's own: no starter on this side was)"; planted = true; } } }
   const ok = (g, st) => { const q = ((M.record[g + '|' + st] || {}).past); return !!q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53; };
   const best = {};
   for (const [pid, v] of Object.entries(M.players || {})) for (const [st, a] of Object.entries(v.stats)) {
     if (!ok(v.group, st)) continue; const z = a[2] / M.fit[v.group + '|' + st].sd;
     if (!best[pid] || z > best[pid].z) best[pid] = { pid, st, z }; }
   const top = Object.values(best).sort((x, y) => y.z - x.z);
-  if (top.filter(x => x.z >= 0.12).length >= 3) return raw;
+  if (top.filter(x => x.z >= 0.12).length >= 3) return planted ? JSON.stringify(M) : raw;
   for (const x of top.slice(0, 3)) { const v = M.players[x.pid]; v.stats[x.st][2] = 0.2 * M.fit[v.group + '|' + x.st].sd; }
   return JSON.stringify(M);
 })();
@@ -1134,9 +1143,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    game final on the scoreboard and on a graded one; closes on Escape, Close and a click
    outside; keeps Tab inside and hands the focus back; links to the full tabs; reads no Elo file
    a second time; says so in each section when matchups.json, or the ratings, did not load while
-   the rest draws; draws a playoff game; and lays the position table out fixed, names wrapping on a
-   phone (the rules, since jsdom lays nothing out). With every game played (--season-over) there is no
-   game to come, and the played-game checks carry it.
+   the rest draws; draws a playoff game; lays the position table out fixed, names wrapping, and puts
+   every questionable starter's Q inside his own name's box in his team's column (the rules and the
+   structure, since jsdom lays nothing out); and gives its modal no top padding for the sticky
+   header to stick inside. With every game played (--season-over) there is no game to come, and the
+   played-game checks carry it.
    ===================================================================================== */
 async function snapshotChecks() {
   const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
@@ -1175,6 +1186,32 @@ async function snapshotChecks() {
     const btn = card.querySelector('.pk-gbody button[data-snap]'); if (!btn) return { card, btn: null };
     btn.focus(); btn.click(); await wait(150);
     return { card, btn, md: R.d.getElementById('gsModal') };
+  };
+  /* each Q in its own player's name box, after the name, in his team's column. Set beside the
+     name box as a flex item of its own, a Q was pushed, when the name wrapped on a phone, to the
+     inner edge of its half, beside the other team's player ('Malik Nabers Q' for Terry McLaurin's
+     Q; nearer the other player than its own for 69 of the season's 510 Q's at 390px and 109 at 360
+     in Chromium, none at 1280). jsdom lays nothing out, so the structure that keeps
+     them together is held: the Q's parent is the box whose own text is the player's name, not a
+     flex or grid box, the Q its only element and its last node, laid out inline, in the cell of the
+     column of the team whose lineup he is in; and a questionable starter has one Q, no other */
+  const qPlaced = (R, md, g) => {
+    const L = eloMu.lineups || {}, Q = eloMu.q || {}, a = g.away_team, h = g.home_team, bad = [], sides = new Set();
+    const pills = [...md.querySelectorAll('#gsPos .pe-q')];
+    for (const pill of pills) {
+      const pl = pill.closest('.gs-pl[data-pid]'), pid = pl ? pl.dataset.pid : null, e = pid ? eloP.players[pid] : null;
+      const who = e ? e.name : pid || 'a Q outside any player';
+      const box = pill.parentElement, own = box ? [...box.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+      const disp = box ? R.w.getComputedStyle(box).display : '';
+      if (!pl || !box || !pl.contains(box) || (e ? own !== e.name : !own)) bad.push(`${who}'s Q is not inside his name's box (its box reads '${own}')`);
+      else if (/flex|grid/.test(disp) || box.children.length !== 1 || box.lastChild !== pill || /^(block|flex|grid|table)$/.test(R.w.getComputedStyle(pill).display)) bad.push(`${who}'s Q is not inline after his name (its box is ${disp || 'unstyled'}, with ${box.children.length} elements)`);
+      const side = [a, h].find(t => ((L[t] || {}).players || []).includes(pid)), td = pill.closest('td');
+      if (!side || pl.dataset.team !== side || !td || !td.classList.contains(side === a ? 'gs-a' : 'gs-h')) bad.push(`${who}'s Q is not in ${side || 'his team'}'s column`);
+      else sides.add(side === a ? 'away' : 'home');
+    }
+    for (const pl of md.querySelectorAll('#gsPos .gs-pl[data-pid]')) { const n = pl.querySelectorAll('.pe-q').length;
+      if (n !== (Q[pl.dataset.pid] ? 1 : 0)) bad.push(`${(eloP.players[pl.dataset.pid] || {}).name || pl.dataset.pid} has ${n} Q's, the report ${Q[pl.dataset.pid] ? 'one' : 'none'}`); }
+    return { n: pills.length, bad, sides };
   };
   /* everything the window shows for a game, against the files; win is the winner when played
      (null on a tie), undefined for a game to come */
@@ -1226,13 +1263,16 @@ async function snapshotChecks() {
       let grp = null;
       for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
         if (tr.classList.contains('gs-grp')) { grp = Object.keys(eloP.groups).find(k => eloP.groups[k].label === txt(tr)); continue; }
-        for (const x of tr.querySelectorAll('.gs-pl[data-pid]')) { const e = eloP.players[x.dataset.pid]; if (!e) { if (!/not rated yet/.test(txt(x))) bad.push(x.dataset.pid + ' is not said to be unrated'); continue; }
+        for (const x of tr.querySelectorAll('.gs-pl[data-pid]')) { const e = eloP.players[x.dataset.pid];
+          if (!!x.querySelector('.pe-q') !== !!(eloMu.q || {})[x.dataset.pid]) bad.push(`${e ? e.name : x.dataset.pid}'s Q is not the report's`);
+          if (!e) { if (!/not rated yet/.test(txt(x))) bad.push(x.dataset.pid + ' is not said to be unrated'); continue; }
           if (e.group !== grp || x.dataset.grp !== e.group) bad.push(`${e.name} (${e.group}) sits under ${grp}`);
           if (!x.closest('td').classList.contains(x.dataset.team === a ? 'gs-a' : 'gs-h')) bad.push(e.name + ' is in the wrong column');
           if (e.rank != null && e.se != null) { if (txt(x.querySelector('.gs-pse')) !== String(e.se) || txt(x.querySelector('.gs-prk')) !== '#' + e.rank || !x.querySelector('svg.tierbadge')) bad.push(`${e.name} reads ${txt(x.querySelector('.gs-pse'))} ${txt(x.querySelector('.gs-prk'))}, the file ${e.se} #${e.rank}`); }
-          else if (txt(x.querySelector('.gs-pcar')) !== String(e.elo) || x.querySelector('.gs-pse')) bad.push(`${e.name}, not ranked, does not read career ${e.elo}`);
-          if (!!x.querySelector('.pe-q') !== !!(eloMu.q || {})[x.dataset.pid]) bad.push(`${e.name}'s Q is not the report's`); } }
+          else if (txt(x.querySelector('.gs-pcar')) !== String(e.elo) || x.querySelector('.gs-pse')) bad.push(`${e.name}, not ranked, does not read career ${e.elo}`); } }
       chk(pls.length > 0 && bad.length === 0, `snapshot (${label}): the position-by-position table is not the files': ${pls.length} players; ${bad.slice(0, 4).join('; ')}`);
+      /* each Q with its own player (qPlaced, above) */
+      { const r = qPlaced(R, md, g); chk(r.bad.length === 0, `snapshot (${label}): a Q is not with its own player: ${r.bad.slice(0, 4).join('; ')}${r.bad.length > 4 ? ` (${r.bad.length} in all)` : ''}`); }
       /* the ranked players out, as the ELO Ratings tab lists them */
       for (const t of [a, h]) { const want = Object.keys(eloP.groups).flatMap(k => (eloP.groups[k].sidelined || []).filter(x => x.team === t).map(x => x.id)).join();
         const got = [...md.querySelectorAll(`[data-gs-outs="${t}"] li[data-pid]`)].map(x => x.dataset.pid).join();
@@ -1258,13 +1298,19 @@ async function snapshotChecks() {
   chk(!R.timedOut && R.errs.length === 0, 'snapshot: the page did not boot: ' + R.errs.join('; '));
   /* the position table on a phone: laid out fixed, so each team keeps half the card and a long name
      wraps inside its half (laid out automatically, a long name set the column's width and pushed
-     the home side past the card's edge on 34 of 45 games at 390px in Chromium); the Q pill never
-     shrinks. jsdom lays nothing out, so the rules themselves are held here */
+     the home side past the card's edge on 34 of 45 games at 390px in Chromium), and no rule stops a
+     name wrapping (the Q is inside the name's box, so a name cut to an ellipsis would cut its Q).
+     jsdom lays nothing out, so the rules themselves are held here */
   { const rules = [], walk = (list, media) => { for (const r of list) { if (r.cssRules && r.media) walk(r.cssRules, r.media.mediaText); else if (r.selectorText) rules.push({ sel: r.selectorText, media, st: r.style }); } };
     for (const sh of R.d.styleSheets) { try { walk(sh.cssRules, ''); } catch (e) { /* a sheet jsdom cannot read */ } }
     const has = (sel, phone, prop, val) => rules.some(r => r.sel === sel && (phone ? /max-width:\s*760px/.test(r.media) : !r.media) && r.st.getPropertyValue(prop) === val);
-    chk(has('.gs-pos', false, 'table-layout', 'fixed') && has('.gs-pl .gs-pn span', true, 'white-space', 'normal') && has('.gs-pl .gs-pn span', true, 'overflow-wrap', 'anywhere') && has('.gs-pl .pe-q', false, 'flex', 'none'),
-      'snapshot: the position table is not laid out fixed with names wrapping on a phone, so a long name pushes the home side off the screen'); }
+    chk(has('.gs-pos', false, 'table-layout', 'fixed') && has('.gs-pl .gs-pnm', false, 'overflow-wrap', 'anywhere')
+      && !rules.some(r => /\.gs-pnm$|\.gs-pn span$/.test(r.sel) && /nowrap/.test(r.st.getPropertyValue('white-space'))),
+      'snapshot: the position table is not laid out fixed with names wrapping, so a long name pushes the home side off the screen');
+    /* the page's modal pads its top, and a sticky header sticks inside that padding: the window's
+       content showed in a band above its header once scrolled, so its modal has none */
+    chk(rules.some(r => r.sel === '#gsModal' && !r.media && /^0(px)?$/.test(r.st.getPropertyValue('padding-top'))),
+      'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled'); }
   /* every opened game carries the button, priced by the prop model or not */
   { const cards = [...R.d.querySelectorAll('.pk-game')].slice(0, 4);
     for (const c of cards) { c.click(); await wait(40); }
@@ -1329,6 +1375,17 @@ async function snapshotChecks() {
     else chk(false, 'snapshot: a graded game has no Game snapshot button');
   }
   chk(opened > 0, 'snapshot: no game to open the window on');
+  /* every questionable starter's Q, in the game his lineup is for (each game drawn once): with his
+     own name, in his team's column, both columns covered */
+  { const L = eloMu.lineups || {}, Q = eloMu.q || {}, games = new Map();
+    for (const lu of Object.values(L)) if ((lu.players || []).some(pid => Q[pid])) { const g = st.schedule.find(x => x.game_id === lu.game_id); if (g) games.set(g.game_id, g); }
+    let n = 0; const bad = [], sides = new Set();
+    for (const g of games.values()) {
+      R.w.gameSnapshot(g.game_id, null); await wait(20);
+      const r = qPlaced(R, R.d.getElementById('gsModal'), g); n += r.n; r.sides.forEach(x => sides.add(x)); bad.push(...r.bad.map(b => `${g.game_id}: ${b}`));
+      R.w.gameSnapshotClose(false); }
+    chk(games.size > 0 && n > 0 && sides.size === 2 && bad.length === 0,
+      `snapshot: the questionable starters' Q's are not each with their own player in their team's column (${n} Q's in ${games.size} games, ${[...sides].join(' and ') || 'no'} column): ${bad.slice(0, 4).join('; ')}${bad.length > 4 ? ` (${bad.length} in all)` : ''}`); }
   /* the Elo files were read once, by the ELO Ratings tab, however often the window opened */
   for (const f of ['players', 'model', 'matchups']) { const n = R.fetched.filter(u => u.endsWith(`elo/data/${f}.json`)).length;
     chk(n === 1, `snapshot: elo/data/${f}.json was read ${n} times; the window reads the ELO Ratings tab's copy`); }

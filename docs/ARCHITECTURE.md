@@ -292,9 +292,17 @@ team's next game rather than this one, and a file that did not load are each sai
 and the rest still draws. `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number to its
 file, on a game to come, a final on the scoreboard, a graded game and a playoff game, with
 matchups.json or the ratings missing. The position table is `table-layout: fixed` (each team half
-the card) and its names wrap below 760px: laid out automatically, a long name set a column's width
-and pushed the home side past the card on 34 of week 4-6's 45 games at 390px; the smoke holds the
-rules, since jsdom lays nothing out.
+the card) and its names wrap: laid out automatically, a long name set a column's width and pushed
+the home side past the card on 34 of week 4-6's 45 games at 390px. A player's Q sits inside his
+name's own box (`.gs-pnm`), inline after the name: as a flex item of its own beside a wrapping
+name it was pushed to the inner edge of its half, beside the other team's player, on 69 of the
+season's 510 Q's at 390px and 109 at 360 in Chromium (NYG at WAS read "Malik Nabers Q" for Terry
+McLaurin's). jsdom lays nothing out, so the smoke holds the rules and the structure: every Q's
+parent is the box whose own text is its player's name, inline, in his team's column, checked on
+every game a questionable starter's lineup is for (a week with none on one side has one planted,
+in the smoke's copy of the matchups). The window's modal has no top padding (the panel's margin
+makes the gap), since a sticky header sticks inside its scroller's padding and the content showed
+in a band above it once scrolled.
 The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's

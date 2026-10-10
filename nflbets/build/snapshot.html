@@ -25,8 +25,10 @@
      ones the ELO Ratings tab read on load (window.eloFiles): nothing is fetched a second time.
      A file that did not load, or has nothing for the game, says so in its section; the rest draws. -->
 <style>
-#gsModal{z-index:55}
-#gsModal .modal-panel{max-width:1000px;padding:0 0 22px;overflow:visible}
+/* the page's modal pads its top by 28px, and a sticky header sticks inside that padding, so the
+   window's content showed in a band above it once scrolled: the gap is the panel's margin instead */
+#gsModal{z-index:55;padding-top:0}
+#gsModal .modal-panel{max-width:1000px;padding:0 0 22px;overflow:visible;margin-top:28px}
 .gs-top{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--bg-2);border-bottom:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0}
 .gs-top h2{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0;line-height:1.2}
 .gs-top h2 .gs-wk{font-family:var(--body);font-size:12px;font-weight:600;color:var(--muted)}
@@ -115,15 +117,19 @@ table.gs-vs .gs-num{font-size:17px}
 .gs-pos td{padding:8px 12px;vertical-align:top;width:50%}
 .gs-pos td.gs-h{text-align:right}
 .gs-pl{display:block;min-width:0}
+/* the shield and the name box side by side; the Q is inside the name box, inline after the name, so
+   a name that wraps carries its Q on its own last line and never leaves it at the edge beside the
+   other team's player (as a flex item of its own it was pushed there, nearer the other player than
+   its own, on 69 of the season's 510 Q's at 390px and 109 at 360) */
 .gs-pl .gs-pn{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-weight:600;color:var(--ink)}
-.gs-pl .gs-pn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.gs-pl .gs-pnm{display:block;min-width:0;overflow-wrap:anywhere}
 .gs-h .gs-pl .gs-pn{flex-direction:row-reverse}
 .gs-pl .tierbadge{width:16px;height:18px;flex:none}
 .gs-pl small{display:block;font-size:11.5px;color:var(--ink-2);margin-top:2px;white-space:nowrap}
 .gs-pl small b{font-family:var(--display);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
-.gs-pl.gs-off .gs-pn span{text-decoration:line-through;text-decoration-color:var(--miss)}
+.gs-pl.gs-off .gs-pnm{text-decoration:line-through;text-decoration-color:var(--miss)}
 .gs-pl .gs-outw{color:var(--miss);font-weight:600;white-space:normal}
-.gs-pl .pe-q{margin-left:0;flex:none;overflow:visible}
+.gs-pl .gs-pnm .pe-q{display:inline-block;margin-left:3px;white-space:nowrap;text-decoration:none}
 .gs-unitrow td{font-size:12px;color:var(--ink-2)}
 .gs-unitrow b{color:var(--ink);font-weight:700}
 .gs-outs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
@@ -152,12 +158,13 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;
 .gs-links{display:flex;flex-wrap:wrap;gap:8px}
 .gs-past{margin:0 0 14px;padding:11px 14px;border-radius:var(--r-md);background:var(--gold-soft);color:var(--ink);font-size:12.5px;line-height:1.55}
 @media(max-width:760px){
+  #gsModal .modal-panel{margin-top:0}
   .gs-top{border-radius:0;padding:10px 12px}
   .gs-top h2{font-size:16px}
   .gs-body{padding:12px 12px 0}
   .gs-sec.card{padding:14px 12px}
   .gs-hero{gap:8px}
-  .gs-team{padding:10px 10px}
+  .gs-team{padding:10px 8px}
   .gs-tname{flex-direction:column;align-items:flex-start;gap:6px}
   .gs-home .gs-tname{flex-direction:column;align-items:flex-end}
   .gs-tname .pk-ttag{font-size:15px;padding:6px 8px}
@@ -178,10 +185,13 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;
   .gs-pos thead th{padding:8px}
   .gs-pos .gs-grp td{padding:6px 8px}
   .gs-pl small{white-space:normal}
-  .gs-pl .gs-pn span{white-space:normal;overflow-wrap:anywhere}
   .gs-outs{grid-template-columns:1fr}
   ul.gs-mm li{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px}
   ul.gs-mm li .gs-mmn{grid-column:1/-1;justify-self:start;height:22px}
+}
+/* the narrowest phones: 'Commanders', the longest name, whole at 360px */
+@media(max-width:400px){
+  .gs-tname b{font-size:13px}
 }
 </style>
 <script>
@@ -389,14 +399,17 @@ function positions(P,g,F){
     :x.lu.game_id===g.game_id?'':`${esc(t)}'s starters for its next game, week ${esc(x.lu.week)}${(()=>{ const p=String(x.lu.game_id).split('_'); return p.length>=4?' '+(p[3]===t?'vs '+p[2]:'at '+p[3]):''; })()}`;
   const notes=[whose(a,LA),whose(h,LH)].filter(Boolean);
   const q=pid=>mu.q&&mu.q[pid];
+  /* the Q goes inside the name's own box, after the name: a space, so a name that fills its line
+     sends the Q down under its last word rather than break a word */
+  const qpill=pid=>q(pid)?` <span class="pill pe-q" title="${esc(q(pid))}">Q</span>`:'';
   const off=pid=>typeof S==='object'&&S&&S.inactive&&S.inactive[pid]?(typeof inactiveWhy==='function'?inactiveWhy(S.inactive[pid]):'ruled out'):null;
   const cell=(x,t)=>{ if(!x) return '';
     const e=x.e, o=off(x.pid);
-    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn"><span>${esc(x.name)}</span></span><small>not rated yet</small></span>`;
+    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn"><span class="gs-pnm" data-gs-name>${esc(x.name)}${qpill(x.pid)}</span></span><small>not rated yet</small></span>`;
     const ranked=e.rank!=null&&e.se!=null, active=Pl.groups[e.group]&&Pl.groups[e.group].active;
     const stat=ranked?`<b class="gs-pse">${e.se}</b> · <span class="gs-prk">#${e.rank}</span>${active?` of ${esc(active)}`:''} · ${esc(tierName(e.se))}`
       :`not ranked this season · career <span class="gs-pcar">${e.elo}</span>`;
-    return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${ranked?shield(e.se):''}<span>${esc(e.name)}</span>${q(x.pid)?`<span class="pill pe-q" title="${esc(q(x.pid))}">Q</span>`:''}</span>
+    return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${ranked?shield(e.se):''}<span class="gs-pnm" data-gs-name>${esc(e.name)}${qpill(x.pid)}</span></span>
       <small>${stat}</small>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
   /* each defence's units ranked among the league's, 1st the best (the matchup formula's units) */
   const defs=mu.league&&mu.league.defs||{}, nDefs=Object.keys(defs).length;

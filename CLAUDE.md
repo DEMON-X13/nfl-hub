@@ -536,8 +536,10 @@ matchups' week or a team whose lineup is for another game is said in its card wh
 `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file, on a game to
 come, a final on the scoreboard, a graded game and a playoff game, with a file missing. The position
 table is laid out fixed, each team half the card, and a long name wraps on a phone rather than push
-the home side off the screen (the smoke holds those rules; jsdom lays nothing out, so a layout change
-there is checked in a real browser at 390 and 360 on a long-named game, such as CLE at NYJ).
+the home side off the screen; a player's Q is inside his name's own box, inline after the name, so a
+wrapping name never leaves it beside the other team's player (the smoke holds those rules and that
+structure on every questionable starter's game; jsdom lays nothing out, so a layout change there is
+checked in a real browser at 390 and 360 over every game, such as NYG at WAS and CLE at NYJ).
 
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
