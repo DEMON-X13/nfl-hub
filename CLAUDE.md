@@ -198,10 +198,11 @@ python3 elo/build.py             # downloads nflverse player stats 2012-now into
 python3 elo/check.py             # the gate: the files against the roster, injury report, schedule and published calls; "0 failures"
 node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom from props/build); "0 failures"
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
+python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017
 ```
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
-charts, injury report, roster, team stats) or any past season's cannot be downloaded: it exits 1 and the
+charts, injury report, roster, play-by-play) or any past season's cannot be downloaded: it exits 1 and the
 last good files stay live. The season comes from games.csv alone (a new schedule becomes the season in
 play once its first game is 36 hours old; until then the finished season stays, and its week 1 is called
 in the fortnight before; the rankings switch once 16 clubs have a rated game); the playoffs are rated as
@@ -239,10 +240,18 @@ its tag into the page and reshaped at build time by `betting/tools/tiers.js` (bo
 Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger, renamed so it is not taken for the
 Challenger model) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card: a bell-curve
 histogram of the position by shield over the table, and a click on a player opens his window (his rating, then his
-matchup this week); under it, Total Offense and Total Defense in the same format (`units` in `model.json`, TOTAL
-OFFENSE AND TOTAL DEFENSE in the build: each unit a this-season Elo on a game score of two parts points and one part
-EPA a play, which walk-forward on 2018-2025 predicted the next game's points best, total yards worse; it reads
-nflverse's `stats_team_week` for the season). The tab's script also puts a second price, "market + form", on every
+matchup this week); at the end of its position row, two pills, Overall Offense and Overall Defense (`units` in
+`model.json`, OVERALL OFFENSE AND OVERALL DEFENSE in the build), each a table of the 32 teams: an Elo of this season on
+each of nine key stats from nflverse's play-by-play, opponents and home field counted, each side a fixed weighted sum
+(offense points 35, success rate 25, EPA a play 15, giveaways 15, sack rate 10; defense points allowed 50, big plays
+allowed 30, takeaways 10, sacks 10), fitted on 2012-2017 by `elo/tools/units_fit.py` and no less accurate walk-forward
+on 2018-2025 than the old points-and-EPA measure (9.508 against 9.520, not a real gain); third down, red zone, yards a
+play and the rest are shown with their league ranks and weigh nothing. The table scrolls sideways inside its card at
+every width, the team column held, the columns sort, and a click on a team opens
+its window (its rating game by game, every stat ranked raw and with opponents counted, its coming opponent). The page
+reads the weights and the stats from the file and still draws an older file's three columns. A final the
+play-by-play lacks or has only part of is `pending` and moves nobody; `elo/check.py` replays the season from the
+play-by-play and holds every rating and stat to it. The tab's script also puts a second price, "market + form", on every
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the prop
