@@ -172,6 +172,9 @@ const LIVE = `<style>
     display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;max-width:100%}
   #tab-record table th,#tab-record table td,
   #tab-ratings table th,#tab-ratings table td{padding:7px 9px}
+  /* the pick grid's own box already scrolls sideways: its table scrolling too (held 520px wide
+     by its min-width) put a second bar inside the first */
+  #tab-record .pickgrid table{display:table;overflow:visible;max-width:none}
 }
 /* embedded: one tab of this page shown inside another page (the X NFL Bets and Stats page frames the
    Records, Power Ratings and Bet Log tabs), which has a header and a tab bar of its own */
@@ -433,8 +436,6 @@ table.rv-grid td.rv-c b{display:block;font-family:var(--display);font-size:14px}
 table.rv-grid td.rv-c small{display:block;font-size:11px;color:var(--ink-2)}
 table.rv-grid td.rv-none{color:var(--muted)}
 table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
-table.rv-grid td.rv-fit{background:repeating-linear-gradient(135deg,var(--line-2) 0 2px,transparent 2px 7px)}
-table.rv-grid td.rv-fit small{font-style:italic}
 .rt-lag{margin-left:3px;color:var(--muted);font-weight:700;cursor:help}
 .rt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.rt-v{width:100%}
