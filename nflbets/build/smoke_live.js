@@ -1,11 +1,16 @@
-/* Check the Live Parlays section of the built Bets and Stats page.
+/* Check the X Parlays section of the built Bets and Stats page.
  *
  *   node nflbets/build/smoke_live.js        (from the hub root)
  *
  * The section reads liveparlays/parlays.json, the scoreboard, and the prop and betting models
- * in the page around it. The test boots the whole page against a stubbed file and a stubbed
- * ESPN, with the real payload and state, opens the Parlay Builders tab and checks what the
- * section renders. jsdom and PapaParse are borrowed from props/build; run npm ci there first.
+ * in the page around it, and draws two lists: X Parlays (the owner's, the same on every device)
+ * and Your parlays (a visitor's own). The test boots the whole page against a stubbed file and a
+ * stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the
+ * section renders, three ways: with no store (sync.json does not answer: X Parlays is the file,
+ * read only, and what the browser holds is its own), on the owner's device (a stubbed store, the
+ * smoke's own owner secret in the browser: everything is X's, with every control), and on a
+ * visitor's device (the store holds X's document; X Parlays shows it read only). jsdom and
+ * PapaParse are borrowed from props/build; run npm ci there first.
  */
 'use strict';
 const fs = require('fs');
@@ -17,6 +22,12 @@ const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const STATE = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
 const URL_ = 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay';
+/* a store for the owner's and a visitor's runs: the sync layer's node at STORE (rev and doc), and
+   the owner link checked against the smoke's own secret (the site's real one is not in the repository) */
+const STORE = 'https://store.test/nflhub', SECRET = 'smoke-live-owner-secret';
+const HASH = require('crypto').createHash('sha256').update(SECRET).digest('hex');
+const WEBCRYPTO = require('crypto').webcrypto, { TextEncoder: NodeTextEncoder } = require('util');
+const nodeOf = doc => { const rev = 'r-' + Math.random().toString(36).slice(2, 8), at = new Date().toISOString(); return { rev, at, doc: { rev, at, revs: [rev], json: JSON.stringify(doc) } }; };
 
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
@@ -97,14 +108,26 @@ const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
     { game_id: '2026_02_CAR_ATL', away: 'CAR', home: 'ATL', pick: 'ATL', ml: -150 },
     { game_id: '2026_02_NO_BAL', away: 'NO', home: 'BAL', pick: 'BAL', ml: 130 }] }] } });
 
-function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x } = {}) {
+/* role: 'local' (sync.json does not answer), 'owner' (a store, and the owner's secret in this
+   browser) or 'reader' (a store holding doc, and no secret) */
+function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, role = 'local', doc = null } = {}) {
   return new Promise(resolve => {
-    const calls = [];
+    const calls = [], store = { node: doc ? nodeOf(doc) : null, writes: 0 };
+    const res = (status, body) => Promise.resolve({ ok: status < 300, status, json: async () => body });
     const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
+        Object.defineProperty(w, 'crypto', { value: WEBCRYPTO, configurable: true }); w.TextEncoder = NodeTextEncoder;
+        if (role === 'owner') w.localStorage.setItem('nflowner_v1', SECRET);
         try { seed(w); } catch (e) {}
-        w.fetch = u => { const s = String(u); calls.push(s);
+        w.fetch = (u, o) => { const s = String(u); calls.push(s);
+          if (/(^|\/)sync\.json/.test(s)) return role === 'local' ? res(404, null) : res(200, { url: STORE, ownerHash: HASH });
+          if (s.startsWith('https://store.test/')) {
+            if (o && o.method && o.method !== 'GET') { store.writes++; if (s.startsWith(STORE + '.json')) store.node = JSON.parse(o.body); return res(200, null); }
+            const p = s.replace(/\?.*$/, '');
+            if (p === STORE + '/rev.json') return res(200, store.node ? store.node.rev : null);
+            if (p === STORE + '/doc.json') return res(200, store.node ? store.node.doc : null);
+            return res(200, null); }
           if (s.includes('parlays.json')) return data === 'ok'
             ? Promise.resolve({ ok: true, status: 200, json: async () => file })
             : Promise.resolve({ ok: false, status: 404 });
@@ -117,9 +140,9 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
             : Promise.resolve({ ok: false, status: 403 });
         };
         /* the section draws once the prop model is up and its builder has been drawn */
-        w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, calls }), 400));
+        w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, calls, store }), 400));
       } });
-    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, calls, timedOut: true }), 20000);
+    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, calls, store, timedOut: true }), 20000);
   });
 }
 
@@ -153,7 +176,9 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   chk(/Bijan Robinson/.test(who(cards[0].querySelector('.sp-leg'))), 'the early parlay should be first');
   chk(/Derrick Henry/.test(who(cards[1].querySelector('.sp-leg'))), 'the late parlay should be second');
 
-  // ---- C. it reads the two models, and never writes anything ----
+  // ---- C. it reads the two models, and never writes anything of theirs ----
+  /* with no store the browser's own parlays are its own: Your parlays, under the builder; X
+     Parlays is the file */
   chk(!/api\.github\.com/.test(HTML), 'the page still talks to the GitHub API');
   /* the page may write its own key and no other: the two models' storage is theirs */
   {
@@ -169,26 +194,33 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     const pills = cards.map(c => txt(c.querySelector('.pill')));
     chk(pills.filter(x => x === 'prop model').length === 1, 'the prop model parlay is not picked up or not labelled');
     chk(pills.filter(x => x === 'betting model').length === 1, 'the betting parlay is not picked up or not labelled');
-    chk(pills.filter(x => x === 'in the repository').length === 2, 'the file parlays are not labelled');
+    chk(pills.filter(x => x === 'placed').length === 2, 'the file parlays are not labelled placed');
+    chk(m.d.querySelectorAll('#lpCard .savedp').length === 2 && m.d.querySelectorAll('#myCard .savedp').length === 2, 'the file\'s parlays are not under X Parlays and the browser\'s under Your parlays');
     const mine = cards.find(c => /prop model/.test(txt(c.querySelector('.pill'))));
     chk(who(mine.querySelector('.sp-leg')) === 'Kyle Pitts Receiving Yards', 'the imported leg is wrong: ' + who(mine.querySelector('.sp-leg')));
     chk(knob(mine.querySelector('.sp-leg')) === '21', 'an imported leg is not tracked against the live box score');
     /* the prop model rewrites its own key as it boots, but what was seeded survives in it */
     chk(m.w.eval('S').saved.length === 1 && m.w.eval('S').saved[0].id === 'mine', 'the seeded saved parlay was lost across the prop model\'s boot');
     chk(m.w.localStorage.getItem(BET_KEY) === betBlob(), 'the page wrote over the betting model key');
-    /* a parlay in both places is shown once, with this browser's copy winning */
-    const dup = await run({ seed, file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+    /* with no store, X's placed copy and the browser's own are two lists, each shown in its own */
+    { const two = await run({ seed, file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+        { id: 'mine', week: 2, stake: 99, legs: [legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 99.5, 'over', true)] }] } });
+      chk(/\$99\.00/.test(txt(two.d.getElementById('lpCard'))) && /\$15\.00/.test(txt(two.d.getElementById('myCard'))), 'the placed copy and the visitor\'s own are not each in their own list'); }
+    /* on the owner's device the browser's parlays are X's: a parlay in both places is shown once,
+       with this browser's copy winning */
+    const dup = await run({ seed, role: 'owner', file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
       { id: 'mine', week: 2, stake: 99, legs: [legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 99.5, 'over', true)] }] } });
     const same = [...dup.d.querySelectorAll('.savedp')].filter(c => /Kyle Pitts/.test(txt(c)));
     chk(same.length === 1, `a parlay in both places showed ${same.length} times`);
     chk(/\$15\.00/.test(txt(same[0])), "the file's older copy won over this browser's");
     /* and the same parlay under a different id is still the same parlay */
-    const ren = await run({ seed, file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
+    const ren = await run({ seed, role: 'owner', file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
       { id: 'a-different-id', week: 2, stake: 99, legs: [
         legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 20.5, 'over', true)] }] } });
     const twice = [...ren.d.querySelectorAll('.savedp')].filter(c => /Kyle Pitts/.test(txt(c)));
     chk(twice.length === 1, `the same legs under another id showed ${twice.length} times`);
     chk(/\$15\.00/.test(txt(twice[0])), "the file's copy won over this browser's");
+    chk(dup.w.NFLSYNC.role() === 'owner' && dup.d.getElementById('myCard').hidden && dup.d.querySelectorAll('#myCard .savedp').length === 0, 'the owner\'s device draws a list of its own beside X\'s');
   }
 
   // ---- C2. a parlay still in the prop model's builder counts too ----
@@ -235,7 +267,8 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
         name: 'Bijan Robinson', team: 'ATL', week: 2 },
       [L2key]: { gid: L2.id, pid: 'team:' + L2.h, stat: 'ml', k: 0, side: 'over', main: false,
         name: L2.h, team: L2.h, grp: 'TEAM', week: L2.w } } });
-    const k = await run({ pay: pin, seed: w => w.localStorage.setItem(PROP_KEY, atKick()), file: { updated: null, games: [], parlays: [] } });
+    /* on the owner's device the kept builder is X's: the section's shared key */
+    const k = await run({ pay: pin, role: 'owner', seed: w => w.localStorage.setItem(PROP_KEY, atKick()), file: { updated: null, games: [], parlays: [] } });
     const cards = [...k.d.querySelectorAll('.savedp')], S = k.w.eval('S');
     chk(Object.keys(S.parlay).length === 1 && !!S.parlay[L2key], 'the builder should drop the leg whose game kicked off: ' + Object.keys(S.parlay).join(', '));
     chk(cards.length === 1 && /builder at kickoff/.test(txt(cards[0])) && cards[0].querySelectorAll('.sp-leg').length === 2,
@@ -256,6 +289,11 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     if (kc) { kc.querySelector('[data-rm]').click(); await wait(60); }
     chk(!!kc && Object.keys(JSON.parse(k.w.localStorage.getItem('live_parlays_v1') || '{}').kept || {}).length === 0 && Object.keys(S.parlay).length === 2,
       'deleting the kept parlay did not delete it, or touched the builder');
+    /* anywhere else the builder is the visitor's, and so is its kept copy: their own key, their own list */
+    const kv = await run({ pay: pin, seed: w => w.localStorage.setItem(PROP_KEY, atKick()), file: { updated: null, games: [], parlays: [] } });
+    const mine = JSON.parse(kv.w.localStorage.getItem('my_parlays_v1') || '{}');
+    chk(mine.kept && Object.keys(mine.kept).length === 1 && kv.w.localStorage.getItem('live_parlays_v1') === null && [...kv.d.querySelectorAll('#myCard .savedp')].some(c => /builder at kickoff/.test(txt(c))),
+      'a visitor\'s builder kept at kickoff is not under their own key and their own list: ' + JSON.stringify(mine));
   }
 
   // ---- C4. two parlays alike but for the side or the player are two parlays ----
@@ -334,63 +372,79 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
   /* the build stamp: the one thing that tells a stale cached copy from a broken one, in the markup now */
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
-  /* the section stands where the Saved parlays card was, under the builder */
+  /* X Parlays heads the tab; the builder is under it and Your parlays, where the Saved parlays card was, under that */
   const lpc = d.getElementById('lpCard');
-  chk(!!lpc && lpc.previousElementSibling && lpc.previousElementSibling.id === 'parlayBody', 'the section is not under the builder');
+  chk(!!lpc && d.getElementById('tab-parlay').firstElementChild === lpc && lpc.nextElementSibling.id === 'parlayBody' && d.getElementById('parlayBody').nextElementSibling.id === 'myCard',
+    'X Parlays is not at the top of its tab with the builder and Your parlays under it');
+  { const body = d.body.cloneNode(true); body.querySelectorAll('script, style').forEach(n => n.remove());
+    chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old cards are still drawn');
 
-  // ---- D1. deleting what has settled, on this device ----
+  // ---- D1. what is X's stays X's; what is yours you clear ----
   {
+    /* with no store (and on any device but the owner's) a placed parlay is X's: no delete, and
+       Clear settled is not offered, though both have landed or gone */
     const live = await run({ state: 'in' });
     chk(live.d.getElementById('clear').hidden, 'with nothing settled there is nothing to clear');
     chk(/\[hidden\]\{display:none!important\}/.test(HTML), 'a hidden button is still drawn: the .btn display rule beats the hidden attribute without this');
-    chk(live.d.querySelectorAll('.savedp [data-rm]').length === 2, 'every parlay should carry its own delete button');
+    chk(live.d.querySelectorAll('#lpCard .savedp').length === 2 && !live.d.querySelector('#lpCard [data-rm]'), 'a placed parlay offers a delete on a device that is not the owner\'s');
     /* the section only: the Props game list carries its own LIVE pill once a real game has kicked off */
     chk(!live.d.querySelector('#lpCard .pill.warn') && !/\d of \d in/.test(txt(live.d.getElementById('lpCard'))), 'a running parlay still carries the "n of m in" tag');
-    live.d.querySelector('.savedp [data-rm]').click();
-    await wait(60);
-    chk(live.d.querySelectorAll('.savedp').length === 1, 'deleting one parlay did not take it off the page');
-    chk(!live.d.getElementById('showHidden') && !/\u00b7 show/.test(txt(live.d.body)), 'a deleted parlay is offered back');
-    const st = JSON.parse(live.w.localStorage.getItem('live_parlays_v1') || '{}');
-    chk(st.removed && Object.keys(st.removed).length === 1 && /^file\|/.test(Object.keys(st.removed)[0]), 'the deleted parlay is not kept under this page\'s own key: ' + JSON.stringify(st));
-    /* a key another page put here is carried through: a deletion here must not wipe it */
-    { const keep = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: { 'a|b|0': 44 }, removed: {}, other: { x: 1 } })) });
-      keep.d.querySelector('.savedp [data-rm]').click();
-      await wait(60);
-      const after = JSON.parse(keep.w.localStorage.getItem('live_parlays_v1') || '{}');
-      chk(after.other && after.other.x === 1, 'deleting a parlay wiped a key another page put here: ' + JSON.stringify(after));
-      chk(after.lines && after.lines['a|b|0'] === 44, 'deleting a parlay wiped a corrected line'); }
-    chk(live.w.localStorage.getItem(BET_KEY) === null, 'deleting a file parlay wrote to the betting model\'s key');
-
+    chk(live.w.LIVE_IO.set('{"removed":{"file|night":1}}') === false && live.w.localStorage.getItem('live_parlays_v1') === null, 'a device that is not the owner\'s wrote X\'s key');
     const done = await run({ state: 'post' });
-    chk(!done.d.getElementById('clear').hidden, 'with every game final, Clear settled should be offered');
+    chk(done.d.getElementById('clear').hidden && done.d.querySelectorAll('#lpCard .savedp').length === 2, 'Clear settled is offered on X\'s parlays, or took them, on a device that is not the owner\'s');
     chk(done.d.querySelectorAll('#lpCard .pill.ok, #lpCard .pill.bad').length === 2, 'a finished parlay should still say landed or gone');   /* the section only: the Props list has its own FINAL pills */
-    done.d.getElementById('clear').click();
-    await wait(60);
-    chk(done.d.querySelectorAll('.savedp').length === 0, 'Clear settled did not delete the settled parlays: ' + done.d.querySelectorAll('.savedp').length);
-    chk(done.d.getElementById('clear').hidden, 'Clear settled stays offered with nothing left to clear');
-    chk(/Nothing to watch yet/.test(txt(done.d.getElementById('app'))), 'an emptied page does not say so');
-    /* a parlay still running is not settled and is not cleared */
-    const mixed = await run({ state: 'in', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: {} })) });
-    chk(mixed.d.getElementById('clear').hidden, 'a running parlay is offered for clearing');
-    /* an emptied page is never a dead end: it says why, and the way back is on it */
-    { const all = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1',
-        JSON.stringify({ lines: {}, removed: { 'file|night': 1, 'file|early': 1 } })) });
-      chk(all.d.querySelectorAll('.savedp').length === 0, 'the fixture should leave nothing to watch');
-      const txtAll = txt(all.d.getElementById('app'));
-      chk(/^Nothing to watch yet\s*bring back the 2 deleted$/.test(txtAll), 'an emptied page should say only that, and the way back: ' + txtAll.slice(0, 160));
-      const back = all.d.getElementById('restoreAll');
-      chk(!!back, 'no way back from an emptied page');
-      back.click();
-      await wait(60);
-      chk(all.d.querySelectorAll('.savedp').length === 2, 'bringing them back did not bring them back');
-      chk(!all.d.getElementById('restoreAll'), 'the way back is still offered with nothing deleted');
-      const st2 = JSON.parse(all.w.localStorage.getItem('live_parlays_v1') || '{}');
-      chk(st2.removed && !Object.keys(st2.removed).length, 'the deletions were not cleared: ' + JSON.stringify(st2)); }
 
+    /* Your parlays: the visitor's own, settled, cleared with its own Clear settled; X's untouched */
+    const ownBlob = JSON.stringify({ stake: 5, saved: [
+      { id: 'own-won', week: 2, stake: 5, price: 150, payout: 12.5, legs: [{ gid: '2026_02_CAR_ATL', stat: 'rushing_yards', k: 43.5, side: 'over', main: true, name: 'Bijan Robinson', team: 'ATL', week: 2 }] },
+      { id: 'own-lost', week: 2, stake: 5, price: 150, payout: 12.5, legs: [{ gid: '2026_02_CAR_ATL', stat: 'rushing_yards', k: 20.5, side: 'under', main: true, name: 'Chuba Hubbard', team: 'CAR', week: 2 }] }] });
+    const mine = await run({ state: 'post', seed: w => w.localStorage.setItem(PROP_KEY, ownBlob) });
+    chk(mine.d.querySelectorAll('#myCard .savedp').length === 2 && !mine.d.getElementById('myClear').hidden, 'with your own parlays settled, Clear settled is not offered under Your parlays');
+    mine.d.getElementById('myClear').click();
+    await wait(60);
+    chk(mine.d.querySelectorAll('#myCard .savedp').length === 0 && mine.w.eval('S').saved.length === 0 && /^Nothing of yours to watch yet$/.test(txt(mine.d.getElementById('myApp'))),
+      'Clear settled under Your parlays did not delete your settled parlays: ' + txt(mine.d.getElementById('myApp')));
+    chk(mine.d.getElementById('myClear').hidden && mine.d.querySelectorAll('#lpCard .savedp').length === 2, 'Clear settled stays offered with nothing left, or it touched X\'s parlays');
+
+    /* a betting slip of yours deleted is kept deleted in your own key, beside anything else there,
+       and the way back is offered */
+    const r = await run({ state: 'in', seed: w => { w.localStorage.setItem(BET_KEY, betBlob());
+      w.localStorage.setItem('my_parlays_v1', JSON.stringify({ lines: { 'a|b|0': 44 }, removed: {}, other: { x: 1 } })); } });
+    const betCard = [...r.d.querySelectorAll('#myCard .savedp')].find(c => /betting model/.test(txt(c)));
+    chk(!!betCard && !!betCard.querySelector('[data-rm]'), 'your betting slip has no delete under Your parlays');
+    if (betCard) betCard.querySelector('[data-rm]').click();
+    await wait(60);
+    { const after = JSON.parse(r.w.localStorage.getItem('my_parlays_v1') || '{}');
+      chk(after.removed && after.removed['bet|bb1'] === 1 && Object.keys(after.removed).length === 1, 'the deleted slip is not kept under your own key: ' + JSON.stringify(after));
+      chk(after.other && after.other.x === 1 && after.lines && after.lines['a|b|0'] === 44, 'deleting a parlay wiped a key or a corrected line kept beside it: ' + JSON.stringify(after)); }
+    chk(r.w.localStorage.getItem(BET_KEY) === betBlob() && r.w.localStorage.getItem('live_parlays_v1') === null, 'deleting your slip wrote to the betting model\'s key or X\'s');
+    chk(/^Nothing of yours to watch yet\s*bring back the 1 deleted$/.test(txt(r.d.getElementById('myApp'))), 'an emptied list should say only that, and the way back: ' + txt(r.d.getElementById('myApp')));
+    r.d.getElementById('myRestoreAll').click();
+    await wait(60);
+    chk(r.d.querySelectorAll('#myCard .savedp').length === 1 && !r.d.getElementById('myRestoreAll') && !Object.keys(JSON.parse(r.w.localStorage.getItem('my_parlays_v1')).removed).length,
+      'bringing your deleted slip back did not bring it back');
     /* what was deleted stays deleted on the next visit */
-    const again = await run({ state: 'post', seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: { 'file|night': 1 } })) });
-    chk(again.d.querySelectorAll('.savedp').length === 1, 'a parlay deleted on the last visit came back');
+    const again = await run({ state: 'post', seed: w => { w.localStorage.setItem(BET_KEY, betBlob()); w.localStorage.setItem('my_parlays_v1', JSON.stringify({ lines: {}, removed: { 'bet|bb1': 1 } })); } });
+    chk(again.d.querySelectorAll('#myCard .savedp').length === 0 && again.d.querySelectorAll('#lpCard .savedp').length === 2, 'a slip deleted on the last visit came back');
+
+    /* on the owner's device X's parlays are the owner's to delete and clear, for every device */
+    const own = await run({ state: 'in', role: 'owner' });
+    chk(own.w.NFLSYNC.role() === 'owner' && own.d.querySelectorAll('#lpCard .savedp [data-rm]').length === 2 && own.d.getElementById('myCard').hidden, 'the owner\'s device cannot delete X\'s parlays, or shows a list of its own');
+    own.d.querySelector('#lpCard .savedp [data-rm]').click();
+    await wait(60);
+    { const st = JSON.parse(own.w.localStorage.getItem('live_parlays_v1') || '{}');
+      chk(own.d.querySelectorAll('#lpCard .savedp').length === 1 && st.removed && Object.keys(st.removed).length === 1 && /^file\|/.test(Object.keys(st.removed)[0]), 'the owner\'s deletion is not kept under X\'s key: ' + JSON.stringify(st)); }
+    await wait(900);
+    chk(own.store.writes > 0 && /file\|/.test(own.store.node.doc.json), 'the owner\'s deletion did not reach the store');
+    const ownDone = await run({ state: 'post', role: 'owner' });
+    chk(!ownDone.d.getElementById('clear').hidden, 'on the owner\'s device, with every game final, Clear settled should be offered');
+    ownDone.d.getElementById('clear').click();
+    await wait(60);
+    chk(ownDone.d.querySelectorAll('#lpCard .savedp').length === 0 && /^Nothing to watch yet\s*bring back the 2 deleted$/.test(txt(ownDone.d.getElementById('app'))), 'Clear settled on the owner\'s device did not clear X\'s settled parlays, or offers no way back: ' + txt(ownDone.d.getElementById('app')));
+    ownDone.d.getElementById('restoreAll').click();
+    await wait(60);
+    chk(ownDone.d.querySelectorAll('#lpCard .savedp').length === 2 && !ownDone.d.getElementById('restoreAll'), 'bringing them back did not bring them back');
   }
 
   // ---- D2. a line the book moved, corrected on the page ----
@@ -398,35 +452,60 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
     const one = { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
       { id: 'k', week: 2, stake: 5, legs: [
         legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 41.5, 'over', true)] }] };
-    const e = await run({ file: one });
-    const ln = e.d.querySelector('[data-edit]');
-    chk(!!ln && txt(ln) === '41.5', 'the line is not a control on the bar: ' + txt(ln || null));
-    chk(!e.d.querySelector('.sp-leg.team [data-edit]'), 'a team bet has a line to edit and should not');
-    ln.click();
-    const inp = e.d.querySelector('.lineInput');
-    chk(!!inp && inp.value === '41.5', 'the editor does not open prefilled');
-    inp.value = '50';
-    inp.dispatchEvent(new e.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    await wait(60);
-    const row = e.d.querySelector('.sp-leg.prop');
-    chk(target(row) === '50+', 'the corrected line is not what the leg reads: ' + target(row));
-    chk(/29 to go/.test(status(row)), 'the distance is not recomputed on the new line: ' + status(row));
-    chk(/moved from 41\.5/.test(txt(row)), 'the row does not say where the line moved from');
-    /* it is kept in this page's key, and the prop model's is not touched */
-    const store = JSON.parse(e.w.localStorage.getItem('live_parlays_v1'));
-    chk(store && store.lines && Object.values(store.lines)[0] === 50, 'the correction was not stored');
-    chk(e.w.localStorage.getItem(BET_KEY) === null, "correcting a line wrote to the betting model's key");
-    /* and undone */
-    e.d.querySelector('[data-reset]').click();
-    await wait(60);
-    chk(target(e.d.querySelector('.sp-leg.prop')) === '41.5+', 'undo did not put the line back');
-    /* Escape leaves it alone */
-    const e2 = await run({ file: one });
-    e2.d.querySelector('[data-edit]').click();
-    const i2 = e2.d.querySelector('.lineInput'); i2.value = '99';
-    i2.dispatchEvent(new e2.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    await wait(60);
-    chk(target(e2.d.querySelector('.sp-leg.prop')) === '41.5+', 'Escape committed the edit anyway');
+    /* X's placed line is X's: no pencil on a device that is not the owner's */
+    const ro = await run({ file: one });
+    chk(!ro.d.querySelector('#lpCard [data-edit]') && txt(ro.d.querySelector('#lpCard .lineLbl')) === '41.5', 'a placed parlay\'s line can be changed on a device that is not the owner\'s');
+    /* your own parlay's line is yours, kept in your own key; and on the owner's device a placed one's is X's */
+    const ownPitts = JSON.stringify({ stake: 5, saved: [{ id: 'pitts', week: 2, stake: 5, price: 200, payout: 15, legs: [
+      { gid: '2026_02_CAR_ATL', stat: 'receiving_yards', k: 41.5, side: 'over', main: true, name: 'Kyle Pitts', team: 'ATL', week: 2 }] }] });
+    for (const [how, opts, key, card] of [['your own', { file: { updated: null, games: [], parlays: [] }, seed: w => w.localStorage.setItem(PROP_KEY, ownPitts) }, 'my_parlays_v1', '#myCard'],
+      ['the owner\'s', { file: one, role: 'owner' }, 'live_parlays_v1', '#lpCard']]) {
+      const e = await run(opts);
+      const ln = e.d.querySelector(card + ' [data-edit]');
+      chk(!!ln && txt(ln) === '41.5', `the line on ${how} parlay is not a control on the bar: ` + txt(ln || null));
+      chk(!e.d.querySelector('.sp-leg.team [data-edit]'), 'a team bet has a line to edit and should not');
+      if (!ln) continue;
+      ln.click();
+      const inp = e.d.querySelector('.lineInput');
+      chk(!!inp && inp.value === '41.5', 'the editor does not open prefilled');
+      inp.value = '50';
+      inp.dispatchEvent(new e.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await wait(60);
+      const row = e.d.querySelector(card + ' .sp-leg.prop');
+      chk(target(row) === '50+', 'the corrected line is not what the leg reads: ' + target(row));
+      chk(/29 to go/.test(status(row)), 'the distance is not recomputed on the new line: ' + status(row));
+      chk(/moved from 41\.5/.test(txt(row)), 'the row does not say where the line moved from');
+      /* it is kept in the list's own key, and the prop model's is not touched */
+      const store = JSON.parse(e.w.localStorage.getItem(key) || 'null');
+      chk(store && store.lines && Object.values(store.lines)[0] === 50, `the correction to ${how} parlay was not stored under ${key}`);
+      chk(e.w.localStorage.getItem(BET_KEY) === null, "correcting a line wrote to the betting model's key");
+      /* and undone */
+      e.d.querySelector(card + ' [data-reset]').click();
+      await wait(60);
+      chk(target(e.d.querySelector(card + ' .sp-leg.prop')) === '41.5+', 'undo did not put the line back');
+      /* Escape leaves it alone */
+      e.d.querySelector(card + ' [data-edit]').click();
+      const i2 = e.d.querySelector('.lineInput'); i2.value = '99';
+      i2.dispatchEvent(new e.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await wait(60);
+      chk(target(e.d.querySelector(card + ' .sp-leg.prop')) === '41.5+', 'Escape committed the edit anyway');
+    }
+  }
+
+  // ---- D2b. a visitor's device: X's document, read only ----
+  {
+    const doc = { prop: { stake: 30, saved: [{ id: 'x1', week: 2, stake: 10, price: 250, payout: 35, legs: [
+        { gid: '2026_02_CAR_ATL', stat: 'rushing_yards', k: 43.5, side: 'over', main: true, name: 'Bijan Robinson', team: 'ATL', week: 2 }] }],
+      parlay: { 'b|1': { gid: '2026_18_NO_BAL', pid: 'hen', stat: 'rushing_yards', k: 70.5, side: 'over', main: true, name: 'Derrick Henry', team: 'BAL', week: 18 } } },
+      live: { lines: { 'prop|x1|0': 60.5 }, removed: { 'file|night': 1 } } };
+    const v = await run({ role: 'reader', doc });
+    const lp = v.d.getElementById('lpCard'), pills = [...lp.querySelectorAll('.savedp')].map(c => [...c.querySelectorAll('.pill')].map(txt).join('|'));
+    chk(v.w.NFLSYNC.role() === 'reader' && pills.length === 3 && pills.includes('prop model') && pills.some(x => /in X.s builder/.test(x)) && pills.filter(x => x.startsWith('placed')).length === 1,
+      'a visitor\'s X Parlays is not X\'s saved parlay, X\'s builder and the placed parlay X kept: ' + pills.join(' / '));
+    const x1 = [...lp.querySelectorAll('.savedp')].find(c => /Bijan/.test(txt(c)) && /prop model/.test(txt(c)));
+    chk(!!x1 && /60\.5\+/.test(txt(x1)) && /moved from 43\.5/.test(txt(x1)), 'X\'s corrected line is not shown on a visitor\'s device');
+    chk(!lp.querySelector('[data-rm], [data-edit], [data-stake-of], [data-reset]') && !v.d.getElementById('myCard').hidden, 'a visitor\'s X Parlays offers a control, or Your parlays is not shown');
+    chk(v.store.writes === 0, 'a visitor\'s device wrote to the store');
   }
 
   // ---- D3. the scoreboard chips carry the result ----

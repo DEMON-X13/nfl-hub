@@ -12,12 +12,21 @@
    Hovering a week shows what was staked, what came back and the balance after it.
 
    Under the chart: the balance, the net, the return on money staked and the winning weeks.
-   The deposit is the visitor's own number, entered here and kept in the browser
-   (S.bank.deposit), never published. The table keeps the running total and, with a deposit,
-   the balance after each week. */
+   The deposit is entered here (S.bank.deposit) and kept in the browser; the table keeps the
+   running total and, with a deposit, the balance after each week.
+
+   Inside the Bets and Stats page with a store set up the log is X's (the X Bet Log, through
+   window.XBETS, which the build's hook lays into S.bets): on the owner's devices everything above,
+   the deposit kept on the device unless nflbets/sync.json shares it; on everyone else's the same
+   weeks, read only -- no entry form, no Remove, no deposit box, the balance only when the deposit
+   is shared, otherwise X's profit against break even -- with a line saying whether the log is
+   synced. */
 function betsViz(){
   const chart=document.getElementById('betChart'), table=document.getElementById('betTable');
   if(!chart||!table) return;
+  const XB=window.XBETS&&typeof window.XBETS.enabled==='function'&&window.XBETS.enabled()?window.XBETS:null;
+  const xb=XB?XB.get():null, ro=!!xb&&!xb.owner;
+  xbHead(xb);
   const logged=Object.keys(S.bets||{}).map(Number).sort((a,b)=>a-b).map(w=>({w,...S.bets[w]}));
   const dep=S.bank&&S.bank.deposit!=null&&S.bank.deposit!==''&&isFinite(+S.bank.deposit)?+S.bank.deposit:null;
   const view=S.bank&&S.bank.betView==='pnl'?'pnl':'balance';
@@ -28,14 +37,16 @@ function betsViz(){
   const signed=v=>(v>=0?'+':MINUS)+USD+Math.abs(v).toFixed(2);
   const short=v=>{ const a=Math.abs(v); return (v<0?MINUS:'')+USD+(a>=100||Number.isInteger(a)?Math.round(a):a.toFixed(a<10?2:1)); };
   const esc=t=>String(t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-  const depForm=`<div class="bv-dep"><label>Deposited ${USD}<input type="number" id="betDeposit" step="0.01" min="0" placeholder="0.00" value="${dep==null?'':dep}"></label>
-      <button class="btn quiet" id="betDepositSave">Save</button><span class="muted">what you put in the account, for the balance; kept in this browser only</span></div>`;
-  const wireDeposit=()=>document.getElementById('betDepositSave').addEventListener('click',()=>{
+  const depWhere=!xb?'kept in this browser only':(xb.share?'shared: every visitor sees the balance':'kept on this device, not shared');
+  const depForm=ro?'':`<div class="bv-dep"><label>Deposited ${USD}<input type="number" id="betDeposit" step="0.01" min="0" placeholder="0.00" value="${dep==null?'':dep}"></label>
+      <button class="btn quiet" id="betDepositSave">Save</button><span class="muted">what you put in the account, for the balance; ${depWhere}</span></div>`;
+  const wireDeposit=()=>{ const b=document.getElementById('betDepositSave'); if(b) b.addEventListener('click',()=>{
     const v=document.getElementById('betDeposit').value.trim();
     if(v!==''&&(!isFinite(+v)||+v<0)){ alert('Enter what you deposited, or leave it empty.'); return; }
-    S.bank=Object.assign({},S.bank||{},{deposit:v===''?null:+(+v).toFixed(2)}); save(); renderRecord(); });
+    S.bank=Object.assign({},S.bank||{},{deposit:v===''?null:+(+v).toFixed(2)}); save(); renderRecord(); }); };
   if(!logged.length){
-    chart.innerHTML=`<div class="card"><h2>Bankroll</h2><p class="muted" style="margin:0 0 8px">Log a week above and your balance shows here.</p>${depForm}</div>`;
+    chart.innerHTML=ro?`<div class="card"><h2>Bankroll</h2><p class="muted" style="margin:0">No weeks logged yet.</p></div>`
+      :`<div class="card"><h2>Bankroll</h2><p class="muted" style="margin:0 0 8px">Log a week above and your balance shows here.</p>${depForm}</div>`;
     table.innerHTML=''; wireDeposit(); return;
   }
   /* every week from the first logged to the last, a week off at zero */
@@ -94,10 +105,11 @@ function betsViz(){
   chart.innerHTML=`<div class="card"><div class="bv-hd"><h2>Bankroll</h2><span class="seg" role="group" aria-label="Chart">`
     +`<button type="button" data-bv="balance" class="${view==='balance'?'on':''}" aria-pressed="${view==='balance'}">Balance</button>`
     +`<button type="button" data-bv="pnl" class="${view==='pnl'?'on':''}" aria-pressed="${view==='pnl'}">Weekly P&amp;L</button></span></div>
-    <p class="muted" style="margin:0 0 8px">${view==='balance'?(dep==null?'Your running profit, week by week, against break even. Enter what you deposited below to see the account balance instead.':'Your account balance at the end of each week, against what you deposited: green while you are above it, red while you are below.'):'What each week made or lost.'}</p>
+    <p class="muted" style="margin:0 0 8px">${view==='balance'?(ro?(dep==null?'X\u2019s running profit, week by week, against break even.':'X\u2019s account balance at the end of each week, against what X deposited: green while above it, red while below.')
+      :(dep==null?'Your running profit, week by week, against break even. Enter what you deposited below to see the account balance instead.':'Your account balance at the end of each week, against what you deposited: green while you are above it, red while you are below.')):(ro?'What each of X\u2019s weeks made or lost.':'What each week made or lost.')}</p>
     <div class="bv-wrap"><svg class="bv-chart bv-${view}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${view==='balance'?'Account balance by week':'Profit and loss by week'}">${svg}${hits}</svg><div class="bv-tip" hidden></div></div>
     <div class="stat-strip" style="margin-top:12px">
-      <div class="stat bv-balance"><b>${dep==null?'–':money(dep+net)}</b><span>${dep==null?'balance: enter your deposit below':'balance, '+money(dep)+' deposited'}</span></div>
+      ${ro&&dep==null?'':`<div class="stat bv-balance"><b>${dep==null?'–':money(dep+net)}</b><span>${dep==null?'balance: enter your deposit below':'balance, '+money(dep)+' deposited'}</span></div>`}
       <div class="stat"><b class="${net>=0?'delta up':'delta down'}">${signed(net)}</b><span>net across ${logged.length} week${logged.length===1?'':'s'} bet</span></div>
       <div class="stat"><b>${staked?((net>=0?'+':MINUS)+Math.abs(net/staked*100).toFixed(1)):'0.0'}%</b><span>return on ${money(staked)} staked</span></div>
       <div class="stat"><b>${won} of ${logged.length}</b><span>winning weeks</span></div>
@@ -122,14 +134,42 @@ function betsViz(){
       if(c&&c.querySelector('svg.bv-chart')&&Math.abs((c.clientWidth-36)-lastW)>40){ lastW=c.clientWidth-36; betsViz(); } },200); }); }
   /* the table: the app's columns, with the balance after each week once there is a deposit */
   let r2=0;
-  table.innerHTML='<div class="card"><h2>Bet log</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th><th></th></tr></thead><tbody>'
+  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th>'+(ro?'':'<th></th>')+'</tr></thead><tbody>'
     +logged.map(r=>{ const n=r.returned-r.staked; r2+=n;
       return `<tr><td>Week ${r.w}</td><td class="num">${money(r.staked)}</td><td class="num">${money(r.returned)}</td>`
         +`<td class="num ${n>=0?'delta up':'delta down'}">${signed(n)}</td><td class="num">${signed(r2)}</td>`
         +(dep==null?'':`<td class="num">${money(dep+r2)}</td>`)
-        +`<td class="muted">${esc(r.note)}</td><td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td></tr>`; }).join('')
+        +`<td class="muted">${esc(r.note)}</td>`+(ro?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
     +'</tbody></table></div>';
   table.querySelectorAll('button[data-betdel]').forEach(b=>b.addEventListener('click',()=>{
     if(!confirm(`Remove the week ${b.dataset.betdel} bet entry?`)) return;
     delete S.bets[b.dataset.betdel]; save(); renderRecord(); }));
+}
+/* the X Bet Log's note over the entry form: what the log is, whose, and whether it is synced. The
+   owner's devices keep Save shut until the log has been read once, so a week is never written
+   over one the device has not seen. */
+function xbHead(xb){
+  const n=document.getElementById('xbNote'), save=document.getElementById('betSave'), bl=document.getElementById('xbBackup');
+  if(bl) bl.hidden=!(xb&&xb.owner);
+  if(!xb){ if(save){ save.disabled=false; save.textContent='Save week'; } return; }
+  const esc=t=>String(t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+  const s=xb.status||{};
+  let line, cls='';
+  if(xb.owner&&s.blocked){ line=s.blocked==='signin'?'Not published: sign in on the X Parlays tab to publish':'Not published: the store refused the change'; cls='bad'; }
+  else if(s.applied&&s.ok!==false){ line='Synced'+(s.at?' \u00b7 last change '+when(s.at):'')+(s.pending?' \u00b7 saving\u2026':''); cls='ok'; }
+  else if(s.cached){ line='Not synced \u00b7 the copy this browser last saw, '+when(s.cached); cls='bad'; }
+  else if(s.ok===false){ line='The X Bet Log could not be reached; retrying.'; cls='bad'; }
+  else line='Connecting\u2026';
+  if(save){ const wait=xb.owner&&!s.applied; save.disabled=wait; save.textContent=wait?'Connecting\u2026':'Save week'; }
+  if(!n) return;
+  const who=s.signedIn?'Signed in'+(s.email?' as '+esc(s.email):'')+' on this device':'Owner on this device';
+  n.innerHTML=xb.owner
+    ?'Your X Bet Log: one line per week, what you staked and what came back. Every visitor sees these weeks'+(xb.share?' and your balance':', not your deposit')+'.'
+      +' <span class="xb-who">'+who+' \u00b7 <a href="#" id="xbSignOut">Sign out</a></span>'
+    :'Every week X bet: what went in and what came back. Updated from X\u2019s devices; read only.';
+  n.insertAdjacentHTML('beforeend','<span class="xb-status '+cls+'">'+line+'</span>');
+  const so=document.getElementById('xbSignOut');
+  if(so) so.addEventListener('click',e=>{ e.preventDefault();
+    if(confirm('Sign this device out of owner? It stops publishing: the X Bet Log and X Parlays become read only here.')) window.XBETS.signOut(); });
 }

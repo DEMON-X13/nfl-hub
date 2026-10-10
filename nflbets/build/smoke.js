@@ -18,7 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
-const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
+const { JSDOM, VirtualConsole } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
 const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
@@ -41,6 +41,8 @@ const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json')
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
 /* the prop model's storage key, part2's own (the build hands it to the page) */
 const PROP_KEY = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part2.js'), 'utf8').match(/const SEASON=\d{4}, KEY='([^']+)';/)[1];
+/* the betting app's own key and season: X's betting slips are read from it, and the X Bet Log is that season's */
+const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
    whose nudge clears the Elo picks' bar): then three real players' strongest trusted nudges are
@@ -61,7 +63,7 @@ const ELO_MU = (() => {
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 /* how the smoke ends, whichever way it ends: the count, every failure, an exit code. The jsdom
-   windows it leaves open (the sync layer's polls, the Live Parlays section's refresh) keep the
+   windows it leaves open (the sync layer's polls, the X Parlays section's refresh) keep the
    process alive, so nothing ends it but this. */
 let ended = false;
 function finish(why) {
@@ -95,7 +97,7 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
     chk(B.out === HTML, 'nflbets/index.html is not a fresh build of its sources: run node nflbets/build/build.js and commit the page');
     chk(B.pv === fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), 'nflbets/preview.html is not a fresh build of its sources: run node nflbets/build/build.js');
     chk(!/PROP_KEY=\/\*PROP_KEY\*\/'/.test(HTML) && (HTML.match(/PROP_KEY=\/\*PROP_KEY\*\/"([^"]+)"/g) || []).length === 2 && HTML.split(`PROP_KEY=/*PROP_KEY*/${JSON.stringify(B.PROP_KEY)}`).length === 3,
-      "the sync layer and the Live Parlays section are not both on part2's storage key " + B.PROP_KEY); }
+      "the sync layer and the X Parlays section are not both on part2's storage key " + B.PROP_KEY); }
 }
 /* ---- the betting app inside the page carries the gated model numbers ----
    betting/tools/update.js gates the app source against reference_models.json; this is the same
@@ -177,48 +179,113 @@ function scoreboard(state, week) {
 /* boot the page; resolves once the prop model says it is ready and the board has drawn */
 /* a shared store for the sync layer, as a Firebase Realtime Database answers over REST: the
    node at <url> holds {rev, at, doc}, <url>/rev.json is the tag alone, <url>/doc.json the
-   document, and a PUT to <url>.json replaces the node. Two devices are two runs on one store. */
-const STORE_URL = 'https://store.test/nflhub';
-function mkStore() { return { node: null, puts: [], revGets: 0, docGets: 0, fail: false }; }
+   document, and a PUT to <url>.json replaces the node. The X Bet Log's document sits beside it,
+   at <parent>/xbets/<season>, written by PATCH (a key with slashes is a path; null deletes). Two
+   devices are two runs on one store.
+   The store keeps rules, as the owner's locked ones do once `locked` is set: a write must carry
+   ?auth= with an ID token of the owner's uid that has not expired, or it is refused 401
+   {"error":"Permission denied"}. Firebase's sign-in (identitytoolkit, email and password) and
+   token service (securetoken, refresh tokens) are stubbed beside it: one owner account, tokens
+   issued by number, a refresh token that is deleted is revoked. Nothing here touches a real store. */
+const STORE_URL = 'https://store.test/nflhub', BETS_ROOT = 'https://store.test/xbets';
+const sha256 = t => require('crypto').createHash('sha256').update(t).digest('hex');
+/* the smoke's own owner link and account; the site's real secret is not in the repository */
+const OWNER_SECRET = 'smoke-test-owner-secret', OWNER_HASH = sha256(OWNER_SECRET);
+const API_KEY = 'smoke-api-key', OWNER_UID = 'smoke-owner-uid', OWNER_EMAIL = 'x@smoke.test', OWNER_PW = 'the-right-password';
+const OTHER_EMAIL = 'someone@smoke.test', OTHER_PW = 'their-password';
+function mkStore(conf) {
+  return { node: null, bets: null, puts: [], patches: [], writes: [], revGets: 0, docGets: 0, fail: false, locked: false, refused: 0,
+    conf: Object.assign({ url: STORE_URL, ownerHash: OWNER_HASH }, conf || {}), ids: {}, rts: {}, n: 0, refreshes: 0, signIns: 0 };
+}
 const res = (status, body) => Promise.resolve({ ok: status < 300, status, json: async () => body });
+/* a token pair from the stub's sign-in service */
+function issue(store, uid) { const n = ++store.n, id = 'id-' + n, rt = 'rt-' + n; store.ids[id] = { uid, exp: Date.now() + 3600e3 }; store.rts[rt] = uid; return { id, rt }; }
+const authOf = s => { const m = s.match(/[?&]auth=([^&]+)/); return m ? decodeURIComponent(m[1]) : null; };
+const allowed = (store, s) => { if (!store.locked) return true; const t = store.ids[authOf(s)]; return !!t && t.exp > Date.now() && t.uid === OWNER_UID; };
+function patchTree(node, ops) {
+  node = node && typeof node === 'object' ? node : {};
+  for (const [p, v] of Object.entries(ops)) { const ks = p.split('/'); let o = node;
+    for (let i = 0; i < ks.length - 1; i++) { if (!o[ks[i]] || typeof o[ks[i]] !== 'object') o[ks[i]] = {}; o = o[ks[i]]; }
+    if (v == null) delete o[ks[ks.length - 1]]; else o[ks[ks.length - 1]] = JSON.parse(JSON.stringify(v)); }
+  return node;
+}
 function storeFetch(store, s, o) {
-  if (/(^|\/)sync\.json/.test(s)) return res(200, { url: STORE_URL });
+  if (/(^|\/)sync\.json/.test(s)) return res(200, store.conf);
+  if (s.startsWith('https://identitytoolkit.googleapis.com/')) { store.signIns++;
+    const b = JSON.parse(o.body), acct = { [OWNER_EMAIL]: [OWNER_PW, OWNER_UID], [OTHER_EMAIL]: [OTHER_PW, 'someone-else-uid'] }[b.email];
+    if (!s.includes('key=' + API_KEY)) return res(400, { error: { message: 'API key not valid. Please pass a valid API key.' } });
+    if (!acct || acct[0] !== b.password) return res(400, { error: { message: 'INVALID_LOGIN_CREDENTIALS' } });
+    const t = issue(store, acct[1]); return res(200, { idToken: t.id, refreshToken: t.rt, expiresIn: '3600', localId: acct[1], email: b.email }); }
+  if (s.startsWith('https://securetoken.googleapis.com/')) { store.refreshes++;
+    const rt = decodeURIComponent((String(o && o.body).match(/refresh_token=([^&]+)/) || [])[1] || ''), uid = store.rts[rt];
+    if (!uid) return res(400, { error: { message: 'TOKEN_EXPIRED' } });
+    const t = issue(store, uid); return res(200, { id_token: t.id, refresh_token: t.rt, expires_in: '3600', user_id: uid }); }
+  if (s.startsWith(BETS_ROOT + '/')) {
+    if (store.fail) return res(500, null);
+    const p = s.slice(BETS_ROOT.length).replace(/\?.*$/, '');
+    if (o && o.method && o.method !== 'GET') { store.writes.push({ method: o.method, path: '/xbets' + p, auth: authOf(s) });
+      if (!allowed(store, s)) { store.refused++; return res(401, { error: 'Permission denied' }); }
+      if (o.method !== 'PATCH' || p !== '/' + BET_SEASON + '.json') return res(400, { error: 'the X Bet Log is written by PATCH of its season, nothing else' });
+      const ops = JSON.parse(o.body); store.patches.push(ops); store.bets = patchTree(store.bets, ops); return res(200, null); }
+    if (p === '/' + BET_SEASON + '.json') return res(200, store.bets ? JSON.parse(JSON.stringify(store.bets)) : null);
+    if (p === '/' + BET_SEASON + '/rev.json') return res(200, store.bets ? store.bets.rev || null : null);
+    return res(404, null);
+  }
   if (!s.startsWith(STORE_URL)) return null;
   if (store.fail) return res(500, null);
   const p = s.slice(STORE_URL.length).replace(/\?.*$/, '');
-  if (o && o.method === 'PUT') { const b = JSON.parse(o.body); store.node = b; store.puts.push(b); return res(200, null); }
+  if (o && o.method === 'PUT') { store.writes.push({ method: 'PUT', path: p, auth: authOf(s) });
+    if (!allowed(store, s)) { store.refused++; return res(401, { error: 'Permission denied' }); }
+    const b = JSON.parse(o.body); store.node = b; store.puts.push(b); return res(200, null); }
   if (p === '/rev.json') { store.revGets++; return res(200, store.node ? store.node.rev : null); }
   if (p === '/doc.json') { store.docGets++; return res(200, store.node ? store.node.doc : null); }
   return res(404, null);
 }
 const storeDoc = store => store.node ? JSON.parse(store.node.doc.json) : null;
+/* the parlay file the sync checks read in place of the real one: three placed parlays of their
+   own (a player leg, a team bet, one to delete), so they hold whatever the real file holds this week */
+const FIXFILE = { updated: null, games: [`${BET_SEASON}_18_XXA_XXH`], parlays: [
+  { id: 'fx-player', week: 18, stake: 5, price: 300, payout: 20, legs: [{ game: 0, player: 'Fixture Receiver', team: 'XXH', stat: 'receiving_yards', line: 50.5, side: 'over', main: true }] },
+  { id: 'fx-team', week: 18, stake: 2, price: 120, payout: 4.4, legs: [{ game: 0, player: 'Fixture Home', team: 'XXH', stat: 'ml', line: 0, side: 'over', main: false }] },
+  { id: 'fx-gone', week: 18, stake: 1, price: 150, payout: 2.5, legs: [{ game: 0, player: 'Fixture Runner', team: 'XXA', stat: 'rushing_yards', line: 60.5, side: 'over', main: true }] }] };
+/* jsdom has no SubtleCrypto or TextEncoder; a browser on https has both, and the owner link needs them */
+const WEBCRYPTO = require('crypto').webcrypto, { TextEncoder: NodeTextEncoder } = require('util');
+function cryptoFor(w) { Object.defineProperty(w, 'crypto', { value: WEBCRYPTO, configurable: true }); w.TextEncoder = NodeTextEncoder; }
 
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { sync = null, seed = null, net = null } = {}) {
+/* owner: the owner link's secret in this browser (true for the smoke's own); session: a Firebase
+   session in it; file: the parlay file it reads in place of liveparlays/parlays.json. Every request
+   is in `calls` with its method, and a reload the page asks for is counted in `nav` (jsdom cannot
+   navigate). */
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { sync = null, seed = null, net = null, owner = null, session = null, file = null } = {}) {
   return new Promise(resolve => {
-    const errs = [], fetched = [], urls = [];
-    const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
+    const errs = [], fetched = [], urls = [], calls = [], nav = { reloads: 0 };
+    const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
+    vc.on('jsdomError', e => { if (/navigation/i.test(String(e && e.message))) nav.reloads++; else console.error('jsdom: ' + (e && e.message)); });
+    const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url, virtualConsole: vc,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
-        shiftClock(w);
+        shiftClock(w); cryptoFor(w);
         w.addEventListener('error', e => errs.push(e.message));
+        if (owner) w.localStorage.setItem('nflowner_v1', owner === true ? OWNER_SECRET : owner);
+        if (session) w.localStorage.setItem('nflsync_owner_v1', JSON.stringify(session));
         if (seed) seed(w);
-        w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, '')); urls.push(s);
+        w.fetch = (u, o) => { const s = String(u); fetched.push(s.replace(/\?.*$/, '')); urls.push(s); calls.push(((o && o.method) || 'GET') + ' ' + s);
           /* a device of its own offline: the store does not answer it, whatever it answers others */
-          if (sync && net && net.down && s.startsWith(STORE_URL)) return Promise.reject(new TypeError('Failed to fetch'));
+          if (sync && net && net.down && s.startsWith('https://store.test/')) return Promise.reject(new TypeError('Failed to fetch'));
           if (sync) { const r = storeFetch(sync, s, o); if (r) return r; }
           if (s.includes('state.json')) return noState
             ? Promise.resolve({ ok: false, status: 404 })
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
           if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
-          if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PARLAYS) });
+          if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => file ? JSON.parse(JSON.stringify(file.value || file)) : JSON.parse(PARLAYS) });
           if (s.includes('elo/data/players.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_P) });
           if (s.includes('elo/data/model.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_M) });
           if (s.includes('elo/data/matchups.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_MU) });
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
-        w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls }), 300));
+        w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls, calls, nav }), 300));
       } });
-    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs, fetched, urls, timedOut: true }), 20000);
+    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs, fetched, urls, calls, nav, timedOut: true }), 20000);
   });
 }
 
@@ -242,7 +309,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
      bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builders|Team Rankings|ELO Ratings|Pick'em Record|Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
@@ -335,7 +402,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const behind = vegasPick(g1) === g1.home_team;
     chk(c1.querySelector('.pk-result .pk-mwin').classList.contains(behind ? 'pk-bad' : 'pk-ok') && !c1.querySelector('.pk-res'), 'a call on now is not coloured by whether it leads, or a game on now carries a mark');
   }
-  /* the button reads again (the Live Parlays section reads the scoreboard too, so count the delta) */
+  /* the button reads again (the X Parlays section reads the scoreboard too, so count the delta) */
   const sbReads = () => fetched.filter(u => u.includes('/scoreboard')).length;
   const sbBefore = sbReads();
   d.getElementById('pkNow').click();
@@ -393,7 +460,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     if (openCard !== first) { first.click(); await wait(30); openCard.click(); await wait(60); }
     const boxes = [...openCard.querySelectorAll('input[data-leg]')];
     chk(boxes.length === nLines(openCard.dataset.game) && boxes.every(b => !b.checked), `a game not yet kicked off should offer ${nLines(openCard.dataset.game)} unticked lines, got ${boxes.length}`);
-    chk(/Tick one and it joins the parlay/.test(txt(openCard.querySelector('.gbets'))) && !!openCard.querySelector('.pk-tolegs a[href="#parlay"]'), 'no note pointing at Parlay Builders');
+    chk(/Tick one and it joins the parlay/.test(txt(openCard.querySelector('.gbets'))) && !!openCard.querySelector('.pk-tolegs a[href="#parlay"]'), 'no note pointing at X Parlays');
     const key = boxes[0].dataset.leg;
     boxes[0].click();
     await wait(60);
@@ -402,7 +469,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const box2 = openCard.querySelector(`input[data-leg="${key}"]`);
     chk(box2 && box2.checked && box2.closest('tr').classList.contains('on'), 'the ticked row does not show as on');
     chk(/1 from this game is on the parlay/.test(txt(openCard.querySelector('.pk-tolegs'))), 'the note does not count the leg');
-    chk(/1-leg parlay/.test(txt(d.getElementById('parlayBody'))) && txt(d.getElementById('parlayBody')).includes(leg.name), 'the Parlay Builders tab does not show the leg');
+    chk(/1-leg parlay/.test(txt(d.getElementById('parlayBody'))) && txt(d.getElementById('parlayBody')).includes(leg.name), 'the X Parlays tab does not show the leg in the builder');
     box2.click();
     await wait(60);
     chk(!w.eval('S').parlay[key], 'unticking did not take the leg off the parlay');
@@ -464,11 +531,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the Games tab's own state saved, under the prop model's own key */
   chk(!!w.localStorage.getItem(PROP_KEY), 'the prop model did not save its state under its own key');
 
-  /* ---- Parlay Builders: the prop model's Parlay Builder, suggestions, saved parlays and all ---- */
+  /* ---- X Parlays: X's parlays at the top, the visitor's own Parlay Builder (suggestions and all)
+     under them, and the visitor's own parlays under that ---- */
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'parlay').click();
   await wait(60);
-  chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden, 'the Parlay Builders tab did not open');
-  chk(w.location.hash === '#parlay', 'the Parlay Builders tab did not become the address');
+  chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden, 'the X Parlays tab did not open');
+  chk(w.location.hash === '#parlay', 'the X Parlays tab did not become the address #parlay');
   const pb = d.getElementById('parlayBody');
   /* the suggestions are behind a button in a window, so the builder heads the tab */
   chk(!d.getElementById('suggCard') && !!d.getElementById('suggOpen'), 'the suggestions are still taking up the tab');
@@ -480,16 +548,23 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(60);
   chk(d.getElementById('suggModal').hidden, 'the suggestions window would not close');
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
-  /* ---- Live Parlays: the live page's section, where the Saved parlays card was ---- */
-  const lp = d.getElementById('lpCard');
-  chk(!!lp && lp.closest('#tab-parlay') && lp.previousElementSibling && lp.previousElementSibling.id === 'parlayBody', 'the Live Parlays section is not under the builder');
+  /* ---- the X Parlays section: X's card at the top, the builder, then Your parlays, where the
+     Saved parlays card was. With no store (this run: sync.json does not answer) X's card is the
+     placed parlays from the file, read only, and everything this browser makes is its own ---- */
+  const lp = d.getElementById('lpCard'), myc = d.getElementById('myCard');
+  chk(!!lp && d.getElementById('tab-parlay').firstElementChild === lp && lp.nextElementSibling === pb && !!myc && pb.nextElementSibling === myc,
+    'X Parlays is not at the top of its tab, with the builder under it and Your parlays under that');
+  chk(/^X Parlays/.test(txt(lp.querySelector('h2'))) && /^Your parlays/.test(txt(myc.querySelector('h2'))) && !/Live Parlays/.test(txt(d.getElementById('tab-parlay'))), 'the cards are not headed X Parlays and Your parlays');
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old Saved parlays or betting-slips card is still drawn beside the section');
-  chk(!!lp.querySelector('#now') && !!lp.querySelector('#stamp') && !!lp.querySelector('#app'), 'the section is missing its controls');
+  chk(!!lp.querySelector('#now') && !!lp.querySelector('#stamp') && !!lp.querySelector('#app') && !!myc.querySelector('#myApp'), 'the section is missing its controls');
   const fileCount = JSON.parse(PARLAYS).parlays.length;
-  chk(lp.querySelectorAll('.savedp').length >= fileCount, `the section shows ${lp.querySelectorAll('.savedp').length} parlays; the file alone holds ${fileCount}`);
-  chk([...lp.querySelectorAll('.savedp .pill')].some(x => /in the repository/.test(txt(x))), 'the file parlays are not labelled');
-  /* a saved parlay is watched the moment it is saved: no sending */
-  { const S = w.eval('S'); const before = lp.querySelectorAll('.savedp').length;
+  chk(lp.querySelectorAll('.savedp').length === fileCount, `X Parlays shows ${lp.querySelectorAll('.savedp').length} parlays with no store; the file holds ${fileCount}`);
+  chk(!fileCount || [...lp.querySelectorAll('.savedp .pill')].some(x => txt(x) === 'placed'), 'the file parlays are not labelled placed');
+  chk(!lp.querySelector('[data-rm], [data-edit], [data-stake-of]') && lp.querySelector('#clear').hidden, 'X Parlays offers a control on a browser that is not the owner\'s');
+  chk(!myc.hidden, 'Your parlays is not shown on a browser that is not the owner\'s');
+  /* a saved parlay is watched the moment it is saved: no sending. On a browser that is not the
+     owner's it is the visitor's own, under Your parlays */
+  { const S = w.eval('S'); const lp = myc; const before = lp.querySelectorAll('.savedp').length;
     const g = S.sched.find(x => x.id === (cards[0] && cards[0].dataset.game)) || S.sched[0];
     S.saved.push({ id: 'live-smoke', saved: new Date().toISOString(), week: g.w, stake: 3, payout: 9, price: 200,
       legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.55, price: -120, src: 'real' }] });
@@ -498,6 +573,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(lp.querySelectorAll('.savedp').length === before + 1, 'a saved parlay did not appear in the section on its own');
     const mine = [...lp.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
     chk(!!mine, 'the saved parlay is not labelled as the prop model\'s');
+    chk(d.getElementById('lpCard').querySelectorAll('.savedp').length === fileCount, 'a visitor\'s saved parlay went into X Parlays');
     /* its stake is the one thing on it you can change: tap, type, Enter, and the payout follows the locked price */
     { const pill = mine.querySelector('[data-stake-of="live-smoke"]');
       chk(!!pill && /\$3\.00/.test(txt(pill)), 'the saved parlay\'s stake is not a tap-to-change pill');
@@ -542,8 +618,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         if (bx) { bx.value = '10'; bx.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Enter' }));
           chk(odd().stake === 10 && Math.abs(odd().payout - 74.567) < 1e-9, `$10 should pay exactly half the locked $20 payout, 74.567: ${odd().payout}`); }
         S.saved = S.saved.filter(p => p.id !== 'odd'); w.eval('save(); renderParlay();'); await wait(80); }
-      /* a file parlay is someone else's copy and keeps its stake */
-      const filed = [...lp.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
+      /* a file parlay is X's placed slip and keeps its stake */
+      const filed = [...d.getElementById('lpCard').querySelectorAll('.savedp')].find(c => /placed/.test(txt(c.querySelector('.pill'))));
       chk(!filed || !filed.querySelector('[data-stake-of]'), 'a file parlay offers to change its stake'); }
     /* the builder and the suggestions window carry the one-tap amounts */
     chk(/data-stake-chip/.test(HTML) && /function stakeChips\(/.test(HTML), 'the amount buttons are not in the built page');
@@ -552,8 +628,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!S.saved.some(p => p.id === 'live-smoke'), 'deleting a saved parlay in the section left it in the saved list');
     chk(lp.querySelectorAll('.savedp').length === before, 'the deleted parlay is still drawn');
-    const st = JSON.parse(w.localStorage.getItem('live_parlays_v1') || '{}');
-    chk(!(st.removed && st.removed['prop|live-smoke']), 'a deleted saved parlay was written to the device deletions instead of deleted'); }
+    const st = JSON.parse(w.localStorage.getItem('my_parlays_v1') || '{}');
+    chk(!(st.removed && st.removed['prop|live-smoke']), 'a deleted saved parlay was written to the device deletions instead of deleted');
+    chk(w.localStorage.getItem('live_parlays_v1') === null && w.LIVE_IO.set('{"removed":{"file|x":1}}') === false, 'a browser with no store wrote X\'s key'); }
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 
   /* ---- Pick'em Record: the betting app's Records tab, in a frame filled when first opened ---- */
@@ -572,7 +649,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const adminHtml = recFrame.getAttribute('srcdoc') || '';
   chk(adminHtml.length > 100000 && /const MODEL = /.test(adminHtml), 'the Records frame was not filled with the betting app: ' + adminHtml.length + ' chars');
   chk(/^<!DOCTYPE html>/i.test(adminHtml.trim()), 'the framed app does not start with its doctype');
-  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='\.\.\/betting\/state\.json';<\/script>/.test(adminHtml), 'the framed app is not told its tab and its season path');
+  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='\.\.\/betting\/state\.json';window\.XBETS=window\.XBETS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.XBETS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);if\(window\.XBETS\)document\.documentElement\.classList\.add\('xbets-ro'\);<\/script>/.test(adminHtml),
+    'the framed app is not told its tab, its season path and the page\'s X Bet Log');
+  /* the frames reach the page's X Bet Log through window.parent: a sandboxed frame could not */
+  chk([...d.querySelectorAll('iframe.pk-frame')].every(f => !f.hasAttribute('sandbox')), 'a betting frame is sandboxed, so it cannot reach the X Bet Log');
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
     'the framed app has no embed mode, so the frame would show its header and tab bar');
   chk(/data-tab="record"/.test(adminHtml), 'the framed app has no Records tab');
@@ -595,15 +675,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(/window\.EMBED_TAB="ratings";/.test(ratFrame.getAttribute('srcdoc') || ''), 'the Power Ratings frame is not opened on its tab');
   chk(/data-tab="ratings"/.test(adminHtml), 'the framed app has no Power Ratings tab');
 
-  /* ---- Bet Log: the betting site's Bet Log tab, framed, on the same browser store ---- */
+  /* ---- X Bet Log: the betting site's Bet Log tab, framed, with X's log handed in ---- */
   const betFrame = d.querySelector('#tab-bets iframe.pk-frame');
-  chk(!!betFrame && !betFrame.getAttribute('srcdoc'), 'the Bet Log frame should not be filled before its tab is opened');
+  chk(!!betFrame && !betFrame.getAttribute('srcdoc') && betFrame.title === 'X Bet Log', 'the X Bet Log frame should not be filled before its tab is opened, and is titled X Bet Log');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'bets').click();
   await wait(60);
-  chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-track').hidden, 'the Bet Log tab did not open');
-  chk(w.location.hash === '#bets', 'the Bet Log tab did not become the address');
-  chk(/window\.EMBED_TAB="bets";/.test(betFrame.getAttribute('srcdoc') || ''), 'the Bet Log frame is not opened on its tab');
-  chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml), 'the framed app has no Bet Log tab with its form');
+  chk(!d.getElementById('tab-bets').hidden && d.getElementById('tab-track').hidden, 'the X Bet Log tab did not open');
+  chk(w.location.hash === '#bets', 'the X Bet Log tab did not become the address #bets');
+  chk(/window\.EMBED_TAB="bets";/.test(betFrame.getAttribute('srcdoc') || ''), 'the X Bet Log frame is not opened on its tab');
+  chk(/data-tab="bets"/.test(adminHtml) && /id="betSave"/.test(adminHtml) && /<h2>X Bet Log<\/h2>/.test(adminHtml), 'the framed app has no X Bet Log tab with its form');
   /* every framed tab is the same app on this page's origin, so one store: a bet logged in either place is in both */
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
   chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
@@ -940,7 +1020,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(eloM.coef.QB > 0 && eloM.coef.DB > 0, 'the fitted weights lost their sign');
     [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'pickems').click(); await wait(40); }
 
-  /* ---- Sync: one document for every device ---- */
+  /* ---- Sync: X's parlays, one document every device reads and only X's devices write ---- */
   /* with no store address the page runs on this browser alone, and says so */
   chk(fetched.includes('sync.json'), 'the page never read nflbets/sync.json for the store address');
   chk(w.NFLSYNC && w.NFLSYNC.state().live === false && w.NFLSYNC.state().url === null, 'with sync.json unreachable the page should be local-only');
@@ -950,11 +1030,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const teamLeg = g => ({ gid: g.id, pid: 'team:' + g.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.55, price: -120, src: 'real',
     name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win' });
   const settle = () => wait(900);
+  /* ---- X's devices: the owner link marks them, and among themselves they share as every device
+     once did: two, then more, of X's devices on one store ---- */
   { const store = mkStore();
     /* device A, first to open the page on an empty store: whatever it makes seeds the document */
-    const A = await run(state, undefined, null, false, { sync: store });
+    const A = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: store });
     chk(!A.timedOut && A.errs.length === 0, 'device A broke: ' + A.errs.join('; '));
-    chk(A.w.NFLSYNC.state().live === true && A.w.NFLSYNC.state().url === STORE_URL, 'device A did not come up synced: ' + JSON.stringify(A.w.NFLSYNC.state()));
+    chk(A.w.NFLSYNC.state().live === true && A.w.NFLSYNC.state().url === STORE_URL && A.w.NFLSYNC.role() === 'owner', 'device A did not come up synced as the owner\'s: ' + JSON.stringify(A.w.NFLSYNC.state()));
+    chk(!A.d.getElementById('ownerMark').hidden && !A.d.getElementById('xpOwner').hidden && !A.d.getElementById('xpSignOut').hidden && A.d.getElementById('myCard').hidden && A.d.getElementById('xpSignIn').hidden,
+      'the owner\'s device does not show the owner mark and sign-out, or still shows Your parlays or a sign-in it has no use for');
     await settle();
     chk(/^Synced/.test(txt(A.d.getElementById('syncStamp'))), 'device A\'s header does not say Synced: ' + txt(A.d.getElementById('syncStamp')));
     const SA = A.w.eval('S'), gA = openGame(SA), key = gA.id + '|team:' + gA.h + '|ml';
@@ -970,13 +1054,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(store.node && typeof store.node.doc.json === 'string' && store.node.rev && store.node.doc.rev === store.node.rev, 'the store node is not {rev, at, doc:{rev, at, json}}');
     chk(/^Synced/.test(txt(A.d.getElementById('syncStamp'))), 'after a push the header does not say Synced: ' + txt(A.d.getElementById('syncStamp')));
     chk(/^Synced \u00b7 last change /.test(txt(A.d.getElementById('syncStamp'))) && /last checked at \d/.test(A.d.getElementById('syncStamp').title), 'the sync stamp does not say when the parlays last changed, or its tooltip when the page last checked: ' + txt(A.d.getElementById('syncStamp')));
-    chk(!!A.d.querySelector('#lpCard #syncStamp') && !A.d.querySelector('header #syncStamp'), 'the sync stamp is not in the Live Parlays card, or is still in the header');
+    chk(!!A.d.querySelector('#lpCard #syncStamp') && !A.d.querySelector('header #syncStamp'), 'the sync stamp is not in the X Parlays card, or is still in the header');
     /* a poll after its own push reads the tag alone and fetches nothing */
     const dg = store.docGets, puts = store.puts.length;
     await A.w.NFLSYNC.poll();
     chk(store.docGets === dg && store.puts.length === puts, 'a poll with nothing changed fetched the document or pushed it again');
     /* device B opens the page fresh and sees exactly what A made, in the builder and in the section */
-    const B = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { sync: store });
+    const B = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { owner: true, file: FIXFILE, sync: store });
     chk(!B.timedOut && B.errs.length === 0, 'device B broke: ' + B.errs.join('; '));
     await settle();
     const SB = B.w.eval('S');
@@ -990,7 +1074,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     /* B deletes the saved parlay in the section and deletes a file parlay; A sees both on its next look */
     const mine = [...lpB.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
     mine.querySelector('[data-rm]').click();
-    const filep = [...lpB.querySelectorAll('.savedp')].find(c => /in the repository/.test(txt(c.querySelector('.pill'))));
+    const filep = [...lpB.querySelectorAll('.savedp')].find(c => /placed/.test(txt(c.querySelector('.pill'))));
     filep.querySelector('[data-rm]').click();
     await settle();
     const docB = storeDoc(store);
@@ -1016,7 +1100,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     store.fail = true;
     SB.parlay[key] = teamLeg(gA); B.w.eval('save(); renderParlay();');
     store.fail = false; await settle(); store.fail = true;
-    const C = await run(state, undefined, null, false, { sync: store });
+    const C = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: store });
     chk(!C.timedOut && C.errs.length === 0, 'device C broke: ' + C.errs.join('; '));
     chk(C.w.NFLSYNC.state().live === false && C.w.NFLSYNC.state().ok === false, 'device C should be waiting on the store: ' + JSON.stringify(C.w.NFLSYNC.state()));
     chk(/Sync failed/.test(txt(C.d.getElementById('syncStamp'))), 'device C\'s header does not say the store is unreachable: ' + txt(C.d.getElementById('syncStamp')));
@@ -1034,7 +1118,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     /* device D has a browser copy from before sync and opens on an empty store: its copy seeds the document */
     const fresh = mkStore();
     const blob = JSON.parse(A.w.localStorage.getItem(PROP_KEY)); blob.saved = [{ id: 'old-device', saved: new Date().toISOString(), week: gA.w, stake: 2, payout: 4, price: 100, legs: [teamLeg(gA)] }];
-    const D = await run(state, undefined, null, false, { sync: fresh, seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify(blob)) });
+    const D = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: fresh, seed: w => w.localStorage.setItem(PROP_KEY, JSON.stringify(blob)) });
     chk(!D.timedOut && D.errs.length === 0, 'device D broke: ' + D.errs.join('; '));
     await settle();
     chk(D.w.eval('S').saved.some(p => p.id === 'old-device'), 'device D lost its own saved parlay to an empty store');
@@ -1051,7 +1135,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const blobE = JSON.parse(A.w.localStorage.getItem(PROP_KEY)); blobE.saved = [{ id: 'other-device', saved: new Date().toISOString(), week: gA.w, stake: 5, payout: 15, price: 200, legs: [teamLeg(gA)] }];
     blobE.parlay = { [key]: teamLeg(gA) };
     const putsE = fresh.puts.length;
-    const E = await run(state, undefined, null, false, { sync: fresh, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(blobE));
+    const E = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: fresh, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(blobE));
       w.localStorage.setItem('live_parlays_v1', JSON.stringify({ lines: {}, removed: { 'file|gone-before-sync': 1 } })); } });
     chk(!E.timedOut && E.errs.length === 0, 'device E broke: ' + E.errs.join('; '));
     await settle();
@@ -1070,13 +1154,230 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
        device deleted it, so the document wins and nothing is pushed */
     const blobF = JSON.parse(E.w.localStorage.getItem(PROP_KEY)); blobF.saved = blobF.saved.concat([{ id: 'ghost', saved: new Date().toISOString(), week: gA.w, stake: 1, payout: 2, price: 100, legs: [teamLeg(gA)] }]);
     const putsF = fresh.puts.length;
-    const F = await run(state, undefined, null, false, { sync: fresh, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(blobF)); w.localStorage.setItem('nflsync_v1', 'some-earlier-rev'); } });
+    const F = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: fresh, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(blobF)); w.localStorage.setItem('nflsync_v1', 'some-earlier-rev'); } });
     chk(!F.timedOut && F.errs.length === 0, 'device F broke: ' + F.errs.join('; '));
     await settle();
     chk(!F.w.eval('S').saved.some(p => p.id === 'ghost'), 'device F kept a parlay the document lacks although it had shared before');
     chk(fresh.puts.length === putsF && !storeDoc(fresh).prop.saved.some(p => p.id === 'ghost'), 'device F pushed a parlay another device had deleted');
     chk(F.w.localStorage.getItem('nflsync_v1') === fresh.node.rev, 'device F did not remember the rev it took');
     for (const x of [A, B, C, D, E, F]) x.w.close();
+  }
+
+  /* ---- the owner link: opened once as #owner=<secret>; the secret leaves the address at once,
+     and on a match this browser is the owner's (kept in it); a wrong one marks nothing ---- */
+  { const store = mkStore();
+    const L = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#owner=' + encodeURIComponent(OWNER_SECRET), null, false, { sync: store, file: FIXFILE });
+    await settle();
+    chk(!L.timedOut && L.errs.length === 0, 'the owner link broke the page: ' + L.errs.join('; '));
+    chk(!/owner=/.test(L.w.location.href) && L.w.location.hash === '#parlay' && !L.d.getElementById('tab-parlay').hidden, 'the owner link is still in the address, or the page did not open on X Parlays: ' + L.w.location.href);
+    chk(L.w.localStorage.getItem('nflowner_v1') === OWNER_SECRET && L.w.NFLSYNC.role() === 'owner', 'the owner link did not mark this browser as the owner\'s');
+    chk(!L.d.getElementById('ownerMark').hidden && !L.d.getElementById('xpSignOut').hidden && /sign out of owner/.test(txt(L.d.getElementById('xpSignOut'))), 'the owner\'s browser shows no owner mark or "sign out of owner"');
+    const bad = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#owner=not-the-secret', null, false, { sync: store, file: FIXFILE });
+    await settle();
+    chk(!/owner=/.test(bad.w.location.href) && bad.w.localStorage.getItem('nflowner_v1') === null && bad.w.NFLSYNC.role() === 'reader' && bad.d.getElementById('ownerMark').hidden,
+      'a wrong owner link stays in the address or marks the browser as the owner\'s');
+    chk(/does not match/.test(txt(bad.d.getElementById('xpSub'))), 'a wrong owner link is not said: ' + txt(bad.d.getElementById('xpSub')));
+    /* a new ownerHash in sync.json signs every device out */
+    const moved = mkStore({ ownerHash: sha256('another-secret') });
+    const M2 = await run(state, undefined, null, false, { sync: moved, owner: true, file: FIXFILE });
+    await settle();
+    chk(M2.w.NFLSYNC.role() === 'reader' && M2.d.getElementById('ownerMark').hidden, 'a browser is still the owner\'s after ownerHash changed');
+    for (const x of [L, bad, M2]) x.w.close(); }
+
+
+  /* ---- everyone else's device: X's parlays, read only; the visitor's own apart ----
+     The owner's device O builds a document of every kind X Parlays shows: a saved parlay, the
+     builder, a builder kept at kickoff, a betting slip, a placed parlay deleted, a line corrected. */
+  const slip = (id, g, g2) => ({ id, week: g.w, type: 'parlay', stake: 3, legs: [
+    { game_id: g.id, away: g.a, home: g.h, pick: g.h, ml: -150 }, { game_id: g2.id, away: g2.a, home: g2.h, pick: g2.a, ml: 130 }] });
+  const savedOf = (id, g, extra) => Object.assign({ id, saved: new Date().toISOString(), week: g.w, stake: 3, payout: 9, price: 200, legs: [teamLeg(g)] }, extra || {});
+  const pillsOf = card => [...card.querySelectorAll('.savedp')].map(c => [...c.querySelectorAll('.pill')].map(txt).join('|'));
+  const puts = x => x.calls.filter(c => /^(PUT|PATCH|POST|DELETE) https:\/\/store\.test\//.test(c)).length;
+  { const store = mkStore();
+    const O = await run(state, undefined, null, false, { sync: store, owner: true, file: FIXFILE });
+    await settle();
+    const SO = O.w.eval('S'), g = openGame(SO), g2 = SO.sched.find(x => x.id !== g.id) || g, key = g.id + '|team:' + g.h + '|ml';
+    O.w.localStorage.setItem(BET_KEY, JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [slip('x-slip', g, g2)] } }));
+    SO.parlay[key] = teamLeg(g);
+    SO.saved.push(savedOf('x-saved', g));
+    O.w.eval('save(); renderParlay();');
+    { const lv = JSON.parse(O.w.LIVE_IO.get() || '{}');
+      lv.removed = { 'file|fx-gone': 1 }; lv.lines = { 'file|fx-player|0': 60.5 };
+      lv.kept = { kx: { at: new Date().toISOString(), week: g.w, stake: 4, price: 300, payout: 16, legs: [{ gid: g.id, stat: 'receptions', k: 4.5, side: 'over', main: true, name: 'Kept Receiver', team: g.h, week: g.w }] } };
+      chk(O.w.LIVE_IO.set(JSON.stringify(lv)) !== false, 'the owner\'s device could not write X\'s key'); }
+    await O.w.NFLSYNC.poll(); await settle();
+    { const doc = storeDoc(store);
+      chk(!!doc && doc.prop.saved.some(p => p.id === 'x-saved') && !!doc.prop.parlay[key] && doc.live.removed['file|fx-gone'] === 1 && doc.live.kept.kx
+        && doc.live.bet && doc.live.bet[O.w.NFLSYNC.device()] && doc.live.bet[O.w.NFLSYNC.device()][0].id === 'x-slip',
+        'the owner\'s parlays, deletion, kept builder and betting slip did not all reach the store: ' + JSON.stringify(doc && doc.live)); }
+
+    /* V, a visitor: X Parlays is X's document, every kind, with nothing to press */
+    const V = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { sync: store, file: FIXFILE });
+    await settle();
+    const lpV = V.d.getElementById('lpCard'), myV = V.d.getElementById('myCard'), SV = V.w.eval('S');
+    chk(!V.timedOut && V.errs.length === 0, 'the visitor\'s device broke: ' + V.errs.join('; '));
+    chk(V.w.NFLSYNC.role() === 'reader' && V.w.NFLSYNC.state().live === false && V.d.getElementById('ownerMark').hidden && V.d.getElementById('xpSignOut').hidden && V.d.getElementById('xpSignIn').hidden,
+      'a visitor\'s device is not a reader, or shows an owner control');
+    { const p = pillsOf(lpV);
+      chk(p.length === 6, `X Parlays on a visitor's device should show X's saved parlay, builder, kept builder, betting slip and two placed parlays, 6: ${p.length} (${p.join(' / ')})`);
+      chk(p.filter(x => x === 'prop model').length === 1 && p.some(x => /^prop model\|in X.s builder$/.test(x)) && p.some(x => /^prop model\|builder at kickoff$/.test(x))
+        && p.filter(x => x === 'betting model').length === 1 && p.filter(x => x === 'placed').length === 2, 'X Parlays is not labelled saved, in X\'s builder, kept at kickoff, betting model and placed: ' + p.join(' / ')); }
+    chk(!/Fixture Runner/.test(txt(lpV)), 'a placed parlay X deleted still shows on a visitor\'s device');
+    { const card = [...lpV.querySelectorAll('.savedp')].find(c => /Fixture Receiver/.test(txt(c)));
+      chk(!!card && txt(card.querySelector('.lineLbl')) === '60.5' && /moved from 50\.5/.test(txt(card)) && !card.querySelector('[data-reset]'), 'X\'s corrected line is not what a visitor\'s device measures against: ' + (card ? txt(card).slice(0, 160) : 'no card')); }
+    chk(!lpV.querySelector('[data-rm], [data-edit], [data-stake-of], [data-reset], #restoreAll') && lpV.querySelector('#clear').hidden, 'X Parlays offers a visitor a control');
+    chk(!myV.hidden && /On this device only/.test(txt(myV)) && /Nothing of yours/.test(txt(myV.querySelector('#myApp'))), 'Your parlays is not shown, empty, on a visitor\'s device');
+    chk(Object.keys(SV.parlay).length === 0 && SV.saved.length === 0, 'a visitor\'s builder or saved list did not start empty: it took X\'s');
+    chk(/^X.s parlays · updated /.test(txt(V.d.getElementById('syncStamp'))), 'a visitor\'s stamp does not say these are X\'s parlays and when they changed: ' + txt(V.d.getElementById('syncStamp')));
+    /* everything V does is V's, in this browser */
+    const docBefore = JSON.stringify(store.node), patchesBefore = store.patches.length;
+    SV.parlay[key] = teamLeg(g); V.w.eval('save(); renderParlay();');
+    SV.saved.push({ id: 'v-own', saved: new Date().toISOString(), week: g.w, stake: 2, payout: 6, price: 200,
+      legs: [{ gid: g.id, stat: 'receiving_yards', k: 30.5, side: 'over', main: true, name: 'Visitor Receiver', team: g.h, week: g.w, label: '30.5+', p: 0.5, price: -110, src: 'real' }] });
+    SV.stake = 77; SV.margin = 'none'; V.w.eval('save(); renderParlay();');
+    await settle();
+    { const own = [...myV.querySelectorAll('.savedp')], builder = own.find(c => /in the builder/.test(txt(c))), saved = own.find(c => /Visitor Receiver/.test(txt(c)));
+      chk(own.length === 2 && !!builder && !!saved, 'the visitor\'s builder and saved parlay are not under Your parlays: ' + own.length);
+      chk(pillsOf(lpV).length === 6, 'the visitor\'s parlays went into X Parlays');
+      const ed = saved && saved.querySelector('[data-edit]');
+      if (ed) { ed.click(); const inp = myV.querySelector('input.lineInput'); inp.value = '33.5'; inp.dispatchEvent(new V.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); }
+      chk(!!ed && Object.values((JSON.parse(V.w.localStorage.getItem('my_parlays_v1') || '{}').lines) || {}).includes(33.5), 'a line corrected under Your parlays was not kept in the visitor\'s own key');
+      const x = [...myV.querySelectorAll('.savedp')].find(c => /Visitor Receiver/.test(txt(c)));
+      if (x) x.querySelector('[data-rm]').click();
+      chk(!!x && !SV.saved.some(p => p.id === 'v-own'), 'the visitor could not delete their own parlay'); }
+    chk(V.w.LIVE_IO.set(JSON.stringify({ removed: { 'file|fx-player': 1 } })) === false, 'a visitor\'s device can write X\'s key');
+    chk(V.w.XBETS.write({ bets: {} }, { bets: { 9: { staked: 1, returned: 2, note: '' } } }) === false, 'a visitor\'s device can write the X Bet Log');
+    await V.w.NFLSYNC.poll(); await settle();
+    chk(puts(V) === 0 && JSON.stringify(store.node) === docBefore && store.patches.length === patchesBefore, `a visitor's device wrote to the store (${puts(V)} writes)`);
+    chk(pillsOf(lpV).length === 6 && JSON.parse(V.w.localStorage.getItem(PROP_KEY)).stake === 77, 'the visitor\'s stake, or X\'s list, did not stand');
+
+    /* X changes things on O; V sees each on its next look */
+    SO.saved.push(savedOf('x-new', g, { stake: 6 })); O.w.eval('save(); renderParlay();');
+    { const lv = JSON.parse(O.w.LIVE_IO.get()); lv.removed['file|fx-team'] = 1; lv.lines['file|fx-player|0'] = 70.5; O.w.LIVE_IO.set(JSON.stringify(lv)); }
+    O.w.localStorage.setItem(BET_KEY, JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [slip('x-slip', g, g2), slip('x-slip2', g2, g)] } }));
+    await O.w.NFLSYNC.poll(); await settle();
+    await V.w.NFLSYNC.poll(); await wait(300);
+    { const p = pillsOf(lpV), card = [...lpV.querySelectorAll('.savedp')].find(c => /Fixture Receiver/.test(txt(c)));
+      chk(p.filter(x => x === 'prop model').length === 2, 'X\'s new parlay did not reach the visitor on its next look: ' + p.join(' / '));
+      chk(p.filter(x => x === 'placed').length === 1 && !/Fixture Home/.test(txt(lpV)), 'a placed parlay X deleted did not go from the visitor\'s view');
+      chk(!!card && txt(card.querySelector('.lineLbl')) === '70.5', 'X\'s new correction did not reach the visitor');
+      chk(p.filter(x => x === 'betting model').length === 2, 'X\'s new betting slip did not reach the visitor: ' + p.join(' / ')); }
+    chk(puts(V) === 0, 'the visitor\'s device wrote while following X');
+
+    /* a visitor's browser from when every device wrote the document: what it took from the
+       document (its mirror) leaves its own list, once, and nothing is written */
+    const cur = storeDoc(store), ownKey = g.id + '|team:' + g.a + '|ml', ownLeg = Object.assign(teamLeg(g), { pid: 'team:' + g.a, name: TEAM(g.a), team: g.a });
+    const mineOwn = { id: 'mine-own', saved: new Date().toISOString(), week: g.w, stake: 2, payout: 4, price: 100,
+      legs: [{ gid: g.id, stat: 'receptions', k: 3.5, side: 'over', main: true, name: 'Own Receiver', team: g.h, week: g.w }] };
+    const base = { rev: 'r-mirror', revs: ['r-mirror'], doc: { prop: { saved: cur.prop.saved, parlay: cur.prop.parlay, stake: 5 }, live: { lines: { 'prop|mine-own|0': 4.5, 'file|fx-player|0': 70.5 }, removed: {}, kept: cur.live.kept } }, hist: [] };
+    const blob = { stake: 5, saved: cur.prop.saved.concat([mineOwn]), parlay: Object.assign({}, cur.prop.parlay, { [ownKey]: ownLeg }) };
+    const Mi = await run(state, undefined, null, false, { sync: store, file: FIXFILE, seed: w2 => { w2.localStorage.setItem(PROP_KEY, JSON.stringify(blob));
+      w2.localStorage.setItem('nflsync_v1', 'r-mirror'); w2.localStorage.setItem('nflsync_base_v1', JSON.stringify(base)); w2.localStorage.setItem('live_parlays_v1', JSON.stringify(base.doc.live)); } });
+    await settle();
+    { const SM = Mi.w.eval('S'), ls2 = k => Mi.w.localStorage.getItem(k), my = JSON.parse(ls2('my_parlays_v1') || '{}');
+      chk(SM.saved.map(p => p.id).join() === 'mine-own' && Object.keys(SM.parlay).join() === ownKey, 'a visitor\'s mirror of the document was not taken out of their own list: ' + SM.saved.map(p => p.id).join() + ' / ' + Object.keys(SM.parlay).join());
+      chk(['nflsync_v1', 'nflsync_base_v1', 'live_parlays_v1'].every(k => ls2(k) === null) && !!ls2('xparlays_v1') && Mi.w.NFLSYNC.state().stripped === cur.prop.saved.length + Object.keys(cur.prop.parlay).length,
+        'the mirror\'s keys were not removed, or the strip was not recorded: ' + JSON.stringify(Mi.w.NFLSYNC.state()));
+      chk(my.lines && my.lines['prop|mine-own|0'] === 4.5 && !('file|fx-player|0' in my.lines), 'a line the visitor corrected on their own parlay did not move to their own key, or one of X\'s did');
+      chk(puts(Mi) === 0, 'stripping a visitor\'s mirror wrote to the store');
+      chk([...Mi.d.querySelectorAll('#myCard .savedp')].some(c => /Own Receiver/.test(txt(c))) && pillsOf(Mi.d.getElementById('lpCard')).filter(x => x === 'prop model').length === 2,
+        'after the strip the visitor\'s own parlay is not under Your parlays, or X\'s are not under X Parlays'); }
+    /* a browser that saved parlays before the store had an address never mirrored the document:
+       its parlays are its own, and on a visitor's device they do not join X's */
+    const P0 = await run(state, undefined, null, false, { sync: store, file: FIXFILE, seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 3, saved: [savedOf('presync', g)] })) });
+    await settle();
+    chk(P0.w.eval('S').saved.some(p => p.id === 'presync') && !storeDoc(store).prop.saved.some(p => p.id === 'presync') && puts(P0) === 0 && P0.w.NFLSYNC.state().joined === 0,
+      'a visitor\'s parlays from before the store joined X\'s document, or were lost');
+    chk([...P0.d.querySelectorAll('#myCard .savedp')].length === 1, 'a visitor\'s own parlay from before the store is not under Your parlays');
+
+    /* the store out of reach: a visitor sees the copy it last saw, and says so */
+    store.fail = true;
+    const Vc = await run(state, undefined, null, false, { sync: store, file: FIXFILE, seed: w2 => w2.localStorage.setItem('xparlays_cache_v1', V.w.localStorage.getItem('xparlays_cache_v1')) });
+    await settle();
+    chk(pillsOf(Vc.d.getElementById('lpCard')).filter(x => x === 'prop model').length === 2 && /last saw/.test(txt(Vc.d.getElementById('syncStamp'))),
+      'with the store out of reach a visitor does not see the copy it last saw, or is not told: ' + txt(Vc.d.getElementById('syncStamp')));
+    store.fail = false;
+
+    /* the owner signs this device out: what it holds of X's leaves its own, and it reloads as a reader */
+    const docNow = storeDoc(store), navBefore = O.nav.reloads;
+    await O.w.NFLSYNC.signOut();
+    { const ls2 = k => O.w.localStorage.getItem(k), left = JSON.parse(ls2(PROP_KEY) || '{}');
+      chk(ls2('nflowner_v1') === null && !!ls2('xparlays_v1') && ls2('nflsync_v1') === null && ls2('nflsync_base_v1') === null && ls2('live_parlays_v1') === null && O.nav.reloads > navBefore,
+        'signing out of owner did not drop the mark, strip the mirror and reload');
+      chk(!(left.saved || []).some(p => docNow.prop.saved.some(q => q.id === p.id)) && !Object.keys(left.parlay || {}).some(k => k in docNow.prop.parlay), 'signing out left X\'s parlays as the browser\'s own');
+      chk(JSON.stringify(storeDoc(store).prop.saved.map(p => p.id)) === JSON.stringify(docNow.prop.saved.map(p => p.id)), 'signing out changed X\'s document'); }
+    { const keep = {}; for (let i = 0; i < O.w.localStorage.length; i++) { const k = O.w.localStorage.key(i); keep[k] = O.w.localStorage.getItem(k); }
+      const O2 = await run(state, undefined, null, false, { sync: store, file: FIXFILE, seed: w2 => { for (const [k, v] of Object.entries(keep)) w2.localStorage.setItem(k, v); } });
+      await settle();
+      chk(O2.w.NFLSYNC.role() === 'reader' && puts(O2) === 0 && O2.w.eval('S').saved.length === 0, 'a device signed out of owner comes back as the owner\'s, writes, or keeps X\'s parlays as its own');
+      O2.w.close(); }
+    for (const x of [O, V, Mi, P0, Vc]) x.w.close();
+  }
+
+  /* ---- Firebase sign-in: the store's rules locked to the owner's uid ----
+     sync.json carries apiKey and owner; every write needs the owner's ID token (?auth=). */
+  { const store = mkStore({ ownerHash: '', apiKey: API_KEY, owner: OWNER_UID }); store.locked = true;
+    /* the stub keeps the rules: a write with no token, or anyone else's, is refused */
+    const forged = await storeFetch(store, STORE_URL + '.json?print=silent', { method: 'PUT', body: JSON.stringify({ rev: 'f', at: 'f', doc: { rev: 'f', at: 'f', revs: ['f'], json: '{"prop":{"saved":[]}}' } }) });
+    const other = issue(store, 'someone-else-uid');
+    const forged2 = await storeFetch(store, STORE_URL + '.json?print=silent&auth=' + other.id, { method: 'PUT', body: '{}' });
+    chk(forged.status === 401 && forged2.status === 401 && store.node === null && (await forged.json()).error === 'Permission denied', 'the stub store took a write without the owner\'s token: the checks below would prove nothing');
+    store.writes = [];
+    const R = await run(state, undefined, null, false, { sync: store, file: FIXFILE });
+    await settle();
+    chk(R.w.NFLSYNC.role() === 'reader' && !R.d.getElementById('xpSignIn').hidden && /Owner sign-in/.test(txt(R.d.getElementById('xpSignIn'))) && R.d.getElementById('xpSignOut').hidden,
+      'with sign-in set up a visitor\'s device does not offer "Owner sign-in"');
+    const form = async (email, pw) => { if (R.d.getElementById('xpSignInBox').hidden) R.d.getElementById('xpSignIn').click();
+      R.d.getElementById('xpEmail').value = email; R.d.getElementById('xpPass').value = pw;
+      R.d.getElementById('xpSignInBox').dispatchEvent(new R.w.Event('submit', { cancelable: true })); await wait(300); };
+    await form(OWNER_EMAIL, 'a-wrong-password');
+    chk(/wrong email or password/.test(txt(R.d.getElementById('xpSignInMsg'))) && R.w.localStorage.getItem('nflsync_owner_v1') === null && R.nav.reloads === 0 && R.d.getElementById('xpPass').value === '',
+      'a wrong password is not said, keeps the password in its box, or signs in: ' + txt(R.d.getElementById('xpSignInMsg')));
+    await form(OTHER_EMAIL, OTHER_PW);
+    chk(/not the owner/.test(txt(R.d.getElementById('xpSignInMsg'))) && R.w.localStorage.getItem('nflsync_owner_v1') === null, 'an account that is not the owner\'s was signed in');
+    await form(OWNER_EMAIL, OWNER_PW);
+    const sess = JSON.parse(R.w.localStorage.getItem('nflsync_owner_v1') || 'null');
+    { let leaked = false; for (let i = 0; i < R.w.localStorage.length; i++) if (String(R.w.localStorage.getItem(R.w.localStorage.key(i))).includes(OWNER_PW)) leaked = true;
+      chk(!!sess && sess.uid === OWNER_UID && !!sess.refreshToken && !leaked && R.nav.reloads === 1, 'the owner\'s sign-in did not keep a session (and never the password) and reload as the owner\'s device'); }
+    /* the device as it reloads: the owner's, and its writes carry the owner's token */
+    const O = await run(state, undefined, null, false, { sync: store, session: sess, file: FIXFILE });
+    await settle();
+    const SO = O.w.eval('S'), g = openGame(SO);
+    chk(O.w.NFLSYNC.role() === 'owner' && O.w.NFLSYNC.state().signedIn && !O.d.getElementById('ownerMark').hidden && /^sign out$/.test(txt(O.d.getElementById('xpSignOut'))), 'a signed-in device is not the owner\'s');
+    SO.saved.push(savedOf('signed-1', g)); O.w.eval('save(); renderParlay();'); await settle();
+    chk(!!storeDoc(store) && storeDoc(store).prop.saved.some(p => p.id === 'signed-1') && store.writes.filter(x => x.method === 'PUT').every(x => x.auth && store.ids[x.auth] && store.ids[x.auth].uid === OWNER_UID),
+      'the signed-in owner\'s write did not land, or a write went without the owner\'s token');
+    chk(/^Signed in · Synced/.test(txt(O.d.getElementById('syncStamp'))), 'the signed-in owner\'s stamp does not say so: ' + txt(O.d.getElementById('syncStamp')));
+    /* the X Bet Log's writes carry it too */
+    await O.w.XBETS.ready();
+    O.w.XBETS.write({ bets: {} }, { bets: { 4: { staked: 10, returned: 30, note: 'signed' } } }); await settle();
+    chk(store.bets && store.bets.weeks && store.bets.weeks.w4 && store.writes.filter(x => x.method === 'PATCH').every(x => store.ids[x.auth] && store.ids[x.auth].uid === OWNER_UID), 'the X Bet Log was not written with the owner\'s token');
+    /* an ID token past its hour: renewed with the refresh token before the write */
+    const old = issue(store, OWNER_UID); store.ids[old.id].exp = Date.now() - 1000;
+    const E = await run(state, undefined, null, false, { sync: store, file: FIXFILE, session: { uid: OWNER_UID, email: OWNER_EMAIL, idToken: old.id, refreshToken: old.rt, exp: Date.now() - 1000 } });
+    await settle();
+    const ref0 = store.refreshes; E.w.eval('S').saved.push(savedOf('renewed', g)); E.w.eval('save(); renderParlay();'); await settle();
+    chk(store.refreshes > ref0 && storeDoc(store).prop.saved.some(p => p.id === 'renewed') && JSON.parse(E.w.localStorage.getItem('nflsync_owner_v1')).idToken !== old.id, 'an expired ID token was not renewed before the write');
+    /* one the page thinks good that the store has stopped taking: refused, renewed, written */
+    const stale = issue(store, OWNER_UID);
+    const E2 = await run(state, undefined, null, false, { sync: store, file: FIXFILE, session: { uid: OWNER_UID, email: OWNER_EMAIL, idToken: stale.id, refreshToken: stale.rt, exp: Date.now() + 3600e3 } });
+    await settle(); store.ids[stale.id].exp = Date.now() - 1;
+    const ref1 = store.refreshes, ref1d = store.refused; E2.w.eval('S').saved.push(savedOf('retried', g)); E2.w.eval('save(); renderParlay();'); await settle();
+    chk(store.refused > ref1d && store.refreshes > ref1 && storeDoc(store).prop.saved.some(p => p.id === 'retried'), 'a refused write was not renewed and tried again');
+    /* a refresh token revoked (the password changed): the stamp asks for sign-in, nothing is lost,
+       and the change lands once the device is signed in again */
+    const rv = issue(store, OWNER_UID); store.ids[rv.id].exp = Date.now() - 1; delete store.rts[rv.rt];
+    const K = await run(state, undefined, null, false, { sync: store, file: FIXFILE, session: { uid: OWNER_UID, email: OWNER_EMAIL, idToken: rv.id, refreshToken: rv.rt, exp: Date.now() - 1000 } });
+    await settle();
+    const SK = K.w.eval('S'); SK.saved.push(savedOf('k-unsent', g)); K.w.eval('save(); renderParlay();'); await settle();
+    chk(K.w.NFLSYNC.state().blocked === 'signin' && /sign in to publish/.test(txt(K.d.getElementById('syncStamp'))) && !K.d.getElementById('xpSignIn').hidden, 'a lapsed sign-in is not said, or no sign-in is offered: ' + txt(K.d.getElementById('syncStamp')));
+    chk(!storeDoc(store).prop.saved.some(p => p.id === 'k-unsent') && SK.saved.some(p => p.id === 'k-unsent') && JSON.parse(K.w.localStorage.getItem(PROP_KEY)).saved.some(p => p.id === 'k-unsent'),
+      'a change made while the sign-in had lapsed was written, or lost from the device');
+    const putsK = store.writes.length; await K.w.NFLSYNC.poll(); await settle();
+    chk(store.writes.length === putsK, 'a device whose sign-in lapsed keeps trying to write');
+    await K.w.NFLSYNC.signIn(OWNER_EMAIL, OWNER_PW); await settle();
+    chk(storeDoc(store).prop.saved.some(p => p.id === 'k-unsent') && K.nav.reloads === 0 && /^Signed in · Synced/.test(txt(K.d.getElementById('syncStamp'))), 'the change did not land once the device signed in again: ' + txt(K.d.getElementById('syncStamp')));
+    for (const x of [R, O, E, E2, K]) x.w.close();
   }
 
   /* ---- two devices writing at once: nothing either saved is lost ----
@@ -1088,9 +1389,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const parlayOf = (id, g) => ({ id, saved: new Date().toISOString(), week: g.w, stake: 1, payout: 2, price: 100, legs: [teamLeg(g)] });
     const setVis = (x, v) => { Object.defineProperty(x.d, 'visibilityState', { value: v, configurable: true }); x.d.dispatchEvent(new x.w.Event('visibilitychange')); };
     const ids = st => (st && st.prop && st.prop.saved || []).map(p => p.id).join(',');
-    const P = await run(state, undefined, null, false, { sync: store });
+    const P = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: store });
     await settle();
-    const Q = await run(state, undefined, null, false, { sync: store, net: netQ });
+    const Q = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: store, net: netQ });
     await settle();
     chk(!P.timedOut && !Q.timedOut && P.errs.length === 0 && Q.errs.length === 0, 'devices P or Q broke: ' + P.errs.concat(Q.errs).join('; '));
     const SP = P.w.eval('S'), SQ = Q.w.eval('S'), g = openGame(SP);
@@ -1157,7 +1458,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(!storeDoc(store).prop.saved.some(p => p.id === 'race-Q'), 'P\'s deletion did not reach the store');
     snap.prop.saved.push(parlayOf('unsent', g));
     const putsR = store.puts.length;
-    const R = await run(state, undefined, null, false, { sync: store, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(snap.prop));
+    const R = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: store, seed: w => { w.localStorage.setItem(PROP_KEY, JSON.stringify(snap.prop));
       w.localStorage.setItem('nflsync_v1', snap.seen); w.localStorage.setItem('nflsync_base_v1', snap.base); } });
     await settle();
     { const SR = R.w.eval('S'), doc = storeDoc(store);
@@ -1165,6 +1466,112 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(SR.saved.some(p => p.id === 'unsent') && !SR.saved.some(p => p.id === 'race-Q'), 'a browser\'s unsent parlay was lost on its next visit, or a parlay deleted elsewhere came back: ' + SR.saved.map(p => p.id).join(','));
       chk(doc.prop.saved.some(p => p.id === 'unsent') && !doc.prop.saved.some(p => p.id === 'race-Q') && store.puts.length > putsR, 'the unsent parlay did not reach the store, or the deleted one came back: ' + ids(doc)); }
     for (const x of [P, R]) x.w.close();
+  }
+
+
+  /* ---- the X Bet Log: X's weeks, one document beside the parlays', every device reads it and
+     only X's devices write it, a week at a time ---- */
+  { const store = mkStore();
+    const mineOf = (bets, deposit) => JSON.stringify({ myPicks: {}, bets, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit } });
+    const seeded = mineOf({ 1: { staked: 10, returned: 0, note: 'a' }, 2: { staked: 20, returned: 35, note: 'b' } }, 100);
+    const A = await run(state, undefined, null, false, { sync: store, owner: true, file: FIXFILE, seed: w2 => w2.localStorage.setItem(BET_KEY, seeded) });
+    await settle();
+    const W = st2 => st2 && st2.weeks || {};
+    chk(W(store.bets).w1 && W(store.bets).w1.staked === 10 && W(store.bets).w2 && W(store.bets).w2.returned === 35 && Object.keys(W(store.bets)).length === 2,
+      'the owner\'s own weeks did not move into the shared X Bet Log: ' + JSON.stringify(store.bets));
+    { const pre = JSON.parse(A.w.localStorage.getItem('x_nfl_bets_preshare_' + BET_SEASON) || 'null'), joined = JSON.parse(A.w.localStorage.getItem('xbets_joined_' + BET_SEASON) || 'null');
+      chk(!!pre && pre.bets && pre.bets[2].returned === 35 && !!joined && joined.added.join() === '1,2' && joined.differ.length === 0, 'moving in left no copy of the browser\'s own log, or no record of what it added: ' + JSON.stringify(joined)); }
+    chk(A.w.localStorage.getItem(BET_KEY) === seeded, 'moving the log in changed the betting app\'s own key');
+    chk(!(store.bets.bank && store.bets.bank.deposit != null), 'the deposit was shared with shareDeposit off');
+    chk(store.patches.every(ops => Object.keys(ops).every(k => /^weeks\/w([1-9]|1\d|2[0-2])$|^rev$|^at$|^bank(\/deposit)?$/.test(k))), 'the X Bet Log was written with something other than its weeks: ' + JSON.stringify(store.patches));
+    /* the parlays' whole-node writes never touch it: it is not inside /nflhub */
+    { const SA = A.w.eval('S'), g = openGame(SA); SA.saved.push({ id: 'bets-beside', saved: new Date().toISOString(), week: g.w, stake: 1, payout: 2, price: 100, legs: [teamLeg(g)] });
+      A.w.eval('save(); renderParlay();'); await settle();
+      chk(storeDoc(store).prop.saved.some(p => p.id === 'bets-beside') && W(store.bets).w2, 'a parlay write and the X Bet Log did not both stand'); }
+    /* B, a visitor with a log of its own: sees X's, cannot write it, keeps its own */
+    const seededB = mineOf({ 5: { staked: 5, returned: 0, note: 'mine' } }, 50);
+    const B = await run(state, undefined, null, false, { sync: store, file: FIXFILE, seed: w2 => w2.localStorage.setItem(BET_KEY, seededB) });
+    await settle();
+    const xb = B.w.XBETS; await xb.ready();
+    chk(Object.keys(xb.get().weeks).join() === '1,2' && xb.get().owner === false && xb.get().deposit === null && xb.get().status.applied, 'a visitor does not see X\'s weeks (and only them, with no deposit): ' + JSON.stringify(xb.get()));
+    const nP = store.patches.length;
+    chk(xb.write({ bets: {} }, { bets: { 9: { staked: 1, returned: 2, note: '' } } }) === false && store.patches.length === nP, 'a visitor\'s device wrote the X Bet Log');
+    let fired = 0; xb.onChange(() => { fired++; });
+    /* A logs week 3 (a note with markup, which nobody's frame may draw as markup); B sees it on its next look */
+    { const cur = A.w.XBETS.get().weeks;
+      A.w.XBETS.write({ bets: cur }, { bets: Object.assign({}, cur, { 3: { staked: 5, returned: 12.5, note: '<img src=x onerror=alert(1)>' } }) }); await settle();
+      const last = store.patches[store.patches.length - 1];
+      chk(W(store.bets).w3 && Object.keys(last).filter(k => k.startsWith('weeks/')).join() === 'weeks/w3' && !/[<>]/.test(W(store.bets).w3.note), 'logging week 3 wrote more than week 3, or kept the markup: ' + JSON.stringify(last)); }
+    await xb.poll(); await wait(100);
+    chk(xb.get().weeks[3] && xb.get().weeks[3].returned === 12.5 && fired > 0, 'a visitor did not get X\'s week 3 on its next look, or was not told');
+    /* a second of X's browsers, whose own log has week 2 different and a week 4: week 4 joins, week 2 stays X's */
+    const C = await run(state, undefined, null, false, { sync: store, owner: true, file: FIXFILE, seed: w2 => w2.localStorage.setItem(BET_KEY, mineOf({ 2: { staked: 99, returned: 0, note: 'other' }, 4: { staked: 4, returned: 8, note: '' } }, null)) });
+    await settle();
+    { const joined = JSON.parse(C.w.localStorage.getItem('xbets_joined_' + BET_SEASON) || 'null');
+      chk(W(store.bets).w4 && W(store.bets).w4.returned === 8 && W(store.bets).w2.staked === 20 && !!joined && joined.added.join() === '4' && joined.differ.join() === '2',
+        'another of X\'s browsers did not add its own week 4 and keep the shared week 2: ' + JSON.stringify(joined)); }
+
+    /* the frames: the betting app as the page frames it, handed a device's X Bet Log */
+    const BET_FRAME = JSON.parse(HTML.match(/\nconst BET_APP=("(?:[^"\\]|\\.)*");\n<\/script>/)[1]);
+    const frame = (X, tab) => new Promise(resolve => {
+      const errs = [];
+      const dom = new JSDOM(BET_FRAME.replace('window.EMBED_TAB=null', 'window.EMBED_TAB=' + JSON.stringify(tab)), { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://demon-x13.github.io/nfl-hub/nflbets/',
+        beforeParse(fw) { fw.XBETS = X; fw.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) };
+          fw.confirm = () => true; fw.alert = () => {}; fw.scrollTo = () => {};
+          fw.addEventListener('error', e => errs.push(e.message));
+          fw.fetch = async u => { const s = String(u);
+            if (/elo\/data\/model\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(ELO_M) };
+            if (/state\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) };
+            return { ok: false, status: 404, json: async () => null }; }; } });
+      setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs }), 1500); });
+    const rowsOf = fd => [...fd.querySelectorAll('#betTable tbody tr')].map(tr => txt(tr.children[0]));
+    await xb.poll();
+    const FB = await frame(xb, 'bets');
+    chk(FB.errs.length === 0 && FB.d.documentElement.classList.contains('xbets-ro'), 'a visitor\'s X Bet Log frame is not read only: ' + FB.errs.join('; '));
+    chk(rowsOf(FB.d).join() === 'Week 1,Week 2,Week 3,Week 4' && !FB.d.querySelector('[data-betdel], .bv-dep, #betDeposit') && /Week by week/.test(txt(FB.d.querySelector('#betTable h2'))),
+      'a visitor\'s frame does not show X\'s weeks, read only: ' + rowsOf(FB.d).join());
+    chk(!FB.d.querySelector('#betTable img') && /img src=x/.test(txt(FB.d.getElementById('betTable'))), 'a note was drawn as markup');
+    chk(/Every week X bet/.test(txt(FB.d.getElementById('xbNote'))) && /Synced/.test(txt(FB.d.getElementById('xbNote'))) && txt(FB.d.querySelector('#tab-bets h2')) === 'X Bet Log',
+      'a visitor\'s frame is not headed X Bet Log with what it is and that it is synced: ' + txt(FB.d.getElementById('xbNote')));
+    chk(!/Week 5|mine/.test(txt(FB.d.getElementById('betTable'))), 'a visitor\'s own old log is shown as X\'s');
+    { const nV = store.patches.length, pv = FB.d.querySelector('[data-bv="pnl"]'); if (pv) pv.click(); await wait(400);
+      const keptB = JSON.parse(B.w.localStorage.getItem(BET_KEY));
+      chk(!!pv && keptB.bets[5] && Object.keys(keptB.bets).join() === '5' && keptB.bank.deposit === 50 && store.patches.length === nV, 'a visitor\'s save wrote X\'s log over their own, or wrote to the store'); }
+    /* the owner's frames: the form, and a save writes only the week it changed; a frame loaded
+       earlier that saves its whole state writes nothing of the log */
+    const FR = await frame(A.w.XBETS, 'record'), FA = await frame(A.w.XBETS, 'bets');
+    chk(!FA.d.documentElement.classList.contains('xbets-ro') && !!FA.d.querySelector('#betTable [data-betdel]') && !FA.d.getElementById('betSave').disabled && /Owner on this device/.test(txt(FA.d.getElementById('xbNote'))),
+      'the owner\'s frame is read only, or does not say whose it is: ' + txt(FA.d.getElementById('xbNote')));
+    { const fd = FA.d, n0 = store.patches.length;
+      fd.getElementById('betWeek').value = '7'; fd.getElementById('betStaked').value = '10'; fd.getElementById('betReturned').value = '25'; fd.getElementById('betNote').value = 'from the frame';
+      fd.getElementById('betSave').click(); await wait(1200);
+      const mine = store.patches.slice(n0);
+      chk(W(store.bets).w7 && W(store.bets).w7.returned === 25 && mine.length >= 1 && mine.every(ops => Object.keys(ops).filter(k => k.startsWith('weeks/')).join() === 'weeks/w7'),
+        'Save week in the owner\'s frame did not write week 7, and only week 7: ' + JSON.stringify(mine));
+      FR.w.eval('save()'); await wait(800);
+      chk(W(store.bets).w7 && store.patches.length === n0 + mine.length, 'a frame loaded before week 7 was logged wrote over it when it saved');
+      chk(rowsOf(FR.d).includes('Week 7'), 'the other frame did not take the new week');
+      const del = fd.querySelector('#betTable [data-betdel="7"]'); if (del) del.click(); await wait(1200);
+      chk(!!del && !W(store.bets).w7 && W(store.bets).w4, 'Remove did not take week 7, and only week 7, out of the X Bet Log'); }
+    /* a visitor sees the deposit only when sync.json shares it */
+    const shared = mkStore({ shareDeposit: true });
+    const D = await run(state, undefined, null, false, { sync: shared, owner: true, file: FIXFILE, seed: w2 => w2.localStorage.setItem(BET_KEY, mineOf({ 1: { staked: 10, returned: 30, note: '' } }, 250)) });
+    await settle();
+    const Ev = await run(state, undefined, null, false, { sync: shared, file: FIXFILE }); await settle(); await Ev.w.XBETS.ready();
+    chk(shared.bets && shared.bets.bank && shared.bets.bank.deposit === 250 && Ev.w.XBETS.get().deposit === 250, 'with shareDeposit on the owner\'s deposit is not shared');
+    { const FE = await frame(Ev.w.XBETS, 'bets');
+      chk(/\$270\.00/.test(txt(FE.d.querySelector('#betChart .stat.bv-balance'))), 'with the deposit shared a visitor does not see the balance');
+      FE.w.close(); }
+    /* turned off again: the deposit leaves the document, and no visitor sees it meanwhile */
+    shared.conf.shareDeposit = false;
+    const Ev2 = await run(state, undefined, null, false, { sync: shared, file: FIXFILE }); await settle(); await Ev2.w.XBETS.ready();
+    chk(Ev2.w.XBETS.get().deposit === null, 'a visitor sees a deposit sync.json no longer shares');
+    { const FE2 = await frame(Ev2.w.XBETS, 'bets');
+      chk(!FE2.d.querySelector('#betChart .stat.bv-balance') && !/\$250/.test(txt(FE2.d.getElementById('betChart'))), 'a visitor\'s frame shows the deposit or the balance it is not shared');
+      FE2.w.close(); }
+    const D2 = await run(state, undefined, null, false, { sync: shared, owner: true, file: FIXFILE }); await settle();
+    chk(!(shared.bets.bank && shared.bets.bank.deposit != null), 'an owner\'s device did not take the deposit out once it is no longer shared');
+    for (const x of [A, B, C, D, D2, Ev, Ev2, FB, FR, FA]) x.w.close();
   }
 
   finish();

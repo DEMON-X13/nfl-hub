@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>X NFL Live Parlays</title>
+<title>X Parlays</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -134,20 +134,23 @@ footer a{color:var(--ink-2)}
 </head>
 <body>
 <header><div class="brand">
-  <h1>X NFL Live Parlays</h1>
+  <h1>X Parlays</h1>
 </div></header>
 <main>
   <div class="bar">
     <span class="stamp"><span class="dot" id="dot"></span><span id="stamp">idle</span></span>
     <span class="sub" id="syncStamp"></span>
     <span class="grow"></span>
-    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from this page.">Clear settled</button>
+    <button class="btn quiet" id="clear" title="Delete every parlay that has landed or gone from X Parlays, on every device.">Clear settled</button>
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
   <noscript><div class="note"><b>This page needs JavaScript.</b> It has none of its own data:
     it reads the parlay file and the live scores when it opens, and with scripts turned off
     there is nothing for it to show. Lockdown Mode and some content blockers turn them off.</div></noscript>
   <div id="app"></div>
+  <h2 class="mine-hd">Your parlays</h2>
+  <div class="bar"><span class="muted">On this device only; nobody else sees these.</span><span class="grow"></span><button class="btn quiet" id="myClear" hidden title="Delete every parlay of yours that has landed or gone.">Clear settled</button></div>
+  <div id="myApp"></div>
 </main>
 <script>
 /* ---- the section's own copies of a few of the prop model's helpers (props/build/part2.js):
@@ -165,32 +168,52 @@ const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 /* a name both sources can agree on: the page's own normName (part2) when it is there */
 const nameOf=n=>typeof normName==='function'?normName(n):String(n||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
 
-/* ---- the section ----
-   The parlays every device should see are in the repository, in liveparlays/parlays.json,
-   which the section reads on every load and never writes: a browser has no way to commit to
-   GitHub without a credential, and a static page has nowhere safe to keep one, so the file is
-   edited in the repository and the section picks the change up on the next load. What the
-   visitor does here -- a corrected line, a deletion -- is kept under the section's own key,
-   below. */
+/* ---- the section: two lists ----
+   X Parlays is the owner's, the same on every device: what X placed at the book (in the
+   repository, liveparlays/parlays.json, which the section reads on every load and never writes:
+   a browser has no way to commit to GitHub without a credential, and a static page has nowhere
+   safe to keep one, so the file is edited in the repository and the section picks the change up
+   on the next load), and what X saved, is building and kept at kickoff in the prop model, and
+   X's betting slips. On the owner's own device that is the prop model's own state and the shared
+   key, and every control on it writes through LIVE_IO to the document every device reads; on
+   anyone else's it is that document as read (NFLSYNC.x(), LIVE_IO.get()), with nothing to press.
+
+   Your parlays is a visitor's own: the prop model's builder and saved parlays in this browser,
+   the builders it kept at kickoff and its betting slips, with every control, under the browser's
+   own key (my_parlays_v1), seen by nobody else. On the owner's device there is no second list:
+   everything there is X's. With no store at all, X Parlays is the file and Your parlays
+   everything this browser has. */
 const DATA='parlays.json';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
    going from 41.5 to 50 -- leaves the page counting down to a number nobody bet. Tap the
    line under the bar and set what you actually took.
 
-   The correction is kept in this page's own key and nowhere else. The parlay in the prop
+   The correction is kept in the list's own key and nowhere else. The parlay in the prop
    model, in the betting model and in the file is left exactly as it was: this changes what
    the page measures against, not how anything settles, and the prop model's Track Record
    still grades the line the model actually quoted.
 
-   The key is read and written through LIVE_IO when the page around this section defines
-   one: inside the Bets and Stats page that is the sync layer, which keeps the same key in
-   the shared document every device reads, so a correction or a deletion made on one device
-   is on all of them. On its own the section keeps the key in this browser. */
-const LIVE_KEY='live_parlays_v1';
-const LIVE_IO=(typeof window!=='undefined'&&window.LIVE_IO)||{get:()=>localStorage.getItem(LIVE_KEY),set:v=>{ localStorage.setItem(LIVE_KEY,v); return true; }};
-function liveStore(){
-  let v=null; try{ v=JSON.parse(LIVE_IO.get()||'null'); }catch(e){}
+   X's list keeps its key (live_parlays_v1) through LIVE_IO, which inside the Bets and Stats
+   page is the sync layer: the shared document every device reads, written only by X's devices.
+   The visitor's list keeps its own in this browser. */
+const LIVE_KEY='live_parlays_v1', MY_KEY='my_parlays_v1';
+const SYNC=()=>(typeof window!=='undefined'&&window.NFLSYNC)||null;
+/* the owner's device, with a store to write to: X's list is this device's to change */
+const ownerHere=()=>{ const s=SYNC(); return !!s&&s.role()==='owner'&&!!s.state().url; };
+/* with no sync layer around it (the section on its own) there is no X document to read or write */
+const LIVE_IO=(typeof window!=='undefined'&&window.LIVE_IO)||{get:()=>null,set:()=>false};
+const MY_IO={get:()=>{ try{ return localStorage.getItem(MY_KEY); }catch(e){ return null; } },
+  set:v=>{ try{ localStorage.setItem(MY_KEY,v); return true; }catch(e){ return false; } }};
+const LISTS={x:{id:'x',io:LIVE_IO,el:'app',clear:'clear',restore:'restoreAll'},my:{id:'my',io:MY_IO,el:'myApp',clear:'myClear',restore:'myRestoreAll'}};
+const listOf=id=>LISTS[id]||LISTS.x;
+/* what can be changed here: the visitor's own list always, X's on the owner's device only */
+const editable=L=>L.id==='my'||ownerHere();
+/* whose prop model state a list shows: X's list on the owner's device, the visitor's own list
+   everywhere else */
+const holdsS=L=>L.id==='x'?ownerHere():!ownerHere();
+function liveStore(L){
+  let v=null; try{ v=JSON.parse(L.io.get()||'null'); }catch(e){}
   if(!v||typeof v!=='object') v={};
   /* anything else in the object is carried through untouched: writeStore writes the whole
      object back, and a key some other page put here is not this page's to drop */
@@ -198,29 +221,31 @@ function liveStore(){
     lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
     removed:(v.removed&&typeof v.removed==='object')?v.removed:{}};
 }
-/* a parlay deleted from this page is gone from this page, for good -- on this device, or
-   on every device when the page is synced. This page writes to no other key: the prop
-   model's saved parlays and the betting model's slips are deleted where they were made, and
-   a parlay in the file is taken out of the file. */
+/* a parlay deleted from a list is gone from it, for good: from X's on every device, from the
+   visitor's on this one. Nothing else is written: the prop model's saved parlays are deleted where
+   they are kept, and a parlay in the file is taken out of the file. */
 const rmKey=p=>p.src+'|'+p.id;
-function removeParlay(p){
+function removeParlay(L,p){
+  if(!editable(L)) return;
   /* a saved parlay has one copy, in the prop model, and this is the section that shows it,
      so deleting it here deletes it there. A parlay from the file or the betting model is
-     somebody else's copy, and is only taken off this device. */
-  if(p.src==='prop'&&p.id!=='prop-builder'&&typeof S==='object'&&S&&Array.isArray(S.saved)&&typeof save==='function'){
+     somebody else's copy, and is only taken off the list. */
+  if(p.src==='prop'&&holdsS(L)&&p.id!=='prop-builder'&&typeof S==='object'&&S&&Array.isArray(S.saved)&&typeof save==='function'){
     S.saved=S.saved.filter(x=>String(x.id)!==String(p.id)); save(); return; }
   /* the builder's own legs: clearing them here clears the Parlay Builder, the one copy */
-  if(p.src==='prop'&&p.id==='prop-builder'&&typeof S==='object'&&S&&S.parlay&&typeof save==='function'){
+  if(p.src==='prop'&&holdsS(L)&&p.id==='prop-builder'&&typeof S==='object'&&S&&S.parlay&&typeof save==='function'){
     S.parlay={}; save(); if(typeof renderParlay==='function') renderParlay(); return; }
   /* a builder kept at kickoff is this section's own copy: deleting it deletes it */
-  if(p.src==='kept'){ const st=liveStore(); if(isObj(st.kept)) delete st.kept[p.id]; writeStore(st); return; }
-  const st=liveStore(); st.removed[rmKey(p)]=1; writeStore(st); }
+  if(p.src==='kept'){ const st=liveStore(L); if(isObj(st.kept)) delete st.kept[p.id]; writeStore(L,st); return; }
+  const st=liveStore(L); st.removed[rmKey(p)]=1; writeStore(L,st); }
 /* What you bet is yours to change on a parlay the prop model holds: a saved one, whose price
    stays as it was locked so the payout follows the stake, or the one still in the builder,
    whose stake is the builder's own. A parlay from the file or the betting model is somebody
    else's copy and keeps its stake. */
-const canStake=p=>p.src==='prop'&&typeof S==='object'&&!!S&&Array.isArray(S.saved)&&typeof save==='function';
+const canStake=(L,p)=>editable(L)&&holdsS(L)&&p.src==='prop'&&typeof S==='object'&&!!S&&Array.isArray(S.saved)&&typeof save==='function';
 const mlDec=ml=>{ const m=+ml; return !isFinite(m)||!m?null:(m>0?1+m/100:1+100/-m); };
+/* a price as a number, whatever the document carried */
+const money=x=>x!=null&&x!==''&&isFinite(+x)?+x:null;
 function setStake(id,v){
   if(!(isFinite(v)&&v>=0)||typeof S!=='object'||!S||typeof save!=='function') return false;
   /* the builder's stake is the builder's: its box, its amount buttons and its payouts redraw */
@@ -234,26 +259,23 @@ function setStake(id,v){
   const dec=(+x.stake>0&&+x.payout>0)?(+x.payout/+x.stake):mlDec(x.price);
   x.stake=v; x.payout=dec?v*dec:0;
   save(); return true; }
-function restoreAll(){ const st=liveStore(); st.removed={}; writeStore(st); }
-/* how many of the parlays this device can see have been deleted on it */
-const removedCount=()=>allParlays().filter(isRemoved).length;
-const isRemoved=p=>!!liveStore().removed[rmKey(p)];
-function writeStore(st){ try{ return LIVE_IO.set(JSON.stringify(st))!==false; }catch(e){ return false; } }
+function restoreAll(L){ const st=liveStore(L); st.removed={}; writeStore(L,st); }
+/* how many of the parlays a list can show have been deleted from it */
+const removedCount=L=>allParlays(L).filter(p=>isRemoved(L,p)).length;
+const isRemoved=(L,p)=>!!liveStore(L).removed[rmKey(p)];
+function writeStore(L,st){ if(!editable(L)) return false; try{ return L.io.set(JSON.stringify(st))!==false; }catch(e){ return false; } }
 function lineKey(p,i){ return p.src+'|'+p.id+'|'+i; }
-function lineOf(p,i,l){ const v=liveStore().lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
-function setLine(p,i,val){
-  const st=liveStore(), k=lineKey(p,i);
+function lineOf(L,p,i,l){ const v=liveStore(L).lines[lineKey(p,i)]; return (v==null||!isFinite(v))?+l.k:+v; }
+function setLine(L,p,i,val){
+  if(!editable(L)) return false;
+  const st=liveStore(L), k=lineKey(p,i);
   if(val==null) delete st.lines[k]; else st.lines[k]=+val;
-  return writeStore(st);
+  return writeStore(L,st);
 }
-const legAt=(p,i,l)=>{ const k=lineOf(p,i,l); return k===+l.k?l:Object.assign({},l,{k}); };
+const legAt=(L,p,i,l)=>{ const k=lineOf(L,p,i,l); return k===+l.k?l:Object.assign({},l,{k}); };
 
-/* The two models keep what you save under their own keys, and the section shows both -- the
-   file, which every device sees, and whatever the prop and betting models have saved, picked
-   up on their own with nothing to press. Inside the Bets and Stats page the prop model's
-   builder and saved parlays go through the sync layer, so with a store named in
-   nflbets/sync.json a parlay saved on one device shows on all of them; the betting model's
-   slips stay in the browser that made them. */
+/* The two models keep what you save under their own keys, and the section shows both, picked
+   up on their own with nothing to press. */
 function propState(){
   /* inside the Bets and Stats page this runs beside the prop model itself, whose state in
      memory is ahead of what it has written to storage; that one wins */
@@ -265,33 +287,34 @@ const propLeg=l=>({gid:l.gid,stat:l.stat,k:+l.k,side:l.side||'over',main:!!l.mai
 
 /* Saved and locked is not the only parlay worth watching, and on a Sunday it is usually not
    the one you are watching: the prop model will not let you lock a parlay until it has a
-   price, so a parlay you have built and bet can easily still be sitting in the builder. That
-   one is read too, marked "in the builder" and shown without a price -- pricing legs that
-   share a game is the prop model's same-game maths, not this page's, and a wrong number here
-   would be worse than none. */
-function propParlays(){
-  const v=propState(); if(!v) return [];
+   price, so a parlay built and bet can easily still be sitting in the builder. That one is
+   read too, marked as in the builder and shown without a price -- pricing legs that share a
+   game is the prop model's same-game maths, not this page's, and a wrong number here would be
+   worse than none. v is the prop model's state, or X's as the document carries it. */
+function propParlays(v,builderNote){
+  if(!v) return [];
   const out=[];
   const saved=Array.isArray(v.saved)?v.saved:[];
   for(const p of saved){
     if(!p||!Array.isArray(p.legs)||!p.legs.length) continue;
     out.push({src:'prop',id:String(p.id||''),week:+p.week||null,stake:+p.stake||0,
-      price:p.price,payout:+p.payout||0,note:'',legs:p.legs.map(propLeg)});
+      price:money(p.price),payout:+p.payout||0,note:'',legs:p.legs.filter(l=>l&&l.gid&&l.stat).map(propLeg)});
   }
   const work=(v.parlay&&typeof v.parlay==='object')
     ?Object.keys(v.parlay).map(k=>v.parlay[k]).filter(l=>l&&l.gid&&l.stat):[];
   if(work.length){
     let w=null; for(const l of work) if(+l.week&&(w===null||+l.week<w)) w=+l.week;
     out.push({src:'prop',id:'prop-builder',week:w,stake:+v.stake||0,price:null,payout:0,
-      note:'in the builder',legs:work.map(propLeg)});
+      note:builderNote||'in the builder',legs:work.map(propLeg)});
   }
-  return out;
+  return out.filter(p=>p.legs.length);
 }
 /* The builder drops a leg once its game has kicked off, since it can no longer be bet. But a
    parlay bet at the book and never locked here is still a bet, and the one this section most
    needs to follow on a Sunday: so the moment the builder is about to drop a started leg, the
    section keeps its own copy of the builder as it stood -- every leg, the stake, a price typed
-   in -- under its own key (kept), shared like the rest of the key, and watches that. Kept by
+   in -- under the key of the list the builder belongs to (kept: X's on the owner's device,
+   shared like the rest of X's key; the visitor's own anywhere else), and watches that. Kept by
    its legs, so two devices that both see the kickoff keep one copy; deleted with its x. The
    page calls this before every redraw of the builder. */
 const hashStr=s2=>{ let h=5381; for(let i=0;i<s2.length;i++) h=((h<<5)+h+s2.charCodeAt(i))|0; return 'k'+(h>>>0).toString(36); };
@@ -300,25 +323,39 @@ function keepBuilder(){
   const legs=Object.keys(S.parlay).map(k=>S.parlay[k]).filter(l=>l&&l.gid&&l.stat);
   const started=legs.filter(l=>{ const g=S.sched.find(x=>x.id===l.gid); return g&&gameStarted(g); });
   if(!started.length) return false;
-  const kl=legs.map(propLeg), id=hashStr(legPrint({legs:kl})), st=liveStore();
+  const L=ownerHere()?LISTS.x:LISTS.my;
+  const kl=legs.map(propLeg), id=hashStr(legPrint({legs:kl})), st=liveStore(L);
   st.kept=isObj(st.kept)?st.kept:{};
   if(st.kept[id]) return false;
   let w=null; for(const l of legs) if(+l.week&&(w===null||+l.week<w)) w=+l.week;
   const price=(S.bookPrice!=null&&isFinite(S.bookPrice)&&+S.bookPrice)?+S.bookPrice:null, stake=+S.stake||0, dec=price!=null?mlDec(price):null;
   st.kept[id]={at:new Date().toISOString(),week:w,stake,price,payout:dec?stake*dec:0,legs:kl};
-  return writeStore(st);
+  return writeStore(L,st);
 }
 window.lpKeep=keepBuilder;
-function keptParlays(){
-  const k=liveStore().kept; if(!isObj(k)) return [];
+function keptParlays(L){
+  const k=liveStore(L).kept; if(!isObj(k)) return [];
   return Object.keys(k).map(id=>{ const v=k[id]; if(!v||!Array.isArray(v.legs)||!v.legs.length) return null;
-    return {src:'kept',id,week:+v.week||null,stake:+v.stake||0,price:v.price!=null?v.price:null,payout:+v.payout||0,
-      note:'builder at kickoff',legs:v.legs.map(propLeg)}; }).filter(Boolean);
+    return {src:'kept',id,week:+v.week||null,stake:+v.stake||0,price:money(v.price),payout:+v.payout||0,
+      note:'builder at kickoff',legs:v.legs.filter(l=>l&&l.gid&&l.stat).map(propLeg)}; }).filter(p=>p&&p.legs.length);
 }
-function localParlays(){
-  const bet=bettingParlays().map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
+/* the betting model's slips: this browser's own (read across from its key by part2), and on X's
+   list those of X's other devices, which the document carries by device (live.bet) */
+function slipsOf(raw){ try{ return typeof bettingParlays==='function'?bettingParlays(JSON.stringify({bank:{build:raw}})):[]; }catch(e){ return []; } }
+function betSlips(L){
+  const s=SYNC(), dev=s&&s.device?s.device():null;
+  let out=holdsS(L)&&typeof bettingParlays==='function'?bettingParlays():[];
+  if(L.id==='x'){ const bet=liveStore(L).bet;
+    if(isObj(bet)) for(const k of Object.keys(bet)) if(!(holdsS(L)&&k===dev)&&Array.isArray(bet[k])) out=out.concat(slipsOf(bet[k])); }
+  const seen=new Set(); return out.filter(p=>!seen.has(p.id)&&seen.add(p.id));
+}
+function ownParlays(L){
+  let props=[];
+  if(holdsS(L)) props=propParlays(propState(),'in the builder');
+  else if(L.id==='x'){ const s=SYNC(), x=s&&s.x?s.x():null; props=x?propParlays(x.prop,'in X’s builder'):[]; }
+  const bet=betSlips(L).map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
     price:p.priced?decToML(p.dec):null,payout:p.payout,note:'',legs:p.legs}));
-  const kept=keptParlays(), props=propParlays();
+  const kept=keptParlays(L);
   /* what is left in the builder after the kickoff is part of the kept parlay, not a second one,
      until a leg is added to it; a kept copy of a parlay that was saved after all is the saved one */
   const inKept=p=>kept.some(k=>{ const ks=new Set(k.legs.map(legOf)); return p.legs.every(l=>ks.has(legOf(l))); });
@@ -331,11 +368,14 @@ function localParlays(){
    the Falcons' are not one leg) */
 const legOf=l=>[l.gid,l.stat,l.k,l.side,isGameLeg(l)?(l.stat==='total'?'':String(l.team||'')):nameOf(l.name)].join('|');
 const legPrint=p=>p.legs.map(legOf).sort().join(' + ');
-function allParlays(){
-  const mine=localParlays(), seen={};
+function allParlays(L){
+  L=L||LISTS.x;
+  const mine=ownParlays(L);
+  if(L.id!=='x') return mine;
+  const seen={};
   for(const p of mine){ seen[String(p.id)]=1; seen[legPrint(p)]=1; }
-  /* what this browser holds wins over the copy in the file, so a parlay you are looking at
-     is the one you built rather than an older snapshot of it */
+  /* what X holds wins over the copy in the file, so a parlay being looked at is the one built
+     rather than an older snapshot of it */
   return mine.concat(STATE.parlays.filter(p=>!seen[String(p.id)]&&!seen[legPrint(p)])
     .map(p=>Object.assign({},p,{src:'file'})));
 }
@@ -361,7 +401,7 @@ function readFile(v){
     id:String(o.id||('p'+ix)),
     week:+o.week||null,
     stake:+o.stake||0,
-    price:o.price!=null?o.price:null,
+    price:money(o.price),
     payout:+o.payout||0,
     note:o.note||'',
     legs:(o.legs||[]).map(q=>({gid:String((q.game!=null&&games[q.game])||''),stat:String(q.stat||''),
@@ -370,7 +410,7 @@ function readFile(v){
       .filter(l=>l.gid&&l.stat&&isFinite(l.k))
   })).filter(x=>x.legs.length);
 }
-const STATE={parlays:[],games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false};
+const STATE={parlays:[],games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false,asked:new Set()};
 const legGames=ps=>{ const s2=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s2.add(l.gid); return s2; };
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -382,8 +422,10 @@ async function refresh(){
     STATE.parlays=readFile(f); STATE.dataErr=null;
   }catch(e){ STATE.dataErr=String(e&&e.message||e); }
   STATE.loaded=true;
-  const ps=allParlays();
+  /* both lists: X's, and the visitor's own */
+  const ps=allParlays(LISTS.x).concat(allParlays(LISTS.my));
   const want=legGames(ps);
+  for(const gid of want) STATE.asked.add(gid);
   if(want.size){
     try{
       const sched=[...want].map(gidParts).filter(Boolean), games={};
@@ -501,12 +543,12 @@ const n0=v=>v==null?'0':String(v);
    Red the moment a leg there is lost, green while every leg is won, yellow for level or
    still undecided -- a leg short of its line with the game running is not lost yet. A game
    that has not kicked off is none of the three. */
-function gameTone(p,gid){
+function gameTone(L,p,gid){
   const g=STATE.games[gid]; if(!g||g.state==='pre') return '';
   let good=0, bad=0, n=0;
   p.legs.forEach((leg,i)=>{
     if(leg.gid!==gid) return;
-    const l=legAt(p,i,leg);
+    const l=legAt(L,p,i,leg);
     const r=liveFor(l); if(r&&r.state==='void') return;        /* a void leg rides on nothing */
     n++; if(!r) return;
     if(r.state==='hit'){ good++; return; }
@@ -519,14 +561,14 @@ function gameTone(p,gid){
 }
 /* Only the games this parlay has no team bet in: where it does, the score is in that leg's
    own row and a strip above would just say it twice. */
-function gameStrip(p){
+function gameStrip(L,p){
   const seen=[], out=[], inRow=[];
   for(const l of p.legs) if(isGameLeg(l)&&l.gid) inRow.push(l.gid);
   for(const l of p.legs){
     if(!l.gid||seen.indexOf(l.gid)>=0||inRow.indexOf(l.gid)>=0) continue;
     seen.push(l.gid);
     const g=STATE.games[l.gid]; if(!g) continue;
-    const tone=gameTone(p,l.gid);
+    const tone=gameTone(L,p,l.gid);
     out.push(`<span class="gm${tone?' '+tone:''}${g.state==='post'?' done':''}">${esc(g.away)} ${n0(g.as)}\u2013${n0(g.hs)} ${esc(g.home)}<em>${esc(g.clock||'')}</em></span>`);
   }
   return out.length?`<div class="games">${out.join('')}</div>`:'';
@@ -563,8 +605,8 @@ function marginBar(val,state){
     <span class="lineLbl" style="left:${mid}%">line</span></div></div>`;
 }
 const MARK={hit:'\u2713',missed:'\u2717',push:'P',void:'V'};
-function legRow(p,leg,i){
-  const l=legAt(p,i,leg), k=+l.k, moved=k!==+leg.k;
+function legRow(L,p,leg,i){
+  const l=legAt(L,p,i,leg), k=+l.k, moved=k!==+leg.k, ed=editable(L);
   const r=liveFor(l), tone=r&&r.state==='hit'?'win':(r&&r.state==='missed'?'lose':'');
   const cls=tone==='win'?'res win':(tone==='lose'?'res loss':'res');
   const mark=r&&MARK[r.state]?MARK[r.state]:'\u25cb';
@@ -606,10 +648,13 @@ function legRow(p,leg,i){
       :(r.need>0?num(r.need,r.need%1?1:0)+(room?' to spare':' to go'):'live'))))));
   const line=state==='void'?`did not play (${r.why}): a book voids this leg`
     :((r&&r.absent)?'not on the box score':((r&&r.stats)?statLine(r.stats):''));
-  const lineHTML=`<span class="ln edit${moved?' moved':''}" role="button" tabindex="0"
+  /* the line is a control only where the list is this device's to change; on X's list on
+     anyone else's device it is the line X took, corrected or not */
+  const lineHTML=ed?`<span class="ln edit${moved?' moved':''}" role="button" tabindex="0"
     data-edit="${esc(lineKey(p,i))}" data-k="${esc(String(k))}"
-    title="The book moved this line? Tap and set what you actually bet.">${esc(num(k,k%1?1:0))}</span>`;
-  const note=moved?`<span class="movedNote">moved from ${esc(num(+leg.k,(+leg.k)%1?1:0))} \u00b7 <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a></span>`:'';
+    title="The book moved this line? Tap and set what you actually bet.">${esc(num(k,k%1?1:0))}</span>`
+    :`<span class="ln${moved?' moved':''}">${esc(num(k,k%1?1:0))}</span>`;
+  const note=moved?`<span class="movedNote">moved from ${esc(num(+leg.k,(+leg.k)%1?1:0))}${ed?` \u00b7 <a href="#" data-reset="${esc(lineKey(p,i))}">undo</a>`:''}</span>`:'';
   return `<div class="sp-leg prop"><span class="${cls}">${mark}</span>
     <div class="legbody">
       <div class="legtop"><span class="tgt">${esc(targetLabel(l,k))}</span><span class="grow"></span><span class="status ${tone}">${status}</span></div>
@@ -626,15 +671,30 @@ const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; r
 let EDITING=null;
 function draw(){
   if(EDITING&&EDITING.isConnected&&document.activeElement===EDITING) return;
-  const app=document.getElementById('app'), ps=allParlays().filter(p=>!isRemoved(p));
-  document.getElementById('clear').hidden=!ps.some(settledP);
+  const own=ownerHere(), card=document.getElementById('myCard');
+  if(card) card.hidden=own;
+  drawList(LISTS.x);
+  /* on the owner's device there is no list of its own: one drawn before the device was known
+     to be the owner's goes */
+  if(!own) drawList(LISTS.my); else { const a=document.getElementById(LISTS.my.el); if(a) a.innerHTML=''; }
+  foot();
+  /* a parlay that arrived since the scores were read (X's, re-read from the store) gets its game read too */
+  if(STATE.loaded&&!STATE.busy&&[...legGames(allParlays(LISTS.x).concat(allParlays(LISTS.my)))].some(g=>!STATE.asked.has(g))) setTimeout(refresh,0);
+}
+function drawList(L){
+  const app=document.getElementById(L.el); if(!app) return;
+  const ed=editable(L), ps=allParlays(L).filter(p=>!isRemoved(L,p));
+  const clr=document.getElementById(L.clear); if(clr) clr.hidden=!ed||!ps.some(p=>settledP(L,p));
   let html='';
-  if(STATE.dataErr) html+=`<div class="note"><b>The parlay file could not be read: ${esc(STATE.dataErr)}</b> This page shows <code>liveparlays/parlays.json</code> from the repository; nothing else is stored anywhere.</div>`;
-  else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
+  if(L.id==='x'){
+    if(STATE.dataErr) html+=`<div class="note"><b>X's placed parlays could not be read: ${esc(STATE.dataErr)}</b> They come from <code>liveparlays/parlays.json</code> in the repository, read on every load; the rest of X Parlays is not affected.</div>`;
+    else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
+  }
   if(!ps.length){
     /* empty says so and no more; the one thing worth a line is the way back for what was deleted */
-    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${removedCount()?';margin-bottom:8px':''}">Nothing to watch yet</b>${removedCount()?`<a href="#" id="restoreAll">bring back the ${removedCount()} deleted</a>`:''}</div>`;
-    foot(); return;
+    const n=ed?removedCount(L):0;
+    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${n?';margin-bottom:8px':''}">${L.id==='x'?'Nothing to watch yet':'Nothing of yours to watch yet'}</b>${n?`<a href="#" id="${L.restore}" data-restore="${L.id}">bring back the ${n} deleted</a>`:''}</div>`;
+    return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
   const endsAt=p=>{ let k=null; for(const l of p.legs){ const g=STATE.games[l.gid]; if(!g||g.kick==null) continue; if(k===null||g.kick>k) k=g.kick; } return k; };
@@ -661,38 +721,43 @@ function draw(){
     }
     const runs=!isDone(p)&&w0&&w1&&w1.key!==w0.key?`<span class="pill">runs into ${w1.day===w0.day?'':esc(w1.day)+' '}${w1.w} games</span>`:'';
     /* the legs as this page measures them, corrected lines and all */
-    const states=p.legs.map((l,i)=>{ const r=liveFor(legAt(p,i,l)); return r?r.state:null; });
+    const states=p.legs.map((l,i)=>{ const r=liveFor(legAt(L,p,i,l)); return r?r.state:null; });
     const done=isDone(p), gone=states.includes('missed'), voids=states.filter(x=>x==='void').length;
     const allVoid=voids>0&&states.every(x=>x==='void'||x==='push');
     const tag=gone?'<span class="pill bad">gone</span>':(done?(allVoid?'<span class="pill">void</span>':'<span class="pill ok">landed</span>'):'')
       +(voids&&!gone&&!allVoid?`<span class="pill">${voids} void</span>`:'');
-    const from={prop:'prop model',kept:'prop model',bet:'betting model',file:'in the repository'}[p.src]||'in the repository';
+    /* a file parlay is one X placed at the book */
+    const from={prop:'prop model',kept:'prop model',bet:'betting model',file:'placed'}[p.src]||'placed';
+    const x=!ed?'':(p.id==='prop-builder'?`<button class="hidebtn" data-rm="${esc(rmKey(p))}" data-list="${L.id}" data-builder="1" title="Clear the builder" aria-label="Clear the Parlay Builder">×</button>`
+      :`<button class="hidebtn" data-rm="${esc(rmKey(p))}" data-list="${L.id}" title="Delete this parlay" aria-label="Delete this parlay">×</button>`);
     html+=`<div class="savedp src ${esc(p.src==='prop'||p.src==='kept'?'prop':(p.src==='bet'?'bet':'file'))}">
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
         <span class="pill">${esc(from)}</span>
-        ${p.week?`<span class="muted" style="font-size:12px">week ${p.week}</span>`:''}
+        ${p.week?`<span class="muted" style="font-size:12px">week ${+p.week}</span>`:''}
         ${p.note?`<span class="pill"${p.src==='kept'?' title="The builder as it stood when its first game kicked off: the builder drops a started leg, so this copy is what is watched. Delete it if it was never bet."':''}>${esc(p.note)}</span>`:''}
-        ${runs}${tag}<span class="grow"></span>${p.id==='prop-builder'?`<button class="hidebtn" data-rm="${esc(rmKey(p))}" data-builder="1" title="Clear the builder" aria-label="Clear the Parlay Builder">\u00d7</button>`:`<button class="hidebtn" data-rm="${esc(rmKey(p))}" title="Delete this parlay" aria-label="Delete this parlay">\u00d7</button>`}</div>
+        ${runs}${tag}<span class="grow"></span>${x}</div>
       <div class="sp-money">
-        <div><b>${canStake(p)?`<span class="ln edit stk" role="button" tabindex="0" data-stake-of="${esc(p.id)}" data-k="${esc(String(+p.stake||0))}" title="Bet a different amount? Tap and set it.">$${(+p.stake||0).toFixed(2)}</span>`:`$${(+p.stake||0).toFixed(2)}`}</b><span>staked</span></div>
-        <div><b>${p.price==null?'\u2013':fmtML(p.price)}</b><span>price</span></div>
-        <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'\u2013'}</b><span>pays</span></div>
+        <div><b>${canStake(L,p)?`<span class="ln edit stk" role="button" tabindex="0" data-stake-of="${esc(p.id)}" data-k="${esc(String(+p.stake||0))}" title="Bet a different amount? Tap and set it.">$${(+p.stake||0).toFixed(2)}</span>`:`$${(+p.stake||0).toFixed(2)}`}</b><span>staked</span></div>
+        <div><b>${p.price==null?'–':esc(fmtML(p.price))}</b><span>price</span></div>
+        <div><b>${p.payout?'$'+(+p.payout).toFixed(2):'–'}</b><span>pays</span></div>
       </div>
-      ${gameStrip(p)}
-      ${p.legs.map((l,i)=>legRow(p,l,i)).join('')}</div>`;
+      ${gameStrip(L,p)}
+      ${p.legs.map((l,i)=>legRow(L,p,l,i)).join('')}</div>`;
   }
-  app.innerHTML=html; wireLines(app); foot();
+  app.innerHTML=html;
+  if(!ed) return;
+  wireLines(app,L);
   app.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
     /* the builder is work in progress, so clearing it asks first; a saved parlay goes at once */
     if(b.dataset.builder&&!confirm('Clear the Parlay Builder? Its legs come off the parlay you are building.')) return;
-    const q=b.dataset.rm.split('|'); removeParlay({src:q[0],id:q.slice(1).join('|')}); draw(); }));
+    const q=b.dataset.rm.split('|'); removeParlay(listOf(b.dataset.list),{src:q[0],id:q.slice(1).join('|')}); draw(); }));
 }
 /* landed or gone: nothing left to watch */
-function settledP(p){ return isDone(p)||p.legs.some((l,i)=>{const r=liveFor(legAt(p,i,l));return r&&r.state==='missed';}); }
+function settledP(L,p){ return isDone(p)||p.legs.some((l,i)=>{const r=liveFor(legAt(L,p,i,l));return r&&r.state==='missed';}); }
 /* Edit a line in place: the number under the bar becomes a box, Enter or leaving it commits,
    Escape puts it back. It is drawn where the line actually is, on the bar, rather than as a
    button repeating the number beside it. */
-function wireLines(app){
+function wireLines(app,L){
   app.querySelectorAll('[data-edit]').forEach(b=>{
     b.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); b.click(); } });
     b.addEventListener('click',()=>{
@@ -706,7 +771,7 @@ function wireLines(app){
       const done=save=>{ if(gone) return; gone=true; EDITING=null;
         if(save){ const v=parseFloat(inp.value), q=key.split('|');
           /* only what was typed: a box left as it opened writes nothing */
-          if(isFinite(v)&&v!==+cur) setLine({src:q[0],id:q[1]},+q[2],v); }
+          if(isFinite(v)&&v!==+cur) setLine(L,{src:q[0],id:q[1]},+q[2],v); }
         draw(); };
       inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); done(true); }
         else if(e.key==='Escape'){ e.preventDefault(); done(false); } });
@@ -735,7 +800,7 @@ function wireLines(app){
   app.querySelectorAll('[data-reset]').forEach(a=>a.addEventListener('click',e=>{
     e.preventDefault();
     const q=a.dataset.reset.split('|');
-    setLine({src:q[0],id:q[1]},+q[2],null); draw();
+    setLine(L,{src:q[0],id:q[1]},+q[2],null); draw();
   }));
 }
 function foot(){
@@ -744,9 +809,14 @@ function foot(){
       :(STATE.loaded?'loaded':'idle'));
 }
 document.getElementById('now').addEventListener('click',refresh);
-document.getElementById('clear').addEventListener('click',()=>{ for(const p of allParlays()) if(!isRemoved(p)&&settledP(p)) removeParlay(p); draw(); });
-document.getElementById('app').addEventListener('click',e=>{
-  if(e.target&&e.target.id==='restoreAll'){ e.preventDefault(); restoreAll(); draw(); } });
+/* Clear settled: each list its own, and only where the list can be changed */
+for(const L of [LISTS.x,LISTS.my]){
+  const b=document.getElementById(L.clear);
+  if(b) b.addEventListener('click',()=>{ if(!editable(L)) return; for(const p of allParlays(L)) if(!isRemoved(L,p)&&settledP(L,p)) removeParlay(L,p); draw(); });
+  const app=document.getElementById(L.el);
+  if(app) app.addEventListener('click',e=>{
+    if(e.target&&e.target.dataset&&e.target.dataset.restore){ e.preventDefault(); restoreAll(listOf(e.target.dataset.restore)); draw(); } });
+}
 draw(); refresh();
 </script>
 </body>
