@@ -15,6 +15,11 @@ on:
     - cron: "17 18 * * *"   # lands about 21-03 UTC: before the 10pm Eastern puck drops; the early games' scores
     - cron: "17 22 * * *"   # lands about 01-07 UTC: the night's finals
   workflow_dispatch:
+  push:
+    # a change to the job or the page runs it once, so the change is proved on the real feeds at once and the
+    # state the page reads is the new job's from the first minute, not the next scheduled slot hours later
+    branches: [main]
+    paths: ["nhl/tools/*.js", "nhl/tools/package*.json", "nhl/index.html", ".github/workflows/nhl.yml"]
 
 permissions:
   contents: write

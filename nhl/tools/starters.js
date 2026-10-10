@@ -12,8 +12,14 @@
    Each game is written with its date, the date of the game on this site's schedule it matches
    (the same two clubs on the page's date, or within a day of the run's Eastern date when the page
    gives none), and that game's ESPN id, so players.js applies a name only to that game: yesterday's
-   starters are never tonight's. The file carries names and clubs, never ratings; players.js
-   matches the names to the box scores' goalies (any club's, so a goalie who changed clubs is found).
+   starters are never tonight's. The page's date is its GMT timestamp (dateGmt) in Eastern time when
+   it has one, else its calendar date as written (date, gameDate: the first ten characters, never
+   moved a day by reading midnight GMT as the evening before). A game that matches nothing on the
+   schedule is kept aside in `unmatched`, never applied, and warned; when on a game day the page
+   names games and none of them matches, the file says so (`ok: false`, "answered ... none matched")
+   and the workflow's last step fails the run after the commit. The file carries names and clubs,
+   never ratings; players.js matches the names to the box scores' goalies (any club's, so a goalie
+   who changed clubs is found).
 
    The page answers GitHub's runners and not every network. When it does not answer, the games
    already in the file stay (each only for its own date) and `ok: false` with `why` says so; when it
@@ -45,7 +51,18 @@ const codeOf = s => {
 /* the status exactly: Confirmed, Likely, Unconfirmed; anything else as the page wrote it */
 const statusOf = s => { const t = String(s || '').trim(); return /^confirmed$/i.test(t) ? 'Confirmed' : /^likely$/i.test(t) ? 'Likely' : /^unconfirmed$/i.test(t) ? 'Unconfirmed' : (t || null); };
 const nameOf = v => !v ? null : typeof v === 'string' ? v : v.name || v.fullName || v.playerName || (v.firstName && v.lastName ? `${v.firstName} ${v.lastName}` : null);
-const dateOf = node => { for (const k of ['date', 'gameDate', 'dateGmt', 'startTime', 'time', 'gameTime']) { const v = node[k]; if (typeof v !== 'string') continue; if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v; if (!isNaN(Date.parse(v)) && /^\d{4}-\d{2}-\d{2}T/.test(v)) return E.etDate(v); } return null; };
+/* the game's Eastern date. A real timestamp (dateGmt, or a start time that says its zone) is converted
+   to Eastern, dateGmt first: a zone-less GMT stamp is read as GMT. A calendar key (date, gameDate) is
+   the day it names, its first ten characters, never converted: '2026-10-10T00:00:00.000Z' is the 10th,
+   not the evening of the 9th in New York. A clock time alone ('7:00 PM') is no date */
+const STAMP = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/, ZONE = /(Z|[+-]\d{2}:?\d{2})$/i;
+const dateOf = node => {
+  const gmt = node.dateGmt;
+  if (typeof gmt === 'string' && STAMP.test(gmt.trim())) { const t = gmt.trim().replace(' ', 'T'); const ms = Date.parse(ZONE.test(t) ? t : t + 'Z'); if (!isNaN(ms)) return E.etDate(ms); }
+  for (const k of ['date', 'gameDate']) { const v = node[k]; if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v.trim())) return v.trim().slice(0, 10); }
+  for (const k of ['startTime', 'gameTime', 'startTimeUTC']) { const v = node[k]; if (typeof v === 'string' && STAMP.test(v.trim()) && ZONE.test(v.trim())) { const ms = Date.parse(v.trim()); if (!isNaN(ms)) return E.etDate(ms); } }
+  return null;
+};
 
 /* walk the page's JSON for every game with two clubs and at least one goalie */
 function harvest(node, found = [], depth = 0) {
@@ -91,7 +108,18 @@ async function main() {
   const m = /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(html);
   let found = [];
   if (m) { try { found = harvest(JSON.parse(m[1])); } catch (e) { log(`starters: the page's data did not parse (${e.message})`); } }
-  const games = matchGames(found, S.games, today);
+  const read = matchGames(found, S.games, today);
+  /* an entry is used only on the game it matched; one that matches no game on the schedule is kept
+     aside (`unmatched`), never applied, and said. When the page names games on a game day and not one
+     of them matches, its dates or names are being misread: the file says so (`ok: false`, 'answered'),
+     and the workflow's last step fails the run after the commit, so the break is seen */
+  const games = read.filter(g => g.id), unmatched = read.filter(g => !g.id);
+  if (unmatched.length) warn(`starters: ${unmatched.length} of ${read.length} games read off the page match no game on the schedule: ${unmatched.slice(0, 6).map(g => `${g.away}@${g.home} ${g.date}`).join(', ')}`);
+  if (!games.length && read.length) {
+    const why = `DailyFaceoff answered with ${read.length} game(s) but none matched the schedule (read as ${[...new Set(unmatched.map(g => g.date))].slice(0, 3).join(', ')}): its dates or club names are being misread`;
+    if (gameDay) warn(`starters: ${why}`); else log(`starters: ${why}; no game today`);
+    write({ ok: !gameDay, why: gameDay ? why : null, games: keep, unmatched }); return;
+  }
   if (!games.length) {
     const why = gameDay ? `DailyFaceoff answered but no game could be read from it (${m ? 'the page\'s shape has changed' : 'no __NEXT_DATA__ on the page'})` : 'no game on the page';
     if (gameDay) {
@@ -105,8 +133,8 @@ async function main() {
   const likely = games.reduce((a, g) => a + [g.homeGoalie, g.awayGoalie].filter(x => x && x.status === 'Likely').length, 0);
   /* the page's games replace the file's for the same game; earlier ones stay, each for its own date */
   const ids = new Set(games.map(g => g.id || `${g.date}|${g.home}|${g.away}`));
-  write({ ok: true, why: null, games: keep.filter(e => !ids.has(e.id || `${e.date}|${e.home}|${e.away}`)).concat(games) });
-  log(`starters: ${games.length} games read, ${n} goalies named (${conf} confirmed, ${likely} likely, ${n - conf - likely} unconfirmed), ${games.filter(g => g.id).length} matched to the schedule`);
+  write(Object.assign({ ok: true, why: null, games: keep.filter(e => !ids.has(e.id || `${e.date}|${e.home}|${e.away}`)).concat(games) }, unmatched.length ? { unmatched } : {}));
+  log(`starters: ${read.length} games read, ${games.length} matched to the schedule; ${n} goalies named (${conf} confirmed, ${likely} likely, ${n - conf - likely} unconfirmed)`);
 }
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
 module.exports = { harvest, matchGames, statusOf, codeOf };

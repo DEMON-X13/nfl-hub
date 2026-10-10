@@ -762,7 +762,7 @@ nhl/
   tools/elo.js        THE MODEL: Elo with home ice, back-to-back, rest, an overtime weight and a
                       goal-margin multiplier; a Poisson goals layer for the puck line and the total
   tools/fit.js        coordinate search on the history, last season held out
-  tools/update.js     the job (--scores: the days through today only, its first pass)
+  tools/update.js     the job (--scores, its first pass: scores and schedule, every call copied, none made)
   tools/smoke.js      the gate: the page and the state against the injury report, the box scores,
                       DailyFaceoff, the clock and the last published state
   tools/simulate.js   the whole job offline on fixtures in the feeds' shapes, run first by the workflow
@@ -770,7 +770,8 @@ nhl/
   tools/fetch_box.js  ESPN box scores into data/box_<season>.jsonl (2021-22 on, each line with its
                       score) and data/injuries.json (the id read from the player's link)
   tools/starters.js   DailyFaceoff's announced goalies into data/starters.json, each game with its
-                      date and ESPN id (GitHub's runners only)
+                      date and ESPN id; a game matching nothing on the schedule kept aside, never
+                      applied (GitHub's runners only)
   tools/players.js    THE PLAYER MODEL: skaters' offence and defence, goalies' saves, lineups by ice
                       time; fit, holdout, walk-forward, every game to come lined up -> data/players.json
 ```
@@ -782,7 +783,12 @@ game still to come the model's chance, expected margin and total, the overtime c
 DraftKings' moneyline, puck line and total. That call is frozen at puck drop by the clock (a game
 ESPN still has as scheduled past its start is not called again) and every part of it is copied
 after, so the record grades what the page showed; rows an older job recomputed after puck drop are
-put back once to the call shown. A side is taken only where the model's chance beats the book's
+put back once to the call shown. The job runs `update.js` twice: the first pass (`--scores`) reads the
+same days, writes the scores and the schedule and copies every call as it was, so `fetch_box.js` boxes
+last night's finals and `players.js` lines up on the schedule the second pass calls on; only the second
+makes calls. A game comes off the schedule only on the feed's word (postponed, cancelled, or moved to
+another day); one an answer leaves out is kept with its call, line and grade (`kept`), a blank answer
+on a day the last state has games on is no answer, and what came off is in `removed` with the reason. A side is taken only where the model's chance beats the book's
 implied by five points; the record counts straight-up calls on every game and the sides taken on
 each market. The playoff picture, in the regular season, is two thousand simulations of the rest
 of it (overtime and its loser point from the goals layer), the league's bracket (top three a
@@ -794,7 +800,8 @@ series' score (`phase`: preseason, regular, postseason, over, offseason).
 WHO PLAYS (`players.js`): each game's lineup is who dressed last less anyone ESPN's injury report has
 out, on injured reserve or suspended, or lists under another club; the goalie, game by game, is
 DailyFaceoff's for that game and date, else the club's most frequent starter in its last ten games
-this season, the other goalie on the second night of a back to back. The page's clock decides what
+this season, the other goalie on the second night of a back to back (other than the box score's
+starter of the night before, or the one expected for it while it is not boxed). The page's clock decides what
 has started: the Games tab's Today is the visitor's Eastern date, a game past its puck drop offers no
 bet and says it is under way, a live score the job published says when it was read (and the page
 reads ESPN itself once on opening for a game under way), and a leg whose game has started leaves the
@@ -802,7 +809,8 @@ builder. Tabs: Games, Standings, Power Ratings, Playoff, Players (the player mod
 the sources it stands on), Parlays (browser only, no sync), Record.
 
 `.github/workflows/nhl.yml` runs five times a day, each slot queued for the window it must land in
-at the 2.7 to 8.7 hours late GitHub starts this repo's runs: `simulate.js`, `update.js --scores`,
+at the 2.7 to 8.7 hours late GitHub starts this repo's runs, and once on a push to `nhl/tools`, the page
+or the workflow: `simulate.js`, `update.js --scores`,
 `fetch_box.js`, `starters.js`, `players.js`, `update.js`, `smoke.js`, the commit (`nhl/state.json`,
 `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`,
 `nhl/data/players.json` and any `nhl/data/season_*.json`), then `sources.js`, which fails the run
@@ -827,7 +835,7 @@ week 18 and says the regular season is complete; it does not cover the playoffs.
 | `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the page or a week file | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the page, the lineups against the report they came from, and `cases.js`); commits only what changed: `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
 | `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json`, `cfb/news.json` and `cfb/data/teams.json` |
-| `nhl.yml` | 5x/day, queued for the window each must land in (GitHub starts them 2.7-8.7 hours late): the night's finals and morning lines, before 7pm Eastern twice, before 10pm, the night's finals | `simulate.js`, `update.js --scores`, `fetch_box.js`, `starters.js`, `players.js`, `update.js` (exits 1, nothing written, when a day with games to finish or call does not answer), `smoke.js`; commits `nhl/state.json`, `nhl/data/teams.json`, `box_*.jsonl`, `injuries.json`, `starters.json`, `players.json`, `season_*.json`; then `sources.js` fails the run if a source broke |
+| `nhl.yml` | 5x/day, queued for the window each must land in (GitHub starts them 2.7-8.7 hours late): the night's finals and morning lines, before 7pm Eastern twice, before 10pm, the night's finals; and on a push to `nhl/tools`, the page or the workflow | `simulate.js`, `update.js --scores`, `fetch_box.js`, `starters.js`, `players.js`, `update.js` (exits 1, nothing written, when a day with games to finish or call does not answer), `smoke.js`; commits `nhl/state.json`, `nhl/data/teams.json`, `box_*.jsonl`, `injuries.json`, `starters.json`, `players.json`, `season_*.json`; then `sources.js` fails the run if a source broke |
 
 Only `props.yml` spends money (`ODDS_API_KEY`, ~7 credits a game, ~112 a week,
 500 free a month). The other five use free sources.

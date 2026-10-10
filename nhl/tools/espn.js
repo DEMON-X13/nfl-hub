@@ -124,7 +124,10 @@ function oddsOf(comp) {
   return out;
 }
 
-/* one event -> one row. null for a game that is not two NHL clubs (an exhibition), or postponed */
+/* one event -> one row. null for a game that is not two NHL clubs (an exhibition). A game the feed
+   marks postponed or cancelled is a marker, { id, gone: 'postponed' | 'cancelled', date, home, away },
+   never a row: the job takes a game off the schedule only on the feed's word, so a game that is
+   merely missing from an answer is never mistaken for one called off */
 function gameRow(ev) {
   const comp = ev.competitions?.[0];
   if (!comp || !comp.competitors) return null;
@@ -133,7 +136,8 @@ function gameRow(ev) {
   const H = codeOf(home.team), A = codeOf(away.team);
   if (!H || !A) return null;
   const st = comp.status?.type || {};
-  if (/POSTPONED|CANCELED/i.test(st.name || '')) return null;
+  const off = `${st.name || ''} ${st.description || ''}`;
+  if (/POSTPONED|CANCEL/i.test(off)) return { id: String(ev.id), gone: /CANCEL/i.test(off) ? 'cancelled' : 'postponed', date: etDate(comp.date || ev.date), home: H, away: A };
   const state = st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
   const periods = state === 'pre' ? null : Math.max((home.linescores || []).length, (away.linescores || []).length, comp.status?.period || 0) || null;
   const date = etDate(comp.date || ev.date);

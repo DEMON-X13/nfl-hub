@@ -2,10 +2,12 @@
    and the lines before puck drop, grade what has finished, simulate the playoff picture and
    write nhl/state.json, which is everything the page shows.
 
-    node nhl/tools/update.js              the season, from ESPN
-    node nhl/tools/update.js --scores     the days through today only (the rest carried from the last
-                                          state): the job's first pass, so last night's finals are in
-                                          the state before fetch_box.js boxes them and players.js rates them
+    node nhl/tools/update.js              the season, from ESPN: rate, call, grade, write
+    node nhl/tools/update.js --scores     the job's first pass: the same season read, the scores, states and
+                                          schedule written, and every call copied from the last state
+                                          as it was, none made; last night's finals are then in the state
+                                          before fetch_box.js boxes them and players.js lines up on the
+                                          same schedule the second pass calls on
     node nhl/tools/update.js --offline    from the scoreboard files a previous run saved in nhl/tools/out/
 
    NHL_TODAY, NHL_NOW, NHL_STATE, NHL_OUT, NHL_TEAMS and NHL_DATA in the environment move the day,
@@ -14,19 +16,28 @@
 
    Free: ESPN's public feeds only, nothing spends a credit. One request per day from the
    season's start to the end of June, skipping the days the last state already has complete,
-   so the whole schedule is known and a run in season is a couple of hundred small requests.
+   so the whole schedule is known and a pass in season is a couple of hundred small requests.
    A day the last state still has a game to finish on, through tomorrow, must be read fresh: if
-   ESPN does not answer for one, the run exits 1 having written nothing, so the last good state
-   stays live; a later day that fails keeps the schedule the last state had.
+   ESPN does not answer for one (or answers with no game where the last state has some, none
+   called off), the run exits 1 having written nothing, so the last good state stays live; a later
+   day that fails keeps the schedule the last state had. A game leaves the schedule only when the
+   feed marks it postponed or cancelled (or it has moved to another day): one an answer merely
+   leaves out is kept as the last state had it, call, line and grade, and said (`kept`), and only
+   one never final two days past its puck drop that the feed has not shown since goes. Every game
+   taken off is listed in `removed` with the feed's reason, so the smoke test can account for each
+   started call of the last published state.
 
    The call is frozen at puck drop, by the clock and not only by ESPN's state (a game delayed past
-   its start is not called again): once a game has started, every part of the call shown before it
-   (the chance, margin, total, overtime chance, the line, each side taken and whose call it was) is
-   copied from the last state and graded as it stands, never recomputed. A row an older job wrote
-   after puck drop, which recomputed the puck-line side from the team Elo's margin, is put back to
-   the call shown before puck drop from the inputs it kept (the player model's margin, the line,
-   the chance and total), exactly as that run computed it. Games that were already over when this
-   job first ran are graded from the replay and marked so.
+   its start is not called again, nor one whose start ESPN moves less than half a day later after
+   the puck drop its call was made before): once a game has started, every part of the call shown
+   before it (the chance, margin, total, overtime chance, the line, each side taken and whose call
+   it was) is copied from the last state and graded as it stands, never recomputed. Only the second
+   pass makes calls. A row an older job wrote after puck drop, which recomputed the puck-line side
+   from the team Elo's margin, is put back to the call shown before puck drop from the inputs it
+   kept (the player model's margin, the line, the chance and total): every pick, side and margin as
+   that run computed it; the team Elo's view shown beside it (`elo`, display only) from the replay
+   for a final and from the ratings as they stand while it is live. Games that were already over
+   when this job first ran are graded from the replay and marked so.
 
    The model is nhl/tools/elo.js with the parameters fit.js wrote to nhl/data/model.json,
    replayed over the finished seasons (hist.js: history.json and the season_<year>.json files) and
@@ -72,21 +83,21 @@ async function pullSeason(prev) {
   const teams = JSON.parse(fs.readFileSync(TEAMS, 'utf8'));
   const games = new Map();
   const complete = new Set();
+  const prevByDate = {};
   if (prev && prev.season === SEASON) {
-    const byDate = {};
-    for (const g of prev.games) { (byDate[g.date] = byDate[g.date] || []).push(g); games.set(g.id, g); }
-    for (const [d, rs] of Object.entries(byDate)) if (d < TODAY && rs.every(r => r.state === 'final')) complete.add(d);
+    for (const g of prev.games) { (prevByDate[g.date] = prevByDate[g.date] || []).push(g); games.set(g.id, g); }
+    for (const [d, rs] of Object.entries(prevByDate)) if (d < TODAY && rs.every(r => r.state === 'final')) complete.add(d);
   }
   const days = [];
   /* every day of the season, so the whole schedule is known and the playoff picture is the rest
-     of the season and not the next fortnight; a day already complete is not asked for again.
-     --scores reads only the days through today and carries the rest */
-  const lastDay = ARGS.has('--scores') ? TODAY : `${SEASON}-06-30`;
-  for (let d = `${SEASON - 1}-10-01`; d <= lastDay; d = addDays(d, 1)) if (!complete.has(d)) days.push(d);
+     of the season and not the next fortnight; a day already complete is not asked for again. Both
+     passes read every day, so the lineups players.js builds between them stand on the same schedule
+     the calls are made on (a game postponed tomorrow is not a back to back's first night) */
+  for (let d = `${SEASON - 1}-10-01`; d <= `${SEASON}-06-30`; d = addDays(d, 1)) if (!complete.has(d)) days.push(d);
   /* the days that must be read fresh: any through tomorrow on which the last state has a game not final */
   const needed = new Set();
   if (prev && prev.season === SEASON) for (const g of prev.games) if (g.state !== 'final' && g.date <= addDays(TODAY, 1)) needed.add(g.date);
-  const fresh = new Set();
+  const fresh = new Set(), rowsOf = new Map(), gone = new Map(), blank = [];
   let asked = 0, ok = 0;
   for (let i = 0; i < days.length; i += 4) {
     const batch = await Promise.all(days.slice(i, i + 4).map(async d => {
@@ -102,18 +113,41 @@ async function pullSeason(prev) {
     for (const [d, j] of batch) {
       if (!j) continue;
       E.teamsOf(j, teams.teams);
-      /* the day's rows are what the feed says now, so a postponed game leaves its old date */
-      for (const [id, g] of games) if (g.date === d) games.delete(id);
-      for (const ev of j.events || []) { const g = E.gameRow(ev); if (g && g.season === SEASON && g.type !== 1 && g.date === d) { if (g.type !== 2) g.type = 3; games.set(g.id, g); } }
+      const here = [];
+      for (const ev of j.events || []) {
+        const g = E.gameRow(ev); if (!g) continue;
+        if (g.gone) { gone.set(g.id, g); continue; }
+        if (g.season === SEASON && g.type !== 1 && g.date === d) { if (g.type !== 2) g.type = 3; here.push(g); }
+      }
+      /* an answer with no game on a day the last state has games on, none of them called off, is no
+         answer: that day is not fresh (a needed one stops the run below), and its games stay */
+      if (!here.length && (prevByDate[d] || []).some(g => !gone.has(g.id))) { fresh.delete(d); blank.push(d); log(`${d}: the scoreboard answered with no game, where the last state has ${prevByDate[d].length}: taken as no answer`); continue; }
+      for (const g of here) rowsOf.set(g.id, g);
     }
     if (!ARGS.has('--offline')) await new Promise(r => setTimeout(r, 200));
   }
   if (asked && !ok) throw new Error('ESPN scoreboard unreachable: every day asked for failed');
-  const missing = [...needed].filter(d => days.includes(d) && !fresh.has(d)).sort();
-  if (missing.length) throw new Error(`ESPN's scoreboard did not answer for ${missing.join(', ')}, which still have games to finish or to call; nothing written, the last state stays live`);
-  log(`${days.length} days read (${complete.size} already complete)${ARGS.has('--scores') ? ', through today only' : ''}, ${asked} asked, ${ok} answered`);
+  const unanswered = [...needed].filter(d => days.includes(d) && !fresh.has(d)).sort();
+  if (unanswered.length) throw new Error(`ESPN's scoreboard did not answer for ${unanswered.join(', ')}, which still have games to finish or to call; nothing written, the last state stays live`);
+  /* the feed's rows, each on the day it is on now (a game moved to another day leaves its old one) */
+  for (const [id, g] of rowsOf) games.set(id, g);
+  /* a game comes off the schedule only on the feed's word: postponed or cancelled, and not on another day now */
+  const removed = [];
+  for (const [id, x] of gone) if (!rowsOf.has(id) && games.has(id)) { const p = games.get(id); games.delete(id); removed.push({ id, date: p.date, home: p.home, away: p.away, why: x.gone }); log(`${p.away}@${p.home} ${p.date}: ${x.gone} in the feed, taken off the schedule`); }
+  /* a game the last state has on a day the feed answered for, left out of that answer and neither
+     called off nor on another day: a partial answer never takes a game, its call, its line or its
+     grade. It is kept as the last state had it, and said; one still not final two days after its
+     puck drop that the feed has never shown again was not played, and goes, said the same way */
+  const kept = [];
+  for (const [id, g] of [...games]) {
+    if (!fresh.has(g.date) || rowsOf.has(id)) continue;
+    if (g.state !== 'final' && g.start && Date.parse(NOW) - Date.parse(g.start) > 48 * 3600000) { games.delete(id); removed.push({ id, date: g.date, home: g.home, away: g.away, why: 'missing from the feed' }); log(`${g.away}@${g.home} ${g.date}: missing from the feed since its day and never final, taken off the schedule`); }
+    else kept.push(g);
+  }
+  if (kept.length) log(`${kept.length} game(s) the feed's answer left out, kept as the last state had them: ${kept.map(g => `${g.away}@${g.home} ${g.date} (${g.state})`).join(', ')}`);
+  log(`${days.length} days read (${complete.size} already complete), ${asked} asked, ${ok} answered${blank.length ? `, ${blank.length} blank` : ''}`);
   fs.writeFileSync(TEAMS, JSON.stringify(teams));
-  return { games: [...games.values()].sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0), teams };
+  return { games: [...games.values()].sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0), teams, removed, kept: kept.map(g => g.id) };
 }
 
 /* the finished seasons; at a new season's first run the old one is closed into season_<year>.json
@@ -272,8 +306,11 @@ async function main() {
   /* the player model's numbers on the games to come, when players.js has run; `use` says whose call the page carries */
   const PM = fs.existsSync(path.join(DATA, 'players.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'players.json'), 'utf8')) : null;
   const usePM = !!(PM && PM.report && PM.report.use);
-  const { games, teams: T } = await pullSeason(prev);
+  const { games, teams: T, removed, kept } = await pullSeason(prev);
   log(`${games.length} games this season, ${games.filter(g => g.state === 'final').length} final`);
+  /* the games taken off the schedule since the last published state: this run's, and the first pass's when this is the second */
+  const prevPass = prev && prev.season === SEASON && prev.pass === 'scores';
+  const removedNow = (prevPass ? (prev.removed || []).filter(r => !games.some(g => g.id === r.id)) : []).concat(removed);
 
   /* replay: the history, then this season's finals, keeping each one's pre-game view and the scoring rates before it */
   const m = new Elo(model.params);
@@ -295,9 +332,14 @@ async function main() {
   }
   E.TEAMS.slice().sort((a, b) => teams[b].rating - teams[a].rating).forEach((id, i) => { teams[id].rank = i + 1; });
 
-  /* every game's call and lines: made while it is still to come, frozen at puck drop, kept after */
+  /* every game's call and lines: made while it is still to come, frozen at puck drop, kept after.
+     Started: under way or over in the feed, or its puck drop passed by the clock, or (a delay) the puck
+     drop its call was made before has passed and the feed has moved the start less than half a day
+     later; a game moved to another day is a game to come again */
   const now = NOW;
-  const started = g => g.state !== 'pre' || (!!g.start && Date.parse(g.start) <= Date.parse(NOW));
+  const DELAY = 12 * 3600000;
+  const started = (g, p) => g.state !== 'pre' || (!!g.start && Date.parse(g.start) <= Date.parse(NOW))
+    || !!(p && p.frozen && p.before && Date.parse(p.before) <= Date.parse(NOW) && g.start && Date.parse(g.start) - Date.parse(p.before) < DELAY);
   /* the call from a view and a line: the chance, margin, total, overtime chance and each side taken */
   const callOf = (view, line) => {
     const mu = view.pmMu !== undefined && view.pmMu !== null ? view.pmMu : spreadOf(view.diff, model);
@@ -332,23 +374,35 @@ async function main() {
      still to come there), else rebuilt from what an older job kept after puck drop: the chance, the
      total, the player model's view and the line were kept, the margin and the sides recomputed on the
      team Elo's margin, so the player model's margin is put back and the sides recomputed from it */
+  const shown = p => p.state === 'pre' || !!p.callV;               // the row's call is the one the page showed before puck drop
+  const verbatim = p => { const c = {}; for (const k of CALL) if (p[k] !== undefined) c[k] = p[k]; if (shown(p)) c.callV = CALL_V; return c; };
   const keptCall = (p, rp) => {
-    if (p.state === 'pre' || p.callV) { const c = {}; for (const k of CALL) if (p[k] !== undefined) c[k] = p[k]; c.callV = CALL_V; return c; }
+    if (shown(p)) return verbatim(p);
+    /* the team Elo's view beside the player model's, as the row had it before puck drop: the replay's
+       pre-game view for a final, the ratings as they stand (the game not yet rated) while it is live */
     const byPlayers = !!(p.pm && p.pm.pHome === p.pHome && p.pm.xt === p.xt);
     const view = { pHome: p.pHome, diff: p.diff, rh: p.rh, ra: p.ra, xt: p.xt, frozen: p.frozen, pm: p.pm };
-    if (byPlayers) { view.pmMu = p.pm.mu; view.elo = { pHome: expected(p.diff), xt: rp ? rp.xt : p.xt }; }
+    if (byPlayers) { view.pmMu = p.pm.mu; view.elo = rp ? { pHome: rp.pHome, xt: rp.xt } : { pHome: m.predict(p).pHome, xt: rates.total(p.home, p.away) }; }
     rebuilt++;
     return callOf(view, p.line || null);
   };
   let rebuilt = 0;
   const out = [];
+  /* --scores, the job's first pass, makes no call: every row keeps the last state's call as it was
+     (a game still to come included), and only its score, state and schedule are new. players.js lines
+     up on that state, and the second pass makes the calls, so a game whose puck drop falls between the
+     two passes is graded on the call the page showed, never on one the first pass made and nobody saw */
+  const SCORES = ARGS.has('--scores');
   for (const g of games) {
     const p = prevGames.get(g.id);
     const row = { id: g.id, type: g.type, date: g.date, start: g.start, state: g.state, detail: g.detail, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods,
       neutral: g.neutral, note: g.note, hrec: g.hrec, arec: g.arec };
+    /* a score under way that a partial answer left out is the one read before: said with when it was read */
+    if (g.state === 'live' && kept.includes(g.id)) row.scoreAt = (p && p.scoreAt) || (prev && prev.published) || null;
     let call;
-    if (started(g) && p && p.frozen) call = keptCall(p, replayed[g.id]);
-    else if (!started(g)) {
+    if (SCORES) call = p ? verbatim(p) : {};
+    else if (started(g, p) && p && p.frozen) call = keptCall(p, replayed[g.id]);
+    else if (!started(g, p)) {
       const v = m.predict(g); const view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: now, elo: { pHome: v.pHome, xt: rates.total(g.home, g.away) } };
       /* the player model's view, frozen with the rest; the call is its when it has earned it */
       const u = PM && PM.upcoming && PM.upcoming[g.id];
@@ -403,7 +457,13 @@ async function main() {
 
   /* the player rankings, for the Players tab: every rated player, the club strengths, the report */
   const players = PM ? { asOf: PM.asOf, generated: PM.generated, use: usePM, report: PM.report, params: PM.params, players: PM.players, teams: PM.teams, injuries: PM.injuries || null, starters: PM.starters || null } : null;
-  const state = { published: process.env.NHL_NOW ? new Date(Date.parse(NOW)).toISOString() : new Date().toISOString(), season: SEASON, today: TODAY, phase: playoff.phase, model, teams, games: out, record, playoff, edge: EDGE, players };
+  /* `removed`: the games taken off the schedule since the last published state, each with the feed's
+     reason, so the smoke test can hold every started call of that state to this one; `kept`: games a
+     partial answer left out, kept as they were; `pass`: only on the first pass's state, never published */
+  /* published at the run's own clock, the one every call was made and frozen by, so a puck drop while the run reads
+     the feed is not a call "made after puck drop" to the smoke test */
+  const state = Object.assign({ published: new Date(Date.parse(NOW)).toISOString(), season: SEASON, today: TODAY, phase: playoff.phase, model, teams, games: out, record, playoff, edge: EDGE, players },
+    removedNow.length ? { removed: removedNow } : {}, kept.length ? { kept } : {}, SCORES ? { pass: 'scores' } : {});
   const before = prev ? JSON.stringify(Object.assign({}, prev, { published: null, today: null })) : null;
   const after = JSON.stringify(Object.assign({}, state, { published: null, today: null }));
   if (before === after) { log('nothing changed; state.json left alone'); return; }

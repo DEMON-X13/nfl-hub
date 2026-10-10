@@ -266,7 +266,7 @@ select,input[type=number]{background:var(--panel-3);border:1px solid var(--line-
 </main>
 <script>
 'use strict';
-const APP_BUILD = 'nhl v4 · 2026-10-10';
+const APP_BUILD = 'nhl v5 · 2026-10-10';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
 const KEY = 'nhl_v1';
@@ -395,7 +395,7 @@ function gameCard(g) {
      has as to come whose puck drop has passed says so instead of a time */
   let detail = '';
   if (live) detail = `<span class="${state === 'live' ? 'live' : ''}">${esc(live.detail)}</span>`;
-  else if (g.state === 'live') detail = `<span class="live">${esc(g.detail)}</span> <span class="asof" title="the score when the job last ran; Refresh scores reads ESPN now">as of ${esc(hhmm(S.published))}</span>`;
+  else if (g.state === 'live') detail = `<span class="live">${esc(g.detail)}</span> <span class="asof" title="the score when the job last read it; Refresh scores reads ESPN now">as of ${esc(hhmm(g.scoreAt || S.published))}</span>`;
   else if (g.state === 'final') detail = esc(g.detail);
   else if (started) detail = '<span class="asof" title="Refresh scores reads ESPN now">under way · no score yet</span>';
   return `<div class="game ${final ? 'final' : ''}" data-id="${g.id}">

@@ -37,8 +37,12 @@
    with the most starts in its last ten games this season (ties: last season's starts for the club,
    then the latest start), never one the report has out; on the second night of a back to back
    (the club's previous game, played or not, the day before) the other goalie from the one who
-   started, or is expected to start, that game. NHL_DATA, NHL_STATE and NHL_TODAY move the files and
-   the day, for simulate.js. */
+   started that game (its box score), or is expected to (the same choice, while it is to come,
+   under way or over and not yet boxed). The schedule is the state update.js's first pass wrote,
+   which reads every day, so the lineups stand on the games the second pass calls; the team Elo's
+   gap blended in is this file's own replay of every final, never a row's `diff` (the first pass
+   copies the last run's calls). NHL_DATA, NHL_STATE and NHL_TODAY move the files and the day, for
+   simulate.js. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
@@ -321,15 +325,17 @@ function lineups(m, games, S, injuries, starters) {
       if (!R.length) return null;
       const list = sched[code] || []; const i = list.findIndex(x => x.id === g.id);
       const prev = i > 0 && daysBetween(list[i - 1].date, g.date) === 1 ? list[i - 1] : null;
-      let yesterday = null;
-      if (prev) yesterday = prev.state === 'final' ? (boxed.has(String(prev.id)) ? startOf[prev.id + '|' + code] || null : R[0].id) : (expectedBy[prev.id] || R[0].id);
+      /* that night's goalie: the box score's starter once it is boxed, else the one expected for it (the
+         same choice, DailyFaceoff's for that game first), whether it is to come, under way or over */
+      const yesterday = prev ? (expectedBy[prev.id] || R[0].id) : null;
       if (prev && yesterday === R[0].id && R.length > 1) return { id: R[1].id, how: 'back to back: the other goalie', b2b: true };
       return { id: R[0].id, how: startsText(R[0]) };
     };
     let next = null;
     for (const g of sched[code] || []) {
-      if (g.state === 'final') continue;
+      if (boxed.has(String(g.id))) { expectedBy[g.id] = startOf[g.id + '|' + code] || null; continue; }   // played and boxed: who started it
       const c = choose(g); expectedBy[g.id] = c ? c.id : null;
+      if (g.state === 'final') continue;                       // over and not yet boxed: only the night after reads it
       perGame[g.id + '|' + code] = c;
       if (!next) next = c;
     }
@@ -381,13 +387,17 @@ function main() {
   const upcoming = {}; let teams = {}; let injMeta = null, stMeta = null;
   if (S) {
     const L = lineups(m, games, S, injuries, starters); teams = L.teams;
+    /* the team Elo's gap on each game, from this file's own replay of every final (update.js's first
+       pass copies the last state's calls, so a row's `diff` is the last run's, or none on a new game) */
+    eloModel.newSeason(S.season);
     for (const g of S.games) {
       if (g.state === 'final') continue;
       const th = teams[g.home], ta = teams[g.away];
       const ch = L.perGame[g.id + '|' + g.home], ca = L.perGame[g.id + '|' + g.away];
-      const v = m.predict(g, th._shares, ta._shares, ch ? ch.id : null, ca ? ca.id : null, g.diff);
+      const diff = eloModel.predict(g).diff;
+      const v = m.predict(g, th._shares, ta._shares, ch ? ch.id : null, ca ? ca.id : null, diff);
       /* `inj`: the injury report this lineup was built on, so the page and the smoke can hold it to that report */
-      upcoming[g.id] = { pHome: +v.pHome.toFixed(4), pGoals: +v.pGoals.toFixed(4), mu: +v.mu.toFixed(2), total: +v.total.toFixed(2), tie: +v.tie.toFixed(3),
+      upcoming[g.id] = { pHome: +v.pHome.toFixed(4), pGoals: +v.pGoals.toFixed(4), mu: +v.mu.toFixed(2), total: +v.total.toFixed(2), tie: +v.tie.toFixed(3), diff: +diff.toFixed(2),
         home: th._side(ch), away: ta._side(ca), inj: injuries.pulled || null };
     }
     for (const t of Object.values(teams)) { delete t._shares; delete t._side; }

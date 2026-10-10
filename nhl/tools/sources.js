@@ -6,9 +6,11 @@
    run, the model's own goalies when DailyFaceoff could not be read); this step makes the break seen
    too, by failing the run once the data is already live. It fails when, with a game in the next day
    and a half: the injury report in use is more than twelve hours older than the state, or there is
-   none; ESPN's report rows mostly lack the id fetch_box.js reads from the player link (its shape
+   none, or it has no rows (fetch_box.js never writes an empty one: the league always has someone
+   hurt); ESPN's report rows mostly lack the id fetch_box.js reads from the player link (its shape
    moved; players.js is matching names alone); or DailyFaceoff answered on a game day and not one
-   game could be read from it (its shape moved). DailyFaceoff not answering at all is a warning only:
+   game could be read from it (its shape moved), or none it named matched a game on the schedule
+   (its dates or club names are being misread). DailyFaceoff not answering at all is a warning only:
    it answers GitHub's runners and not every network, and the next run asks again.
    NHL_STATE and NHL_DATA move the files (simulate.js). */
 'use strict';
@@ -26,6 +28,7 @@ if (soon) {
   if (inj && inj.teams) {
     const rows = Object.values(inj.teams).reduce((a, l) => a.concat(l || []), []);
     const withId = rows.filter(r => r.id && /^\d+$/.test(String(r.id))).length;
+    if (inj.pulled && !rows.length) problems.push('the injury report in use has no rows: ESPN answered with nobody hurt in the whole league, which is no report, and every lineup to come is who dressed last');
     if (rows.length && withId < rows.length / 2) problems.push(`only ${withId} of ${rows.length} injury report rows carry an ESPN id: the feed's player links have moved, and players.js is matching by name alone`);
   }
   if (st && st.ok === false && /answered/.test(st.why || '')) problems.push(`DailyFaceoff: ${st.why}; the goalies are the model's own choice until starters.js reads the new shape`);

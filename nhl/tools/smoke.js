@@ -16,14 +16,19 @@
        played for the club this season or last, and once the club has three games this season he
        started one of them, unless every goalie who did is out or gone; a goalie said to be on the
        second night of a back to back is (the club's game before is the day before) and is not
-       the one named or who started that night
+       the one who started that night (its box score) or is named for it (a game still to come);
+       a game under way or over and not yet boxed is not compared, since its card is the call
+       frozen at puck drop, which may be an older run's goalie
      - DailyFaceoff (nhl/data/starters.json): a goalie it names for a game still to come, who is a
        rated goalie of that club and not out, is the one in goal on that game
      - the clock: a call is never made after its puck drop; a call shown before puck drop is the call
        graded, field for field, against the last published state (NHL_PREV_STATE, else git's
-       HEAD:nhl/state.json; a row an older job wrote after puck drop is exempt); a call that is the
-       player model's carries the player model's margin; and the page, opened at a game's puck drop,
-       offers no bet on it and calls the visitor's day Today
+       HEAD:nhl/state.json; a row an older job wrote after puck drop is exempt), a game delayed less
+       than half a day counting as started; no started call of that state is gone from this one
+       unless `removed` gives the feed's reason (postponed, cancelled, or never final and unseen two
+       days past its puck drop); the state is the job's second pass, never the first's; a call that
+       is the player model's carries the player model's margin; and the page, opened at a game's
+       puck drop, offers no bet on it and calls the visitor's day Today
      - the playoffs: a club knocked out has no Cup or conference chance, the champion has the Cup
    NHL_STATE, NHL_DATA and NHL_PREV_STATE move the files (simulate.js). */
 'use strict';
@@ -136,7 +141,12 @@ function reality() {
       const list = sched[club]; const i = list.findIndex(x => x.id === g.id); const prev = i > 0 ? list[i - 1] : null;
       chk(prev && prev.date === dayBefore(g.date), `${club} on ${g.date}: "${gl.how}" but its game before is on ${prev ? prev.date : 'no date'}`);
       if (prev && prev.date === dayBefore(g.date)) {
-        const thatNight = prev.state === 'final' && byStart[prev.id] ? starterOf(byStart[prev.id], club) : prev.pm && prev.pm[prev.home === club ? 'home' : 'away'] && prev.pm[prev.home === club ? 'home' : 'away'].goalie && prev.pm[prev.home === club ? 'home' : 'away'].goalie.id;
+        /* that night's goalie: the box score's starter once boxed; the one named on its card while it is
+           still to come; a game under way or over with no box yet is not known here, and not compared
+           (its card is the call frozen at puck drop, which may be an older run's goalie) */
+        const side = prev.pm && prev.pm[prev.home === club ? 'home' : 'away'];
+        const begun = startedAt(prev, PUB) || (!!prev.before && Date.parse(prev.before) <= PUB);       // a delayed game's call is frozen too
+        const thatNight = byStart[prev.id] ? starterOf(byStart[prev.id], club) : !begun && side && side.goalie ? side.goalie.id : null;
         if (thatNight) chk(thatNight !== gl.id, `${club} on ${g.date}: "${gl.how}" names ${gl.name}, who is also the goalie of ${prev.date}`);
       }
     }
@@ -159,11 +169,26 @@ function reality() {
     if (g.frozen) chk(Date.parse(g.frozen) < Date.parse(g.before || g.start), `the call on ${g.id} was made at ${g.frozen}, at or after its puck drop ${g.before || g.start}`);
     if (g.pm && g.pHome === g.pm.pHome && g.xt === g.pm.xt && g.frozen) chk(g.mu === g.pm.mu && g.by === 'players', `the call on ${g.id} (${g.away}@${g.home} ${g.date}, ${g.state}) is the player model's chance and total but carries margin ${g.mu} (the player model's is ${g.pm.mu}) and by=${g.by}`);
   }
+  /* the published state is the second pass's, never the first's (which makes no call) */
+  chk(S.pass === undefined, `the state is the job's second pass, not its first (pass ${S.pass})`);
   if (PREV && PREV.season === S.season) {
     const prev = new Map(PREV.games.map(g => [g.id, g]));
+    /* no started call is lost: every game the last published state had a call on that has started is
+       still on the schedule, unless the feed called it off (or, never final, it has not been seen two
+       days past its puck drop), which `removed` must say */
+    const now = new Map(games.map(g => [g.id, g])), off = new Map((S.removed || []).map(r => [r.id, r]));
+    for (const p of PREV.games) {
+      if (!p.frozen || !startedAt(p, PUB) || now.has(p.id)) continue;
+      const r = off.get(p.id);
+      const ok = r && (/postponed|cancelled/.test(r.why) || (r.why === 'missing from the feed' && p.state !== 'final' && PUB - Date.parse(p.start) > 48 * 3600000));
+      chk(ok, `${p.away}@${p.home} ${p.date} (${p.state}, call frozen ${p.frozen}) was in the last published state and is gone from this one${r ? ` (${r.why})` : ', with no reason given'}`);
+    }
     let compared = 0;
     for (const g of games) {
-      const p = prev.get(g.id); if (!p || !p.frozen || !startedAt(g, PUB)) continue;
+      const p = prev.get(g.id); if (!p || !p.frozen) continue;
+      /* started, or delayed: the puck drop the call was made before has passed and the start moved less than half a day */
+      const delayed = !!p.before && Date.parse(p.before) <= PUB && Date.parse(g.start) - Date.parse(p.before) < 12 * 3600000;
+      if (!startedAt(g, PUB) && !delayed) continue;
       if (!(p.state === 'pre' || p.callV)) continue;                                // an older job's row after puck drop: put back once, not compared
       compared++;
       const moved = CALL.filter(k => JSON.stringify(g[k] ?? null) !== JSON.stringify(p[k] ?? null));
