@@ -47,7 +47,7 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
-- `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json`
+- `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` (and `cfb/data/history.json` gains the season just finished on the job's first run of a new one; otherwise it is source)
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
@@ -309,17 +309,61 @@ a model fitted on the seasons before it. Do not tune the formula on the season i
 
 ```
 cd cfb/tools && npm ci
-node cfb/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> cfb/state.json
+node cfb/tools/simulate.js        # the job over fabricated weeks in a scratch folder; must end "0 failures"
+node cfb/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> cfb/state.json; exit 1, nothing written, on a failed feed it cannot carry
 node cfb/tools/news.js            # the CFB News tab's file: the week's slate, written from the numbers -> cfb/news.json
-node cfb/tools/smoke.js           # must end "0 failures"
+node cfb/tools/smoke.js           # must end "0 failures" (the job runs it with CFB_SMOKE_STRICT=1)
 ```
 
 The page is `cfb/index.html`, hand-written, one file; it fetches `state.json` on every
 load, so a page change is just an edit (bump `APP_BUILD` in it) and a data change is the
-job's. `cfb/data/history.json` is twelve seasons of results pulled once by
-`tools/history.js`; `tools/fit.js` chooses the model's parameters on it and writes
-`cfb/data/model.json`. Refit only for a deliberate model change, and commit the new
-numbers with it. `.github/workflows/cfb.yml` runs six times a week on ESPN's free feeds.
+job's. The season is `cfb/tools/season.js` and nowhere else: August to January is that year's,
+February to July the finished one stays (`phase` 'over'); on the first run of a new season the
+job appends the season just finished to `cfb/data/history.json` from the same scoreboards (and
+refuses the new season if that pull fails), so a rollover needs no hand edit. `history.json` is
+otherwise twelve seasons pulled once by `tools/history.js` (which merges a range into the file);
+`tools/fit.js` chooses the model's parameters on it and writes `cfb/data/model.json`. Refit only
+for a deliberate model change, and commit the new numbers with it.
+
+What the page shows is held to reality, in the job, on the page and in the gate:
+- A game's call and line are taken at every run while it is to come and frozen from its kickoff,
+  by ESPN's status or by the clock (a game whose time is TBD from the start of its day), so a run
+  landing after kickoff cannot re-take them; the record grades that frozen call. A line is the one
+  ESPN carries at this run: a look-ahead number ESPN has dropped is not kept for a game to come.
+  A postponed or cancelled game (ESPN's 'post' with `completed` false) is neither called nor
+  graded; an opponent ESPN lists as TBD is shown without a call and never counted as a win.
+- The page never offers a game that has kicked off by the visitor's clock, never offers a line
+  older than the job's last run, drops a started leg from the builder, reads live scores from
+  ESPN in the browser on load when a game of the week is under way (a score the job saw under way
+  is dated), shows a TBD kickoff as its Eastern day with "time TBA", and leads the record with
+  the calls made before kickoff beside DraftKings' favourite on the same games.
+- A week's scoreboard that does not download is carried from the last publish only when every
+  game in it is final or more than five days off; otherwise `update.js` exits 1 before the commit
+  and the last good state stays live. Polls that do not download are carried and dated; either
+  is said on the page (`notes`). The current week is the first regular-season week with a game to
+  play (Army-Navy holds its week against a bowl the same morning); the playoff odds keep every
+  played playoff result (a team out has no title chance) and use the real bracket once ESPN has it.
+- CFB News keeps football headlines only, from after each team's last game, none naming an
+  opponent already played; marks a season leader the injury report or a headline has out; lists
+  real injury statuses; compares sacks a game; a feed that does not answer is named in the window
+  (a game summary that does not answer keeps the last run's preview, dated).
+- `smoke.js` holds the page to the clock (on the real week and on made-up games: kicked off, a
+  stale line, a TBD time, a score under way, a postponement), the state to the schedule and the
+  last commit (no frozen call re-taken, no graded game or week lost), the polls to the season, the
+  expected wins to the real games left, the playoff odds to the playoff's results, and the news
+  to the injury report and schedule it was written from. On a checkout whose files predate the
+  schema-2 job it skips what only that job writes and says so; strict, as the job runs it, those
+  fail. `simulate.js` runs the job itself through a week (lines up, kickoffs with ESPN lagging,
+  finals), a failed feed (refused, or carried), a postponement, Army-Navy week, the 2025 playoff
+  from the history and the next season's first run, with the smoke after each; `CFB_SIM_TOOLS`
+  runs a mutated copy of the job through it, which must fail.
+
+`.github/workflows/cfb.yml` runs `simulate.js`, the job, the news and the strict smoke 17 times a
+week, set by when each run must land: GitHub starts this repo's scheduled runs 3 to 9 hours late,
+so a slot that must land before a kickoff is queued about ten hours ahead (daily 06:17 UTC for
+Saturday's noon games, Saturday 10:17 for the afternoon, daily 13:47 for any evening), and slots
+meant to land after the finals or the Sunday AP poll are queued at them. It commits
+`cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` and, at a rollover, `cfb/data/history.json`.
 
 ## Hockey: the loop
 

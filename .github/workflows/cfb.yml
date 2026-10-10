@@ -2,16 +2,25 @@ name: Update college site
 
 on:
   schedule:
-    # In UTC (Eastern is UTC-4 in season). College football plays Tuesday to Saturday,
-    # nearly all of it Saturday. ESPN's public feeds are the only source: free, no credits.
-    # Off the hour, because this repo's scheduled runs land late and :00 is the minute most
-    # often dropped.
-    - cron: "17 13 * * 2"   # Tuesday 9:17am ET: the week rolls over, the new polls are out
-    - cron: "17 13 * * 5"   # Friday 9:17am ET: the weekend's lines are posted, the calls are frozen
-    - cron: "17 13 * * 6"   # Saturday 9:17am ET: the last read of the lines before kickoff
-    - cron: "47 3 * * 0"    # Saturday 11:47pm ET: the afternoon and early evening games are final
-    - cron: "17 9 * * 0"    # Sunday 5:17am ET: the late games, the whole Saturday graded
-    - cron: "17 13 * * 1"   # Monday 9:17am ET: catch-up
+    # In UTC. Eastern is UTC-4 until the first Sunday of November, UTC-5 after: the ET times
+    # below are EDT, an hour earlier in EST. ESPN's public feeds are the only source: free.
+    #
+    # GitHub starts this repo's scheduled runs 3 to 9 hours late (this job's measured 4.0-7.8h,
+    # the repo's 2.7-9.4h), never early by much. So every slot that must land BEFORE a kickoff
+    # is queued about ten hours ahead of it, and every slot meant to land AFTER something (the
+    # finals, a poll) is queued at it. A game's call and line are the last run's before its
+    # kickoff; the page itself stops offering a game at kickoff by the visitor's clock and reads
+    # live scores from ESPN in the browser, so a late run never shows a started game as bettable.
+    # Off the hour, because :00 is the minute most often delayed.
+    - cron: "17 6 * * *"    # daily 2:17am ET: lands ~9am-3pm UTC. Last night's finals (Tue-Fri nights,
+                            # all of Saturday on Sunday), Wednesday's for a Tuesday-night CFP ranking,
+                            # and Saturday's for the noon kickoffs (16:00 UTC)
+    - cron: "17 10 * * 6"   # Saturday 6:17am ET: lands ~1-7pm UTC, before the 3:30pm ET kickoffs (19:30 UTC)
+    - cron: "47 13 * * *"   # daily 9:47am ET: lands ~5-11pm UTC, before the evening kickoffs any night
+                            # (7-8pm ET, 23:00-00:00 UTC): Tuesday/Wednesday in November, Thursday,
+                            # Friday and Saturday night
+    - cron: "47 21 * * 6"   # Saturday 5:47pm ET: lands ~1-7am UTC Sunday, the afternoon games final
+    - cron: "47 17 * * 0"   # Sunday 1:47pm ET: lands ~9pm-3am UTC, after the AP poll (Sunday ~2pm ET)
   workflow_dispatch:
 
 permissions:
@@ -31,17 +40,27 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: cfb/tools
+      # The job proved first on fabricated weeks (a kickoff, a failed feed, a dropped line, a
+      # postponement, Army-Navy week, the playoff, a new season), offline, in a scratch folder
+      - name: Simulate the job over a fabricated season
+        run: node cfb/tools/simulate.js
+      # Exits 1 and writes nothing when a scoreboard the season needs did not download (the
+      # last publish stays live); a far-off week or the polls that fail are carried and said so
       - name: Read the season, rate, call, grade and write state.json
         run: node cfb/tools/update.js
       - name: Write the CFB News tab's file
         run: node cfb/tools/news.js
+      # Strict: the files must be the ones this job writes (schema 2), and the calls and lines
+      # frozen before a kickoff must match the last commit's
       - name: Smoke test the page over the new state
         run: node cfb/tools/smoke.js
+        env:
+          CFB_SMOKE_STRICT: "1"
       - name: Commit if anything changed
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add cfb/state.json cfb/news.json cfb/data/teams.json
+          git add cfb/state.json cfb/news.json cfb/data/teams.json cfb/data/history.json
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "cfb: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             ok=0

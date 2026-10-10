@@ -72,6 +72,14 @@ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1
 .tag.loss{background:var(--miss-soft);color:var(--miss);border-color:transparent}
 .tag.push{background:var(--gold-soft);color:#8A6412;border-color:transparent}
 .tag.replay{background:var(--blue-soft);color:var(--blue);border-color:transparent}
+.tag.out{background:var(--miss-soft);color:var(--miss);border-color:transparent}
+.game .when .started{color:var(--gold);font-weight:600}
+.lines .v small{color:var(--muted);font-size:11px;margin-left:4px}
+.notes{max-width:1100px;margin:0 auto;padding:8px 16px 0;font-size:12.5px;color:var(--ink-2)}
+.notes p{margin:0 0 4px;padding:6px 10px;background:var(--gold-soft);border-radius:var(--r-sm)}
+.bracket .seedline.out span:not(.seed){text-decoration:line-through;color:var(--muted)}
+.bracket .champ{font-size:11px;color:var(--pick);font-weight:700}
+.slot .when .kick{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--gold-soft);color:#8A6412;letter-spacing:.08em}
 .legbtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .legbtns .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-right:2px}
 .linesTable td{padding:5px 6px;white-space:normal} .linesTable .btn{margin:1px 2px;white-space:nowrap}
@@ -180,6 +188,7 @@ tr.major td{font-weight:500}
     <button data-tab="record">Record</button>
   </nav>
 </header>
+<div class="notes" id="runNotes" hidden></div>
 <main>
   <section id="tab-games">
     <div class="toolbar">
@@ -244,7 +253,8 @@ tr.major td{font-weight:500}
   <section id="tab-parlays" hidden>
     <div class="card">
       <h2>Parlay builder</h2>
-      <p class="small muted">Add moneylines and spreads with the + buttons below, or on any game card on the Games tab. Priced at DraftKings' numbers as ESPN showed them when the job last ran; the model's chance is its own view of the same legs, multiplied, one leg a game.</p>
+      <p class="small muted">Add moneylines and spreads with the + buttons below, or on any game card on the Games tab. Priced at DraftKings' numbers as ESPN showed them when the job last ran; the model's chance is its own view of the same legs, multiplied, one leg a game. A game that has kicked off, by your clock, is never offered, and a leg on one leaves the builder.</p>
+      <p class="small muted" id="legsNote" hidden></p>
       <div class="legs" id="legs"></div>
       <div class="totals" id="parlayTotals"></div>
       <div class="row">
@@ -283,7 +293,7 @@ tr.major td{font-weight:500}
 <div class="ov" id="ov"><div class="ovbox" id="ovbox"></div></div>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v10 · 2026-10-03';
+const APP_BUILD = 'cfb v11 · 2026-10-10';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -312,8 +322,29 @@ const gameById = () => { const m = {}; for (const g of S.games) m[g.id] = g; ret
 const isMajorGame = g => T(g.home).major || T(g.away).major;
 const isRankedGame = g => g.hrank || g.arank || T(g.home).ap || T(g.away).ap;
 const weekLabel = g => g.type === 3 ? 'Postseason' : 'Week ' + g.week;
+/* ESPN's stand-in for an opponent not decided yet (id -1 or -2): shown, never called or offered */
+const isPh = id => !(Number(id) > 0);
+const isPlaceholderGame = g => !!g.placeholder || isPh(g.home) || isPh(g.away);
+/* a kickoff whose time is not set: ESPN dates it at midnight Eastern, so the day is right in
+   Eastern time and the hour means nothing (a state from before the job marked it says 'TBD') */
+const tbdTime = g => g.tbd === true || (g.tbd === undefined && g.state === 'pre' && /^TBD$/i.test(g.detail || ''));
+const ET = 'America/New_York';
+/* what the page knows of a game now: the scores this browser read from ESPN, else the job's */
+const stateOf = g => (LIVE[g.id] ? LIVE[g.id].state : g.state);
+/* kicked off by ESPN or by the visitor's clock; a game with no time set counts from the start of its day */
+const kickedOff = g => { const st = stateOf(g); return st === 'live' || st === 'final' || (st === 'pre' && Date.now() >= Date.parse(g.date)); };
+/* a line the job read at its last run. An older one (ESPN stopped carrying it) is shown with its
+   date and never offered as a price */
+const runStamp = () => S.run || (S.published ? new Date(S.published).toISOString().slice(0, 16) + 'Z' : '');
+const freshLine = g => !!g.line && (S.run ? g.line.at === S.run : Math.abs(Date.parse(S.published) - Date.parse(g.line.at || 0)) < 3600e3);
+const bettable = g => !!g.line && !isPlaceholderGame(g) && g.state === 'pre' && stateOf(g) === 'pre' && !kickedOff(g) && freshLine(g);
+const sortKey = g => Date.parse(g.date) + (tbdTime(g) ? 86399e3 : 0);
+const byKick = (a, b) => sortKey(a) - sortKey(b);
+const shortDate = iso => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const clock = iso => new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
 function when(g) {
   const d = new Date(g.date);
+  if (tbdTime(g)) return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: ET }) + ' · time TBA';
   return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 function teamCell(id, rank) {
@@ -355,13 +386,34 @@ function renderGames() {
   if (conf) gs = gs.filter(g => T(g.home).conf === conf || T(g.away).conf === conf);
   else if (scope === 'major') gs = gs.filter(isMajorGame);
   else if (scope === 'ranked') gs = gs.filter(isRankedGame);
-  gs.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  gs.sort(byKick);
   $('gamesNote').textContent = gs.length ? `${gs.length} games` : '';
   if (!gs.length) { $('games').innerHTML = '<div class="empty">No games here. Widen the filter.</div>'; return; }
   $('games').innerHTML = gs.map(gameCard).join('');
 }
+/* the card's status: ESPN's as this browser read it, else the job's (a score the job saw under
+   way is dated, it is not live), else the clock's */
+function statusOf(g) {
+  const live = LIVE[g.id];
+  if (live) return { text: live.detail, cls: live.state === 'live' ? 'live' : '' };
+  if (g.state === 'live') return { text: `${g.detail || 'in progress'} · as of ${clock(S.published)}`, cls: 'live' };
+  if (g.state === 'final') return { text: g.detail || 'Final', cls: '' };
+  if (g.state === 'postponed') return { text: g.detail || 'Postponed', cls: 'started' };
+  if (kickedOff(g)) return { text: tbdTime(g) ? 'game day · time TBA' : 'kicked off · result after the next run', cls: 'started' };
+  return { text: '', cls: '' };
+}
+function placeholderCard(g) {
+  const nm = id => isPh(id) ? '<span class="muted">to be decided</span>' : `${esc(T(id).short)}`;
+  return `<div class="game" data-id="${g.id}" data-placeholder="1">
+    <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span></div>
+    <div class="side"><span></span><span class="nm">${nm(g.away)}</span><span></span><span></span></div>
+    <div class="side"><span></span><span class="nm">${nm(g.home)}</span><span></span><span></span></div>
+    <div class="lines"><div><div class="k">Matchup</div><div class="v muted">opponent to be decided: no call until ESPN names both teams</div></div></div>
+  </div>`;
+}
 function gameCard(g) {
-  const live = LIVE[g.id]; const state = live ? live.state : g.state;
+  if (isPlaceholderGame(g)) return placeholderCard(g);
+  const live = LIVE[g.id]; const state = stateOf(g);
   const hs = live ? live.hs : g.hs, as = live ? live.as : g.as;
   const th = T(g.home), ta = T(g.away);
   const pAway = 1 - g.pHome;
@@ -377,11 +429,15 @@ function gameCard(g) {
     </div>`;
   const modelLine = g.spread === 0 ? 'PK' : (g.spread < 0 ? `${th.abbr} ${g.spread}` : `${ta.abbr} ${-g.spread}`);
   let mkt = '—', ml = '—', callTag = '';
+  /* a line older than the job's last run, on a game still to come: ESPN no longer carries it */
+  const stale = line && g.state === 'pre' && !kickedOff(g) && !freshLine(g);
   if (line) {
     mkt = line.homeLine === null || line.homeLine === undefined ? '—' : (line.homeLine <= 0 ? `${th.abbr} ${fmtLine(line.homeLine)}` : `${ta.abbr} ${fmtLine(-line.homeLine)}`) + (line.total ? ` · o/u ${line.total}` : '');
     ml = `${ta.abbr} ${fmtOdds(line.awayML)} · ${th.abbr} ${fmtOdds(line.homeML)}`;
+    if (stale) { mkt += ` <small>read ${shortDate(line.at)}, not current</small>`; }
   }
-  if (g.atsPick) {
+  if (stale) callTag = `<span class="tag pass" title="DraftKings' number is not on ESPN any more; the model takes no side against an old line">no call: the line is not current</span>`;
+  else if (g.atsPick) {
     const t = g.atsPick === 'home' ? th : ta; const l = g.atsPick === 'home' ? line.homeLine : -line.homeLine;
     callTag = `<span class="tag pick">${esc(t.abbr)} ${fmtLine(l)} · edge ${Math.abs(g.edge)}</span>`;
   } else if (g.noAts === 'fcs') callTag = `<span class="tag pass" title="the model has almost nothing on a lower-division school; the book's number is the better guess">no call against an FCS side</span>`;
@@ -392,9 +448,10 @@ function gameCard(g) {
     if (g.result.ats) result += ` <span class="tag ${g.result.ats}">ATS ${g.result.ats}</span>`;
     if (!g.frozen) result += ` <span class="tag replay" title="this game was over before the job first ran; the call is the replay's">replayed</span>`;
   }
-  const legBtn = (sd, kind) => legButton(g, sd, kind, line, final || state === 'live');
-  return `<div class="game" data-id="${g.id}">
-    <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span class="${state === 'live' ? 'live' : ''}">${state === 'pre' ? '' : esc(live ? live.detail : g.detail)}</span></div>
+  const legBtn = (sd, kind) => legButton(g, sd, kind, line, !bettable(g));
+  const st = statusOf(g);
+  return `<div class="game" data-id="${g.id}"${kickedOff(g) ? ' data-started="1"' : ''}>
+    <div class="when"><span>${when(g)}${g.neutral ? ' · neutral' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span class="${st.cls}">${esc(st.text)}</span></div>
     ${side(g.away, g.arank, g.arec, pAway, as, g.pick === 'away', awayWon)}
     ${side(g.home, g.hrank, g.hrec, g.pHome, hs, g.pick === 'home', homeWon)}
     <div class="lines">
@@ -424,6 +481,7 @@ document.addEventListener('click', e => {
   const [gid, side, kind] = b.dataset.leg.split('|'); const g = gameById()[gid];
   const i = P.legs.findIndex(l => l.game === gid && l.side === side && l.kind === kind);
   if (i >= 0) P.legs.splice(i, 1);
+  else if (!g || !bettable(g)) { renderGames(); if (!$('tab-parlays').hidden) renderParlays(); return; }
   else {
     P.legs = P.legs.filter(l => l.game !== gid);         // one leg a game
     const line = g.line;
@@ -438,22 +496,33 @@ document.addEventListener('click', e => {
 });
 function updateLegCount() { const n = P.legs.length; $('legCount').hidden = !n; $('legCount').textContent = n; }
 
-/* live scores, read from ESPN in this browser */
+/* live scores, read from ESPN in this browser: on the button, and once on load when a game of
+   the week has kicked off since the job's last run */
+async function readScores(wk) {
+  const q = wk === 'post' ? `groups=80&seasontype=3&week=1&dates=${S.season}&limit=400` : `groups=80&seasontype=2&week=${wk}&dates=${S.season}&limit=400`;
+  const r = await fetch(`${ESPN_SB}?${q}`, { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+  const j = await r.json(); let n = 0;
+  for (const ev of j.events || []) {
+    const c = ev.competitions && ev.competitions[0]; if (!c) continue;
+    const h = c.competitors.find(x => x.homeAway === 'home'), a = c.competitors.find(x => x.homeAway === 'away');
+    const st = c.status && c.status.type || {};
+    const off = /POSTPONED|CANCELED|CANCELLED/i.test(st.name || '') || (st.state === 'post' && st.completed === false);
+    const state = off ? 'postponed' : st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
+    if (state === 'pre') continue;
+    LIVE[ev.id] = { state, hs: off ? null : +h.score, as: off ? null : +a.score, detail: st.shortDetail || st.detail || '' }; n++;
+  }
+  return n;
+}
+function rerender() { const t = P.ui.tab; if (t && $('tab-' + t) && !$('tab-' + t).hidden) showTab(t); }
+async function autoScores() {
+  const wk = String(S.week);
+  const due = S.games.some(g => (wk === 'post' ? g.type === 3 : g.type === 2 && String(g.week) === wk) && !isPlaceholderGame(g) && g.state !== 'final' && g.state !== 'postponed' && kickedOff(g));
+  if (!due) return;
+  try { if (await readScores(wk)) rerender(); } catch (e) { /* the job's scores stay, dated */ }
+}
 $('refreshScores').addEventListener('click', async () => {
   const wk = $('weekSel').value; const btn = $('refreshScores'); btn.disabled = true; btn.textContent = 'Reading…';
-  try {
-    const q = wk === 'post' ? `groups=80&seasontype=3&week=1&dates=${S.season}&limit=400` : `groups=80&seasontype=2&week=${wk}&dates=${S.season}&limit=400`;
-    const r = await fetch(`${ESPN_SB}?${q}`, { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
-    const j = await r.json(); let n = 0;
-    for (const ev of j.events || []) {
-      const c = ev.competitions && ev.competitions[0]; if (!c) continue;
-      const h = c.competitors.find(x => x.homeAway === 'home'), a = c.competitors.find(x => x.homeAway === 'away');
-      const st = c.status && c.status.type || {}; const state = st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
-      if (state === 'pre') continue;
-      LIVE[ev.id] = { state, hs: +h.score, as: +a.score, detail: st.shortDetail || st.detail || '' }; n++;
-    }
-    btn.textContent = `Scores read (${n})`;
-  } catch (e) { btn.textContent = 'ESPN did not answer'; }
+  try { const n = await readScores(wk); btn.textContent = `Scores read (${n})`; } catch (e) { btn.textContent = 'ESPN did not answer'; }
   setTimeout(() => { btn.textContent = 'Refresh scores'; btn.disabled = false; }, 2500);
   renderGames();
 });
@@ -469,16 +538,18 @@ async function renderNews() {
   $('newsLabel').textContent = NEWS.label || ''; $('newsDates').textContent = NEWS.dates || '';
   $('newsNote').textContent = NEWS.published ? 'Written ' + new Date(NEWS.published).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
   if (!NEWS.games.length) { $('slate').innerHTML = '<div class="empty">Nothing on the slate this week.</div>'; return; }
-  $('slate').innerHTML = NEWS.games.map(n => {
+  $('slate').innerHTML = NEWS.games.slice().sort((x, y) => Date.parse(x.kick) + (x.tbd ? 86399e3 : 0) - Date.parse(y.kick) - (y.tbd ? 86399e3 : 0)).map(n => {
     const g = G[n.id] || {}; const a = T(n.away), h = T(n.home);
     const live = LIVE[n.id]; const state = live ? live.state : g.state; const hs = live ? live.hs : g.hs, as = live ? live.as : g.as;
     const done = state === 'final' && hs !== null && hs !== undefined;
-    const d = new Date(n.kick);
-    const when = done ? d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : `${d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} · ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+    const d = new Date(n.kick); const tbd = n.tbd || (g.id && tbdTime(g));
+    const day = d.toLocaleDateString(undefined, Object.assign({ weekday: 'short', month: 'short', day: 'numeric' }, tbd ? { timeZone: ET } : {}));
+    const when = done ? day : tbd ? `${day} · time TBA` : `${day} · ${d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+    const started = !done && state !== 'live' && g.id && kickedOff(g);
     const won = id => done && ((id === n.home) === (hs > as)) && hs !== as;
     const team = (t, id) => `<span class="team ${done ? (won(id) ? 'won' : 'lost') : ''}">${t.logo ? `<img src="${esc(t.logo)}" alt="" onerror="this.style.visibility='hidden'">` : ''}${t.ap ? `<span class="rk">${t.ap}</span>` : ''}${esc(t.abbr)}</span>`;
     return `<button class="slot ${done ? 'final' : ''}" type="button" data-news="${n.id}" aria-label="Open ${esc(a.name)} at ${esc(h.name)}">
-      <div class="when">${esc(when)}${done ? '<span class="fin">Final</span>' : state === 'live' ? '<span class="liv">Live</span>' : ''}</div>
+      <div class="when">${esc(when)}${done ? '<span class="fin">Final</span>' : state === 'live' ? (live ? '<span class="liv">Live</span>' : `<span class="liv">Live as of ${esc(clock(S.published))}</span>`) : started ? `<span class="kick">${tbd ? 'Game day' : 'Kicked off'}</span>` : ''}</div>
       <div class="vs">${team(a, n.away)}<em>${g.neutral ? 'vs' : 'at'}</em>${team(h, n.home)}${done || state === 'live' ? `<span class="score">${as} - ${hs}</span>` : ''}</div>
       <div class="meta" title="${[n.tv, n.venue].filter(Boolean).map(esc).join(' · ')}">${[n.tv, n.venue].filter(Boolean).map(esc).join(' · ')}</div>
       <div class="hook">${esc(n.note || '')}${n.credit ? ` <small class="muted">(${esc(n.credit)})</small>` : ''}</div>
@@ -492,8 +563,8 @@ function openNews(id) {
   const n = (NEWS && NEWS.games || []).find(x => x.id === id); if (!n) return;
   const g = gameById()[id] || {}; const a = T(n.away), h = T(n.home);
   const done = g.state === 'final' && g.hs !== null;
-  const d = new Date(n.kick);
-  const meta = [done ? `Final ${g.as}-${g.hs}` : '', d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }), done ? '' : d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }), n.tv, n.venue, n.line].filter(Boolean).map(esc).join(' · ');
+  const d = new Date(n.kick); const tbd = n.tbd || (g.id && tbdTime(g));
+  const meta = [done ? `Final ${g.as}-${g.hs}` : '', d.toLocaleDateString(undefined, Object.assign({ weekday: 'short', month: 'short', day: 'numeric' }, tbd ? { timeZone: ET } : {})), done ? '' : tbd ? 'time TBA' : d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }), n.tv, n.venue, n.line].filter(Boolean).map(esc).join(' · ');
   const block = (side) => {
     const t = T(n[side]); const e = n.teams[side] || {}; const ap = t.ap ? `<span class="tag">AP ${t.ap}</span>` : '';
     const rec = t.fbs ? `${t.w}-${t.l}${t.cw + t.cl ? ` · ${t.cw}-${t.cl} ${esc(confName(t.conf))}` : ''}` : ((side === 'home' ? g.hrec : g.arec) || '');
@@ -515,8 +586,8 @@ function openNews(id) {
     { label: 'Rushing yards', a: sa.rushg, h: sh.rushg, note: 'per game' },
     { label: 'Passing yards', a: sa.passg, h: sh.passg, note: 'per game' },
     { label: 'Turnover margin', a: sa.to, h: sh.to, sign: true, note: 'per game' },
-    { label: 'Sacks', a: sa.sk, h: sh.sk },
-    { label: 'Sacks allowed', a: sa.ska, h: sh.ska, lo: true },
+    { label: 'Sacks', a: perGame(sa, 'sk', 'skg'), h: perGame(sh, 'sk', 'skg'), note: 'per game' },
+    { label: 'Sacks allowed', a: perGame(sa, 'ska', 'skag'), h: perGame(sh, 'ska', 'skag'), lo: true, note: 'per game' },
     { label: 'Third down rate', a: sa.third, h: sh.third, pct: true },
     { label: 'Penalty yards', a: sa.pen, h: sh.pen, lo: true, note: 'per game' },
   ];
@@ -533,6 +604,8 @@ function openNews(id) {
   };
   $('ovbox').innerHTML = `<div class="ovhd"><div><h3><i style="background:${esc(a.color || '#999')}"></i>${esc(a.name)}<em>${g.neutral ? 'vs' : 'at'}</em><i style="background:${esc(h.color || '#999')}"></i>${esc(h.name)}</h3><div class="sub">${meta}</div></div><button class="x" id="ovx" aria-label="Close">×</button></div>
     <div class="ovbody">${n.note ? `<p class="ovnote">${esc(n.note)}</p>` : ''}
+      ${n.stale ? `<p class="small muted" id="ovstale">ESPN's game summary did not answer at the job's last run: this preview is the one written ${esc(clock(n.stale))}.</p>` : ''}
+      ${(n.gaps || []).length ? `<p class="small muted" id="ovgaps">Not read at the job's last run, so left out: ${n.gaps.map(esc).join(', ')}.</p>` : ''}
       ${n.story && n.story.paragraphs && n.story.paragraphs.length ? `<div class="ovstory"><h5>${esc(n.story.headline || 'The story')}</h5>${n.story.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}<p class="src">${esc(n.story.source)}</p></div>` : ''}
       <div class="duo">${block('away')}${block('home')}</div>
       <div class="ovsec">Full stat breakdown<small>${NEWS.season} season to date</small></div>
@@ -542,6 +615,8 @@ function openNews(id) {
   $('ov').classList.add('on'); $('ov').scrollTop = 0; document.body.style.overflow = 'hidden';
   $('ovx').addEventListener('click', closeOv);
 }
+/* a season total a game: early in the season two teams have not played the same number */
+function perGame(s, k, kg) { if (s[kg] !== undefined && s[kg] !== null) return s[kg]; const v = num(s[k]); return v === null || !s.gp ? null : Math.round(v / s.gp * 10) / 10; }
 function diffOf(s) { return (s.ppg === null || s.ppg === undefined || s.pa === null || s.pa === undefined) ? null : Math.round((s.ppg - s.pa) * 10) / 10; }
 function num(v) { return v === null || v === undefined || v === '' ? null : (isFinite(+v) ? +v : null); }
 function closeOv() { $('ov').classList.remove('on'); document.body.style.overflow = ''; }
@@ -551,8 +626,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('ov').cl
 /* ---------- Rankings ---------- */
 function renderRankings() {
   const R = S.rankings || {}; const basis = R.cfp || R.ap;
-  if (!basis) { $('rankTable').innerHTML = ''; $('rankNote').textContent = 'No poll published yet.'; return; }
-  $('rankNote').textContent = `${basis.name}, ${basis.week || ''} (${basis.date || ''}). The model column is the power rating's place among FBS teams; Playoff is the simulation's chance of a bracket spot.`;
+  const failed = (S.notes || []).find(x => /rankings/i.test(x));
+  if (!basis) { $('rankTable').innerHTML = ''; $('rankNote').textContent = failed ? failed : `No ${S.season} poll published yet.`; return; }
+  $('rankNote').textContent = `${basis.name}, ${basis.week || ''} (${basis.date || ''}). The model column is the power rating's place among FBS teams; Playoff is the simulation's chance of a bracket spot.` +
+    (basis.carried ? ` ESPN's rankings did not answer at the job's last run: this is the poll as read ${shortDate(basis.read)}.` : '');
   const po = (S.playoff && S.playoff.odds) || {};
   const rows = basis.ranks.map(r => { const t = T(r.team); return `<tr class="${t.major ? 'major' : ''}">
     <td class="n">${r.rank}</td><td class="n muted">${r.prev ? (r.prev === r.rank ? '·' : r.prev > r.rank ? '▲' + (r.prev - r.rank) : '▼' + (r.rank - r.prev)) : 'new'}</td>
@@ -583,18 +660,22 @@ $('poMajor').addEventListener('change', renderPlayoff);
 function renderPlayoff() {
   const PO = S.playoff; if (!PO) return;
   const f = PO.bracket.field;
-  $('bracketNote').textContent = `Seeded straight from the ${PO.bracket.basis}; the five best-placed conference leaders (★) are in as champions, seven more at large, the top four seeds on a bye. Unranked teams are placed by rating less ${PO.lossCost} Elo a loss, which stands in for the committee.`;
-  const seedLine = s => `<div class="seedline"><span class="seed">${s.seed}</span>${teamCell(s.team, s.rank)}<span class="muted small">${esc(s.record)}</span>${s.auto ? `<span class="auto">★ ${esc(confName(s.conf))}</span>` : ''}</div>`;
+  $('tab-playoff').querySelector('h2').textContent = PO.bracket.set ? 'The playoff bracket' : 'If the season ended today';
+  $('bracketNote').textContent = PO.bracket.set
+    ? `The twelve in the playoff, as ESPN lists the games, seeded by the committee's ranking. A team that has lost is struck through and its title chance is zero; the odds below play out only the games still to come.`
+    : `Seeded straight from the ${PO.bracket.basis}; the five best-placed conference leaders (★) are in as champions, seven more at large, the top four seeds on a bye. Unranked teams are placed by rating less ${PO.lossCost} Elo a loss, which stands in for the committee.` + (PO.bracket.final ? ' The regular season is over, so the odds below play this bracket.' : '');
+  const seedLine = s => `<div class="seedline${s.out ? ' out' : ''}"><span class="seed">${s.seed}</span>${teamCell(s.team, s.rank)}<span class="muted small">${esc(s.record)}</span>${s.auto ? `<span class="auto">★ ${esc(confName(s.conf))}</span>` : ''}${s.out ? ' <span class="tag out">out</span>' : ''}${s.champion ? ' <span class="champ">national champion</span>' : ''}</div>`;
   const byes = f.slice(0, 4), fr = [[5, 12], [6, 11], [7, 10], [8, 9]].map(([a, b]) => [f[a - 1], f[b - 1]]);
   $('bracket').innerHTML = `<div class="bye"><h3 style="margin-top:0">Byes</h3>${byes.map(seedLine).join('')}</div>
     <div class="fr"><h3 style="margin-top:0">First round, at the higher seed</h3>${fr.map(([h, a]) => a && h ? `${seedLine(a)}${seedLine(h)}<div style="height:6px"></div>` : '').join('')}</div>`;
   const major = $('poMajor').checked;
   let ids = Object.keys(PO.odds).filter(id => !major || T(id).major);
   ids.sort((a, b) => PO.odds[b].playoff - PO.odds[a].playoff || PO.odds[b].title - PO.odds[a].title).splice(60);
-  $('poNote').textContent = `${PO.sims} simulations of the rest of the season, the title games and the bracket, at the current ratings.`;
+  $('poNote').textContent = `${PO.sims} simulations of the rest of the season, the title games and the bracket, at the current ratings; a game already played keeps its result.`;
+  const outSet = new Set(f.filter(x => x.out).map(x => x.team));
   const bar = p => `<span class="tw"><span class="bar"><i style="width:${Math.round(p * 100)}%"></i></span>${pct1(p)}</span>`;
   $('poTable').innerHTML = `<thead><tr><th>Team</th><th>Conf</th><th class="n">Rec</th><th class="n">Exp. wins</th><th>Playoff</th><th class="n">Bye</th><th class="n">Conf title</th><th class="n">National title</th></tr></thead><tbody>` +
-    ids.map(id => { const t = T(id), o = PO.odds[id]; return `<tr class="${t.major ? 'major' : ''}"><td>${teamCell(id, t.ap)}</td><td class="muted">${esc(confName(t.conf))}</td><td class="n">${t.w}-${t.l}</td><td class="n">${o.expWins}</td><td>${bar(o.playoff)}</td><td class="n">${pct(o.bye)}</td><td class="n">${pct(o.conf)}</td><td class="n">${pct1(o.title)}</td></tr>`; }).join('') + '</tbody>';
+    ids.map(id => { const t = T(id), o = PO.odds[id]; return `<tr class="${t.major ? 'major' : ''}"><td>${teamCell(id, t.ap)}</td><td class="muted">${esc(confName(t.conf))}</td><td class="n">${t.w}-${t.l}</td><td class="n">${o.expWins}</td><td>${bar(o.playoff)}</td><td class="n">${pct(o.bye)}</td><td class="n">${pct(o.conf)}</td><td class="n">${outSet.has(id) ? '<span class="tag out">out</span>' : pct1(o.title)}</td></tr>`; }).join('') + '</tbody>';
   const confs = Object.keys(PO.standings).sort((a, b) => (S.p4.includes(a) ? 0 : 1) - (S.p4.includes(b) ? 0 : 1) || confName(a).localeCompare(confName(b)));
   $('standings').innerHTML = confs.map(c => `<details ${S.p4.includes(c) ? 'open' : ''}><summary><b>${esc(confName(c))}</b> <span class="muted small">leader ${esc(T(PO.champs[c]).short)}</span></summary>
     <table><thead><tr><th>Team</th><th class="n">Conf</th><th class="n">Overall</th><th class="n">Rating</th><th class="n">Conf title</th></tr></thead><tbody>${PO.standings[c].map(r => `<tr><td>${teamCell(r.team, T(r.team).ap)}</td><td class="n">${r.cw}-${r.cl}</td><td class="n">${r.w}-${r.l}</td><td class="n">${T(r.team).rating}</td><td class="n">${PO.odds[r.team] ? pct(PO.odds[r.team].conf) : '—'}</td></tr>`).join('')}</tbody></table></details>`).join('');
@@ -618,11 +699,11 @@ $('plScope').addEventListener('click', e => { const b = e.target.closest('button
 function renderParlayLines() {
   const scope = P.ui.plScope || 'major';
   for (const b of $('plScope').querySelectorAll('button')) b.classList.toggle('on', b.dataset.scope === scope);
-  let gs = S.games.filter(g => (S.week === 'post' ? g.type === 3 : g.type === 2 && g.week === S.week) && g.state === 'pre' && g.line);
+  let gs = S.games.filter(g => (S.week === 'post' ? g.type === 3 : g.type === 2 && g.week === S.week) && bettable(g));
   if (scope === 'major') gs = gs.filter(isMajorGame); else if (scope === 'ranked') gs = gs.filter(isRankedGame);
-  gs.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
-  $('plNote').textContent = gs.length ? `${gs.length} games still to come with a DraftKings number, as of the job's last run. The green figure is the model's chance for the side listed first.` : '';
-  if (!gs.length) { $('plLines').innerHTML = '<tbody><tr><td class="empty">Nothing left to bet this week: every lined game has kicked off. The Friday run posts next week\'s lines.</td></tr></tbody>'; return; }
+  gs.sort(byKick);
+  $('plNote').textContent = gs.length ? `${gs.length} games still to come with a DraftKings number, read at the job's last run (${clock(runStamp())}). The green figure is the model's chance for the side listed first.` : '';
+  if (!gs.length) { $('plLines').innerHTML = '<tbody><tr><td class="empty">Nothing to bet here right now: every lined game has kicked off, or DraftKings has no number on it at the job\'s last run. Lines are read at every run of the job.</td></tr></tbody>'; return; }
   $('plLines').innerHTML = '<thead><tr><th>Game</th><th>Kickoff</th><th>Model</th><th>Moneyline</th><th>Spread</th></tr></thead><tbody>' + gs.map(g => `<tr>
     <td>${teamCell(g.away, g.arank)} <span class="muted">@</span> ${teamCell(g.home, g.hrank)}</td>
     <td class="muted small">${when(g)}</td>
@@ -630,8 +711,15 @@ function renderParlayLines() {
     <td>${legButton(g, 'away', 'ml', g.line, false)}${legButton(g, 'home', 'ml', g.line, false)}</td>
     <td>${legButton(g, 'away', 'spread', g.line, false)}${legButton(g, 'home', 'spread', g.line, false)}</td></tr>`).join('') + '</tbody>';
 }
+/* a leg whose game has kicked off, or whose line has gone, leaves the builder: it can no longer be bet at that price */
+function pruneLegs() {
+  const G = gameById(); const before = P.legs.length;
+  P.legs = P.legs.filter(l => G[l.game] && bettable(G[l.game]));
+  const n = before - P.legs.length;
+  if (n) { save(); $('legsNote').hidden = false; $('legsNote').textContent = `${n === 1 ? 'A leg' : n + ' legs'} left the builder: the game kicked off or DraftKings' line is no longer current.`; }
+}
 function renderParlays() {
-  updateLegCount(); renderParlayLines();
+  pruneLegs(); updateLegCount(); renderParlayLines();
   $('legs').innerHTML = P.legs.length ? P.legs.map((l, i) => `<div class="leg"><span>${esc(l.label)} · ${legText(l)}</span><span class="muted small">${weekLabel(l)}</span><span class="n" title="the model's chance">${pct(l.p)}</span><button class="x" data-i="${i}" title="remove">×</button></div>`).join('') : '<div class="empty">No legs yet. Pick moneylines and spreads on the Games tab.</div>';
   const pr = priceLegs(P.legs); const stake = +$('stake').value || 0;
   $('parlayTotals').innerHTML = pr ? `
@@ -661,14 +749,42 @@ $('clearParlay').addEventListener('click', () => { P.legs = []; save(); renderPa
 $('savedList').addEventListener('click', e => { const b = e.target.closest('button[data-del]'); if (!b) return; P.saved = P.saved.filter(s => s.id !== b.dataset.del); save(); renderParlays(); });
 
 /* ---------- Record ---------- */
+/* the record split the way it should be read, from the games themselves (the same rules as the
+   job's record.live, .replayed, .fbs and .book): called before kickoff or replayed, FBS against
+   FBS, and DraftKings' favourite on the games the model called before kickoff with a line */
+function splits() {
+  const su0 = () => ({ w: 0, l: 0 }), ats0 = () => ({ w: 0, l: 0, p: 0 });
+  const X = { live: { su: su0(), ats: ats0() }, replayed: { su: su0() }, fbs: { su: su0(), ats: ats0() }, book: { games: 0, model: su0(), book: su0() }, fcs: 0 };
+  const su = (t, r) => { r.result.su ? t.w++ : t.l++; };
+  const ats = (t, r) => { if (r.result.ats === 'win') t.w++; else if (r.result.ats === 'loss') t.l++; else if (r.result.ats === 'push') t.p++; };
+  for (const r of S.games) {
+    if (!r.result) continue;
+    if (r.frozen) { su(X.live.su, r); ats(X.live.ats, r); } else su(X.replayed.su, r);
+    if (T(r.home).fbs && T(r.away).fbs) { su(X.fbs.su, r); ats(X.fbs.ats, r); } else X.fcs++;
+    const L = r.line; let fav = null;
+    if (r.frozen && L) {
+      if (L.homeLine !== null && L.homeLine !== undefined && L.homeLine !== 0) fav = L.homeLine < 0 ? 'home' : 'away';
+      else if (L.homeML != null && L.awayML != null && L.homeML !== L.awayML) fav = L.homeML < L.awayML ? 'home' : 'away';
+    }
+    if (fav) { X.book.games++; su(X.book.model, r); ((fav === 'home') === (r.hs > r.as)) ? X.book.book.w++ : X.book.book.l++; }
+  }
+  return X;
+}
 function renderRecord() {
   const R = S.record; const f = S.model.fitted;
   const stat = (k, v, cls) => `<div class="stat"><div class="k">${k}</div><div class="v ${cls || ''}">${v}</div></div>`;
   const suPct = r => r.w + r.l ? pct1(r.w / (r.w + r.l)) : '—';
   const atsStr = r => `${r.w}-${r.l}${r.p ? '-' + r.p : ''}`;
-  $('recordTotals').innerHTML = stat('Straight up', `${R.su.w}-${R.su.l}`) + stat('SU rate', suPct(R.su)) + stat('Against the spread', atsStr(R.ats), R.ats.w > R.ats.l ? 'good' : R.ats.w < R.ats.l ? 'bad' : '') + stat('ATS rate', suPct(R.ats)) + stat('Major schools SU', `${R.major.su.w}-${R.major.su.l}`) + stat('Major schools ATS', atsStr(R.major.ats));
-  const replayed = S.games.filter(g => g.result && !g.frozen).length;
-  $('recordNote').textContent = `Every FBS game the model called, straight up, and every game where it disagreed with the DraftKings line by ${S.atsEdge} points or more, against the spread. ${replayed ? replayed + ' games were over before the job first ran and are graded from the replay, without a line.' : ''}`;
+  const X = splits();
+  const vs = X.book.games ? (X.book.model.w > X.book.book.w ? 'good' : X.book.model.w < X.book.book.w ? 'bad' : '') : '';
+  $('recordTotals').innerHTML = stat('Called before kickoff', `${X.live.su.w}-${X.live.su.l}`) + stat('Its rate', suPct(X.live.su), vs) +
+    stat('DraftKings favourite, same games', X.book.games ? `${X.book.book.w}-${X.book.book.l}` : '—') + stat('Its rate', X.book.games ? suPct(X.book.book) : '—') +
+    stat('Against the spread', atsStr(R.ats), R.ats.w > R.ats.l ? 'good' : R.ats.w < R.ats.l ? 'bad' : '') + stat('ATS rate', suPct(R.ats)) +
+    stat('FBS against FBS', `${X.fbs.su.w}-${X.fbs.su.l}`) + stat('Replayed (weeks before the job)', `${X.replayed.su.w}-${X.replayed.su.l}`) +
+    stat('Straight up, all', `${R.su.w}-${R.su.l}`) + stat('Major schools SU', `${R.major.su.w}-${R.major.su.l}`) + stat('Major schools ATS', atsStr(R.major.ats));
+  $('recordNote').textContent = `The record that counts is the calls made before kickoff, frozen there and graded on the score: ${X.live.su.w}-${X.live.su.l}` +
+    (X.book.games ? `, against ${X.book.book.w}-${X.book.book.l} for simply taking DraftKings' favourite on the same ${X.book.games} games` : '') +
+    `. Against the spread, every game where the model disagreed with the DraftKings line by ${S.atsEdge} points or more. ${X.replayed.su.w + X.replayed.su.l ? `${X.replayed.su.w + X.replayed.su.l} games were over before the job first ran and are graded from the replay (honest walk-forward calls, but never shown before kickoff, without a line); ${X.fcs} of all the games graded were against FCS schools.` : ''}`;
   const weeks = Object.keys(R.byWeek).sort((a, b) => (a === 'post') - (b === 'post') || a - b);
   $('recWeek').innerHTML = '<thead><tr><th>Week</th><th class="n">SU</th><th class="n">Rate</th><th class="n">ATS</th></tr></thead><tbody>' + weeks.map(w => `<tr><td>${w === 'post' ? 'Postseason' : 'Week ' + w}</td><td class="n">${R.byWeek[w].su.w}-${R.byWeek[w].su.l}</td><td class="n">${suPct(R.byWeek[w].su)}</td><td class="n">${atsStr(R.byWeek[w].ats)}</td></tr>`).join('') + '</tbody>';
   $('recBand').innerHTML = '<thead><tr><th>Model chance</th><th class="n">SU</th><th class="n">Rate</th><th class="n">ATS</th></tr></thead><tbody>' + ['80+', '65-80', '50-65'].filter(b => R.bands[b]).map(b => `<tr><td>${b}%</td><td class="n">${R.bands[b].su.w}-${R.bands[b].su.l}</td><td class="n">${suPct(R.bands[b].su)}</td><td class="n">${atsStr(R.bands[b].ats)}</td></tr>`).join('') + '</tbody>';
@@ -683,10 +799,15 @@ async function boot() {
     S = await r.json();
   } catch (e) { $('stamp').textContent = 'Could not read state.json (' + e.message + ')'; return; }
   const pub = new Date(S.published);
-  $('stamp').innerHTML = `<b>${S.season} season · ${S.week === 'post' ? 'postseason' : 'week ' + S.week}</b> published ${pub.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${S.record.su.w}-${S.record.su.l} SU, ${S.record.ats.w}-${S.record.ats.l} ATS`;
-  weekOptions(); updateLegCount();
+  const X = splits();
+  const first = S.games.filter(g => g.type === 2).map(g => g.date).sort()[0];
+  const phase = S.phase === 'over' ? 'season complete' : S.phase === 'opening' && first ? `opens ${shortDate(first)}` : S.week === 'post' ? 'postseason' : 'week ' + S.week;
+  $('stamp').innerHTML = `<b>${S.season} season · ${phase}</b> published ${pub.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${X.live.su.w}-${X.live.su.l} SU called before kickoff${X.book.games ? ` (DraftKings' favourite ${X.book.book.w}-${X.book.book.l})` : ''}, ${S.record.ats.w}-${S.record.ats.l} ATS`;
+  if ((S.notes || []).length) { $('runNotes').hidden = false; $('runNotes').innerHTML = S.notes.map(x => `<p>${esc(x)}</p>`).join(''); }
+  weekOptions(); pruneLegs(); updateLegCount();
   const h = location.hash.slice(1);
   showTab(h && $('tab-' + h) ? h : (P.ui.tab && $('tab-' + P.ui.tab) ? P.ui.tab : 'games'));
+  autoScores();
 }
 boot();
 </script>
