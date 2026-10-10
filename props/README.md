@@ -2,8 +2,9 @@
 
 A single-file NFL player prop app. Projects every starter's stat line, turns each
 projection into the chance of clearing thresholds (20+, 30+ pass attempts, etc),
-prices those, and builds correlated parlays. A visitor's own state lives in the browser
-(the parlays are shared across devices by the Bets and Stats page's sync layer).
+prices those, and builds correlated parlays. A visitor's own state (the builder, saved
+parlays, stake) lives in their browser and nowhere else; X's own parlays are a file the
+Bets and Stats page reads (`liveparlays/parlays.json`).
 
 Built in chat over ~30 rounds. This package is everything needed to rebuild the page and
 its payload; the research scripts behind the fitted model were not carried over (see How
@@ -221,9 +222,9 @@ the table lacks the season just finished, so `weekly.py` fetches nflverse's week
 for those seasons, rebuilds it (the seasons it held come out as they were) and the workflow
 commits it with the payload. A rebuild that cannot finish refuses the run before any credit is
 spent. The audit's week-1 fixture takes the page's season as it is read. So the rollover is
-the one line in `part2.js` (with the key in `nflbets/build/sync.js` and the assert in
-`nflbets/build/build.js`); a refit of the coefficients (`fit4.py`, not in this repo) is a
-separate research step the job does not need.
+the one line in `part2.js`: `nflbets/build/build.js` reads it (and stops if its shape changes)
+and writes its KEY into `nflbets/build/storage.js`, so neither needs an edit; a refit of the
+coefficients (`fit4.py`, not in this repo) is a separate research step the job does not need.
 Kickoffs are turned into instants by the US daylight-time rule for each game's own year.
 The data/ week files are named by week alone, so at a rollover `weekly.py` moves last
 season's (`wk*_lines.csv`, `prices_wk*.csv`, `gamelines_wk*.csv`, every game id another

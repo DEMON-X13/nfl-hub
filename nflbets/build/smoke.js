@@ -69,7 +69,7 @@ const ELO_MU = (() => {
 const fails = []; let checks = 0;
 const chk = (ok, msg) => { checks++; if (!ok) fails.push(msg); };
 /* how the smoke ends, whichever way it ends: the count, every failure, an exit code. The jsdom
-   windows it leaves open (the sync layer's polls, the X Parlays section's refresh) keep the
+   windows it leaves open (the X Parlays section's refresh, among others) keep the
    process alive, so nothing ends it but this. */
 let ended = false;
 function finish(why) {
@@ -126,7 +126,7 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
 /* the page's clock. In the season the page runs on the real one. Once the prop model's last game
    is about to kick off (its final weekend, the playoffs, the off-season, until next season's
    schedule is in the payload) no game can take a builder leg, and much of what is checked here
-   (the builder, the badges and second prices on its legs, the sync layer's parlays) has nothing
+   (the builder, the badges and second prices on its legs, the Finish card) has nothing
    to stand on; the page is then booted two days before that last kickoff, as it was on the
    Friday of the season's final weekend. The board, the results and the grades come from the
    files, so they are checked as they are. Schedule times are US Eastern, read through the time
@@ -1064,13 +1064,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     for (const x2 of [B, FB, N, FN]) x2.w.close(); }
 
   /* ---- a browser the retired owner and reader layers left their mark on: exactly the files on
-     screen, their flags and copies gone, and nothing of the browser's own lost ---- */
+     screen, their flags and copies gone, and nothing of the browser's own lost. Its copies of the
+     old document carry a stale correction and a deletion (neither may count); its section key is
+     the store's last, the one line carried into the file and the deletion, so it goes (a key
+     holding a correction the file lacks stays: smoke_live.js N) ---- */
   { const doc = { prop: { saved: [{ id: 'x-old', week: 2, stake: 3, legs: [teamLeg(openGame(w.eval('S')) || w.eval('S').sched[0])] }], parlay: {} }, live: { lines: { 'file|fx-player|0': 60.5 }, removed: { 'file|fx-team': 1 } } };
     const ownProp = JSON.stringify({ stake: 25, saved: [{ id: 'own-1', week: 2, stake: 4, price: 300, payout: 16, legs: [{ gid: `${BET_SEASON}_02_CAR_ATL`, stat: 'receptions', k: 3, side: 'over', main: false, name: 'Own Receiver', team: 'ATL', week: 2 }] }], parlay: {} });
     const ownBets = mineOf({ 1: { staked: 10, returned: 8.71, note: '' }, 9: { staked: 3, returned: 0, note: 'own' } }, 100);
     const OLD = { nflowner_v1: 'the-old-owner-secret', nflsync_owner_v1: JSON.stringify({ uid: 'u', refreshToken: 'rt', idToken: 'it', exp: 1 }), nflsync_device_v1: 'dabc',
       xparlays_v1: JSON.stringify({ at: '2026-10-10T05:00:00Z', dropped: 0 }), nflsync_v1: 'r-old', nflsync_base_v1: JSON.stringify({ rev: 'r-old', revs: ['r-old'], doc, hist: [] }),
-      xparlays_cache_v1: JSON.stringify({ rev: 'r-old', at: '2026-10-10T05:00:00Z', doc }), live_parlays_v1: JSON.stringify(doc.live),
+      xparlays_cache_v1: JSON.stringify({ rev: 'r-old', at: '2026-10-10T05:00:00Z', doc }), live_parlays_v1: JSON.stringify({ lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: doc.live.removed }),
       ['xbets_joined_' + BET_SEASON]: '{}', ['xbets_cache_' + BET_SEASON]: '{"weeks":{}}',
       [PROP_KEY]: ownProp, my_parlays_v1: '{"lines":{"prop|own-1|0":4},"removed":{},"kept":{}}', [BET_KEY]: ownBets, ['x_nfl_bets_preshare_' + BET_SEASON]: '{"bets":{}}' };
     const O = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#owner=the-old-owner-secret', null, false, { file: FIXFILE, xbets: XBFIX, seed: w2 => { for (const [k, v] of Object.entries(OLD)) w2.localStorage.setItem(k, v); } });

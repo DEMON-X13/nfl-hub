@@ -423,8 +423,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   {
     /* what an owner's device or an old reader's carries: the owner link's secret, a sign-in session,
        the device id, the reader's mark, the rev it last saw, its copies of the old shared document
-       (a merge base, a reader's last copy, the section's key with a corrected line, a deletion and
-       slips it deleted), the X Bet Log's moved-in mark, its cache and a week that reached the store;
+       (a merge base and a reader's last copy, each with a corrected line, and the section's key as the
+       store last held it: the one line carried into the file, deletions and the slips it deleted), the
+       X Bet Log's moved-in mark, its cache and a week that reached the store;
        and what is its own: the prop model's key, my_parlays_v1, the betting app's key and the log
        kept aside when it was shared */
     const xdoc = { prop: { saved: [{ id: 'x-old', week: 2, stake: 3, legs: [{ gid: '2026_02_CAR_ATL', stat: 'receptions', k: 3, side: 'over', main: true, name: 'Old Shared Receiver', team: 'ATL', week: 2 }] }], parlay: {} },
@@ -438,7 +439,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       xparlays_v1: JSON.stringify({ at: '2026-10-10T05:00:00Z', dropped: 0 }), nflsync_v1: 'r-old',
       nflsync_base_v1: JSON.stringify({ rev: 'r-old', revs: ['r-old'], doc: xdoc, hist: [] }),
       xparlays_cache_v1: JSON.stringify({ rev: 'r-old', at: '2026-10-10T05:00:00Z', doc: xdoc }),
-      live_parlays_v1: JSON.stringify({ lines: { 'file|early|0': 50.5 }, removed: { 'file|night': 1, 'bet|s1': 1 }, bet: { dabc: [{ id: 's1', week: 2, type: 'parlay', stake: 1, legs: [] }] } }),
+      live_parlays_v1: JSON.stringify({ lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: { 'file|night': 1, 'file|w3-dk-sgp-5': 1, 'bet|s1': 1 }, bet: { dabc: [{ id: 's1', week: 2, type: 'parlay', stake: 1, legs: [] }] } }),
       ['xbets_joined_' + BET_SEASON]: JSON.stringify({ at: '2026-10-10T17:28:44Z', added: [1], differ: [] }), ['xbets_cache_' + BET_SEASON]: JSON.stringify({ weeks: { w1: { staked: 10, returned: 8.71, note: '' } } }),
       ['xbets_pending_' + BET_SEASON]: JSON.stringify({ at: '2026-10-10T17:28:44Z', ops: { 'weeks/w1': { staked: 10, returned: 8.71, note: '' } } }),
       [PROP_KEY]: own, my_parlays_v1: myOld, [BET_KEY]: betOwn, ['x_nfl_bets_preshare_' + BET_SEASON]: pre };
@@ -469,9 +470,18 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     await wait(300);
     const keys2 = allKeys(k2.w);
     chk(keys2.live_parlays_v1 === keep.live_parlays_v1 && keys2['xbets_pending_' + BET_SEASON] === keep['xbets_pending_' + BET_SEASON], 'a leftover holding something the files lack was deleted: ' + Object.keys(keys2).join(', '));
-    for (const [what, v] of [['a kept builder', { kept: { k: { legs: [] } } }], ['a slip it never deleted', { removed: {}, bet: { d: [{ id: 's9', legs: [] }] } }], ['a key it never wrote', { lines: {}, other: 1 }]]) {
+    for (const [what, v] of [['a kept builder', { kept: { k: { legs: [] } } }], ['a slip it never deleted', { removed: {}, bet: { d: [{ id: 's9', legs: [] }] } }], ['a key it never wrote', { lines: {}, other: 1 }],
+      /* a line a browser corrected on one of X's placed parlays before the store (24 September), which
+         the file does not have: on another leg, or on the carried leg at another number */
+      ['a line corrected on another of X\'s legs', { lines: { 'file|w2-ml-3|0': 2.5 } }],
+      ['the carried leg corrected to another number', { lines: { 'file|w3-dk-sgp-5|4': 250 }, removed: { 'file|w3-dk-sgp-5': 1 } }],
+      ['the carried line beside one the file lacks', { lines: { 'file|w3-dk-sgp-5|4': 239.5, 'file|w4-dk-sgp-3|1': 6.5 } }]]) {
       const k3 = await run({ seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify(v)) });
       chk(k3.w.localStorage.getItem('live_parlays_v1') === JSON.stringify(v), `the old shared key holding ${what} was deleted`); }
+    /* the store's last section key as it stood, on its own, holds nothing the file lacks: it goes */
+    { const v = { lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: { 'file|w3-dk-sgp-5': 1 } };
+      const k4 = await run({ seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify(v)) });
+      chk(k4.w.localStorage.getItem('live_parlays_v1') === null, 'the old shared key holding only the line the file carries and a deletion was kept'); }
   }
 
   // ---- D3. the scoreboard chips carry the result ----

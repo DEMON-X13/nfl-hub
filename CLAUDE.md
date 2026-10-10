@@ -118,8 +118,9 @@ publishes without it, `not_posted` in the payload and a note on the slate say so
 run goes red after its commit once that is overdue; with some published it refuses. The
 season is `SEASON` in `part2.js` and nowhere else (`build/season.py` reads it); at a
 rollover the job moves last season's price files to `props/data/archive/<season>/` and
-bakes only this season's games, so bumping that line (with the key in `nflbets/build/storage.js`
-and the assert in `nflbets/build/build.js`) is the whole change.
+bakes only this season's games, so bumping that line is the whole change: `nflbets/build/build.js`
+reads it (and stops if its shape changes) and writes its KEY into `nflbets/build/storage.js`, so
+neither needs an edit.
 
 `.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
 Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
@@ -598,9 +599,11 @@ may quietly outrank what the job published:
   `Co-Authored-By` and `Claude-Session` lines the session provides.
 - **`live_parlays_v1` and `my_parlays_v1` are retired keys.** Nothing reads, draws or writes
   either: X Parlays is the file, read only. `storage.js` removes `live_parlays_v1` from a browser
-  only where all it holds is in the file (lines corrected on placed parlays, deletions, betting
-  slips it deleted itself); `my_parlays_v1`, which held a visitor's own corrected lines, is left as
-  it is.
+  only where all it holds is in the file: the one line the store last held corrected
+  (`file|w3-dk-sgp-5|4` at 239.5, now the file's), deletions and betting slips it deleted itself.
+  Any other corrected line (one a browser last opened before the store may hold, on X's parlay or
+  its own) keeps the key, unread; `my_parlays_v1`, which held a visitor's own corrected lines, is
+  left as it is.
 - **Visitor data is the visitor's.** Picks, parlays, bankroll, bets and self-loaded odds are
   never written to the repo or anywhere else. A visitor's own builder, picks, bankroll, bet log and
   odds live in their browser's local storage only; a parlay they finish becomes a card they

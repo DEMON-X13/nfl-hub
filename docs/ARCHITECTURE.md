@@ -369,9 +369,11 @@ parlays read back without `<`, `>`, `"` and a backtick, as the page always read 
 out of a browser, once on load, what the retired layers left: their flags (`nflowner_v1`,
 `nflsync_owner_v1`, `nflsync_device_v1`, `xparlays_v1`, `nflsync_v1`) and their copies of the old
 shared parlay document (`nflsync_base_v1`, `xparlays_cache_v1`). The section's old key,
-`live_parlays_v1`, goes only where all it holds is in the file (lines corrected on placed parlays,
-deletions, betting slips it deleted itself); anything else in it -- a line corrected on a parlay of
-the browser's own, a kept builder, a slip never deleted, a key it never wrote -- keeps it, unread.
+`live_parlays_v1`, goes only where all it holds is in the file: the one line the store last held
+corrected (`file|w3-dk-sgp-5|4` at 239.5, which is the file's), deletions, betting slips it deleted
+itself. Anything else in it -- any other corrected line (on a parlay of the browser's own, on another
+of X's legs, or on that leg at another number, which a browser last opened before the store may
+hold), a kept builder, a slip never deleted, a key it never wrote -- keeps it, unread.
 `xbets.js`, once the file is in, takes out the X Bet Log's last copy (`xbets_cache_<season>`) and
 moved-in mark (`xbets_joined_<season>`), and a week that never reached the store
 (`xbets_pending_<season>`) only when the file has it as it was written. Nothing that holds a

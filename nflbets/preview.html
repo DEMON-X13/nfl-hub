@@ -1076,10 +1076,12 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
  * their copies of the shared parlay document (nflsync_base_v1, a merge base, and xparlays_cache_v1,
  * a reader's last look), whose last state is in liveparlays/parlays.json. The section's old key
  * (live_parlays_v1: corrected lines, deletions, builders kept at kickoff, betting slips) goes only
- * where everything in it is in the file or was deleted: lines corrected on placed parlays (the
- * last of them carried into the file), deletions, and betting slips it deleted itself. A line
- * corrected on a parlay of the browser's own, a kept builder, a slip it did not delete, or a key
- * this page never wrote, and the key stays where it is, unread. The X Bet Log's leftovers are
+ * where everything in it is in the file or was deleted: the one corrected line the store last
+ * held (file|w3-dk-sgp-5|4 at 239.5, leg 4 of that parlay, which is the file's line), deletions,
+ * and betting slips it deleted itself. Any other corrected line (on a parlay of the browser's own,
+ * on another of X's legs, or on that leg at another number: a browser last opened before the store
+ * may hold one), a kept builder, a slip it did not delete, or a key this page never wrote, and the
+ * key stays where it is, unread. The X Bet Log's leftovers are
  * xbets.js's, once its file has been read. Nothing that holds a visitor's own data is touched: the
  * prop model's key (the builder, the saved parlays, the stake), my_parlays_v1, the betting app's
  * key and x_nfl_bets_preshare_<season> stay exactly as they are. */
@@ -1110,14 +1112,15 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 
   /* ---- what the retired layers left ---- */
   for(const k of ['nflowner_v1','nflsync_owner_v1','nflsync_device_v1','xparlays_v1','nflsync_v1','nflsync_base_v1','xparlays_cache_v1']) ls.del(k);
-  /* the section's old key: gone only where all it holds is in the file or was deleted */
-  { const raw=ls.get('live_parlays_v1');
+  /* the section's old key: gone only where all it holds is in the file or was deleted. CARRIED is
+     the store's last live.lines, which the file has (a line is settled only at exactly that value) */
+  { const CARRIED={'file|w3-dk-sgp-5|4':239.5}, raw=ls.get('live_parlays_v1');
     if(raw!=null){
       const v=parse(raw), removed=isObj(v)&&isObj(v.removed)?v.removed:{};
       const only=(o,ok)=>o===undefined||(isObj(o)&&Object.keys(o).every(ok));
       const settled=isObj(v)
         &&Object.keys(v).every(k=>['lines','removed','kept','bet'].includes(k))
-        &&only(v.lines,k=>/^file\|/.test(k))
+        &&only(v.lines,k=>Object.prototype.hasOwnProperty.call(CARRIED,k)&&typeof v.lines[k]==='number'&&v.lines[k]===CARRIED[k])
         &&only(v.removed,()=>true)
         &&only(v.kept,()=>false)
         &&only(v.bet,dev=>Array.isArray(v.bet[dev])&&v.bet[dev].every(s=>isObj(s)&&removed['bet|'+s.id]));
@@ -3768,7 +3771,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='74f678a';
+const PAGE_HASH='fedbd6e';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
