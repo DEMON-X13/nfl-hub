@@ -38,6 +38,7 @@ from jobkit import neutral                       # noqa: E402
 
 FROZEN = HERE / "data"
 FIT_SEASONS = list(range(2019, 2026))
+PASSERS = "passers_2019_2025.csv"   # the quarterback table in FROZEN (the long fit, joker/long, points both at its own)
 SEASON = 2026          # the fit's season; joker.py sets it to the app's (state.json's `season`) before scoring
 
 CATEGORICAL = ["home_team", "away_team", "roof", "surface", "weekday", "home_coach", "away_coach",
@@ -101,8 +102,8 @@ def _aggregate_like_harness(raw, seasons):
 
 
 def passers(fresh: Path | None):
-    """The quarterback table: the frozen 2019-2025 rows plus this season from play-by-play."""
-    p = pd.read_csv(FROZEN / "passers_2019_2025.csv")
+    """The quarterback table: the frozen seasons' rows plus this season from play-by-play."""
+    p = pd.read_csv(FROZEN / PASSERS)
     pq = fresh / f"play_by_play_{SEASON}.parquet" if fresh is not None else None
     if pq is not None and pq.exists():
         cols = ["game_id", "season", "season_type", "week", "posteam", "play_type", "qb_dropback",

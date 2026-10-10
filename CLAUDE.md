@@ -137,6 +137,7 @@ It commits straight to `main`.
 cd betting/tools && npm install
 node betting/tools/update.js     # download + grade + write state.json; exit 1, nothing written, if a file the season needs did not download
 python3 betting/joker/joker.py   # the Joker's picks into state.json (pip install -r betting/joker/requirements.txt)
+python3 betting/joker/long/joker_long.py   # Joker Jr's picks, the test beside the Joker
 python3 betting/broly/broly.py   # Broly's picks into state.json
 node betting/tools/build.js      # checks the app builds; writes nothing (nflbets/build/build.js sets it into the page)
 node betting/tools/smoke.js      # the built app, on its own and embedded, then the state against reality (section 5)
@@ -187,6 +188,37 @@ it Broly refuses and says so). Both score playoff games too, and both freeze a g
 kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, the owner's
 call); `model.json` names the weeks (`fitted_weeks`) and the Pick'em Record hatches them and gives
 its record without them.
+The **Joker Jr** (`betting/joker/long/`) is a shadow model, a test running beside the live
+Joker, never in its place: the Joker's own recipe and inputs (less the two preseason win totals,
+which do not exist before 2019) fitted once on 2010-2025 instead of 2019-2025, with no 2026 week in
+its training. Research in October 2026 found it right on 65.2% of 2021-2025 regular-season games
+walking forward against the 2019 start's 63.0% (Vegas 66.5%; p about 0.06); `fit.py` re-derives
+those numbers into `model.json` (`fit.py data` builds its frozen `data/`: nflverse's 2010-2018 games,
+team stats and quarterback table under the Joker's own 2019-2025 files). `joker_long.py` runs in the
+job after `joker.py` (`continue-on-error`, like the others) and writes `state.jokerLong` (the calls),
+`processed[gid].jokerLong` (graded on the call shown) and `state.jokerLongInfo` (`since`, the run
+that first published it, and the walk-forward). Its calls freeze at kickoff like every model's. A
+game since kickoff with no call (every game before `since`: the owner asked for its picks on all of
+2026) is replayed from the data as it stood before that kickoff: the season's files cut back to the
+games kicked off at least six hours earlier, after-the-game fields (scores, overtime, weather,
+referee) blanked and every other game's stats and plays removed, the game scored as one still to
+come; the line and quarterbacks are nflverse's for the game, the closing line and the starters.
+Those calls carry `backfill` (and `late` if a run missed one after `since`), count in its record
+like the rest, and the Pick'em Record says in one line how they were made. Read it on the Pick'em
+Record: its dashed dark-red line and its row sit beside the Joker's, its column in the pick grid
+beside the Joker's. Compare the two on the same games from week 3 on (the Joker's weeks 1-2 are a
+fit, not calls). Consider switching the Joker to the long fit only once it has led the live Joker
+over a full season of calls, and then refit it through the season just finished; a lead of a few
+games in one season is chance. The smoke test (5m) holds it to all of this: the workflow step, each
+grade on the call shown, `backfill` exactly before `since`, every call backfilled by this run
+recomputed exactly from files poisoned with made-up finals after the cut (and the latest older one
+within 0.05, for nflverse's revisions), its line, row, column and note, and, with its
+`model.joblib` gone (`JOKER_LONG_MODEL` points the step elsewhere), the step exiting 1 with every
+call and grade kept and the record saying why. In a run where the step did not run
+(`modelStatus.jokerLong` says why) the smoke skips the recomputation, since that run backfilled
+nothing and the recomputation would need what the step lacked: a lost artefact or a failed download
+must never fail the smoke and stop the whole publish over a test, and 5m checks that on the state the
+missing-model step leaves. The smoke runs it with `python3`; `PYTHON` names another.
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 
