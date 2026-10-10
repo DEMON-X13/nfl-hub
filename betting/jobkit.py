@@ -1,4 +1,4 @@
-"""What the Joker (joker/joker.py), the Joker (long fit) (joker/long/joker_long.py) and the Broly
+"""What the Joker (joker/joker.py), Joker Jr (joker/long/joker_long.py) and the Broly
 Model (broly/broly.py) share as steps of the betting job, after update.js has written state.json:
 
   * where things are: data/ (the job's downloads) and betting/state.json, with BETTING_DATA,

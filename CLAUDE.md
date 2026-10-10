@@ -137,7 +137,7 @@ It commits straight to `main`.
 cd betting/tools && npm install
 node betting/tools/update.js     # download + grade + write state.json; exit 1, nothing written, if a file the season needs did not download
 python3 betting/joker/joker.py   # the Joker's picks into state.json (pip install -r betting/joker/requirements.txt)
-python3 betting/joker/long/joker_long.py   # the Joker (long fit)'s picks, the test beside the Joker
+python3 betting/joker/long/joker_long.py   # Joker Jr's picks, the test beside the Joker
 python3 betting/broly/broly.py   # Broly's picks into state.json
 node betting/tools/build.js      # checks the app builds; writes nothing (nflbets/build/build.js sets it into the page)
 node betting/tools/smoke.js      # the built app, on its own and embedded, then the state against reality (section 5)
@@ -188,7 +188,7 @@ it Broly refuses and says so). Both score playoff games too, and both freeze a g
 kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, the owner's
 call); `model.json` names the weeks (`fitted_weeks`) and the Pick'em Record hatches them and gives
 its record without them.
-The **Joker (long fit)** (`betting/joker/long/`) is a shadow model, a test running beside the live
+The **Joker Jr** (`betting/joker/long/`) is a shadow model, a test running beside the live
 Joker, never in its place: the Joker's own recipe and inputs (less the two preseason win totals,
 which do not exist before 2019) fitted once on 2010-2025 instead of 2019-2025, with no 2026 week in
 its training. Research in October 2026 found it right on 65.2% of 2021-2025 regular-season games

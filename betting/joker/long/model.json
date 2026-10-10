@@ -1,5 +1,5 @@
 {
- "name": "Joker (long fit)",
+ "name": "Joker Jr",
  "role": "a test running beside the live Joker (betting/joker), never in its place",
  "formula": "gradient boosted trees, depth 4, 25 rounds, learning rate 0.1, min leaf 5 (the Joker's recipe)",
  "fitted_on": "2010-2025 regular season and playoffs",

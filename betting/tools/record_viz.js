@@ -8,7 +8,7 @@
       from red (under .500) through clear to green (over), the season in the last column.
 
    Colours follow the model, as everywhere else on the tab (Alpha Model green, Challenger Model blue,
-   Joker red, ELO Model orange, Broly Model purple, and the Joker (long fit), a test beside the Joker,
+   Joker red, ELO Model orange, Broly Model purple, and Joker Jr, a test beside the Joker,
    dark red and dashed with hollow dots, dash:true); every line carries a label at its end beside the
    legend. Your own picks are not drawn: My Picks is retired, and so is the You column.
    Text is in the page's ink, never a line's colour. renderRecord() calls recordViz(rows) last;
@@ -20,7 +20,7 @@
    (S.jokerFit, from betting/joker/model.json): those are marked in the grid and in its tooltip,
    and its record without them is given beside the one with them. Nothing is regraded.
 
-   And one line about the Joker (long fit) (betting/joker/long; S.jokerLongInfo, from its step): it
+   And one line about Joker Jr (betting/joker/long; S.jokerLongInfo, from its step): it
    is a test running beside the live Joker, and its picks on games before it went live were
    computed after the fact, from the data as it stood before each kickoff, by a model fitted only
    on 2010-2025; they count in its record like the rest. */
@@ -36,7 +36,7 @@ function recordViz(rows){
     {id:'main',name:'Alpha Model',color:'#1F6F4A',ok:r=>flag(r.correct)},
     {id:'chal',name:'Challenger Model',color:'#3B6FB6',all:true,ok:r=>r.h?flag(r.h.correct):null},
     {id:'joker',name:'The Joker',color:'#C0392B',all:true,ok:r=>r.joker?flag(r.joker.correct):null},
-    {id:'jokerLong',name:'Joker (long fit)',color:'#8E1B10',all:true,dash:true,test:true,ok:r=>r.jokerLong?flag(r.jokerLong.correct):null},
+    {id:'jokerLong',name:'Joker Jr',color:'#8E1B10',all:true,dash:true,test:true,ok:r=>r.jokerLong?flag(r.jokerLong.correct):null},
     {id:'elo',name:'ELO Model',color:'#E8730A',all:true,ok:r=>r.elo?flag(r.elo.correct):null},
     {id:'broly',name:'Broly Model',color:'#7A3FB0',all:true,ok:r=>r.broly?flag(r.broly.correct):null}];
   const weeks=[...new Set(rows.map(r=>+r.week))].sort((a,b)=>a-b);
@@ -82,17 +82,17 @@ function recordViz(rows){
       const ft=tally(jm.ok,inFit);
       jm.fitNote=`weeks ${wkList(jf)} fitted after the fact`;
       notes.push(`<b>The Joker</b> was refitted after week${jf.length>1?'s':''} ${wkList(jf)} ${jf.length>1?'were':'was'} played, with those games in its training, so its ${rec(ft)} there is a fit, not a prediction (marked in the grid). Its calls from week ${Math.max(...jf)+1} on, made before the games: <b>${rec(t)}</b>, ${sign(net)} vs Vegas.`); } }
-  /* the Joker (long fit): a test beside the live Joker, and what its backfilled picks are */
+  /* Joker Jr: a test beside the live Joker, and what its backfilled picks are */
   { const jl=shown.find(m=>m.id==='jokerLong'), info=S.jokerLongInfo||{}, wf=info.walk_forward||{};
     if(jl){ const done=rows.filter(r=>r.jokerLong&&r.jokerLong.backfill&&flag(r.jokerLong.correct)!==null);
       const bf=done.filter(r=>!r.jokerLong.late).length, missed=done.length-bf;
       const since=info.since?new Date(info.since):null, pct=x=>typeof x==='number'&&isFinite(x)?(100*x).toFixed(1)+'%':null;
       const day=since&&!isNaN(since)?since.toLocaleDateString(undefined,{month:'short',day:'numeric'}):null;
-      notes.push(`<b>Joker (long fit)</b> is a test running beside the live Joker, not a replacement: the same formula and inputs, fitted on 2010-2025 instead of 2019-2025${pct(wf.long_fit)&&pct(wf.joker_recipe_2019_start)?`, which in walk-forward testing on 2021-2025 was right on ${pct(wf.long_fit)} of games to the 2019 fit’s ${pct(wf.joker_recipe_2019_start)}${pct(wf.vegas)?` (Vegas ${pct(wf.vegas)})`:''}`:''}.`
+      notes.push(`<b>Joker Jr</b> is a test running beside the live Joker, not a replacement: the same formula and inputs, fitted on 2010-2025 instead of 2019-2025${pct(wf.long_fit)&&pct(wf.joker_recipe_2019_start)?`, which in walk-forward testing on 2021-2025 was right on ${pct(wf.long_fit)} of games to the 2019 fit’s ${pct(wf.joker_recipe_2019_start)}${pct(wf.vegas)?` (Vegas ${pct(wf.vegas)})`:''}`:''}.`
         +(bf?` Its ${bf} pick${bf>1?'s':''} on games before ${day?'it went live on '+esc(day):'it went live'} were computed after the fact from pre-game data (the files as they stood before each kickoff) by a model fitted only on 2010-2025, which never saw a 2026 game; they count in its record like the rest. From then on its picks are made before kickoff like every other model’s.`:'')
         +(missed?` ${missed} game${missed>1?'s':''} a run missed after that ${missed>1?'were':'was'} called the same way, from pre-game data, after kickoff.`:'')); } }
   /* a model the job could not rescore on its last run: its picks are the last good ones */
-  { const names={joker:'The Joker',jokerLong:'Joker (long fit)',broly:'Broly Model'}, ms=S.modelStatus||{};
+  { const names={joker:'The Joker',jokerLong:'Joker Jr',broly:'Broly Model'}, ms=S.modelStatus||{};
     for(const [k,v] of Object.entries(ms)){ if(!v) continue; const d=v.since?new Date(v.since):null;
       notes.push(`<b>${esc(names[k]||k)}</b> could not be rescored${d&&!isNaN(d)?' since '+esc(d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}: ${esc(v.why||'an input was missing')}. Its picks are the last good ones and its record stands where it was.`); } }
 

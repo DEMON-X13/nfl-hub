@@ -1,4 +1,4 @@
-"""Score the Joker (long fit) on this season and write its picks into the published state, beside
+"""Score Joker Jr on this season and write its picks into the published state, beside
 the live Joker's. A test running beside the Joker (see longfit.py and fit.py), never in its place.
 
     python betting/joker/long/joker_long.py                  (from the hub root, after joker.py)
@@ -281,7 +281,7 @@ def main():
     if changed:
         J.save_state(st)
         graded = [r[KEY] for r in st["processed"].values() if r.get(KEY) and r[KEY]["correct"] is not None]
-        log(f"state.json patched: Joker (long fit) {sum(1 for r in graded if r['correct'])}-{sum(1 for r in graded if not r['correct'])} on {len(graded)} decided games")
+        log(f"state.json patched: Joker Jr {sum(1 for r in graded if r['correct'])}-{sum(1 for r in graded if not r['correct'])} on {len(graded)} decided games")
     else:
         log("state.json unchanged")
 

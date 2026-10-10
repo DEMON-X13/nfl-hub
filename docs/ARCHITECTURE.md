@@ -55,7 +55,7 @@ betting/
                                  times, the freeze at kickoff, grading, and modelStatus when a model
                                  cannot run
   joker/                         the Joker: python, fitted model, the vendored rating/QB pieces of the harness
-  joker/long/                    the Joker (long fit), a test beside the Joker: the same recipe fitted on
+  joker/long/                    Joker Jr, a test beside the Joker: the same recipe fitted on
                                  2010-2025 (fit.py, its frozen data/ and model.joblib), the weekly run
                                  joker_long.py (calls frozen at kickoff, the games before it went live
                                  replayed from the data as it stood before each kickoff)
@@ -428,9 +428,9 @@ moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injur
 `atKickoff` (each coming game's Alpha and Challenger call, recorded by every run before its
 kickoff and kept from then on; the game is graded on it, `processed[gid].atKickoff`),
 `jokerFit` (the weeks the Joker was fitted on after they were played), `jokerLong` and
-`jokerLongInfo` (the Joker (long fit)'s calls, `backfill` on those replayed from pre-game data, and
+`jokerLongInfo` (Joker Jr's calls, `backfill` on those replayed from pre-game data, and
 `since`, its first live run), `modelStatus` (only while
-the Joker, the Joker (long fit) or Broly could not run: since when and why), `prevElo`/`prevRanks`, `published`, and
+the Joker, Joker Jr or Broly could not run: since when and why), `prevElo`/`prevRanks`, `published`, and
 the app's own bookkeeping (`gamesPlayed`, `modelBuild`, `prevRanksWeek`, `season`,
 `showAllModels`, `snapWeek`).
 
@@ -452,7 +452,7 @@ finals outnumber its rating's record, or whose playoff final kicked off after th
 built (the Elo file's record is the regular season's).
 
 Every call is frozen at kickoff: Alpha's and the Challenger's through `atKickoff`, the Joker's,
-the Joker (long fit)'s and Broly's through `jobkit.freeze` (a game that has kicked off keeps the
+Joker Jr's and Broly's through `jobkit.freeze` (a game that has kicked off keeps the
 call of the last run before it; the long fit replays a game it has no call for from the data as it
 stood before the kickoff, never from the game's own). A closing line nflverse posts afterwards, a depth chart that moves, or a refit never rewrites
 a call a reader saw. The page shows the frozen call for a game under way and settles a scoreboard
@@ -589,7 +589,7 @@ week 18 and says the regular season is complete; it does not cover the playoffs.
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 5 price pulls a week (Mon, Wed, Thu, Sat morning, Sat evening; each prices up to the next slot plus 10 hours, since GitHub fires this repo's crons 3-9 hours late); with `--catch-up` (a game a dropped pull left unpriced, nothing otherwise), 8 post-game and stats runs and a daily 12:07 UTC run that lands after nflverse posts the day's injury report | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main` unless `weekly.py` refused the run (a required download failed, the stats would shrink, the audit is not clean), in which case it commits only the price files the run bought, never `payload.json`; afterwards the run fails if `weekly.py` reported problems |
-| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py`, `joker/long/joker_long.py` (the Joker (long fit), a test beside the Joker) and `broly/broly.py` (each may fail on its own without stopping the publish), `smoke.js` (which builds the app); commits `betting/state.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
+| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py`, `joker/long/joker_long.py` (Joker Jr, a test beside the Joker) and `broly/broly.py` (each may fail on its own without stopping the publish), `smoke.js` (which builds the app); commits `betting/state.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
 | `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the page or a week file | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the page, the lineups against the report they came from, and `cases.js`); commits only what changed: `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
 | `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data` |
 | `cfb.yml` | 6x/week around the college weekend | `cfb/tools/update.js` + `news.js` + `smoke.js`, commits `cfb/state.json`, `cfb/news.json` and `cfb/data/teams.json` |

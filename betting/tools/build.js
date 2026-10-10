@@ -225,7 +225,7 @@ function settleFinished(){
     /* the ELO Model and Broly too: graded here from the scoreboard like the rest, or the record
        compared them on fewer games than the others from the whistle until the job graded it */
     const ek=(S.elo&&S.elo[g.game_id])||null, bk=(S.broly&&S.broly[g.game_id])||null;
-    const jl=(S.jokerLong&&S.jokerLong[g.game_id])||null;    /* the Joker (long fit), the test beside the Joker */
+    const jl=(S.jokerLong&&S.jokerLong[g.game_id])||null;    /* Joker Jr, the test beside the Joker */
     const result=s.hs-s.as;                                  /* home margin, as the job writes it */
     const winner=result>0?g.home_team:(result<0?g.away_team:null);
     const myPick=(S.myPicks&&S.myPicks[g.game_id])||null;
@@ -440,16 +440,16 @@ patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null, bk=(done&&done.broly)||brl[g.game_id]||null;
     const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
-/* ---- the Joker (long fit): its column in the pick grid, beside the Joker's ----
+/* ---- Joker Jr: its column in the pick grid, beside the Joker's ----
    A test running beside the live Joker (betting/joker/long): its call for a game is
    processed[gid].jokerLong once graded, S.jokerLong before (the job's, frozen at kickoff).
    Laid over the lines patched just above, each edit asserted to land once. */
-patch(`['The Joker','#C0392B'],['ELO Model','#E8730A']`, `['The Joker','#C0392B'],['Joker (long fit)','#8E1B10'],['ELO Model','#E8730A']`, 'the pick grid, the Joker (long fit) column');
+patch(`['The Joker','#C0392B'],['ELO Model','#E8730A']`, `['The Joker','#C0392B'],['Joker Jr','#8E1B10'],['ELO Model','#E8730A']`, 'the pick grid, Joker Jr column');
 patch(`    const ek=(done&&done.elo)||elo[g.game_id]||null, bk=(done&&done.broly)||brl[g.game_id]||null;`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null, bk=(done&&done.broly)||brl[g.game_id]||null;
-    const jl=(done&&done.jokerLong)||(S.jokerLong||{})[g.game_id]||null;`, 'the pick grid, the Joker (long fit) call');
-patch(`jk?jk.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]`, `jk?jk.pick:null,jl?jl.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]`, 'the pick grid, the Joker (long fit) pick');
-/* ---- end of the Joker (long fit) block ---- */
+    const jl=(done&&done.jokerLong)||(S.jokerLong||{})[g.game_id]||null;`, 'the pick grid, Joker Jr call');
+patch(`jk?jk.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]`, `jk?jk.pick:null,jl?jl.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]`, 'the pick grid, Joker Jr pick');
+/* ---- end of Joker Jr block ---- */
 patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   renderBets();`,
 `  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';

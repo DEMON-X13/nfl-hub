@@ -1,4 +1,4 @@
-"""Fit the Joker (long fit) once, on every regular-season and playoff game from 2010 to the last
+"""Fit Joker Jr once, on every regular-season and playoff game from 2010 to the last
 complete season, and freeze it in model.joblib and model.json beside this file.
 
     python betting/joker/long/fit.py data     (once: the frozen data, from nflverse and the Joker's files)
@@ -168,7 +168,7 @@ def main(do_walk=True):
     fit_acc = float(((model.predict_proba(reg[num + cat])[:, 1] >= .5) == (reg.result > 0)).mean())
     joblib.dump(model, L.MODEL)
     meta = {
-        "name": "Joker (long fit)",
+        "name": "Joker Jr",
         "role": "a test running beside the live Joker (betting/joker), never in its place",
         "formula": "gradient boosted trees, depth 4, 25 rounds, learning rate 0.1, min leaf 5 (the Joker's recipe)",
         "fitted_on": f"{L.FIRST}-{L.LAST} regular season and playoffs",

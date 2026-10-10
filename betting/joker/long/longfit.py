@@ -1,4 +1,4 @@
-"""What the Joker (long fit) shares between its fit (fit.py) and its weekly step (joker_long.py).
+"""What Joker Jr shares between its fit (fit.py) and its weekly step (joker_long.py).
 
 The long fit is the Joker's own recipe -- the same inputs from betting/joker/features.py, the
 same gradient-boosted trees (depth 4, 25 rounds, learning rate 0.1, minimum leaf 5) -- fitted on
