@@ -51,11 +51,39 @@ at the next refresh:
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`
-- `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md` (a drafted `news/data/weekN.js` is finished by hand)
+- `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
+
+## Season Tracker: the loop
+
+```
+cd news && npm ci
+node tools/run-auto.js           # the job: the schedule's current week -> pull-week.js (results, stats, pack) -> context.js
+node tools/context.js            # the rank chip, positions and the Deep Dive alone (nflverse only; no ESPN list)
+node tools/smoke.js              # must end "all checks passed" (runs tools/cases.js too)
+```
+
+The narrative half is a person's (`news/HANDOFF.md` first, always). The season is `SEASON` in
+`news/tools/lib.js`, nowhere else; after week 18 the tracker stays on week 18 and says the regular
+season is complete (it does not cover the playoffs; the stat tables are then asked for as of the
+day after week 18). The Deep Dive's lineups follow the nflverse injury report and ESPN's list
+(`context.js` says the rule; a team has filed only when its game statuses are on the report, never
+on a practice report), and every nflverse file but the snap counts is required: one that does not
+download fails the run before the commit, so the last good files stay live (before the season's
+first game a 404 on a current-season file is "no games yet"). The smoke test checks the lineups
+against the report, roster and schedule they were built from (`lineup-checks.js`, which never
+shares the build's shortcuts, only its reading of a source: which ESPN entry is which player and what
+day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab),
+the stat bars against `results.js`, that the live week's narrative quotes none of the site's own
+ranks, and the fixed cases in `tools/cases.js` (each with the broken version a review caught, which
+the checks must fail); on a checkout whose `units2026.js` is older than the report it fails until
+`node tools/context.js` runs. A change to a rule comes with a case there. `.github/workflows/news.yml`
+runs about nineteen times a week, timed to the injury report and set early because GitHub starts
+this repo's scheduled runs 2.3 to 9.4 hours late, and on a push to the tools, the page or a week
+file; a run that finds nothing new commits nothing beyond the day's "as of" dates.
 
 ## Props: the loop
 

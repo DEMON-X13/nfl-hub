@@ -8,7 +8,9 @@ This is the model. The sources are fixed. The reading happens every Wednesday.
 |---|---|---|
 | Schedule, kickoff (UTC), TV, venue | ESPN scoreboard feed, `site.api.espn.com/.../scoreboard?seasontype=2&week=N&dates=2026` | Works from Node with a browser user agent. Blocked from curl. |
 | Final scores for past weeks | Same feed, weeks 1 to N-1 | Written to `data/results.js`. Records and Final labels update from it. |
-| Betting line and total | Same feed, `odds[0].details` and `overUnder` | Present for upcoming games only. |
+| Betting line and total | Same feed, `odds[0].details` and `overUnder` | Present for upcoming games only. Drafted into the week file (ESPN's `WSH`, `LA`, `JAC` written `WAS`, `LAR`, `JAX`). |
+| The line the overlay shows | nflverse schedule, `spread_line` and `total_line` | Every game, into `data/results.js` `LINES` with its date; the closing line once played. |
+| Lineups for the Deep Dive | nflverse injury report, roster and depth charts, plus ESPN's injury list and practice notes (`tools/context.js`) | The report's game statuses once filed; before then ESPN's Questionable clears no one, and with a note of no practice on the last practice day it rules him out. A note's practice is dated by its own weekday, never the game's; ESPN's names are matched through the roster's and the chart's. Each week's lineups are kept as kickoff found them and graded against the snap counts the week after. |
 | Team stats, season to date (2026 only, zeros before a team has played) | TeamRankings `/nfl/stat/<slug>?date=today` | Slugs: points-per-game, opponent-points-per-game, yards-per-play, opponent-yards-per-play, turnover-margin-per-game, sacks-per-game, qb-sacked-per-game, third-down-conversion-pct, red-zone-scoring-pct. Season column includes playoffs once they start. |
 | Explosive plays (20+ yards) | ESPN core team statistics, `passingBigPlays + rushingBigPlays` over games played | ESPN calls them big plays. |
 | Injuries | ESPN injuries feed, `site.api.espn.com/.../nfl/injuries` | One call, all teams. Status, body part, short comment. |
@@ -36,13 +38,15 @@ A point goes on the card only if two or more sources make it. If sources split, 
 ## 4. What gets written, per game
 
 Week `headline` and `intro` are about the games only. No stadiums, buildings, ceremonies or other off field news.
-The intro names the two or three marquee matchups of the week, picked from the numbers: both teams' power rank
-(`data/ranks2026.js`), how close the spread is, the total, division games, and records. Say why each one matters.
-Quarterback availability that changes a game is fair to mention.
+The intro names the two or three marquee matchups of the week, picked from the numbers: both teams' rank on
+the chip (`data/ranks2026.js`), how close the spread is, the total, division games, and records. Say why each
+one matters, in records and sourced numbers: the text never quotes the chip's or the Deep Dive's ranks, which
+sit beside it and move with every run (the smoke test fails a live week that does). Quarterback availability
+that changes a game is fair to mention.
 
 Written automatically, not by hand: player positions after names (from `data/players2026.js`), the rank chip
-(`data/ranks2026.js`, the betting model's Power Ratings rank) and the Deep Dive section under Keys to victory
-(`data/units2026.js`). `tools/context.js` builds all three at the end of every pull.
+(`data/ranks2026.js`, the team's place on X NFL Bets' Team Rankings tab) and the Deep Dive section under Keys
+to victory (`data/units2026.js`). `tools/context.js` builds all three at the end of every pull.
 
 
 - Game `note`: one line on what the game is.
