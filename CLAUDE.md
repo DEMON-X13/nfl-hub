@@ -168,7 +168,7 @@ nflverse's `stats_team_week` for the season). The tab's script also puts a secon
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the prop
-model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
+model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
 shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
 window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says

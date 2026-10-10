@@ -14,7 +14,10 @@
  *     the page, with the build's reason in his window;
  *   - the rankings say how far the season has got as the build words it, a questionable
  *     player carries a Q, and the bar splits the ELO Model's record into calls made before
- *     kickoff and backtest.
+ *     kickoff and backtest;
+ *   - every ranked player has a trend line, one game in too (week 1's column was blank);
+ *   - a player kept out of the players map is priced by nothing, but the Prop Record still
+ *     reads the rating he took into each week he played (it graded those weeks at 1500).
  */
 'use strict';
 const fs = require('fs');
@@ -80,6 +83,24 @@ function page(MU, opts) {
     const row = d.querySelector('#peBody tbody tr'), q = row && row.querySelector('.pe-q');
     chk(!!q && txt(q) === 'Q' && /questionable/.test(q.title), 'a questionable player has no Q in the rankings');
     if (had === undefined) delete P.groups.QB.top[0].q; else P.groups.QB.top[0].q = had; }
+  /* every ranked player has a trend line, one game in too (in week 1 the whole column was
+     blank: a line needs two points, and the season's start is the first); checked with the
+     top quarterback cut to his first game in this copy of the file only */
+  { const top = P.groups.QB.top[0], had = top.this_season;
+    top.this_season = had.slice(0, 1);
+    const { d } = page(MU0); await wait(60);
+    const rows = [...d.querySelectorAll('#peBody .card tbody tr.pe-plrow')];
+    chk(rows.length > 0 && rows.every(tr => tr.querySelector('svg.pe-spark')), 'a ranked player has no trend line: ' + rows.filter(tr => !tr.querySelector('svg.pe-spark')).map(tr => txt(tr).slice(0, 30)).join('; '));
+    top.this_season = had; }
+  /* a player kept out of the players map (out, or gone from his club) keeps his season so far
+     for the Prop Record: the weeks he played are graded on the rating he took into each, not
+     at 1500; and he is still priced by nothing (no market + form, no Elo picks) */
+  { const past = Object.entries(P.past || {}).find(([, v]) => (v.h || []).length);
+    if (!past) notes.push('nobody kept out of the players map has a game this season: the past-ratings check is skipped');
+    else { const [pid, v] = past, { w } = page(MU0); await wait(60);
+      chk(w.eloOf(pid) === null, `${pid} is out but the page would price him`);
+      chk(w.eloPre(pid, v.h[0][0]) === v.s0 && w.eloPre(pid, v.h[0][0] + 1) === v.h[0][1],
+        `the Prop Record would not grade ${pid}'s past weeks on the rating he took into them: ${w.eloPre(pid, v.h[0][0] + 1)} for ${v.h[0][1]}`); } }
 
   /* ---- Mismatches: kicked-off games leave, and the bubbles wear the season shield ---- */
   if (!MU0 || !MU0.players || !Object.keys(MU0.players).length) notes.push('no projections in this week\'s file: the Mismatches checks are skipped');

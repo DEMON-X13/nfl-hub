@@ -230,6 +230,11 @@ models -- the game model, the matchups and the page's market
 + form -- read the rating with every season behind it, which is what their records were
 proven on: three games is too little to price from. players.json carries both for every
 player the models may price: `elo` (career), `se` and `rank` (this season, where he has one).
+A player the roster or the report keeps out is not in that map, so nothing prices him or
+suggests his lines; his season so far (`s0`, `h`) is kept beside it in `past`, because the
+Prop Record grades the weeks he did play on the rating he took into each (it graded them at
+1500). The Move column is against where each stood before the latest week's games; in the
+season's first week there is no week before, and nobody has moved.
 
 THE LADDER. Player Elo at a position spreads far less than team Elo (a standard deviation of
 20 to 60 points, where the shields' bands are 50 wide), so on the raw number nearly everyone
@@ -277,7 +282,8 @@ says when the player stats or team stats lag a final or a club has not filed its
 Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
 (the fitted weights and the who-played walk-forward are kept for the record and the smoke
 test; no page draws them), each file written whole once everything is built:
-    elo/data/players.json   rankings by position, every rated player's rating and club
+    elo/data/players.json   rankings by position, every rated player's rating and club, and
+                            the season so far of each player kept out (`past`)
     elo/data/model.json     the fitted weights, the walk-forward record (pre-game lineups, and
                             who played), this season's graded calls (frozen at kickoff), the
                             coming week's calls, the teams' power ratings, the units, `sources`
@@ -1350,6 +1356,7 @@ def main():
     rated_games = [r for r in game_feat if r['season'] == rank_season and r['result'] is not None]
     last_ord = max((r['ord'] for r in rated_games), default=None)
     players = {}
+    kept_out = set()       # players the map would carry but for being out now (see `past` below)
     groups_out = {}
     def why_out(pid):
         if pid in out_now:
@@ -1395,6 +1402,11 @@ def main():
         # the movement column: against where each stood before the latest week's games
         prev = {pid: before_last(pid) for pid in pool}
         prev_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: (-prev[p], p)))}
+        # the season's first week has no week before it: everyone stood at 1500, and the order
+        # among equals was the players' ids, so week 1 showed "up 25" beside a quarterback who
+        # had moved from nowhere. Nobody has moved yet.
+        if not any(o < last_ord for p in pool for o, _ in HS.get(p, []) if last_ord is not None):
+            prev_rank = {pid: i + 1 for i, pid in enumerate(pool)}
         rank = {pid: i + 1 for i, pid in enumerate(pool)}
         # the ladder: each rating shown on the position's bell curve (THE LADDER)
         def curve(vals):
@@ -1428,6 +1440,14 @@ def main():
             players[pid] = {'name': info[pid]['name'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
                             's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
                             'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
+        kept_out.update(p for p in set(rated) | {p for p in R if info[p]['group'] == g and latest_season[p] >= active_cut and N[p] >= 3}
+                        if why_out(p))
+    # a player the roster or the report keeps out (or one who has left his club) is not in the
+    # players map, so nothing on the page prices him or suggests his lines; but the Prop Record
+    # grades the lines he had before, each week on the rating he took into it, and with no
+    # rating it graded them at 1500. So his season so far (s0 and h, as in the map) is kept here.
+    past = {pid: {'s0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in hist[pid][last]]}
+            for pid in sorted(kept_out) if pid in R and pid not in players and hist.get(pid, {}).get(last)}
 
     def through(season):
         """how far the season's rating has got: the latest week whose games are all rated (or
@@ -1463,7 +1483,7 @@ def main():
         'built_at': model['built_at'], 'formula': FORMULA, 'season': rank_season, 'season_in_play': last, 'phase': phase,
         'through_week': tw, 'through': tlabel, 'partial': partial,
         'rule': 'a real role (half the position\'s normal workload) in at least half of his club\'s rated games',
-        'groups': groups_out, 'players': players,
+        'groups': groups_out, 'players': players, 'past': past,
     }
     mu = matchups(mu_log, game_feat, coming, call_season, mu_lineups)
     if mu:

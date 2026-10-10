@@ -96,7 +96,9 @@ elo/
                                  the build's functions on fixtures; the job runs it before
                                  committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
-                                 data/: kicked-off games leave the Mismatches, shields agree
+                                 data/: kicked-off games leave the Mismatches, shields agree,
+                                 every ranked row has a trend line (week 1 too), a player kept
+                                 out is priced by nothing but keeps his past weeks' ratings
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/
@@ -104,7 +106,9 @@ elo/
   data/players.json              generated: the rankings by position (this season's rating,
                                  the bell curve, who is sidelined and why, a Q for questionable)
                                  and every player the models may price, on his career rating
-                                 with the season's path and his club
+                                 with the season's path and his club; `past`, beside the map,
+                                 the season's path of each player kept out of it (out, or gone
+                                 from his club), for the Prop Record's weeks he played
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming

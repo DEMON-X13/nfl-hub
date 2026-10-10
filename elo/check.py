@@ -16,8 +16,9 @@ all pass. What each one would have caught is said beside it.
   ROSTER     a player on his club's current roster (its own latest week: a club on its bye has
              no rows for the bye week) is not a free agent; every club keeps its players in the
              players map; in season, no club has more than a handful of free agents among the
-             sidelined (in the offseason they are real).
-             (Mahomes, Kelce and Bryce Young were "free agents" every bye week.)
+             sidelined (in the offseason they are real); a sidelined player keeps his season so
+             far in `past`. (Mahomes, Kelce and Bryce Young were "free agents" every bye week;
+             a player out had his past prop lines graded at 1500.)
   REPORT     nobody the report has Out or Doubtful for his club's next game is in that game's
              expected lineup or projected; nor, before the club files its statuses, anybody Out
              or Doubtful at its previous report who has not practised since (or whose club has
@@ -25,7 +26,8 @@ all pass. What each one would have caught is said beside it.
              (Caleb Williams, Out in week 4 and not practising, was CHI's expected QB in week 5.)
   CALENDAR   the rankings' "through week" is a week whose games are all played; the season is
              one with a final game; nothing is projected for a game that had kicked off when the
-             files were built. (One Thursday game made it "week 5" and raised the games bar.)
+             files were built; in the season's first week nobody shows movement. (One Thursday
+             game made it "week 5" and raised the games bar; week 1 showed "up 25".)
   CARRY      a top-ten player of the last published rankings (same season, same formula) is
              still ranked or listed as sidelined unless his club has played since, or has had a
              game rated since (nflverse's player stats come in a night after the score, so a
@@ -194,6 +196,12 @@ def main():
         wk = rg[rg.week == tw]
         unplayed = wk[wk.home_score.isna() & (wk.kick > built - datetime.timedelta(days=3))]
         chk(not len(unplayed), f'CALENDAR: the rankings say "through week {tw}" with {len(unplayed)} of its {len(wk)} games still to play')
+    # the season's first week has no week before it to move from: with only week 1 rated,
+    # nobody shows movement (the order among players all at 1500 was their ids: "up 25")
+    if not tw or (tw == 1 and not P.get('partial')):
+        for g in groups:
+            moved = [r['name'] for r in P['groups'][g]['top'] if r.get('start_rank', r['rank']) != r['rank']]
+            chk(not moved, f'CALENDAR: {g} shows movement in the season\'s first week, from a week that was never played: {moved[:3]}')
     started = {gid for gid, k in zip(games.game_id, games.kick) if k <= built}
     for pid, v in (MU.get('players') or {}).items():
         if v.get('game_id') in started:
@@ -265,6 +273,13 @@ def main():
         by_club[v.get('team')] = by_club.get(v.get('team'), 0) + 1
     thin = sorted(t for t in clubs if by_club.get(t, 0) < 15)
     chk(not thin, f'ROSTER: clubs with fewer than 15 players in the players map: {thin}')
+    # a player kept out of the players map keeps his season so far beside it (the Prop Record
+    # grades the weeks he played on the rating he took into each; it graded them at 1500).
+    # Every sidelined player of this season's rankings has played this season, so has one.
+    if P.get('season') == P.get('season_in_play', P.get('season')):
+        past = P.get('past') or {}
+        lost = [x['name'] for g in groups for x in P['groups'][g]['sidelined'] if x['id'] not in players and x['id'] not in past]
+        chk(not lost, f'ROSTER: kept out with no season so far beside the players map, so their past lines grade at 1500: {lost[:5]}{" ..." if len(lost) > 5 else ""}')
 
     # ---- REPORT ----
     inj_path = os.path.join(a.cache, f'injuries_{int(games[games.kick > built].season.min()) if (games.kick > built).any() else sched}.csv')

@@ -148,7 +148,9 @@ const tag=(t,mini)=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagCo
 const shield=elo=>window.pkTierBadge?window.pkTierBadge(elo):'';
 const tierName=elo=>{ const t=window.pkEloTier?window.pkEloTier(elo):null; return t?t[0]:''; };
 function spark(pts){
-  if(!pts||pts.length<2) return '';
+  if(!pts||!pts.length) return '';
+  /* one game in (all of week 1): the line runs from 1500, where every player starts the season */
+  if(pts.length<2) pts=[[pts[0][0]-1,1500],pts[0]];
   const v=pts.map(p=>p[1]), lo=Math.min(...v), hi=Math.max(...v), W=84, H=22;
   const x=i=>(i/(v.length-1))*(W-2)+1, y=e=>hi===lo?H/2:H-1-((e-lo)/(hi-lo))*(H-2);
   const d=v.map((e,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(e).toFixed(1)).join(' ');
@@ -378,9 +380,11 @@ function decorate(){
 }
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
 /* a player's rating as it stood before week w of this season: after his last game before
-   it, or where the season began. Grading a past week on today's rating would be hindsight. */
+   it, or where the season began. Grading a past week on today's rating would be hindsight.
+   A player out now is not in the map (nothing prices him or suggests his lines), but his
+   season so far is in `past`, so the weeks he did play are still graded on his rating. */
 function preElo(pid,w){
-  const e=window.eloOf(pid); if(!e) return null;
+  const e=window.eloOf(pid)||(D.players&&D.players.past&&D.players.past[pid])||null; if(!e) return null;
   let v=e.s0!=null?e.s0:e.elo;
   for(const [o,r] of (e.h||[])) if(o<w) v=r;
   return v;
