@@ -426,7 +426,8 @@ function partB2(b) {
   for (const g of older.games) {
     if (!legacy.some(x => x.id === g.id)) continue;
     const mu = spreadOf(g.diff, model), G = goals(g.xt, mu, g.diff, model.pull);
-    Object.assign(g, { state: 'live', hs: 1, as: 1, mu: +mu.toFixed(2), tie: r3(G.tie) }); delete g.by; delete g.elo;
+    /* the older job wrote neither callV nor before: rows that carry them are this job's and copied as they are */
+    Object.assign(g, { state: 'live', hs: 1, as: 1, mu: +mu.toFixed(2), tie: r3(G.tie) }); delete g.by; delete g.elo; delete g.callV; delete g.before;
     if (g.line.homeLine !== null && g.line.homeLine !== undefined) { const cp = coverProbs(G, g.line.homeLine); g.cover = { home: r3(cp.cover), push: r3(cp.push), away: r3(cp.lose) }; g.plEdge = { home: r3(cp.cover - (g.line.homeSpreadOdds > 0 ? 100 / (g.line.homeSpreadOdds + 100) : -g.line.homeSpreadOdds / (-g.line.homeSpreadOdds + 100))), away: r3(cp.lose - (g.line.awaySpreadOdds > 0 ? 100 / (g.line.awaySpreadOdds + 100) : -g.line.awaySpreadOdds / (-g.line.awaySpreadOdds + 100))) }; g.plPick = g.plEdge.home >= 0.05 ? 'home' : g.plEdge.away >= 0.05 ? 'away' : null; }
     if (g.line.total !== null && g.line.total !== undefined) { const tp = totalProbs(G, g.line.total), imp = am => am > 0 ? 100 / (am + 100) : -am / (-am + 100); g.ou = { over: r3(tp.over), push: r3(tp.push), under: r3(tp.under) }; g.ouEdge = { over: r3(tp.over - imp(g.line.overOdds)), under: r3(tp.under - imp(g.line.underOdds)) }; g.ouPick = g.ouEdge.over >= 0.05 ? 'over' : g.ouEdge.under >= 0.05 ? 'under' : null; }
   }
