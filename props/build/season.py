@@ -1,15 +1,15 @@
 """The season the prop model follows, read from the one place it is set.
 
 That place is the page: `const SEASON=2026, KEY='props_2026_v1';` in part2.js. The storage key
-carries the year too, the Bets and Stats build asserts that exact line, and its sync layer names
-the key, so the page's line is the one that has to change at a rollover anyway. weekly.py,
-payload.py and mktbuild.py take the season from here, the payload carries it (`season`), and the
-audit checks the page and the payload agree, so the job can never bake one season into a page
-built for another.
+carries the year too, and the Bets and Stats build reads that line (stopping if its shape changes)
+and writes its KEY into nflbets/build/storage.js, so the page's line is the one that has to change
+at a rollover anyway. weekly.py, payload.py and mktbuild.py take the season from here, the payload
+carries it (`season`), and the audit checks the page and the payload agree, so the job can never
+bake one season into a page built for another.
 
-At a rollover: change that line in part2.js (and the key in nflbets/build/sync.js and the
-assert in nflbets/build/build.js with it); nothing in props/ needs a second edit. The baselines
-are the season before (BASE), taken from raw/feat.pkl, the feature table research/features.py
+At a rollover: change that line in part2.js; nothing in props/ or nflbets/build/ needs a second
+edit (nflbets/build/build.js reads the line and writes its KEY into nflbets/build/storage.js). The
+baselines are the season before (BASE), taken from raw/feat.pkl, the feature table research/features.py
 builds from nflverse's weekly player stats, FIRST..BASE (it takes both from here). The table is
 committed, so on the first run of a new season it is a season short: weekly.py sees that, fetches
 the weekly stats FIRST..BASE, rebuilds it (the seasons it already held come out as they were),

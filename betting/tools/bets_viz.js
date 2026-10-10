@@ -15,19 +15,17 @@
    The deposit is entered here (S.bank.deposit) and kept in the browser; the table keeps the
    running total and, with a deposit, the balance after each week.
 
-   Inside the Bets and Stats page with a store set up the log is X's (the X Bet Log, through
-   window.XBETS, which the build's hook lays into S.bets): on the owner's devices everything above,
-   the deposit kept on the device unless nflbets/sync.json shares it; on everyone else's the same
-   weeks, read only -- no entry form, no Remove, no deposit box, the balance only when the deposit
-   is shared, otherwise X's profit against break even -- with a line saying whether the log is
-   synced. */
+   Inside the Bets and Stats page the log is X's (the X Bet Log: the file liveparlays/xbets.json,
+   through window.XBETS, which the build's hook lays into S.bets and S.bank.deposit), the same on
+   every device and read only: no entry form, no Remove, no deposit box; the balance from X's
+   deposit, or X's profit against break even when the file has none; and a line saying when the
+   file last changed. */
 function betsViz(){
   const chart=document.getElementById('betChart'), table=document.getElementById('betTable');
   if(!chart||!table) return;
   const XB=window.XBETS&&typeof window.XBETS.enabled==='function'&&window.XBETS.enabled()?window.XBETS:null;
-  const xb=XB?XB.get():null, ro=!!xb&&!xb.owner;
-  /* the owner's device before the log has been read: no Remove, as no Save, over weeks it has not seen */
-  const fixed=ro||(!!xb&&!(xb.status&&xb.status.applied));
+  /* X's log, handed in by the page: read only on every device */
+  const xb=XB?XB.get():null, ro=!!xb;
   xbHead(xb);
   const logged=Object.keys(S.bets||{}).map(Number).sort((a,b)=>a-b).map(w=>({w,...S.bets[w]}));
   const dep=S.bank&&S.bank.deposit!=null&&S.bank.deposit!==''&&isFinite(+S.bank.deposit)?+S.bank.deposit:null;
@@ -39,9 +37,8 @@ function betsViz(){
   const signed=v=>(v>=0?'+':MINUS)+USD+Math.abs(v).toFixed(2);
   const short=v=>{ const a=Math.abs(v); return (v<0?MINUS:'')+USD+(a>=100||Number.isInteger(a)?Math.round(a):a.toFixed(a<10?2:1)); };
   const esc=t=>String(t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-  const depWhere=!xb?'kept in this browser only':(xb.share?'shared: every visitor sees the balance':'kept on this device, not shared');
   const depForm=ro?'':`<div class="bv-dep"><label>Deposited ${USD}<input type="number" id="betDeposit" step="0.01" min="0" placeholder="0.00" value="${dep==null?'':dep}"></label>
-      <button class="btn quiet" id="betDepositSave">Save</button><span class="muted">what you put in the account, for the balance; ${depWhere}</span></div>`;
+      <button class="btn quiet" id="betDepositSave">Save</button><span class="muted">what you put in the account, for the balance; kept in this browser only</span></div>`;
   const wireDeposit=()=>{ const b=document.getElementById('betDepositSave'); if(b) b.addEventListener('click',()=>{
     const v=document.getElementById('betDeposit').value.trim();
     if(v!==''&&(!isFinite(+v)||+v<0)){ alert('Enter what you deposited, or leave it empty.'); return; }
@@ -136,43 +133,31 @@ function betsViz(){
       if(c&&c.querySelector('svg.bv-chart')&&Math.abs((c.clientWidth-36)-lastW)>40){ lastW=c.clientWidth-36; betsViz(); } },200); }); }
   /* the table: the app's columns, with the balance after each week once there is a deposit */
   let r2=0;
-  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th>'+(fixed?'':'<th></th>')+'</tr></thead><tbody>'
+  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th>'+(ro?'':'<th></th>')+'</tr></thead><tbody>'
     +logged.map(r=>{ const n=r.returned-r.staked; r2+=n;
       return `<tr><td>Week ${r.w}</td><td class="num">${money(r.staked)}</td><td class="num">${money(r.returned)}</td>`
         +`<td class="num ${n>=0?'delta up':'delta down'}">${signed(n)}</td><td class="num">${signed(r2)}</td>`
         +(dep==null?'':`<td class="num">${money(dep+r2)}</td>`)
-        +`<td class="muted">${esc(r.note)}</td>`+(fixed?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
+        +`<td class="muted">${esc(r.note)}</td>`+(ro?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
     +'</tbody></table></div>';
   table.querySelectorAll('button[data-betdel]').forEach(b=>b.addEventListener('click',()=>{
     if(!confirm(`Remove the week ${b.dataset.betdel} bet entry?`)) return;
     delete S.bets[b.dataset.betdel]; save(); renderRecord(); }));
 }
-/* the X Bet Log's note over the entry form: what the log is, whose, and whether it is synced. The
-   owner's devices keep Save shut until the log has been read once, so a week is never written
-   over one the device has not seen. */
+/* the X Bet Log's note over the (hidden) entry form: what the log is, and when the file last
+   changed or that it could not be read. Save week stays shut: X's log is a file, read only here. */
 function xbHead(xb){
-  const n=document.getElementById('xbNote'), save=document.getElementById('betSave'), bl=document.getElementById('xbBackup');
-  if(bl) bl.hidden=!(xb&&xb.owner);
-  if(!xb){ if(save){ save.disabled=false; save.textContent='Save week'; } return; }
+  const n=document.getElementById('xbNote'), save=document.getElementById('betSave');
+  if(save) save.disabled=!!xb;
+  if(!xb||!n) return;
   const esc=t=>String(t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-  const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+  const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); };
   const s=xb.status||{};
-  let line, cls='';
-  if(xb.owner&&s.blocked){ line=(s.blocked==='signin'?'Not published: sign in on the X Parlays tab to publish':'Not published: the store refused the change')+(s.pending?'; your change waits on this device':''); cls='bad'; }
-  else if(xb.owner&&s.denied){ line='Not synced: the store\u2019s rules do not let this page read the X Bet Log (open xbets beside nflhub in the rules). This browser\u2019s own log is kept.'; cls='bad'; }
-  else if(s.applied&&s.ok!==false){ line='Synced'+(s.at?' \u00b7 last change '+when(s.at):'')+(s.pending?' \u00b7 saving\u2026':''); cls='ok'; }
-  else if(s.cached){ line='Not synced \u00b7 the copy this browser last saw, '+when(s.cached); cls='bad'; }
-  else if(s.ok===false){ line='The X Bet Log could not be reached; retrying.'; cls='bad'; }
-  else line='Connecting\u2026';
-  if(save){ const wait=xb.owner&&!s.applied; save.disabled=wait; save.textContent=wait?'Connecting\u2026':'Save week'; }
-  if(!n) return;
-  const who=s.signedIn?'Signed in'+(s.email?' as '+esc(s.email):'')+' on this device':'Owner on this device';
-  n.innerHTML=xb.owner
-    ?'Your X Bet Log: one line per week, what you staked and what came back. Every visitor sees these weeks'+(xb.share?' and your balance':', not your deposit')+'.'
-      +' <span class="xb-who">'+who+' \u00b7 <a href="#" id="xbSignOut">Sign out</a></span>'
-    :'Every week X bet: what went in and what came back. Updated from X\u2019s devices; read only.';
-  n.insertAdjacentHTML('beforeend','<span class="xb-status '+cls+'">'+line+'</span>');
-  const so=document.getElementById('xbSignOut');
-  if(so) so.addEventListener('click',e=>{ e.preventDefault();
-    if(confirm('Sign this device out of owner? It stops publishing: the X Bet Log and X Parlays become read only here.')) window.XBETS.signOut(); });
+  let line='', cls='';
+  if(s.ok===false){ line='X\u2019s bet log could not be read'+(s.err?' ('+esc(s.err)+')':'')+': reload the page to try again.'; cls='bad'; }
+  else if(s.other){ line='The log on file is X\u2019s '+esc(s.other)+' season: no week of this one is logged yet.'; }
+  else if(!s.applied) line='Reading X\u2019s bet log\u2026';
+  else if(s.at&&when(s.at)) line='Updated '+esc(when(s.at));
+  n.innerHTML='Every week X bet: what went in and what came back. The same on every device, read only.'
+    +(line?'<span class="xb-status '+cls+'">'+line+'</span>':'');
 }

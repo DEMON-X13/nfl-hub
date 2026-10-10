@@ -19,9 +19,9 @@
  * its own TEAM_COLORS and tag().
  *
  * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json,
- * liveparlays/parlays.json, elo/data/*.json and nflbets/sync.json when it opens, so it is
+ * liveparlays/parlays.json, liveparlays/xbets.json and elo/data/*.json when it opens, so it is
  * rebuilt when a source changes, never when the data does. Neither site is touched. This page
- * reads what they publish.
+ * reads what they publish, and writes nothing anywhere but the visitor's own browser storage.
  */
 'use strict';
 const fs = require('fs');
@@ -43,53 +43,49 @@ const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
 const tab = rd('nflbets', 'build', 'tab_pickems.html');
 /* the X Parlays section is the section page's own source, set into the X Parlays tab: X's
-   parlays at the top of the tab and the Parlay Builder under them. There is no list of a
-   visitor's own: visitors come to see X's parlays. On the owner's devices a parlay saved in the
-   builder is X's and is watched in X's card the moment it is saved; on anyone else's the builder
-   finishes a parlay as a card to download (card.html, below), saved nowhere. Its styles are
-   scoped to its card and its script runs in a closure, since the page around it defines most
-   of the same names for itself. */
+   parlays (liveparlays/parlays.json, read only on every device) at the top of the tab and the
+   Parlay Builder under them. No device keeps a list of its own: visitors come to see X's
+   parlays, and the builder finishes a parlay as a card to download (card.html, below), saved
+   nowhere. Its styles are scoped to its card and its script runs in a closure, since the page
+   around it defines most of the same names for itself. */
 const livePage = rd('liveparlays', 'build', 'page.html');
-/* the parlay card: a visitor's finished parlay in a window, downloadable as an image. Its own
-   styles, window and script, every name prefixed pc-; the builder's pricing is lifted into it
-   from part3's renderParlay (its QUOTE slot), so the card prices a parlay exactly as the
-   builder shows it, never with a copy that can drift */
+/* the parlay card: a finished parlay in a window, downloadable as an image. Its own styles,
+   window and script, every name prefixed pc-; the builder's pricing is lifted into it from
+   part3's renderParlay (its QUOTE slot), so the card prices a parlay exactly as the builder
+   shows it, never with a copy that can drift */
 const cardSrc = rd('nflbets', 'build', 'card.html');
-/* the sync layer: one shared document for X's builder, saved parlays, corrected lines and
-   deletions, read by every device and written by X's alone (the owner link, or Firebase sign-in).
-   It runs before the prop model, which saves through the window.storage it defines; the
-   section's key goes through window.LIVE_IO. Its address and who the owner is are read from
-   nflbets/sync.json at run time, never built in. The X Bet Log's adapter (xbets.js) runs right
-   after it and hands the betting app's frames X's log. */
-/* the season and the prop model's storage key are part2's, one place: the sync layer and the
-   X Parlays section are handed that key at build time, so a new season is a new key in
-   part2.js and nowhere else */
+/* the browser's own storage (storage.js): the window.storage the prop model saves through, over
+   this browser's localStorage and nothing else, and the leftovers of the retired shared store
+   taken out once. It runs before the prop model. The X Bet Log's adapter (xbets.js) runs right
+   after it and hands the betting app's frames X's log, read from liveparlays/xbets.json. */
+/* the season and the prop model's storage key are part2's, one place: the storage layer is
+   handed that key at build time, so a new season is a new key in part2.js and nowhere else */
 const SEASON_KEY = part2.match(/const SEASON=(\d{4}), KEY='([^']+)';/);
 if (!SEASON_KEY) throw new Error("the prop model's SEASON and storage KEY are not where nflbets/build expects them in part2.js");
 const PROP_KEY = SEASON_KEY[2];
-/* the betting app's own key and season (betting/tools/build.js reads them from the app): the sync
-   layer publishes X's betting slips from that key, and the X Bet Log is that season's */
+/* the betting app's own key and season (betting/tools/build.js reads them from the app): the X
+   Bet Log is that season's */
 const BETB = require(path.join(ROOT, 'betting', 'tools', 'build.js'));
 if (!/^x_nfl_viewer_picks_\d{4}$/.test(BETB.BET_KEY)) throw new Error('betting/tools/build.js no longer exports the betting app\'s own key');
 /* the prop model reads the betting slips from the same key (part2's BET_KEY): two names for one
-   key would leave X Parlays without the slips the sync layer publishes */
+   key would read a key nothing writes */
 { const m = part2.match(/const BET_KEY='([^']+)';/);
   if (!m || m[1] !== BETB.BET_KEY) throw new Error(`part2.js reads the betting slips from ${m ? m[1] : 'no BET_KEY'}, the betting app keeps them under ${BETB.BET_KEY}: move part2's BET_KEY to the app's season with a props patch`); }
-let SYNC_JS = sub1(rd('nflbets', 'build', 'sync.js'), /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringify(PROP_KEY), "the sync layer's PROP_KEY");
-SYNC_JS = sub1(SYNC_JS, /\/\*BET_KEY\*\/'[^']*'/, '/*BET_KEY*/' + JSON.stringify(BETB.BET_KEY), "the sync layer's BET_KEY");
-/* who may write: the owner link's hash, Firebase's key and the owner's uid, read from sync.json at
-   run time; the owner's token on every write; the role the section and the frames ask for */
-for (const need of ['window.storage=', 'window.LIVE_IO=', "LIVE_KEY='live_parlays_v1'", "CONF='sync.json'", "s('ownerHash')", "s('apiKey')", "s('owner')",
-  "'&auth='+encodeURIComponent(tok)", "await write(st.url,{method:'PUT'", "PUT_MS,'parlays');", 'role:()=>st.role', 'function clean(v,d)', "const BAD=/[<>\"`]/g;", 'doc:clean({prop:propPart(doc.prop), live:livePart(doc.live)})', "'SHA-256'", "history.replaceState(null,'',location.pathname+location.search+'#parlay')", 'migrateReader('])
-  if (!SYNC_JS.includes(need)) throw new Error('nflbets/build/sync.js no longer has ' + need);
+const STORAGE_JS = sub1(rd('nflbets', 'build', 'storage.js'), /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringify(PROP_KEY), "the storage layer's PROP_KEY");
+for (const need of ['window.storage=', 'function clean(v,d)', "const BAD=/[<>\"`]/g;", "ls.del('live_parlays_v1')", "'nflowner_v1'", "'xparlays_v1'"])
+  if (!STORAGE_JS.includes(need)) throw new Error('nflbets/build/storage.js no longer has ' + need);
 const XBETS_JS = sub1(rd('nflbets', 'build', 'xbets.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the X Bet Log's season");
-for (const need of ['window.XBETS=', "SYNC.write(docUrl(),{method:'PATCH'", "},null,'xbets');", "conf().betsUrl+'/'+SEASON", 'function cleanWeek(', "replace(/[<>]/g,'')", "PENDING='xbets_pending_'+SEASON", 'function keepPre('])
+for (const need of ['window.XBETS=', "URL='../liveparlays/xbets.json'", "{cache:'no-store'}", 'function cleanWeek(', "replace(/[<>]/g,'')", 'function tidy('])
   if (!XBETS_JS.includes(need)) throw new Error('nflbets/build/xbets.js no longer has ' + need);
-const SYNC_CONF = JSON.parse(rd('nflbets', 'sync.json'));
-if (SYNC_CONF.ownerHash && !/^[0-9a-f]{64}$/.test(SYNC_CONF.ownerHash)) throw new Error('nflbets/sync.json: ownerHash is not a SHA-256 in hex');
-if (!!SYNC_CONF.apiKey !== !!SYNC_CONF.owner) throw new Error('nflbets/sync.json: Firebase sign-in needs both apiKey and owner (the uid), or neither');
-if (!part2.includes('if(window.storage){const r=await window.storage.get(KEY,false)')) throw new Error('the prop model no longer reads through window.storage, which the sync layer relies on');
-if (!fs.existsSync(path.join(ROOT, 'nflbets', 'sync.json'))) throw new Error('nflbets/sync.json is missing: the page reads the store address from it');
+/* nothing on the page writes anywhere but this browser: the two scripts send no request but the
+   X Bet Log file's read */
+for (const [name, src] of [['storage.js', STORAGE_JS], ['xbets.js', XBETS_JS]])
+  for (const gone of ["method:'PUT'", "method:'PATCH'", "method:'POST'", 'keepalive', 'write('])
+    if (src.includes(gone)) throw new Error(`nflbets/build/${name} has ${gone}: nothing on the page writes anywhere but this browser's storage`);
+if (!part2.includes('if(window.storage){const r=await window.storage.get(KEY,false)')) throw new Error('the prop model no longer reads through window.storage, which the storage layer relies on');
+for (const gone of ['sync.json', path.join('build', 'sync.js'), path.join('build', 'stress_sync.js')])
+  if (fs.existsSync(path.join(ROOT, 'nflbets', gone))) throw new Error('nflbets/' + gone + ' is back: the shared store is retired, X\'s parlays and the X Bet Log are files in liveparlays/');
+if (!fs.existsSync(path.join(ROOT, 'liveparlays', 'xbets.json'))) throw new Error('liveparlays/xbets.json is missing: the X Bet Log reads it');
 
 const lift = (src, from, to, what) => {
   const a = src.indexOf(from), b = src.indexOf(to, a + 1);
@@ -136,7 +132,7 @@ for (const need of ['function gameBet', 'function confTier', 'function bookPrice
 /* ---- the X Parlays section, out of liveparlays/build/page.html ---- */
 const lpiece = (re, what) => { const m = livePage.match(re); if (!m) throw new Error(`liveparlays/build/page.html has no ${what}`); return m[1]; };
 const LIVE_CSS = lpiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
-const LIVE_BAR = lpiece(/<main>\s*(<div class="bar">[\s\S]*?<\/div>)\s*<noscript>/, 'control bar');
+const LIVE_BAR = lpiece(/<main>\s*(<p class="lp-upd" id="lpUpdated"><\/p>\s*<div class="bar">[\s\S]*?<\/div>)\s*<noscript>/, 'updated line and control bar');
 let LIVE_JS = lpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
 /* Scope every rule to the section's cards. Page-level rules -- the page shell, the button and card
    bases the prop model already has -- are dropped; the rest keep their look inside the cards
@@ -164,21 +160,21 @@ function scopeCss(css, scopes) {
   return block(css);
 }
 const LIVE_SCOPED = scopeCss(LIVE_CSS, ['#lpCard']);
-for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#lpCard .gm{', '#lpCard .hidebtn{'])
+for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#lpCard .gm{', '#lpCard .lp-upd{'])
   if (!LIVE_SCOPED.includes(need)) throw new Error('the scoped live styles lost ' + need);
 if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
 const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
 lsub("const DATA='parlays.json';", "const DATA='../liveparlays/parlays.json';", 'file path');
-LIVE_JS = sub1(LIVE_JS, /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringify(PROP_KEY), "the live script: the prop model's key");
-/* the section redraws whenever the prop model redraws its builder, and once the model is up */
+/* the section draws once the model is up (a leg's injury word and player ids are the model's) */
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
 lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
-for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'const editable=()=>ownerHere();', 'function writeStore(L,st){ if(!editable(L)) return false;', 'window.lpKeep=', 'window.lpOwner=ownerHere;', "if(!ownerHere()||typeof S!=='object'", 'function espnWeek(', 'function drawList(L)'])
+for (const need of ['function readFile(', 'o.cleared===true', 'const updatedOf=', "{cache:'no-store'}", 'function espnWeek(', 'function drawList(', "getElementById('lpUpdated')"])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
-/* one list: X's. Nothing of the section reads, draws or writes a visitor's own list any more */
-for (const gone of ["MY_KEY", 'myCard', 'myApp', 'LISTS.my'])
-  if (LIVE_JS.includes(gone)) throw new Error('the live script still has ' + gone + ': a visitor has no list of their own');
+/* one list, X's, from the file, read only on every device: nothing of the section reads, draws or
+   writes a browser's own parlays, and nothing on it changes X's */
+for (const gone of ['MY_KEY', 'myCard', 'myApp', 'LISTS.', 'LIVE_IO', 'NFLSYNC', 'lpOwner', 'lpKeep', 'localStorage', 'data-rm', 'data-edit', 'data-stake-of', 'data-reset', "id=\"clear\"", 'propState', 'S.saved'])
+  if (LIVE_JS.includes(gone) || LIVE_BAR.includes(gone)) throw new Error('the live section still has ' + gone + ': X Parlays is the file, read only, on every device');
 /* the card: its styles (nothing page-level), its window, and its script with the builder's
    pricing set into it */
 const cpiece = (re, what) => { const m = cardSrc.match(re); if (!m) throw new Error(`card.html has no ${what}`); return m[1]; };
@@ -192,29 +188,25 @@ if (part3.split(QUOTE_FROM).length !== 2) throw new Error("the builder's pricing
 const QUOTE = lift(part3, QUOTE_FROM, '\n\n  let html=droppedNote+', "builder's pricing in renderParlay");
 for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 'const bookDec=', 'const fairML=', 'const stake=', 'const override=', 'const realPrice=', 'const estPrice=', 'const useDec=', 'const payout=stake*useDec, profit=payout-stake;'])
   if (!QUOTE.includes(need)) throw new Error("the builder's pricing lifted from part3.js has no " + need);
-/* the builder's save, which a visitor's device turns into Finish: the button, its rule, its label,
-   and the suggestion tiers' save */
+/* the builder's save, which every device turns into Finish: the button, its rule, its label, and
+   the suggestion tiers' save */
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', "'Add to saved parlays'", 'data-suggest-save="${t.id}"'])
-  if (!part3.includes(need)) throw new Error("the builder's save moved (" + need + "); the parlay card stands in for it on a visitor's device");
+  if (!part3.includes(need)) throw new Error("the builder's save moved (" + need + "); the parlay card stands in for it on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishTiers(', "$('pSave')", '[data-suggest-save],[data-elo-save]', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', 'window.lpOwner'])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishTiers(', "$('pSave')", '[data-suggest-save],[data-elo-save]', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
+/* Finish on every device: nothing in the card asks whose device it is */
+for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
+  if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
 for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'let SUGGEST_CACHE'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes('data-elo-save="${t.id}"') || !elo.includes('window.eloPicks=eloPicks;'))
-    throw new Error("the Elo picks' save or window.eloPicks moved; the parlay card finishes an Elo pick on a visitor's device"); }
-/* X Parlays: the owner's parlays, at the top of the tab, with the owner's mark and controls and
-   the Firebase sign-in box (shown only when sync.json sets it up) */
+    throw new Error("the Elo picks' save or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
+/* X Parlays: X's parlays from the file, at the top of the tab, read only; a quiet line under the
+   heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
-    <h2 style="display:flex;align-items:center;gap:10px">X Parlays<span class="grow" style="flex:1"></span><span class="xp-own" id="xpOwner" hidden>owner</span><button type="button" class="xp-link" id="xpSignIn" hidden>Owner sign-in</button><button type="button" class="xp-link" id="xpSignOut" hidden>sign out of owner</button></h2>
-    <p class="muted xp-sub" id="xpSub"></p>
-    <form class="xp-signin" id="xpSignInBox" hidden autocomplete="on">
-      <input type="email" id="xpEmail" autocomplete="username" placeholder="email" required>
-      <input type="password" id="xpPass" autocomplete="current-password" placeholder="password" required>
-      <button class="btn" type="submit" id="xpSignInGo">Sign in</button><button class="btn quiet" type="button" id="xpSignInCancel">Cancel</button>
-      <span class="muted" id="xpSignInMsg"></span>
-    </form>
+    <h2>X Parlays</h2>
     ${LIVE_BAR}
     <div id="app"></div>
   </div>`;
@@ -224,89 +216,23 @@ const LIVE_SCRIPT = `<script>
 (function(){
 ${LIVE_JS}
 })();
-/* the Saved parlays card and the betting-slips card it also covered are drawn by the section
-   now, as X's, and on a visitor's device not at all; the builder keeps its place above it and the
-   section follows every redraw. Before each redraw the owner's device keeps a copy of a builder
-   about to lose a leg to a kickoff (lpKeep), so a parlay bet and never locked is still watched
-   once its first game starts. After it, a visitor's builder gets Finish parlay where Save was
-   (the parlay card). */
+/* the Saved parlays card and the betting-slips card are drawn nowhere: X Parlays is X's, from the
+   file, and a browser's own saved parlays are not drawn. The builder keeps its place under X's
+   card, and after every redraw it gets Finish parlay where Save was (the parlay card). The section
+   draws again once the prop model is up, for the injury word and player ids its legs read. */
 renderSaved=function(){ return ''; };
 renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
-  renderParlay=function(){ try{ if(window.lpKeep) window.lpKeep(); }catch(e){}
-    const r=drawParlay.apply(this,arguments);
+  renderParlay=function(){ const r=drawParlay.apply(this,arguments);
     try{ if(window.PARLAY_CARD) window.PARLAY_CARD.finishBuilder(); }catch(e){}
-    if(window.lpDraw) window.lpDraw(); return r; }; }
+    return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
-/* the sync stamp, in the X Parlays card (the parlays are what it syncs; the header keeps only
-   when the site's data was updated, and the owner's mark). On a reader's device: X's parlays
-   and when X last changed them, or that the store cannot be reached and the copy shown is the
-   last one seen. On the owner's: synced and when, saving, failed and retrying, or held until
-   the device is signed in again. With no store: this browser only. When this page last checked
-   is in its tooltip. The owner's mark, sign-out and (with Firebase set up) sign-in follow it. */
-(function(){
-  const el=document.getElementById('syncStamp'); if(!el||!window.NFLSYNC) return;
-  const $=id=>document.getElementById(id);
-  const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
-  const clock=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}); };
-  /* changed: when the shared document last moved, on any device. checked: when this page
-     last heard from the store, so a page that has stopped looking can be told from one
-     with nothing new to show. */
-  const put=s=>{ let t, cls='';
-    const owner=s.role==='owner'&&!!s.url;
-    if(!s.url){ t=s.err&&!/HTTP 404/.test(s.err)?'Not synced: '+s.err:'Not synced \u2014 this browser only'; cls='off'; }
-    else if(!owner){
-      if(s.ok===false){ t=s.cached?'Not synced \u2014 X\u2019s parlays as this browser last saw them, '+when(s.cached):'Not synced \u2014 X\u2019s parlays could not be reached; retrying'; cls='bad'; }
-      else if(!s.applied){ t='Connecting\u2026'; }
-      else { t='X\u2019s parlays'+(s.at?' \u00b7 updated '+when(s.at):''); cls='ok'; }
-    }
-    else if(s.blocked){ t=s.blocked==='signin'?'Not published \u2014 sign in to publish your changes':'Not published \u2014 the store refused the change'; cls='bad'; }
-    else if(s.ok===false){ t='Sync failed \u2014 retrying'; cls='bad'; }
-    else if(s.pending){ t='Saving\u2026'; cls='ok'; }
-    else if(!s.applied){ t='Connecting\u2026'; }
-    else { t=(s.signedIn?'Signed in \u00b7 ':'')+'Synced'+(s.at?' \u00b7 last change '+when(s.at):''); cls='ok'; }
-    el.textContent=t; el.dataset.state=cls;
-    el.title=(!s.url?'nflbets/sync.json has no store address, so X Parlays shows only the placed parlays in the repository'
-      :(owner?'What you change here is what every device shows':'X\u2019s parlays, the same on every device')+(s.checked?'; this page last checked at '+clock(s.checked):''))
-      +(s.ok===false&&s.err?' ('+s.err+')':'')+(s.ownerMsg?' ('+s.ownerMsg+')':'');
-    /* the owner's mark and controls */
-    const mark=$('ownerMark'), pill=$('xpOwner'), out=$('xpSignOut'), inn=$('xpSignIn'), sub=$('xpSub');
-    if(mark) mark.hidden=!owner;
-    if(pill) pill.hidden=!owner;
-    if(out){ out.hidden=!owner; out.textContent=s.signedIn?'sign out':'sign out of owner'; }
-    /* sign-in, offered when either document's writes wait for it (the X Bet Log's note sends the owner here) */
-    const lapsed=s.blocked==='signin'||!!(s.blocks&&s.blocks.xbets==='signin');
-    if(inn){ inn.hidden=!(s.url&&s.enforced&&(!owner||!s.signedIn||lapsed)); inn.textContent=owner?'sign in':'Owner sign-in'; }
-    if(sub) sub.textContent=!s.url?'X\u2019s placed parlays, from the repository.'
-      :(owner?'Yours, as every visitor sees them: what you change here changes for everyone.'
-        :'What X placed, saved and is building, followed live: the same on every device, read only.')
-      +(s.ownerMsg&&!owner?' ('+s.ownerMsg+')':'');
-  };
-  NFLSYNC.onChange(put); put(NFLSYNC.state());
-  const box=$('xpSignInBox'), msg=$('xpSignInMsg');
-  const open=v=>{ if(!box) return; box.hidden=!v; if(msg) msg.textContent=''; if(v){ const e=$('xpEmail'); if(e) e.focus(); } };
-  if($('xpSignIn')) $('xpSignIn').addEventListener('click',()=>open(box.hidden));
-  if($('xpSignInCancel')) $('xpSignInCancel').addEventListener('click',()=>open(false));
-  if(box) box.addEventListener('submit',async e=>{ e.preventDefault();
-    const pw=$('xpPass'); msg.textContent='Signing in\u2026';
-    try{ await NFLSYNC.signIn($('xpEmail').value,pw.value); pw.value=''; msg.textContent='Signed in'; box.hidden=true; }
-    catch(err){ pw.value=''; msg.textContent=String(err&&err.message||err); } });
-  if($('xpSignOut')) $('xpSignOut').addEventListener('click',()=>{
-    if(confirm('Sign this device out of owner? It stops publishing: X Parlays and the X Bet Log become read only here, and the parlays it holds that are X\u2019s stay under X Parlays.')) NFLSYNC.signOut(); });
-})();
 </script>`;
 
 /* the prop model's page, re-headed */
 let html = part1;
 html = sub1(html, '<title>X NFL Prop Model</title>', '<title>X NFL Bets and Stats</title>', 'title');
 html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 'heading');
-html = sub1(html, '</style>\n</head>', '</style>\n<style>#syncStamp{margin-left:10px;font-size:12px} #syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}\n'
-  + '.xp-own,.xp-mark{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--gold-soft,#FBEFD3);color:#8A5E05;font-family:var(--body)}\n'
-  + '.xp-link{background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:underline;cursor:pointer;font-family:var(--body)}\n'
-  + '.xp-sub{margin:0 0 10px;font-size:13px} .xp-signin{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px} .xp-signin input{padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;min-width:0;flex:1 1 160px}'
-  + '</style>\n</head>', 'the sync stamp style');
-/* the owner's mark in the header, on every tab: this browser writes what every device shows */
-html = sub1(html, '<span class="sub" id="buildTag"></span>', '<span class="sub" id="buildTag"></span><span class="xp-mark" id="ownerMark" hidden title="This browser is the owner\'s: what you change in X Parlays and the X Bet Log is what every device shows">owner</span>', 'the owner\'s mark');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here stays in the page, unshown. */
@@ -318,13 +244,13 @@ html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>
    reads the season from ../betting/state.json. The frame takes the height of what it shows.
    Nothing is cached apart from this page: the frame's content is inside it. */
 const { buildApp } = BETB;
-/* the frame is handed the page's X Bet Log (window.XBETS, nflbets/build/xbets.js): a srcdoc frame
-   is this page's origin, so its parent is reachable. It starts read only (xbets-ro) and the app's
-   hook lifts that on the owner's devices, so a visitor never sees the entry form flash up. */
+/* the frame is handed the page's X Bet Log (window.XBETS, nflbets/build/xbets.js, which reads
+   liveparlays/xbets.json): a srcdoc frame is this page's origin, so its parent is reachable. It is
+   read only from its first paint (xbets-ro): no entry form, Remove, deposit box or backup card. */
 const BET_APP = sub1(buildApp(), '<head>', "<head>\n<script>window.EMBED_TAB=null;window.STATE_URL='../betting/state.json';"
   + "window.XBETS=window.XBETS||(function(){try{return window.parent!==window&&window.parent.XBETS||null;}catch(e){return null;}})();"
   + "if(window.XBETS)document.documentElement.classList.add('xbets-ro');</script>", 'the head of the betting app');
-for (const need of ['html.embed header,html.embed #tabs{display:none}', "classList.add('embed')", 'data-tab="record"', 'data-tab="ratings"', 'data-tab="bets"', 'id="betSave"', 'window.STATE_URL||', 'window.XBETS.write(', 'html.xbets-ro #backupCard', '<h2>X Bet Log</h2>'])
+for (const need of ['html.embed header,html.embed #tabs{display:none}', "classList.add('embed')", 'data-tab="record"', 'data-tab="ratings"', 'data-tab="bets"', 'id="betSave"', 'window.STATE_URL||', 'window.XBETS.get()', 'html.xbets-ro #backupCard', '<h2>X Bet Log</h2>'])
   if (!BET_APP.includes(need)) throw new Error('the built betting app has no ' + need + ', which the framed tabs rely on');
 for (const gone of ['index.html', 'admin.html']) if (fs.existsSync(path.join(ROOT, 'betting', gone)))
   throw new Error('betting/' + gone + ' exists; the betting site has no pages, its app is inside this one');
@@ -357,9 +283,9 @@ html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n
 html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  ' + LIVE_SECTION + '\n  <div id="parlayBody"></div>', 'the Parlay Builder section');
 html = sub1(html, '\n</main>', '\n' + CARD_HTML + '\n</main>', "the parlay card's window");
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
-/* the sync layer runs first: the prop model reads its state through it at boot; the X Bet Log's
-   adapter right after it */
-html = html.slice(0, -'<script>\n'.length) + '<script>\n' + SYNC_JS + '\n</script>\n<script>\n' + XBETS_JS + '\n</script>\n<script>\n';
+/* the storage layer runs first: the prop model reads its state through it at boot; the X Bet
+   Log's adapter right after it */
+html = html.slice(0, -'<script>\n'.length) + '<script>\n' + STORAGE_JS + '\n</script>\n<script>\n' + XBETS_JS + '\n</script>\n<script>\n';
 
 /* the app, as assemble.py assembles it, one directory further from its payload */
 const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n' + part3;
@@ -369,7 +295,7 @@ const NOTE = `<script>
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
-   the X Parlays section, the parlay card, the sync layer, the X Bet Log, the betting app -- shows
+   the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
 const PAGE_HASH='${HASH_SLOT}';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
@@ -384,6 +310,10 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
 })();
 </script>`;
 let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>' + CARD_JS + '</script>\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
+/* no owner and no shared store: the retired Firebase layer (its database, sign-in and token
+   services, the owner link, the shared key, the sync stamp) is nowhere in the page */
+for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
+  if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);

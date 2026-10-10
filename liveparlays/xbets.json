@@ -1,0 +1,23 @@
+{
+ "how": "The X Bet Log: X's betting, week by week, which the X Bet Log tab shows on every device, read only. Claude keeps this file from what the owner sends in chat; the page only reads it, on every load, so a change here is what every device sees on its next load. season is the NFL season the weeks belong to (a file for another season than the betting app's shows no weeks). deposit is what X put in the account, in dollars, for the balance (null for none: the chart is then X's profit against break even). weeks holds one entry for each week X bet, keyed w1 to w22 (w19 to w22 are the playoffs): staked is everything X bet that week, returned is everything that came back, stakes included (0 for a week that lost it all), and note is optional plain text, 140 characters at most, no angle brackets. A week with no bets is left out. updated is when this file last changed.",
+ "season": 2026,
+ "updated": "2026-10-10T17:28:44Z",
+ "deposit": 100,
+ "weeks": {
+  "w1": {
+   "staked": 10,
+   "returned": 8.71,
+   "note": ""
+  },
+  "w3": {
+   "staked": 11,
+   "returned": 14.66,
+   "note": ""
+  },
+  "w4": {
+   "staked": 8,
+   "returned": 29.02,
+   "note": ""
+  }
+ }
+}
