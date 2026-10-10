@@ -626,7 +626,13 @@ function applyRoster(R){
   for(const id of Object.keys(S.inactive)) if(S.inactive[id]&&S.inactive[id].week==='season') delete S.inactive[id];
   if(!R||typeof R!=='object') return {season,moved};
   const w=currentWeek();
+  /* the file keeps a released player's last row at an older week, still ACT or DEV: a row older
+     than the latest week, for a club that has rows in it (a club on its bye has none), is a
+     player on no roster */
+  let LW=0; for(const id in R) LW=Math.max(LW,+R[id][3]||0);
+  const filed=new Set(); for(const id in R) if(+R[id][3]===LW) filed.add(R[id][0]);
   for(const id in R){ const [team,st,,wk]=R[id]; RSTAT[id]=st;
+    if((st==='ACT'||st==='DEV')&&LW&&+wk<LW&&filed.has(team)){ RSTAT[id]='NONE'; S.inactive[id]={week:'season',status:'NONE'}; season++; continue; }
     const p=S.players[id]; if(p&&team&&p.team!==team){ p.team=team; moved++; }
     if(st==='INA'){ if(+wk===w&&!S.inactive[id]) S.inactive[id]={week:w,status:'Inactive'}; continue; }
     if(st!=='ACT'&&st!=='DEV'){ S.inactive[id]={week:'season',status:st}; season++; } }

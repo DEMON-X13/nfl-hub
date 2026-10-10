@@ -1069,9 +1069,14 @@ setTimeout(async()=>{
       /* V1. who is listed: nobody on a reserve list, released, retired or inactive this week; a
          practice-squad player starts only with a chart place or a game in the two weeks before */
       { let listed=0; const bad=[], dev=[];
+        /* the raw file's latest week, and the clubs with rows in it: a row left behind at an older
+           week by a club that has moved on is a released player */
+        const LW=Math.max(0,...(rRoster||[]).map(r=>+r.week||0)), filed=new Set((rRoster||[]).filter(r=>+r.week===LW).map(r=>r.team));
+        const stale=pid=>{ const r=rawRo[pid]; return !!r&&(r.status==='ACT'||r.status==='DEV')&&+r.week<LW&&filed.has(r.team); };
         for(const g of openG){ const r=F('rosterFor')(g,true);
           for(const t in r) for(const x of r[t].players){ listed++; const s=rstat(x.pl.id);
             if(s&&s.st!=='ACT'&&s.st!=='DEV'&&!(s.st==='INA'&&s.wk!==cw)) bad.push(`${g.id} ${x.pl.n} ${s.st}`);
+            if(stale(x.pl.id)) bad.push(`${g.id} ${x.pl.n} released (roster row from week ${rawRo[x.pl.id].week})`);
             if(x.starter&&s&&s.st==='DEV'&&x.rank==null&&![cw-1,cw-2].some(k=>F('actualFor')(k,x.pl.id))) dev.push(`${g.id} ${x.pl.n}`); } }
         chk(!bad.length,`players the roster has on a reserve list, released or inactive are on this week's pages: ${bad.length} (${bad.slice(0,5).join('; ')})`);
         chk(!dev.length,`practice-squad players with no chart place and no recent game start: ${dev.slice(0,5).join('; ')}`);
