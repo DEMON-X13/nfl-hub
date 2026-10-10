@@ -257,7 +257,9 @@ closure, since the prop model has its own `tag()`.
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting app's, so a pick, parlay or bet made in either is what
 this page shows. Tabs are addresses: `#slate`, `#parlay` (the Parlay Builder), `#xparlays`
-(X Parlays), `#record` and so on.
+(X Parlays), `#record` and so on (`routeTabs()` in `tab_pickems.html`). On a phone the tab bar is
+wider than the screen and scrolls sideways, so on load, on a new address and on a tap the chosen
+button is brought into the bar by the bar's own `scrollLeft`, never by scrolling the page.
 The header's `buildTag` is the prop model's `APP_BUILD` and the page's own hash (`PAGE_HASH`,
 seven hex of the page's SHA-256 taken with a placeholder in its slot), so every source change
 shows. `smoke.js` builds the page in memory and fails unless the published files match it, checks
@@ -301,8 +303,8 @@ its games not read), a quiet line under the heading saying when the file last ch
 
 The Parlay Builder is the prop model's own tab (`#parlay`, `tab-parlay`): the suggested parlays
 (`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). The panel builds from
-what the visitor ticks, kept in the prop model's state (`S.ui.pb`: `kinds`, the games unticked,
-whether the games list is open): a mix -- All (the default), Teams only, Players only -- which sets
+what the visitor ticks, kept in the prop model's state (`S.ui.pb`: `k`, the five boxes; `off`, the
+games unticked; `gx`, whether the games list is open): a mix -- All (the default), Teams only, Players only -- which sets
 five boxes, Moneyline (`ml`), Spread (`ats`), Game total (`total`), Player overs and Player unders (a
 touchdown and a ladder rung are overs), a box changed by hand showing the mix it makes or Custom;
 and the week's games still to kick off (away @ home, the viewer's own time), all ticked to start,
@@ -310,10 +312,16 @@ with All and None. `getPbTiers()` builds four tiers from those alone (`PB_TIERS`
 likeliest 2-leg parlay; Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the best
 expected return (the model's chance times the book's price) that lands at least 25%, 12% and 5% of
 the time. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
-points over the book's with its margin out, market + form agreeing on a player leg); where those
-cannot fill a tier, the fewest legs the model still rates at or over the book fill it, each marked
-thin, with a line saying so, and never a leg under the book. One game leg a game, one leg a player,
-no line twice. A tier that cannot be built says why, never offering a smaller parlay. The search is
+points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
+stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
+fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
+with a line saying so for each kind of leg (`pbThinLine`: a team bet or a total, which has no
+market + form, missed only the 3-point bar; a player leg the bar with market + form agreeing), and
+never a leg under the book. One game leg a game, one leg a player, no line twice. A tier that
+cannot be built says why, never offering a smaller parlay; when player bets are ticked and none of
+the ticked games has a player price on file yet (`plGames` from `pbPool`, before the week's pulls),
+that is the reason given ("No player prices yet: they are pulled within a day of each kickoff."
+under Players only, or after the usual reason under a mix), never "tick more". The search is
 a beam over a pairwise approximation of the copula (each correlated pair's joint chance exact, by a
 Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
 builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so **Add to

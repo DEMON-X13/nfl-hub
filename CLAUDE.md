@@ -483,7 +483,8 @@ each, and which report and goalies the clubs stand on.
 The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, Parlay Builder (the prop model's own Parlay Builder
 tab, `#parlay`), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
 Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
-there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`.
+there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`. On a phone the bar scrolls sideways,
+and the chosen tab's button is brought into it on load, on a new address and on a tap (the bar scrolls, never the page).
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
 front of it as its own `pk-` prefixed section, and the X Parlays section lifted out of
@@ -503,11 +504,13 @@ alone it builds four tiers, each on its own: Safe, the likeliest 2-leg parlay; M
 Extreme, the 3-, 4- and 5-leg parlay with the best expected return (chance times payout) that lands at
 least 25%, 12% and 5% of the time (`PB_TIERS`). Under All nothing forces or caps a kind. A leg
 qualifies as the old Suggested parlays window's did (a real price, the model's chance 45-97% and 3
-points above the book's, market + form agreeing on a player leg: `formAgrees`); where those cannot
-fill a tier, the fewest legs the model still rates at or above the book fill it, marked thin edge
-with a line saying so; never a leg below the book. One game leg a game, one leg a player, no line
-twice. A tier that cannot be built says why ("Only 3 legs on your picks: tick more games or bet
-types"), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
+points above the chance that price implies, the book's margin left in, market + form agreeing on a
+player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at
+or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet or
+a total has no market + form); never a leg below the book. One game leg a game, one leg a player,
+no line twice. A tier that cannot be built says why ("Only 3 legs on your picks: tick more games or
+bet types", or, with player bets ticked before any of the ticked games has a player price, "No
+player prices yet: they are pulled within a day of each kickoff."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
 builder (exactly those legs into `S.parlay`) shows the same numbers; Finish opens the parlay card on
 the $10 the tier shows. The search is a beam over a pairwise copula approximation, with only the

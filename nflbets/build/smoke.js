@@ -1116,6 +1116,40 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(/updated /.test(txt(F.d.getElementById('lpUpdated'))), 'X Parlays does not say when the file last changed: ' + txt(F.d.getElementById('lpUpdated')));
     chk(!F.d.getElementById('tab-xparlays').hidden && F.d.getElementById('tab-parlay').hidden && txt(F.d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays', 'opened on #xparlays, the X Parlays tab is not the one showing');
     F.w.close(); }
+  /* ---- on a phone the tab bar scrolls sideways, and the chosen tab is brought into it ----
+     jsdom lays nothing out, so the bar is drawn as a phone draws it: 358px of bar, each button
+     110px with a 6px gap, scrolled by its scrollLeft (held between 0 and its width less the
+     bar's). Opened on #xparlays (where the old Live Parlays links land), then sent to every
+     tab's address in turn and tapped, the chosen button must sit inside the bar each time */
+  { const BAR = { left: 16, width: 358 }, BW = 110, GAP = 6;
+    const R = (l, wd) => ({ left: l, right: l + wd, width: wd, top: 0, bottom: 40, height: 40, x: l, y: 0 });
+    const seed = w2 => {
+      const max = el => Math.max(0, el.children.length * (BW + GAP) - GAP + 10 - BAR.width);
+      Object.defineProperty(w2.HTMLElement.prototype, 'scrollLeft', { configurable: true,
+        get() { return this.__sl || 0; }, set(x) { this.__sl = this.id === 'tabs' ? Math.max(0, Math.min(+x || 0, max(this))) : +x || 0; } });
+      const was = w2.Element.prototype.getBoundingClientRect;
+      w2.Element.prototype.getBoundingClientRect = function () {
+        if (this.id === 'tabs') return R(BAR.left, BAR.width);
+        const p = this.parentElement;
+        if (p && p.id === 'tabs') return R(BAR.left + 5 + [...p.children].indexOf(this) * (BW + GAP) - p.scrollLeft, BW);
+        return was.call(this); };
+      w2.__vscroll = 0; for (const f of ['scrollTo', 'scrollBy']) { w2[f] = () => { w2.__vscroll++; }; }
+      w2.Element.prototype.scrollIntoView = function () { if (this.closest && this.closest('#tabs')) w2.__vscroll++; }; };
+    const T = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { seed });
+    await wait(200);
+    const nav = T.d.getElementById('tabs'), inBar = b => { const n = nav.getBoundingClientRect(), r = b.getBoundingClientRect(); return r.left >= n.left && r.right <= n.right; };
+    const sel = () => T.d.querySelector('#tabs button[aria-selected="true"]');
+    chk(!T.timedOut && T.errs.length === 0, 'the page broke with the tab bar laid out as a phone lays it: ' + T.errs.join('; '));
+    chk(txt(sel()) === 'X Parlays' && nav.scrollLeft > 0 && inBar(sel()), `opened on #xparlays at phone width, the X Parlays button is not brought into the tab bar (scrollLeft ${nav.scrollLeft})`);
+    const seen = [];
+    for (const b of [...nav.querySelectorAll('button')].reverse()) {
+      T.w.location.hash = '#' + b.dataset.tab; await wait(60);
+      seen.push(b.dataset.tab + (sel() === b && inBar(b) ? '' : ' (off the bar)')); }
+    chk(seen.every(s => !/off the bar/.test(s)), 'sent to a tab\'s address at phone width, its button is not brought into the tab bar: ' + seen.join(', '));
+    { const last = [...nav.querySelectorAll('button')].pop(); T.w.location.hash = '#pickems'; await wait(60); last.click(); await wait(30);
+      chk(sel() === last && inBar(last), 'a tab tapped at the bar\'s cut-off edge is not brought into it'); }
+    chk(T.w.__vscroll === 0, 'bringing a tab into the bar scrolled the page, not the bar');
+    T.w.close(); }
   /* ---- the suggested parlays' choices are the visitor's own, and come back with the page ---- */
   { const pb = { k: { ml: false, ats: false, total: false, over: true, under: true }, off: [], gx: false };
     const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, ui: { pb } })) });

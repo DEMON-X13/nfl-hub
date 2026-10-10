@@ -645,7 +645,7 @@ function eloSuggest(){
   let body;
   if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders above for the Elo picks: every leg is a player's line.</p>`;
   else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
-    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices arrive with the Thursday and Saturday pulls; Sunday's games come with Saturday's.</p>`;
+    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices are pulled within a day of each kickoff.</p>`;
   else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
       rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>

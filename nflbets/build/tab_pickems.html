@@ -360,12 +360,22 @@ function foot(){
   el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Challenger Model, the Joker, the ELO Model and the Broly Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging.`;
 }
 
-/* tabs as addresses: #props opens the Props tab, and a reload stays where it was */
+/* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
+   bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
+   on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
+   its button off the bar's right edge. Only the bar scrolls, never the page */
 function routeTabs(){
-  const btns=[...document.querySelectorAll('#tabs button')];
-  const go=()=>{ const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); };
-  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); }));
+  const nav=document.getElementById('tabs'), btns=[...document.querySelectorAll('#tabs button')];
+  const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
+    if(r.left>=n.left&&r.right<=n.right) return;
+    nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
+  const chosen=()=>btns.find(x=>x.getAttribute('aria-selected')==='true');
+  const go=()=>{ const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
+  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); reveal(b); }));
   window.addEventListener('hashchange',go); go();
+  /* the web fonts can widen the buttons after the first layout: once more when they are in */
+  if(document.readyState!=='complete') window.addEventListener('load',()=>reveal(chosen()),{once:true});
+  try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>reveal(chosen())); }catch(e){}
 }
 
 /* the betting tabs are the betting site's own page, framed. A frame loads the first time its

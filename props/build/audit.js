@@ -445,10 +445,17 @@ setTimeout(async()=>{
          price, nothing of a kind or game not ticked, a preferred leg only over the full bar */
       chk([...pool.pref,...pool.thin].every(c=>c.p>=mlP(c.price)&&c.src==='real'&&!!u.k[kindOf(c)]&&!u.off.includes(c.gid)),`${lab}: a leg under the book, on an estimated price, or of a kind or game not ticked is among the legs a tier may take`);
       chk(pool.pref.every(c=>c.p-mlP(c.price)>=0.03&&F('formAgrees')(c)),`${lab}: a preferred leg does not clear the 3-point bar and market + form`);
+      /* no player prices on file for the ticked games, with player bets ticked: the reason a tier
+         is empty, said as such (and never "tick more" under Players only, where no tick helps) */
+      const pooled=pool.plGames!=null, plOn=!!(u.k.over||u.k.under), tmOn=!!(u.k.ml||u.k.ats||u.k.total);
+      const noPl=pooled&&plOn&&!F('pricedLegs')(games.filter(g=>!u.off.includes(g.id)),true).some(l=>!isG(l));
+      chk(!pooled||!!r.noPlayerPrices===noPl,`${lab}: the tiers say there are${r.noPlayerPrices?'':' not'} no player prices on file, and that is not so`);
       for(const t of r.tiers){ const [,,n,floor]=SPEC.find(s=>s[0]===t.id);
         if(!t.legs){ said++;
           chk(typeof t.why==='string'&&t.why.length>10,`${lab}: the ${t.id} tier is empty and does not say why`);
-          if(maxLegs<n) chk(/^(Only \d+ legs?|No legs|No games|No bet types)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
+          if(maxLegs<n) chk(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
+          if(pooled) chk(/no player prices yet/i.test(t.why)===noPl&&(!noPl||tmOn||(t.why==='No player prices yet: they are pulled within a day of each kickoff.'&&!/tick more/.test(t.why))),
+            `${lab}: the empty ${t.id} tier ${noPl?'does not say plainly that no player prices are on file yet':'says no player prices are on file, and some are'}: ${t.why}`);
           continue; }
         built++; legsSeen+=t.legs.length;
         chk(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
@@ -579,6 +586,48 @@ setTimeout(async()=>{
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
       w.eval('PB_CACHE=new Map()');
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
+    /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet or a
+       total has no market + form (a player leg's second price), so it never reads as wanting it */
+    { const C=F('pbTierCard'), base={gid:'gT',name:'Thin',label:'a leg',price:-110,p:0.53,week:F('currentWeek')(),thin:true,side:'over',k:0,main:false};
+      const tm={...base,key:'gT|team:AAA|ml',pid:'team:AAA',stat:'ml',grp:'TEAM'}, tt={...base,key:'gT|game|total',pid:'game',stat:'total',grp:'TEAM'},
+        pl={...base,key:'gT|p1|receiving_yards',pid:'p1',stat:'receiving_yards',grp:'WR'};
+      const line=legs=>{ const x=d.createElement('div'); x.innerHTML=C({id:'safe',label:'Safe',n:legs.length,floor:0,legs,corr:0.3,dec:3,thin:legs.filter(l=>l.thin).length});
+        const p=x.querySelector('.pb-thin'); return p?p.textContent.replace(/\s+/g,' '):''; };
+      const MF=/market \+ form/;
+      const cases=[];
+      for(const form of [false,true]){
+        if(form) w.eloLoaded=()=>true; else delete w.eloLoaded;
+        cases.push([`form ${form?'on':'off'}, a team bet`,line([tm]),t=>/^One leg has a thin edge: .*but not 3 points above\.$/.test(t)&&!MF.test(t)]);
+        cases.push([`form ${form?'on':'off'}, a total`,line([tt]),t=>/but not 3 points above\.$/.test(t)&&!MF.test(t)]);
+        cases.push([`form ${form?'on':'off'}, two team bets and a total`,line([tm,{...tm,key:'gU|team:BBB|ats',gid:'gU',stat:'ats'},tt]),t=>/^3 legs have a thin edge: the model rates them/.test(t)&&!MF.test(t)]);
+        cases.push([`form ${form?'on':'off'}, a player leg`,line([pl]),t=>form?/but not 3 points above with market \+ form agreeing\.$/.test(t):(/but not 3 points above\.$/.test(t)&&!MF.test(t))]);
+        cases.push([`form ${form?'on':'off'}, a team bet and a player leg`,line([tm,pl]),t=>form?/the team bet not 3 points above, and the player leg not 3 points above with market \+ form agreeing\.$/.test(t):(/but not 3 points above\.$/.test(t)&&!MF.test(t))]);
+        cases.push([`form ${form?'on':'off'}, a total and two player legs`,line([tt,pl,{...pl,key:'gT|p2|receptions',pid:'p2',stat:'receptions'}]),t=>form?/the total not 3 points above, and the player legs not 3 points above with market \+ form agreeing\.$/.test(t):!MF.test(t)]);
+        cases.push([`form ${form?'on':'off'}, no thin leg`,line([{...tm,thin:false},{...pl,thin:false}]),t=>t==='']); }
+      delete w.eloLoaded; w.eval('PB_CACHE=new Map()');
+      for(const [lab,t,ok] of cases) chk(ok(t),`the thin-edge line, ${lab}, reads: "${t}"`);
+      console.log(`M2. thin edge: the line under a tier named for each kind of leg, ${cases.length} cases (a team bet or a total never wants market + form)`); }
+    /* no player prices on file yet (before the week's pulls): Players only says so on every tier,
+       and so does a mix with team bets where a tier cannot be filled; the note does not repeat it */
+    if(games.length){ const cw=F('currentWeek')(), keepO=JSON.stringify(S.odds||{}), keepM=JSON.stringify(PAY.mkt[String(cw)]||null);
+      for(const g of games){ if(S.odds) delete S.odds[g.id]; }
+      delete PAY.mkt[String(cw)]; U().off=[];
+      setKinds(['over','under']); const rP=hold('no player prices, players only'); F('renderPb')();
+      const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' ');
+      chk(!F('pricedLegs')(games,true).some(l=>!isG(l))&&rP.noPlayerPrices&&rP.tiers.every(t=>!t.legs&&t.why==='No player prices yet: they are pulled within a day of each kickoff.'),
+        'with no player price on file, Players only does not say so on every tier: '+rP.tiers.map(t=>t.why).join(' / '));
+      chk(!/tick more/.test(tx)&&!/No line on your picks has a real sportsbook price/.test(tx),'with no player price on file, Players only still says to tick more, or repeats it in the note');
+      setKinds(KINDS); const rA=hold('no player prices, all');
+      chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):/, and no player prices yet: they are pulled within a day of each kickoff\.$/.test(t.why)),'with no player price on file, All builds a player leg, or an empty tier does not say no player prices are on file: '+rA.tiers.map(t=>t.why||'built').join(' / '));
+      /* All on one game: its team bets make one leg (one game bet a game), so no tier can be built,
+         and each says both why: too few legs, and no player prices yet */
+      U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
+      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks, and no player prices yet: they are pulled within a day of each kickoff\.$/.test(t.why)),
+        'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
+      U().off=[];
+      S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
+      w.eval('PB_CACHE=new Map()'); F('renderPb')();
+      console.log(`M3. no player prices yet: Players only says so on all 4 tiers; All ${rA.tiers.filter(t=>t.legs).length} built on team bets, ${rA.tiers.filter(t=>!t.legs).length} saying why; All on one game gives both reasons on all 4`); }
     /* with no game to come the panel says so and offers nothing: the regular season over, or every game of the week under way */
     { w.__pbKeep=w.eval('[pbGames, seasonOver]');
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; renderParlay();');

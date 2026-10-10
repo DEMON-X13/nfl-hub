@@ -19,7 +19,8 @@ grown from the one before. It is replaced by a panel at the top of the Parlay Bu
     on an ordinary week (about 63%, 59% and 55% a leg); under All nothing forces or caps a kind,
     so a tier is teams, players or both as the numbers fall.
   * A leg qualifies as the window's did: a real book price, the model's chance 45-97% and 3
-    points over the book's with its margin out, market + form agreeing on a player leg. Where
+    points over the chance the book's price implies, mlProb(price), with its margin left in
+    (stricter than the margin-out chance), market + form agreeing on a player leg. Where
     those cannot fill a tier, the fewest legs the model still rates at or over the book fill it,
     each marked thin, with a line saying so; a leg under the book never. One game leg a game
     (a win, a cover or the total), one leg a player (two lines on one receiver are one bet

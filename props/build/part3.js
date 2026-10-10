@@ -1101,8 +1101,9 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
    kind: a tier holds whatever mix of team and player legs does best by those rules.
 
    A leg qualifies as the old Suggested parlays window's did: a real sportsbook price, the
-   model's chance between 45% and 97% and at least 3 points above the book's implied chance,
-   and for a player leg market + form agreeing (formAgrees). When those cannot fill a tier, the
+   model's chance between 45% and 97% and at least 3 points above the chance the price itself
+   implies (mlProb, the book's margin left in, so stricter than its margin-out chance), and for
+   a player leg market + form agreeing (formAgrees). When those cannot fill a tier, the
    fewest legs the model still rates at or above the book fill it, marked thin edge; never a
    leg the model rates below the book. At most one game leg (to win, to cover, the total) a
    game, one leg a player, and no line twice: a line's over and under, or a player's main line
@@ -1150,14 +1151,15 @@ function pbCap(list){
 /* the legs on the reader's picks: preferred (the full bar) and thin (at or above the book, no more) */
 function pbPool(games){
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
-  const pref=[], thin=[];
+  const pref=[], thin=[], plGames=new Set();
   for(const c of pricedLegs(games,true)){
+    if(!isGameLeg(c)) plGames.add(c.gid);
     if(!pbAllows(c)||c.src!=='real'||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
     if(c.grp!=='TEAM'&&formOut) continue;
     if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
-  return {pref:pbCap(pref),thin:pbCap(thin)};
+  return {pref:pbCap(pref),thin:pbCap(thin),plGames:plGames.size};
 }
 /* a leg that can join: not a line already on it, not a second game leg on one game, and not a
    second leg on one player (two lines on one man, his catches and his yards, are nearly one bet) */
@@ -1251,23 +1253,29 @@ function pbTier([id,label,n,floor],pool,memo){
   }
   return null;
 }
-/* why a tier is empty, in the reader's terms */
-function pbWhy(n,floor,pool){
+/* why a tier is empty, in the reader's terms. A player leg needs the book's price, and a game's
+   player prices are pulled within a day of its kickoff (Thursday's game on Thursday, Sunday's on
+   Saturday evening, Monday's on Monday): with player bets ticked and none of the ticked games
+   priced yet, that is the reason, and the tier says so rather than ask for more ticks (under
+   Players only no tick would help). c: which of the two kinds are ticked */
+const PB_NO_PL='no player prices yet: they are pulled within a day of each kickoff.';
+function pbWhy(n,floor,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin]);
-  if(m<n) return `${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks: tick more games or bet types.`;
-  return floor?`No ${n}-leg parlay on your picks lands ${Math.round(floor*100)}% of the time or more: tick more games or bet types.`
-    :`No ${n}-leg parlay on your picks: tick more games or bet types.`;
+  const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`
+    :floor?`No ${n}-leg parlay on your picks lands ${Math.round(floor*100)}% of the time or more`:`No ${n}-leg parlay on your picks`;
+  if(c&&c.players&&!pool.plGames) return c.teams?`${what}, and ${PB_NO_PL}`:PB_NO_PL[0].toUpperCase()+PB_NO_PL.slice(1);
+  return `${what}: tick more games or bet types.`;
 }
 function pbBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
-  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,tiers:[],noTotalPrice:false};
+  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,tiers:[],noTotalPrice:false,noPlayerPrices:false};
   const empty=why=>PB_TIERS.map(([id,label,n,floor])=>({id,label,n,floor,why}));
   if(!all.length){ out.tiers=empty('No games left to build from.'); return out; }
   if(!kinds.length){ out.tiers=empty('No bet types ticked: tick at least one above.'); return out; }
   if(!games.length){ out.tiers=empty('No games ticked: tick at least one above.'); return out; }
-  const pool=pbPool(games), memo=new Map();
-  out.pref=pool.pref.length; out.thin=pool.thin.length;
-  out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,floor,pool)}; });
+  const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats||u.k.total)};
+  out.pref=pool.pref.length; out.thin=pool.thin.length; out.noPlayerPrices=c.players&&!pool.plGames;
+  out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,floor,pool,c)}; });
   out.noTotalPrice=!!u.k.total&&games.some(g=>g.tot!=null)&&!games.some(g=>totalBook(g,'over')!=null||totalBook(g,'under')!=null);
   return out;
 }
@@ -1379,6 +1387,18 @@ const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,max
 function pbWide(){ try{ return typeof window.matchMedia!=='function'||window.matchMedia('(min-width: 761px)').matches; }catch(e){ return true; } }
 /* the builder holds exactly these legs */
 const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.every(l=>suggestLegOn(l));
+/* what a thin edge means for the legs it is on. A team bet or a total has no market + form (that
+   is a player leg's second price, from his Elo), so it is thin only for missing the 3-point bar;
+   a player leg is thin for that or for market + form not agreeing, where the Elo tab is on the
+   page (form) */
+function pbThinLine(legs,form){
+  const th=legs.filter(l=>l.thin), n=th.length, gl=th.filter(isGameLeg), p=n-gl.length;
+  const tot=gl.filter(l=>l.stat==='total').length, tm=gl.length-tot, s=k=>k===1?'':'s';
+  const bar='not 3 points above', both='not 3 points above with market + form agreeing';
+  const games=tm&&tot?`the team bet${s(tm)} and the total${s(tot)}`:tot?`the total${s(tot)}`:`the team bet${s(tm)}`;
+  const tail=!form||!p?bar:!gl.length?both:`${games} ${bar}, and the player leg${s(p)} ${both}`;
+  return `${n===1?'One leg has a thin edge: the model rates it':n+' legs have a thin edge: the model rates them'} at or above the book's price, but ${tail}.`;
+}
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr;
@@ -1388,7 +1408,7 @@ function pbTierCard(t,o){
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
     <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div><b>${pbMoney(PB_STAKE*t.dec)}</b><span>$${PB_STAKE} pays</span></div></div>
     <ul class="pb-legs">${t.legs.map(l=>`<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.thin?' <i class="pb-thinmark">thin edge</i>':''}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
-    ${t.thin?`<p class="pb-thin">${t.thin===1?'One leg has a thin edge: the model rates it':t.thin+' legs have a thin edge: the model rates them'} at or above the book's price, but not 3 points above${form?' with market + form agreeing':''}.</p>`:''}
+    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
 }
 window.pbTierCard=pbTierCard;
@@ -1405,7 +1425,7 @@ function pbPanel(){
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
   if(r.noTotalPrice) notes.push('No over or under price is on file for these games’ totals yet, so no total is in a tier.');
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices arrive with the Thursday and Saturday pulls.`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled within a day of each kickoff.`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
@@ -1417,7 +1437,7 @@ function pbPanel(){
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t)).join('')}</div>
-    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the book's${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time. One leg a player, one team bet or total a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
+    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time. One leg a player, one team bet or total a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
     <div id="pbElo" class="pb-elo"></div></div>`;
 }
 function renderPb(){
