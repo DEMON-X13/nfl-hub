@@ -27,15 +27,30 @@
     node nhl/tools/players.js          replay with the parameters in nhl/data/players.json, write it
     node nhl/tools/players.js fit      search the parameters again first
 
-   Tonight: each club's lineup is the last game's minus the injury report's Out and IR, its goalie
-   the announced starter in nhl/data/starters.json where there is one, else the goalie who did not
-   play yesterday on a back to back, else the one with more starts in the last ten. */
+   Tonight (WHO PLAYS): each club's lineup is who dressed in its last game, less anyone the injury
+   report has Out, on injured reserve or suspended, and less anyone listed on another club's report
+   or whose latest game was for another club. The report is matched by ESPN id (read from the
+   player's link by fetch_box.js), else by the club and the name, else by a name only one rated
+   player has. Day-to-day players stay in and are flagged. The goalie is chosen game by game: the
+   one DailyFaceoff names for that game and that date (Confirmed, Likely or Unconfirmed, said as
+   such; a confirmed starter stands even when ESPN's report still lists him), else the club's goalie
+   with the most starts in its last ten games this season (ties: last season's starts for the club,
+   then the latest start), never one the report has out; on the second night of a back to back
+   (the club's previous game, played or not, the day before) the other goalie from the one who
+   started that game (its box score), or is expected to (the same choice, while it is to come,
+   under way or over and not yet boxed). The schedule is the state update.js's first pass wrote,
+   which reads every day, so the lineups stand on the games the second pass calls; the team Elo's
+   gap blended in is this file's own replay of every final, never a row's `diff` (the first pass
+   copies the last run's calls). NHL_DATA, NHL_STATE and NHL_TODAY move the files and the day, for
+   simulate.js. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
-const { Elo, expected, goals, homeByGoals, spreadOf } = require('./elo');
+const Hist = require('./hist');
+const { Elo, expected, goals, homeByGoals, spreadOf, daysBetween } = require('./elo');
 
-const ROOT = path.join(__dirname, '..'), DATA = path.join(ROOT, 'data');
+const ROOT = path.join(__dirname, '..'), DATA = process.env.NHL_DATA || path.join(ROOT, 'data');
+const STATE_F = process.env.NHL_STATE || path.join(ROOT, 'state.json');
 const OUTF = path.join(DATA, 'players.json');
 const WARM = 2022, FIT_TO = 2025;
 const DEFAULT = { K: 0.3, Kg: 0.03, pow: 0.5, carry: 0.8, rookie: -0.5, rookieG: -0.05, hfa: 0.12, blend: 0.3, clip: 12, clipG: 3, recent: 8 };
@@ -56,15 +71,19 @@ const LEAGUE = { shots: 60, conv: 0.095 };
 
 /* ---------- the data: every game with a box score, in date order, with its score and the team Elo's view ---------- */
 function loadGames() {
-  const H = JSON.parse(fs.readFileSync(path.join(DATA, 'history.json'), 'utf8'));
-  const col = Object.fromEntries(H.cols.map((c, i) => [c, i]));
+  /* the finished seasons (history.json and the job's season_<year>.json files), then this season's
+     finals from the state; a box line carries its own score too, for a final the state lacks */
+  const hist = Hist.rows(DATA);
   const res = {};
-  for (const r of H.rows) res[r[col.id]] = { hs: r[col.hs], as: r[col.as], periods: r[col.periods], neutral: r[col.neutral], season: r[col.season] };
-  const stateFile = path.join(ROOT, 'state.json'); let S = null;
-  if (fs.existsSync(stateFile)) { S = JSON.parse(fs.readFileSync(stateFile, 'utf8')); for (const g of S.games) if (g.state === 'final' && g.hs !== null) res[g.id] = { hs: g.hs, as: g.as, periods: g.periods, neutral: g.neutral, season: S.season }; }
+  for (const r of hist) res[r.id] = { hs: r.hs, as: r.as, periods: r.periods, neutral: r.neutral, season: r.season };
+  let S = null;
+  if (fs.existsSync(STATE_F)) { S = JSON.parse(fs.readFileSync(STATE_F, 'utf8')); for (const g of S.games) if (g.state === 'final' && g.hs !== null) res[g.id] = { hs: g.hs, as: g.as, periods: g.periods, neutral: g.neutral, season: S.season }; }
   const games = [];
   for (const f of fs.readdirSync(DATA).filter(f => /^box_\d+\.jsonl$/.test(f)).sort()) for (const l of fs.readFileSync(path.join(DATA, f), 'utf8').split('\n')) {
-    if (!l) continue; const b = JSON.parse(l); const r = res[b.id]; if (!r) continue;
+    if (!l) continue; const b = JSON.parse(l);
+    const r = res[b.id] || (b.hs !== undefined && b.hs !== null ? { hs: b.hs, as: b.as, periods: b.periods, neutral: !!b.neutral, season: b.season } : null);
+    if (!r) continue;
+    if (!res[b.id]) res[b.id] = r;
     games.push(Object.assign(b, r));
   }
   games.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.id < b.id ? -1 : 1);
@@ -74,8 +93,9 @@ function loadGames() {
   LEAGUE.shots = shots / n; LEAGUE.conv = gl / shots;
   /* the team Elo's chance on every game, replayed over the whole history, for the blend */
   const m = new Elo(model.params); const elo = {};
-  const all = H.rows.map(r => ({ id: r[col.id], season: r[col.season], date: r[col.date], home: r[col.home], away: r[col.away], hs: r[col.hs], as: r[col.as], periods: r[col.periods], neutral: r[col.neutral] }));
-  if (S) for (const g of S.games) if (g.state === 'final' && g.hs !== null) all.push({ id: g.id, season: S.season, date: g.date, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods, neutral: g.neutral });
+  const all = hist.map(r => Object.assign({}, r)); const inAll = new Set(all.map(r => String(r.id)));
+  if (S) for (const g of S.games) if (g.state === 'final' && g.hs !== null && !inAll.has(String(g.id))) { all.push({ id: g.id, season: S.season, date: g.date, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods, neutral: g.neutral }); inAll.add(String(g.id)); }
+  for (const g of games) if (!inAll.has(String(g.id))) { all.push({ id: g.id, season: g.season, date: g.date, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods, neutral: g.neutral }); inAll.add(String(g.id)); }
   all.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   for (const g of all) { m.newSeason(g.season); elo[g.id] = m.play(g); }
   return { games, elo, eloModel: m, state: S };
@@ -198,37 +218,137 @@ function fit(games, elo, fitFrom, fitTo, start) {
   return P;
 }
 
-/* ---------- tonight ---------- */
-function lineups(m, S, injuries, starters, today) {
-  const upcoming = {}; const teams = {};
-  const out = code => (injuries.teams && injuries.teams[code] || []).filter(x => /out|injured reserve|suspension/i.test(x.status || '')).map(x => x.id);
-  const yesterday = {}; for (const g of S.games) if (g.state === 'final') for (const t of [g.home, g.away]) yesterday[t] = g.date;
+/* ---------- tonight: WHO PLAYS ---------- */
+/* Out, injured reserve (long-term too) and suspensions keep a player out; day-to-day does not */
+const OUT_RE = /\bout\b|injured reserve|\bir\b|\bltir\b|suspen/i;
+const DTD_RE = /day.to.day|questionable/i;
+const STATUS_RANK = { Confirmed: 3, Likely: 2, Unconfirmed: 1 };
+const HOW = { Confirmed: 'confirmed by DailyFaceoff', Likely: 'likely, says DailyFaceoff', Unconfirmed: "DailyFaceoff's projection, unconfirmed" };
+
+/* the injury report against the rated players: each row to an id by ESPN id, else by the club and
+   the name, else by a name only one rated player has */
+function readInjuries(m, injuries) {
+  const byTeamName = new Map(), byName = new Map();
+  const push = (map, k, v) => { if (!map.has(k)) map.set(k, []); map.get(k).push(v); };
+  for (const [id, x] of Object.entries(m.r)) { const n = E.normName(x.name); if (n) { push(byTeamName, x.team + '|' + n, id); push(byName, n, id); } }
+  const resolve = (code, row) => {
+    if (row.id && /^\d+$/.test(String(row.id))) return m.r[row.id] ? String(row.id) : null;   // an id is the player's: no name guess past it
+    const n = E.normName(row.name); if (!n) return null;
+    const t = byTeamName.get(code + '|' + n); if (t && t.length === 1) return t[0];
+    const a = byName.get(n); return a && a.length === 1 ? a[0] : null;
+  };
+  const byClub = {}, outIds = new Set(), listedAt = new Map(); let rows = 0, withId = 0, matched = 0;
+  for (const [code, list] of Object.entries((injuries && injuries.teams) || {})) {
+    byClub[code] = [];
+    for (const row of list || []) {
+      rows++; if (row.id && /^\d+$/.test(String(row.id))) withId++;
+      const id = resolve(code, row); if (id) matched++;
+      const out = OUT_RE.test(row.status || ''), dtd = !out && DTD_RE.test(row.status || '');
+      byClub[code].push({ id, name: row.name, pos: row.pos, status: row.status, returns: row.returns || null, out, dtd });
+      if (id) { if (out) outIds.add(id); listedAt.set(id, code); }
+    }
+  }
+  return { byClub, outIds, listedAt, stats: { rows, withId, matched, out: outIds.size } };
+}
+
+/* each club's goalies ranked: this season's starts in its last ten games, then appearances this
+   season, then last season's starts for the club, then the latest start, then games and rating.
+   Only a goalie who played for the club this season or last (or is on its report and not out):
+   never one who is out, now elsewhere, or long gone */
+function goalieRanks(m, games, season, inj) {
+  const ranks = {}, startOf = {};
+  const byClub = {}; for (const g of games) for (const t of [g.home, g.away]) (byClub[t] = byClub[t] || []).push(g);
   for (const code of E.TEAMS) {
-    const last = m.last[code]; const gone = new Set(out(code));
-    const dressed = last ? last.skaters.filter(s => s.team === code && !gone.has(s.id)) : [];
-    const est = dressed.map(s => { const x = m.r[s.id]; const t = x && x.toi.length ? x.toi.reduce((a, b) => a + b, 0) / x.toi.length : 600; return { id: s.id, t }; });
+    const boxes = byClub[code] || [];
+    const now = boxes.filter(g => g.season === season).slice(-10), before = boxes.filter(g => g.season === season - 1);
+    const starts = {}, apps = {}, lastSeason = {}, latest = {}, recent = new Set();
+    for (const b of now) { const id = Model.goalieOf(b, code); if (id) starts[id] = (starts[id] || 0) + 1; }
+    for (const b of boxes.filter(g => g.season === season)) for (const x of b.goalies) if (x.team === code && x.toi > 0) apps[x.id] = (apps[x.id] || 0) + 1;
+    for (const b of before) { const id = Model.goalieOf(b, code); if (id) lastSeason[id] = (lastSeason[id] || 0) + 1; }
+    for (const b of boxes) { const id = Model.goalieOf(b, code); if (id) { latest[id] = b.date; startOf[b.id + '|' + code] = id; } if (b.season >= season - 1) for (const x of b.goalies) if (x.team === code && x.toi > 0) recent.add(x.id); }
+    const ids = new Set(Object.entries(m.r).filter(([id, x]) => x.pos === 'G' && x.team === code && recent.has(id)).map(([id]) => id));
+    for (const [id, c] of inj.listedAt) if (c === code && m.r[id] && m.r[id].pos === 'G') ids.add(id);     // on this club's report and not out: his
+    ranks[code] = [...ids].filter(id => !inj.outIds.has(id) && !(inj.listedAt.has(id) && inj.listedAt.get(id) !== code))
+      .map(id => ({ id, starts: starts[id] || 0, of: now.length, apps: apps[id] || 0, lastSeason: lastSeason[id] || 0, latest: latest[id] || '', gp: m.r[id].gp, gk: m.r[id].gk }))
+      .sort((a, b) => b.starts - a.starts || b.apps - a.apps || b.lastSeason - a.lastSeason || (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0) || b.gp - a.gp || b.gk - a.gk);
+  }
+  return { ranks, startOf };
+}
+
+/* DailyFaceoff's goalie for a club in one game: the entry for that game's date (and id, when it
+   carries one), the strongest status if there are two */
+function announcedFor(starters, code, g) {
+  let best = null;
+  for (const e of (starters && starters.games) || []) {
+    if (e.date !== g.date || (e.id && String(e.id) !== String(g.id))) continue;
+    const side = e.home === code ? e.homeGoalie : e.away === code ? e.awayGoalie : null;
+    if (!side || !side.name) continue;
+    if (!best || (STATUS_RANK[side.status] || 0) > (STATUS_RANK[best.status] || 0)) best = side;
+  }
+  return best;
+}
+
+function lineups(m, games, S, injuries, starters) {
+  const inj = readInjuries(m, injuries);
+  const { ranks, startOf } = goalieRanks(m, games, S.season, inj);
+  const goalieIds = new Map(); for (const [id, x] of Object.entries(m.r)) if (x.pos === 'G') { const n = E.normName(x.name); if (!goalieIds.has(n)) goalieIds.set(n, []); goalieIds.get(n).push(id); }
+  const nameToGoalie = (code, name) => { const c = goalieIds.get(E.normName(name)) || []; const own = c.filter(id => m.r[id].team === code); return own.length === 1 ? own[0] : c.length === 1 ? c[0] : null; };
+  const avgToi = x => x && x.toi && x.toi.length ? x.toi.reduce((a, b) => a + b, 0) / x.toi.length : 600;
+  const sched = {}; for (const g of S.games.slice().sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0)) for (const t of [g.home, g.away]) (sched[t] = sched[t] || []).push(g);
+  const boxed = new Set(games.map(g => String(g.id)));
+  const lastFinal = {}; for (const g of S.games) if (g.state === 'final') for (const t of [g.home, g.away]) if (!lastFinal[t] || g.date > lastFinal[t]) lastFinal[t] = g.date;
+  const teams = {}, perGame = {}; let announcedUsed = 0;
+  const startsText = r => r.starts ? `most starts, ${r.starts} of the last ${r.of}` : r.lastSeason ? "last season's starter for the club" : "the club's goalie";
+  for (const code of E.TEAMS) {
+    const last = m.last[code];
+    const elsewhere = id => (inj.listedAt.has(id) && inj.listedAt.get(id) !== code) || (m.r[id] && m.r[id].team !== code);
+    const dressed = last ? last.skaters.filter(s => s.team === code && !inj.outIds.has(s.id) && !elsewhere(s.id)) : [];
+    const est = dressed.map(s => ({ id: s.id, t: avgToi(m.r[s.id]) }));
     const tot = est.reduce((a, s) => a + s.t, 0) || 1;
     const shares = est.map(s => ({ id: s.id, share: 5 * s.t / tot }));
-    /* the goalie */
-    const gs = Object.entries(m.r).filter(([id, x]) => x.pos === 'G' && x.team === code && !gone.has(id)).map(([id, x]) => ({ id, name: x.name, gk: x.gk, gp: x.gp }));
-    let goalie = null, how = null;
-    const st = starters && starters.teams && starters.teams[code];
-    if (st && st.id && m.r[st.id]) { goalie = st.id; how = st.status || 'announced'; }
-    else if (gs.length) {
-      const recent = S.games.filter(g => g.state === 'final' && (g.home === code || g.away === code)).slice(-10);
-      const starts = {}; for (const g of recent) { const b = m.last[code]; if (b && b.id === g.id) { const gk = Model.goalieOf(b, code); starts[gk] = (starts[gk] || 0) + 1; } }
-      const lastGk = last ? Model.goalieOf(last, code) : null;
-      const b2b = last && yesterday[code] && require('./elo').daysBetween(last.date, today) === 1;
-      const pick = gs.slice().sort((a, b) => (b.gp - a.gp) || (b.gk - a.gk));
-      if (b2b && lastGk && pick.length > 1) { goalie = pick.find(g => g.id !== lastGk).id; how = 'back to back: the other goalie'; }
-      else { goalie = pick[0].id; how = 'the usual starter'; }
+    const rep = inj.byClub[code] || [];
+    const out = rep.filter(r => r.out).map(r => { const x = r.id && m.r[r.id]; return { id: r.id, name: r.name, pos: r.pos || (x && x.pos) || null, status: r.status, returns: r.returns, cost: x && x.pos !== 'G' ? +((x.o + x.d) * LEAGUE.conv * 5 * avgToi(x) / tot).toFixed(2) : null }; });
+    const dtd = rep.filter(r => r.dtd).map(r => ({ id: r.id, name: r.name, pos: r.pos }));
+    const R = ranks[code];
+    /* the goalie, game by game in date order, each back to back read off the game before it */
+    const expectedBy = {};
+    const choose = g => {
+      const ann = announcedFor(starters, code, g);
+      if (ann) {
+        let id = nameToGoalie(code, ann.name);
+        if (!id && (ann.status === 'Confirmed' || ann.status === 'Likely')) {
+          id = 'new:' + E.normName(ann.name).replace(/ /g, '-');                       // a first NHL start: a rookie's rating
+          if (!m.r[id]) m.r[id] = { name: ann.name, pos: 'G', team: code, o: 0, d: 0, gk: m.p.rookieG, gp: 0, toi: [], seasons: {}, debut: true };
+        }
+        if (id && (!inj.outIds.has(id) || ann.status === 'Confirmed')) { announcedUsed++; return { id, how: HOW[ann.status] || `named by DailyFaceoff (${ann.status || 'no status'})`, announced: ann.status || 'named' }; }
+      }
+      if (!R.length) return null;
+      const list = sched[code] || []; const i = list.findIndex(x => x.id === g.id);
+      const prev = i > 0 && daysBetween(list[i - 1].date, g.date) === 1 ? list[i - 1] : null;
+      /* that night's goalie: the box score's starter once it is boxed, else the one expected for it (the
+         same choice, DailyFaceoff's for that game first), whether it is to come, under way or over */
+      const yesterday = prev ? (expectedBy[prev.id] || R[0].id) : null;
+      if (prev && yesterday === R[0].id && R.length > 1) return { id: R[1].id, how: 'back to back: the other goalie', b2b: true };
+      return { id: R[0].id, how: startsText(R[0]) };
+    };
+    let next = null;
+    for (const g of sched[code] || []) {
+      if (boxed.has(String(g.id))) { expectedBy[g.id] = startOf[g.id + '|' + code] || null; continue; }   // played and boxed: who started it
+      const c = choose(g); expectedBy[g.id] = c ? c.id : null;
+      if (g.state === 'final') continue;                       // over and not yet boxed: only the night after reads it
+      perGame[g.id + '|' + code] = c;
+      if (!next) next = c;
     }
-    const S1 = m.strength(shares, goalie);
-    const outNames = out(code).map(id => m.r[id] ? { id, name: m.r[id].name, pos: m.r[id].pos, cost: +(m.r[id].pos === 'G' ? 0 : (m.r[id].o + m.r[id].d) * LEAGUE.conv * 5 * (m.r[id].toi.length ? m.r[id].toi.reduce((a, b) => a + b, 0) / m.r[id].toi.length : 600) / (tot || 1)).toFixed(2) } : null).filter(Boolean);
-    teams[code] = { offence: +(S1.o * LEAGUE.conv).toFixed(3), defence: +(S1.d * LEAGUE.conv).toFixed(3), goalie: goalie ? { id: goalie, name: m.r[goalie].name, gk: +m.r[goalie].gk.toFixed(3), how } : null, strength: +((S1.o + S1.d) * LEAGUE.conv + S1.gk).toFixed(3), out: outNames,
-      lineup: shares.map(s => ({ id: s.id, name: m.r[s.id].name, pos: m.r[s.id].pos, share: +s.share.toFixed(2), v: +((m.r[s.id].o + m.r[s.id].d) * LEAGUE.conv * s.share).toFixed(3) })).sort((a, b) => b.share - a.share), _shares: shares, _goalie: goalie };
+    if (!next && R.length) next = { id: R[0].id, how: startsText(R[0]) };
+    const gOf = c => c ? Object.assign({ id: c.id, name: m.r[c.id].name, gk: +m.r[c.id].gk.toFixed(3), how: c.how }, c.announced ? { announced: c.announced } : {}, m.r[c.id].debut ? { debut: true } : {}) : null;
+    const S1 = m.strength(shares, next ? next.id : null);
+    teams[code] = { offence: +(S1.o * LEAGUE.conv).toFixed(3), defence: +(S1.d * LEAGUE.conv).toFixed(3), goalie: gOf(next), strength: +((S1.o + S1.d) * LEAGUE.conv + S1.gk).toFixed(3), out, dtd,
+      lastBox: last ? last.date : null, lastFinal: lastFinal[code] || null,
+      lineup: shares.map(s => ({ id: s.id, name: m.r[s.id].name, pos: m.r[s.id].pos, share: +s.share.toFixed(2), v: +((m.r[s.id].o + m.r[s.id].d) * LEAGUE.conv * s.share).toFixed(3) })).sort((a, b) => b.share - a.share),
+      _shares: shares,
+      _side: c => { const s = m.strength(shares, c ? c.id : null); return { goalie: gOf(c), out, dtd, strength: +((s.o + s.d) * LEAGUE.conv + s.gk).toFixed(3), lastBox: last ? last.date : null, lastFinal: lastFinal[code] || null }; } };
   }
-  return { teams };
+  return { teams, perGame, inj, announcedUsed };
 }
 
 function main() {
@@ -264,24 +384,35 @@ function main() {
   const injuries = fs.existsSync(path.join(DATA, 'injuries.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'injuries.json'), 'utf8')) : { teams: {} };
   const starters = fs.existsSync(path.join(DATA, 'starters.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'starters.json'), 'utf8')) : null;
   const today = process.env.NHL_TODAY || E.etDate(new Date());
-  const upcoming = {}; let teams = {};
+  const upcoming = {}; let teams = {}; let injMeta = null, stMeta = null;
   if (S) {
-    const L = lineups(m, S, injuries, starters, today); teams = L.teams;
+    const L = lineups(m, games, S, injuries, starters); teams = L.teams;
+    /* the team Elo's gap on each game, from this file's own replay of every final (update.js's first
+       pass copies the last state's calls, so a row's `diff` is the last run's, or none on a new game) */
+    eloModel.newSeason(S.season);
     for (const g of S.games) {
       if (g.state === 'final') continue;
       const th = teams[g.home], ta = teams[g.away];
-      const v = m.predict(g, th._shares, ta._shares, th._goalie, ta._goalie, g.diff);
-      upcoming[g.id] = { pHome: +v.pHome.toFixed(4), pGoals: +v.pGoals.toFixed(4), mu: +v.mu.toFixed(2), total: +v.total.toFixed(2), tie: +v.tie.toFixed(3),
-        home: { goalie: th.goalie, out: th.out, strength: th.strength }, away: { goalie: ta.goalie, out: ta.out, strength: ta.strength } };
+      const ch = L.perGame[g.id + '|' + g.home], ca = L.perGame[g.id + '|' + g.away];
+      const diff = eloModel.predict(g).diff;
+      const v = m.predict(g, th._shares, ta._shares, ch ? ch.id : null, ca ? ca.id : null, diff);
+      /* `inj`: the injury report this lineup was built on, so the page and the smoke can hold it to that report */
+      upcoming[g.id] = { pHome: +v.pHome.toFixed(4), pGoals: +v.pGoals.toFixed(4), mu: +v.mu.toFixed(2), total: +v.total.toFixed(2), tie: +v.tie.toFixed(3), diff: +diff.toFixed(2),
+        home: th._side(ch), away: ta._side(ca), inj: injuries.pulled || null };
     }
-    for (const t of Object.values(teams)) { delete t._shares; delete t._goalie; }
+    for (const t of Object.values(teams)) { delete t._shares; delete t._side; }
+    injMeta = Object.assign({ pulled: injuries.pulled || null }, L.inj.stats);
+    stMeta = { pulled: (starters && starters.pulled) || null, ok: starters ? starters.ok !== false : null, why: (starters && starters.why) || null,
+      games: ((starters && starters.games) || []).filter(e => e.date >= today).length, used: L.announcedUsed };
+    log(`injury report ${injMeta.pulled || 'none'}: ${injMeta.rows} rows, ${injMeta.withId} with an ESPN id, ${injMeta.matched} matched to a rated player, ${injMeta.out} out; DailyFaceoff: ${stMeta.games} games from today named, ${stMeta.used} goalies taken from it${stMeta.ok === false ? ` (${stMeta.why})` : ''}`);
   }
   const players = {};
   for (const [id, x] of Object.entries(m.r)) {
-    if (x.gp < 5 && Object.keys(x.seasons).length === 0) continue;
+    if (x.debut || (x.gp < 5 && Object.keys(x.seasons).length === 0)) continue;
     players[id] = { name: x.name, pos: x.pos, team: x.team, o: +(x.o * LEAGUE.conv).toFixed(3), d: +(x.d * LEAGUE.conv).toFixed(3), gk: +x.gk.toFixed(3), v: +(x.pos === 'G' ? x.gk : (x.o + x.d) * LEAGUE.conv).toFixed(3), gp: x.gp, toi: x.toi.length ? Math.round(x.toi.reduce((a, b) => a + b, 0) / x.toi.length) : 0, seasons: x.seasons };
   }
-  const out = { params: P, league: { shots: +LEAGUE.shots.toFixed(2), conv: +LEAGUE.conv.toFixed(4) }, report, asOf: games[games.length - 1].date, season: last, games: games.length, players, teams, upcoming, generated: prev ? prev.generated : null };
+  const out = { params: P, league: { shots: +LEAGUE.shots.toFixed(2), conv: +LEAGUE.conv.toFixed(4) }, report, asOf: games[games.length - 1].date, season: last, games: games.length, players, teams, upcoming,
+    injuries: injMeta, starters: stMeta, generated: prev ? prev.generated : null };
   const same = prev && JSON.stringify(Object.assign({}, prev, { generated: null })) === JSON.stringify(Object.assign({}, out, { generated: null }));
   out.generated = same ? prev.generated : new Date().toISOString().slice(0, 16) + 'Z';
   if (!same) fs.writeFileSync(OUTF, JSON.stringify(out));

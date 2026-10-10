@@ -14,12 +14,11 @@
 'use strict';
 const fs = require('fs'), path = require('path');
 const { Elo, DEFAULTS, fitSpread, spreadOf, goals, homeByGoals } = require('./elo');
+const Hist = require('./hist');
 const DATA = path.join(__dirname, '..', 'data');
 
-const H = JSON.parse(fs.readFileSync(path.join(DATA, 'history.json'), 'utf8'));
-const col = Object.fromEntries(H.cols.map((c, i) => [c, i]));
-const games = H.rows.map(r => ({ id: r[col.id], season: r[col.season], type: r[col.type], date: r[col.date], home: r[col.home], away: r[col.away], hs: r[col.hs], as: r[col.as], periods: r[col.periods], neutral: r[col.neutral] }));
-games.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+/* every finished season: history.json and the season_<year>.json files the job closed */
+const games = Hist.rows(DATA);
 const seasons = [...new Set(games.map(g => g.season))].sort();
 const WARM = seasons.slice(0, 2), HOLD = seasons[seasons.length - 1];
 console.log(`${games.length} games, seasons ${seasons[0]}-${HOLD}; warm-up ${WARM.join(',')}; holdout ${HOLD}`);

@@ -3,6 +3,7 @@
   "private": true,
   "description": "The college football site's job and smoke test",
   "scripts": {
+    "simulate": "node simulate.js",
     "update": "node update.js",
     "smoke": "node smoke.js"
   },

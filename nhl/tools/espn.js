@@ -7,6 +7,7 @@
    codes are this site's own (TEAMS): ESPN's ids are mapped onto them, so a franchise that
    moved (the Coyotes, now Utah) is one team all the way back. */
 'use strict';
+const fs = require('fs'), path = require('path');
 
 const SB = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
 
@@ -54,7 +55,30 @@ const HEADER_SETS = [
   { 'User-Agent': 'nfl-hub-nhl/1.0 (+https://github.com/DEMON-X13/nfl-hub)', Accept: 'application/json' },
   {},
 ];
+/* NHL_FIXTURES names a folder of saved answers, which is how simulate.js plays the job offline: a
+   URL is read from the file named for it, and a file that is not there is a request that failed */
+function fixtureName(url) {
+  const u = String(url); let m;
+  if ((m = /summary\?event=(\d+)/.exec(u))) return `summary_${m[1]}.json`;
+  if ((m = /scoreboard\?dates=(\d{4})(\d{2})(\d{2})/.exec(u))) return `sb_${m[1]}-${m[2]}-${m[3]}.json`;
+  if (/\/injuries/.test(u)) return 'injuries.json';
+  if (/dailyfaceoff\.com/.test(u)) return 'dailyfaceoff.html';
+  return null;
+}
+function fromFixture(url) {
+  const name = fixtureName(url), file = name && path.join(process.env.NHL_FIXTURES, name);
+  if (!file || !fs.existsSync(file)) throw new Error(`HTTP 503 (no saved answer) ${url}`);
+  return fs.readFileSync(file, 'utf8');
+}
+/* a page as text (DailyFaceoff's), the same way */
+async function getText(url, headers) {
+  if (process.env.NHL_FIXTURES) return fromFixture(url);
+  const r = await fetch(url, { headers, redirect: 'follow' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.text();
+}
 async function getJSON(url, tries = 3) {
+  if (process.env.NHL_FIXTURES) return JSON.parse(fromFixture(url));
   let last;
   for (let i = 0; i < tries; i++) {
     for (const headers of HEADER_SETS) {
@@ -100,7 +124,10 @@ function oddsOf(comp) {
   return out;
 }
 
-/* one event -> one row. null for a game that is not two NHL clubs (an exhibition), or postponed */
+/* one event -> one row. null for a game that is not two NHL clubs (an exhibition). A game the feed
+   marks postponed or cancelled is a marker, { id, gone: 'postponed' | 'cancelled', date, home, away },
+   never a row: the job takes a game off the schedule only on the feed's word, so a game that is
+   merely missing from an answer is never mistaken for one called off */
 function gameRow(ev) {
   const comp = ev.competitions?.[0];
   if (!comp || !comp.competitors) return null;
@@ -109,7 +136,8 @@ function gameRow(ev) {
   const H = codeOf(home.team), A = codeOf(away.team);
   if (!H || !A) return null;
   const st = comp.status?.type || {};
-  if (/POSTPONED|CANCELED/i.test(st.name || '')) return null;
+  const off = `${st.name || ''} ${st.description || ''}`;
+  if (/POSTPONED|CANCEL/i.test(off)) return { id: String(ev.id), gone: /CANCEL/i.test(off) ? 'cancelled' : 'postponed', date: etDate(comp.date || ev.date), home: H, away: A };
   const state = st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
   const periods = state === 'pre' ? null : Math.max((home.linescores || []).length, (away.linescores || []).length, comp.status?.period || 0) || null;
   const date = etDate(comp.date || ev.date);
@@ -134,4 +162,7 @@ function teamsOf(json, into = {}) {
   return into;
 }
 
-module.exports = { getJSON, scoreboard, gameRow, teamsOf, CLUBS, TEAMS, codeOf, seasonOf, etDate };
+/* a name as two sources can agree on it: no accents, no punctuation, no Jr., lower case */
+const normName = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[.'’]/g, '').replace(/-/g, ' ').replace(/\b(jr|sr|ii|iii|iv)\b/g, ' ').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+
+module.exports = { getJSON, getText, scoreboard, gameRow, teamsOf, CLUBS, TEAMS, codeOf, seasonOf, etDate, normName };
