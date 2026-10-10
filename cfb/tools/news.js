@@ -52,6 +52,9 @@ const num = v => { if (v === null || v === undefined) return null; const n = par
 const r1 = v => v === null ? null : Math.round(v * 10) / 10;
 const plural = (n, s, p) => `${n} ${n === 1 ? s : (p || s + 's')}`;
 const fmtHalf = n => (Math.abs(n) % 1 ? n.toFixed(1) : String(Math.round(n)));
+/* a line ESPN left out at the job's last run, held for the grade (update.js), is cited as the last
+   one read, with its time, never as DraftKings' number now */
+const readAt = L => new Date(L.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
 
 /* ---------- the numbers ---------- */
 function statsFromSummary(sum, teamId) {
@@ -285,7 +288,7 @@ function writeBullets(S, g, side, ctx) {
   const L = g.line; const p = side === 'home' ? g.pHome : 1 - g.pHome;
   if (L && L.homeLine !== null && L.homeLine !== undefined) {
     const my = side === 'home' ? L.homeLine : -L.homeLine;
-    let s = `<strong>${my < 0 ? `Favored by ${fmtHalf(-my)}` : my > 0 ? `${fmtHalf(my)}-point underdog` : 'A pick\'em'} at DraftKings.</strong> The model gives ${me.short} ${Math.round(p * 100)} percent`;
+    let s = `<strong>${my < 0 ? `Favored by ${fmtHalf(-my)}` : my > 0 ? `${fmtHalf(my)}-point underdog` : 'A pick\'em'} at DraftKings${L.held ? `' last line, read ${readAt(L)}` : ''}.</strong> The model gives ${me.short} ${Math.round(p * 100)} percent`;
     const mySpread = side === 'home' ? g.spread : -g.spread;
     s += mySpread < 0 ? ` and has it by ${fmtHalf(-mySpread)}` : mySpread > 0 ? ` and has it losing by ${fmtHalf(mySpread)}` : ' and calls it even';
     if (c.fpi !== null) s += `; ESPN's FPI ${c.fpi} percent`;
@@ -379,7 +382,7 @@ async function main() {
     };
     const ctx = { home: side('home'), away: side('away') };
     const L = g.line;
-    const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}` : null;
+    const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}${L.held ? `, last read ${readAt(L)}` : ''}` : null;
     ctx.story = storyOf(sum);
     /* one headline a side, never the same one twice: a piece that names both teams comes
        back from both feeds */

@@ -40,8 +40,9 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: cfb/tools
-      # The job proved first on fabricated weeks (a kickoff, a failed feed, a dropped line, a
-      # postponement, Army-Navy week, the playoff, a new season), offline, in a scratch folder
+      # The job proved first on fabricated weeks (a kickoff, a failed feed, a dropped line or
+      # game, a postponement, a line held for the grade, Army-Navy week, the title games, the
+      # playoff, a new season), offline, in a scratch folder
       - name: Simulate the job over a fabricated season
         run: node cfb/tools/simulate.js
       # Exits 1 and writes nothing when a scoreboard the season needs did not download (the

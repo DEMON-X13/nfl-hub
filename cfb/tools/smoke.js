@@ -47,6 +47,10 @@ const RUN_MS = Date.parse(runOf(S));
 /* the page's rule, said independently: a line read at the job's last run */
 const fresh = (st, g) => !!g.line && (st.run ? g.line.at === st.run : Math.abs(Date.parse(st.published) - Date.parse(g.line.at || 0)) < 3600e3);
 const etDay = iso => new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+/* a game still to be played at the run: not final, not called off, not one ESPN no longer lists,
+   not a scheduled game ESPN left two days past its kickoff */
+const openAt = (g, runMs) => g.state !== 'final' && g.state !== 'postponed' && !g.gone && !(g.state === 'pre' && Date.parse(g.date) < runMs - 2 * 864e5);
+const HOLD_MS = 24 * 3600e3;          // a line ESPN left out, read within this long before kickoff, is held for the grade
 
 /* the page in jsdom, over a state and news file, with the clock at nowMs and ESPN's scoreboard
    answering `espn` (events) */
@@ -168,7 +172,7 @@ async function main() {
   const rrows = d.querySelectorAll('#rankTable tbody tr');
   chk(!basis || rrows.length === basis.ranks.length, `rankings table has ${basis ? basis.ranks.length : 0} rows, not ${rrows.length}`);
   if (basis) chk(/Model/.test(txt(d.querySelector('#rankTable thead'))), 'rankings table has the model column');
-  if (basis && basis.carried) chk(/did not answer/.test(txt($('rankNote'))), 'a poll carried from the last publish says so, with its date');
+  if (basis && basis.carried) chk(/did not carry this poll/.test(txt($('rankNote'))) && txt($('rankNote')).includes(new Date(basis.read).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })), 'a poll carried from the last publish says so, with its date');
 
   /* Power ratings */
   tab(P, 'ratings');
@@ -266,6 +270,11 @@ function newsChecks(N) {
     chk(!!g && !phGame(g), `a tile is a real game of the state: ${n.id}`);
     if (!g) continue;
     if (tbdOf(g) && n.schema >= 2) chk(n.tbd === true, `a tile for a game with no time set says so: ${n.id}`);
+    /* a line held for the grade (ESPN left it out at this run) is cited as the last one read, never as today's */
+    if (n.schema >= 2 && g.state === 'pre' && g.line && g.line.held && Date.parse(g.date) > RUN_MS && g.line.homeLine !== null && g.line.homeLine !== undefined) {
+      chk(/last read/.test(n.line || ''), `the news cites a held line as the last one read: ${n.id} ${n.line}`);
+      chk(['home', 'away'].every(sd => n.teams[sd].bullets.filter(b => /at DraftKings/.test(b)).every(b => /last line, read/.test(b))), `the news bullets cite a held line as the last one read: ${n.id}`);
+    }
     /* an entry this writer wrote (a started game keeps the preview an older run wrote) */
     if (!(n.schema >= 2)) continue;
     for (const side of ['home', 'away']) {
@@ -314,8 +323,8 @@ async function clockChecks() {
   const F = JSON.parse(STATE);
   const run = RUN_MS; F.run = F.run || C.stamp(run);
   const pool = F.games.filter(g => !phGame(g) && F.teams[g.home].fbs && F.teams[g.away].fbs);
-  const pick = pool.slice(0, 7).map(g => g.id);
-  if (pick.length < 7) { chk(false, 'the state has seven FBS games to make the clock cases from'); return; }
+  const pick = pool.slice(0, 9).map(g => g.id);
+  if (pick.length < 9) { chk(false, 'the state has nine FBS games to make the clock cases from'); return; }
   const day = ms => new Date(ms).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const etMidnight = ms => { const d = day(ms); for (const h of [4, 5]) { const t = Date.parse(`${d}T0${h}:00:00Z`); if (day(t) === d && day(t - 3600e3) !== d) return t; } return Date.parse(`${d}T04:00:00Z`); };
   const at = run + 3 * 3600e3;
@@ -329,6 +338,8 @@ async function clockChecks() {
   const e = make(pick[4], { date: iso(run - 3600e3), state: 'live', detail: '2nd 5:00', hs: 7, as: 3, line: lineAt(F.run) });
   const f = make(pick[5], { date: iso(run + 6 * 3600e3), state: 'postponed', detail: 'Postponed', frozen: null });
   const h = make(pick[6], { date: iso(run + 30 * 60e3), line: lineAt(F.run) });           // ESPN will say under way
+  const gn = make(pick[7], { date: iso(run - 5 * 3600e3), line: lineAt(iso(run - 26 * 3600e3)), carried: true, gone: true });   // ESPN dropped it after kickoff
+  const hl = make(pick[8], { date: iso(run + 8 * 3600e3), line: Object.assign(lineAt(iso(run - 6 * 3600e3)), { held: true }) });  // ESPN left its line out at this run
   const FS = JSON.stringify(F);
   const store = { legs: [a, b].map(g => ({ game: g.id, side: 'home', kind: 'ml', odds: -160, line: null, p: 0.6, label: 'x', team: 'X', week: g.week, type: g.type })), saved: [], ui: { scope: 'all', plScope: 'all' } };
   const P = await boot({ state: FS, nowMs: at, store });
@@ -343,9 +354,15 @@ async function clockChecks() {
   chk(ids.indexOf(tb.id) > ids.indexOf(b.id), 'a game with no time set sorts after the timed games of its day');
   chk(card(P, e.id) && /as of/.test(txt(card(P, e.id))), `a score the job saw under way is dated, not shown as live: ${txt(card(P, e.id) && card(P, e.id).querySelector('.when'))}`);
   chk(card(P, f.id) && !has(f) && /Postponed/.test(txt(card(P, f.id))), 'a postponed game offers no bet and says so');
+  chk(card(P, gn.id) && !has(gn) && /no longer in ESPN/.test(txt(card(P, gn.id))), `a game ESPN dropped after kickoff says so and offers nothing: ${txt(card(P, gn.id) && card(P, gn.id).querySelector('.when'))}`);
+  chk(card(P, hl.id) && !has(hl) && /not current/.test(txt(card(P, hl.id))) && !card(P, hl.id).querySelector('.tag.pick'), `a line held for the grade is shown dated, with no call and no price: ${txt(card(P, hl.id))}`);
   tab(P, 'parlays');
   const L = new Set(listed(P));
-  chk(!L.has(a.id) && L.has(b.id) && !L.has(c.id) && !L.has(tb.id) && !L.has(e.id) && !L.has(f.id), `the Parlays tab offers only the game still to come with a current line (${[...L].filter(x => [a, b, c, tb, e, f].some(g => g.id === x))})`);
+  chk(!L.has(a.id) && L.has(b.id) && !L.has(c.id) && !L.has(tb.id) && !L.has(e.id) && !L.has(f.id) && !L.has(gn.id) && !L.has(hl.id), `the Parlays tab offers only the game still to come with a current line (${[...L].filter(x => [a, b, c, tb, e, f, gn, hl].some(g => g.id === x))})`);
+  /* the held line after kickoff: the call against it is shown, dated as the last line before kickoff */
+  const P2 = await boot({ state: FS, nowMs: Date.parse(hl.date) + 60e3, store: { legs: [], saved: [], ui: { scope: 'all' } } });
+  tab(P2, 'games'); scope(P2, 'scope', 'all');
+  chk(card(P2, hl.id) && /the last before kickoff/.test(txt(card(P2, hl.id))) && !card(P2, hl.id).querySelector('button[data-leg]'), `after kickoff a held line says it was the last before kickoff: ${txt(card(P2, hl.id))}`);
   const legsNow = JSON.parse(P.w.localStorage.getItem('cfb_v1')).legs.map(l => l.game);
   chk(!legsNow.includes(a.id) && legsNow.includes(b.id) && !P.$('legsNote').hidden, `a leg on a game that kicked off leaves the builder, and the builder says so (${legsNow})`);
   /* ESPN read in the browser: a game it has under way shows its score */
@@ -381,18 +398,37 @@ function stateChecks() {
     if (g.state !== 'final') chk(!g.result, `only a final game is graded: ${g.id} (${g.state})`);
     if (phGame(g)) chk(!g.result && !g.line, `a game against an opponent still to be decided is neither called against a line nor graded: ${g.id}`);
     if (g.state !== 'pre' && g.result && g.result.ats) chk(!!g.line, `an ATS grade has a line: ${g.id}`);
+    /* a call against the spread is the model's margin against the line: the edge, and a side only
+       where it reaches the threshold between two FBS teams */
+    if (g.line && g.line.homeLine !== null && g.line.homeLine !== undefined) {
+      chk(Math.abs(g.edge - (g.mu + g.line.homeLine)) < 0.06, `the edge on ${g.id} is the model's margin against the line (${g.edge} vs ${g.mu} + ${g.line.homeLine})`);
+      const fbs = S.teams[g.home]?.fbs && S.teams[g.away]?.fbs;
+      chk((g.atsPick || null) === (fbs && Math.abs(g.edge) >= S.atsEdge ? (g.edge > 0 ? 'home' : 'away') : null), `the call against the spread on ${g.id} follows its edge (${g.atsPick}, edge ${g.edge})`);
+      if (g.result && g.result.ats !== undefined) {
+        const c = g.hs - g.as + g.line.homeLine;
+        const hc = c > 0 ? 'win' : c < 0 ? 'loss' : 'push';
+        chk(g.result.ats === (g.atsPick ? (hc === 'push' ? 'push' : (hc === 'win') === (g.atsPick === 'home') ? 'win' : 'loss') : null), `the ATS grade on ${g.id} is its call on its line (${g.result.ats})`);
+      }
+    }
+    if (g.state === 'final' && !phGame(g) && g.result && g.line && g.line.homeLine !== null && g.line.homeLine !== undefined) chk(g.result.ats !== undefined, `a final with a line is graded against it: ${g.id}`);
+    if (g.heldLine) chk(g.state === 'postponed' && !g.line, `only a game called off keeps its line aside: ${g.id} (${g.state})`);
   }
   /* a line on a game still to come is the one ESPN carried at this run (a look-ahead number ESPN
      dropped weeks ago is not today's) */
   if (S.schema >= 2) {
-    const old = S.games.filter(g => g.state === 'pre' && g.line && Date.parse(g.date) > Date.parse(run) && g.line.at !== run && !g.carried);
-    chk(old.length === 0, `${old.length} games still to come carry a line ESPN no longer shows (${old.slice(0, 3).map(g => g.id + ' read ' + g.line.at).join(', ')})`);
+    const R = Date.parse(run);
+    /* the one exception: a line read at an earlier run within a day of kickoff, held so the game is
+       graded on the last line before it (never offered: it is not this run's) */
+    const held = g => !!g.line.held && Date.parse(g.line.at) < R && Date.parse(g.date) - Date.parse(g.line.at) <= HOLD_MS;
+    const old = S.games.filter(g => g.state === 'pre' && g.line && Date.parse(g.date) > R && g.line.at !== run && !g.carried && !held(g));
+    chk(old.length === 0, `${old.length} games still to come carry a line ESPN no longer shows (${old.slice(0, 3).map(g => g.id + ' read ' + g.line.at + (g.line.held ? ' held' : '')).join(', ')})`);
+    for (const g of S.games.filter(x => x.state === 'pre' && x.line && x.line.at === run)) chk(!g.line.held, `a line read at this run is not marked held: ${g.id}`);
     for (const g of S.games.filter(x => x.carried)) chk((S.notes || []).some(n => /did not answer|no longer in ESPN/.test(n)), `a game carried from the last publish is explained in the run's notes: ${g.id}`);
   } else skip(`state.json predates schema 2: its ${S.games.filter(g => g.state === 'pre' && g.line && g.line.at !== run).length} lines older than its run are only checked on the page`);
 
   /* the current week is the first regular-season week with a game still to play, whatever the
      postseason has the same day (Army-Navy) */
-  const open = S.games.filter(g => g.state !== 'final' && g.state !== 'postponed' && !(g.state === 'pre' && Date.parse(g.date) < Date.parse(run) - 2 * 864e5));
+  const open = S.games.filter(g => openAt(g, Date.parse(run)));
   const reg = open.filter(g => g.type === 2);
   const want = reg.length ? Math.min(...reg.map(g => g.week)) : 'post';
   chk(S.week === want, `the current week is the first with a regular-season game to play: ${want}, not ${S.week}`);
@@ -441,6 +477,18 @@ function playoffChecks() {
     if (S.playoff.odds[loser]) chk(S.playoff.odds[loser].title === 0, `${S.teams[loser].abbr} lost a playoff game (${g.id}) and keeps a title chance of ${S.playoff.odds[loser].title}`);
     if (/national championship/i.test(g.note || '') && S.playoff.odds[winner]) chk(S.playoff.odds[winner].title === 1, `${S.teams[winner].abbr} won the title game and has a title chance of ${S.playoff.odds[winner].title}`);
   }
+  /* the field is decided once the regular season is over, or once its conference title games are
+     with nothing left to play before the last of them; from then on the odds play the bracket shown */
+  const runMs = Date.parse(runOf(S));
+  const titles = S.games.filter(g => g.type === 2 && /championship/i.test(g.note || ''));
+  const titleDay = titles.length ? Math.max(...titles.map(g => Date.parse(g.date))) : null;
+  const decided = !S.games.some(g => g.type === 2 && openAt(g, runMs)) || (titles.length > 0 && !titles.some(g => openAt(g, runMs)) && !S.games.some(g => g.type === 2 && openAt(g, runMs) && Date.parse(g.date) <= titleDay));
+  if (S.schema >= 2) chk(!!S.playoff.bracket.final === decided, `the bracket is final (${S.playoff.bracket.final}) exactly when the schedule has decided the field (${decided})`);
+  if (S.playoff.bracket.final && !S.playoff.bracket.set) {
+    const seat = new Map(S.playoff.bracket.field.map(f => [f.team, f.seed]));
+    const off = Object.entries(S.playoff.odds).filter(([id, o]) => o.playoff !== (seat.has(id) ? 1 : 0) || o.bye !== (seat.has(id) && seat.get(id) <= 4 ? 1 : 0));
+    chk(seat.size === 12 && off.length === 0, `with the field decided the odds play the bracket shown: its twelve in, its top four on a bye, nobody else (${off.slice(0, 4).map(([id, o]) => `${S.teams[id] ? S.teams[id].abbr : id} ${o.playoff}/${o.bye}`).join(', ')})`);
+  }
   if (S.playoff.bracket.set) {
     const field = new Set(S.playoff.bracket.field.map(f => f.team));
     const inGames = new Set(S.games.filter(g => g.type === 3 && /college football playoff|\bCFP\b/i.test(g.note || '')).flatMap(g => [g.home, g.away]).filter(id => !isPh(id)));
@@ -470,15 +518,19 @@ function prevChecks() {
       held++;
       chk(!!n, `a game called before its kickoff is still in the state: ${p.id}`);
       if (!n) continue;
-      /* a game called off after it was called keeps its call; its line is void */
-      const off = n.state === 'postponed';
-      chk(n.frozen === p.frozen && n.pHome === p.pHome && (off ? !n.line : n.atsPick === p.atsPick && JSON.stringify(n.line) === JSON.stringify(p.line)),
-        `the call and line frozen before ${p.id}'s kickoff are kept after it (frozen ${p.frozen} -> ${n.frozen}, line ${p.line && p.line.at} -> ${n.line && n.line.at})`);
+      /* a game called off after it was called keeps its call; its line is off the board but kept
+         aside, so a game suspended and finished later is graded on it */
+      const off = n.state === 'postponed', pl = p.line || p.heldLine || null;
+      chk(n.frozen === p.frozen && n.pHome === p.pHome && (off ? !n.line && JSON.stringify(n.heldLine || null) === JSON.stringify(pl)
+        : JSON.stringify(n.line) === JSON.stringify(pl) && (p.state === 'postponed' || n.atsPick === p.atsPick)),
+        `the call and line frozen before ${p.id}'s kickoff are kept after it (frozen ${p.frozen} -> ${n.frozen}, line ${pl && pl.at} -> ${(n.line || n.heldLine) && (n.line || n.heldLine).at})`);
     }
   }
   const weekCount = st => { const m = {}; for (const g of st.games) if (!phGame(g)) { const k = g.type === 3 ? 'post' : g.week; m[k] = (m[k] || 0) + 1; } return m; };
   const a = weekCount(prev), b = weekCount(S);
   for (const k of Object.keys(a)) if (a[k] >= 4) chk((b[k] || 0) >= a[k] / 2, `week ${k} had ${a[k]} games at the last publish and has ${b[k] || 0} now`);
+  /* a poll the last publish had this season is still on the page, read now or carried and dated */
+  for (const k of Object.keys(prev.rankings || {})) chk(!!(S.rankings || {})[k], `the ${k} poll the last publish had is still in the state`);
   void held;
 }
 

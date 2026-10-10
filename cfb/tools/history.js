@@ -10,7 +10,10 @@
    first run of a new season (seasonRows below, the same code), so the ratings carry from one
    season to the next without a hand edit; it refuses to run the new season when that pull
    fails. A pull that misses a week fails here too: a season with a hole in it would quietly
-   skew every rating after it. */
+   skew every rating after it. A week that throws fails the season, and so does one that answers
+   with no finals: week 1, any week between two weeks with games, or the postseason (seasonRows
+   pulls finished seasons only). update.js also holds the pull to the last publish of that
+   season (shortOf), which catches a week that answered with only part of its games. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
@@ -40,7 +43,36 @@ async function seasonRows(season, fetchWeek, teams = {}) {
       }
     }
   }
-  return [...rows.values()];
+  const out = [...rows.values()];
+  const holes = holesOf(out);
+  if (holes.length) throw new Error(`${season}: ${holes.join(', ')} answered with no finals (a hole in the season)`);
+  return out;
+}
+
+const keyOf = (type, week) => type === 3 ? 'the postseason' : 'week ' + week;
+/* the weeks of a finished season that came back empty: week 1, any week between two weeks with
+   games, and the postseason (weeks after the last one with games, 15 or 16, are often empty) */
+function holesOf(rows) {
+  const ti = COLS.indexOf('type'), wi = COLS.indexOf('week');
+  const n = {}; let post = 0;
+  for (const r of rows) { if (r[ti] === 3) post++; else n[r[wi]] = (n[r[wi]] || 0) + 1; }
+  const weeks = Object.keys(n).map(Number);
+  const lastW = weeks.length ? Math.max(...weeks) : 0;
+  const out = [];
+  for (let w = 1; w <= Math.max(1, lastW); w++) if (!n[w]) out.push('week ' + w);
+  if (!post) out.push('the postseason');
+  return out;
+}
+
+/* the weeks where a pull has fewer finals than the last publish of that season had (more than
+   one game, or 5%, short: ESPN does revise a game now and then). `published` is that publish's
+   finals as {type, week} */
+function shortOf(rows, published) {
+  const ti = COLS.indexOf('type'), wi = COLS.indexOf('week');
+  const have = {}, had = {};
+  for (const r of rows) { const k = keyOf(r[ti], r[wi]); have[k] = (have[k] || 0) + 1; }
+  for (const g of published) { const k = keyOf(g.type, g.week); had[k] = (had[k] || 0) + 1; }
+  return Object.keys(had).filter(k => (have[k] || 0) < had[k] - Math.max(1, Math.floor(had[k] * 0.05))).map(k => `${k}: ${have[k] || 0} finals where it had ${had[k]}`);
 }
 
 /* the file with these seasons' rows replaced by the new ones, in date order */
@@ -72,5 +104,5 @@ async function main() {
   console.log(`wrote ${out.rows.length} games to ${path.relative(process.cwd(), OUT)}; ${Object.keys(teams).length} teams`);
 }
 
-module.exports = { COLS, seasonRows, mergeRows };
+module.exports = { COLS, seasonRows, mergeRows, holesOf, shortOf };
 if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });

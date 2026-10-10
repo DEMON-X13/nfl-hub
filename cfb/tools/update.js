@@ -15,9 +15,14 @@
    while ESPN still lists the game as scheduled cannot re-take them. A line is DraftKings' number
    as ESPN carries it at this run; when ESPN stops carrying a game's line, the old number is not
    kept for a game still to come (a look-ahead line weeks old would otherwise read as today's,
-   with a call against it and a price to bet). Games that were already over when this job first
-   ran are graded from the replay and marked so; a postponed or cancelled game is neither called
-   nor graded; a placeholder opponent (ESPN's TBD) is shown but never counted.
+   with a call against it and a price to bet), with one exception: a line read within the
+   HOLD_HOURS before the game's kickoff is held (`held`, dated by its `at`) so a line ESPN leaves
+   out on the last runs before kickoff is still the one the game is graded on; the page shows it
+   as not current, with no call and no price. Games that were already over when
+   this job first ran are graded from the replay and marked so; a postponed or cancelled game is
+   not graded and offers nothing (its line, if one was frozen, is kept aside as `heldLine`, so a
+   game suspended and finished later is graded on the line before its kickoff); a placeholder
+   opponent (ESPN's TBD) is shown but never counted.
 
    A download the season needs that fails is never published as if it were the season:
    - a week's scoreboard (or the postseason's) that does not download, after six tries, is
@@ -25,10 +30,14 @@
      and said so on the page; otherwise the run stops here with exit 1 and writes nothing, so
      the last good state stays live. A scoreboard that comes back with under half the games
      the last publish had for that week stops the run the same way.
-   - a game the last publish had graded or under way that ESPN no longer lists is kept as published.
-   - the rankings that do not download are carried from the last publish, dated, and said so.
+   - a game the last publish had graded or under way, or had called and has since kicked off by
+     the clock, that ESPN no longer lists is kept as published (`gone`), its call with it.
+   - the rankings that do not download are carried from the last publish, dated, and said so; so
+     is any one poll the feed stops carrying in the same season (the committee's ranking, say).
    - the first run of a new season appends the season just finished to data/history.json from
-     the same scoreboards; if that pull fails the run stops (the new season cannot be rated).
+     the same scoreboards; if that pull fails, has a week with no games between weeks with games,
+     or comes back short of the finals the last publish of that season had, the run stops (the
+     new season cannot be rated on a season with a hole in it).
 
    The model is cfb/tools/elo.js with the parameters fit.js wrote to cfb/data/model.json,
    replayed over cfb/data/history.json and then this season's finished games, in date
@@ -59,7 +68,8 @@ const SIMS = 3000;
 const LOSS_COST = 55;                               // the committee proxy: Elo minus this per loss
 const CARRY_DAYS = 5;                               // a week that did not download is carried only if every game is final or this far off
 const STALE_DAYS = 2;                               // a game ESPN still lists as scheduled this long after kickoff no longer holds its week open
-const DAY = 864e5;
+const HOLD_HOURS = 24;                              // a line ESPN drops, read within this long before kickoff, is held for grading
+const DAY = 864e5, HOUR = 36e5;
 
 const log = m => console.log(new Date().toISOString().slice(11, 19), m);
 class Refusal extends Error {}
@@ -67,8 +77,9 @@ class Refusal extends Error {}
 function rec(w, l) { return `${w}-${l}`; }
 const isPh = id => E.isPlaceholder(id);
 const realGame = g => !isPh(g.home) && !isPh(g.away);
-/* a game still to be played: not final, not called off, not a scheduled game ESPN never updated */
-const isOpen = g => g.state !== 'final' && g.state !== 'postponed' && !(g.state === 'pre' && Date.parse(g.date) < NOW_MS - STALE_DAYS * DAY);
+/* a game still to be played: not final, not called off, not a scheduled game ESPN never updated
+   or no longer lists */
+const isOpen = g => g.state !== 'final' && g.state !== 'postponed' && !g.gone && !(g.state === 'pre' && Date.parse(g.date) < NOW_MS - STALE_DAYS * DAY);
 /* kicked off, by ESPN's status or by the clock; a game whose time is still TBD is dated at the
    start of its day (midnight Eastern), so from then on it may have started and its call holds */
 const kickedOff = g => g.state === 'live' || g.state === 'final' || (g.state === 'pre' && Date.parse(g.date) <= NOW_MS);
@@ -85,9 +96,9 @@ async function feed(file, fetcher) {
 }
 
 /* a published row back into the raw shape gameRow() gives, for a game carried from the last publish */
-const rawOf = (r, teams) => ({ id: r.id, season: SEASON, type: r.type, week: r.week, date: r.date, state: r.state, detail: r.detail, home: r.home, away: r.away,
+const rawOf = (r, teams, gone) => ({ id: r.id, season: SEASON, type: r.type, week: r.week, date: r.date, state: r.state, detail: r.detail, home: r.home, away: r.away,
   hs: r.hs, as: r.as, neutral: r.neutral, conf: r.conf, note: r.note, venue: r.venue, tv: r.tv, hrank: r.hrank, arank: r.arank, hrec: r.hrec, arec: r.arec,
-  hconf: teams[r.home]?.conf || null, aconf: teams[r.away]?.conf || null, odds: null, tbd: !!r.tbd, carried: true });
+  hconf: teams[r.home]?.conf || null, aconf: teams[r.away]?.conf || null, odds: null, tbd: !!r.tbd, carried: true, gone: !!gone });
 
 async function pullSeason(prev, notes) {
   fs.mkdirSync(OUT, { recursive: true });
@@ -132,13 +143,19 @@ async function pullSeason(prev, notes) {
     if (before >= 4 && count[r.key] < before / 2) refuse.push(`ESPN returned ${count[r.key]} games for ${labelOf(r.key)} where the last publish had ${before}`);
   }
   if (refuse.length) throw new Refusal(refuse.join('; '));
-  /* a game the last publish had graded or under way that ESPN no longer lists keeps its row */
+  /* a game the last publish had graded or under way, or had called before a kickoff that has
+     now passed, that ESPN no longer lists keeps its row and its call (a game it dropped before
+     kickoff was never played and goes) */
+  const gone = new Set();
   for (const p of prevRows || []) {
     if (games.has(p.id) || carried.has(p.id)) continue;
-    if ((p.state === 'final' || p.state === 'live') && realGame(p)) { carried.set(p.id, p); notes.push(`${prevTeams[p.away]?.abbr || p.away} @ ${prevTeams[p.home]?.abbr || p.home} is no longer in ESPN's schedule; kept as last published.`); }
-    else log(`${p.id} (${prevTeams[p.away]?.abbr || p.away} @ ${prevTeams[p.home]?.abbr || p.home}, ${p.state}) is no longer in ESPN's schedule and had not been played; dropped`);
+    const who = `${prevTeams[p.away]?.abbr || p.away} @ ${prevTeams[p.home]?.abbr || p.home}`;
+    if (!realGame(p)) { log(`${p.id} (${who}, a placeholder) is no longer in ESPN's schedule; dropped`); continue; }
+    if (p.state === 'final' || p.state === 'live') { carried.set(p.id, p); gone.add(p.id); notes.push(`${who} is no longer in ESPN's schedule; kept as last published.`); }
+    else if (p.frozen && Date.parse(p.date) <= NOW_MS) { carried.set(p.id, p); gone.add(p.id); notes.push(`${who} is no longer in ESPN's schedule since its kickoff; kept as last published, with the call made before it.`); }
+    else log(`${p.id} (${who}, ${p.state}) is no longer in ESPN's schedule and had not kicked off; dropped`);
   }
-  for (const p of carried.values()) games.set(p.id, rawOf(p, prevTeams));
+  for (const p of carried.values()) games.set(p.id, rawOf(p, prevTeams, gone.has(p.id) || p.gone));
 
   /* the polls: this season's, read now; carried and dated when ESPN does not answer */
   let rankings = {};
@@ -155,6 +172,13 @@ async function pullSeason(prev, notes) {
     rankings = E.rankingsOf(raw, SEASON);
     for (const v of Object.values(rankings)) v.read = RUN;
     if (!Object.keys(rankings).length && Object.keys(prevPolls).length) rankings = carryPolls(`ESPN's rankings feed carried no ${SEASON} poll at this run`);
+    else {
+      /* one poll the feed has stopped carrying this season (the committee's ranking, in the
+         postseason) is kept as last read: the byes and the seeds stand on it */
+      const lost = Object.keys(prevPolls).filter(k => !rankings[k]);
+      for (const k of lost) rankings[k] = Object.assign({}, prevPolls[k], { carried: true, read: prevPolls[k].read || (prev.published || '').slice(0, 16) + 'Z' });
+      if (lost.length) notes.push(`ESPN's rankings feed no longer carried the ${lost.map(k => prevPolls[k].name || k).join(' and ')} at this run; the one read ${rankings[lost[0]].read.slice(0, 10)} is kept.`);
+    }
   } catch (e) { log(`rankings: ${e.message}`); rankings = carryPolls(`ESPN's rankings did not answer at this run (${e.message})`); }
 
   if (!OFFLINE) { try { teams.confs = await E.conferences(); } catch (e) { log(`conferences: ${e.message}; the saved list kept`); } }
@@ -164,7 +188,7 @@ async function pullSeason(prev, notes) {
 
 /* data/history.json must reach the season before this one: on the first run of a new season
    the season just finished is pulled from the same scoreboards and appended */
-async function loadHistory(notes) {
+async function loadHistory(notes, prev) {
   let H = JSON.parse(fs.readFileSync(HISTORY, 'utf8'));
   const si = H.cols.indexOf('season');
   const last = H.rows.reduce((m, r) => Math.max(m, r[si]), 0);
@@ -173,8 +197,13 @@ async function loadHistory(notes) {
     const rows = [];
     for (const s of need) {
       /* a scratch team table: last season's conferences must not overwrite this season's */
-      try { rows.push(...await HIST.seasonRows(s, (y, w, t) => feed(`sb_${y}_${t}_${w}.json`, () => E.scoreboard(y, w, t)), {})); }
+      let got;
+      try { got = await HIST.seasonRows(s, (y, w, t) => feed(`sb_${y}_${t}_${w}.json`, () => E.scoreboard(y, w, t)), {}); }
       catch (e) { throw new Refusal(`history.json ends at ${last} and the ${s} season did not download (${e.message}); ${SEASON} cannot be rated without it. Run node cfb/tools/history.js ${s} ${s} when ESPN answers`); }
+      /* held to the last publish of that season: a week that answered short is a hole */
+      const short = prev && prev.season === s ? HIST.shortOf(got, prev.games.filter(g => g.state === 'final' && realGame(g)).map(g => ({ type: g.type, week: g.week }))) : [];
+      if (short.length) throw new Refusal(`history.json ends at ${last} and ESPN's ${s} season came back short of its last publish (${short.join('; ')}); ${SEASON} cannot be rated on a season with a hole in it. Run node cfb/tools/history.js ${s} ${s} when ESPN answers in full`);
+      rows.push(...got);
     }
     if (!rows.length) throw new Refusal(`history.json ends at ${last} and ESPN has no finals for ${need.join(', ')}`);
     H = HIST.mergeRows(H, need, rows);
@@ -304,7 +333,14 @@ function playoffPicture(teams, games, ratings, model, rankings, confs) {
   let seed = 20260901; const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
   for (const g of games) g.isChamp = g.type === 2 && realGame(g) && /championship/i.test(g.note || '') && teams[g.home]?.conf && teams[g.home].conf === teams[g.away]?.conf;
   const reg = games.filter(g => g.type === 2 && realGame(g) && g.state !== 'postponed');
+  /* the field is decided once the regular season is over, or once every conference title game
+     is over with no regular-season game left before the last of them (Army-Navy, a week later,
+     is played after the committee has chosen) */
   const regOver = !games.some(g => g.type === 2 && isOpen(g));
+  const titles = games.filter(g => g.type === 2 && /championship/i.test(g.note || ''));
+  const titleDay = titles.length ? Math.max(...titles.map(g => Date.parse(g.date))) : null;
+  const titlesOver = titles.length > 0 && !titles.some(isOpen) && !games.some(g => g.type === 2 && isOpen(g) && Date.parse(g.date) <= titleDay);
+  const decided = regOver || titlesOver;
   const cfp = cfpOf(games, rankings, ratings);
 
   /* if the season ended today: the committee's ranking where there is one, the AP poll
@@ -329,9 +365,9 @@ function playoffPicture(teams, games, ratings, model, rankings, confs) {
   }
   const today = fieldOf(order, champs);
   const champSet = new Set(Object.values(champs));
-  /* the field the odds play: the real bracket once it is drawn, today's once the regular season
-     is over (nothing left to change it), the proxy's in each simulated season before that */
-  const fixed = cfp.set ? cfp.field : regOver ? today : null;
+  /* the field the odds play: the real bracket once it is drawn, the one shown once the field is
+     decided (nothing left to play changes it), the proxy's in each simulated season before that */
+  const fixed = cfp.set ? cfp.field : decided ? today : null;
 
   const tally = {}; for (const id of Object.keys(teams)) if (teams[id].fbs) tally[id] = { playoff: 0, bye: 0, conf: 0, title: 0, wins: 0 };
   for (let i = 0; i < SIMS; i++) {
@@ -351,7 +387,7 @@ function playoffPicture(teams, games, ratings, model, rankings, confs) {
   const field = shown.map(f => Object.assign(f, { conf: f.auto ? teams[f.team].conf : null, rank: poll ? (poll.ranks.find(r => r.team === f.team)?.rank ?? null) : null,
     record: rec(S[f.team]?.w || 0, S[f.team]?.l || 0), out: cfp.out.has(f.team), champion: cfp.champion === f.team }));
   const basis = cfp.set ? 'committee\'s bracket' : poll ? (rankings.cfp ? 'CFP rankings' : 'AP poll') : 'model';
-  return { sims: SIMS, lossCost: LOSS_COST, odds, standings, champs, bracket: { basis, set: cfp.set, final: regOver, field } };
+  return { sims: SIMS, lossCost: LOSS_COST, odds, standings, champs, bracket: { basis, set: cfp.set, final: decided, field } };
 }
 
 /* ---------- the record ---------- */
@@ -396,7 +432,7 @@ async function main() {
   const notes = [];
   const { games, teams: T, rankings } = await pullSeason(prev, notes);
   const confs = T.confs; const FBS = new Set(Object.keys(confs));
-  const history = await loadHistory(notes);
+  const history = await loadHistory(notes, prev);
   log(`${SEASON}: ${games.length} games, ${games.filter(g => g.state === 'final').length} final; ${Object.keys(rankings).join(', ') || 'no'} rankings`);
 
   /* replay: the history, then this season's finals, keeping each one's pre-game view */
@@ -440,6 +476,7 @@ async function main() {
     if (g.tbd) row.tbd = true;
     if (placeholder) row.placeholder = true;
     if (g.carried) row.carried = true;
+    if (g.gone) row.gone = true;
     let view;
     if (g.state === 'pre' && !started) { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, frozen: RUN }; }
     /* a call frozen before kickoff keeps its view after. A frozen row carries its rating gap (diff);
@@ -450,13 +487,21 @@ async function main() {
     else { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, frozen: null }; }   // under way with no frozen call, or called off: the current view
     const mu = spreadOf(view.diff, model);
     Object.assign(row, { pHome: +view.pHome.toFixed(4), rh: +view.rh.toFixed(1), ra: +view.ra.toFixed(1), diff: +view.diff.toFixed(2), mu: +mu.toFixed(2), spread: roundHalf(-mu), frozen: view.frozen });
-    /* the line: ESPN's, read at this run, while the game is to come; from kickoff, the one the
-       last run before it read; none for a game called off or with an opponent still TBD */
-    let line = null;
-    if (placeholder || g.state === 'postponed') line = null;
-    else if (!started) line = g.odds ? Object.assign({}, g.odds, { at: RUN }) : (g.carried && p ? p.line : null);
-    else line = p ? p.line : null;
+    /* the line: ESPN's, read at this run, while the game is to come (or, ESPN having left it out
+       at this run, the last one read within HOLD_HOURS of kickoff, held for the grade and never
+       offered); from kickoff, the one the last run before it had; none for an opponent still
+       TBD; none on offer for a game called off, whose frozen line is kept aside */
+    let line = null, heldLine = null;
+    const pLine = p ? (p.line || p.heldLine || null) : null;
+    if (placeholder) line = null;
+    else if (g.state === 'postponed') heldLine = pLine;
+    else if (!started) {
+      if (g.odds) line = Object.assign({}, g.odds, { at: RUN });
+      else if (g.carried && p) line = p.line;
+      else if (p && p.line && p.state === 'pre' && Date.parse(g.date) - Date.parse(p.line.at) <= HOLD_HOURS * HOUR) line = Object.assign({}, p.line, { held: true });
+    } else line = pLine;
     row.line = line;
+    if (heldLine) row.heldLine = heldLine;
     row.pick = placeholder ? null : view.pHome >= 0.5 ? 'home' : 'away';
     if (line && line.homeLine !== null && line.homeLine !== undefined) {
       const cp = coverProbs(mu, model.sd, line.homeLine);

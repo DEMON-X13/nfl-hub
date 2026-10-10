@@ -293,7 +293,7 @@ tr.major td{font-weight:500}
 <div class="ov" id="ov"><div class="ovbox" id="ovbox"></div></div>
 <script>
 'use strict';
-const APP_BUILD = 'cfb v11 · 2026-10-10';
+const APP_BUILD = 'cfb v12 · 2026-10-10';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
 const KEY = 'cfb_v1';
@@ -399,6 +399,7 @@ function statusOf(g) {
   if (g.state === 'live') return { text: `${g.detail || 'in progress'} · as of ${clock(S.published)}`, cls: 'live' };
   if (g.state === 'final') return { text: g.detail || 'Final', cls: '' };
   if (g.state === 'postponed') return { text: g.detail || 'Postponed', cls: 'started' };
+  if (g.gone) return { text: 'no longer in ESPN\'s schedule · the call made before kickoff kept', cls: 'started' };
   if (kickedOff(g)) return { text: tbdTime(g) ? 'game day · time TBA' : 'kicked off · result after the next run', cls: 'started' };
   return { text: '', cls: '' };
 }
@@ -435,6 +436,7 @@ function gameCard(g) {
     mkt = line.homeLine === null || line.homeLine === undefined ? '—' : (line.homeLine <= 0 ? `${th.abbr} ${fmtLine(line.homeLine)}` : `${ta.abbr} ${fmtLine(-line.homeLine)}`) + (line.total ? ` · o/u ${line.total}` : '');
     ml = `${ta.abbr} ${fmtOdds(line.awayML)} · ${th.abbr} ${fmtOdds(line.homeML)}`;
     if (stale) { mkt += ` <small>read ${shortDate(line.at)}, not current</small>`; }
+    else if (line.held) mkt += ` <small title="ESPN left the line out at the job's last run before kickoff; the game is graded on the one it carried before">read ${clock(line.at)}, the last before kickoff</small>`;
   }
   if (stale) callTag = `<span class="tag pass" title="DraftKings' number is not on ESPN any more; the model takes no side against an old line">no call: the line is not current</span>`;
   else if (g.atsPick) {
@@ -629,7 +631,7 @@ function renderRankings() {
   const failed = (S.notes || []).find(x => /rankings/i.test(x));
   if (!basis) { $('rankTable').innerHTML = ''; $('rankNote').textContent = failed ? failed : `No ${S.season} poll published yet.`; return; }
   $('rankNote').textContent = `${basis.name}, ${basis.week || ''} (${basis.date || ''}). The model column is the power rating's place among FBS teams; Playoff is the simulation's chance of a bracket spot.` +
-    (basis.carried ? ` ESPN's rankings did not answer at the job's last run: this is the poll as read ${shortDate(basis.read)}.` : '');
+    (basis.carried ? ` ESPN's rankings feed did not carry this poll at the job's last run: this is the poll as read ${shortDate(basis.read)}.` : '');
   const po = (S.playoff && S.playoff.odds) || {};
   const rows = basis.ranks.map(r => { const t = T(r.team); return `<tr class="${t.major ? 'major' : ''}">
     <td class="n">${r.rank}</td><td class="n muted">${r.prev ? (r.prev === r.rank ? '·' : r.prev > r.rank ? '▲' + (r.prev - r.rank) : '▼' + (r.rank - r.prev)) : 'new'}</td>
@@ -663,7 +665,7 @@ function renderPlayoff() {
   $('tab-playoff').querySelector('h2').textContent = PO.bracket.set ? 'The playoff bracket' : 'If the season ended today';
   $('bracketNote').textContent = PO.bracket.set
     ? `The twelve in the playoff, as ESPN lists the games, seeded by the committee's ranking. A team that has lost is struck through and its title chance is zero; the odds below play out only the games still to come.`
-    : `Seeded straight from the ${PO.bracket.basis}; the five best-placed conference leaders (★) are in as champions, seven more at large, the top four seeds on a bye. Unranked teams are placed by rating less ${PO.lossCost} Elo a loss, which stands in for the committee.` + (PO.bracket.final ? ' The regular season is over, so the odds below play this bracket.' : '');
+    : `Seeded straight from the ${PO.bracket.basis}; the five best-placed conference leaders (★) are in as champions, seven more at large, the top four seeds on a bye. Unranked teams are placed by rating less ${PO.lossCost} Elo a loss, which stands in for the committee.` + (PO.bracket.final ? ' The conference title games are over, so the odds below play this bracket until the committee\'s is drawn.' : '');
   const seedLine = s => `<div class="seedline${s.out ? ' out' : ''}"><span class="seed">${s.seed}</span>${teamCell(s.team, s.rank)}<span class="muted small">${esc(s.record)}</span>${s.auto ? `<span class="auto">★ ${esc(confName(s.conf))}</span>` : ''}${s.out ? ' <span class="tag out">out</span>' : ''}${s.champion ? ' <span class="champ">national champion</span>' : ''}</div>`;
   const byes = f.slice(0, 4), fr = [[5, 12], [6, 11], [7, 10], [8, 9]].map(([a, b]) => [f[a - 1], f[b - 1]]);
   $('bracket').innerHTML = `<div class="bye"><h3 style="margin-top:0">Byes</h3>${byes.map(seedLine).join('')}</div>

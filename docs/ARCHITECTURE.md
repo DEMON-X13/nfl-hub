@@ -730,10 +730,16 @@ are current; a game still to come gets the model's chance, spread and, from ESPN
 DraftKings' line as ESPN carries it at that run, all frozen from its kickoff (by ESPN's status
 or the clock, whichever first; a TBD time from the start of its day) and kept after it, so the
 record grades what the page showed. A line ESPN stops carrying is dropped from a game to come,
-never kept as if current. Games over before the job first ran are graded from the replay and
+never kept as if current, with one exception: a line read within the 24 hours before the game's
+kickoff is held (`line.held`, dated by its `at`) so a line ESPN leaves out on the last runs before
+kickoff is still the one the game is graded on; the page shows it as not current, with
+no call and no price, and after kickoff as the last line before it; CFB News cites it as the last
+one read, with its time. Games over before the job first ran are graded from the replay and
 marked; the page leads with the calls made before kickoff, beside DraftKings' favourite on the
-same games, and shows FBS against FBS and the replayed calls apart. A postponed game is neither
-called nor graded; a TBD opponent is shown without a call and counts for no one. A side against
+same games, and shows FBS against FBS and the replayed calls apart. A postponed game offers nothing and is not graded; the line frozen before it is kept aside
+(`heldLine`), so a game suspended and finished later is graded on it. A game that kicked off with a
+frozen call and that ESPN then stops listing stays in the state (`gone`), its call and line with it,
+and says so on its card. A TBD opponent is shown without a call and counts for no one. A side against
 the spread is taken only when the model and the line differ by three points or more, and never
 against a lower-division opponent. The current week is the first regular-season week with a game
 to play, then the postseason; `phase` says opening, regular, postseason or over.
@@ -742,14 +748,20 @@ A failed feed never publishes as the season: a week's scoreboard that does not d
 carried from the last publish (said so in `notes`, shown under the header) only when every game
 in it is final or more than five days off; otherwise the run exits 1 before the commit. A
 scoreboard with under half the games the last publish had for its week stops the run too; a
-graded game ESPN stops listing is kept. Polls that fail are carried and dated, and a poll from
-another season is not this one's. State files carry `schema: 2` and `run` (the minute the job
-read ESPN, the `at` of every current line).
+graded game ESPN stops listing is kept. Polls that fail are carried and dated, and so is a single
+poll the feed stops carrying in the same season (the committee's ranking, which seeds the byes);
+a poll from another season is not this one's. The first run of a new season appends the finished
+one to `data/history.json` and refuses the new season when that pull throws, has a week with no
+finals (week 1, a week between two weeks with games, or the postseason) or has fewer finals in a
+week than the last publish of that season had (`history.js` holesOf and shortOf). State files
+carry `schema: 2` and `run` (the minute the job read ESPN, the `at` of every current line).
 
 The playoff picture is three thousand simulations of the rest of the season: each
 conference's title game, a committee proxy (rating less a cost per loss, the polls
 where they exist), the five best-placed champions plus seven at large, straight seeding,
-the bracket played out. Once the regular season is over the odds play the bracket shown; once
+the bracket played out. Once the field is decided (`bracket.final`: the conference title games
+over, with nothing left to play before the last of them, so Army-Navy a week later does not hold
+it open) the odds play the bracket shown, its twelve in and its top four on a bye; once
 ESPN lists the playoff's first round and byes, they play the real bracket (seeded by the
 committee's ranking), a played playoff game keeps its result and a team out has no title chance.
 Tabs: Games, Rankings, Power Ratings, Playoff, Parlays (browser

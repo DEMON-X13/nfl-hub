@@ -9,18 +9,25 @@
    and update.js and news.js are run --offline over them, the clock set by CFB_NOW, as the job
    would run through a week:
      1  the week's lines are up (calls frozen; five look-ahead lines on the next week)
-     2  half the week has kicked off: ESPN still lists some as scheduled, with a moved line, and
-        has dropped the look-ahead lines (the frozen calls and lines must hold; the dropped
-        lines must go)
-     3  the week is final (graded on the frozen calls; the next week current)
+     2  half the week has kicked off: ESPN still lists some as scheduled, with a moved line, has
+        dropped the look-ahead lines, has called one game off after it was called and no longer
+        lists another that kicked off (the frozen calls and lines must hold, the dropped game's
+        too; the dropped lines must go)
+     3  the week is final (graded on the frozen calls; the game called off was finished after
+        all and is graded on the line frozen before its kickoff; the next week current)
      4  the next week's scoreboard fails (the run refuses, nothing written)
      5  a far week and the rankings fail (carried from the last publish, said so)
-     6  a game is postponed (neither called nor graded, the week not held open)
-   then, each in its own folder: Army-Navy week with a bowl earlier the same day; the 2025
-   playoff from data/history.json, between rounds and over; and the first run of the next
-   season (last season appended to the history from the same scoreboards, or a refusal when
-   that pull fails). After each run the smoke test runs, strict, over the files it wrote and the
-   last publish before it. Nothing in cfb/ is written: the scratch folder is os.tmpdir().
+     6  a game is postponed, and the feed no longer carries the CFP ranking (neither called nor
+        graded, the week not held open; the ranking carried and dated)
+   then, each in its own folder: a line ESPN leaves out on the last run before kickoff (held for
+   the grade, never offered; one read more than a day before kickoff is not); Army-Navy week with a bowl
+   earlier the same day; the conference title games over with Army-Navy still to play and no
+   playoff game listed (the odds play the bracket shown); the 2025 playoff from
+   data/history.json, between rounds and over; and the first run of the next season (last season
+   appended to the history from the same scoreboards, or a refusal when that pull fails, has an
+   empty week or comes back short of the last publish). After each run the smoke test runs,
+   strict, over the files it wrote and the last publish before it. Nothing in cfb/ is written:
+   the scratch folder is os.tmpdir(), removed at the end (CFB_SIM_KEEP=1 keeps it).
 
    CFB_SIM_TOOLS runs update.js and news.js from another folder (the gate's own tests run a
    mutated copy through here and expect it to fail); the smoke test is always this folder's. */
@@ -101,9 +108,12 @@ const W = cands[Math.floor(cands.length / 2)];
 const wk = w => sched.filter(g => g.type === 2 && g.week === w);
 const writeFeeds = (d, season, rows, stateOf, lineOfG, omit = []) => F.writeScoreboards(path.join(d, 'out'), season, rows.map(g => Object.assign({}, g, stateOf(g))), TEAMS0.teams, { lineOf: lineOfG, omit });
 /* a poll: the top 25 by the published ratings */
-const apOf = season => {
+const apOf = (season, cfp) => {
   const top = Object.keys(real.teams).filter(id => real.teams[id].fbs).sort((a, b) => real.teams[b].rating - real.teams[a].rating).slice(0, 25);
-  return { ap: { name: 'AP Top 25', week: 'Week ' + W, date: `${season}-10-01`, season, ranks: top.map((team, i) => ({ rank: i + 1, prev: i + 1, team, record: null })) } };
+  const ranks = top.map((team, i) => ({ rank: i + 1, prev: i + 1, team, record: null }));
+  const out = { ap: { name: 'AP Top 25', week: 'Week ' + W, date: `${season}-10-01`, season, ranks } };
+  if (cfp) out.cfp = { name: 'College Football Playoff Rankings', week: 'Week ' + W, date: `${season}-10-02`, season, ranks };
+  return out;
 };
 const writePolls = (d, season, polls) => fs.writeFileSync(path.join(d, 'out', 'rankings_raw.json'), JSON.stringify(F.rankingsRaw(polls, season)));
 
@@ -157,7 +167,7 @@ function weekRuns() {
 
   /* 1: the week's lines are up */
   writeFeeds(d, SEASON0, rows, g => past(g, T0) ? fin(g) : pre(g), g => (g.type === 2 && g.week === W && realG(g)) || look.includes(g.id) ? lineFor(g) : null);
-  writePolls(d, SEASON0, apOf(SEASON0));
+  writePolls(d, SEASON0, apOf(SEASON0, true));
   let r = run('update.js', d, T0);
   chk(r.code === 0, `run 1 writes the state: ${r.out.slice(-400)}`);
   if (r.code !== 0) return;
@@ -213,7 +223,8 @@ function weekRuns() {
   let flip = 0;
   const started = wW.filter(g => Date.parse(g.date) <= T1), toCome = wW.filter(g => Date.parse(g.date) > T1);
   const off2 = started[0];
-  writeFeeds(d, SEASON0, rows, g => {
+  const gone2 = started.find(g => g.id !== off2.id);              // kicked off, and ESPN no longer lists it
+  writeFeeds(d, SEASON0, rows.filter(g => !gone2 || g.id !== gone2.id), g => {
     if (past(g, T0)) return fin(g);
     if (g.id === off2.id) return { state: 'postponed', hs: 0, as: 0, detail: 'Postponed' };
     if (g.type === 2 && g.week === W && realG(g) && Date.parse(g.date) <= T1) return (flip++ % 2) ? { state: 'live', hs: 7, as: 3, detail: '2nd 5:00' } : pre(g);
@@ -224,10 +235,16 @@ function weekRuns() {
   const S2 = read(path.join(d, 'state.json')); const by2 = new Map(S2.games.map(g => [g.id, g]));
   const o2 = by2.get(off2.id);
   chk(o2.state === 'postponed' && !o2.result && !o2.line && o2.frozen === by1.get(off2.id).frozen, 'run 2: a game called off after its call keeps the call, loses the line and is not graded');
-  chk(started.filter(g => g.id !== off2.id).every(g => { const a = by1.get(g.id), b = by2.get(g.id); return b.frozen === a.frozen && b.pHome === a.pHome && sameJSON(b.line, a.line); }),
+  chk(started.filter(g => g.id !== off2.id).every(g => { const a = by1.get(g.id), b = by2.get(g.id); return !!b && b.frozen === a.frozen && b.pHome === a.pHome && sameJSON(b.line, a.line); }),
     `run 2: the ${started.length} games that kicked off keep the call and line taken before kickoff, even where ESPN still lists them as scheduled with a new line`);
   chk(toCome.every(g => by2.get(g.id).frozen === iso(T1) && by2.get(g.id).line.at === iso(T1)), 'run 2: the games still to come are called again on the new line');
   chk(look.every(id => !by2.get(id).line && !by2.get(id).atsPick), 'run 2: a line ESPN stopped carrying is dropped, with its call against the spread');
+  chk(sameJSON(o2.heldLine, by1.get(off2.id).line), 'run 2: the line frozen before the called-off game is kept aside, off the board');
+  if (gone2) {
+    const a = by1.get(gone2.id), b = by2.get(gone2.id);
+    chk(!!b && b.gone && b.frozen === a.frozen && b.pHome === a.pHome && sameJSON(b.line, a.line) && S2.notes.some(n => /no longer in ESPN's schedule since its kickoff/.test(n)),
+      `run 2: a game that kicked off and that ESPN no longer lists keeps its call and line, and the page is told (${b ? b.gone + ' ' + b.frozen : 'dropped'})`);
+  }
   smoke('run 2', d, T1, P1);
   const P2 = keep(d, 'state2.json');
 
@@ -237,8 +254,11 @@ function weekRuns() {
   chk(r.code === 0, `run 3 writes the state: ${r.out.slice(-300)}`);
   const S3 = read(path.join(d, 'state.json')); const by3 = new Map(S3.games.map(g => [g.id, g]));
   chk(S3.week === W + 1, `run 3: the next week is current (${S3.week})`);
-  chk(wW.every(g => { const a = by2.get(g.id), b = by3.get(g.id); return b.result && b.frozen === a.frozen && b.pHome === a.pHome && b.result.su === ((b.hs > b.as) === (a.pHome >= 0.5)); }), 'run 3: every game of the week is graded on the call frozen before its kickoff');
+  chk(wW.every(g => { const a = by2.get(g.id), b = by3.get(g.id); return !!a && !!b && b.result && b.frozen === a.frozen && b.pHome === a.pHome && b.result.su === ((b.hs > b.as) === (a.pHome >= 0.5)); }), 'run 3: every game of the week is graded on the call frozen before its kickoff');
   chk(S3.record.live.su.w + S3.record.live.su.l === S3.games.filter(g => g.result && g.frozen).length && S3.record.live.su.w + S3.record.live.su.l >= wW.length, 'run 3: the record called before kickoff counts the week');
+  const o3 = by3.get(off2.id);
+  chk(o3.result && sameJSON(o3.line, by1.get(off2.id).line) && !o3.heldLine && o3.result.ats !== undefined, `run 3: the game called off and finished after all is graded on the line frozen before its kickoff (${o3.line && o3.line.at})`);
+  if (gone2) chk(!!by3.get(gone2.id) && !by3.get(gone2.id).gone && !!by3.get(gone2.id).result, 'run 3: the dropped game back in ESPN\'s schedule is graded');
   smoke('run 3', d, T2, P2);
   const P3 = keep(d, 'state3.json');
   const bytes3 = fs.readFileSync(path.join(d, 'state.json'));
@@ -260,14 +280,98 @@ function weekRuns() {
   smoke('run 5', d, T2 + H, P3);
   const P5 = keep(d, 'state5.json');
 
-  /* 6: a game is postponed */
+  /* 6: a game is postponed, and the feed no longer carries the committee's ranking */
   writePolls(d, SEASON0, apOf(SEASON0));
   const off = wN[1];
   writeFeeds(d, SEASON0, rows, g => g.id === off.id ? { state: 'postponed', hs: 0, as: 0, detail: 'Postponed' } : (g.type === 2 && g.week <= W && realG(g)) ? fin(g) : pre(g), g => g.type === 2 && g.week === W + 1 && realG(g) && g.id !== off.id ? lineFor(g) : null);
   r = run('update.js', d, T2 + 2 * H);
   const S6 = read(path.join(d, 'state.json')); const o6 = S6.games.find(g => g.id === off.id);
   chk(r.code === 0 && o6.state === 'postponed' && !o6.result && !o6.line && o6.hs === null, `run 6: a postponed game is neither graded (0-0 is not a final) nor offered (${o6 && o6.state})`);
+  chk(S6.rankings.cfp && S6.rankings.cfp.carried && S6.rankings.ap && !S6.rankings.ap.carried && S6.notes.some(n => /no longer carried the College Football Playoff/.test(n)), 'run 6: a poll the feed stops carrying is kept, dated, and the page is told');
   smoke('run 6', d, T2 + 2 * H, P5);
+}
+
+/* ================= a line ESPN leaves out on the last run before kickoff ================= */
+function holdRuns() {
+  const d = folder('hold');
+  const fbsG = g => realG(g) && real.teams[g.home] && real.teams[g.away] && real.teams[g.home].fbs && real.teams[g.away].fbs;
+  const wW = wk(W).filter(fbsG).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+  /* a game with another kicking off within the next 20 hours: the one held, the other's line read too long ago */
+  const major = g => real.teams[g.home].major || real.teams[g.away].major;
+  const i = wW.findIndex((g, j) => major(g) && j + 1 < wW.length && Date.parse(wW[j + 1].date) - Date.parse(g.date) < 20 * H && Date.parse(wW[j + 1].date) > Date.parse(g.date));
+  if (i < 0) { chk(false, `week ${W} has no two FBS games within 20 hours to hold a line on`); return; }
+  const tgt = wW[i], g3 = wW[i + 1], k = Date.parse(tgt.date);
+  const nxt = wk(W + 1).filter(realG).find(g => Date.parse(g.date) - k > 2 * DAY);
+  const tA = k - 20 * H, tB = k - 3 * H, tC = Date.parse(g3.date) + 8 * H;
+  const at = t => g => {
+    if (g.type === 2 && realG(g) && Date.parse(g.date) < t - 4 * H && (g.week < W || (g.week === W && Date.parse(g.date) <= tC))) return { state: 'final', hs: score(g).hs, as: score(g).as, detail: 'Final' };
+    if (g.type === 2 && realG(g) && g.week === W && Date.parse(g.date) < t) return { state: 'live', hs: 7, as: 3, detail: '2nd 5:00' };
+    return { state: 'pre', hs: null, as: null };
+  };
+  /* the held game's line puts the model five points off it, so it carries a call against the spread
+     to grade: the model's margin is the job's own, read from a first pass at the same moment */
+  const L = lineOf(tgt);
+  const lineAt = t => g => g.id === tgt.id ? (t === tB ? null : L) : g.id === g3.id && t === tB ? null : (g.type === 2 && g.week === W && realG(g) && Date.parse(g.date) > t) || (nxt && g.id === nxt.id && t === tA) ? lineFor(g) : null;
+  writeFeeds(d, SEASON0, sched, at(tA), lineAt(tA)); writePolls(d, SEASON0, apOf(SEASON0));
+  let r = run('update.js', d, tA);
+  chk(r.code === 0, `hold run A0: ${r.out.slice(-300)}`); if (r.code !== 0) return;
+  L.homeLine = Math.round((-read(path.join(d, 'state.json')).games.find(g => g.id === tgt.id).mu + 5) * 2) / 2;
+  fs.unlinkSync(path.join(d, 'state.json'));
+  writeFeeds(d, SEASON0, sched, at(tA), lineAt(tA));
+  r = run('update.js', d, tA);
+  chk(r.code === 0, `hold run A: ${r.out.slice(-300)}`); if (r.code !== 0) return;
+  smoke('hold run A', d, tA, null);
+  /* the publish before run B read g3's line more than a day ago (made so: the job ran, ESPN had it then) */
+  const SA = read(path.join(d, 'state.json'));
+  const g3A = SA.games.find(g => g.id === g3.id); g3A.line.at = iso(tB - 30 * H); g3A.frozen = g3A.line.at;
+  fs.writeFileSync(path.join(d, 'state.json'), JSON.stringify(SA));
+  const PA = keep(d, 'stateA.json');
+  const byA = new Map(SA.games.map(g => [g.id, g]));
+  writeFeeds(d, SEASON0, sched, at(tB), lineAt(tB));
+  r = run('update.js', d, tB);
+  chk(r.code === 0, `hold run B: ${r.out.slice(-300)}`); if (r.code !== 0) return;
+  const SB = read(path.join(d, 'state.json')); const byB = new Map(SB.games.map(g => [g.id, g]));
+  const b = byB.get(tgt.id);
+  chk(b.line && b.line.held && b.line.at === iso(tA) && b.line.homeLine === L.homeLine && b.atsPick, `hold run B: a line ESPN left out three hours before kickoff, read 20 hours before it, is held with its call (${JSON.stringify(b.line)}, ${b.atsPick})`);
+  chk(!byB.get(g3.id).line, `hold run B: a line read more than a day before kickoff is not held (${JSON.stringify(byB.get(g3.id).line)})`);
+  if (nxt) chk(byA.get(nxt.id).line && !byB.get(nxt.id).line, 'hold run B: a look-ahead line ESPN dropped a week out is not held');
+  newsFeeds(d, SB, { qb: {}, injuries: {}, news: {} });
+  r = run('news.js', d, tB);
+  const nB = r.code === 0 ? read(path.join(d, 'news.json')).games.find(x => x.id === tgt.id) : null;
+  chk(nB && /last read/.test(nB.line) && nB.teams.home.bullets.some(x => /DraftKings' last line, read/.test(x)), `hold run B: the news cites the held line as the last one read (${nB && nB.line})`);
+  smoke('hold run B (line held)', d, tB, PA);
+  const PB = keep(d, 'stateB.json');
+  writeFeeds(d, SEASON0, sched, at(tC), lineAt(tC));
+  r = run('update.js', d, tC);
+  chk(r.code === 0, `hold run C: ${r.out.slice(-300)}`); if (r.code !== 0) return;
+  const c = read(path.join(d, 'state.json')).games.find(g => g.id === tgt.id);
+  chk(c.result && sameJSON(c.line, b.line) && c.frozen === b.frozen && ['win', 'loss', 'push'].includes(c.result.ats), `hold run C: the game is graded against the spread on the held line (${c.result && c.result.ats})`);
+  smoke('hold run C (graded)', d, tC, PB);
+}
+
+/* ================= the conference title games over, Army-Navy to come, no playoff game listed ================= */
+function titleRuns() {
+  const d = folder('titles');
+  const confOf = note => Object.keys(real.confs).find(c => note.startsWith(real.confs[c].short + ' ') || note.startsWith(real.confs[c].name.replace(/ Conference$/, '') + ' '));
+  const titles = sched.filter(g => g.type === 2 && /championship/i.test(g.note || ''));
+  const rows = sched.map(g => {
+    if (!titles.includes(g)) return g;
+    const c = confOf(g.note); const two = Object.keys(real.teams).filter(id => real.teams[id].fbs && String(real.teams[id].conf) === String(c)).sort((a, b) => real.teams[b].rating - real.teams[a].rating);
+    return two.length >= 2 ? Object.assign({}, g, { home: two[0], away: two[1], neutral: true, tbd: false, detail: 'scheduled', pHome: 0.6 }) : g;
+  });
+  chk(rows.filter(g => titles.some(t => t.id === g.id) && realG(g)).length >= 4, 'the schedule has conference title games to play');
+  const titleDay = Math.max(...titles.map(g => Date.parse(g.date)));
+  const later = rows.filter(g => g.type === 2 && realG(g) && Date.parse(g.date) > titleDay);
+  const now = titleDay + 14 * H;
+  writeFeeds(d, SEASON0, rows, g => g.type === 2 && realG(g) && Date.parse(g.date) <= titleDay ? { state: 'final', hs: score(g).hs, as: score(g).as, detail: 'Final' } : { state: 'pre', hs: null, as: null }, () => null);
+  writePolls(d, SEASON0, apOf(SEASON0, true));
+  const r = run('update.js', d, now);
+  chk(r.code === 0, `the title games over: ${r.out.slice(-300)}`); if (r.code !== 0) return;
+  const S = read(path.join(d, 'state.json'));
+  const seat = new Map(S.playoff.bracket.field.map(f => [f.team, f.seed]));
+  chk(S.playoff.bracket.final && !S.playoff.bracket.set && (!later.length || S.phase === 'regular'), `the title games over: the field is decided before ESPN lists the playoff (${S.playoff.bracket.final}, ${S.playoff.bracket.set}, ${S.phase}, week ${S.week})`);
+  chk(Object.entries(S.playoff.odds).every(([id, o]) => o.playoff === (seat.has(id) ? 1 : 0) && o.bye === (seat.has(id) && seat.get(id) <= 4 ? 1 : 0)), 'the title games over: the odds play the bracket shown, nobody else in');
+  smoke('the title games over', d, now, null);
 }
 
 /* ================= Army-Navy week: a bowl the same morning does not end the regular season ================= */
@@ -327,8 +431,13 @@ function playoff() {
 function rollover() {
   const next = SEASON0 + 1;
   const d = folder('rollover');
+  /* a finished season: every slot ESPN held for a team still to be decided (title games, bowls,
+     the playoff) has its teams by January */
+  const fbs = Object.keys(real.teams).filter(id => real.teams[id].fbs).sort((a, b) => real.teams[b].rating - real.teams[a].rating);
+  let j = 0; const next2 = not => { let id; do { id = fbs[j++ % fbs.length]; } while (id === not); return id; };
+  const done = sched.map(g => { if (realG(g)) return g; const home = isPh(g.home) ? next2(g.away) : g.home; return Object.assign({}, g, { home, away: isPh(g.away) ? next2(home) : g.away }); });
   const fin = g => realG(g) ? { state: 'final', hs: score(g).hs, as: score(g).as, detail: 'Final' } : { state: 'pre', hs: null, as: null };
-  writeFeeds(d, SEASON0, sched, fin, () => null);
+  writeFeeds(d, SEASON0, done, fin, () => null);
   const shifted = sched.map(g => Object.assign({}, g, { id: '8' + g.id, date: iso(Date.parse(g.date) + 364 * DAY) }));
   writeFeeds(d, next, shifted, () => ({ state: 'pre', hs: null, as: null }), () => null);
   writePolls(d, SEASON0, apOf(SEASON0));                         // last season's final poll, still the feed's latest
@@ -340,22 +449,37 @@ function rollover() {
   let r = run('update.js', d, now);
   chk(r.code === 1 && /history/.test(r.out) && read(path.join(d, 'history.json')).rows.length === histBefore, `a new season whose predecessor cannot be pulled into the history refuses (exit ${r.code})`);
   fs.renameSync(path.join(d, 'out', 'held.json'), path.join(d, 'out', `sb_${SEASON0}_2_${W}.json`));
+  /* a week that answers with no games, or with only part of them, is a hole too */
+  const sbW = path.join(d, 'out', `sb_${SEASON0}_2_${W}.json`), sb2 = path.join(d, 'out', `sb_${SEASON0}_2_2.json`);
+  const full = { W: fs.readFileSync(sbW), two: fs.readFileSync(sb2) };
+  fs.writeFileSync(sbW, JSON.stringify({ events: [] }));
+  r = run('update.js', d, now);
+  chk(r.code === 1 && new RegExp(`week ${W} answered with no finals`).test(r.out) && !/the postseason answered/.test(r.out) && read(path.join(d, 'history.json')).rows.length === histBefore, `a last season with a week that answered empty refuses the new one (exit ${r.code}: ${r.out.split('\n').filter(l => /REFUSED/.test(l)).join(' ').slice(0, 200)})`);
+  fs.writeFileSync(sbW, full.W);
+  const part = JSON.parse(full.two); part.events = part.events.slice(0, Math.floor(part.events.length / 3));
+  fs.writeFileSync(sb2, JSON.stringify(part));
+  r = run('update.js', d, now);
+  chk(r.code === 1 && /short of its last publish/.test(r.out) && read(path.join(d, 'history.json')).rows.length === histBefore, `a last season with a week that answered a third of its games refuses the new one (exit ${r.code}: ${r.out.split('\n').filter(l => /REFUSED/.test(l)).join(' ').slice(0, 200)})`);
+  fs.writeFileSync(sb2, full.two);
   r = run('update.js', d, now);
   chk(r.code === 0, `the first run of ${next}: ${r.out.slice(-300)}`);
   if (r.code !== 0) return;
   const S = read(path.join(d, 'state.json')); const Hn = read(path.join(d, 'history.json'));
   const si = Hn.cols.indexOf('season');
-  chk(Hn.rows.filter(x => x[si] === SEASON0).length === sched.filter(realG).length, `${SEASON0} is appended to the history (${Hn.rows.filter(x => x[si] === SEASON0).length} games)`);
+  chk(Hn.rows.filter(x => x[si] === SEASON0).length === done.length, `${SEASON0} is appended to the history (${Hn.rows.filter(x => x[si] === SEASON0).length} games)`);
   chk(S.season === next && S.phase === 'opening' && !S.rankings.ap, `${next} opens on its own schedule, with no poll of last season's (${S.season}, ${S.phase}, ${Object.keys(S.rankings)})`);
   smoke(`the first run of ${next}`, d, now, null);
 }
 
 /* ================= go ================= */
 try { weekRuns(); } catch (e) { chk(false, 'the week runs threw: ' + e.stack); }
+try { holdRuns(); } catch (e) { chk(false, 'the held line runs threw: ' + e.stack); }
 try { armyNavy(); } catch (e) { chk(false, 'Army-Navy threw: ' + e.stack); }
+try { titleRuns(); } catch (e) { chk(false, 'the title games threw: ' + e.stack); }
 try { playoff(); } catch (e) { chk(false, 'the playoff threw: ' + e.stack); }
 try { rollover(); } catch (e) { chk(false, 'the rollover threw: ' + e.stack); }
 console.log(`${checks} checks, ${fails.length} failures`);
 for (const f of fails) console.log('  FAIL ' + f);
-if (!fails.length && !process.env.CFB_SIM_KEEP) fs.rmSync(SCRATCH, { recursive: true, force: true });
+if (process.env.CFB_SIM_KEEP) console.log(`  the runs are kept in ${SCRATCH}`);
+else fs.rmSync(SCRATCH, { recursive: true, force: true });
 process.exit(fails.length ? 1 : 0);
