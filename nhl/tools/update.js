@@ -19,13 +19,13 @@
    so the whole schedule is known and a pass in season is a couple of hundred small requests.
    A day the last state still has a game to finish on, through tomorrow, must be read fresh: if
    ESPN does not answer for one (or answers with no game where the last state has some, none
-   called off), the run exits 1 having written nothing, so the last good state stays live; a later
-   day that fails keeps the schedule the last state had. A game leaves the schedule only when the
-   feed marks it postponed or cancelled (or it has moved to another day): one an answer merely
-   leaves out is kept as the last state had it, call, line and grade, and said (`kept`), and only
-   one never final two days past its puck drop that the feed has not shown since goes. Every game
-   taken off is listed in `removed` with the feed's reason, so the smoke test can account for each
-   started call of the last published state.
+   called off and not all on another day now), the run exits 1 having written nothing, so the last
+   good state stays live; a later day that fails keeps the schedule the last state had. A game
+   leaves the schedule only when the feed marks it postponed or cancelled (or it has moved to
+   another day): one an answer merely leaves out is kept as the last state had it, call, line and
+   grade, and said (`kept`), and only one never final two days past its puck drop that the feed has
+   not shown since goes. Every game taken off is listed in `removed` with the feed's reason, so the
+   smoke test can account for each started call of the last published state.
 
    The call is frozen at puck drop, by the clock and not only by ESPN's state (a game delayed past
    its start is not called again, nor one whose start ESPN moves less than half a day later after
@@ -48,8 +48,10 @@
    The playoff picture: before the regular season ends, the rest of it played SIMS times and the
    league's bracket off each simulated table; once it has ended the field is the real one, the
    series are the ones ESPN has, each played on from its real score, so a club knocked out has no
-   chance left and the bracket carries each series' score. `phase` says preseason, regular,
-   postseason or over (the Cup awarded), offseason with no games at all. */
+   chance left and the bracket carries each series' score. The field is the sixteen of that first
+   round: a club the table's tie-breakers left out that ESPN has in a series is in for certain, and
+   the club it displaced is out. `phase` says preseason, regular, postseason or over (the Cup
+   awarded), offseason with no games at all. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
@@ -127,6 +129,8 @@ async function pullSeason(prev) {
     if (!ARGS.has('--offline')) await new Promise(r => setTimeout(r, 200));
   }
   if (asked && !ok) throw new Error('ESPN scoreboard unreachable: every day asked for failed');
+  /* a blank day all of whose games the answer has on another day (the same id) or called off did answer: they moved */
+  for (const d of blank.slice()) if (prevByDate[d].every(g => rowsOf.has(g.id) || gone.has(g.id))) { fresh.add(d); blank.splice(blank.indexOf(d), 1); log(`${d}: its games are on another day now; the blank answer stands`); }
   const unanswered = [...needed].filter(d => days.includes(d) && !fresh.has(d)).sort();
   if (unanswered.length) throw new Error(`ESPN's scoreboard did not answer for ${unanswered.join(', ')}, which still have games to finish or to call; nothing written, the last state stays live`);
   /* the feed's rows, each on the day it is on now (a game moved to another day leaves its old one) */
@@ -225,17 +229,24 @@ function seriesOf(games) {
   return list;
 }
 /* the computed first round, put right by the series ESPN actually has (the league's tie-breakers
-   beyond goal difference are not modelled, so a wild card can land the other way round) */
+   beyond goal difference are not modelled, so a wild card can land the other way round). The field is
+   then the sixteen clubs of that first round: the division seeds and the wild cards are read back off its
+   slots, so a club the table left out that the real bracket has is in, and the club it displaced is out */
 function fixBracket(F, observed) {
-  const r1 = observed.filter(s => s.round === 1);
-  const oppOf = t => { const s = r1.find(x => x.a === t || x.b === t); return s ? (s.a === t ? s.b : s.a) : null; };
   for (const conf of ['East', 'West']) {
-    const field = [].concat(...F[conf].series);
-    const fixed = F[conf].series.map(([a, b]) => { const oa = oppOf(a); if (oa) return [a, oa, true]; const ob = oppOf(b); return ob ? [ob, b, true] : [a, b, false]; });
+    const field = [].concat(...F[conf].series), real = observed.filter(s => s.round === 1 && s.conf === conf), placed = new Set();
+    const take = (t, first) => { const s = real.find(x => !placed.has(x) && (x.a === t || x.b === t)); if (!s) return null; placed.add(s); const o = s.a === t ? s.b : s.a; return first ? [t, o, true] : [o, t, true]; };
+    /* each real series to the slot of the club the table put first in it (the higher seed), else of its other club, else a slot left */
+    const fixed = F[conf].series.map(([a]) => take(a, true));
+    F[conf].series.forEach(([, b], i) => { if (!fixed[i]) fixed[i] = take(b, false); });
+    for (const s of real.filter(x => !placed.has(x))) { const i = fixed.indexOf(null); if (i >= 0) { placed.add(s); fixed[i] = [s.a, s.b, true]; } }
+    F[conf].series.forEach(([a, b], i) => { if (!fixed[i]) fixed[i] = [a, b, false]; });
     /* a series not started yet keeps its slot, less a club a started one has taken, which goes to whoever that left out */
     const seen = new Set(fixed.filter(s => s[2]).flatMap(s => [s[0], s[1]]));
     const spare = field.filter(t => !seen.has(t) && !fixed.some(s => !s[2] && (s[0] === t || s[1] === t)));
-    F[conf].series = fixed.map(([a, b, real]) => real ? [a, b] : [a, b].map(t => seen.has(t) && spare.length ? spare.shift() : t));
+    const series = fixed.map(([a, b, isReal]) => isReal ? [a, b] : [a, b].map(t => seen.has(t) && spare.length ? spare.shift() : t));
+    const [d1, d2] = Object.keys(F[conf].divs);
+    F[conf] = { divs: { [d1]: [series[0][0], series[1][0], series[1][1]], [d2]: [series[2][0], series[3][0], series[3][1]] }, wild: [series[2][1], series[0][1]], series };
   }
   return F;
 }
@@ -275,7 +286,7 @@ function playoffPicture(games, ratings, model, rates) {
     for (const conf of ['East', 'West']) {
       const f = F[conf];
       for (const d of Object.keys(f.divs)) tally[f.divs[d][0]].div++;
-      for (const t of [].concat(...Object.values(f.divs), f.wild)) tally[t].playoff++;
+      for (const t of [].concat(...f.series)) tally[t].playoff++;                // the field is the first round's sixteen
       const seedOf = t => S[t].pts + S[t].rw / 100;
       const r1 = f.series.map(([a, b]) => series(a, b, model.params.hfa));
       const r2 = [[r1[0], r1[1]], [r1[2], r1[3]]].map(([a, b]) => seedOf(a) >= seedOf(b) ? series(a, b, model.params.hfa) : series(b, a, model.params.hfa));

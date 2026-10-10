@@ -781,21 +781,26 @@ day through tomorrow with a game to finish or call must answer, or the run exits
 nothing), replays the finished seasons and this season's finals in date order, and gives every
 game still to come the model's chance, expected margin and total, the overtime chance, and
 DraftKings' moneyline, puck line and total. That call is frozen at puck drop by the clock (a game
-ESPN still has as scheduled past its start is not called again) and every part of it is copied
-after, so the record grades what the page showed; rows an older job recomputed after puck drop are
+ESPN still has as scheduled past its start, or has moved less than half a day later after it, is not
+called again, and the smoke test holds it as under way, not to this run's lineups) and every part of
+it is copied after, so the record grades what the page showed; rows an older job recomputed after puck drop are
 put back once to the call shown. The job runs `update.js` twice: the first pass (`--scores`) reads the
 same days, writes the scores and the schedule and copies every call as it was, so `fetch_box.js` boxes
 last night's finals and `players.js` lines up on the schedule the second pass calls on; only the second
 makes calls. A game comes off the schedule only on the feed's word (postponed, cancelled, or moved to
 another day); one an answer leaves out is kept with its call, line and grade (`kept`), a blank answer
-on a day the last state has games on is no answer, and what came off is in `removed` with the reason. A side is taken only where the model's chance beats the book's
+on a day the last state has games on is no answer (unless the answer has each of them on another day,
+the same id: they moved), and what came off is in `removed` with the reason. A side is taken only where the model's chance beats the book's
 implied by five points; the record counts straight-up calls on every game and the sides taken on
 each market. The playoff picture, in the regular season, is two thousand simulations of the rest
 of it (overtime and its loser point from the goals layer), the league's bracket (top three a
 division, two wild cards a conference), four best-of-seven rounds with home ice to the higher seed;
 once the regular season is over the field is the real one and each series ESPN has a game in is
 played on from its real score, so a club knocked out has no chance left and the bracket shows every
-series' score (`phase`: preseason, regular, postseason, over, offseason).
+series' score (`phase`: preseason, regular, postseason, over, offseason). The field is then the
+sixteen clubs of ESPN's first round, its seeds and wild cards read off the bracket: the table breaks
+ties only to goal difference, so a club it left out that ESPN has in a series is in for certain, and
+the club it displaced is out.
 
 WHO PLAYS (`players.js`): each game's lineup is who dressed last less anyone ESPN's injury report has
 out, on injured reserve or suspended, or lists under another club; the goalie, game by game, is

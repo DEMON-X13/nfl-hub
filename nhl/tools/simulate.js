@@ -30,6 +30,13 @@
       night after a back to back is called while its first night is under way).
    B3. Rows an older job rewrote after puck drop (margin and sides recomputed on the team Elo's margin)
       are put back to the published pre-game call, every field, the team Elo's view included.
+   B4. The first game of the published state's first day ahead, called half an hour before its puck drop;
+      an hour after, the feed still has it scheduled, its start moved ninety minutes on, and the injury
+      report has been re-pulled (a newer `pulled`, the goalie on the card now on injured reserve,
+      DailyFaceoff confirming another): the call is kept, and the smoke against the first run passes.
+   B5. A day ahead whose only game the feed moves two days on under the same id, so the day answers with
+      no game: the game is on its new day and the run goes on (not "no answer", which would stop every
+      run from then on).
    A. A fabricated season on the real schedule: invented scores up to a day six weeks in, invented
       DraftKings lines, update.js run as the job would be: the morning the lines are up (calls made);
       the job's first pass a minute before the first puck drop (every call copied, none made) and its
@@ -39,9 +46,10 @@
       a partial one (games left out kept with their calls, one postponed taken off and said, one moved
       to another day called again, a blank day weeks ahead kept); the next morning (those games final
       and graded on the calls shown), and a quiet rerun (the file left alone).
-   C. The same season played out, then the playoffs: the field from the final table, a sweep, an
-      upset, series under way; a club knocked out has no Cup chance and the bracket shows the
-      scores; then every round to the Final, and a champion.
+   C. The same season played out, then the playoffs: the field from the final table; on a copy, ESPN's
+      first round with a club the table left out in the second wild card's place (in for certain, the
+      table's club out); a sweep, an upset, series under way; a club knocked out has no Cup chance and
+      the bracket shows the scores; then every round to the Final, and a champion.
    D. The rollover: the first run in August closes the finished season into season_<year>.json, the
       new season's ratings are that season's carried, and a season missing everywhere is refused. */
 'use strict';
@@ -50,6 +58,7 @@ const { spawnSync } = require('child_process');
 const E = require('./espn');
 const Hist = require('./hist');
 const { goals, spreadOf, coverProbs, totalProbs } = require('./elo');
+const { injuriesOf } = require('./fetch_box');
 
 const ROOT = path.join(__dirname, '..'), REAL_DATA = path.join(ROOT, 'data');
 const real = JSON.parse(fs.readFileSync(path.join(ROOT, 'state.json'), 'utf8'));
@@ -347,7 +356,7 @@ function partB() {
     const s4 = readJSON(path.join(B2, 'starters.json'));
     chk(s4.ok === true && s4.games.some(e => e.id === String(onD[0].id)) && (s4.unmatched || []).length === Math.min(1, off3.length) && !s4.games.some(e => !e.id), 'a game matching nothing is kept aside, the rest used');
   }
-  return { B, NOW, D, FX, OUTB, dfo, starts, feedPlain, planted: [X, Y, Z].filter(Boolean) };
+  return { B, NOW, D, FX, OUTB, dfo, starts, lastOf, feedPlain, planted: [X, Y, Z].filter(Boolean) };
 }
 
 /* ---------- B2. the first evening after a change: games under way, the published calls an older job's ---------- */
@@ -430,6 +439,74 @@ function partB2(b) {
     const n = SL.games.find(g => g.id === p.id), moved = n ? FIELDS.filter(k => JSON.stringify(n[k] ?? null) !== JSON.stringify(p[k] ?? null)) : ['missing'];
     chk(!moved.length, `a call an older job rewrote after puck drop is put back to the one shown before it, every field: ${p.away}@${p.home} ${moved.map(k => `${k} ${JSON.stringify(p[k])} -> ${JSON.stringify(n && n[k])}`).join('; ').slice(0, 240)}`);
   }
+}
+
+/* ---------- B4. a start moved later after its puck drop, the injury report re-pulled since the call ---------- */
+function partB4(b) {
+  const NOW0 = Date.parse(real.published), D = b.D;
+  const onD = real.games.filter(g => g.date === D && g.state === 'pre' && Date.parse(g.start) > NOW0).sort((x, y) => x.start < y.start ? -1 : 1);
+  const G = onD[0], S0 = G && Date.parse(G.start), T1 = G && minute(Math.max(NOW0 + 60000, S0 - 30 * 60000));
+  if (!G || Date.parse(T1) >= S0 - 60000) { console.log('B4. no game day ahead with time to call before its first puck drop: skipped'); return; }
+  const T2 = minute(S0 + 30 * 60000), MOVED = minute(S0 + 90 * 60000);
+  console.log(`B4. ${G.away}@${G.home} on ${D}: called at ${T1}, its ${G.start} puck drop moved to ${MOVED} after it passed; the job runs again at ${T2} on a newer injury report`);
+  const DB = dataDir('B4'), OUT4 = mkdir('B4-sb'), ST4 = path.join(SCRATCH, 'B4-state.json'), R1 = path.join(SCRATCH, 'B4-run1.json'), FX1 = mkdir('B4-fx1'), FX2 = mkdir('B4-fx2');
+  fs.copyFileSync(path.join(ROOT, 'state.json'), ST4);
+  /* last night's games over, each with a box score to read in the first run, so the second asks ESPN for none */
+  const over = real.games.filter(g => g.date < D && g.state !== 'final' && b.lastOf(g.home) && b.lastOf(g.away));
+  for (const g of over) { const hb = b.lastOf(g.home), ab = b.lastOf(g.away);
+    fs.writeFileSync(path.join(FX1, `summary_${g.id}.json`), JSON.stringify(summaryOf({ home: g.home, away: g.away, skaters: hb.skaters.filter(x => x.team === g.home).concat(ab.skaters.filter(x => x.team === g.away)), goalies: hb.goalies.filter(x => x.team === g.home).concat(ab.goalies.filter(x => x.team === g.away)) }))); }
+  const feedAt = (now, moved) => feedOf(real.games, (g, ev) => {
+    if (over.some(x => x.id === g.id)) Object.assign(ev, event(g, { state: 'post', hs: 3, as: 2, periods: 3, type: g.type }));
+    else if (moved && g.id === G.id) Object.assign(ev, event(Object.assign({}, g, { start: MOVED }), { state: 'pre', odds: oddsOfLine(g.line), type: g.type }));
+    else if (g.date === D && g.state !== 'final' && Date.parse(g.start) <= Date.parse(now)) Object.assign(ev, event(g, { state: 'in', hs: 0, as: 0, periods: 1, detail: '15:00 - 1st', type: g.type }));
+  });
+  /* run 1: the call before puck drop, on the report the last run pulled (the feed not answering: it stays), stamped
+     an hour before this simulation's clock so the second run's pull is newer whenever it runs */
+  const injFeed = list => ({ timestamp: T1, status: 'success', injuries: Object.entries(list).map(([c, l]) => ({ id: E.CLUBS[c].id, displayName: E.CLUBS[c].name, injuries: l })) });
+  const pulled1 = minute(Date.now() - 3600000);
+  fs.writeFileSync(path.join(DB, 'injuries.json'), JSON.stringify(injuriesOf(injFeed(b.feedPlain), pulled1)));
+  const env = (now, fx) => ({ NHL_DATA: DB, NHL_STATE: ST4, NHL_TEAMS: path.join(DB, 'teams.json'), NHL_OUT: OUT4, NHL_FIXTURES: fx, NHL_NOW: now, NHL_TODAY: E.etDate(now), NHL_SEASON: String(SEASON) });
+  writeDays(OUT4, feedAt(T1, false));
+  for (const { s, r } of runJob(env(T1, FX1), 'B4 run 1')) chk(r.status === 0, `B4, the call before puck drop: ${s} runs`);
+  fs.copyFileSync(ST4, R1);
+  const g1 = readJSON(R1).games.find(g => g.id === G.id), gl = g1 && g1.pm && g1.pm.home && g1.pm.home.goalie;
+  chk(g1 && g1.state === 'pre' && g1.frozen === T1 && g1.before === G.start && g1.pm && g1.pm.inj === pulled1 && gl, `${G.away}@${G.home} is called before its puck drop on the report of ${pulled1}: ${g1 && [g1.frozen, g1.before, g1.pm && g1.pm.inj].join(' ')}`);
+  if (!gl) return;
+  /* run 2: the puck drop passed, the feed has the game scheduled 90 minutes on; the injury report re-pulled with the goalie on
+     the card now on injured reserve, and DailyFaceoff confirming another for that game */
+  const feed2 = JSON.parse(JSON.stringify(b.feedPlain));
+  (feed2[G.home] = feed2[G.home] || []).push(injRow(gl.name, 'G', 'Injured Reserve', gl.id, 'Upper Body'));
+  fs.writeFileSync(path.join(FX2, 'injuries.json'), JSON.stringify(injFeed(feed2)));
+  const other = b.starts(G.home).find(x => x.id !== gl.id);
+  if (other) fs.writeFileSync(path.join(FX2, 'dailyfaceoff.html'), dfoPage([{ date: D, homeTeamName: E.CLUBS[G.home].name, awayTeamName: E.CLUBS[G.away].name, homeGoalieName: other.name, homeNewsStrengthName: 'Confirmed' }]));
+  writeDays(OUT4, feedAt(T2, true));
+  for (const { s, r } of runJob(env(T2, FX2), 'B4 run 2')) chk(r.status === 0, `B4, the run after the puck drop moved: ${s} runs`);
+  const S2 = readJSON(ST4), g2 = S2.games.find(g => g.id === G.id), pulled2 = readJSON(path.join(DB, 'injuries.json')).pulled;
+  chk(pulled2 !== pulled1, `the injury report was re-pulled between the runs (${pulled1} -> ${pulled2})`);
+  const CALL = ['pHome', 'rh', 'ra', 'diff', 'mu', 'xt', 'tie', 'frozen', 'before', 'pm', 'elo', 'by', 'line', 'pick', 'mlEdge', 'mlPick', 'cover', 'plEdge', 'plPick', 'ou', 'ouEdge', 'ouPick'];
+  const moved = g2 ? CALL.filter(k => JSON.stringify(g2[k] ?? null) !== JSON.stringify(g1[k] ?? null)) : ['missing'];
+  chk(g2 && g2.state === 'pre' && g2.start === MOVED && !moved.length, `a game whose start the feed moved later after its puck drop keeps the call made before it, ${gl.name} in goal on the report of ${pulled1}: ${moved.join(', ')}`);
+  const sm = run('smoke.js', [], { NHL_STATE: ST4, NHL_DATA: DB, NHL_PREV_STATE: R1 }, 'smoke.js over the delayed game, against the run before its puck drop');
+  chk(sm.status === 0 && / 0 failures/.test(sm.out), 'smoke over a start moved later after its puck drop, the report re-pulled since: ' + sm.out.trim().split('\n').filter(l => /checks|FAIL/.test(l)).slice(0, 6).join(' | '));
+}
+
+/* ---------- B5. a day's only game moved by the feed to another day, under the same id: that day answers blank ---------- */
+function partB5() {
+  const NOW0 = Date.parse(real.published), count = {};
+  for (const g of real.games) count[g.date] = (count[g.date] || 0) + 1;
+  const lone = real.games.find(g => g.state === 'pre' && Date.parse(g.start) > NOW0 + 2 * 86400000 && count[g.date] === 1);
+  if (!lone) { console.log('B5. no day ahead with a single game: skipped'); return; }
+  const NOW = addDays(lone.date, -1) + 'T15:00Z', newStart = minute(Date.parse(lone.start) + 2 * 86400000), newDay = E.etDate(newStart);
+  console.log(`B5. ${lone.away}@${lone.home}, the only game of ${lone.date}, moved by the feed to ${newDay}; the job runs on ${E.etDate(NOW)}`);
+  const DB = dataDir('B5'), OUT5 = mkdir('B5-sb'), ST5 = path.join(SCRATCH, 'B5-state.json');
+  fs.copyFileSync(path.join(ROOT, 'state.json'), ST5);
+  const byDate = feedOf(real.games, g => g.id !== lone.id);
+  byDate[lone.date] = [];
+  (byDate[newDay] = byDate[newDay] || []).push(event(Object.assign({}, lone, { start: newStart, date: newDay }), { state: 'pre', odds: oddsOfLine(lone.line), type: lone.type }));
+  writeDays(OUT5, byDate);
+  const r = run('update.js', ['--offline'], { NHL_DATA: DB, NHL_STATE: ST5, NHL_TEAMS: path.join(DB, 'teams.json'), NHL_OUT: OUT5, NHL_NOW: NOW, NHL_TODAY: E.etDate(NOW), NHL_SEASON: String(SEASON) }, 'B5: update.js');
+  const S5 = readJSON(ST5), g = S5.games.find(x => x.id === lone.id);
+  chk(r.status === 0 && g && g.date === newDay && g.start === newStart && !(S5.removed || []).some(x => x.id === lone.id), `the day a lone game moved from answers blank and the run goes on, the game on its new day (exit ${r.status}, ${g ? g.date : 'gone'})`);
 }
 
 /* ---------- A. a fabricated season through update.js ---------- */
@@ -608,6 +685,26 @@ function partC(B, games, results) {
   chk(C1.phase === 'postseason', `the regular season over is the postseason (${C1.phase})`);
   const field = conf => [].concat(...C1.playoff.bracket[conf].series);
   chk(['East', 'West'].every(c => field(c).every(t => C1.playoff.odds[t].playoff === 1)) && Object.values(C1.playoff.odds).filter(o => o.playoff === 1).length === 16, 'the field is the real one: sixteen clubs in, for certain');
+  /* on a copy: ESPN's first round has a club the table left out (the league's tie-breakers put it in the second wild
+     card, which the table's do not model), two games in. The field is ESPN's: that club is in for certain with a Cup
+     chance, the club the table had there is out with none, and the bracket's seeds and wild cards are the sixteen it draws */
+  {
+    const DW = dataDir('C-wc', DC), OUTW = mkdir('C-sb-wc'), STW = path.join(SCRATCH, 'C-wc-state.json');
+    for (const f of fs.readdirSync(OUT)) fs.copyFileSync(path.join(OUT, f), path.join(OUTW, f));
+    fs.copyFileSync(STATE, STW);
+    const [top, wc2] = C1.playoff.bracket.East.series[0], inField = new Set(field('East'));
+    const Y = E.TEAMS.filter(t => E.CLUBS[t].conf === 'East' && !inField.has(t)).sort((a, b) => C1.teams[b].pts - C1.teams[a].pts || C1.teams[b].rw - C1.teams[a].rw)[0];
+    [0, 2].forEach((k, i) => { const d = addDays(lastReg, 3 + k), f = path.join(OUTW, `sb_${d}.json`); const had = fs.existsSync(f) ? readJSON(f).events : [];
+      fs.writeFileSync(f, JSON.stringify({ events: had.concat([event({ id: `98000000${i + 1}`, date: d, start: d + 'T23:00Z', home: top, away: Y, neutral: false }, { state: 'post', hs: 1, as: 3, periods: 3, type: 3 })]) })); });
+    chk(run('update.js', ['--offline'], Object.assign(env(addDays(lastReg, 6)), { NHL_STATE: STW, NHL_OUT: OUTW, NHL_DATA: DW, NHL_TEAMS: path.join(DW, 'teams.json') }), `the first round with ${Y}, whom the table left out`).status === 0, 'a first round with a club the table left out runs');
+    const W = readJSON(STW), OW = W.playoff.odds, fw = W.playoff.bracket.East, marked = [].concat(...Object.values(fw.divs), fw.wild);
+    chk(JSON.stringify(fw.series[0]) === JSON.stringify([top, Y]) && fw.wild[1] === Y && marked.includes(Y) && !marked.includes(wc2), `ESPN's first round is the bracket and its field: ${top} v ${Y} in the second wild card's place (${JSON.stringify(fw.series[0])}, wild cards ${fw.wild})`);
+    chk(OW[Y].playoff === 1 && OW[Y].cup > 0 && OW[Y].conf > 0, `${Y}, left out by the table but up 2-0 on ${top} in ESPN's first round, is in the playoffs for certain with a Cup chance (${JSON.stringify(OW[Y])})`);
+    chk(OW[wc2].playoff === 0 && OW[wc2].cup === 0 && OW[wc2].conf === 0 && OW[wc2].div === 0, `${wc2}, the table's second wild card, is out with no chance (${JSON.stringify(OW[wc2])})`);
+    chk(Object.values(OW).filter(o => o.playoff === 1).length === 16 && Object.values(OW).every(o => o.playoff === 0 || o.playoff === 1), 'sixteen clubs in for certain, the rest out');
+    const smW = run('smoke.js', [], { NHL_STATE: STW, NHL_DATA: B, NHL_PREV_STATE: 'none' }, 'smoke.js over a first round the table did not draw');
+    chk(smW.status === 0 && / 0 failures/.test(smW.out), `smoke over a first round with ${Y}, whom the table left out: ` + smW.out.trim().split('\n').filter(l => /checks|FAIL/.test(l)).slice(0, 6).join(' | '));
+  }
   /* the first round: a sweep, an upset, series under way */
   let n = 0, day = addDays(lastReg, 3);
   const po = [], pgame = (a, b, aHome, aWins, d) => { const id = `9${String(++n).padStart(8, '0')}`; const home = aHome ? a : b, away = aHome ? b : a; const hs = (aWins === aHome) ? 3 : 1, as = (aWins === aHome) ? 1 : 3; po.push({ id, date: d, start: d + 'T23:00Z', home, away, neutral: false, state: 'post', hs, as, periods: 3 }); };
@@ -692,6 +789,8 @@ try {
   const b = partB();
   const B = b.B;
   partB2(b);
+  partB4(b);
+  partB5();
   const { games, results } = partA(B);
   const C = partC(B, games, results);
   partD(B, C);

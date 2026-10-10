@@ -9,9 +9,11 @@
 
    Reality, each read here on its own terms and never through the job's code:
      - the injury report (nhl/data/injuries.json): no row's id is the string "undefined"; the
-       lineups still to play were built on this report; nobody it has out, on injured reserve or
-       suspended is in his club's lineup or named in goal, and no goalie it lists under another club
-       is named for his old one (a goalie DailyFaceoff confirms stands)
+       lineups still to play were built on this report (a game whose start the feed moved later after
+       its puck drop is not still to play: its card is the call frozen then, as the job keeps it);
+       nobody it has out, on injured reserve or suspended is in his club's lineup or named in goal,
+       and no goalie it lists under another club is named for his old one (a goalie DailyFaceoff
+       confirms stands)
      - the box scores (nhl/data/box_<season>.jsonl): a goalie named by the model's own rule has
        played for the club this season or last, and once the club has three games this season he
        started one of them, unless every goalie who did is out or gone; a goalie said to be on the
@@ -29,7 +31,9 @@
        days past its puck drop); the state is the job's second pass, never the first's; a call that
        is the player model's carries the player model's margin; and the page, opened at a game's
        puck drop, offers no bet on it and calls the visitor's day Today
-     - the playoffs: a club knocked out has no Cup or conference chance, the champion has the Cup
+     - the playoffs: a club knocked out has no Cup or conference chance, the champion has the Cup, a
+       club in a series ESPN has is in the playoffs for certain, and the field the standings mark is the
+       first round the bracket draws
    NHL_STATE, NHL_DATA and NHL_PREV_STATE move the files (simulate.js). */
 'use strict';
 const fs = require('fs'), path = require('path');
@@ -55,6 +59,9 @@ const PUB = Date.parse(S.published);
 const etDate = ms => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
 const dayBefore = d => { const x = new Date(d + 'T12:00:00Z'); x.setUTCDate(x.getUTCDate() - 1); return x.toISOString().slice(0, 10); };
 const startedAt = (g, ms) => g.state !== 'pre' || Date.parse(g.start) <= ms;
+/* a delay: the puck drop a frozen call was made before has passed and the feed has moved the start less than
+   half a day later; the job keeps that call (its started() rule), so the game is under way for these checks */
+const delayedAt = (call, start, ms) => !!(call && call.frozen && call.before && Date.parse(call.before) <= ms && Date.parse(start) - Date.parse(call.before) < 12 * 3600000);
 /* a name as the report and the box scores can agree on it; written here again on purpose, not shared with the job */
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.'’]/g, '').replace(/-/g, ' ').replace(/\b(jr|sr|ii|iii|iv)\b/g, ' ').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
 const OUT = /\bout\b|injured reserve|\bir\b|\bltir\b|suspen/i;
@@ -83,7 +90,7 @@ async function boot(clockMs, errors) {
 /* ---------- the state against what it was built from ---------- */
 function reality() {
   const games = S.games.filter(g => g.id !== 'fake');
-  const toCome = games.filter(g => !startedAt(g, PUB));
+  const toCome = games.filter(g => !startedAt(g, PUB) && !delayedAt(g, g.start, PUB));      // a delayed game's card is its frozen call
   const PL = S.players;
   /* the injury report */
   const inj = readJSON(path.join(DATA, 'injuries.json'));
@@ -187,8 +194,7 @@ function reality() {
     for (const g of games) {
       const p = prev.get(g.id); if (!p || !p.frozen) continue;
       /* started, or delayed: the puck drop the call was made before has passed and the start moved less than half a day */
-      const delayed = !!p.before && Date.parse(p.before) <= PUB && Date.parse(g.start) - Date.parse(p.before) < 12 * 3600000;
-      if (!startedAt(g, PUB) && !delayed) continue;
+      if (!startedAt(g, PUB) && !delayedAt(p, g.start, PUB)) continue;
       if (!(p.state === 'pre' || p.callV)) continue;                                // an older job's row after puck drop: put back once, not compared
       compared++;
       const moved = CALL.filter(k => JSON.stringify(g[k] ?? null) !== JSON.stringify(p[k] ?? null));
@@ -204,6 +210,14 @@ function reality() {
     chk(PO.odds[loser].cup === 0 && (final || PO.odds[loser].conf === 0), `${loser}, knocked out by ${s.winner}, keeps a Cup chance ${PO.odds[loser].cup} or conference chance ${PO.odds[loser].conf}`);
   }
   if (PO.phase === 'postseason' || PO.phase === 'over') for (const [t, o] of Object.entries(PO.odds)) if (!o.playoff) chk(o.cup === 0, `${t} missed the playoffs but has a Cup chance`);
+  /* a club ESPN has in a playoff series made the playoffs, whatever the table's tie-breakers said */
+  for (const s of PO.series || []) for (const t of [s.a, s.b]) chk(PO.odds[t] && PO.odds[t].playoff === 1, `${t} plays ${t === s.a ? s.b : s.a} in a round-${s.round} series but has a playoff chance of ${PO.odds[t] && PO.odds[t].playoff}`);
+  /* the field the standings mark is the bracket's first round */
+  for (const conf of ['East', 'West']) {
+    const f = PO.bracket && PO.bracket[conf]; if (!f) continue;
+    const marked = [].concat(...Object.values(f.divs), f.wild).sort().join(','), drawn = [].concat(...f.series).sort().join(',');
+    chk(marked === drawn, `${conf}: the division seeds and wild cards (${marked}) are the clubs of the first round drawn (${drawn})`);
+  }
   if (PO.champion) chk(PO.odds[PO.champion].cup === 1, `the champion ${PO.champion} has the Cup`);
 }
 
