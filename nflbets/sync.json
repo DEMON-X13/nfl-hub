@@ -1,3 +1,7 @@
 {
-  "url": "https://nfl-bets-and-stats-default-rtdb.firebaseio.com/nflhub"
+  "url": "https://nfl-bets-and-stats-default-rtdb.firebaseio.com/nflhub",
+  "ownerHash": "db47a25792829f3f1b478cb35db13ac9c1c0b7778cef8b0c3f1f8db8b9dfad35",
+  "apiKey": "",
+  "owner": "",
+  "shareDeposit": true
 }

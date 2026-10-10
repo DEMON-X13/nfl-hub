@@ -9,8 +9,8 @@ anything here that contradicts it is out of date.
 
 One repo, served straight from its root by GitHub Pages. No server, no framework, no
 bundler. Four sites have pages: `nflbets/` (X NFL Bets and Stats, built by
-`nflbets/build/build.js` from the prop model's parts, the betting app, the Live Parlays
-section and the Player Elo tab), `news/`, `cfb/` and `nhl/`. The pages carry no season
+`nflbets/build/build.js` from the prop model's parts, the betting app, the X Parlays
+section, the sync layer and the Player Elo tab), `news/`, `cfb/` and `nhl/`. The pages carry no season
 data: each fetches what the scheduled jobs commit (`props/data/payload.json`,
 `betting/state.json`, `elo/data/*.json`, `liveparlays/parlays.json`, `cfb/state.json` and
 `cfb/news.json`, `nhl/state.json`) on every load. `news/` alone keeps its data in plain
@@ -18,7 +18,7 @@ script files, so it works from `file://`. Six scheduled GitHub Actions jobs, one
 or site, rebuild the data from their sources and commit it.
 
 `index.html` at the root is a static landing page linking the four. `pickems/` and `live/`
-hold only redirects for old bookmarks; `liveparlays/` holds a redirect too, beside the Live
+hold only redirects for old bookmarks; `liveparlays/` holds a redirect too, beside the X
 Parlays section's source and `parlays.json`.
 
 ```
@@ -31,10 +31,11 @@ cfb/       X College Football Bets   a test site: moneylines and spreads
 nhl/       X NHL Bets                moneylines, puck lines and totals
 ```
 
-Picks, bankroll, bets and odds a visitor loads stay in that browser's local storage. The
-parlays (builder, saved parlays, stake, book price, margin, and the Live Parlays section's
-corrected lines and deletions) are one document shared through the store named in
-`nflbets/sync.json` (below). Everything else changes only with a commit.
+Picks, bankroll, bets, odds and parlays a visitor makes stay in that browser's local
+storage. X's parlays (X's builder, saved parlays, stake, book price, margin, the X Parlays
+section's corrected lines, deletions and kept builders, and X's betting slips) and the X Bet
+Log are documents in the store named in `nflbets/sync.json`, read by every device and written
+only from the owner's devices (below). Everything else changes only with a commit.
 
 ## Repo layout
 
@@ -67,7 +68,8 @@ betting/
                                  run on its own it checks and writes nothing
   tools/ratings_viz.js, record_viz.js, bets_viz.js
                                  Power Ratings, the Pick'em Record's chart and table, and the
-                                 Bet Log, drawn over the app's own (built in by tools/build.js)
+                                 X Bet Log, drawn over the app's own (built in by tools/build.js;
+                                 bets_viz.js draws it read only for a visitor)
   tools/tiers.js                 the Elo tiers reshaped at build time (Wood under 1350 up to
                                  Elite, HOF from 1750)
   tools/smoke.js                 loads the built app, plain and embedded, and checks it; then
@@ -112,18 +114,32 @@ props/
 
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
-                                 explained in its docstring; downloads 2012-now nflverse
-                                 player stats into cache/ (gitignored) and writes data/; exits 1
-                                 and writes nothing when a required source cannot be had
+                                 and Overall Offense and Overall Defense (an Elo on nine key
+                                 stats from the season's play-by-play, weighted), explained in
+                                 its docstring; downloads 2012-now nflverse player stats and
+                                 the season's play-by-play into cache/ (gitignored) and writes
+                                 data/; exits 1 and writes nothing when a required source
+                                 cannot be had
   check.py                       the gate: data/ against the roster, the injury report, the
-                                 schedule and what was published (the last commit's data/
-                                 and history/: the top ten carried, frozen calls kept), plus
-                                 the build's functions on fixtures; the job runs it before
-                                 committing
+                                 schedule, the play-by-play (every team's stats and ratings
+                                 replayed from it) and what was published (the last commit's
+                                 data/ and history/: the top ten carried, frozen calls kept),
+                                 plus the build's functions on fixtures; the job runs it
+                                 before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
-                                 out is priced by nothing but keeps his past weeks' ratings
+                                 out is priced by nothing but keeps his past weeks' ratings;
+                                 Overall Offense and Overall Defense: the two pills, the 32
+                                 teams, every value and rank the file's, the weights read from
+                                 the file, the sort, the team window, an old file's fallback;
+                                 the table scrolls in its own box at a desktop width with the
+                                 page's stylesheet round it, the team column free to stick
+  tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
+                                 Overall Defense: 2012-2025 play-by-play, every constant fitted
+                                 on 2012-2017, the build's weights scored on 2018-2025; run by
+                                 hand, never by the job; says whether the build carries its
+                                 numbers
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/
@@ -138,8 +154,10 @@ elo/
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming
                                  week's (the Pick'em Record's ELO Model), `teams`, the team Elo
-                                 of this season's results (Power Ratings), `units`, `phase`,
-                                 and `sources` (what each download gave)
+                                 of this season's results (Power Ratings), `units` (Overall
+                                 Offense and Overall Defense: each team's rating, its line, every
+                                 key stat with its league rank, the weights), `phase`, and
+                                 `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
                                  projections, each club's expected lineup and who is out of it
@@ -179,14 +197,17 @@ news/
 
 nflbets/
   build/build.js                 THE BUILD: the prop model's parts, tab_pickems.html,
-                                 tab_elo.html, the Live Parlays section, sync.js and the
+                                 tab_elo.html, the X Parlays section, sync.js, xbets.js and the
                                  betting app -> index.html and preview.html (required, it
                                  builds in memory and writes nothing: the smoke's freshness check)
   build/tab_pickems.html         the Pick'ems tab (pk- prefixed)
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
-  build/sync.js                  the sync layer, inlined by the build
-  build/stress_sync.js           three devices at random against a late store (not a gate)
-  build/smoke.js  smoke_live.js  the page, and the Live Parlays section, in jsdom: the gates
+  build/sync.js                  the sync layer, inlined by the build: who is the owner, X's
+                                 parlays read everywhere and written from the owner's devices
+  build/xbets.js                 the X Bet Log's adapter (window.XBETS), inlined after it
+  build/stress_sync.js           three of X's devices and a visitor's at random against a late
+                                 store (not a gate)
+  build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
                                  (smoke.js also: the page is a fresh build, its tag's hash is
                                  its own, the served betting app carries the reference numbers;
                                  --season-over runs it with every game played; both stop
@@ -194,11 +215,13 @@ nflbets/
                                  when left waiting on nothing before they finish)
   build/preview_theme.css        the NBA Hub's look, laid over the page as preview.html
   index.html  preview.html       generated by build/build.js
-  sync.json                      the shared store's address (blank: the browser alone)
+  sync.json                      the shared store's address (blank: the browser alone), the
+                                 owner link's hash (ownerHash), Firebase sign-in (apiKey, owner:
+                                 blank until set up) and shareDeposit; read at run time
 
 liveparlays/
-  build/page.html                THE SOURCE of the Live Parlays section
-  parlays.json                   hand-edited: the parlays every device sees
+  build/page.html                THE SOURCE of the X Parlays section
+  parlays.json                   hand-edited: X's placed parlays, which every device sees
   index.html                     redirect to nflbets/#parlay
 
 live/  pickems/                  redirects to nflbets/ for old bookmarks
@@ -212,7 +235,7 @@ from its parts (title, heading and tab bar swapped; every prop model section kep
 page, listeners and all, whether or not it has a button yet), sets the Pick'ems board in
 front of it from `nflbets/build/tab_pickems.html` (its own section, styles and closure,
 every class and id prefixed `pk-`), and sets the betting app's Records, Power Ratings
-and Bet Log tabs into frames: the app as `betting/tools/build.js` builds it is carried in
+and Bet Log (the X Bet Log) tabs into frames: the app as `betting/tools/build.js` builds it is carried in
 the page as a string and becomes a frame's srcdoc when its tab is first opened, with
 `window.EMBED_TAB` (the tab, which also hides the app's header and tab bar) and
 `window.STATE_URL` (`../betting/state.json`) written in front of it. A srcdoc frame is the
@@ -236,6 +259,13 @@ The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closur
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's
 season line. A click on a player opens his window: his rating, then his matchup this week.
+The position row ends with two pills, Overall Offense and Overall Defense, which put a table of
+the 32 teams in the card's place (`units` in `model.json`): rank, team, record, rating and
+shield, and each key stat with its league rank, the weighted ones first, sortable by column,
+scrolling sideways inside the card at every width with the team column held; a
+click on a team opens its window (its rating game by game, every stat ranked raw and with
+opponents counted, what each weighted stat adds, its coming opponent). The weights and the
+stats are read from the file, and a file from before them draws the old three columns.
 The same script puts the Mismatches card on the Props tab (games still to kick off only), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
@@ -247,23 +277,30 @@ has not taken in yet is starred until the Elo job, which the betting job starts 
 rebuilds it). It borrows the Pick'ems tab's team tag and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
 `window.pkTag`, `pkTagColor`, `pkTierBadge`, `pkEloTier` and `pkTierDefs`.
-Live Parlays is a section of the Parlay Builders tab, standing where the prop model's
-Saved parlays card is: `nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its
-styles scoped to `#lpCard` and its script in a closure -- and hands it the prop model's own
+X Parlays is the tab the prop model's Parlay Builder sits in (still `#parlay`):
+`nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its styles scoped to its two
+cards, `#lpCard` and `#myCard`, and its script in a closure -- and hands it the prop model's own
 in-memory state, so a saved parlay is watched the moment it is saved and deleting it there
-deletes it. The section reads `liveparlays/parlays.json` (parlays every device sees) and
-ESPN's public scoreboard and box scores in the browser, each game's season and week from its id
-in ESPN's numbering. A parlay is recognised as a copy of another by its legs: game, stat, line,
-side, and the player (or the team, for a team bet). The builder drops a leg once its game kicks
-off, so just before each redraw of the builder the page calls the section's `lpKeep`, which keeps
-the builder as it stood under the section's key (`kept`, keyed by its legs, shared) and watches
-it as "builder at kickoff". A leg on a player on no line of the box score is void (marked V, not
-lost or won) when there is official word he was not playing that week -- Out or Doubtful on the
-injury report the page reads, or the page's record of a game-day inactive or a reserve list --
-and otherwise graded on nothing with the row saying he is not on the box score.
+deletes it. The section draws two lists. X Parlays (`#lpCard`, at the top of the tab) is X's:
+the placed parlays in `liveparlays/parlays.json`, and X's saved parlays, builder, builders kept
+at kickoff and betting slips -- on the owner's device the prop model's own state and the shared
+key, with every control; on anyone else's the shared document as read (`NFLSYNC.x()`), read
+only. Your parlays (`#myCard`, under the builder, where the Saved parlays card was) is a
+visitor's own, under the browser's own key `my_parlays_v1`, and is not drawn on the owner's
+devices. The section reads ESPN's public scoreboard and box scores in the browser, each game's
+season and week from its id in ESPN's numbering. A parlay is recognised as a copy of another by
+its legs: game, stat, line, side, and the player (or the team, for a team bet). The builder drops
+a leg once its game kicks off, so just before each redraw of the builder the page calls the
+section's `lpKeep`, which keeps the builder as it stood under the key of the list it belongs to
+(`kept`, keyed by its legs) and watches it as "builder at kickoff". A leg on a player on no line
+of the box score is void (marked V, not lost or won) when there is official word he was not
+playing that week -- Out or Doubtful on the injury report the page reads, or the page's record of
+a game-day inactive or a reserve list -- and otherwise graded on nothing with the row saying he
+is not on the box score.
 `liveparlays/index.html` is a redirect. `nflbets/build/smoke.js` boots the built page in jsdom against both sites'
 published data and walks every tab; `nflbets/build/smoke_live.js` does the same for the
-Live Parlays section against a stubbed parlay file and scoreboard. The elo job runs `smoke.js`
+X Parlays section against a stubbed parlay file and scoreboard, with no store, as the owner and as
+a visitor. The elo job runs `smoke.js`
 every morning, playoffs and off-season included, so it holds in any week: the board's week is
 taken as the board takes it (the first with a game to play, else the last), the checks that need
 a game still to come run only when there is one, and once the payload's last game is about to kick
@@ -273,42 +310,214 @@ every game given a result. A throw in either smoke's own code ends it at once wi
 stack; a run still going after ten minutes stops and fails, and one left waiting on nothing
 (no window open, its body not done) fails rather than ending with a silent exit 0.
 
-The parlays are one document for every device. `nflbets/build/sync.js`, inlined before the
-prop model's script, defines the `window.storage` the model saves through and the
-`window.LIVE_IO` the section's `live_parlays_v1` key goes through. On load it reads
-`nflbets/sync.json` for the store's address, pulls the document (`GET <url>/doc.json`) and
-lays its keys -- `parlay`, `saved`, `stake`, `bookPrice`, `margin`, and the section's whole
-key (`lines`, `removed`, `kept`) -- over the browser's copy; every save pushes the same keys back
-(`PUT <url>.json`, the document as a JSON string under a random `rev`, with `revs`, the last fifty
-revs, its line of descent), and a poll every eight seconds while the page is on screen reads
-`<url>/rev.json` and pulls the document when the tag moved, then redraws the builder, the open
-game, the section and any open Pick'ems game. No write is blind: a push reads the rev first and,
-when another device has written since, pulls and merges three ways against the document both
-started from (`merge3`: what only one side changed is taken, a deletion on either side holds,
-where both changed one thing the writer's change wins) before writing; a poll merges the same
-way and runs while a push is waiting, so a device edited offline merges when it is back; a page
-going to the background or away looks first as well, its requests sent keepalive, and a change it
-cannot send in time waits in the browser for its next visit; and each device keeps the last
-sixteen documents it read or wrote, by rev, so when a write made at the same instant (or built on
-an older document) lands over its own -- its rev missing from the store's `revs` -- it merges
-against the newest of them the store descends from and writes again. Nothing is pushed until the document has been read once, so a device that could not
-reach the store never replaces it with an empty builder. A browser's first read of the
-document joins rather than yields: its own saved parlays are added to the document by id,
-its builder stands in for an empty one, its corrected lines and deletions are kept where
-the document has none, and the result is pushed, so parlays saved before the store had an
-address are not lost to whichever device seeded it. The browser then remembers the rev it
-took or wrote under `nflsync_v1`, and the document at that rev and the few before it under
-`nflsync_base_v1`, so its next visit merges three ways: a change it had not sent stays, and a parlay it lacks that the
-remembered document had is one another device deleted. A browser that remembers the rev but not
-the document takes the document as it is. No Firebase-specific header (ETag, if-match) is used,
-so the store needs only GET and PUT. The store is a Firebase Realtime
-Database over its REST interface; with `sync.json` blank the page runs on the browser alone
-and the header stamp says so. `nflbets/build/smoke.js` runs two, then more, devices against
-one stubbed store and checks that each sees what the others did, including a device that writes
-without having looked, one that comes back from offline, a write overwritten by one made at the
-same instant or on an older document, and a browser reopened with an unsent parlay;
-`nflbets/build/stress_sync.js` (not a gate) does the same at random, with a store that answers
-late so writes cross, and fails if a parlay is lost or comes back.
+### X's parlays and the X Bet Log
+
+X's parlays are one document for every device, and the X Bet Log another beside it; every device
+reads them and only the owner's devices write them. `nflbets/build/sync.js`, inlined before the
+prop model's script, defines the `window.storage` the model saves through and the `window.LIVE_IO`
+the section's `live_parlays_v1` key goes through, and exposes `window.NFLSYNC` (`role()`, `x()`,
+`signIn()`, `signOut()`, the authorised `write()`); `nflbets/build/xbets.js`, inlined after it,
+defines `window.XBETS` for the betting frames.
+
+**Who the owner is.** On every load the layer reads `nflbets/sync.json`: `url` (the store's
+address), `ownerHash`, `apiKey`, `owner` and `shareDeposit`. A device is the owner's in one of two
+ways:
+
+- *The owner link* (`ownerHash`, active now). `ownerHash` is the SHA-256, in hex, of a secret the
+  owner holds; the secret is not in the repository. The owner opens
+  `https://demon-x13.github.io/nfl-hub/nflbets/#owner=<secret>` once on each device. The layer
+  takes the secret off the address before any other script runs (`history.replaceState`, landing
+  on `#parlay`), hashes it (SubtleCrypto) and, on a match, keeps it in the browser (`nflowner_v1`);
+  it is hashed again on every load, so a new `ownerHash` signs every device out. The header shows
+  an "owner" mark on every tab, and X Parlays "sign out of owner". **This stops visitors' pages
+  from writing, not a person who has the store's address and a command line: the store's rules
+  are open, and anyone can still `curl -X PUT` the document.** The second layer closes that.
+- *Firebase sign-in* (`apiKey` and `owner`, dormant while they are blank). `owner` is the owner's
+  Firebase uid. X Parlays then offers "Owner sign-in": email and password, posted to
+  `identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=<apiKey>`; an account whose
+  uid is not `owner` is refused. The session (`nflsync_owner_v1`: uid, email, refresh token and
+  the current ID token, never the password) is kept in the browser. Every write carries
+  `?auth=<ID token>`; the token is renewed at `securetoken.googleapis.com/v1/token` when it has
+  under five minutes left, and once more when the store refuses a write. A refresh token the
+  service turns down (revoked, the password changed) holds the device's writes and the stamp asks
+  for sign-in; nothing is lost, and what waited is written once the device signs in again. A
+  refusal is held per document (`blocks` in `NFLSYNC.state()`): one of the X Bet Log's never holds
+  the parlays' writes, nor the reverse. With the store's rules locked to the owner's uid (below),
+  nobody else can write at all. While sign-in
+  is set up but the rules are still open, a device marked by the owner link alone still writes.
+
+Everyone else's device is a **reader**. It reads the same document and polls it the same way, but
+keeps it in memory only, never merges it into the prop model's state, never joins, never pushes:
+`LIVE_IO.set` refuses, `window.storage` is the browser's own storage, and the X Parlays card is
+drawn read only (no delete, no line pencil, no stake pill, no Clear settled). What the visitor
+builds, saves and corrects is theirs, in the prop model's own key and `my_parlays_v1`, drawn under
+Your parlays. The first time a browser opens as a reader (`xparlays_v1`, cleared whenever the
+browser is the owner's, so a browser that stops being the owner's is done again), the mirror it
+kept from when every device wrote the document is stripped: the saved parlays and builder legs in
+the documents it remembers (`nflsync_base_v1`, its `hist`, and the store's once read) leave its own
+list, its copy of the shared key goes (lines corrected on its own remaining parlays move to
+`my_parlays_v1`), and `nflsync_v1` and `nflsync_base_v1` go. A browser that never mirrored the
+document keeps everything it has as its own. Signing out of owner does the same strip and reloads.
+A reader also keeps the last copy of X's it saw (`xparlays_cache_v1`), shown, marked "Not synced",
+only while the store cannot be reached.
+
+**Nothing from the store is drawn as it came.** Until the rules are locked anyone with the address
+can write the parlays' document, and the prop model draws a leg's position, team and opponent and
+the book price into the owner's page, where the owner link and the sign-in session are kept. So the
+document is cleaned on the way in (`pull()`), and so is every copy a browser kept of it (the
+remembered documents, a reader's last copy, the owner's own copy of the shared keys as the prop
+model and the section read them): every string and every key loses `<`, `>`, `"` and a backtick, which
+leaves a string neither an element nor a way out of a quoted attribute (nothing in the page puts the
+document's strings in a single-quoted or unquoted attribute or an inline handler, and nothing a
+parlay holds uses those four characters). The X Bet Log is cleaned the same way, by its own rules
+(below).
+
+**Among the owner's devices** the sync is what it was. On load an owner's device pulls the
+document (`GET <url>/doc.json`) and lays its keys -- `parlay`, `saved`, `stake`, `bookPrice`,
+`margin`, and the section's whole key (`lines`, `removed`, `kept`, and `bet`, X's betting slips by
+device, published from each device's betting-app key) -- over the browser's copy; every save
+pushes the same keys back (`PUT <url>.json`, the document as a JSON string under a random `rev`,
+with `revs`, the last fifty revs, its line of descent), and a poll every eight seconds while the
+page is on screen reads `<url>/rev.json` and pulls the document when the tag moved, then redraws
+the builder, the open game, the section and any open Pick'ems game. No write is blind: a push reads
+the rev first and, when another device has written since, pulls and merges three ways against the
+document both started from (`merge3`: what only one side changed is taken, a deletion on either
+side holds, where both changed one thing the writer's change wins) before writing; a poll merges
+the same way and runs while a push is waiting, so a device edited offline merges when it is back; a
+page going to the background or away looks first as well, its requests sent keepalive, and a change
+it cannot send in time waits in the browser for its next visit; and each device keeps the last
+sixteen documents it read or wrote, by rev, so when a write made at the same instant (or built on an
+older document) lands over its own -- its rev missing from the store's `revs` -- it merges against
+the newest of them the store descends from and writes again. Nothing is pushed until the document
+has been read once. An owner's browser's first read joins rather than yields: its own saved parlays
+are added to the document by id, its builder stands in for an empty one, its corrected lines and
+deletions are kept where the document has none, and the result is pushed -- so the owner's first
+visit as the owner adopts the document as it stands and loses nothing. The browser then remembers
+the rev it took or wrote under `nflsync_v1`, and the document at that rev and the few before it
+under `nflsync_base_v1`, so its next visit merges three ways. No Firebase-specific header (ETag,
+if-match) is used, so the store needs only GET and PUT (and PATCH for the X Bet Log).
+
+**The X Bet Log** is a document of its own at `<the parent of url>/xbets/<season>` -- for
+`.../nflhub` that is `.../xbets/2026` -- never inside `/nflhub`, since every parlay write replaces
+that whole node: `{rev, at, weeks:{w1:{staked, returned, note}, ...}, bank:{deposit}}`. An owner's
+device writes it by `PATCH` of the weeks that changed (`{"weeks/w3": {...}, "weeks/w5": null, rev,
+at}`) through the same authorised write, so two devices logging different weeks both keep theirs
+and a removed week stays removed. Everything read is cleaned before it is drawn (a week 1-22,
+amounts of 0 or more, a note of plain text without angle brackets, 140 characters at most) and the
+app's own note cell is escaped at build time: a note is drawn in every visitor's frame. The betting
+frames reach it as `parent.XBETS` (a srcdoc frame is the page's origin; the frames must not be
+sandboxed). `betting/tools/build.js`'s hook lays X's weeks into the app's `S.bets`, starts the frame
+read only (`html.xbets-ro`: no entry bar, Remove, deposit box or Backup card) and lifts that on the
+owner's devices, keeps a visitor's own log and deposit in the app's key exactly as they were, and on
+the owner's devices writes only the weeks a frame changed against what it last had, so a frame
+loaded before another logged a week writes nothing over it. Each of the owner's browsers moves its
+own weeks in once a season (`xbets_joined_<season>`): its log is copied to
+`x_nfl_bets_preshare_<season>` the moment the device is known to be the owner's, before any frame
+can load; the weeks the shared log lacks are added, a week both have with different numbers keeps
+the shared one and is listed; and the app's key keeps the browser's own weeks, whatever a frame
+saves, until they have joined and the log has been read on that visit (the hook writes them back as
+they were), and after that a copy of X's. So a store that is slow, down or shut to the X Bet Log by
+its rules loses nothing: the frames share the page's browser store, and a frame that saves its whole
+state before the log arrives would otherwise write an empty log over the browser's own. The owner's
+devices keep Save and Remove shut until the log has been read. A week the store would not take
+(out of reach, or refusing until the device signs in) waits in memory and in the browser
+(`xbets_pending_<season>`): it is laid over the log the device shows and written the next time the
+store answers, on that visit or a later one. The deposit is the owner's own unless `sync.json` has
+`"shareDeposit": true`; otherwise visitors see the weeks and X's profit against break even, no
+balance, and an owner's device takes a deposit left in the document out.
+
+With `sync.json` blank or unreadable the page runs on the browser alone: X Parlays is the placed
+parlays from the file, read only; everything the browser makes is under Your parlays; the X Bet
+Log is the browser's own as it always was; and the stamp says "Not synced". `nflbets/build/smoke.js`
+runs it all against a stubbed store that keeps the documented rules by path and nothing more (open
+or locked for `/nflhub` and `/xbets`, a write without the owner's unexpired token refused 401 once
+locked, a path the rules do not name denied) and stubbed Firebase sign-in and token services: the
+owner link (right, wrong, rotated), readers (read only, nothing written, X's changes followed, the
+mirror stripped, a pre-store browser kept apart, the cached copy), sign-out, sign-in (wrong password,
+a non-owner account, renewal, a refused write retried, a revoked refresh token), the X Bet Log
+(moving in, read only, a week at a time, deposit sharing, the frames end to end; shut by the old
+rules with frames that share the page's browser store, where a Pick'em Record click must leave the
+owner's own log as it was and the weeks join once the path opens; a week whose write failed shown
+and written on the next visit; a refusal of one document that leaves the other written), markup
+planted in the store or in a browser's kept copies (never an element, in the owner's page or a
+visitor's), the docs' open rules and lock probes, and the old races between two of X's devices
+(offline, at the same instant, on an older document, the unsent parlay on reopening).
+`nflbets/build/stress_sync.js` (not a gate) does the races at random with three of X's devices and a
+visitor's, and fails if a parlay is lost or comes back, or the visitor writes or sees anything but
+the store's.
+
+### Opening the X Bet Log's path (hand this to the owner now, with this page)
+
+Until the X Bet Log, the store's rules named `/nflhub` alone:
+`{"rules":{"nflhub":{".read":true,".write":true},"xbets":{".read":true,".write":true}}}` is what
+they must say now, the parlays' path and the X Bet Log's beside it. Firebase refuses any path its
+rules do not name, read or write, so under the old rules nobody's page can read or write the X Bet
+Log: every visitor's says it could not be reached, the owner's says the store's rules do not let it
+read the log and keeps Save shut, and the owner's own Bet Log stays in each browser untouched (it is
+copied aside to `x_nfl_bets_preshare_<season>` and kept in the app's key until it has joined), so
+nothing is lost while the rules wait. Once, before or with the deploy that carries the X Bet Log:
+Firebase console > the project behind `nfl-bets-and-stats-default-rtdb` > Realtime Database >
+Rules, replace everything with the line above, and Publish. The owner's devices move their weeks in
+on their next look. `nflbets/build/smoke.js` checks that this line, here and in `CLAUDE.md`, opens
+both paths, and its stub store keeps exactly these rules: a path they do not name is denied.
+
+### Locking the store to the owner (hand this to the owner)
+
+The owner link is enough to stop other people's pages from changing your parlays and bet log. It
+does not stop someone who finds the store's address (it is in `nflbets/sync.json`, public) and
+writes to it directly. This closes that, once, in about fifteen minutes. Do the steps in this order.
+
+1. Open the Firebase console (console.firebase.google.com) and the project behind
+   `nfl-bets-and-stats-default-rtdb`.
+2. Authentication (in the left menu, under Build or Security) > Get started. Sign-in method >
+   Email/Password > Enable (leave "Email link" off) > Save.
+3. Authentication > Users > Add user: your email and a password only you know > Add user. Copy the
+   **User UID** shown for it.
+4. Project settings (the gear) > General: copy the **Web API Key**. If none is shown, add a web app
+   under "Your apps" (the </> button, any nickname, no hosting) and copy `apiKey` from the config it
+   shows. The key is public by design. Optional but worth it: in Google Cloud console > APIs &
+   Services > Credentials, open that browser key and restrict it to websites
+   `https://demon-x13.github.io/*` and to the Identity Toolkit API and the Token Service API.
+5. Put both into `nflbets/sync.json` and commit it (no rebuild needed):
+   `"apiKey": "<Web API Key>", "owner": "<User UID>"`.
+6. On each of your devices open the site, go to X Parlays, press **Owner sign-in** (or **sign in**
+   beside the owner mark) and sign in. The card then reads "Signed in · Synced".
+7. Look through X Parlays and the X Bet Log and delete anything that is not yours: until now the
+   store took writes from anyone.
+8. Only now lock the rules. Realtime Database > Rules, replace everything with this (your uid in
+   both places) and Publish:
+
+   ```json
+   {
+     "rules": {
+       "nflhub": { ".read": true, ".write": "auth != null && auth.uid === 'YOUR_UID'" },
+       "xbets":  { ".read": true, ".write": "auth != null && auth.uid === 'YOUR_UID'" }
+     }
+   }
+   ```
+
+   Locking earlier would leave copies of the page cached from before (GitHub Pages keeps a page up
+   to ten minutes) saying "Sync failed" until they reload.
+9. Check it, under both paths the lock covers (a path the rules never name is refused whether
+   they are locked or not, so a probe there proves nothing):
+
+   - `curl -X PUT -d '"x"' 'https://nfl-bets-and-stats-default-rtdb.firebaseio.com/nflhub/rules_probe.json'`
+   - `curl -X PUT -d '"x"' 'https://nfl-bets-and-stats-default-rtdb.firebaseio.com/xbets/rules_probe.json'`
+
+   Each must answer `{"error" : "Permission denied"}`. One that answers `"x"` means that path is
+   still open: publish the rules of step 8 again, and remove the probe with the same address and
+   `curl -X DELETE`. (The probes write nothing the pages read: the parlays live at
+   `nflhub/doc.json` and the X Bet Log at `xbets/<season>`.) `nflbets/build/smoke.js` runs these two
+   probes against its stub store and fails unless each is refused under the locked rules and taken
+   under the open ones.
+
+After that a device that is not signed in cannot write, whatever page it runs. Signing out (the
+link beside the owner mark, or in the X Bet Log) makes a device a reader again; changing your
+password signs every device out. The refresh token sits in each browser's local storage on
+`demon-x13.github.io`, which every GitHub Pages site of the account shares; all it can do is write
+these two documents, and changing the password revokes it. To retire the owner link once sign-in
+works, blank `ownerHash`; to replace it, put the SHA-256 of a new secret there
+(`printf %s 'new secret' | sha256sum`) and open the site once with `#owner=<new secret>`.
 
 ## Props: how it fits together
 
@@ -358,7 +567,7 @@ live outside it.
 Sections. part1.html's own tab bar (Games, Parlay Builder, Track Record, Weekly Update,
 Backup) is the audit's standalone page; the Bets and Stats build replaces it with its own
 bar. `tab-slate` is the Props tab (`slateView` + the `gameModal` overlay), `tab-parlay` is
-Parlay Builders (`parlayBody`, with the Live Parlays section under it), and three have no
+X Parlays (`parlayBody`, between the X Parlays card above it and Your parlays below), and three have no
 button, kept because the prop model draws into them: `tab-track` (Track Record, the Prop
 Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 
@@ -480,7 +689,8 @@ publish aborts. Shipping a model change means passing the release gate in
 
 Tabs: AI Picks, Parlay Builder, Records, Bet Log, Power Ratings, Data Upload,
 Backup (the build drops My Picks). The Bets and Stats page frames Records, Power
-Ratings and Bet Log only, with the app's header and tab bar hidden.
+Ratings and Bet Log only, with the app's header and tab bar hidden; the Bet Log there is the X
+Bet Log (the page hands the frames `window.XBETS`; see "X's parlays and the X Bet Log").
 
 ## College: the test site
 

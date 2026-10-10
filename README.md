@@ -7,12 +7,12 @@ GitHub Pages serves the repo root:
 
 | Path | What | Source |
 |---|---|---|
-| `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app, the Live Parlays section and the Player Elo tab; rebuilt by hand when a source changes, never by a job |
+| `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the sync layer and the Player Elo tab; rebuilt by hand when a source changes, never by a job |
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
-| `elo/` | Player Elo: every player rated by position since 2012, and the game model and matchup formula built on those ratings | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
-| `liveparlays/` | the Live Parlays section's source and the parlays every device sees; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` (hand-edited) |
+| `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
+| `liveparlays/` | the X Parlays section's source and X's placed parlays, which every device sees; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` (hand-edited) |
 | `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
 | `nhl/` | X NHL Bets: a rating model on every NHL game, moneylines, puck lines and totals, the standings and the playoff picture | `nhl/index.html`, `nhl/tools/`; `.github/workflows/nhl.yml` runs three times a day |
 
@@ -28,15 +28,16 @@ GitHub Pages serves the repo root:
   exported. A mismatch aborts the publish.
 - `betting/tools/build.js` builds the app from the one app file for
   `nflbets/build/build.js`, which carries it inside the Bets and Stats page and
-  shows its Records (as Pick'em Record), Power Ratings and Bet Log tabs in
-  frames, the app's own header and tab bar hidden. It loads the published
-  season from `betting/state.json` and keeps the visitor's own picks, bankroll,
-  bets and any odds they load in their browser only, under one key; the job's
-  published state wins on every load. Picks are graded against the published
-  results. nflverse's moneylines, spreads and totals are published with the
-  state (`odds`): they are the Pick'ems board's Vegas baseline. Nothing a
-  visitor does in the app changes what anyone else sees; only a commit to this
-  repo changes it.
+  shows its Records (as Pick'em Record), Power Ratings and Bet Log (as X Bet
+  Log) tabs in frames, the app's own header and tab bar hidden. It loads the
+  published season from `betting/state.json` and keeps the visitor's own picks,
+  bankroll, Bet Build and any odds they load in their browser only, under one
+  key; the job's published state wins on every load. Picks are graded against
+  the published results. nflverse's moneylines, spreads and totals are published
+  with the state (`odds`): they are the Pick'ems board's Vegas baseline. The X
+  Bet Log is the owner's, the same on every device and written only from the
+  owner's devices (see X Parlays below); nothing a visitor does in the app
+  changes what anyone else sees.
 - `betting/events.json`: manual team news the job cannot infer (resting
   starters). One entry per line, applied once by id:
   `{"id":"2026-wk18-KC-rest","type":"rest","team":"KC","week":18,"note":"clinched"}`.
@@ -85,17 +86,32 @@ draft is not shown until it is added to `data/weeks.js` and `index.html` (see
 Friday, Monday and Tuesday at 8am Eastern, five post-game runs, and once on a
 push to the pull code.
 
-## Live parlays
+## X Parlays and the X Bet Log
 
-Live Parlays is a section of the Parlay Builders tab on `nflbets/` (`live/` and
-`liveparlays/` redirect there). Its source is `liveparlays/build/page.html`,
-lifted in by `nflbets/build/build.js` with its styles scoped to `#lpCard` and
-its script in a closure. It reads `liveparlays/parlays.json` (parlays every
-device sees, edited by hand as its `how` field says), the two models' saved
-parlays and ESPN's public scoreboard and box scores in the browser, and its
-corrected lines and deletions go through the same sync document as the parlays
-(`nflbets/sync.json`, see `CLAUDE.md`). No odds-API credits are spent and no
-job runs for it.
+X Parlays is a tab of `nflbets/` (still `#parlay`; `live/` and `liveparlays/`
+redirect there): X's parlays at the top, the same on every device, then the
+visitor's own Parlay Builder and, under it, Your parlays, kept in that browser
+alone. X's are the slips placed at the book (`liveparlays/parlays.json`, edited
+by hand as its `how` field says), what X saved, is building and kept at kickoff
+in the prop model, and X's betting-model slips, all followed live against
+ESPN's public scoreboard and box scores in the browser. The section's source is
+`liveparlays/build/page.html`, lifted in by `nflbets/build/build.js` with its
+styles scoped to its two cards and its script in a closure. The X Bet Log tab is
+X's week-by-week log, read only for visitors; the balance shows only when
+`nflbets/sync.json` says `"shareDeposit": true`.
+
+Both are kept in a Firebase Realtime Database named in `nflbets/sync.json` and
+written only from the owner's devices: the owner link (`#owner=<secret>`,
+checked against `ownerHash`) marks a browser as the owner's, and Firebase
+sign-in (`apiKey` and `owner`, blank until the owner sets it up) is what lets
+the store itself refuse anyone else. The owner link alone does not stop someone
+with the store's address and curl; the steps that do, and the locked rules, are
+in `docs/ARCHITECTURE.md` ("Locking the store to the owner"). The store's rules
+must name both paths, `nflhub` and `xbets`, open now and locked later: Firebase
+refuses a path its rules do not name, and the X Bet Log is the second one
+("Opening the X Bet Log's path"). Nothing read from the store is drawn as it
+came: the page cleans it first. See `CLAUDE.md` for how the sync works. No
+odds-API credits are spent and no job runs for it.
 
 The ESPN parsing is not copied into the section: inside the page it uses the
 prop model's own readers from `props/build/part2.js`, so there is one source of
@@ -103,7 +119,8 @@ truth and the prop model's audit keeps testing it.
 
 ```
 node nflbets/build/build.js         # -> nflbets/index.html
-node nflbets/build/smoke_live.js    # hands the section a file and a stubbed ESPN, checks what renders
+node nflbets/build/smoke_live.js    # the section with no store, as the owner and as a visitor
+node nflbets/build/smoke.js         # the whole page, the owner link, sign-in, readers and the X Bet Log on a stubbed store
 ```
 
 ## The betting job
