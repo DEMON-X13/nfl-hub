@@ -1324,7 +1324,7 @@ function renderParlay(){
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
   legs.forEach((l,i)=>{
     const [c,lbl]=confTier(l.p);
-    html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${l.pos} \u00b7 ${l.team} v ${l.opp} \u00b7 wk ${l.week}</small></td>
+    html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
       <td><b>${esc(l.label)}</b></td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
       <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span></td>
@@ -1340,7 +1340,7 @@ function renderParlay(){
     <div class="bar">
       <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
       ${stakeChips()}
-      <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?S.bookPrice:''}" style="width:110px"></label>
+      <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?esc(S.bookPrice):''}" style="width:110px"></label>
       <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
     </div>
     <div class="bigp">

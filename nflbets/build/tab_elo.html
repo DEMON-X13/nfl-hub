@@ -137,6 +137,9 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .pe-tnext b{color:var(--ink)}
 /* questionable on the week's report: still listed, with a Q */
 .pe-q{font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;vertical-align:1px;color:#8A5E05;background:rgba(212,160,23,.14);border-color:rgba(212,160,23,.4)}
+/* the tab's record lines wrap on a phone instead of widening the page past the screen */
+#tab-elo .bar{flex-wrap:wrap}
+#tab-elo .bar .rec{white-space:normal;min-width:0;overflow-wrap:anywhere}
 @media(max-width:900px){
   table.pe-t{display:block;overflow-x:auto}
   table.pe-t td,table.pe-t th{padding-left:6px;padding-right:6px}

@@ -640,6 +640,13 @@ setTimeout(async()=>{
       S.parlay=keepP; F('save')(); d.querySelector('[data-game="'+g.id+'"]').click(); }
     /* the game bets open under each game on the Pick'ems tab; a game page here is its players */
     chk(!!d.querySelector('#gameView .gsugg')&&!d.querySelector('#gameView .gbets'),'the game page still carries the Game bets card');
+    /* the parlay card prints a leg's fields as text: markup planted in the shared store never becomes an element */
+    if(T.med&&T.med.legs.length){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})), keepB=S.bookPrice, bad='<img src=x data-planted=1>';
+      const l0=T.med.legs[0]; S.parlay={}; S.parlay[l0.key]=Object.assign({},l0,{pos:bad,team:bad,opp:bad,week:bad});
+      S.bookPrice='"><img src=x data-planted=1>';
+      try{ F('renderParlay')(); const body=d.getElementById('parlayBody');
+        chk(!!body&&!body.querySelector('[data-planted]')&&/<img src=x data-planted=1>/.test(body.textContent),'markup in a parlay leg or the book price became an element on the parlay card'); }
+      finally{ S.parlay=keepP; S.bookPrice=keepB; F('renderParlay')(); } }
     console.log(`O. game tiers: ${spec.map(([id,,n])=>T[id]?`${id} ${n} legs ${(T[id].corr*100).toFixed(0)}% at ${(T[id].dec).toFixed(2)}${T[id].relaxed?' (under floor)':''}`:`${id} none`).join(', ')} from ${T.pool} lines`); }
   /* ---- N. the credit-pull panel, in place of the old price sheet ---- */
   { const box=d.getElementById('pricePull');
