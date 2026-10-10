@@ -8,27 +8,41 @@
 
    One request per game (ESPN's game summary), four at a time with a pause, free. A game already in
    the file is never asked for again, so the daily run is last night's games only; the one-time
-   backfill of five seasons is about seven thousand requests. Also pulls today's injury report
-   into nhl/data/injuries.json. Exit 1 if ESPN could not be read at all. */
+   backfill of five seasons is about seven thousand requests. Each line carries the game's score
+   beside the box, so the player model can rate a final the state does not have yet. The job runs
+   update.js --scores first, so last night's finals are in the state and boxed in the same run.
+
+   Also pulls today's injury report into nhl/data/injuries.json. ESPN's injury feed carries no
+   athlete id field: the id is read from the player's page link (.../player/_/id/NNN/...), else the
+   headshot's file name, else left null, and players.js falls back to the club and the name. A report
+   that does not download, or comes back empty, leaves the last one in place (its `pulled` time says
+   how old it is, players.js carries that to the page, and the workflow's last step goes red once
+   it is stale on a game day). Exit 1 if ESPN could not be read at all.
+
+   NHL_DATA and NHL_STATE move the files, NHL_FIXTURES reads saved answers instead of ESPN
+   (simulate.js plays the job offline that way). */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
-const DATA = path.join(__dirname, '..', 'data');
+const Hist = require('./hist');
+const DATA = process.env.NHL_DATA || path.join(__dirname, '..', 'data');
+const STATE = process.env.NHL_STATE || path.join(__dirname, '..', 'state.json');
 const SUMMARY = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=';
 const INJ = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/injuries';
 const FROM_SEASON = 2022;                                     // five seasons of box scores before this one
 const log = m => console.log(new Date().toISOString().slice(11, 19), m);
+const warn = m => { log(m); if (process.env.GITHUB_ACTIONS) console.log(`::warning title=nhl fetch_box::${m}`); };
 const secs = t => { const m = /^(\d+):(\d+)$/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : 0; };
 
-/* the games worth a box score: the history's, then this season's finals from the state */
+/* the games worth a box score: the finished seasons', then this season's finals from the state,
+   each with its score, which the box line keeps */
+const pick = g => ({ id: String(g.id), season: g.season, type: g.type, date: g.date, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods, neutral: !!g.neutral });
 function finals(from, to) {
-  const H = JSON.parse(fs.readFileSync(path.join(DATA, 'history.json'), 'utf8'));
-  const col = Object.fromEntries(H.cols.map((c, i) => [c, i]));
-  const out = H.rows.filter(r => r[col.season] >= from && r[col.season] <= to).map(r => ({ id: r[col.id], season: r[col.season], type: r[col.type], date: r[col.date], home: r[col.home], away: r[col.away] }));
-  const stateFile = path.join(__dirname, '..', 'state.json');
-  if (fs.existsSync(stateFile)) {
-    const S = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-    if (S.season >= from && S.season <= to) for (const g of S.games) if (g.state === 'final' && g.hs !== null) out.push({ id: g.id, season: S.season, type: g.type, date: g.date, home: g.home, away: g.away });
+  const out = Hist.rows(DATA).filter(r => r.season >= from && r.season <= to).map(pick);
+  const seen = new Set(out.map(g => g.id));
+  if (fs.existsSync(STATE)) {
+    const S = JSON.parse(fs.readFileSync(STATE, 'utf8'));
+    if (S.season >= from && S.season <= to) for (const g of S.games) if (g.state === 'final' && g.hs !== null && !seen.has(String(g.id))) out.push(pick(Object.assign({}, g, { season: S.season })));
   }
   return out;
 }
@@ -54,15 +68,37 @@ function boxOf(j, g) {
   return Object.assign({}, g, { skaters, goalies });
 }
 
-async function injuries() {
-  const j = await E.getJSON(INJ);
-  const out = { pulled: new Date().toISOString().slice(0, 16) + 'Z', teams: {} };
+/* the athlete's ESPN id: the feed has no id field, so it is read from the player's page link, else
+   from the headshot's file name; null when neither is there (players.js then matches the name) */
+function athleteId(a) {
+  if (!a) return null;
+  if (a.id !== undefined && a.id !== null && /^\d+$/.test(String(a.id))) return String(a.id);
+  for (const l of a.links || []) { const m = /\/id\/(\d+)/.exec((l && l.href) || ''); if (m) return m[1]; }
+  const m = /\/(\d+)\.png/.exec((a.headshot && a.headshot.href) || '');
+  return m ? m[1] : null;
+}
+/* one feed answer -> the file's shape: each club's list as ESPN files it */
+function injuriesOf(j, pulled) {
+  const out = { pulled, source: 'ESPN', teams: {} };
   for (const t of j.injuries || []) {
-    const code = E.codeOf({ id: t.id }); if (!code) continue;
-    out.teams[code] = (t.injuries || []).map(x => ({ id: String(x.athlete && x.athlete.id), name: x.athlete && x.athlete.displayName, pos: x.athlete && x.athlete.position && x.athlete.position.abbreviation, status: x.status, detail: (x.details && x.details.type) || null, returns: (x.details && x.details.returnDate) || null }));
+    const code = E.codeOf({ id: t.id }) || E.codeOf({ id: t.team && t.team.id }) || Object.keys(E.CLUBS).find(c => E.CLUBS[c].name === t.displayName) || null;
+    if (!code) { log(`injuries: club not recognised: ${t.id} ${t.displayName}`); continue; }
+    out.teams[code] = (t.injuries || []).map(x => {
+      const a = x.athlete || {}, d = x.details || {};
+      return { id: athleteId(a), name: a.displayName || a.fullName || null, pos: (a.position && a.position.abbreviation) || null, status: x.status || (x.type && x.type.description) || null,
+        detail: d.type || null, returns: d.returnDate ? String(d.returnDate).slice(0, 10) : null, date: x.date ? String(x.date).slice(0, 10) : null };
+    });
   }
+  return out;
+}
+async function injuries() {
+  const out = injuriesOf(await E.getJSON(INJ), new Date().toISOString().slice(0, 16) + 'Z');
+  const rows = Object.values(out.teams).reduce((a, l) => a.concat(l), []);
+  /* an empty answer is not a report: the last one stays */
+  if (!rows.length) throw new Error('the injury report came back empty');
   fs.writeFileSync(path.join(DATA, 'injuries.json'), JSON.stringify(out));
-  log(`injuries: ${Object.values(out.teams).reduce((a, l) => a + l.length, 0)} players on ${Object.keys(out.teams).length} clubs`);
+  log(`injuries: ${rows.length} players on ${Object.keys(out.teams).length} clubs, ${rows.filter(r => r.id).length} with an ESPN id`);
+  if (rows.filter(r => r.id).length < rows.length / 2) warn(`injuries: only ${rows.filter(r => r.id).length} of ${rows.length} rows carry an ESPN id; players.js matches the rest by club and name`);
 }
 
 async function main() {
@@ -86,7 +122,12 @@ async function main() {
     log(`${season}: ${todo.length} games asked, file now ${fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).length} box scores`);
   }
   if (asked && !ok) throw new Error('ESPN unreachable: no box score could be read');
-  try { await injuries(); } catch (e) { log(`injuries: ${e.message}`); }
+  try { await injuries(); } catch (e) {
+    const prev = fs.existsSync(path.join(DATA, 'injuries.json')) ? JSON.parse(fs.readFileSync(path.join(DATA, 'injuries.json'), 'utf8')).pulled : null;
+    warn(`injuries: ${e.message}; the last report${prev ? ` (pulled ${prev})` : ''} stays, and the page says how old it is`);
+  }
+  if (empty) warn(`box scores: ${empty} of ${asked} empty or failed; they are asked for again next run, and the page names the club's last box until then`);
   log(`box scores: ${asked} asked, ${ok} read, ${empty} empty or failed`);
 }
-main().catch(e => { console.error(e); process.exit(1); });
+if (require.main === module) main().catch(e => { console.error(e); process.exit(1); });
+module.exports = { athleteId, injuriesOf };

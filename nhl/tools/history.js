@@ -40,7 +40,7 @@ async function main() {
         E.teamsOf(j, teams);
         for (const ev of j.events || []) {
           const g = E.gameRow(ev);
-          if (!g || g.state !== 'final' || g.hs === null || g.as === null || g.season !== season) continue;
+          if (!g || g.gone || g.state !== 'final' || g.hs === null || g.as === null || g.season !== season) continue;
           if (g.type === 1) continue;                      // preseason
           if (g.type !== 2) g.type = 3;
           if (!rows.has(g.id)) n++;

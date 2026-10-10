@@ -48,7 +48,7 @@ at the next refresh:
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
 - `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` (and `cfb/data/history.json` gains the season just finished on the job's first run of a new one; otherwise it is source)
-- `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
+- `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`, and `nhl/data/season_<year>.json` (written once, by the first run of the next season, from the last state of the finished one)
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
 - `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
@@ -383,12 +383,14 @@ meant to land after the finals or the Sunday AP poll are queued at them. It comm
 
 ```
 cd nhl/tools && npm ci
-node nhl/tools/simulate.js        # a fabricated season through the job in a scratch folder; must end "0 failures"
-node nhl/tools/fetch_box.js       # ESPN box scores (one a game, five seasons back) + the injury report
-node nhl/tools/starters.js        # tonight's announced goalies from DailyFaceoff (answers GitHub's runners only)
-node nhl/tools/players.js         # the player and goalie model: replay, report, tonight's lineups -> nhl/data/players.json ("fit" to refit)
-node nhl/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> nhl/state.json
-node nhl/tools/smoke.js           # must end "0 failures"
+node nhl/tools/simulate.js        # the whole job offline in a scratch folder (today's data, its first evening, a fabricated season, the playoffs, the rollover); must end "0 failures"
+node nhl/tools/update.js --scores # the first pass: the season read, scores and schedule written, every call copied from the last state, none made
+node nhl/tools/fetch_box.js       # ESPN box scores (one a game, five seasons back) + the injury report (the id read from the player's link)
+node nhl/tools/starters.js        # the goalies DailyFaceoff announces, game by game with their dates (answers GitHub's runners only)
+node nhl/tools/players.js         # the player and goalie model: replay, report, every game to come lined up -> nhl/data/players.json ("fit" to refit)
+node nhl/tools/update.js          # ESPN -> rate, call, freeze at puck drop, grade, simulate -> nhl/state.json; exit 1, nothing written, if a day with games to finish or call does not answer
+node nhl/tools/smoke.js           # the page and the state against the injury report, the box scores, DailyFaceoff, the clock and the last published state; must end "0 failures"
+node nhl/tools/sources.js         # the job's last step, after the commit: exit 1 if a source the state stands on broke
 ```
 
 The page is `nhl/index.html`, hand-written, one file, the NBA Hub's look; it fetches `state.json` on
@@ -401,12 +403,69 @@ it. The model is `tools/elo.js`: an Elo with home ice, back-to-back and rest ter
 result past regulation and a goal-margin multiplier, plus a Poisson goals layer (each club's
 scoring rates, shrunk to the league's) for the puck line and the total. A side is taken on the
 moneyline, the puck line or the total only where the model's chance beats DraftKings' implied by
-five points. `.github/workflows/nhl.yml` runs three times a day on ESPN's free feeds, the
-simulation first: `tools/simulate.js` plays the real schedule with invented scores and lines
-through three offline runs of the job (lines up, the next morning, a quiet rerun) and checks the
-freeze, the grades, the record, the standings and the page, so a change to the job is proved on a
-season in progress even in September. `NHL_TODAY`, `NHL_STATE`, `NHL_OUT` and `NHL_TEAMS` are the
-environment hooks it uses; the real files are never touched.
+five points. The call (the chance, margin, total, overtime chance, the line, each side taken and whose
+call it is) is made while a game is still to come and frozen at its puck drop by the clock, not only by
+ESPN's state, so a game delayed past its start is not called again (nor one whose start ESPN moves
+less than half a day later after the puck drop its call was made before; a game moved to another day
+is a game to come again); after it, every part is copied from the last state and graded as it stands,
+never recomputed. Only the job's second pass makes calls: `update.js --scores` copies every call as it
+found it, so a puck drop between the two passes is graded on the call the page showed. Rows an older
+job wrote after puck drop (it recomputed the puck-line side on the team Elo's margin, so 25 of the
+first 57 graded games were graded on a puck-line side other than the one shown, and that record read
+11-8 for picks that went 15-5) are put back once to the call shown from the inputs they kept, the team
+Elo's view beside it from the replay (a final) or the ratings as they stand (a game under way): a
+replay of every committed state matched the last pre-game row on every field, `elo` included, on all
+61 started games, and `simulate.js` holds the rebuild to that on rows it rewrites the older job's way.
+A game leaves the schedule only on the feed's word (postponed or cancelled, or moved to another day);
+one a scoreboard answer merely leaves out is kept with its call, line and grade (`kept` in the state;
+a score under way kept so carries the time it was read, `scoreAt`, which the card shows),
+an answer with no game on a day the last state has games on is no answer, and every game taken off is
+listed in `removed` with the feed's reason.
+
+`.github/workflows/nhl.yml` runs five times a day on ESPN's free feeds, each slot queued for the
+window it must land in at the 2.7 to 8.7 hours late GitHub starts this repo's runs (the night's finals
+and the morning lines; before 7pm Eastern; the last read before 7pm at the usual lateness; before 10pm;
+the night's finals), and once on a push to `nhl/tools`, the page or the workflow, so a change is proved
+on the real feeds and the state is the new job's at once. The simulation first: `tools/simulate.js`
+plays the whole job offline on fixtures in the feeds' own shapes. Today's real state, box scores and
+injury report go through the job in its order with planted cases (an injured top goalie, a skater out
+by name only, a goalie on another club's report, DailyFaceoff confirming a backup with its date written
+as midnight GMT, naming a debut and an unconfirmed goalie dated by a GMT stamp, a stale entry, the first
+night of a back to back postponed), then the refusals (a scoreboard day unanswered, the injury report
+silent or empty, DailyFaceoff silent, in a new shape, or naming games that match nothing on the
+schedule); the first evening after a change (games under way and not boxed, the published calls an
+older job's, the night after a back to back to call) and rows an older job rewrote after puck drop put
+back exactly; a fabricated season whose evening runs the two passes either side of a puck drop and
+finds games under way, one still "scheduled" past its puck drop and one whose start moved an hour,
+then a scoreboard answer that is blank or leaves games out (one postponed, one moved to another day);
+the season played out and the playoffs (a sweep, an upset, the Final); and the rollover. On opening
+night, in the summer and before a schedule is out it plays what there is (last season's starters,
+last season's schedule a year on) and skips what needs a game to come. `NHL_TODAY`, `NHL_NOW`,
+`NHL_STATE`, `NHL_OUT`, `NHL_TEAMS`, `NHL_DATA` and `NHL_FIXTURES` are the hooks; the real files are
+never touched. The job then runs `update.js --scores` (so last night's finals are boxed in the same
+run, and players.js lines up on the schedule the calls are made on: both passes read every day),
+`fetch_box.js`, `starters.js`, `players.js`, `update.js`, the smoke test, the commit, and last
+`sources.js`, which fails the run after the commit when the injury report in use is over twelve hours
+old, has no rows or mostly lacks ESPN ids, or DailyFaceoff answered in a shape nothing could be read
+from or with games none of which matched the schedule: the page still publishes and says so on its
+Games tab.
+
+The smoke test holds the published state to reality, each source read on its own terms: nobody the
+injury report has out, on injured reserve or suspended is in a lineup or in goal (a goalie DailyFaceoff
+confirms excepted), no goalie listed on another club's report is named for his old one, a goalie named
+by the rule has played for the club and, once it has three games, started one of them, a back to back
+is one and its goalie is not the one who started the night before (the box score) or is named for it
+(a game still to come; one under way or over and not yet boxed is not compared), DailyFaceoff's names
+reach their games, no call was made after its puck drop or moved since (the last published state,
+`NHL_PREV_STATE` or git's `HEAD`), no started call of that state is gone unless `removed` gives the
+feed's reason, the state is the second pass's, a call that is the player model's carries its margin,
+the page opened at a puck drop offers no bet on that game and calls the visitor's day Today, and a club
+knocked out of the playoffs has no Cup chance. The season is the Eastern date's
+(`E.seasonOf`), nowhere else. Between seasons the first run from August closes the old one into
+`nhl/data/season_<year>.json` (read beside `history.json` by `tools/hist.js`), so its results stay in
+both models; a season in neither file nor the last state is refused. In the playoffs the field is the
+real one, each series is played on from its real score and the bracket shows it; `phase` is preseason,
+regular, postseason, over (the champion named) or offseason.
 
 The player model (`tools/players.js`) is the NBA Hub's idea: every skater an offence and a defence
 rating, every goalie a save rating, in goals a game for a player on the ice all game; a club is its
@@ -414,10 +473,21 @@ lineup weighted by ice time plus its goalie; after a final the surprise in regul
 who was on the ice. Fitted on 2022-23 to 2024-25 with 2025-26 held out, and scored cold season by
 season (walk-forward); `report.use` in `players.json` is whether it beat the team Elo cold, and only
 then does the page's call switch to it (`by: 'players'` on the game row, the Elo's view kept beside
-it as `elo`). Do not tune it on the season in progress. Tonight's lineup is who dressed last minus
-the injury report; the goalie is DailyFaceoff's announced starter when `starters.json` has one, else
-the other goalie on a back to back, else the usual starter, and the card says which. The Players
-tab shows the rankings with a five-season line each.
+it as `elo`). Do not tune it on the season in progress. Each game's lineup (WHO PLAYS in
+`players.js`) is who dressed last, less anyone ESPN's injury report has out, on injured reserve or
+suspended and anyone listed by another club or whose latest game was for one; the report is matched by
+the ESPN id `fetch_box.js` reads from the player's link (the feed has no id field: before October 2026
+every id was "undefined" and nobody was ever taken out), else by club and name, else by a name only one
+rated player has. Day-to-day players stay in, flagged. The goalie is chosen game by game: the one
+DailyFaceoff names for that game and date (Confirmed, Likely or Unconfirmed, said exactly), else the
+club's goalie with the most starts in its last ten games this season (then last season's starts for the
+club), never one who is out or elsewhere; on the second night of a back to back (the club's previous
+game, played or not, the day before) the other goalie from the one who started that game (its box
+score), or is expected to (the same choice, while it is to come, under way or not yet boxed). The team
+Elo's gap it blends is its own replay of every final, this run's. The card says which, names the injury report it
+was built on, and says when a club's last box score is not read yet; the page says when the injury
+report or DailyFaceoff could not be read. The Players tab shows the rankings with a five-season line
+each, and which report and goalies the clubs stand on.
 
 ## Bets and Stats: the loop
 
