@@ -2754,7 +2754,7 @@
   },
   "LAR": {
    "kick": "2026-10-13T00:15Z",
-   "built_at": "2026-10-10T07:12:06.856Z",
+   "built_at": "2026-10-10T22:25:29.580Z",
    "units": {
     "qb": [
      {
@@ -2831,10 +2831,9 @@
       "pos": "ILB"
      },
      {
-      "id": "00-0037587",
-      "n": "Nate Landman",
-      "pos": "ILB",
-      "q": "questionable: shoulder, not practising"
+      "id": "00-0039734",
+      "n": "Braden Fiske",
+      "pos": "DT"
      }
     ],
     "db": [
