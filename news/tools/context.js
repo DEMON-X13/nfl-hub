@@ -268,6 +268,16 @@ function ratings(team25, team26, player25, player26) {
         quarterbacks these rules let play, most 2026 dropbacks first; with none, the row says so
         (next_none). Until 2026-10-09 only the chart, or with no chart only a quarterback who had
         thrown in 2026, was looked at, and a team whose chart carried an injured QB2 named nobody.
+     7. the quarterback ESPN's current notes name, plainly, as this week's starter starts, when rules 1
+        to 5 let him play; every quarterback the chart has ahead of him (with no chart, the one 2026
+        usage picked) is passed over, "not starting: <name> named the starter, per ESPN", with his tag
+        when he carries one ("not starting (questionable: hamstring): ..."). An official Out or
+        Doubtful, or any rule above, still rules the named one out, and then the chart decides as
+        before. Decided before rule 6 looks for a next quarterback. The reading (which notes count,
+        the words accepted and refused, the dating) is announcedStarter() below, shared with the check.
+        Until 2026-10-10 there was no such rule: CHI's row listed Caleb Williams (Questionable, limited
+        Friday) with Tyson Bagent next, while ESPN's notes on Bagent and on Keenum both said Ben Johnson
+        had named Bagent the Week 5 starter, and the week's narrative said so too.
    A team with no chart within ten days of kickoff falls back on 2026 usage, still minus the out.
    A chart starter passed over is kept as out, so the page can say who is missing and why. */
 const STATUS = { RES: 'on injured reserve', PUP: 'on the PUP list', NON: 'on the non-football injury list', SUS: 'suspended',
@@ -397,6 +407,123 @@ function espnIndex(espn, roster, chartNames) {
     if (id) byId[id] ??= e; else byName[k] ??= e;
   }
   return (id, team, name) => (id && byId[id]) || byName[`${team}|${normName(name)}`] || null;
+}
+
+/* A quarterback announced as this week's starter (rule 7 of lineups()). ESPN's notes carry it before the
+   team files, in the starter's own note ("Bears head coach Ben Johnson said that Bagent will start
+   Sunday's game against the Packers in Green Bay") or a teammate's ("Keenum is expected to remain in a
+   backup role ... after head coach Ben Johnson said that Tyson Bagent will start at quarterback in Week
+   5"). Only the team's own ESPN entries are read, and only the team's own quarterbacks on the roster
+   count: in a note a quarterback is named by his full name (the roster's, the chart's, or his football
+   or first name with his last), or in his own note (the entry espnIndex() gives him) by his last name
+   alone, so another team's quarterback, and a teammate who shares a last name, never count.
+   Accepted, when the sentence is plain:
+     X will start / will make the start (his first start ...) / will get the start / will draw the start /
+     will be the starter (the team's starting quarterback) / will be under center / will return to the
+     starting lineup; X is expected, set, slated, scheduled or going to start; X has cleared (is healthy,
+     ...) and will start; X is starting; X has been (was) named the starter (the team's starting
+     quarterback); named (names, naming) X the starter (as the starter, the Week 5 starter); will start X.
+     Read on every ESPN note in the committed packs (6,694, weeks 1 to 5) as if each were current, these
+     take 11, each a real announcement for that week's game (Bagent in Week 5 from his note and Keenum's,
+     Jayden Daniels, Huntley, Mariota twice, Kyler Murray from his note and Wentz's, Penix, Lock), and
+     none else.
+   Refused:
+     a hedge or a condition anywhere in the sentence (START_HEDGE): if, unless, should, could, would, may,
+       might, whether, likely, probably, possibly, perhaps, in line to, figures to, projected to, on
+       track to, in the event, pending, depending, assuming, barring, provided that, in case, game-time
+       decision, plans to or on, hopes to, leaning, trending ("will start if", "could start", "would
+       start", "is in line to start should ...");
+     a choice in the clause: "X or Y will start", either;
+     a note that leaves it open anywhere (START_OPEN): "has not yet confirmed", "hasn't decided", "didn't
+       name", "won't commit", "declined to name", undecided, unclear, uncertain, remains to be seen (ESPN's Oct 3 line: "Bagent is
+       expected to start Sunday versus the Jets ... However, coach Ben Johnson has not yet confirmed the
+       plan.");
+     another game: a note dated on or before the team's last game (Eastern days, the practice reader's
+       rule) or at or after this week's kickoff; a sentence naming another week ("in Week 6"), next week
+       or next Sunday, the week after or after the bye, last week or last game; a game weekday that is
+       not this game's ("Thursday night's game" before a Sunday game; a weekday is the game's by the
+       practice reader's own tests, so "said Friday" and "ruled out Friday" are not); a team other than
+       these two after against, versus, vs, facing, at, in, to, over, hosting or visiting;
+     "will not start", "won't start", and start as begin ("will start throwing").
+   Of notes naming different quarterbacks the newest wins; two as new that disagree name none. One reader
+   for the build and its check (lineup-checks.js). Returns { id, n, said, from, date } or null. */
+const TEAM_WORDS = { ARI: ['Cardinals', 'Arizona'], ATL: ['Falcons', 'Atlanta'], BAL: ['Ravens', 'Baltimore'], BUF: ['Bills', 'Buffalo'],
+  CAR: ['Panthers', 'Carolina'], CHI: ['Bears', 'Chicago'], CIN: ['Bengals', 'Cincinnati'], CLE: ['Browns', 'Cleveland'], DAL: ['Cowboys', 'Dallas'],
+  DEN: ['Broncos', 'Denver'], DET: ['Lions', 'Detroit'], GB: ['Packers', 'Green Bay'], HOU: ['Texans', 'Houston'], IND: ['Colts', 'Indianapolis'],
+  JAX: ['Jaguars', 'Jags', 'Jacksonville'], KC: ['Chiefs', 'Kansas City'], LV: ['Raiders', 'Las Vegas'], LAC: ['Chargers'], LAR: ['Rams'],
+  MIA: ['Dolphins', 'Miami'], MIN: ['Vikings', 'Minnesota'], NE: ['Patriots', 'Pats', 'New England'], NO: ['Saints', 'New Orleans'], NYG: ['Giants'],
+  NYJ: ['Jets'], PHI: ['Eagles', 'Philadelphia'], PIT: ['Steelers', 'Pittsburgh'], SF: ['49ers', 'Niners', 'San Francisco'], SEA: ['Seahawks', 'Seattle'],
+  TB: ['Buccaneers', 'Bucs', 'Tampa Bay', 'Tampa'], TEN: ['Titans', 'Tennessee'], WAS: ['Commanders', 'Washington'] };
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const TEAM_OF_WORD = {};
+for (const [t, ws] of Object.entries(TEAM_WORDS)) for (const w of ws) TEAM_OF_WORD[w] = t;
+const TEAM_NAMED = new RegExp(`\\b(?:against|versus|vs\\.?|facing|faces|face|at|in|to|over|hosting|hosts|host|visiting|visits|visit)\\s+(?:the\\s+)?(${Object.keys(TEAM_OF_WORD).sort((a, b) => b.length - a.length).map(esc).join('|')})\\b`, 'g');
+const START_HEDGE = /\b(?:if|unless|should|could|would|may|might|whether|likely|probably|possibly|perhaps|tentatively|presumably|in line to|figures? to|projected to|projects? to|on track to|in the event|pending|depending|assuming|barring|provided that|in case|game-time decision|plan(?:s|ned|ning)? (?:to|on)|hop(?:e|es|ed|ing) to|leaning|trending)\b/i;
+const START_OPEN = /\b(?:(?:(?:has|have|had|did|does|do|would|could)(?:n['’]t| not)|won['’]t|will not)(?: yet)?|not yet(?: been)?|yet to(?: be)?)\s+(?:officially\s+)?(?:confirm|decide|name|announce|determine|commit)\w*|\b(?:declin|refus)\w* to (?:name|commit|say|confirm|announce)|\b(?:undecided|unclear|uncertain|remains to be seen|to be determined)\b/i;
+const START_CHOICE = /\b(?:or|either|nor)\b/i;
+const START_ELSEWHERE = /\b(?:next|following)\s+(?:week|weekend|season|year|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b|\b(?:last|previous)\s+(?:week|weekend|game|season|year|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b|\bweek after\b|\bafter the bye\b/i;
+const START_PAREN = '(?:\\s*\\([^)]*\\))?';
+const START_BEGIN = '(?!\\s+(?:to\\b|(?!thanksgiving\\b|morning\\b|evening\\b|opening\\b)[a-z]+ing\\b))';
+/* the starter, the team's starting quarterback, the Week 5 starter; never "the starter's backup" */
+const START_ROLE = `(?:as\\s+)?(?:(?:the|his|their|its)\\s+)?(?:[\\w.'’-]+['’]s?\\s+)?(?:[\\w-]+\\s+){0,2}?(?:starter|starting (?:quarterback|QB|signal-caller))\\b(?!['’])`;
+const START_VERB = `(?:start${START_BEGIN}(?!\\s+(?:the game\\s+)?on the bench)|make (?:the|his|another|a)\\b[^.,;()]{0,30}?\\bstart\\b|(?:get|draw|earn|receive) (?:the|another|his)\\s+(?:starting\\s+)?(?:start|nod)\\b|be ${START_ROLE}|be under center\\b|return to the starting lineup\\b)`;
+const startForms = N => [
+  /* "Bagent will start", "Daniels (elbow) will start", "Murray has cleared concussion protocol and will start" */
+  `\\b(?:${N})${START_PAREN}(?:\\s+(?:has|had|is|was)\\s+[^.;,()]{1,60}?\\s+and)?\\s+(?:will|is (?:set|slated|scheduled|expected|going) to|['’]ll)\\s+(?:(?:again|also|instead|still|officially|then|once again)\\s+)?${START_VERB}`,
+  `\\b(?:${N})${START_PAREN}\\s+(?:has been|have been|had been|was|is)\\s+(?:officially\\s+)?(?:named|tabbed|tapped|picked|chosen|selected|confirmed as|announced as)\\s+${START_ROLE}`,
+  `\\b(?:named|names|naming|tabbed|tapped|picked|chose|selected|announced|confirmed)\\s+(?:${N})${START_PAREN}\\s+${START_ROLE}`,
+  `\\bwill start (?:${N})\\b`,
+  `\\b(?:${N})${START_PAREN}\\s+is starting${START_BEGIN}`,
+].map(s => new RegExp(s));   // case kept: names are proper nouns, and a last name alone must not follow a capitalised word
+/* a name as a pattern: its words, either apostrophe, a period optional, a suffix allowed after; a last
+   name alone must not follow a capitalised word (that word would be someone else's first name) */
+const namePattern = n => String(n || '').replace(/,?\s+(?:jr|sr|ii|iii|iv|v)\.?$/i, '').trim().split(/\s+/)
+  .map(w => esc(w).replace(/['’]/g, '[\'’]?').replace(/\\\./g, '\\.?')).join('\\s+') + '(?:,?\\s+(?:Jr|Sr|II|III|IV|V)\\b\\.?)?';
+const SENTENCE = /(?<!\b(?:Jr|Sr|No|vs|St|Mr|Dr|Mt|Ft)\.)(?<=[.;!?])\s+(?=["“'‘(]?[A-Z])/;
+function announcedStarter({ team, espn, espnOf, roster, chartNames, since = '', kick = '', week, opp }) {
+  if (!team || !kick || !espn || !espn.length) return null;   // no game this week (a bye), or no list
+  const of = espnOf || espnIndex(espn, roster, chartNames);
+  const qbs = (roster || []).filter(r => r.gsis_id && ab(r.team) === team && r.position === 'QB').map(r => {
+    const full = new Set([r.full_name, r.football_name && `${r.football_name} ${r.last_name}`, r.first_name && `${r.first_name} ${r.last_name}`].filter(x => x && x.trim().split(/\s+/).length > 1));
+    for (const c of chartNames || []) if (c.team === team && c.id === r.gsis_id && c.name) full.add(c.name);
+    return { id: r.gsis_id, n: r.full_name, full: [...full].map(namePattern).join('|'),
+      last: r.last_name ? `(?<![A-Z][\\w'’.-]*\\s)${namePattern(r.last_name)}` : '' };
+  });
+  if (!qbs.length) return null;
+  const kickT = kick ? Date.parse(kick) : NaN, gameDay = kick ? weekdayOf(etDay(kick)) : '';
+  const allowed = new Set([team, opp].filter(Boolean));
+  const found = [];
+  for (const e of espn) {
+    if (e.team !== team) continue;
+    /* dated as the practice reader dates a note: after the team's last game, Eastern days; and before kickoff */
+    const noteDay = e.date ? etDay(e.date) : '';
+    if (!noteDay || (since && noteDay <= since) || (isFinite(kickT) && Date.parse(e.date) >= kickT)) continue;
+    const text = `${e.comment || ''} ${e.long || ''}`.trim();
+    if (!text || START_OPEN.test(text)) continue;
+    const own = qbs.find(q => of(q.id, team, q.n) === e);
+    for (const sent of text.split(SENTENCE)) {
+      if (START_HEDGE.test(sent) || START_ELSEWHERE.test(sent)) continue;
+      if ([...sent.matchAll(/\bweek\s+(\d{1,2})\b/gi)].some(m => +m[1] !== +week)) continue;
+      if ([...sent.matchAll(TEAM_NAMED)].some(m => !allowed.has(TEAM_OF_WORD[m[1]]))) continue;
+      let otherDay = false;
+      for (const w of sent.matchAll(WEEKDAY_RE)) {
+        const before = sent.slice(0, w.index), after = sent.slice(w.index + w[0].length);
+        if (!AFTER_PRACTICE.test(after) && !BEFORE_SAID.test(before) && (AFTER_GAME.test(after) || BEFORE_GAME.test(before)) && w[1].toLowerCase() !== gameDay) otherDay = true;
+      }
+      if (otherDay) continue;
+      /* clauses cut where the practice reader cuts them: "X or Y" is refused only in the clause naming the starter */
+      for (const clause of sent.split(CLAUSE)) {
+        if (START_CHOICE.test(clause)) continue;
+        for (const q of qbs) {
+          const N = q === own && q.last ? `${q.full}|${q.last}` : q.full;
+          if (N && startForms(N).some(re => re.test(clause))) found.push({ id: q.id, n: q.n, said: sent.trim(), from: e.name, date: e.date });
+        }
+      }
+    }
+  }
+  if (!found.length) return null;
+  const newest = Math.max(...found.map(f => Date.parse(f.date))), top = found.filter(f => Date.parse(f.date) === newest);
+  return new Set(top.map(f => f.id)).size === 1 ? top[0] : null;
 }
 
 function lineups(src) {
@@ -552,6 +679,15 @@ function lineups(src) {
     };
     const L = {};
     let next = null;
+    /* 7. the quarterback ESPN's current notes name as this week's starter (announcedStarter above) starts
+       when the rules let him play; whoever was ahead of him is passed over, not starting */
+    const ann = announcedStarter({ team, espn, espnOf: espOf, roster, chartNames, since: sinceOf(team), kick: kicks[team] || '', week, opp: (src.opps || {})[team] });
+    const named = ann ? person(ann.id, ann.n, 'QB') : null;
+    const takesOver = () => named && !named.out && !(L.qb[0] && (L.qb[0].id && named.id ? L.qb[0].id === named.id : normName(L.qb[0].n) === normName(named.n)));
+    const startNamed = ahead => {
+      for (const a of ahead) { const p = person(a.id, a.n, 'QB'); entry(p.out ? p : { ...p, out: true, why: `not starting${p.q ? ` (${p.q})` : ''}: ${named.n} named the starter, per ESPN` }, 'qb'); }
+      L.qb = [shown(named)];
+    };
     if (fresh) {
       chartUsed = chartUsed > s.dt ? chartUsed : s.dt;
       const rows = s.rows.map(r => {
@@ -578,6 +714,15 @@ function lineups(src) {
       };
       const strip = arr => arr.map(({ u, ...e }) => e);
       L.qb = strip(fill(['QB'], 'qb'));
+      if (takesOver()) {
+        /* everyone on the chart above him; if he is not on it, everyone down to the one it would have started */
+        const qbRows = rows.filter(r => r.slot === 'QB').sort((a, b) => a.rank - b.rank);
+        const at = qbRows.findIndex(r => r.id && r.id === named.id), pick = L.qb[0] ? qbRows.findIndex(r => key(r) === (L.qb[0].id || `name:${normName(L.qb[0].n)}`)) : -1;
+        const ahead = qbRows.slice(0, at >= 0 ? at : pick + 1);
+        for (const r of ahead) used.delete(key(r));
+        startNamed(ahead.map(r => ({ id: r.id, n: r.name })));
+        used.add(named.id || `name:${normName(named.n)}`);
+      }
       /* the next quarterback on the chart, available, for a starter who carries a tag */
       if (L.qb[0] && L.qb[0].q) {
         for (const r of rows.filter(r => r.slot === 'QB').sort((a, b) => a.rank - b.rank)) {
@@ -612,6 +757,7 @@ function lineups(src) {
       /* the quarterback: whoever threw most in the team's last game, then the season */
       const qbScore = e => (e.lastWk === lastPass[team] ? 1e6 * e.lastAtt : 0) + e.att;
       L.qb = top(isQB, qbScore, 1, 'qb');
+      if (takesOver()) startNamed(L.qb.map(p => ({ id: p.id, n: p.n })));
       if (L.qb[0] && L.qb[0].q) { next = top(isQB, qbScore, 2, 'qb', false).find(p => p.n !== L.qb[0].n) || null; if (next) next.from = 'usage'; }
       L.ol = top(isOL, e => e.osn, 5, 'ol');
       L.rb = top(isRB, e => e.car, 2, 'rb');
@@ -666,14 +812,17 @@ function units(src) {
 function schedule(games, now) {
   const st = seasonState(games);
   const rows = games.filter(r => r.season === String(SEASON) && r.game_type === 'REG');
-  const kicks = {}, lastGame = {};
-  for (const r of rows.filter(r => +r.week === st.week)) { const k = etToISO(r.gameday, r.gametime); kicks[ab(r.away_team)] = k; kicks[ab(r.home_team)] = k; }
+  const kicks = {}, lastGame = {}, opps = {};
+  for (const r of rows.filter(r => +r.week === st.week)) {
+    const k = etToISO(r.gameday, r.gametime), a = ab(r.away_team), h = ab(r.home_team);
+    kicks[a] = k; kicks[h] = k; opps[a] = h; opps[h] = a;
+  }
   /* each team's last game before this week: rule 4 looks there, so a team back from a bye is covered */
   for (const r of rows.filter(r => +r.week < st.week)) {
     const k = etToISO(r.gameday, r.gametime);
     for (const t of [ab(r.away_team), ab(r.home_team)]) if (!lastGame[t] || +r.week > lastGame[t].week) lastGame[t] = { week: +r.week, kick: k };
   }
-  return { ...st, kicks, lastGame, now };
+  return { ...st, kicks, lastGame, opps, now };
 }
 
 /* the chart file holds every snapshot since March (60 MB): keep the header and the last few weeks before parsing */
@@ -794,7 +943,7 @@ async function build(opts = {}) {
   try { RK = ranks(root, D.games); } catch (e) { warn(`ranks2026.js kept: ${e.message}`); }
   const P = players(D.roster26);
   const { U, LU } = units({ team25: D.team25, team26: D.team26, player25: D.player25, player26: D.player26, snaps26: D.snaps26,
-    roster: D.roster26, injuries: D.injuries26, chart, espn, week, kicks, lastGame: S.lastGame, now, reportModified: LAST_MODIFIED.injuries26 });
+    roster: D.roster26, injuries: D.injuries26, chart, espn, week, kicks, lastGame: S.lastGame, opps: S.opps, now, reportModified: LAST_MODIFIED.injuries26 });
 
   const day = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' }) : '';
   const lineSrc = [LU.chart ? `depth charts of ${day(LU.chart)}` : 'season usage (no current depth chart)',
@@ -850,5 +999,5 @@ async function build(opts = {}) {
   return { week, phase: S.phase, U, meta: META };
 }
 
-module.exports = { build, units, ratings, lineups, normName, notePractice, weekPractice, espnIndex, lastPracticeDay, etDay, schedule, gradeLineups, URLS };
+module.exports = { build, units, ratings, lineups, normName, notePractice, weekPractice, espnIndex, announcedStarter, lastPracticeDay, etDay, schedule, gradeLineups, URLS };
 if (require.main === module) build().catch(e => { console.error(e.message || e); process.exit(1); });

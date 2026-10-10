@@ -16,6 +16,10 @@
                  any other)
      next-qb     a quarterback carrying a tag has a next quarterback named beside him whenever the team
                  has one these same rules let play, and the one named is one of those
+     announced   the quarterback ESPN's current notes name, plainly, as this week's starter is the one
+                 listed, whenever these same rules let him play (context.js announcedStarter reads the notes
+                 for both: until 2026-10-10 the build had no such rule and listed Caleb Williams for CHI
+                 while ESPN's notes on Bagent and Keenum said Bagent would start, and every check passed)
    "Filed" is official and nothing else: the team's rows on the week's report carry a game status.
    (A version of these checks also counted a practice report two days before kickoff as filed, the
    same shortcut the build took, so for a Thursday game Tuesday's practice report "filed" the team
@@ -23,8 +27,9 @@
    were listed on the Wednesday before TB at DAL and the checks passed. A check that shares the
    build's shortcut cannot catch it.)
    What it shares with the build is the reading of a source, never a rule: an ESPN entry is matched to
-   a player and a practice note is dated by the same functions (context.js espnIndex, weekPractice and
-   notePractice), so the two cannot disagree about what a note says. (Until 2026-10-09 the check matched
+   a player, a practice note is dated and a starter's announcement is read by the same functions
+   (context.js espnIndex, weekPractice, notePractice and announcedStarter), so the two cannot disagree
+   about what a note says. (Until 2026-10-09 the check matched
    ESPN by the roster's full name, the build by the chart's, and the check dated a note older than the
    report as no news even for a team with no rows yet: it failed "Olu Fashanu" and Breece Hall, whom the
    build rightly listed.)
@@ -34,7 +39,7 @@
    week 5) as playing, because ESPN's mid-week "Questionable" stopped the rule before it ran.       */
 'use strict';
 const { SEASON, ab, seasonState, etToISO, parseCSV, fetchText, unplayed } = require('./lib');
-const { weekPractice, espnIndex, lastPracticeDay, etDay } = require('./context');
+const { weekPractice, espnIndex, announcedStarter, lastPracticeDay, etDay } = require('./context');
 
 const norm = s => String(s || '').toLowerCase().replace(/[.'’,]/g, '').replace(/-/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
 const lc = s => String(s || '').trim().toLowerCase();
@@ -72,11 +77,11 @@ function check(U, meta, S) {
   }
   const week = st.week;
   const reg = S.games.filter(r => String(r.season) === String(SEASON) && r.game_type === 'REG');
-  const kick = {}, last = {};
+  const kick = {}, last = {}, opp = {};
   for (const r of reg) {
     const k = etToISO(r.gameday, r.gametime), w = +r.week;
     for (const t of [ab(r.away_team), ab(r.home_team)]) {
-      if (w === week) kick[t] = k;
+      if (w === week) { kick[t] = k; opp[t] = t === ab(r.away_team) ? ab(r.home_team) : ab(r.away_team); }
       else if (w < week && (!last[t] || w > last[t])) last[t] = w;
     }
   }
@@ -102,7 +107,8 @@ function check(U, meta, S) {
     return { ...p, k: p.st === 'limited' || p.st === 'full' ? 'practised' : p.st };
   };
   /* the kickoff the build worked to (ESPN's where it had one), else the schedule's */
-  const kickDay = t => etDay((S.kicks && S.kicks[t]) || kick[t]);
+  const kickOf = t => (S.kicks && S.kicks[t]) || kick[t];
+  const kickDay = t => etDay(kickOf(t));
   /* every rule a player can break, as [check, why]: an empty list means the rules let him play */
   const verdicts = (id, team, name) => {
     const v = [], x = id && rep[id], ro = id && roster[id], P = practice(id, team, name), pr = P.k;
@@ -132,6 +138,12 @@ function check(U, meta, S) {
       const id = p.id || rosterByName[`${team}|${norm(p.n)}`];
       for (const [k, why] of verdicts(id, team, p.n)) add(k, `${team} ${u}: ${p.n} ${why}`);
     }
+    /* announced: the quarterback ESPN's current notes name as this week's starter is the one listed, when the
+       rules let him play (an official Out or Doubtful, or any rule above, still rules him out) */
+    const ann = announcedStarter({ team, espn: S.espn, espnOf, roster: S.roster, chartNames: S.chart_names, since: lastKick[team] || '', kick: kickOf(team), week, opp: opp[team] });
+    const q0 = T.qb && T.qb.who && T.qb.who[0];
+    if (ann && !verdicts(ann.id, team, ann.n).length && !(q0 && (q0.id ? q0.id === ann.id : norm(q0.n) === norm(ann.n))))
+      add('announced', `${team}: ESPN's ${ann.from} note names ${ann.n} the starter ("${ann.said}"), but the lineup lists ${q0 ? q0.n : 'no quarterback'}`);
     /* a quarterback in doubt: the next one named whenever the team has one these rules let play */
     const q = T.qb && T.qb.who && T.qb.who[0];
     if (q && q.q && !(T.qb.who.length > 1)) {
