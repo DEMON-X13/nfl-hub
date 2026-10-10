@@ -388,8 +388,7 @@ body.modal-open{overflow:hidden}
 <style>#syncStamp{margin-left:10px;font-size:12px} #syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}
 .xp-own,.xp-mark{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--gold-soft,#FBEFD3);color:#8A5E05;font-family:var(--body)}
 .xp-link{background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:underline;cursor:pointer;font-family:var(--body)}
-.xp-sub{margin:0 0 10px;font-size:13px} .xp-signin{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px} .xp-signin input{padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;min-width:0;flex:1 1 160px}
-#myCard h2{margin-bottom:4px}</style>
+.xp-sub{margin:0 0 10px;font-size:13px} .xp-signin{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px} .xp-signin input{padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;min-width:0;flex:1 1 160px}</style>
 <style>
 /* the board row: the betting app's columns -- date, matchup, split bar, confidence, final
    score -- at the Props tab's size and type, so the two tabs read as one page: the same
@@ -622,85 +621,136 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 }
 </style>
 <style>
-#lpCard button,#myCard button,#lpCard input,#myCard input{font:inherit;color:inherit}
-#lpCard select:focus,#myCard select:focus,#lpCard button:focus-visible,#myCard button:focus-visible{outline:none;box-shadow:var(--ring)}
-#lpCard .empty,#myCard .empty{padding:44px 24px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg);line-height:1.7}
-#lpCard .empty a,#myCard .empty a{color:var(--ink)}
-#lpCard .pill,#myCard .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#E9EEF4;color:var(--ink-2)}
-#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:var(--pick)}
-#lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
-#lpCard .res,#myCard .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
-#lpCard .res.win,#myCard .res.win{color:var(--pick)}
-#lpCard .res.loss,#myCard .res.loss{color:var(--miss)}
-#lpCard .res.tie,#myCard .res.tie{color:var(--gold)}
-#lpCard .savedp,#myCard .savedp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
-#lpCard .sp-head,#myCard .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-#lpCard .sp-head .grow,#myCard .sp-head .grow{flex:1}
-#lpCard .sp-title,#myCard .sp-title{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
-#lpCard .lp-win,#myCard .lp-win{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-#lpCard .lp-win:first-child,#myCard .lp-win:first-child{margin-top:4px}
-#lpCard .lp-win b,#myCard .lp-win b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink)}
-#lpCard .lp-win span,#myCard .lp-win span{font-size:12px;color:var(--muted)}
-#lpCard .sp-money,#myCard .sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
-#lpCard .sp-money div,#myCard .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
-#lpCard .sp-money b,#myCard .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
-#lpCard .sp-money span,#myCard .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-#lpCard .sp-leg,#myCard .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
-#lpCard .sp-leg.prop,#myCard .sp-leg.prop,#lpCard .sp-leg.team,#myCard .sp-leg.team{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
-#lpCard .sp-leg.prop .res,#myCard .sp-leg.prop .res,#lpCard .sp-leg.team .res,#myCard .sp-leg.team .res{margin-top:3px}
-#lpCard .legbody,#myCard .legbody{min-width:0}
-#lpCard .legtop,#myCard .legtop{display:flex;align-items:baseline;gap:10px}
-#lpCard .legtop .grow,#myCard .legtop .grow{flex:1}
-#lpCard .tgt,#myCard .tgt{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.1}
-#lpCard .who,#myCard .who{color:var(--ink-2);font-size:13px;margin-top:1px}
-#lpCard [hidden],#myCard [hidden]{display:none!important}
-#lpCard .hidebtn,#myCard .hidebtn{background:none;border:0;color:var(--muted);font-size:18px;line-height:1;padding:0 4px;cursor:pointer;border-radius:6px}
-#lpCard .hidebtn:hover,#myCard .hidebtn:hover{color:var(--ink);background:var(--panel-2)}
-#lpCard .status,#myCard .status{font-size:12px;color:var(--ink-2);white-space:nowrap}
-#lpCard .status.win,#myCard .status.win{color:var(--pick);font-weight:700}
-#lpCard .status.lose,#myCard .status.lose{color:var(--miss);font-weight:700}
-#lpCard .pbar,#myCard .pbar{position:relative;margin:14px 0 0;padding:0 26px 30px 6px}
-#lpCard .track,#myCard .track{position:relative;height:10px;border-radius:999px;background:var(--line)}
-#lpCard .fill,#myCard .fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#F4E2B4,var(--gold));transition:width .3s var(--ease)}
-#lpCard .fill.win,#myCard .fill.win{background:linear-gradient(90deg,#A9E2C6,var(--pick))}
-#lpCard .fill.lose,#myCard .fill.lose{background:linear-gradient(90deg,#F3BEB8,var(--miss))}
-#lpCard .tick,#myCard .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-2);border-radius:2px;opacity:.65}
-#lpCard .knob,#myCard .knob{position:absolute;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:2px solid var(--gold);border-radius:999px;padding:1px 9px;font-family:var(--display);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--sh-xs)}
-#lpCard .knob.win,#myCard .knob.win{border-color:var(--pick);color:var(--pick)}
-#lpCard .knob.lose,#myCard .knob.lose{border-color:var(--miss);color:var(--miss)}
-#lpCard .lineLbl,#myCard .lineLbl{position:absolute;top:calc(100% + 5px);transform:translateX(-50%);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
-#lpCard .ln.edit,#myCard .ln.edit{display:inline-block;cursor:pointer;border:1.5px dashed var(--line-2);border-radius:999px;padding:3px 9px;background:var(--panel);color:var(--ink-2);font-weight:600;line-height:1.2}
-#lpCard .ln.edit::after,#myCard .ln.edit::after{content:"\270E";margin-left:5px;opacity:.75;font-weight:400}
-#lpCard .ln.edit:hover,#myCard .ln.edit:hover{border-color:var(--ink-2);color:var(--ink)}
-#lpCard .ln.edit:focus-visible,#myCard .ln.edit:focus-visible{outline:none;box-shadow:var(--ring)}
-#lpCard .ln.moved,#myCard .ln.moved{color:var(--gold);border-color:var(--gold);border-style:solid}
-#lpCard .movedNote,#myCard .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
-#lpCard .movedNote a,#myCard .movedNote a{color:var(--gold)}
-#lpCard .sp-money .ln.edit.stk,#myCard .sp-money .ln.edit.stk{font-size:15px;letter-spacing:0;text-transform:none;color:var(--ink);padding:2px 9px}
-#lpCard .lineInput,#myCard .lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
-#lpCard .games,#myCard .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
-#lpCard .gm,#myCard .gm{display:inline-block;background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:4px 11px;font-family:var(--display);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px}
-#lpCard .gm em,#myCard .gm em{font-style:normal;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);margin-left:9px}
-#lpCard .gm.good,#myCard .gm.good{border-color:var(--pick);background:var(--pick-soft);color:var(--pick)}
-#lpCard .gm.good em,#myCard .gm.good em{color:var(--pick)}
-#lpCard .gm.bad,#myCard .gm.bad{border-color:var(--miss);background:var(--miss-soft);color:var(--miss)}
-#lpCard .gm.bad em,#myCard .gm.bad em{color:var(--miss)}
-#lpCard .gm.tie,#myCard .gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05}
-#lpCard .gm.tie em,#myCard .gm.tie em{color:#8A5E05}
-#lpCard .gm.done,#myCard .gm.done{opacity:.85}
-@media(max-width:430px){#lpCard .gm,#myCard .gm{font-size:12px;padding:3px 9px}
+#lpCard button,#lpCard input{font:inherit;color:inherit}
+#lpCard select:focus,#lpCard button:focus-visible{outline:none;box-shadow:var(--ring)}
+#lpCard .empty{padding:44px 24px;text-align:center;color:var(--muted);background:var(--panel);border:1.5px dashed var(--line-2);border-radius:var(--r-lg);line-height:1.7}
+#lpCard .empty a{color:var(--ink)}
+#lpCard .pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#E9EEF4;color:var(--ink-2)}
+#lpCard .pill.ok{background:var(--pick-soft);color:var(--pick)}
+#lpCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+#lpCard .res{display:inline-block;width:20px;text-align:center;font-weight:700;color:var(--muted)}
+#lpCard .res.win{color:var(--pick)}
+#lpCard .res.loss{color:var(--miss)}
+#lpCard .res.tie{color:var(--gold)}
+#lpCard .savedp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
+#lpCard .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+#lpCard .sp-head .grow{flex:1}
+#lpCard .sp-title{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
+#lpCard .lp-win{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+#lpCard .lp-win:first-child{margin-top:4px}
+#lpCard .lp-win b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink)}
+#lpCard .lp-win span{font-size:12px;color:var(--muted)}
+#lpCard .sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
+#lpCard .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
+#lpCard .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+#lpCard .sp-money span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+#lpCard .sp-leg{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+#lpCard .sp-leg.prop,#lpCard .sp-leg.team{grid-template-columns:22px 1fr;align-items:start;padding:12px 0 6px}
+#lpCard .sp-leg.prop .res,#lpCard .sp-leg.team .res{margin-top:3px}
+#lpCard .legbody{min-width:0}
+#lpCard .legtop{display:flex;align-items:baseline;gap:10px}
+#lpCard .legtop .grow{flex:1}
+#lpCard .tgt{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-.4px;line-height:1.1}
+#lpCard .who{color:var(--ink-2);font-size:13px;margin-top:1px}
+#lpCard [hidden]{display:none!important}
+#lpCard .hidebtn{background:none;border:0;color:var(--muted);font-size:18px;line-height:1;padding:0 4px;cursor:pointer;border-radius:6px}
+#lpCard .hidebtn:hover{color:var(--ink);background:var(--panel-2)}
+#lpCard .status{font-size:12px;color:var(--ink-2);white-space:nowrap}
+#lpCard .status.win{color:var(--pick);font-weight:700}
+#lpCard .status.lose{color:var(--miss);font-weight:700}
+#lpCard .pbar{position:relative;margin:14px 0 0;padding:0 26px 30px 6px}
+#lpCard .track{position:relative;height:10px;border-radius:999px;background:var(--line)}
+#lpCard .fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#F4E2B4,var(--gold));transition:width .3s var(--ease)}
+#lpCard .fill.win{background:linear-gradient(90deg,#A9E2C6,var(--pick))}
+#lpCard .fill.lose{background:linear-gradient(90deg,#F3BEB8,var(--miss))}
+#lpCard .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-2);border-radius:2px;opacity:.65}
+#lpCard .knob{position:absolute;top:50%;transform:translate(-50%,-50%);background:var(--panel);border:2px solid var(--gold);border-radius:999px;padding:1px 9px;font-family:var(--display);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--sh-xs)}
+#lpCard .knob.win{border-color:var(--pick);color:var(--pick)}
+#lpCard .knob.lose{border-color:var(--miss);color:var(--miss)}
+#lpCard .lineLbl{position:absolute;top:calc(100% + 5px);transform:translateX(-50%);font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+#lpCard .ln.edit{display:inline-block;cursor:pointer;border:1.5px dashed var(--line-2);border-radius:999px;padding:3px 9px;background:var(--panel);color:var(--ink-2);font-weight:600;line-height:1.2}
+#lpCard .ln.edit::after{content:"\270E";margin-left:5px;opacity:.75;font-weight:400}
+#lpCard .ln.edit:hover{border-color:var(--ink-2);color:var(--ink)}
+#lpCard .ln.edit:focus-visible{outline:none;box-shadow:var(--ring)}
+#lpCard .ln.moved{color:var(--gold);border-color:var(--gold);border-style:solid}
+#lpCard .movedNote{display:block;font-size:11px;color:var(--gold);font-weight:600;margin-top:2px}
+#lpCard .movedNote a{color:var(--gold)}
+#lpCard .sp-money .ln.edit.stk{font-size:15px;letter-spacing:0;text-transform:none;color:var(--ink);padding:2px 9px}
+#lpCard .lineInput{width:82px;padding:4px 8px;border:1.5px solid var(--ink-2);border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center;background:var(--panel)}
+#lpCard .games{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+#lpCard .gm{display:inline-block;background:var(--panel-2);border:1.5px solid var(--line);border-radius:999px;padding:4px 11px;font-family:var(--display);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.2px}
+#lpCard .gm em{font-style:normal;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);margin-left:9px}
+#lpCard .gm.good{border-color:var(--pick);background:var(--pick-soft);color:var(--pick)}
+#lpCard .gm.good em{color:var(--pick)}
+#lpCard .gm.bad{border-color:var(--miss);background:var(--miss-soft);color:var(--miss)}
+#lpCard .gm.bad em{color:var(--miss)}
+#lpCard .gm.tie{border-color:var(--gold);background:var(--gold-soft);color:#8A5E05}
+#lpCard .gm.tie em{color:#8A5E05}
+#lpCard .gm.done{opacity:.85}
+@media(max-width:430px){#lpCard .gm{font-size:12px;padding:3px 9px}
 }
-#lpCard .statline,#myCard .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
-#lpCard .stamp,#myCard .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
-#lpCard .dot,#myCard .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
-#lpCard .dot.on,#myCard .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
-#lpCard .stamp.ok,#myCard .stamp.ok{color:var(--pick)}
-#lpCard .stamp.bad,#myCard .stamp.bad{color:#8A5E05}
-#lpCard .note,#myCard .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-#lpCard .src,#myCard .src{border-left:4px solid #6E5AA8}
-#lpCard .src.prop,#myCard .src.prop{border-left-color:var(--pick)}
-#lpCard .src.bet,#myCard .src.bet{border-left-color:var(--gold)}
+#lpCard .statline{display:block;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;font-weight:400;margin-top:1px}
+#lpCard .stamp{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+#lpCard .dot{width:8px;height:8px;border-radius:50%;background:var(--line-2);display:inline-block}
+#lpCard .dot.on{background:var(--pick);box-shadow:0 0 8px rgba(27,122,78,.6)}
+#lpCard .stamp.ok{color:var(--pick)}
+#lpCard .stamp.bad{color:#8A5E05}
+#lpCard .note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+#lpCard .src{border-left:4px solid #6E5AA8}
+#lpCard .src.prop{border-left-color:var(--pick)}
+#lpCard .src.bet{border-left-color:var(--gold)}
 @media(max-width:620px){}
+</style>
+<style>
+#pcModal{z-index:60}
+#pcModal [hidden]{display:none!important}
+#pcModal .modal-panel{max-width:560px;padding:16px 18px 20px}
+.pc-top{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.pc-top h2{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink)}
+.pc-top .pc-grow{flex:1}
+/* the card is drawn in the site's own colours whatever the page's theme: it is the picture the
+   download makes, so it looks the same here as it will in a phone's photos */
+.pc-card{background:#FFFFFF;color:#0F1B2D;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(15,27,45,.08),0 14px 34px -14px rgba(15,27,45,.45);
+  font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
+.pc-head{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);color:#fff;padding:16px 20px 15px;position:relative}
+.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(211,154,31,0),rgba(211,154,31,.8),rgba(211,154,31,0))}
+.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B9C5D4;margin:0 0 10px}
+.pc-mark i{width:6px;height:6px;border-radius:50%;background:#D39A1F;box-shadow:0 0 8px rgba(211,154,31,.8);flex:none}
+.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(211,154,31,.18);color:#F0C565;white-space:nowrap}
+.pc-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pc-title{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.pc-price{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:1.05;color:#F0C565;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#B9C5D4;font-variant-numeric:tabular-nums}
+.pc-legs{list-style:none;margin:0;padding:4px 20px 2px}
+.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #E4E9F0;margin:0}
+.pc-legs li:first-child{border-top:0}
+.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #D5DCE6;font-size:11px;font-weight:700;color:#4F607A;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pc-who{display:block;font-weight:700;font-size:15px;color:#0F1B2D;overflow-wrap:anywhere}
+.pc-what{display:block;font-size:14px;color:#0F1B2D;overflow-wrap:anywhere}
+.pc-meta{display:block;font-size:12px;color:#657386;margin-top:1px}
+.pc-lp{text-align:right;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0F1B2D}
+.pc-lp small{display:block;font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#657386;margin-top:2px}
+.pc-money{display:flex;flex-wrap:wrap;gap:8px;padding:6px 20px 0}
+/* a figure is never cut: each tile takes an equal share of the row and never less than its
+   figure (a flex item's own minimum is its content), and a tile that will not fit beside the
+   others goes onto a row of its own */
+.pc-money div{flex:1 1 0;background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px}
+.pc-money span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#657386}
+.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap}
+.pc-money .pc-win b{color:#1B7A4E}
+.pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
+.pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
+.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
+.pc-foot b{color:#4F607A;font-weight:600}
+.pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
+@media(max-width:430px){
+  #pcModal .modal-panel{padding:12px 12px 22px}
+  .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
+  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
+  .pc-actions .btn{flex:1 1 auto}
+}
 </style>
 </head>
 <body>
@@ -796,11 +846,6 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
     <div id="app"></div>
   </div>
   <div id="parlayBody"></div>
-  <div class="card" id="myCard" hidden>
-    <h2>Your parlays</h2>
-    <div class="bar"><span class="muted">On this device only; nobody else sees these.</span><span class="grow"></span><button class="btn quiet" id="myClear" hidden title="Delete every parlay of yours that has landed or gone.">Clear settled</button></div>
-    <div id="myApp"></div>
-  </div>
   <div id="suggModal" class="modal" hidden>
     <div class="modal-panel" role="dialog" aria-modal="true" aria-label="Suggested parlays">
       <div id="suggView"></div>
@@ -912,6 +957,19 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
   </div>
 </section>
 
+<div id="pcModal" class="modal" hidden>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pcTitle" tabindex="-1">
+    <div class="pc-top"><h2 id="pcTitle">Your parlay card</h2><span class="pc-grow"></span><button type="button" class="btn quiet" id="pcClose">Close</button></div>
+    <div id="pcView"></div>
+    <div class="pc-actions">
+      <button type="button" class="btn go" id="pcDownload">Download image</button>
+      <button type="button" class="btn quiet" id="pcShare" hidden>Share or save to Photos</button>
+      <button type="button" class="btn quiet" id="pcAgain" title="Clear the Parlay Builder and start a new parlay">Start over</button>
+    </div>
+    <p class="pc-msg" id="pcMsg" role="status" aria-live="polite"></p>
+    <p class="pc-note">Yours alone: this card is not saved anywhere, on this site or in X&#8217;s parlays. Change the builder and finish again for a new one.</p>
+  </div>
+</div>
 </main>
 <script>
 /* X's parlays, one copy for every device, written by X alone.
@@ -1867,7 +1925,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v84 \u00b7 2026-10-10';
+const APP_BUILD='app v85 \u00b7 2026-10-10';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3474,8 +3532,8 @@ async function boot(){
        times a week and a banner on each would bury the one that matters */
     rebuilt=(saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD)?null
       :(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
-      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and prices were kept; weeks built into this file were replayed.'
-      : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and prices were kept; weeks built into this file were replayed.';
+      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.'
+      : 'The model changed, so the season was rebuilt from the current baseline. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.';
     /* the season's data is built in and replays below; keep what only you could have made */
     for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }
@@ -4370,8 +4428,9 @@ function applyBaked(){
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
-   the X Parlays section, the sync layer, the X Bet Log, the betting app -- shows as a new tag. */
-const PAGE_HASH='1d6b1be';
+   the X Parlays section, the parlay card, the sync layer, the X Bet Log, the betting app -- shows
+   as a new tag. */
+const PAGE_HASH='e7b2015';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -4403,7 +4462,7 @@ const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
 /* a name both sources can agree on: the page's own normName (part2) when it is there */
 const nameOf=n=>typeof normName==='function'?normName(n):String(n||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
 
-/* ---- the section: two lists ----
+/* ---- the section: one list, X's ----
    X Parlays is the owner's, the same on every device: what X placed at the book (in the
    repository, liveparlays/parlays.json, which the section reads on every load and never writes:
    a browser has no way to commit to GitHub without a credential, and a static page has nowhere
@@ -4412,12 +4471,14 @@ const nameOf=n=>typeof normName==='function'?normName(n):String(n||'').toLowerCa
    X's betting slips. On the owner's own device that is the prop model's own state and the shared
    key, and every control on it writes through LIVE_IO to the document every device reads; on
    anyone else's it is that document as read (NFLSYNC.x(), LIVE_IO.get()), with nothing to press.
+   With no store at all, X Parlays is the file.
 
-   Your parlays is a visitor's own: the prop model's builder and saved parlays in this browser,
-   the builders it kept at kickoff and its betting slips, with every control, under the browser's
-   own key (my_parlays_v1), seen by nobody else. On the owner's device there is no second list:
-   everything there is X's. With no store at all, X Parlays is the file and Your parlays
-   everything this browser has. */
+   There is no second list. Visitors come to see X's parlays, so a visitor's device draws nothing
+   of its own here: the Parlay Builder above stays theirs to use, and finishing a parlay there
+   opens it as a card they can download (nflbets/build/card.html), which is saved nowhere. What a
+   browser saved before this (the prop model's saved parlays, my_parlays_v1) is left in its
+   storage untouched and simply not drawn: on a device that later opens the owner link, those
+   saved parlays join X's document (nflbets/build/sync.js). */
 const DATA='../liveparlays/parlays.json';
 
 /* A line that moved between building the parlay and placing it -- Kelce's receiving yards
@@ -4430,23 +4491,22 @@ const DATA='../liveparlays/parlays.json';
    still grades the line the model actually quoted.
 
    X's list keeps its key (live_parlays_v1) through LIVE_IO, which inside the Bets and Stats
-   page is the sync layer: the shared document every device reads, written only by X's devices.
-   The visitor's list keeps its own in this browser. */
-const LIVE_KEY='live_parlays_v1', MY_KEY='my_parlays_v1';
+   page is the sync layer: the shared document every device reads, written only by X's devices. */
+const LIVE_KEY='live_parlays_v1';
 const SYNC=()=>(typeof window!=='undefined'&&window.NFLSYNC)||null;
-/* the owner's device, with a store to write to: X's list is this device's to change */
+/* the owner's device, with a store to write to: X's list is this device's to change. Everyone
+   else is a visitor (the parlay card asks the same question: window.lpOwner) */
 const ownerHere=()=>{ const s=SYNC(); return !!s&&s.role()==='owner'&&!!s.state().url; };
+window.lpOwner=ownerHere;
 /* with no sync layer around it (the section on its own) there is no X document to read or write */
 const LIVE_IO=(typeof window!=='undefined'&&window.LIVE_IO)||{get:()=>null,set:()=>false};
-const MY_IO={get:()=>{ try{ return localStorage.getItem(MY_KEY); }catch(e){ return null; } },
-  set:v=>{ try{ localStorage.setItem(MY_KEY,v); return true; }catch(e){ return false; } }};
-const LISTS={x:{id:'x',io:LIVE_IO,el:'app',clear:'clear',restore:'restoreAll'},my:{id:'my',io:MY_IO,el:'myApp',clear:'myClear',restore:'myRestoreAll'}};
-const listOf=id=>LISTS[id]||LISTS.x;
-/* what can be changed here: the visitor's own list always, X's on the owner's device only */
-const editable=L=>L.id==='my'||ownerHere();
-/* whose prop model state a list shows: X's list on the owner's device, the visitor's own list
-   everywhere else */
-const holdsS=L=>L.id==='x'?ownerHere():!ownerHere();
+const LISTS={x:{id:'x',io:LIVE_IO,el:'app',clear:'clear',restore:'restoreAll'}};
+const listOf=()=>LISTS.x;
+/* what can be changed here: X's list, on the owner's device only */
+const editable=()=>ownerHere();
+/* the prop model's own state is X's on the owner's device; anywhere else it is the visitor's,
+   and nothing of it is drawn here */
+const holdsS=()=>ownerHere();
 function liveStore(L){
   let v=null; try{ v=JSON.parse(L.io.get()||'null'); }catch(e){}
   if(!v||typeof v!=='object') v={};
@@ -4456,8 +4516,8 @@ function liveStore(L){
     lines:(v.lines&&typeof v.lines==='object')?v.lines:{},
     removed:(v.removed&&typeof v.removed==='object')?v.removed:{}};
 }
-/* a parlay deleted from a list is gone from it, for good: from X's on every device, from the
-   visitor's on this one. Nothing else is written: the prop model's saved parlays are deleted where
+/* a parlay deleted from X's list is gone from it, for good, on every device. Nothing else is
+   written: the prop model's saved parlays are deleted where
    they are kept, and a parlay in the file is taken out of the file. */
 const rmKey=p=>p.src+'|'+p.id;
 function removeParlay(L,p){
@@ -4548,17 +4608,17 @@ function propParlays(v,builderNote){
    parlay bet at the book and never locked here is still a bet, and the one this section most
    needs to follow on a Sunday: so the moment the builder is about to drop a started leg, the
    section keeps its own copy of the builder as it stood -- every leg, the stake, a price typed
-   in -- under the key of the list the builder belongs to (kept: X's on the owner's device,
-   shared like the rest of X's key; the visitor's own anywhere else), and watches that. Kept by
-   its legs, so two devices that both see the kickoff keep one copy; deleted with its x. The
-   page calls this before every redraw of the builder. */
+   in -- under X's key (kept, shared like the rest of it), and watches that. Only on the owner's
+   device: a visitor's builder is theirs alone and nothing of it is watched here. Kept by its
+   legs, so two devices that both see the kickoff keep one copy; deleted with its x. The page
+   calls this before every redraw of the builder. */
 const hashStr=s2=>{ let h=5381; for(let i=0;i<s2.length;i++) h=((h<<5)+h+s2.charCodeAt(i))|0; return 'k'+(h>>>0).toString(36); };
 function keepBuilder(){
-  if(typeof S!=='object'||!S||!isObj(S.parlay)||!Array.isArray(S.sched)||typeof gameStarted!=='function') return false;
+  if(!ownerHere()||typeof S!=='object'||!S||!isObj(S.parlay)||!Array.isArray(S.sched)||typeof gameStarted!=='function') return false;
   const legs=Object.keys(S.parlay).map(k=>S.parlay[k]).filter(l=>l&&l.gid&&l.stat);
   const started=legs.filter(l=>{ const g=S.sched.find(x=>x.id===l.gid); return g&&gameStarted(g); });
   if(!started.length) return false;
-  const L=ownerHere()?LISTS.x:LISTS.my;
+  const L=LISTS.x;
   const kl=legs.map(propLeg), id=hashStr(legPrint({legs:kl})), st=liveStore(L);
   st.kept=isObj(st.kept)?st.kept:{};
   if(st.kept[id]) return false;
@@ -4574,20 +4634,20 @@ function keptParlays(L){
     return {src:'kept',id,week:+v.week||null,stake:+v.stake||0,price:money(v.price),payout:+v.payout||0,
       note:'builder at kickoff',legs:v.legs.filter(l=>l&&l.gid&&l.stat).map(propLeg)}; }).filter(p=>p&&p.legs.length);
 }
-/* the betting model's slips: this browser's own (read across from its key by part2), and on X's
-   list those of X's other devices, which the document carries by device (live.bet) */
+/* the betting model's slips: on the owner's device this browser's own (read across from its key by
+   part2), and those of X's other devices, which the document carries by device (live.bet) */
 function slipsOf(raw){ try{ return typeof bettingParlays==='function'?bettingParlays(JSON.stringify({bank:{build:raw}})):[]; }catch(e){ return []; } }
 function betSlips(L){
   const s=SYNC(), dev=s&&s.device?s.device():null;
   let out=holdsS(L)&&typeof bettingParlays==='function'?bettingParlays():[];
-  if(L.id==='x'){ const bet=liveStore(L).bet;
+  { const bet=liveStore(L).bet;
     if(isObj(bet)) for(const k of Object.keys(bet)) if(!(holdsS(L)&&k===dev)&&Array.isArray(bet[k])) out=out.concat(slipsOf(bet[k])); }
   const seen=new Set(); return out.filter(p=>!seen.has(p.id)&&seen.add(p.id));
 }
 function ownParlays(L){
   let props=[];
   if(holdsS(L)) props=propParlays(propState(),'in the builder');
-  else if(L.id==='x'){ const s=SYNC(), x=s&&s.x?s.x():null; props=x?propParlays(x.prop,'in X’s builder'):[]; }
+  else { const s=SYNC(), x=s&&s.x?s.x():null; props=x?propParlays(x.prop,'in X’s builder'):[]; }
   const bet=betSlips(L).map(p=>({src:'bet',id:p.id,week:p.week,stake:p.stake,
     price:p.priced?decToML(p.dec):null,payout:p.payout,note:'',legs:p.legs}));
   const kept=keptParlays(L);
@@ -4606,7 +4666,6 @@ const legPrint=p=>p.legs.map(legOf).sort().join(' + ');
 function allParlays(L){
   L=L||LISTS.x;
   const mine=ownParlays(L);
-  if(L.id!=='x') return mine;
   const seen={};
   for(const p of mine){ seen[String(p.id)]=1; seen[legPrint(p)]=1; }
   /* what X holds wins over the copy in the file, so a parlay being looked at is the one built
@@ -4657,8 +4716,7 @@ async function refresh(){
     STATE.parlays=readFile(f); STATE.dataErr=null;
   }catch(e){ STATE.dataErr=String(e&&e.message||e); }
   STATE.loaded=true;
-  /* both lists: X's, and the visitor's own */
-  const ps=allParlays(LISTS.x).concat(allParlays(LISTS.my));
+  const ps=allParlays(LISTS.x);
   const want=legGames(ps);
   for(const gid of want) STATE.asked.add(gid);
   if(want.size){
@@ -4906,29 +4964,24 @@ const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; r
 let EDITING=null;
 function draw(){
   if(EDITING&&EDITING.isConnected&&document.activeElement===EDITING) return;
-  const own=ownerHere(), card=document.getElementById('myCard');
-  if(card) card.hidden=own;
   drawList(LISTS.x);
-  /* on the owner's device there is no list of its own: one drawn before the device was known
-     to be the owner's goes */
-  if(!own) drawList(LISTS.my); else { const a=document.getElementById(LISTS.my.el); if(a) a.innerHTML=''; }
   foot();
   /* a parlay that arrived since the scores were read (X's, re-read from the store) gets its game read too */
-  if(STATE.loaded&&!STATE.busy&&[...legGames(allParlays(LISTS.x).concat(allParlays(LISTS.my)))].some(g=>!STATE.asked.has(g))) setTimeout(refresh,0);
+  if(STATE.loaded&&!STATE.busy&&[...legGames(allParlays(LISTS.x))].some(g=>!STATE.asked.has(g))) setTimeout(refresh,0);
 }
 function drawList(L){
   const app=document.getElementById(L.el); if(!app) return;
   const ed=editable(L), ps=allParlays(L).filter(p=>!isRemoved(L,p));
   const clr=document.getElementById(L.clear); if(clr) clr.hidden=!ed||!ps.some(p=>settledP(L,p));
   let html='';
-  if(L.id==='x'){
+  {
     if(STATE.dataErr) html+=`<div class="note"><b>X's placed parlays could not be read: ${esc(STATE.dataErr)}</b> They come from <code>liveparlays/parlays.json</code> in the repository, read on every load; the rest of X Parlays is not affected.</div>`;
     else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
   }
   if(!ps.length){
     /* empty says so and no more; the one thing worth a line is the way back for what was deleted */
     const n=ed?removedCount(L):0;
-    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${n?';margin-bottom:8px':''}">${L.id==='x'?'Nothing to watch yet':'Nothing of yours to watch yet'}</b>${n?`<a href="#" id="${L.restore}" data-restore="${L.id}">bring back the ${n} deleted</a>`:''}</div>`;
+    app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block${n?';margin-bottom:8px':''}">Nothing to watch yet</b>${n?`<a href="#" id="${L.restore}" data-restore="${L.id}">bring back the ${n} deleted</a>`:''}</div>`;
     return;
   }
   /* the order the day runs in: still to finish first, then by when a parlay can settle */
@@ -5044,26 +5097,28 @@ function foot(){
       :(STATE.loaded?'loaded':'idle'));
 }
 document.getElementById('now').addEventListener('click',refresh);
-/* Clear settled: each list its own, and only where the list can be changed */
-for(const L of [LISTS.x,LISTS.my]){
-  const b=document.getElementById(L.clear);
+/* Clear settled, and the way back, only where X's list can be changed */
+{ const L=LISTS.x, b=document.getElementById(L.clear);
   if(b) b.addEventListener('click',()=>{ if(!editable(L)) return; for(const p of allParlays(L)) if(!isRemoved(L,p)&&settledP(L,p)) removeParlay(L,p); draw(); });
   const app=document.getElementById(L.el);
   if(app) app.addEventListener('click',e=>{
-    if(e.target&&e.target.dataset&&e.target.dataset.restore){ e.preventDefault(); restoreAll(listOf(e.target.dataset.restore)); draw(); } });
-}
+    if(e.target&&e.target.dataset&&e.target.dataset.restore){ e.preventDefault(); if(editable(L)) restoreAll(L); draw(); } }); }
 window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();
 
 })();
 /* the Saved parlays card and the betting-slips card it also covered are drawn by the section
-   now; the builder keeps its place above it and the section follows every redraw. Before each
-   redraw the section keeps a copy of a builder about to lose a leg to a kickoff (lpKeep), so a
-   parlay bet and never locked is still watched once its first game starts. */
+   now, as X's, and on a visitor's device not at all; the builder keeps its place above it and the
+   section follows every redraw. Before each redraw the owner's device keeps a copy of a builder
+   about to lose a leg to a kickoff (lpKeep), so a parlay bet and never locked is still watched
+   once its first game starts. After it, a visitor's builder gets Finish parlay where Save was
+   (the parlay card). */
 renderSaved=function(){ return ''; };
 renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
   renderParlay=function(){ try{ if(window.lpKeep) window.lpKeep(); }catch(e){}
-    const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
+    const r=drawParlay.apply(this,arguments);
+    try{ if(window.PARLAY_CARD) window.PARLAY_CARD.finishBuilder(); }catch(e){}
+    if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
 /* the sync stamp, in the X Parlays card (the parlays are what it syncs; the header keeps only
    when the site's data was updated, and the owner's mark). On a reader's device: X's parlays
@@ -5093,7 +5148,7 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
     else if(!s.applied){ t='Connecting…'; }
     else { t=(s.signedIn?'Signed in · ':'')+'Synced'+(s.at?' · last change '+when(s.at):''); cls='ok'; }
     el.textContent=t; el.dataset.state=cls;
-    el.title=(!s.url?'nflbets/sync.json has no store address, so parlays stay in this browser'
+    el.title=(!s.url?'nflbets/sync.json has no store address, so X Parlays shows only the placed parlays in the repository'
       :(owner?'What you change here is what every device shows':'X’s parlays, the same on every device')+(s.checked?'; this page last checked at '+clock(s.checked):''))
       +(s.ok===false&&s.err?' ('+s.err+')':'')+(s.ownerMsg?' ('+s.ownerMsg+')':'');
     /* the owner's mark and controls */
@@ -5104,7 +5159,7 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
     /* sign-in, offered when either document's writes wait for it (the X Bet Log's note sends the owner here) */
     const lapsed=s.blocked==='signin'||!!(s.blocks&&s.blocks.xbets==='signin');
     if(inn){ inn.hidden=!(s.url&&s.enforced&&(!owner||!s.signedIn||lapsed)); inn.textContent=owner?'sign in':'Owner sign-in'; }
-    if(sub) sub.textContent=!s.url?'This browser only: X’s placed parlays from the repository here, yours under the builder.'
+    if(sub) sub.textContent=!s.url?'X’s placed parlays, from the repository.'
       :(owner?'Yours, as every visitor sees them: what you change here changes for everyone.'
         :'What X placed, saved and is building, followed live: the same on every device, read only.')
       +(s.ownerMsg&&!owner?' ('+s.ownerMsg+')':'');
@@ -5120,6 +5175,355 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
     catch(err){ pw.value=''; msg.textContent=String(err&&err.message||err); } });
   if($('xpSignOut')) $('xpSignOut').addEventListener('click',()=>{
     if(confirm('Sign this device out of owner? It stops publishing: X Parlays and the X Bet Log become read only here, and the parlays it holds that are X’s stay under X Parlays.')) NFLSYNC.signOut(); });
+})();
+</script>
+<script>
+window.PARLAY_CARD=(function(){
+  const SITE='demon-x13.github.io/nfl-hub/nflbets';
+  const $=id=>document.getElementById(id);
+  const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  /* a visitor: anyone whose device is not the owner's, the X Parlays section's own rule */
+  const visitor=()=>!(typeof window.lpOwner==='function'&&window.lpOwner());
+  /* every dollar figure whole, with its thousands marked: $17,620.00 */
+  const money=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pct=p=>p>0&&p<0.0005?'<0.1%':(p*100).toFixed(1)+'%';      // a long shot reads as under a tenth of a percent, not 0.0%
+  const ml=x=>x==null||!isFinite(x)?'–':(x>0?'+'+x:'−'+Math.abs(x));
+  /* the playoffs run on as weeks 19-22 */
+  const weekText=w=>w==null?'':(w<=18?'Week '+w:({19:'Wild Card round',20:'Divisional round',21:'Conference championships',22:'Super Bowl'}[w]||'Week '+w));
+  const game=gid=>(typeof S==='object'&&S&&Array.isArray(S.sched))?S.sched.find(x=>x.id===gid)||null:null;
+  const ET={timeZone:'America/New_York'};
+  const kick=g=>{ try{ return typeof kickoff==='function'&&g?kickoff(g):null; }catch(e){ return null; } };
+  const dayOf=d=>d.toLocaleDateString('en-US',Object.assign({weekday:'short',month:'short',day:'numeric'},ET));
+  const whenOf=d=>d.toLocaleString('en-US',Object.assign({weekday:'short',hour:'numeric',minute:'2-digit'},ET))+' ET';
+  /* the days the legs are played on: one day, or the first and the last */
+  function dates(legs){
+    const ks=legs.map(l=>kick(game(l.gid))).filter(Boolean).sort((a,b)=>a-b);
+    if(!ks.length) return '';
+    const a=dayOf(ks[0]), b=dayOf(ks[ks.length-1]);
+    return a===b?a:a+' – '+b;
+  }
+  /* the builder's numbers, as renderParlay works them out: its own lines, lifted at build time */
+  function quote(){
+    if(typeof S!=='object'||!S||typeof parlayLegs!=='function') return null;
+    const legs=parlayLegs(); if(!legs.length) return null;
+  const wks=[...new Set(legs.map(l=>l.week))];
+  const pr=parlayProb(legs.map(l=>({...l,side:l.side||'over'})));
+  const prices=legs.map(legPrice);
+  const allBook=prices.every(p=>p.src==='real');
+  const multDec=prices.reduce((a,p)=>a*(mlToDec(p.ml)||1),1);
+  const bookDec=parlayDec(legs.map((l,i)=>({leg:l,ml:prices[i].ml})));
+  const sg=sameGame(legs);
+  const fairML=probToAmerican(pr.corr);
+  const stake=Math.max(0,+S.stake||0);
+  const override=S.bookPrice!=null&&isFinite(S.bookPrice)?mlToDec(S.bookPrice):null;
+  /* only call it "your price" when it really is one: a price you typed, or every
+     leg priced from your book. Otherwise we are just multiplying our own fair
+     odds, which carry no bookmaker margin and would flatter the return. */
+  const realPrice=override!=null||allBook;
+  const estPrice=!realPrice&&prices.every(p=>p.src!=='fair');
+  const useDec=override||((allBook||estPrice)?bookDec:mlToDec(fairML));
+  const payout=stake*useDec, profit=payout-stake;
+    return {legs,wks,pr,prices,allBook,bookDec,sg,fairML,stake,override,realPrice,estPrice,useDec,payout,profit};
+  }
+  /* one leg as the card shows it: who, what (the market, the line and the side, as the builder
+     labels it), the game and its kickoff, and its price with where the price came from */
+  function leg(l,price,src){
+    const g=game(l.gid), k=kick(g), team=l.grp==='TEAM';
+    const meta=[team?'':l.pos, l.team&&l.opp?l.team+' v '+l.opp:'', k?whenOf(k):''].filter(Boolean).join(' · ');
+    return {who:l.name||l.team||'', what:l.label||'', meta, price:ml(price), tag:src==='real'?'book':(src==='fair'?'fair':'est.')};
+  }
+  /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
+  function card({kicker,legs,dec,priceNote,chance,chanceBy,stake,source}){
+    const w=legs.reduce((a,l)=>(+l.week&&(a==null||+l.week<a))?+l.week:a,null), n=legs.length;
+    const m={source,kicker,title:n+'-leg parlay',week:w,weekText:weekText(w),dateText:dates(legs),
+      price:ml(typeof decToML==='function'?decToML(dec):null),dec:isFinite(dec)?dec.toFixed(2):'–',implied:dec>1?pct(1/dec):'–',priceNote,
+      legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
+      chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
+      made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
+      file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png'};
+    return m;
+  }
+  /* from the builder: the legs as they stand, priced as the builder prices them */
+  function fromBuilder(){
+    const q=quote(); if(!q) return null;
+    const legs=q.legs.map((l,i)=>Object.assign({},l,{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
+    return card({source:'builder',kicker:'Your parlay',legs,dec:q.useDec,
+      priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
+      chance:q.pr.corr,chanceBy:'Model',stake:q.stake});
+  }
+  /* from a tier of the Suggested parlays window: the model's (SUGGEST_CACHE) or the Elo picks' */
+  function fromTier(kind,id){
+    let t=null;
+    try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
+      :((typeof SUGGEST_CACHE!=='undefined'&&SUGGEST_CACHE&&SUGGEST_CACHE.tiers)||[]).find(x=>x.id===id); }catch(e){ t=null; }
+    if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
+    const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
+    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' suggestion',legs,dec:t.dec,priceNote:'book price',
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:Math.max(0,+S.stake||0)});
+  }
+
+  /* ---- the window ---- */
+  function html(m){
+    return `<div class="pc-card" id="pcCard">
+      <div class="pc-head">
+        <div class="pc-mark"><span>X NFL Bets and Stats</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
+        <div class="pc-row"><span class="pc-title">${h(m.title)}</span><span class="pc-price" title="${h(m.priceNote)}">${h(m.price)}</span></div>
+        <div class="pc-sub"><span>${h([m.weekText,m.dateText].filter(Boolean).join(' · '))}</span><span>${h(m.dec)} decimal · ${h(m.implied)} implied · ${h(m.priceNote)}</span></div>
+      </div>
+      <ol class="pc-legs">${m.legs.map((l,i)=>`<li><span class="pc-n">${i+1}</span>
+        <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
+        <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
+      ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
+      <div class="pc-chance">${m.chance?`${h(m.chanceBy)}\u2019s chance all ${m.legs.length} land <b>${h(m.chance)}</b> · `:''}the price says <b>${h(m.implied)}</b></div>
+      <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
+    </div>`;
+  }
+  let cur=null, opener=null;
+  const isOpen=()=>{ const md=$('pcModal'); return !!md&&!md.hidden; };
+  const say=t=>{ const e=$('pcMsg'); if(e) e.textContent=t||''; };
+  /* the share sheet, where the browser can share an image file (phones): it is how an image
+     reaches the photo library */
+  function canShareFiles(){
+    try{ return typeof navigator!=='undefined'&&typeof navigator.canShare==='function'&&typeof navigator.share==='function'&&typeof File==='function'
+      &&navigator.canShare({files:[new File([new Blob([''],{type:'image/png'})],'card.png',{type:'image/png'})]}); }catch(e){ return false; }
+  }
+  function open(m,from){
+    const md=$('pcModal'); if(!md||!m) return false;
+    cur=m; opener=from||document.activeElement||null;
+    $('pcView').innerHTML=html(m);
+    $('pcAgain').hidden=m.source!=='builder';
+    /* on a phone the share sheet is the way to Photos, so it leads; the download stays beside it */
+    const share=canShareFiles();
+    $('pcShare').hidden=!share;
+    $('pcShare').className='btn '+(share?'go':'quiet'); $('pcDownload').className='btn '+(share?'quiet':'go');
+    say('');
+    md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;
+    /* the window opens at its top (the title, the price and Close in view); focus must not scroll it down to the buttons */
+    try{ $(share?'pcShare':'pcDownload').focus({preventScroll:true}); }catch(e){}
+    md.scrollTop=0;
+    return true;
+  }
+  function close(){
+    const md=$('pcModal'); if(!md||md.hidden) return;
+    md.hidden=true; cur=null;
+    if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
+    /* focus goes back where it came from: the button that opened it, or the builder's Finish
+       if a redraw has replaced that one */
+    const back=opener&&opener.isConnected?opener:$('pFinish');
+    opener=null;
+    try{ if(back) back.focus(); }catch(e){}
+  }
+
+  /* ---- the image: the same card on a canvas, twice its size for a sharp picture ---- */
+  const C={bg:'#EDF0F4',n0:'#0B1526',n1:'#132238',n2:'#1B2E4A',gold:'#D39A1F',goldT:'#F0C565',head2:'#B9C5D4',panel:'#FFFFFF',panel2:'#F7F9FB',
+    ink:'#0F1B2D',ink2:'#4F607A',muted:'#657386',line:'#E4E9F0',line2:'#D5DCE6',pick:'#1B7A4E'};
+  const FD='"Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB='"Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const W=540, M=18, P=24;
+  /* the page's own fonts, if the browser has them, for as long as a moment takes */
+  async function fonts(){
+    try{ const F=document.fonts; if(!F||typeof F.load!=='function') return;
+      await Promise.race([Promise.all(['700 26px "Space Grotesk"','500 14px "Inter Tight"','700 14px "Inter Tight"'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  }
+  function rr(x,a,b,w,hh,r){ x.beginPath(); x.moveTo(a+r,b); x.lineTo(a+w-r,b); x.quadraticCurveTo(a+w,b,a+w,b+r); x.lineTo(a+w,b+hh-r); x.quadraticCurveTo(a+w,b+hh,a+w-r,b+hh);
+    x.lineTo(a+r,b+hh); x.quadraticCurveTo(a,b+hh,a,b+hh-r); x.lineTo(a,b+r); x.quadraticCurveTo(a,b,a+r,b); x.closePath(); }
+  /* text cut to a width, with an ellipsis */
+  function fit(x,t,max){ t=String(t||''); if(x.measureText(t).width<=max) return t;
+    while(t.length>1&&x.measureText(t+'…').width>max) t=t.slice(0,-1); return t+'…'; }
+  function text(x,t,a,b,font,color,align,max){ x.font=font; x.fillStyle=color; x.textAlign=align||'left'; x.textBaseline='alphabetic';
+    const s=max?fit(x,t,max):String(t); x.fillText(s,a,b); return x.measureText(s).width; }
+  const LEG_H=74, HEAD_H=134, TILE_H=58, TILE_GAP=8;
+  /* what it pays: Stake, Pays and Profit, every figure whole. Three across, the figures step down
+     from 19px to 14px until each fits its tile; if one still does not, the tiles take two rows
+     (Stake and Pays, then Profit the card's width), then one to a row; only past anything a real
+     stake makes does the font go under 14px. Never fit()'s ellipsis on a dollar figure. */
+  function tiles(x,m,L,R){
+    if(!m.stake) return null;
+    const vals=[['STAKE',money(m.stake),C.ink],['PAYS',money(m.payout),C.ink],['PROFIT','+'+money(m.profit),C.pick]];
+    const wid=(t,px)=>{ x.font='700 '+px+'px '+FD; return x.measureText(t).width; };
+    const lay=per=>{ const rows=[]; for(let i=0;i<vals.length;i+=per) rows.push(vals.slice(i,i+per));
+      return rows.map(r=>{ const tw=(R-L-(r.length-1)*TILE_GAP)/r.length; return r.map(([k,v,col])=>({k,v,col,tw})); }); };
+    for(const per of [3,2,1]){ const rows=lay(per);
+      for(let px=19;px>=14;px--) if(rows.every(r=>r.every(t=>wid(t.v,px)<=t.tw-20))) return {rows,px}; }
+    const rows=lay(1), w=Math.max(...rows.map(r=>wid(r[0].v,19)));
+    return {rows,px:Math.min(14,Math.floor(19*(rows[0][0].tw-20)/w*10)/10)};
+  }
+  const tilesH=t=>t?4+t.rows.length*TILE_H+(t.rows.length-1)*TILE_GAP+12:0;
+  function size(m,t){ return HEAD_H+10+m.legs.length*LEG_H+tilesH(t)+40+52; }
+  async function draw(m,scale){
+    scale=scale||2;
+    await fonts();
+    const c=document.createElement('canvas');
+    const x=c.getContext&&c.getContext('2d'); if(!x) return null;
+    /* the tiles are laid out first, by measure, since their rows set the card's height; sizing
+       the canvas then resets the context, so the scale comes after */
+    const CW=W-2*M, L=M+P, R=M+CW-P, t=tiles(x,m,L,R), CH=size(m,t), H=CH+2*M;
+    c.width=Math.round(W*scale); c.height=Math.round(H*scale);
+    x.scale(scale,scale);
+    x.fillStyle=C.bg; x.fillRect(0,0,W,H);
+    /* the card, with a soft shadow, and its header band */
+    x.save(); x.shadowColor='rgba(15,27,45,.22)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
+    x.save(); rr(x,M,M,CW,CH,18); x.clip();
+    const g=x.createLinearGradient(M,M,M+CW,M+HEAD_H); g.addColorStop(0,C.n0); g.addColorStop(.55,C.n1); g.addColorStop(1,C.n2);
+    x.fillStyle=g; x.fillRect(M,M,CW,HEAD_H);
+    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(211,154,31,0)'); gl.addColorStop(.5,'rgba(211,154,31,.85)'); gl.addColorStop(1,'rgba(211,154,31,0)');
+    x.fillStyle=gl; x.fillRect(M,M+HEAD_H-2,CW,2);
+    x.restore();
+    /* the mark, the kicker, the title and the price */
+    let y=M+30;
+    if('letterSpacing' in x) x.letterSpacing='1px';
+    const mw=text(x,'X NFL BETS AND STATS',L,y,'700 11px '+FB,C.head2);
+    if('letterSpacing' in x) x.letterSpacing='0px';
+    x.beginPath(); x.arc(L+mw+9,y-4,3,0,Math.PI*2); x.fillStyle=C.gold; x.fill();
+    { x.font='700 10.5px '+FB; const k=String(m.kicker||'').toUpperCase(), kw=x.measureText(k).width+18;
+      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(211,154,31,.2)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
+    y=M+76;
+    const pw=text(x,m.price,R,y,'700 32px '+FD,C.goldT,'right');
+    text(x,m.title,L,y,'700 26px '+FD,'#FFFFFF','left',R-L-pw-16);
+    y=M+108;
+    const right=m.dec+' decimal · '+m.implied+' implied';
+    const rw=text(x,right,R,y,'500 12.5px '+FB,C.head2,'right');
+    text(x,[m.weekText,m.dateText].filter(Boolean).join(' · '),L,y,'500 12.5px '+FB,C.head2,'left',R-L-rw-14);
+    text(x,m.priceNote,R,y+16,'500 11px '+FB,'#8C9AAE','right');
+    /* the legs */
+    y=M+HEAD_H+10;
+    m.legs.forEach((l,i)=>{
+      if(i){ x.fillStyle=C.line; x.fillRect(L,y,R-L,1); }
+      x.beginPath(); x.arc(L+11,y+22,11,0,Math.PI*2); x.lineWidth=1.5; x.strokeStyle=C.line2; x.stroke();
+      text(x,String(i+1),L+11,y+26,'700 11px '+FB,C.ink2,'center');
+      const lpw=Math.max(text(x,l.price,R,y+26,'700 17px '+FD,C.ink,'right'),
+        text(x,String(l.tag||'').toUpperCase(),R,y+44,'600 10px '+FB,C.muted,'right'));
+      const tx=L+34, tw=R-tx-lpw-14;
+      text(x,l.who,tx,y+25,'700 15.5px '+FB,C.ink,'left',tw);
+      text(x,l.what,tx,y+45,'500 14px '+FB,C.ink,'left',tw);
+      if(l.meta) text(x,l.meta,tx,y+63,'500 12px '+FB,C.muted,'left',R-tx);
+      y+=LEG_H;
+    });
+    /* what it pays */
+    if(t){
+      let ty=y+4;
+      t.rows.forEach(r=>{ let tx=L;
+        r.forEach(tl=>{
+          rr(x,tx,ty,tl.tw,TILE_H,10); x.fillStyle=C.panel2; x.fill(); x.lineWidth=1; x.strokeStyle=C.line; x.stroke();
+          text(x,tl.k,tx+11,ty+20,'700 10px '+FB,C.muted);
+          text(x,tl.v,tx+11,ty+46,'700 '+t.px+'px '+FD,tl.col);
+          tx+=tl.tw+TILE_GAP; });
+        ty+=TILE_H+TILE_GAP; });
+      y+=tilesH(t);
+    }
+    /* the chance: the model's beside the price's */
+    { let cx=L; const t1=m.chance?m.chanceBy+'’s chance all '+m.legs.length+' land ':'', yy=y+24;
+      if(t1){ cx+=text(x,t1,cx,yy,'500 13px '+FB,C.ink2); cx+=text(x,m.chance,cx,yy,'700 13px '+FB,C.ink); cx+=text(x,'  ·  ',cx,yy,'500 13px '+FB,C.ink2); }
+      cx+=text(x,'the price says ',cx,yy,'500 13px '+FB,C.ink2); text(x,m.implied,cx,yy,'700 13px '+FB,C.ink); }
+    y+=40;
+    /* the site's mark */
+    x.fillStyle=C.line; x.fillRect(M,y,CW,1);
+    text(x,'Made '+m.made,R,y+31,'500 12px '+FB,C.muted,'right');
+    text(x,m.site,L,y+31,'600 12px '+FB,C.ink2,'left',R-L-120);
+    return c;
+  }
+  /* the card as a PNG */
+  async function png(m){
+    const c=await draw(m||cur,2);
+    if(!c) throw new Error('this browser cannot draw the image');
+    return await new Promise((res,rej)=>{ try{ c.toBlob(b=>b?res(b):rej(new Error('the image came out empty')),'image/png'); }catch(e){ rej(e); } });
+  }
+  function saveFile(blob,name){
+    const u=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=u; a.download=name; a.rel='noopener'; a.style.display='none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(u); }catch(e){} },30000);
+  }
+  async function download(){
+    const m=cur; if(!m) return false; say('Drawing the image…');
+    try{ saveFile(await png(m),m.file); say('Saved as '+m.file+'.'); return true; }
+    catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
+  }
+  async function share(){
+    const m=cur; if(!m) return false; say('Drawing the image…');
+    let blob=null;
+    try{ blob=await png(m);
+      const f=new File([blob],m.file,{type:'image/png'});
+      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'X NFL Bets and Stats: '+m.title}); say(''); return true; } }
+    catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } }
+    /* no share sheet after all: the download */
+    try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }
+    catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
+  }
+  /* Start over: the builder emptied, in this browser only, as its own Clear ALL does */
+  function again(){
+    if(typeof S!=='object'||!S) return;
+    S.parlay={}; S.bookPrice=null;
+    try{ if(typeof save==='function') save(); }catch(e){}
+    close();
+    try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
+    /* Finish went with the legs: the focus goes to the empty builder's first button */
+    try{ const b=$('suggOpen'); if(b) b.focus(); }catch(e){}
+  }
+
+  /* ---- on a visitor's device: Finish where Save was ---- */
+  const FINISH_TIP='Opens this parlay as a card you can download. Nothing is saved: not here, not in X’s parlays.';
+  /* the builder's Save and lock, after every redraw of the builder: the same button, with the
+     builder's own rule for when it can be pressed (one week, and a price), cloned so its save
+     goes with the old one */
+  function finishBuilder(){
+    if(!visitor()) return false;
+    const b=$('pSave'); if(!b) return false;
+    const nb=b.cloneNode(true);
+    nb.id='pFinish'; nb.textContent='Finish parlay';
+    nb.title=nb.disabled?String(b.title||'').replace(/ to save$/,' to finish'):FINISH_TIP;
+    b.replaceWith(nb);
+    nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
+    return true;
+  }
+  /* a tier's Add to saved parlays in the Suggested parlays window, the model's and the Elo
+     picks', whenever the window is filled */
+  function finishTiers(){
+    if(!visitor()) return 0;
+    const v=$('suggView'); if(!v) return 0;
+    let n=0;
+    v.querySelectorAll('[data-suggest-save],[data-elo-save]').forEach(b=>{
+      const kind=b.hasAttribute('data-elo-save')?'elo':'model', id=b.getAttribute(kind==='elo'?'data-elo-save':'data-suggest-save');
+      const nb=b.cloneNode(true);
+      nb.removeAttribute('data-suggest-save'); nb.removeAttribute('data-elo-save');
+      nb.setAttribute('data-pc-finish',kind+'|'+id); nb.disabled=false; nb.classList.remove('quiet'); nb.classList.add('go');
+      nb.textContent='Finish parlay'; nb.title=FINISH_TIP;
+      b.replaceWith(nb);
+      nb.addEventListener('click',()=>{ const m=fromTier(kind,id); if(m) open(m,nb); });
+      n++;
+    });
+    return n;
+  }
+  /* wiring: the window's own buttons, Escape (ahead of the windows beneath it, so it closes this
+     one alone), a click outside the card, Tab kept inside, and the suggestions window watched */
+  function wire(){
+    const md=$('pcModal'); if(!md||md.dataset.wired) return; md.dataset.wired='1';
+    $('pcClose').addEventListener('click',close);
+    $('pcDownload').addEventListener('click',download);
+    $('pcShare').addEventListener('click',share);
+    $('pcAgain').addEventListener('click',again);
+    md.addEventListener('click',e=>{ if(e.target===md) close(); });
+    window.addEventListener('keydown',e=>{
+      if(!isOpen()) return;
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+      if(e.key!=='Tab') return;
+      const f=[...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el=>!el.disabled&&!el.hidden&&!el.closest('[hidden]'));
+      if(!f.length) return;
+      const first=f[0], last=f[f.length-1], at=document.activeElement;
+      if(e.shiftKey&&(at===first||!md.contains(at))){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey&&(at===last||!md.contains(at))){ e.preventDefault(); first.focus(); }
+    },true);
+    const v=$('suggView');
+    if(v&&typeof MutationObserver==='function') new MutationObserver(()=>finishTiers()).observe(v,{childList:true,subtree:true});
+    /* the device's role can be settled after the builder was first drawn (a slow store): the
+       builder is drawn again whenever it changes, so Save and Finish follow it */
+    let was=visitor();
+    if(window.NFLSYNC&&typeof NFLSYNC.onChange==='function') NFLSYNC.onChange(()=>{ const now=visitor(); if(now===was) return; was=now;
+      if(!now&&isOpen()) close();
+      try{ if(typeof renderParlay==='function'&&typeof S==='object'&&S) renderParlay(); if(typeof suggestOpen==='function'&&suggestOpen()&&typeof fillSuggest==='function') fillSuggest(); }catch(e){} });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
+  return {visitor,quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishTiers,current:()=>cur};
 })();
 </script>
 <script>
