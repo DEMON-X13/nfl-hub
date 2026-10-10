@@ -55,7 +55,12 @@ jobs:
   props:
     runs-on: ubuntu-latest
     steps:
+      # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
+      # in line (concurrency), and one queued behind another would otherwise start from the state the other
+      # has since replaced, and lose the push to a conflict on its own file
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -99,6 +104,7 @@ jobs:
             ok=0
             for i in 1 2 3; do
               if git pull --rebase && git push; then ok=1; break; fi
+              git rebase --abort 2>/dev/null || true   # a failed rebase left in place fails every retry
               echo "push raced another job, retrying ($i)"; sleep 15
             done
             [ "$ok" = 1 ]
@@ -120,6 +126,7 @@ jobs:
             ok=0
             for i in 1 2 3; do
               if git pull --rebase && git push; then ok=1; break; fi
+              git rebase --abort 2>/dev/null || true   # a failed rebase left in place fails every retry
               echo "push raced another job, retrying ($i)"; sleep 15
             done
             [ "$ok" = 1 ]
