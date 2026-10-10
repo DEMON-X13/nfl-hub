@@ -1,0 +1,397 @@
+<!-- A visitor's parlay as a card: its styles, its window, its script. build.js sets these into
+     the Bets and Stats page the way it sets the Pick'ems and Player Elo tabs in, every class and
+     id prefixed pc-, the script one closure.
+
+     Visitors come to the site to see X's parlays, so a visitor's device has no list of its own:
+     the Parlay Builder is still theirs to use, and where the owner's device saves a parlay into
+     X's (Save and lock), a visitor's finishes it. Finish parlay opens this window with the
+     parlay drawn as a card -- every leg with its price, the parlay's price, the stake and what it
+     pays, the model's chance beside the book's, the week and its dates, and the site's mark --
+     and Download saves it as a PNG, drawn on a canvas at twice its size. Where the browser can
+     share a file (a phone), the share sheet is offered too, which is how an image reaches Photos.
+
+     Nothing is saved: not to the prop model's saved list, not to X's document, not to any key
+     of this page. The builder keeps its legs, so the visitor can change one and finish again;
+     Start over clears it. A suggestion (the Suggested parlays window's model and Elo tiers) is
+     finished the same way on a visitor's device, since Add to saved parlays would add to a list
+     this page no longer draws for them.
+
+     Who is a visitor: anyone whose device is not the owner's (the X Parlays section's own
+     question, window.lpOwner), which with no store set up at all is everyone. On the owner's
+     devices nothing here runs and Save stays Save.
+
+     The builder's numbers are the builder's own: build.js lifts its pricing block out of
+     renderParlay in props/build/part3.js into quote() below (the /*QUOTE*/ slot), so the card's
+     price can never drift from the one the builder shows. -->
+<style>
+#pcModal{z-index:60}
+#pcModal [hidden]{display:none!important}
+#pcModal .modal-panel{max-width:560px;padding:16px 18px 20px}
+.pc-top{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.pc-top h2{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink)}
+.pc-top .pc-grow{flex:1}
+/* the card is drawn in the site's own colours whatever the page's theme: it is the picture the
+   download makes, so it looks the same here as it will in a phone's photos */
+.pc-card{background:#FFFFFF;color:#0F1B2D;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(15,27,45,.08),0 14px 34px -14px rgba(15,27,45,.45);
+  font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
+.pc-head{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);color:#fff;padding:16px 20px 15px;position:relative}
+.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(211,154,31,0),rgba(211,154,31,.8),rgba(211,154,31,0))}
+.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B9C5D4;margin:0 0 10px}
+.pc-mark i{width:6px;height:6px;border-radius:50%;background:#D39A1F;box-shadow:0 0 8px rgba(211,154,31,.8);flex:none}
+.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(211,154,31,.18);color:#F0C565;white-space:nowrap}
+.pc-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pc-title{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.pc-price{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:1.05;color:#F0C565;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#B9C5D4;font-variant-numeric:tabular-nums}
+.pc-legs{list-style:none;margin:0;padding:4px 20px 2px}
+.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #E4E9F0;margin:0}
+.pc-legs li:first-child{border-top:0}
+.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #D5DCE6;font-size:11px;font-weight:700;color:#4F607A;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pc-who{display:block;font-weight:700;font-size:15px;color:#0F1B2D;overflow-wrap:anywhere}
+.pc-what{display:block;font-size:14px;color:#0F1B2D;overflow-wrap:anywhere}
+.pc-meta{display:block;font-size:12px;color:#657386;margin-top:1px}
+.pc-lp{text-align:right;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0F1B2D}
+.pc-lp small{display:block;font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#657386;margin-top:2px}
+.pc-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px 20px 0}
+.pc-money div{background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px;min-width:0}
+.pc-money span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#657386}
+.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-money .pc-win b{color:#1B7A4E}
+.pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
+.pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
+.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
+.pc-foot b{color:#4F607A;font-weight:600}
+.pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
+@media(max-width:430px){
+  #pcModal .modal-panel{padding:12px 12px 22px}
+  .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
+  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:16px}
+  .pc-actions .btn{flex:1 1 auto}
+}
+</style>
+<div id="pcModal" class="modal" hidden>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pcTitle" tabindex="-1">
+    <div class="pc-top"><h2 id="pcTitle">Your parlay card</h2><span class="pc-grow"></span><button type="button" class="btn quiet" id="pcClose">Close</button></div>
+    <div id="pcView"></div>
+    <div class="pc-actions">
+      <button type="button" class="btn go" id="pcDownload">Download image</button>
+      <button type="button" class="btn quiet" id="pcShare" hidden>Share or save to Photos</button>
+      <button type="button" class="btn quiet" id="pcAgain" title="Clear the Parlay Builder and start a new parlay">Start over</button>
+    </div>
+    <p class="pc-msg" id="pcMsg" role="status" aria-live="polite"></p>
+    <p class="pc-note">Yours alone: this card is not saved anywhere, on this site or in X&#8217;s parlays. Change the builder and finish again for a new one.</p>
+  </div>
+</div>
+<script>
+window.PARLAY_CARD=(function(){
+  const SITE='demon-x13.github.io/nfl-hub/nflbets';
+  const $=id=>document.getElementById(id);
+  const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  /* a visitor: anyone whose device is not the owner's, the X Parlays section's own rule */
+  const visitor=()=>!(typeof window.lpOwner==='function'&&window.lpOwner());
+  const money=v=>'$'+(Math.round(v*100)/100).toFixed(2);
+  const pct=p=>(p*100).toFixed(1)+'%';
+  const ml=x=>x==null||!isFinite(x)?'–':(x>0?'+'+x:'−'+Math.abs(x));
+  /* the playoffs run on as weeks 19-22 */
+  const weekText=w=>w==null?'':(w<=18?'Week '+w:({19:'Wild Card round',20:'Divisional round',21:'Conference championships',22:'Super Bowl'}[w]||'Week '+w));
+  const game=gid=>(typeof S==='object'&&S&&Array.isArray(S.sched))?S.sched.find(x=>x.id===gid)||null:null;
+  const ET={timeZone:'America/New_York'};
+  const kick=g=>{ try{ return typeof kickoff==='function'&&g?kickoff(g):null; }catch(e){ return null; } };
+  const dayOf=d=>d.toLocaleDateString('en-US',Object.assign({weekday:'short',month:'short',day:'numeric'},ET));
+  const whenOf=d=>d.toLocaleString('en-US',Object.assign({weekday:'short',hour:'numeric',minute:'2-digit'},ET))+' ET';
+  /* the days the legs are played on: one day, or the first and the last */
+  function dates(legs){
+    const ks=legs.map(l=>kick(game(l.gid))).filter(Boolean).sort((a,b)=>a-b);
+    if(!ks.length) return '';
+    const a=dayOf(ks[0]), b=dayOf(ks[ks.length-1]);
+    return a===b?a:a+' – '+b;
+  }
+  /* the builder's numbers, as renderParlay works them out: its own lines, lifted at build time */
+  function quote(){
+    if(typeof S!=='object'||!S||typeof parlayLegs!=='function') return null;
+    const legs=parlayLegs(); if(!legs.length) return null;
+/*QUOTE*/
+    return {legs,wks,pr,prices,allBook,bookDec,sg,fairML,stake,override,realPrice,estPrice,useDec,payout,profit};
+  }
+  /* one leg as the card shows it: who, what (the market, the line and the side, as the builder
+     labels it), the game and its kickoff, and its price with where the price came from */
+  function leg(l,price,src){
+    const g=game(l.gid), k=kick(g), team=l.grp==='TEAM';
+    const meta=[team?'':l.pos, l.team&&l.opp?l.team+' v '+l.opp:'', k?whenOf(k):''].filter(Boolean).join(' · ');
+    return {who:l.name||l.team||'', what:l.label||'', meta, price:ml(price), tag:src==='real'?'book':(src==='fair'?'fair':'est.')};
+  }
+  /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
+  function card({kicker,legs,dec,priceNote,chance,chanceBy,stake,source}){
+    const w=legs.reduce((a,l)=>(+l.week&&(a==null||+l.week<a))?+l.week:a,null), n=legs.length;
+    const m={source,kicker,title:n+'-leg parlay',week:w,weekText:weekText(w),dateText:dates(legs),
+      price:ml(typeof decToML==='function'?decToML(dec):null),dec:isFinite(dec)?dec.toFixed(2):'–',implied:dec>1?pct(1/dec):'–',priceNote,
+      legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
+      chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
+      made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
+      file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png'};
+    return m;
+  }
+  /* from the builder: the legs as they stand, priced as the builder prices them */
+  function fromBuilder(){
+    const q=quote(); if(!q) return null;
+    const legs=q.legs.map((l,i)=>Object.assign({},l,{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
+    return card({source:'builder',kicker:'Your parlay',legs,dec:q.useDec,
+      priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
+      chance:q.pr.corr,chanceBy:'Model',stake:q.stake});
+  }
+  /* from a tier of the Suggested parlays window: the model's (SUGGEST_CACHE) or the Elo picks' */
+  function fromTier(kind,id){
+    let t=null;
+    try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
+      :((typeof SUGGEST_CACHE!=='undefined'&&SUGGEST_CACHE&&SUGGEST_CACHE.tiers)||[]).find(x=>x.id===id); }catch(e){ t=null; }
+    if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
+    const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
+    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' suggestion',legs,dec:t.dec,priceNote:'book price',
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:Math.max(0,+S.stake||0)});
+  }
+
+  /* ---- the window ---- */
+  function html(m){
+    return `<div class="pc-card" id="pcCard">
+      <div class="pc-head">
+        <div class="pc-mark"><span>X NFL Bets and Stats</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
+        <div class="pc-row"><span class="pc-title">${h(m.title)}</span><span class="pc-price" title="${h(m.priceNote)}">${h(m.price)}</span></div>
+        <div class="pc-sub"><span>${h([m.weekText,m.dateText].filter(Boolean).join(' · '))}</span><span>${h(m.dec)} decimal · ${h(m.implied)} implied · ${h(m.priceNote)}</span></div>
+      </div>
+      <ol class="pc-legs">${m.legs.map((l,i)=>`<li><span class="pc-n">${i+1}</span>
+        <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
+        <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
+      ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
+      <div class="pc-chance">${m.chance?`${h(m.chanceBy)}\u2019s chance all ${m.legs.length} land <b>${h(m.chance)}</b> · `:''}the price says <b>${h(m.implied)}</b></div>
+      <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
+    </div>`;
+  }
+  let cur=null, opener=null;
+  const isOpen=()=>{ const md=$('pcModal'); return !!md&&!md.hidden; };
+  const say=t=>{ const e=$('pcMsg'); if(e) e.textContent=t||''; };
+  /* the share sheet, where the browser can share an image file (phones): it is how an image
+     reaches the photo library */
+  function canShareFiles(){
+    try{ return typeof navigator!=='undefined'&&typeof navigator.canShare==='function'&&typeof navigator.share==='function'&&typeof File==='function'
+      &&navigator.canShare({files:[new File([new Blob([''],{type:'image/png'})],'card.png',{type:'image/png'})]}); }catch(e){ return false; }
+  }
+  function open(m,from){
+    const md=$('pcModal'); if(!md||!m) return false;
+    cur=m; opener=from||document.activeElement||null;
+    $('pcView').innerHTML=html(m);
+    $('pcAgain').hidden=m.source!=='builder';
+    /* on a phone the share sheet is the way to Photos, so it leads; the download stays beside it */
+    const share=canShareFiles();
+    $('pcShare').hidden=!share;
+    $('pcShare').className='btn '+(share?'go':'quiet'); $('pcDownload').className='btn '+(share?'quiet':'go');
+    say('');
+    md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;
+    try{ $(share?'pcShare':'pcDownload').focus(); }catch(e){}
+    return true;
+  }
+  function close(){
+    const md=$('pcModal'); if(!md||md.hidden) return;
+    md.hidden=true; cur=null;
+    if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
+    /* focus goes back where it came from: the button that opened it, or the builder's Finish
+       if a redraw has replaced that one */
+    const back=opener&&opener.isConnected?opener:$('pFinish');
+    opener=null;
+    try{ if(back) back.focus(); }catch(e){}
+  }
+
+  /* ---- the image: the same card on a canvas, twice its size for a sharp picture ---- */
+  const C={bg:'#EDF0F4',n0:'#0B1526',n1:'#132238',n2:'#1B2E4A',gold:'#D39A1F',goldT:'#F0C565',head2:'#B9C5D4',panel:'#FFFFFF',panel2:'#F7F9FB',
+    ink:'#0F1B2D',ink2:'#4F607A',muted:'#657386',line:'#E4E9F0',line2:'#D5DCE6',pick:'#1B7A4E'};
+  const FD='"Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB='"Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const W=540, M=18, P=24;
+  /* the page's own fonts, if the browser has them, for as long as a moment takes */
+  async function fonts(){
+    try{ const F=document.fonts; if(!F||typeof F.load!=='function') return;
+      await Promise.race([Promise.all(['700 26px "Space Grotesk"','500 14px "Inter Tight"','700 14px "Inter Tight"'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  }
+  function rr(x,a,b,w,hh,r){ x.beginPath(); x.moveTo(a+r,b); x.lineTo(a+w-r,b); x.quadraticCurveTo(a+w,b,a+w,b+r); x.lineTo(a+w,b+hh-r); x.quadraticCurveTo(a+w,b+hh,a+w-r,b+hh);
+    x.lineTo(a+r,b+hh); x.quadraticCurveTo(a,b+hh,a,b+hh-r); x.lineTo(a,b+r); x.quadraticCurveTo(a,b,a+r,b); x.closePath(); }
+  /* text cut to a width, with an ellipsis */
+  function fit(x,t,max){ t=String(t||''); if(x.measureText(t).width<=max) return t;
+    while(t.length>1&&x.measureText(t+'…').width>max) t=t.slice(0,-1); return t+'…'; }
+  function text(x,t,a,b,font,color,align,max){ x.font=font; x.fillStyle=color; x.textAlign=align||'left'; x.textBaseline='alphabetic';
+    const s=max?fit(x,t,max):String(t); x.fillText(s,a,b); return x.measureText(s).width; }
+  const LEG_H=74, HEAD_H=134;
+  function size(m){ return HEAD_H+10+m.legs.length*LEG_H+(m.stake?74:0)+40+52; }
+  async function draw(m,scale){
+    scale=scale||2;
+    await fonts();
+    const CH=size(m), H=CH+2*M, CW=W-2*M;
+    const c=document.createElement('canvas'); c.width=Math.round(W*scale); c.height=Math.round(H*scale);
+    const x=c.getContext&&c.getContext('2d'); if(!x) return null;
+    x.scale(scale,scale);
+    x.fillStyle=C.bg; x.fillRect(0,0,W,H);
+    /* the card, with a soft shadow, and its header band */
+    x.save(); x.shadowColor='rgba(15,27,45,.22)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
+    x.save(); rr(x,M,M,CW,CH,18); x.clip();
+    const g=x.createLinearGradient(M,M,M+CW,M+HEAD_H); g.addColorStop(0,C.n0); g.addColorStop(.55,C.n1); g.addColorStop(1,C.n2);
+    x.fillStyle=g; x.fillRect(M,M,CW,HEAD_H);
+    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(211,154,31,0)'); gl.addColorStop(.5,'rgba(211,154,31,.85)'); gl.addColorStop(1,'rgba(211,154,31,0)');
+    x.fillStyle=gl; x.fillRect(M,M+HEAD_H-2,CW,2);
+    x.restore();
+    const L=M+P, R=M+CW-P;
+    /* the mark, the kicker, the title and the price */
+    let y=M+30;
+    if('letterSpacing' in x) x.letterSpacing='1px';
+    const mw=text(x,'X NFL BETS AND STATS',L,y,'700 11px '+FB,C.head2);
+    if('letterSpacing' in x) x.letterSpacing='0px';
+    x.beginPath(); x.arc(L+mw+9,y-4,3,0,Math.PI*2); x.fillStyle=C.gold; x.fill();
+    { x.font='700 10.5px '+FB; const k=String(m.kicker||'').toUpperCase(), kw=x.measureText(k).width+18;
+      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(211,154,31,.2)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
+    y=M+76;
+    const pw=text(x,m.price,R,y,'700 32px '+FD,C.goldT,'right');
+    text(x,m.title,L,y,'700 26px '+FD,'#FFFFFF','left',R-L-pw-16);
+    y=M+108;
+    const right=m.dec+' decimal · '+m.implied+' implied';
+    const rw=text(x,right,R,y,'500 12.5px '+FB,C.head2,'right');
+    text(x,[m.weekText,m.dateText].filter(Boolean).join(' · '),L,y,'500 12.5px '+FB,C.head2,'left',R-L-rw-14);
+    text(x,m.priceNote,R,y+16,'500 11px '+FB,'#8C9AAE','right');
+    /* the legs */
+    y=M+HEAD_H+10;
+    m.legs.forEach((l,i)=>{
+      if(i){ x.fillStyle=C.line; x.fillRect(L,y,R-L,1); }
+      x.beginPath(); x.arc(L+11,y+22,11,0,Math.PI*2); x.lineWidth=1.5; x.strokeStyle=C.line2; x.stroke();
+      text(x,String(i+1),L+11,y+26,'700 11px '+FB,C.ink2,'center');
+      const lpw=Math.max(text(x,l.price,R,y+26,'700 17px '+FD,C.ink,'right'),
+        text(x,String(l.tag||'').toUpperCase(),R,y+44,'600 10px '+FB,C.muted,'right'));
+      const tx=L+34, tw=R-tx-lpw-14;
+      text(x,l.who,tx,y+25,'700 15.5px '+FB,C.ink,'left',tw);
+      text(x,l.what,tx,y+45,'500 14px '+FB,C.ink,'left',tw);
+      if(l.meta) text(x,l.meta,tx,y+63,'500 12px '+FB,C.muted,'left',R-tx);
+      y+=LEG_H;
+    });
+    /* what it pays */
+    if(m.stake){
+      const gap=8, tw=(R-L-2*gap)/3;
+      [['STAKE',money(m.stake),C.ink],['PAYS',money(m.payout),C.ink],['PROFIT','+'+money(m.profit),C.pick]].forEach(([k,v,col],i)=>{
+        const tx=L+i*(tw+gap);
+        rr(x,tx,y+4,tw,58,10); x.fillStyle=C.panel2; x.fill(); x.lineWidth=1; x.strokeStyle=C.line; x.stroke();
+        text(x,k,tx+11,y+24,'700 10px '+FB,C.muted);
+        text(x,v,tx+11,y+50,'700 19px '+FD,col,'left',tw-20);
+      });
+      y+=74;
+    }
+    /* the chance: the model's beside the price's */
+    { let cx=L; const t1=m.chance?m.chanceBy+'’s chance all '+m.legs.length+' land ':'', yy=y+24;
+      if(t1){ cx+=text(x,t1,cx,yy,'500 13px '+FB,C.ink2); cx+=text(x,m.chance,cx,yy,'700 13px '+FB,C.ink); cx+=text(x,'  ·  ',cx,yy,'500 13px '+FB,C.ink2); }
+      cx+=text(x,'the price says ',cx,yy,'500 13px '+FB,C.ink2); text(x,m.implied,cx,yy,'700 13px '+FB,C.ink); }
+    y+=40;
+    /* the site's mark */
+    x.fillStyle=C.line; x.fillRect(M,y,CW,1);
+    text(x,'Made '+m.made,R,y+31,'500 12px '+FB,C.muted,'right');
+    text(x,m.site,L,y+31,'600 12px '+FB,C.ink2,'left',R-L-120);
+    return c;
+  }
+  /* the card as a PNG */
+  async function png(m){
+    const c=await draw(m||cur,2);
+    if(!c) throw new Error('this browser cannot draw the image');
+    return await new Promise((res,rej)=>{ try{ c.toBlob(b=>b?res(b):rej(new Error('the image came out empty')),'image/png'); }catch(e){ rej(e); } });
+  }
+  function saveFile(blob,name){
+    const u=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=u; a.download=name; a.rel='noopener'; a.style.display='none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(u); }catch(e){} },30000);
+  }
+  async function download(){
+    const m=cur; if(!m) return false; say('Drawing the image…');
+    try{ saveFile(await png(m),m.file); say('Saved as '+m.file+'.'); return true; }
+    catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
+  }
+  async function share(){
+    const m=cur; if(!m) return false; say('Drawing the image…');
+    let blob=null;
+    try{ blob=await png(m);
+      const f=new File([blob],m.file,{type:'image/png'});
+      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'X NFL Bets and Stats: '+m.title}); say(''); return true; } }
+    catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } }
+    /* no share sheet after all: the download */
+    try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }
+    catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
+  }
+  /* Start over: the builder emptied, in this browser only, as its own Clear ALL does */
+  function again(){
+    if(typeof S!=='object'||!S) return;
+    S.parlay={}; S.bookPrice=null;
+    try{ if(typeof save==='function') save(); }catch(e){}
+    close();
+    try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
+    /* Finish went with the legs: the focus goes to the empty builder's first button */
+    try{ const b=$('suggOpen'); if(b) b.focus(); }catch(e){}
+  }
+
+  /* ---- on a visitor's device: Finish where Save was ---- */
+  const FINISH_TIP='Opens this parlay as a card you can download. Nothing is saved: not here, not in X’s parlays.';
+  /* the builder's Save and lock, after every redraw of the builder: the same button, with the
+     builder's own rule for when it can be pressed (one week, and a price), cloned so its save
+     goes with the old one */
+  function finishBuilder(){
+    if(!visitor()) return false;
+    const b=$('pSave'); if(!b) return false;
+    const nb=b.cloneNode(true);
+    nb.id='pFinish'; nb.textContent='Finish parlay';
+    nb.title=nb.disabled?String(b.title||'').replace(/ to save$/,' to finish'):FINISH_TIP;
+    b.replaceWith(nb);
+    nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
+    return true;
+  }
+  /* a tier's Add to saved parlays in the Suggested parlays window, the model's and the Elo
+     picks', whenever the window is filled */
+  function finishTiers(){
+    if(!visitor()) return 0;
+    const v=$('suggView'); if(!v) return 0;
+    let n=0;
+    v.querySelectorAll('[data-suggest-save],[data-elo-save]').forEach(b=>{
+      const kind=b.hasAttribute('data-elo-save')?'elo':'model', id=b.getAttribute(kind==='elo'?'data-elo-save':'data-suggest-save');
+      const nb=b.cloneNode(true);
+      nb.removeAttribute('data-suggest-save'); nb.removeAttribute('data-elo-save');
+      nb.setAttribute('data-pc-finish',kind+'|'+id); nb.disabled=false; nb.classList.remove('quiet'); nb.classList.add('go');
+      nb.textContent='Finish parlay'; nb.title=FINISH_TIP;
+      b.replaceWith(nb);
+      nb.addEventListener('click',()=>{ const m=fromTier(kind,id); if(m) open(m,nb); });
+      n++;
+    });
+    return n;
+  }
+  /* wiring: the window's own buttons, Escape (ahead of the windows beneath it, so it closes this
+     one alone), a click outside the card, Tab kept inside, and the suggestions window watched */
+  function wire(){
+    const md=$('pcModal'); if(!md||md.dataset.wired) return; md.dataset.wired='1';
+    $('pcClose').addEventListener('click',close);
+    $('pcDownload').addEventListener('click',download);
+    $('pcShare').addEventListener('click',share);
+    $('pcAgain').addEventListener('click',again);
+    md.addEventListener('click',e=>{ if(e.target===md) close(); });
+    window.addEventListener('keydown',e=>{
+      if(!isOpen()) return;
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+      if(e.key!=='Tab') return;
+      const f=[...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el=>!el.disabled&&!el.hidden&&!el.closest('[hidden]'));
+      if(!f.length) return;
+      const first=f[0], last=f[f.length-1], at=document.activeElement;
+      if(e.shiftKey&&(at===first||!md.contains(at))){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey&&(at===last||!md.contains(at))){ e.preventDefault(); first.focus(); }
+    },true);
+    const v=$('suggView');
+    if(v&&typeof MutationObserver==='function') new MutationObserver(()=>finishTiers()).observe(v,{childList:true,subtree:true});
+    /* the device's role can be settled after the builder was first drawn (a slow store): the
+       builder is drawn again whenever it changes, so Save and Finish follow it */
+    let was=visitor();
+    if(window.NFLSYNC&&typeof NFLSYNC.onChange==='function') NFLSYNC.onChange(()=>{ const now=visitor(); if(now===was) return; was=now;
+      if(!now&&isOpen()) close();
+      try{ if(typeof renderParlay==='function'&&typeof S==='object'&&S) renderParlay(); if(typeof suggestOpen==='function'&&suggestOpen()&&typeof fillSuggest==='function') fillSuggest(); }catch(e){} });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
+  return {visitor,quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishTiers,current:()=>cur};
+})();
+</script>

@@ -10,7 +10,7 @@ anything here that contradicts it is out of date.
 One repo, served straight from its root by GitHub Pages. No server, no framework, no
 bundler. Four sites have pages: `nflbets/` (X NFL Bets and Stats, built by
 `nflbets/build/build.js` from the prop model's parts, the betting app, the X Parlays
-section, the sync layer and the Player Elo tab), `news/`, `cfb/` and `nhl/`. The pages carry no season
+section, the parlay card, the sync layer and the Player Elo tab), `news/`, `cfb/` and `nhl/`. The pages carry no season
 data: each fetches what the scheduled jobs commit (`props/data/payload.json`,
 `betting/state.json`, `elo/data/*.json`, `liveparlays/parlays.json`, `cfb/state.json` and
 `cfb/news.json`, `nhl/state.json`) on every load. `news/` alone keeps its data in plain
@@ -197,11 +197,13 @@ news/
 
 nflbets/
   build/build.js                 THE BUILD: the prop model's parts, tab_pickems.html,
-                                 tab_elo.html, the X Parlays section, sync.js, xbets.js and the
-                                 betting app -> index.html and preview.html (required, it
+                                 tab_elo.html, the X Parlays section, card.html, sync.js, xbets.js
+                                 and the betting app -> index.html and preview.html (required, it
                                  builds in memory and writes nothing: the smoke's freshness check)
   build/tab_pickems.html         the Pick'ems tab (pk- prefixed)
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
+  build/card.html                the parlay card (pc-): a visitor's Finish parlay, its window and
+                                 its PNG download; the builder's pricing is lifted into it
   build/sync.js                  the sync layer, inlined by the build: who is the owner, X's
                                  parlays read everywhere and written from the owner's devices
   build/xbets.js                 the X Bet Log's adapter (window.XBETS), inlined after it
@@ -278,21 +280,42 @@ rebuilds it). It borrows the Pick'ems tab's team tag and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
 `window.pkTag`, `pkTagColor`, `pkTierBadge`, `pkEloTier` and `pkTierDefs`.
 X Parlays is the tab the prop model's Parlay Builder sits in (still `#parlay`):
-`nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its styles scoped to its two
-cards, `#lpCard` and `#myCard`, and its script in a closure -- and hands it the prop model's own
-in-memory state, so a saved parlay is watched the moment it is saved and deleting it there
-deletes it. The section draws two lists. X Parlays (`#lpCard`, at the top of the tab) is X's:
-the placed parlays in `liveparlays/parlays.json`, and X's saved parlays, builder, builders kept
-at kickoff and betting slips -- on the owner's device the prop model's own state and the shared
-key, with every control; on anyone else's the shared document as read (`NFLSYNC.x()`), read
-only. Your parlays (`#myCard`, under the builder, where the Saved parlays card was) is a
-visitor's own, under the browser's own key `my_parlays_v1`, and is not drawn on the owner's
-devices. The section reads ESPN's public scoreboard and box scores in the browser, each game's
+`nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its styles scoped to its card,
+`#lpCard`, and its script in a closure -- and hands it the prop model's own in-memory state, so
+on the owner's device a saved parlay is watched the moment it is saved and deleting it there
+deletes it. The section draws one list, X's (`#lpCard`, at the top of the tab, the builder under
+it): the placed parlays in `liveparlays/parlays.json`, and X's saved parlays, builder, builders
+kept at kickoff and betting slips -- on the owner's device the prop model's own state and the
+shared key, with every control; on anyone else's the shared document as read (`NFLSYNC.x()`),
+read only. There is no list of a visitor's own: visitors come to see X's parlays. A visitor's
+Parlay Builder works as ever, but its Save and lock is **Finish parlay**, which opens the
+**parlay card** (`nflbets/build/card.html`, every name `pc-`, set in by the build like the tabs):
+a window (`#pcModal`, the page's modal style, over everything; Escape, Close or a click outside
+closes it, Tab stays inside it, the focus goes back to Finish) showing the parlay as a card --
+each leg (who, the builder's own label for the market, line and side, the game and its kickoff,
+its price and whether that is the book's or an estimate), the parlay's price as the builder
+works it out (American, decimal and implied), the stake and what it pays, the model's chance
+beside the price's, the week and its dates, the site's mark and address -- and **Download
+image** saves it as a PNG (`parlay-week6-3legs.png`), drawn with the canvas 2D API at twice its
+size (no library) and handed over by `canvas.toBlob` and an `<a download>`; where the browser
+can share a file (`navigator.canShare({files})`, a phone) a second button opens the share sheet,
+which is how it reaches Photos. **Start over** empties the builder. Finishing writes nothing: not
+`S.saved`, not X's document, no key of the page, never `LIVE_IO`. The card's price is the
+builder's own: the build lifts renderParlay's pricing block out of `part3.js` into the card's
+`quote()` (its `/*QUOTE*/` slot), so it cannot drift. On a visitor's device the Suggested parlays
+window's tiers (the model's, and the Elo picks') finish the same way instead of offering Add to
+saved parlays, which would add to a list nothing draws for them. Who is a visitor is the section's
+own question (`window.lpOwner`, the owner's device with a store): with no store at all, everyone.
+A builder drawn before the device's role was known (a slow `sync.json`) is drawn again when it
+is, so Save or Finish follows. What a browser saved before this -- the prop model's saved list,
+`my_parlays_v1` -- is left in its storage untouched and not drawn: on a device that later opens
+the owner link, those saved parlays join X's document (the join below). The section reads ESPN's public scoreboard and box scores in the browser, each game's
 season and week from its id in ESPN's numbering. A parlay is recognised as a copy of another by
 its legs: game, stat, line, side, and the player (or the team, for a team bet). The builder drops
-a leg once its game kicks off, so just before each redraw of the builder the page calls the
-section's `lpKeep`, which keeps the builder as it stood under the key of the list it belongs to
-(`kept`, keyed by its legs) and watches it as "builder at kickoff". A leg on a player on no line
+a leg once its game kicks off, so just before each redraw of the builder the owner's device
+calls the section's `lpKeep`, which keeps the builder as it stood under X's key (`kept`, keyed by
+its legs) and watches it as "builder at kickoff"; a visitor's builder is theirs alone and nothing
+of it is kept. A leg on a player on no line
 of the box score is void (marked V, not lost or won) when there is official word he was not
 playing that week -- Out or Doubtful on the injury report the page reads, or the page's record of
 a game-day inactive or a reserve list -- and otherwise graded on nothing with the row saying he
@@ -300,7 +323,11 @@ is not on the box score.
 `liveparlays/index.html` is a redirect. `nflbets/build/smoke.js` boots the built page in jsdom against both sites'
 published data and walks every tab; `nflbets/build/smoke_live.js` does the same for the
 X Parlays section against a stubbed parlay file and scoreboard, with no store, as the owner and as
-a visitor. The elo job runs `smoke.js`
+a visitor, and (its section J) the parlay card: Finish, the window with every leg and the price,
+the image on a recorder canvas (jsdom draws nothing), the share sheet, Escape, Tab and Start over,
+that finishing writes nothing, that the owner's Save still saves into X's, that a builder drawn
+before the role was known follows it, and that a reader's own saved parlays join X's document the
+day the browser becomes the owner's. The elo job runs `smoke.js`
 every morning, playoffs and off-season included, so it holds in any week: the board's week is
 taken as the board takes it (the first with a game to play, else the last), the checks that need
 a game still to come run only when there is one, and once the payload's last game is about to kick
@@ -350,13 +377,14 @@ Everyone else's device is a **reader**. It reads the same document and polls it 
 keeps it in memory only, never merges it into the prop model's state, never joins, never pushes:
 `LIVE_IO.set` refuses, `window.storage` is the browser's own storage, and the X Parlays card is
 drawn read only (no delete, no line pencil, no stake pill, no Clear settled). What the visitor
-builds, saves and corrects is theirs, in the prop model's own key and `my_parlays_v1`, drawn under
-Your parlays. The first time a browser opens as a reader (`xparlays_v1`, cleared whenever the
+builds is theirs, in the prop model's own key, and is finished as a parlay card (above), saved
+nowhere; nothing of the visitor's own is drawn in X Parlays. The first time a browser opens as a reader (`xparlays_v1`, cleared whenever the
 browser is the owner's, so a browser that stops being the owner's is done again), the mirror it
 kept from when every device wrote the document is stripped: the saved parlays and builder legs in
 the documents it remembers (`nflsync_base_v1`, its `hist`, and the store's once read) leave its own
 list, its copy of the shared key goes (lines corrected on its own remaining parlays move to
-`my_parlays_v1`), and `nflsync_v1` and `nflsync_base_v1` go. A browser that never mirrored the
+`my_parlays_v1`, which nothing reads or draws any more but which is kept, not deleted), and
+`nflsync_v1` and `nflsync_base_v1` go. A browser that never mirrored the
 document keeps everything it has as its own. Signing out of owner does the same strip and reloads.
 A reader also keeps the last copy of X's it saw (`xparlays_cache_v1`), shown, marked "Not synced",
 only while the store cannot be reached.
@@ -427,7 +455,8 @@ store answers, on that visit or a later one. The deposit is the owner's own unle
 balance, and an owner's device takes a deposit left in the document out.
 
 With `sync.json` blank or unreadable the page runs on the browser alone: X Parlays is the placed
-parlays from the file, read only; everything the browser makes is under Your parlays; the X Bet
+parlays from the file, read only; every device is a visitor's, whose builder finishes a parlay as a
+card and draws nothing of its own; the X Bet
 Log is the browser's own as it always was; and the stamp says "Not synced". `nflbets/build/smoke.js`
 runs it all against a stubbed store that keeps the documented rules by path and nothing more (open
 or locked for `/nflhub` and `/xbets`, a write without the owner's unexpired token refused 401 once
@@ -567,7 +596,7 @@ live outside it.
 Sections. part1.html's own tab bar (Games, Parlay Builder, Track Record, Weekly Update,
 Backup) is the audit's standalone page; the Bets and Stats build replaces it with its own
 bar. `tab-slate` is the Props tab (`slateView` + the `gameModal` overlay), `tab-parlay` is
-X Parlays (`parlayBody`, between the X Parlays card above it and Your parlays below), and three have no
+X Parlays (`parlayBody`, under the X Parlays card, then the `suggModal` overlay), and three have no
 button, kept because the prop model draws into them: `tab-track` (Track Record, the Prop
 Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 

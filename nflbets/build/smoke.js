@@ -574,23 +574,44 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(60);
   chk(d.getElementById('suggModal').hidden, 'the suggestions window would not close');
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
-  /* ---- the X Parlays section: X's card at the top, the builder, then Your parlays, where the
-     Saved parlays card was. With no store (this run: sync.json does not answer) X's card is the
-     placed parlays from the file, read only, and everything this browser makes is its own ---- */
-  const lp = d.getElementById('lpCard'), myc = d.getElementById('myCard');
-  chk(!!lp && d.getElementById('tab-parlay').firstElementChild === lp && lp.nextElementSibling === pb && !!myc && pb.nextElementSibling === myc,
-    'X Parlays is not at the top of its tab, with the builder under it and Your parlays under that');
-  chk(/^X Parlays/.test(txt(lp.querySelector('h2'))) && /^Your parlays/.test(txt(myc.querySelector('h2'))) && !/Live Parlays/.test(txt(d.getElementById('tab-parlay'))), 'the cards are not headed X Parlays and Your parlays');
+  /* ---- the X Parlays section: X's card at the top and the builder under it, the last thing in
+     the tab. With no store (this run: sync.json does not answer) X's card is the placed parlays
+     from the file, read only, and this browser is a visitor's: nothing of its own is drawn, there
+     is no list of its own, and its builder finishes a parlay as a card (Finish parlay) ---- */
+  const lp = d.getElementById('lpCard'), tabP = d.getElementById('tab-parlay');
+  chk(!!lp && tabP.firstElementChild === lp && lp.nextElementSibling === pb && pb.nextElementSibling && pb.nextElementSibling.id === 'suggModal' && !pb.nextElementSibling.nextElementSibling
+    && !d.getElementById('myCard') && !d.getElementById('myApp'),
+    'X Parlays is not at the top of its tab with the builder under it and nothing after, or a list of the visitor\'s own is in the page');
+  chk(/^X Parlays/.test(txt(lp.querySelector('h2'))) && !/Your parlays|Live Parlays/.test(txt(tabP)), 'the card is not headed X Parlays, or the tab still says Your parlays or Live Parlays');
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old Saved parlays or betting-slips card is still drawn beside the section');
-  chk(!!lp.querySelector('#now') && !!lp.querySelector('#stamp') && !!lp.querySelector('#app') && !!myc.querySelector('#myApp'), 'the section is missing its controls');
+  chk(!!lp.querySelector('#now') && !!lp.querySelector('#stamp') && !!lp.querySelector('#app'), 'the section is missing its controls');
   const fileCount = JSON.parse(PARLAYS).parlays.length;
   chk(lp.querySelectorAll('.savedp').length === fileCount, `X Parlays shows ${lp.querySelectorAll('.savedp').length} parlays with no store; the file holds ${fileCount}`);
   chk(!fileCount || [...lp.querySelectorAll('.savedp .pill')].some(x => txt(x) === 'placed'), 'the file parlays are not labelled placed');
   chk(!lp.querySelector('[data-rm], [data-edit], [data-stake-of]') && lp.querySelector('#clear').hidden, 'X Parlays offers a control on a browser that is not the owner\'s');
-  chk(!myc.hidden, 'Your parlays is not shown on a browser that is not the owner\'s');
-  /* a saved parlay is watched the moment it is saved: no sending. On a browser that is not the
-     owner's it is the visitor's own, under Your parlays */
-  { const S = w.eval('S'); const lp = myc; const before = lp.querySelectorAll('.savedp').length;
+  /* the builder's save is Finish on a browser that is not the owner's, and the card's window is in the page */
+  chk(!!d.getElementById('pcModal') && d.getElementById('pcModal').hidden && /function finishBuilder\(/.test(HTML) && !!w.PARLAY_CARD && w.PARLAY_CARD.visitor() === true,
+    'the parlay card\'s window is not in the page, or this browser is not taken for a visitor\'s');
+  /* a parlay this browser saved before visitors stopped saving is kept in its storage and drawn nowhere */
+  { const S = w.eval('S'), g = S.sched.find(x => x.id === (cards[0] && cards[0].dataset.game)) || S.sched[0];
+    S.saved.push({ id: 'live-smoke', saved: new Date().toISOString(), week: g.w, stake: 3, payout: 9, price: 200,
+      legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: 'Smoke Saved Side', team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.55, price: -120, src: 'real' }] });
+    w.eval('save(); renderParlay();');
+    await wait(80);
+    chk(lp.querySelectorAll('.savedp').length === fileCount && !/Smoke Saved Side/.test(txt(tabP)) && S.saved.some(p => p.id === 'live-smoke'),
+      'a visitor\'s own saved parlay is drawn in the X Parlays tab, or was dropped from their saved list');
+    S.saved = S.saved.filter(p => p.id !== 'live-smoke'); w.eval('save(); renderParlay();'); await wait(40); }
+  chk(w.localStorage.getItem('live_parlays_v1') === null && w.localStorage.getItem('my_parlays_v1') === null && w.LIVE_IO.set('{"removed":{"file|x":1}}') === false, 'a browser with no store wrote X\'s key, or a key of its own for the section');
+  /* the builder and the suggestions window carry the one-tap amounts */
+  chk(/data-stake-chip/.test(HTML) && /function stakeChips\(/.test(HTML), 'the amount buttons are not in the built page');
+
+  /* ---- on the owner's device a saved parlay is X's, watched under X Parlays the moment it is
+     saved: no sending. Its stake is the one thing on it the owner can change ---- */
+  { const Ow = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { sync: mkStore(), owner: true });
+    await wait(900);
+    const w = Ow.w, d = Ow.d, lp = d.getElementById('lpCard'), S = w.eval('S');
+    chk(!Ow.timedOut && Ow.errs.length === 0 && w.NFLSYNC.role() === 'owner' && !(w.PARLAY_CARD && w.PARLAY_CARD.visitor()), 'the owner\'s device for the saved-parlay checks did not come up as the owner\'s: ' + Ow.errs.join('; '));
+    const before = lp.querySelectorAll('.savedp').length;
     const g = S.sched.find(x => x.id === (cards[0] && cards[0].dataset.game)) || S.sched[0];
     S.saved.push({ id: 'live-smoke', saved: new Date().toISOString(), week: g.w, stake: 3, payout: 9, price: 200,
       legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: TEAM(g.h), team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.55, price: -120, src: 'real' }] });
@@ -599,9 +620,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(lp.querySelectorAll('.savedp').length === before + 1, 'a saved parlay did not appear in the section on its own');
     const mine = [...lp.querySelectorAll('.savedp')].find(c => /prop model/.test(txt(c.querySelector('.pill'))));
     chk(!!mine, 'the saved parlay is not labelled as the prop model\'s');
-    chk(d.getElementById('lpCard').querySelectorAll('.savedp').length === fileCount, 'a visitor\'s saved parlay went into X Parlays');
     /* its stake is the one thing on it you can change: tap, type, Enter, and the payout follows the locked price */
-    { const pill = mine.querySelector('[data-stake-of="live-smoke"]');
+    { const pill = mine && mine.querySelector('[data-stake-of="live-smoke"]');
       chk(!!pill && /\$3\.00/.test(txt(pill)), 'the saved parlay\'s stake is not a tap-to-change pill');
       if (pill) { pill.click();
         const box = mine.querySelector('input.lineInput');
@@ -645,18 +665,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(odd().stake === 10 && Math.abs(odd().payout - 74.567) < 1e-9, `$10 should pay exactly half the locked $20 payout, 74.567: ${odd().payout}`); }
         S.saved = S.saved.filter(p => p.id !== 'odd'); w.eval('save(); renderParlay();'); await wait(80); }
       /* a file parlay is X's placed slip and keeps its stake */
-      const filed = [...d.getElementById('lpCard').querySelectorAll('.savedp')].find(c => /placed/.test(txt(c.querySelector('.pill'))));
+      const filed = [...lp.querySelectorAll('.savedp')].find(c => /placed/.test(txt(c.querySelector('.pill'))));
       chk(!filed || !filed.querySelector('[data-stake-of]'), 'a file parlay offers to change its stake'); }
-    /* the builder and the suggestions window carry the one-tap amounts */
-    chk(/data-stake-chip/.test(HTML) && /function stakeChips\(/.test(HTML), 'the amount buttons are not in the built page');
     /* and deleting it here deletes the parlay itself */
-    mine.querySelector('[data-rm]').click();
+    const mine2 = [...lp.querySelectorAll('.savedp')].find(c => c.querySelector('[data-stake-of="live-smoke"]'));
+    if (mine2) mine2.querySelector('[data-rm]').click();
     await wait(80);
-    chk(!S.saved.some(p => p.id === 'live-smoke'), 'deleting a saved parlay in the section left it in the saved list');
+    chk(!!mine2 && !S.saved.some(p => p.id === 'live-smoke'), 'deleting a saved parlay in the section left it in the saved list');
     chk(lp.querySelectorAll('.savedp').length === before, 'the deleted parlay is still drawn');
-    const st = JSON.parse(w.localStorage.getItem('my_parlays_v1') || '{}');
+    const st = JSON.parse(w.localStorage.getItem('live_parlays_v1') || '{}');
     chk(!(st.removed && st.removed['prop|live-smoke']), 'a deleted saved parlay was written to the device deletions instead of deleted');
-    chk(w.localStorage.getItem('live_parlays_v1') === null && w.LIVE_IO.set('{"removed":{"file|x":1}}') === false, 'a browser with no store wrote X\'s key'); }
+    Ow.w.close(); }
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
 
   /* ---- Pick'em Record: the betting app's Records tab, in a frame filled when first opened ---- */
@@ -941,12 +960,28 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
         chk(!!card && card.querySelectorAll('.sugg-tier').length === 2 && card.querySelectorAll('.sugg-legs .pe-badge').length === wantBadges, `the Elo picks card is missing, or its legs' shields are wrong: ${card ? card.querySelectorAll('.sugg-legs .pe-badge').length : 'no card'} for ${wantBadges}`);
-        const nSaved = w.eval('S.saved.length');
-        card.querySelector('[data-elo-save="elo2"]').click(); await wait(40);
-        chk(w.eval('S.saved.length') === nSaved + 1 && w.eval('S.saved[S.saved.length-1].suggested') === 'Elo' && w.eval('S.saved[S.saved.length-1].legs.every(l=>l.pe===undefined)'),
-          'saving an Elo parlay did not add it to Saved parlays cleanly');
-        chk(!!d.querySelector('#suggView .pe-sugg [data-elo-save="elo2"][disabled]'), 'a saved Elo parlay does not say Saved');
-        w.eval('S.saved.pop(); save(); closeSuggest()');
+        /* this browser is a visitor's (no store): an Elo pick finishes as a card, saved nowhere */
+        const nSaved = w.eval('S.saved.length'), fb = card.querySelector('[data-pc-finish="elo|elo2"]');
+        chk(!!fb && /^Finish parlay$/.test(txt(fb)) && !card.querySelector('[data-elo-save]'), 'an Elo pick\'s save is not Finish parlay on a visitor\'s device');
+        if (fb) { fb.click(); await wait(40);
+          const view = d.getElementById('pcView');
+          chk(!d.getElementById('pcModal').hidden && /Elo pick/i.test(txt(view)) && t2.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
+            && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t2.dec}))`).replace('-', '\u2212') && txt(view).includes('Elo\u2019s chance all 2 land ' + (t2.p * 100).toFixed(1) + '%'),
+            'an Elo pick\'s card is not its legs, its price and its Elo chance: ' + txt(view));
+          w.eval('PARLAY_CARD.close()'); }
+        chk(w.eval('S.saved.length') === nSaved, 'finishing an Elo pick on a visitor\'s device saved it');
+        w.eval('closeSuggest()');
+        /* on the owner's device it is saved, as ever */
+        { const Oe = await run(state, undefined, null, false, { sync: mkStore(), owner: true });
+          await wait(600);
+          Oe.w.__legs = JSON.parse(JSON.stringify(legs)); Oe.w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }');
+          Oe.w.eval('openSuggest()'); await wait(40);
+          const ob = Oe.d.querySelector('#suggView .pe-sugg [data-elo-save="elo2"]'), n0 = Oe.w.eval('S.saved.length');
+          if (ob) { ob.click(); await wait(40); }
+          chk(!!ob && Oe.w.eval('S.saved.length') === n0 + 1 && Oe.w.eval('S.saved[S.saved.length-1].suggested') === 'Elo' && Oe.w.eval('S.saved[S.saved.length-1].legs.every(l=>l.pe===undefined)'),
+            'saving an Elo parlay on the owner\'s device did not add it to the saved parlays cleanly');
+          chk(!!Oe.d.querySelector('#suggView .pe-sugg [data-elo-save="elo2"][disabled]') && !Oe.d.querySelector('[data-pc-finish]'), 'a saved Elo parlay does not say Saved on the owner\'s device, or a Finish button is there');
+          Oe.w.close(); }
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
       /* a player's window: a click on his row in the rankings opens his rating and his matchup this week, a row a stat */
       { const plOpen = () => { const m = d.getElementById('pePlModal'); return !!m && !m.hidden; };
@@ -1077,7 +1112,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const A = await run(state, undefined, null, false, { owner: true, file: FIXFILE, sync: store });
     chk(!A.timedOut && A.errs.length === 0, 'device A broke: ' + A.errs.join('; '));
     chk(A.w.NFLSYNC.state().live === true && A.w.NFLSYNC.state().url === STORE_URL && A.w.NFLSYNC.role() === 'owner', 'device A did not come up synced as the owner\'s: ' + JSON.stringify(A.w.NFLSYNC.state()));
-    chk(!A.d.getElementById('ownerMark').hidden && !A.d.getElementById('xpOwner').hidden && !A.d.getElementById('xpSignOut').hidden && A.d.getElementById('myCard').hidden && A.d.getElementById('xpSignIn').hidden,
+    chk(!A.d.getElementById('ownerMark').hidden && !A.d.getElementById('xpOwner').hidden && !A.d.getElementById('xpSignOut').hidden && !A.d.getElementById('myCard') && A.d.getElementById('xpSignIn').hidden,
       'the owner\'s device does not show the owner mark and sign-out, or still shows Your parlays or a sign-in it has no use for');
     await settle();
     chk(/^Synced/.test(txt(A.d.getElementById('syncStamp'))), 'device A\'s header does not say Synced: ' + txt(A.d.getElementById('syncStamp')));
@@ -1254,7 +1289,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     /* V, a visitor: X Parlays is X's document, every kind, with nothing to press */
     const V = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { sync: store, file: FIXFILE });
     await settle();
-    const lpV = V.d.getElementById('lpCard'), myV = V.d.getElementById('myCard'), SV = V.w.eval('S');
+    const lpV = V.d.getElementById('lpCard'), SV = V.w.eval('S');
     chk(!V.timedOut && V.errs.length === 0, 'the visitor\'s device broke: ' + V.errs.join('; '));
     chk(V.w.NFLSYNC.role() === 'reader' && V.w.NFLSYNC.state().live === false && V.d.getElementById('ownerMark').hidden && V.d.getElementById('xpSignOut').hidden && V.d.getElementById('xpSignIn').hidden,
       'a visitor\'s device is not a reader, or shows an owner control');
@@ -1266,25 +1301,27 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     { const card = [...lpV.querySelectorAll('.savedp')].find(c => /Fixture Receiver/.test(txt(c)));
       chk(!!card && txt(card.querySelector('.lineLbl')) === '60.5' && /moved from 50\.5/.test(txt(card)) && !card.querySelector('[data-reset]'), 'X\'s corrected line is not what a visitor\'s device measures against: ' + (card ? txt(card).slice(0, 160) : 'no card')); }
     chk(!lpV.querySelector('[data-rm], [data-edit], [data-stake-of], [data-reset], #restoreAll') && lpV.querySelector('#clear').hidden, 'X Parlays offers a visitor a control');
-    chk(!myV.hidden && /On this device only/.test(txt(myV)) && /Nothing of yours/.test(txt(myV.querySelector('#myApp'))), 'Your parlays is not shown, empty, on a visitor\'s device');
+    chk(!V.d.getElementById('myCard') && !/Your parlays/i.test(txt(V.d.getElementById('tab-parlay'))), 'a list of the visitor\'s own is in the page');
     chk(Object.keys(SV.parlay).length === 0 && SV.saved.length === 0, 'a visitor\'s builder or saved list did not start empty: it took X\'s');
     chk(/^X.s parlays · updated /.test(txt(V.d.getElementById('syncStamp'))), 'a visitor\'s stamp does not say these are X\'s parlays and when they changed: ' + txt(V.d.getElementById('syncStamp')));
-    /* everything V does is V's, in this browser */
+    /* everything V does is V's, in this browser, and none of it is drawn as a parlay: V's builder
+       finishes as a card, saved nowhere */
     const docBefore = JSON.stringify(store.node), patchesBefore = store.patches.length;
     SV.parlay[key] = teamLeg(g); V.w.eval('save(); renderParlay();');
     SV.saved.push({ id: 'v-own', saved: new Date().toISOString(), week: g.w, stake: 2, payout: 6, price: 200,
       legs: [{ gid: g.id, stat: 'receiving_yards', k: 30.5, side: 'over', main: true, name: 'Visitor Receiver', team: g.h, week: g.w, label: '30.5+', p: 0.5, price: -110, src: 'real' }] });
     SV.stake = 77; SV.margin = 'none'; V.w.eval('save(); renderParlay();');
     await settle();
-    { const own = [...myV.querySelectorAll('.savedp')], builder = own.find(c => /in the builder/.test(txt(c))), saved = own.find(c => /Visitor Receiver/.test(txt(c)));
-      chk(own.length === 2 && !!builder && !!saved, 'the visitor\'s builder and saved parlay are not under Your parlays: ' + own.length);
-      chk(pillsOf(lpV).length === 6, 'the visitor\'s parlays went into X Parlays');
-      const ed = saved && saved.querySelector('[data-edit]');
-      if (ed) { ed.click(); const inp = myV.querySelector('input.lineInput'); inp.value = '33.5'; inp.dispatchEvent(new V.w.KeyboardEvent('keydown', { key: 'Enter', bubbles: true })); }
-      chk(!!ed && Object.values((JSON.parse(V.w.localStorage.getItem('my_parlays_v1') || '{}').lines) || {}).includes(33.5), 'a line corrected under Your parlays was not kept in the visitor\'s own key');
-      const x = [...myV.querySelectorAll('.savedp')].find(c => /Visitor Receiver/.test(txt(c)));
-      if (x) x.querySelector('[data-rm]').click();
-      chk(!!x && !SV.saved.some(p => p.id === 'v-own'), 'the visitor could not delete their own parlay'); }
+    { const tab = V.d.getElementById('tab-parlay');
+      chk(V.d.querySelectorAll('#tab-parlay .savedp').length === 6 && pillsOf(lpV).length === 6 && !/Visitor Receiver/.test(txt(tab)) && !/in the builder/.test(txt(lpV)),
+        'the visitor\'s builder or saved parlay is drawn, or went into X Parlays');
+      const fin = V.d.getElementById('pFinish');
+      chk(!!fin && !V.d.getElementById('pSave') && !fin.disabled, 'the visitor\'s builder does not offer Finish parlay');
+      if (fin) { fin.click(); await wait(30);
+        chk(!V.d.getElementById('pcModal').hidden && new RegExp(TEAM(g.h)).test(txt(V.d.getElementById('pcView'))), 'Finish did not open the visitor\'s card');
+        V.w.eval('PARLAY_CARD.close()'); }
+      chk(SV.saved.map(p => p.id).join() === 'v-own' && !!SV.parlay[key] && V.w.localStorage.getItem('my_parlays_v1') === null && V.w.localStorage.getItem('live_parlays_v1') === null,
+        'finishing the visitor\'s parlay changed their saved list or builder, or wrote a key of the section\'s'); }
     chk(V.w.LIVE_IO.set(JSON.stringify({ removed: { 'file|fx-player': 1 } })) === false, 'a visitor\'s device can write X\'s key');
     chk(V.w.XBETS.write({ bets: {} }, { bets: { 9: { staked: 1, returned: 2, note: '' } } }) === false, 'a visitor\'s device can write the X Bet Log');
     await V.w.NFLSYNC.poll(); await settle();
@@ -1320,15 +1357,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         'the mirror\'s keys were not removed, or the strip was not recorded: ' + JSON.stringify(Mi.w.NFLSYNC.state()));
       chk(my.lines && my.lines['prop|mine-own|0'] === 4.5 && !('file|fx-player|0' in my.lines), 'a line the visitor corrected on their own parlay did not move to their own key, or one of X\'s did');
       chk(puts(Mi) === 0, 'stripping a visitor\'s mirror wrote to the store');
-      chk([...Mi.d.querySelectorAll('#myCard .savedp')].some(c => /Own Receiver/.test(txt(c))) && pillsOf(Mi.d.getElementById('lpCard')).filter(x => x === 'prop model').length === 2,
-        'after the strip the visitor\'s own parlay is not under Your parlays, or X\'s are not under X Parlays'); }
+      chk(!/Own Receiver/.test(txt(Mi.d.getElementById('tab-parlay'))) && !Mi.d.getElementById('myCard') && pillsOf(Mi.d.getElementById('lpCard')).filter(x => x === 'prop model').length === 2,
+        'after the strip the visitor\'s own parlay is drawn, or X\'s are not under X Parlays'); }
     /* a browser that saved parlays before the store had an address never mirrored the document:
        its parlays are its own, and on a visitor's device they do not join X's */
     const P0 = await run(state, undefined, null, false, { sync: store, file: FIXFILE, seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 3, saved: [savedOf('presync', g)] })) });
     await settle();
     chk(P0.w.eval('S').saved.some(p => p.id === 'presync') && !storeDoc(store).prop.saved.some(p => p.id === 'presync') && puts(P0) === 0 && P0.w.NFLSYNC.state().joined === 0,
       'a visitor\'s parlays from before the store joined X\'s document, or were lost');
-    chk([...P0.d.querySelectorAll('#myCard .savedp')].length === 1, 'a visitor\'s own parlay from before the store is not under Your parlays');
+    chk(!P0.d.getElementById('myCard') && pillsOf(P0.d.getElementById('lpCard')).length === pillsOf(lpV).length && P0.d.querySelectorAll('#tab-parlay .savedp').length === pillsOf(lpV).length,
+      'a visitor\'s own parlay from before the store is drawn, or X Parlays is not X\'s alone');
 
     /* the store out of reach: a visitor sees the copy it last saw, and says so */
     store.fail = true;

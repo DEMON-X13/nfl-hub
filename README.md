@@ -90,13 +90,14 @@ push to the pull code.
 
 X Parlays is a tab of `nflbets/` (still `#parlay`; `live/` and `liveparlays/`
 redirect there): X's parlays at the top, the same on every device, then the
-visitor's own Parlay Builder and, under it, Your parlays, kept in that browser
-alone. X's are the slips placed at the book (`liveparlays/parlays.json`, edited
+Parlay Builder. A visitor has no list of their own: their builder, kept in their
+browser alone, finishes a parlay as a card they can download as an image
+(`nflbets/build/card.html`), saved nowhere. X's are the slips placed at the book (`liveparlays/parlays.json`, edited
 by hand as its `how` field says), what X saved, is building and kept at kickoff
 in the prop model, and X's betting-model slips, all followed live against
 ESPN's public scoreboard and box scores in the browser. The section's source is
 `liveparlays/build/page.html`, lifted in by `nflbets/build/build.js` with its
-styles scoped to its two cards and its script in a closure. The X Bet Log tab is
+styles scoped to its card and its script in a closure. The X Bet Log tab is
 X's week-by-week log, read only for visitors; the balance shows only when
 `nflbets/sync.json` says `"shareDeposit": true`.
 
