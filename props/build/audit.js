@@ -434,7 +434,7 @@ setTimeout(async()=>{
     const SPEC=w.eval('PB_TIERS');
     const KINDS=['ml','ats','total','over','under'], kindOf=F('pbKind');
     const setKinds=ks=>{ for(const k of KINDS) U().k[k]=ks.includes(k); w.eval('PB_CACHE=new Map()'); };
-    let built=0, said=0, legsSeen=0, thinSeen=0;
+    let built=0, said=0, legsSeen=0, thinSeen=0, corrTiers=0;
     /* every rule a tier keeps, on the picks as they stand */
     const hold=(lab)=>{
       const r=F('getPbTiers')(), games=F('pbGames')(), u=U();
@@ -534,6 +534,20 @@ setTimeout(async()=>{
             ((M[x.pl.id]??={})[l.stat])={line:ln,over:-112,under:-108,n:x.pl.n,g:g.id}; nL++; } }); });
       w.eval('PB_CACHE=new Map()');
       for(const [m,ks] of [['all',KINDS],['teams',['ml','ats','total']],['players',['over','under']],['overs',['over']],['unders',['under']],['totals',['total']]]){ setKinds(ks); hold('made-up lines, '+m); }
+      /* one game, players only: every leg of a tier shares that game, so the tier's chance and
+         price are worked by the copula's draws and hold() holds them to parlayProb and parlayDec
+         on correlated legs (legs from different games are a plain product, the same on any
+         number of draws, so the week's own tiers cannot tell a short cut). The game is the one
+         with the most made-up player lines on file */
+      if(games.length){
+        const plLegs=g=>F('pricedLegs')([g],true).filter(l=>!isG(l)).length;
+        const g1=[...games].sort((a,b)=>(plLegs(b)-plLegs(a))||String(a.id).localeCompare(String(b.id)))[0];
+        U().off=games.filter(g=>g.id!==g1.id).map(g=>g.id); setKinds(['over','under']);
+        const r1=hold(`made-up lines, one game (${g1.a} @ ${g1.h}), players only`);
+        corrTiers=r1.tiers.filter(t=>t.legs&&pp(t.legs).pairs.length>0).length;
+        /* a game with a dozen made-up lines on starters always has two that move together */
+        chk(plLegs(g1)<12||corrTiers>0,`one game's made-up player lines (${plLegs(g1)} of them) built no tier with legs that move together, so nothing holds a same-game tier to parlayProb`);
+        U().off=[]; }
       setKinds(KINDS);
       const rA=F('getPbTiers')();
       chk(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
@@ -564,7 +578,7 @@ setTimeout(async()=>{
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
       w.eval('PB_CACHE=new Map()');
-      console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, over this week's ${games.length} games and ${nL} made-up player lines`); }
+      console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* with no game to come the panel says so and offers nothing: the regular season over, or every game of the week under way */
     { w.__pbKeep=w.eval('[pbGames, seasonOver]');
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; renderParlay();');
@@ -1155,7 +1169,7 @@ setTimeout(async()=>{
       const dataCsv=f=>{ const p=path.join(__dirname,'..','data',f); return fs.existsSync(p)?Papa.parse(fs.readFileSync(p,'utf8'),{header:true,skipEmptyLines:true}).data:null; };
       const rRoster=raw(`roster_${SEASON}.csv`), rInj=raw(`injuries_${SEASON}.csv`), rStats=raw(`pw_${SEASON}.csv`), rGames=raw('games.csv');
       /* the page exactly as a browser builds it on a first visit */
-      w.eval('S=freshState(); NORM=null; INJ={}; RSTAT={}; GAME_TIER_CACHE={}; SUGGEST_CACHE=null');
+      w.eval('S=freshState(); NORM=null; INJ={}; RSTAT={}; GAME_TIER_CACHE={}');
       w.eval('applyBaked()'); const SV=w.eval('S');
       /* a book's name against a player's, the rule build/names.py matches with: the same name, his
          football name with his surname, or only a short first name (Cam for Cameron) */
