@@ -270,10 +270,12 @@ function newsChecks(N) {
     chk(!!g && !phGame(g), `a tile is a real game of the state: ${n.id}`);
     if (!g) continue;
     if (tbdOf(g) && n.schema >= 2) chk(n.tbd === true, `a tile for a game with no time set says so: ${n.id}`);
-    /* a line held for the grade (ESPN left it out at this run) is cited as the last one read, never as today's */
+    /* a line held for the grade (ESPN left it out at this run) is cited as the last one read, never as
+       today's. A preview kept because the game summary did not answer (`stale`) has its line from this
+       run but its bullets from the run that wrote it, which the window dates, so only its line is held */
     if (n.schema >= 2 && g.state === 'pre' && g.line && g.line.held && Date.parse(g.date) > RUN_MS && g.line.homeLine !== null && g.line.homeLine !== undefined) {
       chk(/last read/.test(n.line || ''), `the news cites a held line as the last one read: ${n.id} ${n.line}`);
-      chk(['home', 'away'].every(sd => n.teams[sd].bullets.filter(b => /at DraftKings/.test(b)).every(b => /last line, read/.test(b))), `the news bullets cite a held line as the last one read: ${n.id}`);
+      if (!n.stale) chk(['home', 'away'].every(sd => n.teams[sd].bullets.filter(b => /at DraftKings/.test(b)).every(b => /last line, read/.test(b))), `the news bullets cite a held line as the last one read: ${n.id}`);
     }
     /* an entry this writer wrote (a started game keeps the preview an older run wrote) */
     if (!(n.schema >= 2)) continue;

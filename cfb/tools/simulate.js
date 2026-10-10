@@ -20,7 +20,8 @@
      6  a game is postponed, and the feed no longer carries the CFP ranking (neither called nor
         graded, the week not held open; the ranking carried and dated)
    then, each in its own folder: a line ESPN leaves out on the last run before kickoff (held for
-   the grade, never offered; one read more than a day before kickoff is not); Army-Navy week with a bowl
+   the grade, never offered, cited by the news as the last read whether or not the game summary
+   answers; one read more than a day before kickoff is not); Army-Navy week with a bowl
    earlier the same day; the conference title games over with Army-Navy still to play and no
    playoff game listed (the odds play the bracket shown); the 2025 playoff from
    data/history.json, between rounds and over; and the first run of the next season (last season
@@ -320,6 +321,12 @@ function holdRuns() {
   writeFeeds(d, SEASON0, sched, at(tA), lineAt(tA));
   r = run('update.js', d, tA);
   chk(r.code === 0, `hold run A: ${r.out.slice(-300)}`); if (r.code !== 0) return;
+  /* the news at run A, the line fresh: the preview a later run keeps when the game summary fails */
+  newsFeeds(d, read(path.join(d, 'state.json')), { qb: {}, injuries: {}, news: {} });
+  r = run('news.js', d, tA);
+  const nA = r.code === 0 ? read(path.join(d, 'news.json')).games.find(x => x.id === tgt.id) : null;
+  chk(nA && nA.line && !/last read/.test(nA.line) && !nA.stale, `hold run A: the news cites the line read at this run as today's (${nA && nA.line})`);
+  const NA = path.join(d, 'newsA.json'); if (fs.existsSync(path.join(d, 'news.json'))) fs.copyFileSync(path.join(d, 'news.json'), NA);
   smoke('hold run A', d, tA, null);
   /* the publish before run B read g3's line more than a day ago (made so: the job ran, ESPN had it then) */
   const SA = read(path.join(d, 'state.json'));
@@ -335,6 +342,16 @@ function holdRuns() {
   chk(b.line && b.line.held && b.line.at === iso(tA) && b.line.homeLine === L.homeLine && b.atsPick, `hold run B: a line ESPN left out three hours before kickoff, read 20 hours before it, is held with its call (${JSON.stringify(b.line)}, ${b.atsPick})`);
   chk(!byB.get(g3.id).line, `hold run B: a line read more than a day before kickoff is not held (${JSON.stringify(byB.get(g3.id).line)})`);
   if (nxt) chk(byA.get(nxt.id).line && !byB.get(nxt.id).line, 'hold run B: a look-ahead line ESPN dropped a week out is not held');
+  /* the held game's summary does not answer at the run that holds its line: run A's preview stays,
+     dated, and its line is the held one, cited as the last read (an optional feed failing must
+     not fail the gate and stop the publish) */
+  newsFeeds(d, SB, { qb: {}, injuries: {}, news: {} });
+  fs.unlinkSync(path.join(d, 'out', `summary_${tgt.id}.json`));
+  r = run('news.js', d, tB);
+  const nS = r.code === 0 ? read(path.join(d, 'news.json')).games.find(x => x.id === tgt.id) : null;
+  chk(nS && nS.stale && /last read/.test(nS.line) && nA && nS.line.startsWith(nA.line + ', last read '), `hold run B, the summary down: run A's preview kept, dated, citing the held line as the last read (${nS && nS.line}, stale ${nS && nS.stale})`);
+  smoke('hold run B (line held, the summary down)', d, tB, PA);
+  if (fs.existsSync(NA)) fs.copyFileSync(NA, path.join(d, 'news.json'));
   newsFeeds(d, SB, { qb: {}, injuries: {}, news: {} });
   r = run('news.js', d, tB);
   const nB = r.code === 0 ? read(path.join(d, 'news.json')).games.find(x => x.id === tgt.id) : null;

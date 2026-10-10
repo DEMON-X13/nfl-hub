@@ -778,7 +778,8 @@ holds the bullets to (each side's leaders, injury list and headlines). A team's 
 football's only, from after its last game and naming no opponent it has already played; a season
 leader out on the injury report or in a headline is marked out; sacks are compared a game. A
 feed that does not answer leaves its part out and the window says which; a game summary that does
-not answer keeps the last run's preview, dated. A game's preview is kept once it has started (by
+not answer keeps the last run's preview, dated, its line read from this run's state (a line held for
+the grade is cited as the last read). A game's preview is kept once it has started (by
 ESPN or the clock).
 
 `.github/workflows/cfb.yml` runs 17 times a week (daily 06:17 and 13:47 UTC, Saturday 10:17 and

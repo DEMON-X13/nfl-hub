@@ -19,9 +19,9 @@
    beside his numbers; the injury bullet lists real statuses (not 'active') and says so when the
    feed lists nobody or could not be read. A feed that does not answer leaves its part of the
    window out and the window says which (`gaps`); a game summary that does not answer keeps the
-   preview the last run wrote, dated (`stale`). A game whose kickoff has passed, by ESPN or by
-   the clock, keeps the preview it had. CFB_STATE, CFB_NEWS, CFB_OUT and CFB_NOW move the files
-   and the clock for tests. */
+   preview the last run wrote, dated (`stale`), its line read from this run's state. A game whose
+   kickoff has passed, by ESPN or by the clock, keeps the preview it had. CFB_STATE, CFB_NEWS,
+   CFB_OUT and CFB_NOW move the files and the clock for tests. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
@@ -230,6 +230,12 @@ function streakOf(S, id, games) {
   const my = last.home === id ? last.hs : last.as, their = last.home === id ? last.as : last.hs;
   return { win: first, n, last: { opp: opp?.short || '?', my, their, home: last.home === id, neutral: last.neutral } };
 }
+/* the tile's line, from the state at this run: a line held for the grade (ESPN left it out at this
+   run) is cited as the last one read, never as today's */
+function lineTextOf(S, g) {
+  const T = S.teams, L = g.line;
+  return L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}${L.held ? `, last read ${readAt(L)}` : ''}` : null;
+}
 function teamName(S, id) { const t = S.teams[id]; return t.ap ? `No. ${t.ap} ${t.short}` : t.short; }
 
 function writeNote(S, g, ctx) {
@@ -368,8 +374,9 @@ async function main() {
     const sum = sums[i];
     const started = g.state !== 'pre' || Date.parse(g.date) <= NOW_MS || (sum && !sum.predictor && !(sum.lastFiveGames || []).length);
     if (started && prevGame.has(g.id)) return publish(prevGame.get(g.id));
-    /* the game summary did not answer: the preview the last run wrote stays, dated, rather than a thin one */
-    if (!sum && prevGame.has(g.id)) { const p = prevGame.get(g.id); return publish(Object.assign({}, p, { stale: p.stale || prevNews.published })); }
+    /* the game summary did not answer: the preview the last run wrote stays, dated, rather than a
+       thin one; its line is this run's (a line held since is cited as the last read, not as today's) */
+    if (!sum && prevGame.has(g.id)) { const p = prevGame.get(g.id); return publish(Object.assign({}, p, { stale: p.stale || prevNews.published, line: lineTextOf(S, g) })); }
     const recap = g.state === 'final' && g.hs !== null;
     const gaps = [];
     if (!sum) gaps.push('ESPN\'s game summary');
@@ -381,8 +388,6 @@ async function main() {
       return { stats: seasonStats(sum, S, id).fill(tstats[id] || {}), lastFive: lastFive(sum, id), ats: atsOf(sum, id), fpi: fpiOf(sum, s), leaders, injuries, headlines: heads[id] || [], streak: streakOf(S, id, S.games) };
     };
     const ctx = { home: side('home'), away: side('away') };
-    const L = g.line;
-    const lineText = L && L.homeLine !== null && L.homeLine !== undefined ? `${L.homeLine <= 0 ? T[g.home].abbr + ' ' + (L.homeLine === 0 ? 'PK' : L.homeLine) : T[g.away].abbr + ' -' + L.homeLine}${L.total ? `, O/U ${L.total}` : ''}${L.held ? `, last read ${readAt(L)}` : ''}` : null;
     ctx.story = storyOf(sum);
     /* one headline a side, never the same one twice: a piece that names both teams comes
        back from both feeds */
@@ -390,7 +395,7 @@ async function main() {
     let note = recap ? writeRecap(S, g, ctx) : writeNote(S, g, ctx);
     if (recap && ctx.story && ctx.story.lead) note += ' ' + ctx.story.lead;
     const credit = ctx.story && ctx.story.lead ? ctx.story.source : ctx.around.length ? 'ESPN' : (ctx.story && ctx.story.lastGame) ? ctx.story.source : null;
-    return publish({ schema: 2, id: g.id, away: g.away, home: g.home, kick: g.date, tbd: !!g.tbd, gaps, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineText, story: ctx.story, credit,
+    return publish({ schema: 2, id: g.id, away: g.away, home: g.home, kick: g.date, tbd: !!g.tbd, gaps, tv: broadcastOf(sum, g), venue: venueOf(sum, g), line: lineTextOf(S, g), story: ctx.story, credit,
       note,
       teams: { home: Object.assign({ bullets: writeBullets(S, g, 'home', ctx) }, ctx.home), away: Object.assign({ bullets: writeBullets(S, g, 'away', ctx) }, ctx.away) } });
   });
