@@ -1,38 +1,38 @@
-stat,player,line,over,under
-passing_tds,Dak Prescott,2.5,139,-178
-passing_tds,Jalon Daniels,0.5,-262,201
-passing_yards,Dak Prescott,268.5,-111,-113
-passing_yards,Jalon Daniels,184.5,-112,-112
-receiving_yards,CeeDee Lamb,82.5,-114,-110
-receiving_yards,George Pickens,62.5,-110,-114
-receiving_yards,Emeka Egbuka,35.5,-110,-114
-receiving_yards,Ryan Flournoy,31.5,-111,-113
-receiving_yards,Chris Godwin,30.5,-112,-112
-receiving_yards,Cade Otton,30.5,-111,-113
-receiving_yards,Jake Ferguson,26.5,-108,-116
-receiving_yards,Ted Hurst III,20.5,-113,-111
-receiving_yards,Javonte Williams,14.5,-116,-108
-receiving_yards,Tez Johnson,12.5,-117,-108
-receiving_yards,Bucky Irving,12.5,-114,-110
-receiving_yards,Kenny Gainwell,10.5,-118,-106
-receiving_yards,KaVontae Turpin,1.5,-112,-112
-receptions,CeeDee Lamb,6.5,-115,-111
-receptions,George Pickens,4.5,-114,-112
-receptions,Chris Godwin,3.5,-136,107
-receptions,Cade Otton,3.5,-105,-122
-receptions,Jake Ferguson,3.5,106,-135
-receptions,Ryan Flournoy,3.5,123,-158
-receptions,Emeka Egbuka,3.5,125,-160
-receptions,Javonte Williams,2.5,-139,109
-receptions,Bucky Irving,2.5,124,-158
-receptions,Kenny Gainwell,1.5,-185,144
-receptions,Ted Hurst III,1.5,-142,112
-receptions,Tez Johnson,1.5,134,-171
-receptions,KaVontae Turpin,0.5,-121,-106
-rushing_yards,Javonte Williams,71.5,-113,-111
-rushing_yards,Bucky Irving,51.5,-111,-113
-rushing_yards,Jalon Daniels,45.5,-110,-114
-rushing_yards,Tyler Goodson,16.5,-107,-117
-rushing_yards,Kenny Gainwell,11.5,-117,-107
-rushing_yards,Sean Tucker,11.5,-113,-111
-rushing_yards,Dak Prescott,9.5,-113,-111
+game_id,stat,player,line,over,under
+,passing_tds,Dak Prescott,2.5,139,-178
+,passing_tds,Jalon Daniels,0.5,-262,201
+,passing_yards,Dak Prescott,268.5,-111,-113
+,passing_yards,Jalon Daniels,184.5,-112,-112
+,receiving_yards,CeeDee Lamb,82.5,-114,-110
+,receiving_yards,George Pickens,62.5,-110,-114
+,receiving_yards,Emeka Egbuka,35.5,-110,-114
+,receiving_yards,Ryan Flournoy,31.5,-111,-113
+,receiving_yards,Chris Godwin,30.5,-112,-112
+,receiving_yards,Cade Otton,30.5,-111,-113
+,receiving_yards,Jake Ferguson,26.5,-108,-116
+,receiving_yards,Ted Hurst III,20.5,-113,-111
+,receiving_yards,Javonte Williams,14.5,-116,-108
+,receiving_yards,Tez Johnson,12.5,-117,-108
+,receiving_yards,Bucky Irving,12.5,-114,-110
+,receiving_yards,Kenny Gainwell,10.5,-118,-106
+,receiving_yards,KaVontae Turpin,1.5,-112,-112
+,receptions,CeeDee Lamb,6.5,-115,-111
+,receptions,George Pickens,4.5,-114,-112
+,receptions,Chris Godwin,3.5,-136,107
+,receptions,Cade Otton,3.5,-105,-122
+,receptions,Jake Ferguson,3.5,106,-135
+,receptions,Ryan Flournoy,3.5,123,-158
+,receptions,Emeka Egbuka,3.5,125,-160
+,receptions,Javonte Williams,2.5,-139,109
+,receptions,Bucky Irving,2.5,124,-158
+,receptions,Kenny Gainwell,1.5,-185,144
+,receptions,Ted Hurst III,1.5,-142,112
+,receptions,Tez Johnson,1.5,134,-171
+,receptions,KaVontae Turpin,0.5,-121,-106
+,rushing_yards,Javonte Williams,71.5,-113,-111
+,rushing_yards,Bucky Irving,51.5,-111,-113
+,rushing_yards,Jalon Daniels,45.5,-110,-114
+,rushing_yards,Tyler Goodson,16.5,-107,-117
+,rushing_yards,Kenny Gainwell,11.5,-117,-107
+,rushing_yards,Sean Tucker,11.5,-113,-111
+,rushing_yards,Dak Prescott,9.5,-113,-111
