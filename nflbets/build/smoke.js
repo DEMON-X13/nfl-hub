@@ -1126,7 +1126,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    game final on the scoreboard and on a graded one; closes on Escape, Close and a click
    outside; keeps Tab inside and hands the focus back; links to the full tabs; reads no Elo file
    a second time; says so in each section when matchups.json, or the ratings, did not load while
-   the rest draws; and draws a playoff game. With every game played (--season-over) there is no
+   the rest draws; draws a playoff game; and lays the position table out fixed, names wrapping on a
+   phone (the rules, since jsdom lays nothing out). With every game played (--season-over) there is no
    game to come, and the played-game checks carry it.
    ===================================================================================== */
 async function snapshotChecks() {
@@ -1247,6 +1248,15 @@ async function snapshotChecks() {
   const R = await run(st, undefined, wk => scoreboard(st, wk));
   await wait(700);
   chk(!R.timedOut && R.errs.length === 0, 'snapshot: the page did not boot: ' + R.errs.join('; '));
+  /* the position table on a phone: laid out fixed, so each team keeps half the card and a long name
+     wraps inside its half (laid out automatically, a long name set the column's width and pushed
+     the home side past the card's edge on 34 of 45 games at 390px in Chromium); the Q pill never
+     shrinks. jsdom lays nothing out, so the rules themselves are held here */
+  { const rules = [], walk = (list, media) => { for (const r of list) { if (r.cssRules && r.media) walk(r.cssRules, r.media.mediaText); else if (r.selectorText) rules.push({ sel: r.selectorText, media, st: r.style }); } };
+    for (const sh of R.d.styleSheets) { try { walk(sh.cssRules, ''); } catch (e) { /* a sheet jsdom cannot read */ } }
+    const has = (sel, phone, prop, val) => rules.some(r => r.sel === sel && (phone ? /max-width:\s*760px/.test(r.media) : !r.media) && r.st.getPropertyValue(prop) === val);
+    chk(has('.gs-pos', false, 'table-layout', 'fixed') && has('.gs-pl .gs-pn span', true, 'white-space', 'normal') && has('.gs-pl .gs-pn span', true, 'overflow-wrap', 'anywhere') && has('.gs-pl .pe-q', false, 'flex', 'none'),
+      'snapshot: the position table is not laid out fixed with names wrapping on a phone, so a long name pushes the home side off the screen'); }
   /* every opened game carries the button, priced by the prop model or not */
   { const cards = [...R.d.querySelectorAll('.pk-game')].slice(0, 4);
     for (const c of cards) { c.click(); await wait(40); }

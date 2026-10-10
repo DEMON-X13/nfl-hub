@@ -823,7 +823,8 @@ table.gs-vs .gs-num{font-size:17px}
 .gs-u li small{color:var(--muted);font-weight:600;min-width:30px;text-align:right}
 .gs-u li small.gs-top8{color:var(--pick)} .gs-u li small.gs-bot8{color:var(--miss)}
 /* position by position */
-.gs-pos{width:100%;border-collapse:separate;border-spacing:0}
+/* fixed layout: the two columns stay half each, so a long name cannot widen its side past the card */
+.gs-pos{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0}
 .gs-pos th{text-align:left}
 .gs-pos thead th{background:var(--panel-2);padding:9px 12px}
 .gs-pos thead th.gs-h{text-align:right}
@@ -839,7 +840,7 @@ table.gs-vs .gs-num{font-size:17px}
 .gs-pl small b{font-family:var(--display);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
 .gs-pl.gs-off .gs-pn span{text-decoration:line-through;text-decoration-color:var(--miss)}
 .gs-pl .gs-outw{color:var(--miss);font-weight:600;white-space:normal}
-.gs-pl .pe-q{margin-left:0}
+.gs-pl .pe-q{margin-left:0;flex:none;overflow:visible}
 .gs-unitrow td{font-size:12px;color:var(--ink-2)}
 .gs-unitrow b{color:var(--ink);font-weight:700}
 .gs-outs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
@@ -894,6 +895,7 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;
   .gs-pos thead th{padding:8px}
   .gs-pos .gs-grp td{padding:6px 8px}
   .gs-pl small{white-space:normal}
+  .gs-pl .gs-pn span{white-space:normal;overflow-wrap:anywhere}
   .gs-outs{grid-template-columns:1fr}
   ul.gs-mm li{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px}
   ul.gs-mm li .gs-mmn{grid-column:1/-1;justify-self:start;height:22px}
@@ -3829,7 +3831,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='3aaf911';
+const PAGE_HASH='cb2f8db';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

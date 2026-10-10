@@ -287,7 +287,10 @@ the files as they stand now; a game outside the matchups' week, a game under way
 team's next game rather than this one, and a file that did not load are each said in their card,
 and the rest still draws. `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number to its
 file, on a game to come, a final on the scoreboard, a graded game and a playoff game, with
-matchups.json or the ratings missing.
+matchups.json or the ratings missing. The position table is `table-layout: fixed` (each team half
+the card) and its names wrap below 760px: laid out automatically, a long name set a column's width
+and pushed the home side past the card on 34 of week 4-6's 45 games at 390px; the smoke holds the
+rules, since jsdom lays nothing out.
 The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's

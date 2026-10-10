@@ -528,7 +528,10 @@ hands it the season and its own Vegas call (`window.pkBoard`) and the ELO tab it
 ratings and lineups are the files as they stand now, and a file that did not load, a game outside the
 matchups' week or a team whose lineup is for another game is said in its card while the rest draws.
 `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file, on a game to
-come, a final on the scoreboard, a graded game and a playoff game, with a file missing.
+come, a final on the scoreboard, a graded game and a playoff game, with a file missing. The position
+table is laid out fixed, each team half the card, and a long name wraps on a phone rather than push
+the home side off the screen (the smoke holds those rules; jsdom lays nothing out, so a layout change
+there is checked in a real browser at 390 and 360 on a long-named game, such as CLE at NYJ).
 
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
