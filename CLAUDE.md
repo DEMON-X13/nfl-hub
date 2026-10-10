@@ -75,7 +75,8 @@ on a practice report), and every nflverse file but the snap counts is required: 
 download fails the run before the commit, so the last good files stay live (before the season's
 first game a 404 on a current-season file is "no games yet"). The smoke test checks the lineups
 against the report, roster and schedule they were built from (`lineup-checks.js`, which never
-shares the build's shortcuts), the rank chip against `elo/data/model.json` (the Team Rankings tab),
+shares the build's shortcuts, only its reading of a source: which ESPN entry is which player and what
+day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab),
 the stat bars against `results.js`, that the live week's narrative quotes none of the site's own
 ranks, and the fixed cases in `tools/cases.js` (each with the broken version a review caught, which
 the checks must fail); on a checkout whose `units2026.js` is older than the report it fails until

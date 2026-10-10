@@ -11,6 +11,9 @@
      roster      nobody listed who is off the active roster (IR, PUP, practice squad, cut...) or now on
                  another team; nobody listed who was inactive last game without practising this week
      espn        nobody listed whom ESPN rules Out, Doubtful, on IR or suspended before the team files
+     espn-q-dnp  nobody listed whom ESPN has Questionable, before the team files, with a note of no practice
+                 on the last practice day before kickoff (the day before a Thursday game, two days before
+                 any other)
      next-qb     a quarterback carrying a tag has a next quarterback named beside him whenever the team
                  has one these same rules let play, and the one named is one of those
    "Filed" is official and nothing else: the team's rows on the week's report carry a game status.
@@ -19,17 +22,22 @@
    and both the build and its check let ESPN's Out and the last-game rule go: Mayfield and Winfield
    were listed on the Wednesday before TB at DAL and the checks passed. A check that shares the
    build's shortcut cannot catch it.)
+   What it shares with the build is the reading of a source, never a rule: an ESPN entry is matched to
+   a player and a practice note is dated by the same functions (context.js espnIndex, weekPractice and
+   notePractice), so the two cannot disagree about what a note says. (Until 2026-10-09 the check matched
+   ESPN by the roster's full name, the build by the chart's, and the check dated a note older than the
+   report as no news even for a team with no rows yet: it failed "Olu Fashanu" and Breece Hall, whom the
+   build rightly listed.)
 
    Until 2026-10-09 the smoke test only checked the lineups against themselves, and they named
    Hendrickson, Gonzalez, Elliss, Banks and DeVonta Smith (each Out in week 4 and not practising in
    week 5) as playing, because ESPN's mid-week "Questionable" stopped the rule before it ran.       */
 'use strict';
 const { SEASON, ab, seasonState, etToISO, parseCSV, fetchText, unplayed } = require('./lib');
-const { notePractice } = require('./context');
+const { weekPractice, espnIndex, lastPracticeDay, etDay } = require('./context');
 
 const norm = s => String(s || '').toLowerCase().replace(/[.'’,]/g, '').replace(/-/g, ' ').replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
 const lc = s => String(s || '').trim().toLowerCase();
-const etDay = iso => { const d = new Date(iso); return isNaN(d) ? '' : new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d); };
 const addDays = (day, n) => { const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const UNITS = ['qb', 'ol', 'rb', 'rec', 'front', 'db'];
 const OFF = new Set(['RES', 'PUP', 'NON', 'SUS', 'RET', 'CUT', 'DEV', 'EXE', 'TRD', 'TRT']);
@@ -82,27 +90,22 @@ function check(U, meta, S) {
   const filed = t => !!teamStatus[t];
   const roster = {}, rosterByName = {};
   for (const r of S.roster || []) { if (!r.gsis_id) continue; roster[r.gsis_id] = r; rosterByName[`${ab(r.team)}|${norm(r.full_name)}`] ??= r.gsis_id; }
-  const espn = {};
-  for (const e of S.espn || []) espn[`${e.team}|${norm(e.name)}`] = e;
+  /* ESPN's entry for a player, by id through every name he goes by (the build's own index) */
+  const espnOf = espnIndex(S.espn, S.roster, S.chart_names);
 
-  /* the newest practice this week: the report's, or an ESPN note written since the team's last game
-     that names a later practice day than the report holds */
+  /* the newest practice this week, read as the build reads it: the report's, or an ESPN note written
+     since the team's last game where it is newer */
   const lastKick = {};
   for (const r of reg) { const w = +r.week; for (const t of [ab(r.away_team), ab(r.home_team)]) if (w === last[t]) lastKick[t] = etDay(etToISO(r.gameday, r.gametime)); }
   const practice = (id, team, name) => {
-    const x = id && rep[id];
-    let p = x && /did not/i.test(x.practice_status || '') ? (/not injury related/i.test(x.practice_primary_injury || '') ? 'rest' : 'dnp')
-      : x && /limited|full/i.test(x.practice_status || '') ? 'practised' : (!x && teamRows[team] ? 'unlisted' : null);
-    const e = espn[`${team}|${norm(name)}`], nd = e && e.date ? etDay(e.date) : '';
-    if (nd && (!lastKick[team] || nd > lastKick[team])) {
-      const n = notePractice(`${e.comment || ''} ${e.long || ''}`, nd);
-      if (n && (!practiceDay || n.day > practiceDay)) p = n.st === 'dnp' ? 'dnp' : 'practised';
-    }
-    return p;
+    const p = weekPractice({ row: id && rep[id], teamOnReport: !!teamRows[team], reportDay: practiceDay, note: espnOf(id, team, name), since: lastKick[team] || '' });
+    return { ...p, k: p.st === 'limited' || p.st === 'full' ? 'practised' : p.st };
   };
+  /* the kickoff the build worked to (ESPN's where it had one), else the schedule's */
+  const kickDay = t => etDay((S.kicks && S.kicks[t]) || kick[t]);
   /* every rule a player can break, as [check, why]: an empty list means the rules let him play */
   const verdicts = (id, team, name) => {
-    const v = [], x = id && rep[id], ro = id && roster[id], pr = practice(id, team, name);
+    const v = [], x = id && rep[id], ro = id && roster[id], P = practice(id, team, name), pr = P.k;
     const st2 = lc(x && x.report_status);
     if (st2 === 'out' || st2 === 'doubtful') v.push(['official', `is ${st2} on the week ${week} report`]);
     if (st2 === 'questionable' && pr === 'dnp') v.push(['q-dnp', `is questionable with no practice on the week ${week} report`]);
@@ -114,8 +117,11 @@ function check(U, meta, S) {
       else if (OFF.has(ro.status)) v.push(['roster', `is ${ro.status} on the roster`]);
       else if (ro.status === 'INA' && pr !== 'practised') v.push(['roster', 'was inactive last game and has not practised this week']);
     }
-    const e = espn[`${team}|${norm(name)}`];
+    const e = espnOf(id, team, name);
     if (e && !st2 && !filed(team) && /^(out|doubtful|injured reserve|suspension)$/i.test(e.status || '')) v.push(['espn', `is ${e.status} on ESPN's list`]);
+    const kd = kickDay(team), lpd = kd ? lastPracticeDay(kd) : '';
+    if (e && !st2 && !filed(team) && lc(e.status) === 'questionable' && P.src === 'espn' && P.st === 'dnp' && lpd && P.day >= lpd)
+      v.push(['espn-q-dnp', `is questionable on ESPN's list and did not practise ${P.day}, the last practice day before kickoff (${kd})`]);
     return v;
   };
   let listed = 0;

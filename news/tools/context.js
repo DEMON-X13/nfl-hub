@@ -305,7 +305,26 @@ const N_LIM = /\blimited\b/i, N_FULL = /\bfull(?:[- ]go|y)?\b|\bin full\b/i;
    clause was cut only at ", but" and had to name practice itself, so the first read as no practice on
    Thursday and the second as no practice on Tuesday) */
 const CLAUSE = /,?\s*\b(?:and then|but|after|before|while|then)\s+|,\s*and\s+/i;
-function notePractice(text, noteDay) {
+/* Inside a clause the practice's day is a weekday that goes with the practice, never one that names
+   the game ("Sunday's game", "Monday night's game", "Sunday's 24-18 loss", "for Sunday", "ahead of
+   Thursday Night Football", "play Sunday", "start against the Giants on Sunday") or the day someone
+   spoke ("said Monday"); of several ("Wednesday or Thursday") the latest. A clause in the future or
+   conditional ("will be a full participant", "aiming for him to have a full practice week") is a plan,
+   not a practice, and does not count; "won't practice" does. A practice is never dated on or before
+   the team's last game (`since`): a clause whose days all fall there speaks of last week. Until
+   2026-10-09 the last weekday in a clause was taken, so ESPN's common Friday line ("was a
+   non-participant for Friday's practice and is questionable for Sunday's game", "was a full participant
+   in Friday's practice and doesn't have an injury designation for Sunday's game") read as a practice
+   on the previous Sunday: Allen's no practice Friday was lost, and a player back in full Friday after
+   an absence was passed over as not practising since his last game. */
+const N_PRACTICE = /practi[cs]|walk-?through|workout|warmups|\bsession\b|\bDNP\b/i;
+const WEEKDAY_RE = /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi;
+const AFTER_PRACTICE = /^(?:['’]s)?\s+(?:practi[cs]e|session|workout|walk-?through)/i;
+const AFTER_GAME = /^(?:['’]s)?(?:\s+night(?:['’]s)?)?\s+(?:(?!practi|session)[\w.'’-]+\s+){0,3}?(?:game|contest|matchup|match-up|tilt|clash|showdown|opener|meeting|football|kickoff|win|loss|victory|defeat)\b/i;
+const BEFORE_GAME = /(?:\b(?:play|plays|playing|start|starts|starting|suit up|suits up|suiting up|dress|dresses|face|faces|facing|against|versus|vs\.?)\s+(?:[\w.'’-]+\s+){0,3}?(?:on\s+)?|\b(?:for|ahead of|into|by)\s+)$/i;
+const BEFORE_SAID = /\b(?:said|says|told|announced|noted|indicated|confirmed|reported|reports|relayed|revealed|added|explained|stated)\s+(?:on\s+)?$/i;
+const FUTURE = /\b(?:will|would|could|should|might|may|expect(?:s|ed|ing)? to|anticipat\w*|aim(?:s|ed|ing)? (?:for|to)|hop(?:e|es|ed|ing) to|plan(?:s|ned|ning)? to|set to|slated to|on track to|likely to|in line to|figures? to)\b/i;
+function notePractice(text, noteDay, since = '') {
   if (!text || !noteDay) return null;
   let best = null;
   const clauses = [];
@@ -313,14 +332,71 @@ function notePractice(text, noteDay) {
     if (N_ANY.test(sent)) clauses.push(...sent.split(CLAUSE));
   }
   for (const c of clauses) {
-    const st = N_DNP.test(c) ? 'dnp' : N_LIM.test(c) ? 'limited' : N_FULL.test(c) ? 'full' : null;
-    if (!st) continue;
-    const days = c.toLowerCase().match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/g);
-    let day = noteDay;
-    if (days) { const want = days[days.length - 1]; for (let i = 0; i < 7; i++) { const d = addDays(noteDay, -i); if (weekdayOf(d) === want) { day = d; break; } } }
+    const m = N_DNP.exec(c) || N_LIM.exec(c) || N_FULL.exec(c);
+    if (!m) continue;
+    const st = N_DNP.test(c) ? 'dnp' : N_LIM.test(c) ? 'limited' : 'full';
+    if (FUTURE.test(c.slice(0, m.index).split(/[,;:]/).pop())) continue;   // a plan or a forecast, not a practice ("Smith, who will be a game-time decision, did not practice" still counts)
+    const named = [];
+    let games = 0;
+    for (const w of c.matchAll(WEEKDAY_RE)) {
+      const before = c.slice(0, w.index), after = c.slice(w.index + w[0].length);
+      if (!AFTER_PRACTICE.test(after) && (AFTER_GAME.test(after) || BEFORE_GAME.test(before) || BEFORE_SAID.test(before))) { games++; continue; }
+      for (let i = 0; i < 7; i++) { const d = addDays(noteDay, -i); if (weekdayOf(d) === w[1].toLowerCase()) { named.push(d); break; } }
+    }
+    /* "did not participate in Friday's 34-17 preseason loss": a game, not a practice */
+    if (games && !named.length && !N_PRACTICE.test(c)) continue;
+    const day = named.length ? named.sort().pop() : noteDay;
+    if (since && day <= since) continue;   // last week's practice
     if (!best || day > best.day) best = { st, day };
   }
   return best;
+}
+
+/* The practice a player's week shows: the report's practice column, or ESPN's note where it is newer.
+   A note counts only when it was written after the team's last game (`since`), and it wins when the
+   report has no practice for him (no row for his team this week, or his row has no practice status) or
+   names an earlier practice day than the note does. "unlisted" is a team that has filed a practice
+   report without him on it (he practised in full). One reader for the build and its check
+   (lineup-checks.js), so the two cannot read a note differently: until 2026-10-09 the check also
+   required a note to be newer than the file's newest practice day when the team had no rows yet, and
+   on a Wednesday night it failed a Sunday team's back who the build rightly listed. */
+function weekPractice({ row, teamOnReport, reportDay, note, since }) {
+  let base = null;
+  if (row && practiceOf(row.practice_status)) base = { st: practiceOf(row.practice_status, row.practice_primary_injury), day: reportDay || '', src: 'report' };
+  else if (!row && teamOnReport) base = { st: 'unlisted', day: reportDay || '', src: 'report' };
+  const noteDay = note && note.date ? etDay(note.date) : '';
+  const n = noteDay && (!since || noteDay > since) ? notePractice(`${note.comment || ''} ${note.long || ''}`, noteDay, since) : null;
+  if (n && (!base || !base.day || n.day > base.day)) return { ...n, src: 'espn' };
+  return base || { st: null };
+}
+
+/* ESPN's list keyed by the player each entry means. ESPN writes the name a player goes by ("Olu
+   Fashanu", "Hollywood Brown", "Mike Danna"), which is the depth chart's and often not the roster's
+   full name ("Olumuyiwa Fashanu", "Marquise Brown", "Michael Danna"). Each entry is matched, on its
+   team, to a gsis id through every name the files give a player, in this order: the roster's full
+   name, the chart's names, then the roster's football and first names with the last name. A name two
+   players share matches neither. An entry no id takes is kept by name. One index for
+   the build and its check (lineup-checks.js): until 2026-10-09 the build looked ESPN up by the chart's
+   name and the check by the roster's, so the check missed "Olu Fashanu"'s Friday practice and failed
+   a lineup the build had right. Returns (id, team, name) => the entry or null. */
+function espnIndex(espn, roster, chartNames) {
+  const steps = [{}, {}, {}];
+  const put = (i, team, name, id) => { if (!team || !name || !id) return; ((steps[i][`${team}|${normName(name)}`] ??= new Set())).add(id); };
+  for (const r of roster || []) {
+    if (!r.gsis_id) continue;
+    const t = ab(r.team);
+    put(0, t, r.full_name, r.gsis_id);
+    for (const f of [r.football_name, r.first_name]) if (f && r.last_name) put(2, t, `${f} ${r.last_name}`, r.gsis_id);
+  }
+  for (const c of chartNames || []) put(1, c.team, c.name, c.id);
+  const byId = {}, byName = {};
+  for (const e of espn || []) {
+    const k = `${e.team}|${normName(e.name)}`;
+    let id = null;
+    for (const s of steps) { const ids = s[k]; if (!ids) continue; if (ids.size === 1) id = [...ids][0]; break; }
+    if (id) byId[id] ??= e; else byName[k] ??= e;
+  }
+  return (id, team, name) => (id && byId[id]) || byName[`${team}|${normName(name)}`] || null;
 }
 
 function lineups(src) {
@@ -353,28 +429,39 @@ function lineups(src) {
      report, however close to kickoff, says who practised, not who will play */
   const filed = {};
   for (const t of teams) filed[t] = !!teamStatus[t];
-  const esp = {};
-  for (const e of espn || []) esp[`${e.team}|${normName(e.name)}`] = e;
   const reported = Object.keys(rep).length > 0;
 
-  /* practice this week: the report's, or ESPN's note where it is newer; "unlisted" is a team that has
-     filed a practice report without him on it (he practised in full) */
-  function practice(id, team, name) {
-    const x = id && rep[id];
-    let base = null;
-    if (x && practiceOf(x.practice_status)) base = { st: practiceOf(x.practice_status, x.practice_primary_injury), day: reportDay, src: 'report' };
-    else if (!x && teamRows[team]) base = { st: 'unlisted', day: reportDay, src: 'report' };
-    const e = esp[`${team}|${normName(name)}`];
-    const since = lastGame[team] && lastGame[team].kick ? etDay(lastGame[team].kick) : '';
-    const noteDay = e && e.date ? etDay(e.date) : '';
-    const n = noteDay && (!since || noteDay > since) ? notePractice(`${e.comment || ''} ${e.long || ''}`, noteDay) : null;
-    if (n && (!base || !base.day || n.day > base.day)) return { ...n, src: 'espn' };
-    return base || { st: null };
+  /* the chart: each team's latest snapshot before its kickoff, its ids checked against the roster */
+  const snap = {};
+  for (const r of chart || []) {
+    if (r.pos_grp === 'Special Teams') continue;
+    const team = ab(r.team), k = kicks[team];
+    if (k && r.dt >= k) continue;
+    if (!snap[team] || r.dt > snap[team].dt) snap[team] = { dt: r.dt, rows: [] };
+    if (r.dt === snap[team].dt) snap[team].rows.push(r);
   }
+  const chartId = (team, r) => {
+    if (r.gsis_id && byId[r.gsis_id]) return { id: r.gsis_id, repaired: false };
+    const id = idOf(team, r.player_name, null);
+    if (id) return { id, repaired: true };
+    /* no roster to check it against: the chart's own id still finds him in the injury report */
+    return { id: /^00-\d{7}$/.test(r.gsis_id || '') ? r.gsis_id : null, repaired: false };
+  };
+  /* every name the charts give a player, for matching ESPN's list (and kept for the check) */
+  const chartNames = [];
+  for (const [team, s] of Object.entries(snap)) {
+    const seen = new Set();
+    for (const r of s.rows) { const { id } = chartId(team, r); const k = `${id}|${r.player_name}`; if (id && r.player_name && !seen.has(k)) { seen.add(k); chartNames.push({ team, id, name: r.player_name }); } }
+  }
+  const espOf = espnIndex(espn, roster, chartNames);
+  const sinceOf = team => lastGame[team] && lastGame[team].kick ? etDay(lastGame[team].kick) : '';
+
+  /* practice this week: weekPractice() above, shared with the check */
+  const practice = (id, team, name) => weekPractice({ row: id && rep[id], teamOnReport: !!teamRows[team], reportDay, note: espOf(id, team, name), since: sinceOf(team) });
   const practising = p => p.st === 'limited' || p.st === 'full' || p.st === 'unlisted';
 
   function ruling(id, team, name, r) {
-    const x = id && rep[id], pr = practice(id, team, name), e = esp[`${team}|${normName(name || (r && r.n))}`];
+    const x = id && rep[id], pr = practice(id, team, name), e = espOf(id, team, name || (r && r.n));
     const injury = lc((x && (x.report_primary_injury || x.practice_primary_injury)) || (e && e.type));
     const w = injury ? ` (${injury})` : '';
     /* 2. the official game status */
@@ -447,15 +534,6 @@ function lineups(src) {
   const usage = (team, id) => (use[team] && use[team][id]) || { att: 0, db: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, osn: 0, dsn: 0, lastWk: 0, lastAtt: 0 };
   const frontKey = e => 2 * e.sk + e.hit + e.tfl + e.dsn / 100;
 
-  /* the chart: each team's latest snapshot before its kickoff */
-  const snap = {};
-  for (const r of chart || []) {
-    if (r.pos_grp === 'Special Teams') continue;
-    const team = ab(r.team), k = kicks[team];
-    if (k && r.dt >= k) continue;
-    if (!snap[team] || r.dt > snap[team].dt) snap[team] = { dt: r.dt, rows: [] };
-    if (r.dt === snap[team].dt) snap[team].rows.push(r);
-  }
   let repaired = 0, chartUsed = '';
   const out = {}, passedLog = [];
   for (const team of teams) {
@@ -477,10 +555,8 @@ function lineups(src) {
     if (fresh) {
       chartUsed = chartUsed > s.dt ? chartUsed : s.dt;
       const rows = s.rows.map(r => {
-        let id = r.gsis_id && byId[r.gsis_id] ? r.gsis_id : null;
-        if (!id) { id = idOf(team, r.player_name, null); if (id) repaired++; }
-        /* no roster to check it against: the chart's own id still finds him in the injury report */
-        if (!id && /^00-\d{7}$/.test(r.gsis_id || '')) id = r.gsis_id;
+        const { id, repaired: fixed } = chartId(team, r);
+        if (fixed) repaired++;
         return { id, name: r.player_name, slot: r.pos_abb, rank: +r.pos_rank || 99, grp: r.pos_grp || '' };
       });
       const key = r => r.id || `name:${normName(r.name)}`;
@@ -565,7 +641,7 @@ function lineups(src) {
     }
     out[team] = { L, out: passed, next, nextNone, note, chart: fresh ? s.dt : null };
   }
-  return { teams: out, chart: chartUsed, reported, reportDay, filed, repaired, passedLog };
+  return { teams: out, chart: chartUsed, reported, reportDay, filed, repaired, passedLog, chartNames };
 }
 
 function units(src) {
@@ -760,7 +836,8 @@ async function build(opts = {}) {
   fs.mkdirSync(cacheDir, { recursive: true });
   const keepInj = D.injuries26.filter(r => r.season_type === 'REG' && (+r.week === week || Object.values(S.lastGame).some(g => g.week === +r.week)));
   fs.writeFileSync(path.join(cacheDir, 'lineup-sources.json'), JSON.stringify({ built_at: META.built_at, run_at: new Date().toISOString(), season: SEASON, week, report_modified: LAST_MODIFIED.injuries26 || '',
-    injuries: keepInj, roster: D.roster26.map(r => ({ gsis_id: r.gsis_id, team: r.team, status: r.status, full_name: r.full_name, position: r.position })),
+    injuries: keepInj, roster: D.roster26.map(r => ({ gsis_id: r.gsis_id, team: r.team, status: r.status, full_name: r.full_name, football_name: r.football_name, first_name: r.first_name, last_name: r.last_name, position: r.position })),
+    chart_names: LU.chartNames, kicks,
     games: D.games.filter(r => r.season === String(SEASON)).map(r => ({ game_id: r.game_id, season: r.season, game_type: r.game_type, week: r.week, gameday: r.gameday, gametime: r.gametime, away_team: r.away_team, home_team: r.home_team, away_score: r.away_score, home_score: r.home_score })),
     espn: espn || null, model_built_at: RK ? RK.built : null }));
 
@@ -773,5 +850,5 @@ async function build(opts = {}) {
   return { week, phase: S.phase, U, meta: META };
 }
 
-module.exports = { build, units, ratings, lineups, normName, notePractice, schedule, gradeLineups, URLS };
+module.exports = { build, units, ratings, lineups, normName, notePractice, weekPractice, espnIndex, lastPracticeDay, etDay, schedule, gradeLineups, URLS };
 if (require.main === module) build().catch(e => { console.error(e.message || e); process.exit(1); });

@@ -287,10 +287,11 @@ async function run() {
         week: 'the lineups are for the schedule\'s current week', official: 'nobody listed whom the report rules Out or Doubtful',
         'q-dnp': 'nobody listed who is Questionable with no practice on the report', 'last-game': 'nobody listed who was Out last game and has not practised since',
         roster: 'nobody listed who is off the active roster, elsewhere, or inactive and not practising', espn: "nobody listed whom ESPN rules out before the team files",
+        'espn-q-dnp': "nobody listed whom ESPN has Questionable and not practising on the last practice day, before the team files",
         'next-qb': 'a quarterback in doubt has the next one named' };
       console.log(`     (lineups checked against ${S.from}: ${r.listed} players listed for week ${r.week}${S.espn ? ', with ESPN\'s list' : ''})`);
       for (const [k, label] of Object.entries(RULES)) {
-        if (k === 'espn' && !S.espn) { skip('lineups: ' + label, 'no ESPN list in these sources'); continue; }
+        if ((k === 'espn' || k === 'espn-q-dnp') && !S.espn) { skip('lineups: ' + label, 'no ESPN list in these sources'); continue; }
         const f = r.fails[k] || [];
         check('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
       }
