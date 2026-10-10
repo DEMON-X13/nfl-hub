@@ -2030,7 +2030,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v84 \u00b7 2026-10-10';
+const APP_BUILD='app v85 \u00b7 2026-10-10';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3637,8 +3637,8 @@ async function boot(){
        times a week and a banner on each would bury the one that matters */
     rebuilt=(saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD)?null
       :(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
-      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and prices were kept; weeks built into this file were replayed.'
-      : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and prices were kept; weeks built into this file were replayed.';
+      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.'
+      : 'The model changed, so the season was rebuilt from the current baseline. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.';
     /* the season's data is built in and replays below; keep what only you could have made */
     for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }
@@ -4535,7 +4535,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the sync layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='8986df5';
+const PAGE_HASH='e7b2015';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -5291,7 +5291,7 @@ window.PARLAY_CARD=(function(){
   const visitor=()=>!(typeof window.lpOwner==='function'&&window.lpOwner());
   /* every dollar figure whole, with its thousands marked: $17,620.00 */
   const money=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const pct=p=>(p*100).toFixed(1)+'%';
+  const pct=p=>p>0&&p<0.0005?'<0.1%':(p*100).toFixed(1)+'%';      // a long shot reads as under a tenth of a percent, not 0.0%
   const ml=x=>x==null||!isFinite(x)?'–':(x>0?'+'+x:'−'+Math.abs(x));
   /* the playoffs run on as weeks 19-22 */
   const weekText=w=>w==null?'':(w<=18?'Week '+w:({19:'Wild Card round',20:'Divisional round',21:'Conference championships',22:'Super Bowl'}[w]||'Week '+w));
@@ -5403,7 +5403,9 @@ window.PARLAY_CARD=(function(){
     $('pcShare').className='btn '+(share?'go':'quiet'); $('pcDownload').className='btn '+(share?'quiet':'go');
     say('');
     md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;
-    try{ $(share?'pcShare':'pcDownload').focus(); }catch(e){}
+    /* the window opens at its top (the title, the price and Close in view); focus must not scroll it down to the buttons */
+    try{ $(share?'pcShare':'pcDownload').focus({preventScroll:true}); }catch(e){}
+    md.scrollTop=0;
     return true;
   }
   function close(){

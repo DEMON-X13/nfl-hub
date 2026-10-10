@@ -809,8 +809,8 @@ async function boot(){
        times a week and a banner on each would bury the one that matters */
     rebuilt=(saved.build===MODEL_BUILD&&saved.dataBuild===DATA_BUILD)?null
       :(saved.dataBuild&&saved.dataBuild!==DATA_BUILD)||!saved.dataBuild
-      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Your parlays, stake and prices were kept; weeks built into this file were replayed.'
-      : 'The model changed, so the season was rebuilt from the current baseline. Your parlays, stake and prices were kept; weeks built into this file were replayed.';
+      ? 'Rosters and depth charts in this build are newer than what was saved in this browser, so the season was rebuilt from the current one. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.'
+      : 'The model changed, so the season was rebuilt from the current baseline. Saved parlays, the stake and prices were kept; weeks built into this file were replayed.';
     /* the season's data is built in and replays below; keep what only you could have made */
     for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }

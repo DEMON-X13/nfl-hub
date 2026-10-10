@@ -96,7 +96,7 @@ window.PARLAY_CARD=(function(){
   const visitor=()=>!(typeof window.lpOwner==='function'&&window.lpOwner());
   /* every dollar figure whole, with its thousands marked: $17,620.00 */
   const money=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const pct=p=>(p*100).toFixed(1)+'%';
+  const pct=p=>p>0&&p<0.0005?'<0.1%':(p*100).toFixed(1)+'%';      // a long shot reads as under a tenth of a percent, not 0.0%
   const ml=x=>x==null||!isFinite(x)?'–':(x>0?'+'+x:'−'+Math.abs(x));
   /* the playoffs run on as weeks 19-22 */
   const weekText=w=>w==null?'':(w<=18?'Week '+w:({19:'Wild Card round',20:'Divisional round',21:'Conference championships',22:'Super Bowl'}[w]||'Week '+w));
@@ -192,7 +192,9 @@ window.PARLAY_CARD=(function(){
     $('pcShare').className='btn '+(share?'go':'quiet'); $('pcDownload').className='btn '+(share?'quiet':'go');
     say('');
     md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;
-    try{ $(share?'pcShare':'pcDownload').focus(); }catch(e){}
+    /* the window opens at its top (the title, the price and Close in view); focus must not scroll it down to the buttons */
+    try{ $(share?'pcShare':'pcDownload').focus({preventScroll:true}); }catch(e){}
+    md.scrollTop=0;
     return true;
   }
   function close(){
