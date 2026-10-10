@@ -1,0 +1,225 @@
+season,team,team_name,win_total,over_odds,under_odds,p_over_novig,exp_wins,games
+2019,ARI,Arizona Cardinals,5.0,-120,100,0.5217,5.022,16
+2019,ATL,Atlanta Falcons,8.5,-140,120,0.562,8.562,16
+2019,BAL,Baltimore Ravens,8.5,110,-130,0.4573,8.457,16
+2019,BUF,Buffalo Bills,7.0,-140,120,0.562,7.062,16
+2019,CAR,Carolina Panthers,8.0,-130,110,0.5427,8.043,16
+2019,CHI,Chicago Bears,9.0,-140,120,0.562,9.062,16
+2019,CIN,Cincinnati Bengals,6.0,130,-150,0.4202,5.92,16
+2019,CLE,Cleveland Browns,9.0,100,-120,0.4783,8.978,16
+2019,DAL,Dallas Cowboys,9.0,-110,-110,0.5,9.0,16
+2019,DEN,Denver Broncos,7.0,-130,110,0.5427,7.043,16
+2019,DET,Detroit Lions,6.5,-150,130,0.5798,6.58,16
+2019,GB,Green Bay Packers,9.0,-140,120,0.562,9.062,16
+2019,HOU,Houston Texans,8.5,-115,-105,0.5108,8.511,16
+2019,IND,Indianapolis Colts,7.5,-110,-110,0.5,7.5,16
+2019,JAX,Jacksonville Jaguars,8.0,-110,-110,0.5,8.0,16
+2019,KC,Kansas City Chiefs,10.5,-130,110,0.5427,10.543,16
+2019,LAC,Los Angeles Chargers,10.0,120,-140,0.438,9.938,16
+2019,LA,Los Angeles Rams,10.5,125,-145,0.4289,10.429,16
+2019,MIA,Miami Dolphins,4.5,100,-120,0.4783,4.478,16
+2019,MIN,Minnesota Vikings,9.0,-125,105,0.5325,9.032,16
+2019,NE,New England Patriots,11.5,-110,-110,0.5,11.5,16
+2019,NO,New Orleans Saints,10.5,130,-150,0.4202,10.42,16
+2019,NYG,New York Giants,6.0,105,-125,0.4675,5.968,16
+2019,NYJ,New York Jets,7.5,-110,-110,0.5,7.5,16
+2019,LV,Oakland Raiders,6.0,145,-170,0.3933,5.893,16
+2019,PHI,Philadelphia Eagles,10.0,-150,130,0.5798,10.08,16
+2019,PIT,Pittsburgh Steelers,9.5,-110,-110,0.5,9.5,16
+2019,SF,San Francisco 49ers,8.0,-140,120,0.562,8.062,16
+2019,SEA,Seattle Seahawks,9.0,100,-120,0.4783,8.978,16
+2019,TB,Tampa Bay Buccaneers,6.5,-110,-110,0.5,6.5,16
+2019,TEN,Tennessee Titans,8.0,120,-140,0.438,7.938,16
+2019,WAS,Washington Redskins,6.0,130,-150,0.4202,5.92,16
+2020,ARI,Arizona Cardinals,7.5,-110,-110,0.5,7.5,16
+2020,ATL,Atlanta Falcons,7.5,100,-120,0.4783,7.478,16
+2020,BAL,Baltimore Ravens,11.5,120,-140,0.438,11.438,16
+2020,BUF,Buffalo Bills,9.0,-120,100,0.5217,9.022,16
+2020,CAR,Carolina Panthers,5.5,-140,120,0.562,5.562,16
+2020,CHI,Chicago Bears,8.0,115,-135,0.4474,7.947,16
+2020,CIN,Cincinnati Bengals,5.5,-150,130,0.5798,5.58,16
+2020,CLE,Cleveland Browns,8.5,-110,-110,0.5,8.5,16
+2020,DAL,Dallas Cowboys,10.0,-110,-110,0.5,10.0,16
+2020,DEN,Denver Broncos,7.5,-130,110,0.5427,7.543,16
+2020,DET,Detroit Lions,7.0,-130,110,0.5427,7.043,16
+2020,GB,Green Bay Packers,8.5,-120,100,0.5217,8.522,16
+2020,HOU,Houston Texans,7.5,105,-125,0.4675,7.468,16
+2020,IND,Indianapolis Colts,9.5,-110,-110,0.5,9.5,16
+2020,JAX,Jacksonville Jaguars,4.5,-110,-110,0.5,4.5,16
+2020,KC,Kansas City Chiefs,11.5,-120,100,0.5217,11.522,16
+2020,LV,Las Vegas Raiders,7.5,115,-135,0.4474,7.447,16
+2020,LAC,Los Angeles Chargers,8.0,-105,-115,0.4892,7.989,16
+2020,LA,Los Angeles Rams,8.5,110,-130,0.4573,8.457,16
+2020,MIA,Miami Dolphins,6.0,-115,-105,0.5108,6.011,16
+2020,MIN,Minnesota Vikings,9.0,110,-130,0.4573,8.957,16
+2020,NE,New England Patriots,9.0,120,-140,0.438,8.938,16
+2020,NO,New Orleans Saints,10.5,120,-140,0.438,10.438,16
+2020,NYG,New York Giants,6.5,120,-140,0.438,6.438,16
+2020,NYJ,New York Jets,6.5,120,-140,0.438,6.438,16
+2020,PHI,Philadelphia Eagles,9.5,130,-150,0.4202,9.42,16
+2020,PIT,Pittsburgh Steelers,9.5,100,-120,0.4783,9.478,16
+2020,SF,San Francisco 49ers,10.5,120,-140,0.438,10.438,16
+2020,SEA,Seattle Seahawks,9.5,100,-120,0.4783,9.478,16
+2020,TB,Tampa Bay Buccaneers,9.5,-125,105,0.5325,9.532,16
+2020,TEN,Tennessee Titans,8.5,-130,110,0.5427,8.543,16
+2020,WAS,Washington Football Team,5.0,-130,110,0.5427,5.043,16
+2021,ARI,Arizona Cardinals,8.5,-110,-110,0.5,8.5,17
+2021,ATL,Atlanta Falcons,7.5,-120,100,0.5217,7.522,17
+2021,BAL,Baltimore Ravens,10.5,-130,110,0.5427,10.543,17
+2021,BUF,Buffalo Bills,11.5,-110,-110,0.5,11.5,17
+2021,CAR,Carolina Panthers,7.5,100,-120,0.4783,7.478,17
+2021,CHI,Chicago Bears,7.5,120,-140,0.438,7.438,17
+2021,CIN,Cincinnati Bengals,6.5,-110,-110,0.5,6.5,17
+2021,CLE,Cleveland Browns,10.5,-120,100,0.5217,10.522,17
+2021,DAL,Dallas Cowboys,9.0,-120,100,0.5217,9.022,17
+2021,DEN,Denver Broncos,9.0,100,-120,0.4783,8.978,17
+2021,DET,Detroit Lions,4.5,-130,110,0.5427,4.543,17
+2021,GB,Green Bay Packers,10.5,-130,110,0.5427,10.543,17
+2021,HOU,Houston Texans,4.0,110,-130,0.4573,3.957,17
+2021,IND,Indianapolis Colts,9.0,-120,100,0.5217,9.022,17
+2021,JAX,Jacksonville Jaguars,6.5,110,-130,0.4573,6.457,17
+2021,KC,Kansas City Chiefs,12.5,105,-125,0.4675,12.468,17
+2021,LV,Las Vegas Raiders,7.5,100,-120,0.4783,7.478,17
+2021,LAC,Los Angeles Chargers,9.5,-110,-110,0.5,9.5,17
+2021,LA,Los Angeles Rams,10.5,100,-120,0.4783,10.478,17
+2021,MIA,Miami Dolphins,9.0,-140,120,0.562,9.062,17
+2021,MIN,Minnesota Vikings,9.0,100,-120,0.4783,8.978,17
+2021,NE,New England Patriots,9.5,-110,-110,0.5,9.5,17
+2021,NO,New Orleans Saints,9.0,130,-150,0.4202,8.92,17
+2021,NYG,New York Giants,7.0,100,-120,0.4783,6.978,17
+2021,NYJ,New York Jets,6.0,110,-130,0.4573,5.957,17
+2021,PHI,Philadelphia Eagles,6.5,-150,130,0.5798,6.58,17
+2021,PIT,Pittsburgh Steelers,8.5,110,-130,0.4573,8.457,17
+2021,SF,San Francisco 49ers,10.5,100,-120,0.4783,10.478,17
+2021,SEA,Seattle Seahawks,9.5,-150,130,0.5798,9.58,17
+2021,TB,Tampa Bay Buccaneers,12.0,-120,100,0.5217,12.022,17
+2021,TEN,Tennessee Titans,9.5,-130,110,0.5427,9.543,17
+2021,WAS,Washington Football Team,8.5,-130,110,0.5427,8.543,17
+2022,ARI,Arizona Cardinals,8.5,110,-130,0.4573,8.457,17
+2022,ATL,Atlanta Falcons,4.5,-140,120,0.562,4.562,17
+2022,BAL,Baltimore Ravens,10.5,110,-130,0.4573,10.457,17
+2022,BUF,Buffalo Bills,12.0,-110,-110,0.5,12.0,17
+2022,CAR,Carolina Panthers,6.5,-130,110,0.5427,6.543,17
+2022,CHI,Chicago Bears,5.5,-130,100,0.5306,5.531,17
+2022,CIN,Cincinnati Bengals,9.5,-130,110,0.5427,9.543,17
+2022,CLE,Cleveland Browns,8.0,-120,100,0.5217,8.022,17
+2022,DAL,Dallas Cowboys,10.0,120,-140,0.438,9.938,17
+2022,DEN,Denver Broncos,10.0,110,-130,0.4573,9.957,17
+2022,DET,Detroit Lions,6.5,-150,130,0.5798,6.58,17
+2022,GB,Green Bay Packers,11.0,-130,110,0.5427,11.043,17
+2022,HOU,Houston Texans,4.5,-120,100,0.5217,4.522,17
+2022,IND,Indianapolis Colts,10.0,-120,100,0.5217,10.022,17
+2022,JAX,Jacksonville Jaguars,6.5,-120,100,0.5217,6.522,17
+2022,KC,Kansas City Chiefs,10.5,-150,130,0.5798,10.58,17
+2022,LV,Las Vegas Raiders,8.5,-150,130,0.5798,8.58,17
+2022,LAC,Los Angeles Chargers,10.5,100,-120,0.4783,10.478,17
+2022,LA,Los Angeles Rams,10.5,100,-120,0.4783,10.478,17
+2022,MIA,Miami Dolphins,9.0,-130,110,0.5427,9.043,17
+2022,MIN,Minnesota Vikings,9.5,-110,-110,0.5,9.5,17
+2022,NE,New England Patriots,8.5,100,-120,0.4783,8.478,17
+2022,NO,New Orleans Saints,9.0,100,-120,0.4783,8.978,17
+2022,NYG,New York Giants,7.0,120,-140,0.438,6.938,17
+2022,NYJ,New York Jets,5.5,-120,100,0.5217,5.522,17
+2022,PHI,Philadelphia Eagles,10.0,110,-130,0.4573,9.957,17
+2022,PIT,Pittsburgh Steelers,7.5,-125,105,0.5325,7.532,17
+2022,SF,San Francisco 49ers,10.0,-110,-110,0.5,10.0,17
+2022,SEA,Seattle Seahawks,5.5,-125,105,0.5325,5.532,17
+2022,TB,Tampa Bay Buccaneers,11.0,120,-140,0.438,10.938,17
+2022,TEN,Tennessee Titans,9.0,120,-140,0.438,8.938,17
+2022,WAS,Washington Commanders,7.5,-130,110,0.5427,7.543,17
+2023,ARI,Arizona Cardinals,4.5,140,-160,0.4037,4.404,17
+2023,ATL,Atlanta Falcons,8.5,-155,135,0.5882,8.588,17
+2023,BAL,Baltimore Ravens,10.0,-130,110,0.5427,10.043,17
+2023,BUF,Buffalo Bills,10.5,-140,120,0.562,10.562,17
+2023,CAR,Carolina Panthers,7.5,115,-135,0.4474,7.447,17
+2023,CHI,Chicago Bears,7.5,-140,120,0.562,7.562,17
+2023,CIN,Cincinnati Bengals,11.0,100,-120,0.4783,10.978,17
+2023,CLE,Cleveland Browns,9.0,-140,120,0.562,9.062,17
+2023,DAL,Dallas Cowboys,10.0,-130,110,0.5427,10.043,17
+2023,DEN,Denver Broncos,8.5,110,-130,0.4573,8.457,17
+2023,DET,Detroit Lions,9.5,-120,100,0.5217,9.522,17
+2023,GB,Green Bay Packers,7.5,-145,125,0.5711,7.571,17
+2023,HOU,Houston Texans,6.5,130,-150,0.4202,6.42,17
+2023,IND,Indianapolis Colts,6.5,-120,100,0.5217,6.522,17
+2023,JAX,Jacksonville Jaguars,9.5,-140,120,0.562,9.562,17
+2023,KC,Kansas City Chiefs,11.5,-120,100,0.5217,11.522,17
+2023,LV,Las Vegas Raiders,6.5,110,-130,0.4573,6.457,17
+2023,LAC,Los Angeles Chargers,9.5,-130,110,0.5427,9.543,17
+2023,LA,Los Angeles Rams,6.5,110,-130,0.4573,6.457,17
+2023,MIA,Miami Dolphins,9.5,100,-120,0.4783,9.478,17
+2023,MIN,Minnesota Vikings,8.5,-130,110,0.5427,8.543,17
+2023,NE,New England Patriots,7.5,130,-150,0.4202,7.42,17
+2023,NO,New Orleans Saints,9.5,-110,-110,0.5,9.5,17
+2023,NYG,New York Giants,7.5,-120,100,0.5217,7.522,17
+2023,NYJ,New York Jets,9.5,-125,105,0.5325,9.532,17
+2023,PHI,Philadelphia Eagles,11.5,105,-125,0.4675,11.468,17
+2023,PIT,Pittsburgh Steelers,9.0,100,-120,0.4783,8.978,17
+2023,SF,San Francisco 49ers,11.0,120,-140,0.438,10.938,17
+2023,SEA,Seattle Seahawks,9.0,100,-120,0.4783,8.978,17
+2023,TB,Tampa Bay Buccaneers,6.0,-150,130,0.5798,6.08,17
+2023,TEN,Tennessee Titans,7.5,-120,100,0.5217,7.522,17
+2023,WAS,Washington Commanders,6.5,105,-125,0.4675,6.468,17
+2024,ARI,Arizona Cardinals,7.0,-130,110,0.5427,7.043,17
+2024,ATL,Atlanta Falcons,9.5,-130,110,0.5427,9.543,17
+2024,BAL,Baltimore Ravens,10.5,100,-120,0.4783,10.478,17
+2024,BUF,Buffalo Bills,10.0,-110,-110,0.5,10.0,17
+2024,CAR,Carolina Panthers,5.5,-130,110,0.5427,5.543,17
+2024,CHI,Chicago Bears,8.5,-165,145,0.604,8.604,17
+2024,CIN,Cincinnati Bengals,10.5,100,-120,0.4783,10.478,17
+2024,CLE,Cleveland Browns,8.5,-145,125,0.5711,8.571,17
+2024,DAL,Dallas Cowboys,10.0,115,-135,0.4474,9.947,17
+2024,DEN,Denver Broncos,5.5,-170,150,0.6115,5.612,17
+2024,DET,Detroit Lions,10.5,-130,110,0.5427,10.543,17
+2024,GB,Green Bay Packers,10.0,100,-120,0.4783,9.978,17
+2024,HOU,Houston Texans,9.5,-140,120,0.562,9.562,17
+2024,IND,Indianapolis Colts,8.5,115,-135,0.4474,8.447,17
+2024,JAX,Jacksonville Jaguars,8.5,-110,-110,0.5,8.5,17
+2024,KC,Kansas City Chiefs,11.5,-110,-110,0.5,11.5,17
+2024,LV,Las Vegas Raiders,6.5,-125,105,0.5325,6.532,17
+2024,LAC,Los Angeles Chargers,9.0,115,-135,0.4474,8.947,17
+2024,LA,Los Angeles Rams,8.5,-170,150,0.6115,8.612,17
+2024,MIA,Miami Dolphins,10.0,100,-120,0.4783,9.978,17
+2024,MIN,Minnesota Vikings,6.5,-140,120,0.562,6.562,17
+2024,NE,New England Patriots,4.5,-110,-110,0.5,4.5,17
+2024,NO,New Orleans Saints,7.5,-110,-110,0.5,7.5,17
+2024,NYG,New York Giants,6.5,130,-150,0.4202,6.42,17
+2024,NYJ,New York Jets,9.5,-140,120,0.562,9.562,17
+2024,PHI,Philadelphia Eagles,10.5,-150,130,0.5798,10.58,17
+2024,PIT,Pittsburgh Steelers,8.0,-140,120,0.562,8.062,17
+2024,SF,San Francisco 49ers,11.5,140,-160,0.4037,11.404,17
+2024,SEA,Seattle Seahawks,7.5,-160,140,0.5963,7.596,17
+2024,TB,Tampa Bay Buccaneers,7.5,-140,120,0.562,7.562,17
+2024,TEN,Tennessee Titans,6.5,120,-140,0.438,6.438,17
+2024,WAS,Washington Commanders,6.5,-110,-110,0.5,6.5,17
+2025,ARI,Arizona Cardinals,8.5,-125,105,0.5325,8.532,17
+2025,ATL,Atlanta Falcons,8.5,110,-130,0.4573,8.457,17
+2025,BAL,Baltimore Ravens,11.5,-118,-102,0.5174,11.517,17
+2025,BUF,Buffalo Bills,12.5,115,-135,0.4474,12.447,17
+2025,CAR,Carolina Panthers,6.5,-140,118,0.5598,6.56,17
+2025,CHI,Chicago Bears,8.5,115,-140,0.4436,8.444,17
+2025,CIN,Cincinnati Bengals,9.5,-115,-105,0.5108,9.511,17
+2025,CLE,Cleveland Browns,4.5,-150,125,0.5745,4.574,17
+2025,DAL,Dallas Cowboys,7.5,110,-130,0.4573,7.457,17
+2025,DEN,Denver Broncos,9.5,-120,100,0.5217,9.522,17
+2025,DET,Detroit Lions,10.5,110,-135,0.4532,10.453,17
+2025,GB,Green Bay Packers,10.5,100,-130,0.4694,10.469,17
+2025,HOU,Houston Texans,9.5,105,-125,0.4675,9.468,17
+2025,IND,Indianapolis Colts,7.5,100,-120,0.4783,7.478,17
+2025,JAX,Jacksonville Jaguars,7.5,-135,115,0.5526,7.553,17
+2025,KC,Kansas City Chiefs,11.5,118,-140,0.4402,11.44,17
+2025,LV,Las Vegas Raiders,6.5,-150,125,0.5745,6.574,17
+2025,LAC,Los Angeles Chargers,9.5,100,-120,0.4783,9.478,17
+2025,LA,Los Angeles Rams,9.5,-145,120,0.5656,9.566,17
+2025,MIA,Miami Dolphins,7.5,-110,-110,0.5,7.5,17
+2025,MIN,Minnesota Vikings,9.5,115,-140,0.4436,9.444,17
+2025,NE,New England Patriots,8.5,-110,-110,0.5,8.5,17
+2025,NO,New Orleans Saints,4.5,-145,120,0.5656,4.566,17
+2025,NYG,New York Giants,5.5,-120,100,0.5217,5.522,17
+2025,NYJ,New York Jets,6.5,120,-145,0.4344,6.434,17
+2025,PHI,Philadelphia Eagles,11.5,105,-125,0.4675,11.468,17
+2025,PIT,Pittsburgh Steelers,8.5,-120,100,0.5217,8.522,17
+2025,SF,San Francisco 49ers,10.5,-102,-118,0.4826,10.483,17
+2025,SEA,Seattle Seahawks,8.5,105,-125,0.4675,8.468,17
+2025,TB,Tampa Bay Buccaneers,9.5,-115,-105,0.5108,9.511,17
+2025,TEN,Tennessee Titans,6.5,120,-145,0.4344,6.434,17
+2025,WAS,Washington Commanders,9.5,-105,-115,0.4892,9.489,17
