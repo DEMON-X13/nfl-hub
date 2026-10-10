@@ -68,6 +68,18 @@ report=[]; problems=[]
 def say(s): print(s,flush=True); report.append(s)
 def refuse(s): problems.append('BLOCKED: '+s)      # nothing from this run is published
 def blocked(): return any(p.startswith(('BLOCKED','AUDIT')) for p in problems)
+# the audit's last word, on a line of its own: "26980 checks, 0 failures, 0 runtime errors"
+AUDIT_LINE=re.compile(r'(\d+) checks, (\d+) failures, (\d+) runtime errors')
+def audit_verdict(out):
+    """(clean, summary line) from the audit's output. Clean only when the summary line is there
+    and, read as numbers, says 0 failures and 0 runtime errors over at least one check. The gate
+    used to look for the text '0 failures', which '10 failures' contains, so an audit with ten
+    failures would have published. The last summary line counts; none at all is not clean, and
+    neither is one in another shape (test_audit_gate.py holds this to its cases)."""
+    found=[m for m in (AUDIT_LINE.fullmatch(l.strip()) for l in out.splitlines()) if m]
+    if not found: return False,'audit produced no summary line'
+    m=found[-1]; checks,fails,errs=(int(x) for x in m.groups())
+    return checks>0 and fails==0 and errs==0, m.group(0)
 def run(args,cwd,label,soft=False,env=None):
     r=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,encoding='utf-8',errors='replace')
     out=(r.stdout or '')+(r.stderr or '')
@@ -397,10 +409,9 @@ def main():
     # 5. assemble + audit: the audit checks the payload against the raw files just downloaded
     rc,out=run([PY,'assemble.py'],HERE,'assemble')
     rc,out=run(['node','audit.js'],HERE,'audit',env=dict(ENV,PROPS_AUDIT_RAW='1'))
-    last=[l for l in out.splitlines() if 'checks,' in l]
-    audit=last[-1].strip() if last else 'audit produced no summary line'
+    clean,audit=audit_verdict(out)
     say('  '+audit)
-    if '0 failures' not in audit or '0 runtime errors' not in audit:
+    if not clean:
         problems.append('AUDIT NOT CLEAN: '+audit+'\n'+'\n'.join(l for l in out.splitlines() if l.strip().startswith(('FAIL','ERROR')))[:3000])
     return finish(a)
 

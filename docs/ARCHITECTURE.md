@@ -84,6 +84,7 @@ props/
                                  only checked: the app fetches it at boot)
   build/audit.js                 ~26k checks. THE COMMIT GATE
   build/payload.py               rebuilds data/payload.json (weekly.py runs it)
+  build/test_audit_gate.py       weekly.py's reading of the audit's summary line, on cases
   build/weekly.py                the whole refresh: download, price, bake, assemble,
                                  audit (props.yml commits); exits 1, publishing nothing,
                                  when a required download fails or the audit is not clean;
@@ -516,8 +517,9 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 
 ### The audit is a gate, not a test suite
 
-`weekly.py` exits with an error when `audit.js` is not clean, so the job stops before
-its commit step: a failing check means the site silently stops updating and the
+`weekly.py` exits with an error when `audit.js` is not clean (its summary line read as
+numbers by `audit_verdict`, 0 failures and 0 runtime errors, a missing line not clean;
+`build/test_audit_gate.py` holds that to its cases), so the job stops before its commit step: a failing check means the site silently stops updating and the
 scheduled run is marked failed. It does the same when a required download (schedule,
 stats, roster, injury report) fails, or the stats would shrink -- both before any credit is
 spent -- except that a 404 on the stats or the injury report, with none of this season's

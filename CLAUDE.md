@@ -99,7 +99,10 @@ node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's so
 
 The audit is a real gate: `weekly.py` refuses to commit when it is not clean, so
 a broken audit means the site silently stops updating and the run is marked
-failed. Write audit checks against the app's invariants, never against whatever
+failed. "Clean" is read from the audit's summary line as numbers (`audit_verdict`: 0
+failures and 0 runtime errors over at least one check; no summary line is not clean), never
+as the text "0 failures", which "10 failures" contains; `python3 test_audit_gate.py` holds
+it to its cases. Write audit checks against the app's invariants, never against whatever
 the week's data happens to offer -- a lean week must not fail the build. Its section V
 checks the page a browser builds against the raw nflverse files (roster status, the
 injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;
