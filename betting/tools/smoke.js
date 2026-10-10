@@ -26,14 +26,13 @@
  * the opener with nothing graded and no injury report yet, week 1, between playoff rounds, after
  * the Super Bowl, a season the Joker cannot call): BETTING_STATE names a made-up state to test one.
  *
- * Section 6 is the X Bet Log: the app handed a stub of the page's window.XBETS, as a visitor (X's
- * weeks, read only, no form, Remove, deposit box or backup card, a note never drawn as markup, the
- * visitor's own log left as it was) and as the owner (a save writes only the week it changed, a
- * frame that had not seen the latest weeks writes nothing of the log when it saves, a change
- * elsewhere redraws every frame, Save and Remove are shut until the log has been read, and the
- * browser's own log stays in the app's key whatever a frame saves until its weeks have joined X's
- * and the log has been read). Without XBETS -- the app on its own, or the page with no store --
- * every check above runs on the browser's own log.
+ * Section 6 is the X Bet Log: the app handed a stub of the page's window.XBETS (X's weeks and
+ * deposit, as nflbets/build/xbets.js reads them from liveparlays/xbets.json), the same on every
+ * device: X's weeks and balance, read only (no form, Remove, deposit box, backup card or Save), a
+ * note never drawn as markup, the browser's own log and deposit left in its key as they were
+ * whatever a frame saves, a file with no deposit, one that arrives late, one that could not be
+ * read and one for another season. Without XBETS -- the app on its own -- every check above runs
+ * on the browser's own log.
  */
 'use strict';
 const fs = require('fs');
@@ -370,18 +369,16 @@ async function reality() {
 
 /* ---------------------------------------------------------------- 6. the X Bet Log, handed in
    Inside the Bets and Stats page the frame is handed window.XBETS (nflbets/build/xbets.js): X's
-   weeks for every device, written by X's devices only and only the weeks a frame changed. A stub
-   stands in for it here: it records every write and hands back what it is given, notes and all,
-   so the app's own escaping is what is tested. */
-function stubXB({ owner, weeks, deposit = null, share = false, applied = true, joined = { added: [], differ: [] } }) {
+   weeks and deposit, read from liveparlays/xbets.json, the same on every device and read only. A
+   stub stands in for it here: it hands back what it is given, notes and all, so the app's own
+   escaping is what is tested, and it has nothing to write with. */
+function stubXB({ weeks, deposit = null, at = '2026-10-10T17:28:44Z', ok = true, other = null }) {
   const subs = [];
-  const X = { calls: [], weeks: JSON.parse(JSON.stringify(weeks)), deposit,
+  const X = { weeks: JSON.parse(JSON.stringify(weeks)), deposit,
     enabled: () => true, ready: async () => {}, onChange: f => { subs.push(f); },
-    get: () => ({ weeks: JSON.parse(JSON.stringify(X.weeks)), deposit: share ? X.deposit : null, owner, share,
-      status: { applied, ok: applied, at: '2026-10-06T19:41:00Z', pending: false, signedIn: false, joined } }),
-    write: (base, next) => { X.calls.push({ base: JSON.parse(JSON.stringify(base)), next: JSON.parse(JSON.stringify(next)) });
-      if (!owner) return false; X.weeks = JSON.parse(JSON.stringify(next.bets || {})); return true; },
-    signOut: () => {}, fire: () => subs.forEach(f => f()) };
+    get: () => ({ weeks: JSON.parse(JSON.stringify(X.weeks)), deposit: X.deposit, season: APP_SEASON,
+      status: { applied: ok, ok, err: ok ? null : 'HTTP 404', at, other } }),
+    fire: () => subs.forEach(f => f()) };
   return X;
 }
 function loadXB(X, tab, mine) {
@@ -399,74 +396,67 @@ function loadXB(X, tab, mine) {
 }
 async function xbetLog() {
   const rows = d => [...d.querySelectorAll('#betTable tbody tr')].map(tr => tr.children[0].textContent.trim());
+  const cells = (d, i) => [...d.querySelectorAll('#betTable tbody tr')].map(tr => tr.children[i] ? tr.children[i].textContent.trim() : '');
   const XSS = '<img src=x onerror="window.__xss=1">';
-  /* a visitor: X's weeks, read only, and the visitor's own log left as it was */
-  { const X = stubXB({ owner: false, weeks: { 1: { staked: 10, returned: 0, note: 'one' }, 2: { staked: 20, returned: 35, note: XSS } } });
+  /* X's log as the file holds it (the three weeks carried over from the retired store, deposit
+     $100): every device sees X's weeks and balance, read only, never the browser's own log */
+  { const X = stubXB({ weeks: { 1: { staked: 10, returned: 8.71, note: '' }, 3: { staked: 11, returned: 14.66, note: XSS }, 4: { staked: 8, returned: 29.02, note: '' } }, deposit: 100 });
     const mine = { myPicks: {}, bets: { 5: { staked: 5, returned: 0, note: 'mine' } }, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 40 } };
     const v = loadXB(X, 'bets', mine); await sleep(700);
-    check(v.errors.length === 0, '6: a visitor\'s X Bet Log threw: ' + v.errors.join('; '));
+    check(v.errors.length === 0, '6: the X Bet Log threw: ' + v.errors.join('; '));
     check(v.d.documentElement.classList.contains('xbets-ro') && /html\.xbets-ro #tab-bets>\.card:first-child \.bar,html\.xbets-ro #backupCard,html\.xbets-ro \.bv-dep/.test(html),
-      '6: a visitor\'s X Bet Log is not read only (the entry bar, the backup card and the deposit box hidden)');
-    check(rows(v.d).join() === 'Week 1,Week 2' && !v.d.querySelector('#betTable [data-betdel]') && !v.d.querySelector('.bv-dep, #betDeposit'), '6: a visitor does not see X\'s weeks without Remove and the deposit box: ' + rows(v.d).join());
+      '6: the X Bet Log is not read only (the entry bar, the backup card and the deposit box hidden)');
+    check(rows(v.d).join() === 'Week 1,Week 3,Week 4' && !v.d.querySelector('#betTable [data-betdel]') && !v.d.querySelector('.bv-dep, #betDeposit') && v.d.getElementById('betSave').disabled,
+      '6: the X Bet Log does not show X\'s weeks without Remove, the deposit box and Save week: ' + rows(v.d).join());
+    /* the deposit's balance, week by week: 98.71 after week 1, 102.37 after week 3 (week 2 a week
+       off), 123.39 after week 4 */
+    check(cells(v.d, 5).join() === '$98.71,$102.37,$123.39' && /\$123\.39/.test((v.d.querySelector('#betChart .stat.bv-balance') || { textContent: '' }).textContent)
+      && /\$100\.00 deposited/.test(v.d.querySelector('#betChart .stat.bv-balance').textContent),
+      '6: the balance is not X\'s from the $100 deposit: ' + cells(v.d, 5).join() + ' / ' + ((v.d.querySelector('#betChart .stat.bv-balance') || {}).textContent || 'no balance'));
+    { const svg = v.d.querySelector('#betChart svg.bv-balance'), end = v.d.querySelector('#betChart .bv-end');
+      check(!!svg && /Deposited \$100\.00/.test(svg.textContent) && !!end && end.textContent === '$123.39' && /Wk 2/.test(svg.textContent) && svg.querySelectorAll('circle').length === 4,
+        '6: the balance chart is not Start to week 4 from the $100 deposit to $123.39, week 2 included: ' + (svg ? svg.textContent.slice(0, 160) : 'no chart')); }
     check(!v.d.querySelector('#betTable img') && !v.w.__xss, '6: a note was drawn as markup by betsViz');
     v.w.eval('renderBetsApp()');
     check(!v.d.querySelector('#betTable img') && !v.w.__xss, '6: a note was drawn as markup by the app\'s own Bet Log table');
     v.w.eval('renderBets()');
-    check(v.d.querySelector('#tab-bets h2').textContent === 'X Bet Log' && /Every week X bet/.test(v.d.getElementById('xbNote').textContent) && /Synced/.test(v.d.getElementById('xbNote').textContent),
-      '6: a visitor\'s X Bet Log is not headed so, or does not say what it is and that it is synced');
-    check(!v.d.querySelector('#betChart .stat.bv-balance') && !/Week 5|mine/.test(v.d.getElementById('betTable').textContent), '6: a visitor sees a balance with no deposit shared, or their own old log as X\'s');
+    { const note = v.d.getElementById('xbNote').textContent;
+      check(v.d.querySelector('#tab-bets h2').textContent === 'X Bet Log' && /Every week X bet/.test(note) && /read only/.test(note) && /Updated /.test(note)
+        && !/owner|Synced|sign|Not synced|store/i.test(note) && !v.d.getElementById('xbSignOut') && !v.d.getElementById('xbBackup'),
+        '6: the X Bet Log is not headed so, does not say what it is and when it changed, or still speaks of an owner, a sign-in or a store: ' + note); }
+    check(!/Week 5|mine/.test(v.d.getElementById('betTable').textContent) && !/\$40\.00/.test(v.d.getElementById('betChart').textContent), '6: the browser\'s own old log or deposit is shown as X\'s');
+    /* a click that saves the app's whole state (the chart's switch) leaves this browser's own log
+       and deposit as they were, and keeps the view the viewer chose */
     v.d.querySelector('[data-bv="pnl"]').click(); await sleep(500);
     const kept = JSON.parse(v.w.localStorage.getItem(MINE));
-    check(X.calls.length === 0 && Object.keys(kept.bets).join() === '5' && kept.bank.deposit === 40 && kept.bank.betView === 'pnl', '6: a visitor\'s save wrote X\'s log, or wrote it over their own: ' + JSON.stringify({ calls: X.calls.length, kept })); }
-  /* the deposit, shared: a visitor sees the balance */
-  { const X = stubXB({ owner: false, weeks: { 1: { staked: 10, returned: 30, note: '' } }, deposit: 100, share: true });
+    check(Object.keys(kept.bets).join() === '5' && kept.bets[5].note === 'mine' && kept.bank.deposit === 40 && kept.bank.betView === 'pnl',
+      '6: a save wrote X\'s log or deposit over the browser\'s own: ' + JSON.stringify(kept));
+    /* nothing in the frame can write X's log: Save week and Remove are not there to press, and
+       the app's own save of a week changes only what this frame shows until it reloads */
+    v.d.getElementById('betWeek').value = '7'; v.d.getElementById('betStaked').value = '10'; v.d.getElementById('betReturned').value = '25';
+    v.d.getElementById('betSave').click(); await sleep(300);
+    const kept2 = JSON.parse(v.w.localStorage.getItem(MINE));
+    check(Object.keys(kept2.bets).join() === '5' && typeof X.write === 'undefined', '6: Save week in the X Bet Log wrote a week'); }
+  /* no deposit in the file: X's profit against break even, no balance */
+  { const X = stubXB({ weeks: { 1: { staked: 10, returned: 30, note: '' } }, deposit: null });
+    const v = loadXB(X, 'bets', { myPicks: {}, bets: {}, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 75 } }); await sleep(700);
+    check(!v.d.querySelector('#betChart .stat.bv-balance') && /Break even/.test(v.d.querySelector('#betChart svg').textContent) && !/\$75/.test(v.d.getElementById('betChart').textContent),
+      '6: with no deposit in the file the X Bet Log shows a balance, or the browser\'s own deposit'); }
+  /* the file arrives after the frame has drawn: the frame takes it */
+  { const X = stubXB({ weeks: {}, deposit: null });
     const v = loadXB(X, 'bets'); await sleep(700);
-    check(/\$120\.00/.test((v.d.querySelector('#betChart .stat.bv-balance') || { textContent: '' }).textContent), '6: with the deposit shared a visitor does not see X\'s balance'); }
-  /* the owner: the form, Remove, the deposit; a save writes the week it changed and no other */
-  { const X = stubXB({ owner: true, weeks: { 1: { staked: 10, returned: 0, note: 'one' }, 2: { staked: 20, returned: 35, note: 'two' } } });
-    const o = loadXB(X, 'bets', { myPicks: {}, bets: {}, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 75 } });
-    const stale = loadXB(X, 'record'); await sleep(700);
-    check(o.errors.length === 0 && !o.d.documentElement.classList.contains('xbets-ro') && !!o.d.querySelector('#betTable [data-betdel]') && !!o.d.getElementById('betDeposit') && !o.d.getElementById('betSave').disabled,
-      '6: the owner\'s X Bet Log is read only: ' + o.errors.join('; '));
-    check(/Owner on this device/.test(o.d.getElementById('xbNote').textContent) && !!o.d.getElementById('xbSignOut') && !o.d.getElementById('xbBackup').hidden, '6: the owner\'s X Bet Log does not say whose it is, or offers no sign-out');
-    check(/\$75\.00 deposited/.test(o.d.getElementById('betChart').textContent), '6: the owner\'s own deposit is not used for the balance');
-    const diff = c => { const b = c.base.bets || {}, n = c.next.bets || {}; return [...new Set(Object.keys(b).concat(Object.keys(n)))].filter(k => JSON.stringify(b[k]) !== JSON.stringify(n[k])); };
-    o.d.getElementById('betWeek').value = '3'; o.d.getElementById('betStaked').value = '5'; o.d.getElementById('betReturned').value = '12.5'; o.d.getElementById('betNote').value = 'three';
-    o.d.getElementById('betSave').click(); await sleep(500);
-    check(X.calls.length === 1 && diff(X.calls[0]).join() === '3' && X.calls[0].next.bets[3].returned === 12.5, '6: Save week wrote more than its week: ' + JSON.stringify(X.calls.map(diff)));
-    o.d.querySelector('#betTable [data-betdel="1"]').click(); await sleep(500);
-    check(X.calls.length === 2 && diff(X.calls[1]).join() === '1' && !X.calls[1].next.bets[1], '6: Remove wrote more than its week: ' + JSON.stringify(X.calls.map(diff)));
-    /* a frame loaded before those changes, and not told of them, saves its whole state: nothing of the log is written */
-    stale.w.eval('save()'); await sleep(500);
-    const toggle = stale.d.getElementById('picksToggle'); if (toggle) { toggle.click(); await sleep(500); }
-    check(X.calls.length === 2, '6: a frame that had not seen the latest weeks wrote the log when it saved (the stale-frame overwrite)');
-    /* told of a new week, every frame draws it */
-    X.weeks[4] = { staked: 1, returned: 3, note: 'four' }; X.fire(); await sleep(100);
-    check(rows(o.d).includes('Week 4') && rows(stale.d).includes('Week 4'), '6: a week logged elsewhere did not redraw the frames: ' + rows(o.d).join());
-    const mineO = JSON.parse(o.w.localStorage.getItem(MINE));
-    check(mineO.bank.deposit === 75 && mineO.bets[3] && mineO.bets[3].note === 'three', '6: the owner\'s browser does not keep its copy of the log and its own deposit'); }
-  /* the owner's device before the log has been read: nothing can be saved or removed over weeks it
-     has not seen (a week waiting from an earlier visit is shown), and a save of the app's whole
-     state leaves this browser's own log in its key as it was */
-  const ownLog = { myPicks: {}, bets: { 1: { staked: 10, returned: 0, note: 'own' }, 2: { staked: 20, returned: 35, note: 'own' } }, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 60 } };
-  { const X = stubXB({ owner: true, weeks: { 7: { staked: 10, returned: 25, note: 'waiting' } }, applied: false, joined: null });
-    const o = loadXB(X, 'bets', ownLog), r = loadXB(X, 'record', ownLog); await sleep(700);
-    check(o.d.getElementById('betSave').disabled && /Connecting/.test(o.d.getElementById('betSave').textContent) && rows(o.d).join() === 'Week 7' && !o.d.querySelector('#betTable [data-betdel]'),
-      '6: Save week or Remove is open before the X Bet Log has been read: ' + rows(o.d).join());
-    const toggle = r.d.getElementById('picksToggle'); if (toggle) toggle.click(); else r.w.eval('save()'); await sleep(500);
-    o.w.eval('save()'); await sleep(500);
-    const kept = JSON.parse(r.w.localStorage.getItem(MINE)), keptO = JSON.parse(o.w.localStorage.getItem(MINE));
-    check(Object.keys(kept.bets).join() === '1,2' && Object.keys(keptO.bets).join() === '1,2' && X.calls.length === 0,
-      '6: a save before the X Bet Log was read wrote the shown log over this browser\'s own, or wrote the log: ' + JSON.stringify([kept.bets, keptO.bets, X.calls.length])); }
-  /* read, but this browser's weeks not yet moved in: a week saved goes to the log, and the
-     browser's own log stays in its key until it has joined */
-  { const X = stubXB({ owner: true, weeks: { 1: { staked: 10, returned: 0, note: 'shared' } }, joined: null });
-    const o = loadXB(X, 'bets', ownLog); await sleep(700);
-    o.d.getElementById('betWeek').value = '3'; o.d.getElementById('betStaked').value = '5'; o.d.getElementById('betReturned').value = '12.5';
-    o.d.getElementById('betSave').click(); await sleep(500);
-    const kept = JSON.parse(o.w.localStorage.getItem(MINE));
-    check(X.calls.length === 1 && X.weeks[3] && Object.keys(kept.bets).join() === '1,2' && kept.bets[1].note === 'own',
-      '6: before this browser\'s weeks joined, a save wrote X\'s log over its own: ' + JSON.stringify(kept.bets)); }
+    check(rows(v.d).length === 0 && /No weeks logged yet/.test(v.d.getElementById('betChart').textContent), '6: an empty X Bet Log does not say so');
+    X.weeks = { 2: { staked: 4, returned: 9, note: '' } }; X.deposit = 50; X.fire(); await sleep(100);
+    check(rows(v.d).join() === 'Week 2' && /\$55\.00/.test(v.d.querySelector('#betChart .stat.bv-balance').textContent), '6: the log arriving late did not redraw the frame: ' + rows(v.d).join()); }
+  /* the file could not be read: the frame says so, shows nothing of the browser's own */
+  { const X = stubXB({ weeks: {}, ok: false });
+    const v = loadXB(X, 'bets', { myPicks: {}, bets: { 3: { staked: 1, returned: 0, note: 'own' } }, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 9 } }); await sleep(700);
+    check(/could not be read/.test(v.d.getElementById('xbNote').textContent) && rows(v.d).length === 0 && v.d.documentElement.classList.contains('xbets-ro'),
+      '6: a file that could not be read is not said, or the browser\'s own log is shown in its place'); }
+  /* a file for another season: no weeks of this one, and the frame says which it holds */
+  { const X = stubXB({ weeks: {}, other: APP_SEASON - 1 });
+    const v = loadXB(X, 'bets'); await sleep(700);
+    check(new RegExp(String(APP_SEASON - 1)).test(v.d.getElementById('xbNote').textContent) && rows(v.d).length === 0, '6: a log for another season is not said'); }
 }
 
 (async () => {
