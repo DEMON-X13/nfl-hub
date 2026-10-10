@@ -510,6 +510,26 @@ to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's co
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 
+**The Game snapshot.** An opened game on the Pick'ems board has a Game snapshot button at its head
+(`tab_pickems.html`), which opens a window over the page (`nflbets/build/snapshot.html`, `gs-`
+prefixed, its own closure, inlined by the build after the ELO tab's script, so a change to it is a
+rebuild too; the
+page's modal, Escape, Close and a click outside close it, Tab stays inside, the focus goes back to the
+button) with everything the site has on that game: each team's record as Team Rankings counts it,
+the kickoff and site, the Vegas line as the board reads it, every model's pick, chance and grade
+(Vegas, Alpha Model, the Challenger Model, the Joker, the ELO Model, the Broly Model, from
+`state.json`'s `processed`, `atKickoff`, `joker` and `broly` and `model.json`'s `graded` and `next`),
+each team's Power Rating, Overall Offense against Overall Defense both ways, each team's expected
+starters position by position with their season Elo, rank, shield and Q as on the ELO Ratings tab
+(`lineups` in `matchups.json`) and its ranked players out, the Props tab's Mismatches in the game,
+when each file was published, and links to the full tabs. It computes nothing of its own: the board
+hands it the season and its own Vegas call (`window.pkBoard`) and the ELO tab its one read of
+`elo/data/` (`window.eloFiles`) and its Mismatches (`window.eloMismatches`). A played game says the
+ratings and lineups are the files as they stand now, and a file that did not load, a game outside the
+matchups' week or a team whose lineup is for another game is said in its card while the rest draws.
+`smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file, on a game to
+come, a final on the scoreboard, a graded game and a playoff game, with a file missing.
+
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and

@@ -810,13 +810,19 @@ function draw(){
   const d=new Date(D.model.built_at);
   el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
+/* the Game snapshot on the Pick'ems tab (nflbets/build/snapshot.html) draws from these same three
+   files: it waits on this one read of them rather than asking for them again */
+let filesRead=null; const FILES=new Promise(r=>{ filesRead=r; });
+window.eloFiles=()=>FILES;
 async function boot(){
   const get=async u=>{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(u.replace(/^\.\.\//,'')+' '+r.status); return r.json(); };
   try{
     const [p,m]=await Promise.all([get(P_URL),get(M_URL)]);
     D.players=p; D.model=m;
   }catch(e){ D.err='The ratings could not be loaded: '+(e.message||e); }
-  try{ D.mu=await get(MU_URL); }catch(e){}
+  let muErr=null;
+  try{ D.mu=await get(MU_URL); }catch(e){ muErr=String(e&&e.message||e); }
+  filesRead({players:D.players,model:D.model,mu:D.mu,err:D.err||null,muErr});
   draw();
   try{ mismatchCard(); }catch(e){}
 }

@@ -68,6 +68,11 @@
 .pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
 .pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
 .pk-foot a{color:var(--ink-2)}
+/* the Game snapshot's button, at the head of an opened game (the window is snapshot.html's) */
+.pk-snaprow{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin:0 0 12px}
+.pk-snapbtn{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.pk-snapbtn svg{flex:none}
+.pk-snapwhat{font-size:12px;color:var(--muted);line-height:1.4}
 @media(max-width:900px){
   .pk-gamehead{display:none}
   /* one card per game, laid out the way the Props tab lays its out */
@@ -113,7 +118,7 @@
 /*BETTING*/
 const STATE_URL='../betting/state.json';
 /* season: the betting job's own, from state.json (the board's one source), never written in here */
-const ST={sched:[],odds:{},season:null};
+const ST={sched:[],odds:{},season:null,state:null};
 /* the scoreboard as last read, by game id: nothing here is saved anywhere */
 const PK_LIVE={games:{},at:0,err:null,busy:false};
 const el=id=>document.getElementById(id);
@@ -180,14 +185,17 @@ function call(g){
   return {pick,conf,pHome,margin,graded,correct:graded&&+g.result!==0?pick===winnerOf(g):null};
 }
 
+/* the Game snapshot's button heads every opened game, priced or not: the window it opens
+   (nflbets/build/snapshot.html) draws everything the site has on the game */
+const snapBtn=g=>`<div class="pk-snaprow"><button type="button" class="btn quiet pk-snapbtn" data-snap="${esc(g.game_id)}" aria-haspopup="dialog"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h5v5H2zM9 2.5h5v5H9zM2 9.5h5v4H2zM9 9.5h5v4H9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Game snapshot</button><span class="pk-snapwhat">Records, team and player Elo, the matchups and every model's call, in one window</span></div>`;
 /* the prop model's Game bets card for this game, exactly as the game's own page draws it:
    both teams, to win and to cover, a box on each line while the game can still be bet and
    a tick or a cross on each once it has a score. The card is the prop model's own function
    on its own schedule row, so this is the same card and not a copy of one. */
 function gameBody(g){
-  if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody"><span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
+  if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
   const row=mkt(g.game_id);
-  if(!row||!gameBet(row,row.h,'ml')) return `<div class="pk-gbody"><span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  if(!row||!gameBet(row,row.h,'ml')) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
   const locked=gameStarted(row);
   let card=gameBetsCard(row,locked);
   if(card.split('class="card gbets"').length!==2) throw new Error("the Game bets card is not the shape this tab expects");
@@ -204,7 +212,7 @@ function gameBody(g){
   const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')).length;
   const note=locked?''
     :`<p class="pk-tolegs">Ticked lines go to your builder on <a href="#parlay">X Parlays</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
-  return `<div class="pk-gbody">${card}${note}</div>`;
+  return `<div class="pk-gbody">${snapBtn(g)}${card}${note}</div>`;
 }
 /* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
    so the row shows what is on the parlay now */
@@ -214,6 +222,11 @@ function wireLegs(){
     const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;
     toggleLeg(box.dataset.leg,+box.dataset.k,mkt(g.game_id),box.dataset.side||'over',box.dataset.main==='1');
     const body=card.querySelector('.pk-gbody'); if(body) body.outerHTML=gameBody(g);
+  });
+  /* the Game snapshot's button opens its window over the page */
+  el('pkBoard').addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('button[data-snap]'); if(!b) return;
+    if(typeof window.gameSnapshot==='function') window.gameSnapshot(b.dataset.snap,b);
   });
 }
 
@@ -357,8 +370,12 @@ function records(w){
 }
 
 function foot(){
-  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Challenger Model, the Joker, the ELO Model and the Broly Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging.`;
+  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Challenger Model, the Joker, the ELO Model and the Broly Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging; its Game snapshot button opens everything else the site has on the game.`;
 }
+
+/* the Game snapshot (nflbets/build/snapshot.html) reads the board through this: the season as
+   loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site */
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET};
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was */
 function routeTabs(){
@@ -403,7 +420,7 @@ async function boot(){
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const st=await r.json();
-    ST.sched=st.schedule||[]; ST.odds=st.odds||{};
+    ST.sched=st.schedule||[]; ST.odds=st.odds||{}; ST.state=st;
     ST.season=+st.season||(ST.sched[0]?+String(ST.sched[0].game_id).slice(0,4):null);
   }catch(e){
     el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
