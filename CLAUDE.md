@@ -353,7 +353,8 @@ what needs a game to come only when there is one, and, once the payload's last g
 kick off, boots the page two days before it so the builder and the sync checks still have a game
 to stand on. `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
-with its stack, and a run still going after ten minutes stops and fails.
+with its stack, a run still going after ten minutes stops and fails, and one left waiting on
+nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 
 `nflbets/build/sync.js` (the sync layer) is inlined by the build, so a change to it is a rebuild too.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless

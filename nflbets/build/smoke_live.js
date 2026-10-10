@@ -34,6 +34,9 @@ function finish(why) {
 }
 const SMOKE_LIMIT_MS = 10 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
+/* nor does it pass by running out of things to wait on: with no window left open, a body stuck
+   on a promise nothing will settle would end Node with exit 0 and no count */
+process.on('beforeExit', () => finish('the smoke stopped before it finished: its body was waiting on something nothing would settle'));
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const knob = row => txt(row.querySelector('.knob'));
 const lineAt = row => txt(row.querySelector('.lineLbl'));
