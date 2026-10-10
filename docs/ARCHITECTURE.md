@@ -247,8 +247,12 @@ the page as a string and becomes a frame's srcdoc when its tab is first opened, 
 `window.EMBED_TAB` (the tab, which also hides the app's header and tab bar) and
 `window.STATE_URL` (`../betting/state.json`) written in front of it. A srcdoc frame is the
 page's own origin, so the app keeps its browser store, and nothing is fetched or cached
-for it apart from the page. The board's tag and confidence bands are lifted from the betting app at
-build time and scoped inside the closure, since the prop model has its own `tag()`.
+for it apart from the page. The frame follows its content's height (a ResizeObserver on its body)
+and its document never scrolls up and down by itself (`overflow-y: hidden` on its root, set as it
+loads), so no classic scrollbar can stick in it when the content measured with a bar comes out
+taller without one; sideways it still scrolls where something is really wider. The board's tag
+and confidence bands are lifted from the betting app at build time and scoped inside the
+closure, since the prop model has its own `tag()`.
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting app's, so a pick, parlay or bet made in either is what
 this page shows. Tabs are addresses: `#slate`, `#parlay`, `#record` and so on.
@@ -530,7 +534,8 @@ moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injur
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`, `broly`,
 `atKickoff` (each coming game's Alpha and Challenger call, recorded by every run before its
 kickoff and kept from then on; the game is graded on it, `processed[gid].atKickoff`),
-`jokerFit` (the weeks the Joker was fitted on after they were played), `modelStatus` (only while
+`jokerFit` (the weeks the Joker was fitted on after they were played, kept as data: the Pick'em
+Record draws them like any other week), `modelStatus` (only while
 the Joker or Broly could not run: since when and why), `prevElo`/`prevRanks`, `published`, and
 the app's own bookkeeping (`gamesPlayed`, `modelBuild`, `prevRanksWeek`, `season`,
 `showAllModels`, `snapWeek`).
@@ -572,9 +577,10 @@ and exit 1; the workflow carries on past them (`continue-on-error`) and the Pick
 fitted 2019-2025 and refitted once with 2026 weeks 1-2 in its training (`tune_2026.py`, the
 owner's call), whose picks `joker.py` writes into `state.json` (`joker`, the pick
 and home win chance for every game, regular season and playoffs, and `processed[gid].joker` once
-graded) and show beside Alpha Model's on the Pick'em Record, which hatches the fitted weeks and
-gives the Joker's record without them. Each run also logs, in the job's output, any
-input that has drifted from the scale it was fitted on (`drift.py`). It refuses a season more than
+graded) and show beside Alpha Model's on the Pick'em Record, which draws the refitted weeks like
+every other week and counts them in the Joker's record (the owner's call, October 2026: no hatch,
+label or note; `state.jokerFit` keeps which weeks they were). Each run also logs, in the job's
+output, any input that has drifted from the scale it was fitted on (`drift.py`). It refuses a season more than
 one past its frozen data.
 
 The season is the app's (`freshState`), read by `patches.season()`: `update.js` downloads that

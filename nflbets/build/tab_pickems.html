@@ -387,6 +387,12 @@ function routeTabs(){
 
 /* the betting tabs are the betting site's own page, framed. A frame loads the first time its
    tab is opened and then follows the height of what it shows, so the page scrolls as one.
+   The frame never scrolls itself up and down: its height is set from its content, so a vertical
+   overflow is met by the frame growing, never by a scrollbar of its own. With one allowed, a
+   classic scrollbar (Windows Chrome's, with its arrows) stuck there with nothing to scroll: the
+   charts are drawn at the frame's width, so the content was measured with the scrollbar's 15-17px
+   taken off, came out a few px taller without it, overflowed again, and Chrome kept the bar.
+   Sideways it still scrolls when something is really wider than the frame.
 
    The frame's document is this page's own: the betting app is carried here as a string
    (BET_APP, set by the build) and becomes the frame's srcdoc when its tab is first opened,
@@ -399,6 +405,7 @@ function frames(){
     f.addEventListener('load',()=>{
       let doc=null; try{ doc=f.contentDocument; }catch(e){ return; }
       if(!doc||!doc.documentElement) return;
+      doc.documentElement.style.overflowY='hidden';
       const fit=()=>{ const h=doc.documentElement.scrollHeight; if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>2) f.style.height=h+'px'; };
       fit();
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);

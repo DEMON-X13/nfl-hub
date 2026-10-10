@@ -17,8 +17,9 @@
  * the model's status says why it has none); no call changes after its kickoff (against the last
  * committed state: BETTING_PREV_STATE names another file, for tests); a scoreboard final is
  * counted for every model at once, on the call frozen at kickoff; Team Rankings' record is the
- * season's and a rating that predates a final says so; the Joker's fitted weeks and a model that
- * could not run are disclosed on the Pick'em Record; Joker Jr, a test model retired in October
+ * season's and a rating that predates a final says so; a model that could not run is disclosed on
+ * the Pick'em Record, and the weeks the Joker was refitted on after they were played are drawn
+ * like every other week, with no mark, note or record without them; Joker Jr, a test model retired in October
  * 2026, is gone from a state this run wrote and draws nothing from one that still carries it.
  * Each holds whatever the week offers: a check with nothing to look at this week (no game graded
  * yet, no Thursday game, a bye) is skipped, and the rules themselves are also run on cases made
@@ -299,9 +300,13 @@ async function reality() {
       check(!!tr && tr.children[1].textContent.trim().startsWith(other(board.pick)), `5k: the pick grid shows ${tr && tr.children[1].textContent.trim()} for a game under way, not the call frozen at its kickoff (${other(board.pick)})`); }
     } }
 
-  /* 5l. the record says what it is: the Joker's fitted weeks, and a model that could not run */
+  /* 5l. the record says what it is: a model the job could not rescore is disclosed under the legend.
+     And every week is drawn alike: the weeks of this season the Joker was refitted on after they
+     were played (S.jokerFit, which the state keeps as data) are shaded, labelled, counted and shown
+     in the tooltip like any other week of any model, with no hatch, label, note, asterisk or record
+     without them (the owner's call, October 2026) */
   { const st = JSON.parse(state);
-    /* the notes sit on the record, which is drawn once a game is graded: before the first final, one made-up graded game */
+    /* the record is drawn once a game is graded: before the first final, one made-up graded game */
     if (!Object.keys(st.processed).length) { const g = st.schedule[0];
       Object.assign(g, { result: 7, home_score: 24, away_score: 17 });
       st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, h: null, news: [] }; }
@@ -309,23 +314,63 @@ async function reality() {
     /* the published fit when it is this season's, else one made up for the test */
     if (!(st.jokerFit && +st.jokerFit.season === +st.season && (st.jokerFit.weeks || []).some(x => wks.includes(+x)))) delete st.jokerFit;
     st.jokerFit = st.jokerFit || { season: st.season, weeks: wks.slice(0, 1), fitted_on: 'made up for the smoke test' };
-    /* a season the Joker could not call (its status says why) still has the mark tested, on one made-up call */
+    /* a season the Joker could not call (its status says why) still has the rule tested, on one made-up call */
     if (!Object.values(st.processed).some(r => r.joker && st.jokerFit.weeks.includes(+r.week))) {
       const r = Object.values(st.processed).find(x => st.jokerFit.weeks.includes(+x.week) && x.result != null && x.result !== 0);
       if (r) r.joker = { pick: r.home, pHome: 0.6, correct: r.result > 0 }; }
     st.modelStatus = { broly: { since: P.published, why: 'made up for the smoke test' } };
     const b = boot(st); await new Promise(r => setTimeout(r, 700));
     const notes = b.d.querySelector('#modelChart .rv-notes'), nt = notes ? notes.textContent : '';
-    check(/The Joker was refitted after week/.test(nt) && /fit, not a prediction/.test(nt), '5l: the Joker\'s fitted weeks are not disclosed: ' + nt.slice(0, 200));
     check(/Broly Model could not be rescored/.test(nt) && /made up for the smoke test/.test(nt), '5l: a model that could not run is not disclosed: ' + nt.slice(0, 300));
-    const jr = [...b.d.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(t => /The Joker/.test(t.querySelector('th').textContent));
-    const fitted = jr ? jr.querySelectorAll('td.rv-fit').length : 0;
-    check(fitted === st.jokerFit.weeks.filter(x => Object.values(st.processed).some(r => +r.week === x && r.joker)).length && fitted > 0, `5l: the Joker's fitted weeks are not marked in the grid (${fitted})`);
-    /* and the published state's own disclosure, when the job has written one for this season and
-       the Joker has a graded call in a fitted week for it to be about */
+    /* the Joker's refitted weeks, drawn as any week: each cell, the tooltip, the season cell and the legend */
+    const alike = (b, fit, tag) => {
+      const S2 = b.w.eval('S'), rows = Object.values(S2.processed).filter(r => r.correct !== null);
+      const fw = (fit.weeks || []).map(Number);
+      const tx = sel => [...b.d.querySelectorAll(sel)].map(x => x.textContent).join(' ').replace(/\s+/g, ' ');
+      const all = tx('#modelChart') + ' ' + tx('#recordTable');
+      check(!/fitted|refitted|fit, not a prediction|after the fact|hatched/i.test(all), `5l${tag}: the record still marks the Joker's refitted weeks: ` + (all.match(/.{0,80}(fitted|after the fact|hatched).{0,60}/i) || [''])[0]);
+      check(!b.d.querySelector('#recordTable td.rv-fit'), `5l${tag}: a cell of the week-by-week grid is still drawn as fitted`);
+      const weeks = [...new Set(rows.map(r => +r.week))].sort((x, y) => x - y);
+      const jok = r => r.joker && (r.joker.correct === true || r.joker.correct === false) ? r.joker.correct : null;
+      const tally = rs => { let w = 0, l = 0; for (const r of rs) { const v = jok(r); if (v === true) w++; else if (v === false) l++; } return { w, l }; };
+      const pct = t => Math.round(100 * t.w / (t.w + t.l));
+      const shade = t => { const g = t.w + t.l, p = t.w / g, a = Math.min(0.42, Math.abs(p - 0.5) / 0.3 * 0.42).toFixed(3);
+        return p > 0.5 ? `background:rgba(27,122,78,${a})` : (p < 0.5 ? `background:rgba(192,57,43,${a})` : ''); };
+      const jr = [...b.d.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(t => /The Joker/.test(t.querySelector('th').textContent));
+      check(!!jr && jr.children.length === weeks.length + 2, `5l${tag}: the Joker has no full row in the week-by-week grid`);
+      if (!jr) return 0;
+      let seen = 0;
+      weeks.forEach((w, i) => { const t = tally(rows.filter(r => +r.week === w)), td = jr.children[i + 1]; if (!t.w && !t.l) return;
+        const ok = td.className === 'rv-c' && td.textContent.trim() === `${t.w}–${t.l}${pct(t)}%` && (td.getAttribute('style') || '') === shade(t)
+          && td.getAttribute('title') === `The Joker, ${w > 18 ? 'Playoffs ' + (w - 18) : 'Week ' + w}: ${t.w} of ${t.w + t.l} (${pct(t)}%)`;
+        check(ok, `5l${tag}: the Joker's week ${w} is not drawn like any other week: ${td.outerHTML.slice(0, 200)}`);
+        if (fw.includes(w)) seen++;
+        /* the tooltip: the week's record, nothing added */
+        const hit = b.d.querySelector(`#modelChart .rv-hit[data-i="${i}"]`);
+        if (hit) { hit.dispatchEvent(new b.w.Event('mouseenter'));
+          const tip = ((b.d.querySelector('#modelChart .rv-tip') || {}).textContent || '').replace(/\s+/g, ' ');
+          check(tip.includes(`The Joker ${t.w}–${t.l} · season`), `5l${tag}: the tooltip for week ${w} does not give the Joker's record as it stands: ${tip.slice(0, 200)}`); } });
+      /* the season counts every week, on the grid and on the legend, and so does the line against Vegas */
+      const T = tally(rows), sc = jr.children[jr.children.length - 1];
+      check(sc.textContent.trim() === `${T.w}–${T.l}${pct(T)}%` && sc.getAttribute('title') === `The Joker, season: ${T.w} of ${T.w + T.l} (${pct(T)}%)`, `5l${tag}: the Joker's season cell does not count every week: ${sc.outerHTML.slice(0, 200)}`);
+      let net = 0;
+      for (const r of rows) { const a = jok(r), vp = r.line == null || r.line === 0 ? null : (r.line > 0 ? r.home : r.away);
+        if (a === null || vp === null) continue; net += (a ? 1 : 0) - (vp === (r.result > 0 ? r.home : r.away) ? 1 : 0); }
+      const sign = n => n > 0 ? '+' + n : (n < 0 ? '−' + Math.abs(n) : '0');
+      const lg = tx('#modelChart .lgdrow');
+      const want = `The Joker ${T.w}–${T.l} ${sign(net)} vs Vegas`, at = lg.indexOf(want);
+      check(at >= 0 && lg[at + want.length] !== '*',
+        `5l${tag}: the Joker's legend does not count every week (${T.w}–${T.l}, ${sign(net)} vs Vegas, no mark): ${lg.slice(0, 300)}`);
+      return seen; };
+    const before5l = fails, seen = alike(b, st.jokerFit, '');
+    check(seen > 0, `5l: no refitted week of the Joker's was there to hold to the rule (${st.jokerFit.weeks})`);
+    if (fails === before5l) console.log(`  5l: the Joker's refitted week${st.jokerFit.weeks.length > 1 ? 's' : ''} ${st.jokerFit.weeks.join(', ')} drawn like any other (${seen} on the grid, the tooltip, the season and the legend)`);
+    /* and the published state, when the job has written a fit for this season and the Joker has a
+       graded call in one of its weeks */
     if (P.jokerFit && +P.jokerFit.season === +P.season && Object.values(P.processed).some(r => r.joker && (P.jokerFit.weeks || []).map(Number).includes(+r.week))) {
       const e = boot(P); await new Promise(r => setTimeout(r, 700));
-      check(/fit, not a prediction/.test((e.d.querySelector('#modelChart .rv-notes') || {}).textContent || ''), '5l: the published Joker fit is not disclosed on the record');
+      alike(e, P.jokerFit, ' (published)');
+      check(e.errors.length === 0, '5l (published): runtime errors: ' + e.errors.join('; '));
     }
     check(b.errors.length === 0, '5l: runtime errors: ' + b.errors.join('; ')); }
 
