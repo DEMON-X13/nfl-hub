@@ -42,7 +42,8 @@
  *     week 18's or the Super Bowl's absences as if they were coming.
  *
  * The app's version line (APP_BUILD) gains the patches' own version, HUB_PATCHES: bump it with
- * any change here, as the props parts bump theirs.
+ * any change here or to what betting/tools/build.js lays over the app (the record, the pick grid),
+ * as the props parts bump theirs.
  */
 'use strict';
 const fs = require('fs');
@@ -164,7 +165,7 @@ function injAsOf(now){ now=now??Date.now(); const w=currentWeekDefault(), bits=[
   return bits.length?'<p class="muted inj-asof" style="margin:8px 0 0">From nflverse: '+bits.join(' and ')+'.</p>':''; }
 `;
 
-const HUB_PATCHES = 'hub patches 2 \\u00b7 2026-10-09';
+const HUB_PATCHES = 'hub patches 3 \\u00b7 2026-10-10';
 
 function logic(html) {
   { const m = html.match(/^const APP_BUILD='([^'\n]*)';$/mg) || [];
