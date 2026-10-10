@@ -112,18 +112,30 @@ props/
 
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
-                                 explained in its docstring; downloads 2012-now nflverse
-                                 player stats into cache/ (gitignored) and writes data/; exits 1
-                                 and writes nothing when a required source cannot be had
+                                 and Overall Offense and Overall Defense (an Elo on nine key
+                                 stats from the season's play-by-play, weighted), explained in
+                                 its docstring; downloads 2012-now nflverse player stats and
+                                 the season's play-by-play into cache/ (gitignored) and writes
+                                 data/; exits 1 and writes nothing when a required source
+                                 cannot be had
   check.py                       the gate: data/ against the roster, the injury report, the
-                                 schedule and what was published (the last commit's data/
-                                 and history/: the top ten carried, frozen calls kept), plus
-                                 the build's functions on fixtures; the job runs it before
-                                 committing
+                                 schedule, the play-by-play (every team's stats and ratings
+                                 replayed from it) and what was published (the last commit's
+                                 data/ and history/: the top ten carried, frozen calls kept),
+                                 plus the build's functions on fixtures; the job runs it
+                                 before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
-                                 out is priced by nothing but keeps his past weeks' ratings
+                                 out is priced by nothing but keeps his past weeks' ratings;
+                                 Overall Offense and Overall Defense: the two pills, the 32
+                                 teams, every value and rank the file's, the weights read from
+                                 the file, the sort, the team window, an old file's fallback
+  tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
+                                 Overall Defense: 2012-2025 play-by-play, every constant fitted
+                                 on 2012-2017, the build's weights scored on 2018-2025; run by
+                                 hand, never by the job; says whether the build carries its
+                                 numbers
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/
@@ -138,8 +150,10 @@ elo/
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming
                                  week's (the Pick'em Record's ELO Model), `teams`, the team Elo
-                                 of this season's results (Power Ratings), `units`, `phase`,
-                                 and `sources` (what each download gave)
+                                 of this season's results (Power Ratings), `units` (Overall
+                                 Offense and Overall Defense: each team's rating, its line, every
+                                 key stat with its league rank, the weights), `phase`, and
+                                 `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
                                  projections, each club's expected lineup and who is out of it
@@ -236,6 +250,12 @@ The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closur
 `elo/data/players.json`, `model.json` and `matchups.json` on load and draws one card: the
 rankings by position, a bell-curve histogram by tier shield over the table, each player's
 season line. A click on a player opens his window: his rating, then his matchup this week.
+The position row ends with two pills, Overall Offense and Overall Defense, which put a table of
+the 32 teams in the card's place (`units` in `model.json`): rank, team, record, rating and
+shield, and each key stat with its league rank, the weighted ones first, sortable by column; a
+click on a team opens its window (its rating game by game, every stat ranked raw and with
+opponents counted, what each weighted stat adds, its coming opponent). The weights and the
+stats are read from the file, and a file from before them draws the old three columns.
 The same script puts the Mismatches card on the Props tab (games still to kick off only), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),

@@ -106,6 +106,27 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-sugg .sugg-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
+/* Overall Offense and Overall Defense: two pills at the end of the position row, a table of the
+   32 teams with each key stat and its league rank, sortable, and a team's window */
+.pe-pos .pe-unitpill{border-color:var(--ink-2);color:var(--ink);font-weight:700}
+.pe-pos .pe-unitpill:first-of-type{margin-left:6px}
+table.pe-tt th[data-sort]{cursor:pointer;user-select:none}
+table.pe-tt th[data-sort]:hover,table.pe-tt th[aria-sort]{color:var(--ink)}
+table.pe-tt th[aria-sort="descending"]::after{content:' ▼';font-size:9px}
+table.pe-tt th[aria-sort="ascending"]::after{content:' ▲';font-size:9px}
+table.pe-tt th small{display:block;font-size:10px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:600;margin-top:2px}
+table.pe-tt td.pe-st{text-align:right;font-variant-numeric:tabular-nums}
+table.pe-tt .pe-w0f{border-left:1px dashed var(--line-2)}
+table.pe-tt .pe-tm{position:sticky;left:0;background:var(--panel);z-index:1}
+.pe-ord{display:inline-block;margin-left:5px;font-size:10.5px;font-weight:600;color:var(--muted);min-width:30px;text-align:left}
+.pe-ord.top{color:var(--pick)} .pe-ord.bot{color:var(--miss)}
+.pe-tmrow{cursor:pointer}
+.pe-tmrow:hover td{background:var(--panel-2)}
+.pe-tmrow.pe-np td{opacity:.6}
+.pe-tline{margin:0 0 16px;overflow-x:auto}
+.pe-tline svg{display:block;width:100%;min-width:420px;height:auto}
+.pe-tnext{font-size:13px;color:var(--ink-2);margin:0 0 14px}
+.pe-tnext b{color:var(--ink)}
 /* questionable on the week's report: still listed, with a Q */
 .pe-q{font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;vertical-align:1px;color:#8A5E05;background:rgba(212,160,23,.14);border-color:rgba(212,160,23,.4)}
 @media(max-width:900px){
@@ -135,7 +156,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
    this week. */
 (function(){
 const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', MU_URL='../elo/data/matchups.json';
-const D={players:null,model:null,mu:null,pos:'QB',more:false};
+const D={players:null,model:null,mu:null,pos:'QB',more:false,unit:null,tsort:null};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const pct=p=>Math.round(p*100)+'%';
@@ -296,15 +317,24 @@ const thru=P=>P.through?(P.through==='final'?'final':P.through):'through week '+
 function sourceNote(){
   const M=D.model, s=(M&&M.sources)||{}, bits=[];
   const pend=s.player_stats_pending||[]; if(pend.length) bits.push(`${pend.length} final game${pend.length===1?' is':'s are'} not in nflverse's player stats yet, so ${pend.length===1?'it is':'they are'} not rated`);
-  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`Total Offense and Defense wait on the team stats for ${tp.length} game${tp.length===1?'':'s'}`);
+  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`Overall Offense and Overall Defense wait on nflverse's play-by-play for ${tp.length} final game${tp.length===1?'':'s'}, which ${tp.length===1?'is':'are'} not rated yet`);
   const rep=Object.values(s.injury_report||{}), wk=D.mu&&D.mu.week, mine=rep.filter(r=>r.week===wk);
   const filed=mine.filter(r=>r.statuses_filed).length;
   if(mine.length&&filed<mine.length) bits.push(`week ${esc(wk)}'s game statuses are filed for ${filed} of ${mine.length} clubs; until a club files, a player out at its last report who has not practised since is counted out`);
   return bits.length?`<p class="pe-note">${bits.map(b=>b.charAt(0).toUpperCase()+b.slice(1)).join('. ')}.</p>`:'';
 }
+/* the position row: a pill a rated group, then Overall Offense and Overall Defense once a team
+   has a rated game */
+const unitsOn=()=>{ const U=D.model&&D.model.units; return !!(U&&U.off&&U.def&&Object.values(U.off).some(v=>v.games)); };
+function posRow(){
+  const P=D.players, on=D.unit&&unitsOn();
+  const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${!on&&k===D.pos}">${esc(P.groups[k].label)}</button>`).join(''):'';
+  const units=unitsOn()?['off','def'].map(s=>`<button role="tab" class="pe-unitpill" data-unit="${s}" aria-selected="${on&&D.unit===s}">${s==='off'?'Overall Offense':'Overall Defense'}</button>`).join(''):'';
+  return `<div class="pe-pos" role="tablist">${btns}${units}</div>`;
+}
 function rankings(){
+  if(D.unit&&unitsOn()) return teamsCard();
   const P=D.players, g=D.pos, grp=P.groups[g];
-  const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${k===g}">${esc(P.groups[k].label)}</button>`).join(''):'';
   const rows=grp.top.slice(0,D.more?25:10).map(r=>{
     return `<tr class="pe-plrow" data-pe-pl="${esc(r.id)}"><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
       <td class="pe-name"><button type="button" class="pe-plbtn" data-pe-pl="${esc(r.id)}">${esc(r.name)}</button>${qTag(r)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
@@ -319,31 +349,119 @@ function rankings(){
     ${opening?`<p class="pe-note">${esc(P.season_in_play)} has begun: its rankings take over from ${esc(P.season)}'s final table once most clubs have played week 1.</p>`:''}
     <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 160 points a game) and each game after moves him less as his level settles. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least half of their club's games, enough to be ranked (a club's bye or a game it has yet to play does not count against its players). A questionable player stays listed, with a Q. The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Click a player for his matchup this week. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
     ${sourceNote()}
-    <div class="pe-pos" role="tablist">${btns}</div>
+    ${posRow()}
     ${curveChart(grp.curve,grp.label.toLowerCase())}
     <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Career</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div>
     ${sidelined(grp)}</div>`;
 }
-/* Total Offense and Total Defense: every team's offense and defense on this season's games, in the
-   rankings' format (`units` in model.json, TOTAL OFFENSE AND TOTAL DEFENSE in elo/build.py): a
-   bell curve by shield over a table, the side switched by the two buttons */
-function units(){
-  const U=D.model&&D.model.units; if(!U||!U.off) return '';
-  const side=D.unit==='def'?'def':'off', S=U[side], dfn=side==='def';
-  const rows=Object.entries(S).map(([t,v])=>({t,...v})).filter(v=>v.games).sort((a,b)=>a.rank-b.rank);
-  if(!rows.length) return '';
-  const mv=v=>v.change==null||v.change===0?'<span class="pe-flat">–</span>':`<span class="pe-${v.change>0?'up':'down'}" title="${v.change>0?'Up':'Down'} ${Math.abs(v.change)} Elo since its last game">${v.change>0?'+':'−'}${Math.abs(v.change)}</span>`;
-  const body=rows.map((v,i)=>`<tr><td class="pe-rank">${i+1}</td><td>${mv(v)}</td><td class="pe-name">${tag(v.t,true)}<small>${v.games} game${v.games===1?'':'s'}</small></td>
-      <td class="pe-n"><span class="pe-elo">${v.elo}</span></td><td><span class="pe-shield">${shield(v.elo)}${tierName(v.elo)}</span></td>
-      <td class="pe-n">${v.ppg}</td><td class="pe-n">${v.ypg}</td><td class="pe-n pe-m0">${v.epa_play==null?'–':(v.epa_play>=0?'+':'−')+Math.abs(v.epa_play).toFixed(3)}</td></tr>`).join('');
-  const what=dfn?'allowed':'scored';
-  return `<div class="card" id="peUnits"><h2>${dfn?'Total Defense':'Total Offense'} <span class="pill">${esc(D.players.season)} ${esc(thru(D.players))}</span></h2>
-    <p class="pe-sub">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, the way the rankings above are: everyone started at 1500, and after each game the ${dfn?'defense':'offense'} moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. Each game is scored two parts points ${what} and one part EPA a play ${what}: of the measures tried on 2018-2025, that predicted the next game's points best; total yards, the NFL's own "total offense", did worse. Shown on a bell curve across the 32 teams, 1500 the average and every 100 points a standard deviation ${dfn?'better (fewer allowed)':'better'}. Change is since the team's last game.</p>
-    <div class="pe-pos" role="tablist"><button role="tab" data-unit="off" aria-selected="${!dfn}">Total Offense</button><button role="tab" data-unit="def" aria-selected="${dfn}">Total Defense</button></div>
-    ${curveChart(rows.map(v=>v.elo),dfn?'defenses':'offenses')}
-    <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Pts/g ${what}</th><th class="pe-n">Yds/g ${what}</th><th class="pe-n pe-m0">EPA/play</th></tr></thead><tbody>${body}</tbody></table></div>`;
+/* Overall Offense and Overall Defense: every team's offense and defense on this season's games,
+   in the rankings' format (`units` in model.json, OVERALL OFFENSE AND OVERALL DEFENSE in
+   elo/build.py). Each side is an Elo on several key stats, opponents counted, weighed as the
+   file says (each entry of `units.stats` carries its weight, which elo/check.py holds to
+   `units.weights`); every stat is shown with its league rank, the columns sort, and a click on a
+   team opens its window. Nothing here knows the weights: the text and the columns are read from
+   the file (an older file without `stats` gets the old three columns). */
+const ordinal2=n=>n==null?'':ordinal(n);
+const fmtStat=(v,f)=>v==null?'–':f==='pct'?(v*100).toFixed(1)+'%':f==='epa'?(v>=0?'+':'−')+Math.abs(v).toFixed(3):f==='f2'?v.toFixed(2):v.toFixed(1);
+const recStr=r=>r?`${r[0]}-${r[1]}${r[2]?'-'+r[2]:''}`:'–';
+const listAnd=xs=>xs.length<2?xs.join(''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1];
+/* a label inside a sentence: "Points a game" reads "points a game", "EPA a play" stays */
+const lc=s=>String(s).replace(/^[A-Z](?=[a-z])/,c=>c.toLowerCase());
+function unitStats(side){ const U=D.model.units; return (U.stats||[]).filter(s=>s.side===side); }
+/* the side's teams in the order on screen: overall rank, or a column best first (# keeps the rank) */
+function teamRows(side){
+  const U=D.model.units, T=U[side], st=D.tsort||{key:'rank',dir:1};
+  const rows=Object.entries(T).map(([t,v])=>({t,...v}));
+  const winp=r=>{ const g=r.record?r.record[0]+r.record[1]+r.record[2]:0; return g?(r.record[0]+r.record[2]/2)/g:-1; };
+  const key=r=>{ if(st.key==='rank') return r.rank; if(st.key==='team') return r.t; if(st.key==='record') return -winp(r);
+    const e=r.stats&&r.stats[st.key]; return e&&e.rank!=null?e.rank:1e9; };
+  rows.sort((a,b)=>{ const x=key(a), y=key(b); const c=typeof x==='string'?x.localeCompare(y):x-y; return (c||a.rank-b.rank)*(c?st.dir:1); });
+  return rows;
 }
+function teamsCard(){
+  const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', T=U[side], P=D.players;
+  const stats=unitStats(side), old=!stats.length, n=Object.values(T).filter(v=>v.games).length;
+  const st=D.tsort||{key:'rank',dir:1};
+  const sortTh=(key,label,cls='',extra='')=>`<th class="${cls}" data-sort="${key}"${st.key===key?` aria-sort="${st.dir>0?'descending':'ascending'}"`:''}>${label}${extra}</th>`;
+  const mv=v=>v.change==null||v.change===0?'<span class="pe-flat">–</span>':`<span class="pe-${v.change>0?'up':'down'}" title="${v.change>0?'Up':'Down'} ${Math.abs(v.change)} since its last game">${v.change>0?'+':'−'}${Math.abs(v.change)}</span>`;
+  const ordCls=r=>r==null?'':r<=8?'top':r>n-8?'bot':'';
+  const cell=(v,s,i)=>{ const e=v.stats&&v.stats[s.key]; const first=!s.weight&&i>0&&stats[i-1].weight?' pe-w0f':'';
+    return `<td class="pe-st${first}" data-stat="${s.key}"><span class="pe-sv">${fmtStat(e&&e.v,s.fmt)}</span><small class="pe-ord ${ordCls(e&&e.rank)}">${ordinal2(e&&e.rank)}</small></td>`; };
+  const what=dfn?'allowed':'scored';
+  const oldCells=v=>`<td class="pe-n">${v.ppg}</td><td class="pe-n">${v.ypg}</td><td class="pe-n">${v.epa_play==null?'–':(v.epa_play>=0?'+':'−')+Math.abs(v.epa_play).toFixed(3)}</td>`;
+  const body=teamRows(side).map(v=>`<tr class="pe-tmrow${v.games?'':' pe-np'}" data-team="${esc(v.t)}"><td class="pe-rank">${v.rank}</td><td>${mv(v)}</td>
+      <td class="pe-name pe-tm">${tag(v.t,true)}<small>${v.games?`${v.games} game${v.games===1?'':'s'}`:'no game yet'}</small></td>
+      <td class="pe-n">${recStr(v.record)}</td>
+      <td class="pe-n"><span class="pe-elo">${v.elo}</span></td><td><span class="pe-shield">${shield(v.elo)}${tierName(v.elo)}</span></td>
+      ${old?oldCells(v):stats.map((s,i)=>cell(v,s,i)).join('')}</tr>`).join('');
+  const heads=old?`<th class="pe-n">Pts/g ${what}</th><th class="pe-n">Yds/g ${what}</th><th class="pe-n">EPA/play</th>`
+    :stats.map((s,i)=>sortTh(s.key,esc(s.short),'pe-n'+(!s.weight&&i>0&&stats[i-1].weight?' pe-w0f':''),s.weight?`<small>${s.weight}%</small>`:'<small>shown only</small>')).join('');
+  const weighted=stats.filter(s=>s.weight), zero=stats.filter(s=>!s.weight);
+  const wf=U.walk_forward||{};
+  const sub=old
+    ?`<p class="pe-sub">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, everyone starting at 1500, each game scored on points and EPA a play ${what}. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better.</p>`
+    :`<p class="pe-sub" id="peTeamsWhy">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, the way the player rankings are: everyone started at 1500, and after each game every key stat moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better${dfn?' (less allowed)':''}. Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
+      ${zero.length?`<p class="pe-note" id="peTeamsZero">${esc(listAnd(zero.map(s=>s.label)))} are shown with their ranks but weigh nothing: once the weighted stats are known, they told nothing more about a team's next game.${wf.rmse?` Fitted on ${esc(wf.fit)} and tested on ${esc(wf.test)}, these weights missed a team's points in its next game by ${wf.rmse.toFixed(2)} on average, and the old rating on points and EPA alone by ${wf.previous.toFixed(2)}: no less accurate, and built on the key stats.`:''}</p>`:''}`;
+  return `<div class="card" id="peUnits"><h2>${dfn?'Overall Defense':'Overall Offense'} <span class="pill">${esc(U.season||P.season)} ${esc(thru(P))}</span></h2>
+    ${sub}
+    ${sourceNote()}
+    ${posRow()}
+    ${curveChart(Object.values(T).filter(v=>v.games).map(v=>v.elo),dfn?'defenses':'offenses')}
+    <table class="pe-t pe-tt"><thead><tr>${sortTh('rank','#')}<th>Move</th>${sortTh('team','Team','pe-tm')}${sortTh('record','Record','pe-n')}${sortTh('rank','Rating','pe-n')}<th>Tier</th>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+/* a team's window: its rating, its line game by game, every stat with both of its ranks, what
+   each weighted one adds, and its coming opponent's rank on the other side of the ball */
+function teamLine(v,start){
+  const pts=[[null,start],...(v.line||[])]; if(pts.length<2) return '';
+  const W=560, H=140, L=36, R=16, T=16, B=24, vals=pts.map(p=>p[1]);
+  const lo=Math.min(...vals,1500)-10, hi=Math.max(...vals,1500)+10;
+  const x=i=>L+i*(W-L-R)/(pts.length-1), y=e=>T+(H-T-B)*(1-(e-lo)/(hi-lo));
+  const d=pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' ');
+  const up=vals[vals.length-1]>=vals[0];
+  return `<div class="pe-tline" role="img" aria-label="Rating game by game: ${pts.slice(1).map(p=>'week '+p[0]+' '+p[1]).join(', ')}"><svg viewBox="0 0 ${W} ${H}">
+    <line x1="${L}" x2="${W-R}" y1="${y(1500)}" y2="${y(1500)}" stroke="var(--line-2)" stroke-dasharray="4 4"/><text x="${L-6}" y="${y(1500)+4}" text-anchor="end" font-size="10" fill="var(--muted)">1500</text>
+    <path d="${d}" fill="none" stroke="${up?'var(--pick)':'var(--miss)'}" stroke-width="2" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p[1])}" r="${i?3.5:2.5}" fill="${i?'var(--ink)':'var(--muted)'}"><title>${i?'Week '+p[0]:'Season start'}: ${p[1]}</title></circle>
+      <text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)">${i?'Wk '+p[0]:'Start'}</text>`).join('')}
+    <text x="${x(pts.length-1)}" y="${y(vals[vals.length-1])-8}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${vals[vals.length-1]}</text></svg></div>`;
+}
+function nextGame(t){
+  const N=D.model.next, U=D.model.units; if(!N||!Array.isArray(N.games)||+N.season!==+U.season) return null;
+  for(const g of N.games){ const p=String(g.game_id).split('_'); if(p.length<4) continue;
+    if(p[2]===t||p[3]===t) return {week:+p[1],home:p[3]===t,opp:p[3]===t?p[2]:p[3]}; }
+  return null;
+}
+function teamModal(t){
+  const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', v=U[side]&&U[side][t]; if(!v) return;
+  let m=el('peTmModal');
+  if(!m){ m=document.createElement('div'); m.id='peTmModal'; m.className='modal'; m.hidden=true;
+    m.innerHTML='<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Team"><div id="peTmView"></div></div>';
+    (el('tab-elo')||document.body).appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m) tmClose(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) tmClose(); }); }
+  const stats=unitStats(side), n=Object.keys(U[side]).length;
+  const rows=stats.map(s=>{ const e=v.stats&&v.stats[s.key]||{};
+    return `<tr data-stat="${s.key}" class="${s.weight?'':'pe-weak'}"><td>${esc(s.label)}</td><td class="pe-n"><b>${fmtStat(e.v,s.fmt)}</b></td><td class="pe-n">${ordinal2(e.rank)||'–'}</td><td class="pe-n">${ordinal2(e.adj)||'–'}</td>
+      <td class="pe-n">${s.weight?s.weight+'%':'–'}</td><td class="pe-n">${s.weight&&e.adds!=null?`<span class="pe-nud ${e.adds>0?'up':e.adds<0?'dn':'flat'}" style="display:inline">${e.adds>0?'+':e.adds<0?'−':''}${Math.abs(e.adds).toFixed(1)}</span>`:'–'}</td></tr>`; }).join('');
+  const nx=nextGame(t), other=dfn?'off':'def', ov=nx&&U[other]&&U[other][nx.opp];
+  const next=nx?`<p class="pe-tnext" id="peTmNext">Next: week ${esc(nx.week)} ${nx.home?'vs':'at'} ${tag(nx.opp,true)}, whose ${dfn?'offense':'defense'} is <b>${ov?ordinal(ov.rank):'–'}</b> of ${n} in Overall ${dfn?'Offense':'Defense'}${ov?` (${ov.elo}, ${esc(tierName(ov.elo))})`:''}.</p>`:'';
+  const zero=stats.filter(s=>!s.weight);
+  el('peTmView').innerHTML=`<div class="card pe-pl"><h2>${shield(v.elo)}${tag(t,true)} <span class="pill">Overall ${dfn?'Defense':'Offense'}</span><span style="flex:1"></span><button class="btn quiet" id="peTmClose">Close</button></h2>
+    <div class="pe-pl-tiles">
+      <div><span>Rating</span><b>${v.elo}</b><small>${esc(tierName(v.elo))}</small></div>
+      <div><span>Rank</span><b>#${v.rank}</b><small>of ${n} ${dfn?'defenses':'offenses'}</small></div>
+      <div><span>Last game</span><b>${v.change==null?'–':(v.change>0?'+':v.change<0?'−':'')+Math.abs(v.change)}</b><small>${v.before==null?'no game yet':'from '+v.before}</small></div>
+      <div><span>Games</span><b>${v.games}</b><small>${recStr(v.record)}</small></div>
+    </div>
+    ${next}
+    ${teamLine(v,(U.start||{})[side]!=null?U.start[side]:1500)}
+    ${stats.length?`<table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">${dfn?'Allowed':'Value'}</th><th class="pe-n">League rank</th><th class="pe-n" title="The rank of the stat's own rating, which counts who the team played">Opponents counted</th><th class="pe-n">Weight</th><th class="pe-n" title="What the stat adds to the rating, in rating points">Adds</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="pe-note">League rank is the season's raw number against the other teams; opponents counted ranks the stat's own rating, which credits a good game against a good ${dfn?'offense':'defense'} more than the same game against a weak one. Adds is what each weighted stat puts on the rating, in rating points from 1500.${zero.length?` Faded rows weigh nothing: ${esc(listAnd(zero.map(s=>lc(s.label))))} told nothing more about a team's next game once the weighted stats were known.`:''}</p>`:''}</div>`;
+  el('peTmClose').addEventListener('click',tmClose);
+  m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
+}
+function tmClose(){ const m=el('peTmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
 /* the injured, the reserved, the retired and the unsigned are not ranked; the ones whose
    rating would have placed them are listed here, where they would have stood */
 function sidelined(grp){
@@ -656,10 +774,14 @@ function draw(){
   const body=el('peBody');
   if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>ELO Ratings</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
   defs(); decorate(); trackAlt();
-  body.innerHTML=rankings()+units();
-  body.querySelectorAll('[data-unit]').forEach(b=>b.addEventListener('click',()=>{ D.unit=b.dataset.unit; draw(); }));
+  body.innerHTML=rankings();
+  body.querySelectorAll('.pe-pos button[data-unit]').forEach(b=>b.addEventListener('click',()=>{ if(D.unit!==b.dataset.unit) D.tsort=null; D.unit=b.dataset.unit; draw(); }));
   body.querySelectorAll('tr.pe-plrow').forEach(tr=>tr.addEventListener('click',()=>playerModal(tr.dataset.pePl)));
-  body.querySelectorAll('.pe-pos button[data-pos]').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; draw(); }));
+  body.querySelectorAll('tr.pe-tmrow').forEach(tr=>tr.addEventListener('click',()=>teamModal(tr.dataset.team)));
+  /* a column sorts best first; the same column again turns it round */
+  body.querySelectorAll('table.pe-tt th[data-sort]').forEach(th=>th.addEventListener('click',()=>{ const k=th.dataset.sort, cur=D.tsort||{key:'rank',dir:1};
+    D.tsort={key:k,dir:cur.key===k?-cur.dir:1}; draw(); }));
+  body.querySelectorAll('.pe-pos button[data-pos]').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; D.unit=null; draw(); }));
   const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
   body.querySelectorAll('.pe-curve').forEach(c=>curveHover(c.parentElement));
   const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();

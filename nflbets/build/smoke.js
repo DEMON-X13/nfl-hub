@@ -692,8 +692,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(80);
     chk(!d.getElementById('tab-elo').hidden && w.location.hash === '#elo', 'the Player Elo tab did not open');
     const body = d.getElementById('peBody');
-    const wantCards = 1 + (eloM.units && Object.values(eloM.units.off).some(v => v.games) ? 1 : 0);
-    chk(body.querySelectorAll('.card').length === wantCards && /Rankings/.test(txt(body.querySelector('.card h2'))), 'the Elo tab should draw its rankings card, then Total Offense and Defense, and nothing else: ' + body.querySelectorAll('.card').length);
+    chk(body.querySelectorAll('.card').length === 1 && /Rankings/.test(txt(body.querySelector('.card h2'))), 'the Elo tab should draw its rankings card and nothing else (Overall Offense and Defense are pills in its position row): ' + body.querySelectorAll('.card').length);
     const posBtns = [...body.querySelectorAll('.pe-pos button[data-pos]')];
     chk(posBtns.map(b => b.dataset.pos).join() === eloM.groups.join(), 'the position picker does not list every rated group: ' + posBtns.map(b => b.dataset.pos).join());
     const rankRows = () => [...body.querySelectorAll('.card')].find(c => /Rankings/.test(txt(c.querySelector('h2')))).querySelectorAll('tbody tr');
@@ -910,19 +909,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           d.getElementById('weekSel').value = String(MU.week); d.getElementById('weekSel').dispatchEvent(new w.Event('change', { bubbles: true })); await wait(60); }
       } else chk(!card, 'mismatches show on a week they are not for');
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
-    /* Total Offense and Total Defense: every team that has played, best first, each with its shield, and the switch */
+    /* Overall Offense and Overall Defense: two pills in the position row, each a table of the 32
+       teams in rank order (the ones that have played best first), each with its shield; a position
+       pill brings the players back (the tab's own gate, elo/check_tab.js, checks the rest) */
     { const U = eloM.units, played = U ? Object.values(U.off).filter(v => v.games).length : 0, card = () => d.getElementById('peUnits');
-      if (!played) chk(!card(), 'Total Offense shows with no games rated');
+      const pill = side => body.querySelector(`.pe-pos button[data-unit="${side}"]`), was = (body.querySelector('.pe-pos [aria-selected="true"]') || {}).dataset;
+      if (!played) chk(!pill('off') && !card(), 'Overall Offense shows with no games rated');
       else {
         for (const side of ['off', 'def']) {
-          const btn = card() && card().querySelector(`[data-unit="${side}"]`); chk(!!btn, 'no Total ' + side + ' button'); if (!btn) break;
-          btn.click(); await wait(30);
-          const rows = [...card().querySelectorAll('tbody tr')], vals = rows.map(r => +txt(r.querySelector('.pe-elo')));
-          chk(rows.length === played && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield')),
-            `Total ${side === 'off' ? 'Offense' : 'Defense'} is not every team that has played, best first, with shields`);
-          chk(new RegExp(side === 'off' ? 'Total Offense' : 'Total Defense').test(txt(card().querySelector('h2'))) && !!card().querySelector('.pe-curve'), 'the unit card has the wrong title or no curve');
+          const name = side === 'off' ? 'Overall Offense' : 'Overall Defense';
+          chk(!!pill(side) && txt(pill(side)) === name, 'no ' + name + ' pill in the position row'); if (!pill(side)) break;
+          pill(side).click(); await wait(30);
+          const rows = card() ? [...card().querySelectorAll('tbody tr.pe-tmrow')] : [], T = U[side];
+          const vals = rows.filter(r => T[r.dataset.team] && T[r.dataset.team].games).map(r => +txt(r.querySelector('.pe-elo')));
+          chk(rows.length === Object.keys(T).length && rows.every((r, i) => T[r.dataset.team].rank === i + 1) && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield svg')),
+            `${name} is not every team in rank order, best first, with shields`);
+          chk(!!card() && txt(card().querySelector('h2')).startsWith(name) && !!card().querySelector('.pe-curve') && body.querySelectorAll('.card').length === 1, `the ${name} card has the wrong title, no curve, or sits beside the players`);
         }
-        card().querySelector('[data-unit="off"]').click(); await wait(30); } }
+        const back = was && was.pos ? body.querySelector(`.pe-pos button[data-pos="${was.pos}"]`) : body.querySelector('.pe-pos button[data-pos]');
+        back.click(); await wait(30);
+        chk(!card() && !!rankRows().length, 'a position pill does not bring the player rankings back'); } }
     d.getElementById('peMore').click(); await wait(40);
     /* against the position on screen, whichever it is by now: a week with fewer than 25 ranked at
        one position (24 quarterbacks after a run of injuries) is a lean week, not a broken tab */

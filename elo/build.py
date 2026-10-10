@@ -136,38 +136,77 @@ the team's last game (`before`), that chance (`p_avg`) and the regular-season re
 rating was built on (`record`, wins, losses, ties); the Bets and Stats page's Power
 Ratings tab is drawn from it.
 
-TOTAL OFFENSE AND TOTAL DEFENSE (the ELO Ratings tab). Each team's offense and defense rated on this season's games
-alone, in the same Elo format as the power ratings: every unit starts the season at 0 (shown as
-1500) and moves after each final by how far the game beat or missed what it expected.
+OVERALL OFFENSE AND OVERALL DEFENSE (two pills in the ELO Ratings tab's position row). Each
+team's offense and defense rated on this season's games alone, in the power ratings' Elo format,
+on nine key stats from nflverse's play-by-play, scrimmage plays only (passes, sacks, scrambles and
+runs that have an EPA; kneels, spikes and two-point tries left out):
 
-The measure is a game score for an offense, two parts points and one part EPA per play, each put
-in standard deviations of a team-game on 2012-2017:
+    points          the offense's final score (games.csv)
+    success rate    plays with a positive EPA, a share of plays
+    EPA a play      expected points added a play
+    giveaways       interceptions and lost fumbles, a drive (shown a game); fewer is better
+    sack rate       sacks a dropback; fewer is better
+    big plays       passes of 20 yards or more (not sacks or scrambles), runs and scrambles of 10
+                    or more, a share of plays
+    third down      third downs converted, a share of third downs
+    red zone        drives that reached the 20 and ended in a touchdown, a share of those drives
+    yards a play
 
-    g = (2 * (points - 22.73) / 10.13 + (EPA/play + 0.0092) / 0.1899) / 3
-
-points the offense's final score (games.csv) and EPA/play its passing EPA (sacks included) plus
-rushing EPA over attempts + carries + sacks (nflverse's stats_team_week file). A defense is rated
-on the same game score allowed. After each final, for each side of the ball,
+A defense is rated on the same nine allowed: its takeaways and sacks are its opponents' giveaways
+and sacks. Each stat of each team-game is put in standard deviations of a 2012-2017 team-game and
+signed so that more is better for the offense (z), and each stat has its own Elo, offense against
+defense: every unit starts the season at 0 and after each final
 
     e = O[off] - D[def] + H * home                 home +1, away -1, 0 at a neutral site
-    O[off] += K * (g - e),  D[def] -= K * (g - e)
+    O[off] += K * (z - e),  D[def] -= K * (z - e)
 
-with K 0.08 and H 0.086. The league mean is held at its 2012-2017 value (0 by construction): a
-season that scores more pushes every offense up and every defense down alike, which the bell
-curve takes out of the shown number. Shown as 1500 + 100 * z across the teams, so 1500 is the
-average unit and 100 points a standard deviation, as the player rankings are; a defense's number
-is higher the better it is. `before` is the unit's rating going into its last game put on today's
-curve, so `change` is its own movement and not the league's.
+with K 0.08 and H the stat's own home field (UNIT_STATS: its mean, spread and home field, all
+from 2012-2017). A stat a game does not have (a game with no red-zone trip) sits that game out.
+Each side's rating is a weighted sum of its stats' ratings, which, the Elo being linear, is the
+same as one Elo on the weighted game score:
 
-Why this measure: rated walk-forward on 2018-2025 (weeks 2 on, every parameter fitted on
-2012-2017), the two ratings predict the offense's next-game points with an RMSE of 9.516 against
-9.992 for the league average with home field; points alone 9.537, EPA/play 9.567, total yards
-(the NFL's "total offense") 9.615, yards per play 9.620, success rate 9.667. The blend beats
-points alone by 0.021 (SE 0.010) and in six seasons of eight, mostly early in the season, where
-EPA settles faster than the scoreboard; on defense the two are level and yards allowed is
-worse. The end-of-season order agrees with points per game at 0.96 (offense) and 0.93 (defense,
-Spearman) and with yards per game at 0.87 and 0.74.
-`units` in model.json carries both, with each unit's points, yards and EPA a play per game.
+    Overall Offense  = 35% points + 25% success rate + 15% EPA a play + 15% giveaways + 10% sack rate
+    Overall Defense  = 50% points allowed + 30% big plays allowed + 10% takeaways + 10% sacks
+
+The other stats (third down, red zone and yards a play; on offense big plays, on defense EPA and
+success rate allowed) are shown with their league ranks and weigh nothing: once the weighted ones
+are known, they told nothing more about the next game's points. Shown as 1500 + 100 * z across
+the teams that have played, so 1500 is the average unit and 100 points a standard deviation, as
+the player rankings are; a defense's number is higher the better it is. `before` is the unit's
+rating going into its last game put on today's curve, so `change` is its own movement and not the
+league's.
+
+Why these weights. elo/tools/units_fit.py rates every team-game of 2012-2025 this way (on this
+script's own functions) and asks how well the two ratings going into a game predict the offense's
+points in it, every parameter fitted on 2012-2017 and the error (RMSE) scored on 2018-2025, weeks
+2 on: the league average with home field 9.979; each stat alone, points 9.543, EPA 9.564, yards a
+play 9.596, success rate 9.682, third down 9.754, big plays 9.775, sack rate 9.840, red zone
+9.896, giveaways 9.928; the old measure (two parts points and one part EPA, TOTAL OFFENSE AND
+TOTAL DEFENSE until October 2026) 9.520; all nine with free weights 9.558, which overfits; all
+nine equally 9.535; all nine with weights kept at zero or above 9.514, with shares of offense
+points 37%, success rate 26%, giveaways 21%, EPA 11%, sacks 6% and defense points 56%, big plays
+27%, takeaways 14%, sacks 4%, which the owner rounded to the weights above; and those weights
+9.508, better than the old measure in 7 of 8 seasons but by 0.012, under one standard error
+(0.25 on the squared error a team-game): built on the key stats and no less accurate, not a real
+gain. Fitted on 2012-2021 and tested on 2022-2025 the same stats carry the weight (yards a play
+takes a little), and the weights above score 9.311 against the old measure's 9.325. The old
+measure is not kept as an input: points and EPA are in already, and it would count them twice.
+(The research before the fit gave 9.504 for the same weights; its team-game table gave the
+relocated clubs' home games of 2012-2019, OAK, SD and STL in games.csv against LV, LAC and LA in
+the play-by-play, the away score and the away side. The fit reads the side off the play-by-play.)
+
+A final is rated only when the play-by-play has both offenses and its highest running score is
+games.csv's final score; any other final (the play-by-play lags the score by a night, or has half
+a game) is `pending`, also `sources.team_stats_pending`, counted nowhere and moving nobody until a
+later run has it whole. `units` in model.json carries `stats` (each stat's key, label, side,
+better and weight), `weights` (percent, by side), `params`, `walk_forward`, `start` (a raw 0 on
+today's curve, where every unit began), `pending`, and for every team in `off` and `def` its
+rating, `before`, `change`, `raw`, `rank`, `games`, `record` (the regular season's, W-L-T),
+`line` (week and rating on today's curve after each game) and `stats`: for each stat `v` (the
+season's value; giveaways and takeaways a game), `rank` (the league rank on that value, ties
+sharing), `adj` (the rank of the stat's own rating, the opponents counted), `r` (that rating) and,
+for a weighted stat, `adds` (what it adds to the rating, in rating points). `ppg`, `ypg` and
+`epa_play` stay for a page built before October 2026.
 
 THE MATCHUPS. How much does a player's Elo, and the Elo of the defenders he faces, say about
 his next game beyond what his recent games already say? For every QB, RB, WR and TE game
@@ -271,13 +310,13 @@ as they come (WC, DIV, CON, SB after week 18); `phase` in the files is regular, 
 over or opening.
 
 THE SOURCES. Every file a season under way needs -- its player stats, depth charts, injury
-report, roster and team stats, and every past season's stats, charts and reports -- is
+report, roster and play-by-play, and every past season's stats, charts and reports -- is
 required: a download that fails (after three tries; a 404 is not retried) stops the build
 before anything is written, so the job commits nothing and the last good files stay live. A
 failed injury or roster download used to publish IR and Out players as ranked starters, and a
 failed team-stats download every offense and defense at 1500, on a green run. A download is
 written whole or not at all. What each source gave is in `sources` in model.json, and the page
-says when the player stats or team stats lag a final or a club has not filed its statuses.
+says when the player stats or the play-by-play lag a final or a club has not filed its statuses.
 
 Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
 (the fitted weights and the who-played walk-forward are kept for the record and the smoke
@@ -304,7 +343,7 @@ HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
-FORMULA = '2026-10-09'
+FORMULA = '2026-10-10'
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
@@ -314,7 +353,12 @@ STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_p
 ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_{y}.csv'
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
 DC_URL = 'https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_{y}.csv'
-TEAM_WEEK_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_{y}.csv'
+PBP_URL = 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{y}.csv.gz'
+# the play-by-play columns Overall Offense and Overall Defense are made of (read with usecols)
+PBP_COLS = ['game_id', 'home_team', 'posteam', 'defteam', 'play_type', 'pass', 'rush', 'qb_kneel', 'qb_spike', 'two_point_attempt',
+            'qb_scramble', 'epa', 'success', 'yards_gained', 'sack', 'interception', 'fumble_lost',
+            'third_down_converted', 'third_down_failed', 'fixed_drive', 'fixed_drive_result', 'drive_inside20',
+            'total_home_score', 'total_away_score']
 # the depth chart's own labels to the rated groups: the weekly files name positions, the daily
 # ones name slots. Returners, holders, punters, snappers and the offensive line are not rated.
 SLOT = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'HB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K', 'PK': 'K',
@@ -432,16 +476,17 @@ def load(offline, now):
     live = under_way(games, sched, now)
     sources, missing = {}, []
 
-    def read(name, url, y, required, fresh):
-        dest = os.path.join(CACHE, f'{name}_{y}.csv')
+    def read(name, url, y, required, fresh, ext='csv', usecols=None):
+        dest = os.path.join(CACHE, f'{name}_{y}.{ext}')
         # the season in progress changes every day: never trust its cached copy
         if fresh and not offline and os.path.exists(dest):
             os.remove(dest)
         try:
-            d = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False)
+            # usecols names every column read, so a column nflverse renames fails here, loudly
+            d = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False, usecols=usecols)
             if not len(d):
-                raise Missing(f'{name}_{y}.csv has no rows')
-        except (Missing, pd.errors.ParserError, pd.errors.EmptyDataError) as e:
+                raise Missing(f'{name}_{y}.{ext} has no rows')
+        except (Missing, pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError) as e:
             if required:
                 missing.append(f'{name} {y} ({e})')
             else:
@@ -466,15 +511,15 @@ def load(offline, now):
             if d is not None:
                 store[y] = d
     # who can play now: the newest schedule's roster (before it is under way, last season's
-    # stands in); and the season's team stats, for Total Offense and Total Defense
+    # stands in); and the season's play-by-play, for Overall Offense and Overall Defense
     roster = read('roster', ROSTER_URL, sched, live, True)
     if roster is None and not live:
         roster = read('roster', ROSTER_URL, sched - 1, False, True)
-    # (the season before too, once the new one is under way: Total Offense and Total Defense
+    # (the season before too, once the new one is under way: Overall Offense and Overall Defense
     # follow the rankings, which stay on the finished season until most clubs have played)
-    team_week = {sched - 1: read('stats_team_week', TEAM_WEEK_URL, sched - 1, True, not live)}
+    pbp = {sched - 1: read('play_by_play', PBP_URL, sched - 1, True, not live, 'csv.gz', PBP_COLS)}
     if live:
-        team_week[sched] = read('stats_team_week', TEAM_WEEK_URL, sched, True, True)
+        pbp[sched] = read('play_by_play', PBP_URL, sched, True, True, 'csv.gz', PBP_COLS)
     if missing:
         raise SystemExit('elo: required sources could not be had, so nothing is written and the published '
                          'files stay:\n  ' + '\n  '.join(missing))
@@ -482,87 +527,204 @@ def load(offline, now):
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
     stats = stats[stats.game_id.notna()]
-    return games, stats, roster, charts, injuries, team_week, sources
+    return games, stats, roster, charts, injuries, pbp, sources
 
 
 PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.2
 
 
-OD_PTS_MU, OD_PTS_SD = 22.7288, 10.1297      # points per team-game, 2012-2017
-OD_EPA_MU, OD_EPA_SD = -0.0092, 0.1899       # EPA per play per team-game, 2012-2017
-OD_W_PTS = 2 / 3                             # the game score's weight on points (EPA/play the rest)
-OD_K, OD_H = 0.08, 0.086                     # step per final, home field in game-score units
+# OVERALL OFFENSE AND OVERALL DEFENSE (see the docstring). Each stat, as a team-game value from the
+# offense's side: its labels for each side, +1 where more is better for an offense, how the game's
+# value and the season's are made from the play-by-play's sums (numerator, denominator: None is
+# one), the mean and spread of a team-game on 2012-2017, the home field in standard deviations,
+# and how the page prints it. Every number from elo/tools/units_fit.py, never refitted on the
+# season in progress.
+UNIT_STATS = {
+    'pts':   {'off': 'Points a game', 'def': 'Points allowed a game', 'off_short': 'Pts/g', 'def_short': 'Pts allowed/g',
+              'sign': 1, 'game': ('pts', None), 'season': ('pts', 'g'), 'mu': 22.7288, 'sd': 10.1297, 'home': 0.129, 'fmt': 'f1'},
+    'sr':    {'off': 'Success rate', 'def': 'Success rate allowed', 'off_short': 'Success', 'def_short': 'Success allowed',
+              'sign': 1, 'game': ('succ', 'plays'), 'season': ('succ', 'plays'), 'mu': 0.4235, 'sd': 0.073, 'home': 0.021, 'fmt': 'pct'},
+    'epa':   {'off': 'EPA a play', 'def': 'EPA a play allowed', 'off_short': 'EPA/play', 'def_short': 'EPA/play allowed',
+              'sign': 1, 'game': ('epa', 'plays'), 'season': ('epa', 'plays'), 'mu': -0.0114, 'sd': 0.1973, 'home': 0.002, 'fmt': 'epa'},
+    'tor':   {'off': 'Giveaways a game', 'def': 'Takeaways a game', 'off_short': 'Giveaways/g', 'def_short': 'Takeaways/g',
+              'sign': -1, 'game': ('to', 'drives'), 'season': ('to', 'g'), 'mu': 0.12, 'sd': 0.1035, 'home': 0.018, 'fmt': 'f2'},
+    'skr':   {'off': 'Sack rate', 'def': 'Sack rate', 'off_short': 'Sack rate', 'def_short': 'Sack rate',
+              'sign': -1, 'game': ('sacks', 'db'), 'season': ('sacks', 'db'), 'mu': 0.0608, 'sd': 0.0444, 'home': 0.031, 'fmt': 'pct'},
+    'xr':    {'off': 'Big-play rate', 'def': 'Big-play rate allowed', 'off_short': 'Big plays', 'def_short': 'Big plays allowed',
+              'sign': 1, 'game': ('expl', 'plays'), 'season': ('expl', 'plays'), 'mu': 0.0965, 'sd': 0.0403, 'home': 0.081, 'fmt': 'pct'},
+    'third': {'off': 'Third-down rate', 'def': 'Third-down rate allowed', 'off_short': '3rd down', 'def_short': '3rd down allowed',
+              'sign': 1, 'game': ('third_c', 'third_n'), 'season': ('third_c', 'third_n'), 'mu': 0.387, 'sd': 0.1423, 'home': 0.085, 'fmt': 'pct'},
+    'rz':    {'off': 'Red-zone touchdown rate', 'def': 'Red-zone touchdown rate allowed', 'off_short': 'Red zone', 'def_short': 'Red zone allowed',
+              'sign': 1, 'game': ('rz_td', 'rz_trips'), 'season': ('rz_td', 'rz_trips'), 'mu': 0.5494, 'sd': 0.3181, 'home': 0.017, 'fmt': 'pct'},
+    'ypp':   {'off': 'Yards a play', 'def': 'Yards a play allowed', 'off_short': 'Yds/play', 'def_short': 'Yds/play allowed',
+              'sign': 1, 'game': ('yds', 'plays'), 'season': ('yds', 'plays'), 'mu': 5.5014, 'sd': 1.1479, 'home': 0.099, 'fmt': 'f2'},
+}
+# each side's game score: percent shares of the stats' standard deviations (the owner's, rounded
+# from the fit; the rest weigh nothing and are shown with their ranks)
+UNIT_W = {'off': {'pts': 35, 'sr': 25, 'epa': 15, 'tor': 15, 'skr': 10},
+          'def': {'pts': 50, 'xr': 30, 'tor': 10, 'skr': 10}}
+UNIT_K = 0.08          # the step per final, in standard deviations of the stat
+# the walk-forward record (units_fit.py): RMSE of the offense's points in its next game, 2018-2025 weeks 2 on
+UNIT_WF = {'rmse': 9.508, 'previous': 9.52, 'league': 9.979, 'se': 0.252, 'seasons_better': 7, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025'}
+# the sums a team-game's stats are made of (pts, from games.csv, joins them in unit_ratings)
+UNIT_SUMS = ['plays', 'epa', 'succ', 'yds', 'expl', 'to', 'sacks', 'db', 'third_c', 'third_n', 'drives', 'rz_trips', 'rz_td']
+UNIT_ROUND = {'f1': 1, 'f2': 2, 'epa': 3, 'pct': 3}
 
 
-def offdef_ratings(season_games, team_week):
-    """Total Offense and Total Defense for one season: season_games is games.csv cut to the
-    season, team_week that season's stats_team_week file (REG and POST rows)."""
+def pbp_team_games(pbp):
+    """nflverse play-by-play as one row per team-game from the offense's side (game_id, posteam,
+    defteam, `side` home or away, and UNIT_SUMS) over scrimmage plays only: passes, sacks, scrambles and runs that have
+    an EPA, with kneels, spikes and two-point tries left out. A big play is a completed or
+    incomplete pass (not a sack or a scramble) of 20 yards or more, or a run or scramble of 10 or
+    more; a giveaway an interception or a lost fumble; a drive any drive with a scrimmage play,
+    a red-zone trip one that reached the 20 and a red-zone touchdown one of those that ended in a
+    touchdown. Also each game's final score as the play-by-play has it, {game_id: (home, away)},
+    the highest running score on any play, so a game the file has only half of reads short. The
+    side is read off the play-by-play's own home team, since its abbreviations are today's (LV,
+    LAC, LA) where games.csv keeps the old ones (OAK, SD, STL) for those seasons."""
+    p = pbp[pbp.posteam.notna() & pbp.defteam.notna()].copy()
+    for c in ('pass', 'rush', 'qb_kneel', 'qb_spike', 'two_point_attempt', 'qb_scramble', 'success', 'yards_gained', 'sack',
+              'interception', 'fumble_lost', 'third_down_converted', 'third_down_failed', 'drive_inside20'):
+        p[c] = pd.to_numeric(p[c], errors='coerce').fillna(0.0)
+    p['epa'] = pd.to_numeric(p.epa, errors='coerce')
+    s = p[((p['pass'] == 1) | (p.rush == 1)) & p.play_type.isin(['pass', 'run']) & (p.qb_kneel == 0)
+          & (p.qb_spike == 0) & (p.two_point_attempt == 0) & p.epa.notna()].copy()
+    s['expl'] = (((s['pass'] == 1) & (s.sack == 0) & (s.qb_scramble == 0) & (s.yards_gained >= 20))
+                 | (((s.rush == 1) | (s.qb_scramble == 1)) & (s.yards_gained >= 10))).astype(float)
+    s['to'] = s.interception + s.fumble_lost
+    s['db'] = (s['pass'] == 1).astype(float)
+    s['side'] = np.where(s.posteam == s.home_team, 'home', 'away')
+    g = s.groupby(['game_id', 'posteam', 'defteam', 'side'])
+    tg = pd.DataFrame({'plays': g.size(), 'epa': g.epa.sum(), 'succ': g.success.sum(), 'yds': g.yards_gained.sum(),
+                       'expl': g.expl.sum(), 'to': g['to'].sum(), 'sacks': g.sack.sum(), 'db': g.db.sum(),
+                       'third_c': g.third_down_converted.sum(),
+                       'third_n': g.third_down_converted.sum() + g.third_down_failed.sum()}).reset_index()
+    dr = (s.groupby(['game_id', 'posteam', 'fixed_drive'])
+          .agg(rz=('drive_inside20', 'max'), res=('fixed_drive_result', 'last')).reset_index())
+    dr['rz_td'] = ((dr.rz == 1) & (dr.res == 'Touchdown')).astype(float)
+    dd = dr.groupby(['game_id', 'posteam']).agg(drives=('rz', 'size'), rz_trips=('rz', 'sum'), rz_td=('rz_td', 'sum')).reset_index()
+    tg = tg.merge(dd, on=['game_id', 'posteam'], how='left').fillna({'drives': 0.0, 'rz_trips': 0.0, 'rz_td': 0.0})
+    for c in UNIT_SUMS:
+        tg[c] = tg[c].astype(float)
+    sc = pbp.assign(h=pd.to_numeric(pbp.total_home_score, errors='coerce'), a=pd.to_numeric(pbp.total_away_score, errors='coerce'))
+    sc = sc.groupby('game_id').agg(h=('h', 'max'), a=('a', 'max'))
+    score = {gid: (float(h), float(a)) for gid, h, a in zip(sc.index, sc.h, sc.a) if pd.notna(h) and pd.notna(a)}
+    return tg, score
+
+
+def unit_value(st, sums, pts=None):
+    """a stat's value from its sums: the game's (st['game']) or the season's (st['season']), None
+    where it has no denominator (a game with no red-zone trip has no red-zone rate)"""
+    num, den = st
+    x = pts if num == 'pts' else sums[num]
+    if den is None:
+        return float(x)
+    d = sums[den]
+    return float(x) / d if d else None
+
+
+def unit_ratings(season_games, tg, score):
+    """Overall Offense and Overall Defense for one season (see OVERALL OFFENSE AND OVERALL
+    DEFENSE): season_games is games.csv cut to the season, tg and score the season's
+    play-by-play through pbp_team_games. A final is rated only when the play-by-play has both
+    offenses and ends on games.csv's score; any other final is `pending`, counted nowhere and
+    moving nobody, until a later run has the whole game."""
     g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
     g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
     g = g.sort_values(['kick', 'game_id'], kind='mergesort')
     teams = sorted(set(g.home_team) | set(g.away_team))
-    if team_week is None or not len(team_week):      # before the season's first file: everyone 1500
-        team_week = pd.DataFrame(columns=['game_id', 'team', 'passing_yards', 'sack_yards_lost', 'rushing_yards',
-                                          'attempts', 'carries', 'sacks_suffered', 'passing_epa', 'rushing_epa'])
-    n = lambda c: pd.to_numeric(team_week[c], errors='coerce').fillna(0.0)
-    tw = pd.DataFrame({'game_id': team_week.game_id, 'team': team_week.team,
-                       'yds': n('passing_yards') - n('sack_yards_lost').abs() + n('rushing_yards'),
-                       'plays': n('attempts') + n('carries') + n('sacks_suffered'),
-                       'epa': n('passing_epa') + n('rushing_epa')})
-    tw = {(r.game_id, r.team): r for r in tw.itertuples(index=False) if r.plays > 0}
-    O = {t: 0.0 for t in teams}
-    D = {t: 0.0 for t in teams}
-    Ob, Db = {}, {}                                   # each unit's rating going into its last game
-    acc = {t: {'g': 0, 'pts': 0.0, 'yds': 0.0, 'epa': 0.0, 'plays': 0.0,
-               'pa': 0.0, 'ya': 0.0, 'epa_a': 0.0, 'plays_a': 0.0} for t in teams}
+    keys = list(UNIT_STATS)
+    rows = {(r['game_id'], r['side']): r for r in tg.to_dict('records')} if tg is not None and len(tg) else {}
+    R = {side: {k: {t: 0.0 for t in teams} for k in keys} for side in ('off', 'def')}
+    acc = {side: {t: dict.fromkeys(UNIT_SUMS + ['pts', 'g'], 0.0) for t in teams} for side in ('off', 'def')}
+    hist = {side: {t: [] for t in teams} for side in ('off', 'def')}       # (week, overall raw) after each game
+    record = {t: [0, 0, 0] for t in teams}
+    overall = lambda side, t: sum(w / 100 * R[side][k][t] for k, w in UNIT_W[side].items())
     pending = []
     for r in g[g.home_score.notna() & g.away_score.notna()].itertuples(index=False):
-        sides = [(r.home_team, r.away_team, float(r.home_score), 0.0 if r.location == 'Neutral' else 1.0),
-                 (r.away_team, r.home_team, float(r.away_score), 0.0 if r.location == 'Neutral' else -1.0)]
-        stat = [tw.get((r.game_id, a)) for a, *_ in sides]
-        if any(s is None for s in stat):              # the team stats lag the score by a day or so
+        hs, as_ = float(r.home_score), float(r.away_score)
+        if r.game_type == 'REG':
+            record[r.home_team][0 if hs > as_ else 1 if hs < as_ else 2] += 1
+            record[r.away_team][1 if hs > as_ else 0 if hs < as_ else 2] += 1
+        a, b = rows.get((r.game_id, 'home')), rows.get((r.game_id, 'away'))
+        if a is None or b is None or score.get(r.game_id) != (hs, as_):
             pending.append(r.game_id)
             continue
-        step = []
-        for (a, b, pts, home), s in zip(sides, stat):
-            ep = s.epa / s.plays
-            gs = OD_W_PTS * (pts - OD_PTS_MU) / OD_PTS_SD + (1 - OD_W_PTS) * (ep - OD_EPA_MU) / OD_EPA_SD
-            step.append((a, b, OD_K * (gs - (O[a] - D[b] + OD_H * home))))
-            for k, v in (('pts', pts), ('yds', s.yds), ('epa', s.epa), ('plays', s.plays)):
-                acc[a][k] += v
-            for k, v in (('pa', pts), ('ya', s.yds), ('epa_a', s.epa), ('plays_a', s.plays)):
-                acc[b][k] += v
-        for a, b, d in step:
-            Ob[a], Db[b] = O[a], D[b]
-            O[a] += d
-            D[b] -= d
-            acc[a]['g'] += 1
-    played = [t for t in teams if acc[t]['g']]
+        h = 0.0 if r.location == 'Neutral' else 1.0
+        steps = []
+        for off, dfn, pts, home, sums in ((r.home_team, r.away_team, hs, h, a), (r.away_team, r.home_team, as_, -h, b)):
+            for k in keys:
+                st = UNIT_STATS[k]
+                v = unit_value(st['game'], sums, pts)
+                if v is None:                       # no red-zone trip, say: the stat sits this game out
+                    continue
+                z = st['sign'] * (v - st['mu']) / st['sd']
+                steps.append((k, off, dfn, UNIT_K * (z - (R['off'][k][off] - R['def'][k][dfn] + st['home'] * home))))
+            for side, t in (('off', off), ('def', dfn)):
+                for c in UNIT_SUMS:
+                    acc[side][t][c] += sums[c]
+                acc[side][t]['pts'] += pts
+                acc[side][t]['g'] += 1
+        for k, off, dfn, d in steps:            # both sides from their pre-game ratings
+            R['off'][k][off] += d
+            R['def'][k][dfn] -= d
+        for t in (r.home_team, r.away_team):
+            for side in ('off', 'def'):
+                hist[side][t].append((int(r.week), overall(side, t)))
+    played = [t for t in teams if acc['off'][t]['g']]
 
-    def curve(R, before):
-        v = np.array([R[t] for t in played]) if played else np.zeros(1)
+    def side_out(side):
+        raw = {t: overall(side, t) for t in teams}
+        v = np.array([raw[t] for t in played]) if played else np.zeros(1)
         mu, sd = float(v.mean()), float(v.std())
         show = lambda x: round(1500 + 100 * (x - mu) / sd) if sd > 1e-9 else 1500
+        order = sorted(played, key=lambda t: (-raw[t], t)) + sorted(t for t in teams if t not in played)
+        means = {k: (float(np.mean([R[side][k][t] for t in played])) if played else 0.0) for k in keys}
         out = {}
         for t in teams:
-            now, then = show(R[t]), (show(before[t]) if t in before else None)
-            out[t] = {'elo': now, 'before': then, 'change': None if then is None else now - then, 'raw': round(R[t], 4)}
-        order = sorted(teams, key=lambda t: -R[t])
-        for i, t in enumerate(order):
-            out[t]['rank'] = i + 1
-        return out
+            h = hist[side][t]
+            now = show(raw[t])
+            then = show(h[-2][1] if len(h) > 1 else 0.0) if h else None
+            a = acc[side][t]
+            out[t] = {'elo': now, 'before': then, 'change': None if then is None else now - then,
+                      'raw': round(raw[t], 6), 'rank': order.index(t) + 1, 'games': int(a['g']), 'record': record[t],
+                      'line': [[wk, show(x)] for wk, x in h], 'stats': {}}
+            for k in keys:
+                x = unit_value(UNIT_STATS[k]['season'], a, a['pts']) if a['g'] else None
+                e = {'v': None if x is None else round(x, UNIT_ROUND[UNIT_STATS[k]['fmt']]), 'r': round(R[side][k][t], 6)}
+                if k in UNIT_W[side]:
+                    e['adds'] = round(100 * UNIT_W[side][k] / 100 * (R[side][k][t] - means[k]) / sd, 1) if sd > 1e-9 else 0.0
+                out[t]['stats'][k] = e
+            # the old page's three columns, kept while a page built before this one is live
+            k = max(a['g'], 1)
+            out[t].update(ppg=round(a['pts'] / k, 1), ypg=round(a['yds'] / k, 1),
+                          epa_play=round(a['epa'] / a['plays'], 3) if a['plays'] else None)
+        # each stat's league rank on the value shown (ties share), and on its own rating, the
+        # opponents counted (adj); better is higher for an offense's stat where more helps it,
+        # and the other way for a defense's
+        for k in keys:
+            better = 'high' if (UNIT_STATS[k]['sign'] > 0) == (side == 'off') else 'low'
+            vals = {t: out[t]['stats'][k]['v'] for t in played if out[t]['stats'][k]['v'] is not None}
+            for t in teams:
+                e, x = out[t]['stats'][k], vals.get(t)
+                e['rank'] = None if x is None else 1 + sum(1 for y in vals.values() if (y > x if better == 'high' else y < x))
+                e['adj'] = (1 + sum(1 for u in played if R[side][k][u] > R[side][k][t])) if t in played else None
+        return out, show(0.0)
 
-    off, dfn = curve(O, Ob), curve(D, Db)
-    for t in teams:
-        a, k = acc[t], max(acc[t]['g'], 1)
-        off[t].update(games=a['g'], ppg=round(a['pts'] / k, 1), ypg=round(a['yds'] / k, 1),
-                      epa_play=round(a['epa'] / a['plays'], 3) if a['plays'] else None)
-        dfn[t].update(games=a['g'], ppg=round(a['pa'] / k, 1), ypg=round(a['ya'] / k, 1),
-                      epa_play=round(a['epa_a'] / a['plays_a'], 3) if a['plays_a'] else None)
-    return {'off': off, 'def': dfn, 'pending': pending,
-            'measure': 'game score: two parts points, one part EPA per play, each in SDs of a 2012-2017 team-game',
-            'params': {'K': OD_K, 'H': OD_H, 'w_points': round(OD_W_PTS, 4), 'pts': [OD_PTS_MU, OD_PTS_SD],
-                       'epa': [OD_EPA_MU, OD_EPA_SD], 'shown': '1500 + 100 * z across the teams'}}
+    stats = []
+    for side in ('off', 'def'):
+        for k in sorted(keys, key=lambda k: (-UNIT_W[side].get(k, 0), keys.index(k))):
+            st = UNIT_STATS[k]
+            stats.append({'key': k, 'side': side, 'label': st[side], 'short': st[side + '_short'], 'fmt': st['fmt'],
+                          'better': 'high' if (st['sign'] > 0) == (side == 'off') else 'low', 'weight': UNIT_W[side].get(k, 0)})
+    (off, off0), (dfn, def0) = side_out('off'), side_out('def')
+    # `start` is where every unit began the season (a raw 0) on today's curve: a line's first point
+    return {'off': off, 'def': dfn, 'start': {'off': off0, 'def': def0}, 'pending': pending, 'stats': stats,
+            'weights': {side: dict(w) for side, w in UNIT_W.items()},
+            'measure': 'an Elo on each key stat, offense against defense; each side a weighted sum of them (weights in percent)',
+            'params': {'K': UNIT_K, 'stats': {k: [UNIT_STATS[k]['mu'], UNIT_STATS[k]['sd'], UNIT_STATS[k]['home']] for k in keys},
+                       'shown': '1500 + 100 * z across the teams that have played'},
+            'walk_forward': dict(UNIT_WF)}
 
 
 def power_ratings(season_games, lineup=None, lineup_before=None):
@@ -958,7 +1120,7 @@ def main():
     if now.tzinfo is None:
         now = now.replace(tzinfo=datetime.timezone.utc)
     print('loading')
-    games, stats, roster, charts, injuries, team_week, sources = load(a.offline, now)
+    games, stats, roster, charts, injuries, pbp, sources = load(a.offline, now)
     games = week_order(games)
     games['kick'] = [kickoff(d, t) for d, t in zip(games.gameday, games.gametime)]
     weekly, daily, outs = build_lineups(charts, injuries)
@@ -1324,9 +1486,11 @@ def main():
         phase = 'over'
     else:
         phase = 'postseason'
-    # Total Offense and Total Defense sit beside the rankings on the ELO Ratings tab and follow
-    # their season (the finished one until most clubs have played the new one's week 1)
-    units = offdef_ratings(games[games.season == rank_season], team_week.get(rank_season))
+    # Overall Offense and Overall Defense sit in the ELO Ratings tab's position row and follow
+    # the rankings' season (the finished one until most clubs have played the new one's week 1)
+    season_pbp = pbp.get(rank_season)
+    tg, final_score = pbp_team_games(season_pbp) if season_pbp is not None else (None, {})
+    units = unit_ratings(games[games.season == rank_season], tg, final_score)
     units['season'] = rank_season
     # what each source gave: the page says when one is behind, and elo/check.py reads it
     final_ids = set(games[(games.season == last) & games.home_score.notna()].game_id)

@@ -11,7 +11,7 @@ GitHub Pages serves the repo root:
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
-| `elo/` | Player Elo: every player rated by position since 2012, and the game model and matchup formula built on those ratings | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
+| `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
 | `liveparlays/` | the Live Parlays section's source and the parlays every device sees; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` (hand-edited) |
 | `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
 | `nhl/` | X NHL Bets: a rating model on every NHL game, moneylines, puck lines and totals, the standings and the playoff picture | `nhl/index.html`, `nhl/tools/`; `.github/workflows/nhl.yml` runs three times a day |

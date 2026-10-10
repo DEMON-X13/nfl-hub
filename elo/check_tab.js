@@ -17,7 +17,14 @@
  *     kickoff and backtest;
  *   - every ranked player has a trend line, one game in too (week 1's column was blank);
  *   - a player kept out of the players map is priced by nothing, but the Prop Record still
- *     reads the rating he took into each week he played (it graded those weeks at 1500).
+ *     reads the rating he took into each week he played (it graded those weeks at 1500);
+ *   - Overall Offense and Overall Defense are two pills in the position row, each opening a table
+ *     of the 32 teams in the file's rank order, ratings never rising, each with a shield, every
+ *     stat's value and league rank the file's; the text gives the file's weights (summing to 100,
+ *     and a copy with other weights shows those, so the page cannot carry its own) and names the
+ *     stats that weigh nothing; a column sorts best first and back, # keeping the overall rank; a
+ *     team's window lists every stat, its line, and its coming opponent when the file calls one;
+ *     Close and Escape shut it; and a model.json from before the stats still draws the old columns.
  */
 'use strict';
 const fs = require('fs');
@@ -57,7 +64,7 @@ function page(MU, opts) {
     window.pkEloTier=e=>[e>=1700?'Elite':e>=1600?'Diamond':e>=1500?'Gold':'Silver','', '#999'];
     window.pkTag=t=>'<span class="pk-ttag">'+t+'</span>';
     window.pkTierDefs='<svg><defs><linearGradient id="tg-x"></linearGradient></defs></svg>';`);
-  const files = { 'players.json': P, 'model.json': M, 'matchups.json': MU };
+  const files = { 'players.json': P, 'model.json': (opts && opts.M) || M, 'matchups.json': MU };
   w.fetch = u => { const f = Object.keys(files).find(k => String(u).includes('elo/data/' + k));
     return Promise.resolve(f && files[f] ? { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(files[f])) } : { ok: false, status: 404 }); };
   w.eval(script);
@@ -164,6 +171,108 @@ function page(MU, opts) {
     const row = [...d.querySelectorAll('#peBody tr.pe-plrow')].find(tr => tr.dataset.pePl === top.id);
     if (row) { row.click(); await wait(20);
       chk(/not practising/.test(txt(d.getElementById('pePlView'))), 'his window does not give the build\'s reason: ' + txt(d.getElementById('pePlView')).slice(0, 160)); }
+  }
+
+  /* ---- Overall Offense and Overall Defense: the two pills, the table, the sort, the window ---- */
+  const U0 = M.units;
+  if (!U0 || !U0.off || !Object.values(U0.off).some(v => v.games)) notes.push('no team has a rated game: the Overall Offense checks are skipped');
+  else if (!U0.stats) chk(false, 'model.json\'s units carry no stats: an old build wrote them');
+  else {
+    /* the gate's own printing of a value and a rank, so the page's cannot vouch for itself */
+    const show = (v, f) => v == null ? '–' : f === 'pct' ? (v * 100).toFixed(1) + '%' : f === 'epa' ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(3) : f === 'f2' ? v.toFixed(2) : v.toFixed(1);
+    const nth = n => n == null ? '' : n + ((n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+    const pill = (d, side) => [...d.querySelectorAll('#peBody .pe-pos button[data-unit]')].find(b => b.dataset.unit === side);
+    const open = async (d, side) => { const b = pill(d, side); if (b) { b.click(); await wait(20); } return d.getElementById('peUnits'); };
+    const { w, d } = page(MU0); await wait(60);
+    const row = d.querySelector('#peBody .pe-pos');
+    chk(!!row && [...row.querySelectorAll('button[data-unit]')].map(txt).join('|') === 'Overall Offense|Overall Defense',
+      'the position row does not carry the Overall Offense and Overall Defense pills');
+    for (const side of ['off', 'def']) {
+      const card = await open(d, side), T = U0[side], teams = Object.keys(T), stats = U0.stats.filter(s => s.side === side);
+      const name = side === 'off' ? 'Overall Offense' : 'Overall Defense';
+      chk(!!card && txt(card.querySelector('h2')).startsWith(name), `the ${name} pill does not open its table`);
+      if (!card) continue;
+      chk(d.querySelectorAll('#peBody .card').length === 1 && !d.querySelector('#peBody tr.pe-plrow'), `${name} should take the player table's place, not sit beside it`);
+      chk((card.querySelector('.pe-pos [aria-selected="true"]') || {}).dataset?.unit === side, `the ${name} pill is not shown selected`);
+      const rows = () => [...card.ownerDocument.querySelectorAll('#peUnits tbody tr.pe-tmrow')];
+      let R = rows();
+      chk(R.length === teams.length && R.length === 32, `${name} has ${R.length} rows for ${teams.length} teams`);
+      chk(R.every((tr, i) => T[tr.dataset.team] && T[tr.dataset.team].rank === i + 1 && txt(tr.querySelector('.pe-rank')) === String(i + 1)),
+        `${name} is not in the file's rank order`);
+      const elos = R.filter(tr => T[tr.dataset.team].games).map(tr => +txt(tr.querySelector('.pe-elo')));
+      chk(elos.every((e, i) => !i || e <= elos[i - 1]), `${name}'s ratings rise down the table`);
+      chk(R.every(tr => +txt(tr.querySelector('.pe-elo')) === T[tr.dataset.team].elo && tr.querySelector('.pe-shield svg.tierbadge')),
+        `a ${name} rating is not the file's, or has no shield`);
+      /* the columns are the file's stats in its order, and every value and rank on screen is the file's */
+      const cols = [...card.querySelectorAll('thead th[data-sort]')].map(th => th.dataset.sort).filter(k => stats.some(s => s.key === k));
+      chk(cols.join() === stats.map(s => s.key).join(), `${name}'s stat columns are not the file's stats: ${cols.join()}`);
+      const bad = [];
+      for (const tr of R) for (const s of stats) {
+        const e = T[tr.dataset.team].stats[s.key], td = tr.querySelector(`td[data-stat="${s.key}"]`);
+        const got = td ? [txt(td.querySelector('.pe-sv')), txt(td.querySelector('.pe-ord'))] : null;
+        if (!got || got[0] !== show(e && e.v, s.fmt) || got[1] !== nth(e && e.rank)) bad.push(`${tr.dataset.team} ${s.key} ${got} for ${show(e && e.v, s.fmt)} ${nth(e && e.rank)}`);
+      }
+      chk(!bad.length, `${name} shows values or ranks that are not the file's: ${bad.slice(0, 3).join('; ')}`);
+      /* the text names every weighted stat with its share, the shares sum to 100, and the stats
+         that weigh nothing are named as such */
+      const why = txt(card.querySelector('#peTeamsWhy')), weighted = stats.filter(s => s.weight);
+      const shares = (why.match(/(\d+)%/g) || []).map(x => parseInt(x, 10));
+      const said = s => why.toLowerCase().includes(`${s.label.toLowerCase()} ${s.weight}%`);
+      chk(weighted.every(said) && shares.join() === weighted.map(s => s.weight).join()
+        && shares.reduce((a, b) => a + b, 0) === 100, `${name}'s text does not give the file's weights summing to 100: ${shares.join(', ')}`);
+      const zero = stats.filter(s => !s.weight), zt = txt(card.querySelector('#peTeamsZero'));
+      chk(!zero.length || (zero.every(s => zt.includes(s.label)) && /weigh nothing/.test(zt)), `${name} does not say which stats weigh nothing, and why`);
+      /* a stat's header sorts by it, best first, then the other way; # keeps the overall rank */
+      const k = stats[1].key, th = () => card.ownerDocument.querySelector(`#peUnits thead th[data-sort="${k}"]`);
+      th().click(); await wait(20);
+      R = rows();
+      const rk = tr => { const e = T[tr.dataset.team].stats[k]; return e && e.rank != null ? e.rank : 1e9; };
+      chk(R.length === 32 && R.every((tr, i) => !i || rk(tr) >= rk(R[i - 1])) && R.every(tr => txt(tr.querySelector('.pe-rank')) === String(T[tr.dataset.team].rank)),
+        `sorting ${name} by ${k} is not best first, or # lost the overall rank`);
+      th().click(); await wait(20);
+      R = rows();
+      chk(R.every((tr, i) => !i || rk(tr) <= rk(R[i - 1])), `a second click on ${k} does not turn the order round`);
+      card.ownerDocument.querySelector('#peUnits thead th[data-sort="rank"]').click(); await wait(20);
+      R = rows();
+      chk(R.every((tr, i) => T[tr.dataset.team].rank === i + 1), `# does not put ${name} back in rank order`);
+      /* a team's window: every stat, both ranks, and the coming opponent when the file calls its game */
+      const t = R[0].dataset.team; R[0].click(); await wait(20);
+      const m = d.getElementById('peTmModal'), view = d.getElementById('peTmView');
+      chk(!!m && !m.hidden && txt(view).includes(String(T[t].elo)) && view.querySelectorAll('.pe-pl-tiles div').length === 4, `a click on ${t} does not open its window`);
+      chk([...view.querySelectorAll('tbody tr[data-stat]')].map(r => r.dataset.stat).join() === stats.map(s => s.key).join(), `${t}'s window does not list every stat`);
+      chk(view.querySelector('.pe-tline svg') && view.querySelectorAll('.pe-tline circle').length === T[t].line.length + 1, `${t}'s window has no line game by game`);
+      const N = M.next || {}, g = +N.season === +U0.season ? (N.games || []).find(x => { const p = String(x.game_id).split('_'); return p[2] === t || p[3] === t; }) : null;
+      if (g) { const p = g.game_id.split('_'), opp = p[3] === t ? p[2] : p[3], other = U0[side === 'off' ? 'def' : 'off'][opp];
+        chk(!!d.getElementById('peTmNext') && txt(d.getElementById('peTmNext')).includes(opp) && txt(d.getElementById('peTmNext')).includes(nth(other.rank)),
+          `${t}'s window does not give its coming opponent ${opp} and that side's rank`); }
+      else chk(!d.getElementById('peTmNext'), `${t}'s window names an opponent the file does not call`);
+      d.getElementById('peTmClose').click(); await wait(10);
+      chk(m.hidden, 'Close does not shut a team\'s window');
+      rows()[1].click(); await wait(20);
+      d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(10);
+      chk(m.hidden, 'Escape does not shut a team\'s window');
+    }
+    /* back to a position: the player table returns */
+    [...d.querySelectorAll('#peBody .pe-pos button[data-pos]')].find(b => b.dataset.pos === 'QB').click(); await wait(20);
+    chk(!d.getElementById('peUnits') && d.querySelectorAll('#peBody tr.pe-plrow').length > 0 && d.querySelectorAll('#peBody .card').length === 1,
+      'a position pill does not bring the player table back, alone (the teams are a pill away, not a card under it)');
+
+    /* the weights are the file's, not the page's: a copy with other weights shows those */
+    { const M2 = JSON.parse(JSON.stringify(M)), wts = [40, 30, 20, 5, 5];
+      const ws = M2.units.stats.filter(s => s.side === 'off' && s.weight);
+      ws.forEach((s, i) => { s.weight = wts[i] != null ? wts[i] : 0; M2.units.weights.off[s.key] = s.weight; });
+      const { d: d2 } = page(MU0, { M: M2 }); await wait(60);
+      const card = await open(d2, 'off'), why = txt(card && card.querySelector('#peTeamsWhy'));
+      chk(ws.every(s => why.toLowerCase().includes(`${s.label.toLowerCase()} ${s.weight}%`)), 'the page does not read the weights from the file: ' + why.slice(0, 200)); }
+    /* a model.json from before the stats (the page and the data ship apart) still draws, on the old columns */
+    { const M3 = JSON.parse(JSON.stringify(M));
+      delete M3.units.stats; delete M3.units.weights;
+      for (const side of ['off', 'def']) for (const v of Object.values(M3.units[side])) delete v.stats;
+      const { d: d3 } = page(MU0, { M: M3 }); await wait(60);
+      const card = await open(d3, 'off'), heads = card ? [...card.querySelectorAll('thead th')].map(txt).join('|') : '';
+      const first = card && card.querySelector('tbody tr.pe-tmrow'), v = first && M3.units.off[first.dataset.team];
+      chk(!!card && /Pts\/g/.test(heads) && /Yds\/g/.test(heads) && /EPA\/play/.test(heads) && v && txt(first).includes(String(v.ppg)),
+        'an old-shaped model.json does not draw the old columns: ' + heads); }
   }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);
