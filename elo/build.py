@@ -4,6 +4,8 @@ built on nothing but those ratings, and a matchup formula for each player's next
 
     python3 elo/build.py              # downloads what it lacks into elo/cache/, writes elo/data/
     python3 elo/build.py --offline    # use the cache only
+    python3 elo/build.py --now 2026-10-11T16:00Z    # as if at that time (tests of the calendar)
+    python3 elo/check.py && node elo/check_tab.js   # the gate: the files against their sources
 
 WHY ELO FOR A PLAYER. Elo is a rating that moves on results against an opponent whose
 strength is also rated, so a good game against a good defence is worth more than the same
@@ -58,16 +60,55 @@ depth-weighted mean of the pre-game ratings of the players expected to start (QB
 RB2; WR1-3; TE1; K; DL top four; LB top three; DB top five), a short bench filled at 1450.
 Expected means what was known before kickoff: the team's depth chart for that week (nflverse
 publishes the weekly charts through 2024 and daily snapshots from 2025, of which the last
-one before the game is used) with anyone the week's injury report ruled Out taken off it,
-and where a chart says nothing about a group, the players who took the field for it in the
-team's last game. The home-minus-away difference per group, in hundreds of Elo points, feeds
-a logistic regression for the home team winning, fitted on every earlier season and tested
-on the next (walk-forward), and the coefficient of each group is what the data says that
-position is worth in a matchup. For the season in progress the model is fitted on all
-completed seasons, graded on the games played so far (pre-game ratings and pre-game lineups)
-and asked about the next week's games from the latest depth charts and injury report. The
-same walk-forward is also run on who actually played, for comparison: that number is
-flattered by hindsight and is not the model's.
+one before the game is used) with anyone the week's injury report ruled Out or Doubtful
+taken off it, and where a chart says nothing about a group, the players who took the field
+for it in the team's last game. A fullback sorts after every running back (the daily charts
+list him at rank 1 of his own slot, and he took the RB2 place from the real second back for
+thirteen clubs: TreVeyon Henderson, Kaelon Black, Keaton Mitchell, RJ Harvey ...), and
+players a chart puts level (four linebackers at rank 1 for three places) are taken by who has
+been playing most, his median involvement over his last five games, then his id. Before that
+fix the order among them was whatever an unstable sort left, which moved with the numpy
+build: three rebuilds on the same data gave 63.1%, 62.7% and 62.6% walk-forward and 37, 38
+or 39 graded wins in 2026, and JAX@DEN changed sides between published builds. Now the same
+data gives the same numbers, whatever order the chart's rows come in. The home-minus-away
+difference per group, in hundreds of Elo points, beside a home-field column (1 at the home
+team's ground, 0 at a neutral site: London, Mexico City, Munich, a Super Bowl), feeds a
+logistic regression for the home team winning with no other intercept, fitted on every
+earlier season and tested on the next (walk-forward), and the coefficient of each group is
+what the data says that position is worth in a matchup. (The home edge used to be a free
+intercept that every game got, so a Wembley "home" team was 5-6 points too likely.) For the
+season in progress the model is fitted on all completed seasons, graded on the games played
+so far and asked about the next week's games from the latest depth charts, roster and injury
+report (WHO PLAYS, below). The same walk-forward is also run on who actually played, for
+comparison: that number is flattered by hindsight and is not the model's.
+
+What those four changes (fullback, tie order, Doubtful, neutral sites) did to the record,
+walk-forward 2013-2025 on 3,333 games, all on the same data: 2104 right (63.1%) and a log
+loss of 0.6394 before, 2101 (63.0%) and 0.6392 after. Taken out one at a time: the neutral
+site is worth 5 games; Doubtful costs 2 (log loss level); breaking ties on involvement rather
+than on the id is worth 13; the fullback fix costs 10 (log loss 0.6385 with the fullback in
+the RB2 slot). A fullback, rated near 1500 on a handful of touches, was a steadier number than
+the real second back, but he is not the second back, and the matchups and the Elo picks need
+the real one; the RB weight fell from 0.43 to 0.25 with him gone. All of it inside the 17
+games the tie order alone used to move the record, so this is a correction, not a gain;
+2026 so far, 37 of 65 before and 40 of 65 after on the same footing (each game on the model
+fitted before it).
+
+WHO PLAYS, for the coming games. The roster: nflverse's season roster carries each player
+once, at the week of his latest entry, so a club's roster now is its rows at that club's own
+latest week. A club on its bye has none for the bye week; reading only the league's latest
+week called every player of a bye club a free agent (Mahomes, Kelce, Bryce Young and Chuba
+Hubbard in week 5, the players map without a single Chief or Panther). Off the roster (a free
+agent), on injured reserve or the PUP list, suspended or retired: not ranked and not in a
+lineup. The injury report, for each club's next game: once the club files its game statuses,
+Out and Doubtful are out, Questionable is listed with a Q unless he did not practise at the
+last report, which counts him out. Before it files (Tuesday to Friday for a Sunday game), a
+player Out or Doubtful at the club's previous report, or inactive for its last game after
+being on that report, stays out until this week's report clears him: he practises (Full or
+Limited), or the club files a practice report he is not on. That window used to be read as
+"nobody is out", and for four days a week the starters ruled out the week before were
+expected to start (Caleb Williams as Chicago's QB in week 5, eleven such starters in week 4,
+three of them quarterbacks). The page says how many clubs have filed.
 
 THE POWER RATINGS. Each team rated on its results this season, not on its players: a margin
 Elo in which every team starts the season at 0 (shown as 1500) and, after each final,
@@ -179,11 +220,21 @@ the way to his level, after which he moves only as far as his play keeps proving
 starts at 1500 with that uncertainty rather than at the bottom: a start at the bottom would
 rank players by how many games they have had, not how well they played. The table ranks that one, and a player needs enough rated games
 this season to be ranked -- games in a real role (at least half his position's normal
-workload) in at least half the weeks played so far, so the table is not filled with players
-a few snaps have left near 1500. The models -- the game model, the matchups and the page's market
+workload) in at least half of his club's rated games, so the table is not filled with players
+a few snaps have left near 1500. It was half the weeks in which anyone had played, so a lone
+Thursday game raised the bar for all 32 clubs: from Friday to Monday the #1 tight end and four
+top-15 quarterbacks fell out of the table with no note, and a club's bye counted against its
+players. "Through week N" is the latest week whose games are all rated, with the week under
+way beside it ("through week 4, and 1 of 15 week-5 games"); in the playoffs, the round. The
+models -- the game model, the matchups and the page's market
 + form -- read the rating with every season behind it, which is what their records were
 proven on: three games is too little to price from. players.json carries both for every
 player the models may price: `elo` (career), `se` and `rank` (this season, where he has one).
+A player the roster or the report keeps out is not in that map, so nothing prices him or
+suggests his lines; his season so far (`s0`, `h`) is kept beside it in `past`, because the
+Prop Record grades the weeks he did play on the rating he took into each (it graded them at
+1500). The Move column is against where each stood before the latest week's games; in the
+season's first week there is no week before, and nobody has moved.
 
 THE LADDER. Player Elo at a position spreads far less than team Elo (a standard deviation of
 20 to 60 points, where the shields' bands are 50 wide), so on the raw number nearly everyone
@@ -197,24 +248,68 @@ Platinum 15%, Gold and Silver 19% each, Bronze 15%, Iron 9% and the Wood League 
 moves. The raw ratings stay in `raw` and `career_raw`, and the models never read the shown
 ones.
 
+THE CALLS AND THEIR RECORD. Each coming game's call (the pick and the home side's chance) is
+written to a ledger, elo/data/calls.json, on every run until the game kicks off (a call made
+within CALL_LEAD minutes of kickoff does not count as published before it); from kickoff the
+entry is frozen, and the season's record (`graded` in model.json, which the Pick'em Record
+counts) grades that call, the one a visitor saw. It used to regrade the whole season on every
+run, on whatever formula and tie order the run had: 2026_03_SEA_WAS was published as WAS, then
+graded as a SEA pick and a loss. A game never called before kickoff -- weeks 1-2 of 2026, which
+came before the model was published, or a week the job did not run -- is called once on its
+pre-game ratings the first time it is graded, frozen, and marked a backtest (`src`), and the
+record counts the two apart. The calls published before the ledger began are in
+elo/history/calls_<season>.json, recovered from model.json's git history by
+elo/tools/seed_calls.py. A game under way, or final but not yet rated (its player stats lag
+the score by a night), stays in `next` with its frozen call, so its pick does not vanish.
+
+THE SEASON comes from games.csv alone. The newest schedule nflverse has posted is the season
+in play once its first game kicked off UNDER_WAY hours ago; before that (from the spring
+release of a schedule to its opener) the page stays on the finished season, and the new one's
+week 1 is called in the fortnight before it. The rankings follow once RANK_TEAMS clubs have a
+rated game, so a Thursday opener does not leave a table of two teams. The playoffs are rated
+as they come (WC, DIV, CON, SB after week 18); `phase` in the files is regular, postseason,
+over or opening.
+
+THE SOURCES. Every file a season under way needs -- its player stats, depth charts, injury
+report, roster and team stats, and every past season's stats, charts and reports -- is
+required: a download that fails (after three tries; a 404 is not retried) stops the build
+before anything is written, so the job commits nothing and the last good files stay live. A
+failed injury or roster download used to publish IR and Out players as ranked starters, and a
+failed team-stats download every offense and defense at 1500, on a green run. A download is
+written whole or not at all. What each source gave is in `sources` in model.json, and the page
+says when the player stats or team stats lag a final or a club has not filed its statuses.
+
 Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
 (the fitted weights and the who-played walk-forward are kept for the record and the smoke
-test; no page draws them):
-    elo/data/players.json   rankings by position, every rated player's rating
+test; no page draws them), each file written whole once everything is built:
+    elo/data/players.json   rankings by position, every rated player's rating and club, and
+                            the season so far of each player kept out (`past`)
     elo/data/model.json     the fitted weights, the walk-forward record (pre-game lineups, and
-                            who played), this season's graded picks, the coming week's calls
-                            and the teams' power ratings
-    elo/data/matchups.json  the matchup formula per position and stat, its walk-forward record and
-                            the coming week's projections for every expected starter
+                            who played), this season's graded calls (frozen at kickoff), the
+                            coming week's calls, the teams' power ratings, the units, `sources`
+    elo/data/matchups.json  the matchup formula per position and stat, its walk-forward record,
+                            the coming week's projections for every expected starter, each
+                            club's expected lineup and who is out of it and why
+    elo/data/calls.json     the ledger of calls as published before kickoff (THE CALLS)
+elo/check.py and elo/check_tab.js are the gate the job runs before it commits.
 """
-import argparse, bisect, datetime, json, math, os, urllib.request
+import argparse, bisect, datetime, json, math, os, time, urllib.error, urllib.request, zoneinfo
 import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, 'cache')
 OUT = os.path.join(HERE, 'data')
+HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
+# the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
+# model, so elo/check.py knows a reshuffled table is the change and not a fault
+FORMULA = '2026-10-09'
+ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
+UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
+CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
+PRESEASON_CALLS = 14    # days: a new season's week 1 is called this close to its first kickoff
+RANK_TEAMS = 16         # a new season's rankings start once this many teams have a rated game
 STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{y}.csv'
 ROSTER_URL = 'https://github.com/nflverse/nflverse-data/releases/download/rosters/roster_{y}.csv'
 INJ_URL = 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_{y}.csv'
@@ -226,9 +321,15 @@ SLOT = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'HB': 'RB', 'WR': 'WR', 'TE': 'TE', 
         'DE': 'DL', 'DT': 'DL', 'NT': 'DL', 'DL': 'DL', 'LDE': 'DL', 'RDE': 'DL', 'LDT': 'DL', 'RDT': 'DL',
         'LB': 'LB', 'ILB': 'LB', 'OLB': 'LB', 'MLB': 'LB', 'SLB': 'LB', 'WLB': 'LB', 'LILB': 'LB', 'RILB': 'LB',
         'CB': 'DB', 'DB': 'DB', 'S': 'DB', 'FS': 'DB', 'SS': 'DB', 'SAF': 'DB', 'LCB': 'DB', 'RCB': 'DB', 'NB': 'DB'}
-# what a roster status means for the rankings: only the active list is ranked
-STATUS = {'ACT': None, 'RES': 'on injured reserve', 'PUP': 'on the PUP list', 'RET': 'retired', 'DEV': 'on the practice squad',
+# what a roster status means for the rankings: only the active list is ranked. INA (inactive for
+# the club's last game) is not a standing status: it is read with the injury report (availability)
+STATUS = {'ACT': None, 'INA': None, 'RES': 'on injured reserve', 'PUP': 'on the PUP list', 'RET': 'retired', 'DEV': 'on the practice squad',
           'CUT': 'a free agent', 'EXE': 'on the exempt list', 'SUS': 'suspended', 'NON': 'on the non-football injury list'}
+# a status a player keeps after his club's later rosters stop listing him (anything else: he left it)
+STANDING = {'RES', 'PUP', 'RET', 'SUS', 'EXE', 'NON'}
+# the injury report's game statuses that keep a player out of the expected lineup (Doubtful players
+# rarely play: the page has always read them as out, and the lineups now do too)
+OUT_STATUS = ('Out', 'Doubtful')
 GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'
 
 GROUP = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K',
@@ -259,71 +360,129 @@ FG_RATE = {'0_19': 0.99, '20_29': 0.97, '30_39': 0.90, '40_49': 0.78, '50_59': 0
 PAT_RATE = 0.95
 
 
-def fetch(url, dest, offline):
+class Missing(Exception):
+    """a source file that could not be had"""
+
+
+def fetch(url, dest, offline, tries=3):
+    """the file at url, cached at dest. A download is written whole or not at all (a cut-off
+    transfer must not sit in the cache as a short file), and a failure other than a 404 is
+    tried again, since nflverse's release host drops the odd request."""
     if os.path.exists(dest):
         return dest
     if offline:
-        raise SystemExit(f'offline and {dest} is not cached')
+        raise Missing(f'offline and {os.path.basename(dest)} is not cached')
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    print(f'  downloading {os.path.basename(dest)}')
-    with urllib.request.urlopen(url, timeout=120) as r, open(dest, 'wb') as f:
-        f.write(r.read())
-    return dest
+    err = None
+    for i in range(tries):
+        try:
+            print(f'  downloading {os.path.basename(dest)}')
+            with urllib.request.urlopen(url, timeout=120) as r:
+                body = r.read()
+            if not body.strip():
+                raise Missing('an empty file')
+            with open(dest + '.part', 'wb') as f:
+                f.write(body)
+            os.replace(dest + '.part', dest)
+            return dest
+        except urllib.error.HTTPError as e:
+            err = e
+            if e.code == 404:
+                break
+        except Exception as e:
+            err = e
+        if i + 1 < tries:
+            time.sleep(5 * (i + 1))
+    raise Missing(f'{os.path.basename(dest)}: {err}')
 
 
-def load(offline):
-    games = pd.read_csv(fetch(GAMES_URL, os.path.join(CACHE, 'games.csv'), offline), low_memory=False)
+def kickoff(gameday, gametime):
+    """a game's kickoff in UTC: games.csv gives the day and the time in US Eastern, and the zone
+    knows when the clocks change"""
+    t = gametime if isinstance(gametime, str) and ':' in gametime else '13:00'
+    local = datetime.datetime.strptime(f'{gameday} {t[:5]}', '%Y-%m-%d %H:%M').replace(tzinfo=ET)
+    return local.astimezone(datetime.timezone.utc)
+
+
+def under_way(games, season, now):
+    """a season is under way once its first game kicked off UNDER_WAY hours ago: from then on
+    nflverse has its files, and a failure to download one is a fault, not the calendar"""
+    g = games[games.season == season]
+    if not len(g):
+        return False
+    first = min(kickoff(d, t) for d, t in zip(g.gameday, g.gametime))
+    return now >= first + datetime.timedelta(hours=UNDER_WAY)
+
+
+def load(offline, now):
+    """every source, as {name: frame}, with what was had and what was not in `sources`. A file
+    the season under way needs, or any past season's, that cannot be had stops the build before
+    anything is written (SystemExit 1, so the job commits nothing and the last good files stay
+    live): an injury report or a roster that failed to download would otherwise publish the
+    injured as starters and the released as ranked, on a green run."""
+    dest = os.path.join(CACHE, 'games.csv')
+    if not offline and os.path.exists(dest):
+        os.remove(dest)                          # scores land every week: never trust a cached schedule
+    try:
+        games = pd.read_csv(fetch(GAMES_URL, dest, offline), low_memory=False)
+    except Missing as e:
+        raise SystemExit(f'elo: the schedule could not be had ({e}); nothing written, the published files stay')
     games = games[games.season >= FIRST].copy()
-    last = int(games.season.max())
-    frames = []
-    for y in range(FIRST, last + 1):
-        dest = os.path.join(CACHE, f'stats_player_week_{y}.csv')
-        # the season in progress changes every week: never trust its cached copy
-        if y == last and not offline and os.path.exists(dest):
+    sched = int(games.season.max())              # the newest schedule nflverse has posted
+    live = under_way(games, sched, now)
+    sources, missing = {}, []
+
+    def read(name, url, y, required, fresh):
+        dest = os.path.join(CACHE, f'{name}_{y}.csv')
+        # the season in progress changes every day: never trust its cached copy
+        if fresh and not offline and os.path.exists(dest):
             os.remove(dest)
         try:
-            frames.append(pd.read_csv(fetch(STATS_URL.format(y=y), dest, offline), low_memory=False))
-        except Exception as e:
-            if y == last:
-                print(f'  no player stats for {y} yet ({e})')
+            d = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False)
+            if not len(d):
+                raise Missing(f'{name}_{y}.csv has no rows')
+        except (Missing, pd.errors.ParserError, pd.errors.EmptyDataError) as e:
+            if required:
+                missing.append(f'{name} {y} ({e})')
             else:
-                raise
-    stats = pd.concat(frames, ignore_index=True)
-    # who was expected to play: every season's depth charts and injury reports, the current
-    # season's re-downloaded every run since both change daily; and who can play this week,
-    # from the season's latest weekly roster
-    charts, injuries = {}, {}
-    for y in range(FIRST, last + 1):
+                print(f'  no {name} file for {y} yet ({e})')
+            if y == sched or y == sched - 1:
+                sources[f'{name}_{y}'] = {'ok': False, 'required': required, 'error': str(e)[:200]}
+            return None
+        if y >= sched - 1:
+            sources[f'{name}_{y}'] = {'ok': True, 'rows': int(len(d))}
+        return d
+
+    frames, charts, injuries = [], {}, {}
+    for y in range(FIRST, sched + 1):
+        # a past season's files are all required; the newest schedule's only once it is under way
+        req = y < sched or live
+        d = read('stats_player_week', STATS_URL, y, req, y == sched)
+        if d is not None:
+            frames.append(d)
+        # who was expected to play: every season's depth charts and injury reports
         for name, url, store in (('depth_charts', DC_URL, charts), ('injuries', INJ_URL, injuries)):
-            dest = os.path.join(CACHE, f'{name}_{y}.csv')
-            if y == last and not offline and os.path.exists(dest):
-                os.remove(dest)
-            try:
-                store[y] = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False)
-            except Exception as e:
-                print(f'  no {name} file for {y} ({e})')
-    roster = None
-    dest = os.path.join(CACHE, f'roster_{last}.csv')
-    if not offline and os.path.exists(dest):
-        os.remove(dest)
-    try:
-        roster = pd.read_csv(fetch(ROSTER_URL.format(y=last), dest, offline), low_memory=False)
-    except Exception as e:
-        print(f'  no roster file for {last} ({e}); nobody is marked out')
-    inj = injuries.get(last)
-    # the season's team stats, for Total Offense and Total Defense; re-read every run
-    team_week = None
-    dest = os.path.join(CACHE, f'stats_team_week_{last}.csv')
-    if not offline and os.path.exists(dest):
-        os.remove(dest)
-    try:
-        team_week = pd.read_csv(fetch(TEAM_WEEK_URL.format(y=last), dest, offline), low_memory=False)
-    except (Exception, SystemExit) as e:      # offline without the file raises SystemExit
-        print(f'  no team stats file for {last} ({e}); every offense and defense shows 1500')
+            d = read(name, url, y, req, y == sched)
+            if d is not None:
+                store[y] = d
+    # who can play now: the newest schedule's roster (before it is under way, last season's
+    # stands in); and the season's team stats, for Total Offense and Total Defense
+    roster = read('roster', ROSTER_URL, sched, live, True)
+    if roster is None and not live:
+        roster = read('roster', ROSTER_URL, sched - 1, False, True)
+    # (the season before too, once the new one is under way: Total Offense and Total Defense
+    # follow the rankings, which stay on the finished season until most clubs have played)
+    team_week = {sched - 1: read('stats_team_week', TEAM_WEEK_URL, sched - 1, True, not live)}
+    if live:
+        team_week[sched] = read('stats_team_week', TEAM_WEEK_URL, sched, True, True)
+    if missing:
+        raise SystemExit('elo: required sources could not be had, so nothing is written and the published '
+                         'files stay:\n  ' + '\n  '.join(missing))
+    stats = pd.concat(frames, ignore_index=True)
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
     stats = stats[stats.game_id.notna()]
-    return games, stats, roster, inj, charts, injuries, team_week
+    return games, stats, roster, charts, injuries, team_week, sources
 
 
 PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.2
@@ -435,41 +594,45 @@ def power_ratings(season_games, lineup=None, lineup_before=None):
                 'p_avg': round(1 / (1 + 10 ** (-PR_S * now[t] / 400)), 4), 'record': rec[t]} for t in sorted(teams)}
 
 
+def _ranked(rows):
+    """a chart's rows, (group, pid, key), as {group: [(pid, key), ...]}: each player once, at his
+    best key, in key order. The key is (fullback, depth): a fullback sorts after every running
+    back, since the RB slots are the ball carriers and a fullback listed first at his own slot
+    would otherwise take the RB2 place from the real second back. Ties at the same key are left
+    for expected() to break on who has been playing, so file or sort order never decides."""
+    out = {}
+    for g, pid, key in rows:
+        cur = out.setdefault(g, {})
+        if pid not in cur or key < cur[pid]:
+            cur[pid] = key
+    return {g: sorted(v.items(), key=lambda pk: (pk[1], pk[0])) for g, v in out.items()}
+
+
 def build_lineups(charts, injuries):
-    """the depth charts as {(season, week, team): {group: [pid, ...] by rank}} for the weekly
+    """the depth charts as {(season, week, team): {group: [(pid, key), ...]}} for the weekly
     files, {team: [(date, {group: [...]}), ...]} for the daily snapshots, and the week's Outs
-    as {(season, week): set(pid)}"""
+    (the final report's Out and Doubtful) as {(season, week): set(pid)}"""
     weekly, daily, outs = {}, {}, {}
+    num = lambda s: pd.to_numeric(s, errors='coerce').fillna(9).astype(int)
     for y, d in charts.items():
         if 'depth_team' in d.columns:            # 2012-2024: one chart per team per week
             d = d[d.gsis_id.notna() & d.week.notna()]
-            d = d.assign(group=d.position.map(SLOT))
+            d = d.assign(group=d.position.map(SLOT), fb=(d.position == 'FB').astype(int), depth=num(d.depth_team))
             d = d[d.group.notna() & (d.formation != 'Special Teams') | (d.group == 'K')]
-            d = d.sort_values('depth_team')
             for (wk, team), grp in d.groupby(['week', 'club_code']):
-                out = {}
-                for g, pid in zip(grp.group, grp.gsis_id):
-                    lst = out.setdefault(g, [])
-                    if pid not in lst:
-                        lst.append(pid)
-                weekly[(int(y), int(wk), team)] = out
+                weekly[(int(y), int(wk), team)] = _ranked(zip(grp.group, grp.gsis_id, zip(grp.fb, grp.depth)))
         else:                                    # 2025 on: snapshots by date, several a week
             d = d[d.gsis_id.notna()]
-            d = d.assign(group=d.pos_abb.map(SLOT), day=d.dt.str[:10])
-            d = d[d.group.notna()].sort_values(['dt', 'pos_rank'])
+            d = d.assign(group=d.pos_abb.map(SLOT), day=d.dt.str[:10], fb=(d.pos_abb == 'FB').astype(int), depth=num(d.pos_rank))
+            d = d[d.group.notna()]
             for team, tg in d.groupby('team'):
                 lst = daily.setdefault(team, [])
                 for day, sg in tg.groupby('day'):
                     latest = sg[sg.dt == sg.dt.max()]
-                    out = {}
-                    for g, pid in zip(latest.group, latest.gsis_id):
-                        l2 = out.setdefault(g, [])
-                        if pid not in l2:
-                            l2.append(pid)
-                    lst.append((day, out))
-                lst.sort()
+                    lst.append((day, _ranked(zip(latest.group, latest.gsis_id, zip(latest.fb, latest.depth)))))
+                lst.sort(key=lambda dc: dc[0])
     for y, d in injuries.items():
-        d = d[d.gsis_id.notna() & d.week.notna() & (d.report_status == 'Out')]
+        d = d[d.gsis_id.notna() & d.week.notna() & d.report_status.isin(OUT_STATUS)]
         for wk, pid in zip(d.week, d.gsis_id):
             outs.setdefault((int(y), int(wk)), set()).add(pid)
     return weekly, daily, outs
@@ -489,29 +652,91 @@ def chart_for(weekly, daily, season, week, team, gameday):
     return best
 
 
-def availability(roster, inj, week):
-    """player_id -> (reason he is out of the rankings or None, his team now). A player on
-    no roster at all is a free agent; one the coming week's injury report lists as Out is
-    out. An older report says nothing about this week and is not read."""
-    out, team = {}, {}
+def _practised(s):
+    return isinstance(s, str) and ('Full' in s or 'Limited' in s)
+
+
+def availability(roster, inj, next_week):
+    """Who can play each club's next game. Returns ({pid: reason he cannot, or None}, {pid: club},
+    {pid: questionable note}, {club: report summary}).
+
+    The roster: nflverse's season roster carries each player once, at the week of his latest
+    entry, so a club's current roster is its rows at that club's own latest week. A club on its
+    bye has no rows for the bye week, and its latest is the week before: reading only the
+    league's latest week called every player of a bye club a free agent (Mahomes, Kelce, Bryce
+    Young in week 5). A player whose row is older than his club's latest has left it: a free
+    agent, unless his status is one he keeps (injured reserve, retired and so on). A player on no
+    roster at all is a free agent too (why_out).
+
+    The injury report, for each club's next game (next_week): once the club has filed its game
+    statuses for that week, Out and Doubtful are out, and Questionable is listed (a Q tag) unless
+    he did not practise at the last report, which counts him out. Before the statuses are filed
+    (Tuesday to Friday for a Sunday game), a player Out or Doubtful at the club's previous report,
+    or inactive for its last game after being on that report, stays out until this week's report
+    clears him: he practises (Full or Limited), or the club files a report he is not on. Each
+    week's Outs used to be read only from that week's final report, so for four days a week
+    the starters ruled out the week before, still not practising, were expected to start
+    (Caleb Williams in week 5, eleven of them in week 4)."""
+    out, team, q, report = {}, {}, {}, {}
+    inactive = set()
     if roster is not None and len(roster):
-        wk = roster.week.max() if 'week' in roster else None
-        r = roster[roster.week == wk] if wk is not None else roster
-        for row in r.itertuples(index=False):
-            pid = row.gsis_id
-            if not isinstance(pid, str):
-                continue
+        r = roster[roster.gsis_id.map(lambda v: isinstance(v, str))]
+        wk = pd.to_numeric(r.week, errors='coerce') if 'week' in r else pd.Series(np.nan, index=r.index)
+        latest = wk.groupby(r.team).max()
+        for row, w in zip(r.itertuples(index=False), wk):
+            pid, st = row.gsis_id, str(row.status)
             team[pid] = row.team
-            reason = STATUS.get(str(row.status), 'not on the active list')
-            out[pid] = reason
-    if inj is not None and len(inj) and week is not None and (inj.week == week).any():
-        wk = week
-        for row in inj[(inj.week == wk) & (inj.report_status == 'Out')].itertuples(index=False):
-            pid = row.gsis_id
-            if isinstance(pid, str) and not out.get(pid):
-                what = row.report_primary_injury if isinstance(row.report_primary_injury, str) else ''
-                out[pid] = 'out' + (f' ({what.lower()})' if what else '') + f', week {int(wk)}'
-    return out, team
+            if not np.isnan(w) and w < latest.get(row.team, w):
+                out[pid] = STATUS[st] if st in STANDING else 'a free agent'
+            else:
+                out[pid] = STATUS.get(st, 'not on the active list')
+                if st == 'INA':
+                    inactive.add(pid)
+    if inj is None or not len(inj):
+        return out, team, q, report
+    inj = inj[inj.gsis_id.map(lambda v: isinstance(v, str)) & inj.week.notna()]
+    what = lambda row: (f' ({row.report_primary_injury.lower()})' if isinstance(row.report_primary_injury, str) and row.report_primary_injury else '')
+    for t, w in sorted(next_week.items()):
+        mine = inj[inj.team == t]
+        cur = mine[mine.week == w]
+        filed = bool(cur.report_status.notna().any())
+        before = mine[mine.week < w]
+        reasons = {}
+        if filed:
+            for row in cur.itertuples(index=False):
+                s = row.report_status
+                if s == 'Out':
+                    reasons[row.gsis_id] = f'out{what(row)}, week {w}'
+                elif s == 'Doubtful':
+                    reasons[row.gsis_id] = f'doubtful{what(row)}, week {w}: counted out'
+                elif s == 'Questionable':
+                    if isinstance(row.practice_status, str) and 'Did Not' in row.practice_status:
+                        reasons[row.gsis_id] = f'questionable{what(row)}, week {w}, and did not practise at the last report: counted out'
+                    else:
+                        q[row.gsis_id] = f'questionable{what(row)}, week {w}'
+        elif len(before):
+            pw = int(before.week.max())
+            prev = before[before.week == pw]
+            was = {}
+            for row in prev.itertuples(index=False):
+                if row.report_status in OUT_STATUS:
+                    was[row.gsis_id] = f'{row.report_status.lower()}{what(row)} in week {pw}'
+                elif row.gsis_id in inactive and team.get(row.gsis_id) == t:
+                    was[row.gsis_id] = f'inactive{what(row)} for week {pw}'
+            now = {row.gsis_id: row for row in cur.itertuples(index=False)}
+            for pid, why in was.items():
+                row = now.get(pid)
+                if row is not None:
+                    if not _practised(row.practice_status):
+                        reasons[pid] = f'{why}, not practising for week {w}: counted out'
+                elif not len(cur):
+                    reasons[pid] = f"{why}; week {w}'s report is not filed yet: counted out"
+        report[t] = {'week': int(w), 'statuses_filed': filed, 'practice_rows': int(len(cur)), 'counted_out': len(reasons)}
+        for pid, why in reasons.items():
+            if not out.get(pid):
+                out[pid] = why
+            team.setdefault(pid, t)
+    return out, team, q, report
 
 
 def scores(d):
@@ -548,15 +773,16 @@ def week_order(games):
 
 
 def logistic_fit(X, y, l2=0.5, iters=60):
-    """logistic regression by Newton's method with a little ridge, no library needed"""
-    Xb = np.hstack([np.ones((len(X), 1)), X])
-    w = np.zeros(Xb.shape[1])
-    R = np.eye(Xb.shape[1]) * l2
+    """logistic regression by Newton's method with a little ridge, no library needed. There is
+    no free intercept: the first column is home field (1 at the home team's ground, 0 at a
+    neutral site), left unpenalised, so a game in London or Mexico City carries no home edge."""
+    w = np.zeros(X.shape[1])
+    R = np.eye(X.shape[1]) * l2
     R[0, 0] = 0
     for _ in range(iters):
-        p = 1 / (1 + np.exp(-Xb @ w))
-        grad = Xb.T @ (p - y) + R @ w
-        H = (Xb.T * (p * (1 - p))) @ Xb + R
+        p = 1 / (1 + np.exp(-X @ w))
+        grad = X.T @ (p - y) + R @ w
+        H = (X.T * (p * (1 - p))) @ X + R
         step = np.linalg.solve(H, grad)
         w -= step
         if np.abs(step).max() < 1e-8:
@@ -565,7 +791,7 @@ def logistic_fit(X, y, l2=0.5, iters=60):
 
 
 def predict(w, X):
-    return 1 / (1 + np.exp(-(np.hstack([np.ones((len(X), 1)), X]) @ w)))
+    return 1 / (1 + np.exp(-(X @ w)))
 
 
 # ---- matchups: a player's next game from his recent form, his Elo and the defenders he faces ----
@@ -710,24 +936,58 @@ def matchups(log, game_feat, coming, last, lineups=None):
     return out
 
 
+ROUND = {19: 'the Wild Card round', 20: 'the Divisional round', 21: 'the Conference championships', 22: 'the Super Bowl'}
+ROUND_TYPE = {'WC': 19, 'DIV': 20, 'CON': 21, 'SB': 22}
+
+
+def read_json(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--offline', action='store_true')
+    ap.add_argument('--now', help='build as if at this UTC time (ISO); for tests of the calendar')
     a = ap.parse_args()
+    now = (datetime.datetime.fromisoformat(a.now.replace('Z', '+00:00')) if a.now
+           else datetime.datetime.now(datetime.timezone.utc))
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=datetime.timezone.utc)
     print('loading')
-    games, stats, roster, inj, charts, injuries, team_week = load(a.offline)
+    games, stats, roster, charts, injuries, team_week, sources = load(a.offline, now)
     games = week_order(games)
+    games['kick'] = [kickoff(d, t) for d, t in zip(games.gameday, games.gametime)]
     weekly, daily, outs = build_lineups(charts, injuries)
     print(f'  depth charts: {len(weekly)} weekly team-charts, {sum(len(v) for v in daily.values())} daily snapshots; {sum(len(v) for v in outs.values())} players ruled out across {len(outs)} weeks')
-    coming = games[(games.season == games.season.max()) & games.home_score.isna()]
-    out_now, team_now = availability(roster, inj, int(coming.week.min()) if len(coming) else None)
-    on_roster = roster is not None and len(roster) > 0
+    # THE SEASON, from games.csv alone. sched is the newest schedule nflverse has posted; the
+    # season in play (last) is it once under way, else the one before (from the spring release
+    # of a new schedule to its opener, the page stays on the finished season, and the new one's
+    # week 1 is called in the fortnight before it). The rankings (rank_season) follow once most
+    # of the league has a rated game, so a Thursday opener does not leave a table of two teams.
+    sched = int(games.season.max())
+    last = sched if under_way(games, sched, now) else sched - 1
     stats['score'], stats['vol'] = scores(stats)
     stats['w'] = np.minimum(1.0, stats.vol / stats.group.map(VOLUME))
     # kickers and defenders with nothing on the sheet did not really play
     stats = stats[stats.vol > 0].copy()
     seasons = sorted(stats.season.unique())
-    last = int(games.season.max())
+    rank_season = last if stats[stats.season == last].team.nunique() >= RANK_TEAMS else last - 1
+    # the games still to come: no score, and kickoff far enough off that a call made now is
+    # published before it (a game under way is not called again: its call is the one frozen)
+    lead = now + datetime.timedelta(minutes=CALL_LEAD)
+    upcoming = games[(games.season >= last) & games.home_score.isna() & (games.kick > lead)]
+    next_week = {}           # each club's next game week, for the injury report
+    for r in upcoming.sort_values(['season', 'ord', 'kick'], kind='mergesort').itertuples(index=False):
+        for t in (r.home_team, r.away_team):
+            next_week.setdefault(t, int(r.week))
+    inj = injuries.get(int(upcoming.season.min())) if len(upcoming) else None
+    out_now, team_now, q_now, report = availability(roster, inj, next_week)
+    on_roster = roster is not None and len(roster) > 0
+    gone_now = {pid for pid, why in out_now.items() if why}
 
     # the position's typical game, from the season before (its own for the first)
     norm = {}
@@ -749,8 +1009,13 @@ def main():
     season_start = {}      # (season, player) -> rating at the start of the season
     peak = {}              # player -> (rating, season)
     game_feat = []         # per game: features from pre-game ratings
-    RS, NS, HS = {}, {}, {}  # the season in progress alone: rating, rated games, [[ord, rating], ...]
-    NQ = {}                # this season's rated games in a real role (weight at least 0.5)
+    # the season in play and the rankings' season alone (the same one but for a new season's
+    # first days): rating, rated games, [[ord, rating], ...], rated games in a real role
+    # (weight at least 0.5), each {season: {pid: ...}}
+    RSd = {s: {} for s in {last, rank_season}}
+    NSd = {s: {} for s in RSd}
+    HSd = {s: {} for s in RSd}
+    NQd = {s: {} for s in RSd}
     short_prev = {}        # player -> his last game was a short one, skipped
     played = {}            # (season, team) -> last game's participants by group [(pid, group)]
     ord_weeks = games[['season', 'ord']].drop_duplicates().sort_values(['season', 'ord'])
@@ -766,15 +1031,25 @@ def main():
             out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
         return out
 
+    def involvement(pid):
+        rv = recent.get(pid)
+        return float(np.median(rv)) if rv else 0.0
+
     def expected(season, week, team, gameday, fallback, also_out=()):
         """the players expected to start for the team, by group: the chart's order with the
         week's Outs removed, as many as the group fields; last game's players where the chart
-        is silent on a group. Returns [(pid, group)] and whether a chart was found."""
+        is silent on a group. Players the chart puts level (four linebackers at rank 1 for three
+        places, say) are taken by who has been playing most (median involvement over his last
+        five games, then the id): an order that sorting or the file decided made the walk-forward
+        record and the season's calls move with the library version. Returns [(pid, group)] and
+        whether a chart was found."""
         chart = chart_for(weekly, daily, int(season), int(week), team, gameday)
         gone = outs.get((int(season), int(week)), set()) | set(also_out)
         parts = []
         for g in GROUPS:
-            picked = [p for p in (chart or {}).get(g, []) if p not in gone][:len(DEPTH[g])]
+            cands = sorted(((p, k) for p, k in (chart or {}).get(g, []) if p not in gone),
+                           key=lambda pk: (pk[1], -involvement(pk[0]), pk[0]))
+            picked = [p for p, _ in cands][:len(DEPTH[g])]
             if not picked:
                 picked = [p for p, gg in (fallback or []) if gg == g and p not in gone]
             parts += [(p, g) for p in picked]
@@ -814,6 +1089,7 @@ def main():
             mu_lineups[(row.game_id, row.home_team)], mu_lineups[(row.game_id, row.away_team)] = eh, ea
             game_feat.append({'game_id': row.game_id, 'season': int(season), 'ord': int(ordw), 'week': int(row.week),
                               'home': row.home_team, 'away': row.away_team, 'charted': bool(ch and ca),
+                              'hf': 0.0 if row.location == 'Neutral' else 1.0,
                               'result': None if pd.isna(row.home_score) else float(row.home_score) - float(row.away_score),
                               'x': {g: (sh[g] - sa[g]) / 100 for g in GROUPS}, 'sh': sh, 'sa': sa,
                               'x_played': {g: (ph[g] - pa[g]) / 100 for g in GROUPS}})
@@ -857,8 +1133,9 @@ def main():
                 K = K_NEW if N[pid] < SETTLED else K_SET
                 R[pid] += K * r.w * (S - E)
                 N[pid] += 1
-                if int(season) == last:
+                if int(season) in RSd:
                     # the same game played again on a rating that knows only this season
+                    RS, NS, NQ, HS = RSd[int(season)], NSd[int(season)], NQd[int(season)], HSd[int(season)]
                     rs = RS.get(pid, 1500.0)
                     Es = 1 / (1 + 10 ** ((Uv - rs) / 400))
                     RS[pid] = rs + (K_SET + (K_PLACE - K_SET) * K_DECAY ** NS.get(pid, 0)) * r.w * (S - Es)
@@ -881,7 +1158,8 @@ def main():
     # ---- the game model ----
     feats = [gf for gf in game_feat if gf['result'] is not None and gf['result'] != 0]
     print(f'  {sum(1 for r in feats if r["charted"])} of {len(feats)} decided games had both depth charts')
-    X = lambda rows, key='x': np.array([[r[key][g] for g in GROUPS] for r in rows])
+    # home field is a column of its own (0 at a neutral site), not a free intercept
+    X = lambda rows, key='x': np.array([[r['hf']] + [r[key][g] for g in GROUPS] for r in rows])
     Y = lambda rows: np.array([1.0 if r['result'] > 0 else 0.0 for r in rows])
     def walk_forward(key):
         walk = {}
@@ -899,53 +1177,102 @@ def main():
         return walk
     walk = walk_forward('x')
     walk_played = walk_forward('x_played')
-    done = [r for r in feats if r['season'] < last]
-    w_all = logistic_fit(X(done), Y(done))
-    coef = {'home': round(float(w_all[0]), 4), **{g: round(float(w_all[i + 1]), 4) for i, g in enumerate(GROUPS)}}
-    # this season, graded game by game on pre-game ratings with the model fitted on the seasons before
-    this = [r for r in game_feat if r['season'] == last]
-    graded = []
-    for r in this:
-        if r['result'] is None:
-            continue
-        p = float(predict(w_all, X([r]))[0])
-        graded.append({'game_id': r['game_id'], 'p_home': round(p, 4), 'pick': r['home'] if p >= 0.5 else r['away'],
-                       'correct': (p >= 0.5) == (r['result'] > 0) if r['result'] != 0 else None})
-    # the coming week: each team as its latest depth chart and the week's injury report have it,
-    # and as it last took the field where they are silent
-    played_weeks = games[(games.season == last) & games.home_score.notna()]
-    next_ord = None
-    upcoming = games[(games.season == last) & games.home_score.isna()]
+    fits = {}
+    def fit_before(s):
+        """the game model fitted on every season before s"""
+        if s not in fits:
+            rows = [r for r in feats if r['season'] < s]
+            fits[s] = logistic_fit(X(rows), Y(rows))
+        return fits[s]
+    # the coming games: the earliest week still to kick off (in the spring, the new season's week 1)
+    next_ord, call_season = None, last
     if len(upcoming):
-        next_ord = int(upcoming.ord.min())
-    calls = []
+        first = upcoming.sort_values(['season', 'ord', 'kick'], kind='mergesort').iloc[0]
+        call_season, next_ord = int(first.season), int(first.ord)
+        if call_season > last and first.kick - now > datetime.timedelta(days=PRESEASON_CALLS):
+            next_ord = None      # a schedule months away: no calls yet
+    w_all = fit_before(call_season)
+    coef = {'home': round(float(w_all[0]), 4), **{g: round(float(w_all[i + 1]), 4) for i, g in enumerate(GROUPS)}}
+
+    # THE CALLS AND THEIR RECORD. Every call published before its kickoff goes into a ledger,
+    # elo/data/calls.json (the published history up to the ledger's start is in elo/history/),
+    # and the last one before kickoff is frozen there: the record grades that call, the one a
+    # visitor saw, never one recomputed after the game on a formula or a tie order that has
+    # moved since (2026_03_SEA_WAS was shown as WAS, then graded as a SEA pick and a loss).
+    # A game never called before kickoff (weeks 1-2 of 2026, which came before the model was
+    # published, or a week the job did not run) is called once after it, on pre-game ratings,
+    # frozen and marked a backtest, and the record counts the two apart.
+    ledger = {}
+    for s in sorted({last, call_season}):
+        ledger.update((read_json(os.path.join(HISTORY, f'calls_{s}.json')) or {}).get('calls', {}))
+    ledger.update((read_json(os.path.join(OUT, 'calls.json')) or {}).get('calls', {}))
+    # the model.json now live is itself a record of what was published: a call in its `next`
+    # made before its game's kickoff is one a visitor saw, and the newest such call is the one
+    # the record grades (this also carries over a run whose ledger was not committed, and the
+    # calls the job made before the ledger existed)
+    live_model = read_json(os.path.join(OUT, 'model.json')) or {}
+    if live_model.get('built_at'):
+        made = datetime.datetime.fromisoformat(live_model['built_at'])
+        kick_of = dict(zip(games.game_id, games.kick))
+        for c in (live_model.get('next') or {}).get('games', []):
+            k = kick_of.get(c.get('game_id'))
+            if c.get('frozen') or k is None or made + datetime.timedelta(minutes=CALL_LEAD) > k:
+                continue
+            cur = ledger.get(c['game_id'])
+            if cur is None or (cur.get('at') or '') < live_model['built_at']:
+                ledger[c['game_id']] = {'pick': c['pick'], 'p_home': c['p_home'], 'at': live_model['built_at'], 'src': 'published'}
+    stamp = now.isoformat(timespec='minutes')
+    w_grade = fit_before(last)
+    graded = []
+    for r in game_feat:
+        if r['season'] != last or r['result'] is None:
+            continue
+        c = ledger.get(r['game_id'])
+        if c is None:
+            p = float(predict(w_grade, X([r]))[0])
+            c = ledger[r['game_id']] = {'pick': r['home'] if p >= 0.5 else r['away'], 'p_home': round(p, 4), 'at': stamp, 'src': 'backtest'}
+        winner = r['home'] if r['result'] > 0 else r['away'] if r['result'] < 0 else None
+        graded.append({'game_id': r['game_id'], 'p_home': c['p_home'], 'pick': c['pick'],
+                       'correct': None if winner is None else c['pick'] == winner, 'src': c['src']})
+    graded_ids = {g['game_id'] for g in graded}
+    # a game under way, or final but not yet rated (its player stats lag the score by a night),
+    # keeps its frozen call in `next`, so its pick does not vanish between kickoff and the
+    # morning it is graded
+    held = games[(games.season >= last) & (games.kick <= lead) & (games.kick > now - datetime.timedelta(days=10))
+                 & ~games.game_id.isin(graded_ids)].sort_values(['kick', 'game_id'], kind='mergesort')
+    calls = [{'game_id': gid, 'p_home': ledger[gid]['p_home'], 'pick': ledger[gid]['pick'], 'frozen': True}
+             for gid in held.game_id if gid in ledger]
     shown = []      # the console's line per call: the teams and the quarterbacks expected to start
     coming = []
+    fallback = lambda t: played.get((call_season, t)) or played.get((last, t))
     if next_ord is not None:
-        for row in upcoming[upcoming.ord == next_ord].itertuples(index=False):
-            # this week's lineups also drop anyone the latest roster carries off the active
-            # list (injured reserve and the rest), which a depth chart can lag behind
-            not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
-            eh, _ = expected(last, row.week, row.home_team, row.gameday, played.get((last, row.home_team)), not_active)
-            ea, _ = expected(last, row.week, row.away_team, row.gameday, played.get((last, row.away_team)), not_active)
+        week_rows = upcoming[(upcoming.season == call_season) & (upcoming.ord == next_ord)]
+        for row in week_rows.sort_values(['kick', 'game_id'], kind='mergesort').itertuples(index=False):
+            # this week's lineups also drop anyone the roster or the injury report keeps out
+            # (availability), which a depth chart can lag behind
+            eh, _ = expected(call_season, row.week, row.home_team, row.gameday, fallback(row.home_team), gone_now)
+            ea, _ = expected(call_season, row.week, row.away_team, row.gameday, fallback(row.away_team), gone_now)
             if not eh or not ea:
                 continue
             sh, sa = strength(eh), strength(ea)
             for team, other, parts, st_opp, home in ((row.home_team, row.away_team, eh, sa, 1), (row.away_team, row.home_team, ea, sh, 0)):
                 coming.append({'game_id': row.game_id, 'team': team, 'opp': other, 'home': home, 'parts': parts,
                                'opp_strength': st_opp, 'rating': {pid: R.get(pid, REPLACEMENT) for pid, _ in parts}})
-            x = {g: (sh[g] - sa[g]) / 100 for g in GROUPS}
-            p = float(predict(w_all, np.array([[x[g] for g in GROUPS]]))[0])
+            hf = 0.0 if row.location == 'Neutral' else 1.0
+            p = float(predict(w_all, np.array([[hf] + [(sh[g] - sa[g]) / 100 for g in GROUPS]]))[0])
             qb = lambda parts: next((info[pid]['name'] for pid, g in parts if g == 'QB' and pid in info), None)
             pick = row.home_team if p >= 0.5 else row.away_team
             calls.append({'game_id': row.game_id, 'p_home': round(p, 4), 'pick': pick})
+            ledger[row.game_id] = {'pick': pick, 'p_home': round(p, 4), 'at': stamp, 'src': 'published'}
             shown.append(f"{row.away_team}@{row.home_team} {pick} {max(p, 1 - p):.0%} ({qb(ea)} v {qb(eh)})")
+    next_week_no = int(upcoming[(upcoming.season == call_season) & (upcoming.ord == next_ord)].week.min()) if next_ord is not None else None
     # ---- each team on its own: the power ratings (see THE POWER RATINGS) ----
     # the lineup part: each team's expected lineup for the coming week (a team on its bye or
-    # already played this week: who took the field last game, minus anyone off the active list)
-    # scored on this season's player ratings (RS) by the game model's weights, a log-odds against
-    # a team of 1500s centred on the league; before is the same lineup on the ratings it had
-    # going into the team's last game
+    # already played this week: who took the field last game, minus anyone the roster or the
+    # injury report keeps out) scored on this season's player ratings (RS) by the game model's
+    # weights, a log-odds against a team of 1500s centred on the league; before is the same
+    # lineup on the ratings it had going into the team's last game
+    RS, HS = RSd[last], HSd[last]
     w_logit = lambda st: sum(coef[g] * (st[g] - 1500) / 100 for g in GROUPS)
     def rs_at(pid, before_ord=None):
         if before_ord is None:
@@ -960,11 +1287,10 @@ def main():
             rs = (rs + [1500.0] * len(wts))[:len(wts)]
             out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
         return out
-    lineup = {c['team']: c['parts'] for c in coming}
-    not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
+    lineup = {c['team']: c['parts'] for c in coming if c['game_id'].startswith(f'{last}_')}
     for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
         if t not in lineup and played.get((last, t)):
-            lineup[t] = [(pid, g) for pid, g in played[(last, t)] if pid not in not_active]
+            lineup[t] = [(pid, g) for pid, g in played[(last, t)] if pid not in gone_now]
     last_game = {}
     for r in game_feat:
         if r['season'] == last and r['result'] is not None:
@@ -979,13 +1305,43 @@ def main():
     team_rows = power_ratings(games[games.season == last], centred(now_st), centred(before_st))
     n_ok = sum(1 for g in graded if g['correct'] is True)
     n_gr = sum(1 for g in graded if g['correct'] is not None)
+    record = {'season': last}
+    for src in ('published', 'backtest'):
+        gs = [g for g in graded if g['src'] == src and g['correct'] is not None]
+        record[src] = [sum(1 for g in gs if g['correct']), sum(1 for g in gs if not g['correct'])]
+    wk_of = dict(zip(games.game_id, games.week))
+    pub_weeks = sorted({int(wk_of[g['game_id']]) for g in graded if g['src'] == 'published' and g['game_id'] in wk_of})
+    record['published_from_week'] = pub_weeks[0] if pub_weeks else None
+    # the season's place in the calendar, for the page: the regular season, the playoffs, or over
+    sg = games[games.season == last]
+    reg_left = bool((sg.game_type == 'REG').any() and sg[sg.game_type == 'REG'].home_score.isna().any())
+    sb_final = bool(((sg.game_type == 'SB') & sg.home_score.notna()).any())
+    if rank_season < last:
+        phase = 'opening'
+    elif reg_left:
+        phase = 'regular'
+    elif sb_final or last < sched:
+        phase = 'over'
+    else:
+        phase = 'postseason'
+    # Total Offense and Total Defense sit beside the rankings on the ELO Ratings tab and follow
+    # their season (the finished one until most clubs have played the new one's week 1)
+    units = offdef_ratings(games[games.season == rank_season], team_week.get(rank_season))
+    units['season'] = rank_season
+    # what each source gave: the page says when one is behind, and elo/check.py reads it
+    final_ids = set(games[(games.season == last) & games.home_score.notna()].game_id)
+    rated_ids = {r['game_id'] for r in game_feat if r['season'] == last and r['result'] is not None}
+    sources['player_stats_pending'] = sorted(final_ids - rated_ids)
+    sources['team_stats_pending'] = list(units.get('pending', []))
+    sources['injury_report'] = report
     model = {
-        'built_at': datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='minutes'),
-        'season': last, 'groups': GROUPS, 'coef': coef,
-        'walk_forward': walk, 'walk_forward_who_played': walk_played, 'record': {'season': last},
-        'graded': graded, 'next': {'week': int(upcoming[upcoming.ord == next_ord].week.min()) if next_ord is not None else None, 'games': calls},
+        'built_at': stamp, 'formula': FORMULA,
+        'season': last, 'phase': phase, 'groups': GROUPS, 'coef': coef,
+        'walk_forward': walk, 'walk_forward_who_played': walk_played, 'record': record,
+        'graded': graded, 'next': {'week': next_week_no, 'season': call_season, 'games': calls},
         'teams': team_rows,
-        'units': offdef_ratings(games[games.season == last], team_week),
+        'units': units,
+        'sources': sources,
     }
 
     # ---- the rankings ----
@@ -994,10 +1350,13 @@ def main():
     # rated game this season is not ranked. The models (the game model, the matchups, market +
     # form) keep the rating with every season behind it (R), which is what their records were
     # proven on; the players map carries both, `elo` the career one they read.
+    RS, NS, NQ, HS = RSd[rank_season], NSd[rank_season], NQd[rank_season], HSd[rank_season]
     active_cut = last - 1          # career ratings: rated in this season or the last
     latest_season = {pid: max(h) for pid, h in hist.items()}
-    last_ord = int(played_weeks.ord.max()) if len(played_weeks) else None
+    rated_games = [r for r in game_feat if r['season'] == rank_season and r['result'] is not None]
+    last_ord = max((r['ord'] for r in rated_games), default=None)
     players = {}
+    kept_out = set()       # players the map would carry but for being out now (see `past` below)
     groups_out = {}
     def why_out(pid):
         if pid in out_now:
@@ -1010,12 +1369,20 @@ def main():
             if last_ord is not None and o < last_ord:
                 v = r
         return v
-    # enough of a season to rank: games in a real role in at least half the weeks played so far
-    weeks_played = played_weeks.ord.nunique()
-    min_games = max(1, math.ceil(weeks_played / 2))
+    # enough of a season to rank: games in a real role in at least half of his club's rated
+    # games. It was half the weeks in which anyone had played, so one Thursday game raised the
+    # bar for all 32 clubs and the #1 tight end and four top-15 quarterbacks vanished from the
+    # table from Friday to Monday, with no note; a club on its bye is not held to a game it did
+    # not have either.
+    team_games = {}
+    for r in rated_games:
+        for t in (r['home'], r['away']):
+            team_games[t] = team_games.get(t, 0) + 1
+    need_of = lambda t: max(1, math.ceil(team_games.get(t, 0) / 2))
+    club = lambda pid: team_now.get(pid) or info[pid]['team']
     for g in GROUPS:
-        rated = [pid for pid in RS if info[pid]['group'] == g and NQ.get(pid, 0) >= min_games]
-        rated.sort(key=lambda p: -RS[p])
+        rated = [pid for pid in RS if info[pid]['group'] == g and NQ.get(pid, 0) >= need_of(club(pid))]
+        rated.sort(key=lambda p: (-RS[p], p))
         # the rankings are of players who can play: the injured, the retired and the unsigned
         # are listed under the table instead, where they would have stood
         sidelined = []
@@ -1034,7 +1401,12 @@ def main():
                 info[pid]['team'] = team_now[pid]
         # the movement column: against where each stood before the latest week's games
         prev = {pid: before_last(pid) for pid in pool}
-        prev_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: -prev[p]))}
+        prev_rank = {pid: i + 1 for i, pid in enumerate(sorted(pool, key=lambda p: (-prev[p], p)))}
+        # the season's first week has no week before it: everyone stood at 1500, and the order
+        # among equals was the players' ids, so week 1 showed "up 25" beside a quarterback who
+        # had moved from nowhere. Nobody has moved yet.
+        if not any(o < last_ord for p in pool for o, _ in HS.get(p, []) if last_ord is not None):
+            prev_rank = {pid: i + 1 for i, pid in enumerate(pool)}
         rank = {pid: i + 1 for i, pid in enumerate(pool)}
         # the ladder: each rating shown on the position's bell curve (THE LADDER)
         def curve(vals):
@@ -1046,32 +1418,74 @@ def main():
         show_career = curve(R[p] for p in career if p in R)
         rows = []
         for pid in pool:
-            rows.append({'id': pid, 'name': info[pid]['name'], 'pos': info[pid]['pos'], 'team': info[pid]['team'],
-                         'elo': show(RS[pid]), 'raw': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid],
-                         'games': NS[pid], 'career': show_career(R[pid]), 'career_raw': round(R[pid]), 'peak': show_career(peak[pid][0]), 'peak_season': peak[pid][1],
-                         'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])]})
+            row = {'id': pid, 'name': info[pid]['name'], 'pos': info[pid]['pos'], 'team': info[pid]['team'],
+                   'elo': show(RS[pid]), 'raw': round(RS[pid]), 'rank': rank[pid], 'start_rank': prev_rank[pid],
+                   'games': NS[pid], 'career': show_career(R[pid]), 'career_raw': round(R[pid]), 'peak': show_career(peak[pid][0]), 'peak_season': peak[pid][1],
+                   'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])]}
+            if pid in q_now:
+                row['q'] = q_now[pid]        # questionable: listed, with a Q
+            rows.append(row)
         for x in sidelined:
             x['elo'] = show(x.pop('raw'))
-        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'curve': [show(RS[p]) for p in pool], 'min_games': min_games, 'top': rows[:25], 'sidelined': sidelined}
+        groups_out[g] = {'label': LABEL[g], 'active': len(pool), 'curve': [show(RS[p]) for p in pool],
+                         'min_games': min((need_of(t) for t in team_games), default=1), 'top': rows[:25], 'sidelined': sidelined}
         # the players map: every player the models may price, on his career rating (elo, with s0
-        # and h the season so far, so a rating can be read as it stood before any week: the Prop
-        # Record grades on those), and his place this season where he has one (se, rank)
+        # and h the season in play so far, so a rating can be read as it stood before any week:
+        # the Prop Record grades on those), his club, and his place in the rankings where he has
+        # one (se, rank)
         for pid in sorted(set(career) | set(pool)):
             if pid not in R:
                 continue
             h = hist[pid]
-            players[pid] = {'name': info[pid]['name'], 'group': g, 'elo': round(R[pid]),
+            players[pid] = {'name': info[pid]['name'], 'group': g, 'team': info[pid]['team'], 'elo': round(R[pid]),
                             's0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in h.get(last, [])],
                             'se': show(RS[pid]) if pid in rank else None, 'rank': rank.get(pid)}
-    last_week = int(played_weeks.week.max()) if len(played_weeks) else 0
+        kept_out.update(p for p in set(rated) | {p for p in R if info[p]['group'] == g and latest_season[p] >= active_cut and N[p] >= 3}
+                        if why_out(p))
+    # a player the roster or the report keeps out (or one who has left his club) is not in the
+    # players map, so nothing on the page prices him or suggests his lines; but the Prop Record
+    # grades the lines he had before, each week on the rating he took into it, and with no
+    # rating it graded them at 1500. So his season so far (s0 and h, as in the map) is kept here.
+    past = {pid: {'s0': round(season_start.get((last, pid), 1500.0)), 'h': [[o, round(r)] for o, r in hist[pid][last]]}
+            for pid in sorted(kept_out) if pid in R and pid not in players and hist.get(pid, {}).get(last)}
+
+    def through(season):
+        """how far the season's rating has got: the latest week whose games are all rated (or
+        abandoned), the week under way beside it (a Thursday game alone does not make week 5
+        played), the playoff round, or final"""
+        sgm = games[games.season == season]
+        rated = {r['game_id'] for r in game_feat if r['season'] == season and r['result'] is not None}
+        gone_by = now - datetime.timedelta(days=3)
+        complete = lambda rows: all(gid in rated or (pd.isna(hs) and k < gone_by) for gid, hs, k in zip(rows.game_id, rows.home_score, rows.kick))
+        reg, post = sgm[sgm.game_type == 'REG'], sgm[sgm.game_type != 'REG']
+        weeks = sorted(int(w) for w in reg.week.unique())
+        done = [w for w in weeks if complete(reg[reg.week == w])]
+        tw = max(done, default=0)
+        if season < last or bool(((sgm.game_type == 'SB') & sgm.game_id.isin(rated)).any()):
+            return tw, 'final', None
+        rnd = post.game_type.map(ROUND_TYPE)
+        if post.game_id.isin(rated).any():
+            done_r = [r for r in sorted(set(rnd.dropna().astype(int))) if complete(post[rnd == r])]
+            label = 'through ' + (ROUND[max(done_r)] if done_r else 'the regular season')
+            return tw, label, None
+        partial = None
+        nxt = [w for w in weeks if w > tw and reg[reg.week == w].game_id.isin(rated).any()]
+        if nxt:
+            wr = reg[reg.week == nxt[0]]
+            partial = {'week': nxt[0], 'played': int(wr.game_id.isin(rated).sum()), 'games': int(len(wr))}
+        if partial and not tw:      # week 1 under way: there is no "week 0" to be through
+            label = f"{partial['played']} of {partial['games']} week-{partial['week']} games"
+        else:
+            label = f'through week {tw}' + (f", and {partial['played']} of {partial['games']} week-{partial['week']} games" if partial else '')
+        return tw, label, partial
+    tw, tlabel, partial = through(rank_season)
     out = {
-        'built_at': model['built_at'], 'season': last, 'through_week': last_week,
-        'groups': groups_out, 'players': players,
+        'built_at': model['built_at'], 'formula': FORMULA, 'season': rank_season, 'season_in_play': last, 'phase': phase,
+        'through_week': tw, 'through': tlabel, 'partial': partial,
+        'rule': 'a real role (half the position\'s normal workload) in at least half of his club\'s rated games',
+        'groups': groups_out, 'players': players, 'past': past,
     }
-    os.makedirs(OUT, exist_ok=True)
-    with open(os.path.join(OUT, 'players.json'), 'w') as f:
-        json.dump(out, f, separators=(',', ':'))
-    mu = matchups(mu_log, game_feat, coming, last, mu_lineups)
+    mu = matchups(mu_log, game_feat, coming, call_season, mu_lineups)
     if mu:
         cols = lambda g, st: (['1', 'home x form', 'form', 'form x allowed']
                               + [f'form x {g}{i + 1}' for i in range(MU_RANK.get(g, 0) if st in MU_RANK_STATS else 0)]
@@ -1080,17 +1494,17 @@ def main():
         # and the unit he faces against every team, not just the games still to play this week
         # (on a Monday that is two teams, and the weaker of two defences read as "ranked 2nd"):
         # every team on the same rule, its expected starters for its next game (that game's
-        # depth chart minus the Outs and the inactive, as the coming games are), or for a team
-        # with none left its last game's; each team's defensive units on them, and each
-        # position's starters (the DEPTH best of every lineup by career rating) as a mean and
-        # a spread
-        not_active = {pid for pid, why in out_now.items() if why and not why.startswith('out')}
-        league = {}
+        # depth chart minus whoever the roster or the injury report keeps out, as the coming
+        # games are), or for a team with none left its last game's; each team's defensive units
+        # on them, and each position's starters (the DEPTH best of every lineup by career
+        # rating) as a mean and a spread
+        league, lineups = {}, {}
         for t in sorted(set(games[games.season == last].home_team) | set(games[games.season == last].away_team)):
-            nxt = upcoming[(upcoming.home_team == t) | (upcoming.away_team == t)].sort_values('ord')
+            nxt = upcoming[(upcoming.home_team == t) | (upcoming.away_team == t)].sort_values(['season', 'ord', 'kick'], kind='mergesort')
             if len(nxt):
                 r0 = nxt.iloc[0]
-                league[t], _ = expected(last, r0.week, t, r0.gameday, played.get((last, t)), not_active)
+                league[t], _ = expected(int(r0.season), r0.week, t, r0.gameday, fallback(t), gone_now)
+                lineups[t] = {'game_id': r0.game_id, 'week': int(r0.week), 'players': [p for p, _ in league[t]]}
             else:
                 gone = [k for k in mu_lineups if k[1] == t and k[0].startswith(f'{last}_')]
                 if gone:
@@ -1103,17 +1517,40 @@ def main():
                                  for t, parts in sorted(league.items())},
                         'norms': {g: [round(float(np.mean(v)), 1), round(float(np.std(v, ddof=1)), 1)]
                                   for g, v in tops.items() if len(v) > 1}}
-        mu.update({'built_at': model['built_at'], 'season': last, 'week': model['next']['week'],
+        # each club's expected lineup for its next game, and who the roster or the report keeps
+        # out of it (or lists as questionable), so the page can say why a player has no matchup
+        # and elo/check.py can hold the lineups against the injury report
+        mu['lineups'] = lineups
+        priced = lambda pid: pid in R and N.get(pid, 0) >= 3 and latest_season.get(pid, 0) >= active_cut
+        mu['out'] = {pid: why for pid, why in sorted(out_now.items()) if why and priced(pid)}
+        mu['q'] = {pid: why for pid, why in sorted(q_now.items()) if priced(pid)}
+        mu['reports'] = report
+        mu.update({'built_at': model['built_at'], 'season': call_season, 'week': model['next']['week'],
                    'columns': {f'{g}|{st}': cols(g, st) for g, sts in MU_STATS.items() for st in sts}})
-        with open(os.path.join(OUT, 'matchups.json'), 'w') as f:
-            json.dump(mu, f, separators=(',', ':'))
         for k in ('QB|passing_yards', 'WR|receiving_yards', 'RB|rushing_yards', 'TE|receiving_yards'):
             r = mu['record'].get(k, {}).get('past')
             if r:
                 print(f"  matchups {k}: {r['games']} games, rmse {r['rmse_form']} -> {r['rmse_elo']}, biggest nudges right {r['right_top']:.3f}")
-    with open(os.path.join(OUT, 'model.json'), 'w') as f:
-        json.dump(model, f, separators=(',', ':'))
-    print(f'  wrote elo/data/players.json ({os.path.getsize(os.path.join(OUT, "players.json")) // 1024} KB) and model.json')
+    # every file is written once everything is built, each whole: a build that stops halfway
+    # leaves the last good set in place
+    keep = {gid: c for gid, c in ledger.items() if int(gid[:4]) >= last - 1}
+    files = {'players.json': out, 'model.json': model,
+             'calls.json': {'built_at': model['built_at'], 'season': last,
+                            'about': 'each game\'s ELO Model call as last published before its kickoff (src published), or, for a game '
+                                     'never called before it, as first called after it (src backtest); written by elo/build.py, '
+                                     'never edited: the record grades these',
+                            'calls': dict(sorted(keep.items()))}}
+    if mu:
+        files['matchups.json'] = mu
+    os.makedirs(OUT, exist_ok=True)
+    for name, body in files.items():
+        with open(os.path.join(OUT, name + '.part'), 'w') as f:
+            json.dump(body, f, separators=(',', ':'))
+    for name in files:
+        os.replace(os.path.join(OUT, name + '.part'), os.path.join(OUT, name))
+    print(f'  wrote elo/data/players.json ({os.path.getsize(os.path.join(OUT, "players.json")) // 1024} KB), model.json, calls.json'
+          + (', matchups.json' if mu else ''))
+    print(f'  season {last} ({phase}); rankings {rank_season} {tlabel}')
     for g in GROUPS:
         print(f'  {LABEL[g]}: ' + ', '.join(f"{r['name']} {r['elo']}" for r in groups_out[g]['top'][:5]))
     print('  walk-forward, pre-game lineups: ' + ', '.join(f"{s}: {w['accuracy']:.3f} ({w['games']})" for s, w in walk.items()))
@@ -1122,7 +1559,9 @@ def main():
         print('  ' + '; '.join(shown[:6]))
     print(f"  weights: {coef}")
     if n_gr:
-        print(f"  {last}: {n_ok}/{n_gr} graded; next week {model['next']['week']}: {len(calls)} calls")
+        print(f"  {last}: {n_ok}/{n_gr} graded (published before kickoff {record['published'][0]}-{record['published'][1]}, "
+              f"backtest {record['backtest'][0]}-{record['backtest'][1]}); next week {model['next']['week']}: {len(calls)} calls")
+
 
 
 if __name__ == '__main__':

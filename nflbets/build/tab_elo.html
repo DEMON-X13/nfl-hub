@@ -106,6 +106,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 .pe-sugg .sugg-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
 .pe-track table{margin-top:6px}
 .pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
+/* questionable on the week's report: still listed, with a Q */
+.pe-q{font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;vertical-align:1px;color:#8A5E05;background:rgba(212,160,23,.14);border-color:rgba(212,160,23,.4)}
 @media(max-width:900px){
   table.pe-t{display:block;overflow-x:auto}
   table.pe-t td,table.pe-t th{padding-left:6px;padding-right:6px}
@@ -117,6 +119,7 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 <section id="tab-elo" hidden>
   <div class="bar">
     <span class="rec" id="peWalkRec"></span>
+    <span class="rec" id="peCallRec"></span>
     <span class="grow"></span>
     <span class="livestamp" id="peStamp"></span>
   </div>
@@ -145,7 +148,9 @@ const tag=(t,mini)=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagCo
 const shield=elo=>window.pkTierBadge?window.pkTierBadge(elo):'';
 const tierName=elo=>{ const t=window.pkEloTier?window.pkEloTier(elo):null; return t?t[0]:''; };
 function spark(pts){
-  if(!pts||pts.length<2) return '';
+  if(!pts||!pts.length) return '';
+  /* one game in (all of week 1): the line runs from 1500, where every player starts the season */
+  if(pts.length<2) pts=[[pts[0][0]-1,1500],pts[0]];
   const v=pts.map(p=>p[1]), lo=Math.min(...v), hi=Math.max(...v), W=84, H=22;
   const x=i=>(i/(v.length-1))*(W-2)+1, y=e=>hi===lo?H/2:H-1-((e-lo)/(hi-lo))*(H-2);
   const d=v.map((e,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(e).toFixed(1)).join(' ');
@@ -171,13 +176,27 @@ function muTrusted(g,st){ const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; cons
   return !!p&&p.rmse_elo<p.rmse_form&&p.right_top>=0.53; }
 function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl||!pl.stats[st]||!muTrusted(pl.group,st)) return null;
   const f=D.mu.fit[pl.group+'|'+st]; return f?{nudge:pl.stats[st][2],sd:f.sd,proj:pl.stats[st][1],form:pl.stats[st][0]}:null; }
-/* the matchups file is rebuilt every morning from that day's injury report (its Outs only),
-   and the props payload too, from which the page keeps the week's Out and Doubtful in
-   S.inactive. A Doubtful player, or one ruled out since the Elo build, is
-   still an expected starter in the file, so a player's window and the Mismatches leave him out
-   here rather than show a matchup he will not play. */
-const ruledOut=pid=>!!(typeof S==='object'&&S&&S.inactive&&S.inactive[pid]);
+/* who will not play. The matchups file is rebuilt from that day's roster and injury report:
+   Out and Doubtful, and before a club files its statuses, anyone out at its last report who has
+   not practised since (or whose club has filed nothing yet) are off its expected lineup, and
+   `out` says why for each. The props payload is read on every load too, and the page keeps the
+   week's Out and Doubtful in S.inactive; a player ruled out since the Elo build is still in the
+   file, so a player's window and the Mismatches leave him out here rather than show a matchup
+   he will not play. */
+const outWhy=pid=>(D.mu&&D.mu.out&&D.mu.out[pid])||null;
+const ruledOut=pid=>!!((typeof S==='object'&&S&&S.inactive&&S.inactive[pid])||outWhy(pid));
 window.eloRuledOut=ruledOut;
+/* a game that has kicked off is not this week's matchup any more: the file is built in the
+   morning and stands until the next build, so the page checks the clock itself (the props
+   parts' gameStarted, on the schedule the page already has) */
+function gameOn(gid){
+  if(typeof S!=='object'||!S||!Array.isArray(S.sched)||typeof gameStarted!=='function') return false;
+  const g=S.sched.find(x=>x.id===gid); return !!g&&gameStarted(g);
+}
+window.eloGameOn=gameOn;
+/* a player's season shield, the same one his ranking and his builder badge wear (the season
+   rating on the position's bell curve); null when he has no place this season */
+const seOf=pid=>{ const e=D.players&&D.players.players&&D.players.players[pid]; return e&&e.se!=null?e.se:null; };
 /* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
    highest rated); a file without it falls back to the teams playing this week */
 function defRanks(){
@@ -203,6 +222,7 @@ function playerModal(pid){
   const dec=x=>Math.abs(x)>=10?x.toFixed(0):x.toFixed(1);
   let mu;
   if(!stats) mu=`<p class="pe-sub">There is no matchup formula for ${esc(P.groups[g].label.toLowerCase())}: the projections cover quarterbacks, running backs, receivers and tight ends.</p>`;
+  else if(outWhy(pid)) mu=`<p class="pe-sub">Not expected to play: ${esc(outWhy(pid))}, so there is no matchup to show.</p>`;
   else if(!v) mu=`<p class="pe-sub">No matchup for week ${esc(M.week)}: he is not an expected starter in this week's file, or his team is on its bye.</p>`;
   else if(ruledOut(pid)) mu=`<p class="pe-sub">Ruled out for week ${esc(M.week)} on the injury report, so there is no matchup to show.</p>`;
   else {
@@ -212,11 +232,12 @@ function playerModal(pid){
       return `<tr class="${muTrusted(g,st)?'':'pe-weak'}"><td>${MU_LBL[st]||st}</td><td class="pe-n">${dec(form)}</td>
         <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${zero?'0.0':(n>0?'+':'−')+shown}</span></td><td class="pe-n"><b>${dec(proj)}</b></td></tr>`; }).join('');
     mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
+      ${gameOn(v.game_id)?`<p class="pe-sub pe-begun"><b>This game has kicked off.</b> The projection below was made before it, from the ratings he took into it; it is no longer a matchup to bet on, and the Mismatches leave it out.</p>`:''}
       <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
       <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Recent form</th><th class="pe-n">Elo matchup</th><th class="pe-n">Projection</th></tr></thead><tbody>${rows}</tbody></table>
       <p class="pe-note">Recent form is his recent average (the latest games count most). The Elo matchup is what his own rating and the ratings of the ${esc(v.opp)} defenders he faces add or take away; the defences are ranked among all 32, 1st the best. Faded rows are stats where the Elo part has not held up in past seasons, and are not used for Elo picks.</p>`;
   }
-  el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span><span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
+  el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span>${qTag(r)}<span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
     <div class="pe-pl-tiles">
       <div><span>Season Elo</span><b>${r.elo}</b><small>${esc(tierName(r.elo))}</small></div>
       <div><span>Rank</span><b>#${r.rank}</b><small>of ${esc(P.groups[g].active)} ${esc(P.groups[g].label.toLowerCase())}</small></div>
@@ -266,20 +287,38 @@ function curveHover(root){
       const bt=box.getBoundingClientRect(); tip.innerHTML=g.dataset.tip; tip.style.left=(r.left-bt.left+(+g.dataset.x)*r.width)+'px'; tip.style.top=(r.top-bt.top+(+g.dataset.y)*r.height-6)+'px'; tip.classList.add('on'); });
     g.addEventListener('mouseleave',()=>tip.classList.remove('on')); });
 }
+/* a questionable player stays ranked and listed, with a Q and the report's words */
+const qTag=r=>r&&r.q?` <span class="pill pe-q" title="${esc(r.q)}">Q</span>`:'';
+/* how far the season has got, as the build words it: "through week 4, and 1 of 15 week-5 games",
+   "through the Divisional round", or "final" (an older file has only the week) */
+const thru=P=>P.through?(P.through==='final'?'final':P.through):'through week '+P.through_week;
+/* what the build could not have yet, said where the numbers are, so a lag reads as a lag */
+function sourceNote(){
+  const M=D.model, s=(M&&M.sources)||{}, bits=[];
+  const pend=s.player_stats_pending||[]; if(pend.length) bits.push(`${pend.length} final game${pend.length===1?' is':'s are'} not in nflverse's player stats yet, so ${pend.length===1?'it is':'they are'} not rated`);
+  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`Total Offense and Defense wait on the team stats for ${tp.length} game${tp.length===1?'':'s'}`);
+  const rep=Object.values(s.injury_report||{}), wk=D.mu&&D.mu.week, mine=rep.filter(r=>r.week===wk);
+  const filed=mine.filter(r=>r.statuses_filed).length;
+  if(mine.length&&filed<mine.length) bits.push(`week ${esc(wk)}'s game statuses are filed for ${filed} of ${mine.length} clubs; until a club files, a player out at its last report who has not practised since is counted out`);
+  return bits.length?`<p class="pe-note">${bits.map(b=>b.charAt(0).toUpperCase()+b.slice(1)).join('. ')}.</p>`:'';
+}
 function rankings(){
   const P=D.players, g=D.pos, grp=P.groups[g];
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${k===g}">${esc(P.groups[k].label)}</button>`).join(''):'';
   const rows=grp.top.slice(0,D.more?25:10).map(r=>{
     return `<tr class="pe-plrow" data-pe-pl="${esc(r.id)}"><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
-      <td class="pe-name"><button type="button" class="pe-plbtn" data-pe-pl="${esc(r.id)}">${esc(r.name)}</button><small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
+      <td class="pe-name"><button type="button" class="pe-plbtn" data-pe-pl="${esc(r.id)}">${esc(r.name)}</button>${qTag(r)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
       <td class="pe-m0">${tag(r.team,true)}</td>
       <td class="pe-n"><span class="pe-elo"${r.raw!=null?` title="Raw season rating ${r.raw}"`:''}>${r.elo}</span></td>
       <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
       <td class="pe-n" title="The rating with every season behind it, which the game model, matchups and market + form use${r.career_raw!=null?' (raw '+r.career_raw+')':''}">${r.career!=null?r.career:'–'}</td>
       <td class="pe-m0">${spark(r.this_season)}</td>
       <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
-  return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} through week ${esc(P.through_week)}</span></h2>
-    <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 160 points a game) and each game after moves him less as his level settles. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least ${esc(grp.min_games||1)} game${(grp.min_games||1)===1?'':'s'}, enough to be ranked. The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Click a player for his matchup this week. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
+  const opening=P.phase==='opening'&&P.season_in_play&&P.season_in_play!==P.season;
+  return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} ${esc(thru(P))}</span></h2>
+    ${opening?`<p class="pe-note">${esc(P.season_in_play)} has begun: its rankings take over from ${esc(P.season)}'s final table once most clubs have played week 1.</p>`:''}
+    <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 160 points a game) and each game after moves him less as his level settles. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least half of their club's games, enough to be ranked (a club's bye or a game it has yet to play does not count against its players). A questionable player stays listed, with a Q. The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Click a player for his matchup this week. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
+    ${sourceNote()}
     <div class="pe-pos" role="tablist">${btns}</div>
     ${curveChart(grp.curve,grp.label.toLowerCase())}
     <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Career</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
@@ -299,7 +338,7 @@ function units(){
       <td class="pe-n"><span class="pe-elo">${v.elo}</span></td><td><span class="pe-shield">${shield(v.elo)}${tierName(v.elo)}</span></td>
       <td class="pe-n">${v.ppg}</td><td class="pe-n">${v.ypg}</td><td class="pe-n pe-m0">${v.epa_play==null?'–':(v.epa_play>=0?'+':'−')+Math.abs(v.epa_play).toFixed(3)}</td></tr>`).join('');
   const what=dfn?'allowed':'scored';
-  return `<div class="card" id="peUnits"><h2>${dfn?'Total Defense':'Total Offense'} <span class="pill">${esc(D.players.season)} through week ${esc(D.players.through_week)}</span></h2>
+  return `<div class="card" id="peUnits"><h2>${dfn?'Total Defense':'Total Offense'} <span class="pill">${esc(D.players.season)} ${esc(thru(D.players))}</span></h2>
     <p class="pe-sub">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, the way the rankings above are: everyone started at 1500, and after each game the ${dfn?'defense':'offense'} moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. Each game is scored two parts points ${what} and one part EPA a play ${what}: of the measures tried on 2018-2025, that predicted the next game's points best; total yards, the NFL's own "total offense", did worse. Shown on a bell curve across the 32 teams, 1500 the average and every 100 points a standard deviation ${dfn?'better (fewer allowed)':'better'}. Change is since the team's last game.</p>
     <div class="pe-pos" role="tablist"><button role="tab" data-unit="off" aria-selected="${!dfn}">Total Offense</button><button role="tab" data-unit="def" aria-selected="${dfn}">Total Defense</button></div>
     ${curveChart(rows.map(v=>v.elo),dfn?'defenses':'offenses')}
@@ -341,9 +380,11 @@ function decorate(){
 }
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
 /* a player's rating as it stood before week w of this season: after his last game before
-   it, or where the season began. Grading a past week on today's rating would be hindsight. */
+   it, or where the season began. Grading a past week on today's rating would be hindsight.
+   A player out now is not in the map (nothing prices him or suggests his lines), but his
+   season so far is in `past`, so the weeks he did play are still graded on his rating. */
 function preElo(pid,w){
-  const e=window.eloOf(pid); if(!e) return null;
+  const e=window.eloOf(pid)||(D.players&&D.players.past&&D.players.past[pid])||null; if(!e) return null;
   let v=e.s0!=null?e.s0:e.elo;
   for(const [o,r] of (e.h||[])) if(o<w) v=r;
   return v;
@@ -522,7 +563,8 @@ const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2
 const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
 function mismatches(){
   const M=D.mu; if(!M||!M.players) return [];
-  const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]&&!ruledOut(v.pid));
+  /* this week's games still to kick off: a game under way or played is no edge to look for */
+  const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]&&!ruledOut(v.pid)&&!gameOn(v.game_id));
   const unitOf=v=>MM_UNIT[v.group].units.reduce((a,u)=>a+v.opp_def[u],0)/MM_UNIT[v.group].units.length;
   const zs=(arr)=>{ const m=arr.reduce((a,x)=>a+x,0)/arr.length, sd=Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,arr.length-1))||1; return x=>(x-m)/sd; };
   const pz={}, dz={}, L=M.league||{};
@@ -567,11 +609,16 @@ function mismatchCard(){
   const max=rows[0].score||1;
   const bubble=(v,i)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" title="Open ${esc(mmName(v.pid))}'s stats in ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
       <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>
-      <div class="pe-mm-top"><span class="pe-mm-sh" title="${esc(tierName(v.elo))}">${shield(v.elo)}</span><span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
+      <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
       <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
       <div class="pe-mm-score"><b class="${mmGrade(v.score)[1]}" title="${mmGrade(v.score)[0]} edge">${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
       <div class="pe-mm-sub">${mmLine(v)}.<br>${mmProj(v)}.</div></button>`;
-  const html=`<div class="card pe-mm" id="peMism"><h2>Mismatches <small>week ${esc(D.mu.week)}: the best players against the weakest units they face</small></h2>
+  const begun=Object.values(D.mu.players).some(v=>gameOn(v.game_id));
+  /* until a club files its game statuses, who starts is the build's reading of the practice
+     reports (a player out last week who has not practised since is counted out): say so */
+  const rep=Object.values(D.mu.reports||{}).filter(r=>r.week===+D.mu.week), filed=rep.filter(r=>r.statuses_filed).length;
+  const pending=rep.length&&filed<rep.length?`<p class="pe-mm-sub" style="margin:6px 0 0">Game statuses are filed for ${filed} of ${rep.length} clubs; until a club files, a player out last week who has not practised since is counted out, and a starter can still change.</p>`:'';
+  const html=`<div class="card pe-mm" id="peMism"><h2>Mismatches <small>week ${esc(D.mu.week)}: the best players against the weakest units they face${begun?', in the games still to kick off':''}</small></h2>${pending}
     <div class="pe-mm-row">${rows.slice(0,5).map(bubble).join('')}</div>
     ${rows.length>5?`<div class="pe-mm-more"><button class="btn quiet" id="peMmMore">Show the top ${Math.min(30,rows.length)}</button></div>`:''}</div>`;
   const bar=view.querySelector('.bar'); if(bar) bar.insertAdjacentHTML('afterend',html); else view.insertAdjacentHTML('afterbegin',html);
@@ -619,6 +666,14 @@ function draw(){
   const prior=ws.filter(s=>+s<r.season);
   if(prior.length){ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
     el('peWalkRec').textContent=`${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; }
+  /* the ELO Model's season record as the Pick'em Record counts it, split the honest way: calls
+     published before kickoff (frozen there, never regraded), and the backtest of the games it
+     was never called on beforehand (weeks 1-2 of 2026, made after the games on pre-game ratings) */
+  const pub=r&&r.published, bt=r&&r.backtest;
+  if(pub){ const ln=(x,lab)=>x&&(x[0]+x[1])?`${x[0]}–${x[1]} ${lab}`:'';
+    const parts=[ln(pub,'called before kickoff'),ln(bt,'backtest')].filter(Boolean);
+    const cr=el('peCallRec'); cr.textContent=parts.length?`ELO Model ${r.season}: ${parts.join(', ')}`:'';
+    cr.title=`The Pick'em Record grades each game on the call published before its kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}. A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
   const d=new Date(D.model.built_at);
   el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 }
