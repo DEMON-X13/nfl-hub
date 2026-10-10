@@ -10,7 +10,7 @@ into betting/state.json:
     since kickoff, regular season and playoffs),
   processed[gid].joker = {pick, pHome, correct} on graded games,
   state.jokerFit = the weeks of this season the model was fitted on after they were played
-    (model.json, from tune_2026.py), which the Pick'em Record marks.
+    (model.json, from tune_2026.py), kept as data: the Pick'em Record draws them like any week.
 A game keeps the call it had on the last run before its kickoff (betting/jobkit.py): a closing
 line nflverse posts after that, or a refit, never rewrites a call a reader has already seen.
 

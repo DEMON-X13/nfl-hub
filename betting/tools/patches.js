@@ -165,7 +165,7 @@ function injAsOf(now){ now=now??Date.now(); const w=currentWeekDefault(), bits=[
   return bits.length?'<p class="muted inj-asof" style="margin:8px 0 0">From nflverse: '+bits.join(' and ')+'.</p>':''; }
 `;
 
-const HUB_PATCHES = 'hub patches 3 \\u00b7 2026-10-10';
+const HUB_PATCHES = 'hub patches 4 \\u00b7 2026-10-10';
 
 function logic(html) {
   { const m = html.match(/^const APP_BUILD='([^'\n]*)';$/mg) || [];

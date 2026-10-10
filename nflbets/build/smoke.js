@@ -675,6 +675,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
     'the framed app has no embed mode, so the frame would show its header and tab bar');
   chk(/data-tab="record"/.test(adminHtml), 'the framed app has no Records tab');
+  /* the frame takes its content's height and never scrolls up and down by itself: allowed to, a
+     classic scrollbar (Windows Chrome's, with its arrows) stuck in it with nothing to scroll, since
+     the charts drawn without the bar came out a few px taller than the height measured with it.
+     jsdom loads no srcdoc, so the frame's load is played on the blank document it does have */
+  { if (!(recFrame.contentDocument && recFrame.contentDocument.documentElement && recFrame.contentDocument.documentElement.style.overflowY)) recFrame.dispatchEvent(new w.Event('load'));
+    const fd = recFrame.contentDocument;
+    chk(!!fd && !!fd.documentElement && fd.documentElement.style.overflowY === 'hidden' && !fd.documentElement.style.overflowX,
+      'a betting frame, once loaded, can still scroll up and down by itself (a scrollbar can stick in it with nothing to scroll), or no longer scrolls sideways'); }
   chk(!/betting\/(admin|index)\.html/.test(adminHtml) && !/<\/script>[\s\S]*const BET_APP=/.test(adminHtml), 'the framed app carries a copy of itself or points at a betting page');
 
   /* ---- Prop Record: off the bar. The prop model's Track Record section stays in the page,
