@@ -2650,7 +2650,7 @@
   },
   "BUF": {
    "kick": "2026-10-13T00:15Z",
-   "built_at": "2026-10-10T18:04:17.276Z",
+   "built_at": "2026-10-10T19:15:10.856Z",
    "units": {
     "qb": [
      {
@@ -2705,14 +2705,15 @@
       "pos": "WR"
      },
      {
+      "id": "00-0034827",
+      "n": "DJ Moore",
+      "pos": "WR",
+      "q": "questionable: shoulder"
+     },
+     {
       "id": "00-0038933",
       "n": "Dalton Kincaid",
       "pos": "TE"
-     },
-     {
-      "id": "00-0039901",
-      "n": "Keon Coleman",
-      "pos": "WR"
      }
     ],
     "front": [

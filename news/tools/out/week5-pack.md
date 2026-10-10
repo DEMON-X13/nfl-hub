@@ -152,6 +152,7 @@ Searches to run:
 
 Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Noah Sewell (LB) Questionable, Achilles: questionable
 - Keyshaun Elliott (LB) Out, Quadriceps: Elliott (quadriceps) has been ruled out for Sunday's game against the Packers.
 - Kyler Gordon (CB) Out, Calf: Gordon (calf) is listed as questionable ahead of Sunday's game against the Packers.
 - Darnell Wright (OT) Active
@@ -175,7 +176,6 @@ Chicago Bears, injuries:
 - Colston Loveland (TE) Active: Loveland caught six of nine targets for 57 yards in Sunday's 23-12 win over the Jets.
 - Luther Burden III (WR) Active: Burden caught four of six targets for 63 yards and added an 11-yard rush in Sunday's 23-12 win over the Jets.
 - Rome Odunze (WR) Active: Odunze caught six of seven targets for 94 yards in Sunday's 23-12 win over the Jets.
-- Braxton Jones (OT) Injured Reserve, Knee: The Bears placed Jones (knee) on injured reserve Saturday.
 
 Chicago Bears, ESPN headlines:
 
@@ -219,6 +219,7 @@ Searches to run:
 - "NFL week 5 picks HOU TEN"
 
 Houston Texans, injuries:
+- Bryce Oliver (WR) Out, Undisclosed: Oliver (undisclosed) has been ruled out for Sunday's game against the Titans, Aaron Wilson of KPRC 2 Houston reports.
 - M.J. Stewart (S) Out, Knee: Stewart (knee) is listed as questionable for Sunday's game against Tennessee.
 - Will Anderson Jr. (DE) Active: Anderson (ankle) does not have an injury tag against the Titans on Sunday.
 - Azeez Al-Shaair (LB) Active: Al-Shaair (groin) does not carry an injury designation into Sunday's game against the Titans.
@@ -226,7 +227,6 @@ Houston Texans, injuries:
 - Jamal Hill (LB) Active
 - Braden Smith (OT) Injured Reserve, Foot: Smith (foot) was a full participant in Thursday's practice.
 - Kayden McDonald (DT) Injured Reserve, Ankle: McDonald (ankle) was a full participant in Thursday's practice.
-- Bryce Oliver (WR) Active: Oliver signed with the Texans on Thursday.
 - Jadeveon Clowney (DE) Active
 - Logan Hall (DE) Active
 - Aireontae Ersery (OT) Questionable, Illness: questionable
@@ -588,13 +588,13 @@ Indianapolis Colts, injuries:
 Indianapolis Colts, ESPN headlines:
 
 Pittsburgh Steelers, injuries:
+- Michael Pittman Jr. (WR) Out, Foot: Pittman (foot) is being placed on injured reserve, Jeremy Fowler of ESPN reports.
 - Yahya Black (DE) Questionable, Personal: questionable
 - Jamel Dean (CB) Out, Ankle: Dean (ankle) has been ruled out ahead of Sunday's game against the Colts, Mark Kaboly of 93.7 The Fan Pittsburgh reports.
 - DeShon Elliott (S) Injured Reserve, Knee: Elliott (knee) has been ruled out ahead of Sunday's game against the Colts, Mark Kaboly of 93.7 The Fan Pittsburgh reports.
 - Jalen Ramsey (CB) Questionable, Wrist: Ramsey (wrist) is listed as questionable ahead of Sunday's game against the Colts, Mark Kaboly of 93.7 The Fan Pittsburgh reports.
 - Rico Dowdle (RB) Questionable, Toe: Dowdle (toe) is listed as questionable for Sunday's game against the Colts, Mike DeFabo reports.
 - Robert Spears-Jennings (S) Active: Spears-Jennings is on track to start Sunday's contest against the Colts, Nick Farabaugh of PennLive.com reports.
-- Michael Pittman Jr. (WR) Out, Foot: Pittman is expected to miss multiple weeks after aggravating his foot injury, Ray Fittipaldo of the Pittsburgh Post-Gazette reports Thursday.
 - Terell Smith (CB) Active: Smith was signed to the Steelers active roster Tuesday, Teresa Varley of the team's official website reports.
 - Sean Murphy-Bunting (CB) Active: The Steelers signed Murphy-Bunting off the Buccaneers' practice squad Monday, Teresa Varley of the Steelers' official site reports.
 - Derrick Harmon (DT) Injured Reserve, Foot: The Steelers placed Harmon (foot) on injured reserve Monday, Teresa Varley of the team's official site reports.
@@ -967,20 +967,20 @@ Searches to run:
 - "NFL week 5 picks BUF LAR"
 
 Buffalo Bills, injuries:
-- DJ Moore (WR) Questionable, Shoulder - AC Joint: Moore (shoulder) was on the field for the start of Saturday's practice, Joe Buscaglia of The Athletic reports.
-- Joshua Palmer (WR) Questionable, Shoulder: questionable
-- Landon Jackson (DE) Active
+- Ed Oliver (DT) Out, Knee: Oliver (knee) has been ruled out ahead of Monday's game against the Rams, Joe Buscaglia of The Athletic reports.
+- Skyler Bell (WR) Active: Bell will make his NFL regular-season debut against the Rams on Monday due to the absence of Joshua Palmer (shoulder), Cameron Wolfe of NFL Network reports.
+- Landon Jackson (DE) Questionable, Knee: questionable
+- DJ Moore (WR) Questionable, Shoulder - AC Joint: Moore (shoulder) is listed as questionable for Monday's game against the Rams, Katherine Fitzgerald of The Buffalo News reports.
+- Joshua Palmer (WR) Out, Shoulder: Palmer (shoulder) has been ruled out for Monday's game against the Rams, Katherine Fitzgerald of The Buffalo News reports.
 - T.J. Sanders (DT) Active: Sanders (appendix) practiced in full Thursday.
 - Christian Benford (CB) Questionable, Toe: Benford (toe) practiced in a limited capacity Thursday.
 - Dee Alford (CB) Questionable, Ankle: Alford (ankle) did not participate at practice Thursday, Lance Lysowski of The Buffalo News reports.
-- Ed Oliver (DT) Questionable, Knee: Oliver (knee) did not participate at practice Thursday, Lance Lysowski of The Buffalo News reports.
 - Greg Rousseau (LB) Active: Rousseau logged four tackles (two solo) and two passes defensed in the Bills' 29-26 loss to the Patriots on Sunday.
 - Ty Johnson (RB) Active: Johnson rushed once for three yards and caught both of his targets for nine yards Sunday in a loss to New England.
 - Dawson Knox (TE) Active: Knox caught both of his targets for 13 yards in the Bills' 29-26 loss to the Patriots on Sunday.
 - Khalil Shakir (WR) Active: Shakir turned seven catches (on eight targets) into 82 yards during the Bills' 29-26 loss to the Patriots on Sunday. He also lost a fumble.
 - Ray Davis (RB) Active: Davis logged a four-yard carry, a three-yard reception and returned one kickoff for 29 yards during the Bills' 29-26 loss to the Patriots in Week 4.
 - Mike Danna (DE) Active
-- Skyler Bell (WR) Active
 - Jude Bowry (OT) Active
 - Jalon Kilgore (S) Active
 - Ar'maj Reed-Adams (G) Active
