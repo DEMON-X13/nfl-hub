@@ -15,6 +15,8 @@ Searches to run:
 - "NFL week 5 picks TB DAL"
 
 Tampa Bay Buccaneers, injuries:
+- Tez Johnson (WR) Active: Johnson caught his lone target for 64 yards during Thursday's 24-16 win over the Cowboys.
+- Sean Tucker (RB) Active: Tucker turned five carries into 18 yards during the Buccaneers' 24-16 win over the Cowboys on Thursday.
 - Cade Otton (TE) Active: Otton caught three of four targets for 25 yards in a 24-16 win over Dallas on Thursday.
 - Jalon Daniels (QB) Active: Buccaneers coach Todd Bowles said Friday that he plans on starting Daniels in Week 6 against Pittsburgh, Scott Smith reports.
 - Baker Mayfield (QB) Out, Thumb: Head coach Todd Bowles said Friday that Mayfield (thumb) is now in a smaller splint, and the Bucs will see if he can progress to gripping the football next week, Rick Stroud of the Tampa Bay Times reports.
@@ -34,9 +36,7 @@ Tampa Bay Buccaneers, injuries:
 - Tykee Smith (S) Active: Smith recorded six tackles (four solo) and a forced fumble during the Buccaneers' 17-14 loss to the Packers on Sunday.
 - Jacob Parrish (CB) Active: Parrish logged five solo tackles and two pass defenses (including an interception) during the Buccaneers' 17-14 loss to the Packers on Sunday.
 - Josiah Trotter (LB) Active: Trotter (knee) was a full participant in practice Tuesday.
-- Tez Johnson (WR) Active: Johnson brought in both targets for 17 yards, rushed once for 10 yards and returned one punt for 13 yards during Tampa Bay's loss versus the Packers on Sunday.
 - Ted Hurst III (WR) Active: Hurst caught two of his three targets for 25 yards in the Buccaneers' 17-14 loss to the Packers on Sunday.
-- Sean Tucker (RB) Active: Tucker rushed three times for 10 yards and a touchdown in Sunday's 17-14 loss to the Packers.
 - Ifeatu Melifonwu (S) Active: Head coach Todd Bowles said Melifonwu is likely to start at safety Thursday night against Dallas, Jenna Laine of ESPN.com reports.
 - Rueben Bain Jr. (LB) Active: Bain (groin) was listed as a full participant on the Buccaneers' estimated injury report Monday, Brianna Dix of the team's official site reports.
 - Rakeem Nunez-Roches (DT) Active

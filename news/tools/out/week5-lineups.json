@@ -4,7 +4,7 @@
  "teams": {
   "PHI": {
    "kick": "2026-10-11T13:30Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -22,6 +22,11 @@
      {
       "id": "00-0040631",
       "n": "Willie Lampkin",
+      "pos": "C"
+     },
+     {
+      "id": "00-0040422",
+      "n": "Jake Majors",
       "pos": "C"
      },
      {
@@ -516,7 +521,7 @@
   },
   "MIA": {
    "kick": "2026-10-11T17:00Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -606,14 +611,14 @@
       "pos": "CB"
      },
      {
-      "id": "00-0041528",
-      "n": "Michael Taaffe",
-      "pos": "FS"
-     },
-     {
       "id": "00-0040178",
       "n": "Jason Marshall Jr.",
       "pos": "CB"
+     },
+     {
+      "id": "00-0040182",
+      "n": "Dante Trader Jr.",
+      "pos": "FS"
      }
     ]
    }
@@ -1042,7 +1047,7 @@
   },
   "CLE": {
    "kick": "2026-10-11T17:00Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -1063,8 +1068,8 @@
       "pos": "G"
      },
      {
-      "id": "00-0038609",
-      "n": "Luke Wypler",
+      "id": "00-0035526",
+      "n": "Elgton Jenkins",
       "pos": "C"
      },
      {
@@ -1459,7 +1464,7 @@
   },
   "HOU": {
    "kick": "2026-10-11T17:00Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -1470,10 +1475,9 @@
     ],
     "ol": [
      {
-      "id": "00-0040745",
-      "n": "Aireontae Ersery",
-      "pos": "T",
-      "q": "questionable: illness, not practising"
+      "id": "00-0039422",
+      "n": "Nathan Thomas",
+      "pos": "T"
      },
      {
       "id": "00-0041532",
@@ -1529,8 +1533,7 @@
      {
       "id": "00-0039108",
       "n": "Will Anderson Jr.",
-      "pos": "DE",
-      "q": "not practising: ankle"
+      "pos": "DE"
      },
      {
       "id": "00-0032759",
@@ -1978,7 +1981,7 @@
   },
   "LAC": {
    "kick": "2026-10-11T20:05Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -1994,14 +1997,14 @@
       "pos": "G"
      },
      {
-      "id": "00-0041107",
-      "n": "Alex Harkey",
-      "pos": "G"
-     },
-     {
       "id": "00-0041392",
       "n": "Jake Slaughter",
       "pos": "G"
+     },
+     {
+      "id": "00-0041383",
+      "n": "Jacob Spomer",
+      "pos": "C"
      },
      {
       "id": "00-0038103",
@@ -2289,7 +2292,7 @@
   },
   "SF": {
    "kick": "2026-10-11T20:25Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -2341,8 +2344,7 @@
      {
       "id": "00-0031408",
       "n": "Mike Evans",
-      "pos": "WR",
-      "q": "not practising: ribs"
+      "pos": "WR"
      },
      {
       "id": "00-0033288",
@@ -2497,14 +2499,13 @@
   },
   "BAL": {
    "kick": "2026-10-12T00:20Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
       "id": "00-0035993",
       "n": "Tyler Huntley",
-      "pos": "QB",
-      "q": "not practising"
+      "pos": "QB"
      }
     ],
     "ol": [
@@ -2526,7 +2527,8 @@
      {
       "id": "00-0038383",
       "n": "Andrew Vorhees",
-      "pos": "G"
+      "pos": "G",
+      "q": "questionable: foot"
      },
      {
       "id": "00-0039233",
@@ -2812,7 +2814,7 @@
   },
   "LAR": {
    "kick": "2026-10-13T00:15Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T07:12:06.856Z",
    "units": {
     "qb": [
      {
@@ -2892,7 +2894,7 @@
       "id": "00-0037587",
       "n": "Nate Landman",
       "pos": "ILB",
-      "q": "questionable: shoulder"
+      "q": "questionable: shoulder, not practising"
      }
     ],
     "db": [
