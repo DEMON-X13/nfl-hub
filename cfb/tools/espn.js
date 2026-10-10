@@ -6,7 +6,15 @@
    A scoreboard event is flattened by gameRow() into the row shape the whole site uses:
    the id, the season, the week, the kickoff, both team ids, scores, the neutral-site
    flag, each side's conference, the poll rank ESPN showed at the time, DraftKings' line
-   when ESPN carries it (upcoming games only; past seasons have none) and the status. */
+   when ESPN carries it (upcoming games only; past seasons have none) and the status.
+
+   The status is 'pre', 'live', 'final' or 'postponed': ESPN files a postponed or cancelled
+   game under its 'post' state with `completed` false and a score of 0-0, which read as a
+   final would be graded as a tie. `tbd` marks a kickoff whose time is not set yet: ESPN dates
+   it at midnight Eastern (04:00 or 05:00 UTC) as a placeholder, so the date is the game's day
+   in Eastern time and the hour means nothing. A team whose id is not a positive number is a
+   placeholder for an opponent still to be decided (a title game, a bowl, a slot a conference
+   has not filled); isPlaceholder() says so. */
 'use strict';
 
 const SB = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard';
@@ -75,14 +83,16 @@ function gameRow(ev) {
   const home = comp.competitors.find(c => c.homeAway === 'home'), away = comp.competitors.find(c => c.homeAway === 'away');
   if (!home || !away) return null;
   const st = comp.status?.type || {};
-  const state = st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
+  const off = /POSTPONED|CANCELED|CANCELLED/i.test(st.name || '') || (st.state === 'post' && st.completed === false);
+  const state = off ? 'postponed' : st.state === 'post' ? 'final' : st.state === 'in' ? 'live' : 'pre';
+  const tbd = state === 'pre' && (comp.timeValid === false || ev.timeValid === false || /^TBD$/i.test(st.shortDetail || st.detail || ''));
   const rank = c => { const r = c.curatedRank?.current; return r && r <= 25 ? r : null; };
   const note = (comp.notes || [])[0]?.headline || null;
   return {
     id: ev.id, season: ev.season?.year ?? null, type: ev.season?.type ?? 2, week: ev.week?.number ?? null,
     date: comp.date || ev.date, state, detail: st.shortDetail || st.detail || null,
     home: home.team.id, away: away.team.id,
-    hs: state === 'pre' ? null : num(home.score), as: state === 'pre' ? null : num(away.score),
+    hs: state === 'pre' || state === 'postponed' ? null : num(home.score), as: state === 'pre' || state === 'postponed' ? null : num(away.score), tbd,
     neutral: !!comp.neutralSite, conf: !!comp.conferenceCompetition,
     hconf: home.team.conferenceId || null, aconf: away.team.conferenceId || null,
     hrank: rank(home), arank: rank(away),
@@ -112,17 +122,25 @@ async function conferences() {
   return out;
 }
 
-/* AP, Coaches and, from November, the CFP committee's ranking: name -> [{rank, team, record}] */
-async function rankings() {
-  const j = await getJSON(RANKINGS);
+/* AP, Coaches and, from November, the CFP committee's ranking: name -> [{rank, team, record}].
+   The feed answers with the latest polls, which in August are still last season's final ones:
+   a poll ESPN files under another season is left out, so a new season reads "no poll yet"
+   instead of last January's order */
+function rankingsOf(j, season) {
   const out = {};
   for (const r of j.rankings || []) {
     if (!/AP Top 25|AFCA Coaches|College Football Playoff|CFP/i.test(r.name)) continue;
+    const year = r.season?.year ?? null;
+    if (season && year && +year !== +season) continue;
     const key = /AP/.test(r.name) ? 'ap' : /Coaches/.test(r.name) ? 'coaches' : 'cfp';
-    out[key] = { name: r.name, week: r.occurrence?.displayValue || null, date: (r.date || '').slice(0, 10),
+    out[key] = { name: r.name, week: r.occurrence?.displayValue || null, date: (r.date || '').slice(0, 10), season: year,
       ranks: (r.ranks || []).map(x => ({ rank: x.current, prev: x.previous ?? null, team: x.team?.id, record: x.recordSummary || null })) };
   }
   return out;
 }
+async function rankings(season) { return rankingsOf(await getJSON(RANKINGS), season); }
 
-module.exports = { getJSON, scoreboard, gameRow, teamsOf, conferences, rankings };
+/* ESPN's stand-in for an opponent not decided yet: id -1 or -2, abbreviation TBD */
+const isPlaceholder = id => !(Number(id) > 0);
+
+module.exports = { RANKINGS, getJSON, scoreboard, gameRow, teamsOf, conferences, rankings, rankingsOf, isPlaceholder };
