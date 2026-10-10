@@ -1,6 +1,8 @@
 /* Build the X NFL Bets and Stats page (nflbets/).
  *
  *   node nflbets/build/build.js        (from the hub root)
+ *   require('./build.js')              the same build in memory, {out, pv, hash}, written
+ *                                      nowhere: the smoke compares it with the published page
  *
  *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it.
  *
@@ -24,8 +26,17 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const ROOT = path.resolve(__dirname, '..', '..');
+const HASH_SLOT = '@@PAGE_HASH@@';
 const rd = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
+/* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
+   not a page to ship half-edited */
+const sub1 = (s, from, to, what) => {
+  const n = from instanceof RegExp ? (s.match(new RegExp(from.source, from.flags.replace('g', '') + 'g')) || []).length : s.split(from).length - 1;
+  if (n !== 1) throw new Error(`${what}: expected exactly one match, found ${n}`);
+  return s.replace(from, () => to);
+};
 const part1 = rd('props', 'build', 'part1.html');
 const part2 = rd('props', 'build', 'part2.js');
 const part3 = rd('props', 'build', 'part3.js');
@@ -41,21 +52,19 @@ const livePage = rd('liveparlays', 'build', 'page.html');
    lines and the deletions, read and written by every device. It runs before the prop
    model, which saves through the window.storage it defines; the section's key goes through
    window.LIVE_IO. Its address is read from nflbets/sync.json at run time, never built in. */
-const SYNC_JS = rd('nflbets', 'build', 'sync.js');
-for (const need of ['window.storage=', 'window.LIVE_IO=', "PROP_KEY='props_2026_v1'", "LIVE_KEY='live_parlays_v1'", "CONF='sync.json'"])
+/* the season and the prop model's storage key are part2's, one place: the sync layer and the
+   Live Parlays section are handed that key at build time, so a new season is a new key in
+   part2.js and nowhere else */
+const SEASON_KEY = part2.match(/const SEASON=(\d{4}), KEY='([^']+)';/);
+if (!SEASON_KEY) throw new Error("the prop model's SEASON and storage KEY are not where nflbets/build expects them in part2.js");
+const PROP_KEY = SEASON_KEY[2];
+const SYNC_JS = sub1(rd('nflbets', 'build', 'sync.js'), /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringify(PROP_KEY), "the sync layer's PROP_KEY");
+for (const need of ['window.storage=', 'window.LIVE_IO=', "LIVE_KEY='live_parlays_v1'", "CONF='sync.json'"])
   if (!SYNC_JS.includes(need)) throw new Error('nflbets/build/sync.js no longer has ' + need);
-if (!part2.includes("const SEASON=2026, KEY='props_2026_v1';")) throw new Error("the prop model's storage key moved; sync.js names it");
 if (!part2.includes('if(window.storage){const r=await window.storage.get(KEY,false)')) throw new Error('the prop model no longer reads through window.storage, which the sync layer relies on');
 if (!fs.existsSync(path.join(ROOT, 'nflbets', 'sync.json'))) throw new Error('nflbets/sync.json is missing: the page reads the store address from it');
 JSON.parse(rd('nflbets', 'sync.json'));
 
-/* every edit lands exactly once, or the build stops: a source that moved is a build to fix,
-   not a page to ship half-edited */
-const sub1 = (s, from, to, what) => {
-  const n = from instanceof RegExp ? (s.match(new RegExp(from.source, from.flags.replace('g', '') + 'g')) || []).length : s.split(from).length - 1;
-  if (n !== 1) throw new Error(`${what}: expected exactly one match, found ${n}`);
-  return s.replace(from, () => to);
-};
 const lift = (src, from, to, what) => {
   const a = src.indexOf(from), b = src.indexOf(to, a + 1);
   if (a < 0 || b < 0) throw new Error(`the ${what} is not where nflbets/build expects it`);
@@ -134,11 +143,12 @@ for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#
 if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
 const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
 lsub("const DATA='parlays.json';", "const DATA='../liveparlays/parlays.json';", 'file path');
+LIVE_JS = sub1(LIVE_JS, /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringify(PROP_KEY), "the live script: the prop model's key");
 /* the section redraws whenever the prop model redraws its builder, and once the model is up */
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
 lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
-for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'LIVE_IO.get()', 'LIVE_IO.set('])
+for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'LIVE_IO.get()', 'LIVE_IO.set(', 'window.lpKeep=', 'function espnWeek('])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
 const LIVE_SECTION = `<div class="card" id="lpCard">
     <h2 style="display:flex;align-items:center;gap:10px">Live Parlays<span class="grow" style="flex:1"></span></h2>
@@ -152,11 +162,14 @@ const LIVE_SCRIPT = `<script>
 ${LIVE_JS}
 })();
 /* the Saved parlays card and the betting-slips card it also covered are drawn by the section
-   now; the builder keeps its place above it and the section follows every redraw */
+   now; the builder keeps its place above it and the section follows every redraw. Before each
+   redraw the section keeps a copy of a builder about to lose a leg to a kickoff (lpKeep), so a
+   parlay bet and never locked is still watched once its first game starts. */
 renderSaved=function(){ return ''; };
 renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
-  renderParlay=function(){ const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
+  renderParlay=function(){ try{ if(window.lpKeep) window.lpKeep(); }catch(e){}
+    const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
 /* the sync stamp, in the Live Parlays card (the parlays are what it syncs; the header keeps
    only when the site's data was updated): synced and when the shared parlays last changed,
@@ -236,9 +249,13 @@ const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + pa
 /* the public prop page's header note: when the data was last built, not "Autosaved" */
 const NOTE = `<script>
 /* which build of this page you are looking at. Without it there is no way to tell a page
-   the browser cached last week from the one the job published this morning. */
+   the browser cached last week from the one the job published this morning. APP_BUILD moves
+   only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
+   SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
+   the Live Parlays section, the sync layer, the betting app -- shows as a new tag. */
+const PAGE_HASH='${HASH_SLOT}';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
-  if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD; });
+  if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \\u00b7 '+PAGE_HASH; });
 (function(){
   const run=()=>{ const st=document.getElementById('saveState'); if(!st||typeof PAY==='undefined'||!PAY||!PAY.baked_at) return;
     const d=new Date(String(PAY.baked_at).length<=16?PAY.baked_at+'Z':PAY.baked_at); if(isNaN(d)) return;
@@ -248,16 +265,20 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
   document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>`;
-const out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
-fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
+let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
+/* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
+   out again and checks the page is what was hashed */
+const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);
+out = sub1(out, `const PAGE_HASH='${HASH_SLOT}';`, `const PAGE_HASH='${HASH}';`, 'the page hash');
 
 /* the preview: the same page in the NBA Hub's look, beside the real one so every relative
    address still works. Only preview_theme.css (laid over everything, last) and the wordmark's
    markup differ, so the preview is the live page and nothing else. */
+let pv;
 {
   const THEME = fs.readFileSync(path.join(__dirname, 'preview_theme.css'), 'utf8');
   const once = (s, a, b, what) => { if (s.split(a).length !== 2) throw new Error('preview: ' + what + ' is not in the page once'); return s.replace(a, b); };
-  let pv = out;
+  pv = out;
   const head = pv.indexOf('</head>');
   if (head < 0 || head > pv.indexOf('<body')) throw new Error('preview: the page has no head of its own');
   const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
@@ -266,7 +287,11 @@ fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
   pv = once(pv, '<h1>X NFL Bets and Stats</h1>', '<h1>X NFL <em>Bets and Stats</em></h1>', 'the heading');
   pv = once(pv, '<span class="sub" id="buildTag"></span>', '<span class="sub" id="buildTag"></span><span class="pv-flag">Preview</span>', 'the build tag');
   pv = once(pv, '<title>X NFL Bets and Stats</title>', '<title>X NFL Bets and Stats (preview)</title>', 'the title');
-  fs.writeFileSync(path.join(ROOT, 'nflbets', 'preview.html'), pv);
 }
-console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB `
-  + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
+module.exports = { out, pv, hash: HASH, HASH_SLOT, PROP_KEY, SEASON: +SEASON_KEY[1] };
+if (require.main === module) {
+  fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
+  fs.writeFileSync(path.join(ROOT, 'nflbets', 'preview.html'), pv);
+  console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB, build ${HASH} `
+    + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
+}

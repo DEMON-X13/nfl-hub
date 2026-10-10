@@ -2,35 +2,45 @@ name: Update betting model
 
 on:
   schedule:
-    # Three windows, in UTC (Eastern is UTC-4 in season). nflverse publishes the
-    # stats files overnight after games, so each window has a morning run and an
-    # afternoon catch-up in case the file was late. Runs that find nothing new
-    # commit nothing. This job downloads only free nflverse files: no credits.
-    - cron: "0 11 * * 5"    # Friday 7am ET: Thursday night game
-    - cron: "0 17 * * 5"    # Friday 1pm ET: catch-up
-    - cron: "0 11 * * 1"    # Monday 7am ET: Sunday games
-    - cron: "0 17 * * 1"    # Monday 1pm ET: catch-up
-    - cron: "0 11 * * 2"    # Tuesday 7am ET: Monday night game, week rolls over
-    - cron: "0 17 * * 2"    # Tuesday 1pm ET: catch-up
-    # post-game: about an hour after the latest finish each slot sees all season,
-    # so the Pick'ems board and the Pick'em Record update the same night. nflverse posts a final
-    # within minutes of the whistle. Free, like everything else in this job.
+    # Times are UTC (Eastern is UTC-4 in season, UTC-5 from November). GitHub fires this
+    # repo's scheduled runs late, by 3 to 9 hours as measured over October 2026, and drops some
+    # (:00 most often), so every slot here is off the hour and the ones that must land before
+    # a kickoff are set early enough that a 9-hour delay still makes it. The comments give when
+    # each slot is meant for and, for those, the latest it should land.
+    # This job downloads only free nflverse files: no credits. A run that finds nothing new
+    # writes nothing and commits nothing.
+    #
+    # Results: nflverse publishes the stats files overnight after games, so each window has a
+    # morning run and an afternoon catch-up in case the file was late.
+    - cron: "52 10 * * 5"   # Friday 6:52am ET: Thursday night game
+    - cron: "52 16 * * 5"   # Friday 12:52pm ET: catch-up
+    - cron: "52 10 * * 1"   # Monday 6:52am ET: Sunday games
+    - cron: "52 16 * * 1"   # Monday 12:52pm ET: catch-up
+    - cron: "52 10 * * 2"   # Tuesday 6:52am ET: Monday night game, week rolls over
+    - cron: "52 16 * * 2"   # Tuesday 12:52pm ET: catch-up
+    # post-game: about an hour after the latest finish each slot sees all season, so the
+    # Pick'em Record grades the night's games without waiting for the morning (the page already
+    # settles a final from ESPN's scoreboard at the whistle; this makes it the job's). Late
+    # runs only delay the grading.
     - cron: "47 5 * * 5"    # Thursday night game
     - cron: "17 22 * * 0"   # Sunday early games
     - cron: "47 1 * * 1"    # Sunday late games
     - cron: "47 5 * * 1"    # Sunday night game
     - cron: "47 5 * * 2"    # Monday night game
-    # injury reports: a game's Out / Doubtful statuses come on the last report before it,
-    # Wednesday afternoon for Thursday night and Friday afternoon for Sunday and Monday;
-    # nflverse posts each overnight (about 03:07 ET), and the hourly run below usually has
-    # it first. These stay in case the hourly ones are dropped. Off the hour: this repo's
-    # scheduled runs land hours late and :00 is the minute most often dropped.
-    - cron: "23 12 * * 4"   # Thursday 8:23am ET: Wednesday's report, for Thursday night
+    # before kickoff: a game's call is frozen at the last run before it kicks off, so these
+    # carry the final injury report (nflverse posts each overnight, about 03:07 ET: Wednesday's
+    # for Thursday night, Friday's for Sunday and Monday) and the latest lines into the frozen
+    # calls. Two slots a window, the early one a backup for the late one.
+    - cron: "23 8 * * 4"    # Thursday 4:23am ET: backup for the next slot; 9 hours late is 1:23pm ET
+    - cron: "23 12 * * 4"   # Thursday 8:23am ET: Wednesday's report, for Thursday night (8:15pm ET)
+    - cron: "23 8 * * 6"    # Saturday 4:23am ET: Friday's report, before December's Saturday games (1pm ET)
     - cron: "23 12 * * 6"   # Saturday 8:23am ET: Friday's report, for Sunday and Monday
-    # every hour: nflverse's games.csv carries the spread, moneylines and total, and the
-    # Joker reads them, so its picks follow the line within the hour. Free like the rest;
-    # a run that finds nothing new writes nothing and commits nothing. The runs above stay
-    # as the ones that matter, since this repo's scheduled runs are sometimes dropped.
+    - cron: "17 2 * * 0"    # Saturday 10:17pm ET: backup for the next slot; 9 hours late is 7:17am ET, two hours before London
+    - cron: "17 4 * * 0"    # Sunday 12:17am ET: the latest lines; 9 hours late is 9:17am ET, just before London's 9:30am ET kickoff
+    # every hour at :37 on paper; GitHub fires about six of the 24 a day, with gaps of up to about
+    # 8 hours, so this is a background refresh of the lines in games.csv (which the Joker and
+    # Broly read) and the injury report, not a promise of hourly updates. The slots above are
+    # the ones that matter.
     - cron: "37 * * * *"
   workflow_dispatch:
     inputs:
@@ -41,6 +51,7 @@ on:
 
 permissions:
   contents: write
+  actions: write     # to start the Elo job once a final is graded (the last step)
 
 concurrency:
   # one group per workflow: GitHub cancels a pending run whenever a newer one queues
@@ -58,7 +69,10 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: betting/tools
+      # a file the season needs that did not download fails here, before anything is written:
+      # the last good state stays live and the run goes red (betting/tools/update.js)
       - name: Grade the week and write state.json
+        id: grade
         run: node betting/tools/update.js ${{ inputs.rebuild && '--rebuild' || '' }}
       - uses: actions/setup-python@v7
         with:
@@ -66,11 +80,21 @@ jobs:
           cache: pip
           cache-dependency-path: betting/joker/requirements.txt
       - run: pip install -r betting/joker/requirements.txt
+      # a model that cannot run (a missing input, a crash) keeps its last good picks, writes why
+      # into state.modelStatus (the Pick'em Record prints it) and exits 1: the step is marked and
+      # warned, and the lines, the grading and the other models still publish
       - name: Score The Joker and write its picks into state.json
+        continue-on-error: true
         run: python betting/joker/joker.py
       - name: Score the Broly Model and write its picks into state.json
+        continue-on-error: true
         run: python betting/broly/broly.py
+      # the built app on the new state, and the state against what it was built from: this run's
+      # files, the quarterbacks, neutral sites, a call from every model, no call moved after its
+      # kickoff (against the last commit; a rebuild is exempt), the record's disclosures
       - name: Viewer smoke test
+        env:
+          BETTING_REBUILD: ${{ inputs.rebuild && '1' || '' }}
         run: node betting/tools/smoke.js
       - name: Commit if anything changed
         run: |
@@ -88,3 +112,13 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      # Team Rankings' Elo and the ELO Model's calls are the Elo job's (elo.yml), whose own daily
+      # slot lands many hours late: a newly graded final starts it now, so the tab catches up
+      # within the hour instead of the next afternoon. The Elo job reads nflverse, not this state,
+      # so it is started even when this run's smoke test or commit failed (always()). (A
+      # workflow_dispatch from this token does start a run; other events from it do not.)
+      - name: Start the Elo job when a final was graded
+        if: always() && steps.grade.outputs.graded_new != '' && steps.grade.outputs.graded_new != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run elo.yml --ref "${{ github.ref_name }}" || echo "::warning::could not start the Elo job"

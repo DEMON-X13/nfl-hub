@@ -2,14 +2,27 @@ name: elo
 
 # The Player Elo ratings and the roster model: every player rated by position, game by game
 # since 2012, the matchup formula, and the game model fitted on those ratings, re-run once the week's player stats
-# are on nflverse. Every morning, so the coming week is called on the latest depth charts and
-# that day's injury report (who last took the field only where a chart is silent): Friday's
-# final report is on nflverse overnight into Saturday, and a twice-a-week job never saw it.
-# Tuesday's run takes in Monday night; the other mornings re-rate nothing new and only move
-# who is expected to play.
+# are on nflverse, and the coming week called on the latest depth charts, roster and injury report
+# (who last took the field only where a chart is silent).
+#
+# GitHub starts this repo's scheduled runs late: 4 to 9 hours after the cron time, measured on
+# every run since the daily slot began (2026-10-04 to 10-08: 4.4, 8.1, 5.9, 6.4 and 6.3 hours).
+# So the times below are when a run is queued, not when it lands, and every run that has to
+# land before a kickoff is set early enough to make it at nine hours late:
+#   - 12:40 UTC daily (08:40 EDT, 07:40 EST): lands early-to-late afternoon Eastern. Tuesday's
+#     takes in Monday night; Thursday's and Monday's land before the night game; the rest move
+#     who is expected to play as the depth charts and practice reports change.
+#   - 20:40 UTC Saturday and 03:40 UTC Sunday: Sunday's calls on Friday's final injury report
+#     (on nflverse overnight into Saturday), landing by about 05:40 and 12:40 UTC Sunday, before
+#     the London kickoffs (13:30 UTC in October) and the 1pm Eastern games (17:00 or 18:00 UTC).
+#     The daily Saturday run gives a third chance. A call is frozen at kickoff, so a run that
+#     lands after one changes nothing about that game's pick.
+# A run that fails its gate commits nothing: the last good files stay live.
 on:
   schedule:
-    - cron: "40 12 * * *"    # 08:40 ET daily
+    - cron: "40 12 * * *"    # daily, queued 12:40 UTC (08:40 EDT / 07:40 EST); lands 4-9h later
+    - cron: "40 20 * * 6"    # Saturday 20:40 UTC; lands before Sunday's first kickoff
+    - cron: "40 3 * * 0"     # Sunday 03:40 UTC; lands before the London and 1pm Eastern kickoffs
   workflow_dispatch:
 
 permissions:
@@ -29,13 +42,25 @@ jobs:
           python-version: "3.12"
       - run: pip install -r elo/requirements.txt
       - name: Rate every player and fit the roster model
+        # exits 1 without writing anything when a required source cannot be downloaded
         run: python elo/build.py
+      - name: Check the files against the roster, the injury report, the schedule and the published record
+        run: python elo/check.py
       - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm ci
         working-directory: props/build
+      - name: Check the ELO Ratings tab on the new files
+        run: node elo/check_tab.js
+      - name: Is there a week to call
+        id: season
+        # between the Super Bowl and the fortnight before a new week 1 there is no game to call
+        # and no matchup to project, and the page smoke's Elo picks checks need one: then the
+        # two checks above are the gate, and the files still publish
+        run: echo "calls=$(python -c "import json; print(len(json.load(open('elo/data/model.json'))['next']['games']))")" >> "$GITHUB_OUTPUT"
       - name: Check the page still reads what was written
+        if: steps.season.outputs.calls != '0'
         run: node nflbets/build/smoke.js
       - name: Commit if anything changed
         run: |

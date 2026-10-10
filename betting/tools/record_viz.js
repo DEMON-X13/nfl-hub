@@ -12,7 +12,13 @@
    are not drawn: My Picks is retired, and so is the You column. (A dashed series with hollow
    dots is still supported, through dash:true.)
    Text is in the page's ink, never a line's colour. renderRecord() calls recordViz(rows) last;
-   betting/tools/build.js puts this file in front of the app's own script. */
+   betting/tools/build.js puts this file in front of the app's own script.
+
+   Two things the record says about itself, under the legend: a model the job could not rescore
+   on its last run (S.modelStatus, written by betting/jobkit.py: its picks are the last good
+   ones, and why), and the weeks of this season the Joker was fitted on after they were played
+   (S.jokerFit, from betting/joker/model.json): those are marked in the grid and in its tooltip,
+   and its record without them is given beside the one with them. Nothing is regraded. */
 function recordViz(rows){
   const card=document.querySelector('#modelChart .card'), tab=document.getElementById('recordTable');
   if(!card||!rows||!rows.length) return;
@@ -58,6 +64,22 @@ function recordViz(rows){
   const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const sign=n=>n>0?'+'+n:(n<0?'−'+Math.abs(n):'0');
   const rec=t=>`${t.w}–${t.l}`;
+  /* the weeks the Joker was fitted on after they were played: its record there is a fit, not a call */
+  const jf=S.jokerFit&&+S.jokerFit.season===+S.season&&Array.isArray(S.jokerFit.weeks)?S.jokerFit.weeks.map(Number):[];
+  const fitted=(m,w)=>m.id==='joker'&&jf.includes(+w);
+  const wkList=ws=>{ const a=[...ws].sort((x,y)=>x-y); return a.length>1&&a[a.length-1]-a[0]===a.length-1?a[0]+'-'+a[a.length-1]:a.join(', '); };
+  const notes=[];
+  { const jm=shown.find(m=>m.id==='joker'), inFit=rows.filter(r=>jf.includes(+r.week));
+    if(jm&&inFit.length){
+      const rest=rows.filter(r=>!jf.includes(+r.week)), t=tally(jm.ok,rest);
+      let net=0; for(const r of rest){ const a=jm.ok(r), v=vOk(r); if(a===null||v===null) continue; net+=(a?1:0)-(v?1:0); }
+      const ft=tally(jm.ok,inFit);
+      jm.fitNote=`weeks ${wkList(jf)} fitted after the fact`;
+      notes.push(`<b>The Joker</b> was refitted after week${jf.length>1?'s':''} ${wkList(jf)} ${jf.length>1?'were':'was'} played, with those games in its training, so its ${rec(ft)} there is a fit, not a prediction (marked in the grid). Its calls from week ${Math.max(...jf)+1} on, made before the games: <b>${rec(t)}</b>, ${sign(net)} vs Vegas.`); } }
+  /* a model the job could not rescore on its last run: its picks are the last good ones */
+  { const names={joker:'The Joker',broly:'Broly Model'}, ms=S.modelStatus||{};
+    for(const [k,v] of Object.entries(ms)){ if(!v) continue; const d=v.since?new Date(v.since):null;
+      notes.push(`<b>${esc(names[k]||k)}</b> could not be rescored${d&&!isNaN(d)?' since '+esc(d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})):''}: ${esc(v.why||'an input was missing')}. Its picks are the last good ones and its record stands where it was.`); } }
 
   /* ---- 1. the chart ---- */
   /* drawn at the card's own width, so its text stays 11px on a phone instead of shrinking */
@@ -93,19 +115,21 @@ function recordViz(rows){
   /* hover: a band per week, a crosshair and the week's numbers */
   svg+=weeks.map((w,i)=>`<rect class="rv-hit" data-i="${i}" x="${(X(i+1)-(W-padL-padR)/Math.max(1,n)/2).toFixed(1)}" y="${padT}" width="${((W-padL-padR)/Math.max(1,n)).toFixed(1)}" height="${H-padT-padB}" fill="transparent"/>`).join('');
   const chart=`<div class="rv-wrap"><svg viewBox="0 0 ${W} ${H}" class="rv-chart" role="img" aria-label="Wins against Vegas by week">${svg}</svg><div class="rv-tip" hidden></div></div>`;
-  const legend=shown.map(m=>`<span><i class="lgd" style="background:${m.dash?'repeating-linear-gradient(90deg,'+m.color+' 0 5px,transparent 5px 8px)':m.color}"></i>${esc(m.name)} <b>${rec(m.season)}</b> <span class="muted">${sign(m.net)} vs Vegas</span></span>`).join('')
+  const legend=shown.map(m=>`<span><i class="lgd" style="background:${m.dash?'repeating-linear-gradient(90deg,'+m.color+' 0 5px,transparent 5px 8px)':m.color}"></i>${esc(m.name)} <b>${rec(m.season)}</b> <span class="muted">${sign(m.net)} vs Vegas${m.fitNote?'*':''}</span></span>`).join('')
     +`<span><i class="lgd" style="background:var(--ink);height:2px"></i>Vegas <b>${rec(vegas.season)}</b> <span class="muted">the zero line</span></span>`;
   const h2=card.querySelector('h2'); if(h2) h2.textContent='Wins against Vegas';
   const intro=h2&&h2.nextElementSibling&&h2.nextElementSibling.tagName==='P'?h2.nextElementSibling:null;
   if(intro) intro.textContent='Each model’s wins minus the Vegas favourite’s on the same games, added up week by week. Above the line is beating Vegas, below is trailing it; one step is one game.';
   const lg=card.querySelector('.lgdrow'), toggle=lg&&lg.querySelector('.toggle');
   if(lg){ lg.innerHTML=legend; if(toggle) lg.appendChild(toggle); }
+  card.querySelector('.rv-notes')?.remove();
+  if(lg&&notes.length) lg.insertAdjacentHTML('afterend',`<div class="rv-notes muted" style="font-size:12px;margin:0 0 8px">${notes.map(n=>`<p style="margin:0 0 4px">${n}</p>`).join('')}</div>`);
   const old=card.querySelector('svg.wowchart'); if(old) old.outerHTML=chart;
   const wrap=card.querySelector('.rv-wrap'), tip=wrap&&wrap.querySelector('.rv-tip'), cross=wrap&&wrap.querySelector('.rv-cross');
   if(wrap) wrap.querySelectorAll('.rv-hit').forEach(h=>{
     const i=+h.dataset.i, x=X(i+1);
     const show=()=>{ cross.setAttribute('x1',x); cross.setAttribute('x2',x); cross.style.display='';
-      tip.innerHTML=`<b>${wkName(weeks[i])}</b>`+shown.map(m=>`<div><i class="lgd" style="background:${m.color}"></i>${esc(m.name)} ${rec(m.byWeek[i])}<span class="muted">&nbsp;· season ${sign(m.pts[i+1].net)} vs Vegas</span></div>`).join('')
+      tip.innerHTML=`<b>${wkName(weeks[i])}</b>`+shown.map(m=>`<div><i class="lgd" style="background:${m.color}"></i>${esc(m.name)} ${rec(m.byWeek[i])}${fitted(m,weeks[i])?' (fitted)':''}<span class="muted">&nbsp;· season ${sign(m.pts[i+1].net)} vs Vegas</span></div>`).join('')
         +`<div><i class="lgd" style="background:var(--ink);height:2px"></i>Vegas ${rec(vegas.byWeek[i])}</div>`;
       tip.hidden=false; const r=wrap.getBoundingClientRect(), px=x/W*r.width;
       tip.style.left=Math.min(Math.max(8,px+12),Math.max(8,r.width-tip.offsetWidth-8))+'px'; };
@@ -116,12 +140,13 @@ function recordViz(rows){
   if(tab){
     const shade=t=>{ const g=t.w+t.l; if(!g) return ''; const p=t.w/g, a=Math.min(0.42,Math.abs(p-0.5)/0.3*0.42).toFixed(3);
       return p>0.5?`background:rgba(27,122,78,${a})`:(p<0.5?`background:rgba(192,57,43,${a})`:''); };
-    const cell=(t,name,label)=>{ const g=t.w+t.l; if(!g) return '<td class="rv-c rv-none">–</td>';
+    const cell=(t,name,label,fit)=>{ const g=t.w+t.l; if(!g) return '<td class="rv-c rv-none">–</td>';
+      if(fit) return `<td class="rv-c rv-fit" title="${esc(name)}, ${label}: ${t.w} of ${g}, fitted after the fact: these games were in its training"><b>${rec(t)}</b><small>fitted</small></td>`;
       return `<td class="rv-c" style="${shade(t)}" title="${esc(name)}, ${label}: ${t.w} of ${g} (${Math.round(100*t.w/g)}%)"><b>${rec(t)}</b><small>${Math.round(100*t.w/g)}%</small></td>`; };
     const gridRows=[...shown,{...vegas,color:null}].map(m=>`<tr><th class="rv-m">${m.color?`<i class="lgd" style="background:${m.color}"></i>`:'<i class="lgd" style="background:var(--ink);height:2px"></i>'}${esc(m.name)}</th>`
-      +m.byWeek.map((t,i)=>cell(t,m.name,wkName(weeks[i]))).join('')+cell(m.season,m.name,'season').replace('class="rv-c"','class="rv-c rv-season"')+'</tr>').join('');
+      +m.byWeek.map((t,i)=>cell(t,m.name,wkName(weeks[i]),fitted(m,weeks[i]))).join('')+cell(m.season,m.name,'season'+(m.fitNote?', '+m.fitNote:'')).replace('class="rv-c"','class="rv-c rv-season"')+'</tr>').join('');
     const games=weeks.map(w=>rows.filter(r=>+r.week===w).length);
-    tab.innerHTML=`<div class="card"><h2>Week by week</h2><p class="muted" style="margin:0 0 10px">Each model’s record by week, shaded red under .500, clear at .500 and green above; the season is the last column.</p>
+    tab.innerHTML=`<div class="card"><h2>Week by week</h2><p class="muted" style="margin:0 0 10px">Each model’s record by week, shaded red under .500, clear at .500 and green above; the season is the last column.${jf.length&&shown.some(m=>m.fitNote)?` The Joker’s hatched cells (week${jf.length>1?'s':''} ${wkList(jf)}) are fitted after the fact, not called before the games.`:''}</p>
       <div class="rv-gridwrap"><table class="rv-grid"><thead><tr><th class="rv-m"></th>${weeks.map((w,i)=>`<th class="rv-c">${wkName(w)}<small>${games[i]} games</small></th>`).join('')}<th class="rv-c rv-season">Season</th></tr></thead>
       <tbody>${gridRows}</tbody></table></div></div>`;
   }

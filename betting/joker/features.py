@@ -31,12 +31,14 @@ import pandas as pd
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))                    # the vendored harness package lives beside this file
+sys.path.insert(0, str(HERE.parent))             # betting/jobkit.py, what the Joker and Broly share
 from harness import data, pbp, qb, sources       # noqa: E402
 from harness.ratings import Params, build_features, game_features  # noqa: E402
+from jobkit import neutral                       # noqa: E402
 
 FROZEN = HERE / "data"
 FIT_SEASONS = list(range(2019, 2026))
-SEASON = 2026
+SEASON = 2026          # the fit's season; joker.py sets it to the app's (state.json's `season`) before scoring
 
 CATEGORICAL = ["home_team", "away_team", "roof", "surface", "weekday", "home_coach", "away_coach",
                "referee", "stadium", "home_qb_name", "away_qb_name"]
@@ -55,12 +57,14 @@ def point_harness_at_frozen():
 # ---------------------------------------------------------------- raw tables
 def games_table(fresh: Path | None):
     """All games 2019-2025 from the frozen file plus this season from the fresh one,
-    with the harness's own cleaning. Unplayed games keep result NaN."""
+    with the harness's own cleaning. Unplayed games keep result NaN. This season's rows go
+    through jobkit.neutral: a game nflverse codes 'Home' that is played abroad
+    (betting/neutral_sites.json, 2026_05_PHI_JAX in London) is neutral, as the app reads it."""
     g = pd.read_csv(FROZEN / "games.csv", low_memory=False)
     g = g[g.season.isin(FIT_SEASONS)]
     if fresh is not None and (fresh / "games.csv").exists():
         f = pd.read_csv(fresh / "games.csv", low_memory=False)
-        g = pd.concat([g, f[f.season == SEASON]], ignore_index=True)
+        g = pd.concat([g, neutral(f[f.season == SEASON])], ignore_index=True)
     for c in ("home_team", "away_team"):
         g[c] = data.norm_team(g[c])
     g["home_rest"] = g.home_rest.fillna(7); g["away_rest"] = g.away_rest.fillna(7)
@@ -125,7 +129,7 @@ def raw_extras(feats, games):
 
 def win_totals(feats):
     wt = pd.read_csv(FROZEN / "win_totals.csv")[["season", "team", "exp_wins"]]
-    f26 = FROZEN / "win_totals_2026.csv"
+    f26 = FROZEN / f"win_totals_{SEASON}.csv"
     if f26.exists():
         w = pd.read_csv(f26)
         if "exp_wins" in w.columns:
@@ -174,7 +178,9 @@ def previous_game_stats(feats, seasons, fresh: Path | None):
 # ---------------------------------------------------------------- assembly
 def assemble(seasons, qb_Y, fresh: Path | None = None, upcoming: bool = False):
     """Feature rows for every played game in `seasons`, plus (if `upcoming`) the next
-    unplayed week of the current season, scored from the state after the last played game."""
+    unplayed week of the current season, scored from the state after the last played game.
+    The next week can be a playoff round (weeks 19-22): the model was fitted on playoff games
+    too, and the app, Vegas and the ELO Model call them, so the Joker does as well."""
     point_harness_at_frozen()
     games_all = games_table(fresh)
     games_all = games_all[games_all.season.isin(seasons)]
@@ -195,10 +201,14 @@ def assemble(seasons, qb_Y, fresh: Path | None = None, upcoming: bool = False):
     feats, state = build_features(played[data.GAME_COLS], stats, cols, lm, Params(warm=0))
     feats["played"] = True
     if upcoming:
-        un = games_all[(games_all.result.isna() | pending) & (games_all.season == SEASON) & (games_all.game_type == "REG")]
+        un = games_all[(games_all.result.isna() | pending) & (games_all.season == SEASON)]
         if len(un):
-            wk = int(un.week.min())
-            un = un[un.week == wk].reset_index(drop=True)
+            # the coming week is the first with a game not yet played, as the app counts it: a final
+            # whose stats are still to come (Monday night's, on Tuesday morning) is scored too, but
+            # does not hold the Joker on its week while the app has moved on to the next
+            todo = un[un.result.isna()]
+            wk = int(todo.week.min()) if len(todo) else int(un.week.min())
+            un = un[(un.week == wk) | pending.loc[un.index]].reset_index(drop=True)
             if not (played.season == SEASON).any():      # nothing played yet: the state is still last season's, roll it over
                 from harness.ratings import rollover
                 rollover(state, cols, lm, Params(warm=0), season=SEASON)

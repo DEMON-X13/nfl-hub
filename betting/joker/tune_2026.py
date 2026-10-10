@@ -10,7 +10,9 @@ fits 81.5% of 2020-2025, what the original did. A sweep of the weight found 21-1
 same recipe on these files without 2026), 25-7 from 0.75 to 0.9 and more above.
 
 Weeks 1 and 2 are therefore fitted after the fact, not predicted: model.json says so in
-fitted_on. From week 3 on the picks are made before the games, as before.
+fitted_on and fitted_weeks, joker.py publishes it as state.jokerFit, and the Pick'em Record
+marks those weeks and gives the Joker's record without them. From week 3 on the picks are made
+before the games, as before.
 """
 from __future__ import annotations
 
@@ -60,6 +62,8 @@ def main():
                  "fitted_at": datetime.now(timezone.utc).isoformat(timespec="minutes"),
                  "fit_accuracy_2020_2025_reg": round(fit, 4),
                  "fit_2026_weeks": f"1-{WEEKS_2026}: {right}-{len(g) - right}, fitted after the fact",
+                 # what joker.py publishes as state.jokerFit, and the Pick'em Record discloses
+                 "fitted_weeks": {"season": F.SEASON, "weeks": list(range(1, WEEKS_2026 + 1))},
                  "refit_by": "tune_2026.py"})
     (HERE / "model.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
     print(f"model.joblib written: 2026 weeks 1-{WEEKS_2026} {right}-{len(g) - right}, fits {fit:.1%} of 2020-2025")

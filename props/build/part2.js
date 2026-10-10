@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v79 \u00b7 2026-10-08';
+const APP_BUILD='app v83 \u00b7 2026-10-10';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -59,6 +59,10 @@ const store={
 };
 const $=id=>document.getElementById(id);
 let S=null, saveTimer=null;
+/* who can play, from the payload on every load and never saved with S: the roster's status for
+   each player (ACT; DEV the practice squad; RES a reserve list; CUT released ...) and this week's
+   injury report beyond the ruled out (Questionable, not practising, limited) */
+let RSTAT={}, INJ={};
 function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(S);
   $('saveState').textContent = r==='saved'?'Autosaved':'Not saved: export a backup'; },300); }
 
@@ -364,10 +368,29 @@ function depthOf(pl){
   return {team:d[0],pos:d[1],rank:d[2]};
 }
 function depthLabel(pl){ const d=depthOf(pl); return d&&d.pos===pl.grp?d.pos+d.rank:null; }
+/* why a charted player is not on the page. Every reason a player is out starts "ruled out", so a
+   reader is never told an injured starter merely lacks games */
+const SEASON_WHY={RES:'on a reserve list',CUT:'released',RET:'retired',EXE:'exempt list',TRD:'traded',TRT:'traded',NONE:'on no roster'};
+function inactiveWhy(r){
+  if(!r||typeof r!=='object') return 'ruled out';
+  if(r.week==='season') return 'ruled out ('+(SEASON_WHY[r.status]||'not on the active roster')+')';
+  const inj=r.inj?', '+String(r.inj).toLowerCase():'';
+  if(r.status==='Out') return 'ruled out'+inj;
+  if(r.status==='Doubtful') return 'ruled out (doubtful'+inj+')';
+  if(r.status==='Pending') return 'ruled out until his status is filed (out last game, '+(r.why||'no word yet')+')';
+  return 'ruled out ('+String(r.status||'').toLowerCase()+inj+')';
+}
+/* a practice-squad player plays only when he is elevated: he is a starter when his team's chart
+   has him or he played in one of the two weeks before this game, and a backup otherwise */
+function devOk(x,w){
+  if(RSTAT[x.pl.id]!=='DEV'||x.rank!=null) return true;
+  return [w-1,w-2].some(k=>!!actualFor(k,x.pl.id));
+}
 /* the players who will actually be on the field enough to matter.
    the depth chart decides the order when we have it, usage when we don't. */
 function rosterFor(g,showAll){
   const byTeam={};
+  const D=(S.depth&&Object.keys(S.depth).length)?S.depth:PAY.depth;
   for(const [team,opp] of [[g.a,g.h],[g.h,g.a]]){
     const ctx=gameCtx(g,team);
     const list=playersFor(team).map(pl=>{
@@ -375,6 +398,8 @@ function rosterFor(g,showAll){
       return {pl,team,opp,ctx,use:usage(pl,opp,ctx),gp:pl.gp+pl.base_gp,
         rank:(d&&d.team===team&&d.pos===pl.grp)?d.rank:null};
     }).filter(x=>x.use>0);
+    /* where this team's ruled-out players stand on the chart */
+    const outAt={}; for(const id in (D||{})){ const d=D[id]; if(d[0]===team&&S.inactive[id]) (outAt[d[1]]??=[]).push(d[2]); }
     const out=[];
     for(const grp of ['QB','RB','WR','TE','K']){
       const pool=list.filter(x=>x.pl.grp===grp).sort((a,b)=>{
@@ -387,20 +412,28 @@ function rosterFor(g,showAll){
          over who is left: the next man up takes the slot rather than an unranked player with
          enough projected usage to walk in on his own */
       let place=0; for(const x of pool) x.eff=x.rank!=null?++place:null;
-      const cut=pool.filter(x=>x.gp>=3&&(x.eff!=null?x.eff<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
+      /* a charted player moved up because someone above him is ruled out starts now, however few
+         games he has: the page shows him, marked thin history, rather than nobody at all */
+      for(const x of pool) x.up=x.rank!=null&&(outAt[grp]||[]).some(r=>r<x.rank);
+      const cut=pool.filter(x=>(x.gp>=3||x.up)&&devOk(x,+g.w)&&(x.eff!=null?x.eff<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
                     .slice(0,DEPTH[grp]);
       for(const x of (showAll?pool:cut)) out.push({...x,starter:cut.includes(x)});
     }
     /* depth-chart starters we simply cannot project, so the gap is visible */
     const shown=new Set(out.map(x=>x.pl.id));
     const gaps=[];
-    const D=(S.depth&&Object.keys(S.depth).length)?S.depth:PAY.depth;
-    for(const id in D){
+    for(const id in (D||{})){
       const [t,pos,rank,nm]=D[id];
       if(t!==team||shown.has(id)) continue;
       const lead={QB:1,RB:2,WR:3,TE:1,K:1}[pos];
-      if(lead&&rank<=lead) gaps.push({name:nm,slot:pos+rank,
-        why:S.players[id]?'not enough games played':'no NFL history'});
+      if(!lead||rank>lead||gaps.some(x=>x.id===id)) continue;
+      const off=S.inactive[id];
+      gaps.push({id,name:nm,slot:pos+rank,out:!!off,
+        why:off?inactiveWhy(off):(S.players[id]?'not enough games played':'no NFL history')});
+      /* and the man who steps in, when the page cannot show him either */
+      if(off){ const next=Object.keys(D).filter(j=>D[j][0]===team&&D[j][1]===pos&&D[j][2]>rank&&!S.inactive[j]).sort((a,b)=>D[a][2]-D[b][2])[0];
+        if(next&&!shown.has(next)&&!gaps.some(x=>x.id===next)) gaps.push({id:next,name:D[next][3],slot:pos+D[next][2],out:false,
+          why:'steps in for him; '+(S.players[next]?'not enough games played to project':'no NFL history to project')}); }
     }
     byTeam[team]={opp,players:out,gaps};
   }
@@ -520,12 +553,18 @@ function rungView(pl,stat,mu,k,week){
 }
 
 /* ---------- kickoff lock ---------- */
+/* schedule times are US Eastern: daylight time from the second Sunday of March to the first
+   Sunday of November (the change is at 2am, when no game is played), for the date's own year */
+function easternOffset(d){
+  const y=+String(d).slice(0,4), m=+String(d).slice(5,7), day=+String(d).slice(8,10);
+  const sunday=(mon,nth)=>{ const first=new Date(Date.UTC(y,mon-1,1)).getUTCDay(); return 1+(7-first)%7+7*(nth-1); };
+  const dst=(m>3&&m<11)||(m===3&&day>=sunday(3,2))||(m===11&&day<sunday(11,1));
+  return dst?'-04:00':'-05:00';
+}
 function kickoff(g){
   if(!g.d) return null;
   const t=g.t||'13:00';
-  /* schedule times are US Eastern; clocks go back on the first Sunday of November */
-  const off=(g.d>='2026-11-01')?'-05:00':'-04:00';
-  const dt=new Date(`${g.d}T${t}:00${off}`);
+  const dt=new Date(`${g.d}T${t}:00${easternOffset(g.d)}`);
   return isNaN(dt)?null:dt;
 }
 function gameStarted(g){ const k=kickoff(g); return !!k&&Date.now()>=k.getTime(); }
@@ -536,7 +575,9 @@ function actualFor(week,pid){ return (S.actuals&&S.actuals[String(week)]&&S.actu
 /* did a leg land? null while the stats for that week haven't been loaded */
 function settleLeg(l){
   if(isGameLeg(l)) return settleGameLeg(l);
-  const a=actualFor(l.week,l.pid); if(!a) return null;
+  const a=actualFor(l.week,l.pid);
+  /* no stat line once his game's stats are in: he did not play, and a book voids the leg */
+  if(!a) return (l.gid&&S.processedGames&&S.processedGames[l.gid])?'void':null;
   const v=a[l.stat]; if(v==null) return null;
   if(l.stat==='any_td'){ const k=l.k||1; if(k>=2){ if(a.tds==null) return null; return a.tds>=k?'win':'loss'; } return v>=1?'win':'loss'; }
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
@@ -729,8 +770,19 @@ function settleParlay(p){
   const res=p.legs.map(settleLeg);
   if(res.some(r=>r===null)) return {status:'pending',legs:res};
   if(res.some(r=>r==='loss')) return {status:'lost',legs:res};
-  if(res.every(r=>r==='push')) return {status:'void',legs:res};
+  if(res.every(r=>r==='push'||r==='void')) return {status:'void',legs:res};
   return {status:'won',legs:res};
+}
+/* what a settled parlay returns: a void or pushed leg comes out and the rest pay at their own
+   prices, the way a book settles it, so the locked payout is divided by that leg's price */
+function settledReturn(p,s){
+  s=s||settleParlay(p);
+  if(s.status==='lost') return 0;
+  if(s.status==='void') return p.stake;
+  if(s.status!=='won') return null;
+  let pay=p.payout;
+  s.legs.forEach((r,i)=>{ if(r==='void'||r==='push'){ const d=mlToDec(p.legs[i]&&p.legs[i].price); if(d) pay/=d; } });
+  return Math.max(p.stake,pay);
 }
 
 /* the week the season is actually on: the earliest one still having games played.
@@ -741,3 +793,13 @@ function liveWeek(){
   return ws[ws.length-1];
 }
 function weekOpen(w){ return w<=liveWeek(); }
+/* every regular-season game final: the model covers the regular season, and says so */
+function seasonOver(){ return !!(S&&S.sched&&S.sched.length)&&S.sched.every(g=>gameFinal(g)); }
+/* where a game's lines came from: DraftKings' pull while it is under a day old, nflverse's
+   posted line (the Pick'ems board's) after that. null for a payload that does not say. */
+function lineSource(g){
+  if(!g||!g.ls) return null;
+  if(g.ls==='dk'){ const t=g.lat?new Date(g.lat):null;
+    return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
+  return "nflverse's posted line, as on the Pick'ems board";
+}

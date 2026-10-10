@@ -50,12 +50,40 @@ at the next refresh:
 - `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json`
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
-- `props/data/payload.json`
-- `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md` (a drafted `news/data/weekN.js` is finished by hand)
-- `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
+- `props/data/payload.json`, `props/data/priced_at.json`
+- `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
+- `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
+
+## Season Tracker: the loop
+
+```
+cd news && npm ci
+node tools/run-auto.js           # the job: the schedule's current week -> pull-week.js (results, stats, pack) -> context.js
+node tools/context.js            # the rank chip, positions and the Deep Dive alone (nflverse only; no ESPN list)
+node tools/smoke.js              # must end "all checks passed" (runs tools/cases.js too)
+```
+
+The narrative half is a person's (`news/HANDOFF.md` first, always). The season is `SEASON` in
+`news/tools/lib.js`, nowhere else; after week 18 the tracker stays on week 18 and says the regular
+season is complete (it does not cover the playoffs; the stat tables are then asked for as of the
+day after week 18). The Deep Dive's lineups follow the nflverse injury report and ESPN's list
+(`context.js` says the rule; a team has filed only when its game statuses are on the report, never
+on a practice report), and every nflverse file but the snap counts is required: one that does not
+download fails the run before the commit, so the last good files stay live (before the season's
+first game a 404 on a current-season file is "no games yet"). The smoke test checks the lineups
+against the report, roster and schedule they were built from (`lineup-checks.js`, which never
+shares the build's shortcuts, only its reading of a source: which ESPN entry is which player and what
+day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab),
+the stat bars against `results.js`, that the live week's narrative quotes none of the site's own
+ranks, and the fixed cases in `tools/cases.js` (each with the broken version a review caught, which
+the checks must fail); on a checkout whose `units2026.js` is older than the report it fails until
+`node tools/context.js` runs. A change to a rule comes with a case there. `.github/workflows/news.yml`
+runs about nineteen times a week, timed to the injury report and set early because GitHub starts
+this repo's scheduled runs 2.3 to 9.4 hours late, and on a push to the tools, the page or a week
+file; a run that finds nothing new commits nothing beyond the day's "as of" dates.
 
 ## Props: the loop
 
@@ -72,34 +100,80 @@ node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's so
 The audit is a real gate: `weekly.py` refuses to commit when it is not clean, so
 a broken audit means the site silently stops updating and the run is marked
 failed. Write audit checks against the app's invariants, never against whatever
-the week's data happens to offer -- a lean week must not fail the build.
+the week's data happens to offer -- a lean week must not fail the build. Its section V
+checks the page a browser builds against the raw nflverse files (roster status, the
+injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;
+by hand those comparisons are skipped and the rest run. Run by hand against a payload
+baked before 9 October 2026 it fails V2 (lines on the wrong player) until the job rebakes it.
 
-`.github/workflows/props.yml` runs four price pulls a week (Mon/Wed/Thu/Sat, ~7
-odds-API credits a game) and eight post-game and stats runs and one every morning that
-picks up the day's injury report, so a player ruled out leaves the Props tab and the builder
-the same morning. Those nine are catch-ups (`weekly.py --catch-up`): GitHub drops scheduled
-runs, so each prices any game up to the next pull that has no prices and has not kicked off,
-once a pull's slot is eight hours gone, and spends nothing when every pull ran. It commits straight to `main`.
+`weekly.py` also refuses (exits 1 before the workflow's commit step, so the last good data
+stays live) when a required nflverse download fails or comes back wrong -- the schedule,
+the player stats, the roster or the injury report -- or when the stats would cover fewer
+games than the published payload; those are checked before any credit is spent, and a run
+refused after a pull still has its prices kept (unpublished) by the workflow. The depth
+charts are carried forward with their date shown. A 404 on the stats or the injury report
+is judged by what has been published: with none of this season's yet (before the season,
+and the stats until nflverse processes the first games) it is a file not posted yet, the run
+publishes without it, `not_posted` in the payload and a note on the slate say so, and the
+run goes red after its commit once that is overdue; with some published it refuses. The
+season is `SEASON` in `part2.js` and nowhere else (`build/season.py` reads it); at a
+rollover the job moves last season's price files to `props/data/archive/<season>/` and
+bakes only this season's games, so bumping that line (with the key in `nflbets/build/sync.js`
+and the assert in `nflbets/build/build.js`) is the whole change.
+
+`.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
+Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
+runs, and a daily 12:07 UTC run that lands after nflverse posts the day's injury report,
+rosters and depth charts (about 14:20 UTC). GitHub fires this repo's crons 3-9 hours late, so
+each pull prices every game kicking off before the next slot plus 10 hours, never a game that
+has started, and not one priced in the last twelve hours. The nine `7 ` runs are catch-ups
+(`weekly.py --catch-up`): each prices any game up to the next pull that has no prices and has
+not kicked off, once a pull's slot is ten hours gone, and spends nothing when every pull ran.
+It commits straight to `main`.
 
 ## Betting: the loop
 
 ```
 cd betting/tools && npm install
-node betting/tools/update.js     # download + grade + write state.json
+node betting/tools/update.js     # download + grade + write state.json; exit 1, nothing written, if a file the season needs did not download
 python3 betting/joker/joker.py   # the Joker's picks into state.json (pip install -r betting/joker/requirements.txt)
+python3 betting/broly/broly.py   # Broly's picks into state.json
 node betting/tools/build.js      # checks the app builds; writes nothing (nflbets/build/build.js sets it into the page)
-node betting/tools/smoke.js      # the built app, on its own and embedded
+node betting/tools/smoke.js      # the built app, on its own and embedded, then the state against reality (section 5)
 node nflbets/build/build.js      # the app changed, so the page that carries it is rebuilt
 ```
 
 Gate: the app's embedded model numbers must equal
-`betting/tools/reference_models.json`, or the publish aborts.
+`betting/tools/reference_models.json`, or the publish aborts. The smoke then checks the published
+state against what it was built from: this run's injury report and roster, stale inputs flagged on
+the absences card, no quarterback who missed the last game on the report counted back in before
+this week's report clears him, no 'Home' game abroad, a call from every model for every coming
+game (or `modelStatus` saying why), no call moved after its kickoff (against the last commit),
+scoreboard finals counted for every model on the frozen call, Team Rankings' record, and the
+record's disclosures. The files it holds the state to are the ones `update.js` refuses without
+(`patches.filesDue`: the roster and depth chart from a week before the opener, the injury report
+from its first kickoff, the stats once a final is a day and a half old), and it passes in every
+phase of a season: the week before the opener, week 1, between playoff rounds and after the Super
+Bowl. `BETTING_NOW` stands in for the clock and `BETTING_DATA`/`BETTING_STATE`/
+`BETTING_PREV_STATE` for the files, for tests.
+
+The app source is never edited: its behaviour is changed by `betting/tools/patches.js`, applied
+as the app is loaded by `update.js` and `build.js` alike, each edit asserted to land exactly once
+(who starts at quarterback, the absences card, neutral sites from `betting/neutral_sites.json`,
+the call frozen at kickoff in `atKickoff`, the season's phase). The season is the app's own
+(`freshState`), read there; the Joker and Broly take it from `state.json`.
 
 `.github/workflows/update.yml` is the betting job (the file name is a leftover from when one
-job ran every site): hourly at :37, so the Vegas lines and the Joker follow nflverse within
-the hour, plus the Fri/Mon/Tue morning and afternoon, post-game and injury-report runs, kept
-in case an hourly run is dropped. It runs `update.js`, `joker.py` and `smoke.js` (which
-builds the app itself), and commits `betting/state.json`.
+job ran every site). GitHub starts this repo's scheduled runs 3 to 9 hours late, so its slots are
+set by when they must land: Fri/Mon/Tue morning and afternoon runs for the results, post-game
+runs, and two before each Thursday, Saturday and Sunday kickoff window, early enough that a
+9-hour delay still lands before kickoff (a game's call is the last run's before it). The ":37
+hourly" slot fires about six times a day with gaps of up to 8 hours: a background refresh, not
+an hourly promise. It runs `update.js`, `joker.py`, `broly.py` (each model step may fail alone:
+its last good picks stay, `modelStatus` says why on the Pick'em Record) and `smoke.js` (which
+builds the app itself), commits `betting/state.json`, and starts `elo.yml` when a final was
+graded (even if the smoke or the commit failed: the Elo job reads nflverse, not this state), so
+Team Rankings' Elo does not wait for the Elo job's own late slot.
 The **Broly Model** (`betting/broly/`) is the betting line plus six team stats: points per game,
 points allowed, turnover differential, third-down rate, red-zone touchdown rate and yards per
 play for and against, each the season to date with last season blended in early, in a
@@ -108,32 +182,59 @@ per-game rates, `prior_<season>.json`; it is never refit on the season in progre
 runs in the job after `joker.py` and writes `processed[gid].broly` and `state.broly`, which the
 Pick'em Record draws like the Joker. Before it shipped it was tested on 2018-2025, each season
 fitted on the ones before: 65.8% straight up against the Vegas favourite's 66.4%. At a new
-season, run `fit.py` on the seasons through the last one so `prior_<last>.json` exists.
+season, run `fit.py` on the seasons through the last one so `prior_<last>.json` exists (without
+it Broly refuses and says so). Both score playoff games too, and both freeze a game's call at its
+kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, the owner's
+call); `model.json` names the weeks (`fitted_weeks`) and the Pick'em Record hatches them and gives
+its record without them.
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 
 ## Player Elo: the loop
 
 ```
-pip install -r elo/requirements.txt
+pip install -r elo/requirements.txt   # pinned: the walk-forward must not move with a library upgrade
 python3 elo/build.py             # downloads nflverse player stats 2012-now into elo/cache/, writes elo/data/
+python3 elo/check.py             # the gate: the files against the roster, injury report, schedule and published calls; "0 failures"
+node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom from props/build); "0 failures"
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 ```
+
+The build refuses to write anything when a file the season under way needs (its player stats, depth
+charts, injury report, roster, team stats) or any past season's cannot be downloaded: it exits 1 and the
+last good files stay live. The season comes from games.csv alone (a new schedule becomes the season in
+play once its first game is 36 hours old; until then the finished season stays, and its week 1 is called
+in the fortnight before; the rankings switch once 16 clubs have a rated game); the playoffs are rated as
+they come and `phase` says regular, postseason, over or opening. `elo/check.py` holds the new files against
+their sources and against the last publish (the last commit's `elo/data`, which the site serves until the run
+commits): a top-ten player of the published rankings is still ranked or sidelined unless his club has played, had a
+game rated (the player stats land a night after the score) or he changed clubs; every call the published ledger had
+for a game this run can no longer call keeps its pick and its `src`; and a call in `elo/history/` is graded as it
+stands there unless a later call, itself published before kickoff, replaced it.
 
 The rankings are of this season alone: each player's second rating (`RS` in the build) starts
 the season at 1500 with placement games (K 160 shrinking toward 32, Glicko's idea) and moves only on this season's games;
 the number shown is that rating on a bell curve within the position (1500 the average, 100 points a standard
 deviation, so the shields split a position as a ranked ladder does; the raw value stays in `raw`); a player is ranked only with games
-in a real role in at least half the weeks played; the models (game model, matchups, market + form,
+in a real role in at least half of his club's rated games (a club's bye or a Thursday game elsewhere does not move his bar), and
+"through week N" is the last week whose games are all rated, with the week under way beside it; the models (game model, matchups, market + form,
 Mismatches) keep the career rating, `elo` in `players.json` beside the season's `se` and `rank`. Opponents count through the
 units: `K_UNIT` is 120 so a unit is rated as far from the average as it really is, and a big game against a weak one moves a player little.
-They are of players who can play: the season's latest weekly roster (only `ACT`
-counts) and the coming week's injury report (`Out`) sideline the rest, who are listed under
-the table where they would have stood. The game model scores every game, past and coming,
-on the lineup known before kickoff: that week's depth chart (weekly files through 2024, the
-last daily snapshot before the game from 2025) minus the week's Outs, falling back to who
-played last game where a chart is silent; `walk_forward` in `model.json` is that honest
-number and `walk_forward_who_played` the hindsight one, kept for comparison only. Tiers are the betting app's Elo shields, lifted with
+They are of players who can play, the rest listed under the table where they would have stood: each club's
+current roster is its rows at that club's own latest week (a club on its bye has none for the bye week, and reading
+only the league's latest week once called every Chief and Panther a free agent); for each club's next game the
+injury report's Out and Doubtful are out, Questionable stays listed with a Q unless he did not practise at the last
+report, and before a club files its statuses a player out at its previous report (or inactive after being on it) stays
+out until he practises or the club files a report he is not on (WHO PLAYS in the build). The game model scores every
+game, past and coming, on the lineup known before kickoff: that week's depth chart (weekly files through 2024, the
+last daily snapshot before the game from 2025) minus the week's Outs and Doubtfuls (and, for the coming games, whoever
+the roster or the report keeps out), a fullback after every running back and players level on the chart taken by who
+has been playing most, so the same data always gives the same numbers, falling back to who
+played last game where a chart is silent, with home field 0 at a neutral site; `walk_forward` in `model.json` is that honest
+number and `walk_forward_who_played` the hindsight one, kept for comparison only. The ELO Model's record grades the call
+published before each kickoff, frozen in the ledger `elo/data/calls.json` (the calls before the ledger began are in
+`elo/history/`, recovered by `elo/tools/seed_calls.py`), never one recomputed after the game; weeks 1-2 of 2026 were never
+called ahead of time and are kept as a backtest (`src` on each graded call, the split on the tab's bar). Tiers are the betting app's Elo shields, lifted with
 its tag into the page and reshaped at build time by `betting/tools/tiers.js` (both builds apply it): Wood League under 1350,
 Iron, Bronze, Silver, Gold, Platinum, Diamond, Master, Elite (the app's Challenger, renamed so it is not taken for the
 Challenger model) from 1700, and HOF from 1750, worn as a gem. The tab is the rankings card: a bell-curve
@@ -145,9 +246,9 @@ nflverse's `stats_team_week` for the season). The tab's script also puts a secon
 player leg in the Parlay Builder that has a real book price: the book's chance moved by the
 player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`), shown
 beside the model's chance and graded against it, week by week, at the top of the prop
-model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
+model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
-shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
 window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
 they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
 game), built from `pricedLegs()` in the props parts beside the model's own suggestions. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
@@ -155,10 +256,12 @@ moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
 grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season
 in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
-`S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating); `record_viz.js` (below) draws it on the chart and the table, and the build widens the app's own Joker lines in the pick grid to draw it there, each edit asserted
-to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings is a team Elo of this season's results (every team 1500 at the start, both teams moved after each final by how far the margin beat or missed the expected one, a blowout capped at 21, blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record, the tier shields, the change since its last game and the chance against an average team; it replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Challenger Model, the Joker, the ELO Model (the Elo game model) and the Broly Model (below); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record), which the build puts in front of the app's script and `renderRecord()` calls last. The Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the deposit and the chosen view are the visitor's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates every morning (Tuesday's run takes in Monday night;
-the rest move only who is expected to play, on that day's depth charts and injury report) and commits
-`elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
+`S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating; a game under way or awaiting its stats stays in `next` with its frozen call); `record_viz.js` (below) draws it on the chart and the table, and the build widens the app's own Joker lines in the pick grid to draw it there, each edit asserted
+to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings is a team Elo of this season's results (every team 1500 at the start, both teams moved after each final by how far the margin beat or missed the expected one, a blowout capped at 21, blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred), the tier shields, the change since its last game and the chance against an average team; it replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Challenger Model, the Joker, the ELO Model (the Elo game model) and the Broly Model (below); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record), which the build puts in front of the app's script and `renderRecord()` calls last. The Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the deposit and the chosen view are the visitor's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
+for Sunday's calls on Friday's final report (GitHub starts this repo's scheduled runs 4-9 hours late, so a slot is queued
+early enough to land before the London and 1pm kickoffs; Tuesday's run takes in Monday night; the rest move only who is
+expected to play), runs `elo/check.py`, `elo/check_tab.js` and the nflbets smoke (skipped between the Super Bowl and the
+fortnight before week 1, when there is no game to call and the smoke's Elo-picks checks have nothing to read), and commits `elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 
 ## College: the loop
@@ -240,10 +343,29 @@ rebuilding it too:
 ```
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"; includes the sync layer against a stubbed store
+node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the Live Parlays section; must end "0 failures"
 ```
 
+The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
+board's week the way the board does (the first with a game still to play, else the last), checks
+what needs a game to come only when there is one, and, once the payload's last game is about to
+kick off, boots the page two days before it so the builder and the sync checks still have a game
+to stand on. `--season-over` gives every game a result first; run it after a change to the smoke or
+to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
+with its stack, a run still going after ten minutes stops and fails, and one left waiting on
+nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
+
 `nflbets/build/sync.js` (the sync layer) is inlined by the build, so a change to it is a rebuild too.
+`smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
+`nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the
+rebuild fails the gate, and the elo job, which runs this smoke every morning, stops on it. It
+also runs the betting job's `reference_models.json` gate on the copy of the betting app inside the
+page (`BET_APP`). The prop model's storage key is read from part2's `SEASON`/`KEY` line at build
+time and written into the sync layer and the Live Parlays section; the Pick'ems board takes its
+season from `state.json` and the Live Parlays section from each game id, both asking ESPN for the
+week in its own numbering (weeks 19-22 are the playoffs, seasontype 3), so nothing in
+`nflbets/build/` or `liveparlays/` names a season.
 
 The build also writes `nflbets/preview.html`: the same page with `nflbets/build/preview_theme.css`
 (the NBA Hub's look) laid over it and passed into the betting frames. It is a look to try, not a
@@ -266,24 +388,39 @@ may quietly outrank what the job published:
   rebuilds; the betting app already merges only the visitor's keys over the published state.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
   roster change is worth a banner.
-- **Every page says which build it is.** `buildTag` on the Bets and Stats header. Without it a
-  stale copy cannot be told from a current one.
+- **Every page says which build it is.** `buildTag` on the Bets and Stats header: `APP_BUILD`
+  (the prop model's parts) and the page's own hash (`PAGE_HASH`, the first seven hex of its
+  SHA-256), so any source change -- the Pick'ems tab, the Live Parlays section, the sync layer,
+  the betting app -- shows as a new tag. Without it a stale copy cannot be told from a current one.
 - **A frame's content is in the page.** The betting tabs are srcdoc frames filled from a
   string inside `nflbets/index.html`, so nothing is fetched or cached for them apart from
   the page itself: a refresh of the page is a refresh of the frames.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **The parlays are one document for every device.** The builder, the saved parlays, the
-  stake, the book price, the margin, and the Live Parlays section's corrected lines and
-  deletions are kept in a shared JSON document that every device reads when the page opens,
-  writes on every change and re-reads every few seconds while on screen. The document lives
+  stake, the book price, the margin, and the Live Parlays section's key (corrected lines,
+  deletions, the builder kept at kickoff) are kept in a shared JSON document that every device
+  reads when the page opens, writes on every change and re-reads every few seconds while on
+  screen. No device writes over another: every write reads the store's rev first and, if
+  another device wrote since, merges three ways against the document both started from (what
+  only one side changed is taken, a deletion holds, where both changed a thing the writer's
+  change wins); a poll merges the same way, so a phone edited offline merges when it is back;
+  a page going to the background or away looks first too (keepalive requests), and a change it
+  could not send waits for its next visit; each document carries its last fifty revs and each
+  device keeps the last few documents it read or wrote, so a device whose write was overwritten
+  by one made at the same instant (or on an older document) merges against the newest document
+  both sides share and writes its change again. After any change to `sync.js`, also run
+  `node nflbets/build/stress_sync.js [seed]` (not a gate: three devices, random moves, a store
+  that answers late so writes race; it fails if a parlay is lost or comes back). The document lives
   in a Firebase Realtime Database reached over plain HTTPS, whose address is in
   `nflbets/sync.json` (read at run time, so pasting it in needs no rebuild); with the address
   blank the page runs on the browser alone and the Live Parlays card says "Not synced". The layer is
   `nflbets/build/sync.js`: it defines the `window.storage` the prop model saves through and
   the `window.LIVE_IO` the section's key goes through, pushes nothing until it has read the
   document once, adds a browser's own saved parlays to the document the first time that browser
-  reads it (after that the document wins, so a deletion elsewhere holds), and `syncStamp`, in the
+  reads it, keeps the document at the rev it last took or wrote (`nflsync_v1`, and the document
+  and the few before it under `nflsync_base_v1`) so its next visit merges what it had not sent (a deletion elsewhere
+  still holds; a browser that remembers only the rev takes the document as it is), and `syncStamp`, in the
   Live Parlays card, says whether it is synced (with when the parlays last changed), saving or
   failing; the header carries only when the site's data was updated.
   Setting it up: Firebase console → new project → Realtime Database → rules
@@ -304,7 +441,9 @@ may quietly outrank what the job published:
   reported. Look at recent commits before writing one. End with the
   `Co-Authored-By` and `Claude-Session` lines the session provides.
 - **`live_parlays_v1` is the Live Parlays section's key.** It holds `lines` (a line you
-  corrected) and `removed` (a file or betting-model parlay you deleted). A saved parlay is
+  corrected), `removed` (a file or betting-model parlay you deleted) and `kept` (the builder as
+  it stood when a leg's game kicked off: the builder drops a started leg, so the section keeps
+  this copy, keyed by its legs, and watches it until it is deleted). A saved parlay is
   not in it: deleting one in the section deletes it from the prop model's own saved list,
   which is the only copy. The section reads the whole object and writes it back whole, so a
   key anything else puts there is carried through. Inside the Bets and Stats page the key is

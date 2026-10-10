@@ -2,20 +2,23 @@ name: Update prop model
 
 on:
   schedule:
-    # Four runs a week. Each prices only the games that kick off before the next
-    # run, so every game is priced by the last pull before it starts and none is
-    # priced twice. About 7 credits a game, ~112 a week. Times must match
-    # PULL_TIMES in props/build/weekly.py.
-    # Overnight, and never on the hour: this repo's scheduled runs land 2-4.5 hours
-    # late, so the cushion before kickoff has to absorb that, and :00 is the minute
-    # most likely to be dropped under load.
-    - cron: "17 8 * * 1"    # Monday 04:17 ET: Monday night, ~16h of cushion
-    - cron: "17 8 * * 3"    # Wednesday 04:17 ET: holiday games, nothing in an ordinary week
-    - cron: "17 8 * * 4"    # Thursday 04:17 ET: Thursday night, and Thanksgiving's early game
-    - cron: "17 23 * * 6"   # Saturday 19:17 ET: the Sunday slate, priced ~18h out
+    # Five price pulls a week; times are UTC and must match PULL_SLOTS in props/build/weekly.py.
+    # GitHub fires this repo's scheduled runs 3 to 9 hours late (measured across every job in
+    # October 2026: props median 7.2h, a catch-up 9.2h), so each pull prices every game that
+    # kicks off before the next slot plus 10 hours (LATE in weekly.py): no game is left to a
+    # pull that lands after its kickoff. A game that has kicked off is never priced, and one
+    # priced in the last twelve hours is not bought again. About 7 credits a game, ~112 a week;
+    # a pull with no game to price spends nothing. Never on the hour: :00 is the minute most
+    # likely to be dropped under load.
+    - cron: "17 8 * * 1"    # Monday (lands ~noon-5pm UTC): Monday night
+    - cron: "17 8 * * 3"    # Wednesday: Thanksgiving's early game; nothing in an ordinary week
+    - cron: "17 8 * * 4"    # Thursday: Thursday night, Thanksgiving, Black Friday and Christmas games
+    - cron: "17 8 * * 6"    # Saturday morning: a Saturday game (week 15, week 18); nothing in an ordinary week
+    - cron: "17 23 * * 6"   # Saturday evening (lands ~2-8am UTC Sunday): the Sunday slate, London included
     # post-game: finals, game bets settled, started games out of the suggestions.
     # Every one of these sits on minute 7, and the run step passes --catch-up for any
-    # schedule starting "7 ": a credit is spent only on a game a dropped pull left unpriced.
+    # schedule starting "7 ": a credit is spent only on a game a dropped pull left unpriced,
+    # once its slot is 10 hours gone (CATCH_UP_WAIT), past the lateness seen so far.
     - cron: "7 6 * * 5"     # after Thursday night
     - cron: "7 23 * * 0"    # after Sunday early
     - cron: "7 2 * * 1"     # after Sunday late
@@ -26,10 +29,12 @@ on:
     - cron: "7 16 * * 5"    # Thursday night's stats
     - cron: "7 16 * * 1"    # Sunday's stats
     - cron: "7 16 * * 2"    # Monday night's stats
-    # every morning (a catch-up like the runs above): nflverse posts the day's injury report about 03:07 ET, so
-    # the Props tab, the game pages and the builder drop whoever was ruled out the same
-    # morning. Without it Friday's final report waited for Saturday evening's price pull.
-    - cron: "7 9 * * *"     # 05:07 ET daily: the injury report, rosters and depth charts
+    # every day (a catch-up like the runs above): the injury report, rosters and depth charts.
+    # nflverse posts all three once a day, at about 14:20 UTC (seen 9 October 2026); this fires
+    # at 12:07, so landing 3-9 hours late it reads that day's files rather than the day before's.
+    # The old 09:07 slot landed 13:00-16:20, often before the posting, which held Friday's final
+    # report off the page until Saturday evening's pull landed on Sunday morning.
+    - cron: "7 12 * * *"    # daily: lands ~3-9pm UTC, after nflverse's afternoon posting
   workflow_dispatch:
     inputs:
       no_odds:
@@ -61,26 +66,57 @@ jobs:
       - run: npm ci
         working-directory: props/build
       - name: Weekly refresh (downloads, prices, bake, assemble, audit)
+        id: weekly
         working-directory: props/build
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           PYTHONUTF8: "1"
         # a scheduled run cannot carry the no_odds input, so the post-game crons are
         # recognised by their minute: they all start "7 ", the price pulls start "17 ". The
-        # "7 " runs catch up: GitHub drops scheduled runs (Monday 5 October's 08:17 pull never
-        # ran, so the Monday night game had no prices), and a catch-up prices only a game up to
-        # the next pull that has none and has not kicked off, so it spends nothing in a week
-        # where every pull ran. A manual run with no_odds ticked spends nothing at all.
+        # "7 " runs catch up: GitHub delays scheduled runs by hours (Monday 5 October's 08:17
+        # pull landed at 17:11, after a manual pull had already priced the game) and can drop
+        # one, and a catch-up prices only a game up to the next pull that has none and has not
+        # kicked off, so it spends nothing in a week where every pull ran. A manual run with
+        # no_odds ticked spends nothing at all.
+        # weekly.py exits 1 when it refuses the run: a required nflverse download failed or came
+        # back wrong, the stats would cover fewer games than the published payload (both checked
+        # before any credit is spent), or the audit is not clean. Then the commit step below is
+        # skipped and the last good data stays live; the step after it keeps any prices the
+        # refused run bought, without publishing them.
         run: python weekly.py --no-commit ${{ inputs.no_odds && '--no-odds' || (startsWith(github.event.schedule, '7 ') && '--catch-up' || '') }}
       - name: Commit if anything changed
+        # props/raw/feat.pkl changes only on the first run of a new season, when weekly.py adds the
+        # season just finished to it (the baselines come from there); it is committed here so the
+        # next run finds it ready. A refused run never commits it.
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add props/data
+          git add props/data props/raw/feat.pkl
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "props: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:
             # retry the pull-and-push, and fail honestly if all three attempts lose
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
+          fi
+      - name: Keep the prices a refused run bought (nothing is published)
+        # The page reads payload.json alone, and a refused run never commits it (weekly.py has put
+        # the published one back; the checkout below makes sure). The price files and
+        # priced_at.json are the job's inputs: kept, the next run bakes them and does not buy
+        # the same games again, where dropping them would throw the credits away.
+        if: failure() && steps.weekly.outcome == 'failure'
+        run: |
+          git checkout -- props/data/payload.json
+          git add props/data
+          git reset -q -- props/data/payload.json
+          if git diff --cached --quiet; then echo "the refused run bought nothing"; else
+            git config user.name "nfl-hub bot"
+            git config user.email "bot@users.noreply.github.com"
+            git commit -m "props: prices kept from a refused run $(date -u +'%Y-%m-%d %H:%M UTC') (nothing published)"
             ok=0
             for i in 1 2 3; do
               if git pull --rebase && git push; then ok=1; break; fi
@@ -93,7 +129,8 @@ jobs:
         run: |
           f="$RUNNER_TEMP/props-build-problems.txt"
           if [ -s "$f" ]; then
-            echo "::error::the weekly build reported problems; whatever worked was still published"
+            if grep -q '^BLOCKED\|^AUDIT' "$f"; then echo "::error::the weekly build refused this run: nothing was published, the last good data is still live"
+            else echo "::error::the weekly build reported problems; what it built was published, and these are what it could not do"; fi
             sed 's/^/  - /' "$f"
             exit 1
           fi
