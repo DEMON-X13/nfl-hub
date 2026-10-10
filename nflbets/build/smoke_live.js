@@ -12,7 +12,8 @@
  * (a stubbed store, the smoke's own owner secret in the browser: everything is X's, with every
  * control), and on a visitor's device (the store holds X's document; X Parlays shows it read
  * only). Section J is the card: Finish, the window, the image (a canvas stubbed with a recorder,
- * since jsdom draws nothing), and that finishing writes nothing anywhere. jsdom and PapaParse are
+ * since jsdom draws nothing), every dollar figure whole on a long shot, and that finishing writes
+ * nothing anywhere. jsdom and PapaParse are
  * borrowed from props/build; run npm ci there first.
  */
 'use strict';
@@ -59,10 +60,14 @@ const who = row => txt(row.querySelector('.who'));
 const target = row => txt(row.querySelector('.tgt'));
 const wait = ms => new Promise(r => setTimeout(r, ms));
 /* jsdom draws nothing, so the card's image is checked on a recorder: a canvas whose 2D context
-   keeps every piece of text drawn on it, a toBlob that hands back a blob of the type asked for, a
-   blob address, and a download that is an anchor clicked, recorded */
+   keeps every piece of text drawn on it (and the font it was drawn in), a toBlob that hands back a
+   blob of the type asked for, a blob address, and a download that is an anchor clicked, recorded.
+   Its measure is a wide face's: figures ($ + , . and digits) at 0.68 of the font size, as bold
+   digits in the fallback faces phones and Chromium draw with when the page's fonts are not there,
+   the rest at 0.55, so a figure that would be cut on a real canvas is cut on this one */
 function stubDraw(w) {
-  const rec = { texts: [], canvases: [], blobs: [], clicks: [], urls: [] };
+  const rec = { texts: [], draws: [], canvases: [], blobs: [], clicks: [], urls: [] };
+  const em = (x, font) => [...String(x)].reduce((a, ch) => a + (/[\d$+,.\u2212-]/.test(ch) ? 0.68 : 0.55), 0) * (parseFloat((String(font).match(/([\d.]+)px/) || [])[1]) || 10);
   w.HTMLCanvasElement.prototype.getContext = function (kind) {
     if (kind !== '2d') return null;
     rec.canvases.push(this);
@@ -70,8 +75,8 @@ function stubDraw(w) {
     return new Proxy(st, {
       get(t, k) {
         if (k in t) return t[k];
-        if (k === 'measureText') return x => ({ width: String(x).length * (parseFloat((String(t.font).match(/([\d.]+)px/) || [])[1]) || 10) * 0.55 });
-        if (k === 'fillText') return x => { rec.texts.push(String(x)); };
+        if (k === 'measureText') return x => ({ width: em(x, t.font) });
+        if (k === 'fillText') return x => { rec.texts.push(String(x)); rec.draws.push({ t: String(x), font: String(t.font) }); };
         if (k === 'createLinearGradient') return () => ({ addColorStop() {} });
         return () => {};
       },
@@ -693,7 +698,7 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
       chk(txt(view.querySelector('.pc-price')) === price && new RegExp(`${q.useDec.toFixed(2)} decimal`).test(txt(view)) && txt(view).includes((100 / q.useDec).toFixed(1) + '% implied'),
         `${how}: the card's price is not the builder's: ${txt(view.querySelector('.pc-price'))} for ${price}`);
       { const pays = txt(d.querySelector('#parlayBody .bigp .payout')), m = [...view.querySelectorAll('.pc-money b')].map(txt);
-        chk(m.length === 3 && m[0] === '$25.00' && m[1] === pays && txt(view).includes('Model’s chance all 2 land ' + (q.pr.corr * 100).toFixed(1) + '%'),
+        chk(m.length === 3 && m[0] === '$25.00' && m[1].replace(/,/g, '') === pays && txt(view).includes('Model’s chance all 2 land ' + (q.pr.corr * 100).toFixed(1) + '%'),
           `${how}: the card's stake, payout or chance is not the builder's: ${m.join(' / ')} against ${pays}`); }
       chk(new RegExp(`^${wk <= 18 ? 'Week ' + wk : '(Wild Card|Divisional|Conference|Super Bowl)'}`).test(txt(view.querySelector('.pc-sub'))) && /Dec 31/.test(txt(view.querySelector('.pc-sub')))
         && /X NFL Bets and Stats/i.test(txt(view)) && txt(view).includes('demon-x13.github.io/nfl-hub/nflbets'), `${how}: the card has no week and date, or no mark and address: ` + txt(view.querySelector('.pc-head')));
@@ -742,6 +747,35 @@ function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () =>
       w.eval('S.stake=40; save(); renderParlay()'); await wait(20);
       d.getElementById('pFinish').click(); await wait(20);
       chk(txt(d.querySelector('#pcView .pc-money b')) === '$40.00', `${how}: the card did not follow the builder's new stake`);
+      d.getElementById('pcClose').click();
+      /* a long shot: every dollar figure whole, thousands marked, in the window and on the image.
+         The window's tiles may wrap but never cut (no ellipsis, no clipping, none narrower than
+         its figure); the image's figures step down a size to fit three across, and a figure too
+         wide even so takes a second row of tiles, the card that much taller */
+      { const fmt = x => '$' + x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const css = [...d.querySelectorAll('style')].map(e => e.textContent).join('\n');
+        const rules = [...css.matchAll(/\.pc-money(?:\s+(?:b|div))?\s*\{([^}]*)\}/g)].map(x => x[1]);
+        chk(rules.length >= 3 && !rules.some(r => /ellipsis|overflow\s*:\s*hidden|min-width\s*:\s*0/.test(r)),
+          `${how}: the window's money tiles can cut a figure: ` + rules.filter(r => /ellipsis|overflow|min-width/.test(r)).join(' / '));
+        const shot = async (stake, bp) => {
+          w.eval(`S.stake=${stake}; S.bookPrice=${bp}; save(); renderParlay()`); await wait(20);
+          d.getElementById('pFinish').click(); await wait(20);
+          const q = w.PARLAY_CARD.quote(), want = [fmt(stake), fmt(stake * q.useDec), '+' + fmt(stake * q.useDec - stake)];
+          const win = [...d.querySelectorAll('#pcView .pc-money b')].map(txt), n0 = rec.draws.length, c0 = rec.canvases.length;
+          d.getElementById('pcDownload').click(); await wait(60);
+          const drawn = rec.draws.slice(n0).filter(x => /\$/.test(x.t)), cv = rec.canvases[c0];
+          d.getElementById('pcClose').click();
+          return { want, win, drawn, h: cv ? cv.height : 0,
+            whole: want.every(x => drawn.some(y => y.t === x)) && !drawn.some(y => y.t.includes('\u2026')),
+            px: Math.min(...drawn.map(y => parseFloat((y.font.match(/([\d.]+)px/) || [])[1]) || 0)) }; };
+        const a = await shot(20, 88000);
+        chk(a.want[2] === '+$17,600.00' && a.win.join('|') === a.want.join('|'), `${how}: the window does not show a long shot's stake, payout and profit whole: ${a.win.join(' / ')} for ${a.want.join(' / ')}`);
+        chk(a.whole && a.px >= 14 && a.px < 19, `${how}: the image cut a long shot's figures, or did not step them down to fit: ` + a.drawn.map(y => y.t + ' @' + y.font.split(' ')[1]).join(' | '));
+        const b = await shot(100000, 500000);
+        chk(b.whole && b.win.join('|') === b.want.join('|') && b.h === a.h + 2 * 66,
+          `${how}: a figure too wide for three tiles across was cut, or the tiles did not take a second row (${a.h} then ${b.h} px): ` + b.drawn.map(y => y.t + ' @' + y.font.split(' ')[1]).join(' | '));
+        w.eval('S.stake=40; S.bookPrice=null; save(); renderParlay()'); await wait(20);
+        d.getElementById('pFinish').click(); await wait(20); }
       /* Start over empties the builder, and only the builder */
       d.getElementById('pcAgain').click(); await wait(30);
       chk(md.hidden && Object.keys(w.eval('S').parlay).length === 0 && !d.getElementById('pFinish') && w.eval('S').saved.map(p => p.id).join() === 'saved-before' && ioSets === 0,

@@ -299,7 +299,12 @@ beside the price's, the week and its dates, the site's mark and address -- and *
 image** saves it as a PNG (`parlay-week6-3legs.png`), drawn with the canvas 2D API at twice its
 size (no library) and handed over by `canvas.toBlob` and an `<a download>`; where the browser
 can share a file (`navigator.canShare({files})`, a phone) a second button opens the share sheet,
-which is how it reaches Photos. **Start over** empties the builder. Finishing writes nothing: not
+which is how it reaches Photos. Every dollar figure is shown whole with its thousands marked
+($17,620.00), never cut with an ellipsis: in the window Stake, Pays and Profit are flex tiles no
+narrower than their figures, so one too wide for three across goes onto a second row; on the image
+the figures step down from 19px to 14px to fit three across, then the tiles take two rows (Stake
+and Pays, then Profit the card's width), then one to a row, the card growing to hold them.
+**Start over** empties the builder. Finishing writes nothing: not
 `S.saved`, not X's document, no key of the page, never `LIVE_IO`. The card's price is the
 builder's own: the build lifts renderParlay's pricing block out of `part3.js` into the card's
 `quote()` (its `/*QUOTE*/` slot), so it cannot drift. On a visitor's device the Suggested parlays
@@ -324,7 +329,9 @@ is not on the box score.
 published data and walks every tab; `nflbets/build/smoke_live.js` does the same for the
 X Parlays section against a stubbed parlay file and scoreboard, with no store, as the owner and as
 a visitor, and (its section J) the parlay card: Finish, the window with every leg and the price,
-the image on a recorder canvas (jsdom draws nothing), the share sheet, Escape, Tab and Start over,
+the image on a recorder canvas (jsdom draws nothing; it measures figures as a wide bold face does),
+a long shot's stake, payout and profit whole in the window and on the image (stepped down to fit,
+and a second row of tiles for a figure too wide even so), the share sheet, Escape, Tab and Start over,
 that finishing writes nothing, that the owner's Save still saves into X's, that a builder drawn
 before the role was known follows it, and that a reader's own saved parlays join X's document the
 day the browser becomes the owner's. The elo job runs `smoke.js`

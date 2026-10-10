@@ -730,10 +730,13 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .pc-meta{display:block;font-size:12px;color:#657386;margin-top:1px}
 .pc-lp{text-align:right;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0F1B2D}
 .pc-lp small{display:block;font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#657386;margin-top:2px}
-.pc-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:6px 20px 0}
-.pc-money div{background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px;min-width:0}
+.pc-money{display:flex;flex-wrap:wrap;gap:8px;padding:6px 20px 0}
+/* a figure is never cut: each tile takes an equal share of the row and never less than its
+   figure (a flex item's own minimum is its content), and a tile that will not fit beside the
+   others goes onto a row of its own */
+.pc-money div{flex:1 1 0;background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px}
 .pc-money span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#657386}
-.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap}
 .pc-money .pc-win b{color:#1B7A4E}
 .pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
 .pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
@@ -745,7 +748,7 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 @media(max-width:430px){
   #pcModal .modal-panel{padding:12px 12px 22px}
   .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
-  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:16px}
+  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
   .pc-actions .btn{flex:1 1 auto}
 }
 </style>
@@ -4427,7 +4430,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the sync layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='ba0aca0';
+const PAGE_HASH='8986df5';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -5181,7 +5184,8 @@ window.PARLAY_CARD=(function(){
   const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   /* a visitor: anyone whose device is not the owner's, the X Parlays section's own rule */
   const visitor=()=>!(typeof window.lpOwner==='function'&&window.lpOwner());
-  const money=v=>'$'+(Math.round(v*100)/100).toFixed(2);
+  /* every dollar figure whole, with its thousands marked: $17,620.00 */
+  const money=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const pct=p=>(p*100).toFixed(1)+'%';
   const ml=x=>x==null||!isFinite(x)?'–':(x>0?'+'+x:'−'+Math.abs(x));
   /* the playoffs run on as weeks 19-22 */
@@ -5326,14 +5330,33 @@ window.PARLAY_CARD=(function(){
     while(t.length>1&&x.measureText(t+'…').width>max) t=t.slice(0,-1); return t+'…'; }
   function text(x,t,a,b,font,color,align,max){ x.font=font; x.fillStyle=color; x.textAlign=align||'left'; x.textBaseline='alphabetic';
     const s=max?fit(x,t,max):String(t); x.fillText(s,a,b); return x.measureText(s).width; }
-  const LEG_H=74, HEAD_H=134;
-  function size(m){ return HEAD_H+10+m.legs.length*LEG_H+(m.stake?74:0)+40+52; }
+  const LEG_H=74, HEAD_H=134, TILE_H=58, TILE_GAP=8;
+  /* what it pays: Stake, Pays and Profit, every figure whole. Three across, the figures step down
+     from 19px to 14px until each fits its tile; if one still does not, the tiles take two rows
+     (Stake and Pays, then Profit the card's width), then one to a row; only past anything a real
+     stake makes does the font go under 14px. Never fit()'s ellipsis on a dollar figure. */
+  function tiles(x,m,L,R){
+    if(!m.stake) return null;
+    const vals=[['STAKE',money(m.stake),C.ink],['PAYS',money(m.payout),C.ink],['PROFIT','+'+money(m.profit),C.pick]];
+    const wid=(t,px)=>{ x.font='700 '+px+'px '+FD; return x.measureText(t).width; };
+    const lay=per=>{ const rows=[]; for(let i=0;i<vals.length;i+=per) rows.push(vals.slice(i,i+per));
+      return rows.map(r=>{ const tw=(R-L-(r.length-1)*TILE_GAP)/r.length; return r.map(([k,v,col])=>({k,v,col,tw})); }); };
+    for(const per of [3,2,1]){ const rows=lay(per);
+      for(let px=19;px>=14;px--) if(rows.every(r=>r.every(t=>wid(t.v,px)<=t.tw-20))) return {rows,px}; }
+    const rows=lay(1), w=Math.max(...rows.map(r=>wid(r[0].v,19)));
+    return {rows,px:Math.min(14,Math.floor(19*(rows[0][0].tw-20)/w*10)/10)};
+  }
+  const tilesH=t=>t?4+t.rows.length*TILE_H+(t.rows.length-1)*TILE_GAP+12:0;
+  function size(m,t){ return HEAD_H+10+m.legs.length*LEG_H+tilesH(t)+40+52; }
   async function draw(m,scale){
     scale=scale||2;
     await fonts();
-    const CH=size(m), H=CH+2*M, CW=W-2*M;
-    const c=document.createElement('canvas'); c.width=Math.round(W*scale); c.height=Math.round(H*scale);
+    const c=document.createElement('canvas');
     const x=c.getContext&&c.getContext('2d'); if(!x) return null;
+    /* the tiles are laid out first, by measure, since their rows set the card's height; sizing
+       the canvas then resets the context, so the scale comes after */
+    const CW=W-2*M, L=M+P, R=M+CW-P, t=tiles(x,m,L,R), CH=size(m,t), H=CH+2*M;
+    c.width=Math.round(W*scale); c.height=Math.round(H*scale);
     x.scale(scale,scale);
     x.fillStyle=C.bg; x.fillRect(0,0,W,H);
     /* the card, with a soft shadow, and its header band */
@@ -5344,7 +5367,6 @@ window.PARLAY_CARD=(function(){
     const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(211,154,31,0)'); gl.addColorStop(.5,'rgba(211,154,31,.85)'); gl.addColorStop(1,'rgba(211,154,31,0)');
     x.fillStyle=gl; x.fillRect(M,M+HEAD_H-2,CW,2);
     x.restore();
-    const L=M+P, R=M+CW-P;
     /* the mark, the kicker, the title and the price */
     let y=M+30;
     if('letterSpacing' in x) x.letterSpacing='1px';
@@ -5376,15 +5398,16 @@ window.PARLAY_CARD=(function(){
       y+=LEG_H;
     });
     /* what it pays */
-    if(m.stake){
-      const gap=8, tw=(R-L-2*gap)/3;
-      [['STAKE',money(m.stake),C.ink],['PAYS',money(m.payout),C.ink],['PROFIT','+'+money(m.profit),C.pick]].forEach(([k,v,col],i)=>{
-        const tx=L+i*(tw+gap);
-        rr(x,tx,y+4,tw,58,10); x.fillStyle=C.panel2; x.fill(); x.lineWidth=1; x.strokeStyle=C.line; x.stroke();
-        text(x,k,tx+11,y+24,'700 10px '+FB,C.muted);
-        text(x,v,tx+11,y+50,'700 19px '+FD,col,'left',tw-20);
-      });
-      y+=74;
+    if(t){
+      let ty=y+4;
+      t.rows.forEach(r=>{ let tx=L;
+        r.forEach(tl=>{
+          rr(x,tx,ty,tl.tw,TILE_H,10); x.fillStyle=C.panel2; x.fill(); x.lineWidth=1; x.strokeStyle=C.line; x.stroke();
+          text(x,tl.k,tx+11,ty+20,'700 10px '+FB,C.muted);
+          text(x,tl.v,tx+11,ty+46,'700 '+t.px+'px '+FD,tl.col);
+          tx+=tl.tw+TILE_GAP; });
+        ty+=TILE_H+TILE_GAP; });
+      y+=tilesH(t);
     }
     /* the chance: the model's beside the price's */
     { let cx=L; const t1=m.chance?m.chanceBy+'’s chance all '+m.legs.length+' land ':'', yy=y+24;

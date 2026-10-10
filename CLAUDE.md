@@ -476,7 +476,9 @@ the builder's Save and lock is **Finish parlay**: it opens the parlay card
 card (each leg and its price, the parlay's price, the stake and what it pays, the model's chance
 beside the price's, the week and its dates, the site's mark) with **Download image** (a PNG drawn
 on a canvas at twice its size, `parlay-week6-3legs.png`; the share sheet too where the browser can
-share a file, which is how a phone saves it to Photos) and **Start over**. Finishing saves
+share a file, which is how a phone saves it to Photos) and **Start over**. Every dollar figure on
+it is whole, thousands marked: the window's tiles wrap onto a second row rather than cut one, and
+the image's step down from 19px to 14px, then take a second row. Finishing saves
 nothing anywhere; the Suggested parlays window's tiers (the model's and the Elo picks') finish the
 same way on a visitor's device. The build lifts renderParlay's pricing out of `part3.js` into the
 card, so its price is the builder's own. Which parlays are whose, and who may change them, is in
