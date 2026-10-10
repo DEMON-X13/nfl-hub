@@ -34,10 +34,10 @@ by hand when a source changes, and reads the models' data on every load. `news/`
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what `nflbets/` reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
-| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with X Parlays (X's placed parlays from `liveparlays/parlays.json` over the Parlay Builder, which finishes a parlay as a downloadable card, saved nowhere) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
+| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
 | `nhl/` | X NHL Bets: the NBA Hub's idea on hockey, moneylines, puck lines and totals. Its own page, job and data; nothing shared with the other sites | `nhl/index.html` (hand-written), `nhl/tools/` |
-| `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#parlay`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
+| `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
 | `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
 
 ## Source vs generated -- never edit a generated file
@@ -121,6 +121,21 @@ rollover the job moves last season's price files to `props/data/archive/<season>
 bakes only this season's games, so bumping that line is the whole change: `nflbets/build/build.js`
 reads it (and stops if its shape changes) and writes its KEY into `nflbets/build/storage.js`, so
 neither needs an edit.
+
+A game total is a leg like a team's win or cover (`total` beside `ml` and `ats`: `totalBet`,
+`totalLeg`, `settleGameLeg`, `isGameLeg` in `part2.js`), offered over and under on the Game bets card
+under each Pick'ems game and in the suggested parlays. Its line is the schedule's `g.tot`, its price
+the over and under odds beside it, `g.tov`/`g.tou`, which `payload.py` carries from games.csv's
+`over_odds`/`under_odds` (free) and `weekly.py`'s bake replaces with DraftKings' own where a fresh
+DraftKings total is used (`oddsfetch.py` now keeps the totals market's prices it already pulls, no
+more credits; a DraftKings total on another number with no price of its own drops the price). With
+no price on file the leg is shown at -110 marked est. and no suggestion is built on it. Its chance is
+the model's own points for the two sides (`modelPoints`) pulled halfway to the posted total, the final
+total treated as spread about `TOTAL_SD`, 13.2 points (how far 2010-2025's 4,175 regular-season totals
+landed from the posted one; never fitted on the season in play). On 2026's first 65 graded games that
+rule did worse than a coin (its favoured side 25-40, Brier 0.265 against the book's 0.250): it is
+reported, not tuned. A total moves with its game's passing and scoring lines (`TOTAL_RHO`, measured on
+2019-2024) and is unrelated to a win or cover bet on the same game.
 
 `.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
 Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
@@ -258,10 +273,10 @@ player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`)
 beside the model's chance and graded against it, week by week, at the top of the prop
 model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
-shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield), each leg in the builder carries its Elo matchup chance, and the Suggested parlays
-window's Elo picks are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield), each leg in the builder carries its Elo matchup chance, and the Elo picks
+(their own section at the foot of the Parlay Builder's suggested parlays, `#pbElo`) are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
 they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
-game), built from `pricedLegs()` in the props parts beside the model's own suggestions. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
+game), built from `pricedLegs()` in the props parts and filtered by the panel's ticked games and player sides (`pbAllows`), each with Add to builder and Finish. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
 grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season
@@ -461,18 +476,45 @@ each, and which report and goalies the clubs stand on.
 
 ## Bets and Stats: the loop
 
-The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, X Parlays (the prop model's Parlay Builder tab, still
-`#parlay`), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the Player Elo tab, renamed), Pick'em Record,
-X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button there stays in the page, unshown.
+The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, Parlay Builder (the prop model's own Parlay Builder
+tab, `#parlay`), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
+Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
+there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`.
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
-front of it as its own `pk-` prefixed section, the X Parlays section lifted out of
-`liveparlays/build/page.html` into the X Parlays tab (styles scoped to `#lpCard`, script in a
-closure): X's card (`#lpCard`, X's placed parlays from `liveparlays/parlays.json`, read only, a
-parlay marked `cleared` left out, a quiet line under the heading saying when the file last changed)
-at the top of the tab and the builder under it. No device keeps a list of its own (the owner's
-call: visitors come to see X's parlays), and on every device the builder's Save and lock is
-**Finish parlay**: it opens the parlay card
+front of it as its own `pk-` prefixed section, and the X Parlays section lifted out of
+`liveparlays/build/page.html` into a section of its own, `tab-xparlays` (styles scoped to `#lpCard`,
+script in a closure): X's card (`#lpCard`, X's placed parlays from `liveparlays/parlays.json`, read
+only, a parlay marked `cleared` left out, a quiet line under the heading saying when the file last
+changed) and nothing else.
+
+The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
+in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). The panel is built from what
+the visitor ticks, each choice kept in the browser's own prop model state (`S.ui.pb`: the boxes, the
+games unticked, whether the games list is open; nothing else holds it): a mix, All (the default),
+Teams only or Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and
+Player unders (a touchdown and a ladder rung are overs; a box changed by hand shows the mix it makes,
+or Custom); and the week's games still to kick off, all ticked to start, with All and None. From those
+alone it builds four tiers, each on its own: Safe, the likeliest 2-leg parlay; Medium, Aggressive and
+Extreme, the 3-, 4- and 5-leg parlay with the best expected return (chance times payout) that lands at
+least 25%, 12% and 5% of the time (`PB_TIERS`). Under All nothing forces or caps a kind. A leg
+qualifies as the old Suggested parlays window's did (a real price, the model's chance 45-97% and 3
+points above the book's, market + form agreeing on a player leg: `formAgrees`); where those cannot
+fill a tier, the fewest legs the model still rates at or above the book fill it, marked thin edge
+with a line saying so; never a leg below the book. One game leg a game, one leg a player, no line
+twice. A tier that cannot be built says why ("Only 3 legs on your picks: tick more games or bet
+types"), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
+`parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
+builder (exactly those legs into `S.parlay`) shows the same numbers; Finish opens the parlay card on
+the $10 the tier shows. The search is a beam over a pairwise copula approximation, with only the
+finalists worked by the real sums; the tiers are cached on a signature of the choices and the data
+(`PB_CACHE`), and a game that kicks off while the page is open leaves the list and every tier
+(`pbWatch` looks every half minute). The Elo picks are the panel's last section. With no game to come
+the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
+its stake box) is gone; a game page's own High/Medium/Low suggestions and their side switch stay.
+
+No device keeps a list of its own (the owner's call: visitors come to see X's parlays), and on
+every device the builder's Save and lock is **Finish parlay**: it opens the parlay card
 (`nflbets/build/card.html`, `pc-` prefixed, its own closure), a window showing the parlay as a
 card (each leg and its price, the parlay's price, the stake and what it pays, the model's chance
 beside the price's, the week and its dates, the site's mark) with **Download image** (a PNG drawn
@@ -480,10 +522,10 @@ on a canvas at twice its size, `parlay-week6-3legs.png`; the share sheet too whe
 share a file, which is how a phone saves it to Photos) and **Start over**. Every dollar figure on
 it is whole, thousands marked: the window's tiles wrap onto a second row rather than cut one, and
 the image's step down from 19px to 14px, then take a second row. Finishing saves
-nothing anywhere; the Suggested parlays window's tiers (the model's and the Elo picks') finish the
-same way. The build lifts renderParlay's pricing out of `part3.js` into the
-card, so its price is the builder's own. Where X's parlays and the X Bet Log come from is in
-"X's parlays and the X Bet Log" below. Then the Player Elo tab
+nothing anywhere; a suggested tier's Finish (the panel's and the Elo picks', `data-pc-finish`,
+answered by one listener in the card) finishes the same way. The build lifts renderParlay's pricing
+out of `part3.js` into the card, so its price is the builder's own. Where X's parlays and the X Bet
+Log come from is in "X's parlays and the X Bet Log" below. Then the Player Elo tab
 from `nflbets/build/tab_elo.html` (`pe-` prefixed, its own closure, reading `elo/data/`), and the betting
 app's Records, Power Ratings and Bet Log tabs in frames: the app, as `betting/tools/build.js`
 builds it, is carried in the page as a string (`BET_APP`) and becomes a frame's srcdoc when
@@ -496,9 +538,9 @@ rebuilding it too:
 
 ```
 node nflbets/build/build.js
-node nflbets/build/smoke.js       # must end "0 failures"; includes X Parlays and the X Bet Log from their files
+node nflbets/build/smoke.js       # must end "0 failures"; the Parlay Builder's panel, X Parlays and the X Bet Log from their files
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
-node nflbets/build/smoke_live.js  # the X Parlays section from its file, on a plain browser and one the retired owner layer marked, and the parlay card; must end "0 failures"
+node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab, on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
 ```
 
 The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the

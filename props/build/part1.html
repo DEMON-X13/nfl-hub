@@ -305,6 +305,71 @@ body.modal-open{overflow:hidden}
 .sugg-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
 .sugg-tier .btn{margin-top:auto;align-self:stretch;text-align:center}
 @media(max-width:900px){ .sugg-grid{grid-template-columns:1fr} }
+/* the Parlay Builder's suggested parlays: what to build from, then four tiers */
+.pb .pb-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 4px}
+.pb .pb-hd h2{margin:0}
+.pb-lead{margin:0 0 14px;font-size:13px}
+.pb-ctl{display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);margin:0 0 14px}
+.pb-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
+.pb-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:84px}
+.pb-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;background:var(--panel);box-shadow:var(--sh-xs);max-width:100%}
+.pb-seg button{background:transparent;color:var(--ink-2);border:0;border-left:1px solid var(--line-2);padding:8px 14px;min-height:40px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.pb-seg button:first-child{border-left:0}
+.pb-seg button.on{background:var(--ink);color:var(--panel)}
+.pb-custom{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px solid var(--gold);color:var(--ink-2)}
+.pb-chips{display:flex;flex-wrap:wrap;gap:8px}
+.pb-chip{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:7px 13px 7px 11px;border:1px solid var(--line-2);border-radius:999px;background:var(--panel);cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2);user-select:none;-webkit-user-select:none}
+.pb-chip small{font-weight:500;color:var(--muted);font-size:11.5px}
+.pb-chip.on{border-color:var(--pick);background:var(--pick-soft);color:var(--ink)}
+.pb-chip input,.pb-g input{margin:0;flex:none}
+.pb-games{border-top:1px solid var(--line);padding-top:10px}
+.pb-games summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:40px;font-size:13px}
+.pb-games summary .pb-lbl{flex-basis:auto}
+.pb-games summary b{white-space:nowrap}
+.pb-games summary::-webkit-details-marker{display:none}
+.pb-games summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s var(--ease)}
+.pb-games[open] summary::after{transform:rotate(-135deg)}
+.pb-games[open] .pb-sum-hint{display:none}
+.pb-sum-hint{color:var(--muted);font-size:12px}
+.pb-gbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 10px;font-size:12px}
+.pb .btn.small{padding:6px 14px;font-size:12.5px;min-height:34px}
+.pb-glist{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:8px}
+.pb-g{display:flex;align-items:center;gap:9px;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--panel);cursor:pointer;min-height:46px;min-width:0}
+.pb-g:not(.on){opacity:.55;border-style:dashed}
+.pb-g b{display:block;font-family:var(--display);font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap}
+.pb-g small{display:block;font-size:11.5px;color:var(--muted);line-height:1.3}
+.pb-note{margin:-4px 0 12px;font-size:12.5px;color:var(--ink-2)}
+.pb-tiers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.pb-tier{background:var(--panel-2);border:1px solid var(--line);border-top:3px solid var(--line-2);border-radius:var(--r-md);padding:12px 13px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pb-tier.safe,.pb-tier.elo2{border-top-color:var(--pick)} .pb-tier.med,.pb-tier.elo3{border-top-color:var(--gold)} .pb-tier.aggr,.pb-tier.elo4{border-top-color:var(--miss)} .pb-tier.xtrm{border-top-color:#7C4DFF}
+.pb-th{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pb-tn{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
+.pb-rule{font-size:11px;color:var(--muted);flex-basis:100%}
+.pb-nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pb-nums div:last-child{grid-column:1/-1}
+.pb-nums div{flex:1 1 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:6px 8px}
+.pb-nums b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+.pb-nums span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.card .pb-legs{list-style:none;margin:0;padding:0}
+.card .pb-legs li{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 0;margin:0;border-top:1px solid var(--line);font-size:13px;line-height:1.35}
+.pb-legs .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.pb-legs .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
+.pb-legs .pr{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
+.pb-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
+.pb-thinmark{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:0 6px;border-radius:999px;border:1px solid var(--gold);color:var(--ink-2);white-space:nowrap}
+.pb-thin{margin:0;font-size:11.5px;color:var(--ink-2)}
+.pb-why{margin:0;font-size:13px;color:var(--ink-2)}
+.pb-tier.none{border-top-style:dashed}
+.pb-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.pb-acts .btn{flex:1 1 auto;text-align:center;min-height:40px}
+.pb-foot{margin:12px 0 0;font-size:12px}
+.pb-none{margin:6px 0 0;padding:18px;text-align:center;color:var(--ink-2);background:var(--panel-2);border:1.5px dashed var(--line-2);border-radius:var(--r-md)}
+.pb-elo:not(:empty){margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.pb-elo h3{margin:0 0 4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pb-elo .pb-tiers{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){ .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-nums{display:flex;flex-wrap:wrap} }
+@media(max-width:640px){ .card.pb{padding:16px 14px} .pb-tiers,.pb-elo .pb-tiers{grid-template-columns:minmax(0,1fr)} .pb-lbl{min-width:0;flex-basis:100%} .pb-ctl{padding:12px} .pb-glist{grid-template-columns:repeat(2,minmax(0,1fr))} .pb-seg{display:flex;width:100%} .pb-seg button{flex:1 1 auto;padding:8px 10px}
+  .pb-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%} .pb-chip{border-radius:12px;padding:7px 10px;line-height:1.25} .pb-chip small{display:block} .pb-chip span{min-width:0} }
 /* the parlay card: what it pays sits under the legs behind a divider, then the actions behind another */
 .pays{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
 .pays h3{margin:0 0 12px}
@@ -429,12 +494,8 @@ body.modal-open{overflow:hidden}
 </section>
 
 <section id="tab-parlay" hidden>
+  <div id="pbPanel"></div>
   <div id="parlayBody"></div>
-  <div id="suggModal" class="modal" hidden>
-    <div class="modal-panel" role="dialog" aria-modal="true" aria-label="Suggested parlays">
-      <div id="suggView"></div>
-    </div>
-  </div>
 </section>
 
 <section id="tab-track" hidden>

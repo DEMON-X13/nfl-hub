@@ -183,14 +183,14 @@ function actualSummary(x,lines,week,src){
     bits.push(`<b>${num(a[s],0)}</b> ${l.m.short||s} <span class="muted">(proj ${num(l.mu,l.mu<10?1:0)})</span>`); if(bits.length>=3) break; }
   return bits.join(' &nbsp;\u00b7&nbsp; ');
 }
-/* the Game bets card at the top of a game: both teams, to win and to cover */
+/* the Game bets card at the top of a game: both teams, to win and to cover, and the game total */
 function gameBetsCard(g,locked){
+  const mark=r=>r==null?'<span class="res">–</span>':(r==='win'?'<span class="res win">✓</span>':(r==='loss'?'<span class="res loss">✗</span>':'<span class="res">push</span>'));
   const rows=[g.a,g.h].map(team=>{
     const ml=gameBet(g,team,'ml'), ats=gameBet(g,team,'ats'); const isHome=team===g.h;
     const bookML=isHome?g.mlh:g.mla, bookSP=isHome?g.sph:g.spa;
     const kML=legKey(g.id,'team:'+team,'ml'), kATS=legKey(g.id,'team:'+team,'ats');
     const onML=!!S.parlay[kML], onATS=!!S.parlay[kATS];
-    const mark=r=>r==null?'<span class="res">–</span>':(r==='win'?'<span class="res win">✓</span>':(r==='loss'?'<span class="res loss">✗</span>':'<span class="res">push</span>'));
     const rML=locked?settleGameLeg({gid:g.id,team,stat:'ml',k:0}):null;
     const rATS=(locked&&ats)?settleGameLeg({gid:g.id,team,stat:'ats',k:ats.line}):null;
     const row=(b,on,key,book,res,label)=>{ const [c,lbl]=confTier(b.p);
@@ -206,9 +206,24 @@ function gameBetsCard(g,locked){
     if(ats) h+=row(ats,onATS,kATS,bookSP,rATS,`To cover ${ats.line>0?'+':''}${ats.line}`);
     return h+'</table></div>';
   }).join('');
+  /* the game total, over or under: one leg a game, so ticking one side takes the other off. The
+     book's price where the payload has one; -110 marked est. where it has none */
+  let tot='';
+  const tb=totalBet(g,'over');
+  if(tb){ const kT=legKey(g.id,'game','total'), cur=S.parlay[kT];
+    const trow=side=>{ const l=totalLeg(g,side), on=!!cur&&cur.side===side&&cur.k===l.k, [c,lbl]=confTier(l.p);
+      const res=locked?settleGameLeg({gid:g.id,stat:'total',side,k:l.k}):null;
+      return `<tr class="${on?'on':''}${res==='win'?' hit':(res==='loss'?' miss':'')}">
+        <td class="pick">${locked?mark(res):`<input type="checkbox" ${on?'checked':''} data-leg="${kT}" data-k="${l.k}" data-side="${side}" data-main="1" aria-label="Add ${side} ${l.k} points, ${esc(TEAM_NAMES[g.a]||g.a)} at ${esc(TEAM_NAMES[g.h]||g.h)}">`}</td>
+        <td class="thr">${side==='under'?'Under':'Over'} ${l.k}</td>
+        <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${Math.max(2,l.p*100).toFixed(0)}%"></div></div></td>
+        <td class="pct">${(l.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
+        <td class="num est">${l.src==='real'?'':`${fmtML(TOTAL_EST)}<em>est.</em>`}</td>
+        <td class="num book real">${l.src==='real'?fmtML(l.price):''}</td></tr>`; };
+    tot=`<div class="statblk"><h4>Game total <em>our total ${tb.mu.toFixed(1)}</em><em class="mline">book line ${tb.line}</em></h4><table class="rungs">${trow('over')}${trow('under')}</table></div>`; }
   return `<div class="card gbets"><h2>Game bets</h2>
-    <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line and the spread.':'A team to win, or to cover the spread. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. A game leg is priced as unrelated to player legs, because that relationship has not been measured here.</p>
-    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
+    <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line, the spread and the total.':'A team to win, or to cover the spread, or the game total over or under. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that; the total from our own points for each side, pulled halfway to the posted total, spread about 13.2 points. A win or cover leg is priced as unrelated to player legs, which has not been measured here; a total moves with its game's passing and scoring lines, measured on 2019 to 2024.</p>
+    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${tot}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}${tb&&totalBook(g,'over')==null?'<p class="muted" style="margin:6px 0 0;font-size:12px">No over or under price on file for this total yet: the -110 is an estimate, and no suggested parlay is built on it.</p>':''}</div>`;
 }
 /* the ladders are hidden unless turned on: without a real price they cannot be bet
    or picked by a suggestion, and they run to thirty rows a player. The model still
@@ -410,9 +425,9 @@ function renderGame(){
   $('gameView').querySelectorAll('[data-leg]').forEach(cb=>cb.addEventListener('change',e=>{
     e.stopPropagation();
     toggleLeg(cb.dataset.leg, +cb.dataset.k, g, cb.dataset.side||'over', cb.dataset.main==='1'); }));
-  /* the same side switch as the Suggested parlays window, one setting for both */
+  /* the game page's own side switch (the Parlay Builder's suggestions have their own boxes) */
   $('gameView').querySelectorAll('[data-gsugg-side]').forEach(b=>b.addEventListener('click',()=>{
-    S.ui.suggestSide=b.dataset.gsuggSide; save(); renderGame(); renderParlay(); if(suggestOpen()) fillSuggest(); }));
+    S.ui.suggestSide=b.dataset.gsuggSide; save(); renderGame(); renderParlay(); }));
   /* a tier's Add all: every leg of that hand on the parlay, skipping any already there */
   $('gameView').querySelectorAll('[data-gtier-add]').forEach(b=>b.addEventListener('click',()=>{
     const t=gameTiers(g)[b.dataset.gtierAdd]; if(!t) return;
@@ -769,10 +784,8 @@ function renderAll(){ buildNorm(); renderWeekOptions(); renderSlate(); renderPar
 /* the Games tab's own scores: off until asked, then read on the button */
 $('slateNow')?.addEventListener('click',()=>{ LIVE.slate=true; LIVE.err=null; slateStamp(); liveRefresh(); });
 ['trackMarket','trackKind'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderTrack); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame();
-  else if(e.key==='Escape'&&suggestOpen()) closeSuggest(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('gameModal').hidden) closeGame(); });
 $('gameModal').addEventListener('click',e=>{ if(e.target===$('gameModal')) closeGame(); });
-$('suggModal').addEventListener('click',e=>{ if(e.target===$('suggModal')) closeSuggest(); });
 document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
   document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab); }));
@@ -815,14 +828,15 @@ async function boot(){
     for(const k of ['parlay','saved','odds','stake','bookPrice','margin','gamesFetched','lastBackup']) if(saved[k]!=null) S[k]=saved[k];
   }
   /* the view resets, but a toggle the reader set is theirs */
-  S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui&&saved.ui.showRungs),suggestSide:['over','under'].includes(saved&&saved.ui&&saved.ui.suggestSide)?saved.ui.suggestSide:'any'};
+  S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui&&saved.ui.showRungs),suggestSide:['over','under'].includes(saved&&saved.ui&&saved.ui.suggestSide)?saved.ui.suggestSide:'any',
+    pb:pbClean(saved&&saved.ui&&saved.ui.pb)};
   S.inactive=S.inactive||{}; S.depth=S.depth||{};
   S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{};
   let baked=null;
   if(!window.NO_BAKED){ try{ baked=applyBaked(); }catch(e){ console.error('built-in data failed to apply',e); setTimeout(()=>log('Built-in data could not be applied: '+(e&&e.message||e)+'. The upload buttons still work.','err'),0); } }
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
   { const bt=$('buildTag'); if(bt) bt.textContent=`${MODEL_BUILD} \u00b7 ${APP_BUILD}`; }
-  renderAll();
+  renderAll(); pbWatch();
   $('rebuildNote').hidden=!rebuilt;
   if(rebuilt){ $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
   if(baked&&(baked.stats.length||baked.prices||baked.inj)){
@@ -876,7 +890,7 @@ $('fetchGames').addEventListener('click',async()=>{
       g.d=row.gameday||g.d; g.t=row.gametime||g.t;
       const sp=parseFloat(row.spread_line), tot=parseFloat(row.total_line);
       g.sp=isFinite(sp)?sp:g.sp; g.tot=isFinite(tot)?tot:g.tot;
-      for(const [f,c] of [['mla','away_moneyline'],['mlh','home_moneyline'],['spa','away_spread_odds'],['sph','home_spread_odds']]){ const v=parseFloat(row[c]); if(isFinite(v)) g[f]=v; }
+      for(const [f,c] of [['mla','away_moneyline'],['mlh','home_moneyline'],['spa','away_spread_odds'],['sph','home_spread_odds'],['tov','over_odds'],['tou','under_odds']]){ const v=parseFloat(row[c]); if(isFinite(v)) g[f]=v; }
       const hs=parseFloat(row.home_score), as_=parseFloat(row.away_score);
       if(isFinite(hs)&&isFinite(as_)){ g.hs=hs; g.as=as_; } upd++;
     }
@@ -944,6 +958,11 @@ function toggleLeg(key,k,g,side,main){
   if(cur&&cur.k===k&&cur.side===side&&!!cur.main===!!main){ delete S.parlay[key]; save(); renderGame(); renderParlay(); return; }
   const [gid,pid,stat]=key.split('|');
   const game=g||S.sched.find(x=>x.id===gid);
+  if(stat==='total'){
+    if(!game) return; const l=totalLeg(game,side==='under'?'under':'over'); if(!l) return;
+    const {key:_k,...leg}=l; S.parlay[key]=leg;
+    save(); renderGame(); renderParlay(); return;
+  }
   if(stat==='ml'||stat==='ats'){
     if(!game) return; const team=pid.replace(/^team:/,''); const b=gameBet(game,team,stat); if(!b) return;
     const isHome=team===game.h, opp=isHome?game.a:game.h;
@@ -1012,17 +1031,15 @@ function parlayDec(priced,sims){
 const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1;
   return Object.values(g).some(n=>n>1); };
 
-/* ---------- suggested parlays: safe, medium, aggressive ----------
-   One core parlay grown in three steps. Each tier has a floor on the chance that every leg
-   lands and a leg cap; the next leg is always the one with the best expected return
-   (chance x payout, real correlations) that keeps the parlay above the floor. */
-const SUGGEST_TIERS=[['safe','Safe',0.50,3],['med','Medium',0.30,5],['aggr','Aggressive',0.15,8]];
-let SUGGEST_CACHE=null;
-/* every line this week with a real sportsbook price, game bets and players, unjudged */
-function pricedLegs(games){
+/* ---------- the lines the suggestions are built from ---------- */
+/* every line this week with a real sportsbook price, game bets and players, unjudged. withTotals
+   adds each game's total, over and under, where the book's price for it is on file: the Parlay
+   Builder's suggestions use them; a game page's own suggestions and the Elo picks do not */
+function pricedLegs(games,withTotals){
   const w=currentWeek(); const out=[];
   for(const g of (games||gamesIn(w))){
     if(gameStarted(g)) continue;
+    if(withTotals) for(const side of ['over','under']){ const l=totalLeg(g,side); if(l&&l.src==='real') out.push(l); }
     for(const team of [g.a,g.h]){
       const isHome=team===g.h, opp=isHome?g.a:g.h;
       for(const kind of ['ml','ats']){
@@ -1068,54 +1085,200 @@ function formAgrees(c){
   return a!=null&&a-mlProb(c.price)>=0.03;
 }
 function formSig(){ return typeof window.eloLoaded==='function'?(window.eloLoaded()?'form':'noform'):''; }
-/* the side switch in the Suggested parlays window: Any, or player overs only, or player
+/* the side switch on a game page's suggested parlays: Any, or player overs only, or player
    unders only. A touchdown leg is an over; a game bet has no side and drops out. */
 const SUGGEST_SIDES=[['any','Any'],['over','Player overs'],['under','Player unders']];
 function suggestSide(){ const s=S.ui&&S.ui.suggestSide; return s==='over'||s==='under'?s:'any'; }
 function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'&&c.side===s); }
-function suggestCandidates(games){
-  const out=pricedLegs(games);
-  const edge=c=>c.p-mlProb(c.price);
-  /* Player overs has no minimum: the best overs on offer, ranked by how far the model and
-     market + form together put each above the book, whether or not either clears it */
-  if(suggestSide()==='over'){
-    const both=c=>{ const a=typeof window.eloAltP==='function'?window.eloAltP(c.pid,c.side,c.price,c.src):null;
-      return a==null?edge(c):(edge(c)+(a-mlProb(c.price)))/2; };
-    return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&sideAllows(c)).sort((a,b)=>both(b)-both(a)).slice(0,40);
-  }
-  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&edge(c)>=0.03&&formAgrees(c)&&sideAllows(c)).sort((a,b)=>edge(b)-edge(a)).slice(0,40);
+/* ---------- the Parlay Builder's suggested parlays: built from what the reader ticks ----------
+   A panel over the builder. The reader picks the bet types (a mix of all of them, team bets
+   only or player bets only, or any of the five boxes by hand) and which of the week's games
+   still to kick off, and four tiers are built from those alone, each on its own: Safe, the
+   likeliest 2-leg parlay; Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the
+   best expected return (the chance all legs land times what it pays) that still lands at least
+   25%, 12% and 5% of the time: a floor that falls tier by tier, about 63%, 59% and 55% a leg on
+   average, so a longer parlay asks a little less of each leg. Under All nothing forces or caps a
+   kind: a tier holds whatever mix of team and player legs does best by those rules.
+
+   A leg qualifies as the old Suggested parlays window's did: a real sportsbook price, the
+   model's chance between 45% and 97% and at least 3 points above the book's implied chance,
+   and for a player leg market + form agreeing (formAgrees). When those cannot fill a tier, the
+   fewest legs the model still rates at or above the book fill it, marked thin edge; never a
+   leg the model rates below the book. At most one game leg (to win, to cover, the total) a
+   game, one leg a player, and no line twice: a line's over and under, or a player's main line
+   and a rung of the same stat, are one key. A tier that cannot be built says why rather than show a smaller
+   parlay. Its chance and price are the builder's own sums (parlayProb, parlayDec, same-game
+   legs priced together with the model's correlations), worked on the legs in the builder's
+   order, so Add to builder shows the same numbers. Searched, not enumerated: a beam of the best
+   partial parlays at each size, once by expected return and once by chance, so a floor a
+   long-shot start cannot reach is still met. The choices are the reader's own, in S.ui.pb; the
+   tiers are cached on everything they stand on (PB_CACHE), so ticking back is instant. */
+const PB_KINDS=[['ml','Moneyline','straight up'],['ats','Spread','to cover'],['total','Game total','over/under'],['over','Player overs',''],['under','Player unders','']];
+const PB_MIXES=[['all','All',['ml','ats','total','over','under']],['teams','Teams only',['ml','ats','total']],['players','Players only',['over','under']]];
+const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
+const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_STAKE=10, PB_CAP=40, PB_BEAM=12, PB_FINAL=8;
+let PB_CACHE=new Map(), PB_SHOWN=null;
+/* the reader's choices as saved, cleaned: every box on unless it was turned off, the games
+   unticked (a game is ticked unless it is listed), and whether the games list is open */
+function pbClean(v){
+  const o=v&&typeof v==='object'?v:{}, k={};
+  for(const [id] of PB_KINDS) k[id]=!(o.k&&o.k[id]===false);
+  const off=Array.isArray(o.off)?o.off.filter(x=>typeof x==='string'&&/^[\w-]{3,40}$/.test(x)).slice(-64):[];
+  return {k,off,gx:typeof o.gx==='boolean'?o.gx:null};
 }
-function buildSuggestions(){
-  const cands=suggestCandidates();
-  /* what a book pays for these legs together: same-game legs priced as one, cross-game legs multiplied */
-  const dec=(legs,sims)=>parlayDec(legs.map(l=>({leg:l,ml:l.price})),sims);
-  const chance=(legs,sims)=>legs.length?parlayProb(legs,sims).corr:1;
-  const tiers=[]; let cur=[];
-  for(const [id,label,floor,cap] of SUGGEST_TIERS){
-    const startLen=cur.length;
-    /* every tier grows the one before: Safe starts from its two most likely legs, Medium and
-       Aggressive each take at least one more leg (the best expected return), then keep adding
-       while the parlay stays above the tier's floor */
-    const must=id==='safe'?2:startLen+1;
-    while(cur.length<cap){
-      let best=null;
-      for(const c of cands){
-        if(cur.some(l=>l.key===c.key)) continue;
-        if(c.grp==='TEAM'&&cur.some(l=>l.grp==='TEAM'&&l.gid===c.gid)) continue;
-        const next=[...cur,c], p=chance(next,3000);
-        const forced=next.length<=must;
-        if(!forced&&p<floor) continue;
-        const score=(forced&&id==='safe')?p:p*dec(next,2000);
-        if(!best||score>best.score) best={c,score};
-      }
-      if(!best) break;
-      cur=[...cur,best.c];
-    }
-    if(cur.length<2||cur.length===startLen) continue;
-    const pr=parlayProb(cur,40000);
-    tiers.push({id,label,floor,legs:cur.map(l=>({...l})),corr:pr.corr,indep:pr.indep,dec:dec(cur),added:cur.length-startLen});
+function pbUi(){ if(!S.ui) S.ui={}; return (S.ui.pb=pbClean(S.ui.pb)); }
+/* a leg's box: a game bet by what it is, a player leg by its side (a touchdown and a ladder rung are overs) */
+function pbKind(l){ return l.stat==='ml'||l.stat==='ats'||l.stat==='total'?l.stat:(l.side==='under'?'under':'over'); }
+/* the mix the boxes make: one of the three, or none of them */
+function pbMix(u){ const on=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]).join(); const m=PB_MIXES.find(x=>x[2].join()===on); return m?m[0]:'custom'; }
+/* the week's games still to kick off (and with no score): the list the reader ticks from */
+function pbGames(){ return gamesIn(currentWeek()).filter(g=>!gameStarted(g)&&!hasScore(g)); }
+/* a leg the reader's picks allow: its box ticked and its game ticked */
+function pbAllows(l){ const u=pbUi(); return !!u.k[pbKind(l)]&&!u.off.includes(l.gid); }
+function pbPlayerSides(){ const u=pbUi(); return !!(u.k.over||u.k.under); }
+const pbOrd=(a,b)=>(a.key+'|'+a.side+'|'+a.k).localeCompare(b.key+'|'+b.side+'|'+b.k);
+/* the builder's order (parlayLegs): the week, then the name. The tier's numbers are worked on
+   the legs in this order, so the builder, which works them the same way, shows the same */
+const pbOrder=legs=>[...legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name)));
+/* a long list is cut to the likeliest half and the best-paying half, so the search stays quick */
+function pbCap(list){
+  list=[...list].sort(pbOrd); if(list.length<=PB_CAP) return list;
+  const by=f=>[...list].sort((a,b)=>(f(b)-f(a))||pbOrd(a,b)), keep=new Map();
+  for(const c of [...by(c=>c.p).slice(0,PB_CAP/2),...by(c=>c.p*(mlToDec(c.price)||1)).slice(0,PB_CAP/2)]) keep.set(c.key+'|'+c.side+'|'+c.k,c);
+  return [...keep.values()].sort(pbOrd);
+}
+/* the legs on the reader's picks: preferred (the full bar) and thin (at or above the book, no more) */
+function pbPool(games){
+  const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
+  const pref=[], thin=[];
+  for(const c of pricedLegs(games,true)){
+    if(!pbAllows(c)||c.src!=='real'||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
+    /* until the Elo files are in, no player leg qualifies at all, as before */
+    if(c.grp!=='TEAM'&&formOut) continue;
+    if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
-  return {tiers,candidates:cands.length};
+  return {pref:pbCap(pref),thin:pbCap(thin)};
+}
+/* a leg that can join: not a line already on it, not a second game leg on one game, and not a
+   second leg on one player (two lines on one man, his catches and his yards, are nearly one bet) */
+function pbFits(cur,c){
+  if(cur.some(l=>l.key===c.key)) return false;
+  if(isGameLeg(c)) return !cur.some(l=>isGameLeg(l)&&l.gid===c.gid);
+  return !cur.some(l=>!isGameLeg(l)&&l.pid===c.pid);
+}
+/* the most legs a list can make together: one a player, one game leg a game */
+function pbMaxLegs(list){ const pl=new Set(), games=new Set(); for(const l of list){ if(isGameLeg(l)) games.add(l.gid); else pl.add(l.pid); } return pl.size+games.size; }
+/* The search scores thousands of partial parlays, too many for the builder's Monte Carlo sums,
+   so it scores each on the legs' own chances times, for every pair that moves together, how
+   much likelier the pair is than the two apart: the same gaussian copula and correlations as
+   parlayProb, worked exactly for each pair (Plackett's integral, ten-point Gauss-Legendre).
+   That is exact for two legs and close for more. Only the finalists are then worked with the
+   real sums, and those are the numbers shown and the floors are held to. */
+const PB_GLX=[-0.9739065285171717,-0.8650633666889845,-0.6794095682990244,-0.4333953941292472,-0.1488743389816312,0.1488743389816312,0.4333953941292472,0.6794095682990244,0.8650633666889845,0.9739065285171717];
+const PB_GLW=[0.0666713443086881,0.1494513491505806,0.2190863625159820,0.2692667193099963,0.2955242247147529,0.2955242247147529,0.2692667193099963,0.2190863625159820,0.1494513491505806,0.0666713443086881];
+/* P(X<h, Y<k) for two standard normals correlated r */
+function bvnLower(h,k,r){
+  const a=Math.asin(Math.max(-0.9999,Math.min(0.9999,r))); let s=0;
+  for(let i=0;i<10;i++){ const t=a*(PB_GLX[i]+1)/2, c=Math.cos(t); s+=PB_GLW[i]*Math.exp(-(h*h-2*h*k*Math.sin(t)+k*k)/(2*c*c)); }
+  return Math.max(0,gbNorm(h)*gbNorm(k)+s*a/(4*Math.PI));
+}
+const pbId=l=>l.key+'|'+l.side+'|'+l.k;
+/* the chance every leg lands, each leg's chance from pf: the legs' own, times each moving pair's lift */
+function pbJoint(legs,pf,memo){
+  let p=1; for(const l of legs) p*=pf(l);
+  for(let i=0;i<legs.length;i++) for(let j=i+1;j<legs.length;j++){
+    const a=legs[i], b=legs[j], r=legRho(a,b); if(Math.abs(r)<0.03) continue;
+    const key=pbId(a)+'~'+pbId(b)+'~'+(pf===mlP?'b':'m'); let lift=memo.get(key);
+    if(lift==null){ const pa=pf(a), pb=pf(b), da=a.side==='under'?-1:1, db=b.side==='under'?-1:1;
+      lift=bvnLower(-invNorm(1-pa),-invNorm(1-pb),da*db*r)/(pa*pb); memo.set(key,lift); }
+    p*=lift; }
+  return Math.max(0,Math.min(1,p));
+}
+const mlP=l=>mlProb(l.price), modelP=l=>l.p;
+/* what a book pays, as parlayDec works it: legs in different games multiplied, a game's legs
+   priced together from the book's own chances and cut by SGP_HOLD, never above multiplying */
+function pbDecApprox(legs,memo){
+  const by={}; for(const l of legs) (by[l.gid]=by[l.gid]||[]).push(l);
+  let d=1;
+  for(const gid in by){ const grp=by[gid], mult=grp.reduce((a,l)=>a*(mlToDec(l.price)||1),1);
+    if(grp.length<2){ d*=mult; continue; }
+    const pj=pbJoint(grp,mlP,memo); d*=(pj>0&&isFinite(pj))?Math.min(mult,(1/pj)*SGP_HOLD):mult; }
+  return d;
+}
+function pbEval(legs,memo){
+  const id=legs.map(pbId).sort().join(',');
+  let e=memo.get(id); if(e) return e;
+  const pr=pbJoint(legs,modelP,memo), d=pbDecApprox(legs,memo);
+  e={legs,pr,d,ev:pr*d,id}; memo.set(id,e); return e;
+}
+/* the beam: every partial parlay one leg longer, the best `width` of them by `by` kept at each
+   size; one well under the floor is dropped as soon as it is (another leg only lowers it) */
+function pbBeam(pools,floor,by,width,memo){
+  let beam=[{legs:[],id:''}];
+  for(let s=0;s<pools.length;s++){
+    const next=new Map();
+    for(const b of beam) for(const c of pools[s]){ if(!pbFits(b.legs,c)) continue;
+      const e=pbEval([...b.legs,c],memo); if(next.has(e.id)||(floor&&e.pr<floor*0.9)) continue; next.set(e.id,e); }
+    if(!next.size) return [];
+    beam=[...next.values()].sort((a,b)=>(b[by]-a[by])||a.id.localeCompare(b.id)).slice(0,width);
+  }
+  return beam;
+}
+/* a finalist with the builder's own sums, on the legs in the builder's order */
+function pbExact(legs){
+  const L=pbOrder(legs.map(l=>({...l}))), pr=parlayProb(L);
+  return {legs:L,corr:pr.corr,indep:pr.indep,dec:parlayDec(L.map(l=>({leg:l,ml:l.price}))),thin:L.filter(l=>l.thin).length};
+}
+/* one tier: preferred legs alone first, then with k legs from the thin list, fewest first. The
+   best few by the search's own score are worked exactly, and the best of those that clears the
+   floor is the tier */
+function pbTier([id,label,n,floor],pool,memo){
+  const P=pool.pref, U=[...pool.pref,...pool.thin];
+  for(let k=0;k<=n;k++){
+    if(k&&!pool.thin.length) break;
+    if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
+    const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
+    const fin=new Map();
+    if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo)) fin.set(e.id,e);
+    else for(const e of [...pbBeam(pools,floor,'ev',PB_BEAM,memo),...pbBeam(pools,floor,'pr',PB_BEAM,memo)]) fin.set(e.id,e);
+    /* the finalists that clear the floor by the search's own score, best first, worked with the
+       real sums on fewer draws; then the best in full, which is what the card shows and what the
+       floor is held to */
+    const top=[...fin.values()].filter(e=>!floor||e.pr>=floor*0.97).sort((a,b)=>((floor?b.ev-a.ev:b.pr-a.pr))||a.id.localeCompare(b.id)).slice(0,PB_FINAL)
+      .map(e=>{ const L=pbOrder(e.legs), pr=parlayProb(L,6000).corr, d=parlayDec(L.map(l=>({leg:l,ml:l.price})),4000); return {e,sc:floor?pr*d:pr,ok:!floor||pr>=floor*0.97}; })
+      .filter(x=>x.ok).sort((a,b)=>(b.sc-a.sc)||a.e.id.localeCompare(b.e.id));
+    for(const x of top){ const r=pbExact(x.e.legs); if(!floor||r.corr>=floor) return r; }
+  }
+  return null;
+}
+/* why a tier is empty, in the reader's terms */
+function pbWhy(n,floor,pool){
+  const m=pbMaxLegs([...pool.pref,...pool.thin]);
+  if(m<n) return `${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks: tick more games or bet types.`;
+  return floor?`No ${n}-leg parlay on your picks lands ${Math.round(floor*100)}% of the time or more: tick more games or bet types.`
+    :`No ${n}-leg parlay on your picks: tick more games or bet types.`;
+}
+function pbBuild(){
+  const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
+  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,tiers:[],noTotalPrice:false};
+  const empty=why=>PB_TIERS.map(([id,label,n,floor])=>({id,label,n,floor,why}));
+  if(!all.length){ out.tiers=empty('No games left to build from.'); return out; }
+  if(!kinds.length){ out.tiers=empty('No bet types ticked: tick at least one above.'); return out; }
+  if(!games.length){ out.tiers=empty('No games ticked: tick at least one above.'); return out; }
+  const pool=pbPool(games), memo=new Map();
+  out.pref=pool.pref.length; out.thin=pool.thin.length;
+  out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,floor,pool)}; });
+  out.noTotalPrice=!!u.k.total&&games.some(g=>g.tot!=null)&&!games.some(g=>totalBook(g,'over')!=null||totalBook(g,'under')!=null);
+  return out;
+}
+/* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
+function getPbTiers(){
+  const u=pbUi(), games=pbGames();
+  const sig=[currentWeek(),games.map(g=>g.id).join(','),u.off.filter(id=>games.some(g=>g.id===id)).sort().join(','),PB_KINDS.map(([k])=>u.k[k]?1:0).join(''),
+    PAY.baked_at||PAY.build||'',S.sched.length,Object.keys(S.processedGames||{}).length,JSON.stringify(S.odds||{}).length,S.gamesFetched||'',formSig()].join('|');
+  let r=PB_CACHE.get(sig);
+  if(!r){ r={sig,...pbBuild()}; PB_CACHE.set(sig,r); if(PB_CACHE.size>24) PB_CACHE.delete(PB_CACHE.keys().next().value); }
+  return r;
 }
 /* ---------- the game page's suggested parlays: High, Medium, Low ----------
    Always three hands, 2, 3 and 4 legs, each the best payout for its chance from this game's
@@ -1210,95 +1373,116 @@ function gameSuggestCard(g,locked){
     <p class="muted" style="margin:0 0 10px;font-size:12.5px">The best payout for the chance in this game, at 2, 3 and 4 legs: main lines and threshold ladders, with the book's price where it has one and an estimate (est.) where it does not. Every leg at least a 40% chance and no shorter than ${fmtML(GAME_LEG_MIN)}; High pays at least +100 and lands at least 35% of the time, Medium +250 and 20%, Low +500 and 10%. Chances allow for how the legs move together, and the price is what a book pays for them together.</p>
     <div class="gsugg-tiers g3">${GAME_TIERS.map(block).join('')}</div></div>`;
 }
-function getSuggestions(){
-  const w=currentWeek(), started=gamesIn(w).filter(gameStarted).length;
-  /* everything the candidates are filtered and priced on: a player needs three games played,
-     which is the stats that have been counted, so those are part of it */
-  const sig=[w,started,JSON.stringify(S.odds||{}).length,PAY.baked_at||'',S.sched.length,
-    Object.keys(S.processedGames||{}).length,S.margin||'',formSig(),suggestSide()].join('|');
-  if(!SUGGEST_CACHE||SUGGEST_CACHE.sig!==sig) SUGGEST_CACHE={sig,...buildSuggestions()};
-  return SUGGEST_CACHE;
+/* ---------- the panel, over the builder ---------- */
+const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* the games list starts open on a wide screen and shut on a phone, until the reader says otherwise */
+function pbWide(){ try{ return typeof window.matchMedia!=='function'||window.matchMedia('(min-width: 761px)').matches; }catch(e){ return true; } }
+/* the builder holds exactly these legs */
+const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.every(l=>suggestLegOn(l));
+/* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
+function pbTierCard(t,o){
+  o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr;
+  if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span></div><p class="pb-why">${esc(t.why)}</p></div>`;
+  const form=formSig()!=='';
+  return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
+    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
+    <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div><b>${pbMoney(PB_STAKE*t.dec)}</b><span>$${PB_STAKE} pays</span></div></div>
+    <ul class="pb-legs">${t.legs.map(l=>`<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.thin?' <i class="pb-thinmark">thin edge</i>':''}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
+    ${t.thin?`<p class="pb-thin">${t.thin===1?'One leg has a thin edge: the model rates it':t.thin+' legs have a thin edge: the model rates them'} at or above the book's price, but not 3 points above${form?' with market + form agreeing':''}.</p>`:''}
+    <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
 }
-function suggestCard(){
-  /* drawn in its own window, opened from the builder: always open, closed by its button */
-  const w=currentWeek(), stake=Math.max(0,+S.stake||0);
-  let body='';
-  const s=getSuggestions();
-  if(!s.tiers.length){
-    body=`<p class="muted" style="margin:0">No ${suggestSide()==='any'?'':'player-'+suggestSide()+' '}suggestions for week ${w} yet. They use only lines with a real sportsbook price that the model rates above the book and that market + form, the book's chance moved by the player's Elo, also rates three points above it, ${s.candidates?`and only ${s.candidates} line${s.candidates===1?'':'s'} qualify so far`:'and none qualify yet'}. Player prices arrive with the Thursday and Saturday pulls.${suggestSide()==='any'?'':' Any switches the game bets and the other side back on.'}</p>`;
-  } else {
-    const tag={safe:'high',med:'med',aggr:'low'};
-    body=`<p class="muted" style="margin:0 0 14px">${suggestSide()==='over'?`The best player overs on offer in week ${w}, with no minimum: every over with a real sportsbook price, ranked by how far the model and market + form, the book's chance moved by the player's Elo, together put it above the book. Some sit below the book's price, and the expected return on each parlay says so.`:`Built from week ${w} lines with a real sportsbook price that the model rates above the book and that market + form, the book's chance moved by the player's Elo, also rates three points above it${suggestSide()==='any'?'':`, player ${suggestSide()}s only`}.`} Safe is the most likely pair, kept at 50% or better when the lines allow it; Medium and Aggressive add legs to the same core for a bigger payout. Payouts are on a $${stake.toFixed(2)} bet, which you can change above.${s.tiers[s.tiers.length-1].legs.every(l=>l.grp==='TEAM')?' Only game bets qualify so far; player lines join when this week’s prices are pulled on Thursday and Saturday.':''}</p>
-    <div class="sugg-grid">`+s.tiers.map((t,i)=>{
-      const payout=stake*t.dec, ev=t.corr*t.dec-1, ml=decToML(t.dec);
-      const saved=(S.saved||[]).some(p=>p.suggestSig===SUGGEST_CACHE.sig+'|'+t.id);
-      return `<div class="sugg-tier ${t.id}">
-        <div class="sugg-top"><span class="sugg-name">${t.label}</span><span class="conf ${tag[t.id]}">${t.legs.length} legs</span>${i?`<span class="muted sugg-add">+${t.added} leg${t.added===1?'':'s'}</span>`:''}</div>
-        <div class="sugg-nums">
-          <div><b>${(t.corr*100).toFixed(0)}%</b><span>chance all land</span></div>
-          <div><b>${fmtML(ml)}</b><span>book price</span></div>
-          <div><b class="payout">$${payout.toFixed(2)}</b><span>returns if it lands</span></div>
-          <div><b class="${ev>=0?'delta up':'delta down'}">${ev>=0?'+':'−'}${Math.abs(ev*100).toFixed(0)}%</b><span>expected return</span></div>
-        </div>
-        <ul class="sugg-legs">${t.legs.map(l=>`<li><span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}<em>${(l.p*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
-        <button class="btn ${saved?'quiet':'go'}" data-suggest-save="${t.id}" ${saved?'disabled':''}>${saved?'Saved':'Add to saved parlays'}</button>
-      </div>`; }).join('')+`</div>
-    <p class="muted" style="margin:12px 0 0;font-size:12px">Chances allow for how the legs move together. They are the model's numbers, and its edges over book prices have not held up yet this season, so treat these as the model's view rather than a sure thing.</p>`;
+window.pbTierCard=pbTierCard;
+function pbPanel(){
+  const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
+  const head=`<div class="pb-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span></div>`;
+  if(!games.length) return `<div class="card pb" id="pbCard">${head}
+    <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p></div>`;
+  const r=getPbTiers(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
+  const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>${mix==='custom'?'<span class="pb-custom" title="Your own choice of bet types: none of the three mixes">Custom</span>':''}`;
+  const chips=PB_KINDS.map(([k,l,s])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}${s?` <small>${s}</small>`:''}</span></label>`).join('');
+  const glist=games.map(g=>{ const on=!u.off.includes(g.id), d=fmtDate(g);
+    return `<label class="pb-g${on?' on':''}"><input type="checkbox" data-pb-game="${g.id}" ${on?'checked':''} aria-label="${esc(g.a)} at ${esc(g.h)}, ${esc(d.day)} ${esc(d.t)}"><span><b>${esc(g.a)} @ ${esc(g.h)}</b><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></span></label>`; }).join('');
+  const notes=[];
+  if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
+  if(r.noTotalPrice) notes.push('No over or under price is on file for these games’ totals yet, so no total is in a tier.');
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices arrive with the Thursday and Saturday pulls.`);
+  return `<div class="card pb" id="pbCard">${head}
+    <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
+    <div class="pb-ctl">
+      <div class="pb-row"><span class="pb-lbl">Build from</span>${seg}</div>
+      <div class="pb-row"><span class="pb-lbl">Bet types</span><div class="pb-chips">${chips}</div></div>
+      <details class="pb-games"${open?' open':''}><summary><span class="pb-lbl">Games</span><b>${nOn===games.length?`All ${games.length}`:`${nOn} of ${games.length}`}</b><span class="pb-sum-hint">tap to choose</span></summary>
+        <div class="pb-gbar"><button type="button" class="btn quiet small" data-pb-games="all">All</button><button type="button" class="btn quiet small" data-pb-games="none">None</button><span class="muted">Kickoffs in your time zone; a game leaves the list when it kicks off.</span></div>
+        <div class="pb-glist">${glist}</div></details>
+    </div>
+    ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
+    <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t)).join('')}</div>
+    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the book's${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time. One leg a player, one team bet or total a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
+    <div id="pbElo" class="pb-elo"></div></div>`;
+}
+function renderPb(){
+  const el=$('pbPanel'); if(!el||!S||!S.sched) return;
+  el.innerHTML=pbPanel(); wirePb();
+  PB_SHOWN=pbGames().map(g=>g.id).join();
+}
+/* exactly these legs into the builder, in its own order, so it prices them as the tier did */
+function pbPut(legs,what){
+  const L=pbOrder(legs), have=Object.keys(S.parlay||{});
+  if(!(have.length===L.length&&L.every(l=>suggestLegOn(l)))){
+    if(have.length&&!confirm(`Replace the ${have.length} leg${have.length===1?'':'s'} in the builder with ${what}?`)) return false;
+    S.parlay={};
+    for(const l of L){ const {key,thin,pe,ev,imp,...x}=l; S.parlay[key||legKey(l.gid,l.pid,l.stat)]=x; }
+    S.bookPrice=null; save(); renderParlay(); if(S.ui.game) renderGame();
   }
-  return `<div class="card sugg" id="suggCard">
-    <div class="sugg-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span><span class="grow"></span>
-      <span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-suggest-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span>
-      <label class="muted sugg-stake">Bet $<input type="number" id="suggStake" value="${stake}" min="0" step="1" inputmode="decimal" aria-label="Amount to bet on a suggested parlay"></label>
-      ${stakeChips()}
-      <button class="btn quiet" id="suggClose">Close</button></div>
-    ${body}</div>`;
+  const b=$('parlayBody'); try{ if(b&&typeof b.scrollIntoView==='function') b.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+  return true;
 }
-/* the suggestions, in a window opened from the builder. Filling and wiring are separate
-   from opening, so saving a tier can redraw what is on screen without scrolling it away. */
-function fillSuggest(){ const v=$('suggView'); if(!v) return; v.innerHTML=suggestCard(); wireSuggest(); }
-function openSuggest(){ const m=$('suggModal'); if(!m) return; fillSuggest();
-  m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0; }
-function closeSuggest(){ const m=$('suggModal'); if(!m) return;
-  m.hidden=true; document.body.classList.remove('modal-open'); }
-const suggestOpen=()=>{ const m=$('suggModal'); return !!m&&!m.hidden; };
-/* one tap swaps the amount you are betting. It is the one stake the builder and the
-   suggestions both price with, so every payout on the tab follows it. */
+window.pbPut=pbPut;
+function wirePb(){
+  const el=$('pbPanel'); if(!el) return;
+  const redraw=sel=>{ renderPb(); const f=sel&&$('pbPanel').querySelector(sel); try{ if(f) f.focus({preventScroll:true}); }catch(e){} };
+  el.querySelectorAll('[data-pb-mix]').forEach(b=>b.addEventListener('click',()=>{ const u=pbUi(), m=PB_MIXES.find(x=>x[0]===b.dataset.pbMix); if(!m) return;
+    for(const [k] of PB_KINDS) u.k[k]=m[2].includes(k); save(); redraw(`[data-pb-mix="${m[0]}"]`); }));
+  el.querySelectorAll('[data-pb-kind]').forEach(cb=>cb.addEventListener('change',()=>{ const u=pbUi(); u.k[cb.dataset.pbKind]=cb.checked; save(); redraw(`[data-pb-kind="${cb.dataset.pbKind}"]`); }));
+  el.querySelectorAll('[data-pb-game]').forEach(cb=>cb.addEventListener('change',()=>{ const u=pbUi(), id=cb.dataset.pbGame;
+    u.off=u.off.filter(x=>x!==id); if(!cb.checked) u.off.push(id); save(); redraw(`[data-pb-game="${id}"]`); }));
+  el.querySelectorAll('[data-pb-games]').forEach(b=>b.addEventListener('click',()=>{ const u=pbUi(), ids=pbGames().map(g=>g.id);
+    u.off=b.dataset.pbGames==='none'?ids:u.off.filter(x=>!ids.includes(x)); save(); redraw(`[data-pb-games="${b.dataset.pbGames}"]`); }));
+  const det=el.querySelector('details.pb-games');
+  if(det) det.addEventListener('toggle',()=>{ const u=pbUi(); if(u.gx!==det.open){ u.gx=det.open; save(); } });
+  el.querySelectorAll('[data-pb-add]').forEach(b=>b.addEventListener('click',()=>{
+    const t=getPbTiers().tiers.find(x=>x.id===b.dataset.pbAdd&&x.legs); if(t) pbPut(t.legs,`the ${t.label} ${t.legs.length}-leg parlay`); }));
+}
+/* a game that kicks off while the page is open leaves the list and every tier: the page looks
+   every half minute, and redraws the builder (which drops a started leg) and the panel */
+function pbWatch(){
+  if(pbWatch.on) return;
+  pbWatch.on=setInterval(()=>{ try{ if(!S||!S.sched||document.visibilityState==='hidden') return;
+    if(PB_SHOWN!=null&&pbGames().map(g=>g.id).join()!==PB_SHOWN) renderParlay(); }catch(e){} },30000);
+}
+/* one tap swaps the amount you are betting in the builder; the suggested parlays are always
+   shown on $10 (PB_STAKE), so their tiers compare on one footing */
 const STAKE_CHIPS=[1,5,10,20,50,100];
 function stakeChips(){ const s=Math.max(0,+S.stake||0);
   return `<span class="stake-chips" role="group" aria-label="Amount to bet">${STAKE_CHIPS.map(v=>`<button type="button" class="${s===v?'on':''}" data-stake-chip="${v}" aria-pressed="${s===v}">$${v}</button>`).join('')}</span>`; }
 function wireStakeChips(){
   document.querySelectorAll('[data-stake-chip]').forEach(b=>{ if(b.dataset.wired) return; b.dataset.wired='1';
-    b.addEventListener('click',()=>{ S.stake=+b.dataset.stakeChip; save(); renderParlay(); if(suggestOpen()) fillSuggest(); }); });
-}
-function wireSuggest(){
-  wireStakeChips();
-  $('suggClose')?.addEventListener('click',closeSuggest);
-  $('suggOpen')?.addEventListener('click',openSuggest);
-  document.querySelectorAll('[data-suggest-side]').forEach(b=>b.addEventListener('click',()=>{
-    S.ui.suggestSide=b.dataset.suggestSide; save(); renderParlay(); if(suggestOpen()) fillSuggest(); }));
-  /* the same stake the builder uses, so a payout here and a payout there agree */
-  $('suggStake')?.addEventListener('change',e=>{ S.stake=Math.max(0,+e.target.value||0); save(); renderParlay(); if(suggestOpen()) fillSuggest(); });
-  document.querySelectorAll('[data-suggest-save]').forEach(b=>b.addEventListener('click',()=>{
-    const t=(SUGGEST_CACHE&&SUGGEST_CACHE.tiers||[]).find(x=>x.id===b.dataset.suggestSave); if(!t) return;
-    const stake=Math.max(0,+S.stake||0);
-    if(!confirm(`Save the ${t.label} ${t.legs.length}-leg parlay at ${fmtML(decToML(t.dec))} for $${stake.toFixed(2)}?\n\nIt goes to Saved parlays and settles like any other.`)) return;
-    S.saved.push({id:'sp'+Date.now(),saved:new Date().toISOString(),week:t.legs[0].week,legs:t.legs.map(l=>({...l})),
-      stake,price:decToML(t.dec),priceSrc:'real',pCorr:t.corr,pIndep:t.indep,payout:stake*t.dec,
-      suggested:t.label,suggestSig:SUGGEST_CACHE.sig+'|'+t.id});
-    save(); renderParlay(); if(suggestOpen()) fillSuggest(); }));
+    b.addEventListener('click',()=>{ S.stake=+b.dataset.stakeChip; save(); renderParlay(); }); });
 }
 function renderParlay(){
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
   let dropped=0;
   for(const [k,l] of Object.entries(S.parlay||{})){ const g=S.sched.find(x=>x.id===l.gid); if(g&&gameStarted(g)){ delete S.parlay[k]; dropped++; } }
   if(dropped) save();
+  /* the suggested parlays over the builder: its own box, drawn with it */
+  renderPb();
   const legs=parlayLegs();
   const el=$('parlayBody');
   const droppedNote=dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'';
   if(!legs.length){
-    el.innerHTML=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Parlay Builder<span class="grow" style="flex:1"></span><button class="btn quiet" id="suggOpen" title="The model's own parlays for this week, in a window">Suggested parlays</button></h2>
-      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like. Each one lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
-    wireSaved(); wireSuggest();
+    el.innerHTML=droppedNote+`<div class="card"><h2>Parlay Builder</h2>
+      <p class="muted" style="margin:0 0 10px">Open a game, click a player, and tick any line you like, or add a suggested parlay above. Each leg lands here and gets priced.</p></div>`+renderSaved()+renderBetParlays();
+    wireSaved(); wireStakeChips();
     return;
   }
   const wks=[...new Set(legs.map(l=>l.week))];
@@ -1319,7 +1503,7 @@ function renderParlay(){
   const useDec=override||((allBook||estPrice)?bookDec:mlToDec(fairML));
   const payout=stake*useDec, profit=payout-stake;
 
-  let html=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">${legs.length}-leg parlay <span class="pill">building</span><span class="grow" style="flex:1"></span><button class="btn quiet" id="suggOpen" title="The model's own parlays for this week, in a window">Suggested parlays</button></h2>
+  let html=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">${legs.length}-leg parlay <span class="pill">building</span></h2>
     <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
   legs.forEach((l,i)=>{
@@ -1382,7 +1566,7 @@ function renderParlay(){
     delete S.parlay[b.dataset.drop]; save(); renderParlay(); if(S.ui.game) renderGame(); }));
   $('pClear').addEventListener('click',()=>{ if(!confirm('Remove every leg from the builder?')) return;
     S.parlay={}; save(); renderParlay(); if(S.ui.game) renderGame(); });
-  wireSaved(); wireSuggest();
+  wireSaved(); wireStakeChips();
 }
 /* ---------- live: fetch, poll, and never persist ----------
    LIVE sits outside S on purpose. It is someone else's scoreboard, not our state: it must
@@ -1673,7 +1857,7 @@ function applyBaked(){
   buildNorm();   /* price matching projects every player, which needs the league averages ready */
   const byId=Object.fromEntries(S.sched.map(g=>[g.id,g]));
   for(const p of PAY.sched){ const g=byId[p.id]; if(!g) continue;
-    for(const k of ['d','t','sp','tot','hs','as','mla','mlh','spa','sph']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
+    for(const k of ['d','t','sp','tot','hs','as','mla','mlh','spa','sph','tov','tou']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
   /* the build pulled lines when it ran, so the freshness note counts from then */
   if(PAY.baked_at){ const t=Date.parse(PAY.baked_at); if(isFinite(t)&&!(S.gamesFetched>t)) S.gamesFetched=t; }
   /* the season replays week by week, each week graded on its own injury report, the one that

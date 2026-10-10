@@ -436,11 +436,20 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
             # so the grading of a week already played does not move under it
             fresh=(t is not None and (min(now,ko)-t).total_seconds()<=24*3600) or (t is None and ko<=now)
             if not fresh: stale+=1; g['ls']='nflverse'; continue
+            nv_tot=g.get('tot')
             for fld,col in (('mla','away_moneyline'),('mlh','home_moneyline'),('spa','away_spread_odds'),('sph','home_spread_odds'),('sp','spread_line'),('tot','total_line')):
                 v=(r.get(col) or '').strip()
                 if v:
                     try: g[fld]=float(v)
                     except ValueError: pass
+            # a total's over and under prices go with its number: DraftKings' own where its row has
+            # them; a DraftKings total without them, on a number nflverse did not price, has no price
+            # on file, so the page shows it as an estimate and no suggestion is built on it
+            if (r.get('total_line') or '').strip():
+                ou=[(r.get(c) or '').strip() for c in ('over_odds','under_odds')]
+                try: g['tov'],g['tou']=float(ou[0]),float(ou[1])
+                except ValueError:
+                    if g.get('tot')!=nv_tot: g.pop('tov',None); g.pop('tou',None)
             g['ls']='dk'
             if t is not None: g['lat']=t.strftime('%Y-%m-%dT%H:%MZ')
             hit+=1

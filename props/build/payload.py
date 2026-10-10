@@ -105,7 +105,9 @@ for _,r in g26.iterrows():
         'a':r.away_team,'h':r.home_team,
         'sp':None if pd.isna(r.spread_line) else float(r.spread_line),
         'tot':None if pd.isna(r.total_line) else float(r.total_line)}
-    for f,c in (('mla','away_moneyline'),('mlh','home_moneyline'),('spa','away_spread_odds'),('sph','home_spread_odds')):
+    # the total's over and under prices (tov, tou) come with it: nflverse posts them beside the
+    # line, free, so a game total is a leg with a real price wherever the file has one
+    for f,c in (('mla','away_moneyline'),('mlh','home_moneyline'),('spa','away_spread_odds'),('sph','home_spread_odds'),('tov','over_odds'),('tou','under_odds')):
         if c in g26.columns and not pd.isna(getattr(r,c)): _g[f]=float(getattr(r,c))
     # keep scores that games.csv already has, so a rebuild does not un-final played games
     if not pd.isna(r.home_score) and not pd.isna(r.away_score): _g['hs']=float(r.home_score); _g['as']=float(r.away_score)
