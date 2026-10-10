@@ -118,6 +118,14 @@ table.pe-tt th small{display:block;font-size:10px;letter-spacing:0;text-transfor
 table.pe-tt td.pe-st{text-align:right;font-variant-numeric:tabular-nums}
 table.pe-tt .pe-w0f{border-left:1px dashed var(--line-2)}
 table.pe-tt .pe-tm{position:sticky;left:0;background:var(--panel);z-index:1}
+table.pe-tt th.pe-tm{background:var(--panel-2)}
+/* fifteen columns are wider than a desktop card: the table scrolls sideways inside its own box at
+   every width (the page never does), and the team column sticks in it. The page clips every table
+   (overflow:hidden, for the rounded corners), which would make the table the box the team column
+   sticks in, and a table never scrolls: so this one is let out, a plain table at every width, and
+   the box around it carries the corners */
+.pe-tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md)}
+.pe-tscroll table.pe-tt{display:table;overflow:visible}
 .pe-ord{display:inline-block;margin-left:5px;font-size:10.5px;font-weight:600;color:var(--muted);min-width:30px;text-align:left}
 .pe-ord.top{color:var(--pick)} .pe-ord.bot{color:var(--miss)}
 .pe-tmrow{cursor:pointer}
@@ -408,7 +416,7 @@ function teamsCard(){
     ${sourceNote()}
     ${posRow()}
     ${curveChart(Object.values(T).filter(v=>v.games).map(v=>v.elo),dfn?'defenses':'offenses')}
-    <table class="pe-t pe-tt"><thead><tr>${sortTh('rank','#')}<th>Move</th>${sortTh('team','Team','pe-tm')}${sortTh('record','Record','pe-n')}${sortTh('rank','Rating','pe-n')}<th>Tier</th>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
+    <div class="pe-tscroll"><table class="pe-t pe-tt"><thead><tr>${sortTh('rank','#')}<th>Move</th>${sortTh('team','Team','pe-tm')}${sortTh('record','Record','pe-n')}${sortTh('rank','Rating','pe-n')}<th>Tier</th>${heads}</tr></thead><tbody>${body}</tbody></table></div></div>`;
 }
 /* a team's window: its rating, its line game by game, every stat with both of its ranks, what
    each weighted one adds, and its coming opponent's rank on the other side of the ball */

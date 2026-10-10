@@ -130,7 +130,9 @@ elo/
                                  out is priced by nothing but keeps his past weeks' ratings;
                                  Overall Offense and Overall Defense: the two pills, the 32
                                  teams, every value and rank the file's, the weights read from
-                                 the file, the sort, the team window, an old file's fallback
+                                 the file, the sort, the team window, an old file's fallback;
+                                 the table scrolls in its own box at a desktop width with the
+                                 page's stylesheet round it, the team column free to stick
   tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
                                  Overall Defense: 2012-2025 play-by-play, every constant fitted
                                  on 2012-2017, the build's weights scored on 2018-2025; run by
@@ -252,7 +254,8 @@ rankings by position, a bell-curve histogram by tier shield over the table, each
 season line. A click on a player opens his window: his rating, then his matchup this week.
 The position row ends with two pills, Overall Offense and Overall Defense, which put a table of
 the 32 teams in the card's place (`units` in `model.json`): rank, team, record, rating and
-shield, and each key stat with its league rank, the weighted ones first, sortable by column; a
+shield, and each key stat with its league rank, the weighted ones first, sortable by column,
+scrolling sideways inside the card at every width with the team column held; a
 click on a team opens its window (its rating game by game, every stat ranked raw and with
 opponents counted, what each weighted stat adds, its coming opponent). The weights and the
 stats are read from the file, and a file from before them draws the old three columns.

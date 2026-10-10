@@ -24,7 +24,13 @@
  *     and a copy with other weights shows those, so the page cannot carry its own) and names the
  *     stats that weigh nothing; a column sorts best first and back, # keeping the overall rank; a
  *     team's window lists every stat, its line, and its coming opponent when the file calls one;
- *     Close and Escape shut it; and a model.json from before the stats still draws the old columns.
+ *     Close and Escape shut it; and a model.json from before the stats still draws the old columns;
+ *   - the team table scrolls sideways inside its card at a desktop width, not only on a phone: it, or
+ *     a box between it and the card, has overflow-x auto by a rule outside any media query (fifteen
+ *     columns ran past the card at 1280 px and the whole page scrolled), and the team column can
+ *     stick in that box: nothing between them clips, as the page's own rule clips every table. The
+ *     page's stylesheet (props/build/part1.html) goes round the tab for this. jsdom lays nothing
+ *     out and reads only the rules a desktop screen gets, so this is the style, not a measured width.
  */
 'use strict';
 const fs = require('fs');
@@ -44,6 +50,24 @@ const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
 /* the tab's own word on whether a game has kicked off (a tab without it says no game ever has) */
 const on = (w, gid) => typeof w.eloGameOn === 'function' ? w.eloGameOn(gid) : false;
+/* the page's stylesheet, round the tab as on the site: a page-wide rule counts (every table is
+   clipped there, for its rounded corners) */
+const P1 = fs.readFileSync(path.join(ROOT, 'props', 'build', 'part1.html'), 'utf8');
+const PAGE_CSS = P1.includes('<style>') ? P1.slice(P1.indexOf('<style>'), P1.indexOf('</style>') + 8) : '';
+/* an element's overflow both ways (jsdom keeps the shorthand apart from the longhands) */
+const ov = (w, el) => { const c = w.getComputedStyle(el), o = c.getPropertyValue('overflow').trim().split(/\s+/).filter(Boolean);
+  return [c.getPropertyValue('overflow-x') || o[0] || 'visible', c.getPropertyValue('overflow-y') || o[1] || o[0] || 'visible']; };
+/* the box the team table scrolls in at a desktop width: the table itself or one between it and its
+   card (the card scrolling would take its heading and text with it) */
+const scroller = (w, card) => { const t = card && card.querySelector('table.pe-tt');
+  for (let el = t; el && el !== card; el = el.parentElement) if (/^(auto|scroll)$/.test(ov(w, el)[0])) return el;
+  return null; };
+/* the team column sticks in that box only when nothing between them is a box of its own: any
+   overflow but visible makes one, and a clipped table never scrolls, so the column never moves */
+const sticks = (w, card) => { const sc = scroller(w, card), td = card && card.querySelector('tbody td.pe-tm');
+  if (!sc || !td || w.getComputedStyle(td).getPropertyValue('position') !== 'sticky') return false;
+  for (let el = td.parentElement; el && el !== sc; el = el.parentElement) if (ov(w, el).some(v => !/^(visible|clip)$/.test(v))) return false;
+  return true; };
 
 /* the page around the tab: the week's schedule with kickoffs on a clock the test moves */
 function page(MU, opts) {
@@ -51,7 +75,7 @@ function page(MU, opts) {
   const section = TAB.slice(TAB.indexOf('<section id="tab-elo"'), TAB.indexOf('</section>') + 10);
   const script = TAB.slice(TAB.indexOf('<script>') + 8, TAB.lastIndexOf('</script>'));
   const week = MU && MU.week != null ? MU.week : 1;
-  const dom = new JSDOM(`<!doctype html><html><head>${style}</head><body>
+  const dom = new JSDOM(`<!doctype html><html><head>${PAGE_CSS}${style}</head><body>
     <section id="tab-slate"><div id="slateView"><div class="bar"></div></div><select id="weekSel"><option value="${week}" selected>${week}</option></select></section>
     ${section}</body></html>`, { runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window;
@@ -194,6 +218,8 @@ function page(MU, opts) {
       if (!card) continue;
       chk(d.querySelectorAll('#peBody .card').length === 1 && !d.querySelector('#peBody tr.pe-plrow'), `${name} should take the player table's place, not sit beside it`);
       chk((card.querySelector('.pe-pos [aria-selected="true"]') || {}).dataset?.unit === side, `the ${name} pill is not shown selected`);
+      chk(!!scroller(w, card), `${name}'s table has no sideways scroller at a desktop width: its columns run past the card and the page scrolls`);
+      chk(sticks(w, card), `${name}'s team column cannot stick while the table scrolls: it is not sticky, or a box between it and the scroller clips`);
       const rows = () => [...card.ownerDocument.querySelectorAll('#peUnits tbody tr.pe-tmrow')];
       let R = rows();
       chk(R.length === teams.length && R.length === 32, `${name} has ${R.length} rows for ${teams.length} teams`);
@@ -268,11 +294,12 @@ function page(MU, opts) {
     { const M3 = JSON.parse(JSON.stringify(M));
       delete M3.units.stats; delete M3.units.weights;
       for (const side of ['off', 'def']) for (const v of Object.values(M3.units[side])) delete v.stats;
-      const { d: d3 } = page(MU0, { M: M3 }); await wait(60);
+      const { w: w3, d: d3 } = page(MU0, { M: M3 }); await wait(60);
       const card = await open(d3, 'off'), heads = card ? [...card.querySelectorAll('thead th')].map(txt).join('|') : '';
       const first = card && card.querySelector('tbody tr.pe-tmrow'), v = first && M3.units.off[first.dataset.team];
       chk(!!card && /Pts\/g/.test(heads) && /Yds\/g/.test(heads) && /EPA\/play/.test(heads) && v && txt(first).includes(String(v.ppg)),
-        'an old-shaped model.json does not draw the old columns: ' + heads); }
+        'an old-shaped model.json does not draw the old columns: ' + heads);
+      chk(!!scroller(w3, card) && sticks(w3, card), 'the old columns\' table has no sideways scroller at a desktop width, or its team column cannot stick in it'); }
   }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);

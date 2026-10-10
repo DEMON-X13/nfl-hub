@@ -246,7 +246,8 @@ each of nine key stats from nflverse's play-by-play, opponents and home field co
 (offense points 35, success rate 25, EPA a play 15, giveaways 15, sack rate 10; defense points allowed 50, big plays
 allowed 30, takeaways 10, sacks 10), fitted on 2012-2017 by `elo/tools/units_fit.py` and no less accurate walk-forward
 on 2018-2025 than the old points-and-EPA measure (9.508 against 9.520, not a real gain); third down, red zone, yards a
-play and the rest are shown with their league ranks and weigh nothing. The columns sort, and a click on a team opens
+play and the rest are shown with their league ranks and weigh nothing. The table scrolls sideways inside its card at
+every width, the team column held, the columns sort, and a click on a team opens
 its window (its rating game by game, every stat ranked raw and with opponents counted, its coming opponent). The page
 reads the weights and the stats from the file and still draws an older file's three columns. A final the
 play-by-play lacks or has only part of is `pending` and moves nobody; `elo/check.py` replays the season from the

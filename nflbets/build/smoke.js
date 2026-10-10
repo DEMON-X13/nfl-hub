@@ -138,6 +138,16 @@ function shiftClock(w) {
 if (PAGE_SHIFT_MS) console.log(`the payload's last game kicks off within the hour or has: the page is run as at ${new Date(Date.now() - PAGE_SHIFT_MS).toISOString()}, two days before it`);
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* a box's overflow both ways (jsdom keeps the shorthand apart from the longhands), the box a table
+   scrolls in at a desktop width (it or one between it and its card: jsdom reads only the rules a
+   desktop screen gets), and whether a sticky cell can stick in that box: nothing between them may
+   be a box of its own, as the page's every-table clip would make the table one that never scrolls */
+const ovf = (w, el) => { const c = w.getComputedStyle(el), o = c.getPropertyValue('overflow').trim().split(/\s+/).filter(Boolean);
+  return [c.getPropertyValue('overflow-x') || o[0] || 'visible', c.getPropertyValue('overflow-y') || o[1] || o[0] || 'visible']; };
+const scrollBox = (w, card, table) => { for (let el = table; el && el !== card; el = el.parentElement) if (/^(auto|scroll)$/.test(ovf(w, el)[0])) return el; return null; };
+const sticksIn = (w, cell, box) => { if (!cell || !box || w.getComputedStyle(cell).getPropertyValue('position') !== 'sticky') return false;
+  for (let el = cell.parentElement; el && el !== box; el = el.parentElement) if (ovf(w, el).some(v => !/^(visible|clip)$/.test(v))) return false;
+  return true; };
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
 
 /* the game the builder checks put their legs on: the season's last kickoff still to come, so
@@ -925,6 +935,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(rows.length === Object.keys(T).length && rows.every((r, i) => T[r.dataset.team].rank === i + 1) && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield svg')),
             `${name} is not every team in rank order, best first, with shields`);
           chk(!!card() && txt(card().querySelector('h2')).startsWith(name) && !!card().querySelector('.pe-curve') && body.querySelectorAll('.card').length === 1, `the ${name} card has the wrong title, no curve, or sits beside the players`);
+          /* fifteen columns are wider than a desktop card: on the whole page's styles the table scrolls
+             inside its card, and the team column sticks there */
+          { const box = card() && scrollBox(w, card(), card().querySelector('table.pe-tt'));
+            chk(!!box && sticksIn(w, card().querySelector('tbody td.pe-tm'), box), `${name}'s table does not scroll inside its card at a desktop width, or its team column cannot stick in it`); }
         }
         const back = was && was.pos ? body.querySelector(`.pe-pos button[data-pos="${was.pos}"]`) : body.querySelector('.pe-pos button[data-pos]');
         back.click(); await wait(30);
