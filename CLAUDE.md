@@ -214,8 +214,11 @@ grade on the call shown, `backfill` exactly before `since`, every call backfille
 recomputed exactly from files poisoned with made-up finals after the cut (and the latest older one
 within 0.05, for nflverse's revisions), its line, row, column and note, and, with its
 `model.joblib` gone (`JOKER_LONG_MODEL` points the step elsewhere), the step exiting 1 with every
-call and grade kept and the record saying why. The smoke runs it with `python3`; `PYTHON` names
-another.
+call and grade kept and the record saying why. In a run where the step did not run
+(`modelStatus.jokerLong` says why) the smoke skips the recomputation, since that run backfilled
+nothing and the recomputation would need what the step lacked: a lost artefact or a failed download
+must never fail the smoke and stop the whole publish over a test, and 5m checks that on the state the
+missing-model step leaves. The smoke runs it with `python3`; `PYTHON` names another.
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 

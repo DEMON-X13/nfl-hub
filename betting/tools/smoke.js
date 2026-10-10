@@ -77,6 +77,31 @@ const DAY = 86400000;
 const JL_STEP = path.join(ROOT, 'betting', 'joker', 'long', 'joker_long.py');
 const PY = process.env.PYTHON || 'python3';
 const py = (args, env) => require('child_process').spawnSync(PY, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20, env: Object.assign({}, process.env, env || {}) });
+/* 5m's recomputation of the Joker (long fit)'s backfilled calls in state `st`, against `prev`, the
+   state published before it: every call backfilled by this run (all of them on the first, a missed
+   game's after) exactly, and the latest one published before within 0.05, since nflverse revises a
+   stat now and then (that it has not moved since is 5h's). Skipped when the step did not run this
+   time (modelStatus.jokerLong says why: its fitted model missing, a download failed): that run
+   backfilled nothing, 5h holds the calls it kept, and the recomputation would need what the step
+   lacked, so running it would fail the smoke and stop the whole publish over a model that is only a
+   test. Returns { bf, skip } or { bf, todo, now, same, fails }; `env` reaches the recomputation (the
+   missing-model self-test points JOKER_LONG_MODEL and BETTING_STATE at its own files). */
+function jlRecompute(st, prev, env) {
+  const J = JSON.stringify, calls = st.jokerLong || {}, sched = Object.fromEntries(st.schedule.map(g => [g.game_id, g]));
+  const bf = Object.keys(calls).filter(gid => calls[gid].backfill && sched[gid] && kick(sched[gid]) != null).sort((x, y) => kick(sched[x]) - kick(sched[y]));
+  if ((st.modelStatus || {}).jokerLong) return { bf, skip: 'the Joker (long fit) did not run this time, so it backfilled nothing; 5h holds its calls' };
+  if (!bf.length) return { bf, skip: 'no backfilled call in this state' };
+  const had = prev && prev.season === st.season ? prev.jokerLong || {} : {};
+  const now = bf.filter(gid => !had[gid]), old = bf.filter(gid => had[gid]), todo = now.concat(old.slice(-1));
+  const r = py([JL_STEP, '--recompute', ...todo, '--poison'], env);
+  let got = null; try { got = JSON.parse((r.stdout || '').trim().split('\n').pop()); } catch (e) { got = null; }
+  const fails = []; let same = 0;
+  if (!(r.status === 0 && got)) fails.push(`5m: the recomputation did not run (${PY}; pip install -r betting/joker/requirements.txt): ` + String(r.stderr || r.error || '').slice(-400));
+  if (got) for (const gid of todo) { const a = calls[gid], b = got[gid], exact = now.includes(gid);
+    if (!!b && (exact ? a.pick === b.pick && a.pHome === b.pHome : Math.abs(a.pHome - b.pHome) <= 0.05)) same++;
+    else fails.push(`5m: ${gid}'s backfilled call ${J(a)} is not what the data before its kickoff gives: ${J(b)}${exact ? '' : ' (allowing 0.05 for nflverse revisions since)'}`); }
+  return { bf, todo, now, same, fails };
+}
 async function reality() {
   const P = JSON.parse(state), pub = Date.parse(P.published);
   const J = JSON.stringify;
@@ -306,8 +331,9 @@ async function reality() {
      cut has a made-up final and scrambled stats, so a call that leaned on anything after its kickoff
      would move; it is drawn on the record and in the pick grid as a test beside the
      Joker, with the line saying how the backfilled picks were made; and with its fitted model gone
-     the step exits 1 (the workflow warns and goes on), changes no call or grade, and the record
-     says so while every model's record still draws */
+     the step exits 1 (the workflow warns and goes on), changes no call or grade, this smoke on that
+     state skips the recomputation instead of failing on the same missing file (and with it the
+     publish), and the record says so while every model's record still draws */
   { const calls = P.jokerLong || {}, ms = P.modelStatus || {}, info = P.jokerLongInfo || {};
     const yml = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'update.yml'), 'utf8').split(/\n      - /);
     const at = re => yml.findIndex(s => re.test(s)), sJ = at(/betting\/joker\/joker\.py/), sL = at(/joker_long\.py/), sS = at(/tools\/smoke\.js/), sC = at(/git add betting\/state\.json/);
@@ -325,26 +351,15 @@ async function reality() {
     for (const [gid, c] of Object.entries(calls)) { const k = sched[gid] ? kick(sched[gid]) : null; if (k == null || !isFinite(since)) continue;
       if (k <= since) check(!!c.backfill, `5m: ${gid} kicked off before the Joker (long fit) went live and is not marked backfilled`);
       else check(!c.backfill || !!c.late, `5m: ${gid} kicked off after the Joker (long fit) went live and is marked backfilled, not late`); }
-    const bf = Object.keys(calls).filter(gid => calls[gid].backfill && sched[gid] && kick(sched[gid]) != null).sort((x, y) => kick(sched[x]) - kick(sched[y]));
-    console.log(`  5m: the Joker (long fit) graded on its published call on ${n} games, ${bf.length} backfilled`);
-    if (!bf.length) console.log('  (5m recompute skipped: no backfilled call in this state)');
-    else {
-      let prev = null; try { prev = JSON.parse(process.env.BETTING_PREV_STATE ? fs.readFileSync(process.env.BETTING_PREV_STATE, 'utf8')
-        : require('child_process').execSync('git show HEAD:betting/state.json', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { prev = null; }
-      /* every call backfilled by this run (all of them on the first, a missed game's after), exactly;
-         and the latest one published before, within 0.05, since nflverse revises a stat now and then
-         (that it has not moved since is 5h's) */
-      const had = prev && prev.season === P.season ? prev.jokerLong || {} : {};
-      const now = bf.filter(gid => !had[gid]), old = bf.filter(gid => had[gid]), todo = now.concat(old.slice(-1));
-      const r = py([JL_STEP, '--recompute', ...todo, '--poison']);
-      let got = null; try { got = JSON.parse((r.stdout || '').trim().split('\n').pop()); } catch (e) { got = null; }
-      check(r.status === 0 && !!got, `5m: the recomputation did not run (${PY}; pip install -r betting/joker/requirements.txt): ` + String(r.stderr || r.error || '').slice(-400));
-      if (got) { let same = 0;
-        for (const gid of todo) { const a = calls[gid], b = got[gid], exact = now.includes(gid);
-          const ok = !!b && (exact ? a.pick === b.pick && a.pHome === b.pHome : Math.abs(a.pHome - b.pHome) <= 0.05);
-          if (ok) same++;
-          check(ok, `5m: ${gid}'s backfilled call ${J(a)} is not what the data before its kickoff gives: ${J(b)}${exact ? '' : ' (allowing 0.05 for nflverse revisions since)'}`); }
-        console.log(`  5m: ${same} of ${todo.length} backfilled calls (${now.length} new in this state) match a recomputation from the data before each kickoff, with every later game poisoned`); } }
+    let prev = null; try { prev = JSON.parse(process.env.BETTING_PREV_STATE ? fs.readFileSync(process.env.BETTING_PREV_STATE, 'utf8')
+      : require('child_process').execSync('git show HEAD:betting/state.json', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { prev = null; }
+    const rc = jlRecompute(P, prev);
+    console.log(`  5m: the Joker (long fit) graded on its published call on ${n} games, ${rc.bf.length} backfilled`);
+    /* skipped only for a reason: the step did not run this time, or it has nothing backfilled */
+    check(!rc.skip || !!ms.jokerLong || !rc.bf.length, `5m: the recomputation was skipped (${rc.skip}) although the step ran and ${rc.bf.length} calls are backfilled`);
+    if (rc.skip) console.log(`  (5m recompute skipped: ${rc.skip})`);
+    else { rc.fails.forEach(m => check(false, m));
+      if (rc.same != null) console.log(`  5m: ${rc.same} of ${rc.todo.length} backfilled calls (${rc.now.length} new in this state) match a recomputation from the data before each kickoff, with every later game poisoned`); }
     /* on the record: its line, its row and its column, as a test beside the Joker */
     const dec = Object.values(P.processed).filter(r => r.jokerLong && typeof r.jokerLong.correct === 'boolean');
     if (dec.length) {
@@ -372,6 +387,12 @@ async function reality() {
       check(r.status === 1, `5m: with its fitted model missing the step exited ${r.status}, not 1 (the workflow warns on 1 and publishes): ` + String(r.stderr || r.error || '').slice(-300));
       check(!!why && /model/.test(why.why) && /missing/.test(why.why) && !!why.since, '5m: with its fitted model missing the state does not say why: ' + J(why));
       check(['jokerLong', 'joker', 'broly', 'processed', 'schedule', 'odds'].every(k => J(after[k]) === J(P[k])), '5m: with its fitted model missing the step changed a call, a grade or the season');
+      /* and this smoke on that state, as the job's next run meets it (the file still gone, P the state
+         before): the recomputation is skipped for the step's reason, not run on the same missing file,
+         which would fail the smoke and stop the whole publish over a test */
+      const rc = jlRecompute(after, P, { BETTING_STATE: sp, JOKER_LONG_MODEL: path.join(tmp, 'model.joblib') });
+      check(/did not run this time/.test(rc.skip || '') && !(rc.fails || []).length,
+        '5m: with its fitted model missing the smoke still recomputes the backfilled calls, which fails the publish: ' + J(rc.skip || rc.fails));
       const e = boot(after); await new Promise(res => setTimeout(res, 700));
       if (Object.keys(after.processed).length) {
         const ct = e.d.getElementById('modelChart').textContent.replace(/\s+/g, ' '), nt = (e.d.querySelector('#modelChart .rv-notes') || {}).textContent || '';
