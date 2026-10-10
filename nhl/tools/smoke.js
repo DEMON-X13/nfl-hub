@@ -258,6 +258,13 @@ async function main() {
     if (g && startedAt(g, PUB + 60000)) chk(!c.querySelector('button[data-leg]'), `no bet offered on a game that has started: ${g.id}`);
     if (g && g.pm && g.pm.inj) chk(/Injury report of/.test(txt(c)), `a card names the injury report its lineup was built on: ${g.id}`);
   }
+  /* a game whose start the feed moved after its puck drop keeps the call made before it: its day opened,
+     the card offers no bet and says why */
+  for (const g of S.games.filter(g => !startedAt(g, PUB + 60000) && delayedAt(g, g.start, PUB + 60000))) {
+    const b = d.querySelector(`#days .day[data-day="${g.date}"]`); if (b) b.click();
+    const c = d.querySelector(`#games .game[data-id="${g.id}"]`);
+    chk(c && !c.querySelector('button[data-leg]') && /start moved/.test(txt(c.querySelector('.when'))), `no bet offered on a game whose start moved after its puck drop, and the card says so: ${g.id}`);
+  }
   /* a score the job published while a game was under way says when it was read */
   const liveGames = S.games.filter(g => g.state === 'live');
   if (liveGames.length) {

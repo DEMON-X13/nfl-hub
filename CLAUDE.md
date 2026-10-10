@@ -406,7 +406,8 @@ moneyline, the puck line or the total only where the model's chance beats DraftK
 five points. The call (the chance, margin, total, overtime chance, the line, each side taken and whose
 call it is) is made while a game is still to come and frozen at its puck drop by the clock, not only by
 ESPN's state, so a game delayed past its start is not called again (nor one whose start ESPN moves
-less than half a day later after the puck drop its call was made before; a game moved to another day
+less than half a day later after the puck drop its call was made before, which the page applies too:
+no bet on it, and its card says "start moved · call kept"; a game moved to another day
 is a game to come again); after it, every part is copied from the last state and graded as it stands,
 never recomputed. Only the job's second pass makes calls: `update.js --scores` copies every call as it
 found it, so a puck drop between the two passes is graded on the call the page showed. Rows an older

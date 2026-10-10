@@ -266,7 +266,7 @@ select,input[type=number]{background:var(--panel-3);border:1px solid var(--line-
 </main>
 <script>
 'use strict';
-const APP_BUILD = 'nhl v5 · 2026-10-10';
+const APP_BUILD = 'nhl v6 · 2026-10-10';
 const STATE_URL = 'state.json';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
 const KEY = 'nhl_v1';
@@ -288,7 +288,10 @@ const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDa
 const etToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 /* the visitor's clock decides what has started: the job runs a few times a day and GitHub starts it
    hours late, so a game the last state still has as to come may be under way, or over, by now */
-const hasStarted = g => g.state !== 'pre' || Date.parse(g.start) <= Date.now();
+/* started: under way or over, its puck drop passed by the clock, or (a delay, the job's own rule) the puck drop its
+   frozen call was made before has passed and the start has moved less than half a day later */
+const hasStarted = g => g.state !== 'pre' || Date.parse(g.start) <= Date.now()
+  || !!(g.frozen && g.before && Date.parse(g.before) <= Date.now() && Date.parse(g.start) - Date.parse(g.before) < 12 * 3600000);
 const hhmm = iso => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 const ago = iso => (Date.parse(S.published) - Date.parse(iso)) / 3600000;      // hours the source is older than the publish
 const STALE_H = 12;                       // an injury report older than this at publish time is said to be stale (the job runs five times a day)
@@ -397,6 +400,7 @@ function gameCard(g) {
   if (live) detail = `<span class="${state === 'live' ? 'live' : ''}">${esc(live.detail)}</span>`;
   else if (g.state === 'live') detail = `<span class="live">${esc(g.detail)}</span> <span class="asof" title="the score when the job last read it; Refresh scores reads ESPN now">as of ${esc(hhmm(g.scoreAt || S.published))}</span>`;
   else if (g.state === 'final') detail = esc(g.detail);
+  else if (g.state === 'pre' && Date.parse(g.start) > Date.now() && started) detail = '<span class="asof" title="the feed moved the start after the first puck drop; the call shown is the one made before it">start moved · call kept</span>';
   else if (started) detail = '<span class="asof" title="Refresh scores reads ESPN now">under way · no score yet</span>';
   return `<div class="game ${final ? 'final' : ''}" data-id="${g.id}">
     <div class="when"><span>${when(g)}${g.neutral ? ' · neutral ice' : ''}${g.note ? ' · ' + esc(g.note) : ''}</span><span>${detail}</span></div>
