@@ -51,6 +51,28 @@
      next-qb-espn         two Questionable quarterbacks on a Friday, the backup not practising per
                           ESPN: no next one can be named and the checks pass (a version of the check
                           had no ESPN-Questionable rule and failed the week); naming him fails.
+     announced-starter    CHI on Friday night, the live run of 2026-10-10 02:43 UTC: ESPN's notes on Bagent
+                          and on Keenum say Ben Johnson named Bagent the Week 5 starter, Williams is
+                          Questionable and limited Friday. Bagent starts and Williams is passed over, "not
+                          starting", his tag kept; so from Keenum's note alone (a teammate's), from Williams's
+                          own, and from each accepted form. The lineup the build made without the rule
+                          (Williams listed, Bagent next) fails the check (announced).
+     announced-hedged     the same note hedged or conditional (will start if, unless, could, may, is in line
+                          to start should, would, likely, if ... then, X or Y, either, an accepted form beside
+                          could, would, may, might, likely or should, ESPN's own "has not yet confirmed the
+                          plan", in his note or a teammate's): no change, Williams listed and tagged, Bagent
+                          next.
+     announced-dated      no change for a note from before CHI's week-4 game or on its day (ESPN's Oct 3 line
+                          among them), one dated after kickoff, or one about week 6, the Falcons, next week or
+                          a Thursday game.
+     announced-out        Bagent named the starter but Out, or Doubtful, on the filed report: he stays out and
+                          the chart decides (Williams, Questionable and practising, starts; Keenum next).
+     announced-newest     Monday's note names Bagent, Friday's names Williams: Williams starts; two as new that
+                          disagree name nobody.
+     announced-elsewhere  no ESPN list, a list with nothing on CHI, a CHI note naming Green Bay's quarterback
+                          (alone, or newer than Bagent's): CHI and GB keep what their own notes say; and on
+                          CLE's real roster a running back's "Sanders will start" never names the quarterback
+                          Shedeur Sanders (a last name alone is the note's own player).
      site-ranks           the narrative check catches the site's own ranks and lets third-party ones by. */
 'use strict';
 const { SEASON, seasonState, siteRankQuote } = require('./lib');
@@ -73,7 +95,7 @@ function build(F) {
   const S = schedule(F.games, F.now);
   const teams = [...new Set(F.roster.map(r => r.team))];
   const LU = lineups({ roster: F.roster, injuries: F.injuries, chart: F.chart, espn: F.espn || null, player26: [], snaps26: [],
-    week: S.week, kicks: S.kicks, lastGame: S.lastGame, teams, now: F.now, reportModified: F.reportModified });
+    week: S.week, kicks: S.kicks, lastGame: S.lastGame, opps: S.opps, teams, now: F.now, reportModified: F.reportModified });
   const U = {};
   for (const t of teams) {
     const L = LU.teams[t];
@@ -142,6 +164,34 @@ const NYJ5 = {
   now: '2026-10-09T21:30:00Z',
 };
 const espnNote = (name, status, type, comment, date = '2026-10-09T20:00:00Z') => ({ team: 'NYJ', name, pos: '', status, type, comment, long: '', date });
+
+/* ---- CHI at GB, week 5 (Sunday October 11), Friday night: the live run of 2026-10-10 02:43 UTC. The real roster,
+   chart and Thursday report (Williams out in week 4, not practising Thursday, no game statuses for a Sunday team);
+   ESPN's notes as the committed packs carry them. Bagent's and Keenum's appeared between the packs of October 5,
+   15:04 and 20:04 UTC (week4-pack.md), and were still there on Friday night (week5-pack.md, with Williams's Friday
+   line); ESPN's own dates are not in the packs, so each is dated within the hours it appeared ---- */
+const CHI_DT = '2026-10-09T14:19:58Z';
+const CHI5 = {
+  games: [game(4, '2026-10-04', '13:00', 'NYJ', 'CHI', [12, 23]), game(4, '2026-10-04', '13:00', 'GB', 'TB', [17, 14]),
+    game(5, '2026-10-11', '13:00', 'CHI', 'GB'), game(6, '2026-10-18', '13:00', 'CHI', 'ATL')],
+  roster: [player('CHI', '00-0039918', 'Caleb Williams', 'QB'), player('CHI', '00-0038416', 'Tyson Bagent', 'QB'), { ...player('CHI', '00-0028986', 'Case Keenum', 'QB'), first_name: 'Casey' },
+    player('CHI', '00-0041172', 'Miller Moss', 'QB', 'DEV'), player('CHI', '00-0035647', 'Montez Sweat', 'DE'),
+    player('GB', '00-0036264', 'Jordan Love', 'QB'), player('GB', '00-0028118', 'Tyrod Taylor', 'QB')],
+  chart: [chartRow(CHI_DT, 'CHI', '00-0039918', 'Caleb Williams', '3WR 1TE', 'QB', 1), chartRow(CHI_DT, 'CHI', '00-0038416', 'Tyson Bagent', '3WR 1TE', 'QB', 2),
+    chartRow(CHI_DT, 'CHI', '00-0028986', 'Case Keenum', '3WR 1TE', 'QB', 3),
+    chartRow(CHI_DT, 'GB', '00-0036264', 'Jordan Love', '3WR 1TE', 'QB', 1), chartRow(CHI_DT, 'GB', '00-0028118', 'Tyrod Taylor', '3WR 1TE', 'QB', 2)],
+  injuries: [injury(4, 'CHI', '00-0039918', 'Caleb Williams', 'QB', 'Hamstring', 'Out', 'dnp'), injury(5, 'CHI', '00-0039918', 'Caleb Williams', 'QB', 'Hamstring', '', 'dnp')],
+  reportModified: 'Fri, 09 Oct 2026 14:19:06 GMT',   // Thursday's practice report
+  now: '2026-10-10T02:43:49Z',
+};
+const chiNote = (name, comment, date, status = 'Active', type = '', team = 'CHI') => ({ team, name, pos: '', status, type, comment, long: '', date });
+const WILLIAMS_FRI = chiNote('Caleb Williams', "Williams (hamstring) was a limited practice participant Friday and is listed as questionable for Sunday's game at Green Bay.", '2026-10-09T21:10:00Z', 'Questionable', 'Hamstring');
+const BAGENT = chiNote('Tyson Bagent', "Bears head coach Ben Johnson said that Bagent will start Sunday's game against the Packers in Green Bay, Sean Hammond of the Chicago Tribune reports.", '2026-10-05T18:00:00Z');
+const KEENUM = chiNote('Case Keenum', "Keenum is expected to remain in a backup role for Sunday's game against the Packers after head coach Ben Johnson said that Tyson Bagent will start at quarterback in Week 5, Sean Hammond of the Chicago Tribune reports.", '2026-10-05T18:00:00Z');
+/* the QB row as the build made it on the live run, before the rule: ESPN's notes contradict it */
+const CHI_WAS = { who: [{ id: '00-0039918', n: 'Caleb Williams', pos: 'QB', q: 'questionable: hamstring' }], next: { id: '00-0038416', n: 'Tyson Bagent', pos: 'QB', from: 'chart' } };
+const qbRow = q => `who ${names(q.who)}${q.who[0] && q.who[0].q ? ` (${q.who[0].q})` : ''}; out ${(q.out || []).map(p => `${p.n}: ${p.why}`).join('; ') || 'nobody'}; next ${q.next ? q.next.n : q.next_none || 'none'}`;
+const unchanged = q => names(q.who).join() === 'Caleb Williams' && /^questionable: hamstring/.test(q.who[0].q || '') && !!q.next && q.next.n === 'Tyson Bagent' && !(q.out || []).some(p => /named the starter/.test(p.why));
 
 function cases() {
   const out = [];
@@ -302,6 +352,122 @@ function cases() {
     const wrong = clone(U); wrong.NYJ.qb.next = { id: '00-0041056', n: 'Cade Klubnik', pos: 'QB', from: 'chart' }; delete wrong.NYJ.qb.next_none;
     const rw = checkOf(F, wrong, week, snap);
     add('next-qb-espn', 'naming Klubnik as next fails the check', (rw.fails['next-qb'] || []).some(m => /Cade Klubnik, is questionable on ESPN's list/.test(m)), failKeys(rw));
+  }
+  { // announced-starter
+    const F = { ...CHI5, espn: [WILLIAMS_FRI, BAGENT, { ...KEENUM, date: '2026-10-06T16:00:00Z' }] };
+    const { U, week, snap } = build(F), r = checkOf(F, U, week, snap), q = U.CHI.qb, w = (q.out || []).find(p => p.n === 'Caleb Williams');
+    add('announced-starter', "ESPN's notes name Bagent the Week 5 starter: he starts, Williams is passed over, not starting, with his tag",
+      names(q.who).join() === 'Tyson Bagent' && w && w.why === 'not starting (questionable: hamstring): Tyson Bagent named the starter, per ESPN' && !q.next && !q.next_none, qbRow(q));
+    add('announced-starter', 'the checks pass on it', failKeys(r) === 'none', failKeys(r));
+    const old = clone(U); old.CHI.qb = clone(CHI_WAS);
+    const rm = checkOf(F, old, week, snap);
+    add('announced-starter', 'the lineup the build made without the rule (Williams listed, Bagent next) fails the check',
+      (rm.fails.announced || []).some(m => /^CHI: .*names Tyson Bagent the starter.*lists Caleb Williams$/.test(m)), (rm.fails.announced || []).join(' | ') || failKeys(rm));
+    /* each accepted form alone, in Bagent's own note, a teammate's or Williams's own */
+    const FORMS = [KEENUM, { ...WILLIAMS_FRI, comment: "Williams (hamstring) was a limited practice participant Friday, but head coach Ben Johnson said Tyson Bagent will start Sunday's game against the Packers." },
+      'Johnson named Bagent the starter for Week 5.', 'Johnson named Bagent the Week 5 starter.', "Bagent has been named the starter for Sunday's game against the Packers.",
+      "Bagent was named the team's starting quarterback for Sunday's game in Green Bay.", 'Bagent will make the start Sunday against the Packers.',
+      'Bagent will make his second straight start Sunday.', 'Bagent will get the start Sunday at Lambeau Field.', 'Bagent will draw the start against Green Bay.',
+      "Bagent will be the Bears' starting quarterback Sunday.", 'Bagent will be under center Sunday against the Packers.',
+      "Johnson announced Friday that Bagent is expected to start Sunday's game against the Packers.", 'Bagent is set to start Sunday against the Packers.',
+      'Bagent has cleared the concussion protocol and will start Sunday.', "Head coach Ben Johnson confirmed Friday that Bagent (thumb) will start Sunday's game against the Packers.",
+      'Ben Johnson said Friday he will start Bagent on Sunday.', "Johnson provided an update Friday, saying Bagent will start Sunday's game against the Packers."];
+    const bad = FORMS.map(x => {
+      const n = typeof x === 'string' ? { ...BAGENT, comment: x, date: '2026-10-09T18:00:00Z' } : x;
+      const G = { ...CHI5, espn: n.name === 'Caleb Williams' ? [n] : [WILLIAMS_FRI, n] }, g = build(G), rg = checkOf(G, g.U, g.week, g.snap);
+      return names(g.U.CHI.qb.who).join() === 'Tyson Bagent' && failKeys(rg) === 'none' ? null : `${n.name}: "${n.comment.slice(0, 60)}" -> ${names(g.U.CHI.qb.who)} ${failKeys(rg)}`;
+    }).filter(Boolean);
+    add('announced-starter', `each accepted form names Bagent, in his own note, Keenum's or Williams's (${FORMS.length})`, !bad.length, bad.join(' | '));
+  }
+  { // announced-hedged
+    const HEDGED = ["Bears head coach Ben Johnson said that Bagent will start Sunday's game against the Packers if Caleb Williams (hamstring) is unable to play.",
+      "Bagent will start Sunday's game against the Packers unless Caleb Williams (hamstring) is cleared to return.",
+      "Bagent could start Sunday's game against the Packers in Green Bay.", "Bagent may start Sunday's game against the Packers in Green Bay.",
+      "Bagent is in line to start Sunday's game against the Packers should Caleb Williams (hamstring) be unable to play.",
+      "Bears head coach Ben Johnson said that Bagent would start Sunday's game against the Packers.", "Bagent is likely to start Sunday's game against the Packers.",
+      "Bagent is expected to start Sunday's game against the Packers if Williams (hamstring) cannot go.",
+      "If Caleb Williams (hamstring) cannot play, then Bagent will start Sunday's game against the Packers.",
+      "Bagent or Keenum will start Sunday's game against the Packers.",
+      // an accepted form beside a hedge: the sentence is not plain, so it does not count
+      "Bagent is expected to start Sunday's game against the Packers, though Caleb Williams (hamstring) could still be cleared.",
+      "Bagent will start Sunday's game against the Packers, Johnson said, though he would not rule out Caleb Williams (hamstring).",
+      "Bagent is set to start Sunday's game against the Packers, but Caleb Williams (hamstring) may yet be cleared to play.",
+      "Bagent will start Sunday's game against the Packers, though Johnson said Caleb Williams (hamstring) might be ready.",
+      "Bagent is expected to start Sunday's game against the Packers, with Caleb Williams (hamstring) likely sidelined.",
+      "Bagent is expected to start Sunday's game against the Packers should Caleb Williams (hamstring) be held out.",
+      // ESPN's Oct 3 line with this week's opponent and date, so only its second sentence can stop it
+      'Bagent is expected to start Sunday versus the Packers after getting most of the first-team reps in practice, Ian Rapoport of NFL Network reports. However, coach Ben Johnson has not yet confirmed the plan.',
+      "Johnson said he has not decided whether Bagent will start Sunday's game against the Packers."];
+    const notes = [...HEDGED.map(t => ({ ...BAGENT, comment: t, date: '2026-10-09T18:00:00Z' })),
+      { ...KEENUM, comment: "Keenum is expected to remain in a backup role for Sunday's game against the Packers, and Tyson Bagent will start if Caleb Williams (hamstring) cannot play.", date: '2026-10-09T18:00:00Z' },
+      { ...KEENUM, comment: "Johnson said either Bagent or Keenum will start Sunday's game against the Packers.", date: '2026-10-09T18:00:00Z' }];
+    const bad = notes.map(n => {
+      const G = { ...CHI5, espn: [WILLIAMS_FRI, n] }, g = build(G), rg = checkOf(G, g.U, g.week, g.snap);
+      return unchanged(g.U.CHI.qb) && failKeys(rg) === 'none' ? null : `"${n.comment.slice(0, 70)}" -> ${qbRow(g.U.CHI.qb)}; ${failKeys(rg)}`;
+    }).filter(Boolean);
+    add('announced-hedged', `a hedged or conditional note changes nothing: Williams listed and tagged, Bagent next (${notes.length})`, !bad.length, bad.join(' | '));
+  }
+  { // announced-dated
+    const said = 'Bears head coach Ben Johnson said that Bagent will start Sunday.';
+    const DATED = [[said, '2026-10-02T20:00:00Z', 'before the week-4 game'], [said, '2026-10-04T23:30:00Z', "on the week-4 game's day"],
+      ['Bagent is expected to start Sunday versus the Jets after getting most of the first-team reps in practice, Ian Rapoport of NFL Network reports. However, coach Ben Johnson has not yet confirmed the plan.', '2026-10-03T15:00:00Z', "ESPN's Oct 3 line"],
+      [said, '2026-10-11T20:30:00Z', 'after kickoff'],
+      ['Bears head coach Ben Johnson said that Bagent will start in Week 6.', '2026-10-09T18:00:00Z', 'week 6'],
+      ['Bears head coach Ben Johnson said that Bagent will start against the Falcons.', '2026-10-09T18:00:00Z', "week 6's opponent"],
+      ['Bears head coach Ben Johnson said that Bagent will start next week.', '2026-10-09T18:00:00Z', 'next week'],
+      ["Bears head coach Ben Johnson said that Bagent will start Thursday night's game.", '2026-10-09T18:00:00Z', 'a Thursday game']];
+    const bad = DATED.map(([t, date, what]) => {
+      const G = { ...CHI5, espn: [WILLIAMS_FRI, { ...BAGENT, comment: t, date }] }, g = build(G), rg = checkOf(G, g.U, g.week, g.snap);
+      return unchanged(g.U.CHI.qb) && failKeys(rg) === 'none' ? null : `${what}: ${qbRow(g.U.CHI.qb)}; ${failKeys(rg)}`;
+    }).filter(Boolean);
+    add('announced-dated', `a note about another game changes nothing: ${DATED.map(x => x[2]).join(', ')}`, !bad.length, bad.join(' | '));
+  }
+  { // announced-out
+    const bad = ['Out', 'Doubtful'].map(st => {
+      const F = { ...CHI5, reportModified: 'Sat, 10 Oct 2026 14:30:00 GMT', now: '2026-10-10T20:00:00Z', espn: [WILLIAMS_FRI, BAGENT, KEENUM],
+        injuries: [...CHI5.injuries.filter(r => r.week === '4'), injury(5, 'CHI', '00-0039918', 'Caleb Williams', 'QB', 'Hamstring', 'Questionable', 'limited'),
+          injury(5, 'CHI', '00-0038416', 'Tyson Bagent', 'QB', 'Concussion', st, 'dnp')] };
+      const { U, week, snap } = build(F), r = checkOf(F, U, week, snap), q = U.CHI.qb;
+      return names(q.who).join() === 'Caleb Williams' && /^questionable/.test(q.who[0].q || '') && q.next && q.next.n === 'Case Keenum' && failKeys(r) === 'none'
+        ? null : `${st}: ${qbRow(q)}; ${failKeys(r)}`;
+    }).filter(Boolean);
+    add('announced-out', 'named the starter but Out or Doubtful on the filed report: Bagent stays out, Williams starts, Keenum next, the checks pass', !bad.length, bad.join(' | '));
+  }
+  { // announced-newest
+    const back = { ...WILLIAMS_FRI, comment: "Williams (hamstring) was a full participant in Friday's practice, and head coach Ben Johnson said Williams will start Sunday's game against the Packers." };
+    const F = { ...CHI5, espn: [BAGENT, back] }, { U, week, snap } = build(F), r = checkOf(F, U, week, snap), q = U.CHI.qb;
+    add('announced-newest', "Monday's note names Bagent, Friday's names Williams: the newest wins, Williams starts and nobody is passed over",
+      names(q.who).join() === 'Caleb Williams' && !(q.out || []).length && failKeys(r) === 'none', `${qbRow(q)}; ${failKeys(r)}`);
+    const G = { ...CHI5, espn: [WILLIAMS_FRI, BAGENT, { ...KEENUM, comment: "Keenum is expected to remain in a backup role after head coach Ben Johnson said that Caleb Williams will start Sunday's game against the Packers." }] };
+    const g = build(G), rg = checkOf(G, g.U, g.week, g.snap);
+    add('announced-newest', 'two notes as new that disagree name nobody: no change', unchanged(g.U.CHI.qb) && failKeys(rg) === 'none', `${qbRow(g.U.CHI.qb)}; ${failKeys(rg)}`);
+  }
+  { // announced-elsewhere
+    /* Saturday: Friday's report has Williams limited, so with no word from ESPN he is listed, untagged */
+    const base = { ...CHI5, reportModified: 'Sat, 10 Oct 2026 14:30:00 GMT', now: '2026-10-10T20:00:00Z',
+      injuries: [...CHI5.injuries.filter(r => r.week === '4'), injury(5, 'CHI', '00-0039918', 'Caleb Williams', 'QB', 'Hamstring', '', 'limited')] };
+    const vanNess = chiNote('Lukas Van Ness', "Van Ness (shoulder) does not have an injury designation for Sunday's game against the Bears. Bears head coach Ben Johnson said that Tyson Bagent will start Sunday's game against the Packers.", '2026-10-09T18:00:00Z', 'Active', '', 'GB');
+    const sweat = chiNote('Montez Sweat', "Sweat (knee) was a full participant in Friday's practice. Packers head coach Matt LaFleur said that Tyrod Taylor will start Sunday's game against the Bears.", '2026-10-09T22:00:00Z');
+    const R = [['no ESPN list', null, 'Caleb Williams'], ["ESPN's notes on GB only, one naming Bagent", [vanNess], 'Caleb Williams'],
+      ["a CHI note naming GB's Taylor, nothing else", [sweat], 'Caleb Williams'], ["a CHI note naming GB's Taylor, newer than Bagent's and Keenum's", [BAGENT, KEENUM, sweat], 'Tyson Bagent']]
+      .map(([what, espn, want]) => {
+        const G = { ...base, espn }, g = build(G), rg = checkOf(G, g.U, g.week, g.snap);
+        const ok = names(g.U.CHI.qb.who).join() === want && names(g.U.GB.qb.who).join() === 'Jordan Love' && !(g.U.GB.qb.out || []).length && failKeys(rg) === 'none';
+        return ok ? null : `${what}: CHI ${qbRow(g.U.CHI.qb)}; GB ${qbRow(g.U.GB.qb)}; ${failKeys(rg)}`;
+      }).filter(Boolean);
+    add('announced-elsewhere', "no list, another team's notes, another team's quarterback: CHI keeps its own reading, GB keeps Love", !R.length, R.join(' | '));
+    /* CLE's real roster has a running back and a quarterback named Sanders: a last name alone is the note's own
+       player, so the back's note never makes Shedeur Sanders the starter over Watson */
+    const H = { ...NYJ5, games: [...NYJ5.games, game(4, '2026-10-01', '20:15', 'PIT', 'CLE', [24, 27])],
+      roster: [...NYJ5.roster, player('CLE', '00-0040668', 'Shedeur Sanders', 'QB'), player('CLE', '00-0040466', 'Raheim Sanders', 'RB')],
+      chart: [...NYJ5.chart, chartRow('2026-10-06T06:02:22Z', 'CLE', '00-0040668', 'Shedeur Sanders', '3WR 1TE', 'QB', 2)],
+      espn: [{ team: 'CLE', name: 'Raheim Sanders', pos: 'RB', status: 'Active', type: '', comment: 'Sanders will start Sunday against the Jets with Quinshon Judkins (personal) ruled out, Zac Jackson reports.', long: '', date: '2026-10-09T18:00:00Z' }] };
+    const SAN = [H, { ...H, espn: [{ ...H.espn[0], name: 'Shedeur Sanders', pos: 'QB',
+      comment: 'Sanders was a full participant Friday, and the Browns announced that Raheim Sanders will start at running back Sunday against the Jets.' }] }].map(G => {
+      const h = build(G), rh = checkOf(G, h.U, h.week, h.snap);
+      return names(h.U.CLE.qb.who).join() === 'Deshaun Watson' && !(h.U.CLE.qb.out || []).length && failKeys(rh) === 'none' ? null : `${G.espn[0].name}'s note: ${qbRow(h.U.CLE.qb)}; ${failKeys(rh)}`;
+    }).filter(Boolean);
+    add('announced-elsewhere', 'the running back Raheim Sanders "will start", in his note or in Shedeur\'s: Watson stays CLE\'s starter', !SAN.length, SAN.join(' | '));
   }
   { // site-ranks
     const site = ["the secondary ranks 26th in the site's units", 'ranks 1st in the tracker', 'Seahawks, 1st in the power ratings', 'It sits 25th in the power rankings', 'the Deep Dive has them Favorable', 'its power rank is 3rd'];
