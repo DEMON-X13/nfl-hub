@@ -43,12 +43,18 @@ const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
 const tab = rd('nflbets', 'build', 'tab_pickems.html');
 /* the X Parlays section is the section page's own source, set into the X Parlays tab: X's
-   parlays at the top of the tab, the visitor's builder under them, and the visitor's own parlays
-   (Your parlays) under that, where the Saved parlays card was: a saved parlay is watched the
-   moment it is saved, so the list of what is saved and the view of how it is doing are one card.
-   Its styles are scoped to its two cards and its script runs in a closure, since the page around
-   it defines most of the same names for itself. */
+   parlays at the top of the tab and the Parlay Builder under them. There is no list of a
+   visitor's own: visitors come to see X's parlays. On the owner's devices a parlay saved in the
+   builder is X's and is watched in X's card the moment it is saved; on anyone else's the builder
+   finishes a parlay as a card to download (card.html, below), saved nowhere. Its styles are
+   scoped to its card and its script runs in a closure, since the page around it defines most
+   of the same names for itself. */
 const livePage = rd('liveparlays', 'build', 'page.html');
+/* the parlay card: a visitor's finished parlay in a window, downloadable as an image. Its own
+   styles, window and script, every name prefixed pc-; the builder's pricing is lifted into it
+   from part3's renderParlay (its QUOTE slot), so the card prices a parlay exactly as the
+   builder shows it, never with a copy that can drift */
+const cardSrc = rd('nflbets', 'build', 'card.html');
 /* the sync layer: one shared document for X's builder, saved parlays, corrected lines and
    deletions, read by every device and written by X's alone (the owner link, or Firebase sign-in).
    It runs before the prop model, which saves through the window.storage it defines; the
@@ -157,8 +163,8 @@ function scopeCss(css, scopes) {
   };
   return block(css);
 }
-const LIVE_SCOPED = scopeCss(LIVE_CSS, ['#lpCard', '#myCard']);
-for (const need of ['#lpCard .savedp,#myCard .savedp{', '#lpCard .sp-leg,#myCard .sp-leg{', '#lpCard .pbar,#myCard .pbar{', '#lpCard .gm,#myCard .gm{', '#lpCard .hidebtn,#myCard .hidebtn{'])
+const LIVE_SCOPED = scopeCss(LIVE_CSS, ['#lpCard']);
+for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#lpCard .gm{', '#lpCard .hidebtn{'])
   if (!LIVE_SCOPED.includes(need)) throw new Error('the scoped live styles lost ' + need);
 if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
 const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
@@ -168,8 +174,36 @@ LIVE_JS = sub1(LIVE_JS, /\/\*PROP_KEY\*\/'[^']*'/, '/*PROP_KEY*/' + JSON.stringi
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
 lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
-for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', "MY_KEY='my_parlays_v1'", 'const editable=', 'function writeStore(L,st){ if(!editable(L)) return false;', 'window.lpKeep=', 'function espnWeek(', 'function drawList(L)'])
+for (const need of ['function propState', "typeof S==='object'&&S&&Array.isArray(S.saved)", 'function removeParlay', 'S.saved=S.saved.filter', 'function restoreAll', 'window.LIVE_IO', 'const editable=()=>ownerHere();', 'function writeStore(L,st){ if(!editable(L)) return false;', 'window.lpKeep=', 'window.lpOwner=ownerHere;', "if(!ownerHere()||typeof S!=='object'", 'function espnWeek(', 'function drawList(L)'])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
+/* one list: X's. Nothing of the section reads, draws or writes a visitor's own list any more */
+for (const gone of ["MY_KEY", 'myCard', 'myApp', 'LISTS.my'])
+  if (LIVE_JS.includes(gone)) throw new Error('the live script still has ' + gone + ': a visitor has no list of their own');
+/* the card: its styles (nothing page-level), its window, and its script with the builder's
+   pricing set into it */
+const cpiece = (re, what) => { const m = cardSrc.match(re); if (!m) throw new Error(`card.html has no ${what}`); return m[1]; };
+const CARD_CSS = cpiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
+const CARD_HTML = cpiece(/(<div id="pcModal" class="modal" hidden>[\s\S]*?\n<\/div>)\n<script>/, 'window');
+let CARD_JS = cpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+if (/(^|\n)(body|header|main|:root|\.card|\.btn|\.modal|\.modal-panel|table)\{/.test(CARD_CSS)) throw new Error('a page-level rule in the card styles');
+/* the builder's own numbers: renderParlay's pricing, from the legs to what it pays */
+const QUOTE_FROM = '  const wks=[...new Set(legs.map(l=>l.week))];';
+if (part3.split(QUOTE_FROM).length !== 2) throw new Error("the builder's pricing is not in part3.js once");
+const QUOTE = lift(part3, QUOTE_FROM, '\n\n  let html=droppedNote+', "builder's pricing in renderParlay");
+for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 'const bookDec=', 'const fairML=', 'const stake=', 'const override=', 'const realPrice=', 'const estPrice=', 'const useDec=', 'const payout=stake*useDec, profit=payout-stake;'])
+  if (!QUOTE.includes(need)) throw new Error("the builder's pricing lifted from part3.js has no " + need);
+/* the builder's save, which a visitor's device turns into Finish: the button, its rule, its label,
+   and the suggestion tiers' save */
+for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', "'Add to saved parlays'", 'data-suggest-save="${t.id}"'])
+  if (!part3.includes(need)) throw new Error("the builder's save moved (" + need + "); the parlay card stands in for it on a visitor's device");
+CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishTiers(', "$('pSave')", '[data-suggest-save],[data-elo-save]', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', 'window.lpOwner'])
+  if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
+for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'let SUGGEST_CACHE'])
+  if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
+{ const elo = rd('nflbets', 'build', 'tab_elo.html');
+  if (!elo.includes('data-elo-save="${t.id}"') || !elo.includes('window.eloPicks=eloPicks;'))
+    throw new Error("the Elo picks' save or window.eloPicks moved; the parlay card finishes an Elo pick on a visitor's device"); }
 /* X Parlays: the owner's parlays, at the top of the tab, with the owner's mark and controls and
    the Firebase sign-in box (shown only when sync.json sets it up) */
 const LIVE_SECTION = `<div class="card" id="lpCard">
@@ -184,12 +218,6 @@ const LIVE_SECTION = `<div class="card" id="lpCard">
     ${LIVE_BAR}
     <div id="app"></div>
   </div>`;
-/* Your parlays: the visitor's own, under the builder; not drawn on the owner's devices */
-const MY_SECTION = `<div class="card" id="myCard" hidden>
-    <h2>Your parlays</h2>
-    <div class="bar"><span class="muted">On this device only; nobody else sees these.</span><span class="grow"></span><button class="btn quiet" id="myClear" hidden title="Delete every parlay of yours that has landed or gone.">Clear settled</button></div>
-    <div id="myApp"></div>
-  </div>`;
 const LIVE_SCRIPT = `<script>
 /* the X Parlays section: liveparlays/build/page.html, in a closure. Names it shares with
    the prop model -- esc, num, fmtML -- are its own copies inside it. */
@@ -197,14 +225,18 @@ const LIVE_SCRIPT = `<script>
 ${LIVE_JS}
 })();
 /* the Saved parlays card and the betting-slips card it also covered are drawn by the section
-   now; the builder keeps its place above it and the section follows every redraw. Before each
-   redraw the section keeps a copy of a builder about to lose a leg to a kickoff (lpKeep), so a
-   parlay bet and never locked is still watched once its first game starts. */
+   now, as X's, and on a visitor's device not at all; the builder keeps its place above it and the
+   section follows every redraw. Before each redraw the owner's device keeps a copy of a builder
+   about to lose a leg to a kickoff (lpKeep), so a parlay bet and never locked is still watched
+   once its first game starts. After it, a visitor's builder gets Finish parlay where Save was
+   (the parlay card). */
 renderSaved=function(){ return ''; };
 renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
   renderParlay=function(){ try{ if(window.lpKeep) window.lpKeep(); }catch(e){}
-    const r=drawParlay.apply(this,arguments); if(window.lpDraw) window.lpDraw(); return r; }; }
+    const r=drawParlay.apply(this,arguments);
+    try{ if(window.PARLAY_CARD) window.PARLAY_CARD.finishBuilder(); }catch(e){}
+    if(window.lpDraw) window.lpDraw(); return r; }; }
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
 /* the sync stamp, in the X Parlays card (the parlays are what it syncs; the header keeps only
    when the site's data was updated, and the owner's mark). On a reader's device: X's parlays
@@ -234,7 +266,7 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
     else if(!s.applied){ t='Connecting\u2026'; }
     else { t=(s.signedIn?'Signed in \u00b7 ':'')+'Synced'+(s.at?' \u00b7 last change '+when(s.at):''); cls='ok'; }
     el.textContent=t; el.dataset.state=cls;
-    el.title=(!s.url?'nflbets/sync.json has no store address, so parlays stay in this browser'
+    el.title=(!s.url?'nflbets/sync.json has no store address, so X Parlays shows only the placed parlays in the repository'
       :(owner?'What you change here is what every device shows':'X\u2019s parlays, the same on every device')+(s.checked?'; this page last checked at '+clock(s.checked):''))
       +(s.ok===false&&s.err?' ('+s.err+')':'')+(s.ownerMsg?' ('+s.ownerMsg+')':'');
     /* the owner's mark and controls */
@@ -245,7 +277,7 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
     /* sign-in, offered when either document's writes wait for it (the X Bet Log's note sends the owner here) */
     const lapsed=s.blocked==='signin'||!!(s.blocks&&s.blocks.xbets==='signin');
     if(inn){ inn.hidden=!(s.url&&s.enforced&&(!owner||!s.signedIn||lapsed)); inn.textContent=owner?'sign in':'Owner sign-in'; }
-    if(sub) sub.textContent=!s.url?'This browser only: X\u2019s placed parlays from the repository here, yours under the builder.'
+    if(sub) sub.textContent=!s.url?'X\u2019s placed parlays, from the repository.'
       :(owner?'Yours, as every visitor sees them: what you change here changes for everyone.'
         :'What X placed, saved and is building, followed live: the same on every device, read only.')
       +(s.ownerMsg&&!owner?' ('+s.ownerMsg+')':'');
@@ -271,11 +303,11 @@ html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 
 html = sub1(html, '</style>\n</head>', '</style>\n<style>#syncStamp{margin-left:10px;font-size:12px} #syncStamp[data-state="ok"]{color:var(--pick)} #syncStamp[data-state="bad"]{color:#8A5E05} #syncStamp[data-state="off"]{color:var(--muted)}\n'
   + '.xp-own,.xp-mark{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--gold-soft,#FBEFD3);color:#8A5E05;font-family:var(--body)}\n'
   + '.xp-link{background:none;border:0;padding:0;font:inherit;font-size:13px;font-weight:500;color:var(--ink-2);text-decoration:underline;cursor:pointer;font-family:var(--body)}\n'
-  + '.xp-sub{margin:0 0 10px;font-size:13px} .xp-signin{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px} .xp-signin input{padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;min-width:0;flex:1 1 160px}\n'
-  + '#myCard h2{margin-bottom:4px}</style>\n</head>', 'the sync stamp style');
+  + '.xp-sub{margin:0 0 10px;font-size:13px} .xp-signin{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px} .xp-signin input{padding:7px 10px;border:1px solid var(--line-2);border-radius:9px;min-width:0;flex:1 1 160px}'
+  + '</style>\n</head>', 'the sync stamp style');
 /* the owner's mark in the header, on every tab: this browser writes what every device shows */
 html = sub1(html, '<span class="sub" id="buildTag"></span>', '<span class="sub" id="buildTag"></span><span class="xp-mark" id="ownerMark" hidden title="This browser is the owner\'s: what you change in X Parlays and the X Bet Log is what every device shows">owner</span>', 'the owner\'s mark');
-html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n</head>', 'style block');
+html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here stays in the page, unshown. */
 /* A betting tab is the betting app itself, one tab of it, in a frame: the app as
@@ -320,9 +352,10 @@ html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
-/* X Parlays at the top of its tab, the builder under it, the visitor's own parlays under that,
-   where the Saved parlays card was. The tab keeps its address, #parlay. */
-html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  ' + LIVE_SECTION + '\n  <div id="parlayBody"></div>\n  ' + MY_SECTION, 'the Parlay Builder section');
+/* X Parlays at the top of its tab and the builder under it. The tab keeps its address, #parlay.
+   The parlay card's window sits at the end of the page, outside every tab, over everything. */
+html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  ' + LIVE_SECTION + '\n  <div id="parlayBody"></div>', 'the Parlay Builder section');
+html = sub1(html, '\n</main>', '\n' + CARD_HTML + '\n</main>', "the parlay card's window");
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 /* the sync layer runs first: the prop model reads its state through it at boot; the X Bet Log's
    adapter right after it */
@@ -336,7 +369,8 @@ const NOTE = `<script>
    the browser cached last week from the one the job published this morning. APP_BUILD moves
    only with the prop model's parts; PAGE_HASH is the first seven hex of the page's own
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
-   the X Parlays section, the sync layer, the X Bet Log, the betting app -- shows as a new tag. */
+   the X Parlays section, the parlay card, the sync layer, the X Bet Log, the betting app -- shows
+   as a new tag. */
 const PAGE_HASH='${HASH_SLOT}';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \\u00b7 '+PAGE_HASH; });
@@ -349,7 +383,7 @@ document.addEventListener('app-ready',()=>{ const bt=document.getElementById('bu
   document.addEventListener('app-ready',run); if(typeof PAY!=='undefined'&&PAY) run();
 })();
 </script>`;
-let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
+let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>' + CARD_JS + '</script>\n<script>\n/* the betting app, for the framed tabs; see frames() */\nconst BET_APP=' + BET_INLINE + ';\n</script>\n<script>' + js + '</script>\n<script>' + ELO_JS + '</script>\n</body>\n</html>\n';
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);
