@@ -2,6 +2,11 @@ import pandas as pd, numpy as np, json, warnings
 from season import SEASON, BASE, ROSTER, DEPTH, GAMES   # the season is part2.js's SEASON; BASE is the one before
 warnings.filterwarnings('ignore')
 d=pd.read_pickle('../raw/feat.pkl')
+if not (d.season==BASE).any():
+    # the committed table ends a season short on the first run of a new season: weekly.py rebuilds
+    # it before it runs this; by hand, raw/README.md says how
+    raise SystemExit(f"raw/feat.pkl has no {BASE} season, which the baselines come from (it holds {d.season.min()}-{d.season.max()}): "
+                     "weekly.py rebuilds it, or see raw/README.md")
 FM=json.load(open('../data/final_model.json'))   # the canonical copy lives in data/
 ALL=['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries',
  'rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td','fg_att','fg_made','kick_pts']

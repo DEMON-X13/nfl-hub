@@ -22,7 +22,7 @@ The prop model has no page of its own: its parts are the source of `nflbets/inde
 ```
 cd build
 npm install                        # once: jsdom + papaparse for the audit (package.json)
-python3 payload.py                 # regenerates data/payload.json (needs raw/feat.pkl: cd research && python3 features.py)
+python3 payload.py                 # regenerates data/payload.json (needs raw/feat.pkl with last season: raw/README.md)
 python3 assemble.py                # part1+2+3 -> the audit's page (payload.json is fetched at boot, only checked here)
 node audit.js                      # ~26,000 checks. must be 0 failures.
 ```
@@ -215,6 +215,15 @@ a game in progress is never graded.
 for `weekly.py`, `payload.py` and `mktbuild.py` (the baselines are the season before), the raw
 files are named after it (`pw_<season>.csv`, `roster_<season>.csv`, `injuries_<season>.csv`,
 `depth_charts_<season>.csv`), the payload carries it and the audit checks the two agree.
+The baselines come from `raw/feat.pkl`, committed, whose seasons run from `FIRST` to `BASE` in
+`season.py` (`research/features.py` takes them from there); on the first run of a new season
+the table lacks the season just finished, so `weekly.py` fetches nflverse's weekly player stats
+for those seasons, rebuilds it (the seasons it held come out as they were) and the workflow
+commits it with the payload. A rebuild that cannot finish refuses the run before any credit is
+spent. The audit's week-1 fixture takes the page's season as it is read. So the rollover is
+the one line in `part2.js` (with the key in `nflbets/build/sync.js` and the assert in
+`nflbets/build/build.js`); a refit of the coefficients (`fit4.py`, not in this repo) is a
+separate research step the job does not need.
 Kickoffs are turned into instants by the US daylight-time rule for each game's own year.
 The data/ week files are named by week alone, so at a rollover `weekly.py` moves last
 season's (`wk*_lines.csv`, `prices_wk*.csv`, `gamelines_wk*.csv`, every game id another

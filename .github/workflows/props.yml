@@ -85,10 +85,13 @@ jobs:
         # refused run bought, without publishing them.
         run: python weekly.py --no-commit ${{ inputs.no_odds && '--no-odds' || (startsWith(github.event.schedule, '7 ') && '--catch-up' || '') }}
       - name: Commit if anything changed
+        # props/raw/feat.pkl changes only on the first run of a new season, when weekly.py adds the
+        # season just finished to it (the baselines come from there); it is committed here so the
+        # next run finds it ready. A refused run never commits it.
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add props/data
+          git add props/data props/raw/feat.pkl
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "props: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:

@@ -60,24 +60,28 @@ setTimeout(async()=>{
   console.log(`B. rosters: ${nPl} player-slots across the season, ${dupes} dupes, ${wrongTeam} wrong-team, ${capViol} over cap, ${gaps} flagged gaps`);
 
   /* ---- B2. next man up: a ruled-out QB1 hands the slot to the chart's QB2, not to an
-     unranked player with enough projected usage. Any team with both on the chart will do. ---- */
-  { const D=PAY.depth||{}; let tried=0,ok=0;
-    for(const team of new Set(Object.values(D).map(d=>d[0]))){
-      const q=id=>S.players[id]&&S.players[id].team===team&&(S.players[id].gp+S.players[id].base_gp)>=3;
-      const one=Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===1&&q(id));
-      const two=Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===2&&q(id));
-      const g=S.sched.find(x=>x.a===team||x.h===team);
-      if(!one||!two||!g) continue;
-      tried++;
-      S.inactive[one]=true;
-      try{ const qb=rosterFor(g,false)[team].players.filter(x=>x.pl.grp==='QB');
-        if(qb.length===1&&qb[0].pl.id===two) ok++;
-        else chk(false,`${team}: with QB1 out the quarterback shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not the chart's QB2 ${S.players[two].n}`);
-      } finally { delete S.inactive[one]; }
-      if(tried>=6) break;
-    }
-    chk(tried>0,'no team on the depth chart has a QB1 and a QB2 to test next man up with');
-    console.log(`B2. next man up: ${ok} of ${tried} teams hand a ruled-out QB1's slot to the chart's QB2`);
+     unranked player with enough projected usage. Any team with both on the chart will do: first
+     one whose two have three games each; when none has (last season's table holds only a few
+     weeks, as in a rollover tested before that season ends), one whose two are on its roster
+     however few games the QB2 has, which the rule must hold for too ---- */
+  { const D=PAY.depth||{}; let tried=0,ok=0,thin=false;
+    for(const need of [3,0]){ if(tried) break; thin=need===0;
+      for(const team of new Set(Object.values(D).map(d=>d[0]))){
+        const q=id=>S.players[id]&&S.players[id].team===team&&(S.players[id].gp+S.players[id].base_gp)>=need;
+        const one=Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===1&&q(id));
+        const two=Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===2&&q(id));
+        const g=S.sched.find(x=>x.a===team||x.h===team);
+        if(!one||!two||!g) continue;
+        tried++;
+        S.inactive[one]=true;
+        try{ const qb=rosterFor(g,false)[team].players.filter(x=>x.pl.grp==='QB');
+          if(qb.length===1&&qb[0].pl.id===two) ok++;
+          else chk(false,`${team}: with QB1 out the quarterback shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not the chart's QB2 ${S.players[two].n}`);
+        } finally { delete S.inactive[one]; }
+        if(tried>=6) break;
+      } }
+    chk(tried>0,'no team on the depth chart has a QB1 and a QB2 on its roster to test next man up with');
+    console.log(`B2. next man up: ${ok} of ${tried} teams hand a ruled-out QB1's slot to the chart's QB2${thin?' (QB2s with under three games: last season is short)':''}`);
   }
 
   /* ---- C. projections & ladders: finite, monotone, in range ---- */
@@ -214,7 +218,10 @@ setTimeout(async()=>{
   [...d.querySelectorAll('.plrbtn')][0].click();
   const cb=d.querySelector('[data-leg]'); cb.checked=true; cb.dispatchEvent(new w.Event('change'));
   const legsBefore=Object.keys(S.parlay).length;
-  const rows=Papa.parse(fs.readFileSync('../raw/fake_wk1.csv','utf8'),{header:true,skipEmptyLines:true}).data;
+  /* the fixture is a week 1 of real rows; it takes the page's season, so a rollover (SEASON bumped
+     in part2.js) needs no new fixture: ingestStats reads only rows of SEASON */
+  const rows=Papa.parse(fs.readFileSync('../raw/fake_wk1.csv','utf8'),{header:true,skipEmptyLines:true}).data
+    .map(x=>Object.assign(x,{season:String(F('SEASON'))}));
   const before=JSON.parse(JSON.stringify(S.players[Object.keys(S.players)[0]].e5));
   const r=F('ingestStats')(rows); F('renderAll')();
   chk(r.done.length>0,'week 1 not ingested');

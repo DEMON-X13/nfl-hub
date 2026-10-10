@@ -8,14 +8,20 @@ audit checks the page and the payload agree, so the job can never bake one seaso
 built for another.
 
 At a rollover: change that line in part2.js (and the key in nflbets/build/sync.js and the
-assert in nflbets/build/build.js with it), refit the model on the season just finished, and
-rebuild raw/feat.pkl (a runner rebuilds it, since raw/ is not committed); nothing in props/
-needs a second edit. The baselines are the season before (BASE), and the raw files are named
-after the season they hold. The data/ files are not: weekly.py moves last season's week files
-(wk*_lines.csv, prices_wk*.csv, gamelines_wk*.csv) to data/archive/<season>/ on its first run
-of the new season, bakes only this season's games wherever a row sits, and carries none of a
-last-season payload's main lines forward. Until nflverse posts the new season's stats and
-injury files the job publishes without them and the page says so (not_posted).
+assert in nflbets/build/build.js with it); nothing in props/ needs a second edit. The baselines
+are the season before (BASE), taken from raw/feat.pkl, the feature table research/features.py
+builds from nflverse's weekly player stats, FIRST..BASE (it takes both from here). The table is
+committed, so on the first run of a new season it is a season short: weekly.py sees that, fetches
+the weekly stats FIRST..BASE, rebuilds it (the seasons it already held come out as they were),
+and the workflow commits it with the payload, so the next run finds it ready. The fitted
+coefficients (data/final_model.json) are not refitted by any of this: that is a research step
+outside this repo (fit4.py), and the page runs on the shipped ones until it is done. The raw
+files are named after the season they hold. The data/ files are not: weekly.py moves last
+season's week files (wk*_lines.csv, prices_wk*.csv, gamelines_wk*.csv) to
+data/archive/<season>/ on its first run of the new season, bakes only this season's games
+wherever a row sits, and carries none of a last-season payload's main lines forward. Until
+nflverse posts the new season's stats and injury files the job publishes without them and the
+page says so (not_posted).
 """
 import os, re
 
@@ -34,6 +40,7 @@ def page_season():
 
 SEASON = page_season()
 BASE = SEASON - 1          # the season the baselines are built from
+FIRST = 2019               # the first season in raw/feat.pkl: research/features.py builds FIRST..BASE
 
 REL = 'https://github.com/nflverse/nflverse-data/releases/download/'
 # raw/ file name -> (what it is, where it comes from, required). A required file that fails to

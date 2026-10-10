@@ -32,7 +32,9 @@ What it does, in order:
      injury report and roster are read and checked (shape, a whole league, stats that would
      shrink) here, before any credit is spent
      Then the payload's rosters, depth charts and schedule are rebuilt (payload.py), still
-     before the pull, which names its games from that schedule
+     before the pull, which names its games from that schedule. Its baselines are last season's,
+     from raw/feat.pkl: on the first run of a new season the committed table lacks it, and the
+     run rebuilds it (features_ready) for the workflow to commit
   3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking
      off before the next scheduled pull is likely to land (hours_to_next_pull) with
      data/oddsfetch.py and merges them into that week's files
@@ -52,7 +54,7 @@ import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetim
 HERE=os.path.dirname(os.path.abspath(__file__)); PKG=os.path.dirname(HERE)
 RAW=os.path.join(PKG,'raw'); DATA=os.path.join(PKG,'data'); RES=os.path.join(PKG,'research'); ROOT=os.path.dirname(PKG)
 sys.path.insert(0,DATA)
-from season import SEASON, RAW_FILES, GAMES, STATS, ROSTER, INJURIES, DEPTH, SKILL
+from season import SEASON, BASE, FIRST, RAW_FILES, GAMES, STATS, ROSTER, INJURIES, DEPTH, SKILL
 import names, mktbuild
 PY=sys.executable; ENV=dict(os.environ,PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
 STATCOLS=['player_id','player_display_name','position','season','week','season_type','team','opponent_team',
@@ -134,26 +136,74 @@ def read_rows(name):
     if not os.path.exists(p): return []
     with open(p,newline='',encoding='utf-8') as f: return list(csv.DictReader(f))
 
+def fetch(url,dest):
+    """url -> dest, whole or not at all: a failure raises, and leaves no part file behind"""
+    tmp=dest+'.part'
+    try:
+        req=urllib.request.Request(url,headers={'User-Agent':'prop-model-weekly/1.0'})
+        with urllib.request.urlopen(req,timeout=180) as r, open(tmp,'wb') as f: shutil.copyfileobj(r,f)
+        if os.path.getsize(tmp)<200: raise IOError('empty response')
+        os.replace(tmp,dest)
+    finally:
+        if os.path.exists(tmp): os.remove(tmp)
+
 def download(offline):
     """{file: True (fresh), False (failed), None (not posted yet: a 404)}"""
     got={}
     os.makedirs(RAW,exist_ok=True)
     for name,(what,url,_req) in RAW_FILES.items():
-        dest=os.path.join(RAW,name); tmp=dest+'.part'
+        dest=os.path.join(RAW,name)
         if offline:
             got[name]=os.path.exists(dest); say(f"  offline: {name} {'from raw/' if got[name] else 'missing'}"); continue
         try:
-            req=urllib.request.Request(url,headers={'User-Agent':'prop-model-weekly/1.0'})
-            with urllib.request.urlopen(req,timeout=180) as r, open(tmp,'wb') as f: shutil.copyfileobj(r,f)
-            if os.path.getsize(tmp)<200: raise IOError('empty response')
-            os.replace(tmp,dest); got[name]=True; say(f"  fetched {name} ({os.path.getsize(dest)//1024} KB)")
+            fetch(url,dest); got[name]=True; say(f"  fetched {name} ({os.path.getsize(dest)//1024} KB)")
         except Exception as e:
-            if os.path.exists(tmp): os.remove(tmp)
             # a copy left in raw/ by an earlier local run is not used: it may be days old
             if os.path.exists(dest): os.remove(dest)
             got[name]=None if getattr(e,'code',None)==404 else False
             got[name+':err']=str(e)
     return got
+
+FEAT=os.path.join(RAW,'feat.pkl')
+PW_URL='https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{}.csv'
+
+def feat_seasons(path=FEAT):
+    """the seasons a feature table holds; none when it is missing or will not read"""
+    try:
+        import pandas as pd
+        return {int(x) for x in pd.read_pickle(path)['season'].unique()}
+    except Exception: return set()
+
+def features_ready(offline):
+    """raw/feat.pkl is the feature table payload.py takes the baselines from: its BASE season, the
+    one before SEASON. It is committed, so on the first run of a new season it is a season short.
+    Then this rebuilds it, with research/features.py (which takes FIRST..BASE from season.py) on
+    nflverse's weekly player stats for those seasons, fetched here (a runner's raw/ has none of
+    them), and the workflow commits it with the payload, so the rollover needs no hand step and
+    the next run finds it ready. The new table must hold every season the old one did as well as
+    BASE, or it is not used. A rebuild that cannot finish refuses the run before any credit is
+    spent, and the last good payload stays live. Returns whether the bake can go on."""
+    have=feat_seasons()
+    if BASE in have: return True
+    say(f"  raw/feat.pkl {'holds '+str(min(have))+'-'+str(max(have)) if have else 'is missing'}, not {BASE}, the season the baselines come from: rebuilding it")
+    for y in range(FIRST,BASE+1):
+        name=f'pw_{y}.csv'; dest=os.path.join(RAW,name)
+        if offline:
+            if not os.path.exists(dest): refuse(f"raw/feat.pkl lacks {BASE} and {name} is not in raw/ to rebuild it from (--offline)"); return False
+            continue
+        try: fetch(PW_URL.format(y),dest)
+        except Exception as e:
+            refuse(f"raw/feat.pkl lacks {BASE}, the season the baselines come from, and {name} (player stats {y}) could not be fetched to rebuild it: {e}"); return False
+    tmp=FEAT+'.new'
+    rc,out=run([PY,'features.py'],RES,'features',soft=True,env=dict(ENV,OUT=tmp))
+    got=feat_seasons(tmp)
+    if rc!=0 or BASE not in got or not have<=got:
+        if os.path.exists(tmp): os.remove(tmp)
+        why=out.strip()[-400:] if rc!=0 else f"it came out with seasons {sorted(got)}"
+        refuse(f"raw/feat.pkl lacks {BASE}, the season the baselines come from, and rebuilding it failed: {why}"); return False
+    os.replace(tmp,FEAT)
+    say(f"  raw/feat.pkl rebuilt with seasons {min(got)}-{max(got)}; the workflow commits it with the payload")
+    return True
 
 def check_shape(name,rows,need):
     if rows and not set(need)<=set(rows[0]): return f"{name} lacks {sorted(set(need)-set(rows[0]))}"
@@ -163,12 +213,21 @@ def check_shape(name,rows,need):
 # not posted yet (not_posted), the audit then expects none of it, and the page says so
 NOT_POSTED_KIND={STATS:'stats',INJURIES:'injuries'}
 
+def payload_season(prev):
+    """The season the published payload is of: its `season`, or for one baked before it carried
+    that, the season its schedule's game ids name (2026_01_NE_SEA). An empty payload is this
+    season's: there is nothing of another to keep out."""
+    if prev.get('season'): return int(prev['season'])
+    ids=[str(g.get('id') or '')[:4] for g in prev.get('sched') or []]
+    ids=[x for x in ids if x.isdigit()]
+    return int(max(set(ids),key=ids.count)) if ids else SEASON
+
 def published(prev,name):
     """Does the published payload hold any of this season's stats (or injury report)? A 404 on a
     file the site has already published from is a source that vanished, and publishing without it
     would wipe it off the page; a 404 on one it never had is a file nflverse has not posted yet:
     before the season, and for the stats until the first games are processed (a day or so)."""
-    if prev.get('season',SEASON)!=SEASON: return False      # last season's payload, at a rollover
+    if payload_season(prev)!=SEASON: return False      # last season's payload, at a rollover
     if name==STATS: return any((prev.get('stats') or {}).values())
     return any(str(r.get('season'))==str(SEASON) for r in prev.get('injuries') or [])
 
@@ -225,7 +284,7 @@ def read_raw(prev,gs):
         stats.setdefault(str(int(float(r['week']))),[]).append(row)
     # a bake must never hold fewer games of stats than the one already published: that is a
     # failed or truncated download, not a quieter week, and publishing it wipes the season
-    if prev.get('season',SEASON)==SEASON and prev.get('stats'):
+    if payload_season(prev)==SEASON and prev.get('stats'):
         had={(w,r.get('team')) for w,rs in prev['stats'].items() for r in rs}
         now_={(w,r.get('team')) for w,rs in stats.items() for r in rs}
         lost=sorted(had-now_)
@@ -298,9 +357,9 @@ def main():
     if blocked(): return finish(a)
     # 2d. the rosters, depth charts and this season's schedule, rebuilt before the pull: the pull
     # names its games from this schedule (at a rollover the published one is last season's), and
-    # a run payload.py cannot finish is refused before a credit is spent
-    if not os.path.exists(os.path.join(RAW,'feat.pkl')):
-        say("  raw/feat.pkl missing: building features (a few minutes)"); run([PY,'features.py'],RES,'features')
+    # a run payload.py cannot finish is refused before a credit is spent. Its baselines come from
+    # raw/feat.pkl's BASE season, which the first run of a new season adds (features_ready)
+    if not features_ready(a.offline): return finish(a)
     rc,out=run([PY,'payload.py'],HERE,'payload')
     for line in out.splitlines():
         if line.startswith(('players','depth','build')): say('  '+line.strip())
@@ -350,9 +409,9 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     byid={g['id']:g for g in pay['sched']}      # this season's games: nothing of another season is baked
     # a rollover: the published payload is last season's, so none of its lines, nor the dates
     # they were priced, carry into this one (payload.py carries every key it does not rebuild)
-    if prev.get('season',SEASON)!=SEASON:
+    if payload_season(prev)!=SEASON:
         pay['mkt']={}; pay['mkt_meta']={}
-        say(f"  a new season: season {prev.get('season')}'s main lines are not carried into {SEASON}")
+        say(f"  a new season: season {payload_season(prev)}'s main lines are not carried into {SEASON}")
     started={gid for gid,g in byid.items() if (kickoff(g) or now)<=now}
     open_games={gid for gid,g in byid.items() if int(g['w'])==week and gid not in started}
     # DraftKings' moneylines, spreads and totals over nflverse's, but only while fresh: a snapshot
