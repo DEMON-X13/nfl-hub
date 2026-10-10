@@ -13,20 +13,31 @@ Usage (never put the key on the command line; the shell history would keep it):
     python oddsfetch.py --week 2 --hours 40 --missing    only games not yet priced and not yet started:
                        the catch-up weekly.py runs on every score-only run, so a scheduled pull that
                        GitHub dropped costs a game its prices only until the next run of the job
+A game that has kicked off is never priced, in any mode: an in-play price is not a pre-game line.
+A game priced less than REPRICE_HOURS ago is skipped too (--force prices it anyway), so a manual
+pull followed by the scheduled one GitHub delivered hours late does not buy the same game twice,
+nor do two pulls the same day whose windows overlap (each prices up to the next slot plus the
+lateness allowance, so Saturday morning's pull reaches Saturday night's game, and Saturday
+evening's would buy it again if it landed on time). A day apart, as the Wednesday and Thursday
+pulls are for Thanksgiving's early game, the second pull's fresher prices are worth the credits.
 Outputs (in data/), MERGED into existing files for the week so a Thursday pull and a Saturday
 pull add up; a game pulled twice keeps the newer prices:
-    wk{W}_lines.csv    stat,player,line,over,under   main lines: the point where over and under are
-                       closest to even, best price each side.
-                       Feed it to mktbuild.py:  python mktbuild.py W wk{W}_lines.csv "the-odds-api" YYYY-MM-DD
+    wk{W}_lines.csv    game_id,stat,player,line,over,under   main lines: the point where over and
+                       under are closest to even, best price each side. weekly.py matches every
+                       week's file onto player ids on every run (mktbuild.py), within the game.
     prices_wk{W}.csv   game_id,player,market,threshold,odds   every Over as the app's X+ rungs.
                        weekly.py bakes every week's file into payload.json (prices); the app
                        reads it from there.
-    gamelines_wk{W}.csv  the book's moneylines and spreads for the slate (--no-game-lines skips it)
+    gamelines_wk{W}.csv  the book's moneylines, spreads and totals for the slate, with the time of
+                       the pull (--no-game-lines skips it). Pulled only when a game was priced.
+    priced_at.json     when each game was last priced (the reprice guard above reads it)
 Credits: one event request costs (markets requested) x (regions); the free tier is 500 a MONTH,
 about 115 a week. The default pull is 6 markets a game (DEFAULT below: the main lines for
-passing, rushing and receiving yards, receptions and passing TDs, plus anytime TD) and 2 for the
-slate's game lines, about 7 credits a game, ~112 for a 16-game week split across the week's
-pulls. That is the free tier almost exactly; a month with five game weeks runs short at the end.
+passing, rushing and receiving yards, receptions and passing TDs, plus anytime TD) and 3 for the
+slate's game lines (moneyline, spread and total), about 7 credits a game, ~112 for a 16-game week
+split across the week's pulls. That is the free tier almost exactly; a month with five game weeks
+runs short at the end. A pull that prices no game spends nothing: the event list is free and the
+game lines are pulled only with a game.
 --full adds the alternate ladders and attempts, completions, interceptions and carries, which
 needs a paid tier. Every call prints what is left.
 """
@@ -72,17 +83,23 @@ def get(path,params,key):
         if left is not None: print(f"   credits used {used}, remaining {left}",file=sys.stderr)
         return data
 
-def game_lines(key,book,regions,ids):
-    """Moneylines and spreads for the whole slate in one call. The bulk /odds endpoint
-    is billed per market per region, not per event, so this is 2 credits for every game
-    at once. Returns rows keyed to the app's game ids."""
-    data=get('/odds',{'regions':regions,'markets':'h2h,spreads','oddsFormat':'american'},key)
+REPRICE_HOURS=12  # a game priced this recently is not bought again unless --force says so
+GAMELINE_COLS=['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds','total_line','pulled_at']
+def game_lines(key,book,regions,ids,now=None):
+    """Moneylines, spreads and totals for the whole slate in one call. The bulk /odds endpoint
+    is billed per market per region, not per event, so this is 3 credits for every game
+    at once. The total comes with the spread so the page never sets one book's spread beside
+    another source's total. Returns rows keyed to the app's game ids, stamped with the pull."""
+    data=get('/odds',{'regions':regions,'markets':'h2h,spreads,totals','oddsFormat':'american'},key)
+    return game_rows(data,book,ids,now)
+def game_rows(data,book,ids,now=None):
+    at=(now or datetime.now(timezone.utc)).strftime('%Y-%m-%dT%H:%MZ')
     out=[]
     for ev in data:
         gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
         if not gid: continue
         away,home=ev.get('away_team'),ev.get('home_team')
-        row={'game_id':gid}
+        row={'game_id':gid,'pulled_at':at}
         for bk in ev.get('bookmakers',[]):
             if book and bk.get('key')!=book: continue
             for m in bk.get('markets',[]):
@@ -96,7 +113,9 @@ def game_lines(key,book,regions,ids):
                         # the API gives the home side's own handicap, which is negative then
                         if nm==home: row['spread_line']=-float(point); row['home_spread_odds']=int(price)
                         elif nm==away: row['away_spread_odds']=int(price)
-        if len(row)>1: out.append(row)
+                    elif m.get('key')=='totals' and point is not None and nm=='Over':
+                        row['total_line']=float(point)
+        if len(row)>2: out.append(row)
     return out
 
 def game_ids(pay,week):
@@ -111,7 +130,7 @@ def threshold(point):
 def implied(ml): return 100/(ml+100) if ml>0 else abs(ml)/(abs(ml)+100)
 def parse_event(ev,gid,mains,alts,book=None):
     """collect prices from one event: every Over/Under at every point goes to
-    mains[(player,stat)][point][side]; every Over (and anytime-TD Yes) goes to alts as an X+ rung.
+    mains[(gid,player,stat)][point][side]; every Over (and anytime-TD Yes) goes to alts as an X+ rung.
     With book set, only that bookmaker is read, because a best-of-the-market price is not one
     you can actually take and a main line built from one book's over and another's under is not
     a line anybody offers."""
@@ -136,7 +155,7 @@ def parse_event(ev,gid,mains,alts,book=None):
                 # market. An alternate ladder quotes Overs at its own points and letting
                 # those into mains can hand back a main line no book actually posts.
                 if name in ('Over','Under') and not alt:
-                    mains[(player,stat)][float(point)][name].append(int(price))
+                    mains[(gid,player,stat)][float(point)][name].append(int(price))
 def main_from_ladder(pts):
     """the main line is the point where the best over and best under are closest to even"""
     best=None
@@ -159,18 +178,41 @@ def merge_csv(path,header,keyfn,rows,drop=None):
                 old[keyfn(r)]=r
     for r in rows: old[keyfn(r)]={k:str(v) for k,v in r.items()}
     with open(path,'w',newline='',encoding='utf-8') as f:
-        w=csv.DictWriter(f,fieldnames=header); w.writeheader()
+        w=csv.DictWriter(f,fieldnames=header,extrasaction='ignore'); w.writeheader()
         for r in old.values(): w.writerow(r)
     return len(old)
+def merge_lines(path,rows,done):
+    """the main lines, game by game: a game this pull priced replaces that game's rows, and a
+    row written before the lines carried their game is dropped once the same player and stat
+    come back with one"""
+    new={(r['stat'],r['player']) for r in rows}
+    old=[]
+    if os.path.exists(path):
+        with open(path,newline='',encoding='utf-8') as f:
+            for r in csv.DictReader(f):
+                gid=(r.get('game_id') or '').strip()
+                if gid in done or (not gid and (r['stat'],r['player']) in new): continue
+                old.append(r)
+    out=old+[{k:str(v) for k,v in r.items()} for r in rows]
+    with open(path,'w',newline='',encoding='utf-8') as f:
+        w=csv.DictWriter(f,fieldnames=['game_id','stat','player','line','over','under'],extrasaction='ignore'); w.writeheader()
+        for r in out: w.writerow(r)
+    return len(out)
+def read_priced(path='priced_at.json'):
+    try: return json.load(open(path,encoding='utf-8'))
+    except Exception: return {}
 
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('--week',type=int); ap.add_argument('--events',action='store_true')
     ap.add_argument('--sample',help='a saved event-odds JSON (list of events) to parse instead of calling the API')
-    ap.add_argument('--regions',default='us'); ap.add_argument('--no-game-lines',action='store_true',help='skip the moneyline and spread pull (saves 2 credits for the whole slate)'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull the alternate ladders and attempts, completions, interceptions, carries (18 credits a game)')
+    ap.add_argument('--regions',default='us'); ap.add_argument('--no-game-lines',action='store_true',help='skip the moneyline, spread and total pull (saves 3 credits for the whole slate)'); ap.add_argument('--book',default='draftkings',help="only this bookmaker's prices; 'all' for the best across the market, which you cannot actually bet"); ap.add_argument('--full',action='store_true',help='also pull the alternate ladders and attempts, completions, interceptions, carries (18 credits a game)')
     ap.add_argument('--teams',help='comma-separated abbreviations; only games involving them (e.g. NE,SEA for the Thursday game)')
     ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (weekly.py passes the hours to the next scheduled pull)')
     ap.add_argument('--missing',action='store_true',help='only games with no prices in prices_wk{W}.csv that have not kicked off; nothing else is spent')
+    ap.add_argument('--force',action='store_true',help=f'price a game even if it was priced less than {REPRICE_HOURS} hours ago')
+    ap.add_argument('--now',help='pretend it is this UTC time (ISO), for testing the windows on saved events')
+    ap.add_argument('--sample-gamelines',help='a saved /odds response to read the game lines from instead of calling the API')
     a=ap.parse_args()
     pay=json.load(open('payload.json',encoding='utf-8'))
     key=os.environ.get('ODDS_API_KEY')
@@ -191,18 +233,27 @@ def main():
         print(f"limiting to {len(ids)} game(s) involving {', '.join(sorted(want))}")
     mains=collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
     alts={}; matched=0
-    now=datetime.now(timezone.utc)
+    now=datetime.fromisoformat(a.now.replace('Z','+00:00')) if a.now else datetime.now(timezone.utc)
     book=None if a.book=='all' else a.book
     have=set()
     if a.missing and os.path.exists(f'prices_wk{a.week}.csv'):
         with open(f'prices_wk{a.week}.csv',newline='',encoding='utf-8') as f: have={r['game_id'] for r in csv.DictReader(f)}
+    priced=read_priced()
     for ev in events:
         gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
         if not gid: continue
         try: ko=datetime.fromisoformat(str(ev.get('commence_time','')).replace('Z','+00:00'))
         except ValueError: ko=None
         if a.hours and ko and (ko-now).total_seconds()>a.hours*3600: continue
-        if a.missing and (gid in have or (ko and ko<=now)): continue
+        # never a game that has started, in any mode: its prices would be in-play ones
+        if ko and ko<=now: print(f"   {gid}: kicked off {ko:%a %H:%M} UTC, not priced"); continue
+        if a.missing and gid in have: continue
+        last=priced.get(gid)
+        if last and not a.force:
+            try: age=(now-datetime.fromisoformat(last.replace('Z','+00:00'))).total_seconds()/3600
+            except ValueError: age=None
+            if age is not None and 0<=age<REPRICE_HOURS:
+                print(f"   {gid}: priced {age:.1f}h ago, not bought again (--force to)"); continue
         matched+=1
         if a.sample: parse_event(ev,gid,mains,alts,book); continue
         for markets in ([DEFAULT] + ([FULL_EXTRA] if a.full else [])):
@@ -221,25 +272,28 @@ def main():
     print(f"{matched} of {len(ids)} week-{a.week} games matched to API events")
     # main lines: the point where over and under are closest to even, best price each side
     lines=[]
-    for (player,stat),pts in mains.items():
+    for (gid,player,stat),pts in mains.items():
         if stat=='any_td': continue
         m=main_from_ladder(pts)
-        if m: lines.append({'stat':stat,'player':player,'line':m[1],'over':m[2],'under':m[3]})
-    n=merge_csv(f'wk{a.week}_lines.csv',['stat','player','line','over','under'],lambda r:(r['stat'],r['player']),lines)
+        if m: lines.append({'game_id':gid,'stat':stat,'player':player,'line':m[1],'over':m[2],'under':m[3]})
+    prices=[{'game_id':gid,'player':player,'market':stat,'threshold':k,'odds':price} for (gid,player,stat,k),price in sorted(alts.items())]
+    done={p['game_id'] for p in prices}|{l['game_id'] for l in lines}
+    n=merge_lines(f'wk{a.week}_lines.csv',lines,done)
     print(f"wk{a.week}_lines.csv: {len(lines)} main lines from this pull, {n} in the file")
-    if not a.no_game_lines and not a.sample and key and not (a.missing and not matched):
+    # the slate's game lines only with a game: a pull that prices nothing spends nothing
+    if not a.no_game_lines and matched and (key or a.sample_gamelines):
         try:
-            gl=game_lines(key,book,a.regions,ids)
-            n=merge_csv(f'gamelines_wk{a.week}.csv',
-                        ['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds'],
-                        lambda r:r['game_id'],gl,{r['game_id'] for r in gl})
+            gl=game_rows(json.load(open(a.sample_gamelines,encoding='utf-8')),book,ids,now) if a.sample_gamelines else game_lines(key,book,a.regions,ids,now)
+            n=merge_csv(f'gamelines_wk{a.week}.csv',GAMELINE_COLS,lambda r:r['game_id'],gl,{r['game_id'] for r in gl})
             print(f"gamelines_wk{a.week}.csv: {len(gl)} games from this pull, {n} in the file")
         except Exception as e:
             print(f"   game lines not pulled: {e}",file=sys.stderr)
-    prices=[{'game_id':gid,'player':player,'market':stat,'threshold':k,'odds':price} for (gid,player,stat,k),price in sorted(alts.items())]
-    done={p['game_id'] for p in prices}
     n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices,done)
     print(f"prices_wk{a.week}.csv: {len(prices)} threshold prices from this pull, {n} in the file (weekly.py bakes it into the payload)")
-    print(f"next: python mktbuild.py {a.week} wk{a.week}_lines.csv \"{a.book if book else 'best of '+a.regions}\" {datetime.now(timezone.utc).date()}")
+    if done:
+        stamp=now.strftime('%Y-%m-%dT%H:%MZ')
+        for gid in done: priced[gid]=stamp
+        json.dump(dict(sorted(priced.items())),open('priced_at.json','w',encoding='utf-8'),indent=0)
+    print(f"next: weekly.py matches wk{a.week}_lines.csv onto the players (mktbuild.py) and bakes the payload")
 
 if __name__=='__main__': main()

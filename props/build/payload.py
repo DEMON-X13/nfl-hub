@@ -1,12 +1,18 @@
 import pandas as pd, numpy as np, json, warnings
+from season import SEASON, BASE, ROSTER, DEPTH, GAMES   # the season is part2.js's SEASON; BASE is the one before
 warnings.filterwarnings('ignore')
 d=pd.read_pickle('../raw/feat.pkl')
+if not (d.season==BASE).any():
+    # the committed table ends a season short on the first run of a new season: weekly.py rebuilds
+    # it before it runs this; by hand, raw/README.md says how
+    raise SystemExit(f"raw/feat.pkl has no {BASE} season, which the baselines come from (it holds {d.season.min()}-{d.season.max()}): "
+                     "weekly.py rebuilds it, or see raw/README.md")
 FM=json.load(open('../data/final_model.json'))   # the canonical copy lives in data/
 ALL=['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries',
  'rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td','fg_att','fg_made','kick_pts']
 
-# ---- player baselines: state at end of 2025 ----
-d25=d[d.season==2025].sort_values(['player_id','week'])
+# ---- player baselines: state at the end of the season before (BASE) ----
+d25=d[d.season==BASE].sort_values(['player_id','week'])
 last=d25.groupby('player_id').tail(1)
 sea25=d25.groupby('player_id').agg(g=('week','count'),**{s:(s,'mean') for s in ALL}).reset_index()
 info=last[['player_id','player_display_name','pos','grp','team']].copy()
@@ -19,8 +25,8 @@ def keep(r):
     if r.grp=='K': return r.fg_att>=0.3
     return False
 P=P[P.apply(keep,axis=1)].copy()
-# only carry players who are actually on a 2026 roster, and use their 2026 team
-_r=pd.read_csv('../raw/roster26.csv',low_memory=False)
+# only carry players who are actually on a roster this season, and use this season's team
+_r=pd.read_csv('../raw/'+ROSTER,low_memory=False)
 _r=_r[_r.position.isin(['QB','RB','WR','TE','K','FB','HB'])&_r.status.isin(['ACT','DEV'])]
 _by={str(g):(t,('RB' if p in ('FB','HB') else p)) for g,t,p in zip(_r.gsis_id,_r.team,_r.position) if isinstance(g,str)}
 P=P[P.player_id.isin(_by)].copy()
@@ -56,8 +62,8 @@ for _,r in P.iterrows():
     players.append(o)
 print('players',len(players))
 
-# ---- team offense volume baselines (end of 2025) ----
-tg=d[d.season==2025].groupby(['week','team']).agg(
+# ---- team offense volume baselines (end of BASE) ----
+tg=d[d.season==BASE].groupby(['week','team']).agg(
  t_pass_att=('attempts','sum'),t_carries=('carries','sum'),t_pass_yds=('passing_yards','sum'),
  t_rush_yds=('rushing_yards','sum'),t_targets=('targets','sum'),t_pass_tds=('passing_tds','sum'),
  t_rush_tds=('rushing_tds','sum'),t_fg_att=('fg_att','sum'),t_pat_att=('pat_att','sum')).reset_index()
@@ -68,7 +74,7 @@ for t,gg in tg.sort_values('week').groupby('team'):
     toff[t]={c:round(float(gg[c].ewm(span=6,min_periods=1).mean().iloc[-1]),3) for c in TC}
 
 # ---- team defense baselines ----
-od=d[d.season==2025].groupby(['week','opponent_team']).agg(
+od=d[d.season==BASE].groupby(['week','opponent_team']).agg(
  d_pass_yds=('passing_yards','sum'),d_rush_yds=('rushing_yards','sum'),
  d_pass_att=('attempts','sum'),d_carries=('carries','sum'),d_tds=('rushing_tds','sum')).reset_index()
 DC=['d_pass_yds','d_rush_yds','d_pass_att','d_carries','d_tds']
@@ -77,22 +83,22 @@ for t,gg in od.sort_values('week').groupby('opponent_team'):
     tdef[t]={c:round(float(gg[c].ewm(span=8,min_periods=1).mean().iloc[-1]),3) for c in DC}
 
 # ---- opponent allowed by position group ----
-oa=d[d.season==2025].groupby(['week','opponent_team','grp'])[ALL].sum().reset_index()
+oa=d[d.season==BASE].groupby(['week','opponent_team','grp'])[ALL].sum().reset_index()
 tdefg={}
 for (t,g),gg in oa.sort_values('week').groupby(['opponent_team','grp']):
     tdefg.setdefault(t,{})[g]={s:round(float(gg[s].ewm(span=8,min_periods=1).mean().iloc[-1]),3) for s in ALL}
 
-# ---- normalization constants (2025 league means): the app rebuilds the team ones from its
+# ---- normalization constants (BASE league means): the app rebuilds the team ones from its
 # own state, so only the position-group means and the implied-points spread are carried ----
 norm={'oag':{},'implied_mean':0,'implied_sd':0}
 for g in ['QB','RB','WR','TE','K']:
     norm['oag'][g]={s:round(float(np.mean([tdefg[t][g][s] for t in tdefg if g in tdefg[t]])),3) for s in ALL}
-i25=d[d.season==2025]
+i25=d[d.season==BASE]
 norm['implied_mean']=round(float(i25.implied.mean()),3); norm['implied_sd']=round(float(i25.implied.std()),3)
 
-# ---- 2026 schedule ----
-g=pd.read_csv('../raw/games.csv',low_memory=False)
-g26=g[(g.season==2026)&(g.game_type=='REG')]
+# ---- this season's schedule ----
+g=pd.read_csv('../raw/'+GAMES,low_memory=False)
+g26=g[(g.season==SEASON)&(g.game_type=='REG')]
 sched=[]
 for _,r in g26.iterrows():
     _g={'id':r.game_id,'w':int(r.week),'d':str(r.gameday),'t':str(r.gametime),
@@ -108,12 +114,12 @@ print('sched games',len(sched),'weeks',g26.week.max())
 
 _prev=json.load(open('../data/payload.json')) if __import__('os').path.exists('../data/payload.json') else {}
 
-# ---- depth charts: regenerate from raw/dc26.csv, mirroring the app's ingestDepth() ----
+# ---- depth charts: regenerate from raw/depth_charts_SEASON.csv, mirroring the app's ingestDepth() ----
 # latest date wins, then the best (lowest) rank; only the newest date's rows are kept
 import os as _os
 _depth=None; _depth_dt=None
-if _os.path.exists('../raw/dc26.csv'):
-    _dc=pd.read_csv('../raw/dc26.csv',low_memory=False,dtype=str)
+if _os.path.exists('../raw/'+DEPTH):
+    _dc=pd.read_csv('../raw/'+DEPTH,low_memory=False,dtype=str)
     _dc['pos']=_dc.pos_abb.fillna('').str.upper().replace({'PK':'K'})
     _dc=_dc[_dc.pos.isin(['QB','RB','WR','TE','K'])&_dc.gsis_id.notna()].copy()
     _dc['rank']=pd.to_numeric(_dc.pos_rank,errors='coerce'); _dc=_dc[_dc['rank'].notna()]
@@ -125,7 +131,7 @@ if _os.path.exists('../raw/dc26.csv'):
     _depth_dt=_dtmax[:10]
     print('depth',len(_depth),'players ranked as of',_depth_dt)
 else:
-    print('depth: raw/dc26.csv not found, carrying the previous table forward')
+    print('depth: raw/'+DEPTH+' not found, carrying the previous table forward (depth_dt says how old it is)')
 out={'mkt':_prev.get('mkt',{}),'mkt_meta':_prev.get('mkt_meta',{}),'grid':json.load(open('../data/grid_model.json')),'pts':json.load(open('../data/pts_model.json')),'corr':json.load(open('../data/corr.json')),'players':players,'toff':toff,'tdef':tdef,'tdefg':tdefg,'norm':norm,'sched':sched,
      'model':FM['model'],'dist':FM['dist'],'qs':FM['qs'],'prior':FM['prior'],'k':FM['k']}
 # the fitted per-stat market scale and touchdown-per-touch rates: data/ is their source, as it

@@ -50,7 +50,7 @@ at the next refresh:
 - `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json`
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
-- `props/data/payload.json`
+- `props/data/payload.json`, `props/data/priced_at.json`
 - `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json` (by `elo/build.py`; `elo/cache/` is gitignored)
 
@@ -100,14 +100,36 @@ node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's so
 The audit is a real gate: `weekly.py` refuses to commit when it is not clean, so
 a broken audit means the site silently stops updating and the run is marked
 failed. Write audit checks against the app's invariants, never against whatever
-the week's data happens to offer -- a lean week must not fail the build.
+the week's data happens to offer -- a lean week must not fail the build. Its section V
+checks the page a browser builds against the raw nflverse files (roster status, the
+injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;
+by hand those comparisons are skipped and the rest run. Run by hand against a payload
+baked before 9 October 2026 it fails V2 (lines on the wrong player) until the job rebakes it.
 
-`.github/workflows/props.yml` runs four price pulls a week (Mon/Wed/Thu/Sat, ~7
-odds-API credits a game) and eight post-game and stats runs and one every morning that
-picks up the day's injury report, so a player ruled out leaves the Props tab and the builder
-the same morning. Those nine are catch-ups (`weekly.py --catch-up`): GitHub drops scheduled
-runs, so each prices any game up to the next pull that has no prices and has not kicked off,
-once a pull's slot is eight hours gone, and spends nothing when every pull ran. It commits straight to `main`.
+`weekly.py` also refuses (exits 1 before the workflow's commit step, so the last good data
+stays live) when a required nflverse download fails or comes back wrong -- the schedule,
+the player stats, the roster or the injury report -- or when the stats would cover fewer
+games than the published payload; those are checked before any credit is spent, and a run
+refused after a pull still has its prices kept (unpublished) by the workflow. The depth
+charts are carried forward with their date shown. A 404 on the stats or the injury report
+is judged by what has been published: with none of this season's yet (before the season,
+and the stats until nflverse processes the first games) it is a file not posted yet, the run
+publishes without it, `not_posted` in the payload and a note on the slate say so, and the
+run goes red after its commit once that is overdue; with some published it refuses. The
+season is `SEASON` in `part2.js` and nowhere else (`build/season.py` reads it); at a
+rollover the job moves last season's price files to `props/data/archive/<season>/` and
+bakes only this season's games, so bumping that line (with the key in `nflbets/build/sync.js`
+and the assert in `nflbets/build/build.js`) is the whole change.
+
+`.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
+Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
+runs, and a daily 12:07 UTC run that lands after nflverse posts the day's injury report,
+rosters and depth charts (about 14:20 UTC). GitHub fires this repo's crons 3-9 hours late, so
+each pull prices every game kicking off before the next slot plus 10 hours, never a game that
+has started, and not one priced in the last twelve hours. The nine `7 ` runs are catch-ups
+(`weekly.py --catch-up`): each prices any game up to the next pull that has no prices and has
+not kicked off, once a pull's slot is ten hours gone, and spends nothing when every pull ran.
+It commits straight to `main`.
 
 ## Betting: the loop
 

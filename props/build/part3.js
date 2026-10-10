@@ -91,6 +91,9 @@ function renderSlate(){
   }
   const card=g=>{
     const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
+    /* the scores as the row shows them, rounded once: the pick and its margin are read from these,
+       so "22 - 20" never reads "by 3" */
+    const sa=+ca.implied.toFixed(0), sh=+ch.implied.toFixed(0);
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
       <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>'+liveWhen(g,true):(started?liveWhen(g):d.t)}</div>
@@ -102,11 +105,13 @@ function renderSlate(){
         const band=av==null?'':hitBand(av,x.v.mu);
         return `<div><span class="cat">${x.k}</span><span class="nm">${esc(shortName(x.v.pl.n))}</span><span class="v">${x.v.mu.toFixed(0)}<em>yds</em>${
           av!=null?`<span class="va ${band}">${num(av,0)}<em>yds</em></span>`:(fin?'<span class="va pend">\u2013</span>':'')}</span></div>`;}).join('')}</div>
-      <div class="tot"><b>${ca.implied.toFixed(0)} \u2013 ${ch.implied.toFixed(0)}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:liveScoreLine(g)}</div>
+      <div class="tot"><b>${sa} \u2013 ${sh}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:liveScoreLine(g)}</div>
       <div class="totpts${ca.src==='model'?' assumed':''}"><b>${(ca.implied+ch.implied).toFixed(0)}</b><small>${ca.src==='market'?'points':'our model'}</small>${hasScore(g)?`<small class="act">(actual ${g.as+g.hs})</small>`:''}</div>
       <div class="winner">${(()=>{
-        if(ca.implied===ch.implied&&!hasScore(g)) return '<span class="none">\u2013</span><small>even</small>';
-        const pick=ca.implied>ch.implied?g.a:g.h, by=Math.abs(ca.implied-ch.implied).toFixed(0);
+        if(sa===sh){ const even='<span class="none">\u2013</span><small>even</small>';
+          if(!hasScore(g)) return even;
+          return even+`<small class="act">(${g.as===g.hs?'tie':`${g.as>g.hs?g.a:g.h} by ${Math.abs(g.as-g.hs)}`})</small>`; }
+        const pick=sa>sh?g.a:g.h, by=Math.abs(sa-sh);
         if(!hasScore(g)) return tag(pick)+`<small>by ${by}</small>`+(ca.src==='model'?'<small class="muted">no line yet, our model</small>':'');
         if(g.as===g.hs) return tag(pick)+`<small>by ${by}</small><small class="act">(tie)</small>`;
         const real=g.as>g.hs?g.a:g.h, right=real===pick;
@@ -116,7 +121,8 @@ function renderSlate(){
   };
   /* the games still to play, live ones too, first in kickoff order; the finals under a heading */
   const todo=gs.filter(g=>!gameFinal(g)), done=gs.filter(g=>gameFinal(g));
-  const rows=todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
+  const over=seasonOver()?`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:12px"><b>The ${SEASON} regular season is over.</b> <span class="muted">This model covers the regular season only: playoff games are not projected or priced, and no prices are pulled until next season. Every week stays here to look back on.</span></div>`:'';
+  const rows=over+notPostedNote()+todo.map(card).join('')+(done.length?`<div class="slatesep">Completed</div>`+done.map(card).join(''):'');
   $('gamesList').innerHTML=rows||'<div class="empty">No games scheduled for this week.</div>';
   $('gamesList').querySelectorAll('[data-game]').forEach(b=>b.addEventListener('click',()=>{
     S.ui.game=b.dataset.game; S.ui.open={}; save(); renderGame(); }));
@@ -202,7 +208,7 @@ function gameBetsCard(g,locked){
   }).join('');
   return `<div class="card gbets"><h2>Game bets</h2>
     <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line and the spread.':'A team to win, or to cover the spread. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. A game leg is priced as unrelated to player legs, because that relationship has not been measured here.</p>
-    ${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
+    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}</div>`;
 }
 /* the ladders are hidden unless turned on: without a real price they cannot be bet
    or picked by a suggestion, and they run to thirty rows a player. The model still
@@ -232,6 +238,8 @@ function renderGame(){
     <label class="muted"><input type="checkbox" id="rungCb" ${showRungs()?'checked':''}> Threshold ladders</label>
   </div>`;
   if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
+  { const dd=PAY.depth_dt?Date.parse(PAY.depth_dt+'T12:00:00Z'):NaN, bk=PAY.baked_at?Date.parse(PAY.baked_at):NaN;
+    if(!locked&&isFinite(dd)&&isFinite(bk)&&bk-dd>3*864e5) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px;color:#8A5E05">Depth charts as of ${esc(PAY.depth_dt)}: the latest ones could not be downloaded, so who starts may be out of date.</p>`; }
   /* a live score and stats, when the scoreboard has been read for this game */
   const lg=LIVE.games[g.id], lbox=!!LIVE.box[g.id];
   const liveOn=!haveStats&&lbox;
@@ -250,7 +258,7 @@ function renderGame(){
   html+=`
   <div class="card">
     <h2 style="display:flex;align-items:center;gap:10px">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
-    <p class="muted" style="margin:0">${d.day} ${d.t}${g.sp!=null?` \u00b7 ${g.sp>0?g.h+' favoured by '+g.sp:g.a+' favoured by '+Math.abs(g.sp)}`:` \u00b7 ${modelMargin(g)>0?g.h:g.a} favoured by ${Math.abs(modelMargin(g)).toFixed(1)} on our numbers`}${gameCtx(g,g.h).src==='market'?` \u00b7 ${g.tot} points expected between them`:` \u00b7 no betting line posted yet, so the game is built from our own team ratings (${(gameCtx(g,g.a).implied+gameCtx(g,g.h).implied).toFixed(0)} points expected)`}</p>
+    <p class="muted" style="margin:0">${d.day} ${d.t}${g.sp!=null?` \u00b7 ${g.sp>0?g.h+' favoured by '+g.sp:g.a+' favoured by '+Math.abs(g.sp)}`:` \u00b7 ${modelMargin(g)>0?g.h:g.a} favoured by ${Math.abs(modelMargin(g)).toFixed(1)} on our numbers`}${lineSource(g)?` \u00b7 lines: ${esc(lineSource(g))}`:''}${gameCtx(g,g.h).src==='market'?` \u00b7 ${g.tot} points expected between them`:` \u00b7 no betting line posted yet, so the game is built from our own team ratings (${(gameCtx(g,g.a).implied+gameCtx(g,g.h).implied).toFixed(0)} points expected)`}</p>
     <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t.'}</p>
   </div>`;
   html+=gameSuggestCard(g,locked);
@@ -266,7 +274,7 @@ function renderGame(){
       if(!lines.length) continue;
       const open=!!S.ui.open[x.pl.id], stOpen=!!(S.ui.stats&&S.ui.stats[x.pl.id]);
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
-        <div class="who">${esc(x.pl.n)}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span><span class="stbtn${stOpen?' on':''}" role="button" tabindex="0" data-stats="${x.pl.id}" aria-pressed="${stOpen}">${stOpen?'Hide stats':'Show stats'}</span></div>
+        <div class="who">${esc(x.pl.n)}${(!locked&&+g.w===currentWeek())?injChip(x.pl.id):''}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span><span class="stbtn${stOpen?' on':''}" role="button" tabindex="0" data-stats="${x.pl.id}" aria-pressed="${stOpen}">${stOpen?'Hide stats':'Show stats'}</span></div>
         <div class="sum">${locked?`<span class="finchip${fin?'':' live'}">${fin?'FINAL':'LIVE'}</span>`:''}${
           (locked&&haveStats)?actualSummary(x,lines,g.w)
           :(locked&&liveOn?actualSummary(x,lines,g.w,liveStatsFor(g.id,team,x.pl.n))
@@ -556,19 +564,90 @@ function ingestRoster(rows){
     if(!onRoster.has(id)){ delete S.players[id]; delete S.inactive[id]; dropped++; } } }
   return {moved,added,dropped,full};
 }
-function ingestInjuries(rows){
-  const w=currentWeek(); let out=0;
-  /* last week's Out is not this week's: drop every weekly record from another week.
-     'season' records (IR, PUP, suspended) are not weekly and stay until the roster clears them. */
-  for(const id of Object.keys(S.inactive)){ const r=S.inactive[id]; if(r&&r.week!=='season'&&r.week!==w) delete S.inactive[id]; }
+/* Questionable players stay on the page with a Q and out of every suggested parlay: about half
+   of them have not played this season. true lets them into the suggestions. */
+const SUGGEST_QUESTIONABLE=false;
+/* the nflverse files the job found not posted yet (PAY.not_posted): before the season, or the
+   stats until the first games are processed. An empty report is then said to be missing, not
+   shown as a week with nobody hurt */
+function notPostedNote(){
+  const np=new Set((PAY&&PAY.not_posted)||[]), say=[];
+  if(np.has('injuries')) say.push(`nflverse has not posted the ${SEASON} injury report yet, so no player is marked out, doubtful or questionable.`);
+  if(np.has('stats')&&S.sched.some(g=>gameFinal(g))) say.push(`nflverse has not posted this season's player stats yet, so the finished games are not graded and every projection stands on last season.`);
+  return say.length?`<div class="card notposted" style="border-left:4px solid var(--gold);margin-bottom:12px">${say.map(t=>`<div class="muted">${t}</div>`).join('')}</div>`:'';
+}
+function practiceOf(s){ s=String(s||''); return /did not/i.test(s)?'DNP':(/limited/i.test(s)?'Limited':(/full/i.test(s)?'Full':'')); }
+/* the week a team played before this one, past its bye */
+function prevTeamWeek(team,w){ let p=null; for(const g of S.sched) if((g.a===team||g.h===team)&&+g.w<w&&(p==null||+g.w>p)) p=+g.w; return p; }
+/* one week's injury report into S.inactive (who is out) and INJ (who is listed and why).
+   replay: a past week, graded on its final report, so only its game statuses count. */
+function ingestInjuries(rows,week,replay){
+  const w=week||currentWeek(); let out=0;
+  /* the report rebuilds every weekly record: last week's Out is not this week's. 'season'
+     records (a reserve list, a release) are the roster's and stay. */
+  for(const id of Object.keys(S.inactive)){ const r=S.inactive[id]; if(!r||r.week!=='season') delete S.inactive[id]; }
+  if(!replay) INJ={};
+  const cur={}, filed={}, final={}, before={};
   for(const r of rows){
-    if(+r.season!==SEASON||+r.week!==w) continue;
+    if(+r.season!==SEASON) continue;
     const id=r.gsis_id||r.player_id; if(!id) continue;
-    const st=String(r.report_status||r.game_status||'').trim();
-    if(st==='Out'||st==='Doubtful'){ S.inactive[id]={week:w,status:st}; out++; }
-    else if(S.inactive[id]&&S.inactive[id].week===w) delete S.inactive[id];
+    const wk=+r.week, st=String(r.report_status||r.game_status||'').trim(), tm=r.team||'';
+    if(wk===w){ cur[id]=r; if(tm){ filed[tm]=true; if(st) final[tm]=true; } }
+    else if(wk<w&&(st==='Out'||st==='Doubtful')){ const b=(before[id]??={team:tm,weeks:{},last:0}); b.weeks[wk]=st; if(wk>b.last){ b.last=wk; b.team=tm; } }
+  }
+  const rule=(id,status,extra)=>{ S.inactive[id]={week:w,status,...extra}; out++; };
+  for(const id in cur){
+    const r=cur[id], st=String(r.report_status||r.game_status||'').trim(), pr=practiceOf(r.practice_status), inj=String(r.injury||'').trim();
+    if(st==='Out'||st==='Doubtful'){ rule(id,st,{inj}); continue; }
+    if(replay) continue;
+    if(st==='Questionable'&&pr==='DNP'){ rule(id,'Questionable, no practice',{inj}); continue; }
+    if(st==='Questionable'){ INJ[id]={k:'q',t:'Q',title:'Questionable'+(inj?' ('+inj.toLowerCase()+')':'')+(pr?'; '+pr.toLowerCase()+' in practice':'')}; continue; }
+    if(final[r.team]) continue;                      /* his team's final report gives him no status: cleared */
+    if(pr==='DNP') INJ[id]={k:'dnp',t:'DNP',title:'Did not practise'+(inj?' ('+inj.toLowerCase()+')':'')+'; no game status yet'};
+    else if(pr==='Limited') INJ[id]={k:'lim',t:'LP',title:'Limited in practice'+(inj?' ('+inj.toLowerCase()+')':'')+'; no game status yet'};
+  }
+  /* out in his team's last game and no status yet this week: treated as out until one clears him */
+  if(!replay) for(const id in before){
+    const b=before[id], tm=(cur[id]&&cur[id].team)||b.team, pw=prevTeamWeek(tm,w);
+    if(pw==null||!b.weeks[pw]||S.inactive[id]) continue;
+    if(actualFor(pw,id)) continue;                  /* listed, but his stat line says he played */
+    const r=cur[id], st=r?String(r.report_status||r.game_status||'').trim():'';
+    if(st||final[tm]) continue;
+    if(!filed[tm]) rule(id,'Pending',{why:'no report yet this week'});
+    else if(r&&practiceOf(r.practice_status)==='DNP') rule(id,'Pending',{why:'not practising',inj:String(r.injury||'').trim()});
   }
   return {out,week:w};
+}
+/* the roster's word on every player: status, and the team he is on today. INA is a game-day
+   inactive and holds only for the week the roster row is for; the reserve lists, a release, a
+   retirement and the like hold until the roster says otherwise. */
+function applyRoster(R){
+  RSTAT={}; let season=0, moved=0;
+  for(const id of Object.keys(S.inactive)) if(S.inactive[id]&&S.inactive[id].week==='season') delete S.inactive[id];
+  if(!R||typeof R!=='object') return {season,moved};
+  const w=currentWeek();
+  for(const id in R){ const [team,st,,wk]=R[id]; RSTAT[id]=st;
+    const p=S.players[id]; if(p&&team&&p.team!==team){ p.team=team; moved++; }
+    if(st==='INA'){ if(+wk===w&&!S.inactive[id]) S.inactive[id]={week:w,status:'Inactive'}; continue; }
+    if(st!=='ACT'&&st!=='DEV'){ S.inactive[id]={week:'season',status:st}; season++; } }
+  /* a whole-league table: a player on no roster at all is on no team's page either */
+  if(Object.keys(R).length>800) for(const id in S.players) if(!R[id]){ S.inactive[id]={week:'season',status:'NONE'}; season++; }
+  return {season,moved};
+}
+/* the tag beside a name: ruled out, pending, Q, did not practise, limited. null when there is none */
+function injTag(pid){
+  const r=S.inactive&&S.inactive[pid];
+  if(r){ if(r.week==='season') return {k:'out',t:{RES:'IR',CUT:'CUT'}[r.status]||'OUT',title:inactiveWhy(r)};
+    return {k:r.status==='Pending'?'pend':'out',t:r.status==='Pending'?'PENDING':(r.status==='Doubtful'?'D':'OUT'),title:inactiveWhy(r)}; }
+  return INJ[pid]||null;
+}
+function injChip(pid){ const t=injTag(pid); return t?`<span class="inj inj-${t.k}" title="${esc(t.title)}">${t.t}</span>`:''; }
+/* a player the suggestions can build on: not out, not pending, not Questionable (unless the
+   switch above says so), not missing practice with no status yet */
+function suggestable(pid){
+  if(S.inactive&&S.inactive[pid]) return false;
+  const t=INJ[pid]; if(!t) return true;
+  return t.k==='lim'||(t.k==='q'&&SUGGEST_QUESTIONABLE);
 }
 
 /* ---------- track record tab ---------- */
@@ -818,7 +897,7 @@ $('allFiles').addEventListener('change',async e=>{
         log(`${f.name}: ${r.done.length} game${r.done.length===1?'':'s'} counted \u2014 ${names.join(', ')}. Projections updated.`,'ok');
         if(r.skipped.length) log(`${r.skipped.length} game${r.skipped.length===1?'':'s'} in that file were already counted and were skipped.`,'warn');
       } else if(r.games) log(`${f.name}: nothing new, all ${r.games} game${r.games===1?'':'s'} in it were already counted.`,'warn');
-      else log(`${f.name}: no 2026 regular-season rows found.`,'warn'); }
+      else log(`${f.name}: no ${SEASON} regular-season rows found.`,'warn'); }
     else if('gsis_id' in c||('player_id' in c&&'position' in c)){ const r=ingestRoster(rows);
       log(`${f.name}: roster read, ${r.moved} team change${r.moved===1?'':'s'}, ${r.added} added${r.full?`, ${r.dropped} no longer rostered and removed`:', partial file so nobody was removed'}.`,'ok'); }
     else log(`${f.name}: not a file this app knows how to read.`,'err');
@@ -846,6 +925,10 @@ $('importInput').addEventListener('change',e=>{ const f=e.target.files[0]; e.tar
     save(); renderAll(); alert('Backup restored.'); }catch(err){ alert('That file could not be read: '+err.message); } };
   rd.readAsText(f); });
 
+/* the links to this season's nflverse files, from SEASON rather than a year written into them */
+for(const [id,file] of [['statsLink',`stats_player/stats_player_week_${SEASON}.csv`],['rosLink',`rosters/roster_${SEASON}.csv`],
+  ['injLink',`injuries/injuries_${SEASON}.csv`],['dcLink',`depth_charts/depth_charts_${SEASON}.csv`]]){
+  const a=$(id); if(a) a.href='https://github.com/nflverse/nflverse-data/releases/download/'+file; }
 boot().then(()=>document.dispatchEvent(new Event('app-ready')));
 
 /* ---------- parlay builder ---------- */
@@ -947,7 +1030,7 @@ function pricedLegs(games){
     }
     const roster=rosterFor(g,false);
     for(const team in roster) for(const x of roster[team].players){
-      if(x.gp<3) continue;
+      if(x.gp<3||!suggestable(x.pl.id)) continue;
       for(const l of statLines(x)){
         const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'real'};
         if(l.prob){ const od=oddsFor(g.id,x.pl.id,'any_td',1);
@@ -1046,6 +1129,7 @@ function gameLegPool(g){
   const have=new Set(out.map(l=>l.key+'@'+l.k+l.side+(l.main?'m':'')));
   const roster=rosterFor(g,false);
   for(const team in roster) for(const x of roster[team].players){
+    if(!suggestable(x.pl.id)) continue;
     for(const l of statLines(x)){
       if(GAME_NOT_OFFERED.has(l.stat)) continue;
       const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'est'};
@@ -1234,7 +1318,7 @@ function renderParlay(){
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
   legs.forEach((l,i)=>{
     const [c,lbl]=confTier(l.p);
-    html+=`<tr class="legrow"><td class="plr">${esc(l.name)}<small>${l.pos} \u00b7 ${l.team} v ${l.opp} \u00b7 wk ${l.week}</small></td>
+    html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${l.pos} \u00b7 ${l.team} v ${l.opp} \u00b7 wk ${l.week}</small></td>
       <td><b>${esc(l.label)}</b></td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
       <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span></td>
@@ -1242,6 +1326,8 @@ function renderParlay(){
       <td><button class="btn quiet" data-drop="${l.key}">Remove</button></td></tr>`;
   });
   html+=`</tbody></table>`;
+  { const out=legs.filter(l=>l.grp!=='TEAM'&&S.inactive&&S.inactive[l.pid]);
+    if(out.length) html+=`<p class="delta down" style="margin:10px 0 0">${out.map(l=>esc(l.name)).join(', ')} ${out.length===1?'is':'are'} not expected to play (${out.map(l=>inactiveWhy(S.inactive[l.pid])).join('; ')}). A book voids a leg on a player who does not play and pays the rest at their own prices; take ${out.length===1?'it':'them'} off to see what the rest pay.</p>`; }
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
   /* what it pays, inside the same card, then the two actions as buttons only */
   html+=`<div class="pays"><h3>What it pays</h3>
@@ -1440,10 +1526,10 @@ function renderSaved(){
   if(!list.length){ html+=`<p class="muted" style="margin:0">Nothing saved. Build a parlay above and press Save and lock; only locked parlays appear here.</p></div>`; return html; }
   const won=settled.filter(s=>s.status==='won').length, lost=settled.filter(s=>s.status==='lost').length, pend=settled.filter(s=>s.status==='pending').length;
   const staked=list.reduce((s,p)=>s+p.stake,0);
-  const back=list.reduce((s,p,i)=>s+(settled[i].status==='won'?p.payout:(settled[i].status==='void'?p.stake:0)),0);
+  const back=list.reduce((s,p,i)=>s+(settled[i].status==='pending'?0:settledReturn(p,settled[i])),0);
   const atRisk=list.reduce((s,p,i)=>s+(settled[i].status==='pending'?p.stake:0),0);
   const couldWin=list.reduce((s,p,i)=>s+(settled[i].status==='pending'?p.payout-p.stake:0),0);
-  const net=list.reduce((s,p,i)=>s+(settled[i].status==='pending'?0:(settled[i].status==='won'?p.payout-p.stake:(settled[i].status==='void'?0:-p.stake))),0);
+  const net=list.reduce((s,p,i)=>s+(settled[i].status==='pending'?0:settledReturn(p,settled[i])-p.stake),0);
   html+=`<div class="sp-money" style="margin-bottom:14px">
     <div><b>${won}\u2013${lost}${pend?`, ${pend} live`:''}</b><span>record</span></div>
     <div><b>$${staked.toFixed(2)}</b><span>total staked</span></div>
@@ -1455,7 +1541,7 @@ function renderSaved(){
     const s=settled[i];
     const tone=s.status==='won'?'var(--pick)':(s.status==='lost'?'var(--miss)':(s.status==='void'?'var(--muted)':'var(--gold)'));
     const profit=p.payout-p.stake;
-    const result=s.status==='won'?`+$${profit.toFixed(2)}`:(s.status==='lost'?`\u2212$${p.stake.toFixed(2)}`:(s.status==='void'?'$0.00':`$${p.payout.toFixed(2)} to come`));
+    const result=s.status==='won'?`+$${(settledReturn(p,s)-p.stake).toFixed(2)}`:(s.status==='lost'?`\u2212$${p.stake.toFixed(2)}`:(s.status==='void'?'$0.00':`$${p.payout.toFixed(2)} to come`));
     html+=`<div class="savedp" style="border-left:4px solid ${tone}">
       <div class="sp-head">
         <span class="sp-title">${p.legs.length}-leg parlay</span>${p.suggested?`<span class="pill">${p.suggested} suggestion</span>`:''}
@@ -1473,7 +1559,7 @@ function renderSaved(){
         <div class="${s.status==='won'?'win':(s.status==='lost'?'lose':'')}"><b>${result}</b><span>${s.status==='pending'?'still running':'result'}</span></div>
       </div>
       ${p.legs.map((l,k)=>{ const r=s.legs[k]; const a=actualFor(l.week,l.pid);
-        const mark=r==null?'<span class="res">\u25cb</span>':(r==='win'?'<span class="res win">\u2713</span>':(r==='push'?'<span class="res">P</span>':'<span class="res loss">\u2717</span>'));
+        const mark=r==null?'<span class="res">\u25cb</span>':(r==='win'?'<span class="res win">\u2713</span>':(r==='push'?'<span class="res">P</span>':(r==='void'?'<span class="res" title="did not play: the leg is void">V</span>':'<span class="res loss">\u2717</span>')));
         const lv=(LIVE.on&&s.status==='pending')?liveCell(l):'';
         return `<div class="sp-leg">${mark}
           <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span>
@@ -1544,18 +1630,26 @@ function downloadText(name,text){
 function ingestOdds(rows,week){
   const w=week||currentWeek();
   const gs=gamesIn(w), gids=new Set(gs.map(g=>g.id));
-  const byName={};
-  for(const g of gs){ const r=rosterFor(g,true);
-    for(const team in r) for(const x of r[team].players) (byName[normName(x.pl.n)]??=[]).push({gid:g.id,pid:x.pl.id}); }
+  /* rows from a payload that names the player by id need no names; older ones are matched
+     by name among the week's rosters, built only when such a row turns up */
+  let byName=null;
+  const names=()=>{ if(byName) return byName; byName={};
+    for(const g of gs){ const r=rosterFor(g,true);
+      for(const team in r) for(const x of r[team].players) (byName[normName(x.pl.n)]??=[]).push({gid:g.id,pid:x.pl.id}); }
+    return byName; };
   for(const gid of gids) delete S.odds[gid];
   let n=0;
   for(const row of rows){
     const ml=parseFloat(row.odds); if(!isFinite(ml)||ml===0) continue;
     const mk=marketKey(row.market); if(!mk) continue;
     const k=parseFloat(row.threshold); if(!isFinite(k)) continue;
-    const cands=byName[normName(row.player)]||[];
-    let hit=gids.has((row.game_id||'').trim())?cands.find(c=>c.gid===row.game_id.trim()):null;
-    if(!hit&&cands.length===1) hit=cands[0];
+    const gid=(row.game_id||'').trim();
+    if(gid&&!gids.has(gid)) continue;   /* a game this week does not have: last season's file at a rollover */
+    let hit=null;
+    if(row.pid&&gid) hit={gid,pid:row.pid};
+    else { const cands=names()[normName(row.player)]||[];
+      hit=gid?cands.find(c=>c.gid===gid):null;
+      if(!hit&&!gid&&cands.length===1) hit=cands[0]; }
     if(!hit) continue;
     ((((S.odds[hit.gid]??={})[hit.pid]??={})[mk]??={}))[String(k)]=ml;
     n++;
@@ -1576,15 +1670,25 @@ function applyBaked(){
     for(const k of ['d','t','sp','tot','hs','as','mla','mlh','spa','sph']) if(p[k]!=null&&g[k]!==p[k]){ g[k]=p[k]; done.sched++; } }
   /* the build pulled lines when it ran, so the freshness note counts from then */
   if(PAY.baked_at){ const t=Date.parse(PAY.baked_at); if(isFinite(t)&&!(S.gamesFetched>t)) S.gamesFetched=t; }
-  if(PAY.injuries&&PAY.injuries.length) done.inj=ingestInjuries(PAY.injuries).out;
-  /* prices are reloaded whenever the build that carried them changes, and left alone
-     when it has not. There is no upload path any more, so nothing the user typed is at
-     stake; a week that already holds Thursday's game must still take Saturday's. */
+  /* the season replays week by week, each week graded on its own injury report, the one that
+     stood at its kickoffs, and before today's roster: the record scores the page a reader saw
+     that week, not the week rebuilt from today's news */
+  const inj=PAY.injuries||[];
+  RSTAT={}; INJ={};
+  for(const id of Object.keys(S.inactive)) if(S.inactive[id]&&S.inactive[id].week==='season') delete S.inactive[id];
+  for(const w of Object.keys(PAY.stats||{}).sort((a,b)=>a-b)){
+    if(gamesIn(+w).some(g=>!S.processedGames[g.id])) ingestInjuries(inj,+w,true);
+    const r=ingestStats(PAY.stats[w]); done.stats.push(...r.done.map(g=>g.id)); }
+  /* then today's: this week's report, and the roster's statuses and teams */
+  done.inj=ingestInjuries(inj).out;
+  done.roster=applyRoster(PAY.roster);
+  /* prices last, by the player id the job put on each row, so a rookie whose first stats were
+     just replayed has his prices too. They are reloaded whenever the build that carried them
+     changes, and left alone when it has not; a week that already holds Thursday's game must
+     still take Saturday's. */
   const pricesFrom=PAY.baked_at||PAY.build||'';
   if(S.pricesFrom!==pricesFrom){
     for(const w of Object.keys(PAY.prices||{}).sort((a,b)=>a-b)) done.prices+=ingestOdds(PAY.prices[w],+w).n;
     if(Object.keys(PAY.prices||{}).length) S.pricesFrom=pricesFrom; }
-  for(const w of Object.keys(PAY.stats||{}).sort((a,b)=>a-b)){
-    const r=ingestStats(PAY.stats[w]); done.stats.push(...r.done.map(g=>g.id)); }
   return done;
 }

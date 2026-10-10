@@ -12,7 +12,7 @@ app engine (part2.js featVec / part3.js applyGame) and payload.py, which must
 mirror it exactly. Variants are switchable so the reconstruction can be tested
 against the shipped coefficients in data/final_model.json.
 
-Run from pkg/research (or pass RAW=path).  Env switches:
+Run from pkg/research (or pass RAW=path). The seasons are FIRST..BASE from build/season.py.  Env switches:
   PLAYER_SCOPE   career | season   (ewm/gp_prior reset each season?)   default career
   TEAM_SCOPE     career | season                                        default career
   NORM_SCOPE     week | season | all  (league mean used for relz)       default season
@@ -22,6 +22,8 @@ Run from pkg/research (or pass RAW=path).  Env switches:
 import os, sys, warnings
 import pandas as pd, numpy as np
 warnings.filterwarnings('ignore')
+sys.path.insert(0,os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','build'))
+from season import FIRST, BASE     # the season is part2.js's SEASON; BASE is the one before
 
 RAW=os.environ.get('RAW','../raw')
 OUT=os.environ.get('OUT',f'{RAW}/feat.pkl')
@@ -29,7 +31,13 @@ PLAYER_SCOPE=os.environ.get('PLAYER_SCOPE','career')
 TEAM_SCOPE=os.environ.get('TEAM_SCOPE','career')
 NORM_SCOPE=os.environ.get('NORM_SCOPE','season')
 IMP_SCOPE=os.environ.get('IMP_SCOPE','season')
-SEASONS=range(2019,2026)
+# every season up to BASE, the one payload.py takes the baselines from: at a rollover the season just
+# finished joins the table, with no edit here (weekly.py rebuilds the table when it lacks BASE)
+SEASONS=range(FIRST,BASE+1)
+# the seasons data/final_model.json was fitted on (fit4.py, not in this repo). A team's first game
+# in the table has no games before it, and its rolling team state takes their mean, so a season
+# added later leaves the rows the model was fitted on exactly as they were
+FIT=range(2019,2026)
 
 GRP_STATS={'QB':['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards'],
  'RB':['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
@@ -142,7 +150,7 @@ d=d.merge(tg[['game_id','team']+tcols+['tez_'+c for c in TCOLS]],on=['game_id','
 d=d.merge(od[['game_id','team']+dcols+['dez_'+c for c in DCOLS]].rename(columns={'team':'opponent_team'}),on=['game_id','opponent_team'],how='left')
 d=d.merge(oa[['game_id','team','grp']+['oaz_'+s for s in ALL]].rename(columns={'team':'opponent_team'}),on=['game_id','opponent_team','grp'],how='left')
 for c in ['tez_'+c for c in TCOLS]+['dez_'+c for c in DCOLS]+['oaz_'+s for s in ALL]: d[c]=d[c].fillna(0)
-for c in tcols+dcols: d[c]=d[c].fillna(d[c].mean())
+for c in tcols+dcols: d[c]=d[c].fillna(d.loc[d.season.isin(FIT),c].mean())
 d=d.sort_values(['season','week','team','player_id']).reset_index(drop=True)
 d.to_pickle(OUT)
 print('wrote',OUT,d.shape,'variants',PLAYER_SCOPE,TEAM_SCOPE,NORM_SCOPE,IMP_SCOPE)
