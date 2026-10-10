@@ -1981,72 +1981,12 @@
   },
   "LAC": {
    "kick": "2026-10-11T20:05Z",
-   "built_at": "2026-10-10T07:12:06.856Z",
+   "built_at": "2026-10-10T18:04:17.276Z",
    "units": {
-    "qb": [
-     {
-      "id": "00-0036355",
-      "n": "Justin Herbert",
-      "pos": "QB"
-     }
-    ],
-    "ol": [
-     {
-      "id": "00-0041105",
-      "n": "Logan Taylor",
-      "pos": "G"
-     },
-     {
-      "id": "00-0041392",
-      "n": "Jake Slaughter",
-      "pos": "G"
-     },
-     {
-      "id": "00-0041383",
-      "n": "Jacob Spomer",
-      "pos": "C"
-     },
-     {
-      "id": "00-0038103",
-      "n": "Cole Strange",
-      "pos": "G"
-     },
-     {
-      "id": "00-0041058",
-      "n": "Travis Burke",
-      "pos": "T"
-     }
-    ],
-    "rb": [
-     {
-      "id": "00-0040666",
-      "n": "Omarion Hampton",
-      "pos": "RB"
-     },
-     {
-      "id": "00-0038454",
-      "n": "Keaton Mitchell",
-      "pos": "RB"
-     }
-    ],
-    "rec": [
-     {
-      "id": "00-0040727",
-      "n": "Tre Harris",
-      "pos": "WR"
-     },
-     {
-      "id": "00-0038573",
-      "n": "Derius Davis",
-      "pos": "WR"
-     },
-     {
-      "id": "00-0038046",
-      "n": "Charlie Kolar",
-      "pos": "TE",
-      "q": "questionable: forearm"
-     }
-    ],
+    "qb": [],
+    "ol": [],
+    "rb": [],
+    "rec": [],
     "front": [
      {
       "id": "00-0031040",
@@ -2054,14 +1994,14 @@
       "pos": "OLB"
      },
      {
-      "id": "00-0039111",
-      "n": "Tuli Tuipulotu",
-      "pos": "OLB"
-     },
-     {
       "id": "00-0036181",
       "n": "Teair Tart",
       "pos": "DT"
+     },
+     {
+      "id": "00-0038553",
+      "n": "Daiyan Henley",
+      "pos": "ILB"
      }
     ],
     "db": [
@@ -2710,7 +2650,7 @@
   },
   "BUF": {
    "kick": "2026-10-13T00:15Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T18:04:17.276Z",
    "units": {
     "qb": [
      {
@@ -2765,15 +2705,14 @@
       "pos": "WR"
      },
      {
-      "id": "00-0034827",
-      "n": "DJ Moore",
-      "pos": "WR",
-      "q": "questionable: shoulder, not practising"
-     },
-     {
       "id": "00-0038933",
       "n": "Dalton Kincaid",
       "pos": "TE"
+     },
+     {
+      "id": "00-0039901",
+      "n": "Keon Coleman",
+      "pos": "WR"
      }
     ],
     "front": [
