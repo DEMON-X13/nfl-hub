@@ -84,7 +84,7 @@ def get(path,params,key):
         return data
 
 REPRICE_HOURS=12  # a game priced this recently is not bought again unless --force says so
-GAMELINE_COLS=['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds','total_line','pulled_at']
+GAMELINE_COLS=['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds','total_line','over_odds','under_odds','pulled_at']
 def game_lines(key,book,regions,ids,now=None):
     """Moneylines, spreads and totals for the whole slate in one call. The bulk /odds endpoint
     is billed per market per region, not per event, so this is 3 credits for every game
@@ -114,7 +114,11 @@ def game_rows(data,book,ids,now=None):
                         if nm==home: row['spread_line']=-float(point); row['home_spread_odds']=int(price)
                         elif nm==away: row['away_spread_odds']=int(price)
                     elif m.get('key')=='totals' and point is not None and nm=='Over':
-                        row['total_line']=float(point)
+                        # the over's price with its number, and the under's below: the same call,
+                        # no more credits, and the page's game total is then a priced leg
+                        row['total_line']=float(point); row['over_odds']=int(price)
+                    elif m.get('key')=='totals' and point is not None and nm=='Under':
+                        row['under_odds']=int(price)
         if len(row)>2: out.append(row)
     return out
 

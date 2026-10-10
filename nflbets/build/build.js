@@ -4,7 +4,8 @@
  *   require('./build.js')              the same build in memory, {out, pv, hash}, written
  *                                      nowhere: the smoke compares it with the published page
  *
- *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it.
+ *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it, its Parlay
+ *                        Builder tab, and X Parlays on a tab of its own.
  *
  * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
@@ -42,11 +43,12 @@ const part2 = rd('props', 'build', 'part2.js');
 const part3 = rd('props', 'build', 'part3.js');
 const betting = rd('betting', 'app', 'x_nfl_betting_model.html');
 const tab = rd('nflbets', 'build', 'tab_pickems.html');
-/* the X Parlays section is the section page's own source, set into the X Parlays tab: X's
-   parlays (liveparlays/parlays.json, read only on every device) at the top of the tab and the
-   Parlay Builder under them. No device keeps a list of its own: visitors come to see X's
-   parlays, and the builder finishes a parlay as a card to download (card.html, below), saved
-   nowhere. Its styles are scoped to its card and its script runs in a closure, since the page
+/* the X Parlays section is the section page's own source, set into the X Parlays tab, a tab of
+   its own (#xparlays): X's parlays (liveparlays/parlays.json, read only on every device) and
+   nothing else. The Parlay Builder is its own tab (#parlay): the prop model's suggested parlays
+   panel over the builder. No device keeps a list of its own: visitors come to see X's parlays,
+   and the builder finishes a parlay as a card to download (card.html, below), saved nowhere.
+   The section's styles are scoped to its card and its script runs in a closure, since the page
    around it defines most of the same names for itself. */
 const livePage = rd('liveparlays', 'build', 'page.html');
 /* the parlay card: a finished parlay in a window, downloadable as an image. Its own styles,
@@ -188,22 +190,22 @@ if (part3.split(QUOTE_FROM).length !== 2) throw new Error("the builder's pricing
 const QUOTE = lift(part3, QUOTE_FROM, '\n\n  let html=droppedNote+', "builder's pricing in renderParlay");
 for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 'const bookDec=', 'const fairML=', 'const stake=', 'const override=', 'const realPrice=', 'const estPrice=', 'const useDec=', 'const payout=stake*useDec, profit=payout-stake;'])
   if (!QUOTE.includes(need)) throw new Error("the builder's pricing lifted from part3.js has no " + need);
-/* the builder's save, which every device turns into Finish: the button, its rule, its label, and
-   the suggestion tiers' save */
-for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', "'Add to saved parlays'", 'data-suggest-save="${t.id}"'])
-  if (!part3.includes(need)) throw new Error("the builder's save moved (" + need + "); the parlay card stands in for it on every device");
+/* the builder's save, which every device turns into Finish: the button, its rule, its label; and
+   each suggested tier's Add to builder and Finish, which the card answers */
+for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-pb-add="${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${t.id}\"", 'function getPbTiers(', ' PB_STAKE=10,'])
+  if (!part3.includes(need)) throw new Error("the builder's save or the suggested parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishTiers(', "$('pSave')", '[data-suggest-save],[data-elo-save]', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
 /* Finish on every device: nothing in the card asks whose device it is */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
-for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'let SUGGEST_CACHE'])
+for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function getPbTiers('])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
-  if (!elo.includes('data-elo-save="${t.id}"') || !elo.includes('window.eloPicks=eloPicks;'))
-    throw new Error("the Elo picks' save or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
-/* X Parlays: X's parlays from the file, at the top of the tab, read only; a quiet line under the
+  if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')"))
+    throw new Error("the Elo picks' tiers, their place in the suggested parlays or window.eloPicks moved; the parlay card finishes an Elo pick on every device"); }
+/* X Parlays: X's parlays from the file, the whole of its tab, read only; a quiet line under the
    heading says when the file last changed them */
 const LIVE_SECTION = `<div class="card" id="lpCard">
     <h2>X Parlays</h2>
@@ -217,9 +219,9 @@ const LIVE_SCRIPT = `<script>
 ${LIVE_JS}
 })();
 /* the Saved parlays card and the betting-slips card are drawn nowhere: X Parlays is X's, from the
-   file, and a browser's own saved parlays are not drawn. The builder keeps its place under X's
-   card, and after every redraw it gets Finish parlay where Save was (the parlay card). The section
-   draws again once the prop model is up, for the injury word and player ids its legs read. */
+   file, on its own tab, and a browser's own saved parlays are not drawn. The builder, on the
+   Parlay Builder tab, gets Finish parlay where Save was (the parlay card) after every redraw. The
+   section draws again once the prop model is up, for the injury word and player ids its legs read. */
 renderSaved=function(){ return ''; };
 renderBetParlays=function(){ return ''; };
 { const drawParlay=renderParlay;
@@ -262,7 +264,8 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
 const TABS = [
   ['pickems', "Pick'ems"],
   ['slate', 'Props'],
-  ['parlay', 'X Parlays'],
+  ['parlay', 'Parlay Builder'],
+  ['xparlays', 'X Parlays'],
   ['ratings', 'Team Rankings', 'ratings'],
   ['elo', 'ELO Ratings'],
   ['record', "Pick'em Record", 'record'],
@@ -278,9 +281,11 @@ html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
 html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
-/* X Parlays at the top of its tab and the builder under it. The tab keeps its address, #parlay.
-   The parlay card's window sits at the end of the page, outside every tab, over everything. */
-html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="parlayBody"></div>', '<section id="tab-parlay" hidden>\n  ' + LIVE_SECTION + '\n  <div id="parlayBody"></div>', 'the Parlay Builder section');
+/* the Parlay Builder keeps the prop model's own section and its address, #parlay: the suggested
+   parlays panel over the builder. X Parlays is a section of its own after it, #xparlays. The
+   parlay card's window sits at the end of the page, outside every tab, over everything. */
+html = sub1(html, '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>',
+  '<section id="tab-parlay" hidden>\n  <div id="pbPanel"></div>\n  <div id="parlayBody"></div>\n</section>\n\n<section id="tab-xparlays" hidden>\n  ' + LIVE_SECTION + '\n</section>', 'the Parlay Builder section');
 html = sub1(html, '\n</main>', '\n' + CARD_HTML + '\n</main>', "the parlay card's window");
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 /* the storage layer runs first: the prop model reads its state through it at boot; the X Bet

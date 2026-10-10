@@ -88,18 +88,24 @@ push to the pull code.
 
 ## X Parlays and the X Bet Log
 
-X Parlays is a tab of `nflbets/` (still `#parlay`; `live/` and `liveparlays/`
-redirect there): X's parlays at the top, the same on every device, then the
-Parlay Builder. No device keeps a list of its own: the builder, kept in the
+X Parlays is a tab of `nflbets/` (`#xparlays`; `live/` and `liveparlays/`
+redirect there): X's placed parlays, the same on every device, and nothing else.
+X's parlays are the slips placed at the book, in `liveparlays/parlays.json`,
+followed live against ESPN's public scoreboard and box scores in the browser; a
+parlay marked `cleared` stays in the file as history and is not drawn. The
+section's source is `liveparlays/build/page.html`, lifted in by
+`nflbets/build/build.js` with its styles scoped to its card and its script in a
+closure. The X Bet Log tab is X's week-by-week log from `liveparlays/xbets.json`,
+with the balance from its deposit.
+
+The Parlay Builder is its own tab (`#parlay`): suggested parlays over the builder.
+A visitor picks All, Teams only or Players only (or ticks moneyline, spread, game
+total, player overs and player unders by hand) and the week's games to build
+from, and gets a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg
+parlay, each with its book price, the model's chance and what $10 pays, Add to
+builder and Finish. No device keeps a list of its own: the builder, kept in the
 browser alone, finishes a parlay as a card to download as an image
-(`nflbets/build/card.html`), saved nowhere. X's parlays are the slips placed at
-the book, in `liveparlays/parlays.json`, followed live against ESPN's public
-scoreboard and box scores in the browser; a parlay marked `cleared` stays in the
-file as history and is not drawn. The section's source is
-`liveparlays/build/page.html`, lifted in by `nflbets/build/build.js` with its
-styles scoped to its card and its script in a closure. The X Bet Log tab is X's
-week-by-week log from `liveparlays/xbets.json`, with the balance from its
-deposit.
+(`nflbets/build/card.html`), saved nowhere.
 
 Both files are kept by Claude from what the owner sends in chat (a slip's legs,
 stake, price and payout; a week's stake and return), as each file's `how` field
@@ -116,7 +122,7 @@ truth and the prop model's audit keeps testing it.
 ```
 node nflbets/build/build.js         # -> nflbets/index.html
 node nflbets/build/smoke_live.js    # the section from its file, and the parlay card
-node nflbets/build/smoke.js         # the whole page, X Parlays and the X Bet Log from their files
+node nflbets/build/smoke.js         # the whole page, the suggested parlays, X Parlays and the X Bet Log from their files
 ```
 
 ## The betting job

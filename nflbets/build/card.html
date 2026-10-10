@@ -13,8 +13,8 @@
 
      Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
      this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
-     over clears it. A suggestion (the Suggested parlays window's model and Elo tiers) is finished
-     the same way, since Add to saved parlays would add to a list this page does not draw.
+     over clears it. A suggested parlay (a tier of the Parlay Builder's suggestions, or one of its
+     Elo picks) is finished the same way, from its own Finish button, on the $10 its tier shows.
 
      The builder's numbers are the builder's own: build.js lifts its pricing block out of
      renderParlay in props/build/part3.js into quote() below (the /*QUOTE*/ slot), so the card's
@@ -139,15 +139,16 @@ window.PARLAY_CARD=(function(){
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',stake:q.stake});
   }
-  /* from a tier of the Suggested parlays window: the model's (SUGGEST_CACHE) or the Elo picks' */
+  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the stake
+     its tier shows (PB_STAKE, $10) */
   function fromTier(kind,id){
     let t=null;
     try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
-      :((typeof SUGGEST_CACHE!=='undefined'&&SUGGEST_CACHE&&SUGGEST_CACHE.tiers)||[]).find(x=>x.id===id); }catch(e){ t=null; }
+      :kind==='pb'&&typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id&&Array.isArray(x.legs)):null; }catch(e){ t=null; }
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
-    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' suggestion',legs,dec:t.dec,priceNote:'book price',
-      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:Math.max(0,+S.stake||0)});
+    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:typeof PB_STAKE==='number'?PB_STAKE:10});
   }
 
   /* ---- the window ---- */
@@ -345,8 +346,8 @@ window.PARLAY_CARD=(function(){
     try{ if(typeof save==='function') save(); }catch(e){}
     close();
     try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
-    /* Finish went with the legs: the focus goes to the empty builder's first button */
-    try{ const b=$('suggOpen'); if(b) b.focus(); }catch(e){}
+    /* Finish went with the legs: the focus goes to the suggestions' first control, over the builder */
+    try{ const b=document.querySelector('#pbPanel [data-pb-mix]'); if(b) b.focus(); }catch(e){}
   }
 
   /* ---- on every device: Finish where Save was ---- */
@@ -363,22 +364,11 @@ window.PARLAY_CARD=(function(){
     nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
     return true;
   }
-  /* a tier's Add to saved parlays in the Suggested parlays window, the model's and the Elo
-     picks', whenever the window is filled */
-  function finishTiers(){
-    const v=$('suggView'); if(!v) return 0;
-    let n=0;
-    v.querySelectorAll('[data-suggest-save],[data-elo-save]').forEach(b=>{
-      const kind=b.hasAttribute('data-elo-save')?'elo':'model', id=b.getAttribute(kind==='elo'?'data-elo-save':'data-suggest-save');
-      const nb=b.cloneNode(true);
-      nb.removeAttribute('data-suggest-save'); nb.removeAttribute('data-elo-save');
-      nb.setAttribute('data-pc-finish',kind+'|'+id); nb.disabled=false; nb.classList.remove('quiet'); nb.classList.add('go');
-      nb.textContent='Finish parlay'; nb.title=FINISH_TIP;
-      b.replaceWith(nb);
-      nb.addEventListener('click',()=>{ const m=fromTier(kind,id); if(m) open(m,nb); });
-      n++;
-    });
-    return n;
+  /* a suggested tier's Finish (data-pc-finish="pb|med", "elo|elo3"): the panel draws the button
+     wherever this card is on the page, and one listener opens the card for whichever is pressed */
+  function finishFrom(btn){
+    const [kind,id]=String(btn.getAttribute('data-pc-finish')||'').split('|');
+    const m=fromTier(kind,id); if(m) open(m,btn); return !!m;
   }
   /* wiring: the window's own buttons, Escape (ahead of the windows beneath it, so it closes this
      one alone), a click outside the card, Tab kept inside, and the suggestions window watched */
@@ -399,10 +389,10 @@ window.PARLAY_CARD=(function(){
       if(e.shiftKey&&(at===first||!md.contains(at))){ e.preventDefault(); last.focus(); }
       else if(!e.shiftKey&&(at===last||!md.contains(at))){ e.preventDefault(); first.focus(); }
     },true);
-    const v=$('suggView');
-    if(v&&typeof MutationObserver==='function') new MutationObserver(()=>finishTiers()).observe(v,{childList:true,subtree:true});
+    document.addEventListener('click',e=>{ const b=e.target&&e.target.closest&&e.target.closest('[data-pc-finish]');
+      if(b&&!b.disabled&&!md.contains(b)) finishFrom(b); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
-  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishTiers,current:()=>cur};
+  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishFrom,current:()=>cur};
 })();
 </script>

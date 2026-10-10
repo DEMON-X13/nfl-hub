@@ -11,7 +11,9 @@
  *
  * Boots the real page against a stubbed state.json and payload.json: the Pick'ems board, the
  * call on each game, the prop model's prices that open underneath one, and the Props tab,
- * which is the prop model's Games tab running in this page. X Parlays and the X Bet Log are the
+ * which is the prop model's Games tab running in this page; the Parlay Builder, its suggested
+ * parlays panel over the builder (bet types, games, four tiers, the Elo picks, Add to builder,
+ * Finish), and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
  * files liveparlays/parlays.json and liveparlays/xbets.json, read only on every device: there is
  * no owner and no shared store, every request a page makes is recorded, and one to the retired
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
@@ -263,10 +265,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
      bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
-  for (const id of ['tab-slate', 'tab-parlay', 'tab-track', 'tab-week', 'tab-backup'])
+  for (const id of ['tab-slate', 'tab-parlay', 'tab-xparlays', 'tab-track', 'tab-week', 'tab-backup'])
     chk(!!d.getElementById(id), `the prop model's ${id} section is missing, and its listeners with it`);
   /* which build: the prop model's version and the page's own hash, so a change to any source
      (not only the prop model's parts) shows as a new tag */
@@ -387,16 +389,30 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!body || !body.querySelector('.card'), 'the card chrome should come off inside the row');
   const rows = body ? [...body.querySelectorAll('tr')] : [];
   /* to win for both sides, and to cover for both where the prop model has a spread (a game
-     whose spread is not posted yet offers the money line alone, and says so) */
-  const nLines = id => { const r = w.eval('S').sched.find(x => x.id === id); return r && w.gameBet(r, r.h, 'ats') ? 4 : 2; };
-  const firstLines = nLines(first.dataset.game);
-  chk(rows.length === firstLines, `expected ${firstLines === 4 ? 'to win and to cover' : 'to win'} for both sides, got ${rows.length} row(s): ${txt(body)}`);
+     whose spread is not posted yet offers the money line alone, and says so), and the game
+     total over and under where a total is posted */
+  const teamLines = id => { const r = w.eval('S').sched.find(x => x.id === id); return r && w.gameBet(r, r.h, 'ats') ? 4 : 2; };
+  const hasTot = w.eval('typeof totalBet') === 'function' && w.eval('typeof totalBook') === 'function';
+  chk(hasTot, 'the prop model prices no game total (no totalBet or totalBook)');
+  const totLines = id => { const r = w.eval('S').sched.find(x => x.id === id); return hasTot && r && w.eval('totalBet')(r, 'over') ? 2 : 0; };
+  const nLines = id => teamLines(id) + totLines(id);
+  const firstLines = teamLines(first.dataset.game);
+  chk(rows.length === nLines(first.dataset.game), `expected ${firstLines === 4 ? 'to win and to cover' : 'to win'} for both sides${totLines(first.dataset.game) ? ' and the total' : ''}, got ${rows.length} row(s): ${txt(body)}`);
   chk(rows.filter(r => /To win/.test(txt(r))).length === 2, 'both sides should have a to-win price');
   chk(rows.filter(r => /To cover/.test(txt(r))).length === firstLines - 2, 'both sides should have a to-cover price where there is a spread, and none where there is not');
   chk(firstLines === 4 || /No spread posted yet/.test(txt(body)), 'a game with no spread does not say why it offers the money line alone');
   const pcts = rows.filter(r => /To win/.test(txt(r))).map(r => parseInt(txt(r.querySelector('.pct')), 10));
   chk(Math.abs(pcts[0] + pcts[1] - 100) <= 1, `the two win chances do not add up: ${pcts.join(' + ')}`);
-  chk(rows.every(r => /[-+]\d+est\./.test(txt(r).replace(/\s/g, ''))), 'a row is missing our own price');
+  chk(rows.filter(r => /To win|To cover/.test(txt(r))).every(r => /[-+]\d+est\./.test(txt(r).replace(/\s/g, ''))), 'a row is missing our own price');
+  /* the total: over and under on the posted number, the chances summing to one, a price on each
+     (the book's where the payload has one, -110 est. where it has none, and saying so) */
+  { const tr = rows.filter(r => /^(Over|Under) [\d.]+/.test(txt(r.querySelector('.thr')))), row = w.eval('S').sched.find(x => x.id === first.dataset.game);
+    if (totLines(first.dataset.game)) {
+      const tp = tr.map(r => parseInt(txt(r.querySelector('.pct')), 10)), real = w.eval('totalBook')(row, 'over') != null;
+      chk(tr.length === 2 && Math.abs(tp[0] + tp[1] - 100) <= 1 && tr.every(r => txt(r.querySelector('.thr')).endsWith(String(row.tot))), 'the game total is not offered over and under on the posted total: ' + tr.map(txt).join(' / '));
+      chk(real ? tr.every(r => /^[-+]\d+$/.test(txt(r.querySelector('.book')))) : (tr.every(r => /^-110est\.$/.test(txt(r.querySelector('.est')).replace(/\s/g, ''))) && /the -110 is an estimate/.test(txt(body))),
+        'the game total does not carry the book\'s price, or -110 marked est. with a note when there is none: ' + tr.map(txt).join(' / ')); }
+    else chk(!tr.length, 'a game with no total posted offers one'); }
   /* the same game priced by the prop model's own gameBet, on the same row */
   const gid = first.dataset.game, row = w.eval('S').sched.find(x => x.id === gid);
   const own = w.gameBet(row, row.a, 'ml');
@@ -414,7 +430,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     if (openCard !== first) { first.click(); await wait(30); openCard.click(); await wait(60); }
     const boxes = [...openCard.querySelectorAll('input[data-leg]')];
     chk(boxes.length === nLines(openCard.dataset.game) && boxes.every(b => !b.checked), `a game not yet kicked off should offer ${nLines(openCard.dataset.game)} unticked lines, got ${boxes.length}`);
-    chk(/Tick one and it joins the parlay/.test(txt(openCard.querySelector('.gbets'))) && !!openCard.querySelector('.pk-tolegs a[href="#parlay"]'), 'no note pointing at X Parlays');
+    chk(/Tick one and it joins the parlay/.test(txt(openCard.querySelector('.gbets'))) && /Parlay Builder/.test(txt(openCard.querySelector('.pk-tolegs a[href="#parlay"]'))), 'no note pointing at the Parlay Builder');
     const key = boxes[0].dataset.leg;
     boxes[0].click();
     await wait(60);
@@ -423,8 +439,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     const box2 = openCard.querySelector(`input[data-leg="${key}"]`);
     chk(box2 && box2.checked && box2.closest('tr').classList.contains('on'), 'the ticked row does not show as on');
     chk(/1 from this game is on the parlay/.test(txt(openCard.querySelector('.pk-tolegs'))), 'the note does not count the leg');
-    chk(/1-leg parlay/.test(txt(d.getElementById('parlayBody'))) && txt(d.getElementById('parlayBody')).includes(leg.name), 'the X Parlays tab does not show the leg in the builder');
-    box2.click();
+    chk(/1-leg parlay/.test(txt(d.getElementById('parlayBody'))) && txt(d.getElementById('parlayBody')).includes(leg.name), 'the Parlay Builder does not show the leg in the builder');
+    /* the total ticks the same way, one side at a time, and counts as this game's */
+    { const ov = openCard.querySelector('input[data-leg$="|game|total"][data-side="over"]');
+      if (ov) { ov.click(); await wait(60);
+        const un = openCard.querySelector('input[data-leg$="|game|total"][data-side="under"]'); un.click(); await wait(60);
+        const tl = w.eval('S').parlay[ov.dataset.leg];
+        chk(!!tl && tl.stat === 'total' && tl.side === 'under' && /2 from this game are on the parlay/.test(txt(openCard.querySelector('.pk-tolegs'))) && /Under [\d.]+ points/.test(txt(d.getElementById('parlayBody'))),
+          'ticking the total\'s under did not take the over\'s place, or is not counted and shown: ' + txt(openCard.querySelector('.pk-tolegs')));
+        openCard.querySelector('input[data-leg$="|game|total"][data-side="under"]').click(); await wait(60);
+        chk(!w.eval('S').parlay[ov.dataset.leg], 'unticking the total did not take it off the parlay'); } }
+    /* the card was drawn again by each tick: the row is found afresh */
+    openCard.querySelector(`input[data-leg="${key}"]`).click();
     await wait(60);
     chk(!w.eval('S').parlay[key], 'unticking did not take the leg off the parlay');
     chk(/Parlay Builder/.test(txt(d.getElementById('parlayBody'))), 'the builder still shows a parlay after unticking');
@@ -485,31 +511,121 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the Games tab's own state saved, under the prop model's own key */
   chk(!!w.localStorage.getItem(PROP_KEY), 'the prop model did not save its state under its own key');
 
-  /* ---- X Parlays: X's parlays at the top, the visitor's own Parlay Builder (suggestions and all)
-     under them, and the visitor's own parlays under that ---- */
+  /* ---- the Parlay Builder: the suggested parlays panel over the visitor's own builder, the
+     whole of its tab; X Parlays is a tab of its own ---- */
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'parlay').click();
   await wait(60);
-  chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden, 'the X Parlays tab did not open');
-  chk(w.location.hash === '#parlay', 'the X Parlays tab did not become the address #parlay');
-  const pb = d.getElementById('parlayBody');
-  /* the suggestions are behind a button in a window, so the builder heads the tab */
-  chk(!d.getElementById('suggCard') && !!d.getElementById('suggOpen'), 'the suggestions are still taking up the tab');
-  chk(/Parlay Builder|-leg parlay/.test(txt(pb.firstElementChild.querySelector('h2'))), 'the builder is not the first card: ' + txt(pb.firstElementChild));
-  d.getElementById('suggOpen').click();
-  await wait(60);
-  chk(!d.getElementById('suggModal').hidden && !!d.querySelector('#suggView #suggCard'), 'the suggestions window did not open');
-  d.getElementById('suggClose').click();
-  await wait(60);
-  chk(d.getElementById('suggModal').hidden, 'the suggestions window would not close');
+  chk(!d.getElementById('tab-parlay').hidden && d.getElementById('tab-slate').hidden && (d.getElementById('tab-xparlays') || { hidden: true }).hidden, 'the Parlay Builder tab did not open');
+  chk(w.location.hash === '#parlay', 'the Parlay Builder tab did not become the address #parlay');
+  const pb = d.getElementById('parlayBody'), tabB = d.getElementById('tab-parlay'), panel = d.getElementById('pbPanel');
+  /* a page without the panel's engine fails here, and the checks that need it are left out rather than thrown on */
+  const hasPb = w.eval('typeof getPbTiers') === 'function' && w.eval('typeof pbGames') === 'function';
+  chk(hasPb && !!panel, 'the Parlay Builder has no suggested parlays panel (#pbPanel, getPbTiers, pbGames)');
+  chk(!!panel && tabB.firstElementChild === panel && panel.nextElementSibling === pb && !pb.nextElementSibling && !tabB.querySelector('#lpCard'),
+    'the Parlay Builder tab is not the suggested parlays over the builder and nothing else');
+  chk(!d.getElementById('suggModal') && !d.getElementById('suggOpen') && !d.getElementById('suggView') && !d.querySelector('[data-suggest-side], [data-suggest-save], #suggStake'),
+    'the old Suggested parlays window or its switch is still in the page');
+  chk(/Parlay Builder|-leg parlay/.test(txt(pb.firstElementChild.querySelector('h2'))), 'the builder is not the first card under the panel: ' + txt(pb.firstElementChild));
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
-  /* ---- the X Parlays section: X's card at the top and the builder under it, the last thing in
-     the tab. X's card is the placed parlays in liveparlays/parlays.json that are not cleared, read
-     only, the same on every device: nothing of the browser's own is drawn, there is no list of its
-     own, and its builder finishes a parlay as a card (Finish parlay) ---- */
-  const lp = d.getElementById('lpCard'), tabP = d.getElementById('tab-parlay');
-  chk(!!lp && tabP.firstElementChild === lp && lp.nextElementSibling === pb && pb.nextElementSibling && pb.nextElementSibling.id === 'suggModal' && !pb.nextElementSibling.nextElementSibling
-    && !d.getElementById('myCard') && !d.getElementById('myApp'),
-    'X Parlays is not at the top of its tab with the builder under it and nothing after, or a list of the browser\'s own is in the page');
+  /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
+     why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
+  if (hasPb) { const Sx = w.eval('S'), games = w.eval('pbGames()'), U = () => Sx.ui.pb, KINDS = ['ml', 'ats', 'total', 'over', 'under'];
+    const kindOf = w.eval('pbKind'), mlProb = w.eval('mlProb'), isG = w.eval('isGameLeg'), started = w.eval('gameStarted');
+    const hold = lab => { const r = w.eval('getPbTiers()'), u = U(); let built = 0;
+      chk(r.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}: the tiers are not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
+      for (const t of r.tiers) {
+        if (!t.legs) { chk(typeof t.why === 'string' && t.why.length > 10, `${lab}: the ${t.id} tier is empty and says nothing`); continue; }
+        built++;
+        chk(t.legs.length === t.n && new Set(t.legs.map(l => l.key)).size === t.n, `${lab}: the ${t.id} tier is not ${t.n} different lines`);
+        chk(t.legs.every(l => u.k[kindOf(l)] && !u.off.includes(l.gid) && games.some(g => g.id === l.gid) && !started(Sx.sched.find(g => g.id === l.gid))),
+          `${lab}: the ${t.id} tier has a leg of a kind or a game not ticked, or one that has kicked off`);
+        chk(t.legs.every(l => l.src === 'real' && l.p >= mlProb(l.price) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price or rated below the book`);
+        chk(new Set(t.legs.filter(isG).map(l => l.gid)).size === t.legs.filter(isG).length && new Set(t.legs.filter(l => !isG(l)).map(l => l.pid)).size === t.legs.filter(l => !isG(l)).length,
+          `${lab}: the ${t.id} tier has two game bets on one game, or two legs on one player`);
+        chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.corr >= t.floor),
+          `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor`);
+        const card = d.querySelector(`#pbPanel .pb-tier.${t.id}`);
+        chk(!!card && card.querySelectorAll('.pb-legs li').length === t.n && !!card.querySelector(`[data-pb-add="${t.id}"]`) && !!card.querySelector(`[data-pc-finish="pb|${t.id}"]`),
+          `${lab}: the ${t.id} card does not show its legs with Add to builder and Finish`); }
+      return built; };
+    if (!games.length) chk(/no game is left|nothing left to build from/.test(txt(panel)), 'with no game to come the panel does not say so: ' + txt(panel).slice(0, 160));
+    else {
+      chk(d.querySelectorAll('#pbPanel [data-pb-game]').length === games.length && games.every(g => !started(g)), 'the panel\'s games are not this week\'s still to kick off');
+      for (const [m, ks] of [['teams', ['ml', 'ats', 'total']], ['players', ['over', 'under']], ['all', KINDS]]) {
+        d.querySelector(`#pbPanel [data-pb-mix="${m}"]`).click(); await wait(20);
+        chk(KINDS.every(k => U().k[k] === ks.includes(k)) && d.querySelector(`#pbPanel [data-pb-mix="${m}"]`).getAttribute('aria-pressed') === 'true', `the ${m} mix did not set its boxes`);
+        hold('this week, ' + m); }
+      /* a box by hand makes the mix Custom; the choice is the browser's own, saved with the prop model's state */
+      { const cb = d.querySelector('#pbPanel [data-pb-kind="ml"]'); cb.click(); await wait(20);
+        chk(U().k.ml === false && !d.querySelector('#pbPanel [data-pb-mix].on') && /Custom/.test(txt(panel)), 'unticking Moneyline under All does not read as Custom');
+        await wait(400);
+        chk(JSON.parse(w.localStorage.getItem(PROP_KEY)).ui.pb.k.ml === false, 'the bet types are not saved in the browser with the prop model\'s state');
+        d.querySelector('#pbPanel [data-pb-kind="ml"]').click(); await wait(20); }
+      /* one game ticked: every leg from it */
+      d.querySelector('#pbPanel [data-pb-games="none"]').click(); await wait(20);
+      chk(w.eval('getPbTiers()').tiers.every(t => !t.legs && /No games ticked/.test(t.why)), 'None did not leave every tier saying no game is ticked');
+      d.querySelector(`#pbPanel [data-pb-game="${games[0].id}"]`).click(); await wait(20);
+      hold('one game');
+      d.querySelector('#pbPanel [data-pb-games="all"]').click(); await wait(20);
+      /* made-up lines on every starter (each a few points off his own projection) and a price on
+         every other total, so the tiers are built on any day of the week; then Add to builder and
+         Finish on one of them */
+      const keepPay = w.eval('JSON.stringify({m:PAY.mkt[String(currentWeek())]||null,t:S.sched.map(g=>[g.tov,g.tou])})');
+      w.eval(`(function(){ const cw=currentWeek(), M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{});
+        pbGames().forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; }
+          const ro=rosterFor(g,false); for(const tm in ro) ro[tm].players.forEach((x,i)=>{ if(!x.starter) return;
+            for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue; ((M[x.pl.id]??={})[l.stat])={line:(i%2?Math.floor(l.mu*1.25):Math.floor(l.mu*0.8))+0.5,over:-112,under:-108,n:x.pl.n,g:g.id}; } }); });
+        PB_CACHE=new Map(); renderParlay(); })()`);
+      await wait(60);
+      const built = hold('made-up lines');
+      chk(built >= 2, 'with a made-up line on every starter, fewer than two tiers were built');
+      const t = w.eval('getPbTiers()').tiers.filter(x => x.legs).slice(-1)[0];
+      if (t) {
+        /* Add to builder: exactly the tier's legs, and the builder prices them as the tier did */
+        const keepP = w.eval('JSON.stringify(S.parlay)');
+        d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`).click(); await wait(60);
+        const P = w.eval('S').parlay, q = w.PARLAY_CARD.quote();
+        chk(Object.keys(P).length === t.n && t.legs.every(l => P[l.key] && P[l.key].k === l.k && P[l.key].side === l.side) && q && Math.abs(q.pr.corr - t.corr) < 1e-12 && Math.abs(q.useDec - t.dec) < 1e-9,
+          'Add to builder did not put exactly the tier\'s legs in the builder at the tier\'s chance and price');
+        chk(/In the builder/.test(txt(d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`))), 'the tier does not say it is in the builder');
+        w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40);
+        /* Finish: the parlay card for the tier, on its $10, saving nothing */
+        const n0 = w.eval('S.saved.length'), keys0 = JSON.stringify(Object.keys(w.localStorage).sort());
+        const fb = d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`); fb.click(); await wait(40);
+        const view = d.getElementById('pcView');
+        chk(!d.getElementById('pcModal').hidden && new RegExp(t.label + ' parlay', 'i').test(txt(view)) && t.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
+          && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−') && txt(view).includes('Model’s chance all ' + t.n + ' land ' + (t.corr * 100).toFixed(1) + '%')
+          && txt(view.querySelector('.pc-money b')) === '$10.00', `Finish on the ${t.label} tier does not open its card with its legs, price, chance and $10: ` + txt(view).slice(0, 200));
+        w.eval('PARLAY_CARD.close()'); await wait(20);
+        chk(d.getElementById('pcModal').hidden && d.activeElement === d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`), 'closing the card did not give the focus back to the tier\'s Finish');
+        await wait(400);
+        chk(w.eval('S.saved.length') === n0 && JSON.stringify(Object.keys(w.localStorage).sort()) === keys0, 'finishing a suggested tier saved it, or wrote a key'); }
+      /* a game that kicks off leaves the list and every tier, without a reload */
+      { const g0 = w.eval('pbGames()')[0], k0 = w.eval('kickoff')(g0).getTime(), D0 = w.Date, shift = k0 + 60e3 - D0.now();
+        w.Date = class extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() + shift); } static now() { return D0.now() + shift; } };
+        w.eval('renderParlay()'); await wait(40);
+        chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`) && w.eval('getPbTiers()').tiers.every(x => !x.legs || x.legs.every(l => l.gid !== g0.id)), 'a game that kicked off is still on the list or in a tier');
+        w.Date = D0; w.eval('renderParlay()'); await wait(40); }
+      w.eval(`(function(){ const k=${keepPay}, cw=currentWeek(); if(k.m) PAY.mkt[String(cw)]=k.m; else delete PAY.mkt[String(cw)];
+        S.sched.forEach((g,i)=>{ g.tov=k.t[i][0]; g.tou=k.t[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; }); PB_CACHE=new Map(); renderParlay(); })()`);
+      await wait(40); }
+  }
+  /* with no game to come (the off-season, or every game of the week under way) the panel says so,
+     offers nothing, and nothing breaks */
+  if (hasPb) { w.__pbKeep = w.eval('[pbGames, seasonOver]');
+    w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; renderParlay();'); await wait(20);
+    chk(/regular season is over: no game is left/.test(txt(panel)) && !panel.querySelector('[data-pb-mix], .pb-tier, #pbElo, [data-pc-finish]'), 'with the season over the panel does not say so, or still offers something: ' + txt(panel).slice(0, 160));
+    w.eval('seasonOver=function(){ return false; }; renderParlay();'); await wait(20);
+    chk(/has kicked off, so there is nothing left to build from/.test(txt(panel)), 'with every game of the week under way the panel does not say so: ' + txt(panel).slice(0, 160));
+    w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; renderParlay();'); await wait(20); }
+  /* ---- X Parlays: X's parlays from the file, the whole of its own tab, read only, the same on
+     every device: nothing of the browser's own is drawn, there is no list of its own ---- */
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'xparlays').click();
+  await wait(60);
+  chk(!d.getElementById('tab-xparlays').hidden && d.getElementById('tab-parlay').hidden && w.location.hash === '#xparlays', 'the X Parlays tab did not open, or did not become the address #xparlays');
+  const lp = d.getElementById('lpCard'), tabP = d.getElementById('tab-xparlays');
+  chk(!!lp && tabP.firstElementChild === lp && !lp.nextElementSibling && !d.getElementById('myCard') && !d.getElementById('myApp'),
+    'X Parlays is not the whole of its tab, or a list of the browser\'s own is in the page');
   chk(/^X Parlays/.test(txt(lp.querySelector('h2'))) && !/Your parlays|Live Parlays/.test(txt(tabP)), 'the card is not headed X Parlays, or the tab still says Your parlays or Live Parlays');
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old Saved parlays or betting-slips card is still drawn beside the section');
   chk(!!lp.querySelector('#now') && !!lp.querySelector('#stamp') && !!lp.querySelector('#app') && !!lp.querySelector('#lpUpdated'), 'the section is missing its controls or its updated line');
@@ -527,11 +643,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       legs: [{ gid: g.id, stat: 'ml', k: 0, side: 'over', main: false, name: 'Smoke Saved Side', team: g.h, pos: 'Game', grp: 'TEAM', week: g.w, label: 'To win', p: 0.55, price: -120, src: 'real' }] });
     w.eval('save(); renderParlay();');
     await wait(80);
-    chk(lp.querySelectorAll('.savedp').length === fileCount && !/Smoke Saved Side/.test(txt(tabP)) && S.saved.some(p => p.id === 'live-smoke'),
-      'a browser\'s own saved parlay is drawn in the X Parlays tab, or was dropped from its saved list');
+    chk(lp.querySelectorAll('.savedp').length === fileCount && !/Smoke Saved Side/.test(txt(tabP) + txt(tabB)) && S.saved.some(p => p.id === 'live-smoke'),
+      'a browser\'s own saved parlay is drawn on the page, or was dropped from its saved list');
     S.saved = S.saved.filter(p => p.id !== 'live-smoke'); w.eval('save(); renderParlay();'); await wait(40); }
   chk(w.localStorage.getItem('live_parlays_v1') === null && w.localStorage.getItem('my_parlays_v1') === null && typeof w.LIVE_IO === 'undefined', 'the page wrote a key for the section, or still carries the shared key');
-  /* the builder and the suggestions window carry the one-tap amounts */
+  /* the builder carries the one-tap amounts */
   chk(/data-stake-chip/.test(HTML) && /function stakeChips\(/.test(HTML), 'the amount buttons are not in the built page');
 
   chk(!/\bplan\b/i.test(txt(pb)), 'a week plan section is in the builder');
@@ -581,7 +697,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!!ratFrame && !ratFrame.getAttribute('srcdoc'), 'the Power Ratings frame should not be filled before its tab is opened');
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'ratings').click();
   await wait(60);
-  chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-parlay').hidden, 'the Power Ratings tab did not open');
+  chk(!d.getElementById('tab-ratings').hidden && d.getElementById('tab-parlay').hidden && d.getElementById('tab-xparlays').hidden, 'the Power Ratings tab did not open');
   chk(w.location.hash === '#ratings', 'the Power Ratings tab did not become the address');
   chk(/window\.EMBED_TAB="ratings";/.test(ratFrame.getAttribute('srcdoc') || ''), 'the Power Ratings frame is not opened on its tab');
   chk(/data-tab="ratings"/.test(adminHtml), 'the framed app has no Power Ratings tab');
@@ -599,8 +715,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
   chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
 
-  /* the renamed tabs keep their old addresses: a bookmark of #parlay or #bets still opens them */
-  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
+  /* the tabs keep their addresses: #parlay is the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
+  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
     w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
     chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
   /* back to the board by address */
@@ -745,15 +861,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(d.querySelectorAll('#parlayBody .pe-alt:not(.pe-muleg)').length === 2 && d.querySelectorAll('#parlayBody .pe-altsum').length === 1
         && d.querySelectorAll('#parlayBody .pe-muleg').length === nMu, 'a redraw doubled or lost the second prices');
       delete S.parlay[key]; delete S.parlay[key2]; delete S.parlay[g.id + '|team:' + g.h + '|ml']; w.eval('save(); renderParlay()'); await wait(80); }
-    /* the window's side switch reaches the Elo picks too */
-    { const S = w.eval('S'); S.ui.suggestSide = 'under'; const r = w.eloPicks();
-      chk(!r || r.tiers.every(t => t.legs.every(l => l.side === 'under')), 'the Elo picks ignore the side switch');
-      S.ui.suggestSide = 'any'; }
-    /* the suggestions: with the ratings in, a player leg is a candidate only where market + form beats the book */
+    /* the panel's player sides reach the Elo picks too */
+    if (w.eval('typeof getPbTiers') === 'function') { const S = w.eval('S'), keep = JSON.stringify(S.ui.pb); S.ui.pb.k.over = false; const r = w.eloPicks();
+      chk(!r || r.tiers.every(t => t.legs.every(l => l.side === 'under')), 'the Elo picks ignore the panel\'s unticked Player overs');
+      S.ui.pb = JSON.parse(keep); }
+    /* the suggestions: with the ratings in, a player leg is preferred only where market + form beats the book */
     { chk(w.eval('window.eloLoaded()') === true, 'the Elo tab does not say its files are in');
-      const cands = w.eval('suggestCandidates()'), mlProb = w.eval('mlProb'), altP = w.eval('window.eloAltP');
-      chk(cands.filter(c => c.grp !== 'TEAM').every(c => altP(c.pid, c.side, c.price, c.src) - mlProb(c.price) >= 0.03), 'a suggested player leg does not clear market + form');
-      chk(w.eval('getSuggestions().sig').split('|').includes('form'), 'the week\'s suggestion signature does not carry the Elo state: ' + w.eval('getSuggestions().sig')); }
+      if (w.eval('typeof getPbTiers') === 'function') {
+      const pool = w.eval('pbPool(pbGames())'), mlProb = w.eval('mlProb'), altP = w.eval('window.eloAltP');
+      chk(pool.pref.filter(c => c.grp !== 'TEAM').every(c => altP(c.pid, c.side, c.price, c.src) - mlProb(c.price) >= 0.03), 'a preferred player leg does not clear market + form');
+      chk(altP('game', 'over', -110, 'real') === null, 'market + form prices a game total, which is no player\'s');
+      chk(w.eval('getPbTiers().sig').split('|').includes('form'), 'the suggestions\' signature does not carry the Elo state: ' + w.eval('getPbTiers().sig')); } }
     /* the Props game view: the same shield on a ranked player's row */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);
       const S = w.eval('S'); const top = eloP.groups.QB.top[0];
@@ -821,14 +939,20 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           let lo = -8, hi = 8; for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Phi(m) < fair) lo = m; else hi = m; }
           const byHand = Phi(lo + a[2] / sd);
           chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair, `an Elo pick's chance is not the book's fair chance moved by the matchup: ${l.pe} vs ${byHand}`); }
-        w.eval('openSuggest()'); await wait(40);
-        const card = d.querySelector('#suggView .pe-sugg');
+        w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
+        const card = d.querySelector('#pbPanel #pbElo');
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
-        chk(!!card && card.querySelectorAll('.sugg-tier').length === 2 && card.querySelectorAll('.sugg-legs .pe-badge').length === wantBadges, `the Elo picks card is missing, or its legs' shields are wrong: ${card ? card.querySelectorAll('.sugg-legs .pe-badge').length : 'no card'} for ${wantBadges}`);
+        chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not a section of the suggested parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
+        /* Add to builder puts exactly those legs in the builder */
+        { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = card.querySelector('[data-pb-elo-add="elo2"]');
+          if (ab) { ab.click(); await wait(40); const P = w.eval('S').parlay;
+            chk(Object.keys(P).length === 2 && t2.legs.every(l => P[l.key] && P[l.key].side === l.side && P[l.key].pe === undefined), 'an Elo pick\'s Add to builder did not put exactly its legs in the builder'); }
+          else chk(false, 'an Elo pick has no Add to builder');
+          w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40); }
         /* an Elo pick finishes as a card on every device, saved nowhere */
-        const nSaved = w.eval('S.saved.length'), fb = card.querySelector('[data-pc-finish="elo|elo2"]');
-        chk(!!fb && /^Finish parlay$/.test(txt(fb)) && !card.querySelector('[data-elo-save]'), 'an Elo pick\'s save is not Finish parlay');
+        const nSaved = w.eval('S.saved.length'), fb = d.querySelector('#pbElo [data-pc-finish="elo|elo2"]');
+        chk(!!fb && /^Finish$/.test(txt(fb)) && !d.querySelector('[data-elo-save]'), 'an Elo pick has no Finish');
         if (fb) { fb.click(); await wait(40);
           const view = d.getElementById('pcView');
           chk(!d.getElementById('pcModal').hidden && /Elo pick/i.test(txt(view)) && t2.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
@@ -836,7 +960,6 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             'an Elo pick\'s card is not its legs, its price and its Elo chance: ' + txt(view));
           w.eval('PARLAY_CARD.close()'); }
         chk(w.eval('S.saved.length') === nSaved, 'finishing an Elo pick saved it');
-        w.eval('closeSuggest()');
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
       /* a player's window: a click on his row in the rankings opens his rating and his matchup this week, a row a stat */
       { const plOpen = () => { const m = d.getElementById('pePlModal'); return !!m && !m.hidden; };
@@ -980,7 +1103,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     else console.log('  (no game left to kick off: the builder\'s Finish is checked by smoke_live.js on a pinned schedule)'); }
 
   /* ---- X Parlays is the file: three parlays of a fixture's, one of them cleared ---- */
-  { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { file: FIXFILE });
+  { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { file: FIXFILE });
     await settle();
     const lp = F.d.getElementById('lpCard');
     chk(!F.timedOut && F.errs.length === 0, 'the page broke on the fixture file: ' + F.errs.join('; '));
@@ -991,7 +1114,51 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     { const card = [...lp.querySelectorAll('.savedp')].find(c => /Fixture Receiver/.test(txt(c)));
       chk(!!card && txt(card.querySelector('.lineLbl')) === '50.5' && !/moved from/.test(txt(card)), 'a parlay is not drawn on the line the file gives: ' + (card ? txt(card).slice(0, 120) : 'no card')); }
     chk(/updated /.test(txt(F.d.getElementById('lpUpdated'))), 'X Parlays does not say when the file last changed: ' + txt(F.d.getElementById('lpUpdated')));
+    chk(!F.d.getElementById('tab-xparlays').hidden && F.d.getElementById('tab-parlay').hidden && txt(F.d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays', 'opened on #xparlays, the X Parlays tab is not the one showing');
     F.w.close(); }
+  /* ---- on a phone the tab bar scrolls sideways, and the chosen tab is brought into it ----
+     jsdom lays nothing out, so the bar is drawn as a phone draws it: 358px of bar, each button
+     110px with a 6px gap, scrolled by its scrollLeft (held between 0 and its width less the
+     bar's). Opened on #xparlays (where the old Live Parlays links land), then sent to every
+     tab's address in turn and tapped, the chosen button must sit inside the bar each time */
+  { const BAR = { left: 16, width: 358 }, BW = 110, GAP = 6;
+    const R = (l, wd) => ({ left: l, right: l + wd, width: wd, top: 0, bottom: 40, height: 40, x: l, y: 0 });
+    const seed = w2 => {
+      const max = el => Math.max(0, el.children.length * (BW + GAP) - GAP + 10 - BAR.width);
+      Object.defineProperty(w2.HTMLElement.prototype, 'scrollLeft', { configurable: true,
+        get() { return this.__sl || 0; }, set(x) { this.__sl = this.id === 'tabs' ? Math.max(0, Math.min(+x || 0, max(this))) : +x || 0; } });
+      const was = w2.Element.prototype.getBoundingClientRect;
+      w2.Element.prototype.getBoundingClientRect = function () {
+        if (this.id === 'tabs') return R(BAR.left, BAR.width);
+        const p = this.parentElement;
+        if (p && p.id === 'tabs') return R(BAR.left + 5 + [...p.children].indexOf(this) * (BW + GAP) - p.scrollLeft, BW);
+        return was.call(this); };
+      w2.__vscroll = 0; for (const f of ['scrollTo', 'scrollBy']) { w2[f] = () => { w2.__vscroll++; }; }
+      w2.Element.prototype.scrollIntoView = function () { if (this.closest && this.closest('#tabs')) w2.__vscroll++; }; };
+    const T = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { seed });
+    await wait(200);
+    const nav = T.d.getElementById('tabs'), inBar = b => { const n = nav.getBoundingClientRect(), r = b.getBoundingClientRect(); return r.left >= n.left && r.right <= n.right; };
+    const sel = () => T.d.querySelector('#tabs button[aria-selected="true"]');
+    chk(!T.timedOut && T.errs.length === 0, 'the page broke with the tab bar laid out as a phone lays it: ' + T.errs.join('; '));
+    chk(txt(sel()) === 'X Parlays' && nav.scrollLeft > 0 && inBar(sel()), `opened on #xparlays at phone width, the X Parlays button is not brought into the tab bar (scrollLeft ${nav.scrollLeft})`);
+    const seen = [];
+    for (const b of [...nav.querySelectorAll('button')].reverse()) {
+      T.w.location.hash = '#' + b.dataset.tab; await wait(60);
+      seen.push(b.dataset.tab + (sel() === b && inBar(b) ? '' : ' (off the bar)')); }
+    chk(seen.every(s => !/off the bar/.test(s)), 'sent to a tab\'s address at phone width, its button is not brought into the tab bar: ' + seen.join(', '));
+    { const last = [...nav.querySelectorAll('button')].pop(); T.w.location.hash = '#pickems'; await wait(60); last.click(); await wait(30);
+      chk(sel() === last && inBar(last), 'a tab tapped at the bar\'s cut-off edge is not brought into it'); }
+    chk(T.w.__vscroll === 0, 'bringing a tab into the bar scrolled the page, not the bar');
+    T.w.close(); }
+  /* ---- the suggested parlays' choices are the visitor's own, and come back with the page ---- */
+  { const pb = { k: { ml: false, ats: false, total: false, over: true, under: true }, off: [], gx: false };
+    const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, ui: { pb } })) });
+    await wait(300);
+    const P = R.d.getElementById('pbPanel'), on = R.d.querySelector('#pbPanel [data-pb-mix].on');
+    chk(!R.timedOut && R.errs.length === 0 && JSON.stringify(R.w.eval('S').ui.pb) === JSON.stringify(pb), 'the suggested parlays\' saved choices did not come back with the page: ' + JSON.stringify(R.w.eval('S').ui.pb));
+    chk(R.w.eval('typeof pbGames') === 'function' && (!R.w.eval('pbGames()').length) || (!!on && on.dataset.pbMix === 'players' && [...P.querySelectorAll('[data-pb-kind]')].every(cb => cb.checked === ['over', 'under'].includes(cb.dataset.pbKind)) && !P.querySelector('details.pb-games').open),
+      'the panel does not open on the visitor\'s own choices (Players only, the games list shut)');
+    R.w.close(); }
 
   /* ---- the X Bet Log is the file: the three weeks carried over from the retired store ($100
      deposited; the balance 98.71 after week 1, 102.37 after week 3, week 2 a week off, 123.39 after
