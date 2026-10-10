@@ -26,6 +26,8 @@ function betsViz(){
   if(!chart||!table) return;
   const XB=window.XBETS&&typeof window.XBETS.enabled==='function'&&window.XBETS.enabled()?window.XBETS:null;
   const xb=XB?XB.get():null, ro=!!xb&&!xb.owner;
+  /* the owner's device before the log has been read: no Remove, as no Save, over weeks it has not seen */
+  const fixed=ro||(!!xb&&!(xb.status&&xb.status.applied));
   xbHead(xb);
   const logged=Object.keys(S.bets||{}).map(Number).sort((a,b)=>a-b).map(w=>({w,...S.bets[w]}));
   const dep=S.bank&&S.bank.deposit!=null&&S.bank.deposit!==''&&isFinite(+S.bank.deposit)?+S.bank.deposit:null;
@@ -134,12 +136,12 @@ function betsViz(){
       if(c&&c.querySelector('svg.bv-chart')&&Math.abs((c.clientWidth-36)-lastW)>40){ lastW=c.clientWidth-36; betsViz(); } },200); }); }
   /* the table: the app's columns, with the balance after each week once there is a deposit */
   let r2=0;
-  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th>'+(ro?'':'<th></th>')+'</tr></thead><tbody>'
+  table.innerHTML='<div class="card"><h2>'+(xb?'Week by week':'Bet log')+'</h2><table><thead><tr><th>Week</th><th class="num">Staked</th><th class="num">Returned</th><th class="num">Net</th><th class="num">Running</th>'+(dep==null?'':'<th class="num">Balance</th>')+'<th>Note</th>'+(fixed?'':'<th></th>')+'</tr></thead><tbody>'
     +logged.map(r=>{ const n=r.returned-r.staked; r2+=n;
       return `<tr><td>Week ${r.w}</td><td class="num">${money(r.staked)}</td><td class="num">${money(r.returned)}</td>`
         +`<td class="num ${n>=0?'delta up':'delta down'}">${signed(n)}</td><td class="num">${signed(r2)}</td>`
         +(dep==null?'':`<td class="num">${money(dep+r2)}</td>`)
-        +`<td class="muted">${esc(r.note)}</td>`+(ro?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
+        +`<td class="muted">${esc(r.note)}</td>`+(fixed?'':`<td><button class="btn quiet" data-betdel="${r.w}">Remove</button></td>`)+'</tr>'; }).join('')
     +'</tbody></table></div>';
   table.querySelectorAll('button[data-betdel]').forEach(b=>b.addEventListener('click',()=>{
     if(!confirm(`Remove the week ${b.dataset.betdel} bet entry?`)) return;
@@ -156,7 +158,8 @@ function xbHead(xb){
   const when=iso=>{ const d=new Date(iso); return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
   const s=xb.status||{};
   let line, cls='';
-  if(xb.owner&&s.blocked){ line=s.blocked==='signin'?'Not published: sign in on the X Parlays tab to publish':'Not published: the store refused the change'; cls='bad'; }
+  if(xb.owner&&s.blocked){ line=(s.blocked==='signin'?'Not published: sign in on the X Parlays tab to publish':'Not published: the store refused the change')+(s.pending?'; your change waits on this device':''); cls='bad'; }
+  else if(xb.owner&&s.denied){ line='Not synced: the store\u2019s rules do not let this page read the X Bet Log (open xbets beside nflhub in the rules). This browser\u2019s own log is kept.'; cls='bad'; }
   else if(s.applied&&s.ok!==false){ line='Synced'+(s.at?' \u00b7 last change '+when(s.at):'')+(s.pending?' \u00b7 saving\u2026':''); cls='ok'; }
   else if(s.cached){ line='Not synced \u00b7 the copy this browser last saw, '+when(s.cached); cls='bad'; }
   else if(s.ok===false){ line='The X Bet Log could not be reached; retrying.'; cls='bad'; }

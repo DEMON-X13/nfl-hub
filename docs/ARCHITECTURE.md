@@ -317,8 +317,10 @@ ways:
   `?auth=<ID token>`; the token is renewed at `securetoken.googleapis.com/v1/token` when it has
   under five minutes left, and once more when the store refuses a write. A refresh token the
   service turns down (revoked, the password changed) holds the device's writes and the stamp asks
-  for sign-in; nothing is lost, and what waited is written once the device signs in again. With
-  the store's rules locked to the owner's uid (below), nobody else can write at all. While sign-in
+  for sign-in; nothing is lost, and what waited is written once the device signs in again. A
+  refusal is held per document (`blocks` in `NFLSYNC.state()`): one of the X Bet Log's never holds
+  the parlays' writes, nor the reverse. With the store's rules locked to the owner's uid (below),
+  nobody else can write at all. While sign-in
   is set up but the rules are still open, a device marked by the owner link alone still writes.
 
 Everyone else's device is a **reader**. It reads the same document and polls it the same way, but
@@ -335,6 +337,17 @@ list, its copy of the shared key goes (lines corrected on its own remaining parl
 document keeps everything it has as its own. Signing out of owner does the same strip and reloads.
 A reader also keeps the last copy of X's it saw (`xparlays_cache_v1`), shown, marked "Not synced",
 only while the store cannot be reached.
+
+**Nothing from the store is drawn as it came.** Until the rules are locked anyone with the address
+can write the parlays' document, and the prop model draws a leg's position, team and opponent and
+the book price into the owner's page, where the owner link and the sign-in session are kept. So the
+document is cleaned on the way in (`pull()`), and so is every copy a browser kept of it (the
+remembered documents, a reader's last copy, the owner's own copy of the shared keys as the prop
+model and the section read them): every string and every key loses `<`, `>`, `"` and a backtick, which
+leaves a string neither an element nor a way out of a quoted attribute (nothing in the page puts the
+document's strings in a single-quoted or unquoted attribute or an inline handler, and nothing a
+parlay holds uses those four characters). The X Bet Log is cleaned the same way, by its own rules
+(below).
 
 **Among the owner's devices** the sync is what it was. On load an owner's device pulls the
 document (`GET <url>/doc.json`) and lays its keys -- `parlay`, `saved`, `stake`, `bookPrice`,
@@ -375,26 +388,55 @@ read only (`html.xbets-ro`: no entry bar, Remove, deposit box or Backup card) an
 owner's devices, keeps a visitor's own log and deposit in the app's key exactly as they were, and on
 the owner's devices writes only the weeks a frame changed against what it last had, so a frame
 loaded before another logged a week writes nothing over it. Each of the owner's browsers moves its
-own weeks in once a season (`xbets_joined_<season>`): its log is copied first to
-`x_nfl_bets_preshare_<season>`, the weeks the shared log lacks are added, a week both have with
-different numbers keeps the shared one and is listed, and the app's key is never touched. The
-owner's devices keep Save shut until the log has been read once. The deposit is the owner's own
-unless `sync.json` has `"shareDeposit": true`; otherwise visitors see the weeks and X's profit
-against break even, no balance, and an owner's device takes a deposit left in the document out.
+own weeks in once a season (`xbets_joined_<season>`): its log is copied to
+`x_nfl_bets_preshare_<season>` the moment the device is known to be the owner's, before any frame
+can load; the weeks the shared log lacks are added, a week both have with different numbers keeps
+the shared one and is listed; and the app's key keeps the browser's own weeks, whatever a frame
+saves, until they have joined and the log has been read on that visit (the hook writes them back as
+they were), and after that a copy of X's. So a store that is slow, down or shut to the X Bet Log by
+its rules loses nothing: the frames share the page's browser store, and a frame that saves its whole
+state before the log arrives would otherwise write an empty log over the browser's own. The owner's
+devices keep Save and Remove shut until the log has been read. A week the store would not take
+(out of reach, or refusing until the device signs in) waits in memory and in the browser
+(`xbets_pending_<season>`): it is laid over the log the device shows and written the next time the
+store answers, on that visit or a later one. The deposit is the owner's own unless `sync.json` has
+`"shareDeposit": true`; otherwise visitors see the weeks and X's profit against break even, no
+balance, and an owner's device takes a deposit left in the document out.
 
 With `sync.json` blank or unreadable the page runs on the browser alone: X Parlays is the placed
 parlays from the file, read only; everything the browser makes is under Your parlays; the X Bet
 Log is the browser's own as it always was; and the stamp says "Not synced". `nflbets/build/smoke.js`
-runs it all against a stubbed store that keeps the locked rules (a write without the owner's
-unexpired token is refused 401) and stubbed Firebase sign-in and token services: the owner link
-(right, wrong, rotated), readers (read only, nothing written, X's changes followed, the mirror
-stripped, a pre-store browser kept apart, the cached copy), sign-out, sign-in (wrong password, a
-non-owner account, renewal, a refused write retried, a revoked refresh token), the X Bet Log
-(moving in, read only, a week at a time, deposit sharing, the frames end to end) and the old races
-between two of X's devices (offline, at the same instant, on an older document, the unsent parlay on
-reopening). `nflbets/build/stress_sync.js` (not a gate) does the races at random with three of X's
-devices and a visitor's, and fails if a parlay is lost or comes back, or the visitor writes or sees
-anything but the store's.
+runs it all against a stubbed store that keeps the documented rules by path and nothing more (open
+or locked for `/nflhub` and `/xbets`, a write without the owner's unexpired token refused 401 once
+locked, a path the rules do not name denied) and stubbed Firebase sign-in and token services: the
+owner link (right, wrong, rotated), readers (read only, nothing written, X's changes followed, the
+mirror stripped, a pre-store browser kept apart, the cached copy), sign-out, sign-in (wrong password,
+a non-owner account, renewal, a refused write retried, a revoked refresh token), the X Bet Log
+(moving in, read only, a week at a time, deposit sharing, the frames end to end; shut by the old
+rules with frames that share the page's browser store, where a Pick'em Record click must leave the
+owner's own log as it was and the weeks join once the path opens; a week whose write failed shown
+and written on the next visit; a refusal of one document that leaves the other written), markup
+planted in the store or in a browser's kept copies (never an element, in the owner's page or a
+visitor's), the docs' open rules and lock probes, and the old races between two of X's devices
+(offline, at the same instant, on an older document, the unsent parlay on reopening).
+`nflbets/build/stress_sync.js` (not a gate) does the races at random with three of X's devices and a
+visitor's, and fails if a parlay is lost or comes back, or the visitor writes or sees anything but
+the store's.
+
+### Opening the X Bet Log's path (hand this to the owner now, with this page)
+
+Until the X Bet Log, the store's rules named `/nflhub` alone:
+`{"rules":{"nflhub":{".read":true,".write":true},"xbets":{".read":true,".write":true}}}` is what
+they must say now, the parlays' path and the X Bet Log's beside it. Firebase refuses any path its
+rules do not name, read or write, so under the old rules nobody's page can read or write the X Bet
+Log: every visitor's says it could not be reached, the owner's says the store's rules do not let it
+read the log and keeps Save shut, and the owner's own Bet Log stays in each browser untouched (it is
+copied aside to `x_nfl_bets_preshare_<season>` and kept in the app's key until it has joined), so
+nothing is lost while the rules wait. Once, before or with the deploy that carries the X Bet Log:
+Firebase console > the project behind `nfl-bets-and-stats-default-rtdb` > Realtime Database >
+Rules, replace everything with the line above, and Publish. The owner's devices move their weeks in
+on their next look. `nflbets/build/smoke.js` checks that this line, here and in `CLAUDE.md`, opens
+both paths, and its stub store keeps exactly these rules: a path they do not name is denied.
 
 ### Locking the store to the owner (hand this to the owner)
 
@@ -433,8 +475,18 @@ writes to it directly. This closes that, once, in about fifteen minutes. Do the 
 
    Locking earlier would leave copies of the page cached from before (GitHub Pages keeps a page up
    to ten minutes) saying "Sync failed" until they reload.
-9. Check it: `curl -X PUT -d '"x"' 'https://nfl-bets-and-stats-default-rtdb.firebaseio.com/rules_probe.json'`
-   must answer `{"error" : "Permission denied"}`.
+9. Check it, under both paths the lock covers (a path the rules never name is refused whether
+   they are locked or not, so a probe there proves nothing):
+
+   - `curl -X PUT -d '"x"' 'https://nfl-bets-and-stats-default-rtdb.firebaseio.com/nflhub/rules_probe.json'`
+   - `curl -X PUT -d '"x"' 'https://nfl-bets-and-stats-default-rtdb.firebaseio.com/xbets/rules_probe.json'`
+
+   Each must answer `{"error" : "Permission denied"}`. One that answers `"x"` means that path is
+   still open: publish the rules of step 8 again, and remove the probe with the same address and
+   `curl -X DELETE`. (The probes write nothing the pages read: the parlays live at
+   `nflhub/doc.json` and the X Bet Log at `xbets/<season>`.) `nflbets/build/smoke.js` runs these two
+   probes against its stub store and fails unless each is refused under the locked rules and taken
+   under the open ones.
 
 After that a device that is not signed in cannot write, whatever page it runs. Signing out (the
 link beside the owner mark, or in the X Bet Log) makes a device a reader again; changing your

@@ -106,8 +106,12 @@ checked against `ownerHash`) marks a browser as the owner's, and Firebase
 sign-in (`apiKey` and `owner`, blank until the owner sets it up) is what lets
 the store itself refuse anyone else. The owner link alone does not stop someone
 with the store's address and curl; the steps that do, and the locked rules, are
-in `docs/ARCHITECTURE.md` ("Locking the store to the owner"). See `CLAUDE.md`
-for how the sync works. No odds-API credits are spent and no job runs for it.
+in `docs/ARCHITECTURE.md` ("Locking the store to the owner"). The store's rules
+must name both paths, `nflhub` and `xbets`, open now and locked later: Firebase
+refuses a path its rules do not name, and the X Bet Log is the second one
+("Opening the X Bet Log's path"). Nothing read from the store is drawn as it
+came: the page cleans it first. See `CLAUDE.md` for how the sync works. No
+odds-API credits are spent and no job runs for it.
 
 The ESPN parsing is not copied into the section: inside the page it uses the
 prop model's own readers from `props/build/part2.js`, so there is one source of

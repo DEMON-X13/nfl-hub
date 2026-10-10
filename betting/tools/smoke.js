@@ -29,8 +29,10 @@
  * weeks, read only, no form, Remove, deposit box or backup card, a note never drawn as markup, the
  * visitor's own log left as it was) and as the owner (a save writes only the week it changed, a
  * frame that had not seen the latest weeks writes nothing of the log when it saves, a change
- * elsewhere redraws every frame, Save is shut until the log has been read). Without XBETS -- the
- * app on its own, or the page with no store -- every check above runs on the browser's own log.
+ * elsewhere redraws every frame, Save and Remove are shut until the log has been read, and the
+ * browser's own log stays in the app's key whatever a frame saves until its weeks have joined X's
+ * and the log has been read). Without XBETS -- the app on its own, or the page with no store --
+ * every check above runs on the browser's own log.
  */
 'use strict';
 const fs = require('fs');
@@ -333,12 +335,12 @@ async function reality() {
    weeks for every device, written by X's devices only and only the weeks a frame changed. A stub
    stands in for it here: it records every write and hands back what it is given, notes and all,
    so the app's own escaping is what is tested. */
-function stubXB({ owner, weeks, deposit = null, share = false, applied = true }) {
+function stubXB({ owner, weeks, deposit = null, share = false, applied = true, joined = { added: [], differ: [] } }) {
   const subs = [];
   const X = { calls: [], weeks: JSON.parse(JSON.stringify(weeks)), deposit,
     enabled: () => true, ready: async () => {}, onChange: f => { subs.push(f); },
     get: () => ({ weeks: JSON.parse(JSON.stringify(X.weeks)), deposit: share ? X.deposit : null, owner, share,
-      status: { applied, ok: applied, at: '2026-10-06T19:41:00Z', pending: false, signedIn: false } }),
+      status: { applied, ok: applied, at: '2026-10-06T19:41:00Z', pending: false, signedIn: false, joined } }),
     write: (base, next) => { X.calls.push({ base: JSON.parse(JSON.stringify(base)), next: JSON.parse(JSON.stringify(next)) });
       if (!owner) return false; X.weeks = JSON.parse(JSON.stringify(next.bets || {})); return true; },
     signOut: () => {}, fire: () => subs.forEach(f => f()) };
@@ -405,10 +407,28 @@ async function xbetLog() {
     check(rows(o.d).includes('Week 4') && rows(stale.d).includes('Week 4'), '6: a week logged elsewhere did not redraw the frames: ' + rows(o.d).join());
     const mineO = JSON.parse(o.w.localStorage.getItem(MINE));
     check(mineO.bank.deposit === 75 && mineO.bets[3] && mineO.bets[3].note === 'three', '6: the owner\'s browser does not keep its copy of the log and its own deposit'); }
-  /* the owner's device before the log has been read: nothing can be saved over weeks it has not seen */
-  { const X = stubXB({ owner: true, weeks: {}, applied: false });
-    const o = loadXB(X, 'bets'); await sleep(700);
-    check(o.d.getElementById('betSave').disabled && /Connecting/.test(o.d.getElementById('betSave').textContent), '6: Save week is open before the X Bet Log has been read'); }
+  /* the owner's device before the log has been read: nothing can be saved or removed over weeks it
+     has not seen (a week waiting from an earlier visit is shown), and a save of the app's whole
+     state leaves this browser's own log in its key as it was */
+  const ownLog = { myPicks: {}, bets: { 1: { staked: 10, returned: 0, note: 'own' }, 2: { staked: 20, returned: 35, note: 'own' } }, bank: { lastAmt: 20, filter: 'all', build: [], mode: 'straight', deposit: 60 } };
+  { const X = stubXB({ owner: true, weeks: { 7: { staked: 10, returned: 25, note: 'waiting' } }, applied: false, joined: null });
+    const o = loadXB(X, 'bets', ownLog), r = loadXB(X, 'record', ownLog); await sleep(700);
+    check(o.d.getElementById('betSave').disabled && /Connecting/.test(o.d.getElementById('betSave').textContent) && rows(o.d).join() === 'Week 7' && !o.d.querySelector('#betTable [data-betdel]'),
+      '6: Save week or Remove is open before the X Bet Log has been read: ' + rows(o.d).join());
+    const toggle = r.d.getElementById('picksToggle'); if (toggle) toggle.click(); else r.w.eval('save()'); await sleep(500);
+    o.w.eval('save()'); await sleep(500);
+    const kept = JSON.parse(r.w.localStorage.getItem(MINE)), keptO = JSON.parse(o.w.localStorage.getItem(MINE));
+    check(Object.keys(kept.bets).join() === '1,2' && Object.keys(keptO.bets).join() === '1,2' && X.calls.length === 0,
+      '6: a save before the X Bet Log was read wrote the shown log over this browser\'s own, or wrote the log: ' + JSON.stringify([kept.bets, keptO.bets, X.calls.length])); }
+  /* read, but this browser's weeks not yet moved in: a week saved goes to the log, and the
+     browser's own log stays in its key until it has joined */
+  { const X = stubXB({ owner: true, weeks: { 1: { staked: 10, returned: 0, note: 'shared' } }, joined: null });
+    const o = loadXB(X, 'bets', ownLog); await sleep(700);
+    o.d.getElementById('betWeek').value = '3'; o.d.getElementById('betStaked').value = '5'; o.d.getElementById('betReturned').value = '12.5';
+    o.d.getElementById('betSave').click(); await sleep(500);
+    const kept = JSON.parse(o.w.localStorage.getItem(MINE));
+    check(X.calls.length === 1 && X.weeks[3] && Object.keys(kept.bets).join() === '1,2' && kept.bets[1].note === 'own',
+      '6: before this browser\'s weeks joined, a save wrote X\'s log over its own: ' + JSON.stringify(kept.bets)); }
 }
 
 (async () => {

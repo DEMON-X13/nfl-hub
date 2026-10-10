@@ -74,10 +74,10 @@ SYNC_JS = sub1(SYNC_JS, /\/\*BET_KEY\*\/'[^']*'/, '/*BET_KEY*/' + JSON.stringify
 /* who may write: the owner link's hash, Firebase's key and the owner's uid, read from sync.json at
    run time; the owner's token on every write; the role the section and the frames ask for */
 for (const need of ['window.storage=', 'window.LIVE_IO=', "LIVE_KEY='live_parlays_v1'", "CONF='sync.json'", "s('ownerHash')", "s('apiKey')", "s('owner')",
-  "'&auth='+encodeURIComponent(tok)", "await write(st.url,{method:'PUT'", 'role:()=>st.role', "'SHA-256'", "history.replaceState(null,'',location.pathname+location.search+'#parlay')", 'migrateReader('])
+  "'&auth='+encodeURIComponent(tok)", "await write(st.url,{method:'PUT'", "PUT_MS,'parlays');", 'role:()=>st.role', 'function clean(v,d)', "const BAD=/[<>\"`]/g;", 'doc:clean({prop:propPart(doc.prop), live:livePart(doc.live)})', "'SHA-256'", "history.replaceState(null,'',location.pathname+location.search+'#parlay')", 'migrateReader('])
   if (!SYNC_JS.includes(need)) throw new Error('nflbets/build/sync.js no longer has ' + need);
 const XBETS_JS = sub1(rd('nflbets', 'build', 'xbets.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the X Bet Log's season");
-for (const need of ['window.XBETS=', "SYNC.write(docUrl(),{method:'PATCH'", "conf().betsUrl+'/'+SEASON", 'function cleanWeek(', "replace(/[<>]/g,'')"])
+for (const need of ['window.XBETS=', "SYNC.write(docUrl(),{method:'PATCH'", "},null,'xbets');", "conf().betsUrl+'/'+SEASON", 'function cleanWeek(', "replace(/[<>]/g,'')", "PENDING='xbets_pending_'+SEASON", 'function keepPre('])
   if (!XBETS_JS.includes(need)) throw new Error('nflbets/build/xbets.js no longer has ' + need);
 const SYNC_CONF = JSON.parse(rd('nflbets', 'sync.json'));
 if (SYNC_CONF.ownerHash && !/^[0-9a-f]{64}$/.test(SYNC_CONF.ownerHash)) throw new Error('nflbets/sync.json: ownerHash is not a SHA-256 in hex');
@@ -242,7 +242,9 @@ document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); }
     if(mark) mark.hidden=!owner;
     if(pill) pill.hidden=!owner;
     if(out){ out.hidden=!owner; out.textContent=s.signedIn?'sign out':'sign out of owner'; }
-    if(inn){ inn.hidden=!(s.url&&s.enforced&&(!owner||!s.signedIn||s.blocked==='signin')); inn.textContent=owner?'sign in':'Owner sign-in'; }
+    /* sign-in, offered when either document's writes wait for it (the X Bet Log's note sends the owner here) */
+    const lapsed=s.blocked==='signin'||!!(s.blocks&&s.blocks.xbets==='signin');
+    if(inn){ inn.hidden=!(s.url&&s.enforced&&(!owner||!s.signedIn||lapsed)); inn.textContent=owner?'sign in':'Owner sign-in'; }
     if(sub) sub.textContent=!s.url?'This browser only: X\u2019s placed parlays from the repository here, yours under the builder.'
       :(owner?'Yours, as every visitor sees them: what you change here changes for everyone.'
         :'What X placed, saved and is building, followed live: the same on every device, read only.')

@@ -439,7 +439,8 @@ may quietly outrank what the job published:
     overwritten by one made at the same instant (or on an older document) is merged and written
     again. An owner's browser joins the document the first time it reads it (its own saved
     parlays are added), so the owner's first visit adopts the document and loses nothing. A
-    lapsed sign-in holds the device's writes and asks for sign-in; nothing is lost.
+    lapsed sign-in holds the device's writes and asks for sign-in; nothing is lost. A refusal is
+    held per document: one of the X Bet Log's never holds the parlays' writes, nor the reverse.
   - *A reader's browser* never writes and never joins. The first time it opens as a reader
     (`xparlays_v1`), the copy of the document it kept from when every device wrote (the saved
     parlays and builder legs in its remembered documents) leaves its own list, so a visitor's old
@@ -449,9 +450,26 @@ may quietly outrank what the job published:
     device; `nflbets/build/xbets.js` hands it to the betting frames as `parent.XBETS`, and
     `betting/tools/build.js`'s hook lays it into the app's `S.bets` (read only for a visitor,
     whose own log stays in the app's key untouched) and writes only the weeks a frame changed.
-    Each of the owner's browsers moves its own weeks in once a season (a copy kept first, the
-    shared week kept where they differ). The deposit is shown to visitors only with
+    Each of the owner's browsers moves its own weeks in once a season (the shared week kept where
+    they differ): its log is copied aside (`x_nfl_bets_preshare_<season>`) the moment the device is
+    known to be the owner's, and the app's key keeps the browser's own weeks, whatever a frame saves,
+    until they have joined and the log has been read, so a slow, failed or refused read loses
+    nothing (the frames share the page's browser store). A week the store would not take waits in
+    the browser too (`xbets_pending_<season>`), shown, and is written the next time the store
+    answers, on that visit or a later one. The deposit is shown to visitors only with
     `"shareDeposit": true` in `sync.json`.
+  - *Nothing from the store is drawn as it came*: until the rules are locked anyone with the
+    address can write the parlays, so `sync.js` cleans the document on the way in and every copy a
+    browser kept of it (every string and key loses `<`, `>`, `"` and a backtick), and `xbets.js`
+    cleans the X Bet Log by its own rules.
+  - *Setting it up*: Firebase console → new project → Realtime Database → rules
+    `{"rules":{"nflhub":{".read":true,".write":true},"xbets":{".read":true,".write":true}}}` (both
+    paths: Firebase denies a path its rules do not name, so with `/nflhub` alone, as before the X
+    Bet Log, nobody's X Bet Log can be read; open `xbets` before or with the deploy that carries it)
+    → the database URL plus `/nflhub` into `nflbets/sync.json`. Open rules mean anyone with the
+    address can read and change both documents; `docs/ARCHITECTURE.md` ("Opening the X Bet Log's
+    path", "Locking the store to the owner") has the owner's steps, the locked rules and the curl
+    probes that check them under both paths.
   - With the store blank or out of reach the page runs on the browser alone and says so ("Not
     synced"); a reader shows the copy of X's it last saw, marked.
   After any change to `sync.js` or `xbets.js`, also run `node nflbets/build/stress_sync.js [seed]`

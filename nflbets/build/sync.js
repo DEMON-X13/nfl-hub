@@ -81,6 +81,14 @@
  * deleted. A browser that remembers a rev but not the document wins nothing: the document wins
  * outright.
  *
+ * Everything read from the store is cleaned before anything lays it into the page, and so is
+ * every copy of it this browser kept (the remembered documents, a reader's last copy, the owner's
+ * own copy of the shared keys): every string and every key loses < > " and `. Until the rules are
+ * locked the store takes a write from anyone with its address, and the prop model and the X
+ * Parlays section draw a leg's name, team, position and price into the owner's page, which holds
+ * the owner link and the sign-in session; with those four characters gone a string can be neither
+ * an element nor a way out of a quoted attribute, and nothing a parlay holds uses them.
+ *
  * A reader's browser joins nothing. Until X alone wrote, every browser kept a mirror of the
  * shared document as its own; the first time a browser opens as a reader (xparlays_v1 marks it,
  * and it is cleared whenever the browser is the owner's, so a browser that stops being the
@@ -101,16 +109,18 @@ window.NFLSYNC=(function(){
   /* rev, revs, at, doc: the store's document as this device last saw it, read or written.
      hist: the documents it has read or written lately, by rev, oldest first: the bases a merge
      can start from. view: what the page shows, the store's document with this device's own
-     changes merged in. xdoc: a reader's copy of X's document, in memory. blocked: why the owner's
-     writes are held ('signin', or 'refused' by a store this page cannot sign in to). */
+     changes merged in. xdoc: a reader's copy of X's document, in memory. blocks: why the owner's
+     writes to each document are held ('signin', or 'refused' by a store this page cannot sign in
+     to), the parlays' and the X Bet Log's apart: the store's rules can refuse one path and take
+     the other, and a refusal of one must never hold the other. */
   const st={url:null, betsUrl:null, conf:{}, enforced:false, role:null, roleKnown:false, rev:null, revs:[], doc:null, hist:[], view:null,
     applied:false, live:false, ready:false, propRead:false, ok:null, err:null, at:null, checked:null, pending:false, pushing:false,
-    blocked:null, joined:0, merged:0, recovered:0, pulls:0, pushes:0, xdoc:null, cached:null, ownerMsg:null, stripped:0, device:null, slipSig:null};
+    blocks:{parlays:null, xbets:null}, joined:0, merged:0, recovered:0, pulls:0, pushes:0, xdoc:null, cached:null, ownerMsg:null, stripped:0, device:null, slipSig:null};
   const listeners=[];
   const emit=()=>{ for(const f of listeners){ try{ f(state()); }catch(e){} } };
   const state=()=>({url:st.url, role:st.role, enforced:st.enforced, signedIn:signedIn(), email:signedIn()?session().email||null:null,
     shareDeposit:!!st.conf.shareDeposit, rev:st.rev, applied:st.applied, live:st.live, ready:st.ready, ok:st.ok,
-    err:st.err, at:st.at, checked:st.checked, pending:st.pending, pushing:st.pushing, blocked:st.blocked, cached:st.cached,
+    err:st.err, at:st.at, checked:st.checked, pending:st.pending, pushing:st.pushing, blocked:st.blocks.parlays, blocks:Object.assign({},st.blocks), cached:st.cached,
     ownerMsg:st.ownerMsg, joined:st.joined, merged:st.merged, recovered:st.recovered, pulls:st.pulls, pushes:st.pushes, stripped:st.stripped});
   const ls={
     get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
@@ -139,6 +149,21 @@ window.NFLSYNC=(function(){
   function signedIn(){ const s=session(); return !!(st.enforced&&s&&s.uid===st.conf.owner); }
   function device(){ if(!st.device){ st.device=ls.get(DEVICE_KEY); if(!st.device){ st.device='d'+newRev(); ls.set(DEVICE_KEY,st.device); } } return st.device; }
 
+  /* a document, or any part of one, cleaned: a copy whose strings and keys have lost < > " and `
+     (no element, no way out of a quoted attribute), whose numbers are finite, and which nests no
+     deeper than a parlay does (a betting slip's leg is six levels down) */
+  const BAD=/[<>"`]/g;
+  function clean(v,d){
+    d=d|0;
+    if(typeof v==='string') return v.replace(BAD,'');
+    if(typeof v==='number') return isFinite(v)?v:null;
+    if(v==null||typeof v==='boolean') return v;
+    if(d>=12||typeof v!=='object') return null;
+    if(Array.isArray(v)) return v.map(x=>clean(x,d+1));
+    const o={};
+    for(const k of Object.keys(v)){ const kk=k.replace(BAD,''); if(kk!=='__proto__') o[kk]=clean(v[k],d+1); }
+    return o;
+  }
   /* the shared part of what the two models keep */
   function propPart(v){ const out={}; if(!isObj(v)) return out;
     for(const k of PROP_KEYS) if(v[k]!==undefined) out[k]=v[k]; return out; }
@@ -166,7 +191,7 @@ window.NFLSYNC=(function(){
     if(st.role==='owner'){ const bet=Object.assign({},isObj(live.bet)?live.bet:{}), mine=mySlips(), id=device();
       if(mine.length) bet[id]=mine; else delete bet[id];
       if(Object.keys(bet).length) live.bet=bet; else delete live.bet; }
-    return deep({prop:propPart(S_), live}); }
+    return clean({prop:propPart(S_), live}); }
 
   /* whether this browser has ever taken or written the shared document */
   const shared=()=>ls.get(SEEN_KEY)!=null;
@@ -179,8 +204,8 @@ window.NFLSYNC=(function(){
   function loadBase(){
     const seen=ls.get(SEEN_KEY), b=parse(ls.get(BASE_KEY));
     if(!seen||!isObj(b)||b.rev!==seen||!isObj(b.doc)) return;
-    st.rev=b.rev; st.revs=Array.isArray(b.revs)?b.revs:[b.rev]; st.doc={prop:propPart(b.doc.prop), live:livePart(b.doc.live)};
-    for(const h of (Array.isArray(b.hist)?b.hist:[])) if(h&&h.rev&&isObj(h.doc)) know(String(h.rev),{prop:propPart(h.doc.prop), live:livePart(h.doc.live)});
+    st.rev=b.rev; st.revs=Array.isArray(b.revs)?b.revs.map(String):[b.rev]; st.doc=clean({prop:propPart(b.doc.prop), live:livePart(b.doc.live)});
+    for(const h of (Array.isArray(b.hist)?b.hist:[])) if(h&&h.rev&&isObj(h.doc)) know(String(h.rev),clean({prop:propPart(h.doc.prop), live:livePart(h.doc.live)}));
     know(st.rev,st.doc); }
 
   /* a browser's first read of a document another device seeded: what only this browser has
@@ -322,7 +347,7 @@ window.NFLSYNC=(function(){
   function loadCache(){
     if(st.xdoc) return;
     const c=parse(ls.get(CACHE_KEY));
-    if(isObj(c)&&isObj(c.doc)){ st.xdoc={prop:propPart(c.doc.prop), live:livePart(c.doc.live)}; st.at=c.at||null; st.cached=c.seen||c.at||'earlier'; redraw(); }
+    if(isObj(c)&&isObj(c.doc)){ st.xdoc=clean({prop:propPart(c.doc.prop), live:livePart(c.doc.live)}); st.at=c.at||null; st.cached=c.seen||c.at||'earlier'; redraw(); }
   }
 
   /* the address: nflbets/sync.json, read fresh every load. Blank means this browser only. */
@@ -387,11 +412,13 @@ window.NFLSYNC=(function(){
   }
   /* a write to the store (the parlays' PUT, the X Bet Log's PATCH): with the owner's token on it
      when this device is signed in, renewed and tried once more on a refusal. A refusal that
-     stands holds the owner's writes until the device is signed in again; nothing is lost, the
-     change waits in the browser. */
-  async function write(url,init,ms){
+     stands holds the owner's writes to that document (doc: 'parlays' or 'xbets') until the device
+     is signed in again; the other document's writes go on. Nothing is lost, the change waits in
+     the browser. */
+  async function write(url,init,ms,doc){
+    const which=doc==='xbets'?'xbets':'parlays';
     const go=tok=>fetchT(url+'.json?print=silent'+(tok?'&auth='+encodeURIComponent(tok):''),Object.assign({headers:{'Content-Type':'application/json'}},init),ms||PUT_MS);
-    const refused=why=>{ st.blocked=why; const e=new Error(why==='signin'?'sign in to publish':'the store refused the write'); e.auth=true; emit(); return e; };
+    const refused=why=>{ st.blocks[which]=why; const e=new Error(why==='signin'?'sign in to publish':'the store refused the write'); e.auth=true; emit(); return e; };
     const signed=signedIn();
     let tok=signed?await idToken(false):null;
     if(signed&&!tok) throw refused('signin');
@@ -399,7 +426,7 @@ window.NFLSYNC=(function(){
     if((r.status===401||r.status===403)&&signed){ tok=await idToken(true); if(!tok) throw refused('signin'); r=await go(tok); }
     if(r.status===401||r.status===403) throw refused(st.enforced?'signin':'refused');
     if(!r.ok) throw new Error('HTTP '+r.status);
-    st.blocked=null;
+    if(st.blocks[which]){ st.blocks[which]=null; emit(); }
     return r;
   }
 
@@ -411,7 +438,8 @@ window.NFLSYNC=(function(){
     const doc=parse(typeof d.json==='string'?d.json:null);
     if(!isObj(doc)) throw new Error('the shared document is not readable');
     const rev=String(d.rev||'');
-    return {rev, at:d.at||null, revs:Array.isArray(d.revs)?d.revs.map(String):[rev], doc:{prop:propPart(doc.prop), live:livePart(doc.live)}};
+    /* cleaned on the way in, before anything merges it, keeps it or draws it */
+    return {rev, at:typeof d.at==='string'?d.at.replace(BAD,''):null, revs:Array.isArray(d.revs)?d.revs.map(String):[rev], doc:clean({prop:propPart(doc.prop), live:livePart(doc.live)})};
   }
 
   /* lay a document over the running page: the prop model's state in memory, the browser's
@@ -506,7 +534,7 @@ window.NFLSYNC=(function(){
     clearTimeout(pushTimer);
     if(!st.url||!st.live||st.role!=='owner'){ st.pending=false; emit(); return false; }
     /* a write the store refused waits for a sign-in: trying again would be refused again */
-    if(st.blocked){ st.pending=true; emit(); return false; }
+    if(st.blocks.parlays){ st.pending=true; emit(); return false; }
     /* one at a time, and nothing from a model still booting */
     if(st.pushing||(!st.ready&&!leaving)){ pushTimer=setTimeout(push,PUSH_MS); return false; }
     st.pushing=true;
@@ -522,7 +550,7 @@ window.NFLSYNC=(function(){
       if(st.doc&&same(doc,st.doc)){ st.pending=false; st.ok=true; st.err=null; ok=true; }
       else {
         const rev=newRev(), at=new Date().toISOString(), revs=(st.revs||[]).concat([rev]).slice(-REVS);
-        await write(st.url,{method:'PUT',keepalive,body:JSON.stringify({rev,at,doc:{rev,at,revs,json:JSON.stringify(doc)}})},PUT_MS);
+        await write(st.url,{method:'PUT',keepalive,body:JSON.stringify({rev,at,doc:{rev,at,revs,json:JSON.stringify(doc)}})},PUT_MS,'parlays');
         st.rev=rev; st.revs=revs; st.at=at; st.doc=doc; st.view=deep(doc); know(rev,doc); st.pushes++; st.ok=true; st.err=null; st.pending=false; st.checked=at;
         remember(rev); keepBase(); ok=true;
       }
@@ -564,10 +592,13 @@ window.NFLSYNC=(function(){
     async get(key){
       if(key===PROP_KEY){ await settled(boot(),BOOT_WAIT_MS); st.propRead=true; }
       const raw=ls.get(key);
-      if(key!==PROP_KEY||st.role!=='owner'||!st.view||!st.applied||!st.live) return raw==null?null:{value:raw};
+      if(key!==PROP_KEY) return raw==null?null:{value:raw};
       const v=parse(raw);
       if(!isObj(v)) return raw==null?null:{value:raw};
-      Object.assign(v,deep(st.view.prop));
+      /* the shared keys as this browser kept them, cleaned (a copy taken from the store before it
+         was cleaned on the way in), and on the owner's device the shared document's over them */
+      Object.assign(v,clean(propPart(v)));
+      if(st.role==='owner'&&st.view&&st.applied&&st.live) Object.assign(v,clean(st.view.prop));
       return {value:JSON.stringify(v)};
     },
     async set(key,value){
@@ -578,7 +609,8 @@ window.NFLSYNC=(function(){
   window.LIVE_IO={
     /* the owner's device: its copy of the shared key, written through to the store. Anyone
        else's: X's, as last read, which a reader cannot write */
-    get(){ if(st.role==='owner'&&st.url) return ls.get(LIVE_KEY); return st.xdoc?JSON.stringify(st.xdoc.live):null; },
+    get(){ if(st.role==='owner'&&st.url){ const raw=ls.get(LIVE_KEY), v=parse(raw); return isObj(v)?JSON.stringify(clean(v)):raw; }
+      return st.xdoc?JSON.stringify(st.xdoc.live):null; },
     set(v){ if(st.role!=='owner'||!st.url) return false; const ok=ls.set(LIVE_KEY,String(v)); schedulePush(); return ok; },
     writable(){ return st.role==='owner'&&!!st.url; }
   };
@@ -599,13 +631,15 @@ window.NFLSYNC=(function(){
       throw new Error(/INVALID_PASSWORD|INVALID_LOGIN_CREDENTIALS|EMAIL_NOT_FOUND|INVALID_EMAIL/.test(code)?'wrong email or password':(/TOO_MANY/.test(code)?'too many tries: wait a while':code)); }
     if(String(j.localId)!==st.conf.owner) throw new Error('that account is not the owner of this site');
     ls.set(SESSION_KEY,JSON.stringify({uid:String(j.localId),email:j.email||String(email||''),refreshToken:j.refreshToken,idToken:j.idToken,exp:Date.now()+(+j.expiresIn||3600)*1000}));
-    if(st.role==='owner'){ st.blocked=null; emit(); schedulePush(); try{ if(window.XBETS&&window.XBETS.flush) window.XBETS.flush(); }catch(e){} return 'owner'; }
+    if(st.role==='owner'){ st.blocks={parlays:null, xbets:null}; emit(); schedulePush(); try{ if(window.XBETS&&window.XBETS.flush) window.XBETS.flush(); }catch(e){} return 'owner'; }
     reload(); return 'reload';
   }
   /* this browser stops being the owner's: what it has not written is written first, then its
      copy of X's parlays is taken out of its own, as on any reader's first visit, and it reloads */
   async function signOut(){
-    if(st.role==='owner'&&st.pending&&!st.blocked){ try{ await push(); }catch(e){} }
+    if(st.role==='owner'&&st.pending&&!st.blocks.parlays){ try{ await push(); }catch(e){} }
+    /* and the X Bet Log's weeks still to write, for as long as a look takes at most */
+    try{ if(st.role==='owner'&&window.XBETS&&window.XBETS.flush) await settled(window.XBETS.flush(),GET_MS); }catch(e){}
     const docs=[st.doc,st.view].concat(st.hist.map(h=>h.doc)).filter(Boolean);
     ls.del(OWNER_KEY); ls.del(SESSION_KEY);
     const r=stripMirror(docs,true);

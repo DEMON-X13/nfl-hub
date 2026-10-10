@@ -19,8 +19,10 @@
  * The Bet Log is X's there (the X Bet Log): the page also hands the frame window.XBETS, its
  * adapter for the owner's log in the shared store (nflbets/build/xbets.js). With it, the app's
  * S.bets is X's weeks on every device, read only except on the owner's, and a save writes to the
- * log only the weeks this frame changed; this browser's own log stays in its key, untouched, and
- * a visitor's is never shown. Without it (no store set up, or the app on its own) the Bet Log is
+ * log only the weeks this frame changed. This browser's own log stays in its key as it was -- a
+ * visitor's always, never shown; the owner's until its weeks have joined X's log and the log has
+ * been read, after which the key keeps a copy of X's -- so a frame that saves before the log has
+ * arrived (a slow store, a failed read, rules that do not open it yet) never empties it. Without it (no store set up, or the app on its own) the Bet Log is
  * this browser's own, exactly as before.
  */
 'use strict';
@@ -65,8 +67,9 @@ const HOOK = `<script>
   /* the X Bet Log, when the page around the frame hands one over (window.XBETS): S.bets is X's
      weeks; base is what this frame last had of them, so a save writes only what it changed (a
      frame that loaded the log before another changed it writes nothing it did not change); own is
-     this browser's own log and deposit, kept in its key as they were */
-  const XB={on:false, base:null, own:{bets:{}, deposit:null}};
+     this browser's own deposit as it was when the frame loaded, kept in its key on a visitor's
+     device */
+  const XB={on:false, base:null, own:{deposit:null}};
   const xbSnap=S=>JSON.stringify({bets:S.bets||{}, deposit:S.bank&&S.bank.deposit!=null?S.bank.deposit:null});
   /* lay X's log over the state: the weeks, and the deposit when it is shared (the owner's own on
      the owner's devices otherwise, none for a visitor) */
@@ -118,7 +121,7 @@ const HOOK = `<script>
       if(window.XBETS&&typeof window.XBETS.ready==='function'){
         try{ await window.XBETS.ready(); }catch(e){}
         if(window.XBETS.enabled()){
-          XB.on=true; XB.own={bets:mine.bets||{}, deposit:mine.bank&&mine.bank.deposit!=null?mine.bank.deposit:null};
+          XB.on=true; XB.own={deposit:mine.bank&&mine.bank.deposit!=null?mine.bank.deposit:null};
           xbLay(S);
           window.XBETS.onChange(xbChanged);
         }
@@ -130,8 +133,14 @@ const HOOK = `<script>
       const own={}; for(const [gid,o] of Object.entries(S.odds||{})) if(o&&o.src!=='nflverse') own[gid]=o;
       let bets=S.bets||{}, bank=S.bank||null;
       const x=XB.on?window.XBETS.get():null;
-      /* a visitor's own log and deposit stay what they were: what the frame shows is X's */
-      if(x&&!x.owner){ bets=XB.own.bets; bank=Object.assign({},bank||{},{deposit:XB.own.deposit}); }
+      /* this browser's own log stays in its key as it is: a visitor's always (what the frame shows
+         is X's), and the owner's until this browser's weeks have joined X's log and the log has been
+         read on this visit. Until then S.bets is X's log only as far as this frame has it -- nothing
+         at all while the store is slow, out of reach or shut to the X Bet Log -- and writing it here
+         would erase the one copy of the weeks still to join. After that the key keeps a copy of X's. */
+      if(x&&(!x.owner||!(x.status&&x.status.joined&&x.status.applied))) bets=loadMine().bets||{};
+      /* and a visitor's own deposit: what the frame shows is X's, or none */
+      if(x&&!x.owner) bank=Object.assign({},bank||{},{deposit:XB.own.deposit});
       localStorage.setItem(MINE,JSON.stringify({myPicks:S.myPicks||{},bank,bets,odds:own,lastBackup:S.lastBackup||null,lastBackupHow:S.lastBackupHow||null}));
       /* the owner's: what this frame changed in X's log, and nothing else */
       if(x&&x.owner){ const next=xbSnap(S); if(next!==XB.base){ window.XBETS.write(JSON.parse(XB.base||'{}'),JSON.parse(next)); XB.base=next; } }
@@ -535,7 +544,7 @@ const RENAME = [[/Main Model/g, 'Alpha Model'], [/\bthe main model\b/g, 'Alpha M
 function buildApp() {
   let out = html.replace(anchor, HOOK + LIVE + VIZ + anchor);
   for (const [re, to] of RENAME) out = out.replace(re, to);
-  for (const need of ['function betsViz(', 'renderBetsApp(); betsViz();', 'window.XBETS.write(', 'html.xbets-ro #backupCard', 'id="xbNote"', 'function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
+  for (const need of ['function betsViz(', 'renderBetsApp(); betsViz();', 'window.XBETS.write(', 'bets=loadMine().bets||{};', 'html.xbets-ro #backupCard', 'id="xbNote"', 'function recordViz(', 'recordViz(rows);', 'function ratingsViz(', 'ratingsViz();', 'window.STATE_URL', 'window.EMBED_TAB', 'html.embed header,html.embed #tabs{display:none}', 'const MODEL = '])
     if (!out.includes(need)) throw new Error('the built betting app is missing ' + need);
   return out;
 }
