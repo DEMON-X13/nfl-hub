@@ -377,7 +377,7 @@ async function reality() {
       const nt = (rec.querySelector('.rv-notes') || {}).textContent || '';
       check(tx.includes(`Joker Jr ${w2}–${dec.length - w2}`), `5m: the legend should give Joker Jr ${w2}–${dec.length - w2}: ` + tx.slice(0, 400));
       check(rec.querySelectorAll('svg.rv-chart polyline[stroke="#8E1B10"][stroke-dasharray]').length === 1, '5m: Joker Jr has no dashed line on the chart');
-      check(/Joker \(long fit\) is a test running beside the live Joker/.test(nt), '5m: the record does not say Joker Jr is a test beside the live Joker: ' + nt.slice(0, 300));
+      check(/Joker Jr is a test running beside the live Joker/.test(nt), '5m: the record does not say Joker Jr is a test beside the live Joker: ' + nt.slice(0, 300));
       if (dec.some(r => r.jokerLong.backfill)) check(/computed after the fact from pre-game data/.test(nt) && /fitted only on 2010-2025/.test(nt), '5m: the record does not say how the backfilled picks were made: ' + nt.slice(0, 400));
       const row = [...b.d.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(t => t.querySelector('th').textContent.trim() === 'Joker Jr');
       check(!!row && row.querySelector('td.rv-season b').textContent === `${w2}–${dec.length - w2}` && /test running beside the live Joker/.test(row.querySelector('th').title), '5m: the week-by-week grid has no Joker Jr row with its season, marked a test');
@@ -405,7 +405,7 @@ async function reality() {
       const e = boot(after); await new Promise(res => setTimeout(res, 700));
       if (Object.keys(after.processed).length) {
         const ct = e.d.getElementById('modelChart').textContent.replace(/\s+/g, ' '), nt = (e.d.querySelector('#modelChart .rv-notes') || {}).textContent || '';
-        check(/Joker \(long fit\) could not be rescored/.test(nt) && /missing/.test(nt), '5m: a missing fitted model is not said on the record: ' + nt.slice(0, 300));
+        check(/Joker Jr could not be rescored/.test(nt) && /missing/.test(nt), '5m: a missing fitted model is not said on the record: ' + nt.slice(0, 300));
         check(/Alpha Model \d+–\d+/.test(ct) && /The Joker \d+–\d+/.test(ct), '5m: with Joker Jr down the record does not draw the others'); }
       check(e.errors.length === 0, '5m: runtime errors with Joker Jr down: ' + e.errors.join('; '));
       fs.rmSync(tmp, { recursive: true, force: true }); } }
