@@ -18,12 +18,13 @@
  * committed state: BETTING_PREV_STATE names another file, for tests); a scoreboard final is
  * counted for every model at once, on the call frozen at kickoff; Team Rankings' record is the
  * season's and a rating that predates a final says so; the Joker's fitted weeks and a model that
- * could not run are disclosed on the Pick'em Record. Each holds whatever the week offers: a check
- * with nothing to look at this week (no game graded yet, no Thursday game, a bye) is skipped, and
- * the rules themselves are also run on cases made up here, so they are tested every week. It holds
- * in every phase of a season (the week before the opener with nothing graded and no injury report
- * yet, week 1, between playoff rounds, after the Super Bowl, a season the Joker cannot call):
- * BETTING_STATE names a made-up state to test one.
+ * could not run are disclosed on the Pick'em Record; Joker Jr, a test model retired in October
+ * 2026, is gone from a state this run wrote and draws nothing from one that still carries it.
+ * Each holds whatever the week offers: a check with nothing to look at this week (no game graded
+ * yet, no Thursday game, a bye) is skipped, and the rules themselves are also run on cases made
+ * up here, so they are tested every week. It holds in every phase of a season (the week before
+ * the opener with nothing graded and no injury report yet, week 1, between playoff rounds, after
+ * the Super Bowl, a season the Joker cannot call): BETTING_STATE names a made-up state to test one.
  *
  * Section 6 is the X Bet Log: the app handed a stub of the page's window.XBETS, as a visitor (X's
  * weeks, read only, no form, Remove, deposit box or backup card, a note never drawn as markup, the
@@ -82,35 +83,6 @@ function boot(st, opts = {}) {
 }
 const kick = PATCHES.kickoffMs;
 const DAY = 86400000;
-/* Joker Jr's step (5m runs it, with the Joker's Python: PYTHON names another) */
-const JL_STEP = path.join(ROOT, 'betting', 'joker', 'long', 'joker_long.py');
-const PY = process.env.PYTHON || 'python3';
-const py = (args, env) => require('child_process').spawnSync(PY, args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20, env: Object.assign({}, process.env, env || {}) });
-/* 5m's recomputation of Joker Jr's backfilled calls in state `st`, against `prev`, the
-   state published before it: every call backfilled by this run (all of them on the first, a missed
-   game's after) exactly, and the latest one published before within 0.05, since nflverse revises a
-   stat now and then (that it has not moved since is 5h's). Skipped when the step did not run this
-   time (modelStatus.jokerLong says why: its fitted model missing, a download failed): that run
-   backfilled nothing, 5h holds the calls it kept, and the recomputation would need what the step
-   lacked, so running it would fail the smoke and stop the whole publish over a model that is only a
-   test. Returns { bf, skip } or { bf, todo, now, same, fails }; `env` reaches the recomputation (the
-   missing-model self-test points JOKER_LONG_MODEL and BETTING_STATE at its own files). */
-function jlRecompute(st, prev, env) {
-  const J = JSON.stringify, calls = st.jokerLong || {}, sched = Object.fromEntries(st.schedule.map(g => [g.game_id, g]));
-  const bf = Object.keys(calls).filter(gid => calls[gid].backfill && sched[gid] && kick(sched[gid]) != null).sort((x, y) => kick(sched[x]) - kick(sched[y]));
-  if ((st.modelStatus || {}).jokerLong) return { bf, skip: 'Joker Jr did not run this time, so it backfilled nothing; 5h holds its calls' };
-  if (!bf.length) return { bf, skip: 'no backfilled call in this state' };
-  const had = prev && prev.season === st.season ? prev.jokerLong || {} : {};
-  const now = bf.filter(gid => !had[gid]), old = bf.filter(gid => had[gid]), todo = now.concat(old.slice(-1));
-  const r = py([JL_STEP, '--recompute', ...todo, '--poison'], env);
-  let got = null; try { got = JSON.parse((r.stdout || '').trim().split('\n').pop()); } catch (e) { got = null; }
-  const fails = []; let same = 0;
-  if (!(r.status === 0 && got)) fails.push(`5m: the recomputation did not run (${PY}; pip install -r betting/joker/requirements.txt): ` + String(r.stderr || r.error || '').slice(-400));
-  if (got) for (const gid of todo) { const a = calls[gid], b = got[gid], exact = now.includes(gid);
-    if (!!b && (exact ? a.pick === b.pick && a.pHome === b.pHome : Math.abs(a.pHome - b.pHome) <= 0.05)) same++;
-    else fails.push(`5m: ${gid}'s backfilled call ${J(a)} is not what the data before its kickoff gives: ${J(b)}${exact ? '' : ' (allowing 0.05 for nflverse revisions since)'}`); }
-  return { bf, todo, now, same, fails };
-}
 async function reality() {
   const P = JSON.parse(state), pub = Date.parse(P.published);
   const J = JSON.stringify;
@@ -226,11 +198,8 @@ async function reality() {
   /* 5g. every coming game of this week has a call from every model, and a graded game is graded on
      the call published for it; a model the job could not run says why instead (modelStatus) */
   { const ms = P.modelStatus || {};
-    for (const [k, name] of [['joker', 'the Joker'], ['jokerLong', 'Joker Jr'], ['broly', 'the Broly Model']]) {
+    for (const [k, name] of [['joker', 'the Joker'], ['broly', 'the Broly Model']]) {
       if (ms[k]) { check(typeof ms[k].why === 'string' && ms[k].why && ms[k].since, `5g: ${name}'s status has no reason or time`); continue; }
-      /* Joker Jr on a state its step has never run on (one committed before it shipped):
-         nothing to hold it to yet; 5m holds the workflow to running it */
-      if (k === 'jokerLong' && !P.jokerLong && !P.jokerLongInfo) { console.log('  (5g: Joker Jr has not run on this state yet)'); continue; }
       const calls = P[k] || {};
       /* Broly prices a game from both moneylines or, without them, the spread (betting/broly/stats.py market_prob) */
       const both = o => !!o && o.home != null && o.away != null;
@@ -253,7 +222,7 @@ async function reality() {
          its call for such a game is either the last one before kickoff or already frozen */
       const started = S.schedule.filter(g => { const k = kick(g); return k != null && k <= pub; }).map(g => g.game_id);
       for (const gid of started) {
-        for (const k of ['joker', 'jokerLong', 'broly']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
+        for (const k of ['joker', 'broly']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
           if (a && b) { n++; check(a.pick === b.pick && a.pHome === b.pHome, `5h: ${k}'s call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`); } }
         const call = st => (st.atKickoff || {})[gid] || (st.processed[gid] && { pick: st.processed[gid].pick, pHome: st.processed[gid].pHome, h: st.processed[gid].h });
         const fa = call(prev), fb = call(P), same = (x, y) => x == null || y == null || Math.abs(x - y) < 1e-6;
@@ -305,7 +274,6 @@ async function reality() {
       st.atKickoff = Object.assign({}, st.atKickoff || {}, { [g.game_id]: { pick: other(board.pick), conf: 0.55, margin: 1, pHome: other(board.pick) === g.home_team ? 0.55 : 0.45, blended: false, h: { pick: other(board.pick), conf: 0.55, margin: 1, pHome: 0.5 } } });
       st.joker = Object.assign({}, st.joker, { [g.game_id]: (st.joker || {})[g.game_id] || { pick: g.home_team, pHome: 0.6 } });
       st.broly = Object.assign({}, st.broly, { [g.game_id]: (st.broly || {})[g.game_id] || { pick: g.away_team, pHome: 0.4 } });
-      st.jokerLong = Object.assign({}, st.jokerLong, { [g.game_id]: (st.jokerLong || {})[g.game_id] || { pick: g.away_team, pHome: 0.45 } });
       const E = JSON.parse(eloModel); E.next = E.next || { games: [] }; E.next.games = (E.next.games || []).filter(x => x.game_id !== g.game_id).concat([{ game_id: g.game_id, pick: g.home_team }]);
       const espn = { events: [{ id: '1', date: y.toISOString(), competitions: [{ status: { type: { state: 'post', shortDetail: 'Final' } },
         competitors: [{ homeAway: 'home', team: { abbreviation: g.home_team }, score: '24' }, { homeAway: 'away', team: { abbreviation: g.away_team }, score: '17' }] }] }] };
@@ -314,11 +282,11 @@ async function reality() {
       check(!!row && row.fromScoreboard, `5k: a final on the scoreboard (${g.game_id}) was not settled`);
       if (row) {
         check(row.pick === other(board.pick) && row.h && row.h.pick === other(board.pick), `5k: the settled game was graded on today's call (${row.pick}), not the one frozen at kickoff (${other(board.pick)})`);
-        for (const k of ['joker', 'jokerLong', 'elo', 'broly']) check(row[k] && typeof row[k].correct === 'boolean', `5k: the scoreboard final was not counted for ${k}`);
+        for (const k of ['joker', 'elo', 'broly']) check(row[k] && typeof row[k].correct === 'boolean', `5k: the scoreboard final was not counted for ${k}`);
         const tx = b.d.getElementById('modelChart').textContent.replace(/\s+/g, ' ');
         const n = k => Object.values(SB.processed).filter(r => k(r) === true || k(r) === false).length;
-        const cnt = { 'Alpha Model': n(r => r.correct), 'The Joker': n(r => r.joker && r.joker.correct), 'Joker Jr': n(r => r.jokerLong && r.jokerLong.correct), 'ELO Model': n(r => r.elo && r.elo.correct), 'Broly Model': n(r => r.broly && r.broly.correct) };
-        for (const [name, c] of Object.entries(cnt)) { const m = tx.match(new RegExp(name.replace(/[()]/g, '\\$&') + ' (\\d+)–(\\d+)'));
+        const cnt = { 'Alpha Model': n(r => r.correct), 'The Joker': n(r => r.joker && r.joker.correct), 'ELO Model': n(r => r.elo && r.elo.correct), 'Broly Model': n(r => r.broly && r.broly.correct) };
+        for (const [name, c] of Object.entries(cnt)) { const m = tx.match(new RegExp(name + ' (\\d+)–(\\d+)'));
           check(!!m && +m[1] + +m[2] === c, `5k: ${name}'s record does not count the settled final (${m && m[0]}, ${c} decided)`); }
       }
       b.d.getElementById('picksToggle').click(); await new Promise(r => setTimeout(r, 60));
@@ -331,84 +299,6 @@ async function reality() {
       const tr = [...c.d.querySelectorAll('.pickgrid tbody tr')].find(t => t.textContent.includes(g.away_team + ' at ' + g.home_team));
       check(!!tr && tr.children[1].textContent.trim().startsWith(other(board.pick)), `5k: the pick grid shows ${tr && tr.children[1].textContent.trim()} for a game under way, not the call frozen at its kickoff (${other(board.pick)})`); }
     } }
-
-  /* 5m. Joker Jr, the test beside the Joker (betting/joker/long/joker_long.py): the
-     workflow runs it where a failure cannot stop the publish; each graded game is graded on the call
-     published for it; a call is backfilled exactly where the game kicked off before the model went
-     live (or, marked late, where a run missed it); every call backfilled by this run is what the data
-     as it stood before its kickoff gives, recomputed here from files in which every game after the
-     cut has a made-up final and scrambled stats, so a call that leaned on anything after its kickoff
-     would move; it is drawn on the record and in the pick grid as a test beside the
-     Joker, with the line saying how the backfilled picks were made; and with its fitted model gone
-     the step exits 1 (the workflow warns and goes on), changes no call or grade, this smoke on that
-     state skips the recomputation instead of failing on the same missing file (and with it the
-     publish), and the record says so while every model's record still draws */
-  { const calls = P.jokerLong || {}, ms = P.modelStatus || {}, info = P.jokerLongInfo || {};
-    const yml = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'update.yml'), 'utf8').split(/\n      - /);
-    const at = re => yml.findIndex(s => re.test(s)), sJ = at(/betting\/joker\/joker\.py/), sL = at(/joker_long\.py/), sS = at(/tools\/smoke\.js/), sC = at(/git add betting\/state\.json/);
-    check(sJ >= 0 && sL > sJ && sL < sS && sL < sC && /continue-on-error: true/.test(yml[sL] || ''), '5m: update.yml does not run joker_long.py after joker.py and before the smoke test and the commit, with continue-on-error');
-    const winner = r => r.result > 0 ? r.home : r.result < 0 ? r.away : null;
-    let n = 0;
-    for (const [gid, r] of Object.entries(P.processed)) {
-      const c = calls[gid], g = r.jokerLong;
-      if (r.result == null || (!c && (ms.jokerLong || !Object.keys(calls).length))) continue;
-      n++;
-      check(!!c && !!g && g.pick === c.pick && g.pHome === c.pHome && g.correct === (winner(r) == null ? null : c.pick === winner(r)) && !!g.backfill === !!c.backfill,
-        `5m: ${gid} is graded on ${J(g)}, not on the call published for it ${J(c)}`); }
-    const since = Date.parse(info.since || ''), sched = Object.fromEntries(S.schedule.map(g => [g.game_id, g]));
-    check(!Object.keys(calls).length || isFinite(since), '5m: the state has Joker Jr calls and no jokerLongInfo.since');
-    for (const [gid, c] of Object.entries(calls)) { const k = sched[gid] ? kick(sched[gid]) : null; if (k == null || !isFinite(since)) continue;
-      if (k <= since) check(!!c.backfill, `5m: ${gid} kicked off before Joker Jr went live and is not marked backfilled`);
-      else check(!c.backfill || !!c.late, `5m: ${gid} kicked off after Joker Jr went live and is marked backfilled, not late`); }
-    let prev = null; try { prev = JSON.parse(process.env.BETTING_PREV_STATE ? fs.readFileSync(process.env.BETTING_PREV_STATE, 'utf8')
-      : require('child_process').execSync('git show HEAD:betting/state.json', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { prev = null; }
-    const rc = jlRecompute(P, prev);
-    console.log(`  5m: Joker Jr graded on its published call on ${n} games, ${rc.bf.length} backfilled`);
-    /* skipped only for a reason: the step did not run this time, or it has nothing backfilled */
-    check(!rc.skip || !!ms.jokerLong || !rc.bf.length, `5m: the recomputation was skipped (${rc.skip}) although the step ran and ${rc.bf.length} calls are backfilled`);
-    if (rc.skip) console.log(`  (5m recompute skipped: ${rc.skip})`);
-    else { rc.fails.forEach(m => check(false, m));
-      if (rc.same != null) console.log(`  5m: ${rc.same} of ${rc.todo.length} backfilled calls (${rc.now.length} new in this state) match a recomputation from the data before each kickoff, with every later game poisoned`); }
-    /* on the record: its line, its row and its column, as a test beside the Joker */
-    const dec = Object.values(P.processed).filter(r => r.jokerLong && typeof r.jokerLong.correct === 'boolean');
-    if (dec.length) {
-      const b = boot(P); await new Promise(res => setTimeout(res, 700));
-      const rec = b.d.getElementById('modelChart'), tx = rec.textContent.replace(/\s+/g, ' '), w2 = dec.filter(r => r.jokerLong.correct).length;
-      const nt = (rec.querySelector('.rv-notes') || {}).textContent || '';
-      check(tx.includes(`Joker Jr ${w2}–${dec.length - w2}`), `5m: the legend should give Joker Jr ${w2}–${dec.length - w2}: ` + tx.slice(0, 400));
-      check(rec.querySelectorAll('svg.rv-chart polyline[stroke="#8E1B10"][stroke-dasharray]').length === 1, '5m: Joker Jr has no dashed line on the chart');
-      check(/Joker Jr is a test running beside the live Joker/.test(nt), '5m: the record does not say Joker Jr is a test beside the live Joker: ' + nt.slice(0, 300));
-      if (dec.some(r => r.jokerLong.backfill)) check(/computed after the fact from pre-game data/.test(nt) && /fitted only on 2010-2025/.test(nt), '5m: the record does not say how the backfilled picks were made: ' + nt.slice(0, 400));
-      const row = [...b.d.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(t => t.querySelector('th').textContent.trim() === 'Joker Jr');
-      check(!!row && row.querySelector('td.rv-season b').textContent === `${w2}–${dec.length - w2}` && /test running beside the live Joker/.test(row.querySelector('th').title), '5m: the week-by-week grid has no Joker Jr row with its season, marked a test');
-      b.d.getElementById('picksToggle').click(); await new Promise(res => setTimeout(res, 80));
-      const head = [...b.d.querySelectorAll('.pickgrid thead th')].map(th => th.textContent.trim()), ci = head.indexOf('Joker Jr');
-      check(ci > 0 && ci === head.indexOf('The Joker') + 1, '5m: the pick grid has no Joker Jr column beside the Joker\'s: ' + head.join('|'));
-      for (const g of weekGames) { const c = calls[g.game_id]; if (!c || ci < 0) continue;
-        const tr = [...b.d.querySelectorAll('.pickgrid tbody tr')].find(t => t.textContent.includes(g.away_team + ' at ' + g.home_team));
-        check(!!tr && tr.children[ci].textContent.trim().startsWith(c.pick), `5m: the pick grid shows ${tr && tr.children[ci].textContent.trim()} for Joker Jr on ${g.game_id}, not its call ${c.pick}`); }
-      check(b.errors.length === 0, '5m: runtime errors: ' + b.errors.join('; ')); }
-    /* its fitted model gone: the step refuses, keeps every call and grade, and the record says why */
-    { const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'jokerlong-')), sp = path.join(tmp, 'state.json');
-      fs.writeFileSync(sp, J(P));
-      const r = py([JL_STEP], { BETTING_STATE: sp, JOKER_LONG_MODEL: path.join(tmp, 'model.joblib') });
-      const after = JSON.parse(fs.readFileSync(sp, 'utf8')), why = (after.modelStatus || {}).jokerLong;
-      check(r.status === 1, `5m: with its fitted model missing the step exited ${r.status}, not 1 (the workflow warns on 1 and publishes): ` + String(r.stderr || r.error || '').slice(-300));
-      check(!!why && /model/.test(why.why) && /missing/.test(why.why) && !!why.since, '5m: with its fitted model missing the state does not say why: ' + J(why));
-      check(['jokerLong', 'joker', 'broly', 'processed', 'schedule', 'odds'].every(k => J(after[k]) === J(P[k])), '5m: with its fitted model missing the step changed a call, a grade or the season');
-      /* and this smoke on that state, as the job's next run meets it (the file still gone, P the state
-         before): the recomputation is skipped for the step's reason, not run on the same missing file,
-         which would fail the smoke and stop the whole publish over a test */
-      const rc = jlRecompute(after, P, { BETTING_STATE: sp, JOKER_LONG_MODEL: path.join(tmp, 'model.joblib') });
-      check(/did not run this time/.test(rc.skip || '') && !(rc.fails || []).length,
-        '5m: with its fitted model missing the smoke still recomputes the backfilled calls, which fails the publish: ' + J(rc.skip || rc.fails));
-      const e = boot(after); await new Promise(res => setTimeout(res, 700));
-      if (Object.keys(after.processed).length) {
-        const ct = e.d.getElementById('modelChart').textContent.replace(/\s+/g, ' '), nt = (e.d.querySelector('#modelChart .rv-notes') || {}).textContent || '';
-        check(/Joker Jr could not be rescored/.test(nt) && /missing/.test(nt), '5m: a missing fitted model is not said on the record: ' + nt.slice(0, 300));
-        check(/Alpha Model \d+–\d+/.test(ct) && /The Joker \d+–\d+/.test(ct), '5m: with Joker Jr down the record does not draw the others'); }
-      check(e.errors.length === 0, '5m: runtime errors with Joker Jr down: ' + e.errors.join('; '));
-      fs.rmSync(tmp, { recursive: true, force: true }); } }
 
   /* 5l. the record says what it is: the Joker's fitted weeks, and a model that could not run */
   { const st = JSON.parse(state);
@@ -439,6 +329,43 @@ async function reality() {
       check(/fit, not a prediction/.test((e.d.querySelector('#modelChart .rv-notes') || {}).textContent || ''), '5l: the published Joker fit is not disclosed on the record');
     }
     check(b.errors.length === 0, '5l: runtime errors: ' + b.errors.join('; ')); }
+
+  /* 5m. Joker Jr, a test model retired in October 2026, stays retired. A state this run wrote (its
+     stamp is not the last commit's) carries none of what its step published (update.js drops it);
+     the last commit's may, until the job's next run. And a state that still carries all of it, its
+     calls, grades and a status saying it could not run, draws exactly what the same state without
+     it draws: the record's chart and notes, the week-by-week grid and the pick grid */
+  { const has = st => 'jokerLong' in st || 'jokerLongInfo' in st || Object.values(st.processed || {}).some(r => r && 'jokerLong' in r) || !!(st.modelStatus && 'jokerLong' in st.modelStatus);
+    let prev = null; try { prev = JSON.parse(process.env.BETTING_PREV_STATE ? fs.readFileSync(process.env.BETTING_PREV_STATE, 'utf8')
+      : require('child_process').execSync('git show HEAD:betting/state.json', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { prev = null; }
+    if (prev && prev.published !== P.published) check(!has(P), '5m: a state written since the last commit still carries Joker Jr\'s keys (update.js dropJokerJr)');
+    else if (has(P)) console.log('  (5m: the state is the last commit\'s and still carries Joker Jr\'s keys; the job\'s next run drops them)');
+    const st = JSON.parse(state); delete st.jokerLong; delete st.jokerLongInfo;
+    for (const r of Object.values(st.processed)) delete r.jokerLong;
+    if (st.modelStatus) { delete st.modelStatus.jokerLong; if (!Object.keys(st.modelStatus).length) delete st.modelStatus; }
+    /* the record and its grids are drawn once a game is graded: before the first final, one made-up graded game */
+    if (!Object.keys(st.processed).length) { const g = st.schedule[0];
+      Object.assign(g, { result: 7, home_score: 24, away_score: 17 });
+      st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, h: null, news: [] }; }
+    st.showAllModels = true;
+    const jr = JSON.parse(J(st)), wk = w.eval('currentWeekDefault()');
+    jr.jokerLong = {};
+    for (const g of jr.schedule.filter(x => +x.week <= wk)) jr.jokerLong[g.game_id] = { pick: g.away_team, pHome: 0.45, backfill: true };
+    for (const r of Object.values(jr.processed)) r.jokerLong = { pick: r.away, pHome: 0.45, correct: r.result != null ? r.result < 0 : null, backfill: true };
+    jr.jokerLongInfo = { since: P.published, fitted_on: '2010-2025 regular season and playoffs', walk_forward: { long_fit: 0.65, joker_recipe_2019_start: 0.63, vegas: 0.66, games: 1355 } };
+    jr.modelStatus = Object.assign({}, jr.modelStatus, { jokerLong: { since: P.published, why: 'its fitted model is missing (made up for the smoke test)' } });
+    const draw = async s => { const b = boot(s); await new Promise(r => setTimeout(r, 700));
+      b.w.eval(`S.picksOpen=true; S.picksWeek=${wk}; renderRecord()`); await new Promise(r => setTimeout(r, 60));
+      const t = sel => [...b.d.querySelectorAll(sel)].map(x => x.textContent.replace(/\s+/g, ' ').trim()).join(' | ');
+      return { chart: t('#modelChart'), lines: b.d.querySelectorAll('#modelChart svg polyline').length, grid: t('#recordTable table.rv-grid tbody tr'),
+        picks: t('.pickgrid thead th') + ' || ' + t('.pickgrid tbody tr'), errors: b.errors }; };
+    const a = await draw(st), z = await draw(jr);
+    check(!/Joker Jr|jokerLong/.test(a.chart + a.grid + a.picks + z.chart + z.grid + z.picks), '5m: the record names Joker Jr: ' + (z.chart.match(/.{0,80}(Joker Jr|jokerLong).{0,80}/) || [''])[0]);
+    check(a.chart === z.chart && a.lines === z.lines, '5m: a state carrying Joker Jr\'s calls, grades or status draws a different chart or notes: ' + z.chart.slice(0, 300));
+    check(!!a.grid && a.grid === z.grid, '5m: a state carrying Joker Jr\'s grades draws a different week-by-week grid: ' + z.grid.slice(0, 300));
+    check(/The Joker/.test(a.picks) && a.picks === z.picks, '5m: a state carrying Joker Jr\'s calls draws a different pick grid: ' + z.picks.slice(0, 300));
+    check(!a.errors.length && !z.errors.length, '5m: runtime errors: ' + a.errors.concat(z.errors).join('; '));
+    console.log(`  5m: a state carrying Joker Jr's ${Object.keys(jr.jokerLong).length} calls, ${Object.keys(jr.processed).length} grades and a status draws the record as one without them`); }
 }
 
 /* ---------------------------------------------------------------- 6. the X Bet Log, handed in
@@ -739,7 +666,7 @@ async function xbetLog() {
        season it could not call, say) is left out rather than shown empty */
     { const dec = f => Object.values(SE.processed).some(r => { const v = f(r); return v === true || v === false; });
       const order = [['Alpha Model', r => r.correct], ['Challenger Model', r => r.h && r.h.correct], ['The Joker', r => r.joker && r.joker.correct],
-        ['Joker Jr', r => r.jokerLong && r.jokerLong.correct], ['ELO Model', r => r.elo && r.elo.correct], ['Broly Model', r => r.broly && r.broly.correct]].filter(([n, f]) => (SE.showAllModels || n === 'Alpha Model') && dec(f)).map(([n]) => n).concat('Vegas');
+        ['ELO Model', r => r.elo && r.elo.correct], ['Broly Model', r => r.broly && r.broly.correct]].filter(([n, f]) => (SE.showAllModels || n === 'Alpha Model') && dec(f)).map(([n]) => n).concat('Vegas');
       check(gridRows.includes('ELO Model') && gridRows.join('|') === order.join('|'), 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|') + ' (want ' + order.join('|') + ')'); }
     { const eloRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'ELO Model');
       check(!!eloRow && eloRow.querySelector('td.rv-season b').textContent === `${want}\u2013${gradedIds.length - want}`, 'embed: the grid\'s Elo season cell is wrong'); }

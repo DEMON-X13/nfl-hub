@@ -62,6 +62,20 @@ const PRIVATE = ['bets', 'bank', 'myPicks', 'lastBackup', 'lastBackupHow'];   //
  * published state and keeps every key of it, so a key that is no longer written still has to
  * be left out here or it is carried forward for good. */
 const RETIRED = ['picks', 'publishedBuild'];
+/* Joker Jr, a test model the job ran beside the Joker for a few days of October 2026, was
+ * retired for trailing it. Its step published state.jokerLong (its calls), state.jokerLongInfo,
+ * processed[gid].jokerLong (its grades) and, while it could not run, modelStatus.jokerLong; the
+ * app is seeded with the published state and keeps all of them, so they are dropped here: those
+ * keys and nothing else (a modelStatus left empty goes too, as jobkit.set_status never leaves an
+ * empty one). On a state that carries none of them this changes nothing. */
+function dropJokerJr(out) {
+  delete out.jokerLong; delete out.jokerLongInfo;
+  for (const r of Object.values(out.processed || {})) if (r && typeof r === 'object') delete r.jokerLong;
+  if (out.modelStatus && typeof out.modelStatus === 'object') {
+    delete out.modelStatus.jokerLong;
+    if (!Object.keys(out.modelStatus).length) delete out.modelStatus;
+  }
+}
 /* the injury report's columns the app reads (the week's designations, who and where); the
  * rest of nflverse's columns, the injuries themselves among them, are left out of the file
  * the site fetches on every load */
@@ -214,6 +228,7 @@ async function main() {
 
   const out = {};
   for (const k of Object.keys(st)) if (!PRIVATE.includes(k) && !RETIRED.includes(k)) out[k] = st[k];
+  dropJokerJr(out);
   if (out.injuries && Array.isArray(out.injuries.rows))
     out.injuries = { ...out.injuries, rows: out.injuries.rows.map(r => Object.fromEntries(INJ_COLS.filter(c => c in r).map(c => [c, r[c]]))) };
 
