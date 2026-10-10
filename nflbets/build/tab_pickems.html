@@ -203,7 +203,7 @@ function gameBody(g){
   }
   const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')).length;
   const note=locked?''
-    :`<p class="pk-tolegs">Ticked lines go to <a href="#parlay">Parlay Builders</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
+    :`<p class="pk-tolegs">Ticked lines go to your builder on <a href="#parlay">X Parlays</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
   return `<div class="pk-gbody">${card}${note}</div>`;
 }
 /* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
