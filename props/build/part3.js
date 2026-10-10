@@ -91,6 +91,9 @@ function renderSlate(){
   }
   const card=g=>{
     const ca=gameCtx(g,g.a), ch=gameCtx(g,g.h), d=fmtDate(g);
+    /* the scores as the row shows them, rounded once: the pick and its margin are read from these,
+       so "22 - 20" never reads "by 3" */
+    const sa=+ca.implied.toFixed(0), sh=+ch.implied.toFixed(0);
     const started=gameStarted(g), fin=gameFinal(g);
     return `<button class="game${fin?' final':(started?' locked':'')}" data-game="${g.id}">
       <div class="when"><b>${d.day}</b>${fin?'<span class="pill ok">FINAL</span>'+liveWhen(g,true):(started?liveWhen(g):d.t)}</div>
@@ -102,11 +105,13 @@ function renderSlate(){
         const band=av==null?'':hitBand(av,x.v.mu);
         return `<div><span class="cat">${x.k}</span><span class="nm">${esc(shortName(x.v.pl.n))}</span><span class="v">${x.v.mu.toFixed(0)}<em>yds</em>${
           av!=null?`<span class="va ${band}">${num(av,0)}<em>yds</em></span>`:(fin?'<span class="va pend">\u2013</span>':'')}</span></div>`;}).join('')}</div>
-      <div class="tot"><b>${ca.implied.toFixed(0)} \u2013 ${ch.implied.toFixed(0)}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:liveScoreLine(g)}</div>
+      <div class="tot"><b>${sa} \u2013 ${sh}</b><small>${g.a} / ${g.h}</small>${hasScore(g)?`<small class="act">(actual ${g.as} \u2013 ${g.hs})</small>`:liveScoreLine(g)}</div>
       <div class="totpts${ca.src==='model'?' assumed':''}"><b>${(ca.implied+ch.implied).toFixed(0)}</b><small>${ca.src==='market'?'points':'our model'}</small>${hasScore(g)?`<small class="act">(actual ${g.as+g.hs})</small>`:''}</div>
       <div class="winner">${(()=>{
-        if(ca.implied===ch.implied&&!hasScore(g)) return '<span class="none">\u2013</span><small>even</small>';
-        const pick=ca.implied>ch.implied?g.a:g.h, by=Math.abs(ca.implied-ch.implied).toFixed(0);
+        if(sa===sh){ const even='<span class="none">\u2013</span><small>even</small>';
+          if(!hasScore(g)) return even;
+          return even+`<small class="act">(${g.as===g.hs?'tie':`${g.as>g.hs?g.a:g.h} by ${Math.abs(g.as-g.hs)}`})</small>`; }
+        const pick=sa>sh?g.a:g.h, by=Math.abs(sa-sh);
         if(!hasScore(g)) return tag(pick)+`<small>by ${by}</small>`+(ca.src==='model'?'<small class="muted">no line yet, our model</small>':'');
         if(g.as===g.hs) return tag(pick)+`<small>by ${by}</small><small class="act">(tie)</small>`;
         const real=g.as>g.hs?g.a:g.h, right=real===pick;

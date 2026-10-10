@@ -44,6 +44,31 @@ setTimeout(async()=>{
   }
   console.log(`A. game context: ${nGames} games, ${nMkt/2} priced by market, ${nModel/2} by our model`);
 
+  /* ---- A2. the slate's rows: the margin beside the pick is the difference of the two scores the
+     row shows, and the side picked is the one with the bigger number on the row; scores that show
+     a tie read "even", with no pick. Every rendered row of every week (a week not open yet renders
+     none; the current week always has some), then two lines set on the rounding itself ---- */
+  { const ws=d.getElementById('weekSel'), keep=ws.value; let rows=0, evens=0;
+    const show=wk=>{ ws.value=String(wk); ws.dispatchEvent(new w.Event('change')); };
+    const read=b=>{ const sc=((b.querySelector('.tot b')||{}).textContent||'').trim(), m=sc.match(/^(\d+) \u2013 (\d+)$/), win=b.querySelector('.winner');
+      const by=[...(win?win.querySelectorAll('small'):[])].map(x=>x.textContent.trim().match(/^by (\d+)$/)).find(Boolean);
+      return {sc,ok:!!(m&&win),A:m?+m[1]:NaN,H:m?+m[2]:NaN,even:!!(win&&win.querySelector('.none')),by:by?+by[1]:null,pick:((win&&win.querySelector('.ttag'))||{}).textContent||null}; };
+    const rowOk=(g,r)=>r.ok&&(r.even?(r.A===r.H&&r.by==null&&!r.pick):(r.A!==r.H&&r.by===Math.abs(r.A-r.H)&&r.pick===(r.A>r.H?g.a:g.h)));
+    for(const o of [...ws.options]){ show(o.value);
+      for(const b of d.querySelectorAll('#gamesList .game[data-game]')){ rows++;
+        const g=S.sched.find(x=>x.id===b.dataset.game), r=read(b); if(r.even) evens++;
+        chk(!!g&&rowOk(g,r),`slate row ${b.dataset.game}: "${r.sc}" beside ${r.even?'"even"':`"${r.pick} by ${r.by}"`}`); } }
+    chk(rows>0,'the slate rendered no game rows in any week');
+    /* 22.4 - 19.6 shows "22 - 20", whose margin is 2 though the unrounded gap rounds to 3; 21.3 -
+       20.9 shows "21 - 21", which is even though one side leads */
+    const g=S.sched.find(x=>F('weekOpen')(+x.w)), was={sp:g.sp,tot:g.tot};
+    for(const [tot,sp,want] of [[42,-2.8,'22 \u2013 20|by 2'],[42.2,-0.4,'21 \u2013 21|even']]){
+      g.tot=tot; g.sp=sp; show(g.w);
+      const b=d.querySelector(`#gamesList [data-game="${g.id}"]`), r=b?read(b):{sc:'(no row)',ok:false};
+      chk(!!b&&rowOk(g,r)&&`${r.sc}|${r.even?'even':'by '+r.by}`===want,`slate row on the rounding: lines ${tot}/${sp} show "${r.sc}" beside ${r.even?'"even"':`"${r.pick} by ${r.by}"`}, not ${want.replace('|',' beside ')}`); }
+    g.sp=was.sp; g.tot=was.tot; show(keep);
+    console.log(`A2. slate rows: ${rows} rows over ${ws.options.length} weeks (${evens} even), each margin the difference of the scores shown`); }
+
   /* ---- B. rosters: no duplicates, right teams, depth caps ---- */
   let nPl=0, dupes=0, wrongTeam=0, capViol=0, gaps=0;
   for(const g of S.sched){ const r=rosterFor(g,false);
