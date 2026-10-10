@@ -1,24 +1,20 @@
-<!-- A visitor's parlay as a card: its styles, its window, its script. build.js sets these into
-     the Bets and Stats page the way it sets the Pick'ems and Player Elo tabs in, every class and
-     id prefixed pc-, the script one closure.
+<!-- A parlay from the builder as a card: its styles, its window, its script. build.js sets these
+     into the Bets and Stats page the way it sets the Pick'ems and Player Elo tabs in, every class
+     and id prefixed pc-, the script one closure.
 
-     Visitors come to the site to see X's parlays, so a visitor's device has no list of its own:
-     the Parlay Builder is still theirs to use, and where the owner's device saves a parlay into
-     X's (Save and lock), a visitor's finishes it. Finish parlay opens this window with the
-     parlay drawn as a card -- every leg with its price, the parlay's price, the stake and what it
-     pays, the model's chance beside the book's, the week and its dates, and the site's mark --
-     and Download saves it as a PNG, drawn on a canvas at twice its size. Where the browser can
-     share a file (a phone), the share sheet is offered too, which is how an image reaches Photos.
+     Visitors come to the site to see X's parlays (liveparlays/parlays.json, which every device
+     reads and nobody's page writes), so no device keeps a list of its own: the Parlay Builder is
+     everyone's to use, and its Save and lock is Finish parlay on every device. Finish parlay opens
+     this window with the parlay drawn as a card -- every leg with its price, the parlay's price,
+     the stake and what it pays, the model's chance beside the book's, the week and its dates, and
+     the site's mark -- and Download saves it as a PNG, drawn on a canvas at twice its size. Where
+     the browser can share a file (a phone), the share sheet is offered too, which is how an image
+     reaches Photos.
 
-     Nothing is saved: not to the prop model's saved list, not to X's document, not to any key
-     of this page. The builder keeps its legs, so the visitor can change one and finish again;
-     Start over clears it. A suggestion (the Suggested parlays window's model and Elo tiers) is
-     finished the same way on a visitor's device, since Add to saved parlays would add to a list
-     this page no longer draws for them.
-
-     Who is a visitor: anyone whose device is not the owner's (the X Parlays section's own
-     question, window.lpOwner), which with no store set up at all is everyone. On the owner's
-     devices nothing here runs and Save stays Save.
+     Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
+     this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
+     over clears it. A suggestion (the Suggested parlays window's model and Elo tiers) is finished
+     the same way, since Add to saved parlays would add to a list this page does not draw.
 
      The builder's numbers are the builder's own: build.js lifts its pricing block out of
      renderParlay in props/build/part3.js into quote() below (the /*QUOTE*/ slot), so the card's
@@ -92,8 +88,6 @@ window.PARLAY_CARD=(function(){
   const SITE='demon-x13.github.io/nfl-hub/nflbets';
   const $=id=>document.getElementById(id);
   const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  /* a visitor: anyone whose device is not the owner's, the X Parlays section's own rule */
-  const visitor=()=>!(typeof window.lpOwner==='function'&&window.lpOwner());
   /* every dollar figure whole, with its thousands marked: $17,620.00 */
   const money=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const pct=p=>p>0&&p<0.0005?'<0.1%':(p*100).toFixed(1)+'%';      // a long shot reads as under a tenth of a percent, not 0.0%
@@ -355,13 +349,12 @@ window.PARLAY_CARD=(function(){
     try{ const b=$('suggOpen'); if(b) b.focus(); }catch(e){}
   }
 
-  /* ---- on a visitor's device: Finish where Save was ---- */
+  /* ---- on every device: Finish where Save was ---- */
   const FINISH_TIP='Opens this parlay as a card you can download. Nothing is saved: not here, not in X’s parlays.';
   /* the builder's Save and lock, after every redraw of the builder: the same button, with the
      builder's own rule for when it can be pressed (one week, and a price), cloned so its save
      goes with the old one */
   function finishBuilder(){
-    if(!visitor()) return false;
     const b=$('pSave'); if(!b) return false;
     const nb=b.cloneNode(true);
     nb.id='pFinish'; nb.textContent='Finish parlay';
@@ -373,7 +366,6 @@ window.PARLAY_CARD=(function(){
   /* a tier's Add to saved parlays in the Suggested parlays window, the model's and the Elo
      picks', whenever the window is filled */
   function finishTiers(){
-    if(!visitor()) return 0;
     const v=$('suggView'); if(!v) return 0;
     let n=0;
     v.querySelectorAll('[data-suggest-save],[data-elo-save]').forEach(b=>{
@@ -409,14 +401,8 @@ window.PARLAY_CARD=(function(){
     },true);
     const v=$('suggView');
     if(v&&typeof MutationObserver==='function') new MutationObserver(()=>finishTiers()).observe(v,{childList:true,subtree:true});
-    /* the device's role can be settled after the builder was first drawn (a slow store): the
-       builder is drawn again whenever it changes, so Save and Finish follow it */
-    let was=visitor();
-    if(window.NFLSYNC&&typeof NFLSYNC.onChange==='function') NFLSYNC.onChange(()=>{ const now=visitor(); if(now===was) return; was=now;
-      if(!now&&isOpen()) close();
-      try{ if(typeof renderParlay==='function'&&typeof S==='object'&&S) renderParlay(); if(typeof suggestOpen==='function'&&suggestOpen()&&typeof fillSuggest==='function') fillSuggest(); }catch(e){} });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
-  return {visitor,quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishTiers,current:()=>cur};
+  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishTiers,current:()=>cur};
 })();
 </script>

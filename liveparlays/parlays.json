@@ -1,6 +1,6 @@
 {
- "how": "X's placed parlays: the slips X Parlays shows as placed, on every device. The page only reads this file, so changing it here changes what every device sees on its next load. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under.",
- "updated": "2026-10-08T00:00:00Z",
+ "how": "X's placed parlays: what X Parlays shows, on every device, read only. Claude keeps this file from the slips the owner sends in chat; the page only reads it, on every load, so a change here is what every device sees on its next load. A parlay is id (any name not used before), week, stake, price (the American odds it was placed at), payout (what it pays, stake included), note (optional) and legs. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under. A line the book moved before X placed the bet is written as the line X took. A parlay X has cleared (settled, and no longer wanted on the page) stays here as history with \"cleared\": true and is not drawn. updated is when this file last changed what X Parlays shows.",
+ "updated": "2026-10-10T17:28:45Z",
  "games": [
   "2026_02_NO_BAL",
   "2026_02_PHI_TEN",
@@ -32,6 +32,7 @@
  "parlays": [
   {
    "id": "w5-dk-tbdal-3-unders",
+   "cleared": true,
    "week": 5,
    "stake": 2,
    "price": 550,
@@ -69,6 +70,7 @@
   },
   {
    "id": "w5-dk-tbdal-2",
+   "cleared": true,
    "week": 5,
    "stake": 2,
    "price": 244,
@@ -97,6 +99,7 @@
   },
   {
    "id": "w5-dk-tbdal-5-boost",
+   "cleared": true,
    "week": 5,
    "stake": 2,
    "price": 1275,
@@ -152,6 +155,7 @@
   },
   {
    "id": "w4-dk-atlno-ml-over",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 238,
@@ -180,6 +184,7 @@
   },
   {
    "id": "w4-dk-atlno-3-boost",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 750,
@@ -217,6 +222,7 @@
   },
   {
    "id": "w4-dk-atlno-3-td",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 296,
@@ -254,6 +260,7 @@
   },
   {
    "id": "w4-dk-detcar-3a",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 500,
@@ -291,6 +298,7 @@
   },
   {
    "id": "w4-dk-detcar-3b",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 366,
@@ -328,6 +336,7 @@
   },
   {
    "id": "w4-dk-rodgers-3",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 518,
@@ -365,6 +374,7 @@
   },
   {
    "id": "w4-dk-sgp-3",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": 600,
@@ -402,6 +412,7 @@
   },
   {
    "id": "w4-dk-pit-spread",
+   "cleared": true,
    "week": 4,
    "stake": 1,
    "price": -120,
@@ -421,6 +432,7 @@
   },
   {
    "id": "w3-dk-sgp-phichi-4",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 1200,
@@ -467,6 +479,7 @@
   },
   {
    "id": "w3-dk-sgp-phichi-3",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 500,
@@ -504,6 +517,7 @@
   },
   {
    "id": "w3-dk-sgp-5",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 3450,
@@ -559,6 +573,7 @@
   },
   {
    "id": "w3-dk-2",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 212,
@@ -586,6 +601,7 @@
   },
   {
    "id": "w3-dk-lines-3",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 905,
@@ -623,6 +639,7 @@
   },
   {
    "id": "w3-dk-ml-3",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 675,
@@ -659,6 +676,7 @@
   },
   {
    "id": "w3-dk-sgpx-4",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 1546,
@@ -705,6 +723,7 @@
   },
   {
    "id": "w3-dk-props-6",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "note": "top of the slip not in the screenshot",
@@ -767,6 +786,7 @@
   },
   {
    "id": "w2-ml-4",
+   "cleared": true,
    "week": 2,
    "stake": 2,
    "price": 142,
@@ -812,6 +832,7 @@
   },
   {
    "id": "w2-ml-3",
+   "cleared": true,
    "week": 2,
    "stake": 1,
    "price": 503,
@@ -848,6 +869,7 @@
   },
   {
    "id": "w2-props-4",
+   "cleared": true,
    "week": 2,
    "stake": 1,
    "legs": [
@@ -891,6 +913,7 @@
   },
   {
    "id": "w2-sgp-5",
+   "cleared": true,
    "week": 2,
    "stake": 2,
    "price": 1700,
@@ -946,6 +969,7 @@
   },
   {
    "id": "w3-sgp-5",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 2100,
@@ -1001,6 +1025,7 @@
   },
   {
    "id": "w3-sgp-6",
+   "cleared": true,
    "week": 3,
    "stake": 1,
    "price": 4200,
