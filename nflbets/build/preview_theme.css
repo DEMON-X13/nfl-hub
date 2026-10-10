@@ -76,10 +76,11 @@ input[type=checkbox]{accent-color:var(--hot)}
 .pe-pos button[aria-selected="true"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}
 .pk-note{background:var(--hot-soft);color:var(--hot-2)}
 .pk-result .pk-mwin.pk-ok{color:#CDFF4F}
-/* the X Parlays section and the builder's heading button */
-#lpCard .pill{background:var(--panel-3);color:var(--ink-2)}
+/* the X Parlays section (X's card and Your parlays), the owner's mark, and the builder's heading button */
+#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}
 #lpCard .note{background:var(--hot-soft);color:var(--hot-2)}
-#lpCard .pill.ok{background:var(--pick-soft);color:#CDFF4F} #lpCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:#CDFF4F} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+.xp-own,.xp-mark{background:var(--hot-soft);color:var(--hot-2)}
 .card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
 /* inside the framed betting tabs (html.embed): the page's glow shows through */
 html.embed body{background:transparent}

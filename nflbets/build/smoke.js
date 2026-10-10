@@ -688,6 +688,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
   chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
 
+  /* the renamed tabs keep their old addresses: a bookmark of #parlay or #bets still opens them */
+  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
+    w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
+    chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
   /* back to the board by address */
   w.location.hash = '#pickems';
   await wait(60);
@@ -1373,8 +1377,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     chk(K.w.NFLSYNC.state().blocked === 'signin' && /sign in to publish/.test(txt(K.d.getElementById('syncStamp'))) && !K.d.getElementById('xpSignIn').hidden, 'a lapsed sign-in is not said, or no sign-in is offered: ' + txt(K.d.getElementById('syncStamp')));
     chk(!storeDoc(store).prop.saved.some(p => p.id === 'k-unsent') && SK.saved.some(p => p.id === 'k-unsent') && JSON.parse(K.w.localStorage.getItem(PROP_KEY)).saved.some(p => p.id === 'k-unsent'),
       'a change made while the sign-in had lapsed was written, or lost from the device');
-    const putsK = store.writes.length; await K.w.NFLSYNC.poll(); await settle();
-    chk(store.writes.length === putsK, 'a device whose sign-in lapsed keeps trying to write');
+    /* held, not retried: another change and another look send nothing to the store or the token service */
+    const putsK = store.writes.length, refK = store.refreshes;
+    SK.stake = 13; K.w.eval('save();'); await settle(); await K.w.NFLSYNC.poll(); await settle();
+    chk(store.writes.length === putsK && store.refreshes === refK && K.w.NFLSYNC.state().pending, 'a device whose sign-in lapsed keeps trying to write, or forgot it has a change to write');
     await K.w.NFLSYNC.signIn(OWNER_EMAIL, OWNER_PW); await settle();
     chk(storeDoc(store).prop.saved.some(p => p.id === 'k-unsent') && K.nav.reloads === 0 && /^Signed in · Synced/.test(txt(K.d.getElementById('syncStamp'))), 'the change did not land once the device signed in again: ' + txt(K.d.getElementById('syncStamp')));
     for (const x of [R, O, E, E2, K]) x.w.close();
