@@ -54,16 +54,25 @@ const { BET_KEY, SEASON: BET_SEASON } = require(path.join(ROOT, 'betting', 'tool
 const ELO_M = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'model.json'), 'utf8');
 /* the matchups as published, except in a thin week (a lone Monday game has one or two players
    whose nudge clears the Elo picks' bar): then three real players' strongest trusted nudges are
-   raised to clear it, in this copy only, so the Elo picks checks run on any day of the week */
+   raised to clear it, in this copy only, so the Elo picks checks run on any day of the week; and a
+   week with no starter questionable on one side of the games (a report not out yet, a lone Monday
+   game) would leave the Game snapshot's Q with nothing to hold in that column, so the first starter
+   of each lineup on that side is made questionable, in this copy only */
 const ELO_MU = (() => {
   const raw = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'matchups.json'), 'utf8'), M = JSON.parse(raw);
+  let planted = false;
+  { const sideOf = (t, lu) => { const p = String(lu.game_id || '').split('_'); return p[3] === t ? 'home' : p[2] === t ? 'away' : null; };
+    const has = {};
+    for (const [t, lu] of Object.entries(M.lineups || {})) if ((lu.players || []).some(pid => (M.q || {})[pid])) has[sideOf(t, lu)] = true;
+    for (const [t, lu] of Object.entries(M.lineups || {})) { const sd = sideOf(t, lu);
+      if (sd && !has[sd] && (lu.players || []).length) { M.q = M.q || {}; M.q[lu.players[0]] = "questionable (the smoke's own: no starter on this side was)"; planted = true; } } }
   const ok = (g, st) => { const q = ((M.record[g + '|' + st] || {}).past); return !!q && q.rmse_elo < q.rmse_form && q.right_top >= 0.53; };
   const best = {};
   for (const [pid, v] of Object.entries(M.players || {})) for (const [st, a] of Object.entries(v.stats)) {
     if (!ok(v.group, st)) continue; const z = a[2] / M.fit[v.group + '|' + st].sd;
     if (!best[pid] || z > best[pid].z) best[pid] = { pid, st, z }; }
   const top = Object.values(best).sort((x, y) => y.z - x.z);
-  if (top.filter(x => x.z >= 0.12).length >= 3) return raw;
+  if (top.filter(x => x.z >= 0.12).length >= 3) return planted ? JSON.stringify(M) : raw;
   for (const x of top.slice(0, 3)) { const v = M.players[x.pid]; v.stats[x.st][2] = 0.2 * M.fit[v.group + '|' + x.st].sd; }
   return JSON.stringify(M);
 })();
@@ -1272,6 +1281,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       FO.w.close(); }
     O.w.close(); }
 
+  /* ---- the Game snapshot: its own section, at the end of this file ---- */
+  await snapshotChecks();
+
   /* ---- no page asked the retired store or its sign-in services anything, and nothing any page
      or frame sent was a write ---- */
   chk(ALL_CALLS.length > 100 && BAD_CALLS.length === 0, 'a page asked the retired store or its sign-in services, or sent a write: ' + BAD_CALLS.slice(0, 5).join(' | '));
@@ -1279,3 +1291,302 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
   finish();
 })().catch(e => finish('the smoke threw: ' + (e && e.stack || e)));
+
+/* =====================================================================================
+   THE GAME SNAPSHOT (nflbets/build/snapshot.html): the window an opened Pick'ems game opens
+   from its Game snapshot button. The body above runs this last but one, so the request rule
+   after it covers these runs too.
+
+   Every number the window shows is held to the file it comes from, worked out here on its own:
+   each team's record as Team Rankings counts it (betting/state.json's regular-season finals,
+   the rating file's where that has more), its Power Rating, rank, change and chance against an
+   average team (elo/data/model.json `teams`, ranked by rating), both Overall Offense and Overall
+   Defense (`units`), each expected starter's season Elo, rank, shield and Q (players.json and
+   matchups.json `lineups` and `q`), in his position's rows and his team's column, the ranked
+   players out (each group's `sidelined`), every model's pick, chance and grade (state.json's
+   processed, atKickoff, joker and broly, model.json's graded and next, Vegas from the closing
+   moneylines), the line, and the Mismatches, which must be the Props tab's own
+   (window.eloMismatches, and the bubbles on the Props tab). It opens on a game to come, on a
+   game final on the scoreboard and on a graded one; closes on Escape, Close and a click
+   outside; keeps Tab inside and hands the focus back; links to the full tabs; reads no Elo file
+   a second time; says so in each section when matchups.json, or the ratings, did not load while
+   the rest draws; draws a playoff game; lays the position table out fixed, names wrapping, and puts
+   every questionable starter's Q inside his own name's box in his team's column (the rules and the
+   structure, since jsdom lays nothing out); and gives its modal no top padding for the sticky
+   header to stick inside. With every game played (--season-over) there is no game to come, and the
+   played-game checks carry it.
+   ===================================================================================== */
+async function snapshotChecks() {
+  const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
+  const week = openWeek(st);
+  const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
+  const pc = p => Math.round(p * 100) + '%';
+  const amer = x => (+x > 0 ? '+' : '−') + Math.abs(Math.round(+x));
+  const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18;
+  /* a record as Team Rankings counts it: the regular-season finals, or the rating file's count
+     when it has seen more games (withFile false: the schedule alone, as with the file missing) */
+  const recOf = (t, withFile = true) => { const r = [0, 0, 0]; let n = 0;
+    for (const g of st.schedule) if (g.result != null && reg(g) && (g.home_team === t || g.away_team === t)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
+    const f = (withFile && eloM.teams && eloM.teams[t] && eloM.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f;
+    return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
+  const tRank = t => Object.entries(eloM.teams || {}).sort((a, b) => b[1].elo - a[1].elo).findIndex(([k]) => k === t) + 1;
+  const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
+  const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games));
+  /* every model's call on a game, from the files: the graded one, else the one published */
+  const callsOf = g => { const pr = st.processed[g.game_id], ak = (st.atKickoff || {})[g.game_id];
+    const one = x => x && x.pick ? { pick: x.pick, p: x.pHome == null ? null : (x.pick === g.home_team ? +x.pHome : 1 - x.pHome), correct: x.correct } : null;
+    const o = (st.odds || {})[g.game_id], sp = g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null;
+    let vegas = null;
+    if (o && isFinite(o.home) && isFinite(o.away) && o.home && o.away) { const ph = im(+o.home) / (im(+o.home) + im(+o.away)); vegas = { pick: ph >= 0.5 ? g.home_team : g.away_team, p: Math.max(ph, 1 - ph) }; }
+    else if (sp != null && sp !== 0) vegas = { pick: sp > 0 ? g.home_team : g.away_team, p: null };
+    const eg = (eloM.graded || []).find(x => x.game_id === g.game_id);
+    const en = !eg && eloM.next && +eloM.next.season === +st.season ? (eloM.next.games || []).find(x => x.game_id === g.game_id) : null, e = eg || en;
+    return { vegas, alpha: pr ? one(pr) : one(ak), challenger: pr ? one(pr.h) : one(ak && ak.h), joker: one(pr && pr.joker) || one((st.joker || {})[g.game_id]),
+      elo: e ? { pick: e.pick, p: e.pick === g.home_team ? e.p_home : 1 - e.p_home, correct: eg ? eg.correct : undefined } : null,
+      broly: one(pr && pr.broly) || one((st.broly || {})[g.game_id]) }; };
+  /* open a game on the board (its week picked first), then its snapshot from its button */
+  const open = async (R, g) => {
+    const sel = R.d.getElementById('pkWeek');
+    if (+sel.value !== +g.week) { sel.value = String(g.week); sel.dispatchEvent(new R.w.Event('change')); await wait(40); }
+    const card = R.d.querySelector(`.pk-game[data-game="${g.game_id}"]`); if (!card) return { card: null, btn: null };
+    if (!card.classList.contains('pk-open')) { card.click(); await wait(60); }
+    const btn = card.querySelector('.pk-gbody button[data-snap]'); if (!btn) return { card, btn: null };
+    btn.focus(); btn.click(); await wait(150);
+    return { card, btn, md: R.d.getElementById('gsModal') };
+  };
+  /* each Q in its own player's name box, after the name, in his team's column. Set beside the
+     name box as a flex item of its own, a Q was pushed, when the name wrapped on a phone, to the
+     inner edge of its half, beside the other team's player ('Malik Nabers Q' for Terry McLaurin's
+     Q; nearer the other player than its own for 69 of the season's 510 Q's at 390px and 109 at 360
+     in Chromium, none at 1280). jsdom lays nothing out, so the structure that keeps
+     them together is held: the Q's parent is the box whose own text is the player's name, not a
+     flex or grid box, the Q its only element and its last node, laid out inline, in the cell of the
+     column of the team whose lineup he is in; and a questionable starter has one Q, no other */
+  const qPlaced = (R, md, g) => {
+    const L = eloMu.lineups || {}, Q = eloMu.q || {}, a = g.away_team, h = g.home_team, bad = [], sides = new Set();
+    const pills = [...md.querySelectorAll('#gsPos .pe-q')];
+    for (const pill of pills) {
+      const pl = pill.closest('.gs-pl[data-pid]'), pid = pl ? pl.dataset.pid : null, e = pid ? eloP.players[pid] : null;
+      const who = e ? e.name : pid || 'a Q outside any player';
+      const box = pill.parentElement, own = box ? [...box.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim() : '';
+      const disp = box ? R.w.getComputedStyle(box).display : '';
+      if (!pl || !box || !pl.contains(box) || (e ? own !== e.name : !own)) bad.push(`${who}'s Q is not inside his name's box (its box reads '${own}')`);
+      else if (/flex|grid/.test(disp) || box.children.length !== 1 || box.lastChild !== pill || /^(block|flex|grid|table)$/.test(R.w.getComputedStyle(pill).display)) bad.push(`${who}'s Q is not inline after his name (its box is ${disp || 'unstyled'}, with ${box.children.length} elements)`);
+      const side = [a, h].find(t => ((L[t] || {}).players || []).includes(pid)), td = pill.closest('td');
+      if (!side || pl.dataset.team !== side || !td || !td.classList.contains(side === a ? 'gs-a' : 'gs-h')) bad.push(`${who}'s Q is not in ${side || 'his team'}'s column`);
+      else sides.add(side === a ? 'away' : 'home');
+    }
+    for (const pl of md.querySelectorAll('#gsPos .gs-pl[data-pid]')) { const n = pl.querySelectorAll('.pe-q').length;
+      if (n !== (Q[pl.dataset.pid] ? 1 : 0)) bad.push(`${(eloP.players[pl.dataset.pid] || {}).name || pl.dataset.pid} has ${n} Q's, the report ${Q[pl.dataset.pid] ? 'one' : 'none'}`); }
+    return { n: pills.length, bad, sides };
+  };
+  /* everything the window shows for a game, against the files; win is the winner when played
+     (null on a tie), undefined for a game to come */
+  const hold = (R, g, label, win) => {
+    const md = R.d.getElementById('gsModal'), q = s => md.querySelector(s), a = g.away_team, h = g.home_team;
+    chk(!!md && !md.hidden && !!q('[role="dialog"][aria-modal="true"][aria-labelledby="gsTitle"]') && new RegExp(`${a}.*${h}`).test(txt(R.d.getElementById('gsTitle'))) && R.d.activeElement === R.d.getElementById('gsClose'),
+      `snapshot (${label}): the window did not open as a dialog titled with the game, with the focus on Close`);
+    chk(['gsMatch', 'gsTeams', 'gsUnits', 'gsPos', 'gsMism', 'gsFiles'].every(id => md.querySelector('#' + id)) && !/could not be drawn/.test(txt(md)) && R.errs.length === 0,
+      `snapshot (${label}): a section is missing or failed: ${R.errs.join('; ')} ${(txt(md).match(/[^.]*could not be drawn[^.]*/) || [''])[0]}`);
+    /* the matchup: records, the line, the score */
+    for (const t of [a, h]) chk(txt(q(`[data-gs-rec="${t}"]`)) === recOf(t), `snapshot (${label}): ${t}'s record reads ${txt(q(`[data-gs-rec="${t}"]`))}, Team Rankings counts ${recOf(t)}`);
+    { const sp = g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null, o = (st.odds || {})[g.game_id];
+      const spTxt = sp == null ? '–' : sp > 0 ? `${h} −${sp}` : sp < 0 ? `${a} −${-sp}` : "Pick'em";
+      chk(txt(q('[data-gs-spread]')) === spTxt, `snapshot (${label}): the spread reads ${txt(q('[data-gs-spread]'))}, the file's is ${spTxt}`);
+      if (o && o.home && o.away) chk(txt(q('[data-gs-ml]')) === `${a} ${amer(o.away)} · ${h} ${amer(o.home)}`, `snapshot (${label}): the moneylines read ${txt(q('[data-gs-ml]'))}`); }
+    if (win !== undefined) chk(!!q('#gsPast') && /^\d+–\d+$/.test(txt(q('[data-gs-score]'))), `snapshot (${label}): a played game does not show its score and say the files are as they stand now`);
+    else chk(!q('#gsPast') && !q('[data-gs-score]'), `snapshot (${label}): a game to come shows a score or says it was played`);
+    /* every model's call */
+    { const C = callsOf(g), bad = [];
+      for (const id of ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly']) {
+        const tr = q(`tr[data-gs-model="${id}"]`), x = C[id];
+        if (!tr) { bad.push(id + ' has no row'); continue; }
+        if (!x) { if (tr.dataset.pick) bad.push(`${id} shows ${tr.dataset.pick}, the files have no call`); continue; }
+        if (tr.dataset.pick !== x.pick || txt(tr.querySelector('.pk-ttag')) !== x.pick) bad.push(`${id} picks ${tr.dataset.pick}, the files ${x.pick}`);
+        if (x.p != null && txt(tr.querySelector('[data-gs-p]')) !== pc(x.p)) bad.push(`${id} gives ${txt(tr.querySelector('[data-gs-p]'))}, the files ${pc(x.p)}`);
+        const hit = tr.querySelector('[data-gs-hit]');
+        if (win === undefined) { if (hit) bad.push(id + ' is graded before the game'); continue; }
+        const want = x.correct === true || x.correct === false ? x.correct : (win ? x.pick === win : null);
+        if (!hit || hit.dataset.gsHit !== (want === true ? 'hit' : want === false ? 'miss' : 'none')) bad.push(`${id} graded ${hit ? hit.dataset.gsHit : 'not at all'}, the files say ${want}`);
+      }
+      chk(bad.length === 0, `snapshot (${label}): the models' calls are not the files': ${bad.join('; ')}`); }
+    /* team Elo, as Team Rankings draws it (a team the file has no rating for is said) */
+    if (!eloM.teams || !eloM.teams[a] || !eloM.teams[h]) chk(/no rating for|did not load/.test(txt(q('#gsTeams'))), `snapshot (${label}): a team the ratings file lacks is not said`);
+    else for (const t of [a, h]) { const T = eloM.teams[t];
+      const chg = T.before == null ? 'no game yet' : T.elo === T.before ? 'no change' : (T.elo > T.before ? '+' : '−') + Math.abs(T.elo - T.before);
+      chk(txt(q(`[data-gs-telo="${t}"]`)) === String(T.elo) && txt(q(`[data-gs-trank="${t}"]`)) === '#' + tRank(t) && txt(q(`[data-gs-tavg="${t}"]`)) === pc(T.p_avg) && txt(q(`[data-gs-tchg="${t}"]`)) === chg
+        && !!q(`[data-gs-telo="${t}"]`).parentElement.querySelector('svg.tierbadge'),
+        `snapshot (${label}): ${t}'s Power Rating reads ${txt(q(`[data-gs-telo="${t}"]`))} ${txt(q(`[data-gs-trank="${t}"]`))} ${txt(q(`[data-gs-tchg="${t}"]`))} ${txt(q(`[data-gs-tavg="${t}"]`))}, the file's ${T.elo} #${tRank(t)} ${chg} ${pc(T.p_avg)}`); }
+    /* Overall Offense and Defense, both ways */
+    if (unitsOn) for (const [t, s] of [[a, 'off'], [h, 'def'], [h, 'off'], [a, 'def']]) { const v = eloM.units[s] && eloM.units[s][t], box = q(`[data-gs-unit="${s}:${t}"]`);
+      if (!v) { chk(/no rating for/.test(txt(q('#gsUnits'))), `snapshot (${label}): a unit the file lacks is not said`); continue; }
+      chk(!!box && txt(box.querySelector('[data-gs-urank]')) === ordinal(v.rank) && txt(box.querySelector('[data-gs-uelo]')) === String(v.elo),
+        `snapshot (${label}): ${t}'s Overall ${s === 'off' ? 'Offense' : 'Defense'} is not the file's ${ordinal(v.rank)}, ${v.elo}: ${box ? txt(box).slice(0, 80) : 'missing'}`); }
+    /* position by position: each lineup's rated starters, each in his team's column under his
+       position, with the ELO Ratings tab's season Elo, rank, shield and Q */
+    { const L = eloMu.lineups || {}, pls = [...md.querySelectorAll('#gsPos .gs-pl[data-pid]')], bad = [];
+      for (const t of [a, h]) { const all = (L[t] && L[t].players) || [], want = all.filter(pid => eloP.players[pid]), shown = pls.filter(x => x.dataset.team === t).map(x => x.dataset.pid);
+        if (want.some(pid => !shown.includes(pid)) || shown.some(pid => !all.includes(pid))) bad.push(`${t} shows ${shown.length} of its ${want.length} rated starters`); }
+      let grp = null;
+      for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
+        if (tr.classList.contains('gs-grp')) { grp = Object.keys(eloP.groups).find(k => eloP.groups[k].label === txt(tr)); continue; }
+        for (const x of tr.querySelectorAll('.gs-pl[data-pid]')) { const e = eloP.players[x.dataset.pid];
+          if (!!x.querySelector('.pe-q') !== !!(eloMu.q || {})[x.dataset.pid]) bad.push(`${e ? e.name : x.dataset.pid}'s Q is not the report's`);
+          if (!e) { if (!/not rated yet/.test(txt(x))) bad.push(x.dataset.pid + ' is not said to be unrated'); continue; }
+          if (e.group !== grp || x.dataset.grp !== e.group) bad.push(`${e.name} (${e.group}) sits under ${grp}`);
+          if (!x.closest('td').classList.contains(x.dataset.team === a ? 'gs-a' : 'gs-h')) bad.push(e.name + ' is in the wrong column');
+          if (e.rank != null && e.se != null) { if (txt(x.querySelector('.gs-pse')) !== String(e.se) || txt(x.querySelector('.gs-prk')) !== '#' + e.rank || !x.querySelector('svg.tierbadge')) bad.push(`${e.name} reads ${txt(x.querySelector('.gs-pse'))} ${txt(x.querySelector('.gs-prk'))}, the file ${e.se} #${e.rank}`); }
+          else if (txt(x.querySelector('.gs-pcar')) !== String(e.elo) || x.querySelector('.gs-pse')) bad.push(`${e.name}, not ranked, does not read career ${e.elo}`); } }
+      chk(pls.length > 0 && bad.length === 0, `snapshot (${label}): the position-by-position table is not the files': ${pls.length} players; ${bad.slice(0, 4).join('; ')}`);
+      /* each Q with its own player (qPlaced, above) */
+      { const r = qPlaced(R, md, g); chk(r.bad.length === 0, `snapshot (${label}): a Q is not with its own player: ${r.bad.slice(0, 4).join('; ')}${r.bad.length > 4 ? ` (${r.bad.length} in all)` : ''}`); }
+      /* the ranked players out, as the ELO Ratings tab lists them */
+      for (const t of [a, h]) { const want = Object.keys(eloP.groups).flatMap(k => (eloP.groups[k].sidelined || []).filter(x => x.team === t).map(x => x.id)).join();
+        const got = [...md.querySelectorAll(`[data-gs-outs="${t}"] li[data-pid]`)].map(x => x.dataset.pid).join();
+        chk(got === want, `snapshot (${label}): ${t}'s players out are ${got || 'none'}, the file's ${want || 'none'}`); } }
+    /* the Mismatches: the Props tab's own rows for this game, in its order, with its ranks and edges */
+    { const all = R.w.eloMismatches(), mine = all.map((v, i) => ({ ...v, n: i + 1 })).filter(v => v.game_id === g.game_id);
+      const li = [...md.querySelectorAll('#gsMism li[data-pid]')];
+      const kicked = R.w.eloGameOn(g.game_id) || win !== undefined || etKick({ d: g.gameday, t: g.gametime }) <= R.w.Date.now();
+      if (+g.week !== +eloMu.week || String(g.game_id).slice(0, 4) !== String(eloMu.season)) chk(!li.length && /The matchups are for/.test(txt(q('#gsMism'))), `snapshot (${label}): a game outside the matchups' week shows mismatches or does not say why`);
+      else if (kicked) chk(!li.length && /has kicked off/.test(txt(q('#gsMism'))), `snapshot (${label}): a game under way or played shows mismatches, or does not say why none`);
+      else { chk(li.map(x => x.dataset.pid).join() === mine.map(v => v.pid).join() && li.every((x, i) => txt(x.querySelector('[data-gs-mm]')) === mine[i].score.toFixed(1) && txt(x.querySelector('.gs-mmn')) === '#' + mine[i].n)
+          && (mine.length > 0 || /No mismatches in this game/.test(txt(q('#gsMism')))),
+          `snapshot (${label}): the Mismatches are not the Props tab's for this game: ${li.map(x => x.dataset.pid).join()} against ${mine.map(v => v.pid).join()}`);
+        /* and the bubbles the Props tab draws for this game are among them */
+        const bubbles = [...R.d.querySelectorAll('#peMism [data-mm-game]')].filter(b => b.dataset.mmGame === g.game_id).map(b => b.dataset.mmPid);
+        chk(bubbles.every(pid => li.some(x => x.dataset.pid === pid)), `snapshot (${label}): a Mismatches bubble on the Props tab for this game is not in the window`); } }
+    /* when the files were published */
+    chk(/Results and calls/.test(txt(q('#gsStamps'))) && /Elo ratings/.test(txt(q('#gsStamps'))) && /Lineups and matchups/.test(txt(q('#gsStamps'))), `snapshot (${label}): the window does not say when its files were published: ${txt(q('#gsStamps'))}`);
+  };
+
+  const R = await run(st, undefined, wk => scoreboard(st, wk));
+  await wait(700);
+  chk(!R.timedOut && R.errs.length === 0, 'snapshot: the page did not boot: ' + R.errs.join('; '));
+  /* the position table on a phone: laid out fixed, so each team keeps half the card and a long name
+     wraps inside its half (laid out automatically, a long name set the column's width and pushed
+     the home side past the card's edge on 34 of 45 games at 390px in Chromium), and no rule stops a
+     name wrapping (the Q is inside the name's box, so a name cut to an ellipsis would cut its Q).
+     jsdom lays nothing out, so the rules themselves are held here */
+  { const rules = [], walk = (list, media) => { for (const r of list) { if (r.cssRules && r.media) walk(r.cssRules, r.media.mediaText); else if (r.selectorText) rules.push({ sel: r.selectorText, media, st: r.style }); } };
+    for (const sh of R.d.styleSheets) { try { walk(sh.cssRules, ''); } catch (e) { /* a sheet jsdom cannot read */ } }
+    const has = (sel, phone, prop, val) => rules.some(r => r.sel === sel && (phone ? /max-width:\s*760px/.test(r.media) : !r.media) && r.st.getPropertyValue(prop) === val);
+    chk(has('.gs-pos', false, 'table-layout', 'fixed') && has('.gs-pl .gs-pnm', false, 'overflow-wrap', 'anywhere')
+      && !rules.some(r => /\.gs-pnm$|\.gs-pn span$/.test(r.sel) && /nowrap/.test(r.st.getPropertyValue('white-space'))),
+      'snapshot: the position table is not laid out fixed with names wrapping, so a long name pushes the home side off the screen');
+    /* the page's modal pads its top, and a sticky header sticks inside that padding: the window's
+       content showed in a band above its header once scrolled, so its modal has none */
+    chk(rules.some(r => r.sel === '#gsModal' && !r.media && /^0(px)?$/.test(r.st.getPropertyValue('padding-top'))),
+      'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled'); }
+  /* every opened game carries the button, priced by the prop model or not */
+  { const cards = [...R.d.querySelectorAll('.pk-game')].slice(0, 4);
+    for (const c of cards) { c.click(); await wait(40); }
+    chk(cards.length > 0 && cards.every(c => c.querySelector('.pk-gbody button[data-snap]') && c.querySelector('.pk-gbody button[data-snap]').dataset.snap === c.dataset.game),
+      'snapshot: an opened Pick\'ems game has no Game snapshot button');
+    for (const c of cards) { c.click(); await wait(20); } }
+  /* a game to come: the open week's first the scoreboard does not mark over or on, else a later week's */
+  const ung = st.schedule.filter(g => +g.week === week && g.result == null);
+  const toCome = ung.slice(2).concat(st.schedule.filter(g => +g.week > week && g.result == null))[0] || null;
+  let opened = 0;
+  if (toCome) {
+    const o = await open(R, toCome); opened++;
+    chk(!!o.btn, `snapshot: the game to come (${toCome.game_id}) has no Game snapshot button`);
+    if (o.btn) {
+      hold(R, toCome, 'a game to come', undefined);
+      /* Tab stays inside, both ways */
+      { const md = o.md, f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.closest('[hidden]'));
+        f[f.length - 1].focus(); f[f.length - 1].dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+        const wrapped = R.d.activeElement === f[0];
+        f[0].dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
+        chk(f.length > 3 && wrapped && R.d.activeElement === f[f.length - 1], 'snapshot: Tab does not stay inside the window'); }
+      /* Escape closes it, and the focus goes back to the button */
+      R.d.getElementById('gsClose').focus();
+      R.d.activeElement.dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+      chk(o.md.hidden && R.d.activeElement === o.btn && !R.d.body.classList.contains('modal-open'), 'snapshot: Escape does not close the window and hand the focus back to its button');
+      /* a click outside the window closes it; a click inside does not */
+      o.btn.click(); await wait(60);
+      R.d.getElementById('gsView').click(); await wait(20);
+      const stays = !o.md.hidden;
+      o.md.click(); await wait(20);
+      chk(stays && o.md.hidden, 'snapshot: a click outside the window does not close it, or one inside does');
+      /* the links: Team Rankings, then Props on this game */
+      o.btn.click(); await wait(60);
+      o.md.querySelector('[data-gs-go="ratings"]').click(); await wait(60);
+      chk(o.md.hidden && !R.d.getElementById('tab-ratings').hidden && R.d.getElementById('tab-pickems').hidden, 'snapshot: the Team Rankings link does not close the window and open the tab');
+      [...R.d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click(); await wait(60);
+      const o2 = await open(R, toCome);
+      o2.md.querySelector('[data-gs-go="slate"]').click(); await wait(120);
+      { const S = R.w.eval('S'), row = S.sched.find(x => x.id === toCome.game_id), can = !!row && R.w.eval('weekOpen')(+row.w);
+        chk(o2.md.hidden && !R.d.getElementById('tab-slate').hidden && (!can || (S.ui.game === toCome.game_id && !R.d.getElementById('gameModal').hidden)),
+          'snapshot: Props for this game does not open the Props tab on the game');
+        if (S.ui.game) R.w.eval('closeGame()'); }
+      [...R.d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click(); await wait(60);
+    }
+  }
+  /* a game the scoreboard says is over that the job has not graded: graded here on the scoreboard's winner */
+  const sbFinal = ung[0] || null;
+  if (sbFinal) {
+    const o = await open(R, sbFinal); opened++;
+    if (o.btn) { hold(R, sbFinal, 'a final on the scoreboard', sbFinal.home_team);
+      chk(txt(o.md.querySelector('[data-gs-score]')) === '20–27', 'snapshot: a final on the scoreboard does not show the scoreboard\'s score');
+      R.d.getElementById('gsClose').click(); await wait(20); chk(o.md.hidden && R.d.activeElement === o.btn, 'snapshot: Close does not close the window and hand the focus back'); }
+    else chk(false, 'snapshot: a game final on the scoreboard has no Game snapshot button');
+  }
+  /* a graded game, the latest */
+  const played = st.schedule.filter(g => g.result != null && st.processed[g.game_id]).sort((x, y) => +y.week - +x.week)[0] || null;
+  if (played) {
+    const o = await open(R, played); opened++;
+    if (o.btn) { hold(R, played, 'a graded game', played.result > 0 ? played.home_team : played.result < 0 ? played.away_team : null);
+      chk(txt(o.md.querySelector('[data-gs-score]')) === `${played.away_score}–${played.home_score}`, 'snapshot: a graded game does not show its final score');
+      R.d.getElementById('gsClose').click(); await wait(20); }
+    else chk(false, 'snapshot: a graded game has no Game snapshot button');
+  }
+  chk(opened > 0, 'snapshot: no game to open the window on');
+  /* every questionable starter's Q, in the game his lineup is for (each game drawn once): with his
+     own name, in his team's column, both columns covered */
+  { const L = eloMu.lineups || {}, Q = eloMu.q || {}, games = new Map();
+    for (const lu of Object.values(L)) if ((lu.players || []).some(pid => Q[pid])) { const g = st.schedule.find(x => x.game_id === lu.game_id); if (g) games.set(g.game_id, g); }
+    let n = 0; const bad = [], sides = new Set();
+    for (const g of games.values()) {
+      R.w.gameSnapshot(g.game_id, null); await wait(20);
+      const r = qPlaced(R, R.d.getElementById('gsModal'), g); n += r.n; r.sides.forEach(x => sides.add(x)); bad.push(...r.bad.map(b => `${g.game_id}: ${b}`));
+      R.w.gameSnapshotClose(false); }
+    chk(games.size > 0 && n > 0 && sides.size === 2 && bad.length === 0,
+      `snapshot: the questionable starters' Q's are not each with their own player in their team's column (${n} Q's in ${games.size} games, ${[...sides].join(' and ') || 'no'} column): ${bad.slice(0, 4).join('; ')}${bad.length > 4 ? ` (${bad.length} in all)` : ''}`); }
+  /* the Elo files were read once, by the ELO Ratings tab, however often the window opened */
+  for (const f of ['players', 'model', 'matchups']) { const n = R.fetched.filter(u => u.endsWith(`elo/data/${f}.json`)).length;
+    chk(n === 1, `snapshot: elo/data/${f}.json was read ${n} times; the window reads the ELO Ratings tab's copy`); }
+  R.w.close();
+
+  /* a file that did not load: its sections say so, the rest draw */
+  const without = re => w2 => { let real = null; Object.defineProperty(w2, 'fetch', { configurable: true, set: f => { real = f; },
+    get: () => (u, o) => re.test(String(u)) ? Promise.resolve({ ok: false, status: 404 }) : real(u, o) }); };
+  const any = toCome || played || sbFinal;
+  if (any) {
+    const M1 = await run(st, undefined, wk => scoreboard(st, wk), false, { seed: without(/elo\/data\/matchups\.json/) }); await wait(400);
+    const o = await open(M1, any);
+    chk(!!o.btn && !o.md.hidden && M1.errs.length === 0 && /expected lineups did not load/.test(txt(o.md.querySelector('#gsPos'))) && /matchups did not load/.test(txt(o.md.querySelector('#gsMism')))
+      && (!eloM.teams || !eloM.teams[any.home_team] || txt(o.md.querySelector(`[data-gs-telo="${any.home_team}"]`)) === String(eloM.teams[any.home_team].elo)) && txt(o.md.querySelector(`[data-gs-rec="${any.away_team}"]`)) === recOf(any.away_team),
+      'snapshot: with matchups.json missing the window does not say so where it is needed and draw the rest: ' + M1.errs.join('; '));
+    M1.w.close();
+    const M2 = await run(st, undefined, wk => scoreboard(st, wk), false, { seed: without(/elo\/data\/(model|players)\.json/) }); await wait(400);
+    const o2 = await open(M2, any);
+    chk(!!o2.btn && !o2.md.hidden && M2.errs.length === 0 && /did not load/.test(txt(o2.md.querySelector('#gsTeams'))) && /did not load/.test(txt(o2.md.querySelector('#gsUnits')))
+      && /did not load/.test(txt(o2.md.querySelector('#gsPos'))) && /did not load/.test(txt(o2.md.querySelector('tr[data-gs-model="elo"]')))
+      && txt(o2.md.querySelector(`[data-gs-rec="${any.home_team}"]`)) === recOf(any.home_team, false) && !!o2.md.querySelector('tr[data-gs-model="alpha"]'),
+      'snapshot: with the ratings missing the window does not say so in each section and draw the matchup: ' + M2.errs.join('; '));
+    M2.w.close();
+  }
+  /* a playoff game (a wild-card game after week 18, still to play): the window draws, and says
+     what the files have for it */
+  { const alt = JSON.parse(JSON.stringify(st)), src = alt.schedule.filter(x => +x.week === 18)[0];
+    if (src) {
+      const x = JSON.parse(JSON.stringify(src)); x.game_id = x.game_id.replace(/_18_/, '_19_'); x.week = 19; x.game_type = 'WC';
+      for (const k of ['result', 'home_score', 'away_score']) delete x[k]; alt.schedule.push(x);
+      const A = await run(alt, undefined, wk => scoreboard(alt, wk)); await wait(400);
+      const o = await open(A, x);
+      chk(!!o.btn && !o.md.hidden && A.errs.length === 0 && ['gsMatch', 'gsTeams', 'gsUnits', 'gsPos', 'gsMism', 'gsFiles'].every(id => o.md.querySelector('#' + id)) && !/could not be drawn/.test(txt(o.md))
+        && /Wild Card/.test(txt(A.d.getElementById('gsTitle'))) && (+eloMu.week === 19 || /The matchups are for/.test(txt(o.md.querySelector('#gsMism')))),
+        'snapshot: a playoff game\'s window does not draw, or does not say what the files have for it: ' + A.errs.join('; ') + ' ' + (o.md ? txt(o.md.querySelector('#gsMism')).slice(0, 120) : ''));
+      A.w.close(); } }
+}
