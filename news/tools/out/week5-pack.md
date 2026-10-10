@@ -316,15 +316,15 @@ Cincinnati Bengals, injuries:
 Cincinnati Bengals, ESPN headlines:
 
 Miami Dolphins, injuries:
+- Robert Beal Jr. (DE) Out, Hamstring: Beal (hamstring) has been ruled out for Sunday's game against the Bengals.
+- Justin Joly (TE) Out, Concussion: Joly (concussion) has been ruled out ahead of Sunday's game against the Bengals.
 - Dante Trader Jr. (S) Active: Trader (shin) does not have an injury designation against the Bengals on Sunday, Paul Dehner Jr. of The Athletic reports.
 - Chris Bell (WR) Active: Bell (knee) does not have an injury designation for Sunday's game against the Bengals, Paul Dehner Jr. of The Athletic reports.
 - Jaylen Wright (RB) Questionable, Foot: Wright (foot) is listed as questionable for Sunday's game against the Bengals, David Furones of the South Florida Sun Sentinel reports.
 - Caleb Douglas (WR) Out, Ankle: Douglas (ankle) has been ruled out for Sunday's game against the Bengals, David Furones of the South Florida Sun Sentinel reports.
 - Austin Jackson (OT) Active
-- Justin Joly (TE) Out, Concussion: out
 - Tucker Addington (LS) Active
 - JuJu Brents (CB) Active
-- Robert Beal Jr. (DE) Out, Hamstring: out
 - Storm Duck (CB) Out, Knee: Duck (knee) practiced in full Thursday.
 - Kenneth Grant (DT) Injured Reserve, Toe: The Dolphins opened Grant's 21-day practice window Wednesday, and he was a limited participant in the team's first Week 5 session in his return from a toe injury.
 - Jordyn Brooks (LB) Active: Brooks recorded 13 tackles (five solo) and a pass defensed during Sunday's 15-10 loss at Minnesota.
@@ -491,6 +491,7 @@ Searches to run:
 - "NFL week 5 picks CLE NYJ"
 
 Cleveland Browns, injuries:
+- Kalia Davis (DT) Injured Reserve, Quadriceps: Davis (quadriceps) has been ruled out ahead of Sunday's game against the Jets, Kelsey Russo of the Browns' official site reports.
 - Teven Jenkins (G) Out, Back: Jenkins (back) has been ruled out for Sunday's game against the Jets, Daniel Oyefusi of ESPN.com reports.
 - Dillon Gabriel (QB) Injured Reserve, Back: Gabriel (back) has been ruled out ahead of Sunday's game against the Jets, Daniel Oyefusi of ESPN.com reports.
 - Tylan Wallace (WR) Out, Knee: Wallace (knee) has been ruled out ahead of Sunday's game against the Jets, Daniel Oyefusi of ESPN.com reports.
@@ -501,7 +502,6 @@ Cleveland Browns, injuries:
 - Derek Barnett (DE) Active
 - Grant Delpit (S) Active
 - Elgton Jenkins (C) Active: Browns head coach Todd Monken said Wednesday that Jenkins has cleared the league's concussion protocol, Tom Withers of The Associated Press reports.
-- Kalia Davis (DT) Injured Reserve, Quadriceps: The Browns opened Davis' (quadriceps) 21-day practice window Tuesday.
 - Taylen Green (QB) Active
 - Justin Jefferson (LB) Active
 - Denzel Ward (CB) Active: Ward logged four tackles (three solo) and had one pass defensed for an interception in the Browns' 27-24 win over the Steelers on Thursday.
@@ -523,7 +523,7 @@ New York Jets, injuries:
 - Dylan Parham (G) Out, Knee: Parham (knee) has been ruled out for Sunday's game against the Browns, Brian Costello of the New York Post reports.
 - Will McDonald IV (DE) Questionable, Calf: McDonald (calf) is listed as questionable for Sunday's game against the Browns, Daniel Oyefusi of ESPN.com reports.
 - Kingsley Enagbare (LB) Questionable, Knee: Enagbare (knee) is listed as questionable for Sunday's game against the Browns, Daniel Oyefusi of ESPN.com reports.
-- Jarvis Brownlee Jr. (CB) Active: Brownlee (concussion) does not have any injury designation ahead of Sunday's game against the Browns, Daniel Oyefusi of ESPN.com reports.
+- Jarvis Brownlee Jr. (CB) Active: Brownlee (concussion) does not have an injury designation ahead of Sunday's game against the Browns, Daniel Oyefusi of ESPN.com reports.
 - Isaiah Williams (WR) Active: Adonai Mitchell (finger) has been ruled out for Sunday's game against the Browns, so Williams should serve as the Jets' WR2 behind Garrett Wilson for a third consecutive week.
 - Braelon Allen (RB) Active: Allen will once again operate as the Jets' top running back for Sunday's game against the Browns due to the absence of Breece Hall (quadriceps).
 - Tim Patrick (WR) Injured Reserve, Groin: Patrick (groin) is listed as questionable for Sunday's game against the Browns.
@@ -627,10 +627,10 @@ Searches to run:
 - "NFL week 5 picks NYG WAS"
 
 New York Giants, injuries:
+- Andrew Thomas (OT) Active: Thomas (groin) does not have any injury designation ahead of Sunday's game against the Commanders.
+- Jason Pinnock (S) Out, Concussion: Pinnock (concussion) has been ruled out ahead of Sunday's game against the Commanders.
 - Chauncey Golston (DE) Out, Neck: Golston (neck) has been ruled out ahead of Sunday's game against the Commanders.
-- Jason Pinnock (S) Out, Concussion: out
 - Chris Manhertz (TE) Active
-- Andrew Thomas (OT) Active
 - Isaiah Likely (TE) Active: Likely (knee/groin) doesn't carry an injury designation into Sunday's game at Washington, Dan Salomone of the Giants' official site reports.
 - Cam Skattebo (RB) Active: Skattebo (shoulder) doesn't have a designation for Sunday's game in Washington, Dan Salomone of the Giants' official site reports.
 - Malik Nabers (WR) Active: Nabers (knee) doesn't have a designation for Sunday's game at Washington, Dan Salomone of the Giants' official site reports.
@@ -656,15 +656,16 @@ New York Giants, injuries:
 New York Giants, ESPN headlines:
 
 Washington Commanders, injuries:
+- Sam Cosmi (G) Active: Cosmi (concussion/throat) does not have an injury designation for Sunday's game against the Giants.
+- Tyler Owens (S) Out, Hamstring: Owens (hamstring) has been ruled out for Sunday's game against the Giants.
+- Charles Omenihu (DE) Out, Groin: Omenihu (groin/ankle) has been ruled out for Sunday's game against the Giants.
+- Percy Butler (S) Out, Hamstring: Butler (hamstring) has been ruled out for Sunday's game against the Giants.
 - Trey Amos (CB) Injured Reserve, Ankle: Amos (ankle) is listed as questionable for Sunday's game against the Giants.
 - Nick Cross (S) Out, Illness: Cross (illness) has been ruled out ahead of Sunday's game against the Giants.
 - Frankie Luvu (LB) Active: Luvu (groin) does not have any injury designation ahead of Sunday's game against the Giants.
 - Jeremy McNichols (RB) Injured Reserve, Quadriceps: McNichols (quadriceps) is listed as questionable for Sunday's game against the Giants.
 - Terry McLaurin (WR) Questionable, Hamstring: McLaurin (hamstring), who is officially questionable for Sunday's game against the Giants, will be a game-time decision, as Jeremy Fowler of ESPN highlighted Friday in a Week 5 injury update on SportsCenter.
-- Tyler Owens (S) Out, Hamstring: out
-- Percy Butler (S) Out, Hamstring: out
 - Nick Allegretti (G) Active
-- Sam Cosmi (G) Active
 - Marcus Mariota (QB) Out, Knee - MCL: Mariota (knee) has been ruled out for Sunday's game against the Giants.
 - Rachaad White (RB) Active: White (shoulder) does not carry an injury designation ahead of Sunday's game against the Giants.
 - Chig Okonkwo (TE) Active: Okonkwo (hamstring) does not carry an injury designation for Sunday's game against the Giants.
@@ -672,7 +673,6 @@ Washington Commanders, injuries:
 - Stefon Diggs (WR) Out, Hamstring: Diggs (hamstring) won't play Sunday against the Giants, Tashan Reed of The Washington Post reports after Commanders coach Dan Quinn provided injury updates Friday.
 - Jayden Daniels (QB) Active: Head coach Dan Quinn confirmed Friday that Daniels (elbow) will start Sunday's game against the Giants.
 - Sonny Styles (LB) Active: Styles (groin) was a full participant at practice Thursday.
-- Charles Omenihu (DE) Out, Groin: Omenihu (groin/ankle) did not practice Thursday, Tashan Reed of The Washington Post reports.
 - Ben Sinnott (TE) Active: Sinnott (ribs) upgraded to full participation at Thursday's practice.
 - Jeremy Reaves (S) Active: Reaves (finger) was listed as a full practice participant on Wednesday's injury report.
 - Deatrich Wise Jr. (DE) Out, Quadriceps: Wise (quadriceps) had his 21-day practice window opened Wednesday.
@@ -724,6 +724,7 @@ Denver Broncos, injuries:
 Denver Broncos, ESPN headlines:
 
 Los Angeles Chargers, injuries:
+- Rashawn Slater (OT) Injured Reserve, Ankle: The Chargers placed Slater (ankle) on injured reserve Friday.
 - Trevor Penning (G) Out, Concussion: Penning (concussion) was been ruled out ahead of Sunday's game against Denver.
 - Kayode Awosika (G) Out, Lower Leg: Awosika (lower leg) has been ruled out for Sunday's game against the Broncos.
 - Joe Alt (OT) Out, Neck: Alt (neck) has been ruled out for Sunday's game against the Broncos.
@@ -732,7 +733,6 @@ Los Angeles Chargers, injuries:
 - Trey Lance (QB) Doubtful, Groin: Lance (groin) is listed as doubtful for Sunday's game against the Broncos.
 - Derwin James Jr. (S) Out, Hamstring: James (hamstring) has been ruled out against the Broncos on Sunday.
 - Donte Jackson (CB) Out, Hamstring: Jackson (hamstring) has been ruled out for Sunday's game against the Broncos.
-- Rashawn Slater (OT) Injured Reserve, Ankle: ir
 - Tre' Harris (WR) Active: Harris' workload should be larger against the Broncos on Sunday, as Quentin Johnston (chest) has been ruled out and Ladd McConkey (foot, questionable) may not play, Alex Insdorf of BoltBeat.com reports.
 - Rodney Shelley (CB) Questionable, Hamstring: questionable
 - Deane Leonard (CB) Active
@@ -831,10 +831,10 @@ Searches to run:
 - "NFL week 5 picks SF SEA"
 
 San Francisco 49ers, injuries:
+- James Thompson Jr. (DT) Out, Ankle: Thompson (ankle) has been ruled out for Sunday's game against the Seahawks.
 - Mykel Williams (DE) Out, Knee - ACL: Williams (knee) is listed as questionable ahead of Sunday's game against the Seahawks.
 - Upton Stout (CB) Questionable, Shoulder - AC Joint: Stout (shoulder) is listed as questionable ahead of Sunday's game against the Seahawks.
 - Nick Bosa (DE) Out, Calf: Bosa (calf) has been ruled out ahead of Sunday's game against the Seahawks.
-- James Thompson Jr. (DT) Out, Ankle: out
 - Mike Evans (WR) Active: Evans (ribs) does not have an injury designation for Sunday's game against the Seahawks, Nick Wagoner of ESPN.com reports.
 - Kaelon Black (RB) Active: Black (illness) upgraded to a full practice Thursday, Harrison Rich of the San Francisco Chronicle reports.
 - Marques Sigle (S) Out, Ankle: out
@@ -860,10 +860,10 @@ San Francisco 49ers, injuries:
 San Francisco 49ers, ESPN headlines:
 
 Seattle Seahawks, injuries:
+- Chazz Surratt (LB) Out, Calf: Surratt (calf) has been ruled out ahead of Sunday's game against the 49ers, Bob Condotta of The Seattle Times reports.
 - Leonard Williams (DT) Active: Williams (ankle) does not have an injury designation for Sunday's game against the 49ers, Bob Condotta of The Seattle Times reports.
 - Julian Neal (CB) Out, Hamstring: Neal (hamstring) has been ruled out for Sunday's game against the 49ers, Bob Condotta of The Seattle Times reports.
 - Nehemiah Pritchett (CB) Active
-- Chazz Surratt (LB) Out, Calf: out
 - George Holani (RB) Questionable, Ribs: Holani (ribs/knee) is listed as questionable for Sunday's game against the 49ers, Bob Condotta of The Seattle Times reports.
 - Beau Stephens (G) Active
 - Tyrice Knight (LB) Active

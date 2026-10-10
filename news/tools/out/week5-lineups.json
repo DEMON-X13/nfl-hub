@@ -205,14 +205,13 @@
   },
   "CHI": {
    "kick": "2026-10-11T17:00Z",
-   "built_at": "2026-10-10T02:43:49.971Z",
+   "built_at": "2026-10-10T04:04:18.633Z",
    "units": {
     "qb": [
      {
-      "id": "00-0039918",
-      "n": "Caleb Williams",
-      "pos": "QB",
-      "q": "questionable: hamstring"
+      "id": "00-0038416",
+      "n": "Tyson Bagent",
+      "pos": "QB"
      }
     ],
     "ol": [
