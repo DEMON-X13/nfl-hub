@@ -3,34 +3,63 @@
    write nhl/state.json, which is everything the page shows.
 
     node nhl/tools/update.js              the season, from ESPN
+    node nhl/tools/update.js --scores     the days through today only (the rest carried from the last
+                                          state): the job's first pass, so last night's finals are in
+                                          the state before fetch_box.js boxes them and players.js rates them
     node nhl/tools/update.js --offline    from the scoreboard files a previous run saved in nhl/tools/out/
 
-   NHL_TODAY, NHL_STATE, NHL_OUT and NHL_TEAMS in the environment move the day and the files, which
-   is how simulate.js plays a fabricated season through it without touching the real ones.
+   NHL_TODAY, NHL_NOW, NHL_STATE, NHL_OUT, NHL_TEAMS and NHL_DATA in the environment move the day,
+   the clock and the files, which is how simulate.js plays a fabricated season through it without
+   touching the real ones.
 
    Free: ESPN's public feeds only, nothing spends a credit. One request per day from the
    season's start to the end of June, skipping the days the last state already has complete,
-   so the whole schedule is known and a run in season is a couple of hundred small requests. Idempotent: a call or a line made before puck drop is kept once
-   the game has started, so the record grades what the page actually showed; games that were
-   already over when this job first ran are graded from the replay and marked so.
+   so the whole schedule is known and a run in season is a couple of hundred small requests.
+   A day the last state still has a game to finish on, through tomorrow, must be read fresh: if
+   ESPN does not answer for one, the run exits 1 having written nothing, so the last good state
+   stays live; a later day that fails keeps the schedule the last state had.
+
+   The call is frozen at puck drop, by the clock and not only by ESPN's state (a game delayed past
+   its start is not called again): once a game has started, every part of the call shown before it
+   (the chance, margin, total, overtime chance, the line, each side taken and whose call it was) is
+   copied from the last state and graded as it stands, never recomputed. A row an older job wrote
+   after puck drop, which recomputed the puck-line side from the team Elo's margin, is put back to
+   the call shown before puck drop from the inputs it kept (the player model's margin, the line,
+   the chance and total), exactly as that run computed it. Games that were already over when this
+   job first ran are graded from the replay and marked so.
 
    The model is nhl/tools/elo.js with the parameters fit.js wrote to nhl/data/model.json,
-   replayed over nhl/data/history.json and then this season's finished games, in date order. */
+   replayed over the finished seasons (hist.js: history.json and the season_<year>.json files) and
+   then this season's finished games, in date order. The first run of a new season (from August)
+   writes the old season's finals, playoffs included, to nhl/data/season_<year>.json from the last
+   state, so no season is ever dropped; with neither that state nor the file it exits 1.
+
+   The playoff picture: before the regular season ends, the rest of it played SIMS times and the
+   league's bracket off each simulated table; once it has ended the field is the real one, the
+   series are the ones ESPN has, each played on from its real score, so a club knocked out has no
+   chance left and the bracket carries each series' score. `phase` says preseason, regular,
+   postseason or over (the Cup awarded), offseason with no games at all. */
 'use strict';
 const fs = require('fs'), path = require('path');
 const E = require('./espn');
+const Hist = require('./hist');
 const { Elo, expected, spreadOf, goals, coverProbs, totalProbs } = require('./elo');
 
 const ROOT = path.join(__dirname, '..');
-const DATA = path.join(ROOT, 'data'), OUT = process.env.NHL_OUT || path.join(__dirname, 'out');
+const DATA = process.env.NHL_DATA || path.join(ROOT, 'data'), OUT = process.env.NHL_OUT || path.join(__dirname, 'out');
 const STATE = process.env.NHL_STATE || path.join(ROOT, 'state.json');   // simulate.js points these at a scratch folder
 const TEAMS = process.env.NHL_TEAMS || path.join(DATA, 'teams.json');
 const ARGS = new Set(process.argv.slice(2));
-const TODAY = process.env.NHL_TODAY || E.etDate(new Date());
-const SEASON = +(process.env.NHL_SEASON || E.seasonOf(TODAY));
+/* the clock: NHL_NOW (YYYY-MM-DDTHH:MMZ), or NHL_TODAY at noon UTC for the simulation, else now */
+const NOW = process.env.NHL_NOW || (process.env.NHL_TODAY ? process.env.NHL_TODAY + 'T12:00Z' : new Date().toISOString().slice(0, 16) + 'Z');
+const TODAY = process.env.NHL_TODAY || E.etDate(NOW);
+const SEASON = +(process.env.NHL_SEASON || E.seasonOf(TODAY));      // the season's one source: the Eastern date
 const EDGE = 0.05;                                  // the model's chance must beat the book's implied by this to take a side
 const SIMS = 2000;
 const SHRINK = 20;                                  // games before a club's own scoring rate outweighs the league's
+/* the parts of a row that are the call: made before puck drop, copied unchanged after it */
+const CALL = ['pHome', 'rh', 'ra', 'diff', 'mu', 'xt', 'tie', 'frozen', 'before', 'pm', 'elo', 'by', 'line', 'pick', 'mlEdge', 'mlPick', 'cover', 'plEdge', 'plPick', 'ou', 'ouEdge', 'ouPick'];
+const CALL_V = 2;                                   // a row whose call this job made or kept whole
 
 const log = m => console.log(new Date().toISOString().slice(11, 19), m);
 const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -50,16 +79,25 @@ async function pullSeason(prev) {
   }
   const days = [];
   /* every day of the season, so the whole schedule is known and the playoff picture is the rest
-     of the season and not the next fortnight; a day already complete is not asked for again */
-  for (let d = `${SEASON - 1}-10-01`, to = `${SEASON}-06-30`; d <= to; d = addDays(d, 1)) if (!complete.has(d)) days.push(d);
+     of the season and not the next fortnight; a day already complete is not asked for again.
+     --scores reads only the days through today and carries the rest */
+  const lastDay = ARGS.has('--scores') ? TODAY : `${SEASON}-06-30`;
+  for (let d = `${SEASON - 1}-10-01`; d <= lastDay; d = addDays(d, 1)) if (!complete.has(d)) days.push(d);
+  /* the days that must be read fresh: any through tomorrow on which the last state has a game not final */
+  const needed = new Set();
+  if (prev && prev.season === SEASON) for (const g of prev.games) if (g.state !== 'final' && g.date <= addDays(TODAY, 1)) needed.add(g.date);
+  const fresh = new Set();
   let asked = 0, ok = 0;
   for (let i = 0; i < days.length; i += 4) {
     const batch = await Promise.all(days.slice(i, i + 4).map(async d => {
       const file = path.join(OUT, `sb_${d}.json`);
-      if (ARGS.has('--offline')) return [d, fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null];
+      if (ARGS.has('--offline')) { if (!fs.existsSync(file)) return [d, null]; fresh.add(d); return [d, JSON.parse(fs.readFileSync(file, 'utf8'))]; }
       asked++;
-      try { const j = await E.scoreboard(d); fs.writeFileSync(file, JSON.stringify(j)); ok++; return [d, j]; }
-      catch (e) { log(`${d}: ${e.message}${fs.existsSync(file) ? ' (using the saved copy)' : ''}`); return [d, fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : null]; }
+      try { const j = await E.scoreboard(d); fs.writeFileSync(file, JSON.stringify(j)); ok++; fresh.add(d); return [d, j]; }
+      catch (e) {
+        const saved = fs.existsSync(file) && !needed.has(d);              // a saved copy stands in only for a day that need not be fresh
+        log(`${d}: ${e.message}${saved ? ' (using the saved copy)' : ''}`); return [d, saved ? JSON.parse(fs.readFileSync(file, 'utf8')) : null];
+      }
     }));
     for (const [d, j] of batch) {
       if (!j) continue;
@@ -71,16 +109,24 @@ async function pullSeason(prev) {
     if (!ARGS.has('--offline')) await new Promise(r => setTimeout(r, 200));
   }
   if (asked && !ok) throw new Error('ESPN scoreboard unreachable: every day asked for failed');
-  log(`${days.length} days read (${complete.size} already complete), ${asked} asked, ${ok} answered`);
+  const missing = [...needed].filter(d => days.includes(d) && !fresh.has(d)).sort();
+  if (missing.length) throw new Error(`ESPN's scoreboard did not answer for ${missing.join(', ')}, which still have games to finish or to call; nothing written, the last state stays live`);
+  log(`${days.length} days read (${complete.size} already complete)${ARGS.has('--scores') ? ', through today only' : ''}, ${asked} asked, ${ok} answered`);
   fs.writeFileSync(TEAMS, JSON.stringify(teams));
   return { games: [...games.values()].sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0), teams };
 }
 
-function loadHistory() {
-  const H = JSON.parse(fs.readFileSync(path.join(DATA, 'history.json'), 'utf8'));
-  const col = Object.fromEntries(H.cols.map((c, i) => [c, i]));
-  return H.rows.map(r => ({ id: r[col.id], season: r[col.season], type: r[col.type], date: r[col.date], home: r[col.home], away: r[col.away], hs: r[col.hs], as: r[col.as], periods: r[col.periods], neutral: r[col.neutral] }))
-    .filter(g => g.season < SEASON).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+/* the finished seasons; at a new season's first run the old one is closed into season_<year>.json
+   from the last state first, and a season missing from both is a refusal, not a silent gap */
+function loadHistory(prev) {
+  let have = new Set(Hist.seasons(DATA));
+  if (!have.has(SEASON - 1) && prev && prev.season === SEASON - 1 && (prev.games || []).some(g => g.state === 'final')) {
+    const w = Hist.writeSeason(DATA, SEASON - 1, prev.games || []);
+    log(`closed the ${SEASON - 2}-${String(SEASON - 1).slice(2)} season: ${w.games} finals into ${path.relative(ROOT, w.file)}`);
+    have = new Set(Hist.seasons(DATA));
+  }
+  if (!have.has(SEASON - 1)) throw new Error(`the ${SEASON - 2}-${String(SEASON - 1).slice(2)} season is in neither nhl/data/history.json, a season_${SEASON - 1}.json nor the last state; run node nhl/tools/history.js ${SEASON - 1} ${SEASON - 1}`);
+  return Hist.rows(DATA).filter(g => g.season < SEASON);
 }
 
 /* ---------- scoring rates: each club's goals for and against this season, shrunk to the league ---------- */
@@ -124,6 +170,42 @@ function fieldOf(S, ratings) {
   return out;
 }
 
+/* ---------- the playoffs as they stand: every series ESPN has a final in ---------- */
+/* a series is a pair of clubs' playoff finals; its round is one more than the series either club
+   played before it (a pair meets once a spring), its winner the club with four */
+function seriesOf(games) {
+  const fin = games.filter(g => g.type === 3 && g.state === 'final' && g.hs !== null).sort((a, b) => a.start < b.start ? -1 : a.start > b.start ? 1 : 0);
+  const map = new Map();
+  for (const g of fin) {
+    const [a, b] = [g.home, g.away].sort(); const k = a + '|' + b;
+    let s = map.get(k); if (!s) map.set(k, s = { a, b, wins: { [a]: 0, [b]: 0 }, first: g.date, last: g.date, games: 0 });
+    s.wins[g.hs > g.as ? g.home : g.away]++; s.games++; s.last = g.date;
+  }
+  const list = [...map.values()].sort((x, y) => x.first < y.first ? -1 : x.first > y.first ? 1 : 0);
+  const played = {};
+  for (const s of list) {
+    s.round = 1 + Math.max(played[s.a] || 0, played[s.b] || 0); played[s.a] = played[s.b] = s.round;
+    s.winner = s.wins[s.a] >= 4 ? s.a : s.wins[s.b] >= 4 ? s.b : null;
+    s.conf = E.CLUBS[s.a].conf === E.CLUBS[s.b].conf ? E.CLUBS[s.a].conf : 'Final';
+  }
+  return list;
+}
+/* the computed first round, put right by the series ESPN actually has (the league's tie-breakers
+   beyond goal difference are not modelled, so a wild card can land the other way round) */
+function fixBracket(F, observed) {
+  const r1 = observed.filter(s => s.round === 1);
+  const oppOf = t => { const s = r1.find(x => x.a === t || x.b === t); return s ? (s.a === t ? s.b : s.a) : null; };
+  for (const conf of ['East', 'West']) {
+    const field = [].concat(...F[conf].series);
+    const fixed = F[conf].series.map(([a, b]) => { const oa = oppOf(a); if (oa) return [a, oa, true]; const ob = oppOf(b); return ob ? [ob, b, true] : [a, b, false]; });
+    /* a series not started yet keeps its slot, less a club a started one has taken, which goes to whoever that left out */
+    const seen = new Set(fixed.filter(s => s[2]).flatMap(s => [s[0], s[1]]));
+    const spare = field.filter(t => !seen.has(t) && !fixed.some(s => !s[2] && (s[0] === t || s[1] === t)));
+    F[conf].series = fixed.map(([a, b, real]) => real ? [a, b] : [a, b].map(t => seen.has(t) && spare.length ? spare.shift() : t));
+  }
+  return F;
+}
+
 /* ---------- the playoff picture: the rest of the season played SIMS times ---------- */
 function playoffPicture(games, ratings, model, rates) {
   let seed = 20261007; const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
@@ -133,11 +215,19 @@ function playoffPicture(games, ratings, model, rates) {
     return { home: g.home, away: g.away, pHome: expected(diff), tie: G.tie, pOT: G.pOT };
   });
   const base = standingsOf(games);
+  const observed = seriesOf(games);
+  const regDone = !remaining.length && games.some(g => g.type === 2 && g.state === 'final');
+  const cupSeries = observed.find(s => s.round === 4 && s.winner);
+  const phase = !games.length ? 'offseason' : cupSeries ? 'over' : regDone || observed.length ? 'postseason' : games.some(g => g.state === 'final') ? 'regular' : 'preseason';
+  /* once the regular season is over the field is the real one, put right by the real series */
+  const actual = regDone || observed.length ? fixBracket(fieldOf(base, ratings), observed) : null;
+  const obsByPair = new Map(observed.map(s => [s.a + '|' + s.b, s]));
   const tally = {}; for (const id of E.TEAMS) tally[id] = { playoff: 0, div: 0, conf: 0, cup: 0, pts: 0 };
-  const series = (a, b, hfa) => {                      // best of seven, 2-2-1-1-1, a has home ice
-    let wa = 0, wb = 0, g = 0;
+  const series = (a, b, hfa) => {                      // best of seven, 2-2-1-1-1, a has home ice; played on from the real score
+    const o = obsByPair.get([a, b].sort().join('|'));
+    let wa = o ? o.wins[a] : 0, wb = o ? o.wins[b] : 0, g = wa + wb;
     while (wa < 4 && wb < 4) { const aHome = [0, 1, 4, 6].includes(g); const d = ratings[a] - ratings[b] + (aHome ? hfa : -hfa); if (rnd() < expected(d)) wa++; else wb++; g++; }
-    return wa === 4 ? a : b;
+    return wa >= 4 ? a : b;
   };
   for (let i = 0; i < SIMS; i++) {
     const S = {}; for (const id of E.TEAMS) S[id] = Object.assign({}, base[id]);
@@ -146,7 +236,7 @@ function playoffPicture(games, ratings, model, rates) {
       if (r < g.tie) { const hw = rnd() < g.pOT; const W = S[hw ? g.home : g.away], L = S[hw ? g.away : g.home]; W.w++; W.pts += 2; if (rnd() < 0.55) W.row++; L.otl++; L.pts++; }
       else { const hw = rnd() < g.pHome; const W = S[hw ? g.home : g.away], L = S[hw ? g.away : g.home]; W.w++; W.pts += 2; W.rw++; W.row++; L.l++; }
     }
-    const F = fieldOf(S, ratings);
+    const F = actual || fieldOf(S, ratings);
     const finalists = [];
     for (const conf of ['East', 'West']) {
       const f = F[conf];
@@ -164,11 +254,14 @@ function playoffPicture(games, ratings, model, rates) {
   }
   const odds = {};
   for (const id of E.TEAMS) { const t = tally[id]; odds[id] = { playoff: r3(t.playoff / SIMS), div: r3(t.div / SIMS), conf: r3(t.conf / SIMS), cup: r3(t.cup / SIMS), expPts: +(t.pts / SIMS).toFixed(1) }; }
-  /* if the season ended today */
-  const now = fieldOf(base, ratings);
+  /* if the season ended today; the real bracket once it has */
+  const now = actual || fieldOf(base, ratings);
   const standings = {};
   for (const div of ['Atlantic', 'Metropolitan', 'Central', 'Pacific']) standings[div] = order(E.TEAMS.filter(t => E.CLUBS[t].div === div), base, ratings).map(t => Object.assign({ team: t }, base[t]));
-  return { sims: SIMS, odds, standings, bracket: now, remaining: remaining.length };
+  const out = { sims: SIMS, odds, standings, bracket: now, remaining: remaining.length, phase,
+    series: observed.map(s => ({ a: s.a, b: s.b, wins: s.wins, round: s.round, conf: s.conf, winner: s.winner, first: s.first, last: s.last })) };
+  if (cupSeries) out.champion = cupSeries.winner;
+  return out;
 }
 
 /* ---------- the run ---------- */
@@ -184,7 +277,7 @@ async function main() {
 
   /* replay: the history, then this season's finals, keeping each one's pre-game view and the scoring rates before it */
   const m = new Elo(model.params);
-  for (const g of loadHistory()) { m.newSeason(g.season); m.play(g); }
+  for (const g of loadHistory(prev)) { m.newSeason(g.season); m.play(g); }
   m.newSeason(SEASON);
   const rates = new Rates(model.leagueTotal);
   const replayed = {};
@@ -202,53 +295,73 @@ async function main() {
   }
   E.TEAMS.slice().sort((a, b) => teams[b].rating - teams[a].rating).forEach((id, i) => { teams[id].rank = i + 1; });
 
-  /* every game's call and lines: frozen before puck drop, kept after */
-  const now = (process.env.NHL_TODAY ? process.env.NHL_TODAY + 'T12:00' : new Date().toISOString().slice(0, 16)) + 'Z';
+  /* every game's call and lines: made while it is still to come, frozen at puck drop, kept after */
+  const now = NOW;
+  const started = g => g.state !== 'pre' || (!!g.start && Date.parse(g.start) <= Date.parse(NOW));
+  /* the call from a view and a line: the chance, margin, total, overtime chance and each side taken */
+  const callOf = (view, line) => {
+    const mu = view.pmMu !== undefined && view.pmMu !== null ? view.pmMu : spreadOf(view.diff, model);
+    const G = goals(view.xt, mu, view.diff, model.pull);
+    const c = { pHome: +view.pHome.toFixed(4), rh: +view.rh.toFixed(1), ra: +view.ra.toFixed(1), diff: +view.diff.toFixed(2), mu: +mu.toFixed(2), xt: +view.xt.toFixed(2), tie: r3(G.tie), frozen: view.frozen };
+    if (view.pm) c.pm = view.pm;
+    if (view.elo && view.pmMu !== undefined && view.pmMu !== null) c.elo = { pHome: +view.elo.pHome.toFixed(4), xt: +view.elo.xt.toFixed(2) };
+    if (view.pmMu !== undefined && view.pmMu !== null) c.by = 'players';
+    c.line = line;
+    c.pick = view.pHome >= 0.5 ? 'home' : 'away';
+    if (line) {
+      /* the moneyline: a side whose chance beats the book's implied by the edge */
+      const ih = implied(line.homeML), ia = implied(line.awayML);
+      if (ih !== null && ia !== null) { c.mlEdge = { home: r3(view.pHome - ih), away: r3(1 - view.pHome - ia) }; c.mlPick = c.mlEdge.home >= EDGE ? 'home' : c.mlEdge.away >= EDGE ? 'away' : null; }
+      if (line.homeLine !== null && line.homeLine !== undefined) {
+        const cp = coverProbs(G, line.homeLine);
+        c.cover = { home: r3(cp.cover), push: r3(cp.push), away: r3(cp.lose) };
+        const jh = implied(line.homeSpreadOdds), ja = implied(line.awaySpreadOdds);
+        if (jh !== null && ja !== null) { c.plEdge = { home: r3(cp.cover - jh), away: r3(cp.lose - ja) }; c.plPick = c.plEdge.home >= EDGE ? 'home' : c.plEdge.away >= EDGE ? 'away' : null; }
+      }
+      if (line.total !== null && line.total !== undefined) {
+        const tp = totalProbs(G, line.total);
+        c.ou = { over: r3(tp.over), push: r3(tp.push), under: r3(tp.under) };
+        const jo = implied(line.overOdds), ju = implied(line.underOdds);
+        if (jo !== null && ju !== null) { c.ouEdge = { over: r3(tp.over - jo), under: r3(tp.under - ju) }; c.ouPick = c.ouEdge.over >= EDGE ? 'over' : c.ouEdge.under >= EDGE ? 'under' : null; }
+      }
+    }
+    if (view.frozen) { c.callV = CALL_V; if (view.before) c.before = view.before; }      // `before`: the puck drop the call was made ahead of, should ESPN move it later
+    return c;
+  };
+  /* the call shown before puck drop, from the last state: verbatim when this job wrote it (or it was
+     still to come there), else rebuilt from what an older job kept after puck drop: the chance, the
+     total, the player model's view and the line were kept, the margin and the sides recomputed on the
+     team Elo's margin, so the player model's margin is put back and the sides recomputed from it */
+  const keptCall = (p, rp) => {
+    if (p.state === 'pre' || p.callV) { const c = {}; for (const k of CALL) if (p[k] !== undefined) c[k] = p[k]; c.callV = CALL_V; return c; }
+    const byPlayers = !!(p.pm && p.pm.pHome === p.pHome && p.pm.xt === p.xt);
+    const view = { pHome: p.pHome, diff: p.diff, rh: p.rh, ra: p.ra, xt: p.xt, frozen: p.frozen, pm: p.pm };
+    if (byPlayers) { view.pmMu = p.pm.mu; view.elo = { pHome: expected(p.diff), xt: rp ? rp.xt : p.xt }; }
+    rebuilt++;
+    return callOf(view, p.line || null);
+  };
+  let rebuilt = 0;
   const out = [];
   for (const g of games) {
     const p = prevGames.get(g.id);
     const row = { id: g.id, type: g.type, date: g.date, start: g.start, state: g.state, detail: g.detail, home: g.home, away: g.away, hs: g.hs, as: g.as, periods: g.periods,
       neutral: g.neutral, note: g.note, hrec: g.hrec, arec: g.arec };
-    let view;
-    if (g.state === 'pre') {
-      const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: now, elo: { pHome: v.pHome, xt: rates.total(g.home, g.away) } };
+    let call;
+    if (started(g) && p && p.frozen) call = keptCall(p, replayed[g.id]);
+    else if (!started(g)) {
+      const v = m.predict(g); const view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: now, elo: { pHome: v.pHome, xt: rates.total(g.home, g.away) } };
       /* the player model's view, frozen with the rest; the call is its when it has earned it */
       const u = PM && PM.upcoming && PM.upcoming[g.id];
-      if (u) { view.pm = { pHome: u.pHome, mu: u.mu, xt: u.total, home: u.home, away: u.away }; if (usePM) { view.pHome = u.pHome; view.xt = u.total; view.pmMu = u.mu; } }
+      if (u) { view.pm = { pHome: u.pHome, mu: u.mu, xt: u.total, home: u.home, away: u.away, inj: u.inj || null }; if (usePM) { view.pHome = u.pHome; view.xt = u.total; view.pmMu = u.mu; } }
+      /* the lines: taken while the game is still to come */
+      view.before = g.start;
+      call = callOf(view, g.odds ? Object.assign({}, g.odds, { at: now }) : (p && p.line) || null);
     }
-    /* a call frozen before puck drop keeps its view after */
-    else if (p && p.frozen) view = { pHome: p.pHome, diff: p.diff, rh: p.rh, ra: p.ra, xt: p.xt, frozen: p.frozen, pm: p.pm, elo: p.elo, pmMu: p.pmMu };
-    else if (replayed[g.id]) { const v = replayed[g.id]; view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: v.xt, frozen: null }; }
-    else { const v = m.predict(g); view = { pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: null }; }   // live with no frozen call: the current view
-    const mu = view.pmMu !== undefined && view.pmMu !== null ? view.pmMu : spreadOf(view.diff, model);
-    const G = goals(view.xt, mu, view.diff, model.pull);
-    Object.assign(row, { pHome: +view.pHome.toFixed(4), rh: +view.rh.toFixed(1), ra: +view.ra.toFixed(1), diff: +view.diff.toFixed(2), mu: +mu.toFixed(2), xt: +view.xt.toFixed(2), tie: r3(G.tie), frozen: view.frozen });
-    if (view.pm) row.pm = view.pm;
-    if (view.elo && view.pmMu !== undefined && view.pmMu !== null) row.elo = { pHome: +view.elo.pHome.toFixed(4), xt: +view.elo.xt.toFixed(2) };
-    if (view.pmMu !== undefined && view.pmMu !== null) row.by = 'players';
-    /* the lines: taken while the game is still to come, kept once it is not */
-    let line = null;
-    if (g.state === 'pre' && g.odds) line = Object.assign({}, g.odds, { at: now });
-    else if (p && p.line) line = p.line;
-    row.line = line;
-    row.pick = view.pHome >= 0.5 ? 'home' : 'away';
-    if (line) {
-      /* the moneyline: a side whose chance beats the book's implied by the edge */
-      const ih = implied(line.homeML), ia = implied(line.awayML);
-      if (ih !== null && ia !== null) { row.mlEdge = { home: r3(view.pHome - ih), away: r3(1 - view.pHome - ia) }; row.mlPick = row.mlEdge.home >= EDGE ? 'home' : row.mlEdge.away >= EDGE ? 'away' : null; }
-      if (line.homeLine !== null && line.homeLine !== undefined) {
-        const cp = coverProbs(G, line.homeLine);
-        row.cover = { home: r3(cp.cover), push: r3(cp.push), away: r3(cp.lose) };
-        const jh = implied(line.homeSpreadOdds), ja = implied(line.awaySpreadOdds);
-        if (jh !== null && ja !== null) { row.plEdge = { home: r3(cp.cover - jh), away: r3(cp.lose - ja) }; row.plPick = row.plEdge.home >= EDGE ? 'home' : row.plEdge.away >= EDGE ? 'away' : null; }
-      }
-      if (line.total !== null && line.total !== undefined) {
-        const tp = totalProbs(G, line.total);
-        row.ou = { over: r3(tp.over), push: r3(tp.push), under: r3(tp.under) };
-        const jo = implied(line.overOdds), ju = implied(line.underOdds);
-        if (jo !== null && ju !== null) { row.ouEdge = { over: r3(tp.over - jo), under: r3(tp.under - ju) }; row.ouPick = row.ouEdge.over >= EDGE ? 'over' : row.ouEdge.under >= EDGE ? 'under' : null; }
-      }
-    }
+    /* started with no call made before it: the replay's view for a final, the current one while live; no line, no side */
+    else if (replayed[g.id]) { const v = replayed[g.id]; call = callOf({ pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: v.xt, frozen: null }, null); }
+    else { const v = m.predict(g); call = callOf({ pHome: v.pHome, diff: v.diff, rh: v.rh, ra: v.ra, xt: rates.total(g.home, g.away), frozen: null }, null); }
+    Object.assign(row, call);
+    const line = row.line;
     if (g.state === 'final' && g.hs !== null) {
       const margin = g.hs - g.as, total = g.hs + g.as;
       const res = { su: (margin > 0) === (row.pick === 'home') };
@@ -266,6 +379,7 @@ async function main() {
     }
     out.push(row);
   }
+  if (rebuilt) log(`${rebuilt} calls an older job recomputed after puck drop put back to the call shown before it`);
 
   /* the record: straight up on every game, and on the moneyline, the puck line and the total where a side was taken */
   const fresh = () => ({ su: { w: 0, l: 0 }, ml: { w: 0, l: 0 }, pl: { w: 0, l: 0, p: 0 }, ou: { w: 0, l: 0, p: 0 } });
@@ -288,8 +402,8 @@ async function main() {
   log(`playoff picture: ${top} for the Cup; ${SIMS} sims over ${playoff.remaining} games left`);
 
   /* the player rankings, for the Players tab: every rated player, the club strengths, the report */
-  const players = PM ? { asOf: PM.asOf, generated: PM.generated, use: usePM, report: PM.report, params: PM.params, players: PM.players, teams: PM.teams } : null;
-  const state = { published: new Date().toISOString(), season: SEASON, today: TODAY, model, teams, games: out, record, playoff, edge: EDGE, players };
+  const players = PM ? { asOf: PM.asOf, generated: PM.generated, use: usePM, report: PM.report, params: PM.params, players: PM.players, teams: PM.teams, injuries: PM.injuries || null, starters: PM.starters || null } : null;
+  const state = { published: process.env.NHL_NOW ? new Date(Date.parse(NOW)).toISOString() : new Date().toISOString(), season: SEASON, today: TODAY, phase: playoff.phase, model, teams, games: out, record, playoff, edge: EDGE, players };
   const before = prev ? JSON.stringify(Object.assign({}, prev, { published: null, today: null })) : null;
   const after = JSON.stringify(Object.assign({}, state, { published: null, today: null }));
   if (before === after) { log('nothing changed; state.json left alone'); return; }

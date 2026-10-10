@@ -7,6 +7,7 @@
    codes are this site's own (TEAMS): ESPN's ids are mapped onto them, so a franchise that
    moved (the Coyotes, now Utah) is one team all the way back. */
 'use strict';
+const fs = require('fs'), path = require('path');
 
 const SB = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard';
 
@@ -54,7 +55,30 @@ const HEADER_SETS = [
   { 'User-Agent': 'nfl-hub-nhl/1.0 (+https://github.com/DEMON-X13/nfl-hub)', Accept: 'application/json' },
   {},
 ];
+/* NHL_FIXTURES names a folder of saved answers, which is how simulate.js plays the job offline: a
+   URL is read from the file named for it, and a file that is not there is a request that failed */
+function fixtureName(url) {
+  const u = String(url); let m;
+  if ((m = /summary\?event=(\d+)/.exec(u))) return `summary_${m[1]}.json`;
+  if ((m = /scoreboard\?dates=(\d{4})(\d{2})(\d{2})/.exec(u))) return `sb_${m[1]}-${m[2]}-${m[3]}.json`;
+  if (/\/injuries/.test(u)) return 'injuries.json';
+  if (/dailyfaceoff\.com/.test(u)) return 'dailyfaceoff.html';
+  return null;
+}
+function fromFixture(url) {
+  const name = fixtureName(url), file = name && path.join(process.env.NHL_FIXTURES, name);
+  if (!file || !fs.existsSync(file)) throw new Error(`HTTP 503 (no saved answer) ${url}`);
+  return fs.readFileSync(file, 'utf8');
+}
+/* a page as text (DailyFaceoff's), the same way */
+async function getText(url, headers) {
+  if (process.env.NHL_FIXTURES) return fromFixture(url);
+  const r = await fetch(url, { headers, redirect: 'follow' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.text();
+}
 async function getJSON(url, tries = 3) {
+  if (process.env.NHL_FIXTURES) return JSON.parse(fromFixture(url));
   let last;
   for (let i = 0; i < tries; i++) {
     for (const headers of HEADER_SETS) {
@@ -134,4 +158,7 @@ function teamsOf(json, into = {}) {
   return into;
 }
 
-module.exports = { getJSON, scoreboard, gameRow, teamsOf, CLUBS, TEAMS, codeOf, seasonOf, etDate };
+/* a name as two sources can agree on it: no accents, no punctuation, no Jr., lower case */
+const normName = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[.'’]/g, '').replace(/-/g, ' ').replace(/\b(jr|sr|ii|iii|iv)\b/g, ' ').replace(/[^a-z ]/g, '').replace(/\s+/g, ' ').trim();
+
+module.exports = { getJSON, getText, scoreboard, gameRow, teamsOf, CLUBS, TEAMS, codeOf, seasonOf, etDate, normName };

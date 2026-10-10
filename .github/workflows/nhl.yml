@@ -2,13 +2,18 @@ name: Update NHL site
 
 on:
   schedule:
-    # In UTC (Eastern is UTC-4 until November, UTC-5 after). The NHL plays nearly every day,
-    # most games at 7pm Eastern and the last West Coast final around 1am. ESPN's public feeds
-    # are the only source: free, no credits. Off the hour, because this repo's scheduled runs
-    # land late and :00 is the minute most often dropped.
-    - cron: "17 7 * * *"    # 3:17am ET: every game is final, the day is graded
-    - cron: "17 14 * * *"   # 10:17am ET: the day's lines are up, the calls are frozen on them
-    - cron: "17 21 * * *"   # 5:17pm ET: the last read of the lines before the evening's puck drops
+    # In UTC. GitHub starts this repo's scheduled runs late: 2.7 to 8.7 hours for this job over
+    # 15 runs measured in October 2026 (never early), so each slot is queued for the window it must
+    # land in, not the minute it names. Off the hour, since :00 is the minute most often delayed.
+    # Puck drop is 7pm Eastern for most games (23:00 UTC until November, 00:00 after), 10pm for the
+    # West Coast, 12:30-3pm for weekend matinees; the last West Coast final is about 1:30am Eastern.
+    # The call on a game is the last run's before its puck drop, frozen then by the clock; the page
+    # itself never offers a game that has started, whatever the last run saw.
+    - cron: "17 6 * * *"    # lands about 09-15 UTC: the night's finals graded, the morning lines, before the weekend matinees
+    - cron: "17 12 * * *"   # lands about 15-21 UTC: the afternoon read, before every 7pm Eastern puck drop
+    - cron: "17 15 * * *"   # lands about 18-00 UTC: the last read before 7pm puck drops at the usual 6-7 hours late
+    - cron: "17 18 * * *"   # lands about 21-03 UTC: before the 10pm Eastern puck drops; the early games' scores
+    - cron: "17 22 * * *"   # lands about 01-07 UTC: the night's finals
   workflow_dispatch:
 
 permissions:
@@ -28,23 +33,26 @@ jobs:
           node-version: 22
       - run: npm ci
         working-directory: nhl/tools
-      - name: Play a fabricated season through the job, in a scratch folder
+      - name: Play the job offline first (today's data, a fabricated season, the playoffs, the rollover)
         run: node nhl/tools/simulate.js
-      - name: Pull last night's box scores and the injury report
+      - name: Read the scores through today, so last night's finals are in the state before they are boxed
+        run: node nhl/tools/update.js --scores
+      - name: Pull the new box scores and the injury report
         run: node nhl/tools/fetch_box.js
-      - name: Tonight's announced goalies, where DailyFaceoff names them
+      - name: The goalies DailyFaceoff announces, game by game
         run: node nhl/tools/starters.js
-      - name: Replay the player and goalie model and line up tonight
+      - name: Replay the player and goalie model and line up every game to come
         run: node nhl/tools/players.js
       - name: Read the season, rate, call, grade and write state.json
         run: node nhl/tools/update.js
-      - name: Smoke test the page over the new state
+      - name: Smoke test the page and the state against its sources and the last published state
         run: node nhl/tools/smoke.js
       - name: Commit if anything changed
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
           git add nhl/state.json nhl/data/teams.json nhl/data/box_*.jsonl nhl/data/injuries.json nhl/data/starters.json nhl/data/players.json
+          for f in nhl/data/season_*.json; do [ -e "$f" ] && git add "$f"; done
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "nhl: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             ok=0
@@ -54,3 +62,5 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      - name: Fail the run if a source the published state stands on broke (after the commit, so the page still updates and says so)
+        run: node nhl/tools/sources.js
