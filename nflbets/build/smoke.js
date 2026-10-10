@@ -79,6 +79,10 @@ process.on('unhandledRejection', e => { checks++; fails.push('the page threw in 
    still going after ten minutes (it takes one or two) stops with what it has, and fails */
 const SMOKE_LIMIT_MS = 10 * 60 * 1000;
 setTimeout(() => finish(`the smoke did not finish in ${Math.round(SMOKE_LIMIT_MS / 1000)} s: stopped with what it had`), SMOKE_LIMIT_MS).unref();
+/* nor does it pass by running out of things to wait on: a body stuck on a promise nothing will
+   settle, with no window open to keep the process up, would otherwise end Node with exit 0 and
+   no count, which a job reads as a pass */
+process.on('beforeExit', () => finish('the smoke stopped before it finished: its body was waiting on something nothing would settle'));
 
 /* ---- the published page is a fresh build of its sources ----
    Nothing rebuilds the page on a schedule: it is rebuilt by hand when a source changes. A
