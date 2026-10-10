@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v85 \u00b7 2026-10-10';
+const APP_BUILD='app v87 \u00b7 2026-10-10';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -174,11 +174,42 @@ function gameBet(g,team,kind){
   const pH=1-gbNorm((g.sp-mu)/MARGIN_SD);      /* home covers when its margin beats the spread */
   return {p:isHome?pH:1-pH,line:isHome?-g.sp:g.sp,mu:isHome?mu:-mu};
 }
+/* ---------- the game total: over or under the posted points ----------
+   The game's points ~ Normal(mu, TOTAL_SD), the way the margin is above. mu is the model's own
+   points for the two sides (modelPoints: the team volumes and defences it tracks, the numbers the
+   slate falls back on when no line is posted) pulled halfway to the posted total. TOTAL_SD is how
+   far final totals have landed from the posted total: 13.2 points across the 4,175 regular-season
+   games of 2010-2025 in nflverse's games.csv (13.3 for 2010-2018, 13.1 for 2019-2025), measured
+   once and never on the season in play. The book's price for a side is the over or under odds
+   the payload carries beside the total (nflverse's, or DraftKings' with its own number); with
+   none on file the leg is shown at an estimated -110 and no suggestion is built on it. */
+const TOTAL_SD=13.2, TOTAL_EST=-110;
+function modelTotal(g){ return modelPoints(g.a,g.h,false)+modelPoints(g.h,g.a,true); }
+function totalMu(g){ const m=modelTotal(g); return (g.tot!=null&&isFinite(g.tot))?(m+g.tot)/2:m; }
+/* side 'over' or 'under': the chance that side lands, on the posted total. null with no total posted */
+function totalBet(g,side){
+  if(g.tot==null||!isFinite(g.tot)) return null;
+  const mu=totalMu(g), pO=1-gbNorm((g.tot-mu)/TOTAL_SD);
+  return {p:side==='under'?1-pO:pO,line:g.tot,mu,model:modelTotal(g)};
+}
+function totalBook(g,side){ const v=side==='under'?g.tou:g.tov; return (v!=null&&isFinite(v)&&v!==0)?v:null; }
+/* the leg itself, as the builder and the suggestions carry it: one key a game, so its over and
+   its under can never both be on a parlay */
+function totalLeg(g,side){
+  const b=totalBet(g,side); if(!b) return null;
+  const book=totalBook(g,side);
+  return {key:legKey(g.id,'game','total'),gid:g.id,pid:'game',stat:'total',k:b.line,side,main:true,p:b.p,
+    price:book!=null?book:TOTAL_EST,src:book!=null?'real':'est',mu:b.mu,
+    name:`${TEAM_NAMES[g.a]||g.a} at ${TEAM_NAMES[g.h]||g.h}`,pos:'Game',grp:'TEAM',team:g.a,opp:g.h,week:g.w,
+    label:`${side==='under'?'Under':'Over'} ${b.line} points`};
+}
 /* chance of k or more touchdowns from the any-time chance p, touchdowns treated as Poisson */
 function tdPlus(p,k){ const lam=-Math.log(Math.max(1e-9,1-Math.min(p,1-1e-9))); let s=0,t=1; for(let i=0;i<k;i++){ s+=t; t*=lam/(i+1); } return Math.max(0,Math.min(1,1-Math.exp(-lam)*s)); }
-function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'); }
+function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'||l.stat==='total'); }
 function settleGameLeg(l){
   const g=S.sched.find(x=>x.id===l.gid); if(!g||!hasScore(g)) return null;
+  /* a game total: the final's points against the line, on the side bet */
+  if(l.stat==='total'){ const t=g.hs+g.as, k=+l.k; if(t===k) return 'push'; return (l.side==='under'?t<k:t>k)?'win':'loss'; }
   const margin=l.team===g.h?g.hs-g.as:g.as-g.hs;
   const v=l.stat==='ml'?margin:margin+l.k;   /* l.k is the team's spread line */
   return v>0?'win':(v<0?'loss':'push');
@@ -259,8 +290,24 @@ function playersFor(team){
 }
 
 /* ---------- correlated parlays: gaussian copula over the shipped pair table ---------- */
+/* a game total against the player lines of its own game: how a stat's miss (his line against his
+   last five games, weighted) moved with the total's miss (the final's points against the posted
+   total), as normal-score correlations over 2019-2024's regular season, starters only, from
+   raw/feat.pkl and games.csv. Passing touchdowns and yards ride with the total; a kicker's field
+   goals a little against it. Below 0.03 is left out as nothing. */
+const TOTAL_RHO={'QB:attempts':0.10,'QB:completions':0.16,'QB:passing_yards':0.29,'QB:passing_tds':0.44,'QB:rushing_yards':0.05,
+  'RB:rushing_yards':0.06,'RB:receiving_yards':0.06,'RB:scrim_yards':0.08,'RB:any_td':0.17,
+  'WR:receptions':0.12,'WR:receiving_yards':0.16,'WR:any_td':0.17,
+  'TE:receptions':0.07,'TE:receiving_yards':0.12,'TE:any_td':0.12,
+  'K:fg_att':-0.07,'K:kick_pts':0.14};
 function legRho(a,b){
   if(a.gid!==b.gid) return 0;
+  /* the total moves with its game's passing and scoring lines (TOTAL_RHO, the side of each leg
+     is the leg's own); with a win or cover bet on the same game hardly at all (0.05 for a cover
+     and 0.01 for a win, measured on 2010-2025), so not at all here */
+  if(a.stat==='total'||b.stat==='total'){
+    if(a.stat==='total'&&b.stat==='total') return 0.95;
+    const o=a.stat==='total'?b:a; return isGameLeg(o)?0:(TOTAL_RHO[o.grp+':'+o.stat]||0); }
   /* game legs: unrelated to player legs (not measured); two from the same game are strongly related */
   if(isGameLeg(a)||isGameLeg(b)){ if(!(isGameLeg(a)&&isGameLeg(b))) return 0; const same=a.team===b.team; return a.stat===b.stat?(same?0.95:-0.95):(same?0.75:-0.75); }
   const ka=a.grp+':'+a.stat, kb=b.grp+':'+b.stat;
@@ -669,6 +716,11 @@ function liveGameLeg(leg,sc){
   const isHome=leg.team===sc.home, mine=isHome?sc.hs:sc.as, theirs=isHome?sc.as:sc.hs;
   if(mine==null||theirs==null) return {val:null,k:+leg.k||0,need:null,state:'unknown'};
   const done=sc.state==='post';
+  /* a game total: points only go up, so an over is won the moment the total passes the line
+     and an under lost; each otherwise waits for the final */
+  if(leg.stat==='total'){ const t=sc.hs+sc.as, k=+leg.k||0, under=leg.side==='under';
+    if(t>k) return {val:t,k,need:null,state:under?'missed':'hit'};
+    return {val:t,k,need:under?null:+(k-t).toFixed(1),state:done?(t===k?'push':(under?'hit':'missed')):'live'}; }
   if(leg.stat==='ml'){ const up=mine-theirs;
     return {val:up,k:0,need:null,state:done?(up>0?'hit':(up===0?'push':'missed')):'live'}; }
   const m=mine-theirs+(+leg.k||0);                        /* the line is from this team's side */

@@ -7,8 +7,9 @@
  * parlay the file marks cleared is not drawn. No device keeps a list of its own: the Parlay
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
- * own storage. The test boots the whole page against a stubbed file and a stubbed ESPN, with the
- * real payload and state, opens the X Parlays tab and checks what the section renders, on a
+ * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the
+ * suggested parlays panel over the builder. The test boots the whole page against a stubbed file
+ * and a stubbed ESPN, with the real payload and state, opens the X Parlays tab and checks what the section renders, on a
  * browser with nothing of its own and on one that carries what the retired owner and reader layers
  * left (their flags, their copies of the old shared document), which must show exactly the file
  * and lose none of its own. Every request every run makes is recorded: one to the retired store or
@@ -26,7 +27,9 @@ const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papapars
 const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const STATE = fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8');
-const URL_ = 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay';
+const URL_ = 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays';
+/* the Parlay Builder's address, where section J finishes a parlay as a card */
+const URL_PB = 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay';
 /* the retired store and its sign-in and token services: no page may ask any of them anything */
 const RETIRED = /firebaseio\.com|firebasedatabase\.app|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com|googleapis\.com\/identitytoolkit|store\.test/;
 /* every request of every run, and the ones that broke the rule: a request to the retired store,
@@ -147,10 +150,10 @@ const betBlob = () => JSON.stringify({ myPicks: {}, bets: {}, bank: { build: [
    the page opens (seed), the payload as changed for the run (pay), and the X Bet Log's file
    (xbets). Every request is in calls, with its method; a request to the retired store, or one
    that is not a read, is refused and kept in BAD_CALLS, which fails the smoke. */
-function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, xbets = null } = {}) {
+function run({ file = FILE, state = 'in', espn = 'ok', data = 'ok', seed = () => {}, pay = x => x, xbets = null, url = URL_ } = {}) {
   return new Promise(resolve => {
     const calls = [], methods = [];
-    const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url: URL_,
+    const dom = new JSDOM(HTML, { runScripts: 'dangerously', pretendToBeVisual: true, url,
       beforeParse(w) {
         w.Papa = Papa; w.confirm = () => true; w.alert = () => {}; w.scrollTo = () => {};
         try { seed(w); } catch (e) {}
@@ -217,7 +220,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const vis = await run({ seed: w => { seed(w); w.localStorage.setItem('my_parlays_v1', myOld); } });
     chk(!vis.d.getElementById('myCard') && !vis.d.getElementById('myApp') && vis.d.querySelectorAll('.savedp').length === 2 && vis.d.querySelectorAll('#lpCard .savedp').length === 2,
       'a browser\'s own parlays are drawn beside X\'s, or a list of its own is in the page: ' + vis.d.querySelectorAll('.savedp').length + ' cards');
-    chk(!/Your parlays/i.test(txt(vis.d.getElementById('tab-parlay'))) && !/Kyle Pitts Receiving Yards/.test(txt(vis.d.getElementById('tab-parlay'))), 'the X Parlays tab still says Your parlays, or shows the browser\'s own parlay');
+    chk(!/Your parlays/i.test(txt(vis.d.getElementById('tab-xparlays'))) && !/Kyle Pitts Receiving Yards/.test(txt(vis.d.getElementById('tab-xparlays')) + txt(vis.d.getElementById('tab-parlay'))), 'the X Parlays tab still says Your parlays, or the browser\'s own parlay is shown');
     chk([...vis.d.querySelectorAll('#lpCard .savedp .pill')].filter(x => /prop model|betting model/.test(txt(x))).length === 0, 'a parlay from the prop or betting model is drawn as X\'s');
     chk(vis.w.eval('S').saved.length === 1 && vis.w.eval('S').saved[0].id === 'mine' && JSON.parse(vis.w.localStorage.getItem(PROP_KEY)).saved[0].id === 'mine',
       'a browser\'s saved parlay was lost from its own storage');
@@ -225,7 +228,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     /* the browser's own copy of a parlay the file also has is not drawn: the file's is */
     const two = await run({ seed, file: { updated: null, games: ['2026_02_CAR_ATL'], parlays: [
       { id: 'mine', week: 2, stake: 99, legs: [legF(0, 'Kyle Pitts', 'ATL', 'receiving_yards', 99.5, 'over', true)] }] } });
-    chk(/\$99\.00/.test(txt(two.d.getElementById('lpCard'))) && !/\$15\.00/.test(txt(two.d.getElementById('tab-parlay'))), 'the placed copy is not X\'s, or the browser\'s own copy is drawn');
+    chk(/\$99\.00/.test(txt(two.d.getElementById('lpCard'))) && !/\$15\.00/.test(txt(two.d.getElementById('tab-xparlays')) + txt(two.d.getElementById('tab-parlay'))), 'the placed copy is not X\'s, or the browser\'s own copy is drawn');
   }
 
   // ---- C2. a parlay still in this browser's builder is the browser's: not drawn in X Parlays ----
@@ -331,12 +334,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
   /* the build stamp: the one thing that tells a stale cached copy from a broken one, in the markup now */
   chk(/^app v\d+/.test(txt(d.getElementById('buildTag'))), 'the page does not say which build it is');
   chk(!/Parlays marked/.test(txt(d.getElementById('lpCard'))), 'the old footer text is in the section');
-  /* X Parlays heads the tab and the builder is under it, the last thing in it: no list of a visitor's own */
-  const lpc = d.getElementById('lpCard');
-  chk(!!lpc && d.getElementById('tab-parlay').firstElementChild === lpc && lpc.nextElementSibling.id === 'parlayBody' && d.getElementById('parlayBody').nextElementSibling.id === 'suggModal'
-    && !d.getElementById('suggModal').nextElementSibling && !d.getElementById('myCard') && !d.getElementById('myApp') && !d.getElementById('myClear'),
-    'X Parlays is not at the top of its tab with the builder under it and nothing after, or Your parlays is still in the page');
-  chk(!/Your parlays/i.test(txt(d.getElementById('tab-parlay'))), 'the X Parlays tab still says Your parlays');
+  /* X Parlays is the whole of its own tab, opened at its address; the builder is the Parlay Builder
+     tab's, under the suggested parlays: no list of a visitor's own anywhere */
+  const lpc = d.getElementById('lpCard'), tx = d.getElementById('tab-xparlays'), tb = d.getElementById('tab-parlay');
+  chk(!!lpc && !!tx && tx.firstElementChild === lpc && !lpc.nextElementSibling && !tx.hidden && tb.hidden && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'X Parlays'
+    && tb.firstElementChild.id === 'pbPanel' && (tb.firstElementChild.nextElementSibling || {}).id === 'parlayBody' && !tb.querySelector('#lpCard')
+    && !d.getElementById('suggModal') && !d.getElementById('myCard') && !d.getElementById('myApp') && !d.getElementById('myClear'),
+    'X Parlays is not the whole of its own tab (opened on #xparlays), the builder is not under the suggested parlays on its own tab, or Your parlays is still in the page');
+  chk(!/Your parlays/i.test(txt(tx)), 'the X Parlays tab still says Your parlays');
   { const body = d.body.cloneNode(true); body.querySelectorAll('script, style').forEach(n => n.remove());
     chk(/^X Parlays/.test(txt(lpc.querySelector('h2'))) && !/Live Parlays/i.test(body.textContent) && !/Live Parlays/i.test(d.title), 'the section is still called Live Parlays somewhere a reader sees it'); }
   chk(!d.getElementById('savedCard') && !d.getElementById('betParlays'), 'the old cards are still drawn');
@@ -449,7 +454,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const o = await run({ seed: w => { for (const [k, v] of Object.entries(OLD)) w.localStorage.setItem(k, v); }, xbets: XB });
     await wait(300);
     const lp = o.d.getElementById('lpCard'), keys = allKeys(o.w);
-    chk(!o.timedOut && lp.querySelectorAll('.savedp').length === 2 && !/Old Shared Receiver|Own Receiver/.test(txt(o.d.getElementById('tab-parlay'))) && txt(lp.querySelector('.lineLbl')) === '43.5',
+    chk(!o.timedOut && lp.querySelectorAll('.savedp').length === 2 && !/Old Shared Receiver|Own Receiver/.test(txt(o.d.getElementById('tab-xparlays')) + txt(o.d.getElementById('tab-parlay'))) && txt(lp.querySelector('.lineLbl')) === '43.5',
       'a browser with the old owner\'s keys does not show exactly the file\'s parlays on the file\'s lines: ' + txt(lp).slice(0, 160));
     { const shown = o.d.body.cloneNode(true); shown.querySelectorAll('script, style').forEach(n => n.remove());
       chk(!o.d.querySelector('#ownerMark, #xpOwner, #xpSignIn, #xpSignOut, #xpSignInBox, #syncStamp') && !/\bowner\b|sign out|sign in|Not synced|Synced/i.test(txt(shown)),
@@ -621,13 +626,13 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
        (the owner link's secret and a session still in it, which mean nothing now) */
     const wasOwner = w => { w.localStorage.setItem('nflowner_v1', 'the-old-owner-secret'); w.localStorage.setItem('nflsync_owner_v1', JSON.stringify({ uid: 'u', refreshToken: 'rt' })); };
     for (const [how, extra] of [['a plain browser', () => {}], ['a browser that was the owner\'s', wasOwner]]) {
-      const v = await run({ pay: pin, file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob()); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
+      const v = await run({ url: URL_PB, pay: pin, file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob()); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
       const { w, d } = v, tab = d.getElementById('tab-parlay');
       const reads = () => v.methods.every(m => m === 'GET');
       const rec = stubDraw(w);
-      /* the tab: X's card, the builder with its suggestions, nothing of the visitor's own */
-      chk(!d.getElementById('myCard') && !/Your parlays/i.test(txt(tab)) && !!d.getElementById('lpCard') && !!d.getElementById('suggOpen') && d.querySelectorAll('#parlayBody tr.legrow').length === 2,
-        `${how}: the X Parlays tab is not X's card and the builder with its two legs, or a list of the visitor's own is in it`);
+      /* the tab: the suggested parlays and the builder with its two legs, nothing of the visitor's own */
+      chk(!d.getElementById('myCard') && !/Your parlays/i.test(txt(tab)) && !tab.hidden && !!d.getElementById('pbPanel') && !tab.querySelector('#lpCard') && d.querySelectorAll('#parlayBody tr.legrow').length === 2,
+        `${how}: the Parlay Builder tab is not the suggested parlays and the builder with its two legs, or a list of the visitor's own is in it`);
       chk(!/saved-before|Kyle Pitts/.test(txt(tab)), `${how}: the visitor's saved parlay from before is drawn`);
       const fin = d.getElementById('pFinish');
       chk(!!fin && !d.getElementById('pSave') && /^Finish parlay$/.test(txt(fin)) && !fin.disabled, `${how}: the builder's save is not Finish parlay: ` + txt(d.querySelector('#parlayBody .actions')));
@@ -723,24 +728,29 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       d.getElementById('pcAgain').click(); await wait(30);
       chk(md.hidden && Object.keys(w.eval('S').parlay).length === 0 && !d.getElementById('pFinish') && w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(),
         `${how}: Start over did not clear the builder alone`);
-      chk(d.activeElement === d.getElementById('suggOpen'), `${how}: after Start over the focus is lost`);
+      chk(d.activeElement === (d.querySelector('#pbPanel [data-pb-mix]') || d.body) && d.activeElement !== d.getElementById('pcAgain'), `${how}: after Start over the focus is lost`);
       /* two weeks in the builder cannot be one parlay: Finish says so, as Save did */
       w.eval(`S.parlay=${JSON.stringify(builder())}; S.parlay['other|team:${other ? other.h : 'X'}|ml']=${JSON.stringify({ gid: other ? other.id : 'x', pid: 'team:' + (other ? other.h : 'X'), stat: 'ml', k: 0, side: 'over', main: false, p: 0.5, price: 100, src: 'real', name: 'Elsewhere', pos: 'Game', grp: 'TEAM', team: other ? other.h : 'X', opp: other ? other.a : 'Y', week: other ? +other.w : wk + 1, label: 'To win' })}; save(); renderParlay()`);
       await wait(20);
       chk(!!d.getElementById('pFinish') && d.getElementById('pFinish').disabled && /same week to finish/.test(d.getElementById('pFinish').title), `${how}: a builder across two weeks can be finished`);
-      /* the Suggested parlays window: a tier finishes the same way, its legs and its price */
+      /* the suggested parlays: a tier finishes the same way, its legs, its price and its chance, on the
+         $10 the tier shows (the panel's own tiers are held to their rules in props' audit and smoke.js;
+         here the tier is a fixed one on the two pinned games, so the card is checked on any day) */
       { const tierLegs = Object.values(builder()).map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
-        w.eval(`SUGGEST_CACHE={sig:'smoke',candidates:2,tiers:[{id:'safe',label:'Safe',floor:.5,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,added:0}]}; getSuggestions=function(){ return SUGGEST_CACHE; };`);
-        d.getElementById('suggOpen').click(); await wait(30);
-        const tb = d.querySelector('#suggView [data-pc-finish="model|safe"]');
-        chk(!!tb && /^Finish parlay$/.test(txt(tb)) && !d.querySelector('#suggView [data-suggest-save]'), `${how}: a suggestion's save is not Finish parlay`);
+        w.eval(`getPbTiers=function(){ return {sig:'smoke',games:2,ticked:2,kinds:5,pref:2,thin:0,tiers:[{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0},
+          {id:'med',label:'Medium',n:3,floor:0.25,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'Only 2 legs on your picks: tick more games or bet types.'}]}; };
+          pbGames=function(){ return S.sched.filter(g=>${JSON.stringify([g1.id, g2.id])}.includes(g.id)); }; renderPb();`);
+        await wait(30);
+        const tb = d.querySelector('#pbPanel [data-pc-finish="pb|safe"]');
+        chk(!!tb && /^Finish$/.test(txt(tb)) && !!d.querySelector('#pbPanel [data-pb-add="safe"]') && !d.querySelector('#pbPanel [data-pc-finish="pb|med"]') && /Only 2 legs on your picks/.test(txt(d.querySelector('#pbPanel .pb-tier.med'))),
+          `${how}: a suggested tier has no Finish and Add to builder, or an empty tier offers one or does not say why`);
         if (tb) { tb.click(); await wait(20);
-          chk(!md.hidden && /Safe suggestion/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && /41\.0%/.test(txt(d.getElementById('pcView'))),
-            `${how}: the suggestion's card is not its legs, price and chance: ` + txt(d.getElementById('pcView')));
+          chk(!md.hidden && /Safe parlay/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && /41\.0%/.test(txt(d.getElementById('pcView')))
+            && txt(d.querySelector('#pcView .pc-money b')) === '$10.00',
+            `${how}: the suggestion's card is not its legs, price, chance and $10: ` + txt(d.getElementById('pcView')));
           d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-          chk(md.hidden && !d.getElementById('suggModal').hidden && d.activeElement === tb, `${how}: Escape on the card closed the suggestions under it too, or the focus did not go back to the tier`); }
-        chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`);
-        w.eval('closeSuggest()'); }
+          chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the tier`); }
+        chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`); }
     }
 
   }

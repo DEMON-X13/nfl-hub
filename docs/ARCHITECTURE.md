@@ -84,6 +84,7 @@ props/
                                  only checked: the app fetches it at boot)
   build/audit.js                 ~26k checks. THE COMMIT GATE
   build/payload.py               rebuilds data/payload.json (weekly.py runs it)
+  build/test_audit_gate.py       weekly.py's reading of the audit's summary line, on cases
   build/weekly.py                the whole refresh: download, price, bake, assemble,
                                  audit (props.yml commits); exits 1, publishing nothing,
                                  when a required download fails or the audit is not clean;
@@ -203,14 +204,16 @@ nflbets/
   build/tab_pickems.html         the Pick'ems tab (pk- prefixed)
   build/tab_elo.html             the Player Elo tab and the Elo pieces on the prop tabs (pe-)
   build/card.html                the parlay card (pc-): Finish parlay, its window and its PNG
-                                 download, on every device; the builder's pricing is lifted into it
+                                 download, on every device, for the builder and a suggested tier;
+                                 the builder's pricing is lifted into it
   build/storage.js               the browser's own storage, inlined by the build: the window.storage
                                  the prop model saves through (localStorage, nothing else), and the
                                  retired shared store's leftovers taken out of a browser on load
   build/xbets.js                 the X Bet Log's adapter (window.XBETS), inlined after it: reads
                                  liveparlays/xbets.json for the betting frames, read only
   build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
-                                 (smoke.js also: the page is a fresh build, its tag's hash is
+                                 (smoke.js also: the Parlay Builder's suggested parlays held to
+                                 their rules, the page is a fresh build, its tag's hash is
                                  its own, the served betting app carries the reference numbers;
                                  --season-over runs it with every game played; both stop
                                  with exit 1 on their own throw, after ten minutes, or
@@ -227,9 +230,9 @@ liveparlays/
   xbets.json                     the X Bet Log: season, deposit and weeks, which every device sees,
                                  read only: kept by Claude from what the owner sends; its `how`
                                  says how
-  index.html                     redirect to nflbets/#parlay
+  index.html                     redirect to nflbets/#xparlays
 
-live/  pickems/                  redirects to nflbets/ for old bookmarks
+live/  pickems/                  redirects to nflbets/ for old bookmarks (live/ to #xparlays)
 ```
 
 ## Bets and Stats: one page over both models
@@ -253,7 +256,10 @@ and confidence bands are lifted from the betting app at build time and scoped in
 closure, since the prop model has its own `tag()`.
 The prop model's tabs run on the prop model's own state under its own storage key, and
 the framed tabs on the betting app's, so a pick, parlay or bet made in either is what
-this page shows. Tabs are addresses: `#slate`, `#parlay`, `#record` and so on.
+this page shows. Tabs are addresses: `#slate`, `#parlay` (the Parlay Builder), `#xparlays`
+(X Parlays), `#record` and so on (`routeTabs()` in `tab_pickems.html`). On a phone the tab bar is
+wider than the screen and scrolls sideways, so on load, on a new address and on a tap the chosen
+button is brought into the bar by the bar's own `scrollLeft`, never by scrolling the page.
 The header's `buildTag` is the prop model's `APP_BUILD` and the page's own hash (`PAGE_HASH`,
 seven hex of the page's SHA-256 taken with a placeholder in its slot), so every source change
 shows. `smoke.js` builds the page in memory and fails unless the published files match it, checks
@@ -278,7 +284,8 @@ stats are read from the file, and a file from before them draws the old three co
 The same script puts the Mismatches card on the Props tab (games still to kick off only), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
-and the Elo picks in the Suggested parlays window. The ELO Model model's calls and record
+and the Elo picks at the foot of the Parlay Builder's suggested parlays (`#pbElo`, drawn with the
+panel's own `pbTierCard` and kept to its ticked games and player sides by `pbAllows`). The ELO Model model's calls and record
 are on the Pick'em Record and the build's team Elo of results on Power Ratings, both through
 `betting/tools/build.js` (Power Ratings' Record column is the season's own results from
 `betting/state.json`, current within hours of a final, and a team whose latest final the Elo file
@@ -286,13 +293,46 @@ has not taken in yet is starred until the Elo job, which the betting job starts 
 rebuilds it). It borrows the Pick'ems tab's team tag and the tier shields
 (`betting/tools/tiers.js`: Wood under 1350 up to Elite from 1700, HOF from 1750) through
 `window.pkTag`, `pkTagColor`, `pkTierBadge`, `pkEloTier` and `pkTierDefs`.
-X Parlays is the tab the prop model's Parlay Builder sits in (still `#parlay`):
+X Parlays is a tab of its own (`#xparlays`, the section `tab-xparlays`):
 `nflbets/build/build.js` lifts `liveparlays/build/page.html` -- its styles scoped to its card,
-`#lpCard`, and its script in a closure. The section draws one list, X's (`#lpCard`, at the top of
-the tab, the builder under it): the placed parlays in `liveparlays/parlays.json`, read on every
+`#lpCard`, and its script in a closure. The section draws one list, X's (`#lpCard`, the whole of
+the tab): the placed parlays in `liveparlays/parlays.json`, read on every
 load and on Refresh now, read only on every device, a parlay marked `"cleared": true` left out (and
 its games not read), a quiet line under the heading saying when the file last changed (its
 `updated`). Nothing a browser holds is drawn there: no saved parlays, no builder, no betting slips.
+
+The Parlay Builder is the prop model's own tab (`#parlay`, `tab-parlay`): the suggested parlays
+(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). The panel builds from
+what the visitor ticks, kept in the prop model's state (`S.ui.pb`: `k`, the five boxes; `off`, the
+games unticked; `gx`, whether the games list is open): a mix -- All (the default), Teams only, Players only -- which sets
+five boxes, Moneyline (`ml`), Spread (`ats`), Game total (`total`), Player overs and Player unders (a
+touchdown and a ladder rung are overs), a box changed by hand showing the mix it makes or Custom;
+and the week's games still to kick off (away @ home, the viewer's own time), all ticked to start,
+with All and None. `getPbTiers()` builds four tiers from those alone (`PB_TIERS`): Safe, the
+likeliest 2-leg parlay; Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the best
+expected return (the model's chance times the book's price) that lands at least 25%, 12% and 5% of
+the time. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
+points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
+stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
+fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
+with a line saying so for each kind of leg (`pbThinLine`: a team bet or a total, which has no
+market + form, missed only the 3-point bar; a player leg the bar with market + form agreeing), and
+never a leg under the book. One game leg a game, one leg a player, no line twice. A tier that
+cannot be built says why, never offering a smaller parlay; when player bets are ticked and none of
+the ticked games has a player price on file yet (`plGames` from `pbPool`, before the week's pulls),
+that is the reason given ("No player prices yet: they are pulled within a day of each kickoff."
+under Players only, or after the usual reason under a mix), never "tick more". The search is
+a beam over a pairwise approximation of the copula (each correlated pair's joint chance exact, by a
+Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
+builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so **Add to
+builder**, which puts exactly those legs in `S.parlay` (asking first when the builder holds others),
+shows the same price and chance. **Finish** opens the parlay card on the tier's $10. The tiers are
+cached on a signature of the choices and the data (`PB_CACHE`); a game that kicks off with the page
+open leaves the games list and every tier at the next look (`pbWatch`, every 30 seconds) or draw.
+With no game left to come the panel says so (the season over, or the week's games all started).
+The old Suggested parlays window (`suggModal`, its Any/overs/unders switch and stake box) is gone; a
+game page's High/Medium/Low suggestions stay.
+
 The Parlay Builder works as ever, and its Save and lock is **Finish parlay** on every device, which
 opens the **parlay card** (`nflbets/build/card.html`, every name `pc-`, set in by the build like
 the tabs):
@@ -313,8 +353,9 @@ and Pays, then Profit the card's width), then one to a row, the card growing to 
 **Start over** empties the builder. Finishing writes nothing: not `S.saved`, no key of the page,
 nothing anywhere else. The card's price is the builder's own: the build lifts renderParlay's
 pricing block out of `part3.js` into the card's `quote()` (its `/*QUOTE*/` slot), so it cannot
-drift. The Suggested parlays window's tiers (the model's, and the Elo picks') finish the same way
-instead of offering Add to saved parlays, which would add to a list nothing draws. What a browser
+drift. A suggested tier (the panel's or an Elo pick's) finishes the same way: its Finish carries
+`data-pc-finish="pb|<tier>"` or `"elo|<tier>"`, which one listener in the card answers
+(`finishFrom`). What a browser
 saved before -- the prop model's saved list, `my_parlays_v1` -- is left in its storage untouched
 and not drawn. The section reads ESPN's public scoreboard and box scores in the browser, each game's
 season and week from its id in ESPN's numbering. The builder drops a leg once its game kicks off,
@@ -324,7 +365,10 @@ playing that week -- Out or Doubtful on the injury report the page reads, or the
 a game-day inactive or a reserve list -- and otherwise graded on nothing with the row saying he
 is not on the box score.
 `liveparlays/index.html` is a redirect. `nflbets/build/smoke.js` boots the built page in jsdom against both sites'
-published data and walks every tab; `nflbets/build/smoke_live.js` does the same for the
+published data and walks every tab, and holds the Parlay Builder's panel to its rules on the week as
+it stands (the mixes and their boxes, a box by hand, a game unticked and the games list, each tier's
+size, floor, legs and price against the builder's own sums, Add to builder, the choices kept, a game
+kicking off, and with `--season-over` the panel saying there is no game left); `nflbets/build/smoke_live.js` does the same for the
 X Parlays section against a stubbed parlay file and scoreboard, on a plain browser and on one the
 retired owner and reader layers marked, and (its section J) the parlay card: Finish, the window with
 every leg and the price, the image on a recorder canvas (jsdom draws nothing; it measures figures as
@@ -419,7 +463,9 @@ season's file yet: the slate says so, and the audit expects none of it), `build`
 build) and `baked_at`. Only this season's games are baked: a price or line row of another
 season's game is dropped, and a payload of another season carries no lines forward. A `sched` game
 carries `ls` (`dk` or `nflverse`: whose moneyline, spread and total it has) and `lat` (when
-DraftKings' were pulled); DraftKings' are used only while under a day old.
+DraftKings' were pulled); DraftKings' are used only while under a day old. Its total `tot` comes
+with the over and under prices `tov`/`tou` (nflverse's `over_odds`/`under_odds`, or DraftKings'
+own where its total is used), absent on a payload baked before them.
 
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled
@@ -438,7 +484,8 @@ live outside it.
 Sections. part1.html's own tab bar (Games, Parlay Builder, Track Record, Weekly Update,
 Backup) is the audit's standalone page; the Bets and Stats build replaces it with its own
 bar. `tab-slate` is the Props tab (`slateView` + the `gameModal` overlay), `tab-parlay` is
-X Parlays (`parlayBody`, under the X Parlays card, then the `suggModal` overlay), and three have no
+the Parlay Builder (`pbPanel`, the suggested parlays, over `parlayBody`), the build adds
+`tab-xparlays` (X Parlays, `#lpCard` alone), and three have no
 button, kept because the prop model draws into them: `tab-track` (Track Record, the Prop
 Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 
@@ -449,19 +496,26 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 - **main line** -- the real sportsbook over/under for a stat (`main:true`).
 - **rung** -- a step on a **threshold ladder**, the "10+, 20+, 30+" style
   alternatives (`LADDER` in `part2.js`). Hidden behind a checkbox by default.
-- **game bets** -- `ml` (to win) and `ats` (to cover), one team bet per game,
-  `grp:'TEAM'`.
+- **game bets** -- `ml` (to win), `ats` (to cover) and `total` (the game's points over or
+  under `g.tot`, `pid:'game'`), one team bet and one total per game in the builder, a parlay of
+  the panel's taking one game leg a game, `grp:'TEAM'`. A total's chance is `totalBet()`: the
+  model's points for both sides pulled halfway to the posted total, spread about `TOTAL_SD`
+  (13.2, from 2010-2025); its price is `g.tov`/`g.tou`, else -110 marked est.; it settles over,
+  under or push in `settleGameLeg()`.
 - **corr vs indep** -- `parlayProb()` returns both: `indep` is the legs
   multiplied naively, `corr` is a gaussian-copula Monte Carlo over the shipped
   pair correlation table. `corr` is the number the UI shows. It is seeded, so it
-  is deterministic.
+  is deterministic. A game total's pairs are `legRho()`'s own: with a player leg on
+  the same game `TOTAL_RHO` by position and stat (measured on 2019-2024 finals), with a
+  win or cover bet 0.
 - **SGP pricing** -- `parlayDec()`. Legs sharing a game are priced as one
   same-game parlay (never longer than multiplying), legs across games multiply.
 - **margin** -- the book's cut, `light`/`typical`/`heavy`, a visitor setting.
-- **suggested parlays** -- two engines. `buildSuggestions()` is the week-wide
-  Safe/Medium/Aggressive tiers (`SUGGEST_TIERS`) in the Parlay Builder's Suggested
-  parlays window, each tier growing the one before, from `pricedLegs()` (which the
-  Elo picks in the same window also use). `gameTiers()` is a game page's High,
+- **suggested parlays** -- two engines. `getPbTiers()` is the Parlay Builder's
+  panel: Safe/Medium/Aggressive/Extreme, 2/3/4/5 legs (`PB_TIERS`, floors 25/12/5%
+  after Safe), each found on its own from `pricedLegs(games, true)` on the ticked
+  games and bet types (the Elo picks under it use `pricedLegs()` too), cached in
+  `PB_CACHE`, outside `S`. `gameTiers()` is a game page's High,
   Medium and Low (`GAME_TIERS`: 2, 3 and 4 legs, paying at least +100/+250/+500 at
   35%/20%/10% or better, no leg shorter than `GAME_LEG_MIN`, -250), cached per game
   in `GAME_TIER_CACHE`, outside `S`.
@@ -471,8 +525,9 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 
 ### The audit is a gate, not a test suite
 
-`weekly.py` exits with an error when `audit.js` is not clean, so the job stops before
-its commit step: a failing check means the site silently stops updating and the
+`weekly.py` exits with an error when `audit.js` is not clean (its summary line read as
+numbers by `audit_verdict`, 0 failures and 0 runtime errors, a missing line not clean;
+`build/test_audit_gate.py` holds that to its cases), so the job stops before its commit step: a failing check means the site silently stops updating and the
 scheduled run is marked failed. It does the same when a required download (schedule,
 stats, roster, injury report) fails, or the stats would shrink -- both before any credit is
 spent -- except that a 404 on the stats or the injury report, with none of this season's
