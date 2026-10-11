@@ -29,7 +29,12 @@ one player matches or none does. Two are ambiguous, unless exactly one of them p
 the book prices (season.SKILL, by the roster's position or the stats'): the roster file keeps a
 released player's row all season, so Carolina's defensive back Devonta Smith stood beside the
 Eagles' receiver DeVonta Smith in every Panthers-Eagles game, and the book does not price a
-defensive back. Otherwise an ambiguous name is never guessed at (weekly.py reports it).
+defensive back. Otherwise an ambiguous name is never guessed at (weekly.py reports it). Only
+the exact tier looks at every player in the game; first, short and swapped look only at players
+the book prices. When the player behind a name is missing from the roster file (a signing it has
+not caught up with), a nickname would otherwise land his prices and main lines on a defensive back
+or lineman who shares his surname, with nothing reported: the 2021 Bengals carried both the
+receiver Mike Thomas and the defensive back Michael Thomas.
 
 The audit applies the same rule (nameRule in audit.js, reading the same nicknames.json, with
 each player's printed names and legal form kept apart) to every line and price the payload
@@ -168,7 +173,9 @@ class Pool:
         'unmatched' is nobody in the game by any rule (a player the pool has no row for there, such
         as a signing the roster file has not caught up with, or a name no rule reaches);
         'ambiguous' is two or more players in the first tier that has any, none or several of them
-        at a position the book prices. Without the game only an exact or legal name among the
+        at a position the book prices. Only a printed name may land on a player at a position the
+        book never prices: the looser tiers look only at players it does (a signing missing from
+        the roster file is never put on a defensive back or a lineman who shares his surname). Without the game only an exact or legal name among the
         week's players will do, or a short one among those who played that week."""
         g = self.games.get(gid) if gid else None
         teams = {g['a'], g['h']} if g else self.week_teams.get(week, set())
@@ -182,13 +189,13 @@ class Pool:
             # where a name is shared, or is a short form, only the ones who played that week
             played = {p for p in hit if (week, p) in self.played}
             for tier, among in (('exact', None), ('first', None), ('short', played)):
-                ids = {p for p, k in hit.items() if k == tier and (among is None or p in among)}
+                ids = {p for p, k in hit.items() if k == tier and (among is None or p in among) and (tier == 'exact' or p in self.skill)}
                 if not ids: continue
                 pid = self._one(key, ids, ids & played)
                 return (pid, tier) if pid else (None, 'ambiguous')
             return None, ('ambiguous' if len(hit) > 1 else 'unmatched')
         for tier in (('exact',), ('first',), ('short', 'swapped')):
-            ids = {p for p, k in hit.items() if k in tier}
+            ids = {p for p, k in hit.items() if k in tier and (tier == ('exact',) or p in self.skill)}
             if not ids: continue
             pid = self._one(key, ids)
             return (pid, hit[pid]) if pid else (None, 'ambiguous')

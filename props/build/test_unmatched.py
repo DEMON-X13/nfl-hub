@@ -19,6 +19,8 @@ holds it to:
   G. a row on a game already played is never a problem;
   H. the Eagles' receiver DeVonta Smith, beside the Panthers' defensive back Devonta Smith whose
      row the roster file keeps all season, takes his prices and main lines in their week-6 game;
+  I. a receiver missing from the roster file never lends his prices and main lines, by a
+     nickname, to a defensive back of the same surname: the line is reported, as on origin/main;
 and the name rule itself (names.py): a player's legal form (first name and surname) is a tier
 below his printed names, so the real 2019 Saints-Rams game puts "Michael Thomas" on the Saints'
 Michael Thomas and "Mike Thomas" on the Rams' (a Michael too), and without the Saints' row
@@ -66,6 +68,11 @@ SMITHS = [
 THOMASES = [
     {'team': 'NO', 'position': 'WR', 'status': 'ACT', 'full_name': 'Michael Thomas', 'first_name': 'Michael', 'last_name': 'Thomas', 'gsis_id': '00-0032765', 'football_name': 'Michael'},
     {'team': 'LA', 'position': 'WR', 'status': 'ACT', 'full_name': 'Mike Thomas', 'first_name': 'Michael', 'last_name': 'Thomas', 'gsis_id': '00-0033114', 'football_name': 'Mike'},
+]
+# the 2021 Bengals carried a receiver Mike Thomas (a Michael) and a defensive back Michael Thomas
+BENGALS = [
+    {'team': 'CIN', 'position': 'WR', 'status': 'ACT', 'full_name': 'Mike Thomas', 'first_name': 'Michael', 'last_name': 'Thomas', 'gsis_id': '00-0033114', 'football_name': 'Mike'},
+    {'team': 'CIN', 'position': 'DB', 'status': 'ACT', 'full_name': 'Michael Thomas', 'first_name': 'Michael', 'last_name': 'Thomas', 'gsis_id': '00-0028908', 'football_name': 'Michael'},
 ]
 # and the two Brandon Johnsons of the Steelers at the Buccaneers, week 6 of 2026
 JOHNSONS = [
@@ -210,6 +217,22 @@ def h():
     chk(any('DeVonta Smith' in p and 'ambiguous' in p for p in probs), f'H. two receivers of the name in the game stay ambiguous and are reported ({probs})')
 case('H', h)
 
+# ---- I. a missing receiver's name never lands, by a nickname, on a defensive back -----------------------
+def i():
+    evans = [price('Mike Evans', 'SF', m, k, o) for m, k, o in (('any_td', '1', '300'), ('receiving_yards', '50', '-110'), ('receptions', '4', '-120'))]
+    lines = [{'game_id': '2026_05_SF_SEA', 'stat': st, 'player': 'Mike Evans', 'line': l, 'over': '-110', 'under': '-110'}
+             for st, l in (('receiving_yards', '50.5'), ('receptions', '3.5'))]
+    db = player('SEA', 'Michael', 'Evans', '00-8000020', pos='DB')
+    probs, pay, log = bake(base_prices() + evans, extra=[db], lines=lines)
+    chk(not pid_of(pay, 'Mike Evans', 'SF') - {None}, f"I. Mike Evans, missing from the roster, is on no player, not Seattle's defensive back Michael Evans ({pid_of(pay, 'Mike Evans', 'SF')})")
+    chk('00-8000020' not in ((pay.get('mkt') or {}).get('5') or {}), f"I. and his main lines are not the defensive back's ({((pay.get('mkt') or {}).get('5') or {}).get('00-8000020')})")
+    chk(any('Mike Evans' in p for p in probs), f'I. his main lines on no player are reported, as before ({probs})')
+    rec = player('SEA', 'Michael', 'Evans', '00-8000021', pos='WR')
+    probs, pay, log = bake(base_prices() + evans, extra=[rec], lines=lines)
+    chk(pid_of(pay, 'Mike Evans', 'SF') == {'00-8000021'}, f"I. a receiver of the name in the game still takes it, logged as a loose placement ({pid_of(pay, 'Mike Evans', 'SF')})")
+    chk('Mike Evans as Michael Evans (short)' in log, 'I. and the log says so')
+case('I', i)
+
 # ---- the name rule ----------------------------------------------------------------------------------------
 PAIRS = [   # (book, full name, other printed names, legal form, the rule's answer)
     ('Drew Ogletree', 'Andrew Ogletree', [], '', 'short'),
@@ -277,6 +300,16 @@ def tiers():
     stats = [{'player_id': '00-0041153', 'week': '3', 'team': 'CAR', 'position': 'WR', 'player_display_name': 'Devonta Smith'}]
     got = names.Pool(roster(extra=SMITHS), stats, SCHED).match('DeVonta Smith', 6, '2026_06_CAR_PHI')
     chk(got == (None, 'ambiguous'), f'name rule: a back the stats have at receiver counts as one the book prices: ambiguous ({got})')
+    # the real 2021 Bengals: with the receiver's row gone, "Mike Thomas" is not the defensive back
+    cin = [{'id': '2021_01_MIN_CIN', 'w': 1, 'a': 'MIN', 'h': 'CIN'}]
+    got = names.Pool(BENGALS, [], cin).match('Mike Thomas', 1, '2021_01_MIN_CIN')
+    chk(got == ('00-0033114', 'exact'), f'name rule: 2021 MIN at CIN, "Mike Thomas" is the Bengals\' receiver ({got})')
+    got = names.Pool(BENGALS[1:], [], cin).match('Mike Thomas', 1, '2021_01_MIN_CIN')
+    chk(got == (None, 'unmatched'), f'name rule: without his row, "Mike Thomas" is not the defensive back Michael Thomas ({got})')
+    got = names.Pool(BENGALS[1:], [], cin).match('Mike Thomas', 1)
+    chk(got[0] is None, f'name rule: nor without the game ({got})')
+    got = names.Pool(BENGALS[:1], [], cin).match('Michael Thomas', 1, '2021_01_MIN_CIN')
+    chk(got == ('00-0033114', 'first'), f'name rule: the receiver still takes his legal name when he is the one there ({got})')
 case('name tiers', tiers)
 
 # ---- the audit's copy of the rule reads every case the same ---------------------------------------

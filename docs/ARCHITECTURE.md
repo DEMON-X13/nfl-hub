@@ -97,8 +97,9 @@ props/
                                  tiers: a printed name, then his legal first name with
                                  his surname, then a short first name or a nickname
                                  (build/nicknames.json, read by audit.js too) or a
-                                 two-word name swapped; two in a tier are ambiguous
-                                 unless only one plays a position the book prices
+                                 two-word name swapped (these looser tiers only among
+                                 players at a position the book prices); two in a tier
+                                 are ambiguous unless only one plays such a position
   build/test_unmatched.py        the name rule and when unplaced price rows turn a run red
   data/mktbuild.py               every week's wk{W}_lines.csv onto the players (weekly.py
                                  runs it for every week on every run)
