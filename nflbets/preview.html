@@ -312,6 +312,15 @@ body.modal-open{overflow:hidden}
 .pb-ctl{display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);margin:0 0 14px}
 .pb-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
 .pb-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:84px}
+/* the Bet amount box: a $ and the number in one control, framed like the mix switch beside it.
+   16px so a phone does not zoom in on it */
+.pb-amt{display:inline-flex;align-items:center;min-height:40px;padding:0 2px 0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--panel);box-shadow:var(--sh-xs);transition:border-color .15s var(--ease),box-shadow .15s var(--ease)}
+.pb-amt:hover{border-color:#B9C4D2}
+.pb-amt:focus-within{border-color:var(--ink);box-shadow:var(--ring)}
+.pb-amt>span{font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink-2)}
+.pb-amt input[type=number]{width:120px;border:0;border-radius:0 8px 8px 0;background:transparent;box-shadow:none;padding:8px 8px 8px 3px;font-family:var(--display);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.pb-amt input[type=number]:focus{box-shadow:none;outline:none}
+.pb-amt-hint{font-size:12px;color:var(--muted)}
 .pb-seg{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden;background:var(--panel);box-shadow:var(--sh-xs);max-width:100%}
 .pb-seg button{background:transparent;color:var(--ink-2);border:0;border-left:1px solid var(--line-2);padding:8px 14px;min-height:40px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
 .pb-seg button:first-child{border-left:0}
@@ -1505,7 +1514,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v88 \u00b7 2026-10-11';
+const APP_BUILD='app v89 \u00b7 2026-10-11';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3197,7 +3206,7 @@ async function boot(){
   S.ui={game:null,open:{},showAll:false,showRungs:!!(saved&&saved.ui&&saved.ui.showRungs),suggestSide:['over','under'].includes(saved&&saved.ui&&saved.ui.suggestSide)?saved.ui.suggestSide:'any',
     pb:pbClean(saved&&saved.ui&&saved.ui.pb)};
   S.inactive=S.inactive||{}; S.depth=S.depth||{};
-  S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{};
+  S.odds=S.odds||{}; S.parlay=S.parlay||{}; S.stake=pbStake(); S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{};
   let baked=null;
   if(!window.NO_BAKED){ try{ baked=applyBaked(); }catch(e){ console.error('built-in data failed to apply',e); setTimeout(()=>log('Built-in data could not be applied: '+(e&&e.message||e)+'. The upload buttons still work.','err'),0); } }
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
@@ -3307,7 +3316,7 @@ $('importBtn').addEventListener('click',()=>{
 $('importInput').addEventListener('change',e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   const rd=new FileReader(); rd.onload=()=>{ try{ S=JSON.parse(rd.result);
     S.ui={game:null,open:{},showAll:false}; S.inactive=S.inactive||{}; S.depth=S.depth||{};
-    S.odds=S.odds||{}; S.parlay=S.parlay||{}; if(S.stake==null) S.stake=20; S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{}; S.processedGames=S.processedGames||{};
+    S.odds=S.odds||{}; S.parlay=S.parlay||{}; S.stake=pbStake(); S.saved=S.saved||[]; S.actuals=S.actuals||{}; S.projections=S.projections||{}; S.headlines=S.headlines||{}; S.processedGames=S.processedGames||{};
     save(); renderAll(); alert('Backup restored.'); }catch(err){ alert('That file could not be read: '+err.message); } };
   rd.readAsText(f); });
 
@@ -3484,8 +3493,25 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
 const PB_KINDS=[['ml','Moneyline','straight up'],['ats','Spread','to cover'],['total','Game total','over/under'],['over','Player overs',''],['under','Player unders','']];
 const PB_MIXES=[['all','All',['ml','ats','total','over','under']],['teams','Teams only',['ml','ats','total']],['players','Players only',['over','under']]];
 const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
-const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_STAKE=10, PB_CAP=40, PB_BEAM=12, PB_FINAL=8;
-let PB_CACHE=new Map(), PB_SHOWN=null;
+const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_FINAL=8;
+let PB_CACHE=new Map(), PB_SHOWN=null, PB_AMT_T=null;
+/* ---------- the amount bet: one number, S.stake, set from either box ----------
+   The Bet amount box over the suggested parlays and the builder's own stake are one amount: what
+   every tier pays is worked on it, Add to builder leaves it in the builder, and Finish opens the
+   parlay card on it. It is saved with the rest of the visitor's state, as the builder's stake
+   always was. A typed amount is read as dollars (a $ sign and thousands commas allowed), kept to
+   the cent and held between $1 and $100,000; anything that is not a positive number (blank, a
+   word, 0, a minus) is no amount at all and the amount stays what it was, so nothing drawn from
+   it is ever NaN. A saved amount that is not one (an old or hand-edited state) reads as $20. */
+const STAKE_MIN=1, STAKE_MAX=100000, STAKE_DEFAULT=20;
+function stakeRead(v){
+  const n=typeof v==='number'?v:(typeof v==='string'&&v.trim()?Number(v.replace(/[\s$,]/g,'')):NaN);
+  return isFinite(n)&&n>0?Math.min(STAKE_MAX,Math.max(STAKE_MIN,Math.round(n*100)/100)):null;
+}
+function pbStake(){ const v=stakeRead(typeof S==='object'&&S?S.stake:null); return v==null?STAKE_DEFAULT:v; }
+/* the amount as a box shows it (20, 12.50) and as a label ($20, $12.50, $1,250) */
+const stakeText=v=>v%1?v.toFixed(2):String(v);
+const pbAmt=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2});
 /* the reader's choices as saved, cleaned: every box on unless it was turned off, the games
    unticked (a game is ticked unless it is listed), and whether the games list is open */
 function pbClean(v){
@@ -3734,7 +3760,7 @@ const suggestLegOn=l=>{ const c=S.parlay[l.key]; return !!c&&c.k===l.k&&c.side==
 function gameSuggestCard(g,locked){
   if(locked) return '';
   const side=`<div class="gsugg-side"><span class="sugg-side" role="group" aria-label="Which legs to build from">${SUGGEST_SIDES.map(([k,l])=>`<button type="button" class="${suggestSide()===k?'on':''}" data-gsugg-side="${k}" aria-pressed="${suggestSide()===k}">${l}</button>`).join('')}</span></div>`;
-  const T=gameTiers(g), stake=Math.max(0,+S.stake||0);
+  const T=gameTiers(g), stake=pbStake();
   const block=([id,label,n,floor])=>{ const t=T[id];
     if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span></div><p class="muted" style="margin:6px 0 0;font-size:12px">This game does not have ${n} lines to build from yet.</p></div>`;
     return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span><span class="grow"></span><button class="btn quiet gsugg-all" data-gtier-add="${id}">Add all</button></div>
@@ -3749,6 +3775,14 @@ function gameSuggestCard(g,locked){
 }
 /* ---------- the panel, over the builder ---------- */
 const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* a tier's payout on the amount in the box: what it pays, and on what */
+function pbPayHtml(dec){ const s=pbStake(); return `<b>${pbMoney(s*dec)}</b><span>${pbAmt(s)} pays</span>`; }
+/* the payouts redrawn in place as the amount is typed, the panel's tiers and the Elo picks alike
+   (each card's data-pb-pay is its decimal price), so the box keeps its focus and its caret */
+function pbPays(){ const el=$('pbPanel'); if(el) el.querySelectorAll('[data-pb-pay]').forEach(x=>{ x.innerHTML=pbPayHtml(+x.dataset.pbPay); }); }
+/* the builder's own figures on the amount, redrawn only when they show another one; the panel is
+   left as it is, so an Add to builder or Finish pressed straight after typing still lands */
+function pbSyncBuilder(){ const ps=$('pStake'); if(ps&&stakeRead(ps.value)!==pbStake()) renderParlay({keepPb:true}); }
 /* the games list starts open on a wide screen and shut on a phone, until the reader says otherwise */
 function pbWide(){ try{ return typeof window.matchMedia!=='function'||window.matchMedia('(min-width: 761px)').matches; }catch(e){ return true; } }
 /* the builder holds exactly these legs */
@@ -3770,7 +3804,7 @@ function pbTierCard(t,o){
   const form=formSig()!=='';
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
-    <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div><b>${pbMoney(PB_STAKE*t.dec)}</b><span>$${PB_STAKE} pays</span></div></div>
+    <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
     <ul class="pb-legs">${t.legs.map(l=>`<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.thin?' <i class="pb-thinmark">thin edge</i>':''}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
     ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
@@ -3793,6 +3827,7 @@ function pbPanel(){
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
+      <div class="pb-row pb-amt-row"><label class="pb-lbl" for="pbStake">Bet amount</label><span class="pb-amt"><span aria-hidden="true">$</span><input type="number" id="pbStake" inputmode="decimal" min="${STAKE_MIN}" max="${STAKE_MAX}" step="1" value="${stakeText(pbStake())}" autocomplete="off" aria-describedby="pbStakeHint"></span><span class="pb-amt-hint" id="pbStakeHint">Every tier pays on this amount, and the builder below uses it too.</span></div>
       <div class="pb-row"><span class="pb-lbl">Build from</span>${seg}</div>
       <div class="pb-row"><span class="pb-lbl">Bet types</span><div class="pb-chips">${chips}</div></div>
       <details class="pb-games"${open?' open':''}><summary><span class="pb-lbl">Games</span><b>${nOn===games.length?`All ${games.length}`:`${nOn} of ${games.length}`}</b><span class="pb-sum-hint">tap to choose</span></summary>
@@ -3825,6 +3860,15 @@ window.pbPut=pbPut;
 function wirePb(){
   const el=$('pbPanel'); if(!el) return;
   const redraw=sel=>{ renderPb(); const f=sel&&$('pbPanel').querySelector(sel); try{ if(f) f.focus({preventScroll:true}); }catch(e){} };
+  /* the amount: every payout follows it as it is typed and the builder a moment later; leaving
+     the box (or Enter) settles it, a bad entry going back to the amount as it was */
+  const amt=el.querySelector('#pbStake');
+  if(amt){
+    amt.addEventListener('input',()=>{ const v=stakeRead(amt.value); if(v==null) return;
+      S.stake=v; save(); pbPays(); clearTimeout(PB_AMT_T); PB_AMT_T=setTimeout(pbSyncBuilder,250); });
+    amt.addEventListener('change',()=>{ const v=stakeRead(amt.value); if(v!=null) S.stake=v;
+      S.stake=pbStake(); amt.value=stakeText(S.stake); save(); pbPays(); clearTimeout(PB_AMT_T); pbSyncBuilder(); });
+  }
   el.querySelectorAll('[data-pb-mix]').forEach(b=>b.addEventListener('click',()=>{ const u=pbUi(), m=PB_MIXES.find(x=>x[0]===b.dataset.pbMix); if(!m) return;
     for(const [k] of PB_KINDS) u.k[k]=m[2].includes(k); save(); redraw(`[data-pb-mix="${m[0]}"]`); }));
   el.querySelectorAll('[data-pb-kind]').forEach(cb=>cb.addEventListener('change',()=>{ const u=pbUi(); u.k[cb.dataset.pbKind]=cb.checked; save(); redraw(`[data-pb-kind="${cb.dataset.pbKind}"]`); }));
@@ -3844,22 +3888,23 @@ function pbWatch(){
   pbWatch.on=setInterval(()=>{ try{ if(!S||!S.sched||document.visibilityState==='hidden') return;
     if(PB_SHOWN!=null&&pbGames().map(g=>g.id).join()!==PB_SHOWN) renderParlay(); }catch(e){} },30000);
 }
-/* one tap swaps the amount you are betting in the builder; the suggested parlays are always
-   shown on $10 (PB_STAKE), so their tiers compare on one footing */
+/* one tap swaps the amount you are betting in the builder; it is the one amount (S.stake), so the
+   panel's Bet amount box and every tier's payout follow it */
 const STAKE_CHIPS=[1,5,10,20,50,100];
-function stakeChips(){ const s=Math.max(0,+S.stake||0);
+function stakeChips(){ const s=pbStake();
   return `<span class="stake-chips" role="group" aria-label="Amount to bet">${STAKE_CHIPS.map(v=>`<button type="button" class="${s===v?'on':''}" data-stake-chip="${v}" aria-pressed="${s===v}">$${v}</button>`).join('')}</span>`; }
 function wireStakeChips(){
   document.querySelectorAll('[data-stake-chip]').forEach(b=>{ if(b.dataset.wired) return; b.dataset.wired='1';
     b.addEventListener('click',()=>{ S.stake=+b.dataset.stakeChip; save(); renderParlay(); }); });
 }
-function renderParlay(){
+function renderParlay(o){
   /* a leg from a game that has kicked off can't be bet, so it leaves the working parlay */
   let dropped=0;
   for(const [k,l] of Object.entries(S.parlay||{})){ const g=S.sched.find(x=>x.id===l.gid); if(g&&gameStarted(g)){ delete S.parlay[k]; dropped++; } }
   if(dropped) save();
-  /* the suggested parlays over the builder: its own box, drawn with it */
-  renderPb();
+  /* the suggested parlays over the builder: its own box, drawn with it, unless only the amount
+     moved (o.keepPb: the panel redraws its payouts in place, and its buttons stay put) */
+  if(!(o&&o.keepPb)) renderPb();
   const legs=parlayLegs();
   const el=$('parlayBody');
   const droppedNote=dropped?`<p class="muted" style="margin:0 0 12px;padding:10px 14px;background:#FCF1D6;border-radius:8px;color:#8A5E05">${dropped} leg${dropped===1?' was':'s were'} removed because that game has already kicked off. Saved and locked parlays keep theirs.</p>`:'';
@@ -3877,7 +3922,7 @@ function renderParlay(){
   const bookDec=parlayDec(legs.map((l,i)=>({leg:l,ml:prices[i].ml})));
   const sg=sameGame(legs);
   const fairML=probToAmerican(pr.corr);
-  const stake=Math.max(0,+S.stake||0);
+  const stake=pbStake();
   const override=S.bookPrice!=null&&isFinite(S.bookPrice)?mlToDec(S.bookPrice):null;
   /* only call it "your price" when it really is one: a price you typed, or every
      leg priced from your book. Otherwise we are just multiplying our own fair
@@ -3906,7 +3951,7 @@ function renderParlay(){
   /* what it pays, inside the same card, then the two actions as buttons only */
   html+=`<div class="pays"><h3>What it pays</h3>
     <div class="bar">
-      <label>Your stake $<input type="number" id="pStake" min="0" step="1" value="${stake}" style="width:110px"></label>
+      <label>Your stake $<input type="number" id="pStake" inputmode="decimal" min="${STAKE_MIN}" max="${STAKE_MAX}" step="1" value="${stakeText(stake)}" style="width:110px"></label>
       ${stakeChips()}
       <label>Your book's parlay price <input type="number" id="pBook" step="5" placeholder="${allBook?(decToML(bookDec)||''):'e.g. +250'}" value="${S.bookPrice!=null?esc(S.bookPrice):''}" style="width:110px"></label>
       <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
@@ -3943,7 +3988,11 @@ function renderParlay(){
     S.saved.push({id:'sp'+Date.now(),saved:new Date().toISOString(),week:wks[0],legs:legs.map(l=>({...l})),
       stake,price:decToML(useDec),priceSrc:override!=null?'typed':(allBook?'real':'est'),pCorr:pr.corr,pIndep:pr.indep,payout});
     S.parlay={}; S.bookPrice=null; save(); renderParlay(); if(S.ui.game) renderGame(); });
-  $('pStake').addEventListener('change',e=>{ S.stake=Math.max(0,+e.target.value||0); save(); renderParlay(); });
+  /* the builder's stake is the panel's amount: as it is typed the panel's box and payouts follow,
+     and the builder on leaving the box; a bad entry leaves the amount as it was */
+  $('pStake').addEventListener('input',e=>{ const v=stakeRead(e.target.value); if(v==null) return;
+    S.stake=v; save(); const b=$('pbStake'); if(b) b.value=stakeText(v); pbPays(); });
+  $('pStake').addEventListener('change',e=>{ const v=stakeRead(e.target.value); if(v!=null) S.stake=v; S.stake=pbStake(); save(); renderParlay(); });
   $('pBook').addEventListener('change',e=>{ const v=parseFloat(e.target.value);
     S.bookPrice=isFinite(v)&&v!==0?v:null; save(); renderParlay(); });
   el.querySelectorAll('[data-drop]').forEach(b=>b.addEventListener('click',()=>{
@@ -4275,7 +4324,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='d1755f4';
+const PAGE_HASH='4f94f68';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -4722,7 +4771,7 @@ window.PARLAY_CARD=(function(){
   const bookDec=parlayDec(legs.map((l,i)=>({leg:l,ml:prices[i].ml})));
   const sg=sameGame(legs);
   const fairML=probToAmerican(pr.corr);
-  const stake=Math.max(0,+S.stake||0);
+  const stake=pbStake();
   const override=S.bookPrice!=null&&isFinite(S.bookPrice)?mlToDec(S.bookPrice):null;
   /* only call it "your price" when it really is one: a price you typed, or every
      leg priced from your book. Otherwise we are just multiplying our own fair
@@ -4759,8 +4808,8 @@ window.PARLAY_CARD=(function(){
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',stake:q.stake});
   }
-  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the stake
-     its tier shows (PB_STAKE, $10) */
+  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the amount
+     its tier pays on: the Bet amount box, which is the builder's own stake (pbStake) */
   function fromTier(kind,id){
     let t=null;
     try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
@@ -4768,7 +4817,7 @@ window.PARLAY_CARD=(function(){
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
-      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:typeof PB_STAKE==='number'?PB_STAKE:10});
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:pbStake()});
   }
 
   /* ---- the window ---- */

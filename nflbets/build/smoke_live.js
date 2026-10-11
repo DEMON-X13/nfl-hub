@@ -734,8 +734,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       await wait(20);
       chk(!!d.getElementById('pFinish') && d.getElementById('pFinish').disabled && /same week to finish/.test(d.getElementById('pFinish').title), `${how}: a builder across two weeks can be finished`);
       /* the suggested parlays: a tier finishes the same way, its legs, its price and its chance, on the
-         $10 the tier shows (the panel's own tiers are held to their rules in props' audit and smoke.js;
-         here the tier is a fixed one on the two pinned games, so the card is checked on any day) */
+         amount in the panel's Bet amount box, the one the tier pays on (the panel's own tiers are held
+         to their rules in props' audit and smoke.js; here the tier is a fixed one on the two pinned
+         games, so the card is checked on any day) */
       { const tierLegs = Object.values(builder()).map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
         w.eval(`getPbTiers=function(){ return {sig:'smoke',games:2,ticked:2,kinds:5,pref:2,thin:0,tiers:[{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0},
           {id:'med',label:'Medium',n:3,floor:0.25,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'Only 2 legs on your picks: tick more games or bet types.'}]}; };
@@ -744,12 +745,30 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         const tb = d.querySelector('#pbPanel [data-pc-finish="pb|safe"]');
         chk(!!tb && /^Finish$/.test(txt(tb)) && !!d.querySelector('#pbPanel [data-pb-add="safe"]') && !d.querySelector('#pbPanel [data-pc-finish="pb|med"]') && /Only 2 legs on your picks/.test(txt(d.querySelector('#pbPanel .pb-tier.med'))),
           `${how}: a suggested tier has no Finish and Add to builder, or an empty tier offers one or does not say why`);
+        const cash = () => [...d.querySelectorAll('#pcView .pc-money b')].map(txt).join(' | ');
         if (tb) { tb.click(); await wait(20);
           chk(!md.hidden && /Safe parlay/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && /41\.0%/.test(txt(d.getElementById('pcView')))
-            && txt(d.querySelector('#pcView .pc-money b')) === '$10.00',
-            `${how}: the suggestion's card is not its legs, price, chance and $10: ` + txt(d.getElementById('pcView')));
+            && cash() === '$40.00 | $124.00 | +$84.00',
+            `${how}: the suggestion's card is not its legs, price, chance and the $40 amount it pays on: ` + txt(d.getElementById('pcView')));
           d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
           chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the tier`); }
+        /* an amount of the visitor's own in the Bet amount box: the tier pays on it, Finish opens the
+           card on it, and Add to builder leaves it in the builder, whose own Finish is on it too */
+        { const box = d.getElementById('pbStake'), pay = () => { const p = d.querySelector('#pbPanel [data-pb-tier="safe"] [data-pb-pay]'); return p ? txt(p.querySelector('b')) + ' / ' + txt(p.querySelector('span')) : 'no payout'; };
+          chk(!!box && box.value === '40' && pay() === '$124.00 / $40 pays', `${how}: the panel has no Bet amount box on the builder's $40, or the tier does not pay on it: ${box ? box.value : 'no box'} / ${pay()}`);
+          if (box) {
+            box.value = '12.5'; box.dispatchEvent(new w.Event('input')); box.dispatchEvent(new w.Event('change')); await wait(20);
+            chk(w.eval('S.stake') === 12.5 && d.getElementById('pbStake').value === '12.50' && pay() === '$38.75 / $12.50 pays', `${how}: $12.50 typed in the Bet amount box is not what the tier pays on: ${pay()}`);
+            d.querySelector('#pbPanel [data-pc-finish="pb|safe"]').click(); await wait(20);
+            chk(!md.hidden && cash() === '$12.50 | $38.75 | +$26.25', `${how}: Finish on the tier did not open the card on the Bet amount: ` + cash());
+            d.getElementById('pcClose').click();
+            d.querySelector('#pbPanel [data-pb-add="safe"]').click(); await wait(30);
+            const q = w.PARLAY_CARD.quote(), pS = d.getElementById('pStake');
+            chk(Object.keys(w.eval('S').parlay).length === 2 && !!q && q.stake === 12.5 && !!pS && pS.value === '12.50', `${how}: Add to builder did not leave the tier in the builder on the Bet amount: ${q ? q.stake : 'no builder'}`);
+            d.getElementById('pFinish').click(); await wait(20);
+            const fmt = x => '$' + x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            chk(!md.hidden && !!q && cash() === ['$12.50', fmt(12.5 * q.useDec), '+' + fmt(12.5 * q.useDec - 12.5)].join(' | '), `${how}: the builder's Finish after Add to builder is not on the Bet amount: ` + cash());
+            d.getElementById('pcClose').click(); } }
         chk(w.eval('S').saved.map(p => p.id).join() === 'saved-before' && reads(), `${how}: finishing a suggestion saved it`); }
     }
 

@@ -117,7 +117,14 @@ props/
                                  total at the market's own chance). Its downloader, dataset
                                  builder, harness, four frozen candidates, leakage checks and
                                  the judge's scripts; data/ and out/ are gitignored, nothing
-                                 the site or a job reads
+                                 the site reads
+  research/totals/shadow.py      the shadow (README.md, "The shadow"): the frozen ratings
+                                 candidate's call on each game to come from games.csv alone,
+                                 frozen at kickoff, graded after the final, against a bar set
+                                 before its first call; the betting job runs it and
+                                 shadow_check.py (each may fail alone) and commits
+                                 shadow/ledger.json, which no page reads. shadow_equiv.py
+                                 proves it is the harness's candidate; test_shadow.py its test
 
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
@@ -347,7 +354,19 @@ its games not read), a quiet line under the heading saying when the file last ch
 `updated`). Nothing a browser holds is drawn there: no saved parlays, no builder, no betting slips.
 
 The Parlay Builder is the prop model's own tab (`#parlay`, `tab-parlay`): the suggested parlays
-(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). The panel builds from
+(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). Its first control is
+the **Bet amount** box (`#pbStake`, a number box with `inputmode="decimal"`, min $1, max $100,000,
+step $1), which is the builder's own stake, `S.stake`: one amount, $20 to start, saved with the prop
+model's state, set from either box or the builder's one-tap amounts. Every tier card (`pbTierCard`,
+which draws the Elo picks too) pays it times the tier's own decimal price, `pbPayHtml(dec)`, under
+"$25 pays"; each card's `data-pb-pay` holds its price so `pbPays()` redraws every payout in place as
+the amount is typed, and the builder follows 250 ms later (`pbSyncBuilder`). The box's `change`
+(leaving it, or Enter) settles the amount and redraws only the builder, `renderParlay({keepPb:true})`,
+so a tier's Add to builder or Finish pressed straight after typing is not lost to a redraw. A typed
+amount is read by `stakeRead` (a $ sign and thousands commas allowed, kept to the cent, held to
+$1-$100,000; `null` for anything not a positive number, which leaves the amount as it was), and the
+amount in use is `pbStake()`, which reads a saved value that is not an amount as $20, so nothing
+drawn from it is NaN. The panel builds from
 what the visitor ticks, kept in the prop model's state (`S.ui.pb`: `k`, the five boxes; `off`, the
 games unticked; `gx`, whether the games list is open): a mix -- All (the default), Teams only, Players only -- which sets
 five boxes, Moneyline (`ml`), Spread (`ats`), Game total (`total`), Player overs and Player unders (a
@@ -375,7 +394,8 @@ a beam over a pairwise approximation of the copula (each correlated pair's joint
 Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
 builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so **Add to
 builder**, which puts exactly those legs in `S.parlay` (asking first when the builder holds others),
-shows the same price and chance. **Finish** opens the parlay card on the tier's $10. The tiers are
+shows the same price and chance, on the Bet amount, so it pays what the tier said. **Finish** opens
+the parlay card on the Bet amount (`pbStake()`, which `card.html`'s `fromTier` reads). The tiers are
 cached on a signature of the choices and the data (`PB_CACHE`); a game that kicks off with the page
 open leaves the games list and every tier at the next look (`pbWatch`, every 30 seconds) or draw.
 With no game left to come the panel says so (the season over, or the week's games all started).
@@ -858,7 +878,7 @@ week 18 and says the regular season is complete; it does not cover the playoffs.
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 5 price pulls a week (Mon, Wed, Thu, Sat morning, Sat evening; each prices up to the next slot plus 10 hours, since GitHub fires this repo's crons 3-9 hours late); with `--catch-up` (a game a dropped pull left unpriced, nothing otherwise), 8 post-game and stats runs and a daily 12:07 UTC run that lands after nflverse posts the day's injury report | `weekly.py --no-commit` (download, price, bake, assemble, audit), then the workflow commits `props/data` to `main` unless `weekly.py` refused the run (a required download failed, the stats would shrink, the audit is not clean), in which case it commits only the price files the run bought, never `payload.json`; afterwards the run fails if `weekly.py` reported problems |
-| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py` and `broly/broly.py` (each may fail on its own without stopping the publish), `smoke.js` (which builds the app); commits `betting/state.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
+| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py` and `broly/broly.py` (each may fail on its own without stopping the publish), the game-totals shadow `props/research/totals/shadow.py` with `shadow_check.py` (the same), `smoke.js` (which builds the app); commits `betting/state.json` and `props/research/totals/shadow/ledger.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
 | `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the page or a week file | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the page, the lineups against the report they came from, and `cases.js`); commits only what changed: `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
 | `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data` |
 | `cfb.yml` | 17x/week: daily 06:17 and 13:47 UTC, Saturday 10:17 and 21:47, Sunday 17:47 (each queued ~10 hours before the kickoffs it must precede, since GitHub starts them 3-9 hours late) | `cfb/tools/simulate.js`, `update.js` (exits 1 before the commit on a feed it cannot carry), `news.js`, `smoke.js` (strict); commits `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` and, at a rollover, `cfb/data/history.json` |

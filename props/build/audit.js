@@ -12,6 +12,14 @@ const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
 const w=dom.window,d=w.document;
 const fails=[]; let checks=0;
 const chk=(ok,msg)=>{checks++; if(!ok) fails.push(msg);};
+/* what a tier pays on the amount bet, worked here rather than by the page's own helpers: the
+   figure to the cent with its thousands marked, over "$25 pays" ("$12.50 pays", "$1,250 pays"),
+   on the card's own decimal price */
+const money=v=>'$'+(+v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const amtTxt=v=>'$'+v.toLocaleString('en-US',{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2});
+const payOk=(el,stake,dec)=>!!el&&+el.dataset.pbPay===dec&&isFinite(stake*dec)
+  &&(el.querySelector('b')||{}).textContent===money(stake*dec)&&(el.querySelector('span')||{}).textContent===amtTxt(stake)+' pays';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 setTimeout(async()=>{
   const S=w.eval('S'); const F=n=>w.eval(n);
   const [gameCtx,rosterFor,statLines,project,pOver,rungView,marketLine,marketMu,devigOver,bookImplied,probToAmerican,mlToDec,parlayProb,modelMargin,legRho,gameBet,settleLeg,gameMu,tdPlus]=
@@ -546,8 +554,10 @@ setTimeout(async()=>{
       for(const t of r.tiers){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`); if(!c){ chk(false,`${lab}: no card for the ${t.id} tier`); continue; }
         const tx=c.textContent.replace(/\s+/g,' ');
         if(!t.legs) chk(tx.includes(t.why)&&!c.querySelector('[data-pb-add]'),`${lab}: the empty ${t.id} card does not give its reason, or offers Add to builder`);
-        else chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(F('fmtML')(F('decToML')(t.dec)))
-          &&tx.includes((10*t.dec).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}))&&!!c.querySelector(`[data-pb-add="${t.id}"]`),`${lab}: the ${t.id} card does not show its legs, chance, price and what $10 pays`); }
+        else { const stake=w.eval("typeof pbStake==='function'?pbStake():NaN"), pay=c.querySelector('[data-pb-pay]');
+          chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(F('fmtML')(F('decToML')(t.dec)))
+            &&!!c.querySelector(`[data-pb-add="${t.id}"]`),`${lab}: the ${t.id} card does not show its legs, chance and price`);
+          chk(stake===S.stake&&payOk(pay,stake,t.dec),`${lab}: the ${t.id} card does not pay the Bet amount (${amtTxt(stake)}) times its price ${t.dec}: "${pay?[...pay.children].map(x=>x.textContent).join(' '):'no payout'}"`); } }
       return r; };
     const keepU=JSON.stringify(U());
     /* the week as it is, under each mix, then one game, then none, then no bet types */
@@ -628,14 +638,20 @@ setTimeout(async()=>{
       delete w.eloAltP; delete w.eloLoaded; w.eval('PB_CACHE=new Map()');
       /* Add to builder: exactly the tier's legs, priced as the tier was */
       const t=F('getPbTiers')().tiers.filter(x=>x.legs).slice(-1)[0];
-      if(t){ const keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice; S.parlay={'stale|p|x':{gid:'stale',pid:'p',stat:'x',k:1,side:'over',name:'Stale',week:cw,p:0.5,price:-110}}; F('renderParlay')();
+      if(t){ const keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice, keepS=S.stake; S.parlay={'stale|p|x':{gid:'stale',pid:'p',stat:'x',k:1,side:'over',name:'Stale',week:cw,p:0.5,price:-110}}; F('renderParlay')();
+        /* an amount of the visitor's own in the box: the tier pays on it, and Add to builder leaves it in the builder */
+        const box=d.getElementById('pbStake');
+        chk(!!box,'the suggested parlays have no Bet amount box');
+        if(box){ box.value='37.5'; box.dispatchEvent(new w.Event('input')); box.dispatchEvent(new w.Event('change')); }
+        chk(S.stake===37.5&&payOk(d.querySelector(`#pbPanel [data-pb-tier="${t.id}"] [data-pb-pay]`),37.5,t.dec),`the ${t.id} tier does not pay $37.50 times its price once $37.50 is typed in the Bet amount box`);
         d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`).click();
         const keys=Object.keys(S.parlay);
         chk(keys.length===t.legs.length&&t.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side&&!!S.parlay[l.key].main===!!l.main),'Add to builder did not put exactly the tier\'s legs in the builder');
-        const body=d.getElementById('parlayBody').textContent.replace(/\s+/g,' ');
-        chk(body.includes(`${t.legs.length}-leg parlay`)&&body.includes((t.corr*100).toFixed(1)+'%')&&body.includes('$'+(S.stake*t.dec).toFixed(2)),'the builder does not show the tier\'s chance and payout after Add to builder');
+        const body=d.getElementById('parlayBody').textContent.replace(/\s+/g,' '), pS=d.getElementById('pStake'), po=d.querySelector('#parlayBody .payout');
+        chk(body.includes(`${t.legs.length}-leg parlay`)&&body.includes((t.corr*100).toFixed(1)+'%'),'the builder does not show the tier\'s chance after Add to builder');
+        chk(S.stake===37.5&&!!pS&&pS.value==='37.50'&&!!po&&po.textContent==='$'+(37.5*t.dec).toFixed(2),`Add to builder did not carry the Bet amount: the builder is on ${pS?pS.value:'no stake'} and pays ${po?po.textContent:'nothing'}, the tier $${(37.5*t.dec).toFixed(2)} on $37.50`);
         chk(/In the builder/.test(d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`).textContent),'the tier does not say it is in the builder');
-        S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')(); }
+        S.parlay=JSON.parse(keepP); S.bookPrice=keepB; S.stake=keepS; F('save')(); F('renderParlay')(); }
       /* a game that kicks off leaves the list and every tier */
       if(games.length>1){ const g0=games[0], k0=F('kickoff')(g0).getTime(), off=k0+60e3-Date.now(), now0=w.Date.now;
         w.Date.now=()=>now0.call(w.Date)+off; F('renderParlay')();
@@ -696,13 +712,89 @@ setTimeout(async()=>{
       w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1];'); delete w.__pbKeep; }
     S.ui.pb=JSON.parse(keepU); F('save')(); F('renderParlay')(); } }
 
-  /* ---- P. the amount buttons in the builder; the suggested parlays are always on $10 ---- */
+  /* ---- P. the amount bet: the Bet amount box at the top of the suggested parlays and the
+     builder's own stake are one amount, S.stake, kept with the visitor's state. Every tier pays
+     that amount times its own decimal price, as it is typed and once it is settled; Add to builder
+     leaves it in the builder; the builder's box and its one-tap amounts set the same number; a bad
+     entry (blank, a word, 0, a minus) leaves the amount as it was and the box goes back to it; a
+     saved amount that is not one reads as $20; nothing drawn from it is ever NaN. The tiers here
+     are a fixed pair on this week's games still to come (getPbTiers stood in for), so this holds on
+     any week, lean or not; the week's own tiers are held to the amount in M ---- */
   { d.querySelector('#tabs button[data-tab="parlay"]').click();
-    chk(!d.getElementById('suggStake')&&!d.querySelector('#pbPanel [data-stake-chip]'),'the suggested parlays carry a bet box or amount buttons of their own: they are shown on $10');
-    { const was=S.stake;
-      /* and in the builder, with a leg in it so What it pays is drawn */
-      const keep=JSON.stringify(S.parlay||{}); S.parlay={};
-      openUpcoming();
+    const panel=d.getElementById('pbPanel'), was=S.stake, keepPar=JSON.stringify(S.parlay||{}), keepBP=S.bookPrice;
+    const read=w.eval('typeof stakeRead')==='function'?F('stakeRead'):null;
+    chk(!!read,'the page has no reading of a typed amount (stakeRead)');
+    chk(!d.getElementById('suggStake')&&!d.querySelector('#pbPanel [data-stake-chip]')&&d.querySelectorAll('#pbStake').length<=1,'the suggested parlays carry amount buttons of their own, or more than one Bet amount box');
+    /* a typed amount, read on its own: dollars to the cent, $1 to $100,000, and no amount at all for anything that is not a positive number */
+    if(read){ const cases=[['25',25],[' 40 ',40],['7.5',7.5],['12.346',12.35],['$1,250',1250],['0.4',1],['100001',100000],['1e3',1000],[60,60],
+        ['',null],['  ',null],['abc',null],['-5',null],['0',null],['NaN',null],['Infinity',null],[NaN,null],[Infinity,null],[-3,null],[0,null],[null,null],[undefined,null],[true,null],[{},null]];
+      for(const [v,want] of cases){ const got=read(v); chk(got===want,`a typed amount ${typeof v==='string'?JSON.stringify(v):String(v)} reads as ${got}, not ${want}`); } }
+    const games=F('pbGames')();
+    if(!games.length) chk(!d.getElementById('pbStake'),'with no game to come the panel still offers a Bet amount box');
+    else {
+      /* a fixed Safe tier, a money line on each of the first two games still to come (one if one
+         is left), in the builder's order and at the builder's own price; a Medium on another
+         price; and two that say why */
+      const L=F('pbOrder')(games.slice(0,2).map((g,i)=>({key:`${g.id}|team:${g.h}|ml`,gid:g.id,pid:'team:'+g.h,stat:'ml',k:0,side:'over',main:false,p:0.6,price:i?105:-135,src:'real',mu:null,
+        name:'Fixed '+g.h,pos:'Game',grp:'TEAM',team:g.h,opp:g.a,week:g.w,label:'To win',thin:false})));
+      const dec=F('parlayDec')(L.map(l=>({leg:l,ml:l.price}))), why='Only 2 legs on your picks: tick more games or bet types.';
+      w.__pbFix={sig:'audit-P',games:games.length,ticked:games.length,kinds:5,pref:L.length,thin:0,noPlayerPrices:false,tiers:[
+        {id:'safe',label:'Safe',n:L.length,floor:0,legs:L,corr:0.4,indep:0.4,dec,thin:0},
+        {id:'med',label:'Medium',n:3,floor:0.25,legs:L,corr:0.3,indep:0.3,dec:13.7,thin:0},
+        {id:'aggr',label:'Aggressive',n:4,floor:0.12,why},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why}]};
+      w.__pbKeepP=w.eval('getPbTiers'); w.eval('getPbTiers=function(){ return window.__pbFix; }');
+      S.parlay={}; S.bookPrice=null; S.stake=20; F('renderParlay')();
+      const box=()=>d.getElementById('pbStake'), FIX=w.__pbFix.tiers.filter(t=>t.legs), txt=v=>v%1?v.toFixed(2):String(v);
+      const type=(el,v,commit)=>{ el.value=v; el.dispatchEvent(new w.Event('input')); if(commit) el.dispatchEvent(new w.Event('change')); };
+      const noNaN=()=>!/NaN|Infinity|undefined/.test(panel.textContent+d.getElementById('parlayBody').textContent);
+      /* every tier on the panel pays this amount times its own price */
+      const paysAll=s=>FIX.every(t=>payOk(d.querySelector(`#pbPanel [data-pb-tier="${t.id}"] [data-pb-pay]`),s,t.dec));
+      const paysTxt=()=>[...panel.querySelectorAll('.pb-nums div:last-child')].map(x=>[...x.children].map(c=>c.textContent).join(' ')).join(' / ');
+      const b0=box();
+      chk(!!b0&&b0.type==='number'&&b0.getAttribute('inputmode')==='decimal'&&b0.min==='1'&&b0.step==='1'&&+b0.max===100000&&b0.value==='20',
+        'the Bet amount box is not a dollar box (a number, the decimal keypad, $1 up in steps of $1) showing the amount: '+(b0?b0.outerHTML:'none'));
+      chk(!!b0&&b0.closest('.pb-row')===panel.querySelector('.pb-ctl > .pb-row')&&((panel.querySelector('label[for="pbStake"]')||{}).textContent||'')==='Bet amount',
+        'the Bet amount box is not the first of the panel\'s controls, labelled Bet amount');
+      chk(paysAll(20),'on the $20 to start, a tier does not pay $20 times its price: '+paysTxt());
+      if(b0){
+        /* typed in the panel's box: each entry as it is typed, then settled */
+        let cur=20;
+        for(const [v,want] of [['25',25],['7.5',7.5],['0.4',1],['100001',100000],['',null],['-5',null],['0',null],['abc',null],['12.346',12.35],['30',30]]){
+          const b=box(); type(b,v,false);
+          const live=want==null?cur:want;
+          chk(S.stake===live&&paysAll(live)&&noNaN(),`"${v}" typed in the Bet amount box: the amount is ${S.stake} and the tiers say ${paysTxt()}, not on ${amtTxt(live)}`);
+          b.dispatchEvent(new w.Event('change')); cur=live;
+          chk(S.stake===cur&&box().value===txt(cur)&&paysAll(cur)&&noNaN(),`"${v}" settled in the Bet amount box: the box shows "${box().value}", the amount is ${S.stake} and the tiers say ${paysTxt()}, not on ${amtTxt(cur)}`); }
+        w.eval('store.set(S)'); chk(JSON.parse(mem).stake===30,'the Bet amount is not kept with the visitor\'s own state');
+        /* Add to builder: the tier's legs, on the amount, paying what the tier said */
+        d.querySelector('#pbPanel [data-pb-add="safe"]').click();
+        const po=()=>d.querySelector('#parlayBody .payout'), pS=()=>d.getElementById('pStake');
+        chk(Object.keys(S.parlay).length===L.length&&!!pS()&&pS().value==='30'&&!!po()&&po().textContent==='$'+(30*dec).toFixed(2),
+          `Add to builder did not carry the Bet amount: the builder is on ${pS()?pS().value:'no stake'} and pays ${po()?po().textContent:'nothing'}, the tier ${money(30*dec)} on $30`);
+        if(pS()&&po()){
+          /* typed again with the tier in the builder: the tiers at once, the builder a moment later,
+             and settling it leaves the panel (and an Add to builder or Finish about to be pressed) as it is */
+          { const addNode=d.querySelector('#pbPanel [data-pb-add="safe"]'), b=box();
+            type(b,'45.5',false);
+            chk(paysAll(45.5)&&pS().value==='30','typed in the Bet amount box, the tiers did not follow at once, or the builder was redrawn under the pointer');
+            await sleep(400);
+            chk(pS().value==='45.50'&&po().textContent==='$'+(45.5*dec).toFixed(2),`a moment after typing $45.50, the builder is on ${pS().value} and pays ${po().textContent}, not $${(45.5*dec).toFixed(2)}`);
+            b.dispatchEvent(new w.Event('change'));
+            chk(d.querySelector('#pbPanel [data-pb-add="safe"]')===addNode&&box()===b&&b.value==='45.50'&&S.stake===45.5,'settling the amount redrew the panel, so an Add to builder or Finish pressed straight after typing would be lost'); }
+          /* the builder's own box is the same amount: the panel follows it as it is typed, and on leaving it */
+          { type(pS(),'60',false);
+            chk(box().value==='60'&&paysAll(60),'typed in the builder\'s stake, the Bet amount box or the tiers did not follow');
+            pS().dispatchEvent(new w.Event('change'));
+            chk(S.stake===60&&box().value==='60'&&paysAll(60)&&po().textContent==='$'+(60*dec).toFixed(2),'the builder\'s stake, settled, is not the panel\'s amount');
+            for(const v of ['','-1','0','abc']){ type(pS(),v,true);
+              chk(S.stake===60&&pS().value==='60'&&box().value==='60'&&paysAll(60)&&noNaN(),`"${v}" in the builder's stake did not leave the amount at $60 everywhere: the amount ${S.stake}, the builder ${pS().value}, the box ${box().value}`); } }
+          /* a saved amount that is not one reads as $20, and nothing reads NaN */
+          for(const bad of ['abc',-4,0,NaN,null,'<b>',{}]){ S.stake=bad; F('renderParlay')();
+            chk(w.eval('pbStake()')===20&&box().value==='20'&&paysAll(20)&&pS().value==='20'&&po().textContent==='$'+(20*dec).toFixed(2)&&noNaN(),`a saved amount ${typeof bad==='string'?JSON.stringify(bad):String(bad)} does not read as $20 everywhere: `+paysTxt()); } } }
+      w.eval('getPbTiers=window.__pbKeepP'); delete w.__pbKeepP; delete w.__pbFix;
+      S.parlay={}; S.stake=20; F('renderParlay')(); }
+    /* the builder's one-tap amounts set the same amount, with a leg in the builder so What it pays is drawn */
+    { openUpcoming();
       const tick=d.querySelector('#gameView input[data-leg]');
       chk(!!tick,'no leg to tick on the coming game');
       if(tick){ tick.click(); d.querySelector('#tabs button[data-tab="parlay"]').click();
@@ -710,16 +802,15 @@ setTimeout(async()=>{
         chk(!!chip5,'no amount buttons beside the stake in What it pays');
         if(chip5){ chip5.click();
           chk(S.stake===5&&+d.getElementById('pStake').value===5,'tapping $5 in the builder did not set the stake');
+          chk(!F('pbGames')().length||(!!d.getElementById('pbStake')&&d.getElementById('pbStake').value==='5'),'tapping $5 in the builder did not set the Bet amount box over the suggested parlays');
           chk(d.querySelector('#parlayBody [data-stake-chip="5"]').classList.contains('on')&&d.querySelectorAll('#parlayBody [data-stake-chip].on').length===1,'the builder does not show $5 pressed, and only $5');
           chk(/\$\d+\.\d\d/.test(d.querySelector('#parlayBody .payout').textContent)&&+d.querySelector('#parlayBody .payout').textContent.replace(/[^\d.]/g,'')>5,'the builder payout did not redraw from the $5 stake'); }
         /* a typed amount that is none of them presses none */
         const pS=d.getElementById('pStake'); pS.value='7'; pS.dispatchEvent(new w.Event('change'));
-        chk(S.stake===7&&!d.querySelector('#parlayBody [data-stake-chip].on'),'a typed $7 left a chip pressed');
-        S.parlay=JSON.parse(keep); }
-      S.stake=was; F('save')(); F('renderParlay')();
-      chk(S.stake===was,'the stake did not go back after the amount buttons');
-    }
-    console.log('P. amount buttons: the builder\'s stake in one tap; the suggested parlays stay on $10'); }
+        chk(S.stake===7&&!d.querySelector('#parlayBody [data-stake-chip].on'),'a typed $7 left a chip pressed'); } }
+    S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; S.stake=was; F('save')(); F('renderParlay')();
+    chk(S.stake===was,'the stake did not go back after the amount checks');
+    console.log(`P. the amount bet: one Bet amount box over the suggested parlays and the builder's stake, ${F('pbGames')().length?'every tier paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
 
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;
@@ -991,6 +1082,19 @@ setTimeout(async()=>{
       await F('boot')(); SP=w.eval('S');
       chk(Object.values(SP.ui.pb.k).every(v=>v===true)&&Array.isArray(SP.ui.pb.off)&&!SP.ui.pb.off.length&&SP.ui.pb.gx===null,'a damaged saved choice did not read as everything ticked');
       console.log('I3. suggested parlays: the bet types, the games and the open list come back after a reload; a damaged save reads as all ticked'); }
+    /* I4. the amount bet comes back with the page, and a saved one that is not an amount (an old or
+       hand-edited state, on the same bake or across a rebuild) reads as $20 in the state, the Bet
+       amount box and the builder alike */
+    { const box=()=>d.getElementById('pbStake'), cases=[[12.5,12.5],['abc',20],[-4,20],[0,20],[null,20],['<b>',20],[{},20],[250000,100000]];
+      for(const [saved,want] of cases) for(const same of [true,false]){
+        mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:same?F('DATA_BUILD'):'old-build',dataStamp:F('DATA_STAMP'),stake:saved,ui:{}});
+        await F('boot')(); const SP=w.eval('S'); d.querySelector('#tabs button[data-tab="parlay"]').click(); w.eval('renderParlay()');
+        const shown=box()?box().value:null, txt=want%1?want.toFixed(2):String(want);
+        chk(SP.stake===want&&(!F('pbGames')().length||shown===txt)&&!/NaN|Infinity/.test(d.getElementById('pbPanel').textContent),
+          `a saved amount ${JSON.stringify(saved)} ${same?'on the same bake':'across a rebuild'} came back as ${JSON.stringify(SP.stake)} (the box ${JSON.stringify(shown)}), not ${want}`); }
+      mem=JSON.stringify({build:F('MODEL_BUILD'),dataBuild:F('DATA_BUILD'),dataStamp:F('DATA_STAMP'),ui:{}}); await F('boot')();
+      chk(w.eval('S').stake===20,'with no amount saved the page does not start on $20');
+      console.log(`I4. the amount bet: kept across a reload; ${cases.length-2} saved values that are not an amount read as $20 and one over the most as $100,000, on the same bake and across a rebuild`); }
     /* I2. a new bake of the same model rebuilds the season and says nothing about it: the job
        publishes several times a week, and every one of those has to reach every device */
     { const stamp=F('DATA_STAMP');

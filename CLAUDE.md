@@ -52,6 +52,7 @@ at the next refresh:
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
 - `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
+- `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
@@ -150,6 +151,22 @@ prices on every game and with the model's points moved, and M holds that no tier
 A total moves with its game's passing and scoring lines (`TOTAL_RHO`, measured on 2019-2024) and is
 unrelated to a win or cover bet on the same game.
 
+The study's ratings candidate (`cand_ratings.py`, the ratings fade) is tracked quietly as a shadow
+(the owner's call, 2026-10-11): `props/research/totals/shadow.py` runs in the betting job after the
+models (continue-on-error) on that run's games.csv alone, calls every game to come with a line (mu, sd,
+P(over), the market's no-vig chance at the same moment, the 3-point-edge pick), rewrites a call while
+its numbers change before kickoff, freezes it at kickoff, grades it after the final against its own
+line, and writes `props/research/totals/shadow/ledger.json`, which rides on the job's commit;
+`shadow_check.py` in the same step fails that step alone, and puts the ledger back, if a frozen call
+moved or a grade is not games.csv's. No page reads the ledger and nothing uses it. Its bar was set
+before its first call and is held in the ledger: decided once 285 games are graded over or under with a
+market chance (the first 285 in grading order), PASS only if it beats the market's no-vig chance on
+both Brier and log loss with paired bootstrap 90% intervals wholly below zero and its 3-point-edge picks
+are up in units; otherwise FAIL and the tracking stops. A PASS only makes it a candidate for a change of
+its own; before 285 the summary never says passing. `shadow_equiv.py` proves its numbers are the research
+harness's own (identical on every development game), `test_shadow.py` is its test (README.md there,
+"The shadow"). Never edit the ledger or the bar by hand.
+
 `.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
 Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
 runs, and a daily 12:07 UTC run that lands after nflverse posts the day's injury report,
@@ -199,10 +216,11 @@ runs, and two before each Thursday, Saturday and Sunday kickoff window, early en
 9-hour delay still lands before kickoff (a game's call is the last run's before it). The ":37
 hourly" slot fires about six times a day with gaps of up to 8 hours: a background refresh, not
 an hourly promise. It runs `update.js`, `joker.py`, `broly.py` (each model step may fail alone:
-its last good picks stay, `modelStatus` says why on the Pick'em Record) and `smoke.js` (which
-builds the app itself), commits `betting/state.json`, and starts `elo.yml` when a final was
-graded (even if the smoke or the commit failed: the Elo job reads nflverse, not this state), so
-Team Rankings' Elo does not wait for the Elo job's own late slot.
+its last good picks stay, `modelStatus` says why on the Pick'em Record), the game-totals shadow
+(`props/research/totals/shadow.py` and its check, which may fail alone too; see the game totals under
+Props) and `smoke.js` (which builds the app itself), commits `betting/state.json` and the shadow's
+ledger, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
+job reads nflverse, not this state), so Team Rankings' Elo does not wait for the Elo job's own late slot.
 The **Broly Model** (`betting/broly/`) is the betting line plus six team stats: points per game,
 points allowed, turnover differential, third-down rate, red-zone touchdown rate and yards per
 play for and against, each the season to date with last season blended in early, in a
@@ -504,7 +522,18 @@ only, a parlay marked `cleared` left out, a quiet line under the heading saying 
 changed) and nothing else.
 
 The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
-in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). The panel is built from what
+in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). At the top of its controls is
+a **Bet amount** box (`#pbStake`: dollars, the decimal keypad on a phone, $1 to $100,000 in steps of
+$1, cents kept), the visitor's own amount and the builder's own stake, one number (`S.stake`, $20 to
+start, saved with the rest of the prop model state as the builder's stake always was), so it is set
+once: the builder's box and its one-tap amounts set the same number. Every tier, the Elo picks' too,
+pays it times its own decimal price ("$25 pays"), redrawn in place as it is typed (`pbPays`, each
+card's `data-pb-pay` holding its price) with the builder following a moment later; leaving the box or
+Enter settles it without redrawing the panel (`renderParlay({keepPb:true})`), so an Add to builder or
+Finish pressed straight after typing lands. A typed amount is read by `stakeRead` ($ and thousands
+commas allowed); one that is not a positive number (blank, a word, 0, a minus) leaves the amount as it
+was, and a saved one that is not an amount reads as $20 (`pbStake`), so nothing drawn from it is NaN.
+The panel is built from what
 the visitor ticks, each choice kept in the browser's own prop model state (`S.ui.pb`: the boxes, the
 games unticked, whether the games list is open; nothing else holds it): a mix, All (the default),
 Teams only or Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and
@@ -524,8 +553,8 @@ by hand from a game's Game bets card."). One team bet a game, one leg a player, 
 bet types", or, with player bets ticked before any of the ticked games has a player price, "No
 player prices yet: they are pulled within a day of each kickoff."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
-builder (exactly those legs into `S.parlay`) shows the same numbers; Finish opens the parlay card on
-the $10 the tier shows. The search is a beam over a pairwise copula approximation, with only the
+builder (exactly those legs into `S.parlay`, on the Bet amount) shows the same numbers and pays what
+the tier said; Finish opens the parlay card on the Bet amount. The search is a beam over a pairwise copula approximation, with only the
 finalists worked by the real sums; the tiers are cached on a signature of the choices and the data
 (`PB_CACHE`), and a game that kicks off while the page is open leaves the list and every tier
 (`pbWatch` looks every half minute). The Elo picks are the panel's last section. With no game to come
