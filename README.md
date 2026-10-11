@@ -103,7 +103,10 @@ A visitor picks All, Teams only or Players only (or ticks moneyline, spread, gam
 total, player overs and player unders by hand) and the week's games to build
 from, and gets a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg
 parlay, each with its book price, the model's chance and what $10 pays, Add to
-builder and Finish. No device keeps a list of its own: the builder, kept in the
+builder and Finish. A game total is priced at the book's own chance
+(`props/research/totals/README.md` says why), so it never makes a suggested
+parlay: it is added by hand from a game's Game bets card, and the panel says so
+when Game total is ticked. No device keeps a list of its own: the builder, kept in the
 browser alone, finishes a parlay as a card to download as an image
 (`nflbets/build/card.html`), saved nowhere.
 

@@ -127,18 +127,28 @@ neither needs an edit.
 
 A game total is a leg like a team's win or cover (`total` beside `ml` and `ats`: `totalBet`,
 `totalLeg`, `settleGameLeg`, `isGameLeg` in `part2.js`), offered over and under on the Game bets card
-under each Pick'ems game and in the suggested parlays. Its line is the schedule's `g.tot`, its price
-the over and under odds beside it, `g.tov`/`g.tou`, which `payload.py` carries from games.csv's
-`over_odds`/`under_odds` (free) and `weekly.py`'s bake replaces with DraftKings' own where a fresh
-DraftKings total is used (`oddsfetch.py` now keeps the totals market's prices it already pulls, no
-more credits; a DraftKings total on another number with no price of its own drops the price). With
-no price on file the leg is shown at -110 marked est. and no suggestion is built on it. Its chance is
-the model's own points for the two sides (`modelPoints`) pulled halfway to the posted total, the final
-total treated as spread about `TOTAL_SD`, 13.2 points (how far 2010-2025's 4,175 regular-season totals
-landed from the posted one; never fitted on the season in play). On 2026's first 65 graded games that
-rule did worse than a coin (its favoured side 25-40, Brier 0.265 against the book's 0.250): it is
-reported, not tuned. A total moves with its game's passing and scoring lines (`TOTAL_RHO`, measured on
-2019-2024) and is unrelated to a win or cover bet on the same game.
+under each Pick'ems game, and added by hand only: it never makes a suggested parlay. Its line is the
+schedule's `g.tot`, its price the over and under odds beside it, `g.tov`/`g.tou`, which `payload.py`
+carries from games.csv's `over_odds`/`under_odds` (free) and `weekly.py`'s bake replaces with
+DraftKings' own where a fresh DraftKings total is used (`oddsfetch.py` now keeps the totals market's
+prices it already pulls, no more credits; a DraftKings total on another number with no price of its
+own drops the price). With no price on file the leg is shown at -110 marked est. Its chance is the
+market's own (app v88, `patch_totals_market.py`): mu is the posted total, and the over's chance is its
+over and under prices with the margin out (`totalOver`, `devigOver`), 50% where either is missing.
+`TOTAL_SD`, 13.2 points (how far 2010-2025's 4,175 regular-season totals landed from the posted one),
+prices only a number other than the posted one, Normal about it. The model's own points (`modelTotal`,
+from `modelPoints`) are shown on the card as "model's points", a display kept out of the chance, the
+edge and the suggestions. That is what `props/research/totals/README.md` found: four points formulas
+built leak-free on 2012-2023 and tested once, frozen, on 2024-2026 beat the posted total on nothing,
+and the rule used before (the model's points pulled halfway to the total) was worse than the market
+there (MAE +0.13 points, Brier +0.0042, its 3-point-edge picks 66-81 for -20.3 units). A model may take
+the chance back only by passing that study's preregistered rule on seasons it has never seen; never
+tune one on the season in play. A no-vig chance sits under the chance its price implies, so a total
+could never clear the panel's bar, and `pricedLegs` leaves the totals out altogether; with Game total
+ticked the panel says so in one line. The audit's J2 holds the chance to the no-vig chance of the
+prices on every game and with the model's points moved, and M holds that no tier ever holds a total.
+A total moves with its game's passing and scoring lines (`TOTAL_RHO`, measured on 2019-2024) and is
+unrelated to a win or cover bet on the same game.
 
 `.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
 Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
@@ -506,9 +516,11 @@ least 25%, 12% and 5% of the time (`PB_TIERS`). Under All nothing forces or caps
 qualifies as the old Suggested parlays window's did (a real price, the model's chance 45-97% and 3
 points above the chance that price implies, the book's margin left in, market + form agreeing on a
 player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at
-or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet or
-a total has no market + form); never a leg below the book. One game leg a game, one leg a player,
-no line twice. A tier that cannot be built says why ("Only 3 legs on your picks: tick more games or
+or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet has
+no market + form); never a leg below the book. A game total is never in a tier: it is priced at the
+book's own chance, so it has no edge to offer, and the Game total box only brings up the line saying
+so ("Game totals are priced at the book's own chance, so they never make a suggested parlay; add one
+by hand from a game's Game bets card."). One team bet a game, one leg a player, no line twice. A tier that cannot be built says why ("Only 3 legs on your picks: tick more games or
 bet types", or, with player bets ticked before any of the ticked games has a player price, "No
 player prices yet: they are pulled within a day of each kickoff."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
