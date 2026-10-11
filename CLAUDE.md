@@ -569,7 +569,8 @@ least 25%, 12% and 5% of the time (`PB_TIERS`); where no parlay of a level's siz
 with any count of thin legs, the likeliest parlay of that size instead (`pbLikeliest`, chosen as Safe
 is: the fewest thin legs, then the highest chance by the builder's own sums), marked `likeliest` and
 ruled "the likeliest 3 legs" (4, 5) on its card, with its chance and price and no note about the floor
-(the owner's call, October 2026: every level shows a parlay). Under All nothing forces or caps a kind. A leg
+(the owner's call, October 2026: every level shows a parlay; the audit and the smoke work each such tier
+out in full against every parlay of its size wherever its legs are a plain product). Under All nothing forces or caps a kind. A leg
 qualifies as the old Suggested parlays window's did (a real price, the model's chance 45-97% and 3
 points above the chance that price implies, the book's margin left in, market + form agreeing on a
 player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at

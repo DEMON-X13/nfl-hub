@@ -548,6 +548,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     'the old Suggested parlays window or its switch is still in the page');
   chk(/Parlay Builder|-leg parlay/.test(txt(pb.firstElementChild.querySelector('h2'))), 'the builder is not the first card under the panel: ' + txt(pb.firstElementChild));
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
+  /* "the likeliest" worked out in full: where no two legs that could share a parlay move together
+     (different games, or one team bet a game), every parlay's chance is a plain product, so every
+     parlay of a likeliest tier's size with as many thin legs is worked with parlayProb and none may
+     land likelier. That holds whatever the legs are priced at, so a fallback chosen by any other
+     measure (the best return under the floor, say) fails it on the week's own picks. Bounded, so
+     a long list never stalls the smoke */
+  const fitsF = hasPb ? w.eval('pbFits') : null, orderF = hasPb ? w.eval('pbOrder') : null, rhoF = hasPb ? w.eval('legRho') : null, ppF = hasPb ? w.eval('parlayProb') : null, LIKELY_CAP = 250000;
+  const noMovers = list => list.every((a, i) => list.slice(i + 1).every(b => !fitsF([a], b) || Math.abs(rhoF(a, b)) < 0.03));
+  const likeliestOf = (list, n, thin) => { let best = -1, legs = null, seen = 0;
+    const rec = (i0, cur, th) => { if (seen > LIKELY_CAP) return;
+      if (cur.length === n) { if (th !== thin) return; seen++; const pr = ppF(orderF(cur)).corr; if (pr > best) { best = pr; legs = cur.slice(); } return; }
+      for (let i = i0; i < list.length; i++) { const c = list[i], th2 = th + (c.thin ? 1 : 0); if (th2 > thin || !fitsF(cur, c)) continue; cur.push(c); rec(i + 1, cur, th2); cur.pop(); } };
+    rec(0, [], 0); return seen > LIKELY_CAP || !legs ? null : { best, legs, seen }; };
   /* the panel holds on whatever the week offers: the mix sets the boxes, every tier is its legs or says
      why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
   if (hasPb) { const Sx = w.eval('S'), games = w.eval('pbGames()'), U = () => Sx.ui.pb, KINDS = ['ml', 'ats', 'total', 'over', 'under'];
@@ -558,7 +571,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     /* what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
        return, a level none of whose parlays reaches its floor the likeliest of its size */
     const ruleFor = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+` : 'the likeliest pair';
+    const provedLikeliest = (lab, t, list) => { if (!noMovers(list)) return; const b = likeliestOf(list, t.n, t.thin); if (!b) return;
+      chk(t.corr >= b.best - 1e-12, `${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr * 100).toFixed(2)}% (${t.legs.map(l => l.name + ' ' + l.label).join(', ')}) where ${orderF(b.legs).map(l => l.name + ' ' + l.label).join(', ')} land ${(b.best * 100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${t.n} worked)`); };
     const hold = lab => { const r = w.eval('getPbTiers()'), u = U(), m = maxLegs(); let built = 0;
+      const on = games.filter(g => !u.off.includes(g.id)), pool = on.length && KINDS.some(k => u.k[k]) ? w.eval('pbPool')(on) : { pref: [], thin: [] };
       chk(r.tiers.map(t => t.id + t.n).join() === 'safe2,med3,aggr4,xtrm5', `${lab}: the tiers are not Safe 2, Medium 3, Aggressive 4, Extreme 5`);
       for (const t of r.tiers) {
         /* every level shows a parlay of its size whenever the picks make that many legs */
@@ -573,6 +589,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `${lab}: the ${t.id} tier has two game bets on one game, or two legs on one player`);
         chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.likeliest || t.corr >= t.floor) && (!t.likeliest || t.floor > 0),
           `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor without being the likeliest of its size`);
+        /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */
+        if (t.likeliest || !t.floor) provedLikeliest(lab, t, [...pool.pref, ...pool.thin]);
         const card = d.querySelector(`#pbPanel .pb-tier.${t.id}`);
         chk(!!card && card.querySelectorAll('.pb-legs li').length === t.n && !!card.querySelector(`[data-pb-add="${t.id}"]`) && !!card.querySelector(`[data-pc-finish="pb|${t.id}"]`),
           `${lab}: the ${t.id} card does not show its legs with Add to builder and Finish`);
@@ -607,6 +625,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(KINDS.every(k => U().k[k] === (k === 'ats')) && [...d.querySelectorAll('#pbPanel [data-pb-kind]')].every(cb => cb.checked === (cb.dataset.pbKind === 'ats')) && noMix(),
           'Spread alone, ticked by hand, leaves another box ticked, a mix lit or a Custom tag beside the mix switch');
         hold('this week, Spread only');
+        /* and Moneyline alone: another pick where a level may fall back to the likeliest of its size */
+        d.querySelector('#pbPanel [data-pb-kind="ats"]').click(); await wait(20); d.querySelector('#pbPanel [data-pb-kind="ml"]').click(); await wait(20);
+        chk(KINDS.every(k => U().k[k] === (k === 'ml')) && noMix(), 'Moneyline alone, ticked by hand, leaves another box ticked, a mix lit or a Custom tag');
+        hold('this week, Moneyline only');
         d.querySelector('#pbPanel [data-pb-mix="all"]').click(); await wait(20); }
       /* one game ticked: every leg from it */
       d.querySelector('#pbPanel [data-pb-games="none"]').click(); await wait(20);
@@ -692,17 +714,21 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1]; renderParlay();'); await wait(20); }
   /* every level shows a parlay of its size: ten made-up games standing in for the week's (pbGames
      and pricedLegs stood in for, so this holds on any day, the off-season included), only Spread
-     ticked, as the owner had it. Eight covers the model rates 53.5% to 57% at +105, two at 60% at
-     -140 (a thin edge). Three legs land at most 20.5% and four 11.6%, short of Medium's 25% and
-     Aggressive's 12%, so those two are the likeliest parlays of their size (the three and four
-     likeliest covers), marked so and ruled "the likeliest 3 legs" and "the likeliest 4 legs" with
-     no note; Safe is the likeliest pair and Extreme its best return over 5%. Finish on a fallback
-     opens its card like any tier's */
+     ticked, as the owner had it. The covers are priced so that the likeliest legs and the
+     best-paying ones differ: on the odd games four the model rates 57% to 58.5% at -115, on the
+     even ones four it rates 46.5% to 48% at +140 (both over the 3-point bar), and two thin ones at
+     59% and 58.8% at -135. Three legs land at most 20.3% and four 11.8% at any count of thin legs,
+     short of Medium's 25% and Aggressive's 12%, so those two are the likeliest parlays of their
+     size: the three and four likeliest -115 covers (H1, H3, H5, H7), never the +140 ones a choice by
+     return would take or the first games on the list, worked out in full against every parlay of
+     their size, marked so and ruled "the likeliest 3 legs" and "the likeliest 4 legs" with no note;
+     Safe is the likeliest pair and Extreme its best return over 5%. Finish on a fallback opens its
+     card like any tier's */
   if (hasPb) { const Sx = w.eval('S'), cw = w.eval('currentWeek()'), keepU = JSON.stringify(Sx.ui.pb);
     w.__pbKeep4 = w.eval('[pbGames, pricedLegs]');
     const G = [...Array(10)].map((_, i) => ({ id: `2099_${String(cw).padStart(2, '0')}_A${i}_H${i}`, w: cw, a: 'A' + i, h: 'H' + i, d: `2099-01-0${1 + (i % 7)}`, t: '13:00' }));
-    const PREF = [0.57, 0.565, 0.56, 0.555, 0.55, 0.545, 0.54, 0.535];
-    w.__pb4 = { G, L: G.map((g, i) => ({ key: `${g.id}|team:${g.h}|ats`, gid: g.id, pid: 'team:' + g.h, stat: 'ats', k: -3.5, side: 'over', main: false, p: i < 8 ? PREF[i] : 0.6, price: i < 8 ? 105 : -140,
+    const COVER = [[0.48, 140], [0.585, -115], [0.475, 140], [0.58, -115], [0.47, 140], [0.575, -115], [0.465, 140], [0.57, -115], [0.59, -135], [0.588, -135]];
+    w.__pb4 = { G, L: G.map((g, i) => ({ key: `${g.id}|team:${g.h}|ats`, gid: g.id, pid: 'team:' + g.h, stat: 'ats', k: -3.5, side: 'over', main: false, p: COVER[i][0], price: COVER[i][1],
       src: 'real', mu: null, name: 'Made-up ' + g.h, pos: 'Game', grp: 'TEAM', team: g.h, opp: g.a, week: cw, label: 'To cover -3.5' })) };
     w.eval('pbGames=function(){ return window.__pb4.G; }; pricedLegs=function(games){ return window.__pb4.L.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
     Sx.ui.pb = { k: { ml: false, ats: true, total: false, over: false, under: false }, off: [], gx: false };
@@ -715,9 +741,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const want = t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+` : 'the likeliest pair';
       chk(!!c && !!rule && txt(rule) === want && c.querySelectorAll('.pb-legs li').length === t.n && txt(c).includes(`${(t.corr * 100).toFixed(0)}%`) && ![...c.querySelectorAll('p')].some(p => !p.classList.contains('pb-thin')),
         `ten made-up games: the ${t.id} card does not show its legs and chance under the rule "${want}" with no note: ${c ? txt(c).slice(0, 160) : 'no card'}`); }
-    /* the likeliest 3 and 4 legs are the three and four likeliest covers (a plain product, legs in different games) */
-    for (const [id, want] of [['med', 'H0,H1,H2'], ['aggr', 'H0,H1,H2,H3']]) { const t = r.tiers.find(x => x.id === id), p = want.split(',').reduce((a, h) => a * PREF[+h.slice(1)], 1);
-      chk(!!t && !!t.legs && t.legs.map(l => l.team).sort().join() === want && Math.abs(t.corr - p) < 1e-12, `ten made-up games: ${id} is not the likeliest covers ${want}: ${t && t.legs ? t.legs.map(l => l.team).join() : 'none'}`); }
+    /* the likeliest 3 and 4 legs are the three and four likeliest -115 covers (a plain product, legs
+       in different games), and no parlay of their size with as many thin legs lands likelier; the
+       best-paying 3 and 4 are the +140 covers, so the case tells a fallback by return from the likeliest */
+    const pool4 = w.eval('pbPool')(G), teams = c => c.map(l => l.team).sort().join(), mlToDec = w.eval('mlToDec');
+    for (const [id, want] of [['med', 'H1,H3,H5'], ['aggr', 'H1,H3,H5,H7']]) { const t = r.tiers.find(x => x.id === id), p = want.split(',').reduce((a, h) => a * COVER[+h.slice(1)][0], 1);
+      chk(!!t && !!t.legs && teams(t.legs) === want && Math.abs(t.corr - p) < 1e-12, `ten made-up games: ${id} is not the likeliest covers ${want}: ${t && t.legs ? teams(t.legs) : 'none'}`);
+      const all = [...pool4.pref, ...pool4.thin], b = t && t.legs && noMovers(all) ? likeliestOf(all, t.n, t.thin) : null;
+      chk(!!b && t.corr >= b.best - 1e-12, `ten made-up games: ${id} lands ${t && t.corr} where ${b ? teams(b.legs) + ' land ' + b.best : 'no parlay could be worked'}`);
+      const ret = [], n = id === 'med' ? 3 : 4;
+      (function rec(i0, cur) { if (cur.length === n) { ret.push({ c: cur.slice(), ev: cur.reduce((a, l) => a * l.p * mlToDec(l.price), 1) }); return; }
+        for (let i = i0; i < pool4.pref.length; i++) { if (!fitsF(cur, pool4.pref[i])) continue; cur.push(pool4.pref[i]); rec(i + 1, cur); cur.pop(); } })(0, []);
+      const byRet = ret.sort((a, b2) => b2.ev - a.ev)[0];
+      chk(!!byRet && teams(byRet.c) !== want, `ten made-up games: the best-paying ${n} covers are the likeliest too (${byRet ? teams(byRet.c) : 'none'}), so the case cannot tell a fallback by return from the likeliest`); }
     /* Finish on a fallback opens its card, with its legs and price */
     { const t = r.tiers.find(x => x.id === 'aggr'), fb = d.querySelector('#pbPanel [data-pc-finish="pb|aggr"]');
       if (fb) { fb.click(); await wait(40); }

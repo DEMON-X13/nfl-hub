@@ -492,7 +492,22 @@ setTimeout(async()=>{
     const SPEC=w.eval('PB_TIERS');
     const KINDS=['ml','ats','total','over','under'], kindOf=F('pbKind');
     const setKinds=ks=>{ for(const k of KINDS) U().k[k]=ks.includes(k); w.eval('PB_CACHE=new Map()'); };
-    let built=0, said=0, legsSeen=0, thinSeen=0, corrTiers=0, likeliestSeen=0;
+    let built=0, said=0, legsSeen=0, thinSeen=0, corrTiers=0, likeliestSeen=0, likeliestWorked=0, combosWorked=0;
+    /* "the likeliest" worked out in full. Where no two legs that could share a parlay move together
+       (different games, or one team bet a game), every parlay's chance is a plain product and
+       parlayProb works it exactly, so every parlay of the tier's size with its count of thin legs
+       is worked, and none may land likelier than the tier. That holds whatever the legs are priced
+       at, so a fallback chosen by any other measure (the best return under the floor, say) fails
+       it on the week's own picks, not only on made-up ones. Bounded, so a long list never stalls
+       the audit (the week's spreads alone make a few hundred) */
+    const fitsF=F('pbFits'), orderF=F('pbOrder'), rhoF=F('legRho'), LIKELY_CAP=250000;
+    const noMovers=list=>{ for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++)
+      if(fitsF([list[i]],list[j])&&Math.abs(rhoF(list[i],list[j]))>=0.03) return false; return true; };
+    const likeliestOf=(list,n,thin)=>{ let best=-1, legs=null, seen=0;
+      const rec=(i0,cur,th)=>{ if(seen>LIKELY_CAP) return;
+        if(cur.length===n){ if(th!==thin) return; seen++; const pr=F('parlayProb')(orderF(cur)).corr; if(pr>best){ best=pr; legs=cur.slice(); } return; }
+        for(let i=i0;i<list.length;i++){ const c=list[i], th2=th+(c.thin?1:0); if(th2>thin||!fitsF(cur,c)) continue; cur.push(c); rec(i+1,cur,th2); cur.pop(); } };
+      rec(0,[],0); return seen>LIKELY_CAP||!legs?null:{best,legs,seen}; };
     /* a level's best return over its floor, searched on its own (the search a level tries first),
        and what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
        return, a level that fell back the likeliest parlay of its size */
@@ -566,6 +581,12 @@ setTimeout(async()=>{
           chk(!!floor,`${lab}: Safe is marked as a fallback to the likeliest pair`);
           chk(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),pool,new Map())===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
           chk(t.thin===Math.max(0,n-maxLegsOf(pool.pref)),`${lab}: the likeliest ${n} legs take ${t.thin} thin legs where the preferred legs leave ${Math.max(0,n-maxLegsOf(pool.pref))} to fill`); }
+        /* the likeliest pair, and a level's likeliest of its size, worked out in full where every
+           parlay is a plain product: no parlay of its size with as many thin legs lands likelier */
+        if(t.likeliest||!floor){ const all=[...pool.pref,...pool.thin];
+          if(noMovers(all)){ const b=likeliestOf(all,n,t.thin);
+            if(b){ likeliestWorked++; combosWorked+=b.seen;
+              chk(t.corr>=b.best-1e-12,`${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% (${t.legs.map(l=>l.name+' '+l.label).join(', ')}) where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${n} worked)`); } } }
         /* a level over its floor is the best-return search's own parlay, unchanged */
         else if(floor&&bestRet){ const b=bestRet(SPEC.find(s=>s[0]===t.id),pool,new Map());
           chk(!!b&&b.legs.map(pbIdOf).join()===t.legs.map(pbIdOf).join(),`${lab}: the ${t.id} tier is not its best return over its floor`); }
@@ -600,7 +621,14 @@ setTimeout(async()=>{
       hold('this week, '+m); }
     /* the week's spreads alone, as the owner ticked them: a level whose floor no parlay of its size
        reaches is the likeliest of that size (hold holds it to the rule) */
-    setKinds(['ats']); hold('this week, spreads only'); setKinds(KINDS); F('renderPb')();
+    setKinds(['ats']); hold('this week, spreads only');
+    /* and the week's moneylines alone, and Teams only on the first four games: each a pick where a
+       level may fall back, and hold works every likeliest tier out in full against every parlay of
+       its size (one team bet a game, so every parlay is a plain product) */
+    setKinds(['ml']); hold('this week, moneylines only');
+    { const g4=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g4.slice(4).map(g=>g.id); w.eval('PB_CACHE=new Map()');
+      hold('this week, teams only, the first four games'); U().off=[]; }
+    setKinds(KINDS); F('renderPb')();
     /* a box changed by hand: the mix it makes, or no mix lit at all; there is no Custom tag (the
        boxes say what is ticked) */
     d.querySelector('#pbPanel [data-pb-mix="all"]').click();
@@ -744,27 +772,33 @@ setTimeout(async()=>{
     /* M4. every level shows a parlay of its size whenever the picks make that many legs. Held on
        made-up games standing in for the week's (pbGames and pricedLegs stood in for), so it holds
        on any day of the week, a lone Monday game included: ten games to come with only Spread
-       ticked, as the owner had it. Eight have a cover the model rates 53.5% to 57% at +105
-       (preferred, 5 points and more over the price), two a cover it rates 60% at -140 (thin, under
-       2 points over); every game has a moneyline at 75% that must never show (Moneyline is not
-       ticked), and one cover is under the book. So three legs land at most 20.5% and four 11.6%,
-       short of Medium's 25% and Aggressive's 12% whatever the thin legs, and five preferred legs
-       land 5.5%, over Extreme's 5%. Each tier is held to a brute force over every parlay of its size
-       on the pool, worked with the builder's own sums (legs in different games: a plain product,
-       exact): Safe the likeliest pair; Medium and Aggressive the likeliest of their size with the
-       fewest thin legs (the preferred alone, though two thin legs would land likelier), marked
-       likeliest and ruled "the likeliest N legs" with no note, no parlay of their size clearing the
-       floor; Extreme its best return over 5%, as before. Then three games ticked (Aggressive and
-       Extreme too few legs, the only empties), and two preferred with two thin (the likeliest take
-       as few thin legs as fill them). */
+       ticked, as the owner had it. Eight have a preferred cover, priced so that the likeliest legs
+       and the best-paying ones are not the same: four the model rates 57% to 58.5% at -115 (3.5 to
+       5 points over the price) on the odd games, four it rates 46.5% to 48% at +140 (4.8 to 6.3
+       points over) on the even ones, so a fallback chosen by the best return under the floor, or
+       by the first games on the list, takes other legs than the likeliest. Two more are thin, 59%
+       and 58.8% at -135 (under 2 points over), likelier than any preferred leg. Every game has a
+       moneyline at 75% that must never show (Moneyline is not ticked), and one cover is under the
+       book. So three legs land at most 20.3% and four 11.8% at any count of thin legs, short of
+       Medium's 25% and Aggressive's 12%, and the four likeliest preferred with the best-paying
+       +140 land 5.3%, over Extreme's 5%. Each tier is held to a brute force over every parlay of
+       its size on the pool, worked with the builder's own sums (legs in different games: a plain
+       product, exact): Safe the likeliest pair; Medium and Aggressive the likeliest of their size
+       with the fewest thin legs (the three and four likeliest -115 covers, 19.5% and 11.1%, though
+       thin legs would land likelier and the +140 covers would return more), marked likeliest and
+       ruled "the likeliest N legs" with no note, no parlay of their size clearing the floor;
+       Extreme its best return over 5%, as before. Then three games ticked (Aggressive and Extreme
+       too few legs, the only empties), and two preferred with two thin (the likeliest take as few
+       thin legs as fill them). */
     { const cw=F('currentWeek')(), keepU4=JSON.stringify(U());
       w.__m4Keep=w.eval('[pbGames, pricedLegs]');
       const G=Array.from({length:10},(_,i)=>({id:`2099_${String(cw).padStart(2,'0')}_A${i}_H${i}`,w:cw,a:'A'+i,h:'H'+i,d:`2099-01-0${1+(i%7)}`,t:'13:00'}));
       const leg=(g,team,stat,p,price)=>({key:`${g.id}|team:${team}|${stat}`,gid:g.id,pid:'team:'+team,stat,k:stat==='ml'?0:-3.5,side:'over',main:false,p,price,src:'real',mu:null,
         name:'Made-up '+team,pos:'Game',grp:'TEAM',team,opp:team===g.h?g.a:g.h,week:cw,label:stat==='ml'?'To win':'To cover -3.5'});
-      const PREF=[0.57,0.565,0.56,0.555,0.55,0.545,0.54,0.535];
+      /* each game's cover: the model's chance and the price (the even games pay more, the odd are likelier, the last two thin) */
+      const COVER=[[0.48,140],[0.585,-115],[0.475,140],[0.58,-115],[0.47,140],[0.575,-115],[0.465,140],[0.57,-115],[0.59,-135],[0.588,-135]];
       w.__m4Games=G;
-      w.__m4Legs=[...G.map((g,i)=>i<8?leg(g,g.h,'ats',PREF[i],105):leg(g,g.h,'ats',0.60,-140)),...G.map(g=>leg(g,g.a,'ml',0.75,-150)),leg(G[1],G[1].a,'ats',0.50,-150)];
+      w.__m4Legs=[...G.map((g,i)=>leg(g,g.h,'ats',COVER[i][0],COVER[i][1])),...G.map(g=>leg(g,g.a,'ml',0.75,-150)),leg(G[1],G[1].a,'ats',0.50,-150)];
       w.eval('pbGames=function(){ return window.__m4Games; }; pricedLegs=function(games){ return window.__m4Legs.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
       const fits=F('pbFits'), order=F('pbOrder');
       const combos=(list,n)=>{ const out=[], rec=(i0,cur)=>{ if(cur.length===n){ out.push(cur.slice()); return; }
@@ -801,13 +835,21 @@ setTimeout(async()=>{
         return {r,P}; };
       const A=run4('ten made-up games, Spread only',[],{safe:'pair',med:'likeliest',aggr:'likeliest',xtrm:'floor'});
       chk(['med','aggr'].every(id=>{ const t=A.r.tiers.find(x=>x.id===id); return t&&t.legs&&!t.thin; }),'ten made-up games: the likeliest 3 or 4 legs took a thin leg the preferred legs did not need');
+      /* the likeliest 3 and 4 are the -115 covers on the odd games; the made-up prices do what they
+         are for: the best return of each size, under the floor, is the +140 covers instead, so a
+         fallback chosen by return (or by the first games on the list) cannot pass for the likeliest */
+      { const poolA=F('pbPool')(G), teams=c=>c.map(l=>l.team).sort().join();
+        for(const [id,n,want] of [['med',3,'H1,H3,H5'],['aggr',4,'H1,H3,H5,H7']]){ const t=A.r.tiers.find(x=>x.id===id);
+          chk(!!t&&!!t.legs&&teams(t.legs)===want&&Math.abs(t.corr-t.legs.reduce((a,l)=>a*l.p,1))<1e-12,`ten made-up games: ${id} is ${t&&t.legs?teams(t.legs):'empty'}, not the likeliest covers ${want}`);
+          const byRet=combos(poolA.pref,n).map(c=>({c,ev:c.reduce((a,l)=>a*l.p*F('mlToDec')(l.price),1)})).sort((a,b)=>b.ev-a.ev)[0];
+          chk(!!byRet&&teams(byRet.c)!==want,`ten made-up games: the best-paying ${n} covers are the likeliest too (${byRet?teams(byRet.c):'none'}), so the case cannot tell a fallback by return from the likeliest`); } }
       chk(/where none of that size gets there, the likeliest of that size/.test((A.P.querySelector('.pb-foot')||{}).textContent||''),'the panel\'s footer does not say a level with no parlay over its floor shows the likeliest of its size');
       run4('three made-up games, Spread only',[3,4,5,6,7,8,9],{safe:'pair',med:'likeliest',aggr:'empty',xtrm:'empty'});
       const C=run4('two preferred and two thin, Spread only',[2,3,4,5,6,7],{safe:'pair',med:'likeliest',aggr:'likeliest',xtrm:'empty'});
       chk(C.r.tiers.filter(t=>t.legs).map(t=>t.thin).join()==='0,1,2','two preferred and two thin: the likeliest take more thin legs than fill them: '+C.r.tiers.filter(t=>t.legs).map(t=>t.id+' '+t.thin).join(', '));
       w.eval('pbGames=window.__m4Keep[0]; pricedLegs=window.__m4Keep[1]; PB_CACHE=new Map();'); delete w.__m4Keep; delete w.__m4Games; delete w.__m4Legs;
       S.ui.pb=JSON.parse(keepU4); F('renderPb')();
-      console.log(`M4. every level a parlay: ten made-up games, Spread only: ${seen.slice(0,4).join(', ')}; three games: Aggressive and Extreme empty for too few legs; two preferred and two thin: the likeliest take 1 and 2 thin legs; ${likeliestSeen} tiers of the week's own picks fell back to the likeliest`); }
+      console.log(`M4. every level a parlay: ten made-up games, Spread only: ${seen.slice(0,4).join(', ')}; three games: Aggressive and Extreme empty for too few legs; two preferred and two thin: the likeliest take 1 and 2 thin legs; ${likeliestSeen} tiers of the week's own picks fell back to the likeliest; ${likeliestWorked} likeliest tiers (Safe's pair included) worked out in full against ${combosWorked} parlays of their size`); }
     /* with no game to come the panel says so and offers nothing: the regular season over, or every game of the week under way */
     { w.__pbKeep=w.eval('[pbGames, seasonOver]');
       w.eval('pbGames=function(){ return []; }; seasonOver=function(){ return true; }; renderParlay();');

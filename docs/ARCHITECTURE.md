@@ -398,7 +398,13 @@ any other and says nothing about the floor (the owner's call, October 2026: ever
 parlay, "just state the percentage"). The panel's footer says so in a line. On this week's spreads
 alone (eight covers at 56-62%) that is Medium 21% and Aggressive 12%, where both were empty; in
 Chromium a full Sunday slate builds in under 0.1 s with All ticked and about 0.2 s with every level
-forced onto the likeliest on one game's correlated player legs. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
+forced onto the likeliest on one game's correlated player legs. The audit's M and the smoke hold a
+likeliest tier (and Safe's pair) to its word: wherever no two legs that could share a parlay move
+together, so that every parlay is a plain product, every parlay of its size with as many thin legs is
+worked with `parlayProb` and none may land likelier, on the week's own picks (Spread alone, Moneyline
+alone, and in the audit Teams only on four games) and on ten made-up games whose covers are priced so
+that the likeliest ones (-115) and the best-paying ones (+140) differ, so a fallback chosen by return
+fails. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
 points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
 stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
 fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
