@@ -395,8 +395,9 @@ product, so on spreads and moneylines it is the likeliest outright). The tier ca
 true`, and its card's rule reads "the likeliest 3 legs" (4, 5) where a level over its floor reads
 "best return that lands 25%+" and Safe "the likeliest pair"; the card shows its chance and price like
 any other and says nothing about the floor (the owner's call, October 2026: every level shows a
-parlay, "just state the percentage"). The panel's footer says so in a line. On this week's spreads
-alone (eight covers at 56-62%) that is Medium 21% and Aggressive 12%, where both were empty; in
+parlay, "just state the percentage"). The panel's footer says so in a line. On spreads alone (covers
+at 56-62%, three legs land about 20% and four about 11%) Medium and Aggressive fall back where they
+used to be empty; in
 Chromium a full Sunday slate builds in under 0.1 s with All ticked and about 0.2 s with every level
 forced onto the likeliest on one game's correlated player legs. The audit's M and the smoke hold a
 likeliest tier (and Safe's pair) to its word: wherever no two legs that could share a parlay move
