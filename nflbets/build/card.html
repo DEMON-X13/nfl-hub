@@ -145,7 +145,9 @@ window.PARLAY_CARD=(function(){
   function fromTier(kind,id){
     let t=null;
     try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
-      :kind==='pb'&&typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id&&Array.isArray(x.legs)):null; }catch(e){ t=null; }
+      :kind==='pb'?(typeof window.pbShownTier==='function'?window.pbShownTier(id)
+        :(typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id):null)):null;
+      if(t&&!Array.isArray(t.legs)) t=null; }catch(e){ t=null; }
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',

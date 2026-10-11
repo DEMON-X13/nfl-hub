@@ -665,6 +665,22 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(!!c && [...c.querySelectorAll('.pb-legs li')].every(li => /no edge/i.test(txt(li))) && /because your picks do not make a parlay of this size from legs with an edge/.test(txt(c)),
             `the ${x.id} card does not mark its totals no edge or say why they are there`); }
         Object.assign(U().k, JSON.parse(keepK)); w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40); }
+      /* lock a leg and ask for new legs on the page: the lock holds, the card draws the turned legs,
+         and Finish opens the parlay card on them, not on the panel's own */
+      { const T = w.eval('getPbTiers()').tiers.find(x => x.legs && x.n >= 3);
+        chk(!!T, 'with made-up lines no level of three legs or more to lock a leg on');
+        if (T) { const idOf = w.eval('pbId'), lid = idOf(T.legs[0]), cardOf = () => d.querySelector(`#pbPanel .pb-tier.${T.id}`);
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).click(); await wait(20);
+          chk(cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).getAttribute('aria-pressed') === 'true', 'the lock on the page did not take');
+          cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click(); await wait(20);
+          const x = w.eval(`pbShownTier('${T.id}')`);
+          chk(!!x && !!x.legs && x.legs.some(l => idOf(l) === lid) && x.legs.map(idOf).join() !== T.legs.map(idOf).join() && x.legs.every(l => txt(cardOf()).includes(l.name)),
+            'New legs on the page did not keep the locked leg, turn the rest, or draw them');
+          if (x && x.legs) { d.querySelector(`#pbPanel [data-pc-finish="pb|${T.id}"]`).click(); await wait(40);
+            const view = d.getElementById('pcView');
+            chk(!d.getElementById('pcModal').hidden && x.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label)), 'Finish after New legs did not open the parlay card on the turned legs');
+            w.eval('PARLAY_CARD.close()'); await wait(20); }
+          w.eval('PB_VIEW={sig:null,t:{}}; renderParlay()'); await wait(20); } }
       const t = w.eval('getPbTiers()').tiers.filter(x => x.legs).slice(-1)[0];
       /* the Bet amount box, at the top of the panel's controls: an amount of the visitor's own,
          which every tier (the panel's four and the Elo picks') pays on as it is typed, which a bad

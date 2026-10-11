@@ -708,6 +708,60 @@ setTimeout(async()=>{
       setKinds(KINDS);
       const rA=F('getPbTiers')();
       chk(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
+      /* M6. lock a leg and ask for new legs, on the made-up lines: the locked leg stays on every
+         turn, the rest are legs the card has not shown until it starts over, every turn keeps the
+         level's rules, the card draws it and Add to builder takes it; Reset and a changed box put
+         the level back */
+      { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+        const T=rA.tiers.find(t=>t.legs&&t.n>=3), idOf=F('pbId'), mlPx=F('mlProb');
+        const okTier=(x,lab)=>{ const gl=x.legs.filter(isG), sd=gl.filter(l=>l.stat!=='total'), tt=gl.filter(l=>l.stat==='total'), pl=x.legs.filter(l=>!isG(l)), u=U();
+          const ord=[...x.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
+          chk(x.legs.length===x.n&&new Set(x.legs.map(l=>l.key)).size===x.n&&new Set(sd.map(l=>l.gid)).size===sd.length&&new Set(tt.map(l=>l.gid)).size===tt.length&&new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: not ${x.n} different lines, one side and one total a game and one leg a player`);
+          chk(x.legs.every(l=>!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(g=>g.id===l.gid)&&l.src==='real'&&l.p>=0.45&&l.p<0.97&&(l.market?l.stat==='total':l.p>=mlPx(l.price))),`${lab}: a leg of a kind or game not ticked, on no real price, out of 45-97%, or under the book`);
+          chk(x.legs.map(l=>l.key).join()===ord&&pp(x.legs).corr===x.corr&&pd(x.legs.map(l=>({leg:l,ml:l.price})))===x.dec&&x.thin===x.legs.filter(l=>l.thin).length&&(x.mkt||0)===x.legs.filter(l=>l.market).length,`${lab}: its chance, price or counts are not the builder's own sums on its legs`); };
+        chk(!!T,'with made-up lines on every starter no level of three legs or more was built');
+        if(T){ const cardOf=()=>d.querySelector(`#pbPanel .pb-tier.${T.id}`), lid=idOf(T.legs[0]);
+          chk(cardOf().querySelectorAll('[data-pb-lock]').length===T.legs.length&&!!cardOf().querySelector(`[data-pb-turn="${T.id}"]`)&&!cardOf().querySelector('[data-pb-reset]'),`the ${T.id} card has no lock on each leg or no New legs, or offers Reset before a turn`);
+          chk(!d.querySelector('#pbElo [data-pb-lock], #pbElo [data-pb-turn]'),'the Elo picks carry locks or New legs');
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).click();
+          chk(cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).getAttribute('aria-pressed')==='true'&&cardOf().querySelectorAll('[data-pb-lock][aria-pressed="true"]').length===1,'the lock did not take, or took more than the one leg');
+          chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T.legs.map(idOf)),'a lock alone changed the legs');
+          const seen=new Set(T.legs.filter(l=>idOf(l)!==lid).map(idOf)); let turns=0, wrapped=false;
+          while(turns<8&&!wrapped){ cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click(); turns++;
+            const x=F('pbShownTier')(T.id); wrapped=!!w.eval(`PB_VIEW.t['${T.id}'].wrapped`);
+            if(!x.legs){ chk(/unlock one/.test(x.why)&&/unlock one/.test(cardOf().textContent),`turn ${turns}: an empty turn does not say to unlock a leg`); break; }
+            okTier(x,`new legs, turn ${turns}`);
+            chk(x.legs.some(l=>idOf(l)===lid)&&x.turned===true,`turn ${turns}: the locked leg is not on it`);
+            const fresh=x.legs.filter(l=>idOf(l)!==lid);
+            if(!wrapped) chk(fresh.every(l=>!seen.has(idOf(l))),`turn ${turns}: a leg the card had shown came back before the start-over: ${fresh.filter(l=>seen.has(idOf(l))).map(l=>l.name+' '+l.label).join(', ')}`);
+            else chk(/back to the first/.test(cardOf().textContent),`turn ${turns}: the start-over is not said on the card`);
+            fresh.forEach(l=>seen.add(idOf(l)));
+            const li=[...cardOf().querySelectorAll('.pb-legs li')];
+            chk(li.length===x.n&&x.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label))&&cardOf().querySelector('[data-pb-pay]').dataset.pbPay===String(x.dec)
+              &&!!cardOf().querySelector(`[data-pb-reset="${T.id}"]`),`turn ${turns}: the card does not draw the turned legs and their price, or has no Reset`); }
+          chk(turns>=1,'New legs did nothing');
+          /* Add to builder takes the legs on the card */
+          const x=F('pbShownTier')(T.id), keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice;
+          if(x&&x.legs){ cardOf().querySelector(`[data-pb-add="${T.id}"]`).click();
+            chk(Object.keys(S.parlay).length===x.n&&x.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add to builder after New legs did not take the legs on the card'); }
+          S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')();
+          /* Reset, then a changed box: the level is the panel's own again */
+          if(cardOf().querySelector(`[data-pb-reset="${T.id}"]`)) cardOf().querySelector(`[data-pb-reset="${T.id}"]`).click();
+          chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(F('getPbTiers')().tiers.find(t=>t.id===T.id).legs.map(idOf))&&!cardOf().querySelector('[data-pb-lock][aria-pressed="true"]'),'Reset did not put the level back to the panel\'s own, or kept a lock');
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+          setKinds(KINDS.filter(k=>k!=='under')); F('renderPb')(); setKinds(KINDS); F('renderPb')();
+          chk(!w.eval(`PB_VIEW.t['${T.id}']`)||(!w.eval(`PB_VIEW.t['${T.id}'].tier`)&&!w.eval(`PB_VIEW.t['${T.id}'].lock.length`)),'a changed box left a turned level or a lock behind');
+          /* a small pick runs out and starts over: Teams only on three games, Safe turned until no
+             unshown leg is left, every turn a valid pair */
+          let nW=0, wr=false;
+          { const g3=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g3.slice(3).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            if(F('getPbTiers')().tiers.find(t=>t.id==='safe'&&t.legs)){
+              while(nW<40&&!wr){ d.querySelector('#pbPanel [data-pb-turn="safe"]').click(); nW++; wr=!!w.eval("PB_VIEW.t['safe']&&PB_VIEW.t['safe'].wrapped");
+                const x=F('pbShownTier')('safe'); if(x&&x.legs) okTier(x,`Safe on three games, turn ${nW}`); }
+              chk(wr&&/back to the first/.test(d.querySelector('#pbPanel .pb-tier.safe').textContent),`Safe on three games never started over in ${nW} turns, or did not say so`); }
+            U().off=[]; setKinds(KINDS); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
+          console.log(`M6. lock and new legs: ${turns} turns of the ${T.label} level, the locked leg on each, ${seen.size} legs seen${wrapped?', then back to the first':''}; Safe on three games started over after ${nW} turns`); }
+        w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
       chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the game pages\' hands or the Elo picks are built from');
       /* only Game total ticked, every total priced (-105/-115, +100/+100 with no margin, +110/+105
          with less than none): every level a game makes legs for is built, of totals only, each a
