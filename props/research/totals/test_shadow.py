@@ -12,8 +12,9 @@ chance moved, a graded total or result that is not games.csv's, a frozen call de
 after its kickoff, a line re-taken after kickoff, the bar edited, the summary edited, and a shadow
 mutated to recompute calls after kickoff. Then the bar: no verdict at 284 games and no word of passing,
 PASS on the first 285 in grading order, FAIL for a model level with the market, for one better on both
-scores with no picks, and for one better on both scores whose picks lose; after a FAIL the tracking
-stops. The pick rule is the harness's own on random prices, and no page in the repo reads the ledger.
+scores with no picks, for one better on both scores whose picks lose, and, its picks up each time, for
+one whose two intervals straddle 0, one better on Brier alone and one better on log loss alone; after a
+FAIL the tracking stops. The pick rule is the harness's own on random prices, and no page in the repo reads the ledger.
 
     python3 props/research/totals/test_shadow.py      # ends "N passed, 0 failed"
 """
@@ -330,6 +331,37 @@ def test_bar():
     assert d['scores']['brier_diff_ci90'][1] < 0 and d['scores']['logloss_diff_ci90'][1] < 0
     assert d['picks']['units'] < 0 and d['verdict'] == 'FAIL'
     out.append('better on both scores but the picks lose: FAIL')
+
+    # Each of the bar's two interval conditions on its own, the picks up every time, so only that
+    # condition can fail the model. A decide() that reads an interval's lower bound (it reaches below 0)
+    # instead of its upper (it lies wholly below 0), or that leaves out either score, passes one of these.
+    def straddle(res, i):          # level on six games in seven, a modest edge on the seventh, right 4 times in 7
+        return 0.5 if i % 7 else (0.56 if (res == 'over') == ((i // 7) % 7 < 4) else 0.44)
+    d = shadow.decide(synth(300, straddle), shadow.parse_iso(T3))
+    b, ll = d['scores']['brier_diff_ci90'], d['scores']['logloss_diff_ci90']
+    assert b[0] < 0 < b[1] and ll[0] < 0 < ll[1], (b, ll)
+    assert d['picks']['bets'] > 0 and d['picks']['units'] > 0 and d['verdict'] == 'FAIL', d['picks']
+    out.append(f'both intervals straddle 0 (Brier [{b[0]:+.4f}, {b[1]:+.4f}], log loss [{ll[0]:+.4f}, {ll[1]:+.4f}]), '
+               f'picks {d["picks"]["won"]}-{d["picks"]["lost"]} {d["picks"]["units"]:+.2f}u: FAIL')
+
+    def ll_only(res, i):           # sharp on 39 games in 40, a near-certain miss on the 40th: Brier holds, log loss does not
+        return (0.001 if res == 'over' else 0.999) if i % 40 == 7 else (0.58 if res == 'over' else 0.42)
+    d = shadow.decide(synth(300, ll_only), shadow.parse_iso(T3))
+    b, ll = d['scores']['brier_diff_ci90'], d['scores']['logloss_diff_ci90']
+    assert b[1] < 0 and ll[0] < 0 < ll[1], (b, ll)
+    assert d['picks']['units'] > 0 and d['verdict'] == 'FAIL', d['picks']
+    out.append(f'Brier wholly below 0 [{b[0]:+.4f}, {b[1]:+.4f}], log loss not [{ll[0]:+.4f}, {ll[1]:+.4f}], '
+               f'picks {d["picks"]["units"]:+.2f}u: FAIL')
+
+    def brier_only(res, i):        # near-certain and right on one game in five, a little wrong on the rest:
+        q = 0.99 if i % 5 == 0 else 0.45       # log loss holds, Brier does not
+        return q if res == 'over' else 1 - q
+    d = shadow.decide(synth(300, brier_only), shadow.parse_iso(T3))
+    b, ll = d['scores']['brier_diff_ci90'], d['scores']['logloss_diff_ci90']
+    assert ll[1] < 0 and b[0] < 0 < b[1], (b, ll)
+    assert d['picks']['units'] > 0 and d['verdict'] == 'FAIL', d['picks']
+    out.append(f'log loss wholly below 0 [{ll[0]:+.4f}, {ll[1]:+.4f}], Brier not [{b[0]:+.4f}, {b[1]:+.4f}], '
+               f'picks {d["picks"]["units"]:+.2f}u: FAIL')
     return out
 
 

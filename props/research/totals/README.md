@@ -253,7 +253,9 @@ that is not games.csv's, a frozen call deleted, a call stamped after kickoff, th
 the bar or the summary edited, a final left ungraded, a verdict written early or changed) and a shadow
 mutated to recompute after kickoff, then the bar on made-up records (no verdict at 284, PASS on the
 first 285 in grading order, FAIL level with the market, FAIL with no picks, FAIL when the picks lose,
-the tracking stopping after a FAIL), the pick rule against the harness's own, and no page naming the
+and, the picks up each time, FAIL when both intervals straddle 0, when only Brier's lies below 0 and
+when only log loss's does, so a bar read off an interval's lower bound or missing either score fails
+the test; the tracking stopping after a FAIL), the pick rule against the harness's own, and no page naming the
 ledger.
 
 ```
