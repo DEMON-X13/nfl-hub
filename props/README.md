@@ -206,7 +206,7 @@ projection, the band partition, the old-snapshot path and the render.
 `python weekly.py` does the whole week unattended: downloads scores and lines, this
 season's player stats, rosters, injuries and depth charts; works out the current week;
 pulls prices for the games kicking off before the next scheduled pull is likely to land
-(`PULL_SLOTS`, plus `LATE`, 10 hours, because GitHub fires this repo's crons 3-9 hours late)
+(`PULL_SLOTS`, plus `LATE`, 10 hours, because GitHub fires this repo's crons about 2-9.4 hours late)
 if `ODDS_API_KEY` is set; rebuilds the payload; bakes every finished game's player stats,
 the injury report (this week's in full, earlier weeks' Outs), every skill player's roster
 status, every week's main lines matched onto the players of their own game, and every price
@@ -281,11 +281,13 @@ price-sheet upload any more. When the data build changes, the visitor's parlays,
 saved tickets carry over and the baked weeks replay, so a rebuild no longer costs
 anything. Audit section I covers it.
 
-Scheduled by `.github/workflows/props.yml`: five price pulls (Mon, Wed, Thu, Sat morning for a
-Saturday game, Sat evening for Sunday) and eight post-game and stats runs a week plus a daily
-injury-report run at 12:07 UTC, which lands after nflverse's afternoon posting (the catch-ups
-spend a credit only on a game a dropped pull left unpriced); the key is the `ODDS_API_KEY`
-repository secret. Off GitHub Actions `weekly.py` skips the price pull unless given
+Scheduled by `.github/workflows/props.yml`: four price pulls (Mon, Wed, Thu, and Saturday 05:17
+UTC for Saturday's games and the whole Sunday slate, on the site by Saturday morning Pacific) and
+eight post-game and stats runs a week, two Saturday catch-ups for a dropped weekend pull, plus a
+daily injury-report run at 12:07 UTC, which lands after nflverse's afternoon posting (the
+catch-ups spend a credit only on a game a dropped pull left unpriced); the key is the
+`ODDS_API_KEY` repository secret. `build/test_pull_schedule.py` replays the season through the
+pulls' windows offline. Off GitHub Actions `weekly.py` skips the price pull unless given
 `--local`, and it never commits, so the schedule that ran it from the Claude desktop app
 before the workflow (Thursday and Saturday 8:00 local) spends nothing and changes nothing
 if it still fires; it can be deleted in the desktop app.

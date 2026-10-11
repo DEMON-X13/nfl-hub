@@ -94,6 +94,19 @@ jobs:
       - name: Score the Broly Model and write its picks into state.json
         continue-on-error: true
         run: python betting/broly/broly.py
+      # the game-totals shadow (props/research/totals/README.md, "The shadow"): the frozen ratings
+      # candidate's call on every game to come, from this run's games.csv alone, frozen at kickoff and
+      # graded after the final, against a bar set before its first call. Research only: no page reads
+      # its ledger. It can never stop the publish: a failure, or a check that finds a frozen call
+      # changed or a grade that is not games.csv's, marks this step alone and puts the ledger back as
+      # the last commit had it, so only a clean ledger rides on the commit below
+      - name: Game totals shadow (research only, never shown)
+        continue-on-error: true
+        run: |
+          if python props/research/totals/shadow.py --games data/games.csv &&
+             python props/research/totals/shadow_check.py --games data/games.csv; then exit 0; fi
+          git checkout HEAD -- props/research/totals/shadow/ledger.json 2>/dev/null || rm -f props/research/totals/shadow/ledger.json
+          exit 1
       # the built app on the new state, and the state against what it was built from: this run's
       # files, the quarterbacks, neutral sites, a call from every model, no call moved after its
       # kickoff (against the last commit; a rebuild is exempt), the record's disclosures
@@ -105,7 +118,7 @@ jobs:
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add betting/state.json
+          git add betting/state.json props/research/totals/shadow/ledger.json
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "betting: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:

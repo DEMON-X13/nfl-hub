@@ -192,10 +192,10 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
   if (!QUOTE.includes(need)) throw new Error("the builder's pricing lifted from part3.js has no " + need);
 /* the builder's save, which every device turns into Finish: the button, its rule, its label; and
    each suggested tier's Add to builder and Finish, which the card answers */
-for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-pb-add="${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${t.id}\"", 'function getPbTiers(', ' PB_STAKE=10,'])
+for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-pb-add="${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${t.id}\"", 'function getPbTiers(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
   if (!part3.includes(need)) throw new Error("the builder's save or the suggested parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
 /* Finish on every device: nothing in the card asks whose device it is */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])

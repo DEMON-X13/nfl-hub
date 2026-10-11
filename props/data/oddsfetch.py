@@ -16,10 +16,11 @@ Usage (never put the key on the command line; the shell history would keep it):
 A game that has kicked off is never priced, in any mode: an in-play price is not a pre-game line.
 A game priced less than REPRICE_HOURS ago is skipped too (--force prices it anyway), so a manual
 pull followed by the scheduled one GitHub delivered hours late does not buy the same game twice,
-nor do two pulls the same day whose windows overlap (each prices up to the next slot plus the
-lateness allowance, so Saturday morning's pull reaches Saturday night's game, and Saturday
-evening's would buy it again if it landed on time). A day apart, as the Wednesday and Thursday
-pulls are for Thanksgiving's early game, the second pull's fresher prices are worth the credits.
+nor does a scheduled pull a catch-up has just done the work of. Each pull prices up to the next
+slot plus the lateness allowance, so two pulls' windows overlap only where a game sits in the
+allowance: a day apart, as the Wednesday and Thursday pulls are for Thanksgiving's early game, the
+second pull's fresher prices are worth the credits. choose() is the rule, and
+props/build/test_pull_schedule.py drives it over the season's schedule at every lateness.
 Outputs (in data/), MERGED into existing files for the week so a Thursday pull and a Saturday
 pull add up; a game pulled twice keeps the newer prices:
     wk{W}_lines.csv    game_id,stat,player,line,over,under   main lines: the point where over and
@@ -202,6 +203,29 @@ def merge_lines(path,rows,done):
         w=csv.DictWriter(f,fieldnames=['game_id','stat','player','line','over','under'],extrasaction='ignore'); w.writeheader()
         for r in out: w.writerow(r)
     return len(out)
+def choose(events,ids,now,hours=None,missing=False,have=(),priced=None,force=False,say=print):
+    """The (event, game id) pairs this pull prices, in the events' order: a game of the week
+    (ids), kicking off within hours of now (all of them without hours), never one that has
+    kicked off, with --missing only one with no prices on file (have: the game ids in
+    prices_wk{W}.csv), and not one priced less than REPRICE_HOURS ago unless force says so."""
+    out=[]
+    for ev in events:
+        gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
+        if not gid: continue
+        try: ko=datetime.fromisoformat(str(ev.get('commence_time','')).replace('Z','+00:00'))
+        except ValueError: ko=None
+        if hours and ko and (ko-now).total_seconds()>hours*3600: continue
+        # never a game that has started, in any mode: its prices would be in-play ones
+        if ko and ko<=now: say(f"   {gid}: kicked off {ko:%a %H:%M} UTC, not priced"); continue
+        if missing and gid in have: continue
+        last=(priced or {}).get(gid)
+        if last and not force:
+            try: age=(now-datetime.fromisoformat(last.replace('Z','+00:00'))).total_seconds()/3600
+            except ValueError: age=None
+            if age is not None and 0<=age<REPRICE_HOURS:
+                say(f"   {gid}: priced {age:.1f}h ago, not bought again (--force to)"); continue
+        out.append((ev,gid))
+    return out
 def read_priced(path='priced_at.json'):
     try: return json.load(open(path,encoding='utf-8'))
     except Exception: return {}
@@ -243,21 +267,7 @@ def main():
     if a.missing and os.path.exists(f'prices_wk{a.week}.csv'):
         with open(f'prices_wk{a.week}.csv',newline='',encoding='utf-8') as f: have={r['game_id'] for r in csv.DictReader(f)}
     priced=read_priced()
-    for ev in events:
-        gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
-        if not gid: continue
-        try: ko=datetime.fromisoformat(str(ev.get('commence_time','')).replace('Z','+00:00'))
-        except ValueError: ko=None
-        if a.hours and ko and (ko-now).total_seconds()>a.hours*3600: continue
-        # never a game that has started, in any mode: its prices would be in-play ones
-        if ko and ko<=now: print(f"   {gid}: kicked off {ko:%a %H:%M} UTC, not priced"); continue
-        if a.missing and gid in have: continue
-        last=priced.get(gid)
-        if last and not a.force:
-            try: age=(now-datetime.fromisoformat(last.replace('Z','+00:00'))).total_seconds()/3600
-            except ValueError: age=None
-            if age is not None and 0<=age<REPRICE_HOURS:
-                print(f"   {gid}: priced {age:.1f}h ago, not bought again (--force to)"); continue
+    for ev,gid in choose(events,ids,now,a.hours,a.missing,have,priced,a.force):
         matched+=1
         if a.sample: parse_event(ev,gid,mains,alts,book); continue
         for markets in ([DEFAULT] + ([FULL_EXTRA] if a.full else [])):

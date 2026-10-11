@@ -101,9 +101,10 @@ with the balance from its deposit.
 The Parlay Builder is its own tab (`#parlay`): suggested parlays over the builder.
 A visitor picks All, Teams only or Players only (or ticks moneyline, spread, game
 total, player overs and player unders by hand) and the week's games to build
-from, and gets a Safe 2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg
-parlay, each with its book price, the model's chance and what $10 pays, Add to
-builder and Finish. A game total is priced at the book's own chance
+from, types a Bet amount (the builder's own stake, one number), and gets a Safe
+2-leg, Medium 3-leg, Aggressive 4-leg and Extreme 5-leg parlay, each with its book
+price, the model's chance and what that amount pays, Add to builder and Finish,
+both on the same amount. A game total is priced at the book's own chance
 (`props/research/totals/README.md` says why), so it never makes a suggested
 parlay: it is added by hand from a game's Game bets card, and the panel says so
 when Game total is ticked. No device keeps a list of its own: the builder, kept in the

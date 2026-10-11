@@ -156,6 +156,10 @@ function shiftClock(w) {
 }
 if (PAGE_SHIFT_MS) console.log(`the payload's last game kicks off within the hour or has: the page is run as at ${new Date(Date.now() - PAGE_SHIFT_MS).toISOString()}, two days before it`);
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+/* a dollar figure to the cent with its thousands marked, and an amount as a tier names it ("$35",
+   "$12.50"), worked here rather than by the page's own helpers */
+const money = v => '$' + (+v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const amtTxt = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const wait = ms => new Promise(r => setTimeout(r, ms));
 /* a box's overflow both ways (jsdom keeps the shorthand apart from the longhands), the box a table
    scrolls in at a desktop width (it or one between it and its card: jsdom reads only the rules a
@@ -601,26 +605,51 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const built = hold('made-up lines');
       chk(built >= 2, 'with a made-up line on every starter, fewer than two tiers were built');
       const t = w.eval('getPbTiers()').tiers.filter(x => x.legs).slice(-1)[0];
+      /* the Bet amount box, at the top of the panel's controls: an amount of the visitor's own,
+         which every tier (the panel's four and the Elo picks') pays on as it is typed, which a bad
+         entry does not move, and which is kept as the builder's stake is */
+      const box = d.getElementById('pbStake'), stake0 = w.eval('S.stake');
+      const tierOf = id => (/^elo/.test(id) ? ((typeof w.eloPicks === 'function' && w.eloPicks()) || { tiers: [] }) : w.eval('getPbTiers()')).tiers.find(x => x.id === id && x.legs);
+      const paysAll = s => { const cards = [...d.querySelectorAll('#pbPanel [data-pb-tier]')];
+        return cards.length > 0 && cards.every(c => { const tc = tierOf(c.dataset.pbTier), p = c.querySelector('[data-pb-pay]');
+          return !!tc && !!p && +p.dataset.pbPay === tc.dec && txt(p.querySelector('b')) === money(s * tc.dec) && txt(p.querySelector('span')) === amtTxt(s) + ' pays'; }); };
+      const paysTxt = () => [...d.querySelectorAll('#pbPanel .pb-nums div:last-child')].map(x => [...x.children].map(txt).join(' ')).join(' / ');
+      chk(!!box && box.type === 'number' && box.getAttribute('inputmode') === 'decimal' && box.closest('.pb-row') === panel.querySelector('.pb-ctl > .pb-row') && box.value === String(stake0) && paysAll(stake0),
+        'the suggested parlays have no Bet amount box at the top of their controls, showing the builder\'s stake that every tier pays on: ' + (box ? box.outerHTML : 'no box') + ' / ' + paysTxt());
+      if (box) {
+        box.value = '35'; box.dispatchEvent(new w.Event('input'));
+        chk(w.eval('S.stake') === 35 && paysAll(35), 'typed $35 in the Bet amount box, the tiers do not pay $35 times their price: ' + paysTxt());
+        box.dispatchEvent(new w.Event('change')); await wait(20);
+        for (const bad of ['', '-3', '0']) { const b = d.getElementById('pbStake'); b.value = bad; b.dispatchEvent(new w.Event('input')); b.dispatchEvent(new w.Event('change')); await wait(10);
+          chk(w.eval('S.stake') === 35 && d.getElementById('pbStake').value === '35' && paysAll(35) && !/NaN/.test(txt(panel) + txt(pb)), `"${bad}" in the Bet amount box moved the amount off $35, or drew NaN: ` + paysTxt()); }
+        await wait(400);
+        chk(JSON.parse(w.localStorage.getItem(PROP_KEY)).stake === 35, 'the Bet amount is not saved with the prop model\'s state'); }
+      const AMT = box ? 35 : stake0;
       if (t) {
-        /* Add to builder: exactly the tier's legs, and the builder prices them as the tier did */
+        /* Add to builder: exactly the tier's legs, and the builder prices them as the tier did, on the amount in the box */
         const keepP = w.eval('JSON.stringify(S.parlay)');
         d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`).click(); await wait(60);
         const P = w.eval('S').parlay, q = w.PARLAY_CARD.quote();
         chk(Object.keys(P).length === t.n && t.legs.every(l => P[l.key] && P[l.key].k === l.k && P[l.key].side === l.side) && q && Math.abs(q.pr.corr - t.corr) < 1e-12 && Math.abs(q.useDec - t.dec) < 1e-9,
           'Add to builder did not put exactly the tier\'s legs in the builder at the tier\'s chance and price');
+        chk(!!q && q.stake === AMT && (d.getElementById('pStake') || {}).value === String(AMT) && Math.abs(q.payout - AMT * t.dec) < 1e-6 && txt(d.querySelector('#parlayBody .bigp .payout')) === '$' + (AMT * q.useDec).toFixed(2),
+          `Add to builder did not carry the Bet amount: the builder is on ${q ? q.stake : 'nothing'} and pays ${q ? q.payout : '-'}, the tier ${money(AMT * t.dec)} on ${amtTxt(AMT)}`);
         chk(/In the builder/.test(txt(d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`))), 'the tier does not say it is in the builder');
         w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40);
-        /* Finish: the parlay card for the tier, on its $10, saving nothing */
+        /* Finish: the parlay card for the tier, on the amount in the box, saving nothing */
         const n0 = w.eval('S.saved.length'), keys0 = JSON.stringify(Object.keys(w.localStorage).sort());
         const fb = d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`); fb.click(); await wait(40);
-        const view = d.getElementById('pcView');
+        const view = d.getElementById('pcView'), cash = [...view.querySelectorAll('.pc-money b')].map(txt).join(' | ');
         chk(!d.getElementById('pcModal').hidden && new RegExp(t.label + ' parlay', 'i').test(txt(view)) && t.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
-          && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−') && txt(view).includes('Model’s chance all ' + t.n + ' land ' + (t.corr * 100).toFixed(1) + '%')
-          && txt(view.querySelector('.pc-money b')) === '$10.00', `Finish on the ${t.label} tier does not open its card with its legs, price, chance and $10: ` + txt(view).slice(0, 200));
+          && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−') && txt(view).includes('Model’s chance all ' + t.n + ' land ' + (t.corr * 100).toFixed(1) + '%'),
+          `Finish on the ${t.label} tier does not open its card with its legs, price and chance: ` + txt(view).slice(0, 200));
+        chk(cash === [money(AMT), money(AMT * t.dec), '+' + money(AMT * t.dec - AMT)].join(' | '),
+          `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
         w.eval('PARLAY_CARD.close()'); await wait(20);
         chk(d.getElementById('pcModal').hidden && d.activeElement === d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`), 'closing the card did not give the focus back to the tier\'s Finish');
         await wait(400);
         chk(w.eval('S.saved.length') === n0 && JSON.stringify(Object.keys(w.localStorage).sort()) === keys0, 'finishing a suggested tier saved it, or wrote a key'); }
+      w.eval(`S.stake=${JSON.stringify(stake0)}; save(); renderParlay()`); await wait(40);
       /* a game that kicks off leaves the list and every tier, without a reload */
       { const g0 = w.eval('pbGames()')[0], k0 = w.eval('kickoff')(g0).getTime(), D0 = w.Date, shift = k0 + 60e3 - D0.now();
         w.Date = class extends D0 { constructor(...a) { if (a.length) super(...a); else super(D0.now() + shift); } static now() { return D0.now() + shift; } };
@@ -965,6 +994,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
         chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not a section of the suggested parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
+        /* the Elo picks pay on the panel's Bet amount too, as it is typed */
+        const eloStake0 = w.eval('S.stake'), amtBox = d.getElementById('pbStake');
+        if (amtBox) { amtBox.value = '12.5'; amtBox.dispatchEvent(new w.Event('input')); amtBox.dispatchEvent(new w.Event('change')); await wait(20); }
+        const eloAmt = amtBox ? 12.5 : eloStake0;
+        chk(!!amtBox && [t2, t3].every(t => { const p = card.querySelector(`[data-pb-tier="${t.id}"] [data-pb-pay]`);
+          return !!p && +p.dataset.pbPay === t.dec && txt(p.querySelector('b')) === money(12.5 * t.dec) && txt(p.querySelector('span')) === '$12.50 pays'; }),
+          'the Elo picks do not pay the Bet amount ($12.50) times their price: ' + [...card.querySelectorAll('.pb-nums div:last-child')].map(x => [...x.children].map(txt).join(' ')).join(' / '));
         /* Add to builder puts exactly those legs in the builder */
         { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = card.querySelector('[data-pb-elo-add="elo2"]');
           if (ab) { ab.click(); await wait(40); const P = w.eval('S').parlay;
@@ -979,8 +1015,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(!d.getElementById('pcModal').hidden && /Elo pick/i.test(txt(view)) && t2.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
             && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t2.dec}))`).replace('-', '\u2212') && txt(view).includes('Elo\u2019s chance all 2 land ' + (t2.p * 100).toFixed(1) + '%'),
             'an Elo pick\'s card is not its legs, its price and its Elo chance: ' + txt(view));
+          { const cash = [...view.querySelectorAll('.pc-money b')].map(txt).join(' | ');
+            chk(cash === [money(eloAmt), money(eloAmt * t2.dec), '+' + money(eloAmt * t2.dec - eloAmt)].join(' | '), `an Elo pick's card is not on the Bet amount: ${cash} for ${amtTxt(eloAmt)} at ${t2.dec}`); }
           w.eval('PARLAY_CARD.close()'); }
         chk(w.eval('S.saved.length') === nSaved, 'finishing an Elo pick saved it');
+        w.eval(`S.stake=${JSON.stringify(eloStake0)}; save(); renderParlay()`); await wait(20);
       } else chk(false, 'the smoke could not find the matchups it needs for Elo picks');
       /* a player's window: a click on his row in the rankings opens his rating and his matchup this week, a row a stat */
       { const plOpen = () => { const m = d.getElementById('pePlModal'); return !!m && !m.hidden; };
@@ -1171,14 +1210,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(sel() === last && inBar(last), 'a tab tapped at the bar\'s cut-off edge is not brought into it'); }
     chk(T.w.__vscroll === 0, 'bringing a tab into the bar scrolled the page, not the bar');
     T.w.close(); }
-  /* ---- the suggested parlays' choices are the visitor's own, and come back with the page ---- */
-  { const pb = { k: { ml: false, ats: false, total: false, over: true, under: true }, off: [], gx: false };
-    const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: 20, ui: { pb } })) });
+  /* ---- the suggested parlays' choices and the amount bet are the visitor's own, and come back
+     with the page; a saved amount that is not one reads as $20 ---- */
+  for (const [saved, want] of [[12.5, 12.5], ['<b>', 20]]) {
+    const pb = { k: { ml: false, ats: false, total: false, over: true, under: true }, off: [], gx: false };
+    const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { seed: w2 => w2.localStorage.setItem(PROP_KEY, JSON.stringify({ stake: saved, ui: { pb } })) });
     await wait(300);
-    const P = R.d.getElementById('pbPanel'), on = R.d.querySelector('#pbPanel [data-pb-mix].on');
+    const P = R.d.getElementById('pbPanel'), on = R.d.querySelector('#pbPanel [data-pb-mix].on'), games = R.w.eval('typeof pbGames') === 'function' ? R.w.eval('pbGames()').length : 0;
     chk(!R.timedOut && R.errs.length === 0 && JSON.stringify(R.w.eval('S').ui.pb) === JSON.stringify(pb), 'the suggested parlays\' saved choices did not come back with the page: ' + JSON.stringify(R.w.eval('S').ui.pb));
-    chk(R.w.eval('typeof pbGames') === 'function' && (!R.w.eval('pbGames()').length) || (!!on && on.dataset.pbMix === 'players' && [...P.querySelectorAll('[data-pb-kind]')].every(cb => cb.checked === ['over', 'under'].includes(cb.dataset.pbKind)) && !P.querySelector('details.pb-games').open),
+    chk(R.w.eval('typeof pbGames') === 'function' && (!games) || (!!on && on.dataset.pbMix === 'players' && [...P.querySelectorAll('[data-pb-kind]')].every(cb => cb.checked === ['over', 'under'].includes(cb.dataset.pbKind)) && !P.querySelector('details.pb-games').open),
       'the panel does not open on the visitor\'s own choices (Players only, the games list shut)');
+    { const box = R.d.getElementById('pbStake'), shown = want % 1 ? want.toFixed(2) : String(want);
+      chk(R.w.eval('S').stake === want && (!games || (!!box && box.value === shown)) && !/NaN/.test(txt(P)),
+        `a saved amount of ${JSON.stringify(saved)} came back as ${JSON.stringify(R.w.eval('S').stake)}, the Bet amount box showing ${box ? JSON.stringify(box.value) : 'nothing'}, not ${shown}`); }
     R.w.close(); }
 
   /* ---- the X Bet Log is the file: the three weeks carried over from the retired store ($100

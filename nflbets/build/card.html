@@ -14,7 +14,8 @@
      Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
      this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
      over clears it. A suggested parlay (a tier of the Parlay Builder's suggestions, or one of its
-     Elo picks) is finished the same way, from its own Finish button, on the $10 its tier shows.
+     Elo picks) is finished the same way, from its own Finish button, on the amount in the panel's
+     Bet amount box, which is the builder's own stake (pbStake()) and the one its tier pays on.
 
      The builder's numbers are the builder's own: build.js lifts its pricing block out of
      renderParlay in props/build/part3.js into quote() below (the /*QUOTE*/ slot), so the card's
@@ -139,8 +140,8 @@ window.PARLAY_CARD=(function(){
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',stake:q.stake});
   }
-  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the stake
-     its tier shows (PB_STAKE, $10) */
+  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the amount
+     its tier pays on: the Bet amount box, which is the builder's own stake (pbStake) */
   function fromTier(kind,id){
     let t=null;
     try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
@@ -148,7 +149,7 @@ window.PARLAY_CARD=(function(){
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
-      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:typeof PB_STAKE==='number'?PB_STAKE:10});
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:pbStake()});
   }
 
   /* ---- the window ---- */
