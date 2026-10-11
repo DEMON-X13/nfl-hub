@@ -44,7 +44,7 @@ for f in found:
     if f['link'] and 'outcomes=' in f['link']:
         u = urllib.parse.urlsplit(f['link'])
         base = base or urllib.parse.urlunsplit((u.scheme, u.netloc, u.path, '', ''))
-        ids += urllib.parse.parse_qs(u.query)['outcomes'][0].split('+')
+        ids.append(urllib.parse.quote(f['sid'], safe=''))  # '#' in an id must stay %23
 combined = f"{base}?outcomes={'+'.join(ids)}" if ids else None
 print('combined', combined)
 
