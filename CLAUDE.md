@@ -243,8 +243,9 @@ hourly" slot fires about six times a day with gaps of up to 8 hours: a backgroun
 an hourly promise. It runs `update.js`, `joker.py`, `broly.py` (each model step may fail alone:
 its last good picks stay, `modelStatus` says why on the Pick'em Record), the game-totals shadow
 (`props/research/totals/shadow.py` and its check, which may fail alone too; see the game totals under
-Props) and `smoke.js` (which builds the app itself), commits `betting/state.json` and the shadow's
-ledger, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
+Props), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, which may
+fail alone and then puts the file back; see "X's parlays and the X Bet Log") and `smoke.js` (which builds
+the app itself), commits `betting/state.json`, the shadow's ledger and `liveparlays/parlays.json`, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
 job reads nflverse, not this state), so Team Rankings' Elo does not wait for the Elo job's own late slot.
 The **Broly Model** (`betting/broly/`) is the betting line plus six team stats: points per game,
 points allowed, turnover differential, third-down rate, red-zone touchdown rate and yards per
@@ -544,7 +545,8 @@ front of it as its own `pk-` prefixed section, and the X Parlays section lifted 
 `liveparlays/build/page.html` into a section of its own, `tab-xparlays` (styles scoped to `#lpCard`,
 script in a closure): X's card (`#lpCard`, X's placed parlays from `liveparlays/parlays.json`, read
 only, a parlay marked `cleared` left out, a quiet line under the heading saying when the file last
-changed) and nothing else.
+changed; a settled parlay, gone or with every game over, last and in full under Finished, which says
+each clears itself the day after its last game) and nothing else.
 
 The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
 in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). At the top of its controls is
@@ -755,7 +757,13 @@ may quietly outrank what the job published:
     the slip the owner sends in chat (the game, each leg's player, team, stat, line and side, the
     stake, the price and the payout; the file's `how` says how each is written), corrects a line
     the book moved by writing the line X took, and marks a parlay the owner no longer wants on the
-    page `"cleared": true`, which keeps it in the file as history and off the page.
+    page `"cleared": true`, which keeps it in the file as history and off the page. A finished
+    parlay clears itself (the owner's call, October 2026): the betting job's
+    `liveparlays/tools/autoclear.py` marks it `"cleared": true` (with `cleared_on` and
+    `cleared_by: "auto"`) once every game has a final in games.csv and two Eastern days have begun
+    since its last game, so it shows in full on its game day and the next; `test_autoclear.py` is its
+    test. The file is written with `json.dumps(indent=1, ensure_ascii=False)`, its own style, so a
+    clear is a small diff; write it the same way by hand.
   - `liveparlays/xbets.json` is the X Bet Log: `season`, `deposit` and `weeks` (`w1` to `w22`, each
     `staked`, `returned` and an optional plain-text `note`), plus `updated`. Claude adds or changes
     a week from what the owner sends (the week, what was staked, what came back).

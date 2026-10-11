@@ -713,13 +713,6 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 #lpCard .lp-win:first-child{margin-top:4px}
 #lpCard .lp-win b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink)}
 #lpCard .lp-win span{font-size:12px;color:var(--muted)}
-#lpCard .lp-settled{margin:18px 0 0;border-top:1px solid var(--line)}
-#lpCard .lp-settled>summary{display:flex;align-items:baseline;gap:10px;cursor:pointer;list-style:none;padding:12px 0 8px;min-height:44px;box-sizing:border-box}
-#lpCard .lp-settled>summary::-webkit-details-marker{display:none}
-#lpCard .lp-settled>summary::after{content:"Show";margin-left:auto;font-size:12px;font-weight:600;color:var(--ink-2)}
-#lpCard .lp-settled[open]>summary::after{content:"Hide"}
-#lpCard .lp-settled>summary b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink)}
-#lpCard .lp-settled>summary span{font-size:12px;color:var(--muted)}
 #lpCard .lp-quiet{font-size:13px;color:var(--muted);margin:4px 0 0}
 #lpCard .sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
 #lpCard .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
@@ -4513,7 +4506,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='7eedc6b';
+const PAGE_HASH='2ab3ec1';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -4837,13 +4830,11 @@ function legRow(l){
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
 /* settled: a leg has missed (the parlay is gone, whatever is still to play) or every game is over.
-   Settled parlays leave the live list for the fold at its foot, shut until a viewer opens it, so a
-   dead ticket is out of the way on every device with nothing to press; the fold stays as the
-   viewer left it while the page is open (SETTLED_OPEN, never saved). Taking one off the page for
-   good is the file's "cleared". */
+   Settled parlays go last, in full, under Finished, so the day's results stay in view; each clears
+   itself two Eastern days after its last game, when the betting job marks it "cleared" in the file
+   (liveparlays/tools/autoclear.py), and from then on no device draws it. */
 const isGone=p=>p.legs.some(l=>{ const r=liveFor(l); return r&&r.state==='missed'; });
 const isSettled=p=>isDone(p)||isGone(p);
-let SETTLED_OPEN=false;
 function draw(){
   drawList();
   foot();
@@ -4877,13 +4868,13 @@ function drawList(){
   const sorted=ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); });
   const nSettled=sorted.filter(isSettled).length;
   if(nSettled===sorted.length) html+='<p class="lp-quiet">None of X’s parlays is still live.</p>';
-  let lastKey, folded=false;
+  let lastKey;
   for(const p of sorted){
     const s0=startsAt(p), w0=winOf(s0), w1=winOf(endsAt(p));
     const key=isSettled(p)?'settled':(w0?w0.key:'none');
     if(key!==lastKey){
       lastKey=key;
-      html+=key==='settled'?(folded=true,`<details class="lp-settled" id="lpSettled"${SETTLED_OPEN?' open':''}><summary><b>Settled</b><span>${nSettled} parlay${nSettled===1?'':'s'} · gone, or every game over</span></summary>`)
+      html+=key==='settled'?`<div class="lp-win lp-done"><b>Finished</b><span>${nSettled} · each clears itself the day after its last game</span></div>`
         :key==='none'?'<div class="lp-win"><b>Kickoff not known yet</b></div>'
         :`<div class="lp-win"><b>${esc(w0.day)} ${w0.w} games</b><span>first kickoff ${esc(localT(s0))}</span></div>`;
     }
@@ -4908,10 +4899,7 @@ function drawList(){
       ${gameStrip(p)}
       ${p.legs.map(legRow).join('')}</div>`;
   }
-  if(folded) html+='</details>';
   app.innerHTML=html;
-  const fold=document.getElementById('lpSettled');
-  if(fold) fold.addEventListener('toggle',()=>{ SETTLED_OPEN=fold.open; });
 }
 /* the live stamp (when the scores were last read) and, under the heading, when X's parlays
    last changed: the file's own word for it */
