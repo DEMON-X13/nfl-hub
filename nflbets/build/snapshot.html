@@ -58,6 +58,12 @@
 /* one type scale: 11 (labels), 13 (notes, summaries), 15 (text), 18 (titles, answers), 22 (the
    headline and records), 30 (the score); a phone takes the top two down to 20 and 26 */
 #gsModal{--gs-t1:11px;--gs-t2:13px;--gs-t3:15px;--gs-t4:18px;--gs-t5:22px;--gs-t6:30px;--gs-th:64px}
+/* red text on the red tint (the Upset chip, the out badge, a team's players-out heading) a shade
+   darker than the page's red, which reads at 4.4:1 there; this is 5.3:1 (6.6 on white). The
+   preview's dark theme sets its own */
+#gsModal{--gs-miss-ink:#A93226}
+/* the Big mismatch grade's green (the ELO tab's) is 4:1 on white; a shade darker reads at 4.9 */
+#gsModal .pe-g3{color:#2E8050!important}
 #gsModal .modal-panel{max-width:1000px;padding:0 0 24px;overflow:visible;margin-top:28px}
 #gsModal button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .gs-top{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;height:var(--gs-th);box-sizing:border-box;padding:0 20px;background:var(--bg-2);border-bottom:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0}
@@ -135,7 +141,7 @@
 .gs-favsub{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:8px 0 0;font-size:var(--gs-t3);color:var(--ink-2)}
 .gs-favsub b{color:var(--ink);font-weight:700}
 .gs-res{display:inline-flex;align-items:center;gap:5px;font-family:var(--body);font-size:var(--gs-t1);font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line-2);color:var(--ink-2)}
-.gs-res.gs-ok{color:var(--pick);background:var(--pick-soft);border-color:transparent} .gs-res.gs-bad{color:var(--miss);background:var(--miss-soft);border-color:transparent}
+.gs-res.gs-ok{color:var(--pick);background:var(--pick-soft);border-color:transparent} .gs-res.gs-bad{color:var(--gs-miss-ink);background:var(--miss-soft);border-color:transparent}
 .gs-split{display:flex;align-items:center;gap:10px;margin:14px 0 0}
 .gs-split .pk-prob{flex:1;min-width:0;height:26px}
 .gs-split .gs-slab{font-family:var(--display);font-size:var(--gs-t2);font-weight:700;color:var(--muted);min-width:34px;text-align:center}
@@ -172,14 +178,14 @@
 
 /* ---- a folded card: its title, a badge and a one-line summary on a button, the body under it ---- */
 .gs-dbar{display:flex;align-items:center;gap:10px;margin:24px 2px 10px}
-.gs-dbar .gs-lab{flex:1}
+.gs-dbar .gs-lab{flex:1;color:var(--ink-2)}
 .gs-dbar .btn{min-height:44px;padding:7px 16px;font-size:var(--gs-t2);font-weight:600}
 #gsModal .gs-shead{margin:0;font:inherit}
 .gs-tog{display:flex;align-items:center;gap:4px 12px;width:100%;min-height:60px;padding:14px 20px;background:none;border:0;border-radius:var(--r-lg);cursor:pointer;text-align:left;color:var(--ink);flex-wrap:wrap}
 .gs-tog:hover .gs-ttl{text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
 .gs-ttl{font-family:var(--display);font-size:var(--gs-t4);font-weight:600;letter-spacing:-.2px;color:var(--ink)}
 .gs-badge{display:inline-flex;align-items:center;font-size:var(--gs-t1);font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
-.gs-badge.gs-bout{background:var(--miss-soft);border-color:transparent;color:var(--miss)}
+.gs-badge.gs-bout{background:var(--miss-soft);border-color:transparent;color:var(--gs-miss-ink)}
 .gs-sum{flex:1 1 200px;min-width:0;font-size:var(--gs-t2);font-weight:500;color:var(--ink-2);line-height:1.6}
 .gs-sum .pk-ttag.pk-mini{vertical-align:0}
 .gs-sum b{color:var(--ink);font-weight:700}
@@ -269,7 +275,7 @@ table.gs-ut th.gs-uc,table.gs-ut td.gs-uc{text-align:right}
 .gs-outs>div{font-size:var(--gs-t2);color:var(--ink-2);line-height:1.55;min-width:0;padding:10px 12px;border-radius:var(--r-md);background:var(--panel-2);border:1px solid var(--line)}
 .gs-outs>div.gs-hasout{background:var(--miss-soft);border-color:transparent}
 .gs-outs h5{margin:0;font-size:var(--gs-t1);font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);display:flex;align-items:center;gap:8px}
-.gs-outs .gs-hasout h5{color:var(--miss);margin-bottom:6px}
+.gs-outs .gs-hasout h5{color:var(--gs-miss-ink);margin-bottom:6px}
 .gs-outs h5 .gs-none{text-transform:none;letter-spacing:0;font-weight:500;font-size:var(--gs-t2)}
 .gs-outs ul{margin:0;padding:0 0 0 16px}
 .gs-outs li{margin:0 0 4px}

@@ -661,7 +661,9 @@ Starters puts the ranked players out first, then Offense, Defense and Kicker tab
 while the page is open), each defensive unit's league rank at either end of its group's header. The
 side of every comparison with the edge wears one mark (`gs-better`): the higher rating, Elo and
 chance, the better rank, the higher season Elo of each pair of starters. One type scale (11, 13, 15,
-18, 22, 30px; a phone takes the top two to 20 and 26) and every control at least 44px tall. Opening a card, a fold or a tab never redraws
+18, 22, 30px; a phone takes the top two to 20 and 26), every control at least 44px tall, and every
+text at least 4.5:1 on its own background in both looks (red on the red tint is a darker red,
+`--gs-miss-ink`; the preview lifts the window's red and quiet text). Opening a card, a fold or a tab never redraws
 the window, and nothing of it is saved.
 It computes nothing of its own beyond the vote's counts and the Elo gap: the board
 hands it the season and its own Vegas call (`window.pkBoard`) and the ELO tab its one read of
@@ -670,7 +672,10 @@ ratings and lineups are the files as they stand now, and a file that did not loa
 matchups' week or a team whose lineup is for another game is said in its card while the rest draws.
 `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file (each number the
 verdict and the summaries add is marked `data-gs-n` and worked out there on its own, as are the edge
-marks, the stat pairs, the dissenters, the unit ranks in the Starters headers and the badges), the
+marks in the cards and on the verdict's Team Elo and Offense vs defense answers, the side each names
+with the edge, the stat pairs, the dissenters, the unit ranks in the Starters headers and the badges),
+the at-a-glance bars to the same numbers (each call's bar leaning toward its own pick, as far as its
+chance and in that team's colour, and the Vegas split bar each side's chance wide), the
 headline to the files and its confidence pill to the board's own, the header's game bar, on a game
 to come, a final on the scoreboard, a graded game and a playoff game, with a file missing; every
 number is read with the cards, the stats fold and the Starters tabs as they open (folded or not

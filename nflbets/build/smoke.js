@@ -1381,7 +1381,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    fold (the stats behind the units) or a Starters tab not shown is still the file's; the Starters
    tabs (Offense, Defense, Kicker) hold every group in its tab, move on the arrow keys and keep the
    choice; the edge mark sits on the higher season Elo of each pair of starters and the better unit
-   rank in each defensive group's header, nowhere else; the badges count the players out and the
+   rank in each defensive group's header, nowhere else, and on the verdict's Team Elo and Offense vs
+   defense answers on the higher rating and the better rank of each meeting, the side with the edge
+   named; the bars are held to the same numbers (each call's lean toward its pick, its length and
+   colour, the split bar's two widths); the badges count the players out and the
    Mismatches; every control is at least 44px tall (the rules, again). With every game played
    (--season-over) there is no game to come, and the played-game checks carry it.
    ===================================================================================== */
@@ -1596,6 +1599,54 @@ async function snapshotChecks() {
             const [co, cd] = cells, best = co.e.rank != null && cd.e.rank != null && co.e.rank !== cd.e.rank ? (co.e.rank < cd.e.rank ? co : cd) : null;
             for (const c of cells) if (c.el && mark(c.el) !== (c === best)) bad.push(`${c.s}:${c.t}:${k} is${c === best ? ' not' : ''} marked`); } } }
       chk(bad.length === 0, `snapshot (${label}): an edge mark or a stat of Offense vs defense is not the files': ${bad.slice(0, 5).join('; ')}`); }
+
+    /* the at-a-glance visuals, held like the numbers, since a visitor reads the edge off them before
+       any number: each call's bar in Every call leans from 50/50 toward the side it picks (gs-toh to
+       the home side on the right, gs-toa to the away side on the left), in the picked team's colour,
+       as far as its chance for that side (a point of chance over 50 is a point of the track's width,
+       half of it at 100%); where the smoke cannot work the chance out (a Vegas pick from the spread
+       alone), the bar is held to the chance the row prints. The Vegas split bar under the headline
+       is each side's chance wide. The verdict's Team Elo answer marks the higher-rated team alone
+       (neither when level); its Offense vs defense answer marks the better rank of each offense and
+       defense that meet (neither on a tie) and names the side with the edge both ways, and each of
+       the card's two matchups names the side with its edge */
+    { const C = callsOf(g), bad = [], half = p => Math.max(0, Math.min(50, Math.round((p - 0.5) * 1000) / 10));
+      const rows = [...md.querySelectorAll('#gsCalls li.gs-call[data-pick]')];
+      for (const li of rows) { const id = li.dataset.gsModel, x = C[id], em = li.querySelector('.gs-track em');
+        if (!x || !em) { bad.push(`${id} ${em ? 'draws a bar the files have no call for' : 'has no bar'}`); continue; }
+        const toH = x.pick === h;
+        if (!em.classList.contains(toH ? 'gs-toh' : 'gs-toa') || em.classList.contains(toH ? 'gs-toa' : 'gs-toh'))
+          bad.push(`${id}'s bar leans ${em.classList.contains('gs-toh') ? 'home' : em.classList.contains('gs-toa') ? 'away' : 'nowhere'}, its pick ${x.pick} is ${toH ? 'home' : 'away'}`);
+        const shown = (txt(li.querySelector('[data-gs-p]')).match(/^(\d+)%$/) || [])[1];
+        if (x.p != null) { const w = half(x.p) + '%'; if (em.style.width !== w) bad.push(`${id}'s bar is ${em.style.width || 'no'} wide, its chance ${pc(x.p)} draws ${w}`); }
+        else if (shown != null && !(Math.abs(parseFloat(em.style.width) - Math.max(0, Math.min(50, +shown - 50))) <= 0.51)) bad.push(`${id}'s bar is ${em.style.width || 'no'} wide for the ${shown}% it prints`);
+        const col = typeof R.w.pkTagColor === 'function' ? R.w.pkTagColor(x.pick) : null;
+        if (col && em.style.getPropertyValue('--gs-tc') !== col) bad.push(`${id}'s bar is in ${em.style.getPropertyValue('--gs-tc') || 'no colour'}, ${x.pick}'s is ${col}`); }
+      for (const id of ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly']) if (C[id] && (C[id].pick === a || C[id].pick === h) && !rows.some(li => li.dataset.gsModel === id)) bad.push(`${id}'s call has no bar`);
+      /* the split bar: each side as wide as its chance */
+      if (C.vegas && C.vegas.p != null) { const pH = C.vegas.pick === h ? C.vegas.p : 1 - C.vegas.p, pa = Math.round((1 - pH) * 100);
+        const ba = q('#gsMatch .gs-split .pk-prob .pk-a'), bh = q('#gsMatch .gs-split .pk-prob .pk-h');
+        if (!ba || !bh || ba.style.width !== pa + '%' || bh.style.width !== (100 - pa) + '%') bad.push(`the split bar is ${a} ${ba ? ba.style.width : 'missing'}, ${h} ${bh ? bh.style.width : 'missing'}; Vegas has ${a} ${pa}%, ${h} ${100 - pa}%`); }
+      /* the verdict's Team Elo: the higher rating's box alone wears the mark */
+      const marks = (gl, pre) => [...(q(`#gsMatch [data-gs-gl="${gl}"]`) || { querySelectorAll: () => [] }).querySelectorAll('.gs-better')]
+        .map(el => { const n = el.querySelector(`[data-gs-n^="${pre}"]`); return n ? n.dataset.gsN : 'a box with no ' + pre; }).sort().join();
+      if (eloM.teams && eloM.teams[a] && eloM.teams[h]) { const ea = eloM.teams[a].elo, eh = eloM.teams[h].elo, hi = eh > ea ? h : ea > eh ? a : null, got = marks('elo', 'telo:');
+        if (got !== (hi ? 'telo:' + hi : '')) bad.push(`the verdict's Team Elo marks ${got || 'neither team'}, the higher rating is ${hi || 'neither (level)'}`); }
+      /* the verdict's Offense vs defense: the better rank of each meeting marked, the side with the
+         edge named; the card's matchups name theirs */
+      if (unitsOn && [['off', a], ['def', h], ['off', h], ['def', a]].every(([s, t]) => eloM.units[s][t])) { const U = eloM.units, want = [], who = [];
+        for (const [o, d] of [[a, h], [h, a]]) { const ro = U.off[o].rank, rd = U.def[d].rank, e = ro < rd ? 'off' : rd < ro ? 'def' : null;
+          if (e) want.push(e === 'off' ? 'urank:off:' + o : 'urank:def:' + d);
+          who.push({ e, t: e === 'off' ? o : e === 'def' ? d : null }); }
+        const got = marks('units', 'urank:');
+        if (got !== want.sort().join()) bad.push(`the verdict's Offense vs defense marks ${got || 'nothing'}, the better ranks are ${want.join() || 'level'}`);
+        const gv = q('#gsMatch [data-gs-gl="units"] .gs-gv'), [w1, w2] = who;
+        const head = w1.t && w1.t === w2.t ? `${w1.t} ranks higher both ways` : w1.e === 'off' && w2.e === 'off' ? 'Both offenses rank higher' : w1.e === 'def' && w2.e === 'def' ? 'Both defenses rank higher' : 'Even';
+        const tagT = gv && gv.querySelector('.pk-ttag') ? txt(gv.querySelector('.pk-ttag')) : '', words = gv ? txt(gv).slice(tagT.length).trim() : '';
+        if ((tagT ? `${tagT} ${words}` : words) !== head) bad.push(`the verdict's Offense vs defense reads '${txt(gv)}', the files make it '${head}'`);
+        const hs = [...md.querySelectorAll('#gsUnits .gs-unit h4 .gs-uedge')].map(x => txt(x)), hw = who.map(x => x.t ? `edge ${x.t} ${x.e === 'off' ? 'offense' : 'defense'}` : 'even');
+        if (hs.join('|') !== hw.join('|')) bad.push(`Offense vs defense's matchups name the edge '${hs.join("', '")}', the files '${hw.join("', '")}'`); }
+      chk(bad.length === 0, `snapshot (${label}): a bar or an edge mark of the verdict is not the files': ${bad.slice(0, 5).join('; ')}${bad.length > 5 ? ` (${bad.length} in all)` : ''}`); }
 
     /* the starters' edge marks: the higher season Elo of a pair, both ranked, wears the mark and
        nothing else on the row does; each defensive group's header carries both teams' unit as the

@@ -338,9 +338,13 @@ Mismatches in the game (the Props tab's own rows, `window.eloMismatches`, ranked
 each edge on the four-step meter with its legend); and when each file was published, with
 links that close the window and open Team Rankings, ELO Ratings, Props on this game and the Pick'em
 Record. One type scale (11, 13, 15, 18, 22 and 30px, custom properties on `#gsModal`; a phone takes
-the top two to 20 and 26) and every control at least 44px tall; the preview's dark theme lifts the
-lean bars' team colours toward white, the mismatch grades' colours and the window's muted text (to
-5:1 on its panels) so they read there. It computes nothing of its own beyond
+the top two to 20 and 26) and every control at least 44px tall; red text on the red tint (the Upset
+chip, the out badge and heading) is a darker red, `--gs-miss-ink` (5.3:1 there, against the page's
+red at 4.4:1), and the Big mismatch grade's green a shade darker than the ELO tab's (4.9:1 on white,
+against 4:1); the preview's dark theme lifts the lean bars' team colours toward white, the mismatch
+grades' colours, the board's Medium pill, the window's muted text (to 5:1 on its panels) and its red
+(`--miss` and `--gs-miss-ink` to #FF8AA3, 5.3:1 on the panels and 4.7:1 on the tint) so they read
+there: every text in the window, every card open, is at least 4.5:1 on what it sits on in both looks. It computes nothing of its own beyond
 the vote's counts and the Elo gap, each
 marked `data-gs-n` and held by the smoke: the board hands it the season as loaded, its Vegas call and
 where a game stands (`window.pkBoard`), and the Player Elo tab its one read of `elo/data/`
@@ -351,8 +355,12 @@ and the rest still draws. `smoke.js`'s last section (THE GAME SNAPSHOT) holds ev
 file, on a game to come, a final on the scoreboard, a graded game and a playoff game, with
 matchups.json or the ratings missing, read with the cards, the stats fold and the Starters tabs as
 the window opens (so a folded card or a tab not shown is held like the rest); the headline to the
-files and its confidence pill to the board's own; the dissenters, the badges, the edge marks among
-the starters and the unit ranks in their headers; the game bar; the answers' buttons, the folding,
+files and its confidence pill to the board's own; the dissenters, the badges, the edge marks in every
+card, among the starters and on the verdict's Team Elo and Offense vs defense answers (the higher
+rating, the better rank of each offense and defense that meet, the side named with the edge), and the
+unit ranks in their headers; the bars, to the same numbers (each call's bar leaning toward its pick,
+`gs-toh` home and `gs-toa` away, as far as its chance and in that team's colour; the split bar under
+the headline each side's Vegas chance wide); the game bar; the answers' buttons, the folding,
 the tabs' keys and kept choice, the Tab order and the 44px tap heights. The position table is `table-layout: fixed` (each team half
 the card) and its names wrap: laid out automatically, a long name set a column's width and pushed
 the home side past the card on 34 of week 4-6's 45 games at 390px. A player's Q sits inside his
