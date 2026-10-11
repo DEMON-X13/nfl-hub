@@ -1364,13 +1364,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    moneylines), the line, and the Mismatches, which must be the Props tab's own
    (window.eloMismatches, and the bubbles on the Props tab). It opens on a game to come, on a
    game final on the scoreboard and on a graded one; closes on Escape, Close and a click
-   outside; keeps Tab inside and hands the focus back; links to the full tabs; reads no Elo file
-   a second time; says so in each section when matchups.json, or the ratings, did not load while
-   the rest draws; draws a playoff game; lays the position table out fixed, names wrapping, and puts
-   every questionable starter's Q inside his own name's box in his team's column (the rules and the
-   structure, since jsdom lays nothing out); and gives its modal no top padding for the sticky
-   header to stick inside. With every game played (--season-over) there is no game to come, and the
-   played-game checks carry it.
+   outside; keeps Tab inside, in its order, and hands the focus back; links to the full tabs; reads
+   no Elo file a second time; says so in each section when matchups.json, or the ratings, did not
+   load while the rest draws; draws a playoff game; lays the position table out fixed, names
+   wrapping, and puts every questionable starter's Q inside his own name's box in his team's column
+   (the rules and the structure, since jsdom lays nothing out); and gives its modal no top padding
+   for the sticky header to stick inside.
+
+   The verdict is held as a visitor reads it: the headline (the Vegas favourite's nickname and the
+   spread it is favoured by, or once played the winner and whether it was an upset, the line under
+   it) and the confidence pill, which must be the board's own for that game; the model vote, Vegas
+   kept apart (how many of the five models agree with it, the dissenters named, the same count in
+   Every call's summary); the played-game note under the score; the header's one-line game bar;
+   each answer line a button that opens its card. The cards fold (Every call and Team strength
+   open on a wide screen, every card folded on a phone) and every number in a folded card, a folded
+   fold (the stats behind the units) or a Starters tab not shown is still the file's; the Starters
+   tabs (Offense, Defense, Kicker) hold every group in its tab, move on the arrow keys and keep the
+   choice; the edge mark sits on the higher season Elo of each pair of starters and the better unit
+   rank in each defensive group's header, nowhere else; the badges count the players out and the
+   Mismatches; every control is at least 44px tall (the rules, again). With every game played
+   (--season-over) there is no game to come, and the played-game checks carry it.
    ===================================================================================== */
 async function snapshotChecks() {
   const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
@@ -1454,12 +1467,12 @@ async function snapshotChecks() {
       const spTxt = sp == null ? '–' : sp > 0 ? `${h} −${sp}` : sp < 0 ? `${a} −${-sp}` : "Pick'em";
       chk(txt(q('[data-gs-spread]')) === spTxt, `snapshot (${label}): the spread reads ${txt(q('[data-gs-spread]'))}, the file's is ${spTxt}`);
       if (o && o.home && o.away) chk(txt(q('[data-gs-ml]')) === `${a} ${amer(o.away)} · ${h} ${amer(o.home)}`, `snapshot (${label}): the moneylines read ${txt(q('[data-gs-ml]'))}`); }
-    if (win !== undefined) chk(!!q('#gsPast') && /^\d+–\d+$/.test(txt(q('[data-gs-score]'))), `snapshot (${label}): a played game does not show its score and say the files are as they stand now`);
+    if (win !== undefined) chk(!!q('#gsPast') && /before kickoff/.test(txt(q('#gsPast'))) && /as they stand now/.test(txt(q('#gsPast'))) && /^\d+–\d+$/.test(txt(q('[data-gs-score]'))), `snapshot (${label}): a played game does not show its score and say the files are as they stand now`);
     else chk(!q('#gsPast') && !q('[data-gs-score]'), `snapshot (${label}): a game to come shows a score or says it was played`);
     /* every model's call */
     { const C = callsOf(g), bad = [];
       for (const id of ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly']) {
-        const tr = q(`tr[data-gs-model="${id}"]`), x = C[id];
+        const tr = q(`#gsCalls [data-gs-model="${id}"]`), x = C[id];
         if (!tr) { bad.push(id + ' has no row'); continue; }
         if (!x) { if (tr.dataset.pick) bad.push(`${id} shows ${tr.dataset.pick}, the files have no call`); continue; }
         if (tr.dataset.pick !== x.pick || txt(tr.querySelector('.pk-ttag')) !== x.pick) bad.push(`${id} picks ${tr.dataset.pick}, the files ${x.pick}`);
@@ -1489,7 +1502,8 @@ async function snapshotChecks() {
         if (want.some(pid => !shown.includes(pid)) || shown.some(pid => !all.includes(pid))) bad.push(`${t} shows ${shown.length} of its ${want.length} rated starters`); }
       let grp = null;
       for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
-        if (tr.classList.contains('gs-grp')) { grp = Object.keys(eloP.groups).find(k => eloP.groups[k].label === txt(tr)); continue; }
+        if (tr.classList.contains('gs-grp')) { grp = Object.keys(eloP.groups).find(k => eloP.groups[k].label === txt(tr.querySelector('[data-gs-glab]')));
+          if (!grp || tr.dataset.gsGrp !== grp) bad.push(`a group header reads '${txt(tr.querySelector('[data-gs-glab]'))}' for ${tr.dataset.gsGrp}`); continue; }
         for (const x of tr.querySelectorAll('.gs-pl[data-pid]')) { const e = eloP.players[x.dataset.pid];
           if (!!x.querySelector('.pe-q') !== !!(eloMu.q || {})[x.dataset.pid]) bad.push(`${e ? e.name : x.dataset.pid}'s Q is not the report's`);
           if (!e) { if (!/not rated yet/.test(txt(x))) bad.push(x.dataset.pid + ' is not said to be unrated'); continue; }
@@ -1525,14 +1539,17 @@ async function snapshotChecks() {
        landed once played), Vegas's chance on the split bar, the Team Elo gap and ranks, the
        units' ranks and the top mismatch -- and each one the files give must be shown */
     { const C = callsOf(g), want = {}, need = new Set(), bad = [];
-      const calls = ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly'].map(id => C[id]).filter(x => x && (x.pick === a || x.pick === h));
-      const nA = calls.filter(x => x.pick === a).length, nH = calls.length - nA, side = nH > nA ? h : nA > nH ? a : null;
+      const IDS = ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly'], on = x => x && (x.pick === a || x.pick === h);
+      const calls = IDS.map(id => C[id]).filter(on), vg = on(C.vegas) ? C.vegas : null, mods = IDS.slice(1).filter(id => on(C[id]));
+      const nA = mods.filter(id => C[id].pick === a).length, nH = mods.length - nA;
+      const base = vg ? vg.pick : nH > nA ? h : nA > nH ? a : null, dis = base ? mods.filter(id => C[id].pick !== base) : [];
       const put = (k, v, must = true) => { want[k] = v; if (must) need.add(k); };
-      if (calls.length) put('vote', side ? `${side === h ? nH : nA} of ${calls.length}` : `${nA}–${nH}`);
-      /* the average needs every call's chance: Vegas's from the spread alone is the board's own sum, not worked here */
-      if (side && !(C.vegas && C.vegas.p == null)) { const ps = calls.map(x => x.p == null ? null : x.pick === side ? x.p : 1 - x.p).filter(p => p != null);
-        if (ps.length) put('voteavg', pc(ps.reduce((s, p) => s + p, 0) / ps.length)); }
+      if (mods.length) put('vote', base ? `${mods.length - dis.length} of ${mods.length}` : `${nA}–${nH}`);
       if (win !== undefined && calls.length) put('votehit', `${calls.filter(x => (x.correct === true || x.correct === false ? x.correct : (win ? x.pick === win : null)) === true).length} of ${calls.length}`);
+      /* the models that do not agree, by name, and the vote shown twice (the verdict and Every call's summary) */
+      { const got = [...md.querySelectorAll('#gsMatch [data-gs-dissent]')].map(x => x.dataset.gsDissent).join();
+        if (base && mods.length && got !== dis.join()) bad.push(`the dissenters read '${got}', the files '${dis.join()}'`);
+        if (mods.length && md.querySelectorAll('[data-gs-n="vote"]').length < 2) bad.push('the vote is not in both the verdict and Every call\'s summary'); }
       if (C.vegas && C.vegas.p != null) { const pH = C.vegas.pick === h ? C.vegas.p : 1 - C.vegas.p, pa = Math.round((1 - pH) * 100);
         put('vconf', pc(C.vegas.p)); put('vaway', pa + '%', pa >= 14); put('vhome', (100 - pa) + '%', 100 - pa >= 14); }
       if (eloM.teams && eloM.teams[a] && eloM.teams[h]) { const ea = eloM.teams[a].elo, eh = eloM.teams[h].elo, hi = eh > ea ? h : ea > eh ? a : null;
@@ -1580,13 +1597,95 @@ async function snapshotChecks() {
             for (const c of cells) if (c.el && mark(c.el) !== (c === best)) bad.push(`${c.s}:${c.t}:${k} is${c === best ? ' not' : ''} marked`); } } }
       chk(bad.length === 0, `snapshot (${label}): an edge mark or a stat of Offense vs defense is not the files': ${bad.slice(0, 5).join('; ')}`); }
 
+    /* the starters' edge marks: the higher season Elo of a pair, both ranked, wears the mark and
+       nothing else on the row does; each defensive group's header carries both teams' unit as the
+       matchup formula ranks it (mu.league.defs, 1st the best), the better one marked */
+    { const bad = [], defs = (eloMu.league && eloMu.league.defs) || {}, nD = Object.keys(defs).length;
+      const urk = (t, u) => defs[t] ? Object.keys(defs).sort((x, y) => defs[y][u] - defs[x][u]).indexOf(t) + 1 : null;
+      let marks = 0, units = 0;
+      for (const tr of md.querySelectorAll('#gsPos tbody tr')) {
+        if (tr.classList.contains('gs-grp')) { const u = tr.dataset.gsGrp;
+          if (['DL', 'LB', 'DB'].includes(u) && nD) { const ra = urk(a, u), rh = urk(h, u), best = ra && rh && ra !== rh ? (ra < rh ? a : h) : null;
+            for (const [t, r] of [[a, ra], [h, rh]]) { const el = tr.querySelector(`[data-gs-def="${t}:${u}"]`);
+              if (!r) { if (el) bad.push(`${t} ${u} shows a unit rank the file has not`); continue; }
+              units++;
+              if (!el || txt(el) !== `${ordinal(r)} of ${nD}`) bad.push(`${t} ${u} unit reads '${txt(el)}', the file ${ordinal(r)} of ${nD}`);
+              else if (el.classList.contains('gs-better') !== (best === t)) bad.push(`${t} ${u} unit is${best === t ? ' not' : ''} marked`); } }
+          else if (tr.querySelector('[data-gs-def]')) bad.push(`${u} carries a unit rank`);
+          continue; }
+        const [ca, ch] = ['gs-a', 'gs-h'].map(c => tr.querySelector(`td.${c} .gs-pl[data-pid]`));
+        const se = el => { const e = el && eloP.players[el.dataset.pid]; return e && e.rank != null && e.se != null ? e.se : null; };
+        const sa = se(ca), sh = se(ch), best = sa != null && sh != null && sa !== sh ? (sa > sh ? ca : ch) : null;
+        for (const el of [ca, ch]) if (el) { const m = !!el.querySelector('.gs-better'); if (m) marks++;
+          if (m !== (el === best)) bad.push(`${(eloP.players[el.dataset.pid] || {}).name || el.dataset.pid} is${el === best ? ' not' : ''} marked`);
+          else if (m && !el.querySelector('.gs-pse.gs-better')) bad.push('a mark sits off a starter\'s Elo'); } }
+      chk(bad.length === 0 && (!md.querySelector('#gsPos .gs-pos') || marks > 0) && (!md.querySelector('#gsPos .gs-pos') || !nD || units > 0),
+        `snapshot (${label}): an edge mark or a unit rank among the starters is not the files' (${marks} marks, ${units} unit ranks): ${bad.slice(0, 5).join('; ')}`); }
+
+    /* the Starters tabs: every group in its own tab (Offense, Defense, Kicker), one panel shown, its
+       tab selected and the only one in the Tab order; the panels not shown still hold their players,
+       checked above with the rest */
+    if (md.querySelector('#gsPos .gs-pos')) { const bad = [], TAB = { QB: 'off', RB: 'off', WR: 'off', TE: 'off', K: 'k', DL: 'def', LB: 'def', DB: 'def' };
+      const tabs = [...md.querySelectorAll('#gsPos [role="tablist"] [role="tab"]')], panels = [...md.querySelectorAll('#gsPos [role="tabpanel"]')];
+      if (!tabs.length || tabs.length !== panels.length) bad.push(`${tabs.length} tabs for ${panels.length} panels`);
+      const shown = panels.filter(x => !x.hidden), sel = tabs.filter(t => t.getAttribute('aria-selected') === 'true');
+      if (shown.length !== 1 || sel.length !== 1 || sel[0].getAttribute('aria-controls') !== shown[0].id || shown[0].getAttribute('aria-labelledby') !== sel[0].id || sel[0].tabIndex !== 0 || tabs.some(t => t !== sel[0] && t.tabIndex !== -1))
+        bad.push('not one tab selected, alone in the Tab order, with its own panel shown');
+      for (const tr of md.querySelectorAll('#gsPos tr.gs-grp')) { const pn = tr.closest('[role="tabpanel"]');
+        if (!pn || pn.dataset.gsPanel !== TAB[tr.dataset.gsGrp]) bad.push(`${tr.dataset.gsGrp} is in the ${pn ? pn.dataset.gsPanel : 'no'} tab`); }
+      const hiddenPl = panels.filter(x => x.hidden).reduce((n, x) => n + x.querySelectorAll('.gs-pl[data-pid]').length, 0);
+      if (panels.length > 1 && !hiddenPl) bad.push('the tabs not shown hold no players');
+      chk(bad.length === 0, `snapshot (${label}): the Starters tabs are not one per side of the ball with every group in its own: ${bad.join('; ')}`); }
+
+    /* the badges count what their cards hold: the ranked players out, and the Mismatches shown */
+    { const outs = [a, h].reduce((n, t) => n + Object.keys(eloP.groups).flatMap(k => (eloP.groups[k].sidelined || []).filter(x => x.team === t)).length, 0);
+      const b = q('#gsPos [data-gs-badge="out"]'), mm = q('#gsMism [data-gs-badge="mism"]'), li = md.querySelectorAll('#gsMism li[data-pid]').length;
+      chk((outs ? !!b && txt(b) === `${outs} out` && !!b.closest('.gs-shead') : !b) && (li ? !!mm && txt(mm) === `${li} in this game` && !!mm.closest('.gs-shead') : !mm),
+        `snapshot (${label}): a card's badge does not count what the card holds: '${txt(b)}' for ${outs} out, '${txt(mm)}' for ${li} mismatches`); }
+
+    /* the headline as a visitor reads it: the favourite's nickname and the spread it is favoured by,
+       or once played the winner, whether it was an upset, and the line under it; the confidence pill
+       is the board's own for this game; a played game's note sits under the score, ahead of the line */
+    { const v = callsOf(g).vegas, bad = [], NAMES = R.w.eval('TEAM_NAMES'), nick = t => NAMES[t] || t, head = txt(q('#gsMatch .gs-favt'));
+      const sp = g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null, spSide = sp == null || sp === 0 ? null : sp > 0 ? h : a;
+      if (v) { const by = spSide === v.pick ? ` by ${Math.abs(sp)}` : '';
+        if (win === undefined) { if (!head.startsWith(`${v.pick} ${nick(v.pick)} favoured${by}`)) bad.push(`the headline reads '${head}', not ${nick(v.pick)} favoured${by}`); }
+        else { if (win ? !head.startsWith(`${win} ${nick(win)} won`) : !/^A tie/.test(head)) bad.push(`the headline reads '${head}'`);
+          const up = q('#gsMatch [data-gs-upset]'), want = win == null ? 'tie' : win === v.pick ? 'no' : 'yes';
+          if (!up || up.dataset.gsUpset !== want || (want === 'yes') !== /Upset/.test(txt(up))) bad.push(`the result chip reads '${txt(up)}', the result is ${want === 'yes' ? 'an upset' : want}`);
+          if (!txt(q('#gsMatch .gs-favsub')).startsWith(`${v.pick} was favoured${by}`)) bad.push(`the line under it reads '${txt(q('#gsMatch .gs-favsub'))}'`); }
+        const mine = q('#gsMatch .gs-favp .pk-tier'), board = R.d.querySelector(`.pk-game[data-game="${g.game_id}"] .pk-conf .pk-tier`);
+        if (v.p != null && (!mine || !board || txt(board) !== `${txt(mine)} ${pc(v.p)}`)) bad.push(`the confidence pill reads '${txt(mine)}', the board's '${txt(board)}'`); }
+      if (win !== undefined && (!q('#gsPast') || q('#gsMatch .gs-when').nextElementSibling !== q('#gsPast'))) bad.push('the played note is not under the score');
+      chk(bad.length === 0, `snapshot (${label}): the headline is not the files' or the board's: ${bad.join('; ')}`); }
+
+    /* the header's game bar (shown once the verdict's line scrolls away): the score, or each team's
+       record and the spread; hidden from a screen reader, the dialog keeps its title */
+    { const mini = q('#gsMini'), o = txt(q('[data-gs-score]')), word = / vs /.test(txt(R.d.getElementById('gsTitle'))) ? 'vs' : 'at';
+      const sp = g.spread_line != null && isFinite(g.spread_line) ? +g.spread_line : null, spTxt = sp == null ? '' : sp > 0 ? `${h} −${sp}` : sp < 0 ? `${a} −${-sp}` : "Pick'em";
+      const want = win !== undefined ? `${a} ${o} ${h} | Final` : `${a} ${recOf(a)} ${word} ${h} ${recOf(h)}${spTxt ? ' | ' + spTxt : ''}`;
+      chk(!!mini && mini.getAttribute('aria-hidden') === 'true' && txt(mini) === want, `snapshot (${label}): the header's game bar reads '${txt(mini)}', the files '${want}'`); }
+
+    /* each answer of the verdict is a button that opens its own card */
+    { const gl = [...md.querySelectorAll('#gsMatch [data-gs-gl]')], to = { vote: 'gsCalls', elo: 'gsTeams', units: 'gsUnits', out: 'gsPos', mism: 'gsMism' };
+      chk(gl.length === 5 && gl.every(b => b.tagName === 'BUTTON' && b.getAttribute('type') === 'button' && to[b.dataset.gsGl] === b.dataset.gsGoto),
+        `snapshot (${label}): the verdict's answers are not each a button to its card: ${gl.map(b => b.tagName + ':' + b.dataset.gsGl + '>' + b.dataset.gsGoto).join(' ')}`); }
+
     /* every card folds: a button with its title and summary, aria-expanded and aria-controls
-       naming its body, the body hidden exactly when the button says it is closed */
-    { const bad = [];
+       naming its body, the body hidden exactly when the button says it is closed; on a wide screen
+       Every call and Team strength open and the rest folded, and the numbers held above were read
+       from the folded cards, the folded stats and the Starters tabs not shown */
+    { const bad = [], WIDE = ['gsCalls', 'gsTeams'];
       for (const id of SNAP_CARDS) { const sec = q('#' + id), b = sec && sec.querySelector('.gs-shead > button[data-gs-fold]'), body = b && R.d.getElementById(b.getAttribute('aria-controls'));
         if (!b || !body || !sec.contains(body)) { bad.push(id + ' has no fold'); continue; }
         if ((b.getAttribute('aria-expanded') === 'true') === body.hidden) bad.push(`${id}: aria-expanded ${b.getAttribute('aria-expanded')} with its body ${body.hidden ? 'hidden' : 'shown'}`);
+        if (body.hidden === WIDE.includes(id)) bad.push(`${id} is ${body.hidden ? 'folded' : 'open'} on opening`);
         if (!txt(b.querySelector('.gs-sum'))) bad.push(id + ' has no summary'); }
+      const sub = q('#gsUnits [data-gs-sub]');
+      if (unitsOn && eloM.units.off[a] && eloM.units.def[h]) {
+        const ids = sub ? (sub.getAttribute('aria-controls') || '').split(/\s+/) : [];
+        if (!sub || sub.getAttribute('aria-expanded') !== 'false' || ids.length !== 2 || ids.some(id => !R.d.getElementById(id) || !R.d.getElementById(id).hidden || !R.d.getElementById(id).querySelector('[data-gs-stat]')))
+          bad.push('the stats behind the units are not folded under one button that names both tables'); }
       chk(bad.length === 0 && !q('#gsMatch [data-gs-fold]'), `snapshot (${label}): a card does not fold to its summary, or the verdict folds: ${bad.join('; ')}`); }
   };
 
@@ -1607,7 +1706,13 @@ async function snapshotChecks() {
     /* the page's modal pads its top, and a sticky header sticks inside that padding: the window's
        content showed in a band above its header once scrolled, so its modal has none */
     chk(rules.some(r => r.sel === '#gsModal' && !r.media && /^0(px)?$/.test(r.st.getPropertyValue('padding-top'))),
-      'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled'); }
+      'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled');
+    /* every control a thumb can hit is at least 44px tall at every width (48 for the verdict's
+       answers), set by its own rule and never lowered by a narrower screen's */
+    { const tall = [['#gsClose', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-more', 44], ['.gs-ptabs button', 44], ['.gs-links .btn', 44]];
+      const short = tall.filter(([sel, px]) => { const set = rules.filter(r => r.sel === sel && r.st.getPropertyValue('min-height'));
+        return !set.some(r => !r.media) || set.some(r => !(parseFloat(r.st.getPropertyValue('min-height')) >= px)); });
+      chk(short.length === 0, 'snapshot: a control in the window is under its tap height: ' + short.map(x => x[0]).join(', ')); } }
   /* every opened game carries the button, priced by the prop model or not */
   { const cards = [...R.d.querySelectorAll('.pk-game')].slice(0, 4);
     for (const c of cards) { c.click(); await wait(40); }
@@ -1623,12 +1728,17 @@ async function snapshotChecks() {
     chk(!!o.btn, `snapshot: the game to come (${toCome.game_id}) has no Game snapshot button`);
     if (o.btn) {
       hold(R, toCome, 'a game to come', undefined);
-      /* Tab stays inside, both ways */
-      { const md = o.md, f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.closest('[hidden]'));
+      /* Tab stays inside, both ways, and goes in the order a visitor reads: Close, the verdict's five
+         answers, Open all, then each card's title (an open card's insides after its title); a tab
+         the Starters card does not show, or one not chosen, is not in it */
+      { const md = o.md, f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.closest('[hidden]') && x.tabIndex !== -1);
         f[f.length - 1].focus(); f[f.length - 1].dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
         const wrapped = R.d.activeElement === f[0];
         f[0].dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
-        chk(f.length > 3 && wrapped && R.d.activeElement === f[f.length - 1], 'snapshot: Tab does not stay inside the window'); }
+        chk(f.length > 3 && wrapped && R.d.activeElement === f[f.length - 1], 'snapshot: Tab does not stay inside the window');
+        const key = x => x.id === 'gsClose' ? 'close' : x.dataset.gsGl ? 'gl:' + x.dataset.gsGl : x.dataset.gsAll ? 'all' : x.dataset.gsFold ? 'card:' + x.dataset.gsFold : null;
+        const order = f.map(key).filter(Boolean).join(), want = ['close', 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
+        chk(order === want && !f.some(x => x.getAttribute('role') === 'tab' && x.getAttribute('aria-selected') !== 'true'), `snapshot: the Tab order is not Close, the verdict, Open all and the cards: ${order}`); }
       /* Escape closes it, and the focus goes back to the button */
       R.d.getElementById('gsClose').focus();
       R.d.activeElement.dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
@@ -1639,17 +1749,20 @@ async function snapshotChecks() {
       const stays = !o.md.hidden;
       o.md.click(); await wait(20);
       chk(stays && o.md.hidden, 'snapshot: a click outside the window does not close it, or one inside does');
-      /* the cards fold and unfold: a click on a card's title, Open all and Close all; on a phone
-         (the narrow screen's media query) the window opens on the verdict with every card folded,
-         and Tab steps over a folded card's insides */
+      /* the cards fold and unfold: a click on a card's title, Open all and Close all, without the
+         window being drawn again; on a phone (the narrow screen's media query) the window opens on
+         the verdict with every card folded, and Tab steps over a folded card's insides */
       { const md = o.md, b = id => md.querySelector(`#${id} [data-gs-fold]`), shown = id => !R.d.getElementById(id + 'B').hidden, mm0 = R.w.matchMedia;
         o.btn.click(); await wait(60);
-        const ok1 = SNAP_CARDS.every(shown);
+        const keep = md.querySelector('#gsPos table.gs-pos');
+        const ok1 = ['gsCalls', 'gsTeams'].every(shown) && SNAP_CARDS.filter(x => !['gsCalls', 'gsTeams'].includes(x)).every(x => !shown(x));
         b('gsUnits').click();
-        const ok2 = !shown('gsUnits') && b('gsUnits').getAttribute('aria-expanded') === 'false' && SNAP_CARDS.filter(x => x !== 'gsUnits').every(shown);
+        const ok2 = shown('gsUnits') && b('gsUnits').getAttribute('aria-expanded') === 'true' && md.querySelector('#gsUnits').classList.contains('gs-open');
+        b('gsUnits').click();
+        const ok2b = !shown('gsUnits') && b('gsUnits').getAttribute('aria-expanded') === 'false';
         const all = md.querySelector('[data-gs-all]'), ok3 = !!all && all.dataset.gsAll === 'open';
-        all.click(); const ok4 = SNAP_CARDS.every(shown) && all.dataset.gsAll === 'close';
-        all.click(); const ok5 = SNAP_CARDS.every(id => !shown(id)) && !md.hidden;
+        all.click(); const ok4 = SNAP_CARDS.every(shown) && all.dataset.gsAll === 'close' && txt(all) === 'Close all';
+        all.click(); const ok5 = SNAP_CARDS.every(id => !shown(id)) && !md.hidden && txt(all) === 'Open all' && !!keep && keep.isConnected;
         R.d.getElementById('gsClose').click(); await wait(20);
         R.w.matchMedia = mq => ({ matches: /max-width/.test(mq), media: mq, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
         o.btn.click(); await wait(60);
@@ -1659,8 +1772,36 @@ async function snapshotChecks() {
         b('gsTeams').click(); const ok8 = shown('gsTeams') && SNAP_CARDS.filter(x => x !== 'gsTeams').every(id => !shown(id));
         R.w.matchMedia = mm0;
         R.d.getElementById('gsClose').click(); await wait(20);
-        chk(ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7 && ok8 && R.d.activeElement === o.btn,
-          `snapshot: the cards do not fold and unfold, or a phone does not open on the verdict with the cards folded (${[ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8].join(' ')})`); }
+        chk(ok1 && ok2 && ok2b && ok3 && ok4 && ok5 && ok6 && ok7 && ok8 && R.d.activeElement === o.btn,
+          `snapshot: the cards do not fold and unfold, or a phone does not open on the verdict with the cards folded (${[ok1, ok2, ok2b, ok3, ok4, ok5, ok6, ok7, ok8].join(' ')})`); }
+      /* an answer of the verdict opens its card, folded or not, and hands the focus to the card's
+         title; the stats behind the units open and close under their one button; the Starters tabs
+         answer a click, the arrow keys, Home and End, and the tab chosen stays chosen when the window
+         opens again; none of it draws the window again */
+      { const md = o.md, shown = id => !R.d.getElementById(id + 'B').hidden, bad = [];
+        o.btn.click(); await wait(60);
+        const keep = md.querySelector('#gsMatch');
+        for (const [gl, id] of [['out', 'gsPos'], ['vote', 'gsCalls'], ['mism', 'gsMism']]) {
+          md.querySelector(`[data-gs-gl="${gl}"]`).click(); await wait(10);
+          if (!shown(id) || md.querySelector(`#${id} [data-gs-fold]`).getAttribute('aria-expanded') !== 'true' || R.d.activeElement !== md.querySelector(`#${id} [data-gs-fold]`)) bad.push(`${gl} does not open ${id} and focus its title`); }
+        const sub = md.querySelector('[data-gs-sub]');
+        if (sub && unitsOn) { const bodies = () => sub.getAttribute('aria-controls').split(/\s+/).map(id => R.d.getElementById(id));
+          sub.click(); if (sub.getAttribute('aria-expanded') !== 'true' || bodies().some(x => x.hidden) || !/^Hide/.test(txt(sub))) bad.push('the stats behind the units do not open');
+          sub.click(); if (sub.getAttribute('aria-expanded') !== 'false' || bodies().some(x => !x.hidden) || !/^Show/.test(txt(sub))) bad.push('the stats behind the units do not close'); }
+        const tabs = () => [...md.querySelectorAll('#gsPos [role="tab"]')], sel = () => tabs().find(t => t.getAttribute('aria-selected') === 'true');
+        const panelOk = () => { const t = sel(); return !!t && [...md.querySelectorAll('#gsPos [role="tabpanel"]')].every(p => p.hidden === (p.id !== t.getAttribute('aria-controls'))); };
+        if (tabs().length > 1) {
+          tabs()[1].click(); if (sel() !== tabs()[1] || !panelOk()) bad.push('a click on a tab does not show its panel');
+          const key = k => sel().dispatchEvent(new R.w.KeyboardEvent('keydown', { key: k, bubbles: true }));
+          key('ArrowRight'); if (sel() !== tabs()[2 % tabs().length] || R.d.activeElement !== sel() || !panelOk()) bad.push('ArrowRight does not move to the next tab');
+          key('Home'); if (sel() !== tabs()[0] || R.d.activeElement !== sel() || !panelOk()) bad.push('Home does not move to the first tab');
+          key('ArrowLeft'); if (sel() !== tabs()[tabs().length - 1] || !panelOk()) bad.push('ArrowLeft does not wrap to the last tab');
+          key('End'); key('ArrowLeft'); const chosen = sel().dataset.gsTab;
+          R.d.getElementById('gsClose').click(); await wait(20); o.btn.click(); await wait(60);
+          if (sel().dataset.gsTab !== chosen || !panelOk()) bad.push('the tab chosen is not kept when the window opens again'); }
+        else if (!keep.isConnected) bad.push('a toggle drew the window again');
+        R.d.getElementById('gsClose').click(); await wait(20);
+        chk(bad.length === 0 && R.d.activeElement === o.btn, `snapshot: the verdict's answers, the stats fold or the Starters tabs do not work: ${bad.join('; ')}`); }
       /* the links: Team Rankings, then Props on this game */
       o.btn.click(); await wait(60);
       o.md.querySelector('[data-gs-go="ratings"]').click(); await wait(60);
@@ -1743,8 +1884,8 @@ async function snapshotChecks() {
     const M2 = await run(st, undefined, wk => scoreboard(st, wk), false, { seed: without(/elo\/data\/(model|players)\.json/) }); await wait(400);
     const o2 = await open(M2, any);
     chk(!!o2.btn && !o2.md.hidden && M2.errs.length === 0 && /did not load/.test(txt(o2.md.querySelector('#gsTeams'))) && /did not load/.test(txt(o2.md.querySelector('#gsUnits')))
-      && /did not load/.test(txt(o2.md.querySelector('#gsPos'))) && /did not load/.test(txt(o2.md.querySelector('tr[data-gs-model="elo"]')))
-      && txt(o2.md.querySelector(`[data-gs-rec="${any.home_team}"]`)) === recOf(any.home_team, false) && !!o2.md.querySelector('tr[data-gs-model="alpha"]'),
+      && /did not load/.test(txt(o2.md.querySelector('#gsPos'))) && /did not load/.test(txt(o2.md.querySelector('#gsCalls [data-gs-model="elo"]')))
+      && txt(o2.md.querySelector(`[data-gs-rec="${any.home_team}"]`)) === recOf(any.home_team, false) && !!o2.md.querySelector('#gsCalls [data-gs-model="alpha"][data-pick]'),
       'snapshot: with the ratings missing the window does not say so in each section and draw the matchup: ' + M2.errs.join('; '));
     M2.w.close();
   }

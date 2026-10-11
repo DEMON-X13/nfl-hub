@@ -96,6 +96,13 @@ html.embed body{background:transparent}
 polyline[stroke="#0F1B2D"]{stroke:#F6F7FB} circle[fill="#0F1B2D"]{fill:#F6F7FB}
 [style*="background:#0F1B2D"]{background:#F6F7FB!important}
 line[stroke="#E6EAEF"]{stroke:#3C4358}
+/* the Game snapshot: its quiet text lifted a step, so a 13px note reads at 5:1 on the panels
+   (the page's muted is 4:1 on panel-2) */
+#gsModal{--muted:#A3AABD}
+/* the mismatch grades' brown and green are the light page's, too dark here */
+#gsModal .pe-g2{color:#F2B84B!important} #gsModal .pe-g3{color:#7BD88F!important}
+/* and a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
+#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
 /* the preview says what it is */
 .pv-flag{display:inline-block;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--hot-soft);color:var(--hot-2);vertical-align:middle}
 @media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }

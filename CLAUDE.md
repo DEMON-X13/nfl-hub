@@ -642,24 +642,40 @@ each team's Power Rating, Overall Offense against Overall Defense both ways, eac
 starters position by position with their season Elo, rank, shield and Q as on the ELO Ratings tab
 (`lineups` in `matchups.json`) and its ranked players out, the Props tab's Mismatches in the game,
 when each file was published, and links to the full tabs. It reads at a glance first (the owner's
-ask, October 2026: easy to read, nothing smooshed): a verdict card always shown -- the two teams and
-records, the score or kickoff, the Vegas favourite by how much and its chance on the board's own split
-bar, the spread, total and moneylines, and five answer lines (the model vote: how many of the six calls
-pick each side, their average chance for the side most pick and, once played, how many landed; the
-Team Elo gap; which side ranks higher on offense against defense each way; who is out and how many
-starters are questionable; the top mismatch) -- then a card each (Every call, Team strength, Offense
-vs defense, Mismatches, Starters, Sources) that folds to a one-line summary: all open on a wide
-screen, all folded on a phone, with Open all. Every call is one lean chart (each bar leans from 50/50
-toward the side its call picks); the better side of every comparison wears one mark (`gs-better`).
-It computes nothing of its own beyond those counts, that average and that gap: the board
+ask, October 2026: easy to read, nothing smooshed): a pinned header that turns into the game in one
+line (records and spread, or the score) once the verdict scrolls away, then a verdict card always
+shown -- the two teams and records, the score or kickoff, a played game's note under the score, the
+headline ("Jaguars favoured by 7.5", its chance and the board's own confidence pill; once played,
+"Buccaneers won" with an Upset chip and the line it was favoured by under it) over the board's split
+bar, the spread, total and moneylines with one line naming their sources, and five answer lines, each
+a button that opens its card (the model picks, Vegas kept apart as the baseline: how many of the five
+models agree with it, the ones that do not named, once played how many of the six calls were right;
+the Team Elo gap; which side ranks higher on offense against defense each way; who is out by name and
+how many starters are questionable; the top mismatch on its four-step meter) -- then a card each
+(Every call, Team strength, Offense vs defense, Mismatches, Starters, Sources) that folds to a
+one-line summary, Starters and Mismatches with a count badge: Every call and Team strength open on a
+wide screen, every card folded on a phone, Open all and Close all. Every call is one lean chart (each
+bar leans from 50/50 toward the side its call picks, in that team's colour); Offense vs defense shows
+the overall ratings first ("When the Eagles have the ball") with the stats behind them folded;
+Starters puts the ranked players out first, then Offense, Defense and Kicker tabs (the choice kept
+while the page is open), each defensive unit's league rank at either end of its group's header. The
+side of every comparison with the edge wears one mark (`gs-better`): the higher rating, Elo and
+chance, the better rank, the higher season Elo of each pair of starters. One type scale (11, 13, 15,
+18, 22, 30px; a phone takes the top two to 20 and 26) and every control at least 44px tall. Opening a card, a fold or a tab never redraws
+the window, and nothing of it is saved.
+It computes nothing of its own beyond the vote's counts and the Elo gap: the board
 hands it the season and its own Vegas call (`window.pkBoard`) and the ELO tab its one read of
 `elo/data/` (`window.eloFiles`) and its Mismatches (`window.eloMismatches`). A played game says the
 ratings and lineups are the files as they stand now, and a file that did not load, a game outside the
 matchups' week or a team whose lineup is for another game is said in its card while the rest draws.
 `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file (each number the
 verdict and the summaries add is marked `data-gs-n` and worked out there on its own, as are the edge
-marks and the stat pairs), on a game to come, a final on the scoreboard, a graded game and a playoff
-game, with a file missing, and the folding, on a wide screen and a phone. The position
+marks, the stat pairs, the dissenters, the unit ranks in the Starters headers and the badges), the
+headline to the files and its confidence pill to the board's own, the header's game bar, on a game
+to come, a final on the scoreboard, a graded game and a playoff game, with a file missing; every
+number is read with the cards, the stats fold and the Starters tabs as they open (folded or not
+shown), and the folding, the answers' buttons, the tabs' arrow keys, the Tab order and the 44px
+tap heights are held too, on a wide screen and a phone. The position
 table is laid out fixed, each team half the card, and a long name wraps on a phone rather than push
 the home side off the screen; a player's Q is inside his name's own box, inline after the name, so a
 wrapping name never leaves it beside the other team's player (the smoke holds those rules and that

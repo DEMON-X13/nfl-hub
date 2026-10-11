@@ -299,31 +299,49 @@ An opened game has a **Game snapshot** button at its head, over the prices. It o
 `nflbets/build/snapshot.html`'s window (`#gsModal`, every name `gs-`, its script one closure that
 the build sets in last, after the Player Elo tab's; the page's modal style, Escape, Close or a
 click outside closes it, Tab stays inside, the focus goes back to the button, full screen and
-scrolling on a phone) with everything the site has on that one game, at a glance first. The verdict
-(`#gsMatch`, always shown) has each team's record as Team Rankings counts it, the score or the
-kickoff in the viewer's time and the site, the Vegas favourite, by how much and its chance on the
-board's own split bar, the spread, total and moneylines, and five answer lines (`.gs-glance`): the
-model vote (how many of the six calls pick each side, their average chance for the side most pick,
-how many landed once played), the Team Elo gap, which side ranks higher on offense against defense
-each way, who is out and how many starters are questionable, and the top mismatch. Under it six
-cards, each a button (`[data-gs-fold]`, `aria-expanded`) with its title and a one-line summary over a
-body that folds (all open on a wide screen, all folded on a phone, Open all and Close all; nothing
-saved): every call (`#gsCalls`, one lean chart: each bar leans from 50/50 toward the side its call
-picks, as far as its chance -- Vegas, Alpha Model, the
+scrolling on a phone) with everything the site has on that one game, at a glance first. Its header
+is pinned and, once the verdict's line has scrolled under it, shows the game in one line instead
+(`#gsMini`: each team's record and the spread, or the score; hidden from a screen reader, the dialog
+keeps its title). The verdict (`#gsMatch`, always shown) has each team's record as Team Rankings
+counts it, the score or the kickoff in the viewer's time and the site, a played game's note ruled in
+gold under the score, the headline -- the Vegas favourite's nickname and the spread it is favoured
+by, its chance and the board's own confidence pill (`BET.tier`), or once played the winner with an
+Upset or Favourite won chip and the line it was favoured by under it -- over the board's own split
+bar, the spread, total and moneylines (one row on every phone, the moneylines one over the other)
+with one line naming the sources, and five answer lines (`.gs-glance`), each a button
+(`data-gs-goto`) that opens its card and brings it under the header: the model picks with Vegas kept
+apart as the baseline (how many of the five models agree with it, the ones that do not named with
+their dots, the ones with no call yet, how many of the six calls were right once played), the Team
+Elo gap with both ratings and ranks, which side ranks higher on offense against defense each way with
+the four ranks, who is out by name and how many starters are questionable, and the top mismatch with
+its edge on a four-step meter. Under it six cards, each a button (`[data-gs-fold]`, `aria-expanded`)
+with its title, a badge where a count helps (Starters: the ranked players out; Mismatches: how many)
+and a one-line summary over a body that folds (Every call and Team strength open on a wide screen,
+every card folded on a phone, Open all and Close all; nothing saved, nothing redrawn): every call
+(`#gsCalls`, one lean chart: a row a call, its bar under its name and pick, leaning from 50/50 toward
+the side its call picks, as far as its chance, in that team's colour -- Vegas, Alpha Model, the
 Challenger Model, the Joker, the ELO Model, the Broly Model -- graded once the game is played:
 `processed` once the job has graded it, else `atKickoff`, `joker` and `broly` in `state.json` and
 `graded` or `next` in `elo/data/model.json`); Team strength (each team's Power Rating, rank, shield,
 change and chance against an average team, from `teams`, ranked as Team Rankings ranks them);
-Offense vs defense, Overall Offense against Overall Defense both ways ("When PHI has the ball":
-`units`, rank and rating, and the stats either rating weighs paired offense against defense);
-the better side of every comparison wears one mark, `gs-better`;
-position by position (each team's expected starters, `lineups` in `matchups.json`, side by side
-under each position, each with his season Elo, rank and shield as on the ELO Ratings tab and a Q
-from the report, the defensive units the matchup formula reads ranked among the league's, and the
-team's ranked players out, each group's `sidelined`); the Mismatches in the game (the Props tab's
-own rows, `window.eloMismatches`, ranked among the week's); and when each file was published, with
+Offense vs defense, Overall Offense against Overall Defense both ways ("When the Eagles have the
+ball": `units`, the overall rank and rating first, and folded under one button, `[data-gs-sub]`,
+the stats either rating weighs paired offense against defense, each rank over its value);
+the side of every comparison with the edge wears one mark, `gs-better`;
+Starters (the team's ranked players out first, each group's `sidelined`, the box red when someone
+is; then each team's expected starters, `lineups` in `matchups.json`, side by side under each
+position on Offense, Defense and Kicker tabs -- `role="tablist"`, the arrow keys, Home and End, the
+choice kept while the page is open -- each with his season Elo, rank and shield as on the ELO
+Ratings tab and a Q from the report, the higher Elo of each pair marked, and each defensive group's
+header carrying both teams' units as the matchup formula ranks them among the league's); the
+Mismatches in the game (the Props tab's own rows, `window.eloMismatches`, ranked among the week's,
+each edge on the four-step meter with its legend); and when each file was published, with
 links that close the window and open Team Rankings, ELO Ratings, Props on this game and the Pick'em
-Record. It computes nothing of its own beyond the vote's counts and average and the Elo gap, each
+Record. One type scale (11, 13, 15, 18, 22 and 30px, custom properties on `#gsModal`; a phone takes
+the top two to 20 and 26) and every control at least 44px tall; the preview's dark theme lifts the
+lean bars' team colours toward white, the mismatch grades' colours and the window's muted text (to
+5:1 on its panels) so they read there. It computes nothing of its own beyond
+the vote's counts and the Elo gap, each
 marked `data-gs-n` and held by the smoke: the board hands it the season as loaded, its Vegas call and
 where a game stands (`window.pkBoard`), and the Player Elo tab its one read of `elo/data/`
 (`window.eloFiles`), so no file is fetched twice. A played game says the ratings and lineups are
@@ -331,7 +349,11 @@ the files as they stand now; a game outside the matchups' week, a game under way
 team's next game rather than this one, and a file that did not load are each said in their card,
 and the rest still draws. `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number to its
 file, on a game to come, a final on the scoreboard, a graded game and a playoff game, with
-matchups.json or the ratings missing. The position table is `table-layout: fixed` (each team half
+matchups.json or the ratings missing, read with the cards, the stats fold and the Starters tabs as
+the window opens (so a folded card or a tab not shown is held like the rest); the headline to the
+files and its confidence pill to the board's own; the dissenters, the badges, the edge marks among
+the starters and the unit ranks in their headers; the game bar; the answers' buttons, the folding,
+the tabs' keys and kept choice, the Tab order and the 44px tap heights. The position table is `table-layout: fixed` (each team half
 the card) and its names wrap: laid out automatically, a long name set a column's width and pushed
 the home side past the card on 34 of week 4-6's 45 games at 390px. A player's Q sits inside his
 name's own box (`.gs-pnm`), inline after the name: as a flex item of its own beside a wrapping
