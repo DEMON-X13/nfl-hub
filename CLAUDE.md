@@ -21,13 +21,13 @@ without narrating the steps:
 
 ## The sites and their parts
 
-GitHub Pages serves the repo root. Four sites have pages: `nflbets/`, `news/`, `cfb/` and
-`nhl/` (the root `index.html` links them). `pickems/` and `live/` hold only redirects for old
+GitHub Pages serves the repo root. Three sites have pages: `nflbets/`, `news/` and `cfb/` (the
+root `index.html` links them, and X NHL Bets in its own repo). `pickems/` and `live/` hold only redirects for old
 bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
 `parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
 with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
-by hand when a source changes, and reads the models' data on every load. `news/`, `cfb/` and
-`cfb/` each have their own job too (`news.yml`, `cfb.yml`).
+by hand when a source changes, and reads the models' data on every load. `news/` and `cfb/`
+each have their own job too (`news.yml`, `cfb.yml`).
 
 | Path | What | Source of truth |
 |---|---|---|

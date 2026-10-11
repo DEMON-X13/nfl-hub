@@ -8,12 +8,12 @@ anything here that contradicts it is out of date.
 ## What this is
 
 One repo, served straight from its root by GitHub Pages. No server, no framework, no
-bundler. Four sites have pages: `nflbets/` (X NFL Bets and Stats, built by
+bundler. Three sites have pages: `nflbets/` (X NFL Bets and Stats, built by
 `nflbets/build/build.js` from the prop model's parts, the betting app, the X Parlays
-section, the parlay card, the storage layer and the Player Elo tab), `news/`, `cfb/` and `nhl/`. The pages carry no season
+section, the parlay card, the storage layer and the Player Elo tab), `news/` and `cfb/`. The pages carry no season
 data: each fetches what the scheduled jobs commit (`props/data/payload.json`,
-`betting/state.json`, `elo/data/*.json`, `cfb/state.json` and `cfb/news.json`,
-`nhl/state.json`) and what Claude commits from what the owner sends (`liveparlays/parlays.json`,
+`betting/state.json`, `elo/data/*.json`, `cfb/state.json` and `cfb/news.json`)
+and what Claude commits from what the owner sends (`liveparlays/parlays.json`,
 `liveparlays/xbets.json`) on every load. `news/` alone keeps its data in plain
 script files, so it works from `file://`. Six scheduled GitHub Actions jobs, one per model
 or site, rebuild the data from their sources and commit it.
