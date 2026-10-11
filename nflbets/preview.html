@@ -1743,7 +1743,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v92 \u00b7 2026-10-11';
+const APP_BUILD='app v93 \u00b7 2026-10-11';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3923,11 +3923,12 @@ function pbTierOn(t,pool,memo){
   const x=pbLikeliest(t[2],pool,memo); return x?{...x,likeliest:true}:null;
 }
 /* the legs with an edge first, exactly as before (preferred, then the fewest thin); only where
-   they cannot make a parlay of the level's size at all are the totals added, as fill beside the
-   thin legs, the fewest first, by the same two searches */
+   they cannot make a parlay of the level's size at all are the totals added: every leg with an
+   edge, preferred and thin alike, is then the base and the totals the only fill, the fewest totals
+   first, by the same two searches, so a total never takes the place of a leg with an edge */
 function pbTier(t,pool,memo){
   const r=pbTierOn(t,{pref:pool.pref,thin:pool.thin},memo); if(r||!(pool.mkt&&pool.mkt.length)) return r;
-  return pbTierOn(t,{pref:pool.pref,thin:[...pool.thin,...pool.mkt]},memo);
+  return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo);
 }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
@@ -4113,6 +4114,9 @@ function pbPanel(){
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
   if(u.k.total) notes.push('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
+  /* player bets ticked, none of their prices in, and a level built all the same (from team bets
+     or totals): the levels say nothing of the missing player legs, so the panel does */
+  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.');
   if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
@@ -4614,7 +4618,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='faa328b';
+const PAGE_HASH='2cd1f76';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

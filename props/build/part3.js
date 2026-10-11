@@ -1318,11 +1318,12 @@ function pbTierOn(t,pool,memo){
   const x=pbLikeliest(t[2],pool,memo); return x?{...x,likeliest:true}:null;
 }
 /* the legs with an edge first, exactly as before (preferred, then the fewest thin); only where
-   they cannot make a parlay of the level's size at all are the totals added, as fill beside the
-   thin legs, the fewest first, by the same two searches */
+   they cannot make a parlay of the level's size at all are the totals added: every leg with an
+   edge, preferred and thin alike, is then the base and the totals the only fill, the fewest totals
+   first, by the same two searches, so a total never takes the place of a leg with an edge */
 function pbTier(t,pool,memo){
   const r=pbTierOn(t,{pref:pool.pref,thin:pool.thin},memo); if(r||!(pool.mkt&&pool.mkt.length)) return r;
-  return pbTierOn(t,{pref:pool.pref,thin:[...pool.thin,...pool.mkt]},memo);
+  return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo);
 }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
@@ -1508,6 +1509,9 @@ function pbPanel(){
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
   if(u.k.total) notes.push('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
+  /* player bets ticked, none of their prices in, and a level built all the same (from team bets
+     or totals): the levels say nothing of the missing player legs, so the panel does */
+  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.');
   if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>

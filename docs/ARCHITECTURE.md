@@ -452,11 +452,16 @@ stricter than its margin-out chance; market + form agreeing on a player leg); wh
 fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
 with a line saying so for each kind of leg (`pbThinLine`: a team bet, which has no market + form,
 missed only the 3-point bar; a player leg the bar with market + form agreeing), and never a leg
-under the book. A game total is never a candidate: it is priced at the book's own chance (see
-**game bets** below), which sits under the chance its price implies, so `pricedLegs()` leaves the
-totals out, and the Game total box only brings up a line saying they never make a suggested parlay
-and are added by hand from a game's Game bets card. One team bet a game, one leg a player, no line
-twice. A tier is
+under the book. A game total has no edge: it is priced at the book's own chance (see **game
+bets** below), which sits under the chance its price implies, so `pricedLegs()` leaves the totals out
+and a total is never preferred or thin. With Game total ticked `pbPool` adds the week's totals as a
+third list, the market legs (`pool.mkt`: both sides of each ticked game's posted total on a real
+price, 45-97%), and `pbTier` uses them only where the legs with an edge cannot make a level of its
+size, with every leg with an edge as the base and the totals the only fill, the fewest first; a
+total is marked no edge on its card with a line saying why (`pbMktLine`). With player bets ticked and
+none of their prices in, a note says the levels are built without player legs. A game gives one
+side (to win or to cover) and its total (`pbFits`, `pbMaxLegs`; unrelated, `legRho`), one leg a
+player, no line twice. A tier is
 empty only when the picks do not make that many legs (`pbMaxLegs` under its size), and then says why
 (`pbWhy`), never offering a smaller parlay; when player bets are ticked and none of
 the ticked games has a player price on file yet (`plGames` from `pbPool`, before the week's pulls),

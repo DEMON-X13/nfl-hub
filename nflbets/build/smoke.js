@@ -595,6 +595,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor without being the likeliest of its size`);
         /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */
         if ((t.likeliest || !t.floor) && !t.mkt) provedLikeliest(lab, t, [...pool.pref, ...pool.thin]);
+        /* a likeliest level with totals takes the fewest: every leg with an edge first */
+        if (t.mkt && t.likeliest) chk(t.mkt === Math.max(0, t.n - w.eval('pbMaxLegs')([...pool.pref, ...pool.thin])), `${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave fewer to fill`);
         const card = d.querySelector(`#pbPanel .pb-tier.${t.id}`);
         chk(!!card && card.querySelectorAll('.pb-legs li').length === t.n && !!card.querySelector(`[data-pb-add="${t.id}"]`) && !!card.querySelector(`[data-pc-finish="pb|${t.id}"]`),
           `${lab}: the ${t.id} card does not show its legs with Add to builder and Finish`);
@@ -652,6 +654,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       await wait(60);
       const built = hold('made-up lines');
       chk(built >= 2, 'with a made-up line on every starter, fewer than two tiers were built');
+      /* Game total alone, as the owner ticked it: every level the priced totals make legs for is
+         built of totals only, each marked no edge, and its card says why they are there */
+      { const keepK = JSON.stringify(U().k); for (const k of KINDS) U().k[k] = k === 'total'; w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
+        const nT = new Set(w.eval('pbPool(pbGames())').mkt.map(l => l.gid)).size, rT = w.eval('getPbTiers()');
+        hold('made-up lines, Game total alone');
+        chk((nT >= 2 || games.length < 3) && rT.tiers.every(x => x.n > nT ? !x.legs : (!!x.legs && x.legs.every(l => l.market && l.stat === 'total') && x.mkt === x.n)),
+          `with only Game total ticked, a level the totals make legs for was not built of totals alone (${nT} totals priced): ` + rT.tiers.map(x => x.why || x.legs.map(l => l.label).join('+')).join(' / '));
+        for (const x of rT.tiers.filter(x => x.legs)) { const c = d.querySelector(`#pbPanel .pb-tier.${x.id}`);
+          chk(!!c && [...c.querySelectorAll('.pb-legs li')].every(li => /no edge/i.test(txt(li))) && /because your picks do not make a parlay of this size from legs with an edge/.test(txt(c)),
+            `the ${x.id} card does not mark its totals no edge or say why they are there`); }
+        Object.assign(U().k, JSON.parse(keepK)); w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40); }
       const t = w.eval('getPbTiers()').tiers.filter(x => x.legs).slice(-1)[0];
       /* the Bet amount box, at the top of the panel's controls: an amount of the visitor's own,
          which every tier (the panel's four and the Elo picks') pays on as it is typed, which a bad
