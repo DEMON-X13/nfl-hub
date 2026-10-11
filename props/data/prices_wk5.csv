@@ -65,66 +65,6 @@ game_id,player,market,threshold,odds
 2026_05_TB_DAL,Tez Johnson,receptions,2,134
 2026_05_TB_DAL,Tyler Goodson,any_td,1,650
 2026_05_TB_DAL,Tyler Goodson,rushing_yards,17,-107
-2026_05_BAL_ATL,Atlanta Falcons D/ST,any_td,1,550
-2026_05_BAL_ATL,Austin Hooper,any_td,1,750
-2026_05_BAL_ATL,Baltimore Ravens D/ST,any_td,1,550
-2026_05_BAL_ATL,Bijan Robinson,any_td,1,-230
-2026_05_BAL_ATL,Bijan Robinson,receiving_yards,28,-110
-2026_05_BAL_ATL,Bijan Robinson,receptions,4,-120
-2026_05_BAL_ATL,Bijan Robinson,rushing_yards,89,-113
-2026_05_BAL_ATL,Brian Robinson Jr.,any_td,1,240
-2026_05_BAL_ATL,Brian Robinson Jr.,rushing_yards,37,-109
-2026_05_BAL_ATL,Charlie Woerner,any_td,1,1600
-2026_05_BAL_ATL,Chris Blair,any_td,1,2000
-2026_05_BAL_ATL,Chris Moore,any_td,1,1900
-2026_05_BAL_ATL,Derrick Henry,any_td,1,-140
-2026_05_BAL_ATL,Derrick Henry,receiving_yards,6,-112
-2026_05_BAL_ATL,Derrick Henry,receptions,2,158
-2026_05_BAL_ATL,Derrick Henry,rushing_yards,79,-111
-2026_05_BAL_ATL,Devontez Walker,any_td,1,1000
-2026_05_BAL_ATL,Devontez Walker,receiving_yards,9,-115
-2026_05_BAL_ATL,Devontez Walker,receptions,1,-207
-2026_05_BAL_ATL,Drake London,any_td,1,115
-2026_05_BAL_ATL,Drake London,receiving_yards,81,-111
-2026_05_BAL_ATL,Drake London,receptions,7,122
-2026_05_BAL_ATL,Elijah Sarratt,any_td,1,2200
-2026_05_BAL_ATL,Jahan Dotson,any_td,1,500
-2026_05_BAL_ATL,Jahan Dotson,receiving_yards,21,-109
-2026_05_BAL_ATL,Jahan Dotson,receptions,2,-150
-2026_05_BAL_ATL,Josh Cuevas,any_td,1,1600
-2026_05_BAL_ATL,Justice Hill,any_td,1,750
-2026_05_BAL_ATL,Justice Hill,receiving_yards,9,-111
-2026_05_BAL_ATL,Justice Hill,receptions,2,-109
-2026_05_BAL_ATL,Justice Hill,rushing_yards,12,-114
-2026_05_BAL_ATL,Kyle Pitts,any_td,1,350
-2026_05_BAL_ATL,Kyle Pitts,receiving_yards,24,-115
-2026_05_BAL_ATL,Kyle Pitts,receptions,3,106
-2026_05_BAL_ATL,LaJohntay Wester,any_td,1,2000
-2026_05_BAL_ATL,Mark Andrews,any_td,1,260
-2026_05_BAL_ATL,Mark Andrews,receiving_yards,32,-113
-2026_05_BAL_ATL,Mark Andrews,receptions,4,-144
-2026_05_BAL_ATL,Matthew Hibner,any_td,1,800
-2026_05_BAL_ATL,Michael Penix Jr.,any_td,1,1100
-2026_05_BAL_ATL,Michael Penix Jr.,passing_tds,2,113
-2026_05_BAL_ATL,Michael Penix Jr.,passing_yards,221,-111
-2026_05_BAL_ATL,Michael Penix Jr.,rushing_yards,1,-107
-2026_05_BAL_ATL,Nick Muse,any_td,1,1700
-2026_05_BAL_ATL,Nick Vannett,any_td,1,1500
-2026_05_BAL_ATL,Olamide Zaccheaus,any_td,1,850
-2026_05_BAL_ATL,Olamide Zaccheaus,receiving_yards,9,-109
-2026_05_BAL_ATL,Olamide Zaccheaus,receptions,1,-226
-2026_05_BAL_ATL,Rasheen Ali,any_td,1,4000
-2026_05_BAL_ATL,Rashod Bateman,any_td,1,475
-2026_05_BAL_ATL,Rashod Bateman,receiving_yards,18,-108
-2026_05_BAL_ATL,Rashod Bateman,receptions,2,-150
-2026_05_BAL_ATL,Tyler Huntley,any_td,1,400
-2026_05_BAL_ATL,Tyler Huntley,passing_tds,2,188
-2026_05_BAL_ATL,Tyler Huntley,passing_yards,175,-113
-2026_05_BAL_ATL,Tyler Huntley,rushing_yards,30,-108
-2026_05_BAL_ATL,Zachariah Branch,any_td,1,1000
-2026_05_BAL_ATL,Zay Flowers,any_td,1,200
-2026_05_BAL_ATL,Zay Flowers,receiving_yards,70,-110
-2026_05_BAL_ATL,Zay Flowers,receptions,6,-117
 2026_05_CHI_GB,Bo Melton,any_td,1,1400
 2026_05_CHI_GB,Chicago Bears D/ST,any_td,1,500
 2026_05_CHI_GB,Christian Watson,any_td,1,175
@@ -836,3 +776,67 @@ game_id,player,market,threshold,odds
 2026_05_SF_SEA,Tory Horton,receiving_yards,12,-112
 2026_05_SF_SEA,Tory Horton,receptions,2,154
 2026_05_SF_SEA,Velus Jones Jr.,any_td,1,1800
+2026_05_BAL_ATL,Atlanta Falcons D/ST,any_td,1,550
+2026_05_BAL_ATL,Austin Hooper,any_td,1,800
+2026_05_BAL_ATL,Austin Hooper,receiving_yards,7,-107
+2026_05_BAL_ATL,Austin Hooper,receptions,1,-198
+2026_05_BAL_ATL,Baltimore Ravens D/ST,any_td,1,550
+2026_05_BAL_ATL,Bijan Robinson,any_td,1,-230
+2026_05_BAL_ATL,Bijan Robinson,receiving_yards,28,-109
+2026_05_BAL_ATL,Bijan Robinson,receptions,4,-123
+2026_05_BAL_ATL,Bijan Robinson,rushing_yards,89,-111
+2026_05_BAL_ATL,Brian Robinson Jr.,any_td,1,250
+2026_05_BAL_ATL,Brian Robinson Jr.,rushing_yards,35,-111
+2026_05_BAL_ATL,Charlie Woerner,any_td,1,1700
+2026_05_BAL_ATL,Chris Blair,any_td,1,2000
+2026_05_BAL_ATL,Chris Moore,any_td,1,2000
+2026_05_BAL_ATL,Derrick Henry,any_td,1,-150
+2026_05_BAL_ATL,Derrick Henry,receiving_yards,6,-112
+2026_05_BAL_ATL,Derrick Henry,receptions,2,153
+2026_05_BAL_ATL,Derrick Henry,rushing_yards,80,-113
+2026_05_BAL_ATL,Devontez Walker,any_td,1,950
+2026_05_BAL_ATL,Devontez Walker,receiving_yards,9,-111
+2026_05_BAL_ATL,Devontez Walker,receptions,1,-199
+2026_05_BAL_ATL,Drake London,any_td,1,125
+2026_05_BAL_ATL,Drake London,receiving_yards,82,-113
+2026_05_BAL_ATL,Drake London,receptions,7,114
+2026_05_BAL_ATL,Elijah Sarratt,any_td,1,2200
+2026_05_BAL_ATL,Jahan Dotson,any_td,1,500
+2026_05_BAL_ATL,Jahan Dotson,receiving_yards,21,-109
+2026_05_BAL_ATL,Jahan Dotson,receptions,2,-150
+2026_05_BAL_ATL,Josh Cuevas,any_td,1,1700
+2026_05_BAL_ATL,Justice Hill,any_td,1,750
+2026_05_BAL_ATL,Justice Hill,receiving_yards,9,-116
+2026_05_BAL_ATL,Justice Hill,receptions,2,-121
+2026_05_BAL_ATL,Justice Hill,rushing_yards,12,-109
+2026_05_BAL_ATL,Kyle Pitts,any_td,1,350
+2026_05_BAL_ATL,Kyle Pitts,receiving_yards,24,-115
+2026_05_BAL_ATL,Kyle Pitts,receptions,3,105
+2026_05_BAL_ATL,LaJohntay Wester,any_td,1,2000
+2026_05_BAL_ATL,Mark Andrews,any_td,1,265
+2026_05_BAL_ATL,Mark Andrews,receiving_yards,33,-112
+2026_05_BAL_ATL,Mark Andrews,receptions,4,-156
+2026_05_BAL_ATL,Matthew Hibner,any_td,1,850
+2026_05_BAL_ATL,Matthew Hibner,receiving_yards,8,-111
+2026_05_BAL_ATL,Matthew Hibner,receptions,2,183
+2026_05_BAL_ATL,Michael Penix Jr.,any_td,1,1100
+2026_05_BAL_ATL,Michael Penix Jr.,passing_tds,2,113
+2026_05_BAL_ATL,Michael Penix Jr.,passing_yards,220,-111
+2026_05_BAL_ATL,Michael Penix Jr.,rushing_yards,1,-103
+2026_05_BAL_ATL,Nick Muse,any_td,1,2500
+2026_05_BAL_ATL,Nick Vannett,any_td,1,2500
+2026_05_BAL_ATL,Olamide Zaccheaus,any_td,1,950
+2026_05_BAL_ATL,Olamide Zaccheaus,receiving_yards,9,-106
+2026_05_BAL_ATL,Olamide Zaccheaus,receptions,1,-226
+2026_05_BAL_ATL,Rasheen Ali,any_td,1,3500
+2026_05_BAL_ATL,Rashod Bateman,any_td,1,450
+2026_05_BAL_ATL,Rashod Bateman,receiving_yards,18,-113
+2026_05_BAL_ATL,Rashod Bateman,receptions,2,-155
+2026_05_BAL_ATL,Tyler Huntley,any_td,1,450
+2026_05_BAL_ATL,Tyler Huntley,passing_tds,2,185
+2026_05_BAL_ATL,Tyler Huntley,passing_yards,176,-113
+2026_05_BAL_ATL,Tyler Huntley,rushing_yards,30,-111
+2026_05_BAL_ATL,Zachariah Branch,any_td,1,1200
+2026_05_BAL_ATL,Zay Flowers,any_td,1,205
+2026_05_BAL_ATL,Zay Flowers,receiving_yards,68,-112
+2026_05_BAL_ATL,Zay Flowers,receptions,6,103
