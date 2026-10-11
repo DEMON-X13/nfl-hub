@@ -220,10 +220,10 @@ function gameBetsCard(g,locked){
         <td class="pct">${(l.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
         <td class="num est">${l.src==='real'?'':`${fmtML(TOTAL_EST)}<em>est.</em>`}</td>
         <td class="num book real">${l.src==='real'?fmtML(l.price):''}</td></tr>`; };
-    tot=`<div class="statblk"><h4>Game total <em>our total ${tb.mu.toFixed(1)}</em><em class="mline">book line ${tb.line}</em></h4><table class="rungs">${trow('over')}${trow('under')}</table></div>`; }
+    tot=`<div class="statblk"><h4>Game total <em class="mpts" title="The model's own points for the two sides: shown, not used in the chance">model's points ${modelTotal(g).toFixed(1)}</em><em class="mline">book line ${tb.line}</em></h4><table class="rungs">${trow('over')}${trow('under')}</table></div>`; }
   return `<div class="card gbets"><h2>Game bets</h2>
-    <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line, the spread and the total.':'A team to win, or to cover the spread, or the game total over or under. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that; the total from our own points for each side, pulled halfway to the posted total, spread about 13.2 points. A win or cover leg is priced as unrelated to player legs, which has not been measured here; a total moves with its game's passing and scoring lines, measured on 2019 to 2024.</p>
-    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${tot}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}${tb&&totalBook(g,'over')==null?'<p class="muted" style="margin:6px 0 0;font-size:12px">No over or under price on file for this total yet: the -110 is an estimate, and no suggested parlay is built on it.</p>':''}</div>`;
+    <p class="muted" style="margin:0 0 10px">${locked?'How each side did against the money line, the spread and the total.':'A team to win, or to cover the spread, or the game total over or under. Tick one and it joins the parlay like any player line.'} Chances come from our team ratings, pulled halfway to the posted line, with the final margin treated as spread about 13.5 points around that. The total's chance is the book's own, its over and under prices with the margin taken out (an even 50% with no price on file): tested on 2024 to 2026, no points model of ours beat the posted total, so the model's points are shown beside it and not used. A total is never in a suggested parlay; tick it here to add it by hand. A win or cover leg is priced as unrelated to player legs, which has not been measured here; a total moves with its game's passing and scoring lines, measured on 2019 to 2024.</p>
+    ${lineSource(g)?`<p class="muted" style="margin:0 0 8px;font-size:12px">Lines: ${esc(lineSource(g))}.</p>`:''}${rows}${tot}${!gameBet(g,g.h,'ats')?'<p class="muted" style="margin:0">No spread posted yet, so only the money line is offered.</p>':''}${tb&&(totalBook(g,'over')==null||totalBook(g,'under')==null)?'<p class="muted" style="margin:6px 0 0;font-size:12px">No over and under price on file for this total yet: the chance is an even 50%, and where a price is missing the -110 is an estimate.</p>':''}</div>`;
 }
 /* the ladders are hidden unless turned on: without a real price they cannot be bet
    or picked by a suggestion, and they run to thirty rows a player. The model still
@@ -1032,14 +1032,13 @@ const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1
   return Object.values(g).some(n=>n>1); };
 
 /* ---------- the lines the suggestions are built from ---------- */
-/* every line this week with a real sportsbook price, game bets and players, unjudged. withTotals
-   adds each game's total, over and under, where the book's price for it is on file: the Parlay
-   Builder's suggestions use them; a game page's own suggestions and the Elo picks do not */
-function pricedLegs(games,withTotals){
+/* every line this week with a real sportsbook price, team bets and players, unjudged. A game total
+   is not among them: priced at the book's own chance (totalBet), it has no edge for a suggestion
+   to find, so it is a leg a visitor adds by hand from the Game bets card */
+function pricedLegs(games){
   const w=currentWeek(); const out=[];
   for(const g of (games||gamesIn(w))){
     if(gameStarted(g)) continue;
-    if(withTotals) for(const side of ['over','under']){ const l=totalLeg(g,side); if(l&&l.src==='real') out.push(l); }
     for(const team of [g.a,g.h]){
       const isHome=team===g.h, opp=isHome?g.a:g.h;
       for(const kind of ['ml','ats']){
@@ -1105,8 +1104,10 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
    implies (mlProb, the book's margin left in, so stricter than its margin-out chance), and for
    a player leg market + form agreeing (formAgrees). When those cannot fill a tier, the
    fewest legs the model still rates at or above the book fill it, marked thin edge; never a
-   leg the model rates below the book. At most one game leg (to win, to cover, the total) a
-   game, one leg a player, and no line twice: a line's over and under, or a player's main line
+   leg the model rates below the book. A game total is never a candidate: it is priced at the
+   book's own chance (totalBet), which sits under the chance its price implies whenever the book
+   takes a margin, so it has no edge to offer, and pricedLegs leaves it out. At most one team bet
+   (to win or to cover) a game, one leg a player, and no line twice: a line's over and under, or a player's main line
    and a rung of the same stat, are one key. A tier that cannot be built says why rather than show a smaller
    parlay. Its chance and price are the builder's own sums (parlayProb, parlayDec, same-game
    legs priced together with the model's correlations), worked on the legs in the builder's
@@ -1152,7 +1153,7 @@ function pbCap(list){
 function pbPool(games){
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
   const pref=[], thin=[], plGames=new Set();
-  for(const c of pricedLegs(games,true)){
+  for(const c of pricedLegs(games)){
     if(!isGameLeg(c)) plGames.add(c.gid);
     if(!pbAllows(c)||c.src!=='real'||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
@@ -1268,15 +1269,14 @@ function pbWhy(n,floor,pool,c){
 }
 function pbBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
-  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,tiers:[],noTotalPrice:false,noPlayerPrices:false};
+  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,tiers:[],noPlayerPrices:false};
   const empty=why=>PB_TIERS.map(([id,label,n,floor])=>({id,label,n,floor,why}));
   if(!all.length){ out.tiers=empty('No games left to build from.'); return out; }
   if(!kinds.length){ out.tiers=empty('No bet types ticked: tick at least one above.'); return out; }
   if(!games.length){ out.tiers=empty('No games ticked: tick at least one above.'); return out; }
-  const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats||u.k.total)};
+  const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats)};
   out.pref=pool.pref.length; out.thin=pool.thin.length; out.noPlayerPrices=c.players&&!pool.plGames;
   out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,floor,pool,c)}; });
-  out.noTotalPrice=!!u.k.total&&games.some(g=>g.tot!=null)&&!games.some(g=>totalBook(g,'over')!=null||totalBook(g,'under')!=null);
   return out;
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
@@ -1387,16 +1387,14 @@ const pbMoney=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,max
 function pbWide(){ try{ return typeof window.matchMedia!=='function'||window.matchMedia('(min-width: 761px)').matches; }catch(e){ return true; } }
 /* the builder holds exactly these legs */
 const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.every(l=>suggestLegOn(l));
-/* what a thin edge means for the legs it is on. A team bet or a total has no market + form (that
-   is a player leg's second price, from his Elo), so it is thin only for missing the 3-point bar;
-   a player leg is thin for that or for market + form not agreeing, where the Elo tab is on the
-   page (form) */
+/* what a thin edge means for the legs it is on. A team bet has no market + form (that is a player
+   leg's second price, from his Elo), so it is thin only for missing the 3-point bar; a player leg
+   is thin for that or for market + form not agreeing, where the Elo tab is on the page (form). A
+   game total is never in a tier */
 function pbThinLine(legs,form){
-  const th=legs.filter(l=>l.thin), n=th.length, gl=th.filter(isGameLeg), p=n-gl.length;
-  const tot=gl.filter(l=>l.stat==='total').length, tm=gl.length-tot, s=k=>k===1?'':'s';
+  const th=legs.filter(l=>l.thin), n=th.length, tm=th.filter(isGameLeg).length, p=n-tm, s=k=>k===1?'':'s';
   const bar='not 3 points above', both='not 3 points above with market + form agreeing';
-  const games=tm&&tot?`the team bet${s(tm)} and the total${s(tot)}`:tot?`the total${s(tot)}`:`the team bet${s(tm)}`;
-  const tail=!form||!p?bar:!gl.length?both:`${games} ${bar}, and the player leg${s(p)} ${both}`;
+  const tail=!form||!p?bar:!tm?both:`the team bet${s(tm)} ${bar}, and the player leg${s(p)} ${both}`;
   return `${n===1?'One leg has a thin edge: the model rates it':n+' legs have a thin edge: the model rates them'} at or above the book's price, but ${tail}.`;
 }
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
@@ -1424,8 +1422,8 @@ function pbPanel(){
     return `<label class="pb-g${on?' on':''}"><input type="checkbox" data-pb-game="${g.id}" ${on?'checked':''} aria-label="${esc(g.a)} at ${esc(g.h)}, ${esc(d.day)} ${esc(d.t)}"><span><b>${esc(g.a)} @ ${esc(g.h)}</b><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></span></label>`; }).join('');
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
-  if(r.noTotalPrice) notes.push('No over or under price is on file for these games’ totals yet, so no total is in a tier.');
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled within a day of each kickoff.`);
+  if(u.k.total) notes.push('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.');
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled within a day of each kickoff.`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
@@ -1437,7 +1435,7 @@ function pbPanel(){
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t)).join('')}</div>
-    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time. One leg a player, one team bet or total a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
+    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time. One leg a player, one team bet a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
     <div id="pbElo" class="pb-elo"></div></div>`;
 }
 function renderPb(){

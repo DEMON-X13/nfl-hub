@@ -5,3 +5,6 @@ __pycache__/
 news/tools/out/*-part*.json
 cfb/tools/out/
 nhl/tools/out/
+# the totals study: downloads, built datasets and run outputs (props/research/totals/README.md)
+props/research/totals/data/
+props/research/totals/out/

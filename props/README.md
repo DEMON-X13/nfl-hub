@@ -69,7 +69,10 @@ or users silently keep stale data.
 
 The research scripts named below (fit4.py, walkfwd.py, walkcal.py, starters.py, corr.py,
 corr2.py, pts.py, vol.py, boom3.py, boom4.py, blendcheck.py, calfix.py) were part of the
-original handoff package and are not in this repo; only `research/features.py` is.
+original handoff package and are not in this repo; only `research/features.py` is, beside the
+game-totals study in `research/totals/` (its README.md is the whole of it: no points model beat
+the posted total on 2024-2026, so since app v88 a game total is priced at the market's own chance
+and the model's points are shown, not used).
 
 **Projection** (`research/fit4.py`, fitted 2019-2024, tested on 2025):
 eleven features — the player's 5-game and 3-game weighted averages, career rate and

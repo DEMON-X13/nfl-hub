@@ -1,0 +1,26 @@
+Holdout judge: decision rules, written BEFORE any holdout run (out/holdout_log.txt does not exist at this point).
+
+Frozen candidates judged (every frozen module in the totals folder; the task text listing them was cut off after
+the second, so all four are judged): cand_ratings, cand_efficiency, cand_residual, cand_simple.
+Variants tried on dev, from their logs: ratings 22, efficiency 16, residual 14, simple 20 (+1 diagnostic) = 72.
+Baselines: market (closing total_line, P = games.csv no-vig), site proxy (modelPoints + line)/2, sd 13.2.
+
+Periods. PRIMARY: 2024-2025 pooled (regular season + playoffs with a line). SECONDARY: 2026 weeks played (65
+games; direction only, far too small to decide on alone). Also shown: 2024-2026 pooled.
+
+Each candidate runs ONCE per period through harness.evaluate(holdout=True); nothing is changed after a result.
+
+"Beats the market" on a metric = the paired bootstrap interval of (candidate - market) on 2024-2025 lies wholly
+below 0. Reported at 90% (the task's interval) and at 97.5% two-sided (Bonferroni for 4 candidates at one-sided
+5%: 1.25% a tail), the multiplicity-honest bar. Metrics: MAE, RMSE, Brier, log loss.
+"Picks made money" = units at the real games.csv odds with a 90% interval wholly above 0 on 2024-2025; also
+reported at a flat -110 and at the 97.5% level, and with 2026 shown beside it.
+
+Ship rule. A candidate replaces the site's totals chance only if, on 2024-2025, it beats the market on Brier AND
+log loss at the 97.5% level and is not worse on MAE (its 90% MAE interval reaches below 0 or is centred <= 0),
+and 2026 does not point the other way. It may drive suggested parlays only if, in addition, its picks' units
+interval excludes 0 at the 97.5% level at the real odds AND is positive at -110. Otherwise the recommendation
+is the market's own total (mu = posted total, P(over) = the price's no-vig chance, 50/50 with no price), with
+any candidate at most a display, and totals kept out of suggestions unless a real edge is shown.
+Separately, each candidate and the market are compared with the site's current rule (is it better than what
+the site shows now), same intervals.
