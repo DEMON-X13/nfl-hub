@@ -361,6 +361,11 @@ body.modal-open{overflow:hidden}
 .card .pb-legs{list-style:none;margin:0;padding:0}
 .card .pb-legs li{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:6px 0;margin:0;border-top:1px solid var(--line);font-size:13px;line-height:1.35}
 .pb-legs .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.pb-legs .pb-lock+.nm{flex:1}
+.pb-lock{flex:none;align-self:center;width:34px;height:34px;margin:-4px 2px -4px -2px;padding:0;border:1px solid var(--line-2);border-radius:999px;background:var(--panel);font-size:14px;line-height:1;cursor:pointer;opacity:.75}
+.pb-lock.on{opacity:1;border-color:var(--gold);background:var(--gold-soft,#FCF1D6)}
+.pb-lock:focus-visible{outline:2px solid var(--ink-2);outline-offset:1px}
+.pb-turnbar{display:inline-flex;gap:6px;margin-left:auto}
 .pb-legs .nm small{display:block;font-weight:400;color:var(--ink-2);font-size:11.5px}
 .pb-legs .pr{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap;text-align:right}
 .pb-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
@@ -1744,7 +1749,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v94 \u00b7 2026-10-11';
+const APP_BUILD='app v95 \u00b7 2026-10-11';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -3857,8 +3862,9 @@ function pbEval(legs,memo){
 }
 /* the beam: every partial parlay one leg longer, the best `width` of them by `by` kept at each
    size; one well under the floor is dropped as soon as it is (another leg only lowers it) */
-function pbBeam(pools,floor,by,width,memo){
-  let beam=[{legs:[],id:''}];
+function pbBeam(pools,floor,by,width,memo,base){
+  /* base: legs every parlay keeps (the visitor's locked legs), the pools filling the rest */
+  let beam=[{legs:base?base.slice():[],id:''}];
   for(let s=0;s<pools.length;s++){
     const next=new Map();
     for(const b of beam) for(const c of pools[s]){ if(!pbFits(b.legs,c)) continue;
@@ -3876,16 +3882,17 @@ function pbExact(legs){
 /* a level's best return: preferred legs alone first, then with k legs from the thin list, fewest
    first. The best few by the search's own score are worked exactly, and the best of those that
    clears the floor is the tier; null when none does. Safe, with no floor, is the likeliest pair */
-function pbBestReturn([id,label,n,floor],pool,memo,kMax){
-  const P=pool.pref, U=[...pool.pref,...pool.thin];
+function pbBestReturn([id,label,n,floor],pool,memo,kMax,base){
+  /* base: the locked legs, kept in every parlay; the pools fill the m legs left */
+  const B=base||[], m=n-B.length, P=pool.pref, U=[...pool.pref,...pool.thin];
   /* kMax, when given, is the most fill legs a parlay may take (the totals' pass, pbTier) */
-  for(let k=0;k<=(kMax==null?n:kMax);k++){
+  for(let k=0;k<=(kMax==null?m:kMax);k++){
     if(k&&!pool.thin.length) break;
-    if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
-    const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
+    if(pbMaxLegs(P)<m-k||pbMaxLegs(U)<m) continue;
+    const pools=Array.from({length:m},(_,s)=>s<m-k?P:U);
     const fin=new Map();
-    if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo)) fin.set(e.id,e);
-    else for(const e of [...pbBeam(pools,floor,'ev',PB_BEAM,memo),...pbBeam(pools,floor,'pr',PB_BEAM,memo)]) fin.set(e.id,e);
+    if(!floor) for(const e of pbBeam(pools,0,'pr',Infinity,memo,B)) fin.set(e.id,e);
+    else for(const e of [...pbBeam(pools,floor,'ev',PB_BEAM,memo,B),...pbBeam(pools,floor,'pr',PB_BEAM,memo,B)]) fin.set(e.id,e);
     /* the finalists that clear the floor by the search's own score, best first, worked with the
        real sums on fewer draws; then the best in full, which is what the card shows and what the
        floor is held to */
@@ -3904,14 +3911,14 @@ function pbBestReturn([id,label,n,floor],pool,memo,kMax){
    parlay). Legs in different games are a plain product, so there the search's chance is the
    builder's and this is the likeliest parlay outright. null only when the picks do not make n
    legs at all */
-function pbLikeliest(n,pool,memo,kMax){
-  const P=pool.pref, U=[...pool.pref,...pool.thin];
-  for(let k=0;k<=(kMax==null?n:kMax);k++){
+function pbLikeliest(n,pool,memo,kMax,base){
+  const B=base||[], m=n-B.length, P=pool.pref, U=[...pool.pref,...pool.thin];
+  for(let k=0;k<=(kMax==null?m:kMax);k++){
     if(k&&!pool.thin.length) break;
-    if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
-    const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
+    if(pbMaxLegs(P)<m-k||pbMaxLegs(U)<m) continue;
+    const pools=Array.from({length:m},(_,s)=>s<m-k?P:U);
     let best=null;
-    for(const e of pbBeam(pools,0,'pr',PB_WIDE,memo).slice(0,PB_LIKELY)){
+    for(const e of pbBeam(pools,0,'pr',PB_WIDE,memo,B).slice(0,PB_LIKELY)){
       const pr=parlayProb(pbOrder(e.legs)).corr;
       if(!best||pr>best.pr||(pr===best.pr&&e.id<best.e.id)) best={e,pr}; }
     if(best) return pbExact(best.e.legs);
@@ -3920,9 +3927,9 @@ function pbLikeliest(n,pool,memo,kMax){
 }
 /* one level: the best return over its floor, else (Medium, Aggressive, Extreme) the likeliest
    parlay of its size, marked likeliest so its card says which it is */
-function pbTierOn(t,pool,memo,kMax){
-  const r=pbBestReturn(t,pool,memo,kMax); if(r||!t[3]) return r;
-  const x=pbLikeliest(t[2],pool,memo,kMax); return x?{...x,likeliest:true}:null;
+function pbTierOn(t,pool,memo,kMax,base){
+  const r=pbBestReturn(t,pool,memo,kMax,base); if(r||!t[3]) return r;
+  const x=pbLikeliest(t[2],pool,memo,kMax,base); return x?{...x,likeliest:true}:null;
 }
 /* the legs with an edge first, exactly as before (preferred, then the fewest thin); only where
    they cannot make a parlay of the level's size at all are the totals added: every leg with an
@@ -3930,9 +3937,14 @@ function pbTierOn(t,pool,memo,kMax){
    totals as those legs leave to fill (pbTotalsFill) and no more, by the same two searches, so a
    total never takes the place of a leg with an edge */
 const pbTotalsFill=(n,pool)=>Math.max(0,n-pbMaxLegs([...pool.pref,...pool.thin]));
-function pbTier(t,pool,memo){
-  const r=pbTierOn(t,{pref:pool.pref,thin:pool.thin},memo); if(r||!(pool.mkt&&pool.mkt.length)) return r;
-  return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo,pbTotalsFill(t[2],pool));
+function pbTier(t,pool,memo,base){
+  /* base: the visitor's locked legs (pbTurn): every list is cut to the legs that fit beside them,
+     and the searches fill the rest; with none the levels are exactly the panel's own */
+  const B=base||[];
+  if(B.length) pool={pref:pool.pref.filter(c=>pbFits(B,c)),thin:pool.thin.filter(c=>pbFits(B,c)),mkt:(pool.mkt||[]).filter(c=>pbFits(B,c))};
+  if(B.length>=t[2]) return B.length===t[2]?pbExact(B):null;
+  const r=pbTierOn(t,{pref:pool.pref,thin:pool.thin},memo,undefined,B); if(r||!(pool.mkt&&pool.mkt.length)) return r;
+  return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo,pbTotalsFill(t[2]-B.length,pool),B);
 }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
@@ -3959,6 +3971,47 @@ function pbBuild(){
   out.pref=pool.pref.length; out.thin=pool.thin.length; out.mkt=pool.mkt.length; out.noPlayerPrices=c.players&&!pool.plGames;
   out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,pool,c)}; });
   return out;
+}
+/* ---------- a level of the visitor's own: legs locked, the rest turned over ----------
+   Each level's card has a lock on every leg and a New legs button. New legs keeps the locked legs
+   and fills the rest with the best the level's rules give from the legs that card has not shown
+   since the picks last changed (pbTier with the locked legs as its base, the pool less every leg
+   the card has shown); once none can, it starts over from the whole list, the locks kept, and the
+   card says so (wrapped). The turn is the visitor's while the page is open: PB_VIEW, outside S and
+   never saved, keyed on getPbTiers' signature so it is gone when the picks or the data move */
+let PB_VIEW={sig:null,t:{}};
+function pbViewOf(id){
+  const r=getPbTiers(); if(PB_VIEW.sig!==r.sig) PB_VIEW={sig:r.sig,t:{}};
+  return PB_VIEW.t[id]||(PB_VIEW.t[id]={lock:[],seen:[],tier:null,wrapped:false});
+}
+/* a level as its card shows it: the visitor's turn of it, else the panel's own */
+function pbShownTier(id){
+  const t=getPbTiers().tiers.find(x=>x.id===id); if(!t) return null;
+  const v=pbViewOf(id); return v.tier||t;
+}
+window.pbShownTier=pbShownTier;
+const pbLocked=(id,l)=>{ const v=PB_VIEW.t[id]; return !!v&&v.lock.some(x=>pbId(x)===pbId(l)); };
+function pbLockToggle(id,lid){
+  const t=pbShownTier(id); if(!t||!t.legs) return;
+  const v=pbViewOf(id), l=t.legs.find(x=>pbId(x)===lid); if(!l) return;
+  v.lock=v.lock.some(x=>pbId(x)===lid)?v.lock.filter(x=>pbId(x)!==lid):[...v.lock,l];
+}
+function pbTurn(id){
+  const r=getPbTiers(), base=r.tiers.find(x=>x.id===id), spec=PB_TIERS.find(s=>s[0]===id);
+  if(!base||!spec) return;
+  const v=pbViewOf(id), shown=v.tier||base; if(!shown.legs&&!v.lock.length) return;
+  const u=pbUi(), games=pbGames().filter(g=>!u.off.includes(g.id)), pool=pbPool(games);
+  /* a locked leg whose game has kicked off falls away */
+  v.lock=v.lock.filter(l=>games.some(g=>g.id===l.gid));
+  const locked=new Set(v.lock.map(pbId));
+  for(const l of (shown.legs||[])) if(!locked.has(pbId(l))&&!v.seen.includes(pbId(l))) v.seen.push(pbId(l));
+  const less=ex=>({pref:pool.pref.filter(c=>!ex.has(pbId(c))),thin:pool.thin.filter(c=>!ex.has(pbId(c))),mkt:(pool.mkt||[]).filter(c=>!ex.has(pbId(c)))});
+  let x=pbTier(spec,less(new Set([...v.seen,...locked])),new Map(),v.lock);
+  v.wrapped=false;
+  /* nothing unshown is left: start over from the whole list, the locks kept */
+  if(!x){ v.seen=[]; v.wrapped=true; x=pbTier(spec,less(locked),new Map(),v.lock); }
+  const head={id:base.id,label:base.label,n:base.n,floor:base.floor,turned:true};
+  v.tier=x?{...head,...x}:{...head,why:'No parlay of this size fits beside the legs you locked: unlock one.'};
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
 function getPbTiers(){
@@ -4095,13 +4148,17 @@ function pbThinLine(legs,form){
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr;
-  if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span></div><p class="pb-why">${esc(t.why)}</p></div>`;
-  const form=formSig()!=='';
+  /* the panel's own levels (o.ctl) carry New legs, and Reset once turned; the Elo picks do not */
+  const turn=o.ctl?`<span class="pb-turnbar"><button type="button" class="btn quiet small pb-turn" data-pb-turn="${t.id}" title="New legs for this level, keeping the ones you locked">\u21bb New legs</button>${t.turned?`<button type="button" class="btn quiet small" data-pb-reset="${t.id}" title="Back to the panel's own ${esc(t.label)} parlay">Reset</button>`:''}</span>`:'';
+  if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span>${t.turned?turn:''}</div><p class="pb-why">${esc(t.why)}</p></div>`;
+  const form=formSig()!=='', wrapped=o.ctl&&t.turned&&PB_VIEW.t[t.id]&&PB_VIEW.t[t.id].wrapped;
+  const lock=l=>{ if(!o.ctl) return ''; const on=pbLocked(t.id,l);
+    return `<button type="button" class="pb-lock${on?' on':''}" data-pb-lock="${t.id}|${esc(pbId(l))}" aria-pressed="${on}" aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}" title="${on?'Locked: kept when you ask for new legs':'Lock to keep this leg when you ask for new legs'}">${on?'\ud83d\udd12':'\ud83d\udd13'}</button>`; };
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
-    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${t.likeliest?`the likeliest ${t.legs.length} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
+    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${turn}${o.rule||(t.floor!=null?`<span class="pb-rule">${t.likeliest?`the likeliest ${t.legs.length} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
     <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
-    <ul class="pb-legs">${t.legs.map(l=>`<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
-    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs)}</p>`:''}
+    <ul class="pb-legs">${t.legs.map(l=>`<li>${lock(l)}<span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
+    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs)}</p>`:''}${wrapped?`<p class="pb-thin pb-wrap">Every other leg on your picks has had its turn here: back to the first.</p>`:''}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
 }
 window.pbTierCard=pbTierCard;
@@ -4133,7 +4190,7 @@ function pbPanel(){
         <div class="pb-glist">${glist}</div></details>
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
-    <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t)).join('')}</div>
+    <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t.why?t:pbShownTier(t.id),{ctl:!t.why})).join('')}</div>
     <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
     <div id="pbElo" class="pb-elo"></div></div>`;
 }
@@ -4177,7 +4234,14 @@ function wirePb(){
   const det=el.querySelector('details.pb-games');
   if(det) det.addEventListener('toggle',()=>{ const u=pbUi(); if(u.gx!==det.open){ u.gx=det.open; save(); } });
   el.querySelectorAll('[data-pb-add]').forEach(b=>b.addEventListener('click',()=>{
-    const t=getPbTiers().tiers.find(x=>x.id===b.dataset.pbAdd&&x.legs); if(t) pbPut(t.legs,`the ${t.label} ${t.legs.length}-leg parlay`); }));
+    const t=pbShownTier(b.dataset.pbAdd); if(t&&t.legs) pbPut(t.legs,`the ${t.label} ${t.legs.length}-leg parlay`); }));
+  /* a lock, New legs and Reset redraw the panel and keep the focus where it was */
+  el.querySelectorAll('[data-pb-lock]').forEach(b=>b.addEventListener('click',()=>{
+    const s=b.dataset.pbLock, i=s.indexOf('|'); pbLockToggle(s.slice(0,i),s.slice(i+1)); redraw(`[data-pb-lock="${s}"]`); }));
+  el.querySelectorAll('[data-pb-turn]').forEach(b=>b.addEventListener('click',()=>{
+    pbTurn(b.dataset.pbTurn); redraw(`[data-pb-turn="${b.dataset.pbTurn}"]`); }));
+  el.querySelectorAll('[data-pb-reset]').forEach(b=>b.addEventListener('click',()=>{
+    const id=b.dataset.pbReset; pbViewOf(id); delete PB_VIEW.t[id]; redraw(`[data-pb-turn="${id}"]`); }));
 }
 /* a game that kicks off while the page is open leaves the list and every tier: the page looks
    every half minute, and redraws the builder (which drops a started leg) and the panel */
@@ -4622,7 +4686,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='2ab3ec1';
+const PAGE_HASH='cd7543c';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -5120,7 +5184,9 @@ window.PARLAY_CARD=(function(){
   function fromTier(kind,id){
     let t=null;
     try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
-      :kind==='pb'&&typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id&&Array.isArray(x.legs)):null; }catch(e){ t=null; }
+      :kind==='pb'?(typeof window.pbShownTier==='function'?window.pbShownTier(id)
+        :(typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id):null)):null;
+      if(t&&!Array.isArray(t.legs)) t=null; }catch(e){ t=null; }
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
