@@ -107,6 +107,17 @@ jobs:
              python props/research/totals/shadow_check.py --games data/games.csv; then exit 0; fi
           git checkout HEAD -- props/research/totals/shadow/ledger.json 2>/dev/null || rm -f props/research/totals/shadow/ledger.json
           exit 1
+      # X's finished parlays clear themselves (the owner's call, October 2026): a parlay whose every
+      # game has a final in this run's games.csv is marked "cleared" in liveparlays/parlays.json two
+      # Eastern days after its last game, so X Parlays shows it on its game day and the next day.
+      # Its test runs first; a failure marks this step alone and puts the file back as committed
+      - name: Clear X's finished parlays
+        continue-on-error: true
+        run: |
+          if python liveparlays/tools/test_autoclear.py &&
+             python liveparlays/tools/autoclear.py --games data/games.csv; then exit 0; fi
+          git checkout HEAD -- liveparlays/parlays.json
+          exit 1
       # the built app on the new state, and the state against what it was built from: this run's
       # files, the quarterbacks, neutral sites, a call from every model, no call moved after its
       # kickoff (against the last commit; a rebuild is exempt), the record's disclosures
@@ -118,7 +129,7 @@ jobs:
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add betting/state.json props/research/totals/shadow/ledger.json
+          git add betting/state.json props/research/totals/shadow/ledger.json liveparlays/parlays.json
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "betting: update $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:
