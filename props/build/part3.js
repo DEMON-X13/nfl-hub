@@ -1114,8 +1114,8 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
    whenever the book takes a margin, so pricedLegs leaves it out and it is never preferred or thin.
    With Game total ticked the week's totals are a third list, the market legs (pool.mkt), taken only
    where the legs with an edge cannot make a parlay of a level's size at all, and marked no edge on
-   the card (the owner ticked Game total alone and got nothing, October 2026). At most one team bet
-   (to win or to cover) a game, one leg a player, and no line twice: a line's over and under, or a player's main line
+   the card (the owner ticked Game total alone and got nothing, October 2026). At most one side
+   (to win or to cover) and one total a game, one leg a player, and no line twice: a line's over and under, or a player's main line
    and a rung of the same stat, are one key. A tier is empty only when the picks do not make that
    many legs at all, and then it says why rather than show a smaller parlay. Its chance and price are the builder's own sums (parlayProb, parlayDec, same-game
    legs priced together with the model's correlations), worked on the legs in the builder's
@@ -1195,15 +1195,17 @@ function pbPool(games){
     if(c&&pbAllows(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX) mkt.push({...c,thin:false,market:true}); }
   return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size};
 }
-/* a leg that can join: not a line already on it, not a second game leg on one game, and not a
-   second leg on one player (two lines on one man, his catches and his yards, are nearly one bet) */
+/* a leg that can join: not a line already on it, not a second side (to win or to cover) on one
+   game, and not a second leg on one player (two lines on one man, his catches and his yards, are
+   nearly one bet). A game's total is a bet of its own beside its side, as a book takes them on one
+   ticket (the two are unrelated, legRho); its over and under are one key, so one total a game */
 function pbFits(cur,c){
   if(cur.some(l=>l.key===c.key)) return false;
-  if(isGameLeg(c)) return !cur.some(l=>isGameLeg(l)&&l.gid===c.gid);
+  if(isGameLeg(c)) return !cur.some(l=>isGameLeg(l)&&l.gid===c.gid&&(l.stat==='total')===(c.stat==='total'));
   return !cur.some(l=>!isGameLeg(l)&&l.pid===c.pid);
 }
-/* the most legs a list can make together: one a player, one game leg a game */
-function pbMaxLegs(list){ const pl=new Set(), games=new Set(); for(const l of list){ if(isGameLeg(l)) games.add(l.gid); else pl.add(l.pid); } return pl.size+games.size; }
+/* the most legs a list can make together: one a player, one side and one total a game */
+function pbMaxLegs(list){ const pl=new Set(), games=new Set(); for(const l of list){ if(isGameLeg(l)) games.add(l.gid+(l.stat==='total'?'|total':'|side')); else pl.add(l.pid); } return pl.size+games.size; }
 /* The search scores thousands of partial parlays, too many for the builder's Monte Carlo sums,
    so it scores each on the legs' own chances times, for every pair that moves together, how
    much likelier the pair is than the two apart: the same gaussian copula and correlations as
@@ -1323,7 +1325,7 @@ function pbTier(t,pool,memo){
   return pbTierOn(t,{pref:pool.pref,thin:[...pool.thin,...pool.mkt]},memo);
 }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
-   one team bet a game), since every level shows a parlay whenever they do. A player leg needs the
+   one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
    book's price, and a game's player prices are pulled on game day or the day before: Thursday's
    game on Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and the
    whole Sunday slate on Saturday morning (on the site by about 7:50am Pacific). With player bets
@@ -1519,7 +1521,7 @@ function pbPanel(){
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t)).join('')}</div>
-    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player, one team bet a game; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
+    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
     <div id="pbElo" class="pb-elo"></div></div>`;
 }
 function renderPb(){

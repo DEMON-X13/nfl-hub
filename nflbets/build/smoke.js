@@ -549,7 +549,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(/Parlay Builder|-leg parlay/.test(txt(pb.firstElementChild.querySelector('h2'))), 'the builder is not the first card under the panel: ' + txt(pb.firstElementChild));
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
   /* "the likeliest" worked out in full: where no two legs that could share a parlay move together
-     (different games, or one team bet a game), every parlay's chance is a plain product, so every
+     (different games, or a game's side and its total), every parlay's chance is a plain product, so every
      parlay of a likeliest tier's size with as many thin legs is worked with parlayProb and none may
      land likelier. That holds whatever the legs are priced at, so a fallback chosen by any other
      measure (the best return under the floor, say) fails it on the week's own picks. Bounded, so
@@ -565,7 +565,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
   if (hasPb) { const Sx = w.eval('S'), games = w.eval('pbGames()'), U = () => Sx.ui.pb, KINDS = ['ml', 'ats', 'total', 'over', 'under'];
     const kindOf = w.eval('pbKind'), mlProb = w.eval('mlProb'), isG = w.eval('isGameLeg'), started = w.eval('gameStarted');
-    /* the legs the picks make, and the most a parlay can take of them (one a player, one team bet a game) */
+    /* the legs the picks make, and the most a parlay can take of them (one a player, one side and one total a game) */
     const maxLegs = () => { const u = U(), on = games.filter(g => !u.off.includes(g.id));
       if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return w.eval('pbMaxLegs')([...p.pref, ...p.thin, ...(p.mkt || [])]); };
     /* what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
@@ -588,8 +588,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(t.legs.every(l => (l.stat === 'total') === !!l.market) && (t.mkt || 0) === t.legs.filter(l => l.market).length
           && (!t.mkt || w.eval('pbTier')(w.eval('PB_TIERS').find(s => s[0] === t.id), { pref: pool.pref, thin: pool.thin, mkt: [] }, new Map()) === null),
           `${lab}: the ${t.id} tier holds a total that is not a market leg, or took one where the legs with an edge make the level`);
-        chk(new Set(t.legs.filter(isG).map(l => l.gid)).size === t.legs.filter(isG).length && new Set(t.legs.filter(l => !isG(l)).map(l => l.pid)).size === t.legs.filter(l => !isG(l)).length,
-          `${lab}: the ${t.id} tier has two game bets on one game, or two legs on one player`);
+        { const sd = t.legs.filter(l => isG(l) && l.stat !== 'total'), tt = t.legs.filter(l => l.stat === 'total'), pl = t.legs.filter(l => !isG(l));
+          chk(new Set(sd.map(l => l.gid)).size === sd.length && new Set(tt.map(l => l.gid)).size === tt.length && new Set(pl.map(l => l.pid)).size === pl.length,
+            `${lab}: the ${t.id} tier has two sides or two totals on one game, or two legs on one player`); }
         chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.likeliest || t.corr >= t.floor) && (!t.likeliest || t.floor > 0),
           `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor without being the likeliest of its size`);
         /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */

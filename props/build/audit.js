@@ -495,7 +495,7 @@ setTimeout(async()=>{
     const setKinds=ks=>{ for(const k of KINDS) U().k[k]=ks.includes(k); w.eval('PB_CACHE=new Map()'); };
     let built=0, said=0, legsSeen=0, thinSeen=0, corrTiers=0, likeliestSeen=0, likeliestWorked=0, combosWorked=0;
     /* "the likeliest" worked out in full. Where no two legs that could share a parlay move together
-       (different games, or one team bet a game), every parlay's chance is a plain product and
+       (different games, or a game's side and its total), every parlay's chance is a plain product and
        parlayProb works it exactly, so every parlay of the tier's size with its count of thin legs
        is worked, and none may land likelier than the tier. That holds whatever the legs are priced
        at, so a fallback chosen by any other measure (the best return under the floor, say) fails
@@ -575,7 +575,8 @@ setTimeout(async()=>{
           if(l.thin) thinSeen++; }
         chk(new Set(t.legs.map(l=>l.key)).size===n,`${lab}: the ${t.id} tier has one line twice (or both sides of one)`);
         const gl=t.legs.filter(isG), pl=t.legs.filter(l=>!isG(l));
-        chk(new Set(gl.map(l=>l.gid)).size===gl.length,`${lab}: the ${t.id} tier has two game bets on one game`);
+        const sides=gl.filter(l=>l.stat!=='total'), tots=gl.filter(l=>l.stat==='total');
+        chk(new Set(sides.map(l=>l.gid)).size===sides.length&&new Set(tots.map(l=>l.gid)).size===tots.length,`${lab}: the ${t.id} tier has two sides, or two totals, on one game`);
         chk(new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: the ${t.id} tier has two legs on one player`);
         /* the card's numbers are the builder's own sums on the legs as the builder orders them */
         const order=t.legs.map(l=>l.key).join(), want=[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
@@ -637,7 +638,7 @@ setTimeout(async()=>{
     setKinds(['ats']); hold('this week, spreads only');
     /* and the week's moneylines alone, and Teams only on the first four games: each a pick where a
        level may fall back, and hold works every likeliest tier out in full against every parlay of
-       its size (one team bet a game, so every parlay is a plain product) */
+       its size (a game's side and its total are unrelated, so every parlay is a plain product) */
     setKinds(['ml']); hold('this week, moneylines only');
     { const g4=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g4.slice(4).map(g=>g.id); w.eval('PB_CACHE=new Map()');
       hold('this week, teams only, the first four games'); U().off=[]; }
@@ -667,10 +668,11 @@ setTimeout(async()=>{
       for(const g of games.slice(1)){ const c=d.querySelector(`#pbPanel [data-pb-game="${g.id}"]`); c.checked=false; c.dispatchEvent(new w.Event('change')); }
       chk(U().off.length===games.length-1&&!U().off.includes(one.id),'unticking the games one by one did not leave one ticked');
       hold('one game');
-      /* Teams only on one game: one game bet a game makes one leg, so every tier says there are too few */
+      /* Teams only on one game: a side and its total make two legs at most, so Safe is that pair or
+         says why, and every bigger level says there are too few */
       d.querySelector('#pbPanel [data-pb-mix="teams"]').click();
       const r1=hold('one game, teams only');
-      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks: tick more games or bet types\.$/.test(t.why)),'one game\'s team bets did not leave every tier saying there are too few legs: '+r1.tiers.map(t=>t.why).join(' / '));
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&/^(Only [12] legs?|No legs) on your picks: tick more games or bet types\.$/.test(t.why))),'one game\'s team bets did not make at most a side and its total, or a level too big for them did not say there are too few legs: '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); d.querySelector('#pbPanel [data-pb-mix="all"]').click(); }
     setKinds([]); { const r0=F('getPbTiers')(); chk(r0.tiers.every(t=>!t.legs&&/No bet types ticked/.test(t.why)),'with no bet type ticked the tiers did not say so'); }
     setKinds(KINDS); F('renderPb')();
@@ -778,10 +780,10 @@ setTimeout(async()=>{
       chk(!/tick more/.test(tx)&&!/No line on your picks has a real sportsbook price/.test(tx),'with no player price on file, Players only still says to tick more, or repeats it in the note');
       setKinds(KINDS); const rA=hold('no player prices, all');
       chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):t.why.endsWith(', and '+noPlLow)),'with no player price on file, All builds a player leg, or an empty tier does not say no player prices are on file: '+rA.tiers.map(t=>t.why||'built').join(' / '));
-      /* All on one game: its team bets make one leg (one game bet a game), so no tier can be built,
-         and each says both why: too few legs, and no player prices yet */
+      /* All on one game: its team bets make two legs at most (a side and its total), so only Safe
+         can be built, and every bigger level says both why: too few legs, and no player prices yet */
       U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
-      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow)),
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&/^(Only [12] legs?|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow))),
         'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
       U().off=[];
       S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
