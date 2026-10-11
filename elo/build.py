@@ -47,9 +47,28 @@ two and three targets after a season of eight or nine, were both skipped before 
 his rating stood frozen at 2025's). Every season every rating is pulled a quarter of the way back to 1500, since
 rosters, schemes and ages change.
 
-THE SCORES. For a QB, RB, WR or TE the score is expected points added on the plays he
-touched (nflverse's passing_epa + rushing_epa + receiving_epa), which already prices yards,
-downs, turnovers and sacks against the situation. For a kicker it is points over what an
+THE SCORES. For a QB the score is expected points added on the plays he touched (nflverse's
+passing_epa + rushing_epa + receiving_epa), which already prices yards, downs, turnovers and
+sacks against the situation. For a RB, WR or TE (PRODUCED) it is what he produced: yards from
+scrimmage, 20 for each touchdown, less 25 for each fumble lost. These three were scored on EPA
+too until October 2026, and it rated them backwards. The average carry loses expected points
+(the league's backs ran at -0.05 to -0.09 EPA a carry every season), so the more a team trusted
+a back with the ball the lower he scored: a club's lead back was rated above the back behind
+him at the season's end in only 121 of 273 team-seasons since 2013 (44%), and in week 5 of 2026
+Brian Robinson, a backup with 194 rushing yards and four touchdowns, stood 5th among backs and
+Bijan Robinson, with 494 yards, 30th. Receivers were less wrong, a target being worth a little
+on average, but the lead receiver stood above the next in only 74% of team-seasons and the lead
+tight end in 67%. Scored on production the three are 92%, 87% and 89%, and the ratings read as
+a measure of who is good: Walker, Gibbs, Bijan Robinson, Henry and Taylor lead the backs.
+The record on the same data, walk-forward 2013-2025 on 3,333 games: 2101 right (63.0%) and a
+log loss of 0.6392 on EPA, 2111 (63.3%) and 0.6398 on production, level within the noise; the
+matchups' projections are better on every rushing and receiving yards line (rushing yards
+33.792 to 33.694 against the form alone's 33.752, where EPA had made them worse; receiving
+yards 35.440 to 35.398 for receivers and 26.965 to 26.882 for tight ends). Tried on the backs
+and not kept: EPA over the league's average carry (the lead back on top in 54%), and half EPA,
+half production (88%, 63.7% and 0.6393, but Brian Robinson still 16th). A quarterback stays on
+EPA: his volume is not a cost, and EPA prices his sacks and interceptions as production does
+not. For a kicker it is points over what an
 average kicker makes from each distance bucket. For a defender (DL, LB, DB) it is a weighted
 sum of the events he made: sacks, tackles for loss, hits, forced and recovered fumbles,
 interceptions, passes defended, touchdowns and tackles. Offensive linemen and punters have no
@@ -343,7 +362,7 @@ HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
-FORMULA = '2026-10-10'
+FORMULA = '2026-10-11'
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
@@ -388,8 +407,10 @@ FACET = {'QB': 'pass_d', 'WR': 'pass_d', 'TE': 'pass_d', 'RB': 'rush_d', 'DB': '
 # the depth a team fields at each group, and how much each slot counts in the game model
 DEPTH = {'QB': [1.0], 'RB': [1.0, 0.5], 'WR': [1.0, 0.7, 0.45], 'TE': [1.0], 'K': [1.0],
          'DL': [1.0, 0.8, 0.6, 0.4], 'LB': [1.0, 0.7, 0.4], 'DB': [1.0, 0.8, 0.6, 0.5, 0.4]}
+# the groups scored on what they produced (yards, touchdowns, fumbles lost) rather than on EPA (THE SCORES)
+PRODUCED = ['RB', 'WR', 'TE']
 # a game's weight is involvement over this norm, capped at one
-VOLUME = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
+VOLUME ={'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
 K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 120.0, 8
 # the season rating's placement: K = K_SET + (K_PLACE - K_SET) * K_DECAY^games, so the first
 # games move it hard (160, 109, 78, 60, 49 ...) and it settles toward 32, as Glicko's shrinking
@@ -915,6 +936,10 @@ def scores(d):
     vol = pd.Series(0.0, index=d.index)
     off = g.isin(['QB', 'RB', 'WR', 'TE'])
     score[off] = epa[off]
+    # a back or a receiver is scored on what he produced, not on EPA, which rates volume as a cost (THE SCORES)
+    made = (n('rushing_yards') + n('receiving_yards') + 20 * (n('rushing_tds') + n('receiving_tds'))
+            - 25 * (n('rushing_fumbles_lost') + n('receiving_fumbles_lost')))
+    score[g.isin(PRODUCED)] = made[g.isin(PRODUCED)]
     score[g == 'K'] = fg[g == 'K']
     dl = g.isin(['DL', 'LB', 'DB'])
     score[dl] = defense[dl]
