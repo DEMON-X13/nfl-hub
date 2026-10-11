@@ -126,6 +126,19 @@ bakes only this season's games, so bumping that line is the whole change: `nflbe
 reads it (and stops if its shape changes) and writes its KEY into `nflbets/build/storage.js`, so
 neither needs an edit.
 
+A price row turns a published run red only for a book name that could be two players (two in
+the game's first matching tier, printed name, then legal first name, then short, nickname or swapped,
+and not settled by only one of them playing a position the book prices), two
+names placed on one player's same price, or misses too many to be a roster a day behind (on the
+games still to come, more than 10% of one game's player price rows or more than four names); a
+few rows for players the roster has no row for yet are logged and kept in the payload's
+`unmatched` (`price_problems` in `weekly.py`; `python3 test_unmatched.py` holds it and the name
+rule, `names.py` with `nicknames.json`, which the audit's `nameRule` reads too, to their cases).
+A main line on no player in a game to come is still reported, as before. Only a printed name may
+land on a player at a position the book never prices: the looser tiers look only at those it does,
+so a signing missing from the roster file never lends his prices and lines to a defensive back of
+the same surname.
+
 A game total is a leg like a team's win or cover (`total` beside `ml` and `ats`: `totalBet`,
 `totalLeg`, `settleGameLeg`, `isGameLeg` in `part2.js`), offered over and under on the Game bets card
 under each Pick'ems game, and added by hand only: it never makes a suggested parlay. Its line is the
