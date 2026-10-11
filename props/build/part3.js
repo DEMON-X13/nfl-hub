@@ -1096,7 +1096,11 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
    likeliest 2-leg parlay; Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the
    best expected return (the chance all legs land times what it pays) that still lands at least
    25%, 12% and 5% of the time: a floor that falls tier by tier, about 63%, 59% and 55% a leg on
-   average, so a longer parlay asks a little less of each leg. Under All nothing forces or caps a
+   average, so a longer parlay asks a little less of each leg. Where no parlay of a level's size
+   on the reader's picks reaches its floor, the level shows the likeliest parlay of that size
+   instead (pbLikeliest, the tier marked likeliest), so every level has a parlay whenever the
+   picks make that many legs: the owner wants each level filled, with its chance and price, rather
+   than an empty box (October 2026). Under All nothing forces or caps a
    kind: a tier holds whatever mix of team and player legs does best by those rules.
 
    A leg qualifies as the old Suggested parlays window's did: a real sportsbook price, the
@@ -1108,8 +1112,8 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
    book's own chance (totalBet), which sits under the chance its price implies whenever the book
    takes a margin, so it has no edge to offer, and pricedLegs leaves it out. At most one team bet
    (to win or to cover) a game, one leg a player, and no line twice: a line's over and under, or a player's main line
-   and a rung of the same stat, are one key. A tier that cannot be built says why rather than show a smaller
-   parlay. Its chance and price are the builder's own sums (parlayProb, parlayDec, same-game
+   and a rung of the same stat, are one key. A tier is empty only when the picks do not make that
+   many legs at all, and then it says why rather than show a smaller parlay. Its chance and price are the builder's own sums (parlayProb, parlayDec, same-game
    legs priced together with the model's correlations), worked on the legs in the builder's
    order, so Add to builder shows the same numbers. Searched, not enumerated: a beam of the best
    partial parlays at each size, once by expected return and once by chance, so a floor a
@@ -1118,7 +1122,7 @@ function sideAllows(c){ const s=suggestSide(); return s==='any'||(c.grp!=='TEAM'
 const PB_KINDS=[['ml','Moneyline','straight up'],['ats','Spread','to cover'],['total','Game total','over/under'],['over','Player overs',''],['under','Player unders','']];
 const PB_MIXES=[['all','All',['ml','ats','total','over','under']],['teams','Teams only',['ml','ats','total']],['players','Players only',['over','under']]];
 const PB_TIERS=[['safe','Safe',2,0],['med','Medium',3,0.25],['aggr','Aggressive',4,0.12],['xtrm','Extreme',5,0.05]];
-const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_FINAL=8;
+const PB_EDGE=0.03, PB_PMIN=0.45, PB_PMAX=0.97, PB_CAP=40, PB_BEAM=12, PB_WIDE=24, PB_LIKELY=3, PB_FINAL=8;
 let PB_CACHE=new Map(), PB_SHOWN=null, PB_AMT_T=null;
 /* ---------- the amount bet: one number, S.stake, set from either box ----------
    The Bet amount box over the suggested parlays and the builder's own stake are one amount: what
@@ -1148,7 +1152,8 @@ function pbClean(v){
 function pbUi(){ if(!S.ui) S.ui={}; return (S.ui.pb=pbClean(S.ui.pb)); }
 /* a leg's box: a game bet by what it is, a player leg by its side (a touchdown and a ladder rung are overs) */
 function pbKind(l){ return l.stat==='ml'||l.stat==='ats'||l.stat==='total'?l.stat:(l.side==='under'?'under':'over'); }
-/* the mix the boxes make: one of the three, or none of them */
+/* the mix the boxes make: one of the three, or 'custom' when they make none of them (no mix
+   button is lit then, and nothing else is shown: the boxes say what is ticked) */
 function pbMix(u){ const on=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]).join(); const m=PB_MIXES.find(x=>x[2].join()===on); return m?m[0]:'custom'; }
 /* the week's games still to kick off (and with no score): the list the reader ticks from */
 function pbGames(){ return gamesIn(currentWeek()).filter(g=>!gameStarted(g)&&!hasScore(g)); }
@@ -1249,10 +1254,10 @@ function pbExact(legs){
   const L=pbOrder(legs.map(l=>({...l}))), pr=parlayProb(L);
   return {legs:L,corr:pr.corr,indep:pr.indep,dec:parlayDec(L.map(l=>({leg:l,ml:l.price}))),thin:L.filter(l=>l.thin).length};
 }
-/* one tier: preferred legs alone first, then with k legs from the thin list, fewest first. The
-   best few by the search's own score are worked exactly, and the best of those that clears the
-   floor is the tier */
-function pbTier([id,label,n,floor],pool,memo){
+/* a level's best return: preferred legs alone first, then with k legs from the thin list, fewest
+   first. The best few by the search's own score are worked exactly, and the best of those that
+   clears the floor is the tier; null when none does. Safe, with no floor, is the likeliest pair */
+function pbBestReturn([id,label,n,floor],pool,memo){
   const P=pool.pref, U=[...pool.pref,...pool.thin];
   for(let k=0;k<=n;k++){
     if(k&&!pool.thin.length) break;
@@ -1271,16 +1276,45 @@ function pbTier([id,label,n,floor],pool,memo){
   }
   return null;
 }
-/* why a tier is empty, in the reader's terms. A player leg needs the book's price, and a game's
-   player prices are pulled within a day of its kickoff (Thursday's game on Thursday, Sunday's on
-   Saturday evening, Monday's on Monday): with player bets ticked and none of the ticked games
-   priced yet, that is the reason, and the tier says so rather than ask for more ticks (under
-   Players only no tick would help). c: which of the two kinds are ticked */
-const PB_NO_PL='no player prices yet: they are pulled within a day of each kickoff.';
-function pbWhy(n,floor,pool,c){
+/* the likeliest n-leg parlay on the picks, for a level none of whose parlays reaches its floor.
+   Chosen as Safe is: preferred legs alone first, then with k thin legs, fewest first. At each k a
+   beam by the search's own chance, twice as wide as the floor search's, and its best three by that
+   chance worked with the builder's own sums (parlayProb, on the legs in the builder's order), the
+   highest of those the tier (the lower id on a tie, so the same picks always give the same
+   parlay). Legs in different games are a plain product, so there the search's chance is the
+   builder's and this is the likeliest parlay outright. null only when the picks do not make n
+   legs at all */
+function pbLikeliest(n,pool,memo){
+  const P=pool.pref, U=[...pool.pref,...pool.thin];
+  for(let k=0;k<=n;k++){
+    if(k&&!pool.thin.length) break;
+    if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
+    const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
+    let best=null;
+    for(const e of pbBeam(pools,0,'pr',PB_WIDE,memo).slice(0,PB_LIKELY)){
+      const pr=parlayProb(pbOrder(e.legs)).corr;
+      if(!best||pr>best.pr||(pr===best.pr&&e.id<best.e.id)) best={e,pr}; }
+    if(best) return pbExact(best.e.legs);
+  }
+  return null;
+}
+/* one level: the best return over its floor, else (Medium, Aggressive, Extreme) the likeliest
+   parlay of its size, marked likeliest so its card says which it is */
+function pbTier(t,pool,memo){
+  const r=pbBestReturn(t,pool,memo); if(r||!t[3]) return r;
+  const x=pbLikeliest(t[2],pool,memo); return x?{...x,likeliest:true}:null;
+}
+/* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
+   one team bet a game), since every level shows a parlay whenever they do. A player leg needs the
+   book's price, and a game's player prices are pulled on game day or the day before: Thursday's
+   game on Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and the
+   whole Sunday slate on Saturday morning (on the site by about 7:50am Pacific). With player bets
+   ticked and none of the ticked games priced yet, that is the reason, and the tier says so rather
+   than ask for more ticks (under Players only no tick would help). c: which of the two kinds are ticked */
+const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning.';
+function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin]);
-  const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`
-    :floor?`No ${n}-leg parlay on your picks lands ${Math.round(floor*100)}% of the time or more`:`No ${n}-leg parlay on your picks`;
+  const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`:`No ${n}-leg parlay on your picks`;
   if(c&&c.players&&!pool.plGames) return c.teams?`${what}, and ${PB_NO_PL}`:PB_NO_PL[0].toUpperCase()+PB_NO_PL.slice(1);
   return `${what}: tick more games or bet types.`;
 }
@@ -1293,7 +1327,7 @@ function pbBuild(){
   if(!games.length){ out.tiers=empty('No games ticked: tick at least one above.'); return out; }
   const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats)};
   out.pref=pool.pref.length; out.thin=pool.thin.length; out.noPlayerPrices=c.players&&!pool.plGames;
-  out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,floor,pool,c)}; });
+  out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,pool,c)}; });
   return out;
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
@@ -1428,7 +1462,7 @@ function pbTierCard(t,o){
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span></div><p class="pb-why">${esc(t.why)}</p></div>`;
   const form=formSig()!=='';
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
-    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
+    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${o.rule||(t.floor!=null?`<span class="pb-rule">${t.likeliest?`the likeliest ${t.legs.length} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
     <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
     <ul class="pb-legs">${t.legs.map(l=>`<li><span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.thin?' <i class="pb-thinmark">thin edge</i>':''}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
     ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}
@@ -1441,14 +1475,14 @@ function pbPanel(){
   if(!games.length) return `<div class="card pb" id="pbCard">${head}
     <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p></div>`;
   const r=getPbTiers(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
-  const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>${mix==='custom'?'<span class="pb-custom" title="Your own choice of bet types: none of the three mixes">Custom</span>':''}`;
+  const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>`;
   const chips=PB_KINDS.map(([k,l,s])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}${s?` <small>${s}</small>`:''}</span></label>`).join('');
   const glist=games.map(g=>{ const on=!u.off.includes(g.id), d=fmtDate(g);
     return `<label class="pb-g${on?' on':''}"><input type="checkbox" data-pb-game="${g.id}" ${on?'checked':''} aria-label="${esc(g.a)} at ${esc(g.h)}, ${esc(d.day)} ${esc(d.t)}"><span><b>${esc(g.a)} @ ${esc(g.h)}</b><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></span></label>`; }).join('');
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
   if(u.k.total) notes.push('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.');
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled within a day of each kickoff.`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
@@ -1461,7 +1495,7 @@ function pbPanel(){
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t)).join('')}</div>
-    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time. One leg a player, one team bet a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
+    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player, one team bet a game; legs in one game are priced together, as a book prices them. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
     <div id="pbElo" class="pb-elo"></div></div>`;
 }
 function renderPb(){
