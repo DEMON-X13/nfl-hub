@@ -310,6 +310,11 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const live = await run({ file, state: 'in', pay });
     const d2 = [...live.d.querySelectorAll('.sp-leg')].find(r => rx(OUT.n + ' Receiving').test(who(r)));
     chk(!!d2 && status(d2) === 'void', 'a ruled-out player\'s leg is not void while the game is on: ' + (d2 ? status(d2) : ''));
+    /* every game over: all three are settled and folded; while it is on, only a gone one is */
+    chk([...v.d.querySelectorAll('#lpCard .savedp')].every(c => !!c.closest('#lpSettled')) && v.d.querySelectorAll('#lpCard #lpSettled .savedp').length === 3,
+      'with every game over a parlay is left out of the Settled fold');
+    chk([...live.d.querySelectorAll('#lpCard .savedp')].every(c => !!c.closest('#lpSettled') === /\bgone\b/.test(txt(c.querySelector('.sp-head')))),
+      'with the game on, a parlay is folded though not gone, or a gone one is left in the live list');
   }
 
   // ---- C6. the scoreboard asked for in each game's own season and week, playoffs too ----
@@ -357,6 +362,18 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     chk(typeof live.w.LIVE_IO === 'undefined' && typeof live.w.NFLSYNC === 'undefined' && live.w.localStorage.getItem('live_parlays_v1') === null, 'the shared key (LIVE_IO) or the sync layer is still on the page, or the section wrote a key');
     const done = await run({ state: 'post' });
     chk(done.d.querySelectorAll('#lpCard .savedp').length === 2 && done.d.querySelectorAll('#lpCard .pill.ok, #lpCard .pill.bad').length === 2, 'a finished parlay should still be drawn and say landed or gone');   /* the section only: the Props list has its own FINAL pills */
+    /* settled parlays fold away at the foot, shut, the same on every device with nothing to press;
+       mid-game nothing is folded but a parlay already gone; the fold stays as the viewer left it
+       across a redraw */
+    { const f = done.d.querySelector('#lpCard details#lpSettled');
+      chk(!!f && !f.open && f.querySelectorAll('.savedp').length === 2 && /^Settled/.test(txt(f.querySelector('summary'))) && /2 parlays/.test(txt(f.querySelector('summary')))
+        && /None of X’s parlays is still live/.test(txt(done.d.getElementById('app'))),
+        'finished parlays are not folded away, shut, under "Settled" with their count, with a line saying none is live: ' + txt(done.d.getElementById('app')).slice(0, 160));
+      if (f) { f.open = true; f.dispatchEvent(new done.w.Event('toggle')); done.w.lpDraw();
+        const f2 = done.d.querySelector('#lpCard details#lpSettled');
+        chk(!!f2 && f2.open === true && f2 !== f, 'the Settled fold shut itself on a redraw'); } }
+    chk([...live.d.querySelectorAll('#lpCard .savedp')].every(c => !!c.closest('#lpSettled') === /\bgone\b/.test(txt(c.querySelector('.sp-head')))),
+      'mid-game a parlay is folded away though it is not gone, or a gone one is left in the live list');
     /* a browser's own parlays, settled or not, saved before: drawn nowhere, nothing offered to clear
        them, and kept in its storage as they were */
     const ownBlob = JSON.stringify({ stake: 5, saved: [
