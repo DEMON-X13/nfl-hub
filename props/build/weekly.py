@@ -1,6 +1,7 @@
-"""Weekly refresh, run unattended by .github/workflows/props.yml: five price pulls a week
-(PULL_SLOTS below), and post-game, stats and daily injury-report runs with --catch-up: they price
-only a game a dropped pull left unpriced, and spend nothing otherwise.
+"""Weekly refresh, run unattended by .github/workflows/props.yml: four price pulls a week
+(PULL_SLOTS below), and post-game, stats, Saturday and daily injury-report runs with --catch-up:
+they price only a game a dropped pull left unpriced, and spend nothing otherwise.
+test_pull_schedule.py drives the pulls and catch-ups over the season's schedule, offline.
 
     python weekly.py                 (from props/build)
     python weekly.py --no-odds       skip the price pull
@@ -36,8 +37,8 @@ What it does, in order:
      from raw/feat.pkl: on the first run of a new season the committed table lacks it, and the
      run rebuilds it (features_ready) for the workflow to commit
   3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking
-     off before the next scheduled pull is likely to land (hours_to_next_pull) with
-     data/oddsfetch.py and merges them into that week's files
+     off before the next scheduled pull is likely to land (pull_window, hours_to_next_pull) with
+     data/oddsfetch.py (choose() picks the games) and merges them into that week's files
   4. bakes into the payload every week's player
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
@@ -86,11 +87,17 @@ def run(args,cwd,label,soft=False,env=None):
     if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
 
-# Price pulls: (weekday, hour, minute) UTC, matching the crons in .github/workflows/props.yml.
-# Never on the hour: :00 is the most contended minute on the platform and the likeliest to be dropped.
+# Price pulls: (weekday, hour, minute) UTC, matching the "17 " crons in .github/workflows/props.yml
+# (test_pull_schedule.py holds the two together). Never on the hour: :00 is the most contended
+# minute on the platform and the likeliest to be dropped.
 # Mon for Monday night; Wed for a holiday game; Thu for Thursday night, Thanksgiving and Friday's
-# games; Sat morning for a Saturday game (nothing in an ordinary week); Sat evening for Sunday.
-PULL_SLOTS=[(0,8,17),(2,8,17),(3,8,17),(5,8,17),(5,23,17)]
+# games; Saturday 05:17 for the weekend: Saturday's games and the whole Sunday slate, London to
+# Sunday night. The owner looks at the Sunday slate on Saturday (October 2026: "all day saturday to
+# look at potential bets instead of scrambling"), so its prices land by Saturday morning Pacific
+# even at the latest GitHub has started a run (05:17 + 9.4h is 7:41am PDT, 6:41am PST), about a
+# day before kickoff; it replaced a Saturday 08:17 pull for Saturday's games and a 23:17 one for
+# Sunday's, and every game is still priced once.
+PULL_SLOTS=[(0,8,17),(2,8,17),(3,8,17),(5,5,17)]
 # GitHub fires this repo's scheduled runs late: 3 to 9 hours, measured across every job in
 # October 2026 (props median 7.2h, one catch-up 9.2h). A pull prices every game that kicks off
 # before the next slot plus LATE, so a game is never left to a pull that lands after its kickoff.
@@ -113,17 +120,38 @@ def hours_since_last_pull(now=None):
     past=[s for s in _slots(now,8,0) if s<=now]
     return (now-past[-1]).total_seconds()/3600 if past else 999.0
 
-def hours_to_next_pull(now=None):
+def hours_to_next_pull(now=None,soon=1800):
     """How far ahead to price: up to the next scheduled pull, plus LATE for that pull landing
     late. Every game is then priced by a pull that runs before it kicks off, with no special
     case for a holiday, a Saturday game or a Wednesday night game.
 
-    Today counts: a manual Saturday morning run must see that evening's pull rather than skip
-    to Monday. A pull less than half an hour away is treated as already happening."""
+    Today counts: a manual run early on a Monday must see that morning's pull rather than skip
+    to Wednesday and buy Monday night itself. A pull less than soon seconds away (half an hour)
+    is treated as already happening; a catch-up passes 0 (pull_window)."""
     now=now or datetime.datetime.now(datetime.timezone.utc)
     for s in _slots(now,0,9):
-        if (s-now).total_seconds()>1800: return (s-now).total_seconds()/3600+LATE
+        if (s-now).total_seconds()>soon: return (s-now).total_seconds()/3600+LATE
     return 120.0
+
+def pull_window(now=None,catch_up=False):
+    """The hours ahead this run prices (oddsfetch.py --hours), or None when a catch-up leaves it
+    to the scheduled pull: inside CATCH_UP_WAIT of a slot that pull is probably still on its way,
+    and outside it the catch-up prices only what has no prices (--missing).
+
+    A catch-up makes up the pull before it, so its window ends at the very next slot (plus LATE),
+    however close: it used to skip a slot under half an hour away as a pull does, so Sunday's
+    23:07 run landing nine hours late, at 08:07 on Monday, bought Monday night ten minutes before
+    the Monday pull's slot and left that pull nothing to do (no credit spent twice, the reprice
+    guard saw to that, but the game priced hours earlier than its pull would have)."""
+    now=now or datetime.datetime.now(datetime.timezone.utc)
+    if catch_up and hours_since_last_pull(now)<CATCH_UP_WAIT: return None
+    return hours_to_next_pull(now,0 if catch_up else 1800)
+
+def current_week(gs):
+    """(week, season over, games still to play): the earliest week with a regular-season game
+    still to play (no home score in games.csv yet), or the last week once every one is final"""
+    unplayed=[int(r['week']) for r in gs if not r['home_score'].strip()]
+    return (min(unplayed) if unplayed else max(int(r['week']) for r in gs)),not unplayed,len(unplayed)
 
 def problems_file():
     """the job reads this after the commit step and goes red if it has anything in it"""
@@ -329,14 +357,12 @@ def main():
         if bad: raise IOError(bad)
         gs=[r for r in rows if r['season']==str(SEASON) and r['game_type']=='REG']
         if len(gs)<200: raise IOError(f"only {len(gs)} {SEASON} regular-season games in it")
-        unplayed=[int(r['week']) for r in gs if not r['home_score'].strip()]
-        season_over=not unplayed
-        week=min(unplayed) if unplayed else max(int(r['week']) for r in gs)
+        week,season_over,n_unplayed=current_week(gs)
         kos=[kickoff({'d':r['gameday'],'t':r['gametime']}) for r in gs]; kos=[k for k in kos if k]
         first_ko=min(kos) if kos else None
         fkos=[kickoff({'d':r['gameday'],'t':r['gametime']}) for r in gs if r['home_score'].strip()]; fkos=[k for k in fkos if k]
         first_final=min(fkos) if fkos else None
-        say(f"  current week {week} ({len(unplayed)} games still to play this season)"+(' -- the regular season is over' if season_over else ''))
+        say(f"  current week {week} ({n_unplayed} games still to play this season)"+(' -- the regular season is over' if season_over else ''))
     except Exception as e:
         refuse(f"schedule ({GAMES}): {e}; the week cannot be worked out, so nothing is baked")
         first_final=None
@@ -377,13 +403,14 @@ def main():
         if line.startswith(('players','depth','build')): say('  '+line.strip())
     if rc!=0: refuse('payload.py failed, so the rosters and schedule could not be rebuilt'); return finish(a)
     # 3. prices
+    window=pull_window(catch_up=a.catch_up)     # None: a catch-up leaves it to the pull still on its way
     if a.no_odds: say("  price pull skipped (--no-odds)")
     elif season_over: say("  price pull skipped: the regular season is over")
     elif not os.environ.get('GITHUB_ACTIONS') and not a.local: say("  price pull skipped: credits are spent only by the props workflow (pass --local to pull from this machine)")
     elif not os.environ.get('ODDS_API_KEY'): say("  price pull skipped: ODDS_API_KEY is not set in this environment"); problems.append("no ODDS_API_KEY; prices not pulled")
-    elif a.catch_up and hours_since_last_pull()<CATCH_UP_WAIT: say(f"  catch-up skipped: the last scheduled pull's slot was {hours_since_last_pull():.1f}h ago and may still be on its way")
+    elif window is None: say(f"  catch-up skipped: the last scheduled pull's slot was {hours_since_last_pull():.1f}h ago and may still be on its way")
     else:
-        hours=a.hours or hours_to_next_pull()
+        hours=a.hours or window
         if a.catch_up: say(f"  catch-up: pricing only week {week} games within {hours:.0f}h that have no prices yet and have not kicked off")
         else: say(f"  pricing week {week} games kicking off within {hours:.0f}h, which reaches the next scheduled pull however late it lands")
         rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',f'{hours:.1f}']+(['--missing'] if a.catch_up else []),DATA,'oddsfetch')
