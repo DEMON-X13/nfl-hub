@@ -32,6 +32,12 @@ pull add up; a game pulled twice keeps the newer prices:
     gamelines_wk{W}.csv  the book's moneylines, spreads and totals for the slate, with the time of
                        the pull (--no-game-lines skips it). Pulled only when a game was priced.
     priced_at.json     when each game was last priced (the reprice guard above reads it)
+    dk_links_wk{W}.json  the book's own id (sid) and betslip link for every outcome read, keyed
+                       game|player|stat|side|point (game lines: game|game|ml/spread/total|side|point,
+                       and game|event for the game's page), so a parlay can be opened on the book's
+                       betslip: https://sportsbook.draftkings.com/?outcomes=<sid>+<sid>, each '#' as
+                       %23. The API returns them with includeSids and includeLinks, at no extra cost
+                       (billing is markets x regions); a game repriced replaces its entries.
 Credits: one event request costs (markets requested) x (regions); the free tier is 500 a MONTH,
 about 115 a week. The default pull is 6 markets a game (DEFAULT below: the main lines for
 passing, rushing and receiving yards, receptions and passing TDs, plus anytime TD) and 3 for the
@@ -74,6 +80,29 @@ TEAMS={'Arizona Cardinals':'ARI','Atlanta Falcons':'ATL','Baltimore Ravens':'BAL
  'New York Jets':'NYJ','Philadelphia Eagles':'PHI','Pittsburgh Steelers':'PIT','San Francisco 49ers':'SF',
  'Seattle Seahawks':'SEA','Tampa Bay Buccaneers':'TB','Tennessee Titans':'TEN','Washington Commanders':'WAS'}
 
+# what the book calls each outcome read (includeSids, includeLinks): key -> {sid, link}
+LINK_PARAMS={'includeSids':'true','includeLinks':'true'}
+LINKS={}
+def keep_link(key,o):
+    sid,link=o.get('sid'),o.get('link')
+    if sid or link: LINKS[key]={k:v for k,v in (('sid',sid),('link',link)) if v}
+def write_links(path):
+    """merge this pull's ids into the week's file: a game whose player prices this pull read loses
+    its old player entries, and one whose game lines it read (the /odds call covers the whole
+    slate) its old game-line entries; everything else is kept"""
+    kind=lambda k:k.split('|')[1]
+    pl={k.split('|',1)[0] for k in LINKS if kind(k) not in ('game','event')}
+    gl={k.split('|',1)[0] for k in LINKS if kind(k)=='game'}
+    stale=lambda k:(kind(k)=='game' and k.split('|',1)[0] in gl) or (kind(k) not in ('game','event') and k.split('|',1)[0] in pl)
+    old={}
+    if os.path.exists(path):
+        try: old=json.load(open(path,encoding='utf-8'))
+        except Exception: old={}
+    out={k:v for k,v in old.items() if not stale(k)}
+    out.update(LINKS)
+    json.dump(dict(sorted(out.items())),open(path,'w',encoding='utf-8'),indent=0,ensure_ascii=False)
+    return len(out)
+
 def get(path,params,key):
     q=dict(params); q['apiKey']=key
     url=f"{BASE}{path}?{urllib.parse.urlencode(q)}"
@@ -91,7 +120,7 @@ def game_lines(key,book,regions,ids,now=None):
     is billed per market per region, not per event, so this is 3 credits for every game
     at once. The total comes with the spread so the page never sets one book's spread beside
     another source's total. Returns rows keyed to the app's game ids, stamped with the pull."""
-    data=get('/odds',{'regions':regions,'markets':'h2h,spreads,totals','oddsFormat':'american'},key)
+    data=get('/odds',{'regions':regions,'markets':'h2h,spreads,totals','oddsFormat':'american',**LINK_PARAMS},key)
     return game_rows(data,book,ids,now)
 def game_rows(data,book,ids,now=None):
     at=(now or datetime.now(timezone.utc)).strftime('%Y-%m-%dT%H:%MZ')
@@ -103,10 +132,13 @@ def game_rows(data,book,ids,now=None):
         row={'game_id':gid,'pulled_at':at}
         for bk in ev.get('bookmakers',[]):
             if book and bk.get('key')!=book: continue
+            keep_link(f'{gid}|event',bk)
             for m in bk.get('markets',[]):
                 for o in m.get('outcomes',[]):
                     nm,price,point=o.get('name'),o.get('price'),o.get('point')
                     if price is None: continue
+                    side='away' if nm==away else 'home' if nm==home else nm
+                    keep_link(f"{gid}|game|{ {'h2h':'ml','spreads':'spread','totals':'total'}.get(m.get('key'),m.get('key'))}|{side}|{'' if point is None else float(point)}",o)
                     if m.get('key')=='h2h':
                         row['away_moneyline' if nm==away else 'home_moneyline']=int(price)
                     elif m.get('key')=='spreads' and point is not None:
@@ -141,6 +173,7 @@ def parse_event(ev,gid,mains,alts,book=None):
     a line anybody offers."""
     for bk in ev.get('bookmakers',[]):
         if book and bk.get('key')!=book: continue
+        keep_link(f'{gid}|event',bk)
         for m in bk.get('markets',[]):
             key=m.get('key',''); alt=key.endswith('_alternate'); base=key[:-10] if alt else key
             stat=MARKETS.get(base)
@@ -149,6 +182,7 @@ def parse_event(ev,gid,mains,alts,book=None):
                 player=o.get('description') or o.get('participant') or ''
                 name=o.get('name',''); price=o.get('price'); point=o.get('point')
                 if price is None or not player: continue
+                keep_link(f"{gid}|{player}|{stat}|{name}|{'' if point is None else float(point)}",o)
                 if stat=='any_td':
                     if name=='Yes': alts[(gid,player,stat,1)]=max(alts.get((gid,player,stat,1),-10**9),int(price))
                     continue
@@ -272,14 +306,14 @@ def main():
         if a.sample: parse_event(ev,gid,mains,alts,book); continue
         for markets in ([DEFAULT] + ([FULL_EXTRA] if a.full else [])):
             try:
-                data=get(f"/events/{ev['id']}/odds",{'regions':a.regions,'markets':','.join(markets),'oddsFormat':'american'},key)
+                data=get(f"/events/{ev['id']}/odds",{'regions':a.regions,'markets':','.join(markets),'oddsFormat':'american',**LINK_PARAMS},key)
                 parse_event(data,gid,mains,alts,book)
             except urllib.error.HTTPError as err:
                 body=err.read().decode('utf-8','replace')[:300]
                 print(f"   {gid}: HTTP {err.code} for {len(markets)} markets ({body}); retrying one market at a time",file=sys.stderr)
                 for mk in markets:
                     try:
-                        data=get(f"/events/{ev['id']}/odds",{'regions':a.regions,'markets':mk,'oddsFormat':'american'},key)
+                        data=get(f"/events/{ev['id']}/odds",{'regions':a.regions,'markets':mk,'oddsFormat':'american',**LINK_PARAMS},key)
                         parse_event(data,gid,mains,alts,book)
                     except urllib.error.HTTPError as e2:
                         print(f"   {gid}: {mk} not available ({e2.code})",file=sys.stderr)
@@ -304,6 +338,15 @@ def main():
             print(f"   game lines not pulled: {e}",file=sys.stderr)
     n=merge_csv(f'prices_wk{a.week}.csv',['game_id','player','market','threshold','odds'],lambda r:(r['game_id'],r['player'],r['market'],str(r['threshold'])),prices,done)
     print(f"prices_wk{a.week}.csv: {len(prices)} threshold prices from this pull, {n} in the file (weekly.py bakes it into the payload)")
+    # the book's ids for what this pull read; a file that will not write costs the page its
+    # DraftKings button, never the prices
+    try:
+        if LINKS:
+            n=write_links(f'dk_links_wk{a.week}.json')
+            print(f"dk_links_wk{a.week}.json: {len(LINKS)} outcome ids from this pull, {n} in the file")
+        elif done: print(f"   dk_links_wk{a.week}.json: the book sent no outcome ids this pull",file=sys.stderr)
+    except Exception as e:
+        print(f"   dk_links_wk{a.week}.json not written: {e}",file=sys.stderr)
     if done:
         stamp=now.strftime('%Y-%m-%dT%H:%MZ')
         for gid in done: priced[gid]=stamp

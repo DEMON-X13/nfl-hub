@@ -158,9 +158,10 @@ and the rule used before (the model's points pulled halfway to the total) was wo
 there (MAE +0.13 points, Brier +0.0042, its 3-point-edge picks 66-81 for -20.3 units). A model may take
 the chance back only by passing that study's preregistered rule on seasons it has never seen; never
 tune one on the season in play. A no-vig chance sits under the chance its price implies, so a total
-could never clear the panel's bar, and `pricedLegs` leaves the totals out altogether; with Game total
-ticked the panel says so in one line. The audit's J2 holds the chance to the no-vig chance of the
-prices on every game and with the model's points moved, and M holds that no tier ever holds a total.
+never clears the panel's bar and `pricedLegs` leaves the totals out; with Game total ticked the
+suggested parlays take them only as the last fill, marked no edge (app v91-v93, below). The audit's J2
+holds the chance to the no-vig chance of the prices on every game and with the model's points moved,
+and M holds a total in a tier to that.
 A total moves with its game's passing and scoring lines (`TOTAL_RHO`, measured on 2019-2024) and is
 unrelated to a win or cover bet on the same game.
 
@@ -242,8 +243,9 @@ hourly" slot fires about six times a day with gaps of up to 8 hours: a backgroun
 an hourly promise. It runs `update.js`, `joker.py`, `broly.py` (each model step may fail alone:
 its last good picks stay, `modelStatus` says why on the Pick'em Record), the game-totals shadow
 (`props/research/totals/shadow.py` and its check, which may fail alone too; see the game totals under
-Props) and `smoke.js` (which builds the app itself), commits `betting/state.json` and the shadow's
-ledger, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
+Props), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, which may
+fail alone and then puts the file back; see "X's parlays and the X Bet Log") and `smoke.js` (which builds
+the app itself), commits `betting/state.json`, the shadow's ledger and `liveparlays/parlays.json`, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
 job reads nflverse, not this state), so Team Rankings' Elo does not wait for the Elo job's own late slot.
 The **Broly Model** (`betting/broly/`) is the betting line plus six team stats: points per game,
 points allowed, turnover differential, third-down rate, red-zone touchdown rate and yards per
@@ -543,7 +545,8 @@ front of it as its own `pk-` prefixed section, and the X Parlays section lifted 
 `liveparlays/build/page.html` into a section of its own, `tab-xparlays` (styles scoped to `#lpCard`,
 script in a closure): X's card (`#lpCard`, X's placed parlays from `liveparlays/parlays.json`, read
 only, a parlay marked `cleared` left out, a quiet line under the heading saying when the file last
-changed) and nothing else.
+changed; a settled parlay, gone or with every game over, last and in full under Finished, which says
+each clears itself the day after its last game) and nothing else.
 
 The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
 in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). At the top of its controls is
@@ -575,10 +578,14 @@ qualifies as the old Suggested parlays window's did (a real price, the model's c
 points above the chance that price implies, the book's margin left in, market + form agreeing on a
 player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at
 or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet has
-no market + form); never a leg below the book. A game total is never in a tier: it is priced at the
-book's own chance, so it has no edge to offer, and the Game total box only brings up the line saying
-so ("Game totals are priced at the book's own chance, so they never make a suggested parlay; add one
-by hand from a game's Game bets card."). One team bet a game, one leg a player, no line twice. A tier is empty only when the picks do not make that many legs, and then says why ("Only 3 legs on your picks: tick more games or
+no market + form); never a leg below the book. A game total has no edge (it is the book's own
+chance), so it is never preferred or thin: with Game total ticked the week's totals are a third list,
+the market legs (`pool.mkt`), taken only where the legs with an edge cannot make a level of its size,
+those legs then the base and the totals the only fill, the fewest first (`pbTier`); each is marked no
+edge on its card with a line saying why (`pbMktLine`). With player bets ticked and none of their prices
+in yet, a note says the levels are built without player legs. A game gives one side (to win or to
+cover) and its total, which a book takes on one ticket and which are unrelated (`legRho`); one leg a
+player, no line twice. A tier is empty only when the picks do not make that many legs, and then says why ("Only 3 legs on your picks: tick more games or
 bet types", or, with player bets ticked before any of the ticked games has a player price, "No
 player prices yet: they are pulled on game day or the day before, Sunday's games on Saturday morning."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
@@ -750,7 +757,13 @@ may quietly outrank what the job published:
     the slip the owner sends in chat (the game, each leg's player, team, stat, line and side, the
     stake, the price and the payout; the file's `how` says how each is written), corrects a line
     the book moved by writing the line X took, and marks a parlay the owner no longer wants on the
-    page `"cleared": true`, which keeps it in the file as history and off the page.
+    page `"cleared": true`, which keeps it in the file as history and off the page. A finished
+    parlay clears itself (the owner's call, October 2026): the betting job's
+    `liveparlays/tools/autoclear.py` marks it `"cleared": true` (with `cleared_on` and
+    `cleared_by: "auto"`) once every game has a final in games.csv and two Eastern days have begun
+    since its last game, so it shows in full on its game day and the next; `test_autoclear.py` is its
+    test. The file is written with `json.dumps(indent=1, ensure_ascii=False)`, its own style, so a
+    clear is a small diff; write it the same way by hand.
   - `liveparlays/xbets.json` is the X Bet Log: `season`, `deposit` and `weeks` (`w1` to `w22`, each
     `staked`, `returned` and an optional plain-text `note`), plus `updated`. Claude adds or changes
     a week from what the owner sends (the week, what was staked, what came back).

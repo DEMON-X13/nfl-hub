@@ -475,8 +475,9 @@ setTimeout(async()=>{
      below the book; one leg a line, a player and (for a game bet) a game; a tier's chance and price
      are the builder's own sums; thin legs only where the preferred legs could not fill the tier;
      and a pick that leaves fewer legs than a tier needs gets the reason, not a smaller parlay; and
-     no tier ever holds a game total (priced at the book's own chance, it has no edge), with one
-     line saying so whenever Game total is ticked. Run on the week as it is, and again on made-up
+     a game total (priced at the book's own chance, it has no edge) is in a tier only as the last
+     fill, a market leg marked so, where the same level from the legs with an edge is empty, with
+     one line saying so whenever Game total is ticked. Run on the week as it is, and again on made-up
      lines (each starter's main line set off his own projection, a price on every total: -105/-115
      on half, +100/+100 with no margin and +110/+105 with less than none on the rest) so the player
      legs and the totals are always tried. */
@@ -494,7 +495,7 @@ setTimeout(async()=>{
     const setKinds=ks=>{ for(const k of KINDS) U().k[k]=ks.includes(k); w.eval('PB_CACHE=new Map()'); };
     let built=0, said=0, legsSeen=0, thinSeen=0, corrTiers=0, likeliestSeen=0, likeliestWorked=0, combosWorked=0;
     /* "the likeliest" worked out in full. Where no two legs that could share a parlay move together
-       (different games, or one team bet a game), every parlay's chance is a plain product and
+       (different games, or a game's side and its total), every parlay's chance is a plain product and
        parlayProb works it exactly, so every parlay of the tier's size with its count of thin legs
        is worked, and none may land likelier than the tier. That holds whatever the legs are priced
        at, so a fallback chosen by any other measure (the best return under the floor, say) fails
@@ -503,10 +504,10 @@ setTimeout(async()=>{
     const fitsF=F('pbFits'), orderF=F('pbOrder'), rhoF=F('legRho'), LIKELY_CAP=250000;
     const noMovers=list=>{ for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++)
       if(fitsF([list[i]],list[j])&&Math.abs(rhoF(list[i],list[j]))>=0.03) return false; return true; };
-    const likeliestOf=(list,n,thin)=>{ let best=-1, legs=null, seen=0;
+    const likeliestOf=(list,n,thin,mk)=>{ let best=-1, legs=null, seen=0;
       const rec=(i0,cur,th)=>{ if(seen>LIKELY_CAP) return;
         if(cur.length===n){ if(th!==thin) return; seen++; const pr=F('parlayProb')(orderF(cur)).corr; if(pr>best){ best=pr; legs=cur.slice(); } return; }
-        for(let i=i0;i<list.length;i++){ const c=list[i], th2=th+(c.thin?1:0); if(th2>thin||!fitsF(cur,c)) continue; cur.push(c); rec(i+1,cur,th2); cur.pop(); } };
+        for(let i=i0;i<list.length;i++){ const c=list[i], th2=th+((mk?c.market:c.thin)?1:0); if(th2>thin||!fitsF(cur,c)) continue; cur.push(c); rec(i+1,cur,th2); cur.pop(); } };
       rec(0,[],0); return seen>LIKELY_CAP||!legs?null:{best,legs,seen}; };
     /* a level's best return over its floor, searched on its own (the search a level tries first),
        and what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
@@ -530,8 +531,12 @@ setTimeout(async()=>{
     const hold=(lab)=>{
       const r=F('getPbTiers')(), games=F('pbGames')(), u=U();
       chk(r.tiers.length===4&&r.tiers.map(t=>t.id+t.n).join()===SPEC.map(s=>s[0]+s[2]).join(),`${lab}: the tiers are not Safe, Medium, Aggressive and Extreme at 2, 3, 4 and 5 legs`);
-      const pool=games.length&&KINDS.some(k=>u.k[k])&&games.some(g=>!u.off.includes(g.id))?F('pbPool')(games.filter(g=>!u.off.includes(g.id))):{pref:[],thin:[]};
-      const maxLegs=F('pbMaxLegs')([...pool.pref,...pool.thin]);
+      const pool=games.length&&KINDS.some(k=>u.k[k])&&games.some(g=>!u.off.includes(g.id))?F('pbPool')(games.filter(g=>!u.off.includes(g.id))):{pref:[],thin:[],mkt:[]};
+      const mkt=pool.mkt||[], maxLegs=F('pbMaxLegs')([...pool.pref,...pool.thin,...mkt]);
+      /* the market list: only totals, only with Game total ticked, each on a ticked game at the
+         market's own chance (totalLeg's) on a real price, 45-97%, never thin */
+      chk(mkt.every(c=>c.stat==='total'&&c.market===true&&c.thin===false&&c.src==='real'&&c.p>=0.45&&c.p<0.97&&!u.off.includes(c.gid)
+        &&Math.abs(c.p-F('totalLeg')(S.sched.find(g=>g.id===c.gid),c.side).p)<1e-12)&&(!!u.k.total||!mkt.length),`${lab}: the market list holds something other than a ticked game's total at the market's chance, or holds one with Game total unticked`);
       /* the pool itself, whichever legs a tier happens to take: nothing under the book, no estimated
          price, nothing of a kind or game not ticked, a preferred leg only over the full bar */
       chk([...pool.pref,...pool.thin].every(c=>c.p>=mlP(c.price)&&c.src==='real'&&!!u.k[kindOf(c)]&&!u.off.includes(c.gid)),`${lab}: a leg under the book, on an estimated price, or of a kind or game not ticked is among the legs a tier may take`);
@@ -555,18 +560,23 @@ setTimeout(async()=>{
           continue; }
         built++; legsSeen+=t.legs.length;
         chk(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
-        chk(!t.legs.some(l=>l.stat==='total'),`${lab}: the ${t.id} tier holds a game total (${t.legs.filter(l=>l.stat==='total').map(l=>l.label).join(', ')})`);
+        /* a total only as the last fill: every total a market leg, counted, and only where the same
+           level built from the legs with an edge alone is empty */
+        chk(t.legs.every(l=>(l.stat==='total')===!!l.market)&&(t.mkt||0)===t.legs.filter(l=>l.market).length,`${lab}: the ${t.id} tier has a total that is not a market leg, or miscounts them`);
+        if(t.mkt) chk(F('pbTier')(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:pool.thin,mkt:[]},new Map())===null,`${lab}: the ${t.id} tier took a game total where the legs with an edge make a parlay of its size`);
         chk(maxLegs>=n,`${lab}: a ${n}-leg ${t.id} tier from picks that only make ${maxLegs}`);
         for(const l of t.legs){ const g=S.sched.find(x=>x.id===l.gid);
           chk(!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(x=>x.id===l.gid),`${lab}: ${l.name} ${l.label} is of a kind or a game not ticked, or its game is not on the list`);
           chk(!!g&&!F('gameStarted')(g),`${lab}: ${l.name} ${l.label} is on a game that has kicked off`);
           chk(l.src==='real'&&isFinite(l.price)&&l.price!==0&&l.p>=0.45&&l.p<0.97,`${lab}: ${l.name} ${l.label} has no real price, or a chance out of 45-97%`);
-          chk(l.p>=mlP(l.price),`${lab}: ${l.name} ${l.label} is rated below the book (${(l.p*100).toFixed(1)}% against ${(mlP(l.price)*100).toFixed(1)}%)`);
-          chk(l.thin===!(l.p-mlP(l.price)>=0.03&&F('formAgrees')(l)),`${lab}: ${l.name} ${l.label} is marked thin wrongly`);
+          if(l.market) chk(l.stat==='total'&&l.thin===false,`${lab}: ${l.name} ${l.label} is a market leg that is not a total, or is marked thin`);
+          else { chk(l.p>=mlP(l.price),`${lab}: ${l.name} ${l.label} is rated below the book (${(l.p*100).toFixed(1)}% against ${(mlP(l.price)*100).toFixed(1)}%)`);
+            chk(l.thin===!(l.p-mlP(l.price)>=0.03&&F('formAgrees')(l)),`${lab}: ${l.name} ${l.label} is marked thin wrongly`); }
           if(l.thin) thinSeen++; }
         chk(new Set(t.legs.map(l=>l.key)).size===n,`${lab}: the ${t.id} tier has one line twice (or both sides of one)`);
         const gl=t.legs.filter(isG), pl=t.legs.filter(l=>!isG(l));
-        chk(new Set(gl.map(l=>l.gid)).size===gl.length,`${lab}: the ${t.id} tier has two game bets on one game`);
+        const sides=gl.filter(l=>l.stat!=='total'), tots=gl.filter(l=>l.stat==='total');
+        chk(new Set(sides.map(l=>l.gid)).size===sides.length&&new Set(tots.map(l=>l.gid)).size===tots.length,`${lab}: the ${t.id} tier has two sides, or two totals, on one game`);
         chk(new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: the ${t.id} tier has two legs on one player`);
         /* the card's numbers are the builder's own sums on the legs as the builder orders them */
         const order=t.legs.map(l=>l.key).join(), want=[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
@@ -577,18 +587,22 @@ setTimeout(async()=>{
         /* a level falls back to the likeliest parlay of its size only when no parlay of that size
            clears its floor at any count of thin legs (its best-return search finds none), never
            Safe; it prefers the fewest thin legs, as Safe does: as many as the preferred legs leave */
+        /* a level with a total was built on every leg with an edge as its base and the totals as fill */
+        const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:mkt}:{pref:pool.pref,thin:pool.thin}, fill=t.mkt?t.mkt:t.thin, kTop=t.mkt?Math.max(0,n-maxLegsOf(from.pref)):undefined;
+        /* every level with totals takes exactly as many as the legs with an edge leave to fill */
+        if(t.mkt) chk(t.mkt===kTop,`${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave ${kTop} to fill`);
         if(t.likeliest){ likeliestSeen++;
           chk(!!floor,`${lab}: Safe is marked as a fallback to the likeliest pair`);
-          chk(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),pool,new Map())===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
-          chk(t.thin===Math.max(0,n-maxLegsOf(pool.pref)),`${lab}: the likeliest ${n} legs take ${t.thin} thin legs where the preferred legs leave ${Math.max(0,n-maxLegsOf(pool.pref))} to fill`); }
+          chk(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop)===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
+          chk(fill===Math.max(0,n-maxLegsOf(from.pref)),`${lab}: the likeliest ${n} legs take ${fill} ${t.mkt?'totals':'thin legs'} where the ${t.mkt?'legs with an edge':'preferred legs'} leave ${Math.max(0,n-maxLegsOf(from.pref))} to fill`); }
         /* the likeliest pair, and a level's likeliest of its size, worked out in full where every
            parlay is a plain product: no parlay of its size with as many thin legs lands likelier */
-        if(t.likeliest||!floor){ const all=[...pool.pref,...pool.thin];
-          if(noMovers(all)){ const b=likeliestOf(all,n,t.thin);
+        if(t.likeliest||!floor){ const all=[...from.pref,...from.thin];
+          if(noMovers(all)){ const b=likeliestOf(all,n,fill,!!t.mkt);
             if(b){ likeliestWorked++; combosWorked+=b.seen;
               chk(t.corr>=b.best-1e-12,`${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% (${t.legs.map(l=>l.name+' '+l.label).join(', ')}) where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${n} worked)`); } } }
         /* a level over its floor is the best-return search's own parlay, unchanged */
-        else if(floor&&bestRet){ const b=bestRet(SPEC.find(s=>s[0]===t.id),pool,new Map());
+        else if(floor&&bestRet){ const b=bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop);
           chk(!!b&&b.legs.map(pbIdOf).join()===t.legs.map(pbIdOf).join(),`${lab}: the ${t.id} tier is not its best return over its floor`); }
         /* thin legs only fill what the preferred could not */
         if(t.thin&&!t.likeliest) chk(!bestRet||bestRet(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:[]},new Map())===null,`${lab}: the ${t.id} tier took a thin leg the preferred legs did not need`);
@@ -598,13 +612,16 @@ setTimeout(async()=>{
         /* the mixes: Teams only is game bets, Players only is players' lines */
         if(!u.k.over&&!u.k.under) chk(t.legs.every(isG),`${lab}: a player leg with neither player box ticked`);
         if(!u.k.ml&&!u.k.ats&&!u.k.total) chk(!t.legs.some(isG),`${lab}: a game bet with no team box ticked`); }
-      /* the card on the page says the same, and with Game total ticked one line says why no total is in a tier */
+      /* the card on the page says the same, and with Game total ticked one line says what a total in a tier is */
       F('renderPb')();
-      { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' '), nt=tx.includes('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.');
-        chk(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say totals never make a suggested parlay':'Game total is not ticked and the panel still says totals never make one'}`);
+      { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' '), nt=tx.includes('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
+        chk(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say a total has no edge and only fills':'Game total is not ticked and the panel still speaks of totals'}`);
         if(u.k.total&&!u.k.ml&&!u.k.ats&&!u.k.over&&!u.k.under) chk(!/No line on your picks has a real sportsbook price/.test(tx),`${lab}: with only Game total ticked the panel says no line has a price the model rates at or above the book`); }
       for(const t of r.tiers){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`); if(!c){ chk(false,`${lab}: no card for the ${t.id} tier`); continue; }
         const tx=c.textContent.replace(/\s+/g,' ');
+        /* a total on a card is marked no edge, and one line says what that is; nothing else is */
+        if(t.legs) chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&t.legs.every((l,i)=>/no edge/.test(c.querySelectorAll('.pb-legs li')[i].textContent)===!!l.market)
+          &&/because your picks do not make a parlay of this size from legs with an edge/.test(tx)===!!t.mkt,`${lab}: the ${t.id} card does not mark its totals no edge, or its line about them is ${t.mkt?'missing':'there with no total'}`);
         if(!t.legs) chk(tx.includes(t.why)&&!c.querySelector('[data-pb-add]'),`${lab}: the empty ${t.id} card does not give its reason, or offers Add to builder`);
         else { const stake=w.eval("typeof pbStake==='function'?pbStake():NaN"), pay=c.querySelector('[data-pb-pay]');
           chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(F('fmtML')(F('decToML')(t.dec)))
@@ -624,7 +641,7 @@ setTimeout(async()=>{
     setKinds(['ats']); hold('this week, spreads only');
     /* and the week's moneylines alone, and Teams only on the first four games: each a pick where a
        level may fall back, and hold works every likeliest tier out in full against every parlay of
-       its size (one team bet a game, so every parlay is a plain product) */
+       its size (a game's side and its total are unrelated, so every parlay is a plain product) */
     setKinds(['ml']); hold('this week, moneylines only');
     { const g4=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g4.slice(4).map(g=>g.id); w.eval('PB_CACHE=new Map()');
       hold('this week, teams only, the first four games'); U().off=[]; }
@@ -654,10 +671,11 @@ setTimeout(async()=>{
       for(const g of games.slice(1)){ const c=d.querySelector(`#pbPanel [data-pb-game="${g.id}"]`); c.checked=false; c.dispatchEvent(new w.Event('change')); }
       chk(U().off.length===games.length-1&&!U().off.includes(one.id),'unticking the games one by one did not leave one ticked');
       hold('one game');
-      /* Teams only on one game: one game bet a game makes one leg, so every tier says there are too few */
+      /* Teams only on one game: a side and its total make two legs at most, so Safe is that pair or
+         says why, and every bigger level says there are too few */
       d.querySelector('#pbPanel [data-pb-mix="teams"]').click();
       const r1=hold('one game, teams only');
-      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks: tick more games or bet types\.$/.test(t.why)),'one game\'s team bets did not leave every tier saying there are too few legs: '+r1.tiers.map(t=>t.why).join(' / '));
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&/^(Only [12] legs?|No legs) on your picks: tick more games or bet types\.$/.test(t.why))),'one game\'s team bets did not make at most a side and its total, or a level too big for them did not say there are too few legs: '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); d.querySelector('#pbPanel [data-pb-mix="all"]').click(); }
     setKinds([]); { const r0=F('getPbTiers')(); chk(r0.tiers.every(t=>!t.legs&&/No bet types ticked/.test(t.why)),'with no bet type ticked the tiers did not say so'); }
     setKinds(KINDS); F('renderPb')();
@@ -690,11 +708,125 @@ setTimeout(async()=>{
       setKinds(KINDS);
       const rA=F('getPbTiers')();
       chk(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
-      chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the suggestions, the game pages\' or the Elo picks are built from');
-      /* only Game total ticked: every total priced (-105/-115, +100/+100 with no margin, +110/+105 with less than none), and still no tier */
-      { setKinds(['total']); const rT=F('getPbTiers')();
-        chk(rT.tiers.every(t=>!t.legs&&/^No legs on your picks: tick more games or bet types\.$/.test(t.why)),'with only Game total ticked and every total priced, a tier was built or did not say there are no legs: '+rT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
-        setKinds(KINDS); }
+      /* M6. lock a leg and ask for new legs, on the made-up lines: the locked leg stays on every
+         turn, the rest are legs the card has not shown until it starts over, every turn keeps the
+         level's rules, the card draws it and Add to builder takes it; Reset and a changed box put
+         the level back */
+      { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+        const T=rA.tiers.find(t=>t.legs&&t.n>=3), idOf=F('pbId'), mlPx=F('mlProb');
+        const okTier=(x,lab)=>{ const gl=x.legs.filter(isG), sd=gl.filter(l=>l.stat!=='total'), tt=gl.filter(l=>l.stat==='total'), pl=x.legs.filter(l=>!isG(l)), u=U();
+          const ord=[...x.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
+          chk(x.legs.length===x.n&&new Set(x.legs.map(l=>l.key)).size===x.n&&new Set(sd.map(l=>l.gid)).size===sd.length&&new Set(tt.map(l=>l.gid)).size===tt.length&&new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: not ${x.n} different lines, one side and one total a game and one leg a player`);
+          chk(x.legs.every(l=>!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(g=>g.id===l.gid)&&l.src==='real'&&l.p>=0.45&&l.p<0.97&&(l.market?l.stat==='total':l.p>=mlPx(l.price))),`${lab}: a leg of a kind or game not ticked, on no real price, out of 45-97%, or under the book`);
+          chk(x.legs.map(l=>l.key).join()===ord&&pp(x.legs).corr===x.corr&&pd(x.legs.map(l=>({leg:l,ml:l.price})))===x.dec&&x.thin===x.legs.filter(l=>l.thin).length&&(x.mkt||0)===x.legs.filter(l=>l.market).length,`${lab}: its chance, price or counts are not the builder's own sums on its legs`); };
+        chk(!!T,'with made-up lines on every starter no level of three legs or more was built');
+        if(T){ const cardOf=()=>d.querySelector(`#pbPanel .pb-tier.${T.id}`), lid=idOf(T.legs[0]);
+          chk(cardOf().querySelectorAll('[data-pb-lock]').length===T.legs.length&&!!cardOf().querySelector(`[data-pb-turn="${T.id}"]`)&&!cardOf().querySelector('[data-pb-reset]'),`the ${T.id} card has no lock on each leg or no New legs, or offers Reset before a turn`);
+          chk(!d.querySelector('#pbElo [data-pb-lock], #pbElo [data-pb-turn]'),'the Elo picks carry locks or New legs');
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).click();
+          chk(cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).getAttribute('aria-pressed')==='true'&&cardOf().querySelectorAll('[data-pb-lock][aria-pressed="true"]').length===1,'the lock did not take, or took more than the one leg');
+          chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T.legs.map(idOf)),'a lock alone changed the legs');
+          /* the card remembers who it has shown (a player, a team, a game's total), not the line */
+          const whoOf=F('pbWho'), seen=new Set(T.legs.filter(l=>idOf(l)!==lid).map(whoOf)); let turns=0, wrapped=false;
+          while(turns<8&&!wrapped){ cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click(); turns++;
+            const x=F('pbShownTier')(T.id); wrapped=!!w.eval(`PB_VIEW.t['${T.id}'].wrapped`);
+            if(!x.legs){ chk(/unlock one/.test(x.why)&&/unlock one/.test(cardOf().textContent),`turn ${turns}: an empty turn does not say to unlock a leg`); break; }
+            okTier(x,`new legs, turn ${turns}`);
+            chk(x.legs.some(l=>idOf(l)===lid)&&x.turned===true,`turn ${turns}: the locked leg is not on it`);
+            const fresh=x.legs.filter(l=>idOf(l)!==lid);
+            if(!wrapped) chk(fresh.every(l=>!seen.has(whoOf(l))),`turn ${turns}: a player, team or total the card had shown came back before the start-over, on this line or another: ${fresh.filter(l=>seen.has(whoOf(l))).map(l=>l.name+' '+l.label).join(', ')}`);
+            else chk(/back to the first/.test(cardOf().textContent),`turn ${turns}: the start-over is not said on the card`);
+            fresh.forEach(l=>seen.add(whoOf(l)));
+            /* a turned card says what it is: chosen from the legs left (until it starts over) beside the lock */
+            const rule=cardOf().querySelector('.pb-rule').textContent;
+            chk(/ beside your lock$| beside your lock that lands/.test(rule)&&(wrapped||/ left /.test(rule))&&(x.likeliest||!x.floor?/^the likeliest /.test(rule):/^best return /.test(rule)),`turn ${turns}: the turned card is ruled "${rule}", not the level's rule on the legs left beside the lock`);
+            if(x.mkt) chk(!/because your picks do not make a parlay/.test(cardOf().textContent)&&/here because (the legs with an edge (your picks have left for this card|on your picks) do not make a parlay of this size beside your lock|you locked)/.test(cardOf().textContent),`turn ${turns}: the totals line on the turned card does not say why they are there`);
+            const li=[...cardOf().querySelectorAll('.pb-legs li')];
+            chk(li.length===x.n&&x.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label))&&cardOf().querySelector('[data-pb-pay]').dataset.pbPay===String(x.dec)
+              &&!!cardOf().querySelector(`[data-pb-reset="${T.id}"]`),`turn ${turns}: the card does not draw the turned legs and their price, or has no Reset`); }
+          chk(turns>=1,'New legs did nothing');
+          /* Add to builder takes the legs on the card */
+          const x=F('pbShownTier')(T.id), keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice;
+          if(x&&x.legs){ cardOf().querySelector(`[data-pb-add="${T.id}"]`).click();
+            chk(Object.keys(S.parlay).length===x.n&&x.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add to builder after New legs did not take the legs on the card'); }
+          S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')();
+          /* Reset, then a changed box: the level is the panel's own again */
+          if(cardOf().querySelector(`[data-pb-reset="${T.id}"]`)) cardOf().querySelector(`[data-pb-reset="${T.id}"]`).click();
+          chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(F('getPbTiers')().tiers.find(t=>t.id===T.id).legs.map(idOf))&&!cardOf().querySelector('[data-pb-lock][aria-pressed="true"]'),'Reset did not put the level back to the panel\'s own, or kept a lock');
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+          setKinds(KINDS.filter(k=>k!=='under')); F('renderPb')(); setKinds(KINDS); F('renderPb')();
+          chk(!w.eval(`PB_VIEW.t['${T.id}']`)||(!w.eval(`PB_VIEW.t['${T.id}'].tier`)&&!w.eval(`PB_VIEW.t['${T.id}'].lock.length`)),'a changed box left a turned level or a lock behind');
+          const bare=()=>{ const v=w.eval(`PB_VIEW.t['${T.id}']`); return !v||(!v.tier&&!v.lock.length); };
+          /* None and then All is a change of picks too, though no card is drawn under None */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+            d.querySelector('#pbPanel [data-pb-games="none"]').click(); d.querySelector('#pbPanel [data-pb-games="all"]').click();
+            chk(bare()&&JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(F('getPbTiers')().tiers.find(t=>t.id===T.id).legs.map(idOf)),'ticking None and then All brought a turned level or a lock back'); }
+          /* every leg locked: New legs is off and does nothing; a level of locked legs alone (which a
+             kickoff can leave) is ruled as the visitor's own, never as the level's search */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); const T0=F('pbShownTier')(T.id), r0=cardOf().querySelector('.pb-rule').textContent;
+            for(const l of T0.legs) cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(l)}"]`).click();
+            const tb=cardOf().querySelector(`[data-pb-turn="${T.id}"]`);
+            chk(tb.disabled&&/unlock one/.test(tb.title),'with every leg locked New legs is not off, or does not say to unlock one');
+            F('pbTurn')(T.id); F('renderPb')();
+            chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T0.legs.map(idOf))&&cardOf().querySelector('.pb-rule').textContent===r0,'New legs with every leg locked changed the level or its rule');
+            const v=F('pbViewOf')(T.id); F('pbFill')(T.id,v); F('renderPb')();
+            const x=F('pbShownTier')(T.id), rule=cardOf().querySelector('.pb-rule').textContent;
+            chk(!!x.allLocked&&JSON.stringify(x.legs.map(idOf).sort())===JSON.stringify(T0.legs.map(idOf).sort())&&/^your (locked pair|\d+ locked legs)$/.test(rule)&&cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`a level of locked legs alone is ruled "${rule}", or is not the locked legs, or offers New legs`); }
+          /* a game kicking off is not a change of picks: the lock on a game still to come stays and the
+             level is filled again around it, with no leg on the game under way; the lock on that one falls away */
+          let kicked='no leg of the level on a later kickoff than another';
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            const gs=F('pbGames')(), ko=g=>F('kickoff')(g).getTime(), T1=F('pbShownTier')(T.id), kOf=l=>ko(gs.find(g=>g.id===l.gid));
+            const first=Math.min(...T1.legs.map(kOf)), Le=T1.legs.find(l=>kOf(l)===first), Ll=T1.legs.find(l=>kOf(l)>first);
+            if(Le&&Ll){
+              cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Ll)}"]`).click(); cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Le)}"]`).click();
+              const now0=w.Date.now, off=first+60e3-now0.call(w.Date); w.Date.now=()=>now0.call(w.Date)+off; F('renderPb')();
+              const on=new Set(F('pbGames')().map(g=>g.id)), v=w.eval(`PB_VIEW.t['${T.id}']`), x=F('pbShownTier')(T.id);
+              chk(!!v&&v.lock.length===1&&idOf(v.lock[0])===idOf(Ll)&&!!x.legs&&x.legs.length===T1.legs.length&&x.legs.some(l=>idOf(l)===idOf(Ll))&&x.legs.every(l=>on.has(l.gid))
+                &&cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Ll)}"]`).getAttribute('aria-pressed')==='true'&&/ beside your lock/.test(cardOf().querySelector('.pb-rule').textContent),
+                `a kickoff dropped the lock on a game still to come, kept the one on the game under way, or did not fill the level again around it: ${x.legs?x.legs.map(l=>l.name+' '+l.label).join(', '):x.why}`);
+              if(x.legs) okTier(x,'filled again after a kickoff');
+              w.Date.now=now0; F('renderPb')();
+              kicked=`a kickoff kept the lock on ${Ll.name} and dropped the one on ${Le.name}`; } }
+          w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+          /* a small pick runs out and starts over: Teams only on three games, Safe turned until no
+             unshown leg is left, every turn a valid pair */
+          let nW=0, wr=false;
+          { const g3=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g3.slice(3).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            if(F('getPbTiers')().tiers.find(t=>t.id==='safe'&&t.legs)){
+              const sw=new Set(F('pbShownTier')('safe').legs.map(whoOf));
+              while(nW<40&&!wr){ d.querySelector('#pbPanel [data-pb-turn="safe"]').click(); nW++; wr=!!w.eval("PB_VIEW.t['safe']&&PB_VIEW.t['safe'].wrapped");
+                const x=F('pbShownTier')('safe'), c=d.querySelector('#pbPanel .pb-tier.safe'); if(!x||!x.legs) continue;
+                okTier(x,`Safe on three games, turn ${nW}`);
+                chk(c.querySelector('.pb-rule').textContent===(wr?'the likeliest pair':'the likeliest pair left'),`Safe on three games, turn ${nW}: ruled "${c.querySelector('.pb-rule').textContent}"`);
+                if(!wr) chk(x.legs.every(l=>!sw.has(whoOf(l))),`Safe on three games, turn ${nW}: a team or total it had shown came back before the start-over`);
+                if(x.mkt&&!wr) chk(/here because the legs with an edge your picks have left for this card do not make a parlay of this size\./.test(c.textContent),`Safe on three games, turn ${nW}: the totals line does not say the legs with an edge left do not make the pair`);
+                x.legs.forEach(l=>sw.add(whoOf(l))); }
+              chk(wr&&/back to the first/.test(d.querySelector('#pbPanel .pb-tier.safe').textContent),`Safe on three games never started over in ${nW} turns, or did not say so`); }
+            U().off=[]; setKinds(KINDS); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
+          console.log(`M6. lock and new legs: ${turns} turns of the ${T.label} level, the locked leg on each, ${seen.size} players, teams and totals seen${wrapped?', then back to the first':''}; Safe on three games started over after ${nW} turns; ${kicked}`); }
+        w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
+      chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the game pages\' hands or the Elo picks are built from');
+      /* only Game total ticked, every total priced (-105/-115, +100/+100 with no margin, +110/+105
+         with less than none): every level a game makes legs for is built, of totals only, each a
+         market leg; under All on the same prices the legs with an edge fill every level, so no total */
+      { setKinds(['total']); const rT=F('getPbTiers')(), nT=new Set(F('pbPool')(games).mkt.map(l=>l.gid)).size;
+        chk(rT.tiers.every(t=>t.n>nT?!t.legs:(!!t.legs&&t.legs.every(l=>l.stat==='total'&&l.market)&&t.mkt===t.n&&!t.thin)),
+          'with only Game total ticked and every total priced, a level was not built of totals alone: '+rT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+        hold('made-up lines, Game total alone');
+        setKinds(KINDS); const rAll=F('getPbTiers')();
+        chk(rAll.tiers.every(t=>!t.legs||!t.mkt||F('pbTier')(SPEC.find(s=>s[0]===t.id),{...F('pbPool')(games),mkt:[]},new Map())===null),'under All a level took a total though the legs with an edge make it'); }
+      /* a total never stands where a leg with an edge could (the second review's case): two thin
+         moneylines on two games and three totals at -120, both moneylines and one total landing
+         22%, under Medium's 25%, where one moneyline and two totals clear it. Medium and Aggressive
+         keep both moneylines and take only the totals left to fill */
+      { const wk=F('currentWeek')(), mk=(g,o)=>({gid:g,week:wk,k:0,main:true,src:'real',grp:'TEAM',pos:'Game',...o});
+        const thinL=[mk('gA',{key:'gA|team:AAA|ml',pid:'team:AAA',stat:'ml',side:'over',team:'AAA',name:'AAA',label:'To win',p:0.93,price:-1000,thin:true}),
+          mk('gB',{key:'gB|team:BBB|ml',pid:'team:BBB',stat:'ml',side:'over',team:'BBB',name:'BBB',label:'To win',p:0.46,price:130,thin:true})];
+        const tots=['gA','gB','gC'].map(g=>mk(g,{key:g+'|game|total',pid:'game',stat:'total',side:'over',k:44.5,team:'X'+g,name:g+' total',label:'Over 44.5 points',p:0.5217,price:-120,thin:false,market:true}));
+        for(const id of ['med','aggr']){ const s=SPEC.find(x=>x[0]===id), r=F('pbTier')(s,{pref:[],thin:thinL,mkt:tots},new Map());
+          chk(!!r&&r.legs.filter(l=>l.stat==='ml').length===2&&r.mkt===s[2]-2,`a total took the place of a moneyline with an edge on the ${id} level: ${r?r.legs.map(l=>l.name+' '+l.label).join(', '):'none'}`); } }
       /* market + form gates the player legs once the Elo tab is on the page */
       w.eloLoaded=()=>false; w.eval('PB_CACHE=new Map()');
       chk(F('getPbTiers')().tiers.every(t=>!t.legs||t.legs.every(isG)),'before the Elo files load a player leg is suggested');
@@ -730,7 +862,7 @@ setTimeout(async()=>{
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
        market + form (a player leg's second price), so it never reads as wanting it (a game total
-       is never in a tier) */
+       is never thin: pbMktLine speaks for it) */
     { const C=F('pbTierCard'), base={gid:'gT',name:'Thin',label:'a leg',price:-110,p:0.53,week:F('currentWeek')(),thin:true,side:'over',k:0,main:false};
       const tm={...base,key:'gT|team:AAA|ml',pid:'team:AAA',stat:'ml',grp:'TEAM'}, pl={...base,key:'gT|p1|receiving_yards',pid:'p1',stat:'receiving_yards',grp:'WR'};
       const line=legs=>{ const x=d.createElement('div'); x.innerHTML=C({id:'safe',label:'Safe',n:legs.length,floor:0,legs,corr:0.3,dec:3,thin:legs.filter(l=>l.thin).length});
@@ -760,10 +892,21 @@ setTimeout(async()=>{
       chk(!/tick more/.test(tx)&&!/No line on your picks has a real sportsbook price/.test(tx),'with no player price on file, Players only still says to tick more, or repeats it in the note');
       setKinds(KINDS); const rA=hold('no player prices, all');
       chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):t.why.endsWith(', and '+noPlLow)),'with no player price on file, All builds a player leg, or an empty tier does not say no player prices are on file: '+rA.tiers.map(t=>t.why||'built').join(' / '));
-      /* All on one game: its team bets make one leg (one game bet a game), so no tier can be built,
-         and each says both why: too few legs, and no player prices yet */
+      /* a level built with no player price on file says nothing of the missing player legs, so the
+         panel does, whenever one is built; and player bets with Game total build their levels from
+         the totals, with that note */
+      const PL_NOTE='Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.';
+      F('renderPb')(); chk(d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes(PL_NOTE)===rA.tiers.some(t=>t.legs),'with no player price on file and All ticked, the note that the tiers are built without player legs is missing, or shows with no tier built');
+      /* a level needs two legs, so only where two or more games have a priced total (a one-game
+         Monday has one, and builds nothing) */
+      setKinds(['over','under','total']); const rPT=hold('no player prices, player bets and Game total'), nTot=new Set(F('pbPool')(games).mkt.map(l=>l.gid)).size; F('renderPb')();
+      chk((nTot<2||rPT.tiers.some(t=>t.legs))&&rPT.tiers.every(t=>!t.legs||t.legs.every(l=>l.market))&&d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes(PL_NOTE)===rPT.tiers.some(t=>t.legs),
+        'with no player price on file, player bets and Game total do not build their levels from the totals with the note that player prices are not in yet: '+rPT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+      setKinds(KINDS);
+      /* All on one game: its team bets make two legs at most (a side and its total), so only Safe
+         can be built, and every bigger level says both why: too few legs, and no player prices yet */
       U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
-      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow)),
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&/^(Only [12] legs?|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow))),
         'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
       U().off=[];
       S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);

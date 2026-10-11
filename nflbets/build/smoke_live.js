@@ -310,6 +310,12 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const live = await run({ file, state: 'in', pay });
     const d2 = [...live.d.querySelectorAll('.sp-leg')].find(r => rx(OUT.n + ' Receiving').test(who(r)));
     chk(!!d2 && status(d2) === 'void', 'a ruled-out player\'s leg is not void while the game is on: ' + (d2 ? status(d2) : ''));
+    /* every game over: all three are under Finished; while it is on, only a gone one is, after every live one */
+    const finOf = r => { const app = r.d.getElementById('app'), h = app.querySelector('.lp-done'), kids = [...app.children], at = h ? kids.indexOf(h) : Infinity;
+      return [...app.querySelectorAll('.savedp')].map(c => ({ c, fin: kids.indexOf(c) > at })); };
+    chk(finOf(v).length === 3 && finOf(v).every(x => x.fin), 'with every game over a parlay is not under Finished');
+    chk(finOf(live).every(x => x.fin === /\bgone\b/.test(txt(x.c.querySelector('.sp-head')))),
+      'with the game on, a parlay is under Finished though not gone, or a gone one is still among the live ones');
   }
 
   // ---- C6. the scoreboard asked for in each game's own season and week, playoffs too ----
@@ -357,6 +363,15 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     chk(typeof live.w.LIVE_IO === 'undefined' && typeof live.w.NFLSYNC === 'undefined' && live.w.localStorage.getItem('live_parlays_v1') === null, 'the shared key (LIVE_IO) or the sync layer is still on the page, or the section wrote a key');
     const done = await run({ state: 'post' });
     chk(done.d.querySelectorAll('#lpCard .savedp').length === 2 && done.d.querySelectorAll('#lpCard .pill.ok, #lpCard .pill.bad').length === 2, 'a finished parlay should still be drawn and say landed or gone');   /* the section only: the Props list has its own FINAL pills */
+    /* finished parlays stay in full view, last, under Finished with their count and when they
+       clear themselves (the betting job's autoclear.py), and nothing is folded away */
+    { const app = done.d.getElementById('app'), head = app.querySelector('.lp-done'), kids = [...app.children];
+      chk(!!head && /^Finished/.test(txt(head)) && /^Finished2 · each clears itself the day after its last game$/.test(txt(head))
+        && kids.indexOf(head) < kids.indexOf(app.querySelector('.savedp')) && !app.querySelector('details') && /None of X’s parlays is still live/.test(txt(app)),
+        'finished parlays are not shown in full under "Finished" with their count and when they clear, with a line saying none is live: ' + txt(app).slice(0, 160)); }
+    { const app = live.d.getElementById('app'), h = app.querySelector('.lp-done'), kids = [...app.children], at = h ? kids.indexOf(h) : Infinity;
+      chk([...app.querySelectorAll('.savedp')].every(c => (kids.indexOf(c) > at) === /\bgone\b/.test(txt(c.querySelector('.sp-head')))),
+        'mid-game a parlay is under Finished though it is not gone, or a gone one is still among the live ones'); }
     /* a browser's own parlays, settled or not, saved before: drawn nowhere, nothing offered to clear
        them, and kept in its storage as they were */
     const ownBlob = JSON.stringify({ stake: 5, saved: [

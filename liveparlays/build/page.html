@@ -64,6 +64,7 @@ select:focus,button:focus-visible{outline:none;box-shadow:var(--ring)}
 .lp-win:first-child{margin-top:4px}
 .lp-win b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink)}
 .lp-win span{font-size:12px;color:var(--muted)}
+.lp-quiet{font-size:13px;color:var(--muted);margin:4px 0 0}
 .sp-money{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:0 0 10px}
 .sp-money div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px}
 .sp-money b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -443,6 +444,12 @@ function legRow(l){
     </div></div>`;
 }
 const isDone=p=>p.legs.length>0&&p.legs.every(l=>{ const g=STATE.games[l.gid]; return g&&g.state==='post'; });
+/* settled: a leg has missed (the parlay is gone, whatever is still to play) or every game is over.
+   Settled parlays go last, in full, under Finished, so the day's results stay in view; each clears
+   itself two Eastern days after its last game, when the betting job marks it "cleared" in the file
+   (liveparlays/tools/autoclear.py), and from then on no device draws it. */
+const isGone=p=>p.legs.some(l=>{ const r=liveFor(l); return r&&r.state==='missed'; });
+const isSettled=p=>isDone(p)||isGone(p);
 function draw(){
   drawList();
   foot();
@@ -472,14 +479,17 @@ function drawList(){
   const WIN=['early','late','night'];
   const winOf=k=>{ if(k===null) return null; const o=ET(k), h=+o.hour; return {key:`${o.year}${o.month}${o.day}-${h<15?0:h<19?1:2}`,day:o.weekday,w:WIN[h<15?0:h<19?1:2]}; };
   const localT=k=>new Date(k).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-  const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isDone(p)?1:0,s2===null?FAR:s2,e===null?FAR:e,p.week||0]; };
+  const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isSettled(p)?1:0,s2===null?FAR:s2,e===null?FAR:e,p.week||0]; };
+  const sorted=ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); });
+  const nSettled=sorted.filter(isSettled).length;
+  if(nSettled===sorted.length) html+='<p class="lp-quiet">None of X’s parlays is still live.</p>';
   let lastKey;
-  for(const p of ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); })){
+  for(const p of sorted){
     const s0=startsAt(p), w0=winOf(s0), w1=winOf(endsAt(p));
-    const key=isDone(p)?'done':(w0?w0.key:'none');
+    const key=isSettled(p)?'settled':(w0?w0.key:'none');
     if(key!==lastKey){
       lastKey=key;
-      html+=key==='done'?'<div class="lp-win"><b>Finished</b><span>every game over</span></div>'
+      html+=key==='settled'?`<div class="lp-win lp-done"><b>Finished</b><span>${nSettled} · each clears itself the day after its last game</span></div>`
         :key==='none'?'<div class="lp-win"><b>Kickoff not known yet</b></div>'
         :`<div class="lp-win"><b>${esc(w0.day)} ${w0.w} games</b><span>first kickoff ${esc(localT(s0))}</span></div>`;
     }
