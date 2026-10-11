@@ -1,6 +1,7 @@
-"""Weekly refresh, run unattended by .github/workflows/props.yml: five price pulls a week
-(PULL_SLOTS below), and post-game, stats and daily injury-report runs with --catch-up: they price
-only a game a dropped pull left unpriced, and spend nothing otherwise.
+"""Weekly refresh, run unattended by .github/workflows/props.yml: four price pulls a week
+(PULL_SLOTS below), and post-game, stats, Saturday and daily injury-report runs with --catch-up:
+they price only a game a dropped pull left unpriced, and spend nothing otherwise.
+test_pull_schedule.py drives the pulls and catch-ups over the season's schedule, offline.
 
     python weekly.py                 (from props/build)
     python weekly.py --no-odds       skip the price pull
@@ -36,8 +37,8 @@ What it does, in order:
      from raw/feat.pkl: on the first run of a new season the committed table lacks it, and the
      run rebuilds it (features_ready) for the workflow to commit
   3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking
-     off before the next scheduled pull is likely to land (hours_to_next_pull) with
-     data/oddsfetch.py and merges them into that week's files
+     off before the next scheduled pull is likely to land (pull_window, hours_to_next_pull) with
+     data/oddsfetch.py (choose() picks the games) and merges them into that week's files
   4. bakes into the payload every week's player
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
@@ -47,7 +48,11 @@ What it does, in order:
   6. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
-Anything else wrong is a problem that fails the run after the commit.
+Anything else wrong is a problem that fails the run after the commit. For the price rows that
+means only what needs a person (price_problems): a name that could be two players (names.py
+says when), two names on one player's price, or misses too many to be a signing or two the
+roster has not caught up with; a few rows no player takes are logged and listed in the payload's
+unmatched, and a row placed by anything looser than a printed name is logged too.
 Nothing here ever prints the key.
 """
 import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
@@ -86,11 +91,17 @@ def run(args,cwd,label,soft=False,env=None):
     if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
 
-# Price pulls: (weekday, hour, minute) UTC, matching the crons in .github/workflows/props.yml.
-# Never on the hour: :00 is the most contended minute on the platform and the likeliest to be dropped.
+# Price pulls: (weekday, hour, minute) UTC, matching the "17 " crons in .github/workflows/props.yml
+# (test_pull_schedule.py holds the two together). Never on the hour: :00 is the most contended
+# minute on the platform and the likeliest to be dropped.
 # Mon for Monday night; Wed for a holiday game; Thu for Thursday night, Thanksgiving and Friday's
-# games; Sat morning for a Saturday game (nothing in an ordinary week); Sat evening for Sunday.
-PULL_SLOTS=[(0,8,17),(2,8,17),(3,8,17),(5,8,17),(5,23,17)]
+# games; Saturday 05:17 for the weekend: Saturday's games and the whole Sunday slate, London to
+# Sunday night. The owner looks at the Sunday slate on Saturday (October 2026: "all day saturday to
+# look at potential bets instead of scrambling"), so its prices land by Saturday morning Pacific
+# even at the latest GitHub has started a run (05:17 + 9.4h is 7:41am PDT, 6:41am PST), about a
+# day before kickoff; it replaced a Saturday 08:17 pull for Saturday's games and a 23:17 one for
+# Sunday's, and every game is still priced once.
+PULL_SLOTS=[(0,8,17),(2,8,17),(3,8,17),(5,5,17)]
 # GitHub fires this repo's scheduled runs late: 3 to 9 hours, measured across every job in
 # October 2026 (props median 7.2h, one catch-up 9.2h). A pull prices every game that kicks off
 # before the next slot plus LATE, so a game is never left to a pull that lands after its kickoff.
@@ -113,17 +124,38 @@ def hours_since_last_pull(now=None):
     past=[s for s in _slots(now,8,0) if s<=now]
     return (now-past[-1]).total_seconds()/3600 if past else 999.0
 
-def hours_to_next_pull(now=None):
+def hours_to_next_pull(now=None,soon=1800):
     """How far ahead to price: up to the next scheduled pull, plus LATE for that pull landing
     late. Every game is then priced by a pull that runs before it kicks off, with no special
     case for a holiday, a Saturday game or a Wednesday night game.
 
-    Today counts: a manual Saturday morning run must see that evening's pull rather than skip
-    to Monday. A pull less than half an hour away is treated as already happening."""
+    Today counts: a manual run early on a Monday must see that morning's pull rather than skip
+    to Wednesday and buy Monday night itself. A pull less than soon seconds away (half an hour)
+    is treated as already happening; a catch-up passes 0 (pull_window)."""
     now=now or datetime.datetime.now(datetime.timezone.utc)
     for s in _slots(now,0,9):
-        if (s-now).total_seconds()>1800: return (s-now).total_seconds()/3600+LATE
+        if (s-now).total_seconds()>soon: return (s-now).total_seconds()/3600+LATE
     return 120.0
+
+def pull_window(now=None,catch_up=False):
+    """The hours ahead this run prices (oddsfetch.py --hours), or None when a catch-up leaves it
+    to the scheduled pull: inside CATCH_UP_WAIT of a slot that pull is probably still on its way,
+    and outside it the catch-up prices only what has no prices (--missing).
+
+    A catch-up makes up the pull before it, so its window ends at the very next slot (plus LATE),
+    however close: it used to skip a slot under half an hour away as a pull does, so Sunday's
+    23:07 run landing nine hours late, at 08:07 on Monday, bought Monday night ten minutes before
+    the Monday pull's slot and left that pull nothing to do (no credit spent twice, the reprice
+    guard saw to that, but the game priced hours earlier than its pull would have)."""
+    now=now or datetime.datetime.now(datetime.timezone.utc)
+    if catch_up and hours_since_last_pull(now)<CATCH_UP_WAIT: return None
+    return hours_to_next_pull(now,0 if catch_up else 1800)
+
+def current_week(gs):
+    """(week, season over, games still to play): the earliest week with a regular-season game
+    still to play (no home score in games.csv yet), or the last week once every one is final"""
+    unplayed=[int(r['week']) for r in gs if not r['home_score'].strip()]
+    return (min(unplayed) if unplayed else max(int(r['week']) for r in gs)),not unplayed,len(unplayed)
 
 def problems_file():
     """the job reads this after the commit step and goes red if it has anything in it"""
@@ -329,14 +361,12 @@ def main():
         if bad: raise IOError(bad)
         gs=[r for r in rows if r['season']==str(SEASON) and r['game_type']=='REG']
         if len(gs)<200: raise IOError(f"only {len(gs)} {SEASON} regular-season games in it")
-        unplayed=[int(r['week']) for r in gs if not r['home_score'].strip()]
-        season_over=not unplayed
-        week=min(unplayed) if unplayed else max(int(r['week']) for r in gs)
+        week,season_over,n_unplayed=current_week(gs)
         kos=[kickoff({'d':r['gameday'],'t':r['gametime']}) for r in gs]; kos=[k for k in kos if k]
         first_ko=min(kos) if kos else None
         fkos=[kickoff({'d':r['gameday'],'t':r['gametime']}) for r in gs if r['home_score'].strip()]; fkos=[k for k in fkos if k]
         first_final=min(fkos) if fkos else None
-        say(f"  current week {week} ({len(unplayed)} games still to play this season)"+(' -- the regular season is over' if season_over else ''))
+        say(f"  current week {week} ({n_unplayed} games still to play this season)"+(' -- the regular season is over' if season_over else ''))
     except Exception as e:
         refuse(f"schedule ({GAMES}): {e}; the week cannot be worked out, so nothing is baked")
         first_final=None
@@ -377,13 +407,14 @@ def main():
         if line.startswith(('players','depth','build')): say('  '+line.strip())
     if rc!=0: refuse('payload.py failed, so the rosters and schedule could not be rebuilt'); return finish(a)
     # 3. prices
+    window=pull_window(catch_up=a.catch_up)     # None: a catch-up leaves it to the pull still on its way
     if a.no_odds: say("  price pull skipped (--no-odds)")
     elif season_over: say("  price pull skipped: the regular season is over")
     elif not os.environ.get('GITHUB_ACTIONS') and not a.local: say("  price pull skipped: credits are spent only by the props workflow (pass --local to pull from this machine)")
     elif not os.environ.get('ODDS_API_KEY'): say("  price pull skipped: ODDS_API_KEY is not set in this environment"); problems.append("no ODDS_API_KEY; prices not pulled")
-    elif a.catch_up and hours_since_last_pull()<CATCH_UP_WAIT: say(f"  catch-up skipped: the last scheduled pull's slot was {hours_since_last_pull():.1f}h ago and may still be on its way")
+    elif window is None: say(f"  catch-up skipped: the last scheduled pull's slot was {hours_since_last_pull():.1f}h ago and may still be on its way")
     else:
-        hours=a.hours or hours_to_next_pull()
+        hours=a.hours or window
         if a.catch_up: say(f"  catch-up: pricing only week {week} games within {hours:.0f}h that have no prices yet and have not kicked off")
         else: say(f"  pricing week {week} games kicking off within {hours:.0f}h, which reaches the next scheduled pull however late it lands")
         rc,out=run([PY,'oddsfetch.py','--week',str(week),'--hours',f'{hours:.1f}']+(['--missing'] if a.catch_up else []),DATA,'oddsfetch')
@@ -492,13 +523,17 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     # list or released off the board, practice-squad players off the starters, and puts a
     # player traded or signed elsewhere on his new team
     rrows=raw['rrows']
-    # [team, status, name, the week the row is for, and the football name with the surname when it
-    # differs]: INA (a game-day inactive) holds for that week only; the audit checks a book's name
-    # against the name and the football name the way the matcher does
+    # [team, status, name, the week the row is for, then his football name with the surname where it
+    # differs (null when only the next is there), then his legal form, his first name with the
+    # surname, where that is neither (names.names_of)]: INA (a game-day inactive) holds for that week
+    # only; the audit checks a book's name against the names the entry carries the way the matcher
+    # does, the printed ones before the legal form
     def entry(r):
         e=[r['team'],r['status'],r['full_name'],int(float(r.get('week') or 0))]
-        fb=(r.get('football_name') or '').strip()
-        if fb and fb!=(r.get('first_name') or '').strip(): e.append(f"{fb} {r.get('last_name') or ''}".strip())
+        printed,legal=names.names_of(r)
+        fb=[n for n in printed if names.norm(n)!=names.norm(r['full_name'])]
+        if legal: e+=[fb[0] if fb else None,legal]
+        elif fb: e.append(fb[0])
         return e
     # a skill position on the roster, or any player the page can show (his stats, last season's
     # table, the depth chart) whatever position the roster gives him: the page rules a player out
@@ -544,16 +579,31 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
         if at: meta[w]={'src':'DraftKings via the-odds-api','asof':max(at)[:10]}
     for w in list(meta):
         if w not in mkt and w not in prices: del meta[w]
-    # every price row with the player it belongs to, so the page matches by id, not by name
-    unmatched=[]; npid=0
+    # every price row with the player it belongs to, so the page matches by id, not by name. On a
+    # game still to come, a row no player takes is listed in the payload (unmatched) and logged; it
+    # is a problem, and the run goes red after its commit, only when price_problems says so
+    misses=[]; placed={}; rows_in={}; loose=set(); npid=0
     for w,rows in prices.items():
         for r in rows:
             if names.is_team_row(r.get('player')): continue
-            pid,how=pool.match(r['player'],int(w),r.get('game_id'))
-            if pid: r['pid']=pid; npid+=1
-            elif r.get('game_id') in open_games: unmatched.append(f"{r['player']} ({r.get('game_id')}): {how}")
-    for u in sorted(set(unmatched)): problems.append('price row not placed on a player: '+u)
-    pay['prices']=prices; pay['unmatched']=sorted(set(unmatched))
+            gid=r.get('game_id'); to_come=gid in open_games
+            if to_come: rows_in[gid]=rows_in.get(gid,0)+1
+            pid,how=pool.match(r['player'],int(w),gid)
+            if pid:
+                r['pid']=pid; npid+=1
+                if to_come:
+                    placed.setdefault((gid,pid,r.get('market'),r.get('threshold')),set()).add(r['player'])
+                    if how!='exact': loose.add(f"{r['player']} as {pool.who[pid][0][0]} ({how})")
+            elif to_come: misses.append((r['player'],gid,how))
+    unmatched,probs,notes=price_problems(misses,placed,rows_in)
+    problems.extend(probs)
+    if loose: say(f"  price rows placed on a player by his legal first name, a short first name or a nickname, or swapped words: {'; '.join(sorted(loose))}")
+    # a name two players in the game share, taken as the only one of them the book prices (the
+    # roster keeps a released defensive back of a receiver's name all season), main lines and prices
+    split=sorted({f"{b} ({g}) as {pid}, not {', '.join(o)}" for (b,_,g),(pid,o) in pool.by_position.items() if g in open_games})
+    if split: say(f"  a name two players in the game share, placed on the only one at a position the book prices: {'; '.join(split)}")
+    for n in notes: say('  '+n)
+    pay['prices']=prices; pay['unmatched']=unmatched
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over
     # the files nflverse has not posted yet: the audit expects none of them in the payload, and the
     # page says so rather than show an empty report as a quiet week
@@ -564,6 +614,54 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     say(f"  baked in: stats for weeks {', '.join(sorted(stats,key=int)) or 'none yet'} ({sum(len(v) for v in stats.values())} player-games), "
         f"{cur} injury rows for week {week} (+{len(inj)-cur} earlier Outs), {len(pay['roster'])} roster statuses, "
         f"{nl} main lines, prices for weeks {', '.join(sorted(prices,key=int)) or 'none'} ({npid} rows placed on a player)")
+
+# When the price rows no player takes are worth a person's attention. The book prices a touchdown
+# on nearly everyone who may play (one row for a depth player, up to four for a starter: the
+# touchdown, receptions, yards), so a game carries 52-70 player rows over about 30 names, and a
+# signing or a practice-squad call-up the roster file has not caught up with leaves a row or four
+# that nobody takes. That is the roster a day behind, not a fault, and it mends itself; every such
+# row used to turn the run red (the pull of 11 October 2026 01:25 UTC did, over three rows), and
+# the owner was mailed a failure for a page that was fine. A broken source looks different: a
+# club's roster gone, its code changed, a name rule broken take a large share of a game's rows or
+# many names at once. So a miss reports when its game's unplaced rows are more than MISS_SHARE of
+# that game's player rows (more than any one player's four rows of a full game, so one signing
+# priced in every market never trips it, while two starters or half a game do), or when more than
+# MISS_NAMES names are unplaced across the games still to come (2026's weeks 1-5 replayed through
+# the old matcher on today's roster leave at most four a week: the three names names.py now
+# places, and a player the roster has since moved to another club; through this one, at most one).
+MISS_SHARE=0.10
+MISS_NAMES=4
+
+def price_problems(misses,placed,rows_in):
+    """(unmatched, problems, notes) for the price rows of the games still to come.
+
+    misses: (book name, game, how) for each row no player took, how being pool.match's code.
+    placed: (game, player, market, threshold) -> the book names placed there. rows_in: game -> its
+    player rows. unmatched is every miss, for the payload (the audit holds every unplaced row of a
+    game to come to it). Always a problem: an ambiguous name (it could be two players, so it is on
+    neither), and two book names placed on one player's same price (one of them is someone else,
+    and the page would show one price for both). An 'unmatched' name (nobody in the game by any
+    rule) is a problem only past MISS_SHARE of its game's rows or MISS_NAMES names; otherwise a
+    note for the log. The main lines are not judged here: mktbuild reports every one on a game to
+    come that it cannot place, since the book posts a main line only for a player with a role
+    (about half the names it prices), never for the depth players a roster a day behind misses."""
+    unmatched=sorted({f"{b} ({g}): {h}" for b,g,h in misses})
+    probs=[f"price row not placed on a player: {b} ({g}): {h}" for b,g,h in sorted(set(misses)) if h!='unmatched']
+    for (g,pid,mk,k),books in sorted(placed.items(),key=lambda x:tuple(str(v) for v in x[0])):
+        if len(books)>1: probs.append(f"price rows of {len(books)} names placed on one player's {mk} {k} in {g}: {', '.join(sorted(books))}: one of them is someone else")
+    none_=[(b,g) for b,g,h in misses if h=='unmatched']
+    who=sorted(set(none_))
+    if not who: return unmatched,probs,[]
+    per={}
+    for b,g in none_: per[g]=per.get(g,0)+1
+    big=sorted(g for g,n in per.items() if n>MISS_SHARE*rows_in.get(g,n))
+    listed=', '.join(f"{b} ({g})" for b,g in who)
+    if big or len(who)>MISS_NAMES:
+        why=[f"{g} has {per[g]} of its {rows_in.get(g,per[g])} player price rows on no player (more than {MISS_SHARE:.0%})" for g in big]
+        if len(who)>MISS_NAMES: why.append(f"{len(who)} names on no player in the games still to come (more than {MISS_NAMES})")
+        probs.append(f"price rows on no player, too many to be a roster a day behind: {'; '.join(why)}: {listed}")
+        return unmatched,probs,[]
+    return unmatched,probs,[f"price rows on no player ({len(who)} name{'s' if len(who)>1 else ''}: nobody in the game by that name, a signing the roster file has not caught up with; in the payload's unmatched, not a problem): {listed}"]
 
 PUBLISHED=[None]   # the payload as it stood before this run, put back when the run is refused
 
