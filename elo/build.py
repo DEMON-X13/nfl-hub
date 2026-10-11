@@ -343,7 +343,7 @@ HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
-FORMULA = '2026-10-10'
+FORMULA = '2026-10-11'
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
@@ -388,8 +388,10 @@ FACET = {'QB': 'pass_d', 'WR': 'pass_d', 'TE': 'pass_d', 'RB': 'rush_d', 'DB': '
 # the depth a team fields at each group, and how much each slot counts in the game model
 DEPTH = {'QB': [1.0], 'RB': [1.0, 0.5], 'WR': [1.0, 0.7, 0.45], 'TE': [1.0], 'K': [1.0],
          'DL': [1.0, 0.8, 0.6, 0.4], 'LB': [1.0, 0.7, 0.4], 'DB': [1.0, 0.8, 0.6, 0.5, 0.4]}
+# the groups scored on what they produced (yards, touchdowns, fumbles lost) rather than on EPA (THE SCORES)
+PRODUCED = ['RB']
 # a game's weight is involvement over this norm, capped at one
-VOLUME = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
+VOLUME ={'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
 K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 120.0, 8
 # the season rating's placement: K = K_SET + (K_PLACE - K_SET) * K_DECAY^games, so the first
 # games move it hard (160, 109, 78, 60, 49 ...) and it settles toward 32, as Glicko's shrinking
@@ -915,6 +917,10 @@ def scores(d):
     vol = pd.Series(0.0, index=d.index)
     off = g.isin(['QB', 'RB', 'WR', 'TE'])
     score[off] = epa[off]
+    # a running back is scored on what he produced, not on EPA, which rates a carry below nothing (THE SCORES)
+    made = (n('rushing_yards') + n('receiving_yards') + 20 * (n('rushing_tds') + n('receiving_tds'))
+            - 25 * (n('rushing_fumbles_lost') + n('receiving_fumbles_lost')))
+    score[g.isin(PRODUCED)] = made[g.isin(PRODUCED)]
     score[g == 'K'] = fg[g == 'K']
     dl = g.isin(['DL', 'LB', 'DB'])
     score[dl] = defense[dl]
