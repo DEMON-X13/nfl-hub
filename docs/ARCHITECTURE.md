@@ -347,7 +347,19 @@ its games not read), a quiet line under the heading saying when the file last ch
 `updated`). Nothing a browser holds is drawn there: no saved parlays, no builder, no betting slips.
 
 The Parlay Builder is the prop model's own tab (`#parlay`, `tab-parlay`): the suggested parlays
-(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). The panel builds from
+(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). Its first control is
+the **Bet amount** box (`#pbStake`, a number box with `inputmode="decimal"`, min $1, max $100,000,
+step $1), which is the builder's own stake, `S.stake`: one amount, $20 to start, saved with the prop
+model's state, set from either box or the builder's one-tap amounts. Every tier card (`pbTierCard`,
+which draws the Elo picks too) pays it times the tier's own decimal price, `pbPayHtml(dec)`, under
+"$25 pays"; each card's `data-pb-pay` holds its price so `pbPays()` redraws every payout in place as
+the amount is typed, and the builder follows 250 ms later (`pbSyncBuilder`). The box's `change`
+(leaving it, or Enter) settles the amount and redraws only the builder, `renderParlay({keepPb:true})`,
+so a tier's Add to builder or Finish pressed straight after typing is not lost to a redraw. A typed
+amount is read by `stakeRead` (a $ sign and thousands commas allowed, kept to the cent, held to
+$1-$100,000; `null` for anything not a positive number, which leaves the amount as it was), and the
+amount in use is `pbStake()`, which reads a saved value that is not an amount as $20, so nothing
+drawn from it is NaN. The panel builds from
 what the visitor ticks, kept in the prop model's state (`S.ui.pb`: `k`, the five boxes; `off`, the
 games unticked; `gx`, whether the games list is open): a mix -- All (the default), Teams only, Players only -- which sets
 five boxes, Moneyline (`ml`), Spread (`ats`), Game total (`total`), Player overs and Player unders (a
@@ -375,7 +387,8 @@ a beam over a pairwise approximation of the copula (each correlated pair's joint
 Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
 builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so **Add to
 builder**, which puts exactly those legs in `S.parlay` (asking first when the builder holds others),
-shows the same price and chance. **Finish** opens the parlay card on the tier's $10. The tiers are
+shows the same price and chance, on the Bet amount, so it pays what the tier said. **Finish** opens
+the parlay card on the Bet amount (`pbStake()`, which `card.html`'s `fromTier` reads). The tiers are
 cached on a signature of the choices and the data (`PB_CACHE`); a game that kicks off with the page
 open leaves the games list and every tier at the next look (`pbWatch`, every 30 seconds) or draw.
 With no game left to come the panel says so (the season over, or the week's games all started).

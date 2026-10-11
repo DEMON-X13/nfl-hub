@@ -504,7 +504,18 @@ only, a parlay marked `cleared` left out, a quiet line under the heading saying 
 changed) and nothing else.
 
 The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
-in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). The panel is built from what
+in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). At the top of its controls is
+a **Bet amount** box (`#pbStake`: dollars, the decimal keypad on a phone, $1 to $100,000 in steps of
+$1, cents kept), the visitor's own amount and the builder's own stake, one number (`S.stake`, $20 to
+start, saved with the rest of the prop model state as the builder's stake always was), so it is set
+once: the builder's box and its one-tap amounts set the same number. Every tier, the Elo picks' too,
+pays it times its own decimal price ("$25 pays"), redrawn in place as it is typed (`pbPays`, each
+card's `data-pb-pay` holding its price) with the builder following a moment later; leaving the box or
+Enter settles it without redrawing the panel (`renderParlay({keepPb:true})`), so an Add to builder or
+Finish pressed straight after typing lands. A typed amount is read by `stakeRead` ($ and thousands
+commas allowed); one that is not a positive number (blank, a word, 0, a minus) leaves the amount as it
+was, and a saved one that is not an amount reads as $20 (`pbStake`), so nothing drawn from it is NaN.
+The panel is built from what
 the visitor ticks, each choice kept in the browser's own prop model state (`S.ui.pb`: the boxes, the
 games unticked, whether the games list is open; nothing else holds it): a mix, All (the default),
 Teams only or Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and
@@ -524,8 +535,8 @@ by hand from a game's Game bets card."). One team bet a game, one leg a player, 
 bet types", or, with player bets ticked before any of the ticked games has a player price, "No
 player prices yet: they are pulled within a day of each kickoff."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
-builder (exactly those legs into `S.parlay`) shows the same numbers; Finish opens the parlay card on
-the $10 the tier shows. The search is a beam over a pairwise copula approximation, with only the
+builder (exactly those legs into `S.parlay`, on the Bet amount) shows the same numbers and pays what
+the tier said; Finish opens the parlay card on the Bet amount. The search is a beam over a pairwise copula approximation, with only the
 finalists worked by the real sums; the tiers are cached on a signature of the choices and the data
 (`PB_CACHE`), and a game that kicks off while the page is open leaves the list and every tier
 (`pbWatch` looks every half minute). The Elo picks are the panel's last section. With no game to come
