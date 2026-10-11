@@ -726,16 +726,21 @@ setTimeout(async()=>{
           cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).click();
           chk(cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).getAttribute('aria-pressed')==='true'&&cardOf().querySelectorAll('[data-pb-lock][aria-pressed="true"]').length===1,'the lock did not take, or took more than the one leg');
           chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T.legs.map(idOf)),'a lock alone changed the legs');
-          const seen=new Set(T.legs.filter(l=>idOf(l)!==lid).map(idOf)); let turns=0, wrapped=false;
+          /* the card remembers who it has shown (a player, a team, a game's total), not the line */
+          const whoOf=F('pbWho'), seen=new Set(T.legs.filter(l=>idOf(l)!==lid).map(whoOf)); let turns=0, wrapped=false;
           while(turns<8&&!wrapped){ cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click(); turns++;
             const x=F('pbShownTier')(T.id); wrapped=!!w.eval(`PB_VIEW.t['${T.id}'].wrapped`);
             if(!x.legs){ chk(/unlock one/.test(x.why)&&/unlock one/.test(cardOf().textContent),`turn ${turns}: an empty turn does not say to unlock a leg`); break; }
             okTier(x,`new legs, turn ${turns}`);
             chk(x.legs.some(l=>idOf(l)===lid)&&x.turned===true,`turn ${turns}: the locked leg is not on it`);
             const fresh=x.legs.filter(l=>idOf(l)!==lid);
-            if(!wrapped) chk(fresh.every(l=>!seen.has(idOf(l))),`turn ${turns}: a leg the card had shown came back before the start-over: ${fresh.filter(l=>seen.has(idOf(l))).map(l=>l.name+' '+l.label).join(', ')}`);
+            if(!wrapped) chk(fresh.every(l=>!seen.has(whoOf(l))),`turn ${turns}: a player, team or total the card had shown came back before the start-over, on this line or another: ${fresh.filter(l=>seen.has(whoOf(l))).map(l=>l.name+' '+l.label).join(', ')}`);
             else chk(/back to the first/.test(cardOf().textContent),`turn ${turns}: the start-over is not said on the card`);
-            fresh.forEach(l=>seen.add(idOf(l)));
+            fresh.forEach(l=>seen.add(whoOf(l)));
+            /* a turned card says what it is: chosen from the legs left (until it starts over) beside the lock */
+            const rule=cardOf().querySelector('.pb-rule').textContent;
+            chk(/ beside your lock$| beside your lock that lands/.test(rule)&&(wrapped||/ left /.test(rule))&&(x.likeliest||!x.floor?/^the likeliest /.test(rule):/^best return /.test(rule)),`turn ${turns}: the turned card is ruled "${rule}", not the level's rule on the legs left beside the lock`);
+            if(x.mkt) chk(!/because your picks do not make a parlay/.test(cardOf().textContent)&&/here because (the legs with an edge (your picks have left for this card|on your picks) do not make a parlay of this size beside your lock|you locked)/.test(cardOf().textContent),`turn ${turns}: the totals line on the turned card does not say why they are there`);
             const li=[...cardOf().querySelectorAll('.pb-legs li')];
             chk(li.length===x.n&&x.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label))&&cardOf().querySelector('[data-pb-pay]').dataset.pbPay===String(x.dec)
               &&!!cardOf().querySelector(`[data-pb-reset="${T.id}"]`),`turn ${turns}: the card does not draw the turned legs and their price, or has no Reset`); }
@@ -751,16 +756,56 @@ setTimeout(async()=>{
           cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
           setKinds(KINDS.filter(k=>k!=='under')); F('renderPb')(); setKinds(KINDS); F('renderPb')();
           chk(!w.eval(`PB_VIEW.t['${T.id}']`)||(!w.eval(`PB_VIEW.t['${T.id}'].tier`)&&!w.eval(`PB_VIEW.t['${T.id}'].lock.length`)),'a changed box left a turned level or a lock behind');
+          const bare=()=>{ const v=w.eval(`PB_VIEW.t['${T.id}']`); return !v||(!v.tier&&!v.lock.length); };
+          /* None and then All is a change of picks too, though no card is drawn under None */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+            d.querySelector('#pbPanel [data-pb-games="none"]').click(); d.querySelector('#pbPanel [data-pb-games="all"]').click();
+            chk(bare()&&JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(F('getPbTiers')().tiers.find(t=>t.id===T.id).legs.map(idOf)),'ticking None and then All brought a turned level or a lock back'); }
+          /* every leg locked: New legs is off and does nothing; a level of locked legs alone (which a
+             kickoff can leave) is ruled as the visitor's own, never as the level's search */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); const T0=F('pbShownTier')(T.id), r0=cardOf().querySelector('.pb-rule').textContent;
+            for(const l of T0.legs) cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(l)}"]`).click();
+            const tb=cardOf().querySelector(`[data-pb-turn="${T.id}"]`);
+            chk(tb.disabled&&/unlock one/.test(tb.title),'with every leg locked New legs is not off, or does not say to unlock one');
+            F('pbTurn')(T.id); F('renderPb')();
+            chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T0.legs.map(idOf))&&cardOf().querySelector('.pb-rule').textContent===r0,'New legs with every leg locked changed the level or its rule');
+            const v=F('pbViewOf')(T.id); F('pbFill')(T.id,v); F('renderPb')();
+            const x=F('pbShownTier')(T.id), rule=cardOf().querySelector('.pb-rule').textContent;
+            chk(!!x.allLocked&&JSON.stringify(x.legs.map(idOf).sort())===JSON.stringify(T0.legs.map(idOf).sort())&&/^your (locked pair|\d+ locked legs)$/.test(rule)&&cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`a level of locked legs alone is ruled "${rule}", or is not the locked legs, or offers New legs`); }
+          /* a game kicking off is not a change of picks: the lock on a game still to come stays and the
+             level is filled again around it, with no leg on the game under way; the lock on that one falls away */
+          let kicked='no leg of the level on a later kickoff than another';
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            const gs=F('pbGames')(), ko=g=>F('kickoff')(g).getTime(), T1=F('pbShownTier')(T.id), kOf=l=>ko(gs.find(g=>g.id===l.gid));
+            const first=Math.min(...T1.legs.map(kOf)), Le=T1.legs.find(l=>kOf(l)===first), Ll=T1.legs.find(l=>kOf(l)>first);
+            if(Le&&Ll){
+              cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Ll)}"]`).click(); cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Le)}"]`).click();
+              const now0=w.Date.now, off=first+60e3-now0.call(w.Date); w.Date.now=()=>now0.call(w.Date)+off; F('renderPb')();
+              const on=new Set(F('pbGames')().map(g=>g.id)), v=w.eval(`PB_VIEW.t['${T.id}']`), x=F('pbShownTier')(T.id);
+              chk(!!v&&v.lock.length===1&&idOf(v.lock[0])===idOf(Ll)&&!!x.legs&&x.legs.length===T1.legs.length&&x.legs.some(l=>idOf(l)===idOf(Ll))&&x.legs.every(l=>on.has(l.gid))
+                &&cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Ll)}"]`).getAttribute('aria-pressed')==='true'&&/ beside your lock/.test(cardOf().querySelector('.pb-rule').textContent),
+                `a kickoff dropped the lock on a game still to come, kept the one on the game under way, or did not fill the level again around it: ${x.legs?x.legs.map(l=>l.name+' '+l.label).join(', '):x.why}`);
+              if(x.legs) okTier(x,'filled again after a kickoff');
+              w.Date.now=now0; F('renderPb')();
+              kicked=`a kickoff kept the lock on ${Ll.name} and dropped the one on ${Le.name}`; } }
+          w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
           /* a small pick runs out and starts over: Teams only on three games, Safe turned until no
              unshown leg is left, every turn a valid pair */
           let nW=0, wr=false;
           { const g3=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g3.slice(3).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')();
             if(F('getPbTiers')().tiers.find(t=>t.id==='safe'&&t.legs)){
+              const sw=new Set(F('pbShownTier')('safe').legs.map(whoOf));
               while(nW<40&&!wr){ d.querySelector('#pbPanel [data-pb-turn="safe"]').click(); nW++; wr=!!w.eval("PB_VIEW.t['safe']&&PB_VIEW.t['safe'].wrapped");
-                const x=F('pbShownTier')('safe'); if(x&&x.legs) okTier(x,`Safe on three games, turn ${nW}`); }
+                const x=F('pbShownTier')('safe'), c=d.querySelector('#pbPanel .pb-tier.safe'); if(!x||!x.legs) continue;
+                okTier(x,`Safe on three games, turn ${nW}`);
+                chk(c.querySelector('.pb-rule').textContent===(wr?'the likeliest pair':'the likeliest pair left'),`Safe on three games, turn ${nW}: ruled "${c.querySelector('.pb-rule').textContent}"`);
+                if(!wr) chk(x.legs.every(l=>!sw.has(whoOf(l))),`Safe on three games, turn ${nW}: a team or total it had shown came back before the start-over`);
+                if(x.mkt&&!wr) chk(/here because the legs with an edge your picks have left for this card do not make a parlay of this size\./.test(c.textContent),`Safe on three games, turn ${nW}: the totals line does not say the legs with an edge left do not make the pair`);
+                x.legs.forEach(l=>sw.add(whoOf(l))); }
               chk(wr&&/back to the first/.test(d.querySelector('#pbPanel .pb-tier.safe').textContent),`Safe on three games never started over in ${nW} turns, or did not say so`); }
             U().off=[]; setKinds(KINDS); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
-          console.log(`M6. lock and new legs: ${turns} turns of the ${T.label} level, the locked leg on each, ${seen.size} legs seen${wrapped?', then back to the first':''}; Safe on three games started over after ${nW} turns`); }
+          console.log(`M6. lock and new legs: ${turns} turns of the ${T.label} level, the locked leg on each, ${seen.size} players, teams and totals seen${wrapped?', then back to the first':''}; Safe on three games started over after ${nW} turns; ${kicked}`); }
         w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
       chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the game pages\' hands or the Elo picks are built from');
       /* only Game total ticked, every total priced (-105/-115, +100/+100 with no margin, +110/+105
