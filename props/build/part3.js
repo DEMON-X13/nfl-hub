@@ -1270,9 +1270,10 @@ function pbExact(legs){
 /* a level's best return: preferred legs alone first, then with k legs from the thin list, fewest
    first. The best few by the search's own score are worked exactly, and the best of those that
    clears the floor is the tier; null when none does. Safe, with no floor, is the likeliest pair */
-function pbBestReturn([id,label,n,floor],pool,memo){
+function pbBestReturn([id,label,n,floor],pool,memo,kMax){
   const P=pool.pref, U=[...pool.pref,...pool.thin];
-  for(let k=0;k<=n;k++){
+  /* kMax, when given, is the most fill legs a parlay may take (the totals' pass, pbTier) */
+  for(let k=0;k<=(kMax==null?n:kMax);k++){
     if(k&&!pool.thin.length) break;
     if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
     const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
@@ -1297,9 +1298,9 @@ function pbBestReturn([id,label,n,floor],pool,memo){
    parlay). Legs in different games are a plain product, so there the search's chance is the
    builder's and this is the likeliest parlay outright. null only when the picks do not make n
    legs at all */
-function pbLikeliest(n,pool,memo){
+function pbLikeliest(n,pool,memo,kMax){
   const P=pool.pref, U=[...pool.pref,...pool.thin];
-  for(let k=0;k<=n;k++){
+  for(let k=0;k<=(kMax==null?n:kMax);k++){
     if(k&&!pool.thin.length) break;
     if(pbMaxLegs(P)<n-k||pbMaxLegs(U)<n) continue;
     const pools=Array.from({length:n},(_,s)=>s<n-k?P:U);
@@ -1313,17 +1314,19 @@ function pbLikeliest(n,pool,memo){
 }
 /* one level: the best return over its floor, else (Medium, Aggressive, Extreme) the likeliest
    parlay of its size, marked likeliest so its card says which it is */
-function pbTierOn(t,pool,memo){
-  const r=pbBestReturn(t,pool,memo); if(r||!t[3]) return r;
-  const x=pbLikeliest(t[2],pool,memo); return x?{...x,likeliest:true}:null;
+function pbTierOn(t,pool,memo,kMax){
+  const r=pbBestReturn(t,pool,memo,kMax); if(r||!t[3]) return r;
+  const x=pbLikeliest(t[2],pool,memo,kMax); return x?{...x,likeliest:true}:null;
 }
 /* the legs with an edge first, exactly as before (preferred, then the fewest thin); only where
    they cannot make a parlay of the level's size at all are the totals added: every leg with an
-   edge, preferred and thin alike, is then the base and the totals the only fill, the fewest totals
-   first, by the same two searches, so a total never takes the place of a leg with an edge */
+   edge, preferred and thin alike, is then the base and the totals the only fill, exactly as many
+   totals as those legs leave to fill (pbTotalsFill) and no more, by the same two searches, so a
+   total never takes the place of a leg with an edge */
+const pbTotalsFill=(n,pool)=>Math.max(0,n-pbMaxLegs([...pool.pref,...pool.thin]));
 function pbTier(t,pool,memo){
   const r=pbTierOn(t,{pref:pool.pref,thin:pool.thin},memo); if(r||!(pool.mkt&&pool.mkt.length)) return r;
-  return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo);
+  return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo,pbTotalsFill(t[2],pool));
 }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
