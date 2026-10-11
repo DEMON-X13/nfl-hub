@@ -2,7 +2,9 @@
 
 A study run on 2026-10-10 and 2026-10-11, kept here so it can be run again. What it found is
 what the site does now (app v88, `props/build/patch_totals_market.py`): a game total is priced
-at the market's own chance, and the model's points are a display only.
+at the market's own chance, and the model's points are a display only. Since 2026-10-11 the
+ratings candidate is tracked in the betting job as a shadow, never shown, against a bar set before
+its first call ("The shadow" below).
 
 ## The question
 
@@ -161,10 +163,115 @@ candidate against the site rule, and the picks at a flat -110.
   display only. A candidate could replace the market only by passing the preregistered rule on
   new seasons; none should be tuned on the season in play.
 
+## The shadow: the ratings fade, tracked from 2026-10-11
+
+The ratings candidate was level with the market over 2024-2026 and strong on 2026's first 65 games,
+which the rule above calls direction only. The owner's call (2026-10-11): track it quietly for the
+rest of the season and beyond, against a bar written here before any of its live calls existed. It
+is never shown on any page, never used in a suggestion, and nothing on the site reads its ledger; it
+is turned on only if it passes, and then only by a change of its own.
+
+### The bar (pre-registered)
+
+Set on 2026-10-11 and committed before the ledger's first call. It is `BAR` in `shadow.py`, copied
+into the ledger, and `shadow_check.py` fails any ledger whose bar is not this one or not the last
+commit's.
+
+- **When**: decided once, when 285 games are in the sample (half the study's primary period), and
+  never revisited. The sample is the first 285 frozen calls graded over or under (a push drops out,
+  as in the study) that had the market's no-vig chance at the moment of the call, in the order they
+  were graded (then kickoff, then game id).
+- **PASS only if all three hold on those 285 games**:
+  1. Brier score, the model's minus the market's no-vig chance's: the paired bootstrap 90% interval
+     (10,000 resamples of the 285 games, seed 0, 5th to 95th percentile) lies wholly below 0;
+  2. log loss (chances clipped to 1e-6): the same, wholly below 0;
+  3. the 3-point-edge picks on those games are up in units (more than 0; no picks is not up), at the
+     price of the call, -110 where it was missing.
+- **Otherwise FAIL**: the tracking stops (no new calls; calls already frozen are still graded) and
+  the formula is never shown on the site or used in a suggestion.
+- **A PASS** makes it a candidate to turn on, by a change of its own; nothing on the site moves by
+  itself.
+- **Before 285** there is no verdict: the summary gives the running numbers and how many of the 285
+  are in, never a verdict or a word of passing.
+
+### What it does
+
+`shadow.py` runs in the betting job (`.github/workflows/update.yml`, after the Joker and Broly,
+`continue-on-error`), whose slots land before every kickoff window, on the games.csv that run has
+just downloaded, and nothing else: the candidate needs schedules, scores and lines, no play-by-play.
+
+- **The call.** For the season of the games to come, `cand_ratings.fit()` on every played game of the
+  seasons before it (2010 on, the 2009 regular season seeding the first, as the study's dataset does),
+  then `cand_ratings.rate()` over the season's games with a line, each played game's score read from
+  games.csv, so a game is rated on every score from an earlier calendar date; then, as `predict()`:
+  mu = line + W * (model total - line) with W = -0.25, sd the season's fitted sd, P(over) =
+  1 - Phi((line - mu) / sd). Beside it the market's no-vig chance from games.csv's over and under
+  prices at the same moment (none where either is missing) and the study's 3-point-edge pick (the
+  model's chance at least 3 points above the chance the price implies, margin left in; -110 where a
+  price is missing).
+- **The freeze.** A call is rewritten by any run before kickoff whose numbers differ (a line or price
+  moved, a new score came in), and frozen by the first run at or after kickoff, by the clock: the
+  kickoff the call holds or the one games.csv now gives, whichever is earlier. From then on it never
+  changes. A game that kicks off without a call, or never had a line, has none. A run that changes
+  nothing writes nothing.
+- **The grade.** After the final (games.csv's scores), against the call's own line, not the closing
+  one: the total, over, under or push, and the pick's units.
+- **The ledger**, `shadow/ledger.json`: the candidate's hash, the bar and when it was registered,
+  each season's fit (b0, b1, sd), the verdict once made, the summary (graded games, pushes, games
+  without a market price, Brier and log loss for the model and the market on the same games with the
+  paired 90% intervals of their differences, the picks' record and units, and where it stands
+  against the bar) and one call a game: the line, both prices, both chances, mu, sd, the model total,
+  the pick, called_at, frozen, frozen_at and the final.
+- **The check**, `shadow_check.py`, runs in the same step against the last commit's ledger and the
+  same games.csv. It fails the step alone, and puts the ledger back as the last commit had it, when a
+  call was made at or after its kickoff, a call frozen (or past its kickoff) in the last commit is
+  gone or changed in any field, the bar or the candidate is not the registered one, a verdict is
+  written early, late or not as the first 285 give it, a grade is not games.csv's, a final is left
+  ungraded, or the summary does not follow from the calls. The betting publish never waits on it.
+
+### The proof that it is the frozen candidate
+
+`shadow_equiv.py` runs the research harness on cand_ratings for the development seasons (2012-2023;
+the holdout is never touched) and `shadow.season_calls()` on the same games from games.csv alone, and
+holds mu, sd and P(over) equal to 1e-9. On the study's files downloaded 2026-10-11:
+
+- every one of the 3,119 regular-season games, with every earlier score known as the shadow runs live:
+  largest difference 0 (the same floating-point numbers);
+- all 3,259 games, playoffs included, with the scores the harness could not read back withheld from
+  the shadow too: largest difference 0.
+
+The harness reads a score back from a team's next row, so it cannot see a week-18 score when neither
+team plays again (5 to 8 a season); live, games.csv has it. On the playoffs that moves mu by at most
+0.047 points (the candidate's docstring allowed 0.15), and the shadow uses the scores.
+
+`test_shadow.py` runs the shadow and the check on fabricated games.csv files through one week (a game
+called, its line moving, kicking off and freezing while the closing line moves on, a late game still
+rewritten, the final graded over its own line and under the closing one, a push, a game with no price
+and its pick at -110, a game whose line appears only after kickoff, the next week rewritten on the new
+scores), shows the check catching each planted change (a frozen chance moved, a graded total or result
+that is not games.csv's, a frozen call deleted, a call stamped after kickoff, the closing line re-taken,
+the bar or the summary edited, a final left ungraded, a verdict written early or changed) and a shadow
+mutated to recompute after kickoff, then the bar on made-up records (no verdict at 284, PASS on the
+first 285 in grading order, FAIL level with the market, FAIL with no picks, FAIL when the picks lose,
+and, the picks up each time, FAIL when both intervals straddle 0, when only Brier's lies below 0 and
+when only log loss's does, so a bar read off an interval's lower bound or missing either score fails
+the test; the tracking stopping after a FAIL), the pick rule against the harness's own, and no page naming the
+ledger.
+
+```
+python3 props/research/totals/test_shadow.py          # ends "7 passed, 0 failed"
+python3 props/research/totals/shadow.py               # downloads games.csv into data/shadow/; writes shadow/ledger.json
+python3 props/research/totals/shadow_check.py         # against the last commit's ledger; ends "shadow check: 0 failures"
+data/venv/bin/python shadow_equiv.py                  # from here, after fetch_raw.py and build_dataset.py; ends "EQUIVALENCE: passed"
+```
+
+Never edit the ledger by hand: it is the record, and the check holds it to the last commit.
+
 ## How to run it again
 
 From `props/research/totals/`. Everything it downloads or writes goes under `data/` and `out/`,
-both gitignored.
+both gitignored (the shadow's ledger, `shadow/ledger.json`, is the one file here a job writes and
+commits).
 
 ```
 python3 -m venv data/venv && data/venv/bin/pip install -r requirements.txt
