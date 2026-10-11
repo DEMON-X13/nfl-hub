@@ -47,7 +47,10 @@ What it does, in order:
   6. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
-Anything else wrong is a problem that fails the run after the commit.
+Anything else wrong is a problem that fails the run after the commit. For the price rows that
+means only what needs a person (price_problems): a name that could be two players, two names
+on one player's price, or misses too many to be a signing or two the roster has not caught up
+with; a few rows no player takes are logged and listed in the payload's unmatched.
 Nothing here ever prints the key.
 """
 import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
@@ -492,14 +495,12 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     # list or released off the board, practice-squad players off the starters, and puts a
     # player traded or signed elsewhere on his new team
     rrows=raw['rrows']
-    # [team, status, name, the week the row is for, and the football name with the surname when it
-    # differs]: INA (a game-day inactive) holds for that week only; the audit checks a book's name
-    # against the name and the football name the way the matcher does
+    # [team, status, name, the week the row is for, and then his other names (names.names_of: the
+    # football name with the surname, his first name with the surname, where either differs)]: INA
+    # (a game-day inactive) holds for that week only; the audit checks a book's name against every
+    # name the entry carries the way the matcher does
     def entry(r):
-        e=[r['team'],r['status'],r['full_name'],int(float(r.get('week') or 0))]
-        fb=(r.get('football_name') or '').strip()
-        if fb and fb!=(r.get('first_name') or '').strip(): e.append(f"{fb} {r.get('last_name') or ''}".strip())
-        return e
+        return [r['team'],r['status'],r['full_name'],int(float(r.get('week') or 0))]+[n for n in names.names_of(r) if names.norm(n)!=names.norm(r['full_name'])]
     # a skill position on the roster, or any player the page can show (his stats, last season's
     # table, the depth chart) whatever position the roster gives him: the page rules a player out
     # as "on no roster" when the table lacks him, so it must not lack one who is on a roster
@@ -544,16 +545,27 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
         if at: meta[w]={'src':'DraftKings via the-odds-api','asof':max(at)[:10]}
     for w in list(meta):
         if w not in mkt and w not in prices: del meta[w]
-    # every price row with the player it belongs to, so the page matches by id, not by name
-    unmatched=[]; npid=0
+    # every price row with the player it belongs to, so the page matches by id, not by name. On a
+    # game still to come, a row no player takes is listed in the payload (unmatched) and logged; it
+    # is a problem, and the run goes red after its commit, only when price_problems says so
+    misses=[]; placed={}; rows_in={}; loose=set(); npid=0
     for w,rows in prices.items():
         for r in rows:
             if names.is_team_row(r.get('player')): continue
-            pid,how=pool.match(r['player'],int(w),r.get('game_id'))
-            if pid: r['pid']=pid; npid+=1
-            elif r.get('game_id') in open_games: unmatched.append(f"{r['player']} ({r.get('game_id')}): {how}")
-    for u in sorted(set(unmatched)): problems.append('price row not placed on a player: '+u)
-    pay['prices']=prices; pay['unmatched']=sorted(set(unmatched))
+            gid=r.get('game_id'); to_come=gid in open_games
+            if to_come: rows_in[gid]=rows_in.get(gid,0)+1
+            pid,how=pool.match(r['player'],int(w),gid)
+            if pid:
+                r['pid']=pid; npid+=1
+                if to_come:
+                    placed.setdefault((gid,pid,r.get('market'),r.get('threshold')),set()).add(r['player'])
+                    if how!='exact': loose.add(f"{r['player']} as {pool.who[pid][0][0]} ({how})")
+            elif to_come: misses.append((r['player'],gid,how))
+    unmatched,probs,notes=price_problems(misses,placed,rows_in)
+    problems.extend(probs)
+    if loose: say(f"  price rows placed on a player by a short, nickname or swapped name: {'; '.join(sorted(loose))}")
+    for n in notes: say('  '+n)
+    pay['prices']=prices; pay['unmatched']=unmatched
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over
     # the files nflverse has not posted yet: the audit expects none of them in the payload, and the
     # page says so rather than show an empty report as a quiet week
@@ -564,6 +576,54 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     say(f"  baked in: stats for weeks {', '.join(sorted(stats,key=int)) or 'none yet'} ({sum(len(v) for v in stats.values())} player-games), "
         f"{cur} injury rows for week {week} (+{len(inj)-cur} earlier Outs), {len(pay['roster'])} roster statuses, "
         f"{nl} main lines, prices for weeks {', '.join(sorted(prices,key=int)) or 'none'} ({npid} rows placed on a player)")
+
+# When the price rows no player takes are worth a person's attention. The book prices a touchdown
+# on nearly everyone who may play (one row for a depth player, up to four for a starter: the
+# touchdown, receptions, yards), so a game carries 52-70 player rows over about 30 names, and a
+# signing or a practice-squad call-up the roster file has not caught up with leaves a row or four
+# that nobody takes. That is the roster a day behind, not a fault, and it mends itself; every such
+# row used to turn the run red (the pull of 11 October 2026 01:25 UTC did, over three rows), and
+# the owner was mailed a failure for a page that was fine. A broken source looks different: a
+# club's roster gone, its code changed, a name rule broken take a large share of a game's rows or
+# many names at once. So a miss reports when its game's unplaced rows are more than MISS_SHARE of
+# that game's player rows (more than any one player's four rows of a full game, so one signing
+# priced in every market never trips it, while two starters or half a game do), or when more than
+# MISS_NAMES names are unplaced across the games still to come (2026's weeks 1-5 replayed through
+# the old matcher on today's roster leave at most four a week: the three names names.py now
+# places, and a player the roster has since moved to another club; through this one, at most one).
+MISS_SHARE=0.10
+MISS_NAMES=4
+
+def price_problems(misses,placed,rows_in):
+    """(unmatched, problems, notes) for the price rows of the games still to come.
+
+    misses: (book name, game, how) for each row no player took, how being pool.match's code.
+    placed: (game, player, market, threshold) -> the book names placed there. rows_in: game -> its
+    player rows. unmatched is every miss, for the payload (the audit holds every unplaced row of a
+    game to come to it). Always a problem: an ambiguous name (it could be two players, so it is on
+    neither), and two book names placed on one player's same price (one of them is someone else,
+    and the page would show one price for both). An 'unmatched' name (nobody in the game by any
+    rule) is a problem only past MISS_SHARE of its game's rows or MISS_NAMES names; otherwise a
+    note for the log. The main lines are not judged here: mktbuild reports every one on a game to
+    come that it cannot place, since the book posts a main line only for a player with a role
+    (about half the names it prices), never for the depth players a roster a day behind misses."""
+    unmatched=sorted({f"{b} ({g}): {h}" for b,g,h in misses})
+    probs=[f"price row not placed on a player: {b} ({g}): {h}" for b,g,h in sorted(set(misses)) if h!='unmatched']
+    for (g,pid,mk,k),books in sorted(placed.items(),key=lambda x:tuple(str(v) for v in x[0])):
+        if len(books)>1: probs.append(f"price rows of {len(books)} names placed on one player's {mk} {k} in {g}: {', '.join(sorted(books))}: one of them is someone else")
+    none_=[(b,g) for b,g,h in misses if h=='unmatched']
+    who=sorted(set(none_))
+    if not who: return unmatched,probs,[]
+    per={}
+    for b,g in none_: per[g]=per.get(g,0)+1
+    big=sorted(g for g,n in per.items() if n>MISS_SHARE*rows_in.get(g,n))
+    listed=', '.join(f"{b} ({g})" for b,g in who)
+    if big or len(who)>MISS_NAMES:
+        why=[f"{g} has {per[g]} of its {rows_in.get(g,per[g])} player price rows on no player (more than {MISS_SHARE:.0%})" for g in big]
+        if len(who)>MISS_NAMES: why.append(f"{len(who)} names on no player in the games still to come (more than {MISS_NAMES})")
+        probs.append(f"price rows on no player, too many to be a roster a day behind: {'; '.join(why)}: {listed}")
+        return unmatched,probs,[]
+    return unmatched,probs,[f"price rows on no player ({len(who)} name{'s' if len(who)>1 else ''}: nobody in the game by that name, a signing the roster file has not caught up with; in the payload's unmatched, not a problem): {listed}"]
 
 PUBLISHED=[None]   # the payload as it stood before this run, put back when the run is refused
 

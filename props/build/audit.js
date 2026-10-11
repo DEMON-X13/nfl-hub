@@ -1279,16 +1279,27 @@ setTimeout(async()=>{
       /* the page exactly as a browser builds it on a first visit */
       w.eval('S=freshState(); NORM=null; INJ={}; RSTAT={}; GAME_TIER_CACHE={}');
       w.eval('applyBaked()'); const SV=w.eval('S');
-      /* a book's name against a player's, the rule build/names.py matches with: the same name, his
-         football name with his surname, or only a short first name (Cam for Cameron) */
+      /* a book's name against a player's, the rule build/names.py matches with: one of his names (his
+         full name, his football name with his surname, his first name with his surname), or one
+         of them with only a short first name (Cam for Cameron) or a nickname from
+         build/nicknames.json, the job's own table (Drew for Andrew), or a two-word one with its
+         words swapped (James Jordan for Jordan James) */
       const nrm=s=>String(s||'').normalize('NFKD').replace(/[^ -~]/g,'').toLowerCase().replace(/[.'`-]/g,'').replace(/\s+/g,' ').trim().replace(/\s+(jr|sr|ii|iii|iv|v)$/,'').trim();
-      const shortForm=(a,b)=>{ if(!a||!b) return false; const [lo,hi]=a.length<=b.length?[a,b]:[b,a]; let c=0; while(c<a.length&&c<b.length&&a[c]===b[c]) c++; return (lo.length>=3&&hi.startsWith(lo))||c>=4; };
-      const nameRule=(book,full,alias)=>{ const b=nrm(book), f=nrm(full), al=alias?nrm(alias):null; if(!b) return null; if(b===f||(al&&b===al)) return 'exact';
-        const bp=b.split(' '), pp=f.split(' '); if(bp.length<2||pp.length<2||bp.slice(1).join(' ')!==pp.slice(1).join(' ')) return null; return shortForm(bp[0],pp[0])?'short':null; };
+      const NICK={}; for(const [given,nicks] of Object.entries(require('./nicknames.json'))) if(!given.startsWith('_')) for(const n of nicks){ (NICK[given]??=new Set()).add(n); (NICK[n]??=new Set()).add(given); }
+      const shortForm=(a,b)=>{ if(!a||!b) return false; const [lo,hi]=a.length<=b.length?[a,b]:[b,a]; let c=0; while(c<a.length&&c<b.length&&a[c]===b[c]) c++; return (lo.length>=3&&hi.startsWith(lo))||c>=4||!!(NICK[a]&&NICK[a].has(b)); };
+      const nameRule=(book,full,alias)=>{ const b=nrm(book); if(!b) return null;
+        const all=[full,...(Array.isArray(alias)?alias:[alias])].filter(Boolean).map(nrm).filter(Boolean); if(all.includes(b)) return 'exact';
+        const bp=b.split(' '); if(bp.length<2) return null; const sp=all.map(f=>f.split(' '));
+        if(sp.some(pp=>pp.length>=2&&bp.slice(1).join(' ')===pp.slice(1).join(' ')&&shortForm(bp[0],pp[0]))) return 'short';
+        return bp.length===2&&sp.some(pp=>pp.length===2&&pp[0]===bp[1]&&pp[1]===bp[0])?'swapped':null; };
       chk(nameRule('Cam Ward','Cameron Ward')&&nameRule('Kenny Gainwell','Kenneth Gainwell')&&nameRule('A.J. Brown','AJ Brown')==='exact'&&!nameRule('Jalon Daniels','Jayden Daniels')&&!nameRule('Jeremiyah Love','Jordan Love')&&!nameRule('Kevin Coleman Jr.','Keon Coleman')&&!nameRule('Brian Robinson Jr.','Bijan Robinson'),'the name rule lets a different player through, or stops a short name');
+      chk(nameRule('Drew Ogletree','Andrew Ogletree')==='short'&&nameRule('Zonovan Knight','Bam Knight',['Zonovan Knight'])==='exact'&&nameRule('James Jordan','Jordan James')==='swapped'&&!nameRule('Zonovan Knight','Bam Knight')&&!nameRule('Rick Henry','Derrick Henry')&&!nameRule('Ian Thomas','Brian Thomas')&&!nameRule('Drew Jordan','Andrew James')&&!nameRule('James Jordan Smith','Jordan James Smith')&&!nameRule('Andrew Ogletree','Drew Sample'),'the name rule\'s other names, nicknames or swapped names let a different player through, or stop his own');
       const R=PAY.roster||null, rawRo={}; for(const r of (rRoster||[])) if(r.gsis_id) rawRo[r.gsis_id]=r;
+      /* his other names: the downloaded roster's where the job has it (the same rule as names.py's
+         names_of), else the ones the payload's roster entry carries after the week */
+      const rawNames=r=>[r.football_name&&r.football_name!==r.first_name?`${r.football_name} ${r.last_name}`:null, r.first_name&&r.last_name?`${r.first_name} ${r.last_name}`:null].filter(Boolean);
       const who=pid=>{ const e=R&&R[pid], r=rawRo[pid], p=SV.players[pid];
-        return {name:(e&&e[2])||(r&&r.full_name)||(p&&p.n)||'', alias:(e&&e[4])||(r&&r.football_name&&r.football_name!==r.first_name?`${r.football_name} ${r.last_name}`:null)}; };
+        return {name:(e&&e[2])||(r&&r.full_name)||(p&&p.n)||'', alias:r?rawNames(r):(e?e.slice(4):[])}; };
       const rstat=pid=>{ const e=R&&R[pid]; if(e) return {st:e[1],wk:+e[3]}; const r=rawRo[pid]; return r?{st:r.status,wk:+r.week}:null; };
       const cw=F('currentWeek')(), openG=SV.sched.filter(g=>+g.w===cw&&!F('gameStarted')(g));
       const gOf=id=>SV.sched.find(g=>g.id===id), gamesInWeek=wk=>SV.sched.filter(g=>+g.w===+wk).map(g=>g.id);
