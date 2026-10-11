@@ -336,7 +336,7 @@ const LINES = {
  "wk5:LV-NE": "NE -3.5, O/U 45.5",
  "wk5:MIN-NO": "MIN -2.5, O/U 41.5",
  "wk5:CLE-NYJ": "NYJ -2.5, O/U 39.5",
- "wk5:IND-PIT": "PIT -3, O/U 43.5",
+ "wk5:IND-PIT": "PIT -2.5, O/U 43.5",
  "wk5:HOU-TEN": "HOU -7, O/U 37.5",
  "wk5:NYG-WAS": "WAS -3.5, O/U 41.5",
  "wk5:DEN-LAC": "DEN -3.5, O/U 41.5",
