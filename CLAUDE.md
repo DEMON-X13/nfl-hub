@@ -180,15 +180,26 @@ its own; before 285 the summary never says passing. `shadow_equiv.py` proves its
 harness's own (identical on every development game), `test_shadow.py` is its test (README.md there,
 "The shadow"). Never edit the ledger or the bar by hand.
 
-`.github/workflows/props.yml` runs five price pulls a week (Mon, Wed, Thu, Sat morning for a
-Saturday game, Sat evening for Sunday; ~7 odds-API credits a game), eight post-game and stats
-runs, and a daily 12:07 UTC run that lands after nflverse posts the day's injury report,
-rosters and depth charts (about 14:20 UTC). GitHub fires this repo's crons 3-9 hours late, so
-each pull prices every game kicking off before the next slot plus 10 hours, never a game that
-has started, and not one priced in the last twelve hours. The nine `7 ` runs are catch-ups
-(`weekly.py --catch-up`): each prices any game up to the next pull that has no prices and has
-not kicked off, once a pull's slot is ten hours gone, and spends nothing when every pull ran.
-It commits straight to `main`.
+`.github/workflows/props.yml` runs four price pulls a week (Mon, Wed and Thu 08:17 UTC, and Sat
+05:17 UTC for the weekend: Saturday's games and the whole Sunday slate, London to Sunday night;
+~7 odds-API credits a game), eight post-game and stats runs, two Saturday catch-ups (16:07 and
+23:07 UTC) and a daily 12:07 UTC run that lands after nflverse posts the day's injury report,
+rosters and depth charts (about 14:20 UTC). The Sunday slate is priced on Saturday morning so the
+owner has all of Saturday to look at it (his call, October 2026; the prices are about a day old
+by kickoff): even 9.4 hours late, the latest GitHub has started one, the pull is on the site by
+about 7:50am Pacific (6:50am PST from 1 November). GitHub fires this repo's crons about 2 to 9.4
+hours late, so each pull prices every game kicking off before the next slot plus 10 hours, never
+a game that has started, and not one priced in the last twelve hours: every game is bought once
+(Thanksgiving's early game twice, Wednesday and Thursday, by design). The eleven `7 ` crons are
+catch-ups (`weekly.py --catch-up`): each prices any game up to the very next slot that has no
+prices and has not kicked off, once a pull's slot is ten hours gone, and spends nothing when every
+pull ran; a dropped Saturday pull is made up by the 16:07 run on Saturday (Pacific), and the 23:07
+one is the last chance before London. DraftKings' moneylines, spreads and totals are used only
+while under a day old, so a Sunday game's give way to nflverse's on Sunday morning; the player
+prices are DraftKings' Saturday ones to kickoff. `python3 test_pull_schedule.py` (about a minute,
+no credits) replays the season's schedule through `weekly.py`'s windows and `oddsfetch.py`'s
+`choose()` at every lateness up to 9.4 hours and with pulls dropped, and holds the crons to
+`PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`.
 
 ## Betting: the loop
 

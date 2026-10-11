@@ -2,19 +2,26 @@ name: Update prop model
 
 on:
   schedule:
-    # Five price pulls a week; times are UTC and must match PULL_SLOTS in props/build/weekly.py.
-    # GitHub fires this repo's scheduled runs 3 to 9 hours late (measured across every job in
+    # Four price pulls a week; times are UTC and must match PULL_SLOTS in props/build/weekly.py
+    # (props/build/test_pull_schedule.py reads these lines and holds the two together).
+    # GitHub fires this repo's scheduled runs 2 to 9.4 hours late (measured across every job in
     # October 2026: props median 7.2h, a catch-up 9.2h), so each pull prices every game that
     # kicks off before the next slot plus 10 hours (LATE in weekly.py): no game is left to a
     # pull that lands after its kickoff. A game that has kicked off is never priced, and one
-    # priced in the last twelve hours is not bought again. About 7 credits a game, ~112 a week;
-    # a pull with no game to price spends nothing. Never on the hour: :00 is the minute most
-    # likely to be dropped under load.
+    # priced in the last twelve hours is not bought again. About 7 credits a game, ~112 a week,
+    # each game priced once (Thanksgiving's early game twice, Wednesday and Thursday); a pull
+    # with no game to price spends nothing. Never on the hour: :00 is the minute most likely to
+    # be dropped under load.
     - cron: "17 8 * * 1"    # Monday (lands ~noon-5pm UTC): Monday night
     - cron: "17 8 * * 3"    # Wednesday: Thanksgiving's early game; nothing in an ordinary week
     - cron: "17 8 * * 4"    # Thursday: Thursday night, Thanksgiving, Black Friday and Christmas games
-    - cron: "17 8 * * 6"    # Saturday morning: a Saturday game (week 15, week 18); nothing in an ordinary week
-    - cron: "17 23 * * 6"   # Saturday evening (lands ~2-8am UTC Sunday): the Sunday slate, London included
+    # Saturday 05:17 UTC (Friday 10:17pm PDT, 9:17pm PST): the weekend, Saturday's games (week 15,
+    # week 18) and the whole Sunday slate, London to Sunday night, priced about a day before
+    # kickoff so the owner has all of Saturday to look (his call, October 2026). Even 9.4 hours
+    # late it starts by 14:41 UTC, 7:41am PDT (6:41am PST from 1 November), and is on the site
+    # a few minutes later. It replaced a Saturday 08:17 pull for Saturday's games and a 23:17
+    # one for Sunday's.
+    - cron: "17 5 * * 6"
     # post-game: finals, game bets settled, started games out of the suggestions.
     # Every one of these sits on minute 7, and the run step passes --catch-up for any
     # schedule starting "7 ": a credit is spent only on a game a dropped pull left unpriced,
@@ -29,6 +36,11 @@ on:
     - cron: "7 16 * * 5"    # Thursday night's stats
     - cron: "7 16 * * 1"    # Sunday's stats
     - cron: "7 16 * * 2"    # Monday night's stats
+    # Saturday catch-ups for a dropped weekend pull: 16:07 lands Saturday 9am-6:30pm PDT, at least
+    # ten hours after the 05:17 slot however late it starts; 23:07 is the old evening slot's time,
+    # a last chance before London's kickoff. Each spends nothing when the 05:17 pull ran.
+    - cron: "7 16 * * 6"    # Saturday afternoon: the Sunday slate if the 05:17 pull was dropped
+    - cron: "7 23 * * 6"    # Saturday evening: the same, last chance before Sunday morning
     # every day (a catch-up like the runs above): the injury report, rosters and depth charts.
     # nflverse posts all three once a day, at about 14:20 UTC (seen 9 October 2026); this fires
     # at 12:07, so landing 3-9 hours late it reads that day's files rather than the day before's.
