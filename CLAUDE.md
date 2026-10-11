@@ -588,13 +588,25 @@ the kickoff and site, the Vegas line as the board reads it, every model's pick, 
 each team's Power Rating, Overall Offense against Overall Defense both ways, each team's expected
 starters position by position with their season Elo, rank, shield and Q as on the ELO Ratings tab
 (`lineups` in `matchups.json`) and its ranked players out, the Props tab's Mismatches in the game,
-when each file was published, and links to the full tabs. It computes nothing of its own: the board
+when each file was published, and links to the full tabs. It reads at a glance first (the owner's
+ask, October 2026: easy to read, nothing smooshed): a verdict card always shown -- the two teams and
+records, the score or kickoff, the Vegas favourite by how much and its chance on the board's own split
+bar, the spread, total and moneylines, and five answer lines (the model vote: how many of the six calls
+pick each side, their average chance for the side most pick and, once played, how many landed; the
+Team Elo gap; which side ranks higher on offense against defense each way; who is out and how many
+starters are questionable; the top mismatch) -- then a card each (Every call, Team strength, Offense
+vs defense, Mismatches, Starters, Sources) that folds to a one-line summary: all open on a wide
+screen, all folded on a phone, with Open all. Every call is one lean chart (each bar leans from 50/50
+toward the side its call picks); the better side of every comparison wears one mark (`gs-better`).
+It computes nothing of its own beyond those counts, that average and that gap: the board
 hands it the season and its own Vegas call (`window.pkBoard`) and the ELO tab its one read of
 `elo/data/` (`window.eloFiles`) and its Mismatches (`window.eloMismatches`). A played game says the
 ratings and lineups are the files as they stand now, and a file that did not load, a game outside the
 matchups' week or a team whose lineup is for another game is said in its card while the rest draws.
-`smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file, on a game to
-come, a final on the scoreboard, a graded game and a playoff game, with a file missing. The position
+`smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file (each number the
+verdict and the summaries add is marked `data-gs-n` and worked out there on its own, as are the edge
+marks and the stat pairs), on a game to come, a final on the scoreboard, a graded game and a playoff
+game, with a file missing, and the folding, on a wide screen and a phone. The position
 table is laid out fixed, each team half the card, and a long name wraps on a phone rather than push
 the home side off the screen; a player's Q is inside his name's own box, inline after the name, so a
 wrapping name never leaves it beside the other team's player (the smoke holds those rules and that

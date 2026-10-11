@@ -809,170 +809,336 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 /* the page's modal pads its top by 28px, and a sticky header sticks inside that padding, so the
    window's content showed in a band above it once scrolled: the gap is the panel's margin instead */
 #gsModal{z-index:55;padding-top:0}
-#gsModal .modal-panel{max-width:1000px;padding:0 0 22px;overflow:visible;margin-top:28px}
-.gs-top{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:12px 20px;background:var(--bg-2);border-bottom:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0}
-.gs-top h2{font-family:var(--display);font-size:18px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink);display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0;line-height:1.2}
-.gs-top h2 .gs-wk{font-family:var(--body);font-size:12px;font-weight:600;color:var(--muted)}
+#gsModal .modal-panel{max-width:1000px;padding:0 0 24px;overflow:visible;margin-top:28px}
+.gs-top{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--bg-2);border-bottom:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0}
+.gs-top h2{margin:0;min-width:0;display:flex;flex-direction:column;gap:3px;line-height:1.15}
+.gs-top .gs-tm{display:flex;align-items:center;gap:7px;font-family:var(--display);font-size:16px;font-weight:600;color:var(--muted)}
+.gs-top .gs-tsub{font-family:var(--body);font-size:12px;font-weight:600;color:var(--ink-2);letter-spacing:.01em}
 .gs-grow{flex:1}
 .gs-body{padding:16px 20px 0}
-.gs-sec.card{margin:0 0 14px;padding:18px 20px}
-.gs-sec.card h3{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:-.2px;margin:0 0 4px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;color:var(--ink)}
-.gs-sec h3 small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
-.gs-lead{margin:0 0 12px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
-.gs-msg{margin:4px 0 0;font-size:13px;color:var(--ink-2);line-height:1.55}
-.gs-note{margin:10px 0 0;font-size:12px;color:var(--muted);line-height:1.6}
-.gs-num{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+#gsModal .gs-sec.card{margin:0 0 14px;padding:0}
+
+/* ---- the type scale: 11 (labels), 12.5 (notes), 14 (text), 16 (card titles), 20 (values), 30 (the scoreboard) ---- */
+.gs-lab{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.gs-msg{margin:0;font-size:14px;color:var(--ink-2);line-height:1.55}
+.gs-note{margin:14px 0 0;font-size:12.5px;color:var(--muted);line-height:1.6}
+.gs-note+.gs-note{margin-top:6px}
+.gs-num{font-family:var(--display);font-weight:700;color:var(--ink)}
 .gs-up{color:var(--pick);font-weight:700} .gs-down{color:var(--miss);font-weight:700} .gs-flat{color:var(--muted)}
-.gs-sh{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.gs-sh{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .gs-sh .tierbadge{width:18px;height:20px;flex:none}
-.gs-tiern{font-size:11.5px;font-weight:600;color:var(--ink-2)}
-/* the matchup: the two teams either side, the score or the kickoff between them */
-.gs-hero{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center}
-.gs-team{border-top:4px solid var(--gs-tc,var(--line-2));background:var(--panel-2);border-radius:var(--r-md);padding:12px 14px;min-width:0}
-.gs-team.gs-home{text-align:right}
-.gs-side{display:block;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
-.gs-tname{display:flex;align-items:center;gap:9px;min-width:0}
+.gs-tiern{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.gs-none{font-size:12.5px;color:var(--muted)}
+#gsModal .pk-ttag.pk-mini{font-size:11px;padding:3px 5px;min-width:36px;border-radius:5px}
+/* the one mark for the side of a comparison that has the edge */
+.gs-v{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:3px 8px}
+.gs-better{background:var(--pick-soft);color:var(--pick)}
+#gsModal .gs-better .gs-num,#gsModal .gs-better b,#gsModal .gs-better small{color:var(--pick)}
+.gs-key{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.gs-key i{display:inline-block;width:14px;height:10px;border-radius:3px;background:var(--pick-soft);box-shadow:inset 0 0 0 1.5px var(--pick)}
+
+/* ---- the verdict ---- */
+#gsModal .gs-verdict.card{padding:22px 24px 8px}
+.gs-hero{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:center}
+.gs-team{min-width:0;display:flex;flex-direction:column;gap:6px}
+.gs-team.gs-home{align-items:flex-end;text-align:right}
+.gs-tname{display:flex;align-items:center;gap:10px;min-width:0}
 .gs-home .gs-tname{flex-direction:row-reverse}
 .gs-tname .pk-ttag{font-size:18px;padding:7px 10px;border-radius:9px}
-.gs-tname b{font-family:var(--display);font-size:17px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.gs-rec{margin-top:8px;font-size:12px;color:var(--ink-2)}
-.gs-rec b{font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;margin-right:3px}
-.gs-mid{text-align:center;min-width:72px}
-.gs-mid .gs-score{display:block;font-family:var(--display);font-size:26px;font-weight:700;letter-spacing:-.5px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
-.gs-mid .gs-at{display:block;font-family:var(--display);font-size:16px;font-weight:600;color:var(--muted)}
-.gs-mid small{display:block;font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap}
-.gs-when{margin:12px 0 0;font-size:12.5px;color:var(--ink-2);text-align:center;line-height:1.5}
+.gs-tname b{font-family:var(--display);font-size:18px;font-weight:600;color:var(--ink);min-width:0;overflow-wrap:anywhere;line-height:1.15}
+.gs-rec{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2)}
+.gs-home .gs-rec{justify-content:flex-end}
+.gs-rec b{font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink)}
+.gs-mid{text-align:center;min-width:64px}
+.gs-mid .gs-score{display:block;font-family:var(--display);font-size:30px;font-weight:700;letter-spacing:-.5px;color:var(--ink);white-space:nowrap;line-height:1}
+.gs-mid .gs-at{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);font-family:var(--display);font-size:14px;font-weight:600;color:var(--muted)}
+.gs-mid small{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:6px;white-space:nowrap}
+.gs-when{margin:14px 0 0;font-size:12.5px;color:var(--ink-2);text-align:center;line-height:1.5}
 .gs-when b{color:var(--ink);font-weight:600}
-.gs-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 0}
-.gs-tiles>div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:9px 12px;min-width:0}
-.gs-tiles>div>span{display:block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.gs-won b{color:var(--ink)} .gs-lost .gs-tname b{color:var(--ink-2)}
+/* the favourite: who, by how much, the chance, on the board's own split bar */
+.gs-fav{margin:20px 0 0;padding:16px 18px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md)}
+.gs-favh{display:flex;align-items:center;justify-content:space-between;gap:6px 14px;flex-wrap:wrap}
+.gs-favt{display:flex;align-items:center;gap:9px;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);line-height:1.2}
+.gs-favp{margin-left:auto;font-size:14px;color:var(--ink-2)}
+.gs-favp b{font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);margin-right:2px}
+.gs-split{display:flex;align-items:center;gap:10px;margin:12px 0 0}
+.gs-split .pk-prob{flex:1;min-width:0;height:24px}
+.gs-split .gs-slab{font-family:var(--display);font-size:13px;font-weight:700;color:var(--muted);min-width:34px;text-align:center}
+.gs-split .gs-slab.gs-w{color:var(--ink)}
+.gs-favs{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+.gs-res{display:inline-flex;align-items:center;gap:5px;font-family:var(--body);font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line-2);color:var(--ink-2)}
+.gs-res.gs-ok{color:var(--pick);border-color:currentColor} .gs-res.gs-bad{color:var(--miss);border-color:currentColor}
+.gs-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:10px 0 0}
+.gs-tiles>div{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;min-width:0}
+.gs-tiles b{display:block;font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);margin:3px 0 1px;overflow-wrap:anywhere}
 .gs-tiles b>span{white-space:nowrap}
-.gs-tiles b{display:block;font-family:var(--display);font-size:16px;font-weight:700;color:var(--ink);margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.gs-tiles small{display:block;font-size:11px;color:var(--ink-2);margin-top:1px;line-height:1.35}
-/* every model's call */
-table.gs-calls{width:100%;margin-top:14px}
-table.gs-calls th,table.gs-calls td{padding:8px 10px}
-table.gs-calls td{vertical-align:middle}
-table.gs-calls .gs-c{text-align:center}
-.gs-mname{display:flex;align-items:center;gap:7px;font-weight:600;color:var(--ink);white-space:nowrap}
-.gs-mname i{width:9px;height:9px;border-radius:50%;flex:none;background:var(--gs-mc,var(--ink))}
-.gs-msrc{display:block;font-size:11px;font-weight:500;color:var(--muted);margin:2px 0 0 16px;white-space:normal}
-.gs-chance{display:flex;align-items:center;gap:8px;justify-content:center}
-.gs-chance b{font-family:var(--display);font-size:14px;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
-.gs-chance i{display:block;width:56px;height:6px;border-radius:999px;background:var(--line);overflow:hidden;flex:none}
-.gs-chance i em{display:block;height:100%;background:var(--ink-2);border-radius:999px}
-.gs-hit{font-weight:700;white-space:nowrap} .gs-hit.gs-ok{color:var(--pick)} .gs-hit.gs-bad{color:var(--miss)} .gs-hit.gs-tie,.gs-hit.gs-pend{color:var(--muted);font-weight:600}
-.gs-none{font-size:12px;color:var(--muted)}
-/* two teams side by side: a label down the middle on a wide screen, above on a phone */
-table.gs-vs{width:100%;table-layout:fixed}
-table.gs-vs th,table.gs-vs td{padding:9px 12px}
-table.gs-vs th.gs-lab,table.gs-vs td.gs-lab{width:26%;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-table.gs-vs td{vertical-align:middle}
+.gs-tiles small{display:block;font-size:12px;color:var(--muted);line-height:1.35}
+/* at a glance: one line per question, the answer in the middle, how it was reached after */
+.gs-glance{margin:18px 0 0}
+.gs-gl{display:grid;grid-template-columns:132px 290px minmax(0,1fr);gap:4px 18px;align-items:center;padding:13px 0;border-top:1px solid var(--line)}
+.gs-gv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;font-family:var(--display);font-size:17px;font-weight:700;color:var(--ink);line-height:1.25}
+.gs-gv .tierbadge{width:16px;height:18px;flex:none}
+.gs-gv small{font-family:var(--body);font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.gs-gc{min-width:0;font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.gs-gc b{color:var(--ink);font-weight:700}
+.gs-gout{display:inline-flex;align-items:baseline;gap:6px;color:var(--miss)}
+.gs-gout small{color:var(--ink-2)}
+.gs-gc .gs-load,.gs-gv .gs-load{font-family:var(--body);font-size:12.5px;font-weight:500;color:var(--muted)}
+/* the vote: a dot a call, in its model's colour, filled for the side most pick */
+.gs-votes{display:inline-flex;align-items:center;gap:4px;margin-left:2px}
+.gs-votes i{width:10px;height:10px;border-radius:50%;background:var(--gs-mc);flex:none}
+.gs-votes i.gs-vo{background:transparent;box-shadow:inset 0 0 0 2px var(--gs-mc)}
+.gs-votes i.gs-vx{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line-2)}
+
+/* ---- a folded card: its title and a one-line summary on a button, the body under it ---- */
+.gs-dbar{display:flex;align-items:center;gap:10px;margin:22px 2px 10px}
+.gs-dbar .gs-lab{flex:1}
+.gs-dbar .btn{min-height:40px;padding:7px 14px;font-size:12.5px;font-weight:600}
+#gsModal .gs-shead{margin:0;font:inherit}
+.gs-tog{display:flex;align-items:center;gap:6px 14px;width:100%;min-height:56px;padding:14px 20px;background:none;border:0;border-radius:var(--r-lg);cursor:pointer;text-align:left;color:var(--ink);flex-wrap:wrap}
+.gs-tog:hover .gs-ttl{text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
+.gs-ttl{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:-.2px;color:var(--ink)}
+.gs-sum{flex:1;min-width:0;font-size:12.5px;font-weight:500;color:var(--ink-2);line-height:1.6}
+.gs-sum .pk-ttag.pk-mini{vertical-align:0}
+.gs-sum b{color:var(--ink);font-weight:700}
+.gs-chev{flex:none;margin-left:auto;color:var(--muted);transition:transform .18s var(--ease)}
+.gs-open .gs-chev{transform:rotate(180deg)}
+.gs-secbody{padding:0 20px 20px}
+.gs-secbody[hidden]{display:none}
+.gs-pair{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:14px;align-items:start}
+.gs-pair>.gs-sec.card{margin:0 0 14px}
+
+/* every call: the lean chart */
+#gsModal table.gs-calls{width:100%;table-layout:fixed;background:none;box-shadow:none;border-radius:0;border:0}
+#gsModal table.gs-calls th{background:none;padding:0 6px 8px;border-bottom:1px solid var(--line)}
+#gsModal table.gs-calls td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+#gsModal table.gs-calls tr:last-child td{border-bottom:0}
+#gsModal table.gs-calls tbody tr:hover{background:none}
+#gsModal table.gs-calls tr[data-gs-model="vegas"] td{border-bottom:1px solid var(--line-2)}
+table.gs-calls .gs-cm{width:38%}
+table.gs-calls .gs-cl{width:auto}
+table.gs-calls .gs-cp{width:96px;text-align:right}
+table.gs-calls .gs-cr{width:72px;text-align:right}
+.gs-mname{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;color:var(--ink);line-height:1.25}
+.gs-mname i{width:10px;height:10px;border-radius:50%;flex:none;background:var(--gs-mc,var(--ink))}
+.gs-mname small{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gs-axis{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.gs-axis .gs-x50{font-weight:600;letter-spacing:0;text-transform:none}
+.gs-track{position:relative;display:block;height:12px;border-radius:999px;background:var(--line)}
+.gs-track::after{content:"";position:absolute;left:50%;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--muted);border-radius:1px}
+.gs-track em{position:absolute;top:0;bottom:0;background:var(--ink-2)}
+.gs-track em.gs-toh{left:50%;border-radius:0 999px 999px 0}
+.gs-track em.gs-toa{right:50%;border-radius:999px 0 0 999px}
+.gs-pk{display:inline-flex;align-items:center;gap:7px;justify-content:flex-end;white-space:nowrap}
+.gs-pk b{font-family:var(--display);font-size:15px;font-weight:700;color:var(--ink);min-width:34px;text-align:right}
+.gs-hit{font-weight:700;font-size:12.5px;white-space:nowrap}
+.gs-hit i{font-style:normal} .gs-hit.gs-ok{color:var(--pick)} .gs-hit.gs-bad{color:var(--miss)} .gs-hit.gs-tie,.gs-hit.gs-pend{color:var(--muted);font-weight:600}
+
+/* two teams side by side, the label down the middle */
+#gsModal table.gs-vs{width:100%;table-layout:fixed;background:none;box-shadow:none;border-radius:0;border:0}
+#gsModal table.gs-vs th{background:none;padding:0 4px 10px;border-bottom:1px solid var(--line)}
+#gsModal table.gs-vs td{padding:11px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+#gsModal table.gs-vs tr:last-child td{border-bottom:0}
+#gsModal table.gs-vs tbody tr:hover{background:none}
+#gsModal table.gs-vs .gs-mlab{width:30%;text-align:center;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.35}
 table.gs-vs .gs-a{text-align:left} table.gs-vs .gs-h{text-align:right}
-table.gs-vs .gs-num{font-size:17px}
+table.gs-vs .gs-num{font-size:20px}
+table.gs-vs th .gs-thn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:0;text-transform:none}
+table.gs-vs th.gs-h .gs-thn{flex-direction:row-reverse}
+table.gs-vs th .gs-thn{max-width:100%}
+table.gs-vs th .gs-tnm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.gs-vs small{font-size:12.5px;color:var(--muted);font-weight:600}
 .gs-lag{color:var(--gold);font-weight:700;margin-left:2px}
+
 /* Overall Offense against Overall Defense, both ways */
-.gs-units{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.gs-unit{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;min-width:0}
-.gs-unit h4{margin:0 0 10px;font-size:12.5px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.gs-unit h4 .pk-ttag{font-size:10.5px;padding:3px 5px;min-width:34px;border-radius:5px}
-.gs-ugrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.gs-u{min-width:0}
-.gs-u .gs-ulab{display:block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
-.gs-u .gs-urank{display:block;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);margin:3px 0 2px}
-.gs-u .gs-urank small{font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted)}
-.gs-u ul{list-style:none;margin:8px 0 0;padding:0;font-size:11.5px;color:var(--ink-2);line-height:1.45}
-.gs-u li{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin:0 0 4px;padding:0}
-.gs-u li>span:first-child{min-width:0}
-.gs-u li>span:last-child{white-space:nowrap}
-.gs-u li b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-.gs-u li small{color:var(--muted);font-weight:600;min-width:30px;text-align:right}
-.gs-u li small.gs-top8{color:var(--pick)} .gs-u li small.gs-bot8{color:var(--miss)}
+.gs-units{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gs-unit{border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;min-width:0}
+.gs-unit h4{margin:0 0 12px;display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-family:var(--display);font-size:15px;font-weight:600;color:var(--ink)}
+.gs-unit h4 .gs-uedge{margin-left:auto;font-family:var(--body);font-size:12.5px;font-weight:600;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+#gsModal table.gs-ut{width:100%;table-layout:fixed;background:none;box-shadow:none;border-radius:0;border:0}
+#gsModal table.gs-ut th{background:none;padding:0 4px 8px;border-bottom:1px solid var(--line);font-size:11px}
+#gsModal table.gs-ut td{padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:12.5px;color:var(--ink-2)}
+#gsModal table.gs-ut tr:last-child td{border-bottom:0}
+#gsModal table.gs-ut tbody tr:hover{background:none}
+#gsModal table.gs-ut .gs-ulab{width:36%;color:var(--ink-2);font-size:12.5px;font-weight:500}
+table.gs-ut th.gs-uc,table.gs-ut td.gs-uc{text-align:right}
+table.gs-ut .gs-th2{display:inline-flex;align-items:center;gap:5px;justify-content:flex-end}
+.gs-urow td{padding-bottom:12px!important}
+.gs-uov{display:inline-flex;flex-direction:column;align-items:flex-end;gap:4px}
+.gs-uov .gs-urank{font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);line-height:1.1;white-space:nowrap}
+.gs-uov .gs-urank small{font-family:var(--body);font-size:12px;font-weight:600;color:var(--muted)}
+.gs-ush{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:2px 5px;font-size:12.5px;color:var(--ink-2)}
+.gs-ush .tierbadge{width:15px;height:17px;flex:none}
+.gs-ush b{font-family:var(--display);font-weight:700;color:var(--ink)}
+.gs-utier{white-space:nowrap}
+.gs-uov.gs-v{flex-direction:column;align-items:flex-end;padding:5px 8px}
+.gs-sv.gs-v{align-items:baseline;justify-content:flex-end;white-space:nowrap}
+.gs-sv b{font-family:var(--display);font-weight:700;color:var(--ink);font-size:13.5px}
+.gs-sv small{font-size:11.5px;font-weight:600;color:var(--muted);min-width:30px;text-align:right}
+
 /* position by position */
 /* fixed layout: the two columns stay half each, so a long name cannot widen its side past the card */
 .gs-pos{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0}
-.gs-pos th{text-align:left}
-.gs-pos thead th{background:var(--panel-2);padding:9px 12px}
-.gs-pos thead th.gs-h{text-align:right}
-.gs-pos .gs-grp td{background:var(--panel-2);font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);padding:7px 12px}
-.gs-pos td{padding:8px 12px;vertical-align:top;width:50%}
+#gsModal table.gs-pos{background:none;box-shadow:none;border-radius:0;border:0}
+#gsModal table.gs-pos th{text-align:left;background:none;padding:0 10px 10px;border-bottom:1px solid var(--line-2)}
+#gsModal table.gs-pos thead th.gs-h{text-align:right}
+#gsModal table.gs-pos tbody tr:hover{background:none}
+.gs-pos th .gs-thn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:0;text-transform:none}
+.gs-pos th.gs-h .gs-thn{flex-direction:row-reverse}
+#gsModal .gs-pos .gs-grp td{padding:18px 10px 6px;border-bottom:1px solid var(--line);background:none;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2)}
+#gsModal .gs-pos td{padding:9px 10px;vertical-align:top;width:50%;border-bottom:1px solid var(--line)}
+#gsModal .gs-pos tr:last-child td{border-bottom:0}
 .gs-pos td.gs-h{text-align:right}
 .gs-pl{display:block;min-width:0}
 /* the shield and the name box side by side; the Q is inside the name box, inline after the name, so
    a name that wraps carries its Q on its own last line and never leaves it at the edge beside the
    other team's player (as a flex item of its own it was pushed there, nearer the other player than
    its own, on 69 of the season's 510 Q's at 390px and 109 at 360) */
-.gs-pl .gs-pn{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-weight:600;color:var(--ink)}
+.gs-pl .gs-pn{display:inline-flex;align-items:center;gap:7px;max-width:100%;font-weight:600;font-size:14px;color:var(--ink)}
 .gs-pl .gs-pnm{display:block;min-width:0;overflow-wrap:anywhere}
 .gs-h .gs-pl .gs-pn{flex-direction:row-reverse}
 .gs-pl .tierbadge{width:16px;height:18px;flex:none}
-.gs-pl small{display:block;font-size:11.5px;color:var(--ink-2);margin-top:2px;white-space:nowrap}
-.gs-pl small b{font-family:var(--display);font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.gs-pst{display:block;margin-top:3px;white-space:nowrap}
+.gs-pl small{font-size:12px;color:var(--muted)}
+.gs-pl .gs-pse{font-family:var(--display);font-size:13.5px;font-weight:700;color:var(--ink)}
+.gs-pl .gs-outw{display:block;margin-top:2px}
+/* a wide screen: each half's Elo at its inner edge, beside the other side's, the halves split by a rule */
+@media(min-width:761px){
+  .gs-pl{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"pn se" "meta se" "out se";column-gap:14px;align-items:center}
+  .gs-h .gs-pl{grid-template-columns:auto minmax(0,1fr);grid-template-areas:"se pn" "se meta" "se out"}
+  .gs-pl .gs-pn{grid-area:pn;justify-self:start}
+  .gs-h .gs-pl .gs-pn{justify-self:end}
+  .gs-pst{display:contents}
+  .gs-pl .gs-pse{grid-area:se;font-size:20px;min-width:52px}
+  .gs-a .gs-pl .gs-pse{text-align:right} .gs-h .gs-pl .gs-pse{text-align:left}
+  .gs-pl .gs-pmeta{grid-area:meta;display:block;margin-top:2px}
+  .gs-pl .gs-outw{grid-area:out}
+  .gs-psep{display:none}
+  #gsModal .gs-pos tbody td.gs-h{border-left:1px solid var(--line)}
+  #gsModal .gs-pos tbody tr.gs-grp td{border-left:0}
+}
 .gs-pl.gs-off .gs-pnm{text-decoration:line-through;text-decoration-color:var(--miss)}
 .gs-pl .gs-outw{color:var(--miss);font-weight:600;white-space:normal}
 .gs-pl .gs-pnm .pe-q{display:inline-block;margin-left:3px;white-space:nowrap;text-decoration:none}
-.gs-unitrow td{font-size:12px;color:var(--ink-2)}
+#gsModal .gs-unitrow td{padding:2px 10px 8px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
 .gs-unitrow b{color:var(--ink);font-weight:700}
-.gs-outs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.gs-outs>div{font-size:12px;color:var(--ink-2);line-height:1.55;min-width:0}
-.gs-outs h5{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--miss);display:flex;align-items:center;gap:6px}
-.gs-outs h5 .pk-ttag{font-size:10px;padding:2px 4px;min-width:30px;border-radius:5px}
+.gs-outs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px}
+.gs-outs>div{font-size:12.5px;color:var(--ink-2);line-height:1.55;min-width:0;padding:10px 12px;border-radius:var(--r-md);background:var(--panel-2);border:1px solid var(--line)}
+.gs-outs h5{margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.gs-outs h5.gs-hasout{color:var(--miss)}
+.gs-outs h5 .gs-none{text-transform:none;letter-spacing:0;font-weight:500;font-size:12.5px}
+.gs-outs>div:not(:has(ul)){padding:8px 12px}
+.gs-nw{white-space:nowrap}
 .gs-outs ul{margin:0;padding:0 0 0 16px}
 .gs-outs li{margin:0 0 4px}
 .gs-outs li b{color:var(--ink)}
+
 /* mismatches */
-ul.gs-mm{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:10px}
-ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;margin:0;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;line-height:1.4}
-.gs-mmn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:26px;padding:0 6px;border-radius:999px;background:var(--panel);border:1px solid var(--line-2);font-family:var(--display);font-weight:700;font-size:12px;color:var(--ink)}
-.gs-mmwho{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:600;color:var(--ink)}
+ul.gs-mm{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) 150px;gap:14px;align-items:center;margin:0;border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;line-height:1.4}
+.gs-mmn{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:26px;padding:0 6px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line-2);font-family:var(--display);font-weight:700;font-size:12px;color:var(--ink)}
+.gs-mmwho{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-weight:600;font-size:14px;color:var(--ink)}
 .gs-mmwho .tierbadge{width:16px;height:18px;flex:none}
-.gs-mmwho small{color:var(--muted);font-weight:600}
-.gs-mmvs{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:11px;color:var(--muted)}
-.gs-mmvs .pk-ttag{font-size:10px;padding:3px 4px;min-width:30px;border-radius:5px}
-.gs-mmsub{display:block;font-size:12px;color:var(--ink-2);margin-top:3px;line-height:1.45}
-.gs-mmsc{text-align:right}
-.gs-mmsc b{display:block;font-family:var(--display);font-size:22px;line-height:1}
-.gs-mmsc small{display:block;font-size:11px;font-weight:700;margin-top:3px}
+.gs-mmwho small{color:var(--muted);font-weight:600;font-size:12.5px}
+.gs-mmsub{display:block;font-size:12.5px;color:var(--ink-2);margin-top:4px;line-height:1.45}
+.gs-mmsub b{color:var(--ink);font-weight:700}
+.gs-mmsc{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;gap:4px 10px;align-items:center}
+.gs-mmsc b{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink);grid-row:1/3}
+.gs-mmsc small{font-size:12px;font-weight:700}
+.gs-mmbar{display:block;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.gs-mmbar i{display:block;height:100%;border-radius:0 999px 999px 0;background:var(--pick)}
+
 /* the files and the full tabs */
-.gs-files{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--ink-2);margin:0 0 12px}
+.gs-files{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12.5px;color:var(--ink-2);margin:0 0 4px}
 .gs-files b{color:var(--ink);font-weight:600}
-.gs-links{display:flex;flex-wrap:wrap;gap:8px}
-.gs-past{margin:0 0 14px;padding:11px 14px;border-radius:var(--r-md);background:var(--gold-soft);color:var(--ink);font-size:12.5px;line-height:1.55}
+.gs-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.gs-links .btn{min-height:40px}
+.gs-past{margin:0;padding:11px 14px;border-radius:var(--r-md);background:var(--gold-soft);color:var(--ink);font-size:12.5px;line-height:1.55}
+
+@media(max-width:899px){
+  .gs-pair{display:block}
+  .gs-units{grid-template-columns:1fr}
+  .gs-gl{grid-template-columns:118px minmax(0,1fr)}
+  .gs-gl .gs-lab{grid-row:1/3;align-self:start;padding-top:3px}
+  .gs-gl .gs-gv,.gs-gl .gs-gc{grid-column:2}
+}
 @media(max-width:760px){
   #gsModal .modal-panel{margin-top:0}
   .gs-top{border-radius:0;padding:10px 12px}
-  .gs-top h2{font-size:16px}
   .gs-body{padding:12px 12px 0}
-  .gs-sec.card{padding:14px 12px}
+  #gsModal .gs-verdict.card{padding:16px 14px 6px}
   .gs-hero{gap:8px}
-  .gs-team{padding:10px 8px}
   .gs-tname{flex-direction:column;align-items:flex-start;gap:6px}
   .gs-home .gs-tname{flex-direction:column;align-items:flex-end}
-  .gs-tname .pk-ttag{font-size:15px;padding:6px 8px}
-  .gs-tname b{font-size:14px;max-width:100%}
+  .gs-tname .pk-ttag{font-size:16px;padding:6px 9px}
+  .gs-tname b{font-size:15px}
+  .gs-rec{flex-direction:column;gap:0}
+  .gs-home .gs-rec{align-items:flex-end}
   .gs-mid{min-width:0}
-  .gs-mid .gs-score{font-size:20px}
-  .gs-tiles{grid-template-columns:1fr 1fr;gap:8px}
-  table.gs-calls th,table.gs-calls td{padding:7px 6px}
-  .gs-chance i{display:none}
-  .gs-mname{white-space:normal;font-size:13px;align-items:flex-start}
-  .gs-mname i{margin-top:5px}
-  table.gs-calls .pk-ttag{font-size:11px;padding:4px 5px;min-width:34px}
-  table.gs-vs th,table.gs-vs td{padding:8px 8px}
-  table.gs-vs th.gs-lab,table.gs-vs td.gs-lab{width:30%;font-size:10px;letter-spacing:.03em}
-  table.gs-vs .gs-num{font-size:15px}
+  .gs-mid .gs-score{font-size:24px}
+  .gs-mid .gs-at{width:34px;height:34px;font-size:13px}
+  .gs-fav{padding:14px 12px;margin-top:16px}
+  .gs-favt{font-size:18px}
+  .gs-favp{margin-left:0}
+  .gs-tiles{gap:8px}
+  .gs-tiles>div{padding:9px 10px}
+  .gs-tiles b{font-size:15px}
+  .gs-tiles small{font-size:11.5px}
+  .gs-tiles{grid-template-columns:1fr 1fr}
+  .gs-tiles>div:nth-child(3){grid-column:1/-1}
+  .gs-gl{grid-template-columns:minmax(0,1fr);gap:4px;padding:12px 0}
+  .gs-gl .gs-lab{grid-row:auto;padding:0}
+  .gs-gl .gs-gv,.gs-gl .gs-gc{grid-column:1}
+  .gs-gv{font-size:16px}
+  .gs-dbar{margin:18px 2px 8px}
+  .gs-tog{padding:12px 14px;gap:4px 10px}
+  .gs-sum{flex-basis:100%;order:3}
+  .gs-secbody{padding:0 14px 16px}
+  table.gs-calls .gs-cm{width:34%}
+  table.gs-calls .gs-cp{width:86px}
+  table.gs-calls .gs-cr{width:26px}
+  .gs-pk .pk-ttag.pk-mini{min-width:34px}
+  #gsModal table.gs-calls th,#gsModal table.gs-calls td{padding-left:4px;padding-right:4px}
+  /* a phone: the result is its tick or cross, the word kept for a screen reader */
+  .gs-hw{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .gs-hit i{font-size:15px}
+  .gs-axis .gs-x50{display:none}
+  .gs-mname{font-size:13px;align-items:flex-start}
+  .gs-mname i{margin-top:4px}
+  .gs-pk{gap:5px} .gs-pk b{font-size:14px;min-width:30px}
+  #gsModal table.gs-vs .gs-mlab{width:32%;font-size:10.5px;letter-spacing:.03em}
+  table.gs-vs .gs-num{font-size:18px}
+  table.gs-vs th .gs-thn{font-size:13px}
+  table.gs-vs th .gs-tnm{display:none}
   .gs-units{grid-template-columns:1fr}
-  .gs-pos td{padding:7px 8px}
-  .gs-pos thead th{padding:8px}
-  .gs-pos .gs-grp td{padding:6px 8px}
-  .gs-pl small{white-space:normal}
+  .gs-unit{padding:12px 10px}
+  #gsModal table.gs-ut .gs-ulab{width:28%}
+  #gsModal table.gs-ut td,#gsModal table.gs-ut th{padding-left:2px;padding-right:2px}
+  .gs-v{padding:3px 6px;gap:4px}
+  .gs-uov .gs-urank{font-size:17px}
+  .gs-sv b{font-size:13px}
+  .gs-sv small{min-width:0;font-size:11px}
+  #gsModal .gs-pos th{padding:0 6px 8px}
+  #gsModal .gs-pos td{padding:8px 6px}
+  #gsModal .gs-pos .gs-grp td{padding:16px 6px 6px}
+  #gsModal .gs-unitrow td{padding:2px 6px 8px}
+  .gs-pos th .gs-thn{font-size:13px;gap:6px}
+  .gs-pl .gs-pn{font-size:13.5px}
+  .gs-pst{white-space:normal}
   .gs-outs{grid-template-columns:1fr}
-  ul.gs-mm li{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px}
+  ul.gs-mm li{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;padding:11px 12px}
   ul.gs-mm li .gs-mmn{grid-column:1/-1;justify-self:start;height:22px}
+  .gs-mmsc{grid-template-columns:auto;grid-template-rows:auto auto;justify-items:end;width:70px}
+  .gs-mmsc b{grid-row:auto}
+  .gs-mmbar{width:100%}
 }
 /* the narrowest phones: 'Commanders', the longest name, whole at 360px */
 @media(max-width:400px){
-  .gs-tname b{font-size:13px}
+  .gs-tname b{font-size:13.5px}
+  .gs-uov.gs-v{padding:4px 5px}
+  .gs-uov .gs-urank{font-size:16px}
+  .gs-uov .gs-urank small{font-size:11px}
 }
 </style>
 </head>
@@ -4170,7 +4336,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='d1755f4';
+const PAGE_HASH='88650b1';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6000,8 +6166,13 @@ const tierName=e=>{ const t=e!=null&&window.pkEloTier?window.pkEloTier(e):null; 
 const teamName=t=>(typeof TEAM_NAMES==='object'&&TEAM_NAMES&&TEAM_NAMES[t])||t;
 const stamp=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s);
   return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); };
+const stampShort=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s);
+  return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
 const signed=d=>d>0?'+'+d:d<0?'−'+Math.abs(d):'0';
 const wl=r=>r[0]+'-'+r[1]+(r[2]?'-'+r[2]:'');
+/* a number the smoke holds to its file: data-gs-n names what it is */
+const N=(key,v,cls)=>`<b${cls?` class="${cls}"`:''} data-gs-n="${esc(key)}">${esc(v)}</b>`;
+const CHEV='<svg class="gs-chev" width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* the Elo files, as the ELO Ratings tab read them on load (one read for both) */
 let FILES=null, LOADED=null;
@@ -6016,6 +6187,11 @@ function eloFiles(){
 }
 
 let cur=null, opener=null;
+/* which cards are open: all on a wide screen, none on a phone (the verdict is always shown), as
+   the visitor leaves them while the window is open; nothing of it is saved */
+const CARDS=['gsCalls','gsTeams','gsUnits','gsMism','gsPos','gsFiles'];
+let OPEN={};
+const phone=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:760px)').matches); }catch(e){ return false; } };
 const gameOf=gid=>{ const P=B(); return P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched.find(x=>x.game_id===gid)||null:null; };
 const kickMs=(P,g)=>{ const k=g.gameday&&g.gametime?P.kickAt(g.gameday,g.gametime):null; return k?k.getTime():null; };
 /* where the game stands now: played (a published result, or a final on the scoreboard), on, or to come */
@@ -6023,8 +6199,14 @@ function standing(P,g){
   const o=P.outcome(g), k=kickMs(P,g);
   return {o, fin:!!(o&&o.final), live:!!(o&&o.live), started:!!(o&&(o.final||o.live))||(k!=null&&Date.now()>=k), k};
 }
+/* a card: its title and a one-line summary on the button that opens it, the body beneath */
+function fold(id,title,sum,body){
+  const open=OPEN[id]!==false;
+  return `<section class="card gs-sec gs-fold${open?' gs-open':''}" id="${id}"><h3 class="gs-shead"><button type="button" class="gs-tog" data-gs-fold="${id}" aria-expanded="${open}" aria-controls="${id}B"><span class="gs-ttl">${title}</span>${sum?`<span class="gs-sum">${sum}</span>`:''}${CHEV}</button></h3>
+    <div class="gs-secbody" id="${id}B"${open?'':' hidden'}>${body}</div></section>`;
+}
 
-/* ---- the matchup ---- */
+/* ---- the readings each card and the verdict share ---- */
 /* the record Team Rankings shows (betting/tools/ratings_viz.js): the season's regular-season
    results, or the rating file's when the Elo job has taken in a final the betting job has not */
 function recordOf(P,M,t){
@@ -6035,36 +6217,6 @@ function recordOf(P,M,t){
   const T=M&&M.teams&&M.teams[t], f=(T&&T.record)||[0,0,0];
   const po=[0,0,0]; for(const g of fins.filter(x=>!reg(x))) side(g,po);
   return {reg:n>=f[0]+f[1]+f[2]?r:f, po, fromFile:n<f[0]+f[1]+f[2]};
-}
-function matchup(P,g,F){
-  const st=standing(P,g), M=F&&F.model, [day,time]=P.fmtDate(g), neu=P.neutral(g);
-  const team=(t,cls)=>{ const r=recordOf(P,M,t), po=r.po[0]+r.po[1]+r.po[2];
-    return `<div class="gs-team ${cls}" style="--gs-tc:${esc(window.pkTagColor?window.pkTagColor(t):'')}">
-      <span class="gs-side">${cls==='gs-away'?'Away':(neu?'Home (listed)':'Home')}</span>
-      <div class="gs-tname">${tg(t)}<b>${esc(teamName(t))}</b></div>
-      <div class="gs-rec"><b data-gs-rec="${esc(t)}">${wl(r.reg)}</b>${po?` <span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}<span class="gs-tiern" style="display:block">${+g.week>18?'regular season':'this season'}${r.fromFile?' (the Elo file\'s count)':''}</span></div></div>`; };
-  const o=st.o, mid=o
-    ? `<span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small>`
-    : `<span class="gs-at">${neu?'vs':'at'}</span>`;
-  const where=neu?`a neutral site${g.stadium?': '+esc(g.stadium):''}`:(g.stadium?esc(g.stadium):'');
-  /* the line, as the board reads it: nflverse's spread and total from state.json, the closing
-     moneylines in its odds, and Vegas's chance with the book's margin taken out */
-  const c=P.call(g), odds=(P.ST.odds||{})[g.game_id]||null;
-  const sp=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null;
-  let tot=g.total_line!=null&&isFinite(g.total_line)?+g.total_line:null, totSrc='nflverse';
-  if(tot==null&&typeof S==='object'&&S&&Array.isArray(S.sched)){ const row=S.sched.find(x=>x.id===g.game_id); if(row&&row.tot!=null&&isFinite(row.tot)){ tot=+row.tot; totSrc='the prop model\'s book pull'; } }
-  const spTxt=sp==null?null:sp>0?`${g.home_team} −${sp}`:sp<0?`${g.away_team} −${-sp}`:'Pick\'em';
-  const mlA=odds?ml(odds.away):null, mlH=odds?ml(odds.home):null;
-  const tile=(lab,val,sub,attr)=>`<div><span>${lab}</span><b${attr||''}>${val==null?'–':val}</b>${sub?`<small>${sub}</small>`:''}</div>`;
-  const tiles=`<div class="gs-tiles">
-    ${tile('Spread',spTxt?esc(spTxt):null,spTxt?'nflverse\'s line':'not posted',' data-gs-spread')}
-    ${tile('Total',tot!=null?String(tot):null,tot!=null?(totSrc==='nflverse'?'points, over/under':esc(totSrc)):'not posted',' data-gs-total')}
-    ${tile('Moneyline',mlA&&mlH?`<span>${esc(g.away_team)} ${mlA}</span> · <span>${esc(g.home_team)} ${mlH}</span>`:null,mlA&&mlH?'closing prices':'not posted',' data-gs-ml')}
-    ${tile('Vegas favourite',c?`${esc(c.pick)} ${pct(c.conf)}`:null,c?'the book\'s margin taken out':'no line yet',' data-gs-vegas')}</div>`;
-  const past=st.fin?`<p class="gs-past" id="gsPast"><b>This game has been played.</b> The calls below are the ones made before kickoff, graded on the result; the ratings, the lineups and the units are the files as they stand now, after it, not as they stood before it.</p>`:'';
-  return `${past}<section class="card gs-sec" id="gsMatch"><div class="gs-hero">${team(g.away_team,'gs-away')}<div class="gs-mid">${mid}</div>${team(g.home_team,'gs-home')}</div>
-    <p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''} · ${esc(P.weekName(+g.week))}</p>
-    ${tiles}${calls(P,g,F,st)}</section>`;
 }
 /* every model's call: the graded call once the job has graded the game (as the Pick'em Record
    grades it), the call frozen at kickoff once it has started, the latest published one before */
@@ -6084,9 +6236,160 @@ function callsOf(P,g,F){
     broly:one(pr&&pr.broly)||one((S0.broly||{})[gid]),
     graded:!!pr, eloGraded:!!eg, eloNext:M&&M.next?+M.next.week:null };
 }
-function calls(P,g,F,st){
-  const C=callsOf(P,g,F), win=st.fin?st.o.winner:null;
-  const kind=st.fin?(C.graded?'graded':'final on the scoreboard, graded when the job next runs'):st.started?'frozen at kickoff':'the latest call';
+/* a call's chance for the side it picks, and whether it landed (the file's grade, else the winner) */
+const chanceOf=(x,g)=>x.p!=null?x.p:x.pHome!=null?(x.pick===g.home_team?x.pHome:1-x.pHome):null;
+const hitOf=(x,win)=>x.correct===true||x.correct===false?x.correct:(win?x.pick===win:null);
+/* the vote: how many of the calls on file pick each side; the side most pick and the calls'
+   average chance for it (a call on the other side counts its chance for this one, 1 less its own);
+   once played, how many landed */
+function voteOf(P,g,F,st){
+  const C=callsOf(P,g,F), a=g.away_team, h=g.home_team, win=st.fin?st.o.winner:null;
+  const rows=MODELS.map(([id,label,col])=>({id,label,col,x:C[id]})).filter(r=>r.x&&(r.x.pick===a||r.x.pick===h));
+  const nA=rows.filter(r=>r.x.pick===a).length, nH=rows.length-nA, side=nH>nA?h:nA>nH?a:null;
+  const ps=side?rows.map(r=>{ const p=chanceOf(r.x,g); return p==null?null:(r.x.pick===side?p:1-p); }).filter(p=>p!=null):[];
+  const hits=st.fin?rows.filter(r=>hitOf(r.x,win)===true).length:null;
+  return {C,rows,nA,nH,n:rows.length,side,avg:ps.length?ps.reduce((s,p)=>s+p,0)/ps.length:null,hits};
+}
+/* Power Ratings, ranked as Team Rankings ranks them: by rating, highest first */
+function teamsOf(F,g){
+  const M=F&&F.model, T=M&&M.teams; if(!T||!T[g.away_team]||!T[g.home_team]) return null;
+  const order=Object.entries(T).map(([t,v])=>({t,...v})).sort((x,y)=>y.elo-x.elo);
+  return {M,T,order,rank:t=>order.findIndex(x=>x.t===t)+1};
+}
+/* Overall Offense and Overall Defense, as the ELO Ratings tab has them */
+function unitsOf(F){
+  const U=F&&F.model&&F.model.units;
+  if(!U||!U.off||!U.def) return null;
+  return {U,on:Object.values(U.off).some(v=>v.games)};
+}
+/* which side of one possession ranks higher: the offense or the defense (1st the best on each) */
+const possession=(U,o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return null;
+  return {vo,vd,edge:vo.rank<vd.rank?'off':vd.rank<vo.rank?'def':null,team:vo.rank<vd.rank?o:vd.rank<vo.rank?d:null}; };
+/* the Props tab's Mismatches in this game (window.eloMismatches: the same rows), or why none */
+const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
+const mmGrade=s=>{ const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1']; };
+/* with no list: why (the card), short (its summary), and the verdict's answer and its reason */
+function mmOf(P,g,F){
+  if(!F) return {why:'Loading the matchups…',short:'loading…',v:'loading…',c:''};
+  const mu=F.mu;
+  if(!mu||!mu.players) return {why:`The matchups did not load${F.muErr?' ('+esc(F.muErr)+')':''}, so there are no mismatches to show.`,short:'the matchups did not load',v:'Not loaded',c:'The matchups did not load.'};
+  if(typeof window.eloMismatches!=='function') return {why:'The Mismatches are not on this page.',short:'not on this page',v:'Not on this page',c:''};
+  const st=standing(P,g);
+  if(String(g.game_id).slice(0,4)!==String(mu.season)||+g.week!==+mu.week){
+    const gone=+g.week<+mu.week||st.fin, wk=esc(P.weekName(+mu.week).toLowerCase())+(+mu.season!==+P.ST.season?' of '+esc(mu.season):'');
+    return {why:`The matchups are for ${wk}: ${gone?'this game\'s week has gone, and its mismatches with it':'this game\'s come with its week'}.`,
+      short:gone?'its week has gone':'they come with its week',v:gone?'Its week has gone':'Not yet',c:`The matchups are for ${wk}.`}; }
+  const on=typeof window.eloGameOn==='function'?window.eloGameOn(g.game_id):st.started;
+  if(on||st.started) return {why:'This game has kicked off. The Mismatches are for games still to kick off, as on the Props tab, so there are none to show for it.',short:'none once it kicks off',v:'Kicked off',c:'Mismatches are for games still to kick off, as on the Props tab.'};
+  let all=[]; try{ all=window.eloMismatches()||[]; }catch(e){ return {why:'The Mismatches could not be worked out on this page.',short:'could not be worked out',v:'Not worked out',c:''}; }
+  const mine=all.map((v,i)=>({...v,n:i+1})).filter(v=>v.game_id===g.game_id);
+  return {all,mine};
+}
+/* a team's ranked players out of the rankings (each group's sidelined, as the ELO Ratings tab lists
+   them), and how many of its expected starters the report has questionable */
+const sidelinedOf=(Pl,t)=>Object.keys(Pl.groups).flatMap(gr=>(Pl.groups[gr].sidelined||[]).filter(x=>x.team===t).map(x=>({...x,grp:gr})));
+const qCount=(mu,t)=>{ const lu=mu&&mu.lineups&&mu.lineups[t]; return lu?(lu.players||[]).filter(pid=>mu.q&&mu.q[pid]).length:0; };
+const plName=(F,pid)=>(F.players&&F.players.players&&F.players.players[pid]&&F.players.players[pid].name)||pid;
+const plSe=(F,pid)=>{ const e=F.players&&F.players.players&&F.players.players[pid]; return e&&e.se!=null?e.se:null; };
+
+/* ---- the verdict: the matchup, the favourite, the line, and the answers at a glance ---- */
+function matchup(P,g,F){
+  const st=standing(P,g), M=F&&F.model, [day,time]=P.fmtDate(g), neu=P.neutral(g), a=g.away_team, h=g.home_team;
+  const o=st.o, win=st.fin?o.winner:null;
+  const team=(t,cls)=>{ const r=recordOf(P,M,t), po=r.po[0]+r.po[1]+r.po[2];
+    const res=win?(win===t?' gs-won':' gs-lost'):'';
+    return `<div class="gs-team ${cls}${res}"><span class="gs-lab">${cls==='gs-away'?'Away':(neu?'Home (listed)':'Home')}</span>
+      <div class="gs-tname">${tg(t)}<b>${esc(teamName(t))}</b></div>
+      <div class="gs-rec"><b data-gs-rec="${esc(t)}">${wl(r.reg)}</b><span>${+g.week>18?'regular season':'this season'}${r.fromFile?' (the Elo file\'s count)':''}</span>${po?`<span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
+  const mid=o
+    ? `<span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small>`
+    : `<span class="gs-at">${neu?'vs':'at'}</span>`;
+  const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
+  /* the line, as the board reads it: nflverse's spread and total from state.json, the closing
+     moneylines in its odds, and Vegas's chance with the book's margin taken out */
+  const c=P.call(g), odds=(P.ST.odds||{})[g.game_id]||null;
+  const sp=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null;
+  let tot=g.total_line!=null&&isFinite(g.total_line)?+g.total_line:null, totSrc='nflverse';
+  if(tot==null&&typeof S==='object'&&S&&Array.isArray(S.sched)){ const row=S.sched.find(x=>x.id===g.game_id); if(row&&row.tot!=null&&isFinite(row.tot)){ tot=+row.tot; totSrc='the prop model\'s book pull'; } }
+  const spTxt=sp==null?null:sp>0?`${h} −${sp}`:sp<0?`${a} −${-sp}`:'Pick\'em';
+  const spSide=sp==null||sp===0?null:sp>0?h:a;
+  const mlA=odds?ml(odds.away):null, mlH=odds?ml(odds.home):null;
+  /* the favourite: who, by how much, the chance; graded once played */
+  let fav;
+  if(c){
+    const pa=Math.round((1-c.pHome)*100), ph=100-pa, by=spSide===c.pick?` by ${Math.abs(sp)}`:sp===0?', a pick\'em spread':'';
+    const hit=st.fin?hitOf({pick:c.pick,correct:c.graded?c.correct:undefined},win):null;
+    const res=st.fin?`<span class="gs-res ${hit===true?'gs-ok':hit===false?'gs-bad':''}">${hit===true?'✓ The favourite won':hit===false?'✗ An upset':'A tie'}</span>`:'';
+    fav=`<div class="gs-favh"><span class="gs-favt" data-gs-vegas>${tg(c.pick,true)}<span>${st.fin?'was favoured':'favoured'}${esc(by)}</span></span><span class="gs-favp">${N('vconf',pct(c.conf))} to win</span>${res}</div>
+      <div class="gs-split" role="img" aria-label="Vegas win chance: ${esc(a)} ${pa}%, ${esc(h)} ${ph}%"><span class="gs-slab${c.pick===a?' gs-w':''}">${esc(a)}</span>
+        <div class="pk-prob" aria-hidden="true"><div class="pk-a" style="width:${pa}%;background:${pa>=ph?P.BET.PROB_HI:P.BET.PROB_LO};color:#0B162A"><span class="${c.pick===a?'pk-w':''}">${pa>=14?N('vaway',pa+'%'):''}</span></div><div class="pk-h" style="width:${ph}%;background:${ph>pa?P.BET.PROB_HI:P.BET.PROB_LO};color:#0B162A"><span class="${c.pick===h?'pk-w':''}">${ph>=14?N('vhome',ph+'%'):''}</span></div></div>
+        <span class="gs-slab${c.pick===h?' gs-w':''}">${esc(h)}</span></div>
+      <p class="gs-favs">Vegas's chance, from the closing moneylines with the book's margin taken out${odds&&mlA&&mlH?'':' (the spread, with no moneyline posted)'}.</p>`;
+  } else fav=`<div class="gs-favh"><span class="gs-favt">No line posted yet</span></div><p class="gs-favs">Vegas's favourite and chance show here once the game has a line.</p>`;
+  const tile=(lab,val,sub,attr)=>`<div><span class="gs-lab">${lab}</span><b${attr||''}>${val==null?'–':val}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+  const tiles=`<div class="gs-tiles">
+    ${tile('Spread',spTxt?esc(spTxt):null,spTxt?'nflverse\'s line':'not posted',' data-gs-spread')}
+    ${tile('Total',tot!=null?String(tot):null,tot!=null?(totSrc==='nflverse'?'points, over/under':esc(totSrc)):'not posted',' data-gs-total')}
+    ${tile('Moneyline',mlA&&mlH?`<span>${esc(a)} ${mlA}</span><span class="gs-dot"> · </span><span>${esc(h)} ${mlH}</span>`:null,mlA&&mlH?'closing prices':'not posted',' data-gs-ml')}</div>`;
+  /* the answers at a glance; each line stands alone, so one that fails says so and the rest draw */
+  const line=(key,lab,f)=>{ let v,cx; try{ [v,cx]=f(); }catch(e){ v='<span class="gs-load">could not be drawn</span>'; cx=esc(e&&e.message||e); }
+    return `<div class="gs-gl" data-gs-gl="${key}"><span class="gs-lab">${lab}</span><span class="gs-gv">${v}</span><span class="gs-gc">${cx||''}</span></div>`; };
+  const loading=['<span class="gs-load">loading…</span>',''];
+  const glance=`<div class="gs-glance">
+    ${line('vote','Model vote',()=>{ const V=voteOf(P,g,F,st);
+      if(!V.n) return ['<span class="gs-load">no calls yet</span>','The models call a game in the week before it.'];
+      const dots=`<span class="gs-votes" aria-hidden="true">${MODELS.map(([id,label,col])=>{ const x=V.C[id], cls=!x?'gs-vx':V.side&&x.pick!==V.side?'gs-vo':'';
+        return `<i class="${cls}" style="--gs-mc:${col}" title="${esc(label)}: ${x?esc(x.pick):'no call'}"></i>`; }).join('')}</span>`;
+      const v=V.side?`${tg(V.side,true)}${N('vote',V.side===g.home_team?V.nH+' of '+V.n:V.nA+' of '+V.n)}${dots}`:`<span>Split</span>${N('vote',V.nA+'–'+V.nH)}${dots}`;
+      const miss=6-V.n;
+      const cx=(st.fin?`${N('votehit',V.hits+' of '+V.n)} right · `:'')
+        +(V.side?`average chance for ${esc(V.side)} ${V.avg!=null?N('voteavg',pct(V.avg)):'–'}`:`${esc(a)} ${V.nA}, ${esc(h)} ${V.nH}`)
+        +(miss?` · ${miss} ${miss===1?'call':'calls'} not in yet`:'')+' · Vegas and the five models';
+      return [v,cx.charAt(0).toUpperCase()+cx.slice(1)]; })}
+    ${line('elo','Team Elo',()=>{ if(!F) return loading; const R=teamsOf(F,g);
+      if(!R) return ['<span class="gs-load">no rating</span>',F.model&&F.model.teams?`The ratings file has no rating for ${esc(!F.model.teams[a]?a:h)}.`:'The team ratings did not load.'];
+      const ea=R.T[a].elo, eh=R.T[h].elo, d=Math.abs(eh-ea), hi=eh>ea?h:ea>eh?a:null;
+      const v=hi?`<span data-gs-n="tedge">${tg(hi,true)} +${d}</span><small>rating points ahead</small>`:`<span data-gs-n="tedge">Even</span>`;
+      const cx=`${esc(h)} ${N('telo:'+h,eh)} (${N('trank:'+h,'#'+R.rank(h))}) · ${esc(a)} ${N('telo:'+a,ea)} (${N('trank:'+a,'#'+R.rank(a))}). Power Ratings, as on Team Rankings.`;
+      return [v,cx]; })}
+    ${line('units','Offense vs defense',()=>{ if(!F) return loading; const X=unitsOf(F);
+      if(!X) return ['<span class="gs-load">not loaded</span>','The unit ratings did not load.'];
+      if(!X.on) return ['<span class="gs-load">not yet</span>','They start once a team has a rated game this season.'];
+      const p1=possession(X.U,a,h), p2=possession(X.U,h,a);
+      if(!p1||!p2) return ['<span class="gs-load">no rating</span>','A team has no unit rating in the file.'];
+      let v;
+      if(p1.team&&p1.team===p2.team) v=`${tg(p1.team,true)}<span>ranks higher both ways</span>`;
+      else if(p1.edge==='off'&&p2.edge==='off') v='<span>Both offenses rank higher</span>';
+      else if(p1.edge==='def'&&p2.edge==='def') v='<span>Both defenses rank higher</span>';
+      else v='<span>Even</span>';
+      const cx=`${esc(a)} offense ${N('urank:off:'+a,ordinal(p1.vo.rank))} vs ${esc(h)} defense ${N('urank:def:'+h,ordinal(p1.vd.rank))} · ${esc(h)} offense ${N('urank:off:'+h,ordinal(p2.vo.rank))} vs ${esc(a)} defense ${N('urank:def:'+a,ordinal(p2.vd.rank))}`;
+      return [v,cx]; })}
+    ${line('out','Who\'s out',()=>{ if(!F) return loading; const Pl=F.players, mu=F.mu;
+      if(!Pl||!Pl.groups) return ['<span class="gs-load">not loaded</span>','The player ratings did not load.'];
+      const xs=[a,h].flatMap(t=>sidelinedOf(Pl,t));
+      const v=xs.length?xs.map(x=>`<span class="gs-gout" title="${esc(x.why)}"><span data-gs-n="out:${esc(x.id)}">${esc(x.name)}</span><small>${esc(x.team)} ${esc(x.grp)}</small></span>`).join('')
+        :'<span class="gs-load">No ranked player out</span>';
+      const qa=qCount(mu,a), qh=qCount(mu,h);
+      const cx=!mu||!mu.lineups?'The expected lineups did not load.'
+        :qa||qh?`Questionable starters: ${esc(a)} ${qa?N('qn:'+a,qa):0}, ${esc(h)} ${qh?N('qn:'+h,qh):0}. The Starters card has who and why.`:'No expected starter is questionable.';
+      return [v,cx]; })}
+    ${line('mism','Top mismatch',()=>{ const R=mmOf(P,g,F);
+      if(!R.mine) return [`<span class="gs-load">${esc(R.v)}</span>`,R.c];
+      if(!R.mine.length) return ['<span class="gs-load">none in this game</span>','No starter here is above his position\'s average facing a unit below the league\'s.'];
+      const v0=R.mine[0], [gw]=mmGrade(v0.score), se=plSe(F,v0.pid);
+      const v=`${se!=null?shield(se):''}<span data-gs-n="mm1:${esc(v0.pid)}">${esc(plName(F,v0.pid))}</span><small>${esc(v0.group)}, ${esc(v0.team)}</small>`;
+      const cx=`Edge ${N('mm1score',v0.score.toFixed(1))} ${gw}, against a ${esc(v0.unitName)} ranked ${ordinal(v0.defRank)}${R.mine.length>1?` · ${R.mine.length} in this game`:''}.`;
+      return [v,cx]; })}
+  </div>`;
+  return `<section class="card gs-sec gs-verdict" id="gsMatch"><div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${mid}</div>${team(h,'gs-home')}</div>
+    <p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>
+    <div class="gs-fav">${fav}${tiles}</div>${glance}</section>`;
+}
+
+/* ---- every call, on one lean chart ---- */
+function callsSec(P,g,F){
+  const st=standing(P,g), V=voteOf(P,g,F,st), C=V.C, win=st.fin?st.o.winner:null, a=g.away_team, h=g.home_team;
+  const kind=st.fin?(C.graded?'Graded on the result: the calls published before kickoff.':'A final on the scoreboard, graded here on its winner; the job grades it when it next runs.'):st.started?'Frozen at kickoff.':'The latest calls; each is frozen at kickoff.';
   const why=(id)=>{
     if(id==='vegas') return 'no line posted yet';
     if(id==='elo') return F&&F.model?(C.eloNext!=null&&+g.week>C.eloNext&&!st.started?`called in week ${+g.week}`:'no call on file'):(F?'the Elo ratings did not load':'loading…');
@@ -6094,30 +6397,29 @@ function calls(P,g,F,st){
     return id==='alpha'||id==='challenger'?'called in the eight days before kickoff':'called in the week of the game';
   };
   const rows=MODELS.map(([id,label,col])=>{
-    const x=C[id];
-    const src=id==='vegas'?(x?'the board\'s call':''):kind;
-    if(!x) return `<tr data-gs-model="${id}"><td><span class="gs-mname" style="--gs-mc:${col}"><i></i>${label}</span></td><td class="gs-c" colspan="${st.fin?3:2}"><span class="gs-none">${esc(why(id))}</span></td></tr>`;
-    const p=x.p!=null?x.p:x.pHome!=null?(x.pick===g.home_team?x.pHome:1-x.pHome):null;
+    const x=C[id], name=`<span class="gs-mname" style="--gs-mc:${col}"><i></i><span>${label}</span></span>`;
+    if(!x) return `<tr data-gs-model="${id}"><td>${name}</td><td colspan="${st.fin?3:2}"><span class="gs-none">${esc(why(id))}</span></td></tr>`;
+    const p=chanceOf(x,g), w=p!=null?Math.max(0,Math.min(50,Math.round((p-0.5)*1000)/10)):0;
     let res='';
-    if(st.fin){ const hit=x.correct===true||x.correct===false?x.correct:(win?x.pick===win:null);
-      res=`<td class="gs-c"><span class="gs-hit ${hit===true?'gs-ok':hit===false?'gs-bad':'gs-tie'}" data-gs-hit="${hit===true?'hit':hit===false?'miss':'none'}">${hit===true?'✓ Hit':hit===false?'✗ Miss':(win?'–':'Tie')}</span></td>`; }
-    return `<tr data-gs-model="${id}" data-pick="${esc(x.pick)}"><td><span class="gs-mname" style="--gs-mc:${col}"><i></i>${label}</span><small class="gs-msrc">${esc(src)}</small></td>
-      <td class="gs-c">${tg(x.pick,true)}</td>
-      <td class="gs-c"><span class="gs-chance"><b data-gs-p>${p!=null?pct(p):'–'}</b>${p!=null?`<i><em style="width:${Math.round(p*100)}%"></em></i>`:''}</span></td>${res}</tr>`; }).join('');
-  return `<table class="gs-calls" aria-label="Every model's call"><thead><tr><th>Model</th><th class="gs-c">Pick</th><th class="gs-c">Win chance</th>${st.fin?'<th class="gs-c">Result</th>':''}</tr></thead><tbody>${rows}</tbody></table>
-    <p class="gs-note">Each model's pick and its chance for the side it picks. Vegas is the board's baseline; the models are measured against it on the Pick'em Record, which grades the call published before kickoff.</p>`;
+    if(st.fin){ const hit=hitOf(x,win);
+      res=`<td class="gs-cr"><span class="gs-hit ${hit===true?'gs-ok':hit===false?'gs-bad':'gs-tie'}" data-gs-hit="${hit===true?'hit':hit===false?'miss':'none'}">${hit===true?'<i aria-hidden="true">✓</i><span class="gs-hw"> Hit</span>':hit===false?'<i aria-hidden="true">✗</i><span class="gs-hw"> Miss</span>':(win?'–':'Tie')}</span></td>`; }
+    return `<tr data-gs-model="${id}" data-pick="${esc(x.pick)}"><td>${name}</td>
+      <td><span class="gs-track" role="img" aria-label="${esc(label)} leans ${esc(x.pick)}${p!=null?', '+pct(p):''}"><em class="${x.pick===h?'gs-toh':'gs-toa'}" style="width:${w}%"></em></span></td>
+      <td class="gs-cp"><span class="gs-pk">${tg(x.pick,true)}<b data-gs-p>${p!=null?pct(p):'–'}</b></span></td>${res}</tr>`; }).join('');
+  const sum=!V.n?'no calls yet':V.side?`${N('vote',(V.side===h?V.nH:V.nA)+' of '+V.n)} pick ${esc(V.side)}${V.avg!=null?`, average ${N('voteavg',pct(V.avg))}`:''}${st.fin?` · ${N('votehit',V.hits+' of '+V.n)} right`:''}`:`split ${N('vote',V.nA+'–'+V.nH)}${st.fin?` · ${N('votehit',V.hits+' of '+V.n)} right`:''}`;
+  return fold('gsCalls','Every call',sum,`<table class="gs-calls" aria-label="Every model's call"><thead><tr><th class="gs-cm">Call</th><th class="gs-cl"><span class="gs-axis"><span>◀ ${esc(a)}</span><span class="gs-x50">50/50</span><span>${esc(h)} ▶</span></span></th><th class="gs-cp">Pick</th>${st.fin?'<th class="gs-cr"><span class="gs-hw">Result</span></th>':''}</tr></thead><tbody>${rows}</tbody></table>
+    <p class="gs-note">${kind} Each bar leans from 50/50 toward the side its call picks, as far as its chance for that side. Vegas is the board's baseline; the models are measured against it on the Pick'em Record, which grades the call published before kickoff.</p>`);
 }
 
-/* ---- team Elo: Power Ratings, as Team Rankings draws them (ratings_viz.js) ---- */
+/* ---- team strength: Power Ratings, as Team Rankings draws them (ratings_viz.js) ---- */
 function teamElo(P,g,F){
-  const head=`<h3>Team Elo <small>Power Ratings, as on Team Rankings</small></h3>`;
-  if(!F) return `<section class="card gs-sec" id="gsTeams">${head}<p class="gs-msg">Loading the ratings…</p></section>`;
+  const T0='Team strength', S0='Power Ratings';
+  if(!F) return fold('gsTeams',T0,'loading…','<p class="gs-msg">Loading the ratings…</p>');
   const M=F.model, T=M&&M.teams;
-  if(!T) return `<section class="card gs-sec" id="gsTeams">${head}<p class="gs-msg">The team ratings did not load${F.err?': '+esc(F.err):''}.</p></section>`;
+  if(!T) return fold('gsTeams',T0,'did not load',`<p class="gs-msg">The team ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
   const a=g.away_team, h=g.home_team;
-  if(!T[a]||!T[h]) return `<section class="card gs-sec" id="gsTeams">${head}<p class="gs-msg">The ratings file has no rating for ${esc(!T[a]?a:h)}.</p></section>`;
-  /* ranked as Team Rankings ranks them: by rating, highest first */
-  const order=Object.entries(T).map(([t,v])=>({t,...v})).sort((x,y)=>y.elo-x.elo), rank=t=>order.findIndex(x=>x.t===t)+1;
+  if(!T[a]||!T[h]) return fold('gsTeams',T0,'no rating',`<p class="gs-msg">The ratings file has no rating for ${esc(!T[a]?a:h)}.</p>`);
+  const R=teamsOf(F,g), rank=R.rank, order=R.order;
   /* a rating from before the team's latest final, starred as Team Rankings stars it */
   const built=M.built_at?Date.parse(M.built_at):NaN, reg=x=>x.game_type?x.game_type==='REG':+x.week<=18;
   const behind=t=>{ const fs=P.ST.sched.filter(x=>x.result!=null&&(x.home_team===t||x.away_team===t)); if(!fs.length) return null;
@@ -6126,55 +6428,68 @@ function teamElo(P,g,F){
     if(nReg<=rr[0]+rr[1]+rr[2]&&!late.length) return null;
     const last=fs.slice().sort((x,y)=>(kickMs(P,y)||0)-(kickMs(P,x)||0))[0];
     return `${last.away_team} ${last.away_score}-${last.home_score} ${last.home_team}`; };
-  const cell=(t,cls,f)=>`<td class="${cls}">${f(T[t],t)}</td>`;
-  const row=(lab,f,key)=>`<tr data-gs-row="${key}">${cell(a,'gs-a',f)}<td class="gs-lab gs-c" style="text-align:center">${lab}</td>${cell(h,'gs-h',f)}</tr>`;
+  /* the side with the edge on a row wears gs-better: the higher rating and chance, the better rank */
+  const best=(f,hiGood)=>{ const va=f(T[a],a), vh=f(T[h],h); if(va==null||vh==null||va===vh) return null; return (hiGood?va>vh:va<vh)?a:h; };
+  const cell=(t,cls,f,b)=>`<td class="${cls}"><span class="gs-v${b===t?' gs-better':''}">${f(T[t],t)}</span></td>`;
+  const row=(lab,f,key,b)=>`<tr data-gs-row="${key}">${cell(a,'gs-a',f,b)}<td class="gs-mlab">${lab}</td>${cell(h,'gs-h',f,b)}</tr>`;
   const lags=[a,h].map(t=>[t,behind(t)]).filter(x=>x[1]);
   const body=[
-    row('Rating',(v,t)=>`<span class="gs-sh">${shield(v.elo)}<b class="gs-num" data-gs-telo="${esc(t)}">${v.elo}</b>${behind(t)?'<span class="gs-lag" title="Rated before its latest game">*</span>':''}</span>`,'elo'),
-    row('Tier',v=>`<span class="gs-tiern">${esc(tierName(v.elo))}</span>`,'tier'),
-    row('Rank',(v,t)=>`<b class="gs-num" data-gs-trank="${esc(t)}">#${rank(t)}</b> <small class="gs-tiern">of ${order.length}</small>`,'rank'),
+    row('Rating',(v,t)=>`<span class="gs-sh">${shield(v.elo)}<b class="gs-num" data-gs-telo="${esc(t)}">${v.elo}</b>${behind(t)?'<span class="gs-lag" title="Rated before its latest game">*</span>':''}</span>`,'elo',best(v=>v.elo,true)),
+    row('Tier',v=>`<span class="gs-tiern">${esc(tierName(v.elo))}</span>`,'tier',null),
+    row('Rank',(v,t)=>`<b class="gs-num" data-gs-trank="${esc(t)}">#${rank(t)}</b> <small>of ${order.length}</small>`,'rank',best((v,t)=>rank(t),false)),
     row('Since its last game',(v,t)=>{ if(v.before==null) return '<span class="gs-flat" data-gs-tchg="'+esc(t)+'">no game yet</span>'; const d=v.elo-v.before;
-      return `<span class="${d>0?'gs-up':d<0?'gs-down':'gs-flat'}" data-gs-tchg="${esc(t)}">${d===0?'no change':signed(d)}</span>`; },'chg'),
-    row('Vs an average team',(v,t)=>`<b class="gs-num" data-gs-tavg="${esc(t)}">${v.p_avg!=null?pct(v.p_avg):'–'}</b>`,'avg'),
+      return `<span class="${d>0?'gs-up':d<0?'gs-down':'gs-flat'}" data-gs-tchg="${esc(t)}">${d===0?'no change':signed(d)}</span>`; },'chg',null),
+    row('Chance vs an average team',(v,t)=>`<b class="gs-num" data-gs-tavg="${esc(t)}">${v.p_avg!=null?pct(v.p_avg):'–'}</b>`,'avg',best(v=>v.p_avg,true)),
   ].join('');
-  return `<section class="card gs-sec" id="gsTeams">${head}
-    <p class="gs-lead">This season's results alone: every team started at 1500 and moves after each game by how far the score beat or missed what was expected, with each team's expected lineup on this season's player Elo blended in. Vs an average team is its chance against an average team on a neutral field.</p>
-    <table class="gs-vs"><thead><tr><th class="gs-a">${tg(a,true)}</th><th class="gs-lab" style="text-align:center"></th><th class="gs-h">${tg(h,true)}</th></tr></thead><tbody>${body}</tbody></table>
+  const ea=T[a].elo, eh=T[h].elo, hi=eh>ea?h:ea>eh?a:null;
+  const sum=`${hi?`<span data-gs-n="tedge">${tg(hi,true)} +${Math.abs(eh-ea)}</span>`:'<span data-gs-n="tedge">Even</span>'} · ${esc(a)} ${N('trank:'+a,'#'+rank(a))}, ${esc(h)} ${N('trank:'+h,'#'+rank(h))}`;
+  return fold('gsTeams',T0,sum,`<table class="gs-vs" aria-label="${S0}"><thead><tr><th class="gs-a"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span></th><th class="gs-mlab"><span class="gs-key"><i></i>edge</span></th><th class="gs-h"><span class="gs-thn">${tg(h,true)}<span class="gs-tnm">${esc(teamName(h))}</span></span></th></tr></thead><tbody>${body}</tbody></table>
     ${lags.length?`<p class="gs-note">* Rated before its latest game: ${lags.map(([t,x])=>esc(t)+' ('+esc(x)+')').join(', ')}. The record counts it; the rating takes it in when the Elo job next rebuilds the ratings.</p>`:''}
-    <p class="gs-note">Ratings built ${esc(stamp(M.built_at))}.</p></section>`;
+    <p class="gs-note">Power Ratings are this season's results alone: every team started at 1500 and moves after each game by how far the score beat or missed what was expected, with each team's expected lineup on this season's player Elo blended in. The chance is against an average team on a neutral field. Ratings built ${esc(stamp(M.built_at))}.</p>`);
 }
 
 /* ---- Overall Offense against Overall Defense, both ways (`units`, as the ELO Ratings tab) ---- */
 const fmtStat=(v,f)=>v==null?'–':f==='pct'?(v*100).toFixed(1)+'%':f==='epa'?(v>=0?'+':'−')+Math.abs(v).toFixed(3):f==='f2'?v.toFixed(2):v.toFixed(1);
+/* a stat's two sides on one row: what the offense does, what the defense allows (or takes) */
+const PAIR={pts:'Points a game',sr:'Success rate',epa:'EPA a play',tor:'Turnovers a game',skr:'Sack rate',xr:'Big-play rate',third:'Third-down rate',rz:'Red-zone TD rate',ypp:'Yards a play'};
 function unitsSec(P,g,F){
-  const head=`<h3>Overall Offense and Overall Defense <small>each side's rank among the 32</small></h3>`;
-  if(!F) return `<section class="card gs-sec" id="gsUnits">${head}<p class="gs-msg">Loading the ratings…</p></section>`;
-  const U=F.model&&F.model.units;
-  if(!U||!U.off||!U.def) return `<section class="card gs-sec" id="gsUnits">${head}<p class="gs-msg">The unit ratings did not load${F.err?': '+esc(F.err):''}.</p></section>`;
-  if(!Object.values(U.off).some(v=>v.games)) return `<section class="card gs-sec" id="gsUnits">${head}<p class="gs-msg">Overall Offense and Overall Defense start once a team has a rated game this season.</p></section>`;
-  const stats=side=>(U.stats||[]).filter(s=>s.side===side&&s.weight);
-  const side=(t,s)=>{ const v=U[s]&&U[s][t], n=Object.keys(U[s]||{}).length;
-    if(!v) return `<div class="gs-u"><span class="gs-ulab">Overall ${s==='off'?'Offense':'Defense'}</span><span class="gs-msg">no rating for ${esc(t)}</span></div>`;
-    const ord=r=>r==null?'':r<=8?'gs-top8':r>n-8?'gs-bot8':'';
-    const li=stats(s).map(st=>{ const e=v.stats&&v.stats[st.key]||{}; return `<li><span>${esc(st.short)}</span><span><b>${fmtStat(e.v,st.fmt)}</b> <small class="${ord(e.rank)}">${e.rank!=null?ordinal(e.rank):''}</small></span></li>`; }).join('');
-    return `<div class="gs-u" data-gs-unit="${s}:${esc(t)}"><span class="gs-ulab">Overall ${s==='off'?'Offense':'Defense'}</span>
-      <span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n}</small></span>
-      <span class="gs-sh">${shield(v.elo)}<b class="gs-num" data-gs-uelo>${v.elo}</b> <span class="gs-tiern">${esc(tierName(v.elo))}</span></span>
-      ${v.games?'':'<span class="gs-tiern" style="display:block">no game yet</span>'}${li?`<ul>${li}</ul>`:''}</div>`; };
-  const pair=(o,d)=>`<div class="gs-unit"><h4>${tg(o,true)} offense <span class="muted">against</span> ${tg(d,true)} defense</h4><div class="gs-ugrid">${side(o,'off')}${side(d,'def')}</div></div>`;
-  return `<section class="card gs-sec" id="gsUnits">${head}
-    <p class="gs-lead">Each team's offense and defense rated on this season's key stats, opponents and home field counted (1st the best). Under each, the stats the rating weighs, with their league ranks: the best eight green, the worst eight red.</p>
-    <div class="gs-units">${pair(g.away_team,g.home_team)}${pair(g.home_team,g.away_team)}</div></section>`;
+  const T0='Offense vs defense';
+  if(!F) return fold('gsUnits',T0,'loading…','<p class="gs-msg">Loading the ratings…</p>');
+  const X=unitsOf(F);
+  if(!X) return fold('gsUnits',T0,'did not load',`<p class="gs-msg">The unit ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
+  if(!X.on) return fold('gsUnits',T0,'not yet','<p class="gs-msg">Overall Offense and Overall Defense start once a team has a rated game this season.</p>');
+  const U=X.U, all=U.stats||[], a=g.away_team, h=g.home_team;
+  /* the stats either rating weighs, in the offense's order, then the defense's */
+  const keys=[...new Set(all.filter(s=>s.weight&&s.side==='off').map(s=>s.key).concat(all.filter(s=>s.weight&&s.side==='def').map(s=>s.key)))];
+  const meta=(side,k)=>all.find(s=>s.side===side&&s.key===k)||null;
+  const n=s=>Object.keys(U[s]||{}).length;
+  const ov=(t,s,b)=>{ const v=U[s]&&U[s][t];
+    if(!v) return `<td class="gs-uc"><span class="gs-msg">no rating for ${esc(t)}</span></td>`;
+    return `<td class="gs-uc" data-gs-unit="${s}:${esc(t)}"><span class="gs-uov gs-v${b?' gs-better':''}"><span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n(s)}</small></span>
+      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':'<span class="gs-tiern">no game yet</span>'}</span></td>`; };
+  const pair=(o,d)=>{ const p=possession(U,o,d), vo=U.off[o], vd=U.def[d];
+    const edge=!p?'':p.team?`<span class="gs-uedge">edge <span class="gs-v gs-better">${tg(p.team,true)} ${p.edge==='off'?'offense':'defense'}</span></span>`:'<span class="gs-uedge">even</span>';
+    const rows=keys.map(k=>{ const mo=meta('off',k), md=meta('def',k), so=vo&&vo.stats&&vo.stats[k]||{}, sd=vd&&vd.stats&&vd.stats[k]||{};
+      const b=so.rank!=null&&sd.rank!=null&&so.rank!==sd.rank?(so.rank<sd.rank?'off':'def'):null;
+      const sv=(side,t,m,e)=>`<td class="gs-uc"><span class="gs-sv gs-v${b===side?' gs-better':''}" data-gs-stat="${side}:${esc(t)}:${esc(k)}"${m?` title="${esc(m.label)}"`:''}><b data-gs-sv>${m?fmtStat(e.v,m.fmt):'–'}</b><small data-gs-sr>${e.rank!=null?ordinal(e.rank):''}</small></span></td>`;
+      return `<tr><td class="gs-ulab">${esc(PAIR[k]||(mo||md).short)}</td>${sv('off',o,mo,so)}${sv('def',d,md,sd)}</tr>`; }).join('');
+    return `<div class="gs-unit"><h4>When ${tg(o,true)} has the ball ${edge}</h4>
+      <table class="gs-ut"><thead><tr><th class="gs-ulab"></th><th class="gs-uc"><span class="gs-th2">${esc(o)} offense</span></th><th class="gs-uc"><span class="gs-th2">${esc(d)} defense</span></th></tr></thead>
+      <tbody><tr class="gs-urow"><td class="gs-ulab">Overall</td>${ov(o,'off',p&&p.edge==='off')}${ov(d,'def',p&&p.edge==='def')}</tr>${rows}</tbody></table></div>`; };
+  const p1=possession(U,a,h), p2=possession(U,h,a);
+  const sum=p1&&p2?`${esc(a)} O ${N('urank:off:'+a,ordinal(p1.vo.rank))} v ${esc(h)} D ${N('urank:def:'+h,ordinal(p1.vd.rank))} · ${esc(h)} O ${N('urank:off:'+h,ordinal(p2.vo.rank))} v ${esc(a)} D ${N('urank:def:'+a,ordinal(p2.vd.rank))}`:'a unit has no rating';
+  return fold('gsUnits',T0,sum,`<div class="gs-units">${pair(a,h)}${pair(h,a)}</div>
+    <p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The rows are the stats the ratings weigh: what the offense does and what the defense allows (turnovers: the offense's giveaways, the defense's takeaways).</p>`);
 }
 
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */
 const UNIT_NAME={DL:'Pass rush and run front',LB:'Linebackers',DB:'Secondary'};
 function positions(P,g,F){
-  const head=`<h3>Position by position <small>${F&&F.players?esc(F.players.season+' '+(F.players.through||'')):'season Elo'}</small></h3>`;
-  if(!F) return `<section class="card gs-sec" id="gsPos">${head}<p class="gs-msg">Loading the ratings…</p></section>`;
+  const T0='Starters';
+  if(!F) return fold('gsPos',T0,'loading…','<p class="gs-msg">Loading the ratings…</p>');
   const Pl=F.players, mu=F.mu;
-  if(!Pl||!Pl.players||!Pl.groups) return `<section class="card gs-sec" id="gsPos">${head}<p class="gs-msg">The player ratings did not load${F.err?': '+esc(F.err):''}.</p></section>`;
-  if(!mu||!mu.lineups) return `<section class="card gs-sec" id="gsPos">${head}<p class="gs-msg">The expected lineups did not load${F.muErr?' ('+esc(F.muErr)+')':''}, so the starters cannot be shown.</p></section>`;
+  if(!Pl||!Pl.players||!Pl.groups) return fold('gsPos',T0,'did not load',`<p class="gs-msg">The player ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
+  if(!mu||!mu.lineups) return fold('gsPos',T0,'did not load',`<p class="gs-msg">The expected lineups did not load${F.muErr?' ('+esc(F.muErr)+')':''}, so the starters cannot be shown.</p>`);
   const a=g.away_team, h=g.home_team, L=mu.lineups, groups=Object.keys(Pl.groups);
   const depth=typeof PAY==='object'&&PAY&&PAY.depth||{};
   /* each team's lineup by position, in the file's order; a starter the ratings do not know yet
@@ -6195,16 +6510,18 @@ function positions(P,g,F){
   const off=pid=>typeof S==='object'&&S&&S.inactive&&S.inactive[pid]?(typeof inactiveWhy==='function'?inactiveWhy(S.inactive[pid]):'ruled out'):null;
   const cell=(x,t)=>{ if(!x) return '';
     const e=x.e, o=off(x.pid);
-    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn"><span class="gs-pnm" data-gs-name>${esc(x.name)}${qpill(x.pid)}</span></span><small>not rated yet</small></span>`;
+    if(!e) return `<span class="gs-pl" data-pid="${esc(x.pid)}" data-team="${esc(t)}"><span class="gs-pn"><span class="gs-pnm" data-gs-name>${esc(x.name)}${qpill(x.pid)}</span></span><span class="gs-pst"><small class="gs-pmeta">not rated yet</small></span></span>`;
     const ranked=e.rank!=null&&e.se!=null, active=Pl.groups[e.group]&&Pl.groups[e.group].active;
-    const stat=ranked?`<b class="gs-pse">${e.se}</b> · <span class="gs-prk">#${e.rank}</span>${active?` of ${esc(active)}`:''} · ${esc(tierName(e.se))}`
-      :`not ranked this season · career <span class="gs-pcar">${e.elo}</span>`;
+    /* the season Elo on its own, at the inner edge of each half on a wide screen (the two sides'
+       numbers meet in the middle), first on the line under the name on a phone */
+    const stat=ranked?`<b class="gs-pse">${e.se}</b><small class="gs-pmeta"><span class="gs-psep"> · </span><span class="gs-prk">#${e.rank}</span>${active?` of ${esc(active)}`:''} · ${esc(tierName(e.se))}</small>`
+      :`<small class="gs-pmeta">not ranked this season · career <span class="gs-pcar">${e.elo}</span></small>`;
     return `<span class="gs-pl${o?' gs-off':''}" data-pid="${esc(x.pid)}" data-team="${esc(t)}" data-grp="${esc(e.group)}"><span class="gs-pn">${ranked?shield(e.se):''}<span class="gs-pnm" data-gs-name>${esc(e.name)}${qpill(x.pid)}</span></span>
-      <small>${stat}</small>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
+      <span class="gs-pst">${stat}</span>${o?`<small class="gs-outw">${esc(o)}</small>`:''}</span>`; };
   /* each defence's units ranked among the league's, 1st the best (the matchup formula's units) */
   const defs=mu.league&&mu.league.defs||{}, nDefs=Object.keys(defs).length;
   const urank=(t,u)=>{ if(!defs[t]) return null; const order=Object.keys(defs).sort((x,y)=>defs[y][u]-defs[x][u]); return order.indexOf(t)+1; };
-  const unitCell=(t,u)=>{ const r=urank(t,u); return r?`<span data-gs-def="${esc(t)}:${u}">${esc(UNIT_NAME[u])}: <b>${ordinal(r)}</b> of ${nDefs}</span>`:''; };
+  const unitCell=(t,u)=>{ const r=urank(t,u); return r?`<span data-gs-def="${esc(t)}:${u}">${esc(UNIT_NAME[u])}: <span class="gs-nw"><b>${ordinal(r)}</b> of ${nDefs}</span></span>`:''; };
   let rows='';
   for(const grp of groups){
     const xa=LA&&LA.by[grp]||[], xh=LH&&LH.by[grp]||[], n=Math.max(xa.length,xh.length);
@@ -6214,68 +6531,76 @@ function positions(P,g,F){
     for(let i=0;i<n;i++) rows+=`<tr><td class="gs-a">${cell(xa[i],a)}</td><td class="gs-h">${cell(xh[i],h)}</td></tr>`;
   }
   /* the team's players out of the rankings, where they would have stood (the ELO tab's list) */
-  const outs=t=>{ const xs=groups.flatMap(gr=>(Pl.groups[gr].sidelined||[]).filter(x=>x.team===t).map(x=>({...x,grp:gr})));
-    return `<div data-gs-outs="${esc(t)}"><h5>${tg(t,true)} out</h5>${xs.length?`<ul>${xs.map(x=>`<li data-pid="${esc(x.id)}"><b>${esc(x.name)}</b> (${esc(x.grp)}, ${esc(x.elo)}, would be #${esc(x.would_rank)}): ${esc(x.why)}</li>`).join('')}</ul>`:'<span class="gs-none">No ranked player out.</span>'}</div>`; };
+  const outsOf=t=>sidelinedOf(Pl,t);
+  const outs=t=>{ const xs=outsOf(t);
+    return `<div data-gs-outs="${esc(t)}"><h5${xs.length?' class="gs-hasout"':''}>${tg(t,true)} ${xs.length?`${xs.length} ranked ${xs.length===1?'player':'players'} out`:'<span class="gs-none">No ranked player out.</span>'}</h5>${xs.length?`<ul>${xs.map(x=>`<li data-pid="${esc(x.id)}"><b>${esc(x.name)}</b> (${esc(x.grp)}, ${esc(x.elo)}, would be #${esc(x.would_rank)}): ${esc(x.why)}</li>`).join('')}</ul>`:''}</div>`; };
   const unk=[[a,LA],[h,LH]].filter(([,x])=>x&&x.unknown.length).map(([t,x])=>`${esc(t)} ${x.unknown.length}`);
-  return `<section class="card gs-sec" id="gsPos">${head}
-    <p class="gs-lead">Each team's expected starters${mu.built_at?` as of ${esc(stamp(mu.built_at))}`:''}: that day's depth chart, less the injury report's Out and Doubtful. Each wears his season Elo, his rank at the position and his shield, as on the ELO Ratings tab; a Q is questionable on the report. Defenses carry the units the matchup formula reads, ranked among the league's (1st the best).</p>
-    ${notes.length?`<p class="gs-msg" style="margin:0 0 10px">${notes.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join('. ')}.</p>`:''}
-    ${+Pl.season!==+P.ST.season?`<p class="gs-msg" style="margin:0 0 10px">These are ${esc(Pl.season)}'s ratings: ${esc(P.ST.season)}'s take over once most clubs have played week 1.</p>`:''}
-    <table class="gs-pos"><thead><tr><th class="gs-a">${tg(a,true)} ${esc(teamName(a))}</th><th class="gs-h">${esc(teamName(h))} ${tg(h,true)}</th></tr></thead><tbody>${rows}</tbody></table>
+  /* the summary: who is out and who is questionable, by team */
+  const sumT=t=>{ const no=outsOf(t).length, nq=qCount(mu,t); return `${esc(t)} ${no?`${N('outn:'+t,no)} out`:'none out'}${nq?`, ${N('qn:'+t,nq)} Q`:''}`; };
+  const sum=`${sumT(a)} · ${sumT(h)}`;
+  return fold('gsPos',T0,sum,`<div class="gs-outs">${outs(a)}${outs(h)}</div>
+    ${notes.length?`<p class="gs-msg" style="margin:0 0 12px">${notes.map(s=>s.charAt(0).toUpperCase()+s.slice(1)).join('. ')}.</p>`:''}
+    ${+Pl.season!==+P.ST.season?`<p class="gs-msg" style="margin:0 0 12px">These are ${esc(Pl.season)}'s ratings: ${esc(P.ST.season)}'s take over once most clubs have played week 1.</p>`:''}
+    <table class="gs-pos"><thead><tr><th class="gs-a"><span class="gs-thn">${tg(a,true)}${esc(teamName(a))}</span></th><th class="gs-h"><span class="gs-thn">${tg(h,true)}${esc(teamName(h))}</span></th></tr></thead><tbody>${rows}</tbody></table>
     ${unk.length?`<p class="gs-note">Also expected to start, not rated yet: ${unk.join(', ')} player${unk.length===1&&/ 1$/.test(unk[0])?'':'s'}.</p>`:''}
-    <div class="gs-outs">${outs(a)}${outs(h)}</div></section>`;
+    <p class="gs-note">Each team's expected starters${mu.built_at?` as of ${esc(stamp(mu.built_at))}`:''}, rated on ${Pl.season?esc(Pl.season+' '+(Pl.through||'')):'season Elo'}: that day's depth chart, less the injury report's Out and Doubtful. Each wears his season Elo, his rank at the position and his shield, as on the ELO Ratings tab; Q is questionable on the report. Defenses carry the units the matchup formula reads, ranked among the league's (1st the best).</p>`);
 }
 
-/* ---- the Props tab's Mismatches, in this game (window.eloMismatches: the same rows) ---- */
-const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
-const mmGrade=s=>{ const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1']; };
+/* ---- the Props tab's Mismatches, in this game ---- */
 function mismatchSec(P,g,F){
-  const head=`<h3>Mismatches in this game <small>the best players against the weakest units they face</small></h3>`, sec=b=>`<section class="card gs-sec" id="gsMism">${head}${b}</section>`;
-  if(!F) return sec('<p class="gs-msg">Loading the matchups…</p>');
-  const mu=F.mu;
-  if(!mu||!mu.players) return sec(`<p class="gs-msg">The matchups did not load${F.muErr?' ('+esc(F.muErr)+')':''}, so there are no mismatches to show.</p>`);
-  if(typeof window.eloMismatches!=='function') return sec('<p class="gs-msg">The Mismatches are not on this page.</p>');
-  const st=standing(P,g);
-  if(String(g.game_id).slice(0,4)!==String(mu.season)||+g.week!==+mu.week)
-    return sec(`<p class="gs-msg">The matchups are for ${esc(P.weekName(+mu.week).toLowerCase())}${+mu.season!==+P.ST.season?' of '+esc(mu.season):''}: ${+g.week<+mu.week||st.fin?'this game\'s week has gone, and its mismatches with it':'this game\'s come with its week'}.</p>`);
-  const on=typeof window.eloGameOn==='function'?window.eloGameOn(g.game_id):st.started;
-  if(on||st.started) return sec('<p class="gs-msg">This game has kicked off. The Mismatches are for games still to kick off, as on the Props tab, so there are none to show for it.</p>');
-  let all=[]; try{ all=window.eloMismatches()||[]; }catch(e){ return sec('<p class="gs-msg">The Mismatches could not be worked out on this page.</p>'); }
-  const mine=all.map((v,i)=>({...v,n:i+1})).filter(v=>v.game_id===g.game_id);
-  if(!mine.length) return sec(`<p class="gs-msg" id="gsMmNone">No mismatches in this game: no expected starter here both stands above his position's average and faces a unit below the league's.</p>`);
-  const nm=pid=>(F.players&&F.players.players&&F.players.players[pid]&&F.players.players[pid].name)||pid;
-  const se=pid=>{ const e=F.players&&F.players.players&&F.players.players[pid]; return e&&e.se!=null?e.se:null; };
-  const li=mine.map(v=>{ const [gw,gc]=mmGrade(v.score);
+  const T0='Mismatches', R=mmOf(P,g,F);
+  if(!R.mine) return fold('gsMism',T0,esc(R.short),`<p class="gs-msg">${R.why}</p>`);
+  if(!R.mine.length) return fold('gsMism',T0,'none in this game',`<p class="gs-msg" id="gsMmNone">No mismatches in this game: no expected starter here both stands above his position's average and faces a unit below the league's.</p>`);
+  const li=R.mine.map(v=>{ const [gw,gc]=mmGrade(v.score), se=plSe(F,v.pid);
     return `<li data-pid="${esc(v.pid)}"><span class="gs-mmn" title="Mismatch rank this week">#${v.n}</span>
-      <div><span class="gs-mmwho">${se(v.pid)!=null?shield(se(v.pid)):''}${esc(nm(v.pid))} <small>(${esc(v.group)})</small></span><span class="gs-mmvs">${tg(v.team,true)}${v.home?'vs':'at'}${tg(v.opp,true)}</span>
-      <span class="gs-mmsub">vs a ${esc(v.unitName)} ranked ${ordinal(v.defRank)} of ${v.defN}.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
-      <div class="gs-mmsc"><b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b><small class="${gc}">${gw}</small></div></li>`; }).join('');
-  return sec(`<p class="gs-lead">The Props tab's Mismatches in this game, ranked among the week's (${all.length} in all). The edge is how far above his position's average the player stands plus how far below the league's average the defense he faces stands, in standard deviations: 3 and up huge, 2 to 3 big, 1 to 2 solid.</p><ul class="gs-mm">${li}</ul>`);
+      <div><span class="gs-mmwho">${se!=null?shield(se):''}${esc(plName(F,v.pid))} <small>${esc(v.group)}</small>${tg(v.team,true)}<small>${v.home?'vs':'at'}</small>${tg(v.opp,true)}</span>
+      <span class="gs-mmsub">Against a ${esc(v.unitName)} ranked ${ordinal(v.defRank)} of ${v.defN}.${v.proj!=null?` <b>${Math.round(v.proj)} ${MM_LBL[v.lead]||''}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}.`:''}</span></div>
+      <div class="gs-mmsc"><b class="${gc}" data-gs-mm>${v.score.toFixed(1)}</b><small class="${gc}">${gw}</small><span class="gs-mmbar" aria-hidden="true"><i style="width:${Math.round(Math.min(1,v.score/4)*100)}%"></i></span></div></li>`; }).join('');
+  const v0=R.mine[0];
+  const sum=`${R.mine.length} in this game · best ${esc(plName(F,v0.pid))} ${N('mm1score',v0.score.toFixed(1))}`;
+  return fold('gsMism',T0,sum,`<ul class="gs-mm">${li}</ul>
+    <p class="gs-note">The Props tab's Mismatches in this game, ranked among the week's (${R.all.length} in all). The edge is how far above his position's average the player stands plus how far below the league's average the defense he faces stands, in standard deviations: 3 and up huge, 2 to 3 big, 1 to 2 solid.</p>`);
 }
 
 /* ---- the files, and the full tabs ---- */
 function filesSec(P,g,F){
-  const st=P.ST.state||{}, bits=[];
-  if(st.published) bits.push(`Results and calls <b>${esc(stamp(st.published))}</b>`);
-  if(F&&F.model&&F.model.built_at) bits.push(`Elo ratings <b>${esc(stamp(F.model.built_at))}</b>`);
+  const st=P.ST.state||{}, bits=[], short=[];
+  if(st.published){ bits.push(`Results and calls <b>${esc(stamp(st.published))}</b>`); short.push(`results ${esc(stampShort(st.published))}`); }
+  if(F&&F.model&&F.model.built_at){ bits.push(`Elo ratings <b>${esc(stamp(F.model.built_at))}</b>`); short.push(`Elo ${esc(stampShort(F.model.built_at))}`); }
   if(F&&F.mu&&F.mu.built_at) bits.push(`Lineups and matchups <b>${esc(stamp(F.mu.built_at))}</b>`);
   const row=typeof S==='object'&&S&&Array.isArray(S.sched)?S.sched.find(x=>x.id===g.game_id):null;
-  return `<section class="card gs-sec" id="gsFiles"><h3>Where these come from</h3>
-    <div class="gs-files" id="gsStamps">${bits.length?bits.map(b=>`<span>${b}</span>`).join(''):'<span>The files have no publish times.</span>'}</div>
-    <p class="gs-lead">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups. The full tables:</p>
-    <div class="gs-links"><button type="button" class="btn quiet" data-gs-go="ratings">Team Rankings</button><button type="button" class="btn quiet" data-gs-go="elo">ELO Ratings</button><button type="button" class="btn quiet" data-gs-go="slate">${row?'Props for this game':'Props'}</button><button type="button" class="btn quiet" data-gs-go="record">Pick'em Record</button></div></section>`;
+  return fold('gsFiles','Sources',short.length?'Published '+short.join(' · '):'when each file was published',
+    `<div class="gs-files" id="gsStamps">${bits.length?bits.map(b=>`<span>${b}</span>`).join(''):'<span>The files have no publish times.</span>'}</div>
+    <p class="gs-note">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups. The full tables:</p>
+    <div class="gs-links"><button type="button" class="btn quiet" data-gs-go="ratings">Team Rankings</button><button type="button" class="btn quiet" data-gs-go="elo">ELO Ratings</button><button type="button" class="btn quiet" data-gs-go="slate">${row?'Props for this game':'Props'}</button><button type="button" class="btn quiet" data-gs-go="record">Pick'em Record</button></div>`);
 }
 
 function draw(gid){
   const P=B(), g=gameOf(gid), F=LOADED, view=$('gsView'); if(!P||!g||!view) return;
-  $('gsTitle').innerHTML=`${tg(g.away_team,true)}<span class="muted" style="font-weight:500">${P.neutral(g)?'vs':'at'}</span>${tg(g.home_team,true)} <span>Game snapshot</span> <span class="gs-wk">${esc(P.weekName(+g.week))}</span>`;
-  /* each section stands alone: one that fails says so and the rest still draw */
-  const part=(f,id,name)=>{ try{ return f(P,g,F); }catch(e){ return `<section class="card gs-sec" id="${id}"><h3>${name}</h3><p class="gs-msg">This part could not be drawn: ${esc(e&&e.message||e)}.</p></section>`; } };
-  view.innerHTML=part(matchup,'gsMatch','The matchup')+part(teamElo,'gsTeams','Team Elo')+part(unitsSec,'gsUnits','Overall Offense and Overall Defense')
-    +part(positions,'gsPos','Position by position')+part(mismatchSec,'gsMism','Mismatches')+part(filesSec,'gsFiles','Where these come from');
+  $('gsTitle').innerHTML=`<span class="gs-tm">${tg(g.away_team,true)}<span>${P.neutral(g)?'vs':'at'}</span>${tg(g.home_team,true)}</span><span class="gs-tsub">Game snapshot · ${esc(P.weekName(+g.week))}</span>`;
+  /* each card stands alone: one that fails says so and the rest still draw */
+  const part=(f,id,name)=>{ try{ return f(P,g,F); }catch(e){
+    return id==='gsMatch'?`<section class="card gs-sec gs-verdict" id="${id}"><p class="gs-msg">This part could not be drawn: ${esc(e&&e.message||e)}.</p></section>`
+      :fold(id,name,'could not be drawn',`<p class="gs-msg">This part could not be drawn: ${esc(e&&e.message||e)}.</p>`); } };
+  const st=standing(P,g);
+  const past=st.fin?`<p class="gs-past" id="gsPast"><b>This game has been played.</b> The calls are the ones made before kickoff, graded on the result; the ratings, the lineups and the units are the files as they stand now, after it, not as they stood before it.</p>`:'';
+  const allOpen=CARDS.every(id=>OPEN[id]!==false);
+  view.innerHTML=part(matchup,'gsMatch','The matchup')+past
+    +`<div class="gs-dbar"><span class="gs-lab">The details</span><button type="button" class="btn quiet" data-gs-all="${allOpen?'close':'open'}">${allOpen?'Close all':'Open all'}</button></div>`
+    +`<div class="gs-pair">${part(callsSec,'gsCalls','Every call')}${part(teamElo,'gsTeams','Team strength')}</div>`
+    +part(unitsSec,'gsUnits','Offense vs defense')+part(mismatchSec,'gsMism','Mismatches')
+    +part(positions,'gsPos','Starters')+part(filesSec,'gsFiles','Sources');
   if(!$('peDefs')&&window.pkTierDefs){ const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box); }
 }
 function redraw(){ const md=$('gsModal'); if(cur&&md&&!md.hidden){ const y=md.scrollTop; draw(cur); md.scrollTop=y; } }
+/* open or close a card where it stands, without drawing the window again */
+function setCard(id,open){
+  OPEN[id]=open; const sec=$(id), body=$(id+'B'); if(!sec||!body) return;
+  sec.classList.toggle('gs-open',open); body.hidden=!open;
+  const b=sec.querySelector('[data-gs-fold]'); if(b) b.setAttribute('aria-expanded',String(open));
+}
+function syncAll(){ const b=document.querySelector('#gsModal [data-gs-all]'); if(!b) return; const all=CARDS.every(id=>OPEN[id]!==false);
+  b.dataset.gsAll=all?'close':'open'; b.textContent=all?'Close all':'Open all'; }
 
 function wire(){
   let md=$('gsModal'); if(md) return md;
@@ -6285,7 +6610,10 @@ function wire(){
   $('gsClose').addEventListener('click',()=>close());
   md.addEventListener('click',e=>{
     if(e.target===md){ close(); return; }
-    const go=e.target.closest&&e.target.closest('[data-gs-go]'); if(go) goTo(go.dataset.gsGo);
+    const t=e.target.closest?e.target:null; if(!t) return;
+    const f=t.closest('[data-gs-fold]'); if(f){ setCard(f.dataset.gsFold,OPEN[f.dataset.gsFold]===false); syncAll(); return; }
+    const al=t.closest('[data-gs-all]'); if(al){ const open=al.dataset.gsAll==='open'; for(const id of CARDS) setCard(id,open); syncAll(); return; }
+    const go=t.closest('[data-gs-go]'); if(go) goTo(go.dataset.gsGo);
   });
   /* Escape closes this window alone (ahead of the windows beneath it), and Tab stays inside it */
   window.addEventListener('keydown',e=>{
@@ -6304,6 +6632,8 @@ function open(gid,from){
   const P=B(), g=gameOf(gid); if(!P||!g) return false;
   const md=wire();
   cur=gid; opener=from||document.activeElement||null;
+  /* every card open on a wide screen; on a phone the verdict alone, the cards folded to their summaries */
+  const wide=!phone(); OPEN={}; for(const id of CARDS) OPEN[id]=wide;
   eloFiles();
   draw(gid);
   md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;

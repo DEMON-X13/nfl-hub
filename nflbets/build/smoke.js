@@ -1330,6 +1330,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    ===================================================================================== */
 async function snapshotChecks() {
   const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
+  /* the verdict, then a folding card each */
+  const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos', 'gsFiles'], SNAP_CARDS = SNAP_SECS.slice(1);
   const week = openWeek(st);
   const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
   const pc = p => Math.round(p * 100) + '%';
@@ -1344,6 +1346,8 @@ async function snapshotChecks() {
   const tRank = t => Object.entries(eloM.teams || {}).sort((a, b) => b[1].elo - a[1].elo).findIndex(([k]) => k === t) + 1;
   const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
   const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games));
+  /* a stat as the ELO Ratings tab prints it */
+  const fmtStat = (v, f) => v == null ? '–' : f === 'pct' ? (v * 100).toFixed(1) + '%' : f === 'epa' ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(3) : f === 'f2' ? v.toFixed(2) : v.toFixed(1);
   /* every model's call on a game, from the files: the graded one, else the one published */
   const callsOf = g => { const pr = st.processed[g.game_id], ak = (st.atKickoff || {})[g.game_id];
     const one = x => x && x.pick ? { pick: x.pick, p: x.pHome == null ? null : (x.pick === g.home_team ? +x.pHome : 1 - x.pHome), correct: x.correct } : null;
@@ -1398,7 +1402,7 @@ async function snapshotChecks() {
     const md = R.d.getElementById('gsModal'), q = s => md.querySelector(s), a = g.away_team, h = g.home_team;
     chk(!!md && !md.hidden && !!q('[role="dialog"][aria-modal="true"][aria-labelledby="gsTitle"]') && new RegExp(`${a}.*${h}`).test(txt(R.d.getElementById('gsTitle'))) && R.d.activeElement === R.d.getElementById('gsClose'),
       `snapshot (${label}): the window did not open as a dialog titled with the game, with the focus on Close`);
-    chk(['gsMatch', 'gsTeams', 'gsUnits', 'gsPos', 'gsMism', 'gsFiles'].every(id => md.querySelector('#' + id)) && !/could not be drawn/.test(txt(md)) && R.errs.length === 0,
+    chk(SNAP_SECS.every(id => md.querySelector('#' + id)) && !/could not be drawn/.test(txt(md)) && R.errs.length === 0,
       `snapshot (${label}): a section is missing or failed: ${R.errs.join('; ')} ${(txt(md).match(/[^.]*could not be drawn[^.]*/) || [''])[0]}`);
     /* the matchup: records, the line, the score */
     for (const t of [a, h]) chk(txt(q(`[data-gs-rec="${t}"]`)) === recOf(t), `snapshot (${label}): ${t}'s record reads ${txt(q(`[data-gs-rec="${t}"]`))}, Team Rankings counts ${recOf(t)}`);
@@ -1470,6 +1474,76 @@ async function snapshotChecks() {
         chk(bubbles.every(pid => li.some(x => x.dataset.pid === pid)), `snapshot (${label}): a Mismatches bubble on the Props tab for this game is not in the window`); } }
     /* when the files were published */
     chk(/Results and calls/.test(txt(q('#gsStamps'))) && /Elo ratings/.test(txt(q('#gsStamps'))) && /Lineups and matchups/.test(txt(q('#gsStamps'))), `snapshot (${label}): the window does not say when its files were published: ${txt(q('#gsStamps'))}`);
+
+    /* the verdict and the cards' summaries repeat numbers and add a few counts: every element
+       marked data-gs-n is held to the files, worked out here on their own -- the vote (how many
+       of the calls pick each side, the side most pick, their average chance for it, how many
+       landed once played), Vegas's chance on the split bar, the Team Elo gap and ranks, the
+       units' ranks and the top mismatch -- and each one the files give must be shown */
+    { const C = callsOf(g), want = {}, need = new Set(), bad = [];
+      const calls = ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly'].map(id => C[id]).filter(x => x && (x.pick === a || x.pick === h));
+      const nA = calls.filter(x => x.pick === a).length, nH = calls.length - nA, side = nH > nA ? h : nA > nH ? a : null;
+      const put = (k, v, must = true) => { want[k] = v; if (must) need.add(k); };
+      if (calls.length) put('vote', side ? `${side === h ? nH : nA} of ${calls.length}` : `${nA}–${nH}`);
+      /* the average needs every call's chance: Vegas's from the spread alone is the board's own sum, not worked here */
+      if (side && !(C.vegas && C.vegas.p == null)) { const ps = calls.map(x => x.p == null ? null : x.pick === side ? x.p : 1 - x.p).filter(p => p != null);
+        if (ps.length) put('voteavg', pc(ps.reduce((s, p) => s + p, 0) / ps.length)); }
+      if (win !== undefined && calls.length) put('votehit', `${calls.filter(x => (x.correct === true || x.correct === false ? x.correct : (win ? x.pick === win : null)) === true).length} of ${calls.length}`);
+      if (C.vegas && C.vegas.p != null) { const pH = C.vegas.pick === h ? C.vegas.p : 1 - C.vegas.p, pa = Math.round((1 - pH) * 100);
+        put('vconf', pc(C.vegas.p)); put('vaway', pa + '%', pa >= 14); put('vhome', (100 - pa) + '%', 100 - pa >= 14); }
+      if (eloM.teams && eloM.teams[a] && eloM.teams[h]) { const ea = eloM.teams[a].elo, eh = eloM.teams[h].elo, hi = eh > ea ? h : ea > eh ? a : null;
+        put('tedge', hi ? `${hi} +${Math.abs(eh - ea)}` : 'Even');
+        for (const t of [a, h]) { put('telo:' + t, String(eloM.teams[t].elo)); put('trank:' + t, '#' + tRank(t)); } }
+      if (unitsOn && [['off', a], ['def', h], ['off', h], ['def', a]].every(([s, t]) => eloM.units[s][t])) for (const s of ['off', 'def']) for (const t of [a, h]) put(`urank:${s}:${t}`, ordinal(eloM.units[s][t].rank));
+      /* who is out (each group's sidelined) and how many expected starters are questionable */
+      for (const t of [a, h]) { const outs = Object.keys(eloP.groups).flatMap(k => (eloP.groups[k].sidelined || []).filter(x => x.team === t));
+        for (const x of outs) put('out:' + x.id, x.name);
+        if (outs.length) put('outn:' + t, String(outs.length));
+        const lu = (eloMu.lineups || {})[t], nq = lu ? (lu.players || []).filter(pid => (eloMu.q || {})[pid]).length : 0;
+        if (nq) put('qn:' + t, String(nq)); }
+      { const kicked = R.w.eloGameOn(g.game_id) || win !== undefined || etKick({ d: g.gameday, t: g.gametime }) <= R.w.Date.now();
+        const mine = R.w.eloMismatches().map((v, i) => ({ ...v, n: i + 1 })).filter(v => v.game_id === g.game_id);
+        if (+g.week === +eloMu.week && String(g.game_id).slice(0, 4) === String(eloMu.season) && !kicked && mine.length) {
+          put('mm1:' + mine[0].pid, (eloP.players[mine[0].pid] || {}).name || mine[0].pid); put('mm1score', mine[0].score.toFixed(1)); } }
+      const seen = new Set();
+      for (const el of md.querySelectorAll('[data-gs-n]')) { const k = el.dataset.gsN; seen.add(k);
+        if (!(k in want)) bad.push(`${k} reads '${txt(el)}', which the files do not give`);
+        else if (txt(el) !== want[k]) bad.push(`${k} reads '${txt(el)}', the files '${want[k]}'`); }
+      for (const k of need) if (!seen.has(k)) bad.push(`${k} (${want[k]}) is not shown`);
+      chk(bad.length === 0 && !!q('#gsMatch .gs-glance') && ['vote', 'elo', 'units', 'out', 'mism'].every(k => q(`#gsMatch [data-gs-gl="${k}"]`)),
+        `snapshot (${label}): the verdict or a card's summary is not the files': ${bad.slice(0, 5).join('; ')}`); }
+
+    /* the edge marks: the one mark (gs-better) sits on the higher rating and chance and the better
+       rank of each pair, nowhere else in those rows, and on neither side of a tie */
+    { const bad = [], mark = el => !!el && (el.classList.contains('gs-better') || !!el.querySelector('.gs-better'));
+      if (eloM.teams && eloM.teams[a] && eloM.teams[h]) {
+        const T = eloM.teams, rows = { elo: t => T[t].elo, rank: t => -tRank(t), avg: t => T[t].p_avg };
+        for (const [key, f] of Object.entries(rows)) { const va = f(a), vh = f(h), best = va == null || vh == null || va === vh ? null : va > vh ? a : h;
+          for (const [t, cls] of [[a, 'gs-a'], [h, 'gs-h']]) if (mark(q(`tr[data-gs-row="${key}"] td.${cls}`)) !== (best === t)) bad.push(`Team strength ${key}: ${t} is${best === t ? ' not' : ''} marked`); }
+        for (const key of ['tier', 'chg']) if (mark(q(`tr[data-gs-row="${key}"]`))) bad.push(`Team strength ${key} is marked`); }
+      if (unitsOn) { const U = eloM.units, all = U.stats || [];
+        const keys = [...new Set(all.filter(s => s.weight && s.side === 'off').map(s => s.key).concat(all.filter(s => s.weight && s.side === 'def').map(s => s.key)))];
+        for (const [o, d] of [[a, h], [h, a]]) {
+          if (U.off[o] && U.def[d]) { const ro = U.off[o].rank, rd = U.def[d].rank, best = ro === rd ? null : ro < rd ? 'off' : 'def';
+            for (const [s, t] of [['off', o], ['def', d]]) if (mark(q(`[data-gs-unit="${s}:${t}"]`)) !== (best === s)) bad.push(`${s}:${t} overall is${best === s ? ' not' : ''} marked`); }
+          for (const k of keys) {
+            const cells = [['off', o], ['def', d]].map(([s, t]) => ({ s, t, el: q(`[data-gs-stat="${s}:${t}:${k}"]`), m: all.find(x => x.side === s && x.key === k), e: ((U[s][t] || {}).stats || {})[k] || {} }));
+            for (const c of cells) {
+              if (!c.el) { bad.push(`${c.s}:${c.t}:${k} is not shown`); continue; }
+              const v = c.m ? fmtStat(c.e.v, c.m.fmt) : '–', r = c.e.rank != null ? ordinal(c.e.rank) : '';
+              if (txt(c.el.querySelector('[data-gs-sv]')) !== v || txt(c.el.querySelector('[data-gs-sr]')) !== r) bad.push(`${c.s}:${c.t}:${k} reads ${txt(c.el)}, the file ${v} ${r}`); }
+            const [co, cd] = cells, best = co.e.rank != null && cd.e.rank != null && co.e.rank !== cd.e.rank ? (co.e.rank < cd.e.rank ? co : cd) : null;
+            for (const c of cells) if (c.el && mark(c.el) !== (c === best)) bad.push(`${c.s}:${c.t}:${k} is${c === best ? ' not' : ''} marked`); } } }
+      chk(bad.length === 0, `snapshot (${label}): an edge mark or a stat of Offense vs defense is not the files': ${bad.slice(0, 5).join('; ')}`); }
+
+    /* every card folds: a button with its title and summary, aria-expanded and aria-controls
+       naming its body, the body hidden exactly when the button says it is closed */
+    { const bad = [];
+      for (const id of SNAP_CARDS) { const sec = q('#' + id), b = sec && sec.querySelector('.gs-shead > button[data-gs-fold]'), body = b && R.d.getElementById(b.getAttribute('aria-controls'));
+        if (!b || !body || !sec.contains(body)) { bad.push(id + ' has no fold'); continue; }
+        if ((b.getAttribute('aria-expanded') === 'true') === body.hidden) bad.push(`${id}: aria-expanded ${b.getAttribute('aria-expanded')} with its body ${body.hidden ? 'hidden' : 'shown'}`);
+        if (!txt(b.querySelector('.gs-sum'))) bad.push(id + ' has no summary'); }
+      chk(bad.length === 0 && !q('#gsMatch [data-gs-fold]'), `snapshot (${label}): a card does not fold to its summary, or the verdict folds: ${bad.join('; ')}`); }
   };
 
   const R = await run(st, undefined, wk => scoreboard(st, wk));
@@ -1521,6 +1595,28 @@ async function snapshotChecks() {
       const stays = !o.md.hidden;
       o.md.click(); await wait(20);
       chk(stays && o.md.hidden, 'snapshot: a click outside the window does not close it, or one inside does');
+      /* the cards fold and unfold: a click on a card's title, Open all and Close all; on a phone
+         (the narrow screen's media query) the window opens on the verdict with every card folded,
+         and Tab steps over a folded card's insides */
+      { const md = o.md, b = id => md.querySelector(`#${id} [data-gs-fold]`), shown = id => !R.d.getElementById(id + 'B').hidden, mm0 = R.w.matchMedia;
+        o.btn.click(); await wait(60);
+        const ok1 = SNAP_CARDS.every(shown);
+        b('gsUnits').click();
+        const ok2 = !shown('gsUnits') && b('gsUnits').getAttribute('aria-expanded') === 'false' && SNAP_CARDS.filter(x => x !== 'gsUnits').every(shown);
+        const all = md.querySelector('[data-gs-all]'), ok3 = !!all && all.dataset.gsAll === 'open';
+        all.click(); const ok4 = SNAP_CARDS.every(shown) && all.dataset.gsAll === 'close';
+        all.click(); const ok5 = SNAP_CARDS.every(id => !shown(id)) && !md.hidden;
+        R.d.getElementById('gsClose').click(); await wait(20);
+        R.w.matchMedia = mq => ({ matches: /max-width/.test(mq), media: mq, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
+        o.btn.click(); await wait(60);
+        const ok6 = SNAP_CARDS.every(id => !shown(id) && b(id).getAttribute('aria-expanded') === 'false') && !!md.querySelector('#gsMatch .gs-glance') && md.querySelector('[data-gs-all]').dataset.gsAll === 'open';
+        const f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && !x.closest('[hidden]'));
+        const ok7 = f.length >= SNAP_CARDS.length + 2 && !f.some(x => x.closest('.gs-secbody'));
+        b('gsTeams').click(); const ok8 = shown('gsTeams') && SNAP_CARDS.filter(x => x !== 'gsTeams').every(id => !shown(id));
+        R.w.matchMedia = mm0;
+        R.d.getElementById('gsClose').click(); await wait(20);
+        chk(ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7 && ok8 && R.d.activeElement === o.btn,
+          `snapshot: the cards do not fold and unfold, or a phone does not open on the verdict with the cards folded (${[ok1, ok2, ok3, ok4, ok5, ok6, ok7, ok8].join(' ')})`); }
       /* the links: Team Rankings, then Props on this game */
       o.btn.click(); await wait(60);
       o.md.querySelector('[data-gs-go="ratings"]').click(); await wait(60);
@@ -1564,7 +1660,26 @@ async function snapshotChecks() {
       const r = qPlaced(R, R.d.getElementById('gsModal'), g); n += r.n; r.sides.forEach(x => sides.add(x)); bad.push(...r.bad.map(b => `${g.game_id}: ${b}`));
       R.w.gameSnapshotClose(false); }
     chk(games.size > 0 && n > 0 && sides.size === 2 && bad.length === 0,
-      `snapshot: the questionable starters' Q's are not each with their own player in their team's column (${n} Q's in ${games.size} games, ${[...sides].join(' and ') || 'no'} column): ${bad.slice(0, 4).join('; ')}${bad.length > 4 ? ` (${bad.length} in all)` : ''}`); }
+      `snapshot: the questionable starters' Q's are not each with their own player in their team's column (${n} Q's in ${games.size} games, ${[...sides].join(' and ') || 'no'} column): ${bad.slice(0, 4).join('; ')}${bad.length > 4 ? ` (${bad.length} in all)` : ''}`);
+    /* and in each of those games and every game with a ranked player out, the verdict's Who's out
+       and the Starters summary: each player out by name, the count out and the count questionable,
+       as the files have them */
+    const withOuts = new Map(games);
+    for (const k of Object.keys(eloP.groups)) for (const x of eloP.groups[k].sidelined || []) { const lu = L[x.team]; const g = lu && st.schedule.find(y => y.game_id === lu.game_id); if (g) withOuts.set(g.game_id, g); }
+    const bad2 = []; let names = 0;
+    for (const g of withOuts.values()) {
+      R.w.gameSnapshot(g.game_id, null); await wait(20);
+      const md = R.d.getElementById('gsModal'), want = {};
+      for (const t of [g.away_team, g.home_team]) { const outs = Object.keys(eloP.groups).flatMap(k => (eloP.groups[k].sidelined || []).filter(x => x.team === t));
+        for (const x of outs) want['out:' + x.id] = x.name;
+        if (outs.length) want['outn:' + t] = String(outs.length);
+        const nq = L[t] ? (L[t].players || []).filter(pid => Q[pid]).length : 0; if (nq) want['qn:' + t] = String(nq); }
+      const seen = new Set();
+      for (const el of md.querySelectorAll('[data-gs-n^="out"],[data-gs-n^="qn:"]')) { const k = el.dataset.gsN; seen.add(k); if (/^out:/.test(k)) names++;
+        if (want[k] !== txt(el)) bad2.push(`${g.game_id}: ${k} reads '${txt(el)}', the files '${want[k] || 'nothing'}'`); }
+      for (const k of Object.keys(want)) if (!seen.has(k)) bad2.push(`${g.game_id}: ${k} (${want[k]}) is not shown`);
+      R.w.gameSnapshotClose(false); }
+    chk(withOuts.size > 0 && bad2.length === 0, `snapshot: who is out or questionable is not the files' (${names} names in ${withOuts.size} games): ${bad2.slice(0, 4).join('; ')}`); }
   /* the Elo files were read once, by the ELO Ratings tab, however often the window opened */
   for (const f of ['players', 'model', 'matchups']) { const n = R.fetched.filter(u => u.endsWith(`elo/data/${f}.json`)).length;
     chk(n === 1, `snapshot: elo/data/${f}.json was read ${n} times; the window reads the ELO Ratings tab's copy`); }
@@ -1597,7 +1712,7 @@ async function snapshotChecks() {
       for (const k of ['result', 'home_score', 'away_score']) delete x[k]; alt.schedule.push(x);
       const A = await run(alt, undefined, wk => scoreboard(alt, wk)); await wait(400);
       const o = await open(A, x);
-      chk(!!o.btn && !o.md.hidden && A.errs.length === 0 && ['gsMatch', 'gsTeams', 'gsUnits', 'gsPos', 'gsMism', 'gsFiles'].every(id => o.md.querySelector('#' + id)) && !/could not be drawn/.test(txt(o.md))
+      chk(!!o.btn && !o.md.hidden && A.errs.length === 0 && SNAP_SECS.every(id => o.md.querySelector('#' + id)) && !/could not be drawn/.test(txt(o.md))
         && /Wild Card/.test(txt(A.d.getElementById('gsTitle'))) && (+eloMu.week === 19 || /The matchups are for/.test(txt(o.md.querySelector('#gsMism')))),
         'snapshot: a playoff game\'s window does not draw, or does not say what the files have for it: ' + A.errs.join('; ') + ' ' + (o.md ? txt(o.md.querySelector('#gsMism')).slice(0, 120) : ''));
       A.w.close(); } }
