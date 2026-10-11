@@ -561,11 +561,15 @@ The panel is built from what
 the visitor ticks, each choice kept in the browser's own prop model state (`S.ui.pb`: the boxes, the
 games unticked, whether the games list is open; nothing else holds it): a mix, All (the default),
 Teams only or Players only, which sets five boxes, Moneyline, Spread, Game total, Player overs and
-Player unders (a touchdown and a ladder rung are overs; a box changed by hand shows the mix it makes,
-or Custom); and the week's games still to kick off, all ticked to start, with All and None. From those
+Player unders (a touchdown and a ladder rung are overs; a box changed by hand lights the mix it makes,
+or no mix at all: there is no Custom tag); and the week's games still to kick off, all ticked to start, with All and None. From those
 alone it builds four tiers, each on its own: Safe, the likeliest 2-leg parlay; Medium, Aggressive and
 Extreme, the 3-, 4- and 5-leg parlay with the best expected return (chance times payout) that lands at
-least 25%, 12% and 5% of the time (`PB_TIERS`). Under All nothing forces or caps a kind. A leg
+least 25%, 12% and 5% of the time (`PB_TIERS`); where no parlay of a level's size reaches its floor
+with any count of thin legs, the likeliest parlay of that size instead (`pbLikeliest`, chosen as Safe
+is: the fewest thin legs, then the highest chance by the builder's own sums), marked `likeliest` and
+ruled "the likeliest 3 legs" (4, 5) on its card, with its chance and price and no note about the floor
+(the owner's call, October 2026: every level shows a parlay). Under All nothing forces or caps a kind. A leg
 qualifies as the old Suggested parlays window's did (a real price, the model's chance 45-97% and 3
 points above the chance that price implies, the book's margin left in, market + form agreeing on a
 player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at
@@ -573,9 +577,9 @@ or above the book fill it, marked thin edge with a line saying what each kind la
 no market + form); never a leg below the book. A game total is never in a tier: it is priced at the
 book's own chance, so it has no edge to offer, and the Game total box only brings up the line saying
 so ("Game totals are priced at the book's own chance, so they never make a suggested parlay; add one
-by hand from a game's Game bets card."). One team bet a game, one leg a player, no line twice. A tier that cannot be built says why ("Only 3 legs on your picks: tick more games or
+by hand from a game's Game bets card."). One team bet a game, one leg a player, no line twice. A tier is empty only when the picks do not make that many legs, and then says why ("Only 3 legs on your picks: tick more games or
 bet types", or, with player bets ticked before any of the ticked games has a player price, "No
-player prices yet: they are pulled within a day of each kickoff."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
+player prices yet: they are pulled on game day or the day before, Sunday's games on Saturday morning."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
 builder (exactly those legs into `S.parlay`, on the Bet amount) shows the same numbers and pays what
 the tier said; Finish opens the parlay card on the Bet amount. The search is a beam over a pairwise copula approximation, with only the

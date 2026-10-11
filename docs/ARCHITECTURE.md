@@ -380,12 +380,25 @@ drawn from it is NaN. The panel builds from
 what the visitor ticks, kept in the prop model's state (`S.ui.pb`: `k`, the five boxes; `off`, the
 games unticked; `gx`, whether the games list is open): a mix -- All (the default), Teams only, Players only -- which sets
 five boxes, Moneyline (`ml`), Spread (`ats`), Game total (`total`), Player overs and Player unders (a
-touchdown and a ladder rung are overs), a box changed by hand showing the mix it makes or Custom;
+touchdown and a ladder rung are overs), a box changed by hand lighting the mix it makes, or no mix
+at all (`pbMix` answers `custom` inside; there is no Custom tag);
 and the week's games still to kick off (away @ home, the viewer's own time), all ticked to start,
 with All and None. `getPbTiers()` builds four tiers from those alone (`PB_TIERS`): Safe, the
 likeliest 2-leg parlay; Medium, Aggressive and Extreme, the 3-, 4- and 5-leg parlay with the best
 expected return (the model's chance times the book's price) that lands at least 25%, 12% and 5% of
-the time. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
+the time (`pbBestReturn`, which Safe, with no floor, also is). Where no parlay of a level's size
+clears its floor with any count of thin legs, the level is the likeliest parlay of that size instead
+(`pbLikeliest`): chosen as Safe is, the preferred legs alone first and then the fewest thin legs, by a
+beam on the search's own chance (`PB_WIDE`, 24 wide), its best three (`PB_LIKELY`) worked with the
+builder's own `parlayProb` and the highest of those taken (legs in different games are a plain
+product, so on spreads and moneylines it is the likeliest outright). The tier carries `likeliest:
+true`, and its card's rule reads "the likeliest 3 legs" (4, 5) where a level over its floor reads
+"best return that lands 25%+" and Safe "the likeliest pair"; the card shows its chance and price like
+any other and says nothing about the floor (the owner's call, October 2026: every level shows a
+parlay, "just state the percentage"). The panel's footer says so in a line. On this week's spreads
+alone (eight covers at 56-62%) that is Medium 21% and Aggressive 12%, where both were empty; in
+Chromium a full Sunday slate builds in under 0.1 s with All ticked and about 0.2 s with every level
+forced onto the likeliest on one game's correlated player legs. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
 points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
 stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
 fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
@@ -395,11 +408,15 @@ under the book. A game total is never a candidate: it is priced at the book's ow
 **game bets** below), which sits under the chance its price implies, so `pricedLegs()` leaves the
 totals out, and the Game total box only brings up a line saying they never make a suggested parlay
 and are added by hand from a game's Game bets card. One team bet a game, one leg a player, no line
-twice. A tier that
-cannot be built says why, never offering a smaller parlay; when player bets are ticked and none of
+twice. A tier is
+empty only when the picks do not make that many legs (`pbMaxLegs` under its size), and then says why
+(`pbWhy`), never offering a smaller parlay; when player bets are ticked and none of
 the ticked games has a player price on file yet (`plGames` from `pbPool`, before the week's pulls),
-that is the reason given ("No player prices yet: they are pulled within a day of each kickoff."
-under Players only, or after the usual reason under a mix), never "tick more". The search is
+that is the reason given ("No player prices yet: they are pulled on game day or the day before,
+Sunday's games on Saturday morning.", `PB_NO_PL`: since PR #213 Thursday's game is priced on
+Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and the whole Sunday
+slate on Saturday morning) under Players only, or after the usual reason under a mix, never "tick
+more". The search is
 a beam over a pairwise approximation of the copula (each correlated pair's joint chance exact, by a
 Plackett integral), its finalists worked by `parlayProb` with fewer draws, and the winner by the
 builder's own `parlayProb` and `parlayDec` on the legs in the builder's order, so **Add to
