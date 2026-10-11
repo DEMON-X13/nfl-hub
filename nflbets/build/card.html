@@ -62,6 +62,13 @@
 .pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
 .pc-foot b{color:#4F607A;font-weight:600}
 .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.pc-actions a.btn{text-align:center}
+/* what Open in DraftKings opens, and the legs it cannot, under the buttons */
+.pc-dk{font-size:12.5px;color:var(--ink-2);margin:10px 0 0;line-height:1.5}
+.pc-dk:empty{display:none}
+.pc-dk p{margin:0 0 4px}
+.pc-dk ul{margin:2px 0 4px;padding-left:18px}
+.pc-dk a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px}
 .pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
 .pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
 @media(max-width:430px){
@@ -76,10 +83,13 @@
     <div class="pc-top"><h2 id="pcTitle">Your parlay card</h2><span class="pc-grow"></span><button type="button" class="btn quiet" id="pcClose">Close</button></div>
     <div id="pcView"></div>
     <div class="pc-actions">
+      <a class="btn pc-dkbtn" id="pcDk" href="https://sportsbook.draftkings.com/" target="_blank" rel="noopener" hidden>Open in DraftKings</a>
+      <button type="button" class="btn quiet" id="pcLink" title="Send this parlay and its DraftKings link to someone">Share link</button>
       <button type="button" class="btn go" id="pcDownload">Download image</button>
       <button type="button" class="btn quiet" id="pcShare" hidden>Share or save to Photos</button>
       <button type="button" class="btn quiet" id="pcAgain" title="Clear the Parlay Builder and start a new parlay">Start over</button>
     </div>
+    <div class="pc-dk" id="pcDkNote"></div>
     <p class="pc-msg" id="pcMsg" role="status" aria-live="polite"></p>
     <p class="pc-note">Yours alone: this card is not saved anywhere, on this site or in X&#8217;s parlays. Change the builder and finish again for a new one.</p>
   </div>
