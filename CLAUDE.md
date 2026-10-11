@@ -125,7 +125,9 @@ bakes only this season's games, so bumping that line is the whole change: `nflbe
 reads it (and stops if its shape changes) and writes its KEY into `nflbets/build/storage.js`, so
 neither needs an edit.
 
-Price matching turns a published run red only for a book name that could be two players, two
+Price matching turns a published run red only for a book name that could be two players (two in
+the game's first matching tier, printed name, then legal first name, then short, nickname or swapped,
+and not settled by only one of them playing a position the book prices), two
 names placed on one player's same price, or misses too many to be a roster a day behind (on the
 games still to come, more than 10% of one game's player price rows or more than four names); a
 few rows for players the roster has no row for yet are logged and kept in the payload's

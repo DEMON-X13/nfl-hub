@@ -1,5 +1,5 @@
 {
-  "_": "A first name a book prints for a player and the first name the roster gives him: given name -> the nicknames for it that neither start it nor share its first four letters (Drew for Andrew; Cam for Cameron and Kenny for Kenneth need no entry, the short-form rule takes them). Read by names.py and by audit.js, so the job and the audit match by one table. A nickname matches only with the same surname, only among the players of the line's own game, and only when no name there is exactly the book's; two candidates are ambiguous and reported.",
+  "_": "A first name a book prints for a player and the first name the roster gives him: given name -> the nicknames for it that neither start it nor share its first four letters (Drew for Andrew; Cam for Cameron and Kenny for Kenneth need no entry, the short-form rule takes them). Read by names.py and by audit.js, so the job and the audit match by one table. A nickname matches only with the same surname, only among the players of the line's own game, and only when no name there is the book's exactly or as his legal first name and surname; two candidates are ambiguous and reported, unless only one of them plays a position the book prices.",
   "andrew": ["drew", "andy"],
   "anthony": ["tony"],
   "michael": ["mike", "mikey"],

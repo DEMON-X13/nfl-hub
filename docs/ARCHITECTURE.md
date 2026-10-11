@@ -93,10 +93,12 @@ props/
   build/season.py                the season, read from SEASON in part2.js (the one place it
                                  is set), and the raw files named after it
   build/names.py                 a book's player name onto a player id, within the line's
-                                 own game (mktbuild.py and the price rows use it): any of
-                                 his names, a short first name or a nickname
-                                 (build/nicknames.json, read by audit.js too), or a
-                                 two-word name swapped
+                                 own game (mktbuild.py and the price rows use it), in
+                                 tiers: a printed name, then his legal first name with
+                                 his surname, then a short first name or a nickname
+                                 (build/nicknames.json, read by audit.js too) or a
+                                 two-word name swapped; two in a tier are ambiguous
+                                 unless only one plays a position the book prices
   build/test_unmatched.py        the name rule and when unplaced price rows turn a run red
   data/mktbuild.py               every week's wk{W}_lines.csv onto the players (weekly.py
                                  runs it for every week on every run)
@@ -510,7 +512,8 @@ model pieces), `mkt_scale` and `tdrate` (from `data/scale.json` and `data/tdrate
 `tdmult` (the touchdown cap), `norm` (league means by position group, and the implied-points
 spread), `injuries` (this week's report in full, with practice status, and earlier weeks'
 Outs and Doubtfuls), `roster` (every skill player's team, roster status, name and the week
-the row is for, then his other names, `names_of` in `names.py`, which the audit matches book
+the row is for, then where they differ his football name with his surname (or null) and
+his legal form, `names_of` in `names.py`, which the audit matches book
 names against, and anyone else the page can show, whatever position the roster gives him),
 `depth` + `depth_dt`, `price_pull` + `credits` (the last price pull), `season`, `week` and
 `season_over`, `not_posted` (`stats` and/or `injuries` when nflverse has not posted this

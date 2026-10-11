@@ -48,9 +48,10 @@ What it does, in order:
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
 Anything else wrong is a problem that fails the run after the commit. For the price rows that
-means only what needs a person (price_problems): a name that could be two players, two names
-on one player's price, or misses too many to be a signing or two the roster has not caught up
-with; a few rows no player takes are logged and listed in the payload's unmatched.
+means only what needs a person (price_problems): a name that could be two players (names.py
+says when), two names on one player's price, or misses too many to be a signing or two the
+roster has not caught up with; a few rows no player takes are logged and listed in the payload's
+unmatched, and a row placed by anything looser than a printed name is logged too.
 Nothing here ever prints the key.
 """
 import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetime, re, tempfile
@@ -495,12 +496,18 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     # list or released off the board, practice-squad players off the starters, and puts a
     # player traded or signed elsewhere on his new team
     rrows=raw['rrows']
-    # [team, status, name, the week the row is for, and then his other names (names.names_of: the
-    # football name with the surname, his first name with the surname, where either differs)]: INA
-    # (a game-day inactive) holds for that week only; the audit checks a book's name against every
-    # name the entry carries the way the matcher does
+    # [team, status, name, the week the row is for, then his football name with the surname where it
+    # differs (null when only the next is there), then his legal form, his first name with the
+    # surname, where that is neither (names.names_of)]: INA (a game-day inactive) holds for that week
+    # only; the audit checks a book's name against the names the entry carries the way the matcher
+    # does, the printed ones before the legal form
     def entry(r):
-        return [r['team'],r['status'],r['full_name'],int(float(r.get('week') or 0))]+[n for n in names.names_of(r) if names.norm(n)!=names.norm(r['full_name'])]
+        e=[r['team'],r['status'],r['full_name'],int(float(r.get('week') or 0))]
+        printed,legal=names.names_of(r)
+        fb=[n for n in printed if names.norm(n)!=names.norm(r['full_name'])]
+        if legal: e+=[fb[0] if fb else None,legal]
+        elif fb: e.append(fb[0])
+        return e
     # a skill position on the roster, or any player the page can show (his stats, last season's
     # table, the depth chart) whatever position the roster gives him: the page rules a player out
     # as "on no roster" when the table lacks him, so it must not lack one who is on a roster
@@ -563,7 +570,11 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
             elif to_come: misses.append((r['player'],gid,how))
     unmatched,probs,notes=price_problems(misses,placed,rows_in)
     problems.extend(probs)
-    if loose: say(f"  price rows placed on a player by a short, nickname or swapped name: {'; '.join(sorted(loose))}")
+    if loose: say(f"  price rows placed on a player by his legal first name, a short first name or a nickname, or swapped words: {'; '.join(sorted(loose))}")
+    # a name two players in the game share, taken as the only one of them the book prices (the
+    # roster keeps a released defensive back of a receiver's name all season), main lines and prices
+    split=sorted({f"{b} ({g}) as {pid}, not {', '.join(o)}" for (b,_,g),(pid,o) in pool.by_position.items() if g in open_games})
+    if split: say(f"  a name two players in the game share, placed on the only one at a position the book prices: {'; '.join(split)}")
     for n in notes: say('  '+n)
     pay['prices']=prices; pay['unmatched']=unmatched
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over

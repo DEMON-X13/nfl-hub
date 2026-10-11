@@ -10,22 +10,34 @@ rushing lines were graded as Jordan Love's in the Track Record.
 Now a name is looked for only among the players of the game the line belongs to, in a table
 built from this season's roster file (rookies included, and every status, so a line from a
 past week finds a player since released) and, for a past week, the team he actually played
-for that week. The book's name has to be one of the player's names (names_of: his full name,
-his football name with his surname, and his own first name with his surname, which is how
-DraftKings prints Zonovan Knight, whom the roster calls Bam Knight), or differ from one only in a
-short first name (Cam for Cameron, Kenny for Kenneth: one starts the other, or they share four
-letters; or a nickname in nicknames.json: Drew for Andrew, which is how DraftKings prints Andrew
-Ogletree), or be a two-word name with its words swapped (DraftKings prints Jordan James of the
-49ers as James Jordan; nobody of that name is in the league). Every week of 2026 from week 2
-priced those three and none of their rows was placed. An exact name is taken first; a short,
-nickname or swapped one only when no name in the game is exactly the book's. One player matches
-or none does: two is ambiguous, and an ambiguous name is never guessed at (weekly.py reports it).
+for that week. The names a player has (names_of) are of two kinds. His printed names are the
+ones he plays under: his full name, and his football name with his surname. His legal form is
+his own first name with his surname where that is neither, which is how DraftKings prints
+Zonovan Knight, whom the roster calls Bam Knight. The legal form is a weaker claim than a printed
+name: the Rams' Mike Thomas of 2019 is a Michael too, and the book's "Michael Thomas" that week
+was the Saints' Michael Thomas, never him. So the book's name is tried in tiers, each taken only
+when the tier before found nobody in the game:
+  exact    one of a player's printed names;
+  first    his legal form;
+  short    one of his names with only a short first name (Cam for Cameron, Kenny for Kenneth:
+           one starts the other, or they share four letters; or a nickname in nicknames.json:
+           Drew for Andrew, which is how DraftKings prints Andrew Ogletree), or
+  swapped  a two-word name with its words swapped (DraftKings prints Jordan James of the 49ers
+           as James Jordan; nobody of that name is in the league).
+Every week of 2026 from week 2 priced those three and none of their rows was placed. In a tier,
+one player matches or none does. Two are ambiguous, unless exactly one of them plays a position
+the book prices (season.SKILL, by the roster's position or the stats'): the roster file keeps a
+released player's row all season, so Carolina's defensive back Devonta Smith stood beside the
+Eagles' receiver DeVonta Smith in every Panthers-Eagles game, and the book does not price a
+defensive back. Otherwise an ambiguous name is never guessed at (weekly.py reports it).
 
-The audit applies the same rule (nameRule in audit.js, reading the same nicknames.json) to every
-line and price the payload carries, so a looser rule here that the audit lacks fails the audit.
+The audit applies the same rule (nameRule in audit.js, reading the same nicknames.json, with
+each player's printed names and legal form kept apart) to every line and price the payload
+carries, so a looser rule here that the audit lacks fails the audit.
 """
 import csv, json, os, re, unicodedata
 from collections import defaultdict
+from season import SKILL
 
 _SUFFIX = re.compile(r'\s+(jr|sr|ii|iii|iv|v)$')
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -60,34 +72,37 @@ def _short_form(a, b):
 
 
 def names_of(r):
-    """every name a roster row gives the player, his full name first, each once: the football name
-    with his surname where the football name is not his first name, and his first name with his
-    surname where that is not his full name. weekly.py writes the others into the payload's roster
-    entry, where the audit reads them."""
+    """(printed, legal) for a roster row: his printed names, the full name first and then his
+    football name with his surname where the football name is not his first name, each once; and
+    his legal form, his first name with his surname, where that is none of them ('' otherwise).
+    weekly.py writes the others into the payload's roster entry, where the audit reads them."""
     full = (r.get('full_name') or '').strip()
     first, last = (r.get('first_name') or '').strip(), (r.get('last_name') or '').strip()
     fb = (r.get('football_name') or '').strip()
-    out, seen = [], set()
-    for n in (full, f"{fb} {last}".strip() if fb and fb != first else '', f"{first} {last}" if first and last else ''):
+    printed, seen = [], set()
+    for n in (full, f"{fb} {last}".strip() if fb and fb != first else ''):
         k = norm(n)
-        if k and k not in seen: seen.add(k); out.append(n)
-    return out
+        if k and k not in seen: seen.add(k); printed.append(n)
+    legal = f"{first} {last}" if first and last else ''
+    return printed, ('' if norm(legal) in seen else legal)
 
 
-def name_rule(book, full, alias=None):
-    """'exact', 'short', 'swapped' or None: is this book name this player? alias is another of
-    his names, or a list of them"""
+def name_rule(book, full, alias=None, legal=None):
+    """'exact', 'first', 'short', 'swapped' or None: is this book name this player, and how? alias
+    is another of his printed names, or a list of them; legal is his legal form (names_of)"""
     others = alias if isinstance(alias, (list, tuple)) else ([alias] if alias else [])
-    return _rule(norm(book), tuple(norm(n) for n in [full, *others] if n))
+    return _rule(norm(book), tuple(norm(n) for n in [full, *others] if n), norm(legal))
 
 
-def _rule(b, names):
-    """b and names already normalised: the closest way b is one of the names, or None"""
+def _rule(b, printed, legal=''):
+    """b, the printed names and the legal form already normalised: the closest way b is one of
+    the player's names, or None"""
     if not b: return None
-    if b in names: return 'exact'
+    if b in printed: return 'exact'
+    if legal and b == legal: return 'first'
     bp = b.split()
     if len(bp) < 2: return None
-    split = [f.split() for f in names]
+    split = [f.split() for f in (*printed, legal) if f]
     if any(len(pp) >= 2 and bp[1:] == pp[1:] and _short_form(bp[0], pp[0]) for pp in split): return 'short'
     if len(bp) == 2 and any(pp == bp[::-1] for pp in split): return 'swapped'
     return None
@@ -100,11 +115,14 @@ class Pool:
     sched: the payload's schedule (id, w, a, h)."""
 
     def __init__(self, roster, stats, sched):
-        self.who = {}                       # gsis -> [his names (names_of), roster team]
+        self.who = {}                       # gsis -> [his printed names, roster team, his legal form]
+        self.skill = set()                  # who plays a position the book prices, by the roster or the stats
         for r in roster:
             g = (r.get('gsis_id') or '').strip()
             if not g: continue
-            self.who[g] = [names_of(r), (r.get('team') or '').strip()]
+            printed, legal = names_of(r)
+            self.who[g] = [printed, (r.get('team') or '').strip(), legal]
+            if (r.get('position') or '').strip().upper() in SKILL: self.skill.add(g)
         self.played = {}                    # (week, gsis) -> team he played for that week
         for r in stats:
             g = (r.get('player_id') or '').strip()
@@ -112,11 +130,13 @@ class Pool:
             except ValueError: continue
             if not g or not w: continue
             self.played[(w, g)] = (r.get('team') or '').strip()
-            if g not in self.who: self.who[g] = [[(r.get('player_display_name') or '').strip()], (r.get('team') or '').strip()]
+            if g not in self.who: self.who[g] = [[(r.get('player_display_name') or '').strip()], (r.get('team') or '').strip(), '']
+            if (r.get('position') or '').strip().upper() in SKILL: self.skill.add(g)
         self.games = {g['id']: g for g in sched}
         self._cands = {}
         self.week_teams = defaultdict(set)
         for g in sched: self.week_teams[int(g['w'])] |= {g['a'], g['h']}
+        self.by_position = {}               # (book, week, game) -> (the one taken, the others): see _one
 
     def team_in(self, week, gsis):
         return self.played.get((week, gsis)) or self.who.get(gsis, [None, None])[1]
@@ -124,38 +144,55 @@ class Pool:
     def candidates(self, week, teams):
         key = (week, tuple(sorted(teams)))
         if key not in self._cands:
-            self._cands[key] = [(g, tuple(norm(n) for n in v[0])) for g, v in self.who.items() if self.team_in(week, g) in teams]
+            self._cands[key] = [(g, tuple(norm(n) for n in v[0]), norm(v[2])) for g, v in self.who.items() if self.team_in(week, g) in teams]
         return self._cands[key]
 
+    def _one(self, key, *sets):
+        """the one player of the first of sets (each narrower than the one before) that has just
+        one; else the one player of a set at a position the book prices (a receiver beside a
+        defensive back of the same name); else None: ambiguous. A tie broken by position is kept
+        in by_position for the run's log."""
+        for ids in sets:
+            if len(ids) == 1: return next(iter(ids))
+        for ids in sets:
+            skill = sorted(ids & self.skill)
+            if len(skill) == 1:
+                self.by_position[key] = (skill[0], sorted(ids - {skill[0]}))
+                return skill[0]
+        return None
+
     def match(self, book, week, gid=None):
-        """(gsis, how) or (None, 'unmatched' | 'ambiguous'). how is 'exact', 'short' (a short
-        first name or a nickname) or 'swapped'. 'unmatched' is nobody in the game by any rule (a
-        player the pool has no row for there, such as a signing the roster file has not caught up
-        with, or a name no rule reaches); 'ambiguous' is two or more players the name could be.
-        Without the game only an exact name among the week's players will do."""
+        """(gsis, how) or (None, 'unmatched' | 'ambiguous'). how is the tier the name was found in:
+        'exact' (a printed name), 'first' (his legal form), 'short' (a short first name or a
+        nickname) or 'swapped'; each tier is tried only when the one before found nobody.
+        'unmatched' is nobody in the game by any rule (a player the pool has no row for there, such
+        as a signing the roster file has not caught up with, or a name no rule reaches);
+        'ambiguous' is two or more players in the first tier that has any, none or several of them
+        at a position the book prices. Without the game only an exact or legal name among the
+        week's players will do, or a short one among those who played that week."""
         g = self.games.get(gid) if gid else None
         teams = {g['a'], g['h']} if g else self.week_teams.get(week, set())
-        cands, b = self.candidates(week, teams), norm(book)
+        cands, b, key = self.candidates(week, teams), norm(book), (book, week, gid)
+        hit = {}
+        for c in cands:
+            k = _rule(b, c[1], c[2])
+            if k: hit[c[0]] = k
         if not g:
             # a line from before the lines carried their game: the whole week's players, and
             # where a name is shared, or is a short form, only the ones who played that week
-            cands = [c for c in cands if _rule(b, c[1])]
-            played = [c for c in cands if (week, c[0]) in self.played]
-            for pool, kinds in ((cands, ('exact',)), (played, ('exact',)), (played, ('exact', 'short'))):
-                hit = {c[0] for c in pool if _rule(b, c[1]) in kinds}
-                if len(hit) == 1: return hit.pop(), kinds[-1]
-            return None, ('ambiguous' if len({c[0] for c in cands}) > 1 else 'unmatched')
-        how = defaultdict(set)
-        for c in cands:
-            k = _rule(b, c[1])
-            if k: how[k].add(c[0])
-        if len(how['exact']) == 1: return next(iter(how['exact'])), 'exact'
-        if how['exact']: return None, 'ambiguous'
-        loose = how['short'] | how['swapped']
-        if len(loose) == 1:
-            pid = next(iter(loose))
-            return pid, ('short' if pid in how['short'] else 'swapped')
-        return None, ('ambiguous' if loose else 'unmatched')
+            played = {p for p in hit if (week, p) in self.played}
+            for tier, among in (('exact', None), ('first', None), ('short', played)):
+                ids = {p for p, k in hit.items() if k == tier and (among is None or p in among)}
+                if not ids: continue
+                pid = self._one(key, ids, ids & played)
+                return (pid, tier) if pid else (None, 'ambiguous')
+            return None, ('ambiguous' if len(hit) > 1 else 'unmatched')
+        for tier in (('exact',), ('first',), ('short', 'swapped')):
+            ids = {p for p, k in hit.items() if k in tier}
+            if not ids: continue
+            pid = self._one(key, ids)
+            return (pid, hit[pid]) if pid else (None, 'ambiguous')
+        return None, 'unmatched'
 
 
 _TEAM_ROW = re.compile(r'(d/st|defen[cs]e)$', re.I)
