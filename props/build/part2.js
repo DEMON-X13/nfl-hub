@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v90 \u00b7 2026-10-11';
+const APP_BUILD='app v94 \u00b7 2026-10-11';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -189,8 +189,9 @@ function gameBet(g,team,kind){
    once and never on the season in play. It prices a total on a number other than the posted
    one, Normal(posted total, 13.2), and nothing else. The book's price for a side is the over or
    under odds the payload carries beside the total (nflverse's, or DraftKings' with its own
-   number); with none on file the leg is shown at an estimated -110. A total is never in a
-   suggested parlay: at the book's own chance it has no edge for one to find. */
+   number); with none on file the leg is shown at an estimated -110. At the book's own chance
+   a total has no edge, so a suggested parlay takes one only as the last fill, where the legs with
+   an edge cannot make a level, and marks it no edge (pbPool's market legs, pbTier). */
 const TOTAL_SD=13.2, TOTAL_EST=-110;
 function modelTotal(g){ return modelPoints(g.a,g.h,false)+modelPoints(g.h,g.a,true); }
 /* the market's chance of the over on the posted total: both prices with the margin out, else 50% */

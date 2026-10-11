@@ -549,7 +549,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(/Parlay Builder|-leg parlay/.test(txt(pb.firstElementChild.querySelector('h2'))), 'the builder is not the first card under the panel: ' + txt(pb.firstElementChild));
   chk(!/one line per stat per player|pulled from the odds market twice a week/.test(txt(pb)) && !pb.querySelector('.card ul'), 'the how-to list is still under the builder');
   /* "the likeliest" worked out in full: where no two legs that could share a parlay move together
-     (different games, or one team bet a game), every parlay's chance is a plain product, so every
+     (different games, or a game's side and its total), every parlay's chance is a plain product, so every
      parlay of a likeliest tier's size with as many thin legs is worked with parlayProb and none may
      land likelier. That holds whatever the legs are priced at, so a fallback chosen by any other
      measure (the best return under the floor, say) fails it on the week's own picks. Bounded, so
@@ -565,9 +565,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      why, and every leg is of a ticked kind and game, has not kicked off and is never rated below the book */
   if (hasPb) { const Sx = w.eval('S'), games = w.eval('pbGames()'), U = () => Sx.ui.pb, KINDS = ['ml', 'ats', 'total', 'over', 'under'];
     const kindOf = w.eval('pbKind'), mlProb = w.eval('mlProb'), isG = w.eval('isGameLeg'), started = w.eval('gameStarted');
-    /* the legs the picks make, and the most a parlay can take of them (one a player, one team bet a game) */
+    /* the legs the picks make, and the most a parlay can take of them (one a player, one side and one total a game) */
     const maxLegs = () => { const u = U(), on = games.filter(g => !u.off.includes(g.id));
-      if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return w.eval('pbMaxLegs')([...p.pref, ...p.thin]); };
+      if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return w.eval('pbMaxLegs')([...p.pref, ...p.thin, ...(p.mkt || [])]); };
     /* what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
        return, a level none of whose parlays reaches its floor the likeliest of its size */
     const ruleFor = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+` : 'the likeliest pair';
@@ -583,14 +583,20 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(t.legs.length === t.n && new Set(t.legs.map(l => l.key)).size === t.n, `${lab}: the ${t.id} tier is not ${t.n} different lines`);
         chk(t.legs.every(l => u.k[kindOf(l)] && !u.off.includes(l.gid) && games.some(g => g.id === l.gid) && !started(Sx.sched.find(g => g.id === l.gid))),
           `${lab}: the ${t.id} tier has a leg of a kind or a game not ticked, or one that has kicked off`);
-        chk(t.legs.every(l => l.src === 'real' && l.p >= mlProb(l.price) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price or rated below the book`);
-        chk(!t.legs.some(l => l.stat === 'total'), `${lab}: the ${t.id} tier holds a game total, which is priced at the book's own chance`);
-        chk(new Set(t.legs.filter(isG).map(l => l.gid)).size === t.legs.filter(isG).length && new Set(t.legs.filter(l => !isG(l)).map(l => l.pid)).size === t.legs.filter(l => !isG(l)).length,
-          `${lab}: the ${t.id} tier has two game bets on one game, or two legs on one player`);
+        chk(t.legs.every(l => l.src === 'real' && (l.market || l.p >= mlProb(l.price)) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price or rated below the book`);
+        /* a total only as a market leg, marked no edge, and only where the legs with an edge cannot make the level */
+        chk(t.legs.every(l => (l.stat === 'total') === !!l.market) && (t.mkt || 0) === t.legs.filter(l => l.market).length
+          && (!t.mkt || w.eval('pbTier')(w.eval('PB_TIERS').find(s => s[0] === t.id), { pref: pool.pref, thin: pool.thin, mkt: [] }, new Map()) === null),
+          `${lab}: the ${t.id} tier holds a total that is not a market leg, or took one where the legs with an edge make the level`);
+        { const sd = t.legs.filter(l => isG(l) && l.stat !== 'total'), tt = t.legs.filter(l => l.stat === 'total'), pl = t.legs.filter(l => !isG(l));
+          chk(new Set(sd.map(l => l.gid)).size === sd.length && new Set(tt.map(l => l.gid)).size === tt.length && new Set(pl.map(l => l.pid)).size === pl.length,
+            `${lab}: the ${t.id} tier has two sides or two totals on one game, or two legs on one player`); }
         chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.likeliest || t.corr >= t.floor) && (!t.likeliest || t.floor > 0),
           `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor without being the likeliest of its size`);
         /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */
-        if (t.likeliest || !t.floor) provedLikeliest(lab, t, [...pool.pref, ...pool.thin]);
+        if ((t.likeliest || !t.floor) && !t.mkt) provedLikeliest(lab, t, [...pool.pref, ...pool.thin]);
+        /* a level with totals takes exactly as many as the legs with an edge leave to fill */
+        if (t.mkt) chk(t.mkt === Math.max(0, t.n - w.eval('pbMaxLegs')([...pool.pref, ...pool.thin])), `${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave fewer to fill`);
         const card = d.querySelector(`#pbPanel .pb-tier.${t.id}`);
         chk(!!card && card.querySelectorAll('.pb-legs li').length === t.n && !!card.querySelector(`[data-pb-add="${t.id}"]`) && !!card.querySelector(`[data-pc-finish="pb|${t.id}"]`),
           `${lab}: the ${t.id} card does not show its legs with Add to builder and Finish`);
@@ -598,9 +604,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         if (card) { const rule = card.querySelector('.pb-rule'), rest = card.cloneNode(true); rest.querySelectorAll('.pb-legs, .pb-thin, .pb-rule').forEach(x => x.remove());
           chk(!!rule && txt(rule) === ruleFor(t) && ![...card.querySelectorAll('p')].some(p => !p.classList.contains('pb-thin')) && !/floor|usual|below|short of|of the time|%\+/i.test(txt(rest)),
             `${lab}: the ${t.id} card's rule reads "${rule ? txt(rule) : ''}", not "${ruleFor(t)}", or it carries a note: ${txt(rest).slice(0, 140)}`); } }
-      /* with Game total ticked, one line says why no total is ever in a tier (and only then) */
-      chk(txt(panel).includes('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.') === !!u.k.total,
-        `${lab}: ${u.k.total ? 'Game total is ticked and the panel does not say totals never make a suggested parlay' : 'Game total is not ticked and the panel still says totals never make one'}`);
+      /* with Game total ticked, one line says what a total in a tier is (and only then) */
+      chk(txt(panel).includes('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.') === !!u.k.total,
+        `${lab}: ${u.k.total ? 'Game total is ticked and the panel does not say a total has no edge and only fills' : 'Game total is not ticked and the panel still speaks of totals'}`);
       return built; };
     if (!games.length) chk(/no game is left|nothing left to build from/.test(txt(panel)), 'with no game to come the panel does not say so: ' + txt(panel).slice(0, 160));
     else {
@@ -648,6 +654,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       await wait(60);
       const built = hold('made-up lines');
       chk(built >= 2, 'with a made-up line on every starter, fewer than two tiers were built');
+      /* Game total alone, as the owner ticked it: every level the priced totals make legs for is
+         built of totals only, each marked no edge, and its card says why they are there */
+      { const keepK = JSON.stringify(U().k); for (const k of KINDS) U().k[k] = k === 'total'; w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
+        const nT = new Set(w.eval('pbPool(pbGames())').mkt.map(l => l.gid)).size, rT = w.eval('getPbTiers()');
+        hold('made-up lines, Game total alone');
+        chk((nT >= 2 || games.length < 3) && rT.tiers.every(x => x.n > nT ? !x.legs : (!!x.legs && x.legs.every(l => l.market && l.stat === 'total') && x.mkt === x.n)),
+          `with only Game total ticked, a level the totals make legs for was not built of totals alone (${nT} totals priced): ` + rT.tiers.map(x => x.why || x.legs.map(l => l.label).join('+')).join(' / '));
+        for (const x of rT.tiers.filter(x => x.legs)) { const c = d.querySelector(`#pbPanel .pb-tier.${x.id}`);
+          chk(!!c && [...c.querySelectorAll('.pb-legs li')].every(li => /no edge/i.test(txt(li))) && /because your picks do not make a parlay of this size from legs with an edge/.test(txt(c)),
+            `the ${x.id} card does not mark its totals no edge or say why they are there`); }
+        Object.assign(U().k, JSON.parse(keepK)); w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40); }
       const t = w.eval('getPbTiers()').tiers.filter(x => x.legs).slice(-1)[0];
       /* the Bet amount box, at the top of the panel's controls: an amount of the visitor's own,
          which every tier (the panel's four and the Elo picks') pays on as it is typed, which a bad
