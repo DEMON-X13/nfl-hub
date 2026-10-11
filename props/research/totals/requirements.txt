@@ -1,0 +1,6 @@
+# the totals study, pinned to the versions it ran on (2026-10-10/11), so a re-run does not move with a library
+numpy==2.4.6
+pandas==3.0.6
+pyarrow==26.0.0
+scipy==1.17.1
+statsmodels==0.15.0
