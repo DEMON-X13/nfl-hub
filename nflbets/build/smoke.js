@@ -676,10 +676,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           const x = w.eval(`pbShownTier('${T.id}')`);
           chk(!!x && !!x.legs && x.legs.some(l => idOf(l) === lid) && x.legs.map(idOf).join() !== T.legs.map(idOf).join() && x.legs.every(l => txt(cardOf()).includes(l.name)),
             'New legs on the page did not keep the locked leg, turn the rest, or draw them');
+          /* the turned card says it is chosen from the legs left beside the lock */
+          const rule = txt(cardOf().querySelector('.pb-rule'));
+          chk(/ left .*beside your lock/.test(rule), `the turned card is ruled "${rule}", not on the legs left beside the lock`);
           if (x && x.legs) { d.querySelector(`#pbPanel [data-pc-finish="pb|${T.id}"]`).click(); await wait(40);
             const view = d.getElementById('pcView');
             chk(!d.getElementById('pcModal').hidden && x.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label)), 'Finish after New legs did not open the parlay card on the turned legs');
             w.eval('PARLAY_CARD.close()'); await wait(20); }
+          /* None and then All is a change of picks: the turn and the lock are gone */
+          d.querySelector('#pbPanel [data-pb-games="none"]').click(); await wait(20); d.querySelector('#pbPanel [data-pb-games="all"]').click(); await wait(20);
+          chk(!cardOf().querySelector('[data-pb-lock][aria-pressed="true"]') && !cardOf().querySelector('[data-pb-reset]'), 'ticking None and then All on the page brought a lock or a turn back');
           w.eval('PB_VIEW={sig:null,t:{}}; renderParlay()'); await wait(20); } }
       const t = w.eval('getPbTiers()').tiers.filter(x => x.legs).slice(-1)[0];
       /* the Bet amount box, at the top of the panel's controls: an amount of the visitor's own,

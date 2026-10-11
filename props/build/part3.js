@@ -1363,14 +1363,31 @@ function pbBuild(){
 }
 /* ---------- a level of the visitor's own: legs locked, the rest turned over ----------
    Each level's card has a lock on every leg and a New legs button. New legs keeps the locked legs
-   and fills the rest with the best the level's rules give from the legs that card has not shown
-   since the picks last changed (pbTier with the locked legs as its base, the pool less every leg
-   the card has shown); once none can, it starts over from the whole list, the locks kept, and the
-   card says so (wrapped). The turn is the visitor's while the page is open: PB_VIEW, outside S and
-   never saved, keyed on getPbTiers' signature so it is gone when the picks or the data move */
-let PB_VIEW={sig:null,t:{}};
+   and fills the rest with the best the level's rules give from the players, teams and game totals
+   that card has not shown since the picks last changed (pbTier with the locked legs as its base, the
+   pool less every leg on one the card has shown, pbWho: another line or rung on a player, or a team
+   to cover after to win, is not a new leg); once none can, it starts over from the whole list, the
+   locks kept, and the card says so (wrapped). With every leg locked there is nothing to turn, and
+   New legs is off. The turn is the visitor's while the page is open: PB_VIEW, outside S and never
+   saved, keyed on the picks and the data (pbViewKey) and checked on every draw of the panel
+   (pbViewSync), so it is gone when a box or the data move, even a box ticked off and on again. A
+   game kicking off is not a change of picks: the locks on games still to come are kept, and a level
+   that showed a leg on the game that kicked off, or lost a lock with it, is filled again around the
+   locks left (pbRefill) */
+let PB_VIEW={sig:null,key:null,t:{}};
+const pbWho=l=>l.gid+'|'+l.pid;
+/* what the tiers stand on beyond the picks: the data the job published and the page loaded */
+function pbDataSig(){ return [PAY.baked_at||PAY.build||'',S.sched.length,Object.keys(S.processedGames||{}).length,JSON.stringify(S.odds||{}).length,S.gamesFetched||'',formSig()].join('|'); }
+/* the picks and the data, without the games still to come, which a kickoff moves */
+function pbViewKey(){ const u=pbUi(); return [currentWeek(),[...u.off].sort().join(','),PB_KINDS.map(([k])=>u.k[k]?1:0).join(''),pbDataSig()].join('|'); }
+function pbViewSync(){
+  const r=getPbTiers(), key=pbViewKey();
+  if(PB_VIEW.key!==key) PB_VIEW={sig:r.sig,key,t:{}};
+  else if(PB_VIEW.sig!==r.sig){ PB_VIEW.sig=r.sig; for(const id of Object.keys(PB_VIEW.t)) pbRefill(id,r); }
+  return r;
+}
 function pbViewOf(id){
-  const r=getPbTiers(); if(PB_VIEW.sig!==r.sig) PB_VIEW={sig:r.sig,t:{}};
+  pbViewSync();
   return PB_VIEW.t[id]||(PB_VIEW.t[id]={lock:[],seen:[],tier:null,wrapped:false});
 }
 /* a level as its card shows it: the visitor's turn of it, else the panel's own */
@@ -1389,24 +1406,47 @@ function pbTurn(id){
   const r=getPbTiers(), base=r.tiers.find(x=>x.id===id), spec=PB_TIERS.find(s=>s[0]===id);
   if(!base||!spec) return;
   const v=pbViewOf(id), shown=v.tier||base; if(!shown.legs&&!v.lock.length) return;
+  /* every leg locked: nothing to turn (the card's New legs is off) */
+  if(shown.legs&&shown.legs.every(l=>v.lock.some(x=>pbId(x)===pbId(l)))) return;
+  const locked=new Set(v.lock.map(pbId));
+  for(const l of (shown.legs||[])) if(!locked.has(pbId(l))&&!v.seen.includes(pbWho(l))) v.seen.push(pbWho(l));
+  pbFill(id,v);
+}
+/* the level filled around its locks from the picks as they stand: first from the players, teams
+   and totals the card has not shown, then, where none of those can, from the whole list again
+   (wrapped). With every leg locked the locks are the parlay (allLocked) and nothing is searched */
+function pbFill(id,v){
+  const r=getPbTiers(), base=r.tiers.find(x=>x.id===id), spec=PB_TIERS.find(s=>s[0]===id);
+  const head={id:base.id,label:base.label,n:base.n,floor:base.floor,turned:true};
   const u=pbUi(), games=pbGames().filter(g=>!u.off.includes(g.id)), pool=pbPool(games);
   /* a locked leg whose game has kicked off falls away */
   v.lock=v.lock.filter(l=>games.some(g=>g.id===l.gid));
-  const locked=new Set(v.lock.map(pbId));
-  for(const l of (shown.legs||[])) if(!locked.has(pbId(l))&&!v.seen.includes(pbId(l))) v.seen.push(pbId(l));
-  const less=ex=>({pref:pool.pref.filter(c=>!ex.has(pbId(c))),thin:pool.thin.filter(c=>!ex.has(pbId(c))),mkt:(pool.mkt||[]).filter(c=>!ex.has(pbId(c)))});
-  let x=pbTier(spec,less(new Set([...v.seen,...locked])),new Map(),v.lock);
   v.wrapped=false;
+  if(v.lock.length>=spec[2]){ v.tier={...head,...pbExact(v.lock.slice(0,spec[2])),allLocked:true}; return; }
+  const locked=new Set(v.lock.map(pbId));
+  const less=who=>{ const ok=c=>!locked.has(pbId(c))&&!who.has(pbWho(c)); return {pref:pool.pref.filter(ok),thin:pool.thin.filter(ok),mkt:(pool.mkt||[]).filter(ok)}; };
+  let x=pbTier(spec,less(new Set(v.seen)),new Map(),v.lock);
   /* nothing unshown is left: start over from the whole list, the locks kept */
-  if(!x){ v.seen=[]; v.wrapped=true; x=pbTier(spec,less(locked),new Map(),v.lock); }
-  const head={id:base.id,label:base.label,n:base.n,floor:base.floor,turned:true};
-  v.tier=x?{...head,...x}:{...head,why:'No parlay of this size fits beside the legs you locked: unlock one.'};
+  if(!x&&v.seen.length){ v.seen=[]; v.wrapped=true; x=pbTier(spec,less(new Set()),new Map(),v.lock); }
+  v.tier=x?{...head,...x}:{...head,why:base.why||(v.lock.length?'No parlay of this size fits beside the legs you locked: unlock one.':'No parlay of this size on your picks.')};
+}
+/* a game kicked off (the tiers moved, the picks did not): the locks on it fall away, and a level
+   that showed a leg on it or lost a lock is filled again around the locks left, the legs it has
+   shown still left out; one with no lock left is the panel's own again */
+function pbRefill(id,r){
+  const v=PB_VIEW.t[id], base=r.tiers.find(x=>x.id===id);
+  if(!v||!base){ delete PB_VIEW.t[id]; return; }
+  const u=pbUi(), on=new Set(pbGames().filter(g=>!u.off.includes(g.id)).map(g=>g.id)), live=l=>on.has(l.gid);
+  const n0=v.lock.length; v.lock=v.lock.filter(live);
+  const holds=v.tier?!!v.tier.legs&&v.tier.legs.every(live):v.lock.every(l=>(base.legs||[]).some(x=>pbId(x)===pbId(l)));
+  if(v.lock.length===n0&&holds) return;
+  if(!v.lock.length){ delete PB_VIEW.t[id]; return; }
+  pbFill(id,v);
 }
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
 function getPbTiers(){
   const u=pbUi(), games=pbGames();
-  const sig=[currentWeek(),games.map(g=>g.id).join(','),u.off.filter(id=>games.some(g=>g.id===id)).sort().join(','),PB_KINDS.map(([k])=>u.k[k]?1:0).join(''),
-    PAY.baked_at||PAY.build||'',S.sched.length,Object.keys(S.processedGames||{}).length,JSON.stringify(S.odds||{}).length,S.gamesFetched||'',formSig()].join('|');
+  const sig=[currentWeek(),games.map(g=>g.id).join(','),u.off.filter(id=>games.some(g=>g.id===id)).sort().join(','),PB_KINDS.map(([k])=>u.k[k]?1:0).join(''),pbDataSig()].join('|');
   let r=PB_CACHE.get(sig);
   if(!r){ r={sig,...pbBuild()}; PB_CACHE.set(sig,r); if(PB_CACHE.size>24) PB_CACHE.delete(PB_CACHE.keys().next().value); }
   return r;
@@ -1524,9 +1564,26 @@ const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.eve
    game total is never thin: it has no edge at all, and pbMktLine speaks for it */
 /* what a total on a tier is: the book's own chance, so no edge, there only because the picks do
    not make a parlay of the tier's size from legs with an edge */
-function pbMktLine(legs){
+function pbMktLine(legs,why){
   const n=legs.filter(l=>l.market).length, one=n===1;
-  return `${one?'The game total is':n+' game totals are'} at the book’s own chance with its margin out, so ${one?'it has':'they have'} no edge: ${one?'it is':'they are'} here because your picks do not make a parlay of this size from legs with an edge.`;
+  return `${one?'The game total is':n+' game totals are'} at the book’s own chance with its margin out, so ${one?'it has':'they have'} no edge: ${one?'it is':'they are'} here because ${why||'your picks do not make a parlay of this size from legs with an edge'}.`;
+}
+/* a turned level (v, the visitor's view of it) is chosen from the legs the card has not shown
+   (left, until it starts over) beside the visitor's locks, so it says so: in its rule, and in why
+   its totals are there (or that the visitor locked them). The panel's own levels read as before */
+const pbBeside=v=>{ const nL=v.lock.length; return nL?` beside your lock${nL>1?'s':''}`:''; };
+const pbLeft=v=>!v.wrapped&&v.seen.length>0;
+function pbRuleOf(t,v){
+  const n=t.legs.length, pct=Math.round((t.floor||0)*100);
+  if(!t.turned||!v) return t.likeliest?`the likeliest ${n} legs`:t.floor?`best return that lands ${pct}%+`:'the likeliest pair';
+  if(t.allLocked) return n===2?'your locked pair':`your ${n} locked legs`;
+  const mod=(pbLeft(v)?' left':'')+pbBeside(v);
+  return t.likeliest||!t.floor?`the likeliest ${n===2?'pair':n+' legs'}${mod}`:`best return${mod} that lands ${pct}%+`;
+}
+function pbMktWhy(t,v){
+  if(!t.turned||!v) return '';
+  if(!t.legs.some(l=>l.market&&!v.lock.some(x=>pbId(x)===pbId(l)))) return t.mkt===1?'you locked it':'you locked them';
+  return `the legs with an edge ${pbLeft(v)?'your picks have left for this card':'on your picks'} do not make a parlay of this size${pbBeside(v)}`;
 }
 function pbThinLine(legs,form){
   const th=legs.filter(l=>l.thin), n=th.length, tm=th.filter(isGameLeg).length, p=n-tm, s=k=>k===1?'':'s';
@@ -1538,16 +1595,17 @@ function pbThinLine(legs,form){
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr;
   /* the panel's own levels (o.ctl) carry New legs, and Reset once turned; the Elo picks do not */
-  const turn=o.ctl?`<span class="pb-turnbar"><button type="button" class="btn quiet small pb-turn" data-pb-turn="${t.id}" title="New legs for this level, keeping the ones you locked">\u21bb New legs</button>${t.turned?`<button type="button" class="btn quiet small" data-pb-reset="${t.id}" title="Back to the panel's own ${esc(t.label)} parlay">Reset</button>`:''}</span>`:'';
+  const v=o.ctl?PB_VIEW.t[t.id]:null, allL=!!(v&&t.legs&&t.legs.every(l=>pbLocked(t.id,l)));
+  const turn=o.ctl?`<span class="pb-turnbar"><button type="button" class="btn quiet small pb-turn" data-pb-turn="${t.id}" ${allL?'disabled title="Every leg is locked: unlock one for new legs"':'title="New legs for this level, keeping the ones you locked"'}>\u21bb New legs</button>${t.turned?`<button type="button" class="btn quiet small" data-pb-reset="${t.id}" title="Back to the panel's own ${esc(t.label)} parlay">Reset</button>`:''}</span>`:'';
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span>${t.turned?turn:''}</div><p class="pb-why">${esc(t.why)}</p></div>`;
   const form=formSig()!=='', wrapped=o.ctl&&t.turned&&PB_VIEW.t[t.id]&&PB_VIEW.t[t.id].wrapped;
   const lock=l=>{ if(!o.ctl) return ''; const on=pbLocked(t.id,l);
     return `<button type="button" class="pb-lock${on?' on':''}" data-pb-lock="${t.id}|${esc(pbId(l))}" aria-pressed="${on}" aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}" title="${on?'Locked: kept when you ask for new legs':'Lock to keep this leg when you ask for new legs'}">${on?'\ud83d\udd12':'\ud83d\udd13'}</button>`; };
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
-    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${turn}${o.rule||(t.floor!=null?`<span class="pb-rule">${t.likeliest?`the likeliest ${t.legs.length} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair'}</span>`:'')}</div>
+    <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${turn}${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t,v)}</span>`:'')}</div>
     <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
     <ul class="pb-legs">${t.legs.map(l=>`<li>${lock(l)}<span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
-    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs)}</p>`:''}${wrapped?`<p class="pb-thin pb-wrap">Every other leg on your picks has had its turn here: back to the first.</p>`:''}
+    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs,pbMktWhy(t,v))}</p>`:''}${wrapped?`<p class="pb-thin pb-wrap">Every other leg on your picks has had its turn here: back to the first.</p>`:''}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
 }
 window.pbTierCard=pbTierCard;
@@ -1556,7 +1614,7 @@ function pbPanel(){
   const head=`<div class="pb-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span></div>`;
   if(!games.length) return `<div class="card pb" id="pbCard">${head}
     <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p></div>`;
-  const r=getPbTiers(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
+  const r=pbViewSync(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
   const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>`;
   const chips=PB_KINDS.map(([k,l,s])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}${s?` <small>${s}</small>`:''}</span></label>`).join('');
   const glist=games.map(g=>{ const on=!u.off.includes(g.id), d=fmtDate(g);
