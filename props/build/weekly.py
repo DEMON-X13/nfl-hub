@@ -464,8 +464,13 @@ def main():
 #                     '<pid>|<stat>|over|<point>' (and under): a player's line, the book's point,
 #                     '<pid>|any_td': his touchdown (the book's Yes),
 #                     'team:<ABBR>|ml', 'team:<ABBR>|ats|<point>' (the team's own handicap),
-#                     'game|total|over|<point>' (and under)}
-# Each key is the leg's own key (part2.js legKey) without the game, then its side and the book's point
+#                     'game|total|over|<point>' (and under),
+#                     'at': when the game's player prices (and so these ids) were read, priced_at.json,
+#                     'glat': when its moneylines, spreads and totals were, gamelines_wk{W}.csv's pulled_at}
+# An id names one outcome at one number (a spread or total spells its number out, a player's line
+# carries its point in the id's tail), so a line DraftKings has moved since is not on the slip: the
+# card dates what it opens by the older of at and glat, and says every leg lands only while that read
+# is under a day old (the rule g.ls follows for the game lines). Each key is the leg's own key (part2.js legKey) without the game, then its side and the book's point
 # written as the page writes a number (dk_point). A player is the one the same name rule places the
 # price rows on (pool.match, within the game); a name it does not place, a team defence's touchdown and
 # a key two book names would give two ids are left out. Only games still to come, so only the weeks
@@ -529,7 +534,43 @@ def dk_ids(data,byid,to_come,match):
         out[w]={gid:ids for gid,ids in out[w].items() if ids}
         if not out[w]: del out[w]
     n=sum(len(ids) for gs in out.values() for ids in gs.values())
+    # when each game's ids were read: its player prices' pull, and the slate's game lines (a game's
+    # player ids are read once, often on the Saturday before a Sunday game, so they can be a day and
+    # more old at kickoff; the card says so rather than promise every leg lands)
+    played,glines=dk_read_times(data)
+    for gs in out.values():
+        for gid,ids in gs.items():
+            kinds={'game' if (k=='event' or k.startswith(('team:','game|'))) else 'player' for k in ids}
+            if 'player' in kinds and played.get(gid): ids['at']=played[gid]
+            if 'game' in kinds and glines.get(gid): ids['glat']=glines[gid]
     return out,n,sorted(clash)
+
+def dk_stamp(s):
+    """a read time as the files write it (2026-10-17T05:17Z, or with an offset), written
+    2026-10-17T05:17Z, or None"""
+    try: t=datetime.datetime.fromisoformat(str(s or '').strip().replace('Z','+00:00'))
+    except ValueError: return None
+    if t.tzinfo is None: t=t.replace(tzinfo=datetime.timezone.utc)
+    return t.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ')
+
+def dk_read_times(data):
+    """({game: when its player prices were last read}, {game: when its game lines were}) from
+    data/priced_at.json and every gamelines_wk{W}.csv's pulled_at: oddsfetch.py writes a game's ids
+    in the same pull as each, and a game priced again replaces both. A file that will not read, or a
+    row with no time, leaves that game's read undated, and the card says so"""
+    played={}; glines={}
+    try:
+        pr=json.load(open(os.path.join(data,'priced_at.json'),encoding='utf-8'))
+        if isinstance(pr,dict): played={g:t for g,t in ((g,dk_stamp(v)) for g,v in pr.items()) if t}
+    except Exception: pass
+    for fn in sorted(os.listdir(data)):
+        if not re.match(r'gamelines_wk(\d+)\.csv$',fn): continue
+        try: rows=names.read_csv(os.path.join(data,fn))
+        except Exception: continue
+        for r in rows:
+            gid=(r.get('game_id') or '').strip(); t=dk_stamp(r.get('pulled_at'))
+            if gid and t: glines[gid]=t
+    return played,glines
 
 def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     pay=json.load(open(pp,encoding='utf-8'))

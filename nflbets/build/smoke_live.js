@@ -624,18 +624,27 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const wk = Math.max(...Object.keys(byWeek).map(Number).filter(k => byWeek[k].length >= 2)), [g1, g2] = byWeek[wk];
     const other = P0.sched.find(x => +x.w !== wk);
     /* DraftKings' ids for the two legs, made up (the payload's dk, as weekly.py bakes it: week, game,
-       then the leg's key without the game, its side and DraftKings' point), each with a '#' */
-    const DK_ML = 'SMOKE1#ml_' + g1.h, DK_RB = 'SMOKE2#rush_645', DK_EV = '880001';
-    const dkMade = () => ({ [String(wk)]: { [g1.id]: { event: DK_EV, [`team:${g1.h}|ml`]: DK_ML, [`team:${g1.a}|ml`]: 'SMOKE1#ml_' + g1.a },
-      [g2.id]: { event: '880002', 'card-rb|rushing_yards|over|64.5': DK_RB, 'card-rb|rushing_yards|under|64.5': 'SMOKE2#rush_645u' } } });
+       then the leg's key without the game, its side and DraftKings' point), each with a '#', and when
+       they were read: the player ids (at) two hours ago, the game lines (glat) five, so the card
+       dates the link by the older and still says every leg lands (under a day) */
+    const DK_ML = 'SMOKE1#ml_' + g1.h, DK_EV = '880001', DK_RBS = { over: 'SMOKE2#rush_645', under: 'SMOKE2#rush_645u' };
+    const stamp = ago => new Date(Date.now() - ago).toISOString().slice(0, 16) + 'Z';
+    /* a read time as the card dates it, worked out here: weekday, month, day, time, Eastern */
+    const readTxt = s => new Date(s).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }) + ' ET';
+    const AT_P = stamp(2 * 3600e3), AT_G = stamp(5 * 3600e3);
+    const dkMade = (at = AT_P, glat = AT_G) => ({ [String(wk)]: { [g1.id]: { event: DK_EV, [`team:${g1.h}|ml`]: DK_ML, [`team:${g1.a}|ml`]: 'SMOKE1#ml_' + g1.a, glat },
+      [g2.id]: { event: '880002', 'card-rb|rushing_yards|over|64.5': DK_RBS.over, 'card-rb|rushing_yards|under|64.5': DK_RBS.under, at, glat } } });
     const pin = P => { for (const x of P.sched) if (x.id === g1.id || x.id === g2.id || (other && x.id === other.id)) { x.d = '2099-12-31'; x.t = '13:00'; } P.dk = dkMade(); return P; };
     const mlKey = `${g1.id}|team:${g1.h}|ml`, rbKey = `${g2.id}|card-rb|rushing_yards`;
-    const builder = () => ({
+    /* the runner's main line is an Over in the first browser and an Under in the second, so a card
+       that opened DraftKings' Over for an Under (or the other way) fails one of them */
+    const Side = side => side === 'under' ? 'Under' : 'Over';
+    const builder = (side = 'over') => ({
       [mlKey]: { gid: g1.id, pid: 'team:' + g1.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.58, price: -135, src: 'real', mu: null, name: 'Home Side', pos: 'Game', grp: 'TEAM', team: g1.h, opp: g1.a, week: wk, label: 'To win' },
-      [rbKey]: { gid: g2.id, pid: 'card-rb', stat: 'rushing_yards', k: 64.5, side: 'over', main: true, p: 0.52, price: 105, src: 'real', mu: 66, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: 'Over 64.5 rushing yards' } });
+      [rbKey]: { gid: g2.id, pid: 'card-rb', stat: 'rushing_yards', k: 64.5, side, main: true, p: 0.52, price: 105, src: 'real', mu: 66, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: Side(side) + ' 64.5 rushing yards' } });
     const oldSaved = [{ id: 'saved-before', saved: '2026-09-01T00:00:00Z', week: 2, stake: 4, price: 300, payout: 16, legs: [
       { gid: '2026_02_CAR_ATL', stat: 'receptions', k: 3, side: 'over', main: false, name: 'Kyle Pitts', team: 'ATL', week: 2 }] }];
-    const blob = () => JSON.stringify({ stake: 25, saved: oldSaved, parlay: builder() });
+    const blob = side => JSON.stringify({ stake: 25, saved: oldSaved, parlay: builder(side) });
     const myOld = JSON.stringify({ lines: { 'prop|saved-before|0': 4 }, removed: {}, kept: {} });
     const all = w => { const o = {}; for (let i = 0; i < w.localStorage.length; i++) { const k = w.localStorage.key(i); o[k] = w.localStorage.getItem(k); } return o; };
     /* what finishing must leave as it was: every key but the prop model's own, which the model
@@ -645,8 +654,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     /* every device finishes a parlay the same way: a plain browser, and one that was the owner's
        (the owner link's secret and a session still in it, which mean nothing now) */
     const wasOwner = w => { w.localStorage.setItem('nflowner_v1', 'the-old-owner-secret'); w.localStorage.setItem('nflsync_owner_v1', JSON.stringify({ uid: 'u', refreshToken: 'rt' })); };
-    for (const [how, extra] of [['a plain browser', () => {}], ['a browser that was the owner\'s', wasOwner]]) {
-      const v = await run({ url: URL_PB, pay: pin, file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob()); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
+    for (const [how, extra, side] of [['a plain browser', () => {}, 'over'], ['a browser that was the owner\'s', wasOwner, 'under']]) {
+      const v = await run({ url: URL_PB, pay: pin, file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
+      const DK_RB = DK_RBS[side], rbLabel = Side(side) + ' 64.5 rushing yards', rbRe = rbLabel.replace(/\./g, '\\.');
       const { w, d } = v, tab = d.getElementById('tab-parlay');
       const reads = () => v.methods.every(m => m === 'GET');
       const rec = stubDraw(w);
@@ -662,7 +672,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       const md = d.getElementById('pcModal'), view = d.getElementById('pcView'), q = w.PARLAY_CARD.quote();
       const price = w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))').replace('-', '−');
       chk(!!md && !md.hidden && d.body.classList.contains('modal-open') && md.querySelector('[role="dialog"][aria-modal="true"]'), `${how}: Finish did not open the card's window`);
-      chk(['Home Side', 'To win', 'Card Runner', 'Over 64.5 rushing yards', '−135', '+105'].every(t => txt(view).includes(t)), `${how}: the card is missing a leg, its market or its price: ` + txt(view));
+      chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105'].every(t => txt(view).includes(t)), `${how}: the card is missing a leg, its market or its price: ` + txt(view));
       chk(txt(view.querySelector('.pc-price')) === price && new RegExp(`${q.useDec.toFixed(2)} decimal`).test(txt(view)) && txt(view).includes((100 / q.useDec).toFixed(1) + '% implied'),
         `${how}: the card's price is not the builder's: ${txt(view.querySelector('.pc-price'))} for ${price}`);
       { const pays = txt(d.querySelector('#parlayBody .bigp .payout')), m = [...view.querySelectorAll('.pc-money b')].map(txt);
@@ -685,6 +695,11 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(/all 2 legs on DraftKings/.test(txt(note())) && [...note().querySelectorAll('a[data-pc-dkleg]')].map(a => a.getAttribute('href')).join(' ') === order.map(x => DKU([x])).join(' ')
         && [...note().querySelectorAll('a')].every(a => a.getAttribute('target') === '_blank' && /noopener/.test(a.getAttribute('rel') || '')) && !note().querySelector('[data-pc-dkmiss]'),
         `${how}: the note under the buttons does not say every leg opens, or does not give each leg's own link: ` + txt(note()));
+      /* the note is dated by the older read of the legs it opens (the game lines', five hours ago),
+         and every leg is promised only while that read is under a day old: the button says so too */
+      chk(txt(note()).startsWith(`DraftKings’ lines as read ${readTxt(AT_G)}: Open in DraftKings puts all 2 legs on DraftKings’ betslip, at DraftKings’ own prices.`)
+        && dkA.getAttribute('title') === 'Opens all 2 legs on DraftKings’ betslip, in a new tab',
+        `${how}: a read five hours old is not dated by the older read, or does not promise both legs: ` + txt(note()) + ' / ' + dkA.getAttribute('title'));
       /* Share link: the share sheet gets the same DraftKings link, a title, a line for every leg, the
          stake and what it pays and the site's address; a cancel does nothing; with no share sheet (or
          one that fails) the text and the link are copied; never the image */
@@ -696,8 +711,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         link.click(); await wait(30);
         const s0 = shared[0] || {};
         chk(shared.length === 1 && s0.url === dkA.getAttribute('href') && !s0.files && s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(s0.text || '')
-          && (s0.text || '').includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s0.text || '') && !/Add by hand/.test(s0.text || ''),
-          `${how}: Share link did not hand the share sheet the DraftKings link, the title, every leg, the stake and payout and the site: ` + JSON.stringify(s0));
+          && (s0.text || '').includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s0.text || '') && !/Add by hand/.test(s0.text || '')
+          && (s0.text || '').includes(`\nDraftKings lines as read ${readTxt(AT_G)}; check the slip before you bet\n`) && !/ est\.\)| fair\)|\(.*price\)$/.test((s0.text || '') + '\n' + s0.title),
+          `${how}: Share link did not hand the share sheet the DraftKings link, the title, every leg (book prices, unlabelled), the stake and payout, when DraftKings' lines were read and the site: ` + JSON.stringify(s0));
         chk(copied.length === 0 && rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && rec.canvases.length === canv0, `${how}: Share link copied as well, or drew or downloaded the image`);
         def('share', async x => { shared.push(x); throw new w.DOMException('The user cancelled', 'AbortError'); });
         const at = d.activeElement; link.click(); await wait(30);
@@ -721,21 +737,49 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       { const reopen = async () => { d.getElementById('pcClose').click(); await wait(10); d.getElementById('pFinish').click(); await wait(20); };
         const nRb = q.legs.findIndex(l => l.pid === 'card-rb') + 1, shared = [];
         Object.defineProperty(w.navigator, 'share', { value: async x => { shared.push(x); }, configurable: true });
-        w.eval(`delete PAY.dk['${wk}']['${g2.id}']['card-rb|rushing_yards|over|64.5']; PAY.dk['${wk}']['${g2.id}']['card-rb|rushing_yards|over|65.5']='SMOKE2#rush_655'`);
+        w.eval(`delete PAY.dk['${wk}']['${g2.id}']['card-rb|rushing_yards|${side}|64.5']; PAY.dk['${wk}']['${g2.id}']['card-rb|rushing_yards|${side}|65.5']='SMOKE2#rush_655'`);
         await reopen();
         const missRb = () => txt(note().querySelector(`[data-pc-dkmiss="${nRb}"]`));
-        chk(!dkA.hidden && dkA.getAttribute('href') === DKU([DK_ML]) && /1 of the 2 legs/.test(txt(note())) && /Card Runner, Over 64\.5 rushing yards: DraftKings has it at 65\.5 now/.test(missRb())
+        chk(!dkA.hidden && dkA.getAttribute('href') === DKU([DK_ML]) && /1 of the 2 legs/.test(txt(note())) && missRb() === `${nRb}. Card Runner, ${rbLabel}: DraftKings had it at 65.5 when its lines were last read (${readTxt(AT_P)})`
           && note().querySelectorAll('[data-pc-dkmiss]').length === 1 && !note().querySelector('a[data-pc-dkleg]'),
-          `${how}: with one leg's line moved at DraftKings, the link does not open the other alone, or the note does not name the moved leg and DraftKings' line now: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
+          `${how}: with one leg's line moved at DraftKings, the link does not open the other alone, or the note does not name the moved leg and DraftKings' line as last read, dated: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
+        chk(!/ now\b/.test(txt(note())), `${how}: the note says what DraftKings has "now", from a read that can be a day old: ` + txt(note()));
         d.getElementById('pcLink').click(); await wait(30);
-        chk(shared.length === 1 && shared[0].url === DKU([DK_ML]) && new RegExp(`\\nAdd by hand at DraftKings: ${nRb}\\. Card Runner Over 64\\.5 rushing yards\\n`).test(shared[0].text),
+        chk(shared.length === 1 && shared[0].url === DKU([DK_ML]) && new RegExp(`\\nAdd by hand at DraftKings: ${nRb}\\. Card Runner ${rbRe}\\n`).test(shared[0].text),
           `${how}: Share link on a parlay DraftKings has part of does not send the part's link and name the leg to add by hand: ` + JSON.stringify(shared[0]));
+        /* a read more than a day old (the Saturday pull, on Sunday afternoon): the note and the button
+           date it and no longer promise every leg, and the shared text dates it; undated (a payload
+           that does not say), the same, said so */
+        w.eval(`PAY.dk=${JSON.stringify(dkMade(stamp(31 * 3600e3), stamp(30 * 3600e3)))}`); await reopen();
+        chk(dkA.getAttribute('href') === DKU(order) && !/all 2 legs/.test(txt(note()) + dkA.getAttribute('title'))
+          && txt(note()).startsWith(`DraftKings’ lines as read ${readTxt(stamp(31 * 3600e3))}: Open in DraftKings opens these 2 legs; a leg whose line DraftKings has moved since will not be on the slip, so check it before you bet.`)
+          && dkA.getAttribute('title') === `Opens these 2 legs on DraftKings’ betslip, in a new tab, as DraftKings’ lines were read ${readTxt(stamp(31 * 3600e3))}: check each leg is there`,
+          `${how}: ids read 31 hours ago are promised as every leg landing, or the note or the button does not date the older read: ` + txt(note()) + ' / ' + dkA.getAttribute('title'));
+        d.getElementById('pcLink').click(); await wait(30);
+        chk(shared.length === 2 && shared[1].url === DKU(order) && shared[1].text.includes(`\nDraftKings lines as read ${readTxt(stamp(31 * 3600e3))}; check the slip before you bet\n`),
+          `${how}: Share link on ids a day and more old does not say when DraftKings' lines were read: ` + JSON.stringify(shared[1]));
+        w.eval(`PAY.dk=${JSON.stringify(dkMade(undefined, undefined))}; delete PAY.dk['${wk}']['${g2.id}'].at`); await reopen();
+        chk(dkA.getAttribute('href') === DKU(order) && txt(note()).startsWith('When DraftKings’ lines were read is not recorded: Open in DraftKings opens these 2 legs;') && !/all 2 legs/.test(dkA.getAttribute('title')),
+          `${how}: ids with no read time are promised as every leg landing, or the note does not say the time is not recorded: ` + txt(note()));
+        shared.length = 0;
+        /* a price that is not the book's (a rung at the model's estimate, which DraftKings has no id
+           for) is labelled in the shared text as on the card, and so is the parlay's price */
+        w.eval(`S.parlay['${g2.id}|card-rb|receiving_yards']=${JSON.stringify({ gid: g2.id, pid: 'card-rb', stat: 'receiving_yards', k: 100, side: 'over', main: false, p: 0.2, price: 210, src: 'est', mu: 40, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '100+ receiving yards' })}; renderParlay()`);
+        await wait(20); await reopen();
+        { const qe = w.PARLAY_CARD.quote(), ne = qe.legs.findIndex(l => l.stat === 'receiving_yards') + 1, pe = w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))');
+          chk(qe.legs.length === 3 && /\+210\s*est\./.test(txt(d.getElementById('pcView'))) && /estimated price/.test(txt(d.querySelector('#pcView .pc-sub'))), `${how}: the card does not mark the rung's estimated price: ` + txt(d.getElementById('pcView')));
+          d.getElementById('pcLink').click(); await wait(30);
+          const se = shared[0] || {};
+          chk(new RegExp(`(^|\\n)${ne}\\. Card Runner: 100\\+ receiving yards \\(\\+210 est\\.\\)(\\n|$)`).test(se.text || '') && se.title === `3-leg parlay ${pe} (estimated price)`
+            && (se.text || '').includes(`\nAdd by hand at DraftKings: ${ne}. Card Runner 100+ receiving yards`) && /\(-135\)/.test(se.text || ''),
+            `${how}: Share link sends an estimated price as if it were the book's, or does not name the leg to add by hand: ` + JSON.stringify(se)); }
+        w.eval(`S.parlay=${JSON.stringify(builder(side))}; renderParlay()`); await wait(20); shared.length = 0;
         w.eval('PAY.dk={}'); await reopen();
         chk(dkA.hidden && /None of these legs can be opened in DraftKings/.test(txt(note())) && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && /no DraftKings ids were read for its game/.test(txt(note()))
           && !note().querySelector('a') && !d.getElementById('pcLink').hidden, `${how}: a parlay DraftKings has none of shows a link, or does not name every leg and why: ` + txt(note()));
         d.getElementById('pcLink').click(); await wait(30);
-        const s2 = shared[1] || {};
-        chk(shared.length === 2 && !('url' in s2) && legsIn(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '') && !/Add by hand|draftkings\.com/.test(s2.text || ''),
+        const s2 = shared[0] || {};
+        chk(shared.length === 1 && !('url' in s2) && legsIn(s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '') && !/Add by hand|draftkings\.com/.test(s2.text || ''),
           `${how}: Share link on a parlay DraftKings has none of does not send the parlay and the site alone: ` + JSON.stringify(s2));
         delete w.navigator.share;
         /* every kind of leg against made-up ids on the first pinned game: a team's line, the total, a
@@ -745,7 +789,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
            in one game */
         const G = w.eval('S.sched').find(x => x.id === g1.id), ls0 = G.ls, past = P0.sched.find(x => ![g1.id, g2.id, other && other.id].includes(x.id) && Date.parse(x.d + 'T23:59:00Z') < Date.now() - 864e5);
         const made = { [String(wk)]: { [g1.id]: { event: '990', [`team:${g1.h}|ats|-3`]: 'A#h', [`team:${g1.a}|ats|3.5`]: 'A#a', 'game|total|over|43.5': 'T#o', 'game|total|under|44.5': 'T#u',
-          'p1|any_td': 'D#1', 'p1|receptions|over|4.5': 'R#1', 'p1|receiving_yards|over|59': 'Y#59', 'p2|rushing_yards|over|79.5': 'Z#79', 'p2|rushing_yards|over|80': 'Z#80' } } };
+          'p1|any_td': 'D#1', 'p1|receptions|over|4.5': 'R#1', 'p1|receptions|under|4.5': 'R#u', 'p1|receiving_yards|over|59': 'Y#59', 'p2|rushing_yards|over|79.5': 'Z#79', 'p2|rushing_yards|over|80': 'Z#80',
+          at: AT_P, glat: AT_G } } };
         if (past) (made[String(past.w)] = made[String(past.w)] || {})[past.id] = { [`team:${past.h}|ml`]: 'P#1' };
         w.eval(`PAY.dk=${JSON.stringify(made)}`);
         const L = o => Object.assign({ gid: g1.id, week: wk, name: 'N', label: 'L', side: 'over', main: false }, o);
@@ -753,14 +798,21 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           L({ pid: 'game', stat: 'total', k: 43.5, main: true, grp: 'TEAM' }), L({ pid: 'game', stat: 'total', side: 'under', k: 43.5, main: true, grp: 'TEAM' }),
           L({ pid: 'p1', stat: 'any_td', k: 1, grp: 'WR' }), L({ pid: 'p1', stat: 'any_td', k: 2, grp: 'WR' }), L({ pid: 'p1', stat: 'receptions', k: 4.5, main: true, grp: 'WR' }),
           L({ pid: 'p1', stat: 'receiving_yards', k: 60, grp: 'WR' }), L({ pid: 'p2', stat: 'rushing_yards', k: 80, grp: 'RB' }), L({ pid: 'p2', stat: 'rushing_yards', k: 100, grp: 'RB' }),
-          L({ pid: 'team:' + g1.h, stat: 'ml', k: 0, grp: 'TEAM' })];
+          L({ pid: 'team:' + g1.h, stat: 'ml', k: 0, grp: 'TEAM' }), L({ pid: 'p1', stat: 'receptions', side: 'under', k: 4.5, main: true, grp: 'WR' })];
         const plan = ls => { w.eval(`S.sched.find(x=>x.id===${JSON.stringify(g1.id)}).ls=${JSON.stringify(ls)}`); return w.PARLAY_CARD.dkPlan(legs.map(l => Object.assign({}, l))); };
         const a = plan('dk'), why = n => (a.miss.find(x => x.n === n) || {}).why || '';
-        chk(a.url === DKU(['A#h', 'T#o', 'D#1', 'R#1', 'Y#59', 'Z#79']) && a.ok.map(x => x.n).join() === '1,3,5,7,8,9' && why(2) === 'DraftKings has it at +3.5 now' && why(4) === 'DraftKings has it at 44.5 now'
+        const lastG = `when its lines were last read (${readTxt(AT_G)})`;
+        chk(a.url === DKU(['A#h', 'T#o', 'D#1', 'R#1', 'Y#59', 'Z#79', 'R#u']) && a.ok.map(x => x.n).join() === '1,3,5,7,8,9,12' && why(2) === 'DraftKings had it at +3.5 ' + lastG && why(4) === 'DraftKings had it at 44.5 ' + lastG
           && /2\+ touchdowns/.test(why(6)) && /alternate lines/.test(why(10)) && /not among the DraftKings lines read/.test(why(11)) && a.event === 'https://sportsbook.draftkings.com/event/990',
           `${how}: a leg of some kind does not find its DraftKings id, or one it cannot open does not say why: ` + JSON.stringify({ url: a.url, miss: a.miss.map(x => x.n + ' ' + x.why), event: a.event }));
+        /* the read the link stands on is the older of the two (the game lines'), and fresh under a day */
+        chk(!!a.read && a.read.toISOString().slice(0, 16) + 'Z' === AT_G && a.fresh === true, `${how}: the plan is not dated by its older read, or a read five hours old is not fresh: ` + JSON.stringify({ read: a.read, fresh: a.fresh }));
         const b = plan('nflverse');
-        chk(/^DraftKings had it at \+3\.5 when its lines were last read$/.test((b.miss.find(x => x.n === 2) || {}).why || ''), `${how}: a team line on a game whose lines are nflverse's says DraftKings has it now: ` + JSON.stringify(b.miss));
+        chk(((b.miss.find(x => x.n === 2) || {}).why || '') === 'DraftKings had it at +3.5 ' + lastG, `${how}: a team line on a game whose lines are nflverse's does not say DraftKings' line as last read, dated: ` + JSON.stringify(b.miss));
+        /* the same ids read 25 hours ago: nothing lands for sure, whatever the page's own line says */
+        made[String(wk)][g1.id].glat = stamp(25 * 3600e3); w.eval(`PAY.dk=${JSON.stringify(made)}`);
+        { const c = plan('nflverse');
+          chk(c.url === a.url && c.fresh === false && c.read.toISOString().slice(0, 16) + 'Z' === made[String(wk)][g1.id].glat, `${how}: ids read 25 hours ago are still fresh, or not dated by that read: ` + JSON.stringify({ read: c.read, fresh: c.fresh })); }
         w.eval(`S.sched.find(x=>x.id===${JSON.stringify(g1.id)}).ls=${JSON.stringify(ls0)}`);
         if (past) { const c = w.PARLAY_CARD.dkPlan([L({ gid: past.id, week: +past.w, pid: 'team:' + past.h, stat: 'ml', k: 0, grp: 'TEAM' })]);
           chk(!c.url && c.miss.length === 1 && /kicked off/.test(c.miss[0].why) && !c.event, `${how}: a leg whose game has kicked off is opened in DraftKings: ` + JSON.stringify(c)); }
@@ -773,7 +825,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         `${how}: Download did not save the card as a named PNG: ` + JSON.stringify(rec.clicks));
       chk(rec.urls.length === 1 && rec.urls[0].type === 'image/png' && rec.canvases.length === 1 && rec.canvases[0].width === 1080 && rec.canvases[0].height > 2 * 400,
         `${how}: the download is not a PNG drawn at twice the card's size: ` + (rec.urls[0] && rec.urls[0].type) + ' ' + (rec.canvases[0] && rec.canvases[0].width));
-      chk(['Home Side', 'To win', 'Card Runner', 'Over 64.5 rushing yards', '−135', '+105', price, '2-leg parlay', 'X NFL BETS AND STATS', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
+      chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105', price, '2-leg parlay', 'X NFL BETS AND STATS', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
         `${how}: the image does not carry every leg, the price, the stake and the mark: ` + rec.texts.join(' | '));
       chk(!rec.texts.some(x => /DraftKings|Share link/.test(x)), `${how}: the image carries the DraftKings link or the Share link: ` + rec.texts.join(' | '));
       chk(new RegExp('Saved as ' + file).test(txt(d.getElementById('pcMsg'))), `${how}: the window does not say the image was saved`);
@@ -851,14 +903,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         `${how}: Start over did not clear the builder alone`);
       chk(d.activeElement === (d.querySelector('#pbPanel [data-pb-mix]') || d.body) && d.activeElement !== d.getElementById('pcAgain'), `${how}: after Start over the focus is lost`);
       /* two weeks in the builder cannot be one parlay: Finish says so, as Save did */
-      w.eval(`S.parlay=${JSON.stringify(builder())}; S.parlay['other|team:${other ? other.h : 'X'}|ml']=${JSON.stringify({ gid: other ? other.id : 'x', pid: 'team:' + (other ? other.h : 'X'), stat: 'ml', k: 0, side: 'over', main: false, p: 0.5, price: 100, src: 'real', name: 'Elsewhere', pos: 'Game', grp: 'TEAM', team: other ? other.h : 'X', opp: other ? other.a : 'Y', week: other ? +other.w : wk + 1, label: 'To win' })}; save(); renderParlay()`);
+      w.eval(`S.parlay=${JSON.stringify(builder(side))}; S.parlay['other|team:${other ? other.h : 'X'}|ml']=${JSON.stringify({ gid: other ? other.id : 'x', pid: 'team:' + (other ? other.h : 'X'), stat: 'ml', k: 0, side: 'over', main: false, p: 0.5, price: 100, src: 'real', name: 'Elsewhere', pos: 'Game', grp: 'TEAM', team: other ? other.h : 'X', opp: other ? other.a : 'Y', week: other ? +other.w : wk + 1, label: 'To win' })}; save(); renderParlay()`);
       await wait(20);
       chk(!!d.getElementById('pFinish') && d.getElementById('pFinish').disabled && /same week to finish/.test(d.getElementById('pFinish').title), `${how}: a builder across two weeks can be finished`);
       /* the suggested parlays: a tier finishes the same way, its legs, its price and its chance, on the
          amount in the panel's Bet amount box, the one the tier pays on (the panel's own tiers are held
          to their rules in props' audit and smoke.js; here the tier is a fixed one on the two pinned
          games, so the card is checked on any day) */
-      { const tierLegs = Object.values(builder()).map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
+      { const tierLegs = Object.values(builder(side)).map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
         w.eval(`getPbTiers=function(){ return {sig:'smoke',games:2,ticked:2,kinds:5,pref:2,thin:0,tiers:[{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0},
           {id:'med',label:'Medium',n:3,floor:0.25,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'Only 2 legs on your picks: tick more games or bet types.'}]}; };
           pbGames=function(){ return S.sched.filter(g=>${JSON.stringify([g1.id, g2.id])}.includes(g.id)); }; renderPb();`);

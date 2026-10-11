@@ -10,6 +10,9 @@ the week and the game, for the games still to come:
     team:<ABBR>|ats|<point>                a team to cover, its own line
     game|total|over|<point> and under      the game total
     event                                  DraftKings' event id
+    at, glat                               when the game's player prices (priced_at.json) and its game
+                                           lines (gamelines_wk{W}.csv's pulled_at) were read: an id names
+                                           one outcome at one number, so the card dates what it opens
 The card (nflbets/build/card.html, dkLeg) looks a leg up by that key, a rung k+ as DraftKings'
 Over k-0.5 (or Over k-1, the whole line oddsfetch's threshold() reads a k+ price from), and opens
 the ids it finds on DraftKings' betslip.
@@ -20,12 +23,14 @@ This holds, with no network and no credits:
      money lines and spreads and the event come out as the ids in the file; every player key is on the
      player the job placed that book name's prices on; no team defence's touchdown; nothing of a game
      not still to come; and every price row and main line the payload carries for the game, a leg the
-     page offers with a real price, has its id under the key the card builds;
+     page offers with a real price, has its id under the key the card builds; each game is dated by the
+     reads committed with the file (its player prices and its game lines, 21:47 UTC);
   B. the pieces on made-up rows: a point written as the page writes it, a key two book names would
      give two ids left out (one id, kept), a No, an unknown market, a malformed key and a file that
-     will not read left out without costing the rest;
-  C. the bake writes dk into the payload, for the games still to come only, and a later bake with no
-     file leaves an empty dk, never the last one's ids;
+     will not read left out without costing the rest; a read time written as the page reads it, from
+     an offset too, and one that will not read, or a row with none, left undated;
+  C. the bake writes dk into the payload, for the games still to come only, dated by the reads, and a
+     later bake with no file leaves an empty dk, never the last one's ids;
   D. at a rollover last season's file goes to data/archive/ with its week's price files.
 
     python3 props/build/test_dk_links.py        must end "0 failures"
@@ -66,26 +71,30 @@ GID = '2026_05_BAL_ATL'
 # read from git, so a later pull that rewrites the week's file (or prices the game in play) cannot move
 # the case; on a checkout without that history the files as they are now are read instead, and said
 AT = 'b91f865'
-def committed(rel):
+def committed(rel, text=False):
     try:
         r = subprocess.run(['git', 'show', f'{AT}:{rel}'], cwd=HERE, capture_output=True, timeout=60)
-        if r.returncode == 0: return json.loads(r.stdout.decode('utf-8'))
+        if r.returncode == 0: return r.stdout.decode('utf-8') if text else json.loads(r.stdout.decode('utf-8'))
     except (OSError, ValueError, subprocess.TimeoutExpired): pass
     return None
+TIMES = ('priced_at.json', 'gamelines_wk5.csv')    # the reads the ids are dated by, committed with them
 
 def a():
     raw, pay = committed('props/data/dk_links_wk5.json'), committed('props/data/payload.json')
-    if raw is None or pay is None:
+    times = {fn: committed('props/data/' + fn, text=True) for fn in TIMES}
+    if raw is None or pay is None or None in times.values():
         print(f'  (commit {AT} is not in this checkout: the files as they are now)')
         path = os.path.join(DATA, 'dk_links_wk5.json')
         if not os.path.exists(path): chk(False, f'A. {path} is missing'); return
         raw = json.load(open(path, encoding='utf-8'))
         pay = json.load(open(os.path.join(DATA, 'payload.json'), encoding='utf-8'))
+        times = {fn: open(os.path.join(DATA, fn), encoding='utf-8').read() for fn in TIMES if os.path.exists(os.path.join(DATA, fn))}
     byid = {g['id']: g for g in pay['sched']}
     to_come = {GID, '2026_05_BUF_LA'}           # the two games still to come when the file was written
     tmp = tempfile.mkdtemp(prefix='test_dk_links_')
     try:
         json.dump(raw, open(os.path.join(tmp, 'dk_links_wk5.json'), 'w', encoding='utf-8'))
+        for fn, t in times.items(): open(os.path.join(tmp, fn), 'w', encoding='utf-8').write(t)
         pool = payload_pool(pay)
         dk, n, clash = quiet(weekly.dk_ids, tmp, byid, to_come, pool.match)
     finally: shutil.rmtree(tmp, ignore_errors=True)
@@ -114,7 +123,7 @@ def a():
         if p[0] == GID and len(p) == 5 and p[1] != 'game' and not names.is_team_row(p[1]): book.setdefault(p[1], set()).add(p[2])
     wrong = [b for b in book if b in placed and not any(k.startswith(placed[b] + '|') for k in D)]
     chk(not wrong and all(b in placed for b in book), f'A. every book name the file prices is on the player its prices are on ({wrong}, unplaced {sorted(b for b in book if b not in placed)})')
-    pids = {k.split('|')[0] for k in D if not k.startswith(('team:', 'game|', 'event'))}
+    pids = {k.split('|')[0] for k in D if not k.startswith(('team:', 'game|', 'event')) and k not in ('at', 'glat')}
     chk(pids <= set(placed.values()), f'A. no id on a player the prices are not on ({sorted(pids - set(placed.values()))})')
     # every leg the page offers with a real price on the game has its id under the card's key
     miss = []
@@ -130,7 +139,16 @@ def a():
             for side in ('over', 'under'):
                 if f'{pid}|{st}|{side}|{weekly.dk_point(L["line"])}' not in D: miss.append(f"{L['n']} {st} {side} {L['line']}")
     chk(not miss, f'A. every price row and main line of the game opens: its id is under the key the card builds ({len(miss)} missing: {miss[:5]})')
-    chk(n == sum(len(v) for v in dk['5'].values()) and n > 100, f'A. {n} ids counted')
+    chk(n == sum(len([k for k in v if k not in ('at', 'glat')]) for v in dk['5'].values()) and n > 100, f'A. {n} ids counted, the read times not among them')
+    # dated by the reads committed with the file: the Ravens-Falcons player prices and the slate's game
+    # lines both at 21:47 UTC; Bills-Rams had its game lines read then and no player prices yet, so no at
+    priced = json.loads(times.get('priced_at.json') or '{}')
+    gl = {r['game_id']: r.get('pulled_at') for r in __import__('csv').DictReader(io.StringIO(times.get('gamelines_wk5.csv') or ''))}
+    B = (dk.get('5') or {}).get('2026_05_BUF_LA') or {}
+    chk(D.get('at') == priced.get(GID) == '2026-10-11T21:47Z' and D.get('glat') == gl.get(GID) == '2026-10-11T21:47Z',
+        f"A. Ravens-Falcons is dated by its price pull (at {D.get('at')}) and its game lines' read (glat {D.get('glat')})")
+    chk(B.get('glat') == gl.get('2026_05_BUF_LA') and 'at' not in B and not any(k not in ('at', 'glat', 'event') and not k.startswith(('team:', 'game|')) for k in B),
+        f"A. Bills-Rams, game lines only, carries glat ({B.get('glat')}) and no at")
 case('A', a)
 
 # ---- B. the pieces --------------------------------------------------------------------------------
@@ -163,6 +181,10 @@ def b():
         json.dump({f'{g2}|Jaxon Smith-Njigba|receiving_yards|Over|64.5': E('J#1'), f'{g2}|game|spread|away|2.5': E('S#a'),
                    '2025_06_SF_SEA|game|ml|home|': E('L#1')}, open(os.path.join(tmp, 'dk_links_wk7.json'), 'w', encoding='utf-8'))
         open(os.path.join(tmp, 'dk_links_wk8.json'), 'w').write('{not json')
+        # the reads: g1's player prices at 05:17 UTC and its game lines with an offset, g2's price time
+        # unreadable and its game-line row with no time (a row from before the rows carried one)
+        json.dump({g1: '2026-10-17T05:17Z', g2: 'Saturday'}, open(os.path.join(tmp, 'priced_at.json'), 'w', encoding='utf-8'))
+        open(os.path.join(tmp, 'gamelines_wk6.csv'), 'w').write(f'game_id,away_moneyline,home_moneyline,spread_line,pulled_at\n{g1},120,-140,3.0,2026-10-16T22:17:00+00:00\n{g2},110,-130,-2.5,\n')
         log = io.StringIO()
         with contextlib.redirect_stdout(log): dk, n, clash = weekly.dk_ids(tmp, byid, {g1, g2}, pool.match)
         D1, D2 = dk.get('6', {}).get(g1, {}), dk.get('6', {}).get(g2, {})
@@ -174,7 +196,10 @@ def b():
             f'B. the game lines: a team to win, to cover on its own line, the total on a whole number, the event; an entry with no id left out ({D1})')
         chk(D2 == {'00-0038543|receiving_yards|over|64.5': 'J#1', 'team:SF|ats|2.5': 'S#a'} and '2025_06_SF_SEA' not in json.dumps(dk),
             f'B. a game is filed under its own week whatever the file, and another season\'s game is left out ({D2})')
-        chk('dk_links_wk8.json not read' in log.getvalue() and n == len(D1) + len(D2), f'B. a file that will not read is said, and costs nothing else ({n} ids)')
+        chk(D1.get('at') == '2026-10-17T05:17Z' and D1.get('glat') == '2026-10-16T22:17Z',
+            f"B. a game is dated by its price pull and its game lines' read, an offset written in UTC as the page reads it ({D1.get('at')}, {D1.get('glat')})")
+        chk('at' not in D2 and 'glat' not in D2, f'B. a read time that will not read, or a row with none, leaves the game undated ({D2})')
+        chk('dk_links_wk8.json not read' in log.getvalue() and n == len(D1) - 2 + len(D2), f'B. a file that will not read is said, and costs nothing else ({n} ids, the read times not counted)')
         dk2, n2, _ = quiet(weekly.dk_ids, tmp, byid, {g2}, pool.match)
         chk(set(dk2.get('6', {})) == {g2}, 'B. a game not still to come has no ids')
     finally: shutil.rmtree(tmp, ignore_errors=True)
@@ -191,6 +216,8 @@ def c():
         json.dump({f'{g1}|Calvin Austin|any_td|Yes|': E('Y#1'), f'{g1}|event': {'sid': '1'},
                    f'{g2}|Jaxon Smith-Njigba|any_td|Yes|': E('Y#2'), f'{g2}|game|total|Under|47.5': E('O#2'), f'{g2}|event': {'sid': '2'}},
                   open(os.path.join(data, 'dk_links_wk6.json'), 'w', encoding='utf-8'))
+        json.dump({g1: '2026-10-17T05:17Z', g2: '2026-10-17T05:17Z'}, open(os.path.join(data, 'priced_at.json'), 'w', encoding='utf-8'))
+        open(os.path.join(data, 'gamelines_wk6.csv'), 'w').write(f'game_id,total_line,over_odds,under_odds,pulled_at\n{g2},47.5,-110,-110,2026-10-18T08:17Z\n')
         pp = os.path.join(tmp, 'payload.json')
         def bake():
             json.dump({'season': 2026, 'sched': [dict(g) for g in SCHED], 'mkt': {}, 'players': [], 'depth': {}, 'dk': {'5': {'old': {'event': 'x'}}}}, open(pp, 'w', encoding='utf-8'))
@@ -200,8 +227,8 @@ def c():
             with contextlib.redirect_stdout(out): weekly.bake(pp, {'season': 2026}, [], 6, False, now, raw)
             return json.load(open(pp, encoding='utf-8')), out.getvalue(), list(weekly.problems)
         pay, log, probs = bake()
-        chk(pay.get('dk') == {'6': {g2: {'00-0038543|any_td': 'Y#2', 'game|total|under|47.5': 'O#2', 'event': '2'}}},
-            f"C. the bake writes dk for the game still to come alone, and none of the last payload's ({pay.get('dk')})")
+        chk(pay.get('dk') == {'6': {g2: {'00-0038543|any_td': 'Y#2', 'game|total|under|47.5': 'O#2', 'event': '2', 'at': '2026-10-17T05:17Z', 'glat': '2026-10-18T08:17Z'}}},
+            f"C. the bake writes dk for the game still to come alone, dated by its reads, and none of the last payload's ({pay.get('dk')})")
         chk('DraftKings ids: 3 on 1 game(s) still to come' in log and not probs, f'C. it says how many, and reports no problem ({probs})')
         os.remove(os.path.join(data, 'dk_links_wk6.json'))
         pay, log, probs = bake()

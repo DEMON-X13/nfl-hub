@@ -505,10 +505,13 @@ and Pays, then Profit the card's width), then one to a row, the card growing to 
 **Open in DraftKings**, a link in a new tab, opens the parlay on DraftKings' betslip
 (`https://sportsbook.draftkings.com/?outcomes=<id>+<id>`, each `#` as `%23`) from the payload's `dk`, every
 leg it has an id for in the card's order (`dkLeg`, `dkPlan`); under the buttons the card says what it
-opens, links each leg on its own, and names the legs it cannot open and why (no ids for the game, a 2+
-touchdown rung, an alternate line, a game kicked off, or a line DraftKings has moved: "DraftKings has it
-at 79.5 now"); with none, no button. **Share link** sends the parlay as text (a line a leg, the stake and
-what it pays, the legs to add by hand, the site's address) with that link, by `navigator.share`, or
+opens, dated by the oldest read of the legs it opens (`dk`'s `at` and `glat`; every leg is promised only
+while that is under a day old), links each leg on its own, and names the legs it cannot open and why (no
+ids for the game, a 2+ touchdown rung, an alternate line, a game kicked off, or a line DraftKings had
+elsewhere: "DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM ET)"); with
+none, no button. **Share link** sends the parlay as text (a line a leg, each price marked est. or fair
+where it is not the book's and the title's likewise, the stake and what it pays, when DraftKings' lines
+were read, the legs to add by hand, the site's address) with that link, by `navigator.share`, or
 copied where there is none or it fails (a cancel does nothing); neither touches the image.
 **Start over** empties the builder. Finishing writes nothing: not `S.saved`, no key of the page,
 nothing anywhere else. The card's price is the builder's own: the build lifts renderParlay's
@@ -624,7 +627,8 @@ names against, and anyone else the page can show, whatever position the roster g
 `depth` + `depth_dt`, `price_pull` + `credits` (the last price pull), `dk` (DraftKings' own id for
 every outcome the pulls read on a game still to come, `dk[week][game][key]`, the key a leg's own
 without its game, then its side and DraftKings' point: `<pid>|<stat>|over|79.5`, `<pid>|any_td`,
-`team:BAL|ml`, `team:ATL|ats|-3`, `game|total|under|43.5`, and `event`, DraftKings' event id; `dk_ids`
+`team:BAL|ml`, `team:ATL|ats|-3`, `game|total|under|43.5`, and `event`, DraftKings' event id, with `at`
+and `glat`, when the game's player prices and its game lines were read; `dk_ids`
 in `weekly.py` builds it from `data/dk_links_wk{W}.json`, a player placed by the rule his prices are;
 the parlay card's Open in DraftKings and Share link read it), `season`, `week` and
 `season_over`, `not_posted` (`stats` and/or `injuries` when nflverse has not posted this

@@ -209,10 +209,14 @@ priced again replaces its entries. The bake (`dk_ids` in `weekly.py`) turns them
 for the games still to come only, keyed the way the page names a leg, under the week and the game:
 `<pid>|<stat>|over|<point>` (and `under`: a player's line at DraftKings' point), `<pid>|any_td` (the
 book's Yes), `team:<ABBR>|ml`, `team:<ABBR>|ats|<the team's own line>`, `game|total|over|<point>` (and
-`under`) and `event`, each point written as the page writes a number (`dk_point`: 79.5, 80, -3). A player
+`under`) and `event`, each point written as the page writes a number (`dk_point`: 79.5, 80, -3), and
+when they were read: `at`, the game's player prices (`priced_at.json`), and `glat`, its game lines
+(`gamelines_wk{W}.csv`'s `pulled_at`). An id names one outcome at one number, and a Sunday game's player
+ids are read once, on Saturday, so they can be a day and more old by kickoff: the card dates what it
+opens. A player
 is placed by the rule his prices are (`pool.match`, within the game); a name it cannot place, a team
-defence's touchdown and a key two book names would give two ids are left out. Only ids: the parlay card
-builds the links. `python3 test_dk_links.py` holds it to the real week-5 file and to its cases; at a
+defence's touchdown and a key two book names would give two ids are left out. Only ids and the read
+times: the parlay card builds the links. `python3 test_dk_links.py` holds it to the real week-5 file and to its cases; at a
 rollover last season's file goes to `data/archive/` with its week's price files.
 
 ## Betting: the loop
@@ -623,13 +627,20 @@ DraftKings** (a real link, in a new tab) opens the parlay on DraftKings' betslip
 (or the whole k-1 its price was read from), in the card's order. Under the buttons the card says what it
 opens, gives each leg's own link too (DraftKings documents no link for several outcomes), and names every
 leg it cannot open and why: no ids read for its game (a payload baked before `dk`), a 2+ touchdown rung
-or an alternate line the pull does not read, a game that has kicked off, or a line DraftKings has moved
-since the leg was added ("DraftKings has it at 79.5 now", the page's main line where DraftKings has it;
-on a game whose lines are nflverse's, the line DraftKings had when last read). With no leg it can open
+or an alternate line the pull does not read, a game that has kicked off, or a line DraftKings had
+elsewhere when last read ("DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM
+ET)", the page's main line where DraftKings has it; never "now"). The note is dated by the oldest read of
+the legs it opens (`at` for a player's leg, `glat` for a team's line and the total), and says every leg
+lands ("puts all 3 legs on DraftKings' betslip", and so the button's title) only while that read is under
+a day old, the rule `g.ls` follows; older or undated, it opens "these 3 legs" and says a leg whose line
+DraftKings has moved since will not be on the slip, so check it. With no leg it can open
 there is no button, and the game's DraftKings page is offered where every leg is in one game. **Share
 link**, beside it, is for sending the parlay to people (the owner, October 2026): the share sheet
-(`navigator.share`) with a title ("3-leg parlay +330"), a plain line a leg (who, the bet, its price), the
-stake and what it pays, the legs to add by hand where only some open, the site's address, and the same
+(`navigator.share`) with a title ("3-leg parlay +330", with "(estimated price)" or "(fair price)" where the
+card says so), a plain line a leg (who, the bet, its price, "+210 est." or "+150 fair" where it is not the
+book's, as on the card), the stake and what it pays, when DraftKings' lines were read ("DraftKings lines as
+read ...; check the slip before you bet", with a link), the legs to add by hand where only some open, the
+site's address, and the same
 DraftKings link as its url (none when no leg opens); with no share sheet, or one that fails other than
 by a cancel, the text and the link are copied (the clipboard, else a hidden box) and the card says Link
 copied. A cancel does nothing, and neither button ever draws or downloads the image, which carries
@@ -733,12 +744,18 @@ checked in a real browser at 390 and 360 over every game, such as NYG at WAS and
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
-Open in DraftKings on made-up ids (every leg, part with a moved line, none, every kind of leg, a game
-kicked off), Share link (the share sheet's url the link's, every leg in its text, a cancel doing
+Open in DraftKings on made-up ids (every leg, part with a moved line, none, every kind of leg with an
+Under main line among them, a game kicked off; the runner's main line an Over in one browser and an
+Under in the other; the note and the button dated by the older read and promising every leg at five
+hours, not at 31 hours or undated), Share link (the share sheet's url the link's, every leg in its text,
+the read dated, an estimated rung's price and the parlay's marked as on the card, a cancel doing
 nothing, the clipboard and the hidden box without it), Escape, the Tab order (Close, Open in DraftKings,
 Share link, Download, Start over, each leg's link) and Start over, and nothing written by finishing, on
-a plain browser and on one the retired owner layer marked; `smoke.js` holds a real tier's link to the
-payload's own ids. Both smokes record every request a page makes: one to the retired
+a plain browser and on one the retired owner layer marked. `smoke.js` holds a real tier's link to
+made-up ids under keys it works out on its own, with the other side of each line and the other team
+under decoys (the tier's lines are made up, so the payload's own ids could never match them), and,
+where the payload has ids for a game still to come, a builder parlay of its money line and a player's
+Under to the payload's own ids (skipped, and said, on a payload baked before `dk`). Both smokes record every request a page makes: one to the retired
 Firebase store or its sign-in services, or anything but a read, fails them.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
 `nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the
