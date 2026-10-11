@@ -623,7 +623,12 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     for (const x of P0.sched) (byWeek[+x.w] = byWeek[+x.w] || []).push(x);
     const wk = Math.max(...Object.keys(byWeek).map(Number).filter(k => byWeek[k].length >= 2)), [g1, g2] = byWeek[wk];
     const other = P0.sched.find(x => +x.w !== wk);
-    const pin = P => { for (const x of P.sched) if (x.id === g1.id || x.id === g2.id || (other && x.id === other.id)) { x.d = '2099-12-31'; x.t = '13:00'; } return P; };
+    /* DraftKings' ids for the two legs, made up (the payload's dk, as weekly.py bakes it: week, game,
+       then the leg's key without the game, its side and DraftKings' point), each with a '#' */
+    const DK_ML = 'SMOKE1#ml_' + g1.h, DK_RB = 'SMOKE2#rush_645', DK_EV = '880001';
+    const dkMade = () => ({ [String(wk)]: { [g1.id]: { event: DK_EV, [`team:${g1.h}|ml`]: DK_ML, [`team:${g1.a}|ml`]: 'SMOKE1#ml_' + g1.a },
+      [g2.id]: { event: '880002', 'card-rb|rushing_yards|over|64.5': DK_RB, 'card-rb|rushing_yards|under|64.5': 'SMOKE2#rush_645u' } } });
+    const pin = P => { for (const x of P.sched) if (x.id === g1.id || x.id === g2.id || (other && x.id === other.id)) { x.d = '2099-12-31'; x.t = '13:00'; } P.dk = dkMade(); return P; };
     const mlKey = `${g1.id}|team:${g1.h}|ml`, rbKey = `${g2.id}|card-rb|rushing_yards`;
     const builder = () => ({
       [mlKey]: { gid: g1.id, pid: 'team:' + g1.h, stat: 'ml', k: 0, side: 'over', main: false, p: 0.58, price: -135, src: 'real', mu: null, name: 'Home Side', pos: 'Game', grp: 'TEAM', team: g1.h, opp: g1.a, week: wk, label: 'To win' },
@@ -666,6 +671,101 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(new RegExp(`^${wk <= 18 ? 'Week ' + wk : '(Wild Card|Divisional|Conference|Super Bowl)'}`).test(txt(view.querySelector('.pc-sub'))) && /Dec 31/.test(txt(view.querySelector('.pc-sub')))
         && /X NFL Bets and Stats/i.test(txt(view)) && txt(view).includes('demon-x13.github.io/nfl-hub/nflbets'), `${how}: the card has no week and date, or no mark and address: ` + txt(view.querySelector('.pc-head')));
       chk(d.activeElement === d.getElementById('pcDownload'), `${how}: the window did not take the focus`);
+      /* Open in DraftKings: one link to DraftKings' betslip, the legs' own ids in the card's order
+         joined by +, each '#' as %23, in a new tab; under the buttons, what it opens and each leg's
+         own link (DraftKings documents no link for several outcomes, so one at a time is offered too) */
+      const DKU = ids => 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(x => x.replace(/#/g, '%23')).join('+');
+      const order = q.legs.map(l => l.stat === 'ml' ? DK_ML : DK_RB);
+      /* every leg on a line of its own in the shared text: its number, who, the bet and its price */
+      const legsIn = t => q.legs.every((l, i) => new RegExp(`(^|\\n)${i + 1}\\. ${l.name}: ${l.label} \\([+-]\\d+\\)(\\n|$)`).test(t));
+      const dkA = d.getElementById('pcDk'), note = () => d.getElementById('pcDkNote'), msg = () => txt(d.getElementById('pcMsg'));
+      chk(!!dkA && !dkA.hidden && dkA.tagName === 'A' && dkA.getAttribute('href') === DKU(order) && dkA.getAttribute('target') === '_blank' && /\bnoopener\b/.test(dkA.getAttribute('rel') || '') && txt(dkA) === 'Open in DraftKings',
+        `${how}: a parlay DraftKings has every leg of has no Open in DraftKings link to its betslip, in the card's order, in a new tab: ` + (dkA ? dkA.outerHTML : 'none'));
+      chk(!!dkA && !!dkA.closest('.pc-actions') && dkA.nextElementSibling === d.getElementById('pcLink'), `${how}: Open in DraftKings and Share link are not side by side in the action row`);
+      chk(/all 2 legs on DraftKings/.test(txt(note())) && [...note().querySelectorAll('a[data-pc-dkleg]')].map(a => a.getAttribute('href')).join(' ') === order.map(x => DKU([x])).join(' ')
+        && [...note().querySelectorAll('a')].every(a => a.getAttribute('target') === '_blank' && /noopener/.test(a.getAttribute('rel') || '')) && !note().querySelector('[data-pc-dkmiss]'),
+        `${how}: the note under the buttons does not say every leg opens, or does not give each leg's own link: ` + txt(note()));
+      /* Share link: the share sheet gets the same DraftKings link, a title, a line for every leg, the
+         stake and what it pays and the site's address; a cancel does nothing; with no share sheet (or
+         one that fails) the text and the link are copied; never the image */
+      { const nav = w.navigator, def = (k, v) => Object.defineProperty(nav, k, { value: v, configurable: true });
+        const shared = [], copied = [], clicks0 = rec.clicks.length, blobs0 = rec.blobs.length, canv0 = rec.canvases.length;
+        const cash = [...view.querySelectorAll('.pc-money b')].map(txt), link = d.getElementById('pcLink');
+        def('share', async x => { shared.push(x); }); def('clipboard', { writeText: async t => { copied.push(t); } });
+        chk(!!link && !link.hidden && txt(link) === 'Share link', `${how}: the card has no Share link`);
+        link.click(); await wait(30);
+        const s0 = shared[0] || {};
+        chk(shared.length === 1 && s0.url === dkA.getAttribute('href') && !s0.files && s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(s0.text || '')
+          && (s0.text || '').includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s0.text || '') && !/Add by hand/.test(s0.text || ''),
+          `${how}: Share link did not hand the share sheet the DraftKings link, the title, every leg, the stake and payout and the site: ` + JSON.stringify(s0));
+        chk(copied.length === 0 && rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && rec.canvases.length === canv0, `${how}: Share link copied as well, or drew or downloaded the image`);
+        def('share', async x => { shared.push(x); throw new w.DOMException('The user cancelled', 'AbortError'); });
+        const at = d.activeElement; link.click(); await wait(30);
+        chk(shared.length === 2 && copied.length === 0 && msg() === '' && !md.hidden && rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && d.activeElement === at,
+          `${how}: cancelling the share sheet did something: ` + JSON.stringify({ copied, msg: msg() }));
+        def('share', async () => { throw new w.DOMException('Not allowed', 'NotAllowedError'); });
+        link.click(); await wait(30);
+        chk(copied.length === 1 && copied[0] === s0.text + '\n' + s0.url && msg() === 'Link copied', `${how}: a share sheet that failed did not copy the text and the link instead: ` + JSON.stringify(copied));
+        delete nav.share;
+        link.click(); await wait(30);
+        chk(copied.length === 2 && copied[1] === s0.text + '\n' + s0.url && copied[1].endsWith('\n' + dkA.getAttribute('href')) && msg() === 'Link copied',
+          `${how}: with no share sheet the clipboard did not get the text and the DraftKings link: ` + JSON.stringify(copied.slice(1)));
+        delete nav.clipboard; const cmds = []; d.execCommand = c => { cmds.push(c); return true; };
+        const at2 = d.activeElement; link.click(); await wait(30);
+        chk(cmds.join() === 'copy' && msg() === 'Link copied' && !md.querySelector('textarea') && d.activeElement === at2, `${how}: without the clipboard call the link was not copied by a hidden box, or the box or the focus was left behind: ` + cmds.join());
+        delete d.execCommand;
+        chk(rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && rec.canvases.length === canv0 && reads(), `${how}: Share link drew or downloaded the image, or sent a request`); }
+      /* a leg DraftKings cannot open: the link opens the rest, and the note and the shared text name
+         it and why (a moved line: DraftKings' line now); none at all: no link, every leg named, and
+         Share link still sends the parlay and the site, with no DraftKings link */
+      { const reopen = async () => { d.getElementById('pcClose').click(); await wait(10); d.getElementById('pFinish').click(); await wait(20); };
+        const nRb = q.legs.findIndex(l => l.pid === 'card-rb') + 1, shared = [];
+        Object.defineProperty(w.navigator, 'share', { value: async x => { shared.push(x); }, configurable: true });
+        w.eval(`delete PAY.dk['${wk}']['${g2.id}']['card-rb|rushing_yards|over|64.5']; PAY.dk['${wk}']['${g2.id}']['card-rb|rushing_yards|over|65.5']='SMOKE2#rush_655'`);
+        await reopen();
+        const missRb = () => txt(note().querySelector(`[data-pc-dkmiss="${nRb}"]`));
+        chk(!dkA.hidden && dkA.getAttribute('href') === DKU([DK_ML]) && /1 of the 2 legs/.test(txt(note())) && /Card Runner, Over 64\.5 rushing yards: DraftKings has it at 65\.5 now/.test(missRb())
+          && note().querySelectorAll('[data-pc-dkmiss]').length === 1 && !note().querySelector('a[data-pc-dkleg]'),
+          `${how}: with one leg's line moved at DraftKings, the link does not open the other alone, or the note does not name the moved leg and DraftKings' line now: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
+        d.getElementById('pcLink').click(); await wait(30);
+        chk(shared.length === 1 && shared[0].url === DKU([DK_ML]) && new RegExp(`\\nAdd by hand at DraftKings: ${nRb}\\. Card Runner Over 64\\.5 rushing yards\\n`).test(shared[0].text),
+          `${how}: Share link on a parlay DraftKings has part of does not send the part's link and name the leg to add by hand: ` + JSON.stringify(shared[0]));
+        w.eval('PAY.dk={}'); await reopen();
+        chk(dkA.hidden && /None of these legs can be opened in DraftKings/.test(txt(note())) && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && /no DraftKings ids were read for its game/.test(txt(note()))
+          && !note().querySelector('a') && !d.getElementById('pcLink').hidden, `${how}: a parlay DraftKings has none of shows a link, or does not name every leg and why: ` + txt(note()));
+        d.getElementById('pcLink').click(); await wait(30);
+        const s2 = shared[1] || {};
+        chk(shared.length === 2 && !('url' in s2) && legsIn(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '') && !/Add by hand|draftkings\.com/.test(s2.text || ''),
+          `${how}: Share link on a parlay DraftKings has none of does not send the parlay and the site alone: ` + JSON.stringify(s2));
+        delete w.navigator.share;
+        /* every kind of leg against made-up ids on the first pinned game: a team's line, the total, a
+           touchdown, a main line, a rung (Over k-0.5, or Over k-1 where the book's line is whole), and
+           the legs it cannot open, with why; a game whose lines are nflverse's says DraftKings' line was
+           the one last read; a game that has kicked off opens nothing; the game's page when every leg is
+           in one game */
+        const G = w.eval('S.sched').find(x => x.id === g1.id), ls0 = G.ls, past = P0.sched.find(x => ![g1.id, g2.id, other && other.id].includes(x.id) && Date.parse(x.d + 'T23:59:00Z') < Date.now() - 864e5);
+        const made = { [String(wk)]: { [g1.id]: { event: '990', [`team:${g1.h}|ats|-3`]: 'A#h', [`team:${g1.a}|ats|3.5`]: 'A#a', 'game|total|over|43.5': 'T#o', 'game|total|under|44.5': 'T#u',
+          'p1|any_td': 'D#1', 'p1|receptions|over|4.5': 'R#1', 'p1|receiving_yards|over|59': 'Y#59', 'p2|rushing_yards|over|79.5': 'Z#79', 'p2|rushing_yards|over|80': 'Z#80' } } };
+        if (past) (made[String(past.w)] = made[String(past.w)] || {})[past.id] = { [`team:${past.h}|ml`]: 'P#1' };
+        w.eval(`PAY.dk=${JSON.stringify(made)}`);
+        const L = o => Object.assign({ gid: g1.id, week: wk, name: 'N', label: 'L', side: 'over', main: false }, o);
+        const legs = [L({ pid: 'team:' + g1.h, stat: 'ats', k: -3, grp: 'TEAM' }), L({ pid: 'team:' + g1.a, stat: 'ats', k: 3, grp: 'TEAM' }),
+          L({ pid: 'game', stat: 'total', k: 43.5, main: true, grp: 'TEAM' }), L({ pid: 'game', stat: 'total', side: 'under', k: 43.5, main: true, grp: 'TEAM' }),
+          L({ pid: 'p1', stat: 'any_td', k: 1, grp: 'WR' }), L({ pid: 'p1', stat: 'any_td', k: 2, grp: 'WR' }), L({ pid: 'p1', stat: 'receptions', k: 4.5, main: true, grp: 'WR' }),
+          L({ pid: 'p1', stat: 'receiving_yards', k: 60, grp: 'WR' }), L({ pid: 'p2', stat: 'rushing_yards', k: 80, grp: 'RB' }), L({ pid: 'p2', stat: 'rushing_yards', k: 100, grp: 'RB' }),
+          L({ pid: 'team:' + g1.h, stat: 'ml', k: 0, grp: 'TEAM' })];
+        const plan = ls => { w.eval(`S.sched.find(x=>x.id===${JSON.stringify(g1.id)}).ls=${JSON.stringify(ls)}`); return w.PARLAY_CARD.dkPlan(legs.map(l => Object.assign({}, l))); };
+        const a = plan('dk'), why = n => (a.miss.find(x => x.n === n) || {}).why || '';
+        chk(a.url === DKU(['A#h', 'T#o', 'D#1', 'R#1', 'Y#59', 'Z#79']) && a.ok.map(x => x.n).join() === '1,3,5,7,8,9' && why(2) === 'DraftKings has it at +3.5 now' && why(4) === 'DraftKings has it at 44.5 now'
+          && /2\+ touchdowns/.test(why(6)) && /alternate lines/.test(why(10)) && /not among the DraftKings lines read/.test(why(11)) && a.event === 'https://sportsbook.draftkings.com/event/990',
+          `${how}: a leg of some kind does not find its DraftKings id, or one it cannot open does not say why: ` + JSON.stringify({ url: a.url, miss: a.miss.map(x => x.n + ' ' + x.why), event: a.event }));
+        const b = plan('nflverse');
+        chk(/^DraftKings had it at \+3\.5 when its lines were last read$/.test((b.miss.find(x => x.n === 2) || {}).why || ''), `${how}: a team line on a game whose lines are nflverse's says DraftKings has it now: ` + JSON.stringify(b.miss));
+        w.eval(`S.sched.find(x=>x.id===${JSON.stringify(g1.id)}).ls=${JSON.stringify(ls0)}`);
+        if (past) { const c = w.PARLAY_CARD.dkPlan([L({ gid: past.id, week: +past.w, pid: 'team:' + past.h, stat: 'ml', k: 0, grp: 'TEAM' })]);
+          chk(!c.url && c.miss.length === 1 && /kicked off/.test(c.miss[0].why) && !c.event, `${how}: a leg whose game has kicked off is opened in DraftKings: ` + JSON.stringify(c)); }
+        w.eval(`PAY.dk=${JSON.stringify(dkMade())}`); await reopen();
+        chk(dkA.getAttribute('href') === DKU(order) && d.activeElement === d.getElementById('pcDownload'), `${how}: the card did not come back whole with the DraftKings ids put back`); }
       /* the image */
       d.getElementById('pcDownload').click(); await wait(60);
       const file = rec.clicks[0] && rec.clicks[0].download;
@@ -675,17 +775,23 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         `${how}: the download is not a PNG drawn at twice the card's size: ` + (rec.urls[0] && rec.urls[0].type) + ' ' + (rec.canvases[0] && rec.canvases[0].width));
       chk(['Home Side', 'To win', 'Card Runner', 'Over 64.5 rushing yards', '−135', '+105', price, '2-leg parlay', 'X NFL BETS AND STATS', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
         `${how}: the image does not carry every leg, the price, the stake and the mark: ` + rec.texts.join(' | '));
+      chk(!rec.texts.some(x => /DraftKings|Share link/.test(x)), `${how}: the image carries the DraftKings link or the Share link: ` + rec.texts.join(' | '));
       chk(new RegExp('Saved as ' + file).test(txt(d.getElementById('pcMsg'))), `${how}: the window does not say the image was saved`);
       /* Escape closes it, and the focus goes back to Finish; the builder keeps its legs */
       d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
       chk(md.hidden && !d.body.classList.contains('modal-open') && d.activeElement === d.getElementById('pFinish') && Object.keys(w.eval('S').parlay).length === 2,
         `${how}: Escape did not close the window, give the focus back to Finish, or the builder lost its legs`);
-      /* Tab stays inside the window, both ways */
+      /* Tab stays inside the window, both ways. The order is Close, Open in DraftKings, Share link,
+         Download, Start over, then the note's own link for each leg under the buttons, the last */
       d.getElementById('pFinish').click(); await wait(20);
-      d.getElementById('pcAgain').focus(); d.getElementById('pcAgain').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+      const foc = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]'));
+      const seq = foc.map(el => el.id || 'leg' + el.getAttribute('data-pc-dkleg')).join(' ');
+      chk(seq === 'pcClose pcDk pcLink pcDownload pcAgain leg1 leg2', `${how}: the card's controls are not in the order Close, Open in DraftKings, Share link, Download, Start over, each leg's link: ` + seq);
+      const lastC = foc[foc.length - 1];
+      lastC.focus(); lastC.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
       const wrapped = d.activeElement === d.getElementById('pcClose');
       d.getElementById('pcClose').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
-      chk(wrapped && d.activeElement === d.getElementById('pcAgain'), `${how}: Tab leaves the card's window`);
+      chk(wrapped && d.activeElement === lastC, `${how}: Tab leaves the card's window`);
       /* a click outside the card closes it too, and so does Close */
       md.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await wait(10);
       chk(md.hidden, `${how}: a click outside the card did not close its window`);
@@ -765,6 +871,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           chk(!md.hidden && /Safe parlay/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && /41\.0%/.test(txt(d.getElementById('pcView')))
             && cash() === '$40.00 | $124.00 | +$84.00',
             `${how}: the suggestion's card is not its legs, price, chance and the $40 amount it pays on: ` + txt(d.getElementById('pcView')));
+          const tA = d.getElementById('pcDk');
+          chk(!tA.hidden && tA.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + tierLegs.map(l => (l.stat === 'ml' ? DK_ML : DK_RB).replace(/#/g, '%23')).join('+') && /all 2 legs/.test(txt(d.getElementById('pcDkNote'))),
+            `${how}: the suggestion's card does not open its legs in DraftKings in the tier's order: ` + tA.getAttribute('href'));
           d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
           chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the tier`); }
         /* an amount of the visitor's own in the Bet amount box: the tier pays on it, Finish opens the

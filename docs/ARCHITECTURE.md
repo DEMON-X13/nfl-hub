@@ -107,7 +107,10 @@ props/
   data/mktbuild.py               every week's wk{W}_lines.csv onto the players (weekly.py
                                  runs it for every week on every run)
   data/oddsfetch.py              the price pull (the-odds-api): choose() picks the games;
-                                 priced_at.json is when each game was last priced
+                                 priced_at.json is when each game was last priced;
+                                 dk_links_wk{W}.json is DraftKings' own id for every
+                                 outcome it read, which the bake turns into the payload's dk
+  build/test_dk_links.py         the payload's dk against the real week-5 file and its cases
   build/patch_*.py               one committed script per past change, each with a
                                  prose docstring saying why
   data/payload.json              generated. everything the page fetches at boot
@@ -499,6 +502,14 @@ which is how it reaches Photos. Every dollar figure is shown whole with its thou
 narrower than their figures, so one too wide for three across goes onto a second row; on the image
 the figures step down from 19px to 14px to fit three across, then the tiles take two rows (Stake
 and Pays, then Profit the card's width), then one to a row, the card growing to hold them.
+**Open in DraftKings**, a link in a new tab, opens the parlay on DraftKings' betslip
+(`https://sportsbook.draftkings.com/?outcomes=<id>+<id>`, each `#` as `%23`) from the payload's `dk`, every
+leg it has an id for in the card's order (`dkLeg`, `dkPlan`); under the buttons the card says what it
+opens, links each leg on its own, and names the legs it cannot open and why (no ids for the game, a 2+
+touchdown rung, an alternate line, a game kicked off, or a line DraftKings has moved: "DraftKings has it
+at 79.5 now"); with none, no button. **Share link** sends the parlay as text (a line a leg, the stake and
+what it pays, the legs to add by hand, the site's address) with that link, by `navigator.share`, or
+copied where there is none or it fails (a cancel does nothing); neither touches the image.
 **Start over** empties the builder. Finishing writes nothing: not `S.saved`, no key of the page,
 nothing anywhere else. The card's price is the builder's own: the build lifts renderParlay's
 pricing block out of `part3.js` into the card's `quote()` (its `/*QUOTE*/` slot), so it cannot
@@ -523,7 +534,8 @@ retired owner and reader layers marked, and (its section J) the parlay card: Fin
 every leg and the price, the image on a recorder canvas (jsdom draws nothing; it measures figures as
 a wide bold face does), a long shot's stake, payout and profit whole in the window and on the image
 (stepped down to fit, and a second row of tiles for a figure too wide even so), the share sheet,
-Escape, Tab and Start over, and that finishing writes nothing. Both record every request a page
+Open in DraftKings and Share link on made-up ids, Escape, Tab and Start over, and that finishing writes
+nothing. Both record every request a page
 makes, and a request to the retired store or its sign-in services, or anything but a read, fails
 them. The elo job runs `smoke.js`
 every morning, playoffs and off-season included, so it holds in any week: the board's week is
@@ -609,7 +621,12 @@ Outs and Doubtfuls), `roster` (every skill player's team, roster status, name an
 the row is for, then where they differ his football name with his surname (or null) and
 his legal form, `names_of` in `names.py`, which the audit matches book
 names against, and anyone else the page can show, whatever position the roster gives him),
-`depth` + `depth_dt`, `price_pull` + `credits` (the last price pull), `season`, `week` and
+`depth` + `depth_dt`, `price_pull` + `credits` (the last price pull), `dk` (DraftKings' own id for
+every outcome the pulls read on a game still to come, `dk[week][game][key]`, the key a leg's own
+without its game, then its side and DraftKings' point: `<pid>|<stat>|over|79.5`, `<pid>|any_td`,
+`team:BAL|ml`, `team:ATL|ats|-3`, `game|total|under|43.5`, and `event`, DraftKings' event id; `dk_ids`
+in `weekly.py` builds it from `data/dk_links_wk{W}.json`, a player placed by the rule his prices are;
+the parlay card's Open in DraftKings and Share link read it), `season`, `week` and
 `season_over`, `not_posted` (`stats` and/or `injuries` when nflverse has not posted this
 season's file yet: the slate says so, and the audit expects none of it), `build` (the data
 build) and `baked_at`. Only this season's games are baked: a price or line row of another

@@ -202,6 +202,19 @@ no credits) replays the season's schedule through `weekly.py`'s windows and `odd
 `choose()` at every lateness up to 9.4 hours and with pulls dropped, and holds the crons to
 `PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`.
 
+Every pull also keeps DraftKings' own id (sid) for each outcome it reads, free on the same calls
+(`includeSids`), in `props/data/dk_links_wk{W}.json`, keyed by the book's names
+(`game|player|stat|Over/Under/Yes|point`, `game|game|ml/spread/total|side|point`, `game|event`); a game
+priced again replaces its entries. The bake (`dk_ids` in `weekly.py`) turns them into the payload's `dk`,
+for the games still to come only, keyed the way the page names a leg, under the week and the game:
+`<pid>|<stat>|over|<point>` (and `under`: a player's line at DraftKings' point), `<pid>|any_td` (the
+book's Yes), `team:<ABBR>|ml`, `team:<ABBR>|ats|<the team's own line>`, `game|total|over|<point>` (and
+`under`) and `event`, each point written as the page writes a number (`dk_point`: 79.5, 80, -3). A player
+is placed by the rule his prices are (`pool.match`, within the game); a name it cannot place, a team
+defence's touchdown and a key two book names would give two ids are left out. Only ids: the parlay card
+builds the links. `python3 test_dk_links.py` holds it to the real week-5 file and to its cases; at a
+rollover last season's file goes to `data/archive/` with its week's price files.
+
 ## Betting: the loop
 
 ```
@@ -603,7 +616,24 @@ every device the builder's Save and lock is **Finish parlay**: it opens the parl
 card (each leg and its price, the parlay's price, the stake and what it pays, the model's chance
 beside the price's, the week and its dates, the site's mark) with **Download image** (a PNG drawn
 on a canvas at twice its size, `parlay-week6-3legs.png`; the share sheet too where the browser can
-share a file, which is how a phone saves it to Photos) and **Start over**. Every dollar figure on
+share a file, which is how a phone saves it to Photos) and **Start over**. Beside them, **Open in
+DraftKings** (a real link, in a new tab) opens the parlay on DraftKings' betslip,
+`https://sportsbook.draftkings.com/?outcomes=<id>+<id>` with each `#` as `%23`, from the payload's `dk`
+(see the Props loop): each leg's DraftKings id under its own key, a rung k+ as DraftKings' Over k-0.5
+(or the whole k-1 its price was read from), in the card's order. Under the buttons the card says what it
+opens, gives each leg's own link too (DraftKings documents no link for several outcomes), and names every
+leg it cannot open and why: no ids read for its game (a payload baked before `dk`), a 2+ touchdown rung
+or an alternate line the pull does not read, a game that has kicked off, or a line DraftKings has moved
+since the leg was added ("DraftKings has it at 79.5 now", the page's main line where DraftKings has it;
+on a game whose lines are nflverse's, the line DraftKings had when last read). With no leg it can open
+there is no button, and the game's DraftKings page is offered where every leg is in one game. **Share
+link**, beside it, is for sending the parlay to people (the owner, October 2026): the share sheet
+(`navigator.share`) with a title ("3-leg parlay +330"), a plain line a leg (who, the bet, its price), the
+stake and what it pays, the legs to add by hand where only some open, the site's address, and the same
+DraftKings link as its url (none when no leg opens); with no share sheet, or one that fails other than
+by a cancel, the text and the link are copied (the clipboard, else a hidden box) and the card says Link
+copied. A cancel does nothing, and neither button ever draws or downloads the image, which carries
+neither. Every dollar figure on
 it is whole, thousands marked: the window's tiles wrap onto a second row rather than cut one, and
 the image's step down from 19px to 14px, then take a second row. Finishing saves
 nothing anywhere; a suggested tier's Finish (the panel's and the Elo picks', `data-pc-finish`,
@@ -703,8 +733,12 @@ checked in a real browser at 390 and 360 over every game, such as NYG at WAS and
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
-Escape, Tab and Start over, and nothing written by finishing, on a plain browser and on one the
-retired owner layer marked. Both smokes record every request a page makes: one to the retired
+Open in DraftKings on made-up ids (every leg, part with a moved line, none, every kind of leg, a game
+kicked off), Share link (the share sheet's url the link's, every leg in its text, a cancel doing
+nothing, the clipboard and the hidden box without it), Escape, the Tab order (Close, Open in DraftKings,
+Share link, Download, Start over, each leg's link) and Start over, and nothing written by finishing, on
+a plain browser and on one the retired owner layer marked; `smoke.js` holds a real tier's link to the
+payload's own ids. Both smokes record every request a page makes: one to the retired
 Firebase store or its sign-in services, or anything but a read, fails them.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
 `nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the

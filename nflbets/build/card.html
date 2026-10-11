@@ -11,6 +11,11 @@
      the browser can share a file (a phone), the share sheet is offered too, which is how an image
      reaches Photos.
 
+     Open in DraftKings opens the parlay on DraftKings' betslip from the payload's dk (DraftKings' own
+     id for every outcome the price pull read, baked by props/build/weekly.py), and the note under
+     the buttons names any leg it cannot open and why. Share link sends the parlay as a few lines of
+     text with that link, by the share sheet or the clipboard. Neither touches the image.
+
      Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
      this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
      over clears it. A suggested parlay (a tier of the Parlay Builder's suggestions, or one of its
@@ -131,6 +136,60 @@ window.PARLAY_CARD=(function(){
     const meta=[team?'':l.pos, l.team&&l.opp?l.team+' v '+l.opp:'', k?whenOf(k):''].filter(Boolean).join(' · ');
     return {who:l.name||l.team||'', what:l.label||'', meta, price:ml(price), tag:src==='real'?'book':(src==='fair'?'fair':'est.')};
   }
+  /* ---- DraftKings: the parlay on DraftKings' betslip ----
+     PAY.dk is DraftKings' own id for every outcome the price pull read on a game still to come,
+     baked by props/build/weekly.py (dk_ids) under the week and the game, keyed the way a leg is
+     named here: <pid>|<stat>|over|<point> (or under: a player's line at DraftKings' point),
+     <pid>|any_td (his touchdown), team:<ABBR>|ml, team:<ABBR>|ats|<the team's own line>,
+     game|total|over|<point> (or under) and event (the game's page). DraftKings opens several
+     outcomes on its betslip at ?outcomes=<id>+<id>, each '#' written %23; a leg it cannot open is
+     named with why, and where DraftKings' line has moved since the leg was added, its line now. */
+  const DKS='https://sportsbook.draftkings.com/';
+  const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
+  const pt=x=>String(+x), signed=x=>(+x>0?'+':'')+pt(x);
+  function dkGame(l){ try{ const D=typeof PAY==='object'&&PAY&&PAY.dk, W=D&&D[String(l.week)]; return (W&&W[l.gid])||null; }catch(e){ return null; } }
+  /* one leg: {id} where DraftKings has it, else {why} */
+  function dkLeg(l){
+    const g=game(l.gid);
+    if(kickedOff(l)) return {why:'its game has kicked off'};
+    const D=dkGame(l);
+    if(!D) return {why:'no DraftKings ids were read for its game'};
+    const team=l.stat==='ml'||l.stat==='ats';
+    let key=null, near=null, show=pt;
+    if(l.stat==='ml') key=l.pid+'|ml';
+    else if(l.stat==='ats'){ key=l.pid+'|ats|'+pt(l.k); near=l.pid+'|ats|'; show=signed; }
+    else if(l.stat==='total'){ key='game|total|'+l.side+'|'+pt(l.k); near='game|total|'+l.side+'|'; }
+    else if(l.stat==='any_td'){
+      if((+l.k||1)>=2) return {why:(+l.k)+'+ touchdowns is not among the DraftKings lines this page reads'};
+      key=l.pid+'|any_td'; }
+    else if(l.main){ key=[l.pid,l.stat,l.side,pt(l.k)].join('|'); near=[l.pid,l.stat,l.side,''].join('|'); }
+    else {
+      /* a rung, k or more: DraftKings' Over k-0.5 is the same bet (an Over on a whole k-1 is the
+         line the price file read it from, as oddsfetch's threshold() does) */
+      for(const p of [+l.k-0.5,+l.k-1]){ const id=D[[l.pid,l.stat,'over',pt(p)].join('|')]; if(id) return {id}; }
+      return {why:'DraftKings’ alternate lines are not read here'}; }
+    if(D[key]) return {id:D[key]};
+    if(near){
+      const pts=Object.keys(D).filter(k=>k.startsWith(near)).map(k=>k.slice(near.length)).filter(x=>x!==''&&isFinite(+x)).map(Number);
+      if(pts.length){
+        /* the main line the page has for him where DraftKings has it, else DraftKings' nearest */
+        let M=null; try{ M=(!team&&l.stat!=='total'&&typeof marketLine==='function')?marketLine(l.week,l.pid,l.stat):null; }catch(e){}
+        const p=(M&&pts.includes(+M.line))?+M.line:pts.sort((a,b)=>Math.abs(a-l.k)-Math.abs(b-l.k))[0];
+        /* a game's lines are DraftKings' only while under a day old (g.ls); after that the page's
+           line is nflverse's, and DraftKings' is the one last read */
+        return {why:(l.grp==='TEAM'&&g&&g.ls!=='dk')?`DraftKings had it at ${show(p)} when its lines were last read`:`DraftKings has it at ${show(p)} now`,now:p}; } }
+    return {why:'not among the DraftKings lines read for its game'};
+  }
+  /* the parlay: the betslip link for every leg DraftKings has, in the card's order, the legs it
+     cannot open, and the game's own page where every leg is in one game */
+  function dkPlan(legs){
+    const each=legs.map((l,i)=>Object.assign({n:i+1,who:(l.card&&l.card.who)||l.name||'',what:(l.card&&l.card.what)||l.label||''},dkLeg(l)));
+    const ok=each.filter(x=>x.id), miss=each.filter(x=>!x.id);
+    let event=null;
+    if(legs.length&&legs.every(l=>l.gid===legs[0].gid)&&!kickedOff(legs[0])){ const D=dkGame(legs[0]); if(D&&D.event) event=DKS+'event/'+encodeURIComponent(D.event); }
+    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,event,n:legs.length};
+  }
+  function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
   function card({kicker,legs,dec,priceNote,chance,chanceBy,stake,source}){
     const w=legs.reduce((a,l)=>(+l.week&&(a==null||+l.week<a))?+l.week:a,null), n=legs.length;
@@ -139,7 +198,8 @@ window.PARLAY_CARD=(function(){
       legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
       chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
       made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
-      file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png'};
+      file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png',
+      dk:dkPlan(legs)};
     return m;
   }
   /* from the builder: the legs as they stand, priced as the builder prices them */
@@ -180,9 +240,21 @@ window.PARLAY_CARD=(function(){
       <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
     </div>`;
   }
-  let cur=null, opener=null;
+  /* under the buttons: what Open in DraftKings opens, each leg on its own (DraftKings documents no
+     link for several outcomes, so one at a time is there too), and the legs to add by hand, why */
+  function dkHtml(dk){
+    if(!dk||!dk.n) return '';
+    const name=x=>`${x.n}. ${h(x.who)}${x.what?', '+h(x.what):''}`;
+    const one=dk.ok.length>1?` One leg at a time: ${dk.ok.map(x=>`<a href="${h(dkUrl([x.id]))}" target="_blank" rel="noopener" data-pc-dkleg="${x.n}" aria-label="Open leg ${x.n}, ${h(x.who)} ${h(x.what)}, in DraftKings">${x.n}</a>`).join(' · ')}.`:'';
+    const hand=dk.miss.length?`<ul>${dk.miss.map(x=>`<li data-pc-dkmiss="${x.n}">${name(x)}: ${h(x.why)}</li>`).join('')}</ul>`:'';
+    if(!dk.ok.length) return `<p>None of these legs can be opened in DraftKings from here; add ${dk.n===1?'it':'them'} by hand${dk.event?` on <a href="${h(dk.event)}" target="_blank" rel="noopener" data-pc-dkevent="1">the game\u2019s DraftKings page</a>`:''}:</p>${hand}`;
+    return `<p>Open in DraftKings puts ${dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'all '+dk.n+' legs')} on DraftKings\u2019 betslip, at DraftKings\u2019 own prices.${one}${dk.miss.length?' Add by hand:':''}</p>${hand}`;
+  }
+  let cur=null, opener=null, flashT=null;
   const isOpen=()=>{ const md=$('pcModal'); return !!md&&!md.hidden; };
-  const say=t=>{ const e=$('pcMsg'); if(e) e.textContent=t||''; };
+  const say=t=>{ clearTimeout(flashT); const e=$('pcMsg'); if(e) e.textContent=t||''; };
+  /* a word that goes again after a moment */
+  const flash=t=>{ say(t); flashT=setTimeout(()=>{ const e=$('pcMsg'); if(e&&e.textContent===t) e.textContent=''; },2500); };
   /* the share sheet, where the browser can share an image file (phones): it is how an image
      reaches the photo library */
   function canShareFiles(){
@@ -194,6 +266,11 @@ window.PARLAY_CARD=(function(){
     cur=m; opener=from||document.activeElement||null;
     $('pcView').innerHTML=html(m);
     $('pcAgain').hidden=m.source!=='builder';
+    /* DraftKings: the betslip link where any leg has an id there, and what it opens */
+    { const dk=m.dk||{}, a=$('pcDk');
+      a.hidden=!dk.url; a.href=dk.url||DKS;
+      a.title=dk.url?`Opens ${dk.miss&&dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'all '+dk.n+' legs')} on DraftKings\u2019 betslip, in a new tab`:'';
+      $('pcDkNote').innerHTML=dkHtml(dk); }
     /* on a phone the share sheet is the way to Photos, so it leads; the download stays beside it */
     const share=canShareFiles();
     $('pcShare').hidden=!share;
@@ -352,6 +429,40 @@ window.PARLAY_CARD=(function(){
     try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }
     catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
   }
+  /* Share link: the parlay in a few plain lines (each leg, its bet and price, the stake and what
+     it pays, the legs to add by hand, the site's address) with the DraftKings link, by the share
+     sheet where the browser has one (navigator.share), else copied. Never the image: that is
+     Download's and the share sheet's above. A share sheet cancelled is no error and does nothing */
+  function linkText(m){
+    const P=s=>String(s==null?'':s).replace(/\u2212/g,'-'), dk=m.dk||{};
+    const lines=m.legs.map((l,i)=>`${i+1}. ${l.who}: ${l.what} (${P(l.price)})`);
+    if(m.stake) lines.push(`Stake ${money(m.stake)} · Pays ${money(m.payout)}`);
+    if(dk.url&&dk.miss&&dk.miss.length) lines.push('Add by hand at DraftKings: '+dk.miss.map(x=>`${x.n}. ${x.who} ${x.what}`).join('; '));
+    lines.push(SITE);
+    return {title:`${m.title} ${P(m.price)}`,text:lines.join('\n'),url:dk.url||null};
+  }
+  async function copyText(t){
+    try{ if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){ await navigator.clipboard.writeText(t); return true; } }catch(e){}
+    /* a browser without the clipboard call: a hidden box, selected and copied */
+    const back=document.activeElement, ta=document.createElement('textarea');
+    try{ ta.value=t; ta.setAttribute('readonly',''); ta.setAttribute('aria-hidden','true'); ta.tabIndex=-1;
+      ta.style.cssText='position:fixed;top:0;left:-9999px;opacity:0';
+      ($('pcModal')||document.body).appendChild(ta); ta.select();
+      return typeof document.execCommand==='function'&&!!document.execCommand('copy'); }
+    catch(e){ return false; }
+    finally{ ta.remove(); try{ if(back&&back.focus) back.focus({preventScroll:true}); }catch(e){} }
+  }
+  async function shareLink(){
+    const m=cur; if(!m) return false;
+    const s=linkText(m), data={title:s.title,text:s.text}; if(s.url) data.url=s.url;
+    if(typeof navigator.share==='function'){
+      let can=true; try{ if(typeof navigator.canShare==='function') can=navigator.canShare(data)!==false; }catch(e){ can=false; }
+      if(can){ try{ await navigator.share(data); say(''); return true; }
+        catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } } } }
+    /* no share sheet, or one that failed: the same text and the link, copied */
+    if(await copyText(s.text+(s.url?'\n'+s.url:''))){ flash(s.url?'Link copied':'Parlay copied'); return true; }
+    say('The link could not be copied.'); return false;
+  }
   /* Start over: the builder emptied, in this browser only, as its own Clear ALL does */
   function again(){
     if(typeof S!=='object'||!S) return;
@@ -390,6 +501,7 @@ window.PARLAY_CARD=(function(){
     $('pcClose').addEventListener('click',close);
     $('pcDownload').addEventListener('click',download);
     $('pcShare').addEventListener('click',share);
+    $('pcLink').addEventListener('click',shareLink);
     $('pcAgain').addEventListener('click',again);
     md.addEventListener('click',e=>{ if(e.target===md) close(); });
     window.addEventListener('keydown',e=>{
@@ -406,6 +518,6 @@ window.PARLAY_CARD=(function(){
       if(b&&!b.disabled&&!md.contains(b)) finishFrom(b); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
-  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,finishBuilder,finishFrom,current:()=>cur};
+  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,shareLink,linkText,dkPlan,finishBuilder,finishFrom,current:()=>cur};
 })();
 </script>

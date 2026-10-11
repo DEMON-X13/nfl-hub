@@ -728,6 +728,21 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `Finish on the ${t.label} tier does not open its card with its legs, price and chance: ` + txt(view).slice(0, 200));
         chk(cash === [money(AMT), money(AMT * t.dec), '+' + money(AMT * t.dec - AMT)].join(' | '),
           `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
+        /* Open in DraftKings on the payload's own ids (dk, from weekly.py's dk_ids): the tier's legs
+           that have one, in the card's order, joined by + with each '#' as %23, and the rest named
+           under the buttons; no link where no leg has one. The key is worked out here on its own */
+        { const DK = w.eval('PAY').dk || {}, pt = x => String(+x);
+          const idOf = l => { const D = (DK[String(l.week)] || {})[l.gid] || {};
+            if (l.stat === 'ml') return D[l.pid + '|ml'];
+            if (l.stat === 'ats') return D[`${l.pid}|ats|${pt(l.k)}`];
+            if (l.stat === 'total') return D[`game|total|${l.side}|${pt(l.k)}`];
+            if (l.stat === 'any_td') return (+l.k || 1) < 2 ? D[l.pid + '|any_td'] : undefined;
+            if (l.main) return D[`${l.pid}|${l.stat}|${l.side}|${pt(l.k)}`];
+            return D[`${l.pid}|${l.stat}|over|${pt(l.k - 0.5)}`] || D[`${l.pid}|${l.stat}|over|${pt(l.k - 1)}`]; };
+          const ids = t.legs.map(idOf).filter(Boolean), a = d.getElementById('pcDk');
+          chk(!!a && (ids.length ? !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+') : a.hidden)
+            && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - ids.length && !d.getElementById('pcLink').hidden,
+            `Open in DraftKings on the ${t.label} tier is not its legs' DraftKings ids from the payload (${ids.length} of ${t.legs.length}): ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link')); }
         w.eval('PARLAY_CARD.close()'); await wait(20);
         chk(d.getElementById('pcModal').hidden && d.activeElement === d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`), 'closing the card did not give the focus back to the tier\'s Finish');
         await wait(400);

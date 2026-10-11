@@ -42,10 +42,8 @@ What it does, in order:
   4. bakes into the payload every week's player
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
-     every price file with the player each row belongs to, and DraftKings' own id for every
-     outcome the pull read on a game still to come (dk_ids, from dk_links_wk{W}.json), keyed the
-     way the page names a leg, for the parlay card's Open in DraftKings: this season's games
-     only, and nothing of a payload of another season carried forward; and DraftKings' own id for every
+     and every price file with the player each row belongs to: this season's games only, and
+     nothing of a payload of another season carried forward; and DraftKings' own id for every
      outcome the pulls read on a game still to come (dk_links_wk{W}.json -> dk, dk_ids below),
      which the parlay card turns into an Open in DraftKings link
   5. assembles the page and runs the audit, which checks the payload against the raw files
@@ -691,20 +689,6 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     if split: say(f"  a name two players in the game share, placed on the only one at a position the book prices: {'; '.join(split)}")
     for n in notes: say('  '+n)
     pay['prices']=prices; pay['unmatched']=unmatched
-    # DraftKings' own ids for the outcomes the pull read (dk_links_wk{W}.json), keyed the way the
-    # page names a leg, so the parlay card can open a parlay on DraftKings' betslip: the games still
-    # to come only, a player placed by the rule his prices were. A file that will not read costs
-    # the card its link, never the bake
-    links={}
-    for fn in sorted(os.listdir(DATA)):
-        m=re.match(r'dk_links_wk(\d+)\.json$',fn)
-        if not m: continue
-        try: links[int(m.group(1))]=json.load(open(os.path.join(DATA,fn),encoding='utf-8'))
-        except Exception as e: say(f"  {fn} not read ({e}): the parlay card offers no DraftKings link for its games")
-    dk,dn=dk_ids(links,pool,byid,{gid for gid in byid if gid not in started})
-    if dk: pay['dk']=dk
-    else: pay.pop('dk',None)
-    if links: say(f"  DraftKings ids: {dn['ids']} outcomes on {dn['games']} game(s) to come"+(f", {dn['names']} book name(s) on no player left out" if dn['names'] else '')+(f", {dn['clash']} key(s) two names landed on left out" if dn['clash'] else ''))
     # DraftKings' ids for the games still to come, for the parlay card's Open in DraftKings
     dk,ndk,clash=dk_ids(DATA,byid,set(byid)-started,pool.match)
     pay['dk']=dk
@@ -767,71 +751,6 @@ def price_problems(misses,placed,rows_in):
         probs.append(f"price rows on no player, too many to be a roster a day behind: {'; '.join(why)}: {listed}")
         return unmatched,probs,[]
     return unmatched,probs,[f"price rows on no player ({len(who)} name{'s' if len(who)>1 else ''}: nobody in the game by that name, a signing the roster file has not caught up with; in the payload's unmatched, not a problem): {listed}"]
-
-def pt(x):
-    """a point written as the page writes a number (String(79.5) is '79.5', String(-3) is '-3'), so
-    the key the bake writes is the key the parlay card builds from a leg's line"""
-    f=float(x)
-    return str(int(f)) if f.is_integer() else repr(f)
-
-def dk_ids(links,pool,byid,to_come):
-    """DraftKings' ids for the games still to come, as the payload's dk: {week: {game: {key: sid}}}.
-
-    links: {week: that week's dk_links_wk{W}.json}, oddsfetch.py's file, keyed
-    game|player|stat|Over/Under/Yes|point, game|game|ml/spread/total|away/home/Over/Under|point
-    (a spread's point the side's own handicap) and game|event. The page's keys, under the game,
-    are a leg's own key (legKey) without the game, with the side and DraftKings' point:
-      <pid>|<stat>|over|<point>, <pid>|<stat>|under|<point>   a player's line, at DraftKings' point
-      <pid>|any_td                                           his touchdown (the book's Yes)
-      team:<ABBR>|ml                                         a team to win
-      team:<ABBR>|ats|<point>                                a team to cover, its own line
-      game|total|over|<point>, game|total|under|<point>      the game total
-      event                                                  DraftKings' event id (the game's page)
-    A rung k+ is DraftKings' Over k-0.5 (oddsfetch's threshold()), which the card looks up itself.
-    A player is placed by pool.match within the game, the rule his prices are placed by; a name it
-    cannot place, a team's touchdown (D/ST), a No, and a key two names land on with different ids
-    are left out. Only ids are kept: the card builds the links from them.
-    Returns (dk, counts)."""
-    out={}; clash=set(); n={'names':0,'clash':0}
-    for _,f in sorted(links.items()):
-        for key,v in (f or {}).items():
-            sid=str(v.get('sid') or '').strip() if isinstance(v,dict) else ''
-            parts=str(key).split('|'); gid=parts[0]
-            if not sid or gid not in to_come or gid not in byid: continue
-            g=byid[gid]
-            if parts[1:]==['event']: k='event'
-            elif len(parts)!=5: continue
-            else:
-                who,stat,side,point=parts[1:]
-                try: p=pt(point) if point.strip() else ''
-                except ValueError: continue
-                if who=='game':
-                    team={'away':g['a'],'home':g['h']}.get(side)
-                    if stat=='ml' and team: k=f'team:{team}|ml'
-                    elif stat=='spread' and team and p: k=f'team:{team}|ats|{p}'
-                    elif stat=='total' and side in ('Over','Under') and p: k=f'game|total|{side.lower()}|{p}'
-                    else: continue
-                else:
-                    if names.is_team_row(who): continue
-                    if stat=='any_td':
-                        if side!='Yes': continue
-                        rest='any_td'
-                    elif side in ('Over','Under') and p: rest=f'{stat}|{side.lower()}|{p}'
-                    else: continue
-                    pid,_how=pool.match(who,int(g['w']),gid)
-                    if not pid: n['names']+=1; continue
-                    k=f'{pid}|{rest}'
-            slot=out.setdefault(str(g['w']),{}).setdefault(gid,{})
-            if (gid,k) in clash: continue
-            if k in slot and slot[k]!=sid:
-                del slot[k]; clash.add((gid,k)); continue
-            slot[k]=sid
-    out={w:{gid:s for gid,s in gs.items() if s} for w,gs in out.items()}
-    out={w:gs for w,gs in out.items() if gs}
-    n['clash']=len(clash)
-    n['ids']=sum(len(s) for w in out.values() for s in w.values())
-    n['games']=sum(len(w) for w in out.values())
-    return out,n
 
 PUBLISHED=[None]   # the payload as it stood before this run, put back when the run is refused
 
