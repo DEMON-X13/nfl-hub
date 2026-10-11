@@ -220,18 +220,59 @@ setTimeout(async()=>{
       gtick(); chk(!Object.values(S.parlay).some(l=>l.stat==='ml'),'to-win leg did not come back out'); }
     console.log(`J. game bets: home win ${(hw.p*100).toFixed(0)}% at +3, cover ${(hc.p*100).toFixed(0)}%, settlement and toggling ok`); }
 
-  /* ---- J2. the game total: over or under the posted points, priced, settled and correlated ---- */
-  { const tb=F('totalBet'), mT=F('modelTotal'), SD=w.eval('TOTAL_SD');
-    const gj=S.sched.find(x=>x.tot!=null)||S.sched[0], gx={...gj,tot:44.5};
+  /* ---- J2. the game total: over or under the posted points, priced, settled and correlated.
+     Its chance is the market's own (props/research/totals/: no points model beat the posted total
+     on 2024-2026): the over is its over and under prices with the margin out, i(o)/(i(o)+i(u)),
+     and 50% without both, on made-up prices and on every game of the schedule; the model's points
+     never enter it, however they move or with the payload's points model gone; TOTAL_SD prices
+     only a number other than the posted one, Normal(posted total, 13.2) ---- */
+  { const tb=F('totalBet'), mT=F('modelTotal'), SD=w.eval('TOTAL_SD'), gbN=F('gbNorm');
+    const imp=a=>a>0?100/(a+100):-a/(-a+100), has=v=>v!=null&&isFinite(v)&&v!==0;
+    const noVig=g=>has(g.tov)&&has(g.tou)?imp(g.tov)/(imp(g.tov)+imp(g.tou)):0.5;
+    const gj=S.sched.find(x=>x.tot!=null)||S.sched[0], gx={...gj,tot:44.5}; delete gx.tov; delete gx.tou;
     const o=tb(gx,'over'), u=tb(gx,'under');
     chk(Math.abs(o.p+u.p-1)<1e-12&&o.line===44.5&&u.line===44.5,'over and under chances do not sum to 1 on the posted total');
-    chk(Math.abs(o.mu-(mT(gx)+44.5)/2)<1e-9&&Math.abs(o.p-(1-F('gbNorm')((44.5-o.mu)/SD)))<1e-12&&SD===13.2,'the total is not the model\'s points pulled halfway to the posted total, spread 13.2');
-    chk(tb({...gx,tot:50.5},'over').p<o.p&&tb({...gx,tot:null},'over')===null,'a higher total should be harder to go over, and no total no leg');
+    const badNv=[];
+    for(const pr of [{tov:-105,tou:-115},{tov:-110,tou:-110},{tov:120,tou:-140},{tov:-250,tou:200},{tov:100,tou:100},{tov:-130},{tou:-130},{},{tov:0,tou:-110}]){
+      const g={...gx,...pr}, a=tb(g,'over'), b=tb(g,'under'), want=noVig(g);
+      if(!(Math.abs(a.p-want)<1e-12&&Math.abs(b.p-(1-want))<1e-12&&a.mu===44.5&&a.line===44.5)) badNv.push(`${JSON.stringify(pr)} gives ${a.p.toFixed(4)}, not ${want.toFixed(4)}`); }
+    let nTot=0, nPriced=0;
+    for(const g of S.sched){ const a=tb(g,'over');
+      if(g.tot==null||!isFinite(g.tot)){ if(a!==null) badNv.push(`${g.id} has no total and is priced`); continue; }
+      nTot++; if(has(g.tov)&&has(g.tou)) nPriced++;
+      if(!(Math.abs(a.p-noVig(g))<1e-12&&a.mu===g.tot&&a.line===g.tot)) badNv.push(`${g.id} gives ${a.p.toFixed(4)}, not ${noVig(g).toFixed(4)}`); }
+    chk(!badNv.length,`a total's chance is not the no-vig chance of its over and under prices (50% without both): ${badNv.slice(0,4).join('; ')}`);
+    chk(Math.abs(o.p-0.5)<1e-12&&Math.abs(tb({...gx,tov:-105,tou:-115},'over').p-(105/205)/((105/205)+(115/215)))<1e-12,'a total with no price is not an even 50%, or -105/-115 is not 48.9% over');
+    /* the model's points never enter the chance (nor the leg's): moved three ways, then with the
+       payload's points model taken away, not one total's chance moves, while the points shown do */
+    { const tl0=F('totalLeg'), withTot=S.sched.filter(g=>g.tot!=null&&isFinite(g.tot));
+      const snap=()=>withTot.map(g=>[tb(g,'over').p,tb(g,'under').p,tl0(g,'over').p,tl0(g,'under').p].join()), before=snap();
+      w.__keepMP=w.eval('modelPoints'); const keepPts=PAY.pts, moved=[], shown=[];
+      for(const fake of ['function(){ return 3; }','function(){ return 45; }','function(t,o,h){ return h?40:5; }',null]){
+        if(fake) w.eval('modelPoints='+fake); else { w.eval('modelPoints=window.__keepMP'); PAY.pts=null; }
+        const now=snap(); withTot.forEach((g,i)=>{ if(now[i]!==before[i]) moved.push(`${g.id} (${fake||'no points model'})`); });
+        shown.push(mT(gx).toFixed(1)); }
+      PAY.pts=keepPts; w.eval('modelPoints=window.__keepMP'); delete w.__keepMP;
+      chk(!moved.length,`the model's points moved a total's chance: ${moved.slice(0,4).join('; ')}`);
+      chk(shown[0]==='6.0'&&shown[1]==='90.0'&&shown[2]==='45.0','the model\'s points shown are not modelPoints for the two sides: '+shown.join(', ')); }
+    /* another number than the posted one: Normal about the posted total, TOTAL_SD; the posted number itself at the market's chance */
+    { const pg={...gx,tov:-130,tou:110};
+      chk(SD===13.2&&Math.abs(tb(gx,'over',47.5).p-(1-gbN(3/13.2)))<1e-12&&Math.abs(tb(gx,'under',41.5).p-gbN(-3/13.2))<1e-12&&tb(gx,'over',47.5).line===47.5&&tb(gx,'over',47.5).mu===44.5
+        &&Math.abs(tb(pg,'over',44.5).p-noVig(pg))<1e-12&&Math.abs(tb(pg,'over',null).p-noVig(pg))<1e-12,'a total on another number is not priced Normal(posted total, 13.2), or the posted number not at the market\'s chance');
+      chk(tb(gx,'over',50.5).p<tb(gx,'over',47.5).p&&tb({...gx,tot:null},'over')===null,'a higher number should be harder to go over, and no total no leg'); }
     /* settlement on a made-up final: 27-20 is 47 points */
     S.sched.push({...gx,id:'ttest',hs:27,as:20});
     const st=(side,k)=>settleLeg({gid:'ttest',stat:'total',side,k,team:gx.a});
     chk(st('over',44.5)==='win'&&st('under',44.5)==='loss'&&st('over',47)==='push'&&st('under',47)==='push'&&st('over',47.5)==='loss'&&st('under',47.5)==='win','a game total settles wrong on a 47-point final');
     S.sched.pop();
+    /* settlement is the final's points against the line and nothing else: every hook either side of three finals */
+    { const bad=[];
+      for(const [hs,as] of [[27,20],[10,7],[0,0],[41,38]]){ S.sched.push({...gx,id:'ttest',hs,as}); const t=hs+as;
+        for(const k of [t-1.5,t-1,t-0.5,t,t+0.5,t+1,t+1.5]) for(const side of ['over','under']){
+          const want=t===k?'push':((side==='under'?t<k:t>k)?'win':'loss'), got=settleLeg({gid:'ttest',stat:'total',side,k,team:gx.a});
+          if(got!==want) bad.push(`${side} ${k} on ${hs}-${as}: ${got}, not ${want}`); }
+        S.sched.pop(); }
+      chk(!bad.length,`a game total settles other than on the final's points against its line: ${bad.slice(0,4).join('; ')}`); }
     /* live: points only go up */
     const lg=F('liveGameLeg'), sc=(hs,as,state)=>({home:gx.h,away:gx.a,hs,as,state});
     chk(lg({stat:'total',side:'over',k:44.5,team:gx.a},sc(30,20,'live')).state==='hit'&&lg({stat:'total',side:'under',k:44.5,team:gx.a},sc(30,20,'live')).state==='missed'
@@ -240,6 +281,7 @@ setTimeout(async()=>{
     const tl=F('totalLeg'), withP={...gx,tov:-105,tou:-115}, noP={...gx}; delete noP.tov; delete noP.tou;
     chk(tl(withP,'over').price===-105&&tl(withP,'over').src==='real'&&tl(withP,'under').price===-115&&tl(noP,'over').price===-110&&tl(noP,'over').src==='est'
       &&tl(withP,'over').key===tl(withP,'under').key&&/^Over 44\.5 points$/.test(tl(withP,'over').label)&&tl(withP,'over').grp==='TEAM','the total leg\'s price, its source, its label or its one key is wrong');
+    chk(Math.abs(tl(withP,'over').p-noVig(withP))<1e-12&&Math.abs(tl(withP,'under').p-(1-noVig(withP)))<1e-12&&tl(noP,'over').p===0.5&&tl(withP,'over').mu===44.5,'the total leg does not carry the market\'s chance and the posted total');
     chk(F('isGameLeg')(tl(withP,'over')),'a game total is not a game leg');
     /* correlated with its game's passing and scoring lines, not with a win or a cover, nothing across games */
     const T={gid:'g',pid:'game',stat:'total',side:'over',grp:'TEAM',team:'SEA'};
@@ -253,9 +295,14 @@ setTimeout(async()=>{
       const box=d.createElement('div'); box.innerHTML=F('gameBetsCard')(gopen,false);
       const ov=box.querySelector('[data-leg$="|game|total"][data-side="over"]'), un=box.querySelector('[data-leg$="|game|total"][data-side="under"]');
       chk(!!ov&&!!un&&+ov.dataset.k===gopen.tot&&ov.dataset.main==='1','the Game bets card does not offer the total over and under');
+      { const blk=[...box.querySelectorAll('.statblk')].find(b=>/^Game total/.test(b.querySelector('h4').textContent)), pc=blk?[...blk.querySelectorAll('.pct')].map(x=>x.textContent):[];
+        const want=[(noVig(gopen)*100).toFixed(0)+'%',((1-noVig(gopen))*100).toFixed(0)+'%'];
+        chk(!!blk&&pc.join()===want.join()&&blk.querySelector('h4').textContent.includes(`model's points ${mT(gopen).toFixed(1)}`)&&blk.querySelector('h4').textContent.includes(`book line ${gopen.tot}`)
+          &&/The total's chance is the book's own/.test(box.textContent)&&!/pulled halfway to the posted total/.test(box.textContent),
+          `the Game bets card does not show the total at the market's chance (${want.join('/')}) with the model's points as a display: ${blk?blk.textContent.replace(/\s+/g,' ').slice(0,120):'no total block'}`); }
       if(ov&&un){ const tick=cb=>F('toggleLeg')(cb.dataset.leg,+cb.dataset.k,gopen,cb.dataset.side,cb.dataset.main==='1');
         tick(ov); let L=S.parlay[ov.dataset.leg];
-        chk(!!L&&L.stat==='total'&&L.side==='over'&&L.k===gopen.tot&&L.price===(gopen.tov!=null?gopen.tov:-110)&&L.src===(gopen.tov!=null?'real':'est'),'ticking the over did not put the total on the parlay at its price');
+        chk(!!L&&L.stat==='total'&&L.side==='over'&&L.k===gopen.tot&&L.price===(gopen.tov!=null?gopen.tov:-110)&&L.src===(gopen.tov!=null?'real':'est')&&Math.abs(L.p-noVig(gopen))<1e-12,'ticking the over did not put the total on the parlay at its price and the market\'s chance');
         tick(un); L=S.parlay[ov.dataset.leg];
         chk(Object.keys(S.parlay).length===1&&L.side==='under','ticking the under did not take the over\'s place');
         chk(/Under [\d.]+ points/.test(d.getElementById('parlayBody').textContent),'the total is not shown in the builder');
@@ -263,7 +310,7 @@ setTimeout(async()=>{
       const locked=d.createElement('div'); locked.innerHTML=F('gameBetsCard')({...gopen,hs:24,as:20},true);
       chk(locked.querySelectorAll('.statblk').length===3&&!locked.querySelector('input[data-leg]'),'a kicked-off game\'s card does not mark the total with the two teams');
       S.parlay=JSON.parse(keepP); F('renderParlay')(); }
-    console.log(`J2. game total: over ${(o.p*100).toFixed(1)}% at 44.5 (model ${mT(gx).toFixed(1)}), settles over, under and push, live, priced, correlated, ticked one side at a time`); }
+    console.log(`J2. game total: the market's chance on ${nTot} scheduled totals (${nPriced} with both prices, the rest 50%) and 9 made-up prices; the model's points (${mT(gx).toFixed(1)} on a sample game) moved 4 ways and never in it; another number at Normal(line, 13.2); settles over, under and push, live, priced, correlated, ticked one side at a time`); }
 
   /* ---- K. two or more touchdowns ---- */
   { const lam=-Math.log(0.5); chk(Math.abs(tdPlus(0.5,2)-(1-Math.exp(-lam)*(1+lam)))<1e-12&&Math.abs(tdPlus(0.5,1)-0.5)<1e-12,'tdPlus formula wrong');
@@ -419,9 +466,12 @@ setTimeout(async()=>{
      leg is of a ticked kind and game, has not kicked off, carries a real price and is never rated
      below the book; one leg a line, a player and (for a game bet) a game; a tier's chance and price
      are the builder's own sums; thin legs only where the preferred legs could not fill the tier;
-     and a pick that leaves fewer legs than a tier needs gets the reason, not a smaller parlay. Run
-     on the week as it is, and again on made-up lines (each starter's main line set off his own
-     projection, a price on half the totals) so the player legs and the totals are always tried. */
+     and a pick that leaves fewer legs than a tier needs gets the reason, not a smaller parlay; and
+     no tier ever holds a game total (priced at the book's own chance, it has no edge), with one
+     line saying so whenever Game total is ticked. Run on the week as it is, and again on made-up
+     lines (each starter's main line set off his own projection, a price on every total: -105/-115
+     on half, +100/+100 with no margin and +110/+105 with less than none on the rest) so the player
+     legs and the totals are always tried. */
   { const tab=d.getElementById('tab-parlay'), panel=d.getElementById('pbPanel');
     d.querySelector('#tabs button[data-tab="parlay"]').click();
     chk(!!panel&&tab.firstElementChild===panel&&panel.nextElementSibling===d.getElementById('parlayBody'),'the suggested parlays are not at the top of the Parlay Builder tab, over the builder');
@@ -445,9 +495,11 @@ setTimeout(async()=>{
          price, nothing of a kind or game not ticked, a preferred leg only over the full bar */
       chk([...pool.pref,...pool.thin].every(c=>c.p>=mlP(c.price)&&c.src==='real'&&!!u.k[kindOf(c)]&&!u.off.includes(c.gid)),`${lab}: a leg under the book, on an estimated price, or of a kind or game not ticked is among the legs a tier may take`);
       chk(pool.pref.every(c=>c.p-mlP(c.price)>=0.03&&F('formAgrees')(c)),`${lab}: a preferred leg does not clear the 3-point bar and market + form`);
+      /* a game total is priced at the book's own chance, so it is never among the legs a tier may take */
+      chk([...pool.pref,...pool.thin].every(c=>c.stat!=='total'),`${lab}: a game total is among the legs a tier may take`);
       /* no player prices on file for the ticked games, with player bets ticked: the reason a tier
          is empty, said as such (and never "tick more" under Players only, where no tick helps) */
-      const pooled=pool.plGames!=null, plOn=!!(u.k.over||u.k.under), tmOn=!!(u.k.ml||u.k.ats||u.k.total);
+      const pooled=pool.plGames!=null, plOn=!!(u.k.over||u.k.under), tmOn=!!(u.k.ml||u.k.ats);
       const noPl=pooled&&plOn&&!F('pricedLegs')(games.filter(g=>!u.off.includes(g.id)),true).some(l=>!isG(l));
       chk(!pooled||!!r.noPlayerPrices===noPl,`${lab}: the tiers say there are${r.noPlayerPrices?'':' not'} no player prices on file, and that is not so`);
       for(const t of r.tiers){ const [,,n,floor]=SPEC.find(s=>s[0]===t.id);
@@ -459,6 +511,7 @@ setTimeout(async()=>{
           continue; }
         built++; legsSeen+=t.legs.length;
         chk(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
+        chk(!t.legs.some(l=>l.stat==='total'),`${lab}: the ${t.id} tier holds a game total (${t.legs.filter(l=>l.stat==='total').map(l=>l.label).join(', ')})`);
         chk(maxLegs>=n,`${lab}: a ${n}-leg ${t.id} tier from picks that only make ${maxLegs}`);
         for(const l of t.legs){ const g=S.sched.find(x=>x.id===l.gid);
           chk(!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(x=>x.id===l.gid),`${lab}: ${l.name} ${l.label} is of a kind or a game not ticked, or its game is not on the list`);
@@ -485,8 +538,11 @@ setTimeout(async()=>{
         /* the mixes: Teams only is game bets, Players only is players' lines */
         if(!u.k.over&&!u.k.under) chk(t.legs.every(isG),`${lab}: a player leg with neither player box ticked`);
         if(!u.k.ml&&!u.k.ats&&!u.k.total) chk(!t.legs.some(isG),`${lab}: a game bet with no team box ticked`); }
-      /* the card on the page says the same */
+      /* the card on the page says the same, and with Game total ticked one line says why no total is in a tier */
       F('renderPb')();
+      { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' '), nt=tx.includes('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.');
+        chk(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say totals never make a suggested parlay':'Game total is not ticked and the panel still says totals never make one'}`);
+        if(u.k.total&&!u.k.ml&&!u.k.ats&&!u.k.over&&!u.k.under) chk(!/No line on your picks has a real sportsbook price/.test(tx),`${lab}: with only Game total ticked the panel says no line has a price the model rates at or above the book`); }
       for(const t of r.tiers){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`); if(!c){ chk(false,`${lab}: no card for the ${t.id} tier`); continue; }
         const tx=c.textContent.replace(/\s+/g,' ');
         if(!t.legs) chk(tx.includes(t.why)&&!c.querySelector('[data-pb-add]'),`${lab}: the empty ${t.id} card does not give its reason, or offers Add to builder`);
@@ -532,7 +588,7 @@ setTimeout(async()=>{
     /* ---- the same on made-up lines: every player leg kind and the totals in play ---- */
     { const cw=F('currentWeek')(), keepM=JSON.stringify(PAY.mkt[String(cw)]||null), keepT=S.sched.map(g=>[g.tov,g.tou]);
       const M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{}); let nL=0;
-      games.forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; }
+      games.forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; } else if(gi%4===1){ g.tov=100; g.tou=100; } else { g.tov=110; g.tou=105; }
         const ro=rosterFor(g,false);
         for(const tm in ro) ro[tm].players.forEach((x,i)=>{ if(!x.starter) return;
           for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue;
@@ -558,7 +614,11 @@ setTimeout(async()=>{
       setKinds(KINDS);
       const rA=F('getPbTiers')();
       chk(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
-      chk(!games.length||F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'the totals with a price are not among the legs the suggestions use, or leak into the game pages\' and the Elo picks\'');
+      chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the suggestions, the game pages\' or the Elo picks are built from');
+      /* only Game total ticked: every total priced (-105/-115, +100/+100 with no margin, +110/+105 with less than none), and still no tier */
+      { setKinds(['total']); const rT=F('getPbTiers')();
+        chk(rT.tiers.every(t=>!t.legs&&/^No legs on your picks: tick more games or bet types\.$/.test(t.why)),'with only Game total ticked and every total priced, a tier was built or did not say there are no legs: '+rT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+        setKinds(KINDS); }
       /* market + form gates the player legs once the Elo tab is on the page */
       w.eloLoaded=()=>false; w.eval('PB_CACHE=new Map()');
       chk(F('getPbTiers')().tiers.every(t=>!t.legs||t.legs.every(isG)),'before the Elo files load a player leg is suggested');
@@ -586,11 +646,11 @@ setTimeout(async()=>{
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
       w.eval('PB_CACHE=new Map()');
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
-    /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet or a
-       total has no market + form (a player leg's second price), so it never reads as wanting it */
+    /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
+       market + form (a player leg's second price), so it never reads as wanting it (a game total
+       is never in a tier) */
     { const C=F('pbTierCard'), base={gid:'gT',name:'Thin',label:'a leg',price:-110,p:0.53,week:F('currentWeek')(),thin:true,side:'over',k:0,main:false};
-      const tm={...base,key:'gT|team:AAA|ml',pid:'team:AAA',stat:'ml',grp:'TEAM'}, tt={...base,key:'gT|game|total',pid:'game',stat:'total',grp:'TEAM'},
-        pl={...base,key:'gT|p1|receiving_yards',pid:'p1',stat:'receiving_yards',grp:'WR'};
+      const tm={...base,key:'gT|team:AAA|ml',pid:'team:AAA',stat:'ml',grp:'TEAM'}, pl={...base,key:'gT|p1|receiving_yards',pid:'p1',stat:'receiving_yards',grp:'WR'};
       const line=legs=>{ const x=d.createElement('div'); x.innerHTML=C({id:'safe',label:'Safe',n:legs.length,floor:0,legs,corr:0.3,dec:3,thin:legs.filter(l=>l.thin).length});
         const p=x.querySelector('.pb-thin'); return p?p.textContent.replace(/\s+/g,' '):''; };
       const MF=/market \+ form/;
@@ -598,15 +658,14 @@ setTimeout(async()=>{
       for(const form of [false,true]){
         if(form) w.eloLoaded=()=>true; else delete w.eloLoaded;
         cases.push([`form ${form?'on':'off'}, a team bet`,line([tm]),t=>/^One leg has a thin edge: .*but not 3 points above\.$/.test(t)&&!MF.test(t)]);
-        cases.push([`form ${form?'on':'off'}, a total`,line([tt]),t=>/but not 3 points above\.$/.test(t)&&!MF.test(t)]);
-        cases.push([`form ${form?'on':'off'}, two team bets and a total`,line([tm,{...tm,key:'gU|team:BBB|ats',gid:'gU',stat:'ats'},tt]),t=>/^3 legs have a thin edge: the model rates them/.test(t)&&!MF.test(t)]);
+        cases.push([`form ${form?'on':'off'}, two team bets`,line([tm,{...tm,key:'gU|team:BBB|ats',gid:'gU',stat:'ats'}]),t=>/^2 legs have a thin edge: the model rates them .*but not 3 points above\.$/.test(t)&&!MF.test(t)]);
         cases.push([`form ${form?'on':'off'}, a player leg`,line([pl]),t=>form?/but not 3 points above with market \+ form agreeing\.$/.test(t):(/but not 3 points above\.$/.test(t)&&!MF.test(t))]);
         cases.push([`form ${form?'on':'off'}, a team bet and a player leg`,line([tm,pl]),t=>form?/the team bet not 3 points above, and the player leg not 3 points above with market \+ form agreeing\.$/.test(t):(/but not 3 points above\.$/.test(t)&&!MF.test(t))]);
-        cases.push([`form ${form?'on':'off'}, a total and two player legs`,line([tt,pl,{...pl,key:'gT|p2|receptions',pid:'p2',stat:'receptions'}]),t=>form?/the total not 3 points above, and the player legs not 3 points above with market \+ form agreeing\.$/.test(t):!MF.test(t)]);
+        cases.push([`form ${form?'on':'off'}, a team bet and two player legs`,line([tm,pl,{...pl,key:'gT|p2|receptions',pid:'p2',stat:'receptions'}]),t=>form?/the team bet not 3 points above, and the player legs not 3 points above with market \+ form agreeing\.$/.test(t):!MF.test(t)]);
         cases.push([`form ${form?'on':'off'}, no thin leg`,line([{...tm,thin:false},{...pl,thin:false}]),t=>t==='']); }
       delete w.eloLoaded; w.eval('PB_CACHE=new Map()');
       for(const [lab,t,ok] of cases) chk(ok(t),`the thin-edge line, ${lab}, reads: "${t}"`);
-      console.log(`M2. thin edge: the line under a tier named for each kind of leg, ${cases.length} cases (a team bet or a total never wants market + form)`); }
+      console.log(`M2. thin edge: the line under a tier named for each kind of leg, ${cases.length} cases (a team bet never wants market + form)`); }
     /* no player prices on file yet (before the week's pulls): Players only says so on every tier,
        and so does a mix with team bets where a tier cannot be filled; the note does not repeat it */
     if(games.length){ const cw=F('currentWeek')(), keepO=JSON.stringify(S.odds||{}), keepM=JSON.stringify(PAY.mkt[String(cw)]||null);

@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v87 \u00b7 2026-10-10';
+const APP_BUILD='app v88 \u00b7 2026-10-11';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -175,22 +175,33 @@ function gameBet(g,team,kind){
   return {p:isHome?pH:1-pH,line:isHome?-g.sp:g.sp,mu:isHome?mu:-mu};
 }
 /* ---------- the game total: over or under the posted points ----------
-   The game's points ~ Normal(mu, TOTAL_SD), the way the margin is above. mu is the model's own
-   points for the two sides (modelPoints: the team volumes and defences it tracks, the numbers the
-   slate falls back on when no line is posted) pulled halfway to the posted total. TOTAL_SD is how
-   far final totals have landed from the posted total: 13.2 points across the 4,175 regular-season
-   games of 2010-2025 in nflverse's games.csv (13.3 for 2010-2018, 13.1 for 2019-2025), measured
-   once and never on the season in play. The book's price for a side is the over or under odds
-   the payload carries beside the total (nflverse's, or DraftKings' with its own number); with
-   none on file the leg is shown at an estimated -110 and no suggestion is built on it. */
+   The chance is the market's own: mu is the posted total, and the over's chance is its over and
+   under prices with the book's margin taken out (devigOver), an even 50% where either price is
+   missing. Nothing of the model's goes into it. props/research/totals/ built four dedicated
+   points formulas on 2012-2023 and tested each once, frozen, on 2024 to 2026: none beat the
+   posted total, and the rule used before (the model's own points, modelPoints for each side,
+   pulled halfway to the posted total) was measurably worse than it over those 635 games (MAE
+   +0.13 points, 90% interval +0.04 to +0.23; Brier +0.0042, +0.0012 to +0.0073; its 3-point-edge
+   picks 66-81, -20.3 units). The model's points (modelTotal) are shown beside the total on the
+   Game bets card as the model's points, a display only, kept out of the chance, the edge and
+   the suggestions. TOTAL_SD is how far final totals have landed from the posted total: 13.2
+   points across the 4,175 regular-season games of 2010-2025 in nflverse's games.csv, measured
+   once and never on the season in play. It prices a total on a number other than the posted
+   one, Normal(posted total, 13.2), and nothing else. The book's price for a side is the over or
+   under odds the payload carries beside the total (nflverse's, or DraftKings' with its own
+   number); with none on file the leg is shown at an estimated -110. A total is never in a
+   suggested parlay: at the book's own chance it has no edge for one to find. */
 const TOTAL_SD=13.2, TOTAL_EST=-110;
 function modelTotal(g){ return modelPoints(g.a,g.h,false)+modelPoints(g.h,g.a,true); }
-function totalMu(g){ const m=modelTotal(g); return (g.tot!=null&&isFinite(g.tot))?(m+g.tot)/2:m; }
-/* side 'over' or 'under': the chance that side lands, on the posted total. null with no total posted */
-function totalBet(g,side){
+/* the market's chance of the over on the posted total: both prices with the margin out, else 50% */
+function totalOver(g){ const o=totalBook(g,'over'), u=totalBook(g,'under'); return (o!=null&&u!=null)?devigOver(o,u):0.5; }
+/* side 'over' or 'under': the chance that side lands on the posted total, or on k where k is
+   another number (Normal about the posted total, TOTAL_SD). null with no total posted */
+function totalBet(g,side,k){
   if(g.tot==null||!isFinite(g.tot)) return null;
-  const mu=totalMu(g), pO=1-gbNorm((g.tot-mu)/TOTAL_SD);
-  return {p:side==='under'?1-pO:pO,line:g.tot,mu,model:modelTotal(g)};
+  const line=(k==null||!isFinite(k))?g.tot:+k;
+  const pO=line===g.tot?totalOver(g):1-gbNorm((line-g.tot)/TOTAL_SD);
+  return {p:side==='under'?1-pO:pO,line,mu:g.tot};
 }
 function totalBook(g,side){ const v=side==='under'?g.tou:g.tov; return (v!=null&&isFinite(v)&&v!==0)?v:null; }
 /* the leg itself, as the builder and the suggestions carry it: one key a game, so its over and

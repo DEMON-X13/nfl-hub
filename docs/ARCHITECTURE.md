@@ -111,7 +111,13 @@ props/
                                  run, which adds the season just finished and commits it
   research/features.py           builds raw/feat.pkl, seasons from build/season.py (weekly.py
                                  runs it when the table lacks BASE); the only research script
-                                 in this repo
+                                 the job runs
+  research/totals/               the game-totals study (README.md: the question, the rules,
+                                 every result and the verdict the page follows since v88: a
+                                 total at the market's own chance). Its downloader, dataset
+                                 builder, harness, four frozen candidates, leakage checks and
+                                 the judge's scripts; data/ and out/ are gitignored, nothing
+                                 the site or a job reads
 
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
@@ -354,9 +360,13 @@ the time. A leg qualifies from `pricedLegs()` (a real book price, the model's ch
 points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
 stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
 fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
-with a line saying so for each kind of leg (`pbThinLine`: a team bet or a total, which has no
-market + form, missed only the 3-point bar; a player leg the bar with market + form agreeing), and
-never a leg under the book. One game leg a game, one leg a player, no line twice. A tier that
+with a line saying so for each kind of leg (`pbThinLine`: a team bet, which has no market + form,
+missed only the 3-point bar; a player leg the bar with market + form agreeing), and never a leg
+under the book. A game total is never a candidate: it is priced at the book's own chance (see
+**game bets** below), which sits under the chance its price implies, so `pricedLegs()` leaves the
+totals out, and the Game total box only brings up a line saying they never make a suggested parlay
+and are added by hand from a game's Game bets card. One team bet a game, one leg a player, no line
+twice. A tier that
 cannot be built says why, never offering a smaller parlay; when player bets are ticked and none of
 the ticked games has a player price on file yet (`plGames` from `pbPool`, before the week's pulls),
 that is the reason given ("No player prices yet: they are pulled within a day of each kickoff."
@@ -537,10 +547,15 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
   alternatives (`LADDER` in `part2.js`). Hidden behind a checkbox by default.
 - **game bets** -- `ml` (to win), `ats` (to cover) and `total` (the game's points over or
   under `g.tot`, `pid:'game'`), one team bet and one total per game in the builder, a parlay of
-  the panel's taking one game leg a game, `grp:'TEAM'`. A total's chance is `totalBet()`: the
-  model's points for both sides pulled halfway to the posted total, spread about `TOTAL_SD`
-  (13.2, from 2010-2025); its price is `g.tov`/`g.tou`, else -110 marked est.; it settles over,
-  under or push in `settleGameLeg()`.
+  the panel's taking one team bet a game and no total, `grp:'TEAM'`. A total's chance is
+  `totalBet()`: the market's own, mu the posted total and the over's chance its over and under
+  prices with the margin out (`totalOver()`), 50% without both; `TOTAL_SD` (13.2, from
+  2010-2025) prices only another number than the posted one, Normal about it. The model's own
+  points (`modelTotal()`) are shown on the Game bets card as "model's points", never used: the
+  study in `props/research/totals/README.md` found no points model that beat the posted total on
+  2024-2026, and the rule used before (the model's points halfway to the total) worse than it.
+  Its price is `g.tov`/`g.tou`, else -110 marked est.; it settles over, under or push in
+  `settleGameLeg()`.
 - **corr vs indep** -- `parlayProb()` returns both: `indep` is the legs
   multiplied naively, `corr` is a gaussian-copula Monte Carlo over the shipped
   pair correlation table. `corr` is the number the UI shows. It is seeded, so it
@@ -552,8 +567,9 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 - **margin** -- the book's cut, `light`/`typical`/`heavy`, a visitor setting.
 - **suggested parlays** -- two engines. `getPbTiers()` is the Parlay Builder's
   panel: Safe/Medium/Aggressive/Extreme, 2/3/4/5 legs (`PB_TIERS`, floors 25/12/5%
-  after Safe), each found on its own from `pricedLegs(games, true)` on the ticked
-  games and bet types (the Elo picks under it use `pricedLegs()` too), cached in
+  after Safe), each found on its own from `pricedLegs(games)` (team bets and
+  players, never a game total) on the ticked games and bet types (the Elo picks
+  under it use `pricedLegs()` too), cached in
   `PB_CACHE`, outside `S`. `gameTiers()` is a game page's High,
   Medium and Low (`GAME_TIERS`: 2, 3 and 4 legs, paying at least +100/+250/+500 at
   35%/20%/10% or better, no leg shorter than `GAME_LEG_MIN`, -250), cached per game

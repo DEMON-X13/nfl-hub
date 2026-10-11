@@ -420,7 +420,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const tp = tr.map(r => parseInt(txt(r.querySelector('.pct')), 10)), real = w.eval('totalBook')(row, 'over') != null;
       chk(tr.length === 2 && Math.abs(tp[0] + tp[1] - 100) <= 1 && tr.every(r => txt(r.querySelector('.thr')).endsWith(String(row.tot))), 'the game total is not offered over and under on the posted total: ' + tr.map(txt).join(' / '));
       chk(real ? tr.every(r => /^[-+]\d+$/.test(txt(r.querySelector('.book')))) : (tr.every(r => /^-110est\.$/.test(txt(r.querySelector('.est')).replace(/\s/g, ''))) && /the -110 is an estimate/.test(txt(body))),
-        'the game total does not carry the book\'s price, or -110 marked est. with a note when there is none: ' + tr.map(txt).join(' / ')); }
+        'the game total does not carry the book\'s price, or -110 marked est. with a note when there is none: ' + tr.map(txt).join(' / '));
+      /* its chance is the market's own (props/research/totals/): the over and under prices with the
+         margin out, 50% without both; the model's points are a display beside the line, not the chance */
+      const imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), has = v => v != null && isFinite(v) && v !== 0;
+      const nv = has(row.tov) && has(row.tou) ? imp(row.tov) / (imp(row.tov) + imp(row.tou)) : 0.5;
+      const head = txt([...body.querySelectorAll('.statblk h4')].find(h => /^Game total/.test(txt(h))) || { textContent: '' });
+      chk(tp[0] === Math.round(nv * 100) && tp[1] === Math.round((1 - nv) * 100) && head.includes(`model's points ${w.eval('modelTotal')(row).toFixed(1)}`) && head.includes(`book line ${row.tot}`)
+        && /The total's chance is the book's own/.test(txt(body)),
+        `the game total is not at the market's chance (${Math.round(nv * 100)}%) with the model's points shown as a display: ${head} / ${tp.join('% ')}%`); }
     else chk(!tr.length, 'a game with no total posted offers one'); }
   /* the same game priced by the prop model's own gameBet, on the same row */
   const gid = first.dataset.game, row = w.eval('S').sched.find(x => x.id === gid);
@@ -549,6 +557,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(t.legs.every(l => u.k[kindOf(l)] && !u.off.includes(l.gid) && games.some(g => g.id === l.gid) && !started(Sx.sched.find(g => g.id === l.gid))),
           `${lab}: the ${t.id} tier has a leg of a kind or a game not ticked, or one that has kicked off`);
         chk(t.legs.every(l => l.src === 'real' && l.p >= mlProb(l.price) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price or rated below the book`);
+        chk(!t.legs.some(l => l.stat === 'total'), `${lab}: the ${t.id} tier holds a game total, which is priced at the book's own chance`);
         chk(new Set(t.legs.filter(isG).map(l => l.gid)).size === t.legs.filter(isG).length && new Set(t.legs.filter(l => !isG(l)).map(l => l.pid)).size === t.legs.filter(l => !isG(l)).length,
           `${lab}: the ${t.id} tier has two game bets on one game, or two legs on one player`);
         chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.corr >= t.floor),
@@ -556,6 +565,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const card = d.querySelector(`#pbPanel .pb-tier.${t.id}`);
         chk(!!card && card.querySelectorAll('.pb-legs li').length === t.n && !!card.querySelector(`[data-pb-add="${t.id}"]`) && !!card.querySelector(`[data-pc-finish="pb|${t.id}"]`),
           `${lab}: the ${t.id} card does not show its legs with Add to builder and Finish`); }
+      /* with Game total ticked, one line says why no total is ever in a tier (and only then) */
+      chk(txt(panel).includes('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.') === !!u.k.total,
+        `${lab}: ${u.k.total ? 'Game total is ticked and the panel does not say totals never make a suggested parlay' : 'Game total is not ticked and the panel still says totals never make one'}`);
       return built; };
     if (!games.length) chk(/no game is left|nothing left to build from/.test(txt(panel)), 'with no game to come the panel does not say so: ' + txt(panel).slice(0, 160));
     else {
