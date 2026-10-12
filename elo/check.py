@@ -596,11 +596,11 @@ def power_checks(M, games):
 
 def _power_season(games):
     """an invented season for the build's power_ratings: (week, home, away, home pts, away pts,
-    neutral[, time]) with the points None for a game still to come"""
+    neutral[, time[, game type]]) with the points None for a game still to come"""
     rows = []
     for i, (wk, h, a, hp, ap, neutral, *tm) in enumerate(games):
         day = datetime.date(2030, 9, 8) + datetime.timedelta(days=7 * (wk - 1))
-        rows.append({'game_id': f'2030_{wk:02d}_{a}_{h}_{i}', 'season': 2030, 'week': wk, 'game_type': 'REG',
+        rows.append({'game_id': f'2030_{wk:02d}_{a}_{h}_{i}', 'season': 2030, 'week': wk, 'game_type': tm[1] if len(tm) > 1 else 'REG',
                      'gameday': day.isoformat(), 'gametime': tm[0] if tm else '13:00', 'home_team': h, 'away_team': a,
                      'home_score': float('nan') if hp is None else float(hp), 'away_score': float('nan') if ap is None else float(ap),
                      'location': 'Neutral' if neutral else 'Home'})
@@ -656,6 +656,12 @@ def power_fixture_checks():
     chk(abs(tie['A']['r']) < 1e-9 and abs(tie['B']['r']) < 1e-9 and tie['A']['elo'] == tie['B']['elo'] == 1500
         and tie['A']['record'] == tie['B']['record'] == [0, 0, 1], f'POWER: a tie at a neutral site is not level at 1500 with a tie in each record: {tie["A"]}, {tie["B"]}')
     chk(abs(tie_h['A']['r'] + POWER['H'] / 18) < 1e-4, f'POWER: a tie at home is not the home field below average: {tie_h["A"]["r"]}')
+    # a playoff final counts as the build counts it (POWER_TYPES): the same 10-point win at a neutral
+    # site in week 19 as a wild-card game moves both teams exactly as it would as a regular-season one
+    pre = [(1, 'A', 'B', 20, 17, True), (1, 'C', 'D', 24, 21, True)]
+    wc, rg = P(pre + [(19, 'A', 'C', 27, 17, True, '13:00', 'WC')]), P(pre + [(19, 'A', 'C', 27, 17, True, '13:00', 'REG')])
+    chk(all(abs(wc[t]['r'] - rg[t]['r']) < 1e-9 for t in 'ABCD') and abs(wc['A']['r'] - P(pre)['A']['r']) > 0.1,
+        f'POWER: a playoff final is not counted as the build counts the playoffs (A {wc["A"]["r"]} as a wild-card game, {rg["A"]["r"]} as a regular-season one)')
     # the gate's own iteration agrees with the build on the invented season (each a check of the other)
     X = P(season)
     R, ok = power_solve(power_finals(_power_season(season)), clubs)
