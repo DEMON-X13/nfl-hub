@@ -123,11 +123,17 @@ def game_lines(key,book,regions,ids,now=None):
     data=get('/odds',{'regions':regions,'markets':'h2h,spreads,totals','oddsFormat':'american',**LINK_PARAMS},key)
     return game_rows(data,book,ids,now)
 def game_rows(data,book,ids,now=None):
-    at=(now or datetime.now(timezone.utc)).strftime('%Y-%m-%dT%H:%MZ')
+    now=now or datetime.now(timezone.utc)
+    at=now.strftime('%Y-%m-%dT%H:%MZ')
     out=[]
     for ev in data:
         gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
         if not gid: continue
+        # never a game that has kicked off: the slate's call returns games under way too, and
+        # their lines are in-play ones (a pull on a Sunday afternoon read DEN@LAC's total as 31.5)
+        try: ko=datetime.fromisoformat(str(ev.get('commence_time','')).replace('Z','+00:00'))
+        except ValueError: ko=None
+        if ko and ko<=now: continue
         away,home=ev.get('away_team'),ev.get('home_team')
         row={'game_id':gid,'pulled_at':at}
         for bk in ev.get('bookmakers',[]):

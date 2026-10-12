@@ -176,6 +176,31 @@ const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] 
 /* the game the builder checks put their legs on: the season's last kickoff still to come, so
    it does not kick off while the smoke runs (the prop model drops a builder leg whose game has
    started), whatever day of the week the smoke runs on */
+/* a leg's key in the payload's dk (weekly.py's dk_ids), worked out here on its own from what the
+   leg is, never by the card's code: <pid>|ml, <pid>|ats|<its line>, game|total|<side>|<point>,
+   <pid>|any_td (one touchdown; null for 2+), <pid>|<stat>|<side>|<point> for a main line, and a
+   rung k+ as DraftKings' Over k-0.5 */
+const dkPt = x => String(+x);
+function dkKey(l) {
+  if (l.stat === 'ml') return l.pid + '|ml';
+  if (l.stat === 'ats') return `${l.pid}|ats|${dkPt(l.k)}`;
+  if (l.stat === 'total') return `game|total|${l.side}|${dkPt(l.k)}`;
+  if (l.stat === 'any_td') return (+l.k || 1) < 2 ? l.pid + '|any_td' : null;
+  if (l.main) return `${l.pid}|${l.stat}|${l.side}|${dkPt(l.k)}`;
+  return `${l.pid}|${l.stat}|over|${dkPt(l.k - 0.5)}`;
+}
+/* the keys a wrong lookup would land on: the other side of the line, the other team's bet, a rung's Under */
+function dkDecoys(l, w) {
+  const g = w.eval('S').sched.find(x => x.id === l.gid) || {}, them = l.pid === 'team:' + g.h ? g.a : g.h, flip = l.side === 'under' ? 'over' : 'under';
+  if (l.stat === 'ml') return [`team:${them}|ml`];
+  if (l.stat === 'ats') return [`team:${them}|ats|${dkPt(-l.k)}`, `team:${them}|ats|${dkPt(l.k)}`];
+  if (l.stat === 'total') return [`game|total|${flip}|${dkPt(l.k)}`];
+  if (l.stat === 'any_td') return [];
+  if (l.main) return [`${l.pid}|${l.stat}|${flip}|${dkPt(l.k)}`];
+  return [`${l.pid}|${l.stat}|under|${dkPt(l.k - 0.5)}`];
+}
+const dkIdOf = (DK, l) => { const k = dkKey(l); return k ? ((DK[String(l.week)] || {})[l.gid] || {})[k] : undefined; };
+
 function laterGame(w, S) {
   const ko = x => { const k = w.eval('kickoff')(x); return k ? k.getTime() : -Infinity; }, started = w.eval('gameStarted');
   return S.sched.filter(x => !started(x)).sort((a, b) => ko(b) - ko(a))[0] || null;
@@ -351,7 +376,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the season-over note shows exactly when every game is graded and the schedule has no playoffs */
   chk(!!d.getElementById('pkOver') === (state.schedule.every(g => g.result != null) && !state.schedule.some(g => +g.week > 18)), 'the season-over note is wrong for this season');
   const pend = cards.filter(c => /0 : 0/.test(txt(c.querySelector('.pk-result')))).length;
-  const done = cards.filter(c => / won /.test(txt(c.querySelector('.pk-result')))).length;
+  /* a final is "X won 24-16", or "Tie 27-27" when it ended level (NYG at WAS, week 5 of 2026) */
+  const done = cards.filter(c => / won |^Tie \d/.test(txt(c.querySelector('.pk-result')))).length;
   const on = cards.filter(c => / leading |Tied /.test(txt(c.querySelector('.pk-result')))).length;
   chk(pend + done + on === cards.length, `every result cell is 0 : 0, a result or a game on now: ${pend} + ${done} + ${on} of ${cards.length}`);
   /* the scoreboard was read on load: a game the job has not reached shows what ESPN says */
@@ -719,6 +745,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `Add to builder did not carry the Bet amount: the builder is on ${q ? q.stake : 'nothing'} and pays ${q ? q.payout : '-'}, the tier ${money(AMT * t.dec)} on ${amtTxt(AMT)}`);
         chk(/In the builder/.test(txt(d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`))), 'the tier does not say it is in the builder');
         w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40);
+        /* the tier's legs given DraftKings ids, made up (its lines are made up too, so the payload's own
+           ids could never match them): each under the key a leg of its kind has, worked out here on its
+           own (dkKey), and the other side of each line, the other team and a rung's Under under a decoy,
+           so a card that looked a leg up under the wrong side, team or point opens a decoy or nothing.
+           Read an hour ago by the page's clock, so the card promises every leg */
+        const keepDk = w.eval('JSON.stringify(PAY.dk===undefined?null:PAY.dk)');
+        { const dk = {}, read = new Date(w.eval('Date.now()') - 3600e3).toISOString().slice(0, 16) + 'Z';
+          t.legs.forEach((l, i) => { const D = ((dk[String(l.week)] ??= {})[l.gid] ??= { at: read, glat: read });
+            for (const k of dkDecoys(l, w)) if (!(k in D)) D[k] = 'DECOY' + i + '#' + k;
+            const k = dkKey(l); if (k) D[k] = 'SMK' + i + '#' + k; });
+          w.eval(`PAY.dk=${JSON.stringify(dk)}`); }
         /* Finish: the parlay card for the tier, on the amount in the box, saving nothing */
         const n0 = w.eval('S.saved.length'), keys0 = JSON.stringify(Object.keys(w.localStorage).sort());
         const fb = d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`); fb.click(); await wait(40);
@@ -728,6 +765,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `Finish on the ${t.label} tier does not open its card with its legs, price and chance: ` + txt(view).slice(0, 200));
         chk(cash === [money(AMT), money(AMT * t.dec), '+' + money(AMT * t.dec - AMT)].join(' | '),
           `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
+        /* Open in DraftKings: every leg with a key (all but a 2+ touchdown rung) opens, on its own made-up
+           id, in the card's order, joined by + with each '#' as %23, no decoy among them; the rest named
+           under the buttons, and the note dated and promising every leg */
+        { const DK = w.eval('PAY').dk || {}, ids = t.legs.map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(dkKey).length;
+          chk(n > 0 && ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
+            && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.getElementById('pcLink').hidden
+            && /^DraftKings’ lines as read .* ET: Open in DraftKings puts /.test(txt(d.getElementById('pcDkNote'))) && (n < t.legs.length || txt(d.getElementById('pcDkNote')).includes(`all ${t.n} legs`)),
+            `Open in DraftKings on the ${t.label} tier does not open its legs' own ids (${ids.length} of ${n} keyed, ${t.legs.length} legs): ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200)); }
+        w.eval(`(function(){ const k=${keepDk}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
         w.eval('PARLAY_CARD.close()'); await wait(20);
         chk(d.getElementById('pcModal').hidden && d.activeElement === d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`), 'closing the card did not give the focus back to the tier\'s Finish');
         await wait(400);
@@ -1295,6 +1341,27 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(S.saved.length === n0 && JSON.stringify(Object.keys(w.localStorage).sort()) === keys0, 'finishing a parlay saved it, or wrote a key');
       delete S.parlay[key]; w.eval('save(); renderParlay();'); await wait(40); }
     else console.log('  (no game left to kick off: the builder\'s Finish is checked by smoke_live.js on a pinned schedule)'); }
+  /* Open in DraftKings on the payload's own ids (dk, baked by weekly.py's dk_ids), where it has them for
+     a game still to come: the builder holds that game's home money line and, where the payload has a
+     main line DraftKings has an Under for at the same point, that player's Under; Finish opens the
+     card, and its link is those ids, looked up here on their own (dkKey), in the card's order */
+  { const S = w.eval('S'), P = w.eval('PAY'), started = w.eval('gameStarted'), DK = P.dk || {};
+    const cand = Object.values(DK).flatMap(gs => Object.keys(gs || {})).map(gid => S.sched.find(x => x.id === gid)).filter(g => g && !started(g) && dkIdOf(DK, { stat: 'ml', pid: 'team:' + g.h, week: g.w, gid: g.id }));
+    if (!cand.length) console.log(`  (${'dk' in P ? 'the payload has no DraftKings ids for a game still to come' : 'the payload was baked before DraftKings\' ids (dk)'}: Open in DraftKings on its own ids is skipped; the tiers and smoke_live.js hold it on made-up ones)`);
+    else { const g = cand[0], keep = JSON.stringify(S.parlay), mk = P.mkt[String(g.w)] || {};
+      S.parlay = {}; S.parlay[g.id + '|team:' + g.h + '|ml'] = teamLeg(g);
+      const under = Object.entries(mk).flatMap(([pid, sts]) => Object.entries(sts).map(([st, L]) => ({ pid, st, L })))
+        .find(x => x.L.g === g.id && S.players[x.pid] && dkIdOf(DK, { pid: x.pid, stat: x.st, side: 'under', k: x.L.line, main: true, week: g.w, gid: g.id }));
+      if (under) w.eval('toggleLeg')(`${g.id}|${under.pid}|${under.st}`, under.L.line, g, 'under', true);
+      w.eval('save(); renderParlay();'); await wait(60);
+      const q = w.PARLAY_CARD.quote(), fin = d.getElementById('pFinish');
+      if (fin && !fin.disabled) { fin.click(); await wait(30); }
+      const a = d.getElementById('pcDk'), ids = q ? q.legs.map(l => dkIdOf(DK, l)) : [];
+      chk(!!q && q.legs.length === (under ? 2 : 1) && ids.every(Boolean) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
+        && !d.querySelector('#pcDkNote [data-pc-dkmiss]'),
+        `Open in DraftKings on the payload's own ids for ${g.id} (its money line${under ? ' and ' + under.L.n + '\'s Under ' + under.L.line : ''}) is not those ids in the card's order: ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200));
+      w.eval('PARLAY_CARD.close()');
+      S.parlay = JSON.parse(keep); w.eval('save(); renderParlay();'); await wait(40); } }
 
   /* ---- X Parlays is the file: three parlays of a fixture's, one of them cleared ---- */
   { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { file: FIXFILE });

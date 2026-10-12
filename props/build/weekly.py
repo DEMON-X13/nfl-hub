@@ -43,7 +43,9 @@ What it does, in order:
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
      and every price file with the player each row belongs to: this season's games only, and
-     nothing of a payload of another season carried forward
+     nothing of a payload of another season carried forward; and DraftKings' own id for every
+     outcome the pulls read on a game still to come (dk_links_wk{W}.json -> dk, dk_ids below),
+     which the parlay card turns into an Open in DraftKings link
   5. assembles the page and runs the audit, which checks the payload against the raw files
   6. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
@@ -275,13 +277,22 @@ def published(prev,name):
     if name==STATS: return any((prev.get('stats') or {}).values())
     return any(str(r.get('season'))==str(SEASON) for r in prev.get('injuries') or [])
 
-WEEK_FILE=re.compile(r'(?:wk(\d+)_lines|prices_wk(\d+)|gamelines_wk(\d+))\.csv$')
+WEEK_FILE=re.compile(r'(?:wk(\d+)_lines|prices_wk(\d+)|gamelines_wk(\d+))\.csv$|dk_links_wk(\d+)\.json$')
+
+def week_file_games(path):
+    """the game ids a week file names: a CSV's game_id column, or the keys of dk_links_wk{W}.json
+    (game|player|stat|side|point)"""
+    if path.endswith('.json'):
+        try: return {str(k).split('|')[0].strip() for k in json.load(open(path,encoding='utf-8'))}
+        except Exception: return set()
+    return {(r.get('game_id') or '').strip() for r in names.read_csv(path)}
 
 def archive_other_seasons():
     """At a rollover, last season's price files leave data/ for data/archive/<season>/.
 
-    The files are named by week only (wk5_lines.csv, prices_wk5.csv, gamelines_wk5.csv), so
-    without this the new season's first pull would merge into last season's week-1 files. A
+    The files are named by week only (wk5_lines.csv, prices_wk5.csv, gamelines_wk5.csv and
+    DraftKings' ids, dk_links_wk5.json), so without this the new season's first pull would merge
+    into last season's week-1 files. A
     week's files move together, and only when every game id in them is another season's; a lines
     file from before the lines carried their game goes with its prices file. The bake drops
     another season's rows wherever they are, so this keeps data/ tidy rather than correct."""
@@ -291,7 +302,7 @@ def archive_other_seasons():
         if m: weeks.setdefault(next(x for x in m.groups() if x),[]).append(fn)
     moved=[]
     for w,fns in sorted(weeks.items(),key=lambda x:int(x[0])):
-        seen={(r.get('game_id') or '').strip().split('_')[0] for fn in fns for r in names.read_csv(os.path.join(DATA,fn))}
+        seen={g.split('_')[0] for fn in fns for g in week_file_games(os.path.join(DATA,fn))}
         seen.discard('')
         if not seen or str(SEASON) in seen: continue
         old='-'.join(sorted(seen)); dest=os.path.join(DATA,'archive',old); os.makedirs(dest,exist_ok=True)
@@ -445,6 +456,121 @@ def main():
     if not clean:
         problems.append('AUDIT NOT CLEAN: '+audit+'\n'+'\n'.join(l for l in out.splitlines() if l.strip().startswith(('FAIL','ERROR')))[:3000])
     return finish(a)
+
+# DraftKings' own ids for the outcomes a price pull read (oddsfetch.py writes them, with the betslip
+# links, to dk_links_wk{W}.json), baked into the payload as `dk` keyed the way the page names a leg,
+# so the parlay card can open a parlay on DraftKings' betslip:
+#   dk[week][game] = {'event': DraftKings' event id,
+#                     '<pid>|<stat>|over|<point>' (and under): a player's line, the book's point,
+#                     '<pid>|any_td': his touchdown (the book's Yes),
+#                     'team:<ABBR>|ml', 'team:<ABBR>|ats|<point>' (the team's own handicap),
+#                     'game|total|over|<point>' (and under),
+#                     'at': when the game's player prices (and so these ids) were read, priced_at.json,
+#                     'glat': when its moneylines, spreads and totals were, gamelines_wk{W}.csv's pulled_at}
+# An id names one outcome at one number (a spread or total spells its number out, a player's line
+# carries its point in the id's tail), so a line DraftKings has moved since is not on the slip: the
+# card dates what it opens by the older of at and glat, and says every leg lands only while that read
+# is under a day old (the rule g.ls follows for the game lines). Each key is the leg's own key (part2.js legKey) without the game, then its side and the book's point
+# written as the page writes a number (dk_point). A player is the one the same name rule places the
+# price rows on (pool.match, within the game); a name it does not place, a team defence's touchdown and
+# a key two book names would give two ids are left out. Only games still to come, so only the weeks
+# with one: a started game's ids are in-play ones, and no leg of it can be added. Only the ids: the
+# card rebuilds the links (https://sportsbook.draftkings.com/?outcomes=<sid>+<sid>, '#' as %23).
+DK_STATS={'passing_yards','passing_tds','attempts','completions','passing_interceptions','rushing_yards','carries','receptions','receiving_yards','any_td'}
+
+def dk_point(x):
+    """a point as JavaScript's String(number) writes it: 79.5, 80, -3 (the card looks the key up
+    with String(+leg.k))"""
+    f=float(x)
+    if f!=f or f in (float('inf'),float('-inf')): raise ValueError(x)
+    return str(int(f)) if f.is_integer() else repr(f)
+
+def dk_key(parts,g,match):
+    """the payload's key for one entry of dk_links_wk{W}.json (its key split on '|'), or None"""
+    gid=g['id']
+    if len(parts)==2 and parts[1]=='event': return 'event'
+    if len(parts)!=5: return None
+    _,who,stat,side,point=(p.strip() for p in parts)
+    try:
+        if who=='game':
+            team={'away':g['a'],'home':g['h']}.get(side)
+            if stat=='ml' and team: return f"team:{team}|ml"
+            if stat=='spread' and team and point: return f"team:{team}|ats|{dk_point(point)}"
+            if stat=='total' and side in ('Over','Under') and point: return f"game|total|{side.lower()}|{dk_point(point)}"
+            return None
+        if stat not in DK_STATS or not who or names.is_team_row(who): return None
+        if stat=='any_td':
+            if side!='Yes': return None
+            tail='any_td'
+        elif side in ('Over','Under') and point: tail=f"{stat}|{side.lower()}|{dk_point(point)}"
+        else: return None
+    except (ValueError,TypeError): return None
+    pid,_how=match(who,int(g['w']),gid)
+    return f"{pid}|{tail}" if pid else None
+
+def dk_ids(data,byid,to_come,match):
+    """(dk, how many ids, the keys dropped because two book names gave them two ids) from every
+    dk_links_wk{W}.json in data: the ids of the games in to_come, keyed by dk_key. match is
+    pool.match. A file that will not read costs the card its button for that week, nothing else."""
+    out={}; clash=set()
+    for fn in sorted(os.listdir(data)):
+        m=re.match(r'dk_links_wk(\d+)\.json$',fn)
+        if not m: continue
+        try: links=json.load(open(os.path.join(data,fn),encoding='utf-8'))
+        except Exception as e:
+            say(f"  {fn} not read ({e}): no DraftKings ids for week {m.group(1)}"); continue
+        if not isinstance(links,dict): continue
+        for key,v in links.items():
+            parts=str(key).split('|'); gid=parts[0].strip(); g=byid.get(gid)
+            sid=str(v.get('sid') or '').strip() if isinstance(v,dict) else ''
+            if not g or gid not in to_come or not sid: continue
+            k=dk_key(parts,g,match)
+            if not k: continue
+            game=out.setdefault(str(int(g['w'])),{}).setdefault(gid,{})
+            if (gid,k) in clash: continue
+            if k in game and game[k]!=sid: del game[k]; clash.add((gid,k)); continue
+            game[k]=sid
+    for w in list(out):
+        out[w]={gid:ids for gid,ids in out[w].items() if ids}
+        if not out[w]: del out[w]
+    n=sum(len(ids) for gs in out.values() for ids in gs.values())
+    # when each game's ids were read: its player prices' pull, and the slate's game lines (a game's
+    # player ids are read once, often on the Saturday before a Sunday game, so they can be a day and
+    # more old at kickoff; the card says so rather than promise every leg lands)
+    played,glines=dk_read_times(data)
+    for gs in out.values():
+        for gid,ids in gs.items():
+            kinds={'game' if (k=='event' or k.startswith(('team:','game|'))) else 'player' for k in ids}
+            if 'player' in kinds and played.get(gid): ids['at']=played[gid]
+            if 'game' in kinds and glines.get(gid): ids['glat']=glines[gid]
+    return out,n,sorted(clash)
+
+def dk_stamp(s):
+    """a read time as the files write it (2026-10-17T05:17Z, or with an offset), written
+    2026-10-17T05:17Z, or None"""
+    try: t=datetime.datetime.fromisoformat(str(s or '').strip().replace('Z','+00:00'))
+    except ValueError: return None
+    if t.tzinfo is None: t=t.replace(tzinfo=datetime.timezone.utc)
+    return t.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ')
+
+def dk_read_times(data):
+    """({game: when its player prices were last read}, {game: when its game lines were}) from
+    data/priced_at.json and every gamelines_wk{W}.csv's pulled_at: oddsfetch.py writes a game's ids
+    in the same pull as each, and a game priced again replaces both. A file that will not read, or a
+    row with no time, leaves that game's read undated, and the card says so"""
+    played={}; glines={}
+    try:
+        pr=json.load(open(os.path.join(data,'priced_at.json'),encoding='utf-8'))
+        if isinstance(pr,dict): played={g:t for g,t in ((g,dk_stamp(v)) for g,v in pr.items()) if t}
+    except Exception: pass
+    for fn in sorted(os.listdir(data)):
+        if not re.match(r'gamelines_wk(\d+)\.csv$',fn): continue
+        try: rows=names.read_csv(os.path.join(data,fn))
+        except Exception: continue
+        for r in rows:
+            gid=(r.get('game_id') or '').strip(); t=dk_stamp(r.get('pulled_at'))
+            if gid and t: glines[gid]=t
+    return played,glines
 
 def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     pay=json.load(open(pp,encoding='utf-8'))
@@ -604,6 +730,10 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     if split: say(f"  a name two players in the game share, placed on the only one at a position the book prices: {'; '.join(split)}")
     for n in notes: say('  '+n)
     pay['prices']=prices; pay['unmatched']=unmatched
+    # DraftKings' ids for the games still to come, for the parlay card's Open in DraftKings
+    dk,ndk,clash=dk_ids(DATA,byid,set(byid)-started,pool.match)
+    pay['dk']=dk
+    say(f"  DraftKings ids: {ndk} on {sum(len(v) for v in dk.values())} game(s) still to come"+(f"; left out, two book names giving one key two ids: {'; '.join(g+' '+k for g,k in clash)}" if clash else ''))
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over
     # the files nflverse has not posted yet: the audit expects none of them in the payload, and the
     # page says so rather than show an empty report as a quiet week

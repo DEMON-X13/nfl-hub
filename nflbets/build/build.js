@@ -195,12 +195,12 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-pb-add="${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${t.id}\"", 'function getPbTiers(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
   if (!part3.includes(need)) throw new Error("the builder's save or the suggested parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
 /* Finish on every device: nothing in the card asks whose device it is */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
-for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function getPbTiers('])
+for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function getPbTiers(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')"))
