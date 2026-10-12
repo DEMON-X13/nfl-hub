@@ -38,12 +38,11 @@
    while any leg's game or stats are out. A player with no stat line once his game's stats are in is
    not void by that alone: nflverse writes a player's week only when he has a stat, so a receiver who
    played and was never targeted has none, and DraftKings grades a player who takes part in one play
-   on what he did (zero catches: the over loses, the under wins). So such a leg is read against who
-   played, nflverse's snap counts (PFR's, snap_counts_<season>.csv, which weekly.py downloads beside
-   the roster, matched by the roster's PFR id, else by his name within his club): a snap of any kind
-   and he is graded on zero by settleLeg itself (the page's own rowStats of nothing), none with his
-   club's snaps in and the leg is void; with no snap counts for his club's game yet, Out on that week's
-   injury report is void and anything else waits (pending) for them. A grade once made is replaced only
+   on what he did (zero catches: the over loses, the under wins). settleLeg reads who played from the
+   payload (PAY.snaps, which weekly.py's who_played bakes from nflverse's snap counts before this
+   runs): a snap of any kind and he is graded on zero, none with his club's snaps in and the leg is
+   void; with no snap counts for his club's game yet, Out on that week's injury report is void and
+   anything else waits (pending) for them. The page and the record grade alike. A grade once made is replaced only
    by another complete one (a stat corrected), never undone by a payload that no longer holds the week;
    only the page's own season is graded at all, and an entry of another season keeps the grade it has
    (the app's actuals are this season's alone, so last season's week 5 would read this season's).
@@ -71,9 +70,8 @@
    The page runs on the run's clock held still (SUGGEST_NOW or the machine's at the start), so a boot
    that takes seconds cannot carry it past a kickoff the script itself still counts as to come.
 
-   SUGGEST_NOW (the clock), SUGGEST_PAYLOAD, SUGGEST_LEDGER, SUGGEST_PREV, SUGGEST_SNAPS and
-   SUGGEST_ROSTER (the snap counts and the roster their PFR ids are read from; 'none' for neither) are
-   for the test, test_suggest_ledger.js. No odds-API credit is ever spent: the page reads local files only.
+   SUGGEST_NOW (the clock), SUGGEST_PAYLOAD, SUGGEST_LEDGER and SUGGEST_PREV are for the test,
+   test_suggest_ledger.js. No odds-API credit is ever spent: the page reads local files only.
    Exit 0: written, or unchanged and not written. Exit 1: refused, nothing written. The last line
    starts "suggest ledger:". */
 'use strict';
@@ -200,54 +198,12 @@ function takePanel(w, now) {
       pool: { pref: r.pref, thin: r.thin, mkt: r.mkt, far: r.far }, tiers } };
 }
 
-/* ---- who played: nflverse's snap counts, for a player the app would void ----
-   { teams: Set of 'gid|team' whose snaps are in, snaps: Map 'gid|pfr' and 'gid|team|name' -> snaps of
-   any kind }, and the roster's gsis id -> PFR id; null where the file is not there or not the shape */
-function readCsv(f) {
-  const t = f && f !== 'none' ? readText(f) : null; if (t == null) return null;
-  const Papa = require(path.join(HERE, 'node_modules', 'papaparse'));
-  return Papa.parse(t, { header: true, skipEmptyLines: true }).data;
-}
-function whoPlayed(season, normName) {
-  const raw = path.join(ROOT, 'props', 'raw');
-  const rows = readCsv(process.env.SUGGEST_SNAPS || path.join(raw, `snap_counts_${season}.csv`));
-  const ros = readCsv(process.env.SUGGEST_ROSTER || path.join(raw, `roster_${season}.csv`));
-  const pfr = new Map();
-  for (const r of ros || []) if (r.gsis_id && r.pfr_id) pfr.set(r.gsis_id, r.pfr_id);
-  if (!rows || !rows.length || !('game_id' in rows[0]) || !('offense_snaps' in rows[0])) return { teams: new Set(), snaps: new Map(), pfr, file: false };
-  const teams = new Set(), snaps = new Map(), n = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
-  for (const r of rows) {
-    if (!r.game_id || !r.team) continue;
-    teams.add(r.game_id + '|' + r.team);
-    const s = n(r.offense_snaps) + n(r.defense_snaps) + n(r.st_snaps);
-    if (r.pfr_player_id) snaps.set(r.game_id + '|' + r.pfr_player_id, Math.max(s, snaps.get(r.game_id + '|' + r.pfr_player_id) || 0));
-    const k = r.game_id + '|' + r.team + '|' + normName(r.player);
-    snaps.set(k, Math.max(s, snaps.get(k) || 0));
-  }
-  return { teams, snaps, pfr, file: true };
-}
-/* a leg the app voids (no stat line once his game's stats are in), read against who played: a snap
-   and he is graded on zero by the app's own settleLeg; his club's snaps in without him, void; no
-   snaps for his club's game yet, void only when the injury report had him Out, else pending */
-function noLine(w, l, who, out) {
-  const g = l.gid + '|' + l.team, key = who.pfr.get(l.pid);
-  if (who.teams.has(g)) {
-    const s = (key && who.snaps.get(l.gid + '|' + key)) || who.snaps.get(g + '|' + w.eval('normName')(l.name)) || 0;
-    if (!(s > 0)) return 'void';
-    const S = w.eval('S'), wk = String(l.week), had = !!S.actuals[wk], A = (S.actuals[wk] ??= {});
-    A[l.pid] = { ...w.eval('rowStats')({}), team: l.team };
-    try { return w.eval('settleLeg')({ ...l }) || null; } finally { delete A[l.pid]; if (!had) delete S.actuals[wk]; }
-  }
-  return out.has(String(l.week) + '|' + l.pid) ? 'void' : null;
-}
-
 /* ---- a level's grade, by the app's own settlement ---- */
-function gradeTier(w, t, who, out) {
-  const settle = w.eval('settleLeg'), parlayDec = w.eval('parlayDec'), isGame = w.eval('isGameLeg');
+function gradeTier(w, t) {
+  const settle = w.eval('settleLeg'), parlayDec = w.eval('parlayDec');
   const sched = new Set(w.eval('S').sched.map(g => g.id));
   /* a leg on a game the page's schedule does not hold (another season's) cannot be settled here */
-  const one = l => { if (!sched.has(l.gid)) return null; const s = settle({ ...l }) || null;
-    return s === 'void' && !isGame(l) ? noLine(w, l, who, out) : s; };
+  const one = l => sched.has(l.gid) ? settle({ ...l }) || null : null;
   const legs = t.legs.map(one);
   if (legs.some(x => x == null)) return { result: 'pending', legs };
   if (legs.includes('loss')) return { result: 'lost', legs, payout: 0 };
@@ -356,15 +312,14 @@ async function main() {
     else said.push(`${take.key} unchanged`);
   } else said.push('no game to come');
   /* the frozen entries' grades: this season's only (another's keeps the grade it has) */
-  const season = w.eval('SEASON'), who = whoPlayed(season, w.eval('normName'));
-  const ruledOut = new Set((payload.injuries || []).filter(r => r && r.report_status === 'Out').map(r => String(+r.week) + '|' + r.gsis_id));
-  if (!who.file) said.push('no snap counts: a leg on a player with no stat line waits');
+  const season = w.eval('SEASON');
+  if (!payload.snaps) said.push('a payload with no snap counts: a leg on a player with no stat line waits unless Out');
   for (const [key, e] of Object.entries(E)) {
     if (Date.parse(e.kickoff) > now || e.season !== season) continue;
     const g = {};
     for (const t of e.tiers || []) {
       if (!t.legs) continue;
-      const was = (e.grade || {})[t.id], now1 = gradeTier(w, t, who, ruledOut);
+      const was = (e.grade || {})[t.id], now1 = gradeTier(w, t);
       g[t.id] = now1.result === 'pending' && was && DONE.has(was.result) ? was : now1;
     }
     e.grade = g;

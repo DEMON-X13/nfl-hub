@@ -238,13 +238,7 @@ every leg has settled, as a book settles it: a leg lost loses; a push or void dr
 paid at `parlayDec` on the legs left; every leg a push or void is a push, the stake back; pending while a
 game or its stats are out; a grade once made is replaced only by a complete one; only the page's own
 season is graded (the app's actuals are this season's, keyed by week, so last season's week 5 would read
-this one's). A player with no stat line once his game's stats are in is void only if he did not play:
-nflverse writes a player's week only when he has a stat, so a receiver who played and was never targeted
-has none, and DraftKings grades him on zero (his over loses, his under wins). The script reads who played
-from nflverse's snap counts (`raw/snap_counts_<season>.csv`, which `weekly.py` fetches for it and does
-not require; matched by the roster file's PFR id, else his name within his club): a snap of any kind and
-he is graded on zero by `settleLeg` itself, his club's snaps in without him and the leg is void; with no
-snap counts for that game yet, Out on the week's injury report is void and anything else waits. The
+this one's). A player with no stat line is graded as the page grades him (**who played**, below). The
 `summary` gives per level the parlays graded won or lost, won, the wins expected by the fair chance and by
 the model's, and the units on $1, each parlay once: an entry is the whole week's panel, so a parlay
 unchanged across waves is frozen into each, and the same legs (in any order) of the same level in a
@@ -256,12 +250,38 @@ It never refuses the run or turns it red: `weekly.py` logs the refusal in its re
 payload. It spends no credit. `node test_suggest_ledger.js` (about twenty seconds) runs it on made-up
 weeks cut from the payload: taken (and kept by a run a second before its kickoff), rewritten before the
 kickoff, unchanged and not written, frozen, graded against planted wins, losses, voids and pushes worked
-out from the raw rows, made-up snap counts and the injury report (a player who played with no stat line
-on zero, by his PFR id and by his name; one who did not, void; one Out with no snap counts yet, void;
-neither, pending), a grade kept that a payload can no longer settle, last season's entry never regraded
+out from the raw rows, the payload's snaps (planted) and the injury report (a player who played with no
+stat line on zero; one his club's snaps leave out, void; one Out with no snap counts yet, void; neither,
+pending), a grade kept that a payload can no longer settle, last season's entry never regraded
 on this season's rows, a parlay two waves froze counted once, no game to come, and the guard end to end
 and on hand-made ledgers. A
 change to the script comes with a run of it.
+
+**Who played** (app v101, after the review of Sunday 11 October 2026: Tory Horton, SEA, ran 11 offensive
+snaps in week 5 with no target, DraftKings graded his receptions over 1.5 a loss, and the page showed it
+void). nflverse writes a player's week only when he has a stat, so no row is not "did not play".
+`weekly.py` fetches nflverse's snap counts (`raw/snap_counts_<season>.csv`, PFR's, never required) with
+the other files, and the bake (`who_played`) places each row on a player by its PFR id through the
+roster file, else by its name within its game (`names.Pool`, the price rows' rule) when that player is
+on the row's club (nflverse's `players.csv` placed nothing those two miss on 2026 weeks 1-5 and is not
+read). It writes the payload's `snaps`, `snaps[week][game][club]` = the players the page projects who
+took a snap of any kind and have no stat line, a club for every game whose snap counts and stats are
+both in (a club with a skill-position row no player takes is left out, and the name logged), and a row
+of zeros in `stats` (every column, `from_snaps: 1`) for each who took a snap in his role (on offence; a
+kicker on special teams), so the projections (`applyGame`) and the Track Record see the game: about 15%
+of receiver games and 37% of tight-end games at 15-35% of snaps had no row. `settleLeg` (with
+`tookPart` and `reportedOut` in `part2.js`), for a player with no stat line once his game's stats are
+in: a snap, graded on zero (an over and a rung lose, an under wins); his club's snaps in without him,
+void; no snap counts for his club yet, void if that week's report had him Out, otherwise it waits. The
+page, the Track Record and the suggestions record all grade this way, from the payload alone; ESPN's
+game summary, which the live tracking reads, lists only players with a stat and was not used. A run with
+no snap counts carries the published payload's (`carry_snaps`), and a club whose stats are in with no
+snap counts 72 hours after kickoff turns the run red after its commit (`snaps_overdue`). The audit's V9
+plants snap counts and holds every branch; V15 holds the payload's snaps and rows of zeros to each other
+and the page, and with `PROPS_AUDIT_RAW` to `raw/snap_counts` and `raw/pw`. `python3
+test_who_played.py` holds the bake to its cases (PFR id, name, special teams only, a kicker, a player
+traded since, a name no player takes, the carry and the overdue rule, `weekly.bake` end to end). Never
+tune the model on the 2026 results these rows add.
 
 ## Betting: the loop
 

@@ -171,11 +171,19 @@ function hitBand(actual,proj){
   if(d>0) return 'over';
   return Math.abs(d)<=Math.max(1,proj*0.15)?'near':'far';
 }
-function actualSummary(x,lines,week,src){
+/* a player with no stat line in a game whose stats are in, by the snap counts (tookPart) */
+function noLineText(g,pl,long){
+  const t=tookPart({gid:g.id,week:g.w,pid:pl.id,team:pl.team});
+  if(!long) return t===true?'played, no stat line':(t===false?'did not play':'no stat line; snap counts not in yet');
+  return t===true?'No stat line for this player, but the snap counts have him on the field: a book grades his legs on zero.'
+    :(t===false?'No stat line and no snap for this player: he did not play, and a book voids his legs.'
+    :'No stat line for this player, and the snap counts that say whether he played are not in yet.');
+}
+function actualSummary(x,lines,week,src,g){
   /* src is a live box-score block when nflverse has not posted yet; the shape is the same,
      which is the whole reason espnStats was written to match */
   const a=src||actualFor(week,x.pl.id);
-  if(!a) return src===null?'<span class="muted">nothing on the sheet yet</span>':'<span class="muted">did not play</span>';
+  if(!a) return src===null?'<span class="muted">nothing on the sheet yet</span>':`<span class="muted">${g?noLineText(g,x.pl):'did not play'}</span>`;
   const snap=(S.projections&&S.projections[String(week)]&&S.projections[String(week)][x.pl.id])||{};
   lines=lines.map(l=>{ const s0=snap[l.stat]; return (s0&&!l.prob&&s0.mu!=null)?{...l,mu:s0.mu}:l; });
   const want=HEADLINE[x.pl.grp]||[]; const bits=[];
@@ -294,7 +302,7 @@ function renderGame(){
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
         <div class="who">${esc(x.pl.n)}${(!locked&&+g.w===currentWeek())?injChip(x.pl.id):''}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span><span class="stbtn${stOpen?' on':''}" role="button" tabindex="0" data-stats="${x.pl.id}" aria-pressed="${stOpen}">${stOpen?'Hide stats':'Show stats'}</span></div>
         <div class="sum">${locked?`<span class="finchip${fin?'':' live'}">${fin?'FINAL':'LIVE'}</span>`:''}${
-          (locked&&haveStats)?actualSummary(x,lines,g.w)
+          (locked&&haveStats)?actualSummary(x,lines,g.w,undefined,g)
           :(locked&&liveOn?actualSummary(x,lines,g.w,liveStatsFor(g.id,team,x.pl.n))
           :(locked?'<span class="muted">projected</span> '+summaryOf(x,lines):summaryOf(x,lines)))}</div>
         <div class="arrow">${open?'\u2303':'\u2304'}</div></button>`;
@@ -332,7 +340,7 @@ function renderGame(){
           <span><i style="background:var(--gold)"></i>under, but close</span>
           <span><i style="background:var(--miss)"></i>well under</span></div>
           <p class="muted" style="margin:6px 0 0;font-size:11px">Green means it cleared the model's own number, which is not the same as clearing your sportsbook's line. The book line and which way it went are on each tile.</p>`;
-        if(haveStats&&!a) html+='<p class="muted" style="margin:8px 0 0">No stat line for this player, so he most likely didn\u2019t play.</p>';
+        if(haveStats&&!a) html+=`<p class="muted" style="margin:8px 0 0">${noLineText(g,x.pl,true)}</p>`;
         html+='</div>'; continue;
       }
       for(const l of lines){

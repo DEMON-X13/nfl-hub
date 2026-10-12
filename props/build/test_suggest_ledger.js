@@ -18,10 +18,10 @@
         is frozen exactly as B left it and graded as far as its legs allow, and the next wave is taken.
      D  W played out (made-up scores where the real ones are missing, a made-up void and push), with
         made-up frozen entries planted to hold every rule of a book's settlement: each level graded
-        by the legs' own results, worked here from the raw scores, stat rows, snap counts and injury
-        report and never by the app's code (a player with no stat line who took a snap graded on zero,
-        by his PFR id or his name; one with none, or Out with his club's snaps not in, void; neither,
-        pending); a grade kept when the payload can no longer settle it; last season's entry, whose
+        by the legs' own results, worked here from the raw scores, stat rows, the payload's snap counts
+        (PAY.snaps, as weekly.py's who_played bakes them) and injury report and never by the app's code
+        (a player with no stat line who took a snap graded on zero; one his club's snaps leave out, or
+        Out with his club's snaps not in, void; neither, pending); a grade kept when the payload can no longer settle it; last season's entry, whose
         players have this season's rows in the same week, never regraded; a parlay frozen into two
         waves counted once; both waves unmoved; the next week's first wave taken.
      E  W's last kickoff under way: no game to come, so nothing new is taken (E2: nothing written).
@@ -41,8 +41,6 @@ const SL = require('./suggest_ledger.js');
 const REAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8'));
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'suggest_ledger_'));
 const LEDGER = path.join(DIR, 'suggest_ledger.json');
-/* the snap counts and the roster their PFR ids come from: none until D writes made-up ones */
-const SNAPS = path.join(DIR, 'snap_counts.csv'), ROSTER = path.join(DIR, 'roster.csv');
 
 let n = 0; const fails = [];
 const chk = (ok, msg) => { n++; if (!ok) fails.push(msg); };
@@ -61,7 +59,7 @@ let seq = 0;
 function run(pay, now, extra = {}) {
   const pf = path.join(DIR, `payload_${++seq}.json`); fs.writeFileSync(pf, JSON.stringify(pay));
   const r = cp.spawnSync('node', [SCRIPT], { encoding: 'utf8', env: { ...process.env, SUGGEST_NOW: iso(now), SUGGEST_PAYLOAD: pf,
-    SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: 'none', SUGGEST_SNAPS: SNAPS, SUGGEST_ROSTER: ROSTER, ...extra } });
+    SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: 'none', ...extra } });
   const out = (r.stdout || '') + (r.stderr || '');
   return { code: r.status, out, last: out.trim().split('\n').pop() };
 }
@@ -95,6 +93,9 @@ function week(pay, { scored = [], stats = [] } = {}) {
   for (const g of pay.sched) if (+g.w > W) { delete g.hs; delete g.as; }
   pay.stats = Object.fromEntries(Object.entries(pay.stats || {}).filter(([k]) => +k < W));
   if (stats.length) pay.stats[WS] = stats;
+  /* who played (PAY.snaps): the real payload's, for the games played here, where it has them */
+  pay.snaps = Object.fromEntries(Object.entries(pay.snaps || {}).filter(([k]) => +k < W));
+  if (stats.length) pay.snaps[WS] = Object.fromEntries(Object.entries(((REAL.snaps || {})[WS]) || {}).filter(([gid]) => ids.has(gid)));
   return pay;
 }
 const stamp = (pay, t) => { pay.baked_at = iso(t).replace(/Z$/, '+00:00'); return pay; };
@@ -184,28 +185,22 @@ const L_ATS_PUSH = team(gWin, winner(gWin), 'ats', -margin(gWin), -110);
 const L_OVER = player(qb.id, gq, 'passing_yards', 239.5, 'over', true, -115), L_UNDER = player(qb.id, gq, 'passing_yards', 239.5, 'under', true, -105);
 const L_EXACT = player(qb.id, gq, 'passing_tds', 2, 'over', true, 130), L_RUNG = player(qb.id, gq, 'passing_yards', 250, 'over', false, 200);
 const L_VOID = player('XX-0000001', gq, 'rushing_yards', 20.5, 'over', true, -110);
-/* no stat line, read against who played: the snap counts are in for every game of W but gOut's;
-   XX-PLAYED took 31 snaps (his PFR id, from the roster), XX-NAMED 12 (no PFR id: his name, within his
-   club, "Named Fallback Jr." on the page and "Named Fallback" at PFR), XX-ZERO a row of no snaps;
-   in gOut, whose snaps are not in, XX-OUT was Out on the report and XX-UNK on none */
+/* no stat line, read against who played (the payload's snaps, as weekly.py bakes them; placing a snap
+   row on a player, by PFR id or name, is the bake's, and test_who_played.py holds it): the snap counts
+   are in for every game of W but gOut's; XX-PLAYED (gq) and XX-NAMED (another game, on the home club)
+   took a snap with no stat line, XX-ZERO took none; in gOut, whose snaps are not in, XX-OUT was Out on
+   the report and XX-UNK on none */
 const gOut = others[3] || others[0], gNamed = gLose;
 const at = (l, g, team) => ({ ...l, gid: g.id, team });
 const L_PLAYED_O = player('XX-PLAYED', gq, 'receptions', 0.5, 'over', true, -150), L_PLAYED_U = { ...L_PLAYED_O, side: 'under', price: 120 };
 const L_NAMED_U = at({ ...player('XX-NAMED', gq, 'receiving_yards', 8.5, 'under', true, 110), name: 'Named Fallback Jr.' }, gNamed, gNamed.h);
 const L_ZERO = player('XX-ZERO', gq, 'receptions', 1.5, 'over', true, -105);
 const L_OUT = at(player('XX-OUT', gq, 'receptions', 2.5, 'over', true, -110), gOut, gOut.h), L_UNK = at(player('XX-UNK', gq, 'receptions', 2.5, 'over', true, -110), gOut, gOut.a);
-const snapRow = (g, team, who, pfr, off) => [g.id, `${season}${String(W).padStart(2, '0')}0x`, season, 'REG', W, who, pfr, 'WR', team, team === g.h ? g.a : g.h, off, 0.5, 0, 0, 2, 0.1].join(',');
-fs.writeFileSync(SNAPS, ['game_id,pfr_game_id,season,game_type,week,player,pfr_player_id,position,team,opponent,offense_snaps,offense_pct,defense_snaps,defense_pct,st_snaps,st_pct',
-  ...games.filter(g => g.id !== gOut.id).flatMap(g => [snapRow(g, g.h, 'Dummy Lineman', 'DummLi00', 60), snapRow(g, g.a, 'Dummy Lineman', 'DummLi01', 60)]),
-  snapRow(gq, qbTeam, 'Played Person', 'PlayXx00', 31), snapRow(gNamed, gNamed.h, 'Named Fallback', '', 12), [gq.id, 'x', season, 'REG', W, 'Zero Snaps', 'ZeroXx00', 'TE', qbTeam, '', 0, 0, 0, 0, 0, 0].join(',')].join('\n') + '\n');
-fs.writeFileSync(ROSTER, 'season,team,position,full_name,gsis_id,pfr_id\n' + [[season, qbTeam, 'WR', 'Played Person', 'XX-PLAYED', 'PlayXx00'], [season, qbTeam, 'TE', 'Zero Snaps', 'XX-ZERO', 'ZeroXx00'],
-  [season, gNamed.h, 'WR', 'Named Fallback', 'XX-NAMED', '']].map(r => r.join(',')).join('\n') + '\n');
+{ const real = ((REAL.snaps || {})[WS]) || {};
+  P2.snaps[WS] = Object.fromEntries(games.filter(g => g.id !== gOut.id).map(g => [g.id, { [g.h]: [...((real[g.id] || {})[g.h] || [])], [g.a]: [...((real[g.id] || {})[g.a] || [])] }]));
+  P2.snaps[WS][gq.id][qbTeam].push('XX-PLAYED'); P2.snaps[WS][gNamed.id][gNamed.h].push('XX-NAMED'); }
 P2.injuries = [...(P2.injuries || []), { season: String(season), week: String(W), gsis_id: 'XX-OUT', team: gOut.h, report_status: 'Out', practice_status: 'Did Not Participate In Practice', injury: 'Knee' }];
-const SNAP = (() => { const by = new Map(), teams = new Set(); for (const line of fs.readFileSync(SNAPS, 'utf8').trim().split('\n').slice(1)) { const c = line.split(',');
-  teams.add(c[0] + '|' + c[8]); by.set(c[0] + '|' + (c[6] || c[8] + '|' + c[5].toLowerCase()), +c[10] + +c[12] + +c[14]); } return { by, teams }; })();
-const PFR = { 'XX-PLAYED': 'PlayXx00', 'XX-ZERO': 'ZeroXx00' };
 const OUTS = new Set(P2.injuries.filter(x => x.report_status === 'Out').map(x => String(+x.week) + '|' + x.gsis_id));
-const nm = n => String(n).toLowerCase().replace(/[.']/g, '').replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/\s+/g, ' ').trim();
 const tier = (id, n, legs, extra = {}) => ({ id, label: SL.LABELS[id], n, floor: 0, legs, p: 0.3, fair: 0.25, fair_est: false, dec: r3(legs.reduce((a, l) => a * dec(l.price), 1)), likeliest: false, thin: 0, mkt: 0, ...extra });
 const kX = kicks[0] - 3 * H, kY = kicks[0] - 2 * H, kX2 = kicks[0] - 2.5 * H, kZ = kicks[0] - 1.5 * H;
 const plant = (k, tiers, more = {}) => ({ season, week: W, kickoff: iso(k), games: games.map(g => g.id), baked_at: null, pool: { pref: 0, thin: 0, mkt: 0, far: 0 }, tiers, taken_at: iso(k - H), ...more });
@@ -258,9 +253,9 @@ function settle(l) {
   if (!row) {
     if (!rows.length) return null;
     /* no stat line: did he play? his club's snaps in: a snap, zero; none, void. Not in: Out, void; else wait */
-    if (!SNAP.teams.has(l.gid + '|' + l.team)) return OUTS.has(String(l.week) + '|' + l.pid) ? 'void' : null;
-    const s = SNAP.by.get(l.gid + '|' + (PFR[l.pid] || l.team + '|' + nm(l.name)));
-    if (!(s > 0)) return 'void';
+    const G = ((P2.snaps || {})[String(l.week)] || {})[l.gid];
+    if (!G || !(l.team in G)) return OUTS.has(String(l.week) + '|' + l.pid) ? 'void' : null;
+    if (!G[l.team].includes(l.pid)) return 'void';
     v = 0;
   } else v = l.stat === 'any_td' ? row.rushing_tds + row.receiving_tds : row[l.stat];
   if (l.stat === 'any_td') return v >= (l.k || 1) ? 'win' : 'loss';
@@ -301,7 +296,7 @@ chk(gz.safe && gz.safe.result === 'lost' && JSON.stringify(gz.safe.legs) === '["
 chk(gz.med && gz.med.result === 'won' && JSON.stringify(gz.med.legs) === '["win","win","void"]' && gz.med.payout === r3(dec(L_PLAYED_U.price) * dec(L_WIN.price)),
   'D: a player who played with no stat line did not win his under on zero, or one Out with no snap counts in was not void: ' + JSON.stringify(gz.med));
 chk(gz.aggr && gz.aggr.result === 'won' && JSON.stringify(gz.aggr.legs) === '["win","void","win","win"]' && gz.aggr.payout === r3(dec(L_NAMED_U.price) * dec(L_WIN.price) * dec(L_OVER.price)),
-  'D: a player found by name who played was not graded on zero, or one with no snaps was not void: ' + JSON.stringify(gz.aggr));
+  'D: a player who played with no stat line on another club was not graded on zero, or one with no snaps was not void: ' + JSON.stringify(gz.aggr));
 chk(gz.xtrm && gz.xtrm.result === 'pending' && gz.xtrm.legs[0] === null, 'D: a player with no stat line, no snap counts for his club and not Out did not wait: ' + JSON.stringify(gz.xtrm));
 chk(JSON.stringify((L.entries[kPS] || {}).grade) === JSON.stringify(PS.grade), 'D: last season\'s entry was regraded: ' + JSON.stringify((L.entries[kPS] || {}).grade));
 /* the summary, worked here from the grades: a parlay (a season's week, a level, its legs in any order)
