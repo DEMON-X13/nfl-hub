@@ -184,6 +184,32 @@ its own; before 285 the summary never says passing. `shadow_equiv.py` proves its
 harness's own (identical on every development game), `test_shadow.py` is its test (README.md there,
 "The shadow"). Never edit the ledger or the bar by hand.
 
+A quarterback has an anytime touchdown since app v102 (`patch_qb_td.py`; the owner asked, October
+2026): his own rushing or receiving touchdown, as DraftKings settles it, never a pass he throws, and
+settled so everywhere it already was (the stats' `any_td`, the live box score's, `settleLeg`, the
+suggestions record: rushing plus receiving touchdowns only). It is worded so wherever it is named
+("Scores a rushing or receiving TD (not a TD pass)", `tdLabel`; his game page heads it "Rushing or
+receiving TD"); a back's, receiver's or tight end's reads as before. Its numbers are
+`props/research/qb_td.py`'s, merged into `final_model.json`, `tdrate.json` and `corr.json` by its
+`--write`, which adds only the quarterback's entries and asserts nothing else moved: a logit on
+`featVec` fitted the way fit4.py fitted the other positions' (the script recovers that method and
+gives their coefficients back to within 0.018), on the rows the page serves: each club's starter judged
+before the game (`pregame_starter`, most pass attempts over his recent games), 2019-2024, since the page
+offers the leg to the chart's QB1 alone and a fit on every row, backups' relief and kneel-downs in, read
+the starters about 1.5 points low. Held out once on 2025's starters, capped as the page runs it (his
+projected carries at the league's 0.047 touchdowns a carry, times `tdmult`), it beat the league's
+starter rate (log loss 0.4018 against 0.4307, Brier 0.1223 against 0.1307), said 15.4% where they
+scored 15.5%, and was level with his own shrunk career rate (0.4035, 0.1217), as over a 2021-2025
+walk-forward on the starters (said 15.5%, scored 15.6%);
+`TOTAL_RHO['QB:any_td']` 0.09 and 12 `corr.json` pairs were measured as theirs were. The cap is the
+league's rate, so it holds a quarterback who runs in his own goal-line plays under what he does (Josh
+Allen, said about 60%, capped to 40-43%); a per-player rate would be its own change,
+tested walk-forward. Market + form gives his touchdown no second price (his rating is a passer's;
+`eloAltP` takes the leg's stat), so the panel takes one only as a thin edge. The audit's K2 holds it
+(on a payload baked before the model it says so and skips the projection checks; with it, a quarterback's
+book price, the open weeks' own or one it plants, must reach a priced leg), and
+`PROPS_AUDIT_PAYLOAD` boots the audit on another payload, to try data the job has not baked.
+
 `.github/workflows/props.yml` runs four price pulls a week (Mon, Wed and Thu 08:17 UTC, and Sat
 05:17 UTC for the weekend: Saturday's games and the whole Sunday slate, London to Sunday night;
 ~7 odds-API credits a game), eight post-game and stats runs, two Saturday catch-ups (16:07 and

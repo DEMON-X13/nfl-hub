@@ -735,7 +735,7 @@ stat line), `snaps` (who took part, `snaps[week][game][club]`: the players with 
 snap of any kind, a club for every game whose snap counts and stats are in; `who_played` in `weekly.py`,
 from nflverse's snap counts; `settleLeg` grades such a player on zero, one his club's list leaves out
 void, and waits where there is no club, unless the report had him Out), `corr`
-(the 329-entry pair correlation table), `model`/`grid`/`dist`/`qs`/`k`/`prior`/`pts` (fitted
+(the pair correlation table: 329 entries, 341 since the quarterback's touchdown joined in app v102), `model`/`grid`/`dist`/`qs`/`k`/`prior`/`pts` (fitted
 model pieces), `mkt_scale` and `tdrate` (from `data/scale.json` and `data/tdrate.json`) and
 `tdmult` (the touchdown cap), `norm` (league means by position group, and the implied-points
 spread), `injuries` (this week's report in full, with practice status, and earlier weeks'
@@ -788,6 +788,12 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 - **main line** -- the real sportsbook over/under for a stat (`main:true`).
 - **rung** -- a step on a **threshold ladder**, the "10+, 20+, 30+" style
   alternatives (`LADDER` in `part2.js`). Hidden behind a checkbox by default.
+- **anytime touchdown** -- `any_td`, a yes/no leg (`prob` in `MARKETS`) with a "two or more"
+  row (`tdPlus`), for a back, a receiver, a tight end and, since app v102, a quarterback: a
+  touchdown the player scores himself, running or catching, never a pass he throws, as DraftKings
+  settles it and as `rowStats` and `espnStats` count it. Its chance is a logit capped by expected
+  touches at `tdrate` x `tdmult`. A quarterback's is worded "Scores a rushing or receiving TD (not
+  a TD pass)" (`tdLabel()`), and market + form gives it no second price (his rating is a passer's).
 - **game bets** -- `ml` (to win), `ats` (to cover) and `total` (the game's points over or
   under `g.tot`, `pid:'game'`), one team bet and one total per game in the builder, a parlay of
   the panel's taking one team bet a game and no total, `grp:'TEAM'`. A total's chance is
