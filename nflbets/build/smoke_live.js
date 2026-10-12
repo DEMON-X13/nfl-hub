@@ -713,47 +713,69 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       /* every leg on a line of its own in the shared text: its number, who, the bet and its price */
       const legsIn = t => q.legs.every((l, i) => new RegExp(`(^|\\n)${i + 1}\\. ${l.name}: ${l.label} \\([+-]\\d+\\)(\\n|$)`).test(t));
       const dkA = d.getElementById('pcDk'), note = () => d.getElementById('pcDkNote'), msg = () => txt(d.getElementById('pcMsg'));
+      /* nothing promises that every leg will land: an id is DraftKings' outcome at one number, read once
+         a game 12 to 35 hours before its kickoff, and DraftKings drops one whose line has moved since */
+      const promises = t => /\bputs all\b|\bOpens all\b|\ball \d+ legs on\b|\(all \d+ legs\b|\bevery leg (lands|will)\b|\bat DraftKings’ own prices\b/i.test(t);
+      /* what the note and the button say the link opens, dated by the read (or saying it is not recorded) */
+      const opensNote = (which, at) => `${at ? 'DraftKings’ lines as read ' + readTxt(at) : 'When DraftKings’ lines were read is not recorded'}: Open in DraftKings opens ${which} as DraftKings had them ${at ? 'then' : 'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
+      const opensTitle = (which, at) => `Opens ${which} on DraftKings’ betslip, in a new tab, as DraftKings’ lines were ${at ? 'read ' + readTxt(at) : 'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
+      /* the shared text's DraftKings lines: what the link opens, the link alone on its line, the read */
+      const slipLines = (head, url, at) => `\nDraftKings betslip (opens ${head}):\n${url}\nDraftKings lines as ${at ? 'read ' + readTxt(at) : 'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet\n`;
       chk(!!dkA && !dkA.hidden && dkA.tagName === 'A' && dkA.getAttribute('href') === DKU(order) && dkA.getAttribute('target') === '_blank' && /\bnoopener\b/.test(dkA.getAttribute('rel') || '') && txt(dkA) === 'Open in DraftKings',
         `${how}: a parlay DraftKings has every leg of has no Open in DraftKings link to its betslip, in the card's order, in a new tab: ` + (dkA ? dkA.outerHTML : 'none'));
       chk(!!dkA && !!dkA.closest('.pc-actions') && dkA.nextElementSibling === d.getElementById('pcLink'), `${how}: Open in DraftKings and Share link are not side by side in the action row`);
-      chk(/all 2 legs on DraftKings/.test(txt(note())) && [...note().querySelectorAll('a[data-pc-dkleg]')].map(a => a.getAttribute('href')).join(' ') === order.map(x => DKU([x])).join(' ')
+      chk(/opens the 2 legs as DraftKings had them then/.test(txt(note())) && [...note().querySelectorAll('a[data-pc-dkleg]')].map(a => a.getAttribute('href')).join(' ') === order.map(x => DKU([x])).join(' ')
         && [...note().querySelectorAll('a')].every(a => a.getAttribute('target') === '_blank' && /noopener/.test(a.getAttribute('rel') || '')) && !note().querySelector('[data-pc-dkmiss]'),
-        `${how}: the note under the buttons does not say every leg opens, or does not give each leg's own link: ` + txt(note()));
-      /* the note is dated by the older read of the legs it opens (the game lines', five hours ago),
-         and every leg is promised only while that read is under a day old: the button says so too */
-      chk(txt(note()).startsWith(`DraftKings’ lines as read ${readTxt(AT_G)}: Open in DraftKings puts all 2 legs on DraftKings’ betslip, at DraftKings’ own prices.`)
-        && dkA.getAttribute('title') === 'Opens all 2 legs on DraftKings’ betslip, in a new tab',
-        `${how}: a read five hours old is not dated by the older read, or does not promise both legs: ` + txt(note()) + ' / ' + dkA.getAttribute('title'));
-      /* Share link: the share sheet gets the same DraftKings link, a title, a line for every leg, the
-         stake and what it pays and the site's address; a cancel does nothing; with no share sheet (or
-         one that fails) the text and the link are copied; never the image */
+        `${how}: the note under the buttons does not say what the link opens, or does not give each leg's own link: ` + txt(note()));
+      /* the note is dated by the older read of the legs it opens (the game lines', five hours ago), and
+         even so recent a read promises nothing: the legs as DraftKings had them then, and a line moved or
+         pulled since is not on the slip. The button says the same */
+      chk(txt(note()).startsWith(opensNote('the 2 legs', AT_G)) && dkA.getAttribute('title') === opensTitle('the 2 legs', AT_G) && !promises(txt(note()) + ' ' + dkA.getAttribute('title')),
+        `${how}: a read five hours old is not dated by the older read, or the note or the button promises every leg will land: ` + txt(note()) + ' / ' + dkA.getAttribute('title'));
+      /* Share link: one text, the DraftKings link inside it, and no url of its own (the owner, October
+         2026: on an iPhone the share sheet hands the text and a url as two items, Messages draws the url
+         as a card showing only the domain and the sheet's Copy drops it, so the link "compressed" or went
+         missing). The text: a line for every leg, the stake and what it pays, the chances, what the link
+         opens, the betslip link itself alone on its line (every id, in the card's order), when DraftKings'
+         lines were read and that a line moved since will not be on the slip, and the site's address last.
+         canShare is asked about the same title and text; a cancel does nothing; with no share sheet, one
+         that fails or one that cannot share it, the same text is copied, by the clipboard or a hidden box;
+         never the image */
       { const nav = w.navigator, def = (k, v) => Object.defineProperty(nav, k, { value: v, configurable: true });
-        const shared = [], copied = [], clicks0 = rec.clicks.length, blobs0 = rec.blobs.length, canv0 = rec.canvases.length;
+        const shared = [], copied = [], asked = [], clicks0 = rec.clicks.length, blobs0 = rec.blobs.length, canv0 = rec.canvases.length;
         const cash = [...view.querySelectorAll('.pc-money b')].map(txt), link = d.getElementById('pcLink');
-        def('share', async x => { shared.push(x); }); def('clipboard', { writeText: async t => { copied.push(t); } });
+        def('share', async x => { shared.push(x); }); def('clipboard', { writeText: async t => { copied.push(t); } }); def('canShare', x => { asked.push(x); return true; });
         chk(!!link && !link.hidden && txt(link) === 'Share link', `${how}: the card has no Share link`);
         link.click(); await wait(30);
-        const s0 = shared[0] || {};
-        chk((s0.text || '').includes(`\n${line1} · ${line2}\n`), `${how}: Share link does not send the fair chance first, then the model's and the price's: ` + JSON.stringify(s0.text));
-        chk(shared.length === 1 && s0.url === dkA.getAttribute('href') && !s0.files && s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(s0.text || '')
-          && (s0.text || '').includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s0.text || '') && !/Add by hand/.test(s0.text || '')
-          && (s0.text || '').includes(`\nDraftKings lines as read ${readTxt(AT_G)}; check the slip before you bet\n`) && !/ est\.\)| fair\)|\(.*price\)$/.test((s0.text || '') + '\n' + s0.title),
-          `${how}: Share link did not hand the share sheet the DraftKings link, the title, every leg (book prices, unlabelled), the stake and payout, when DraftKings' lines were read and the site: ` + JSON.stringify(s0));
+        const s0 = shared[0] || {}, t0 = s0.text || '';
+        chk(t0.includes(`\n${line1} · ${line2}\nDraftKings betslip (`), `${how}: Share link does not send the fair chance first, then the model's and the price's, then the DraftKings link: ` + JSON.stringify(t0));
+        chk(shared.length === 1 && !('url' in s0) && !s0.files && JSON.stringify(Object.keys(s0).sort()) === '["text","title"]',
+          `${how}: Share link handed the share sheet a url (or anything) beside its title and text, which an iPhone shows as a bare domain or drops: ` + JSON.stringify(s0));
+        chk(asked.length === 1 && JSON.stringify(asked[0]) === JSON.stringify({ title: s0.title, text: t0 }), `${how}: canShare was not asked about the title and the text alone: ` + JSON.stringify(asked));
+        chk(t0.split('\n').includes(DKU(order)) && dkA.getAttribute('href') === DKU(order) && t0.includes(slipLines('the 2 legs as DraftKings had them', DKU(order), AT_G)),
+          `${how}: Share link's text does not carry the whole betslip link (every id, in the card's order) alone on its line, under what it opens and over the read: ` + JSON.stringify(t0));
+        chk(s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(t0) && t0.includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\nDraftKings lines as read [^\n]*\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(t0)
+          && !/Add by hand/.test(t0) && !promises(t0 + '\n' + s0.title) && !/ est\.\)| fair\)|\(.*price\)$/.test(t0 + '\n' + s0.title),
+          `${how}: Share link did not send the title, every leg (book prices, unlabelled), the stake and payout, the read and the site last, or it promises every leg: ` + JSON.stringify(s0));
         chk(copied.length === 0 && rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && rec.canvases.length === canv0, `${how}: Share link copied as well, or drew or downloaded the image`);
+        /* a share sheet that cannot share it: the same text, copied */
+        def('canShare', x => { asked.push(x); return false; }); link.click(); await wait(30);
+        chk(shared.length === 1 && copied.length === 1 && copied[0] === t0 && msg() === 'Link copied', `${how}: a share sheet that cannot share the text did not copy the same text instead: ` + JSON.stringify(copied));
+        delete nav.canShare; copied.length = 0;
         def('share', async x => { shared.push(x); throw new w.DOMException('The user cancelled', 'AbortError'); });
         const at = d.activeElement; link.click(); await wait(30);
         chk(shared.length === 2 && copied.length === 0 && msg() === '' && !md.hidden && rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && d.activeElement === at,
           `${how}: cancelling the share sheet did something: ` + JSON.stringify({ copied, msg: msg() }));
         def('share', async () => { throw new w.DOMException('Not allowed', 'NotAllowedError'); });
         link.click(); await wait(30);
-        chk(copied.length === 1 && copied[0] === s0.text + '\n' + s0.url && msg() === 'Link copied', `${how}: a share sheet that failed did not copy the text and the link instead: ` + JSON.stringify(copied));
+        chk(copied.length === 1 && copied[0] === t0 && msg() === 'Link copied', `${how}: a share sheet that failed did not copy the same text, the link in it and once, instead: ` + JSON.stringify(copied));
         delete nav.share;
         link.click(); await wait(30);
-        chk(copied.length === 2 && copied[1] === s0.text + '\n' + s0.url && copied[1].endsWith('\n' + dkA.getAttribute('href')) && msg() === 'Link copied',
-          `${how}: with no share sheet the clipboard did not get the text and the DraftKings link: ` + JSON.stringify(copied.slice(1)));
-        delete nav.clipboard; const cmds = []; d.execCommand = c => { cmds.push(c); return true; };
+        chk(copied.length === 2 && copied[1] === t0 && copied[1].split(DKU(order)).length === 2 && msg() === 'Link copied',
+          `${how}: with no share sheet the clipboard did not get the same text, the DraftKings link in it once: ` + JSON.stringify(copied.slice(1)));
+        delete nav.clipboard; const cmds = [], boxed = []; d.execCommand = c => { cmds.push(c); const ta = md.querySelector('textarea'); boxed.push(ta ? ta.value : null); return true; };
         const at2 = d.activeElement; link.click(); await wait(30);
-        chk(cmds.join() === 'copy' && msg() === 'Link copied' && !md.querySelector('textarea') && d.activeElement === at2, `${how}: without the clipboard call the link was not copied by a hidden box, or the box or the focus was left behind: ` + cmds.join());
+        chk(cmds.join() === 'copy' && boxed[0] === t0 && msg() === 'Link copied' && !md.querySelector('textarea') && d.activeElement === at2, `${how}: without the clipboard call the same text was not copied by a hidden box, or the box or the focus was left behind: ` + cmds.join() + ' ' + JSON.stringify(boxed));
         delete d.execCommand;
         chk(rec.clicks.length === clicks0 && rec.blobs.length === blobs0 && rec.canvases.length === canv0 && reads(), `${how}: Share link drew or downloaded the image, or sent a request`); }
       /* a leg DraftKings cannot open: the link opens the rest, and the note and the shared text name
@@ -772,37 +794,47 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           `${how}: with one leg's line moved at DraftKings, the link does not open the other alone, or the note does not name the moved leg and DraftKings' line as last read, dated: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
         chk(!/ now\b/.test(txt(note())), `${how}: the note says what DraftKings has "now", from a read that can be a day old: ` + txt(note()));
         d.getElementById('pcLink').click(); await wait(30);
-        chk(shared.length === 1 && shared[0].url === DKU([DK_ML]) && new RegExp(`\\nAdd by hand at DraftKings:\\n${nRb}\\. Card Runner ${rbRe} \\(DraftKings had it at 65\\.5\\)\\n`).test(shared[0].text),
+        chk(shared.length === 1 && !('url' in shared[0]) && shared[0].text.includes(slipLines(`1 of the 2 legs as DraftKings had it; add leg ${nRb} by hand`, DKU([DK_ML]), AT_G))
+          && new RegExp(`\\nAdd by hand at DraftKings:\\n${nRb}\\. Card Runner ${rbRe} \\(DraftKings had it at 65\\.5\\)\\n`).test(shared[0].text),
           `${how}: Share link on a parlay DraftKings has part of does not send the part's link and name the leg to add by hand: ` + JSON.stringify(shared[0]));
-        /* a read more than a day old (the Saturday pull, on Sunday afternoon): the note and the button
-           date it and no longer promise every leg, and the shared text dates it; undated (a payload
-           that does not say), the same, said so */
-        w.eval(`PAY.dk=${JSON.stringify(dkMade(stamp(31 * 3600e3), stamp(30 * 3600e3)))}`); await reopen();
-        chk(dkA.getAttribute('href') === DKU(order) && !/all 2 legs/.test(txt(note()) + dkA.getAttribute('title'))
-          && txt(note()).startsWith(`DraftKings’ lines as read ${readTxt(stamp(31 * 3600e3))}: Open in DraftKings opens these 2 legs; a leg whose line DraftKings has moved since will not be on the slip, so check it before you bet.`)
-          && dkA.getAttribute('title') === `Opens these 2 legs on DraftKings’ betslip, in a new tab, as DraftKings’ lines were read ${readTxt(stamp(31 * 3600e3))}: check each leg is there`,
+        /* a read more than a day old (the Saturday pull, on Sunday afternoon): said as the five-hour read
+           was, dated by it, and the shared text dates it; undated (a payload that does not say), the
+           same, said so */
+        const AT31 = stamp(31 * 3600e3);
+        w.eval(`PAY.dk=${JSON.stringify(dkMade(AT31, stamp(30 * 3600e3)))}`); await reopen();
+        chk(dkA.getAttribute('href') === DKU(order) && txt(note()).startsWith(opensNote('the 2 legs', AT31)) && dkA.getAttribute('title') === opensTitle('the 2 legs', AT31) && !promises(txt(note()) + ' ' + dkA.getAttribute('title')),
           `${how}: ids read 31 hours ago are promised as every leg landing, or the note or the button does not date the older read: ` + txt(note()) + ' / ' + dkA.getAttribute('title'));
         d.getElementById('pcLink').click(); await wait(30);
-        chk(shared.length === 2 && shared[1].url === DKU(order) && shared[1].text.includes(`\nDraftKings lines as read ${readTxt(stamp(31 * 3600e3))}; check the slip before you bet\n`),
-          `${how}: Share link on ids a day and more old does not say when DraftKings' lines were read: ` + JSON.stringify(shared[1]));
+        chk(shared.length === 2 && !('url' in shared[1]) && shared[1].text.includes(slipLines('the 2 legs as DraftKings had them', DKU(order), AT31)) && !promises(shared[1].text),
+          `${how}: Share link on ids a day and more old does not carry the link and say when DraftKings' lines were read: ` + JSON.stringify(shared[1]));
         w.eval(`PAY.dk=${JSON.stringify(dkMade(undefined, undefined))}; delete PAY.dk['${wk}']['${g2.id}'].at`); await reopen();
-        chk(dkA.getAttribute('href') === DKU(order) && txt(note()).startsWith('When DraftKings’ lines were read is not recorded: Open in DraftKings opens these 2 legs;') && !/all 2 legs/.test(dkA.getAttribute('title')),
-          `${how}: ids with no read time are promised as every leg landing, or the note does not say the time is not recorded: ` + txt(note()));
+        chk(dkA.getAttribute('href') === DKU(order) && txt(note()).startsWith(opensNote('the 2 legs', null)) && dkA.getAttribute('title') === opensTitle('the 2 legs', null) && !promises(txt(note()) + ' ' + dkA.getAttribute('title')),
+          `${how}: ids with no read time are promised as every leg landing, or the note does not say the time is not recorded: ` + txt(note()) + ' / ' + dkA.getAttribute('title'));
+        d.getElementById('pcLink').click(); await wait(30);
+        chk(shared.length === 3 && shared[2].text.includes(slipLines('the 2 legs as DraftKings had them', DKU(order), null)),
+          `${how}: Share link on ids with no read time does not say they were the lines as last read: ` + JSON.stringify(shared[2]));
         shared.length = 0;
         /* a price that is not the book's (a rung at the model's estimate, which DraftKings has no id
-           for) is labelled in the shared text as on the card, and so is the parlay's price */
-        w.eval(`S.parlay['${g2.id}|card-rb|receiving_yards']=${JSON.stringify({ gid: g2.id, pid: 'card-rb', stat: 'receiving_yards', k: 100, side: 'over', main: false, p: 0.2, price: 210, src: 'est', mu: 40, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '100+ receiving yards' })}; renderParlay()`);
+           for) is labelled in the shared text as on the card, and so is the parlay's price; with a 2+
+           touchdown rung beside it, four legs of which the link opens two: the text says which two it
+           opens and which to add by hand, by number (the ids still undated: "as last read") */
+        w.eval(`S.parlay['${g2.id}|card-rb|receiving_yards']=${JSON.stringify({ gid: g2.id, pid: 'card-rb', stat: 'receiving_yards', k: 100, side: 'over', main: false, p: 0.2, price: 210, src: 'est', mu: 40, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '100+ receiving yards' })};`
+          + ` S.parlay['${g2.id}|card-rb|any_td']=${JSON.stringify({ gid: g2.id, pid: 'card-rb', stat: 'any_td', k: 2, side: 'over', main: false, p: 0.08, price: 900, src: 'est', mu: null, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '2+ touchdowns' })}; renderParlay()`);
         await wait(20); await reopen();
-        { const qe = w.PARLAY_CARD.quote(), ne = qe.legs.findIndex(l => l.stat === 'receiving_yards') + 1, pe = w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))');
-          chk(qe.legs.length === 3 && /\+210\s*est\./.test(txt(d.getElementById('pcView'))) && /estimated price/.test(txt(d.querySelector('#pcView .pc-sub'))), `${how}: the card does not mark the rung's estimated price: ` + txt(d.getElementById('pcView')));
+        { const qe = w.PARLAY_CARD.quote(), ne = qe.legs.findIndex(l => l.stat === 'receiving_yards') + 1, nt = qe.legs.findIndex(l => l.stat === 'any_td') + 1, pe = w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))');
+          const onSlip = qe.legs.filter(l => l.stat === 'ml' || l.stat === 'rushing_yards').map(l => l.stat === 'ml' ? DK_ML : DK_RB), hand = [ne, nt].sort((a, b) => a - b);
+          chk(qe.legs.length === 4 && /\+210\s*est\./.test(txt(d.getElementById('pcView'))) && /estimated price/.test(txt(d.querySelector('#pcView .pc-sub'))), `${how}: the card does not mark the rung's estimated price: ` + txt(d.getElementById('pcView')));
           /* a leg on no book price: no fair chance, the model's alone, and the card says why */
-          chk(!!qe.fair && qe.fair.p === null && txt(d.querySelector('#pcView .pc-chance')) === `Model’s chance all 3 land ${(qe.pr.corr * 100).toFixed(1)}% · the price says ${(100 / qe.useDec).toFixed(1)}% No fair chance: it needs every leg’s book price`,
+          chk(!!qe.fair && qe.fair.p === null && txt(d.querySelector('#pcView .pc-chance')) === `Model’s chance all 4 land ${(qe.pr.corr * 100).toFixed(1)}% · the price says ${(100 / qe.useDec).toFixed(1)}% No fair chance: it needs every leg’s book price`,
             `${how}: a parlay with a leg on no book price does not give the model's chance alone and say why: ` + txt(d.querySelector('#pcView .pc-chance')));
+          chk(dkA.getAttribute('href') === DKU(onSlip) && txt(note()).startsWith(opensNote('2 of the 4 legs', null)), `${how}: four legs with two on the slip: the button or the note is wrong: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
           d.getElementById('pcLink').click(); await wait(30);
           const se = shared[0] || {};
-          chk(new RegExp(`(^|\\n)${ne}\\. Card Runner: 100\\+ receiving yards \\(\\+210 est\\.\\)(\\n|$)`).test(se.text || '') && se.title === `3-leg parlay ${pe} (estimated price)`
-            && (se.text || '').includes(`\nAdd by hand at DraftKings:\n${ne}. Card Runner 100+ receiving yards (alternate lines are not read here)\n`) && /\(-135\)/.test(se.text || '') && /\nModel’s chance all 3 land [\d.]+% · the price says [\d.]+% · No fair chance: it needs every leg’s book price\n/.test(se.text || ''),
-            `${how}: Share link sends an estimated price as if it were the book's, or does not name the leg to add by hand: ` + JSON.stringify(se)); }
+          chk(new RegExp(`(^|\\n)${ne}\\. Card Runner: 100\\+ receiving yards \\(\\+210 est\\.\\)(\\n|$)`).test(se.text || '') && se.title === `4-leg parlay ${pe} (estimated price)`
+            && (se.text || '').includes(`\nAdd by hand at DraftKings:\n${hand.map(n => n === ne ? `${ne}. Card Runner 100+ receiving yards (alternate lines are not read here)` : `${nt}. Card Runner 2+ touchdowns (2+ touchdowns is not a line read here)`).join('\n')}\n`) && /\(-135\)/.test(se.text || '') && /\nModel’s chance all 4 land [\d.]+% · the price says [\d.]+% · No fair chance: it needs every leg’s book price\n/.test(se.text || ''),
+            `${how}: Share link sends an estimated price as if it were the book's, or does not name the legs to add by hand: ` + JSON.stringify(se));
+          chk(!('url' in se) && (se.text || '').includes(slipLines(`2 of the 4 legs as DraftKings had them; add legs ${hand[0]} and ${hand[1]} by hand`, DKU(onSlip), null)) && !promises(se.text || ''),
+            `${how}: Share link on four legs with two on the slip does not say it opens 2 of the 4 and which to add by hand, over the link: ` + JSON.stringify(se)); }
         w.eval(`S.parlay=${JSON.stringify(builder(side))}; renderParlay()`); await wait(20); shared.length = 0;
         /* the cases where a leg has no id: what the payload holds says why. The runner's main line is in
            PAY.mkt on the second game, a DraftKings player price on it, so for the cases of a game whose
@@ -833,7 +865,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && !note().querySelector('a') && !d.getElementById('pcLink').hidden, `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why: ` + txt(note()) + ' / ' + dkA.outerHTML);
           d.getElementById('pcLink').click(); await wait(30);
           const s2 = shared[0] || {};
-          chk(shared.length === 1 && s2.url === NFL && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '')
+          chk(shared.length === 1 && !('url' in s2) && (s2.text || '').includes(`\nDraftKings’ NFL page (add the legs by hand):\n${NFL}\nAdd by hand at DraftKings:\n`) && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '')
             && handOf(qb, s2.text || '', l => l.stat === 'ml' ? 'its game’s prices are not pulled yet' : 'its game’s prices are not pulled yet, and only main lines are read') && (s2.text || '').includes('\nAdd by hand at DraftKings:\n'),
             `${how}: Share link on a parlay DraftKings has none of, over two games, does not send DraftKings' NFL page and every leg to add by hand, with why: ` + JSON.stringify(s2));
           shared.length = 0; }
@@ -860,7 +892,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             `${how}: the owner's case (game lines read, no player prices yet) does not say the player prices are not pulled yet, or does not open the game's DraftKings page: ` + txt(note()) + ' / ' + dkA.outerHTML);
           d.getElementById('pcLink').click(); await wait(30);
           const sa = shared[0] || {};
-          chk(shared.length === 1 && sa.url === EV && sa.title.startsWith('2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))')) && !/DraftKings lines/.test(sa.text || '') && legsOf(qa, sa.text || '')
+          chk(shared.length === 1 && !('url' in sa) && (sa.text || '').includes(`\nDraftKings, the game’s page (add the legs by hand):\n${EV}\nAdd by hand on the game’s DraftKings page:\n`) && sa.title.startsWith('2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))')) && !/DraftKings lines/.test(sa.text || '') && legsOf(qa, sa.text || '')
             && (sa.text || '').includes('\nAdd by hand on the game’s DraftKings page:\n')
             && handOf(qa, sa.text || '', l => l.stat === 'any_td' ? 'player prices for its game are not pulled yet' : 'player prices for its game are not pulled yet, and only main lines are read'),
             `${how}: Share link in the owner's case does not send the game's DraftKings page with both legs to add by hand, and why: ` + JSON.stringify(sa));
@@ -879,7 +911,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             `${how}: a money line beside a player leg whose prices are not pulled does not open the money line alone, or does not say why the other is left: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
           d.getElementById('pcLink').click(); await wait(30);
           const sd = shared[0] || {};
-          chk(shared.length === 1 && sd.url === DKU(['G2#ml_h']) && (sd.text || '').includes(`\nAdd by hand at DraftKings:\n${nP}. Card Runner Scores a touchdown (player prices for its game are not pulled yet)\n`),
+          chk(shared.length === 1 && !('url' in sd) && (sd.text || '').includes(slipLines(`1 of the 2 legs as DraftKings had it; add leg ${nP} by hand`, DKU(['G2#ml_h']), AT_G)) && (sd.text || '').includes(`\nAdd by hand at DraftKings:\n${nP}. Card Runner Scores a touchdown (player prices for its game are not pulled yet)\n`),
             `${how}: Share link on a money line beside an unpulled player leg does not send the slip and the player leg to add by hand: ` + JSON.stringify(sd));
           shared.length = 0; }
         /* a leg the card prices from the book is never said to be unpulled or not offered: its price is
@@ -940,14 +972,15 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         chk(a.url === DKU(['A#h', 'T#o', 'D#1', 'R#1', 'Y#59', 'Z#79', 'R#u']) && a.ok.map(x => x.n).join() === '1,3,5,7,8,9,12' && why(2) === 'DraftKings had it at +3.5 ' + lastG && why(4) === 'DraftKings had it at 44.5 ' + lastG
           && /2\+ touchdowns/.test(why(6)) && /alternate lines/.test(why(10)) && /not among the DraftKings lines read/.test(why(11)) && a.event === 'https://sportsbook.draftkings.com/event/990',
           `${how}: a leg of some kind does not find its DraftKings id, or one it cannot open does not say why: ` + JSON.stringify({ url: a.url, miss: a.miss.map(x => x.n + ' ' + x.why), event: a.event }));
-        /* the read the link stands on is the older of the two (the game lines'), and fresh under a day */
-        chk(!!a.read && a.read.toISOString().slice(0, 16) + 'Z' === AT_G && a.fresh === true, `${how}: the plan is not dated by its older read, or a read five hours old is not fresh: ` + JSON.stringify({ read: a.read, fresh: a.fresh }));
+        /* the read the link stands on is the older of the two (the game lines'); no read, however recent,
+           makes a promise of it (no fresh flag) */
+        chk(!!a.read && a.read.toISOString().slice(0, 16) + 'Z' === AT_G && !('fresh' in a), `${how}: the plan is not dated by its older read, or still marks a recent read as one every leg lands on: ` + JSON.stringify({ read: a.read, fresh: a.fresh }));
         const b = plan('nflverse');
         chk(((b.miss.find(x => x.n === 2) || {}).why || '') === 'DraftKings had it at +3.5 ' + lastG, `${how}: a team line on a game whose lines are nflverse's does not say DraftKings' line as last read, dated: ` + JSON.stringify(b.miss));
-        /* the same ids read 25 hours ago: nothing lands for sure, whatever the page's own line says */
+        /* the same ids read 25 hours ago: dated by that read */
         made[String(wk)][g1.id].glat = stamp(25 * 3600e3); w.eval(`PAY.dk=${JSON.stringify(made)}`);
         { const c = plan('nflverse');
-          chk(c.url === a.url && c.fresh === false && c.read.toISOString().slice(0, 16) + 'Z' === made[String(wk)][g1.id].glat, `${how}: ids read 25 hours ago are still fresh, or not dated by that read: ` + JSON.stringify({ read: c.read, fresh: c.fresh })); }
+          chk(c.url === a.url && !('fresh' in c) && c.read.toISOString().slice(0, 16) + 'Z' === made[String(wk)][g1.id].glat, `${how}: ids read 25 hours ago are not dated by that read: ` + JSON.stringify({ read: c.read, fresh: c.fresh })); }
         w.eval(`S.sched.find(x=>x.id===${JSON.stringify(g1.id)}).ls=${JSON.stringify(ls0)}`);
         if (past) { const c = w.PARLAY_CARD.dkPlan([L({ gid: past.id, week: +past.w, pid: 'team:' + past.h, stat: 'ml', k: 0, grp: 'TEAM' })]);
           chk(!c.url && c.miss.length === 1 && /kicked off/.test(c.miss[0].why) && !c.event, `${how}: a leg whose game has kicked off is opened in DraftKings: ` + JSON.stringify(c)); }
@@ -1061,7 +1094,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && cash() === '$40.00 | $124.00 | +$84.00',
             `${how}: the suggestion's card is not its legs, price, chance and the $40 amount it pays on: ` + txt(d.getElementById('pcView')));
           const tA = d.getElementById('pcDk');
-          chk(!tA.hidden && tA.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + tierLegs.map(l => (l.stat === 'ml' ? DK_ML : DK_RB).replace(/#/g, '%23')).join('+') && /all 2 legs/.test(txt(d.getElementById('pcDkNote'))),
+          chk(!tA.hidden && tA.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + tierLegs.map(l => (l.stat === 'ml' ? DK_ML : DK_RB).replace(/#/g, '%23')).join('+') && /opens the 2 legs as DraftKings had them then/.test(txt(d.getElementById('pcDkNote'))),
             `${how}: the suggestion's card does not open its legs in DraftKings in the tier's order: ` + tA.getAttribute('href'));
           d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
           chk(md.hidden && d.activeElement === tb, `${how}: Escape on the card did not close it, or the focus did not go back to the tier`); }

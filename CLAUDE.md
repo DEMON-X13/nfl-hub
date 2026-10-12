@@ -796,25 +796,37 @@ game's player prices were read (dated; a book-priced leg with no id is said neut
 lines read), a 2+ touchdown rung or an alternate line the pull does not read, a game that has kicked
 off, or a line DraftKings had elsewhere when last read ("DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM
 ET)", the page's main line where DraftKings has it; never "now"). The note is dated by the oldest read of
-the legs it opens (`at` for a player's leg, `glat` for a team's line and the total), and says every leg
-lands ("puts all 3 legs on DraftKings' betslip", and so the button's title) only while that read is under
-a day old, the rule `g.ls` follows; older or undated, it opens "these 3 legs" and says a leg whose line
-DraftKings has moved since will not be on the slip, so check it. With no leg it can open the button
+the legs it opens (`at` for a player's leg, `glat` for a team's line and the total), and never promises
+that every leg lands: it opens "the 3 legs" (or "2 of the 3 legs") as DraftKings had them at that read,
+and a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it; the
+button's title says the same. DraftKings drops a moved id without a word, and a game's player ids are
+read once, from a few hours to about 40 before its kickoff (Sunday night's on Saturday), so the day-long "puts all 3 legs on DraftKings' betslip"
+it said before could be wrong on the very slip it named (dropped October 2026, with `fresh`). With no leg it can open the button
 stays, to add the legs by hand: **Open game in DraftKings**, the game's page, where every leg is in one
 game still to come with its event id, else **Open DraftKings**, DraftKings' NFL page
 (`https://sportsbook.draftkings.com/leagues/football/nfl`), and the note says so. **Share
-link**, beside it, is for sending the parlay to people (the owner, October 2026): the share sheet
-(`navigator.share`) with a title ("3-leg parlay +330", with "(estimated price)" or "(fair price)" where the
-card says so), a plain line a leg (who, the bet, its price, "+210 est." or "+150 fair" where it is not the
-book's, as on the card), the stake and what it pays, when DraftKings' lines were read ("DraftKings lines as
-read ...; check the slip before you bet", with a link), the legs to add by hand, a line each with why in
-a few words ("player prices for its game are not pulled yet"), the site's address as where it came from,
-and always a DraftKings link as its url: the button's own, the betslip, else the game's page, else
-DraftKings' NFL page (before October 12 a parlay with no leg on the slip sent the site's address alone,
-which the owner took for a link to GitHub); with no share sheet, or one that fails other than
-by a cancel, the text and the link are copied (the clipboard, else a hidden box) and the card says Link
-copied. A cancel does nothing, and neither button ever draws or downloads the image, which carries
-neither. Every dollar figure on
+link**, beside it, is for sending the parlay to people (the owner, October 2026): one plain text, by the
+share sheet (`navigator.share({title, text})`, `canShare` asked about the same) or, with no share sheet,
+one that cannot share it or one that fails other than by a cancel, copied (the clipboard, else a hidden
+box; the card says Link copied), the same text either way. The title is "3-leg parlay +330" (with
+"(estimated price)" or "(fair price)" where the card says so); the text a plain line a leg (who, the bet,
+its price, "+210 est." or "+150 fair" where it is not the book's, as on the card), the stake and what it
+pays, the chances, then the DraftKings link alone on its own line under what it opens ("DraftKings betslip
+(opens the 3 legs as DraftKings had them):", "DraftKings betslip (opens 2 of the 4 legs as DraftKings had
+them; add legs 3 and 4 by hand):", never "all"; with no leg on the slip
+"DraftKings, the game's page (add the legs by hand):" or "DraftKings' NFL page (add the legs by hand):"),
+when DraftKings' lines were read and that a leg moved or pulled since will not be on the slip ("DraftKings
+lines as read ...: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check
+it before you bet"), the legs to add by hand, a line each with why in a few words ("player prices for its
+game are not pulled yet"), and the site's address last, as where it came from. The link is in the text and
+never in the share's `url` field (the owner, October 2026: "sometimes when i copy the button to share the
+draft kings link it like compresses the url and doesnt show all legs"): on an iPhone WebKit hands the share
+sheet the text and the url as two items, Messages draws the url as a card showing only
+sportsbook.draftkings.com, some apps send only the bare domain, and the sheet's Copy keeps the text and
+drops the url (WebKit bug 203221), while Android's Chrome joins the two, so it went wrong only sometimes.
+Before October 12 a parlay with no leg on the slip sent the site's address alone, which the owner took for
+a link to GitHub. A cancel does nothing, and neither button ever draws or downloads the image, which
+carries neither. Every dollar figure on
 it is whole, thousands marked: the window's tiles wrap onto a second row rather than cut one, and
 the image's step down from 19px to 14px, then take a second row. Finishing saves
 nothing anywhere; a suggested tier's Finish (the panel's and the Elo picks', `data-pc-finish`,
@@ -921,11 +933,14 @@ and interceptions there said to be unread (and a carries id the payload has open
 unpulled player leg, a player leg DraftKings did not offer when read, a book-priced leg never said to be
 unpulled or not offered, a money line on DraftKings' game lines with no ids, every kind of leg with an
 Under main line among them, a game kicked off; the runner's main line an Over in one browser and an
-Under in the other; the note and the button dated by the older read and promising every leg at five
-hours, not at 31 hours or undated), Share link (the share sheet's url the link's, the game's page or the
-NFL page where no leg opens, every leg in its text and each to add by hand with why,
-the read dated, an estimated rung's price and the parlay's marked as on the card, a cancel doing
-nothing, the clipboard and the hidden box without it), Escape, the Tab order (Close, Open in DraftKings,
+Under in the other; the note and the button dated by the older read and saying what the link opens as
+DraftKings had it then at five hours, at 31 hours and undated, never that every leg lands), Share link
+(a title and a text and no url field, `canShare` asked about the same; the exact betslip link, every id in
+the card's order, alone on its line in the text under what it opens: all, 1 of 2, 2 of 4 with the legs to
+add by hand by number, none with the game's page or the NFL page; the read and its caution; every leg in
+its text and each to add by hand with why, an estimated rung's price and the parlay's marked as on the card,
+nothing promising every leg, a cancel doing nothing, and the same text copied by the clipboard and by the
+hidden box when the share sheet is missing, cannot share it or fails), Escape, the Tab order (Close, Open in DraftKings,
 Share link, Download, Start over, each leg's link) and Start over, and nothing written by finishing, on
 a plain browser and on one the retired owner layer marked. `smoke.js` holds a real tier's link to
 made-up ids under keys it works out on its own, with the other side of each line and the other team
