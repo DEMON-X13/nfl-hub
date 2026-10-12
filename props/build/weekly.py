@@ -16,7 +16,7 @@ and only when this exits 0 (--no-commit is still accepted, and does nothing).
 
 What it does, in order:
   1. downloads scores/lines, this season's player stats, rosters, injuries and depth charts
-     from nflverse into raw/. The season is SEASON in part2.js (season.py reads it). A runner
+     from nflverse into raw/, and the snap counts (raw/snap_counts_<season>.csv, never required). The season is SEASON in part2.js (season.py reads it). A runner
      starts with an empty raw/, so there is no old copy to fall back on: a required file that
      fails to download, or downloads wrong, stops the run here and nothing is published (the
      last good payload stays live, and the run goes red). The depth charts are the one optional
@@ -45,14 +45,16 @@ What it does, in order:
      and every price file with the player each row belongs to: this season's games only, and
      nothing of a payload of another season carried forward; and DraftKings' own id for every
      outcome the pulls read on a game still to come (dk_links_wk{W}.json -> dk, dk_ids below),
-     which the parlay card turns into an Open in DraftKings link
+     which the parlay card turns into an Open in DraftKings link; and who took part in each
+     finished game, from the snap counts (who_played below): the payload's snaps, and a stat row
+     of zeros for a player who played a snap in his role with no stat line, so a receiver never
+     targeted is graded on zero, as DraftKings grades him, and his projection sees the game
   5. assembles the page and runs the audit, which checks the payload against the raw files
   6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
      the Parlay Builder's suggested parlays on their default choices, taken from the published page
-     on the payload just baked, frozen at each wave's kickoff and graded after, with nflverse's snap
-     counts (raw/snap_counts_<season>.csv, fetched here, not required) saying whether a player with no
-     stat line played. It never refuses the run or turns it red: a ledger it refuses is logged in the
-     report and the last good one stays
+     on the payload just baked, frozen at each wave's kickoff and graded after by the app's own
+     settleLeg, which reads who played from the payload's snaps. It never refuses the run or turns it
+     red: a ledger it refuses is logged in the report and the last good one stays
   7. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
@@ -216,6 +218,24 @@ def download(offline):
             got[name+':err']=str(e)
     return got
 
+# nflverse's snap counts (PFR's): who took part in each finished game, which the stats cannot say
+# (who_played). Never required: a run without them carries the last payload's word forward, and one
+# whose games are three days old with no snap counts in goes red after its commit (snaps_overdue)
+SNAPS=f'snap_counts_{SEASON}.csv'
+SNAPS_URL=f'{REL}snap_counts/{SNAPS}'
+SNAPCOLS=['game_id','team','player','pfr_player_id','position','offense_snaps','defense_snaps','st_snaps']
+
+def fetch_snaps(offline):
+    """raw/snap_counts_<season>.csv, fresh or not at all: True when it is there to read"""
+    dest=os.path.join(RAW,SNAPS)
+    if offline:
+        say(f"  offline: {SNAPS} {'from raw/' if os.path.exists(dest) else 'missing'}"); return os.path.exists(dest)
+    try:
+        fetch(SNAPS_URL,dest); say(f"  fetched {SNAPS} ({os.path.getsize(dest)//1024} KB)"); return True
+    except Exception as e:
+        if os.path.exists(dest): os.remove(dest)
+        say(f"  {SNAPS} did not download ({e}): the published payload's word on who played is carried forward"); return False
+
 FEAT=os.path.join(RAW,'feat.pkl')
 PW_URL='https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{}.csv'
 
@@ -356,7 +376,11 @@ def read_raw(prev,gs):
     rrows=read_rows(ROSTER)
     bad=check_shape(ROSTER,rrows,['gsis_id','team','status','position','full_name'])
     if bad or len(rrows)<1200 or len({r['team'] for r in rrows})<30: refuse(bad or f"{ROSTER} has {len(rrows)} rows over {len({r['team'] for r in rrows})} teams, not a whole league"); return None
-    return {'srows':srows,'stats':stats,'skipped_live':skipped_live,'irows':irows,'rrows':rrows}
+    # the snap counts are never required: one in another shape is not read, and the last word stands
+    snap_rows=read_rows(SNAPS) if os.path.exists(os.path.join(RAW,SNAPS)) else None
+    bad=check_shape(SNAPS,snap_rows or [],SNAPCOLS)
+    if bad: say(f"  {bad}: not read, and the published payload's word on who played is carried forward"); snap_rows=None
+    return {'srows':srows,'stats':stats,'skipped_live':skipped_live,'irows':irows,'rrows':rrows,'snap_rows':snap_rows}
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--no-odds',action='store_true'); ap.add_argument('--hours',type=float); ap.add_argument('--no-commit',action='store_true',help='accepted for the workflow; nothing commits here'); ap.add_argument('--local',action='store_true',help='allow the price pull off GitHub Actions'); ap.add_argument('--catch-up',action='store_true',help='price only the games up to the next pull that have no prices yet and have not kicked off: a dropped scheduled pull made up, nothing else spent')
@@ -369,6 +393,7 @@ def main():
     except Exception: prev={}
     # 1. downloads
     got=download(a.offline)
+    fetch_snaps(a.offline)
     # 2. the schedule first: it says whether the season has started, which the others need
     week=None; gs=[]; season_over=False; first_ko=None
     try:
@@ -464,9 +489,6 @@ def main():
     else: suggestions_record(a.offline)
     return finish(a)
 
-SNAPS=f'snap_counts_{SEASON}.csv'
-SNAPS_URL=f'{REL}snap_counts/{SNAPS}'
-
 def suggestions_record(offline=False):
     """The suggestions record (suggest_ledger.js, whose docstring has the rules): the panel's four
     suggested parlays on its default choices, taken from the published page on the payload this run
@@ -477,17 +499,10 @@ def suggestions_record(offline=False):
     the page or the Elo files would not load) it has already put the last good ledger back; that is
     said in the report, and a file left unreadable by a run that died mid-write is put back here.
 
-    The record reads nflverse's snap counts (PFR's) to tell a player with no stat line who played (a
-    receiver never targeted, graded on zero, as DraftKings grades him) from one who did not (void).
-    They are fetched here and are not required: without them such a leg waits, and nothing else does."""
+    A leg on a player with no stat line is graded as the page grades it, by the payload's snaps (the
+    bake's who_played): graded on zero when he took a snap, void when his club's snaps are in without
+    him, and otherwise void only when the week's injury report had him Out, else it waits."""
     path=os.path.join(DATA,'suggest_ledger.json')
-    dest=os.path.join(RAW,SNAPS)
-    if offline: say(f"  offline: {SNAPS} {'from raw/' if os.path.exists(dest) else 'missing'}")
-    else:
-        try: fetch(SNAPS_URL,dest)
-        except Exception as e:
-            if os.path.exists(dest): os.remove(dest)
-            say(f"  {SNAPS} did not download ({e}): a suggested leg on a player with no stat line waits for it")
     try: before=open(path,'rb').read()
     except OSError: before=None
     rc,out=run(['node','suggest_ledger.js'],HERE,'suggestions record',soft=True)
@@ -620,6 +635,116 @@ def dk_read_times(data):
             if gid and t: glines[gid]=t
     return played,glines
 
+# Who took part in a finished game. nflverse writes a player's week only when he has a stat, so a
+# receiver who played and was never targeted has no row, and the page used to read no row as "did not
+# play" and void his leg. DraftKings grades a player who takes part in one play on what he did: Tory
+# Horton (SEA, week 5 of 2026) ran 11 offensive snaps with no target, and his receptions over 1.5 lost
+# at the book while the page showed it void. About 15% of receiver games and 37% of tight-end games at
+# 15-35% of snaps have no row, so the projections never saw those games either, and the low overs hit
+# 43% where the model said 66%. The snap counts say who played: a snap of any kind (offence, defence,
+# special teams) is taking part. Each row is placed on a player by its PFR id through this season's
+# roster file (its pfr_id), else by its name within its game (names.Pool, the price rows' rule) when
+# that player played for the row's club; nflverse's players.csv places none the two miss (2026 weeks
+# 1-5: every skill-position row with a snap is placed this way) and is a 7 MB download, so it is not
+# read. A club's snaps count only once its stats are in, and a club with a skill-position row that
+# cannot be placed is left out (its players with no stat line wait, as if its snaps were not in),
+# since a player missing from its list would otherwise be voided.
+SNAP_WAIT=72   # hours after kickoff before a finished game's missing snap counts turn the run red
+
+def who_played(snap_rows,srows,rrows,stats,sched,pool,shown):
+    """(snaps, zero, unplaced) from the snap counts.
+
+    snaps: {week: {game: {club: [ids]}}}, a club for every game whose snap counts and stats are both
+    in, holding the players the page projects (a position the book prices, or a player it shows) who
+    took a snap and have no stat line. The page settles a leg on a player with no stat line by it
+    (settleLeg): in the list, on zero; his club there and he is not, void; no word, it waits (or is
+    void if the week's injury report had him Out).
+    zero: {week: [rows]}, a stat row of zeros, in the stats' own shape and marked from_snaps, for each of
+    them who took a snap in his role (on offence; a kicker, on special teams), so the projections and
+    the Track Record see the game. Not for a snap on defence or special teams alone.
+    unplaced: 'name (game club)' for each skill-position row with a snap that no player takes."""
+    games={g['id']:g for g in sched}
+    stats_in={(w,r.get('team')) for w,rs in stats.items() for r in rs}
+    has_line={(r.get('game_id'),r.get('player_id')) for r in srows if r.get('season')==str(SEASON) and r.get('season_type')=='REG'}
+    pfr={}; pos={}; full={}
+    for r in rrows:
+        g=(r.get('gsis_id') or '').strip()
+        if not g: continue
+        p=(r.get('pfr_id') or '').strip()
+        if p and p not in ('NA','None'): pfr.setdefault(p,g)
+        pos[g]=(r.get('position') or '').strip().upper(); full[g]=(r.get('full_name') or '').strip()
+    for r in srows:
+        g=(r.get('player_id') or '').strip()
+        if g and not pos.get(g): pos[g]=(r.get('position') or '').strip().upper()
+        if g and not full.get(g): full[g]=(r.get('player_display_name') or '').strip()
+    def num(v):
+        try: return float(v)
+        except (TypeError,ValueError): return 0.0
+    clubs={}; unplaced={}; zero={}; zeroed=set()
+    for r in snap_rows:
+        gid=(r.get('game_id') or '').strip(); g=games.get(gid); team=(r.get('team') or '').strip()
+        if not g or team not in (g['h'],g['a']) or (r.get('game_type') or 'REG')!='REG': continue
+        w=str(int(g['w']))
+        if (w,team) not in stats_in: continue        # nothing of the club's game is graded yet
+        ids=clubs.setdefault((w,gid,team),set())
+        off,de,st=num(r.get('offense_snaps')),num(r.get('defense_snaps')),num(r.get('st_snaps'))
+        if off+de+st<=0: continue
+        ppos=(r.get('position') or '').strip().upper()
+        pid=pfr.get((r.get('pfr_player_id') or '').strip())
+        if not pid and ppos in SKILL:
+            m,_how=pool.match(r.get('player') or '',int(w),gid)
+            if m and pool.team_in(int(w),m)==team: pid=m
+        if not pid:
+            if ppos in SKILL: unplaced.setdefault((w,gid,team),[]).append((r.get('player') or '').strip())
+            continue
+        ps=pos.get(pid) or ppos
+        if not (ps in SKILL or pid in shown) or (gid,pid) in has_line: continue
+        ids.add(pid)
+        if ps in SKILL and (st if ps=='K' else off)>0 and (gid,pid) not in zeroed:
+            zeroed.add((gid,pid))
+            row={c:0.0 for c in STATCOLS}
+            row.update(player_id=pid,player_display_name=full.get(pid) or (r.get('player') or '').strip(),position=ps,
+                       season=float(SEASON),week=float(w),season_type='REG',team=team,opponent_team=g['a'] if team==g['h'] else g['h'],from_snaps=1)
+            zero.setdefault(w,[]).append(row)
+    snaps={}
+    for (w,gid,team),ids in sorted(clubs.items()):
+        if (w,gid,team) in unplaced: continue
+        snaps.setdefault(w,{}).setdefault(gid,{})[team]=sorted(ids)
+    return snaps,zero,sorted(f"{n} ({gid} {team})" for (w,gid,team),ns in unplaced.items() for n in ns)
+
+def carry_snaps(prev,stats,srows,sched):
+    """(snaps, zero) carried from the published payload when this run has no snap counts to read: its
+    clubs whose stats are still in, and its zero rows for a player who still has no stat line (a stat
+    corrected in since is his real row, and the zero goes)"""
+    if payload_season(prev)!=SEASON: return {},{}
+    stats_in={(w,r.get('team')) for w,rs in stats.items() for r in rs}
+    has_line={(r.get('game_id'),r.get('player_id')) for r in srows if r.get('season')==str(SEASON) and r.get('season_type')=='REG'}
+    gid_of={(str(int(g['w'])),t):g['id'] for g in sched for t in (g['h'],g['a'])}
+    snaps={}
+    for w,gs in (prev.get('snaps') or {}).items():
+        for gid,cl in gs.items():
+            for team,ids in cl.items():
+                if (w,team) in stats_in and gid_of.get((w,team))==gid:
+                    snaps.setdefault(w,{}).setdefault(gid,{})[team]=[p for p in ids if (gid,p) not in has_line]
+    zero={}
+    for w,rs in (prev.get('stats') or {}).items():
+        for r in rs:
+            gid=gid_of.get((w,r.get('team')))
+            if r.get('from_snaps') and (w,r.get('team')) in stats_in and gid and (gid,r.get('player_id')) not in has_line: zero.setdefault(w,[]).append(r)
+    return snaps,zero
+
+def snaps_overdue(snaps,stats,sched,now):
+    """'game club' for each club whose stats are in and whose game kicked off more than SNAP_WAIT hours
+    ago with no snap counts in the payload: a leg on a player with no stat line there waits on them"""
+    stats_in={(w,r.get('team')) for w,rs in stats.items() for r in rs}
+    late=[]
+    for g in sched:
+        ko=kickoff(g); w=str(int(g['w']))
+        if not ko or (now-ko).total_seconds()<SNAP_WAIT*3600: continue
+        for t in (g['a'],g['h']):
+            if (w,t) in stats_in and t not in ((snaps.get(w) or {}).get(g['id']) or {}): late.append(f"{g['id']} {t}")
+    return late
+
 def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     pay=json.load(open(pp,encoding='utf-8'))
     byid={g['id']:g for g in pay['sched']}      # this season's games: nothing of another season is baked
@@ -716,6 +841,22 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     pay['roster']={r['gsis_id']:entry(r) for r in rrows if r.get('gsis_id') and ((r.get('position') or '').upper() in SKILL or r['gsis_id'] in shown)}
     # every week's main lines, matched within their own game
     pool=names.Pool(rrows,[r for r in srows if r.get('season')==str(SEASON) and r.get('season_type')=='REG'],pay['sched'])
+    # who took part in each finished game (who_played): the payload's snaps, which settle a leg on a
+    # player with no stat line, and a row of zeros for each who played in his role, so the record and
+    # the projections see the game. With no snap counts this run, the published payload's word stands
+    if raw.get('snap_rows') is not None:
+        snaps,zero,unplaced=who_played(raw['snap_rows'],srows,rrows,stats,pay['sched'],pool,shown)
+    else:
+        snaps,zero=carry_snaps(prev,stats,srows,pay['sched']); unplaced=[]
+    pay['snaps']=snaps
+    pay['stats']={w:rs+zero.get(w,[]) for w,rs in stats.items()}
+    nz=sum(len(v) for v in zero.values()); nlist=sum(len(ids) for gs in snaps.values() for cl in gs.values() for ids in cl.values())
+    say(f"  who played ({'the snap counts' if raw.get('snap_rows') is not None else 'carried from the published payload'}): "
+        f"{sum(len(cl) for gs in snaps.values() for cl in gs.values())} club-games in, {nlist} players with no stat line who took a snap, "
+        f"{nz} of them in their role (a row of zeros each)")
+    if unplaced: say(f"  snap counts no player takes, so their clubs' players with no stat line wait: {'; '.join(unplaced[:8])}{'...' if len(unplaced)>8 else ''}")
+    late=snaps_overdue(snaps,stats,pay['sched'],now)
+    if late: problems.append(f"no snap counts in for {len(late)} club-game(s) final more than {SNAP_WAIT}h ago ({', '.join(late[:6])}{'...' if len(late)>6 else ''}): a leg on a player with no stat line there waits"+(f"; snap rows no player takes: {'; '.join(unplaced[:6])}" if unplaced else ''))
     # the week files as they are in data/, and the same rows of this season's games only: a row
     # of another season's game (last season's files at a rollover) is never baked, whatever name
     # it carries, and never re-homed onto this season's game of the same week

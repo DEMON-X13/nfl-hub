@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v100 \u00b7 2026-10-12';
+const APP_BUILD='app v101 \u00b7 2026-10-12';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -631,12 +631,39 @@ function hasScore(g){ return g.hs!=null&&g.as!=null&&isFinite(g.hs)&&isFinite(g.
 /* final once a score is in, or once four hours have passed since kickoff */
 function gameFinal(g){ if(hasScore(g)) return true; const k=kickoff(g); return !!k&&Date.now()>=k.getTime()+4*3600*1000; }
 function actualFor(week,pid){ return (S.actuals&&S.actuals[String(week)]&&S.actuals[String(week)][pid])||null; }
+/* who took part in a finished game, by nflverse's snap counts as the props job baked them (PAY.snaps:
+   week -> game -> club -> the players the page projects who took a snap and have no stat line;
+   weekly.py's who_played). true: he took a snap. false: his club's snaps are in and he took none (or,
+   with no club on the leg, both clubs' are in). null: no word on his club yet */
+function tookPart(l){
+  const W=PAY&&PAY.snaps&&PAY.snaps[String(l.week)], G=W&&W[l.gid]; if(!G) return null;
+  for(const t in G) if((G[t]||[]).includes(l.pid)) return true;
+  const team=l.team||(S.players&&S.players[l.pid]&&S.players[l.pid].team);
+  if(team&&G[team]) return false;
+  const g=S.sched.find(x=>x.id===l.gid);
+  return g&&G[g.h]&&G[g.a]?false:null;
+}
+/* Out on that week's injury report: the payload keeps the current week's report and every earlier
+   week's Outs */
+function reportedOut(week,pid){
+  return ((PAY&&PAY.injuries)||[]).some(r=>r&&r.gsis_id===pid&&+r.week===+week&&+r.season===SEASON&&String(r.report_status||'').trim()==='Out');
+}
 /* did a leg land? null while the stats for that week haven't been loaded */
 function settleLeg(l){
   if(isGameLeg(l)) return settleGameLeg(l);
-  const a=actualFor(l.week,l.pid);
-  /* no stat line once his game's stats are in: he did not play, and a book voids the leg */
-  if(!a) return (l.gid&&S.processedGames&&S.processedGames[l.gid])?'void':null;
+  let a=actualFor(l.week,l.pid);
+  /* no stat line once his game's stats are in. nflverse writes a player's week only when he has a
+     stat, so that alone is not "did not play": a receiver never targeted has none, and a book grades
+     a player who takes part in one play on what he did. He took a snap: graded on zero (an over and a
+     rung lose, an under wins). His club's snaps are in without him: void. No snap counts for his club
+     yet: void if that week's injury report had him Out, otherwise it waits */
+  if(!a){
+    if(!(l.gid&&S.processedGames&&S.processedGames[l.gid])) return null;
+    const took=tookPart(l);
+    if(took===false) return 'void';
+    if(took===null) return reportedOut(l.week,l.pid)?'void':null;
+    a=rowStats({});
+  }
   const v=a[l.stat]; if(v==null) return null;
   if(l.stat==='any_td'){ const k=l.k||1; if(k>=2){ if(a.tds==null) return null; return a.tds>=k?'win':'loss'; } return v>=1?'win':'loss'; }
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
@@ -790,8 +817,9 @@ function bettingParlays(raw){
 /* ---------- track record: every frozen pre-game chance against what happened ----------
    Reads only S.projections (frozen at grade time) and S.actuals. Snapshots written before
    v27 hold just the projection; their rungs are rebuilt from it with the same static tables,
-   which gives the identical pre-game chance. A player with no stat line is skipped, as a
-   leg would be. A book main line is scored on the side the model favoured; a push is skipped.
+   which gives the identical pre-game chance. A player with no stat line is skipped; one who
+   played in his role with none has the job's row of zeros in PAY.stats (from_snaps), and is scored
+   on it, as a leg on him is graded. A book main line is scored on the side the model favoured; a push is skipped.
    Where a price exists (a rung price the job pulled, or the book's main-line price) it rides along as
    ml (American) and imp (the book's implied chance, cut included). */
 function trackRecord(){

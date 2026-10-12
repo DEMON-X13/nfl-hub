@@ -98,7 +98,7 @@ props/
                                  page (nflbets/index.html in jsdom) on the payload just
                                  baked, per kickoff wave, frozen at that kickoff and
                                  graded by settleLeg (a player with no stat line by
-                                 nflverse's snap counts: played, zero; not, void) ->
+                                 the payload's snaps: played, zero; not, void) ->
                                  data/suggest_ledger.json, each parlay counted once; its
                                  guard refuses a ledger whose frozen entries moved
   build/test_suggest_ledger.js   its test: made-up weeks cut from the payload, the
@@ -114,6 +114,9 @@ props/
                                  players at a position the book prices); two in a tier
                                  are ambiguous unless only one plays such a position
   build/test_unmatched.py        the name rule and when unplaced price rows turn a run red
+  build/test_who_played.py       who took part (who_played in weekly.py): snap rows placed
+                                 by PFR id or name, the payload's snaps and rows of zeros,
+                                 the carry and the overdue rule, weekly.bake end to end
   data/mktbuild.py               every week's wk{W}_lines.csv onto the players (weekly.py
                                  runs it for every week on every run)
   data/oddsfetch.py              the price pull (the-odds-api): choose() picks the games;
@@ -562,11 +565,8 @@ model chance (`parlayProb`), fair chance (`parlayFair`) and decimal price (`parl
 empty. A frozen entry is graded by the app's own `settleLeg`/`settleGameLeg` once every leg has
 settled: a loss loses; a push or a void drops out, the rest paid at `parlayDec` on the legs left;
 every leg a push or void is a push; a grade once made is replaced only by a complete one; only the
-page's own season is graded. A player with no stat line is void only if he did not play: nflverse
-writes a player's week only when he has a stat, so one who played without a target has none, and
-DraftKings grades him on zero. Who played is nflverse's snap counts (`raw/snap_counts_<season>.csv`,
-fetched by `weekly.py`, not required; the roster's PFR id, else his name within his club): a snap and
-he is graded on zero by `settleLeg` itself, none with his club's snaps in and he is void; no snap
+page's own season is graded. A player with no stat line is graded by `settleLeg` on the payload's
+`snaps` (below): a snap and he is graded on zero, none with his club's snaps in and he is void; no snap
 counts yet, Out on the report is void and anything else waits. The summary counts each parlay once (an
 entry is the whole week's panel, so a parlay unchanged across waves is in each; the same legs of the
 same level in a season's week count from the last entry that holds them). Its guard
@@ -576,7 +576,7 @@ not follow its legs or a summary that does not follow from the entries is refuse
 (the last commit's where the disk copy had moved), exit 1. `test_suggest_ledger.js` runs the script on
 made-up weeks cut from the payload (taken, kept by a run a second before its kickoff, rewritten,
 unchanged, frozen, graded on planted wins, losses, voids and pushes worked out from the raw rows, the
-snap counts and the injury report, last season's entry never regraded, a repeated parlay counted once,
+payload's snaps and the injury report, last season's entry never regraded, a repeated parlay counted once,
 no game to come, the guard end to end and on hand-made ledgers). The page reads the file beside the payload (`PB_REC_URL`, no-store, `PB_REC`
 outside `S`) and draws at the panel's foot, after the Elo picks and also when no game is left, a
 **Suggestions record** (`pbRecHtml`, from the entries' grades by `pbRecSum`, each parlay once as the
@@ -721,7 +721,12 @@ games), `players` (about 470, each with seeded EWMA stat history), `toff`/`tdef`
 week, each with the book's name `n` and game `g`; `mkt_v` 2 says they carry them), `prices`
 (raw odds rows per week, each with the player id `pid` it was matched to; `unmatched` lists
 rows on a game still to play that matched nobody, with pool.match's reason: `ambiguous` turns
-the run red, a few `unmatched` do not, see `price_problems` in `weekly.py`), `stats` (actual results per week), `corr`
+the run red, a few `unmatched` do not, see `price_problems` in `weekly.py`), `stats` (actual results per week:
+nflverse's rows, and a row of zeros marked `from_snaps` for a player who took a snap in his role with no
+stat line), `snaps` (who took part, `snaps[week][game][club]`: the players with no stat line who took a
+snap of any kind, a club for every game whose snap counts and stats are in; `who_played` in `weekly.py`,
+from nflverse's snap counts; `settleLeg` grades such a player on zero, one his club's list leaves out
+void, and waits where there is no club, unless the report had him Out), `corr`
 (the 329-entry pair correlation table), `model`/`grid`/`dist`/`qs`/`k`/`prior`/`pts` (fitted
 model pieces), `mkt_scale` and `tdrate` (from `data/scale.json` and `data/tdrate.json`) and
 `tdmult` (the touchdown cap), `norm` (league means by position group, and the implied-points
