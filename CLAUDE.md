@@ -954,6 +954,21 @@ A parlay X placed at the book goes in `liveparlays/parlays.json`, and a week of 
 `liveparlays/xbets.json`, by Claude from what the owner sends, as each file's `how` field
 describes: every device shows it on its next load.
 
+## Research: the homework toward the next model
+
+`research/` (README.md first) is the owner's study series toward a new game model, one folder a
+question, each with its scripts, its README and its committed `results/`. **No model is built
+there, or anywhere, until the owner gives the all clear**; a study may fit a small regression only
+to ask whether something carries signal. 2003-2025 are explored; 2026 on is held out and never
+read (`research/common.py`'s `HOLDOUT_FROM`, whose loaders refuse it), so the model can be tested
+on seasons it has never seen.
+
+```
+python3 -I research/fetch.py                     # nflverse games.csv + play-by-play 2003-2025 into research/data/ (gitignored)
+python3 -I research/win_indicators/build.py      # study 1's team-game table
+python3 -I research/win_indicators/rank.py       # its rankings -> research/win_indicators/results/
+```
+
 ## The sites behave like websites
 
 The owner publishes a change and expects it on every device on the next load. Nothing

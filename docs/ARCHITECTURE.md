@@ -279,6 +279,14 @@ liveparlays/
   index.html                     redirect to nflbets/#xparlays
 
 live/  pickems/                  redirects to nflbets/ for old bookmarks (live/ to #xparlays)
+
+research/                        the homework toward the next game model (README.md: the rules and
+                                 the list of studies); nothing a site or job reads, and no model
+                                 until the owner gives the all clear
+  common.py  fetch.py            the seasons explored (2003-2025; 2026 on held out and never read)
+                                 and the loaders; the downloader into data/ (gitignored)
+  win_indicators/                study 1: the top win indicators since 2003, in the game and
+                                 before it (build.py, rank.py; results/ committed, out/ gitignored)
 ```
 
 ## Bets and Stats: one page over both models
