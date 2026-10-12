@@ -10,9 +10,16 @@ into betting/state.json:
     since kickoff, regular season and playoffs),
   processed[gid].joker = {pick, pHome, correct} on graded games,
   state.jokerFit = the weeks of this season the model was fitted on after they were played
-    (model.json, from tune_2026.py), kept as data: the Pick'em Record draws them like any week.
+    (model.json, from tune_2026.py), kept as data, with `calls`, the file their calls come from.
 A game keeps the call it had on the last run before its kickoff (betting/jobkit.py): a closing
 line nflverse posts after that, or a refit, never rewrites a call a reader has already seen.
+
+A game in a file of betting/joker/history/ (2026_w1_w2.json: 2026 weeks 1 and 2) takes its call
+from that file on every run, never from the model, and carries its `src` ('published', the call in
+state.json before its kickoff; 'backtest', called after the games by a model that never saw them)
+into the state and the grade. The model in model.joblib was refitted on those games' results
+(tune_2026.py), so its calls on them are fits, not predictions; the owner asked on 12 October 2026
+for the record the Joker really had, and the file holds it (its header says where each came from).
 
 Once a final of the season is a day and a half old, the season's team stats and play-by-play are
 required: without them the run refuses, the last good picks stay, state.modelStatus.joker says
@@ -54,6 +61,22 @@ def fetch_pbp(season: int) -> bool:
             dst.unlink()
         log(f"play-by-play {season} not available ({e})")
         return False
+
+
+def history_calls(season: int) -> dict:
+    """the Joker's real calls on games its model was later fitted on: {game_id: {pick, pHome, src}}"""
+    out = {}
+    for f in sorted((HERE / "history").glob(f"{season}_*.json")):
+        doc = json.loads(f.read_text(encoding="utf-8"))
+        if int(doc.get("season", 0)) != season:
+            raise J.Refuse(f"history/{f.name} is for {doc.get('season')}, not {season}")
+        for gid, e in doc["games"].items():
+            if not (isinstance(e.get("pick"), str) and isinstance(e.get("pHome"), float) and e.get("src") in ("published", "backtest")):
+                raise J.Refuse(f"history/{f.name}: {gid} has no pick, chance or source")
+            if gid in out:
+                raise J.Refuse(f"history/{f.name}: {gid} is in two history files")
+            out[gid] = dict(pick=e["pick"], pHome=e["pHome"], src=e["src"])
+    return out
 
 
 def fitted_weeks(meta: dict, season: int):
@@ -106,6 +129,12 @@ def main():
 
     picks = J.freeze(st.get("joker") or {}, fresh, J.kickoffs(games[games.season == season]), at)
     kept = sum(1 for gid in fresh if picks[gid] is not fresh[gid])
+    # the games the model was fitted on after they were played: their real calls, from the file
+    hist = history_calls(season)
+    stray = [gid for gid in hist if gid not in fresh]
+    if stray:
+        raise J.Refuse(f"history calls for games not on the {season} schedule ({', '.join(stray[:3])})")
+    picks.update(hist)
     changed = False
     if st.get("joker") != picks:
         st["joker"] = picks; changed = True
@@ -113,6 +142,14 @@ def main():
     fit = {"season": season, "weeks": fitted_weeks(meta, season), "fitted_on": meta.get("fitted_on", "")}
     if not fit["weeks"]:
         fit = None
+    else:   # nothing publishes those weeks as the model's: their calls are the history file's
+        fw = {int(w) for w in fit["weeks"]}
+        week = dict(zip(this.game_id, this.week.astype(int)))
+        bare = sorted(gid for gid in fresh if week[gid] in fw and gid not in hist)
+        if bare:
+            raise J.Refuse(f"the model was fitted on week(s) {sorted(fw)} after they were played, and {len(bare)} of their games "
+                           f"({', '.join(bare[:3])}) have no real call in betting/joker/history/")
+        fit["calls"] = sorted(f"betting/joker/history/{f.name}" for f in (HERE / "history").glob(f"{season}_*.json"))
     if st.get("jokerFit") != fit:
         if fit:
             st["jokerFit"] = fit
@@ -120,7 +157,7 @@ def main():
             st.pop("jokerFit", None)
         changed = True
     changed |= J.set_status(st, "joker", None, at)
-    log(f"{kept} calls held from before their kickoff")
+    log(f"{kept} calls held from before their kickoff, {len(hist)} from betting/joker/history/")
     if changed:
         J.save_state(st)
         graded = sum(1 for r in st["processed"].values() if r.get("joker"))

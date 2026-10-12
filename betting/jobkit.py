@@ -136,6 +136,8 @@ def grade(st: dict, picks: dict, key: str) -> bool:
         entry = dict(pick=b["pick"], pHome=b["pHome"], correct=None if winner is None else b["pick"] == winner)
         if b.get("late"):           # first scored after kickoff: the record can say so
             entry["late"] = True
+        if b.get("src"):            # a call from a model's history file says where it came from
+            entry["src"] = b["src"]
         if rec.get(key) != entry:
             rec[key] = entry
             changed = True

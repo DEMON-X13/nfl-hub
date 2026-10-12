@@ -872,8 +872,8 @@ moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injur
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`, `broly`,
 `atKickoff` (each coming game's Alpha and Challenger call, recorded by every run before its
 kickoff and kept from then on; the game is graded on it, `processed[gid].atKickoff`),
-`jokerFit` (the weeks the Joker was fitted on after they were played, kept as data: the Pick'em
-Record draws them like any other week), `modelStatus` (only while
+`jokerFit` (the weeks the Joker was fitted on after they were played, kept as data, and `calls`,
+the history file their calls come from), `modelStatus` (only while
 the Joker or Broly could not run: since when and why), `prevElo`/`prevRanks`, `published`, and
 the app's own bookkeeping (`gamesPlayed`, `modelBuild`, `prevRanksWeek`, `season`,
 `showAllModels`, `snapWeek`).
@@ -913,12 +913,26 @@ a final is a day and a half old, Broly's prior), keep their last good picks, wri
 and exit 1; the workflow carries on past them (`continue-on-error`) and the Pick'em Record says so.
 
 **The Joker** (`betting/joker/`) is a separate gradient-boosted-trees model,
-fitted 2019-2025 and refitted once with 2026 weeks 1-2 in its training (`tune_2026.py`, the
-owner's call), whose picks `joker.py` writes into `state.json` (`joker`, the pick
+fitted 2019-2025 and refitted once with 2026 weeks 1-2 in its training (`tune_2026.py`, 24
+September 2026), whose picks `joker.py` writes into `state.json` (`joker`, the pick
 and home win chance for every game, regular season and playoffs, and `processed[gid].joker` once
-graded) and show beside Alpha Model's on the Pick'em Record, which draws the refitted weeks like
-every other week and counts them in the Joker's record (the owner's call, October 2026: no hatch,
-label or note; `state.jokerFit` keeps which weeks they were). Each run also logs, in the job's
+graded) and show beside Alpha Model's on the Pick'em Record. Its calls on weeks 1-2 are not the
+refit's, which saw those games' results (25-7, +2 against Vegas, in sample): on 12 October 2026 the
+owner asked for the record it actually had, so `joker.py` takes those 32 games' calls on every run
+from `betting/joker/history/2026_w1_w2.json`, written once from git and never by the job. Week 2's
+are the calls `state.json` carried before each kickoff (`src: 'published'`, the commit and its time
+on each); week 1 was played before the Joker existed (its model was fitted on 15 September, after the
+week's last kickoff), so its calls are that original model's, fitted on 2019-2025 alone, called after
+the games on inputs from the games before each (`src: 'backtest'`, the same calls the state carried
+from its first commit). Both are the model #117 put back. Week 1 is counted like any other week, as
+the ELO Model's own backtest weeks 1-2 are on the same chart, so the models are compared on the same
+games; `src` rides on each call and grade, and the record draws no hatch, label or note (the owner's
+call of October 2026, kept). The real record: 13-3 in week 1, 11-5 in week 2, 24-8 and +1 against
+Vegas (the refit showed 25-7, +2); 53-24, +3, through week 5 (was 54-23, +4). From week 3 the refit
+model's calls were made before kickoff and stand. `joker.py` refuses a run where a week in
+`fitted_weeks` has a game with no call in a history file, and the smoke test (5n) holds every call
+of the file to the published state and its grade; 5h lets such a call move only onto the file's.
+Each run also logs, in the job's
 output, any input that has drifted from the scale it was fitted on (`drift.py`). It refuses a season more than
 one past its frozen data.
 
