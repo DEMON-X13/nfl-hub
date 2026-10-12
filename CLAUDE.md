@@ -756,22 +756,36 @@ DraftKings** (a real link, in a new tab) opens the parlay on DraftKings' betslip
 (see the Props loop): each leg's DraftKings id under its own key, a rung k+ as DraftKings' Over k-0.5
 (or the whole k-1 its price was read from), in the card's order. Under the buttons the card says what it
 opens, gives each leg's own link too (DraftKings documents no link for several outcomes), and names every
-leg it cannot open and why: no ids read for its game (a payload baked before `dk`), a 2+ touchdown rung
-or an alternate line the pull does not read, a game that has kicked off, or a line DraftKings had
-elsewhere when last read ("DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM
+leg it cannot open and why, from what the payload holds: its game's DraftKings prices not pulled yet, or
+its game's lines read and none of its player prices yet (both with when they are pulled, the Parlay
+Builder panel's words, and said only of a leg on no book price in a game with no DraftKings player price
+in the payload: an id comes only with a price the job bought, so a game priced late has none; the owner's
+Monday night of 12 October 2026, Bills at Rams, whose player prices the Monday pull had not read; a ladder
+rung adds that only DraftKings' main lines are read, so it opens only if it turns out to be the main
+line), a market the pull does not read (carries, attempts, completions, interceptions, rush + rec yards,
+targets and the kicking lines: only `oddsfetch.py`'s DEFAULT is pulled, so no pull brings their ids;
+an id the payload has for one is opened all the same), no ids read for its game (a payload baked before
+`dk`, or a game priced with none), a player's line on no book price DraftKings did not offer when its
+game's player prices were read (dated; a book-priced leg with no id is said neutrally, not among the
+lines read), a 2+ touchdown rung or an alternate line the pull does not read, a game that has kicked
+off, or a line DraftKings had elsewhere when last read ("DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM
 ET)", the page's main line where DraftKings has it; never "now"). The note is dated by the oldest read of
 the legs it opens (`at` for a player's leg, `glat` for a team's line and the total), and says every leg
 lands ("puts all 3 legs on DraftKings' betslip", and so the button's title) only while that read is under
 a day old, the rule `g.ls` follows; older or undated, it opens "these 3 legs" and says a leg whose line
-DraftKings has moved since will not be on the slip, so check it. With no leg it can open
-there is no button, and the game's DraftKings page is offered where every leg is in one game. **Share
+DraftKings has moved since will not be on the slip, so check it. With no leg it can open the button
+stays, to add the legs by hand: **Open game in DraftKings**, the game's page, where every leg is in one
+game still to come with its event id, else **Open DraftKings**, DraftKings' NFL page
+(`https://sportsbook.draftkings.com/leagues/football/nfl`), and the note says so. **Share
 link**, beside it, is for sending the parlay to people (the owner, October 2026): the share sheet
 (`navigator.share`) with a title ("3-leg parlay +330", with "(estimated price)" or "(fair price)" where the
 card says so), a plain line a leg (who, the bet, its price, "+210 est." or "+150 fair" where it is not the
 book's, as on the card), the stake and what it pays, when DraftKings' lines were read ("DraftKings lines as
-read ...; check the slip before you bet", with a link), the legs to add by hand where only some open, the
-site's address, and the same
-DraftKings link as its url (none when no leg opens); with no share sheet, or one that fails other than
+read ...; check the slip before you bet", with a link), the legs to add by hand, a line each with why in
+a few words ("player prices for its game are not pulled yet"), the site's address as where it came from,
+and always a DraftKings link as its url: the button's own, the betslip, else the game's page, else
+DraftKings' NFL page (before October 12 a parlay with no leg on the slip sent the site's address alone,
+which the owner took for a link to GitHub); with no share sheet, or one that fails other than
 by a cancel, the text and the link are copied (the clipboard, else a hidden box) and the card says Link
 copied. A cancel does nothing, and neither button ever draws or downloads the image, which carries
 neither. Every dollar figure on
@@ -874,10 +888,16 @@ checked in a real browser at 390 and 360 over every game, such as NYG at WAS and
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
-Open in DraftKings on made-up ids (every leg, part with a moved line, none, every kind of leg with an
+Open in DraftKings on made-up ids (every leg, part with a moved line, none over two games with
+DraftKings' NFL page and none in a payload baked before `dk`, the owner's case of a game with its lines
+read and no player prices (an est. rung and an est. touchdown) and its game page, carries, kicking points
+and interceptions there said to be unread (and a carries id the payload has opened), a money line beside an
+unpulled player leg, a player leg DraftKings did not offer when read, a book-priced leg never said to be
+unpulled or not offered, a money line on DraftKings' game lines with no ids, every kind of leg with an
 Under main line among them, a game kicked off; the runner's main line an Over in one browser and an
 Under in the other; the note and the button dated by the older read and promising every leg at five
-hours, not at 31 hours or undated), Share link (the share sheet's url the link's, every leg in its text,
+hours, not at 31 hours or undated), Share link (the share sheet's url the link's, the game's page or the
+NFL page where no leg opens, every leg in its text and each to add by hand with why,
 the read dated, an estimated rung's price and the parlay's marked as on the card, a cancel doing
 nothing, the clipboard and the hidden box without it), Escape, the Tab order (Close, Open in DraftKings,
 Share link, Download, Start over, each leg's link) and Start over, and nothing written by finishing, on
