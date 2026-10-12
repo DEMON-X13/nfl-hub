@@ -328,7 +328,8 @@ the absences card, no quarterback who missed the last game on the report counted
 this week's report clears him, no 'Home' game abroad, a call from every model for every coming
 game (or `modelStatus` saying why), no call moved after its kickoff (against the last commit),
 scoreboard finals counted for every model on the frozen call, Team Rankings' record, the record's
-disclosure of a model that could not run, and the Joker's refitted weeks drawn like any other.
+disclosure of a model that could not run, the Joker's calls on 2026 weeks 1-2 its history file's
+(5n), and those weeks drawn like any other.
 The files it holds the state to are the ones `update.js` refuses without (`patches.filesDue`: the roster and depth chart from a week before the opener, the injury report
 from its first kickoff, the stats once a final is a day and a half old), and it passes in every
 phase of a season: the week before the opener, week 1, between playoff rounds and after the Super
@@ -364,10 +365,19 @@ Pick'em Record draws like the Joker. Before it shipped it was tested on 2018-202
 fitted on the ones before: 65.8% straight up against the Vegas favourite's 66.4%. At a new
 season, run `fit.py` on the seasons through the last one so `prior_<last>.json` exists (without
 it Broly refuses and says so). Both score playoff games too, and both freeze a game's call at its
-kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, the owner's
-call); `model.json` names the weeks (`fitted_weeks`, published as `state.jokerFit` and kept there as
-data), and the Pick'em Record draws them like every other week, counted in the Joker's record and its
-line against Vegas with no mark, label or note (the owner's call, October 2026).
+kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, 24 September);
+`model.json` names the weeks (`fitted_weeks`, published as `state.jokerFit` and kept there as data),
+but its calls on those games are fits, so they are not the record: the owner asked on 12 October 2026
+for the record it actually had. `joker.py` takes every week 1-2 call, on every run, from
+`betting/joker/history/2026_w1_w2.json` (written once from git, never by the job; its header says
+where each came from): week 2's are the calls `state.json` carried before each kickoff
+(`src: 'published'`), week 1's, played before the Joker existed, the original model's (fitted on
+2019-2025 alone, the one #117 put back), called after the games (`src: 'backtest'`), counted like any
+other week as the ELO Model's backtest weeks 1-2 are. 24-8 and +1 against Vegas on weeks 1-2, where
+the refit showed 25-7, +2. A week in `fitted_weeks` with a game missing from the file refuses the
+run; the smoke's 5n holds the published calls and grades to the file and the file to the last commit's
+copy, and 5h let such a call move onto it once, from the refit's (no `src`), then holds it like any other. The Pick'em Record draws those weeks like every other week, counted in the Joker's
+record and its line against Vegas with no mark, label or note (the owner's call, October 2026).
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 

@@ -10,9 +10,11 @@ fits 81.5% of 2020-2025, what the original did. A sweep of the weight found 21-1
 same recipe on these files without 2026), 25-7 from 0.75 to 0.9 and more above.
 
 Weeks 1 and 2 are therefore fitted after the fact, not predicted: model.json says so in
-fitted_on and fitted_weeks, and joker.py publishes it as state.jokerFit, kept as data. The Pick'em
-Record draws those weeks like every other and counts them in the Joker's record (the owner's call,
-October 2026). From week 3 on the picks are made before the games, as before.
+fitted_on and fitted_weeks, and joker.py publishes it as state.jokerFit, kept as data. Those weeks'
+calls are not this model's (the owner's call, 12 October 2026: show the record the Joker actually
+had): joker.py takes them from betting/joker/history/2026_w1_w2.json, its real calls (24-8 where
+this model calls them 25-7), and refuses to run while a week in fitted_weeks has a game that file
+lacks. From week 3 on the picks are made before the games, as before.
 """
 from __future__ import annotations
 
