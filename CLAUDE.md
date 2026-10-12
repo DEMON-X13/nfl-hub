@@ -345,8 +345,11 @@ they come and `phase` says regular, postseason, over or opening. `elo/check.py` 
 their sources and against the last publish (the last commit's `elo/data`, which the site serves until the run
 commits): a top-ten player of the published rankings is still ranked or sidelined unless his club has played, had a
 game rated (the player stats land a night after the score) or he changed clubs; every call the published ledger had
-for a game this run can no longer call keeps its pick and its `src`; and a call in `elo/history/` is graded as it
-stands there unless a later call, itself published before kickoff, replaced it.
+for a game this run can no longer call keeps its pick and its `src`; a call in `elo/history/` is graded as it
+stands there unless a later call, itself published before kickoff, replaced it; and Team Rankings (`teams`, which
+carries each shown number's parts, `r` and `lg`) is solved again from games.csv by the gate's own iteration, never the
+build's matrix solve, `before` included (POWER in its docstring, with fixtures for the re-judging, a later final, a
+neutral site and a tie).
 
 A game's score (THE SCORES in the build) is EPA for a quarterback, production for a back, receiver or
 tight end (yards from scrimmage, 20 a touchdown and 10 for a back, less 25 a fumble lost: EPA rated a

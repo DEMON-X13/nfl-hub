@@ -164,7 +164,8 @@ elo/
                                  schedule, the play-by-play (every team's stats and ratings
                                  replayed from it) and what was published (the last commit's
                                  data/ and history/: the top ten carried, frozen calls kept),
-                                 plus the build's functions on fixtures; the job runs it
+                                 Team Rankings (`teams`) solved again from games.csv by its
+                                 own iteration, plus the build's functions on fixtures; the job runs it
                                  before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree,

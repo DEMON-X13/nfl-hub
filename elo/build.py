@@ -179,7 +179,7 @@ Green Bay's loss to Atlanta counts 1.6 points less against it (a game score of -
 -18.57 now: Atlanta was -1.36 when they met, +0.27 now), and Arizona's win over the Chargers 2
 points less (13.84 to 11.79: the Chargers now -2.05). With five games most teams sit within
 about two points of average, so a re-judged opponent moves a game's score by a point or two
-against margins of up to 17: a correction, not a reshuffle (rank correlation 0.989 with the
+against margins of up to 17: a correction, not a reshuffle (rank correlation 0.988 with the
 margin Elo's table through week 5; Atlanta is 2-3 with a point differential of -3, including a
 3-34 home loss to Carolina, and stays mid-table). There is no preseason rating (the table is
 this season's alone), so the Chargers were an average team, not a projected top one, when
@@ -217,13 +217,18 @@ loss of 0.658 on the next game, and in weeks 2-6 0.696, no better than always ta
 team; this one 0.648 and 0.688 (Vegas 0.607 and 0.630). Last season carried in as a hidden
 prior fading game by game took another 0.011 off the margin Elo (0.03 early), but the table is
 this season's alone, as asked. The ELO Model's game calls stay on the lineups and career
-ratings, which predict better still. `teams` in model.json carries the rating, the rating going
-into the team's last game (`before`: the same solve on every final that kicked off before that
-game, with the lineup it took into it, which is what the table said then), that chance
-(`p_avg`) and the regular-season record the rating was built on (`record`, wins, losses, ties);
-the change since the last game is that game and every re-scoring since, so a team can move in
-a week it did not play, and any final moves every team. The Bets and Stats page's Team
-Rankings tab is drawn from it.
+ratings, which predict better still. `teams` in model.json carries the rating (`elo`), its
+chance against an average team (`p_avg`), the rating going into the team's last game (`before`:
+the same solve on every final that kicked off before that game, its lineup part the team's
+expected lineup now, not the one it took into that game, on the player ratings as they stood
+before the week of its last game the player stats have rated; so it is not exactly what the
+table showed then), the regular-season record the rating was built on (`record`, wins, losses,
+ties) and the parts behind each shown number, which elo/check.py holds to games.csv with its own
+code (`r` and `r_before`, the results part in points; `lg` and `lg_before`, the lineup part in
+log-odds, centred on the league, none where a team has no lineup). The change since the last
+game is that game, every re-scoring since and what the players' ratings did since, so a team
+can move in a week it did not play, and any final moves every team. The Bets and Stats page's
+Team Rankings tab is drawn from it.
 
 OVERALL OFFENSE AND OVERALL DEFENSE (two pills in the ELO Ratings tab's position row). Each
 team's offense and defense rated on this season's games alone, as an Elo (the format the power
@@ -890,16 +895,24 @@ def power_ratings(season_games, lineup=None, lineup_before=None):
             m = r.home_score - r.away_score
             rec[r.home_team][0 if m > 0 else 1 if m < 0 else 2] += 1
             rec[r.away_team][1 if m > 0 else 0 if m < 0 else 2] += 1
-    # before: the same solve on every final that kicked off before the team's last game, what the
-    # table said going into it; the change since is that game and every re-scoring since
+    # before: the same solve on every final that kicked off before the team's last game, the results
+    # part the table had going into it (its lineup part is lineup_before: today's lineup on the
+    # ratings of then); the change since is that game, every re-scoring since and the players' ratings
     at = {k: solve(fin[fin.kick < k]) for k in set(last_kick.values())}
     before = {t: float(at[k][ix[t]]) for t, k in last_kick.items()}
     mix = lambda r, lg: (1 - PR_W) * r + PR_W * lg / PR_S if lg is not None else r   # a log-odds in points
     now = {t: mix(float(R[ix[t]]), (lineup or {}).get(t)) for t in teams}
     then = {t: mix(before[t], (lineup_before or {}).get(t)) for t in before}
     show = lambda v: round(1500 + 100 * v / PR_SPREAD)
+    rnd = lambda v, n: None if v is None else round(float(v), n)
+    # the parts beside what is shown, so elo/check.py can hold the table to games.csv: the results
+    # part in points (`r`, and `r_before` going into the last game) and the lineup part in log-odds
+    # (`lg`, `lg_before`; none where a team has no lineup)
     return {t: {'elo': show(now[t]), 'before': show(then[t]) if t in then else None,
-                'p_avg': round(1 / (1 + math.exp(-PR_S * now[t])), 4), 'record': rec[t]} for t in teams}
+                'p_avg': round(1 / (1 + math.exp(-PR_S * now[t])), 4), 'record': rec[t],
+                'r': rnd(R[ix[t]], 4), 'lg': rnd((lineup or {}).get(t), 5),
+                'r_before': rnd(before.get(t), 4), 'lg_before': rnd((lineup_before or {}).get(t), 5) if t in then else None}
+            for t in teams}
 
 
 def _ranked(rows):
