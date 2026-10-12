@@ -136,6 +136,7 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .pe-tnext b{color:var(--ink)}
 /* questionable on the week's report: still listed, with a Q */
 .pe-q{font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;vertical-align:1px;color:#8A5E05;background:rgba(212,160,23,.14);border-color:rgba(212,160,23,.4)}
+.pe-prov{font-size:10px;font-weight:600;padding:1px 6px;margin-left:6px;vertical-align:1px;color:var(--ink-2);background:transparent;border-style:dashed}
 /* the tab's record lines wrap on a phone instead of widening the page past the screen */
 #tab-elo .bar{flex-wrap:wrap}
 #tab-elo .bar .rec{white-space:normal;min-width:0;overflow-wrap:anywhere}
@@ -320,6 +321,8 @@ function curveHover(root){
 }
 /* a questionable player stays ranked and listed, with a Q and the report's words */
 const qTag=r=>r&&r.q?` <span class="pill pe-q" title="${esc(r.q)}">Q</span>`:'';
+/* ranked on fewer real-role games than the file's prov_games (3): his place is provisional */
+const provTag=r=>r&&r.prov?` <span class="pill pe-prov" title="Provisional: ranked on fewer than ${esc((D.players&&D.players.prov_games)||3)} games in a real role, so his place can still move a long way">prov.</span>`:'';
 /* how far the season has got, as the build words it: "through week 4, and 1 of 15 week-5 games",
    "through the Divisional round", or "final" (an older file has only the week) */
 const thru=P=>P.through?(P.through==='final'?'final':P.through):'through week '+P.through_week;
@@ -347,7 +350,7 @@ function rankings(){
   const P=D.players, g=D.pos, grp=P.groups[g];
   const rows=grp.top.slice(0,D.more?25:10).map(r=>{
     return `<tr class="pe-plrow" data-pe-pl="${esc(r.id)}"><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
-      <td class="pe-name"><button type="button" class="pe-plbtn" data-pe-pl="${esc(r.id)}">${esc(r.name)}</button>${qTag(r)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
+      <td class="pe-name"><button type="button" class="pe-plbtn" data-pe-pl="${esc(r.id)}">${esc(r.name)}</button>${qTag(r)}${provTag(r)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
       <td class="pe-m0">${tag(r.team,true)}</td>
       <td class="pe-n"><span class="pe-elo"${r.raw!=null?` title="Raw season rating ${r.raw}"`:''}>${r.elo}</span></td>
       <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
@@ -357,7 +360,7 @@ function rankings(){
   const opening=P.phase==='opening'&&P.season_in_play&&P.season_in_play!==P.season;
   return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} ${esc(thru(P))}</span></h2>
     ${opening?`<p class="pe-note">${esc(P.season_in_play)} has begun: its rankings take over from ${esc(P.season)}'s final table once most clubs have played week 1.</p>`:''}
-    <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 160 points a game) and each game after moves him less as his level settles. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least half of their club's games, enough to be ranked (a club's bye or a game it has yet to play does not count against its players). A questionable player stays listed, with a Q. The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Click a player for his matchup this week. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
+    <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 174 points a game) and each game after moves him less as his level settles, in such a way that every game he plays ends up counting the same. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least half of their club's games, enough to be ranked (a club's bye or a game it has yet to play does not count against its players). A questionable player stays listed, with a Q, and one ranked on fewer than ${esc(P.prov_games||3)} games in a real role is marked prov. (provisional). The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Click a player for his matchup this week. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
     ${sourceNote()}
     ${posRow()}
     ${curveChart(grp.curve,grp.label.toLowerCase())}

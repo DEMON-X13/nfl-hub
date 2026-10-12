@@ -114,6 +114,17 @@ function page(MU, opts) {
     const row = d.querySelector('#peBody tbody tr'), q = row && row.querySelector('.pe-q');
     chk(!!q && txt(q) === 'Q' && /questionable/.test(q.title), 'a questionable player has no Q in the rankings');
     if (had === undefined) delete P.groups.QB.top[0].q; else P.groups.QB.top[0].q = had; }
+  /* a player ranked on fewer than prov_games real-role games wears prov., and nobody else does:
+     the file's own rows, then the top quarterback marked in this copy of the file only */
+  { const { d } = page(MU0); await wait(60);
+    const rows = [...d.querySelectorAll('#peBody tbody tr.pe-plrow')], top = P.groups[Object.keys(P.groups)[0]].top;
+    chk(rows.length > 0 && rows.every((tr, i) => !!tr.querySelector('.pe-prov') === !!(top[i] && top[i].prov)),
+      'the prov. mark is not exactly on the rows the build marks provisional');
+    const had = P.groups.QB.top[0].prov; P.groups.QB.top[0].prov = true;
+    const p2 = page(MU0); await wait(60);
+    const m = p2.d.querySelector('#peBody tbody tr .pe-prov');
+    chk(!!m && txt(m) === 'prov.' && /fewer than \d+ games/.test(m.title), 'a provisional player has no prov. mark in the rankings');
+    if (had === undefined) delete P.groups.QB.top[0].prov; else P.groups.QB.top[0].prov = had; }
   /* every ranked player has a trend line, one game in too (in week 1 the whole column was
      blank: a line needs two points, and the season's start is the first); checked with the
      top quarterback cut to his first game in this copy of the file only */

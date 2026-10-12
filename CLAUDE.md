@@ -304,8 +304,20 @@ game rated (the player stats land a night after the score) or he changed clubs; 
 for a game this run can no longer call keeps its pick and its `src`; and a call in `elo/history/` is graded as it
 stands there unless a later call, itself published before kickoff, replaced it.
 
+A game's score (THE SCORES in the build) is EPA for a quarterback, production for a back, receiver or
+tight end (yards from scrimmage, 20 a touchdown and 10 for a back, less 25 a fumble lost: EPA rated a
+club's lead back above his backup in only 44% of seasons, since the average carry loses expected
+points), points over expected for a kicker, and a weighted count of events for a defender (a
+lineman's QB hits count double); a quarterback's first career rating is 1450, not 1500. The October
+2026 evaluation of every position (each tested by full rebuilds against the same data, walk-forward
+held) kept the rest: quiet games skipped, the kickers' expectation, the defensive backs' and
+linebackers' scores, which still measure involvement more than coverage or role (open questions:
+an edge group across DL and LB, blocking credit for tight ends).
+
 The rankings are of this season alone: each player's second rating (`RS` in the build) starts
-the season at 1500 with placement games (K 160 shrinking toward 32, Glicko's idea) and moves only on this season's games;
+the season at 1500 with placement games (K = max(32, 695/(games+4)): 174 shrinking toward 32, so that every game ends up counting the
+same, where the schedule before October 2026 counted a season's first game about twice as much) and moves only on this season's games;
+a ranked player with fewer than three real-role games is marked provisional (`prov`, "prov." on the table);
 the number shown is that rating on a bell curve within the position (1500 the average, 100 points a standard
 deviation, so the shields split a position as a ranked ladder does; the raw value stays in `raw`); a player is ranked only with games
 in a real role in at least half of his club's rated games (a club's bye or a Thursday game elsewhere does not move his bar), and
