@@ -666,7 +666,9 @@ function eloPicks(){
     for(const l of best){ if(pick.length>=n) break; if(games.has(l.gid)) continue; games.add(l.gid); pick.push(l); }
     if(pick.length<n) break;
     const p=pick.reduce((a,l)=>a*l.pe,1), d=pick.reduce((a,l)=>a*mlToDec(l.price),1);
-    tiers.push({id:'elo'+n,label:`Elo ${n}-leg`,legs:pick,p,dec:d,sig:'elo|'+pick.map(l=>l.key+'|'+l.side+'|'+l.k).join(',')});
+    /* the book's fair chance on the same legs (parlayFair in the props parts: DraftKings' prices with
+       the margin taken out), which the card leads with, the Elo matchup chance beside it */
+    tiers.push({id:'elo'+n,label:`Elo ${n}-leg`,legs:pick,p,dec:d,fair:typeof parlayFair==='function'?parlayFair(pick):null,sig:'elo|'+pick.map(l=>l.key+'|'+l.side+'|'+l.k).join(',')});
   }
   return {tiers,candidates:best.length,games:new Set(best.map(l=>l.gid)).size};
 }
@@ -681,10 +683,10 @@ function eloSuggest(){
   if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders above for the Elo picks: every leg is a player's line.</p>`;
   else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
     :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.</p>`;
-  else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
+  else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
       rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>
-    <p class="muted pb-lead" style="margin:0 0 12px">Ranked players whose Elo matchup says they beat the book's price: the book's chance moved by the player's Elo against the defenders he faces this week (click a player on the ELO Ratings tab for his matchup). A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs.</p>${body}`;
+    <p class="muted pb-lead" style="margin:0 0 12px">Ranked players whose Elo matchup says they beat the book's price: the book's chance moved by the player's Elo against the defenders he faces this week (click a player on the ELO Ratings tab for his matchup). A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs. Each pick leads with the book's fair chance (DraftKings' prices with the margin taken out) and gives the Elo matchup chance beside it; a leg the prop model rates ${typeof FAR_OFF==='number'?Math.round(FAR_OFF*100):15} points or more above the book's fair chance is flagged far off the market.</p>${body}`;
   v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
     const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} parlay`); }));
 }

@@ -3,7 +3,9 @@
 Downloaded nflverse CSVs live here. Not committed (too large, gitignored): `build/weekly.py`
 downloads this season's files on every run, named after the season `SEASON` in
 `build/part2.js` sets (`build/season.py` has the list): `games.csv`, `pw_<season>.csv`,
-`roster_<season>.csv`, `injuries_<season>.csv`, `depth_charts_<season>.csv`. A runner starts
+`roster_<season>.csv`, `injuries_<season>.csv`, `depth_charts_<season>.csv`, and, after a clean
+audit and only for the suggestions record (`suggest_ledger.js`: did a player with no stat line play?),
+`snap_counts_<season>.csv`, which is never required. A runner starts
 with this folder empty, so a required file that fails to download stops the run before
 anything is published (a stats or injury file nflverse has not posted yet, with none of this
 season's published, is the exception: the run goes on without it and the payload says so in

@@ -51,6 +51,9 @@ at the next refresh:
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`, and `nhl/data/season_<year>.json` (written once, by the first run of the next season, from the last state of the finished one)
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
+- `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: the suggested
+  parlays frozen at each wave's kickoff and graded after, so a hand edit there rewrites the record and
+  the script's guard refuses it)
 - `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
@@ -218,6 +221,47 @@ is placed by the rule his prices are (`pool.match`, within the game); a name it 
 defence's touchdown and a key two book names would give two ids are left out. Only ids and the read
 times: the parlay card builds the links. `python3 test_dk_links.py` holds it to the real week-5 file and to its cases; at a
 rollover last season's file goes to `data/archive/` with its week's price files.
+
+Once the audit is clean, `weekly.py` runs the **suggestions record**, `node suggest_ledger.js` (the third
+change after the review of Sunday 11 October 2026, the owner's call): the Parlay Builder's four suggested
+parlays on its default choices (All, every game still to come, the default Bet amount), taken from the
+published page itself (`nflbets/index.html` booted in jsdom on the payload just baked, with `elo/data`
+beside it, since market + form decides which player legs qualify, and the window's clock held at the
+run's time, so a boot of a few seconds cannot carry it past a kickoff) by the page's own `getPbTiers`, into `props/data/suggest_ledger.json`, which the workflow commits
+with the rest of `props/data`. An entry is keyed `season|week|kickoff wave`, the wave being the earliest
+kickoff among the games still to come at the run: rewritten by any run while that kickoff is to come and
+the panel has changed, frozen from it and never changed again, so each is the panel as the job last saw
+it before that wave (a wave no run landed before has none; an entry not frozen that is no longer the wave
+is dropped; with no game to come nothing is taken). It keeps each level's legs, its model chance, fair
+chance and decimal price, or why it is empty. A frozen entry is graded by the app's own `settleLeg` once
+every leg has settled, as a book settles it: a leg lost loses; a push or void drops out and the rest are
+paid at `parlayDec` on the legs left; every leg a push or void is a push, the stake back; pending while a
+game or its stats are out; a grade once made is replaced only by a complete one; only the page's own
+season is graded (the app's actuals are this season's, keyed by week, so last season's week 5 would read
+this one's). A player with no stat line once his game's stats are in is void only if he did not play:
+nflverse writes a player's week only when he has a stat, so a receiver who played and was never targeted
+has none, and DraftKings grades him on zero (his over loses, his under wins). The script reads who played
+from nflverse's snap counts (`raw/snap_counts_<season>.csv`, which `weekly.py` fetches for it and does
+not require; matched by the roster file's PFR id, else his name within his club): a snap of any kind and
+he is graded on zero by `settleLeg` itself, his club's snaps in without him and the leg is void; with no
+snap counts for that game yet, Out on the week's injury report is void and anything else waits. The
+`summary` gives per level the parlays graded won or lost, won, the wins expected by the fair chance and by
+the model's, and the units on $1, each parlay once: an entry is the whole week's panel, so a parlay
+unchanged across waves is frozen into each, and the same legs (in any order) of the same level in a
+season's week are counted from the last entry that holds them (`repeats` says how many that set aside). Its guard holds the new ledger to the file the run started from and to the last
+commit's: a frozen entry gone or changed in anything but its grade, an entry taken at or after its
+kickoff or new and not this run's, a grade that does not follow its legs, a summary that does not follow
+from the entries: refused, the file put back (the last commit's where the copy on disk had moved), exit 1.
+It never refuses the run or turns it red: `weekly.py` logs the refusal in its report and publishes the
+payload. It spends no credit. `node test_suggest_ledger.js` (about twenty seconds) runs it on made-up
+weeks cut from the payload: taken (and kept by a run a second before its kickoff), rewritten before the
+kickoff, unchanged and not written, frozen, graded against planted wins, losses, voids and pushes worked
+out from the raw rows, made-up snap counts and the injury report (a player who played with no stat line
+on zero, by his PFR id and by his name; one who did not, void; one Out with no snap counts yet, void;
+neither, pending), a grade kept that a payload can no longer settle, last season's entry never regraded
+on this season's rows, a parlay two waves froze counted once, no game to come, and the guard end to end
+and on hand-made ledgers. A
+change to the script comes with a run of it.
 
 ## Betting: the loop
 
@@ -597,7 +641,7 @@ Player unders (a touchdown and a ladder rung are overs; a box changed by hand li
 or no mix at all: there is no Custom tag); and the week's games still to kick off, all ticked to start, with All and None. From those
 alone it builds four tiers, each on its own: Safe, the likeliest 2-leg parlay; Medium, Aggressive and
 Extreme, the 3-, 4- and 5-leg parlay with the best expected return (chance times payout) that lands at
-least 25%, 12% and 5% of the time (`PB_TIERS`); where no parlay of a level's size reaches its floor
+least 25%, 12% and 5% of the time by the model's chance (`PB_TIERS`); where no parlay of a level's size reaches its floor
 with any count of thin legs, the likeliest parlay of that size instead (`pbLikeliest`, chosen as Safe
 is: the fewest thin legs, then the highest chance by the builder's own sums), marked `likeliest` and
 ruled "the likeliest 3 legs" (4, 5) on its card, with its chance and price and no note about the floor
@@ -622,15 +666,66 @@ builder (exactly those legs into `S.parlay`, on the Bet amount) shows the same n
 the tier said; Finish opens the parlay card on the Bet amount. The search is a beam over a pairwise copula approximation, with only the
 finalists worked by the real sums; the tiers are cached on a signature of the choices and the data
 (`PB_CACHE`), and a game that kicks off while the page is open leaves the list and every tier
-(`pbWatch` looks every half minute). The Elo picks are the panel's last section. With no game to come
-the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
+(`pbWatch` looks every half minute). The Elo picks are the panel's last section, and under them, at
+its foot, the **Suggestions record** (app v99, `pbRecHtml`): the props job's `suggest_ledger.json` (see
+the Props loop), read beside the payload once a load with no-store and kept outside `S` (`PB_REC`), drawn
+from the entries' own grades (`pbRecSum`, app v100: each parlay once, from the last entry that holds it,
+as the job's summary counts it), per level the parlays graded won or lost, won, the wins expected by the
+book's fair chance and by the model's, and the units on $1 (a win a push shortened at what it paid),
+pending parlays and pushes counted apart, with a line saying it starts on 12 October 2026 (Monday night's Bills at Rams the first
+wave) and that each entry is the default panel frozen at kickoff; no file, or one that is not a ledger,
+draws nothing. It is drawn when no game is left too. The audit's P2 holds it on made-up ledgers (no-store,
+nothing without a file, each row worked out, an empty and a junk file), and the nflbets smoke on the
+real file and a made-up one. With no game to come the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
 its stake box) is gone; a game page's own High/Medium/Low suggestions and their side switch stay.
+
+**The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
+the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
+from its biggest edges, collected its mistakes; the 1pm Safe pair said 53% where its fair chance was
+about 24%). Labelling and selection only, never a refit on the season in play. A leg's fair chance
+(`legFair` in `part3.js`) is DraftKings' own, its prices with the margin taken out: where both sides of
+the same line have a real price (a player's main line over and under, `PAY.mkt`; a game's two
+moneylines, or its two spread prices on the leg's own number; the total's over and under on the posted
+total) that side's no-vig chance (`devigOver`'s sum); where only one side is (a ladder rung, an anytime
+touchdown, a team line or total missing its other price, a main line the payload has moved), the price's
+implied chance over that week's typical overround on two-sided lines of its kind (`fairVig`: the median
+of the two implied chances summed, player main lines for a player's leg, the moneylines, spreads or
+totals for a game's, every kind's where the week has none of its own), worked from the payload on every
+call and marked est. wherever it is shown; a leg with no real price has none. A parlay's
+(`parlayFair`) is the builder's own `parlayProb` on its legs with each chance replaced by its fair
+chance, so same-game legs move together as the model's do; with a leg that has none it is null and the
+parlay shows the model's chance alone, saying the fair chance needs every leg's book price. Every
+level's card and the Elo picks' lead with it, labelled fair chance (", est." where it is), "model says
+53%" (the Elo picks: "Elo says") beside it; the levels are still chosen on the model's chances, so a
+level over its floor is ruled "best return that lands 25%+ by the model" (and the label wraps inside its
+box, app v100: four levels side by side just over 1100px leave it narrower than "FAIR CHANCE, EST."). The
+builder's summary leads with it ("fair chance all 3 land", "model says" beside it) and its confidence
+tile rates it ("confidence all 3 land, on the fair chance"; the model's chance, said so, where there is
+none; app v100), each builder row gives its leg's ("fair 55%"), a game page's High/Medium/Low hand leads
+with it where every leg has a book price (the hands' floors, 35%, 20% and 10%, said to be by the model's
+chance), and the parlay card does too (below). A leg the model rates `FAR_OFF` (15 points) or more above its fair chance on its
+side (`legFarOff`; only where a fair chance exists) is left out of the panel's preferred and thin lists
+(`pbPool` counts it in `far`, and the panel's note says how many and why) and of a game page's hands
+(`gameLegPool`), and flagged "model 77% · market 55%: far off the market" (`farText`) on the game pages
+(the player lines, the touchdown and rungs on a book price, the Game bets card's team lines), in the
+builder's rows and on an Elo pick, whose own selection (the Elo matchup chance) is left alone. The
+audit's M holds every level's fair chance to `parlayProb` on its legs at theirs and its card to leading
+with it; M7 works the rule on its own from the payload and holds `legFair` to it case by case, then
+made-up lines one in three 25 points above the book's fair chance and one in three 6 points above: the
+pool's count and note, no far leg on a level or a game hand, the flag on the game page (a main line; a
+touchdown and a ladder rung planted on one-sided book prices, the ladders shown; the Game bets card's to
+win and to cover) and in the builder, the builder's summary and confidence tile, each game hand as its
+card draws it and made-up hands that are sure to take each branch (book-priced main lines, one with a
+rung priced on one side, one with a leg on no book price), and the label free to wrap. The nflbets smoke holds the same on the page and the Elo picks, and
+`smoke_live.js` section J the card, its image and Share link's text (fair, est. and none).
 
 No device keeps a list of its own (the owner's call: visitors come to see X's parlays), and on
 every device the builder's Save and lock is **Finish parlay**: it opens the parlay card
 (`nflbets/build/card.html`, `pc-` prefixed, its own closure), a window showing the parlay as a
-card (each leg and its price, the parlay's price, the stake and what it pays, the model's chance
-beside the price's, the week and its dates, the site's mark) with **Download image** (a PNG drawn
+card (each leg and its price, the parlay's price, the stake and what it pays, the book's fair chance
+first, then the model's (an Elo pick's, the Elo's) and the price's implied, or with no fair chance the
+model's and why, the same lines in the window, the image and Share link's text (`chanceLines`), the
+week and its dates, the site's mark) with **Download image** (a PNG drawn
 on a canvas at twice its size, `parlay-week6-3legs.png`; the share sheet too where the browser can
 share a file, which is how a phone saves it to Photos) and **Start over**. Beside them, **Open in
 DraftKings** (a real link, in a new tab) opens the parlay on DraftKings' betslip,

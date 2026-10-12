@@ -1,0 +1,68 @@
+{
+ "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job: the Parlay Builder's four suggested parlays under the default choices (All, every game still to kick off, the default Bet amount), taken from the published page on the payload just baked, keyed by season|week|kickoff wave (the earliest kickoff still to come at the run), rewritten while that kickoff is to come and frozen from it, so each entry is the panel as the job last saw it before that wave. A frozen entry is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. summary: per level, parlays graded won or lost, each parlay once however many waves showed it, won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen entries moved.",
+ "since": "2026-10-12",
+ "updated": "2026-10-12T07:10:33Z",
+ "summary": {
+  "tiers": {
+   "safe": {"label":"Safe","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+   "med": {"label":"Medium","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+   "aggr": {"label":"Aggressive","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0},
+   "xtrm": {"label":"Extreme","graded":0,"won":0,"lost":0,"push":0,"exp_fair":0,"fair_n":0,"exp_model":0,"units":0}
+  },
+  "pending": 0,
+  "repeats": 0,
+  "frozen_entries": 0,
+  "entries": 1
+ },
+ "entries": {
+  "2026|05|2026-10-13T00:15:00Z": {
+   "season": 2026,
+   "week": 5,
+   "kickoff": "2026-10-13T00:15:00Z",
+   "games": ["2026_05_BUF_LA"],
+   "baked_at": "2026-10-12T02:17+00:00",
+   "pool": {"pref":0,"thin":1,"mkt":2,"far":0},
+   "tiers": [
+    {
+     "id": "safe",
+     "label": "Safe",
+     "n": 2,
+     "floor": 0,
+     "legs": [
+      {"gid":"2026_05_BUF_LA","week":5,"pid":"team:BUF","team":"BUF","grp":"TEAM","stat":"ats","k":3,"side":"over","main":false,"price":100,"src":"real","name":"Bills","label":"To cover +3","p":0.5156,"fair":0.4783,"fair_est":false,"thin":true,"market":false},
+      {"gid":"2026_05_BUF_LA","week":5,"pid":"game","team":"BUF","grp":"TEAM","stat":"total","k":54.5,"side":"over","main":true,"price":-115,"src":"real","name":"Bills at Rams","label":"Over 54.5 points","p":0.5108,"fair":0.5108,"fair_est":false,"thin":false,"market":true}
+     ],
+     "p": 0.2634,
+     "fair": 0.2443,
+     "fair_est": false,
+     "dec": 3.35,
+     "likeliest": false,
+     "thin": 1,
+     "mkt": 1
+    },
+    {
+     "id": "med",
+     "label": "Medium",
+     "n": 3,
+     "floor": 0.25,
+     "why": "Only 2 legs on your picks, and no player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning."
+    },
+    {
+     "id": "aggr",
+     "label": "Aggressive",
+     "n": 4,
+     "floor": 0.12,
+     "why": "Only 2 legs on your picks, and no player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning."
+    },
+    {
+     "id": "xtrm",
+     "label": "Extreme",
+     "n": 5,
+     "floor": 0.05,
+     "why": "Only 2 legs on your picks, and no player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning."
+    }
+   ],
+   "taken_at": "2026-10-12T05:51:11Z"
+  }
+ }
+}
