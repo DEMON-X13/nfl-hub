@@ -772,7 +772,16 @@ setTimeout(async()=>{
             chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T0.legs.map(idOf))&&cardOf().querySelector('.pb-rule').textContent===r0,'New legs with every leg locked changed the level or its rule');
             const v=F('pbViewOf')(T.id); F('pbFill')(T.id,v); F('renderPb')();
             const x=F('pbShownTier')(T.id), rule=cardOf().querySelector('.pb-rule').textContent;
-            chk(!!x.allLocked&&JSON.stringify(x.legs.map(idOf).sort())===JSON.stringify(T0.legs.map(idOf).sort())&&/^your (locked pair|\d+ locked legs)$/.test(rule)&&cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`a level of locked legs alone is ruled "${rule}", or is not the locked legs, or offers New legs`); }
+            chk(!!x.allLocked&&JSON.stringify(x.legs.map(idOf).sort())===JSON.stringify(T0.legs.map(idOf).sort())&&/^the (pair|\d+ legs) you locked$/.test(rule)&&cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`a level of locked legs alone is ruled "${rule}", or is not the locked legs, or offers New legs`);
+            /* unlock one: the card still says how the parlay was chosen, and New legs is back */
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(x.legs[0])}"]`).click();
+            chk(cardOf().querySelector('.pb-rule').textContent===rule&&!cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`after an unlock the level of locked legs is ruled "${cardOf().querySelector('.pb-rule').textContent}", or New legs is still off`); }
+          /* a turn beside a lock, then the lock undone: the rule is still the one the parlay was chosen by */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); const L0=F('pbShownTier')(T.id).legs[0];
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(L0)}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+            const r1=cardOf().querySelector('.pb-rule').textContent;
+            if(F('pbShownTier')(T.id).legs){ cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(L0)}"]`).click();
+              chk(/ beside your lock/.test(r1)&&cardOf().querySelector('.pb-rule').textContent===r1,`a turn beside a lock is ruled "${r1}", and "${cardOf().querySelector('.pb-rule').textContent}" once the lock is undone`); } }
           /* a game kicking off is not a change of picks: the lock on a game still to come stays and the
              level is filled again around it, with no leg on the game under way; the lock on that one falls away */
           let kicked='no leg of the level on a later kickoff than another';
@@ -788,7 +797,16 @@ setTimeout(async()=>{
                 `a kickoff dropped the lock on a game still to come, kept the one on the game under way, or did not fill the level again around it: ${x.legs?x.legs.map(l=>l.name+' '+l.label).join(', '):x.why}`);
               if(x.legs) okTier(x,'filled again after a kickoff');
               w.Date.now=now0; F('renderPb')();
-              kicked=`a kickoff kept the lock on ${Ll.name} and dropped the one on ${Le.name}`; } }
+              /* New legs pressed in the half minute after a kickoff, before the page has redrawn: the
+                 panel is redrawn without the game and nothing is turned */
+              { const seen0=(w.eval(`PB_VIEW.t['${T.id}']`)||{seen:[]}).seen.length;
+                w.Date.now=()=>now0.call(w.Date)+off; chk(!!w.eval('pbStale()'),'the panel drawn before a kickoff is not stale after it');
+                cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+                const on1=F('pbGames')().map(g=>g.id), v1=w.eval(`PB_VIEW.t['${T.id}']`)||{seen:[]};
+                chk(v1.seen.length===seen0&&w.eval('PB_SHOWN')===on1.join()&&!w.eval('pbStale()')&&F('getPbTiers')().tiers.every(t=>!t.legs||F('pbShownTier')(t.id).legs.every(l=>on1.includes(l.gid))),
+                  `New legs pressed on a panel drawn before a kickoff turned the level (${seen0} seen, now ${v1.seen.length}) or did not redraw it without the game`);
+                w.Date.now=now0; F('renderPb')(); }
+              kicked=`a kickoff kept the lock on ${Ll.name} and dropped the one on ${Le.name}, and a click before the redraw only redrew`; } }
           w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
           /* a small pick runs out and starts over: Teams only on three games, Safe turned until no
              unshown leg is left, every turn a valid pair */

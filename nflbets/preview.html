@@ -1759,7 +1759,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v96 \u00b7 2026-10-11';
+const APP_BUILD='app v97 \u00b7 2026-10-12';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -4043,13 +4043,15 @@ function pbFill(id,v){
   /* a locked leg whose game has kicked off falls away */
   v.lock=v.lock.filter(l=>games.some(g=>g.id===l.gid));
   v.wrapped=false;
-  if(v.lock.length>=spec[2]){ v.tier={...head,...pbExact(v.lock.slice(0,spec[2])),allLocked:true}; return; }
+  /* what the level is chosen from, kept on it (ctx) so its card says so whatever is locked later */
+  const ctx=()=>({nL:v.lock.length,left:pbLeft(v),locked:v.lock.map(pbId)});
+  if(v.lock.length>=spec[2]){ v.tier={...head,...pbExact(v.lock.slice(0,spec[2])),allLocked:true,ctx:ctx()}; return; }
   const locked=new Set(v.lock.map(pbId));
   const less=who=>{ const ok=c=>!locked.has(pbId(c))&&!who.has(pbWho(c)); return {pref:pool.pref.filter(ok),thin:pool.thin.filter(ok),mkt:(pool.mkt||[]).filter(ok)}; };
   let x=pbTier(spec,less(new Set(v.seen)),new Map(),v.lock);
   /* nothing unshown is left: start over from the whole list, the locks kept */
   if(!x&&v.seen.length){ v.seen=[]; v.wrapped=true; x=pbTier(spec,less(new Set()),new Map(),v.lock); }
-  v.tier=x?{...head,...x}:{...head,why:base.why||(v.lock.length?'No parlay of this size fits beside the legs you locked: unlock one.':'No parlay of this size on your picks.')};
+  v.tier=x?{...head,...x,ctx:ctx()}:{...head,why:base.why||(v.lock.length?'No parlay of this size fits beside the legs you locked: unlock one.':'No parlay of this size on your picks.')};
 }
 /* a game kicked off (the tiers moved, the picks did not): the locks on it fall away, and a level
    that showed a leg on it or lost a lock is filled again around the locks left, the legs it has
@@ -4192,19 +4194,22 @@ function pbMktLine(legs,why){
 /* a turned level (v, the visitor's view of it) is chosen from the legs the card has not shown
    (left, until it starts over) beside the visitor's locks, so it says so: in its rule, and in why
    its totals are there (or that the visitor locked them). The panel's own levels read as before */
-const pbBeside=v=>{ const nL=v.lock.length; return nL?` beside your lock${nL>1?'s':''}`:''; };
+const pbBeside=nL=>nL?` beside your lock${nL>1?'s':''}`:'';
 const pbLeft=v=>!v.wrapped&&v.seen.length>0;
+/* what a turned level was chosen from: the ctx pbFill kept on it, else the view as it stands */
+const pbCtx=(t,v)=>t.ctx||{nL:v.lock.length,left:pbLeft(v),locked:v.lock.map(pbId)};
 function pbRuleOf(t,v){
   const n=t.legs.length, pct=Math.round((t.floor||0)*100);
   if(!t.turned||!v) return t.likeliest?`the likeliest ${n} legs`:t.floor?`best return that lands ${pct}%+`:'the likeliest pair';
-  if(t.allLocked) return n===2?'your locked pair':`your ${n} locked legs`;
-  const mod=(pbLeft(v)?' left':'')+pbBeside(v);
+  if(t.allLocked) return n===2?'the pair you locked':`the ${n} legs you locked`;
+  const c=pbCtx(t,v), mod=(c.left?' left':'')+pbBeside(c.nL);
   return t.likeliest||!t.floor?`the likeliest ${n===2?'pair':n+' legs'}${mod}`:`best return${mod} that lands ${pct}%+`;
 }
 function pbMktWhy(t,v){
   if(!t.turned||!v) return '';
-  if(!t.legs.some(l=>l.market&&!v.lock.some(x=>pbId(x)===pbId(l)))) return t.mkt===1?'you locked it':'you locked them';
-  return `the legs with an edge ${pbLeft(v)?'your picks have left for this card':'on your picks'} do not make a parlay of this size${pbBeside(v)}`;
+  const c=pbCtx(t,v);
+  if(!t.legs.some(l=>l.market&&!c.locked.includes(pbId(l)))) return t.mkt===1?'you locked it':'you locked them';
+  return `the legs with an edge ${c.left?'your picks have left for this card':'on your picks'} do not make a parlay of this size${pbBeside(c.nL)}`;
 }
 function pbThinLine(legs,form){
   const th=legs.filter(l=>l.thin), n=th.length, tm=th.filter(isGameLeg).length, p=n-tm, s=k=>k===1?'':'s';
@@ -4301,16 +4306,23 @@ function wirePb(){
     u.off=b.dataset.pbGames==='none'?ids:u.off.filter(x=>!ids.includes(x)); save(); redraw(`[data-pb-games="${b.dataset.pbGames}"]`); }));
   const det=el.querySelector('details.pb-games');
   if(det) det.addEventListener('toggle',()=>{ const u=pbUi(); if(u.gx!==det.open){ u.gx=det.open; save(); } });
-  el.querySelectorAll('[data-pb-add]').forEach(b=>b.addEventListener('click',()=>{
-    const t=pbShownTier(b.dataset.pbAdd); if(t&&t.legs) pbPut(t.legs,`the ${t.label} ${t.legs.length}-leg parlay`); }));
+  /* a game kicked off since the panel was drawn (pbWatch looks every half minute): the click redraws
+     the builder and the panel and does nothing else, so it never acts on a level nobody has seen */
+  const drawn=fn=>e=>{ if(pbStale()){ renderParlay(); return; } fn(e); };
+  el.querySelectorAll('[data-pb-add]').forEach(b=>b.addEventListener('click',drawn(()=>{
+    const t=pbShownTier(b.dataset.pbAdd); if(t&&t.legs) pbPut(t.legs,`the ${t.label} ${t.legs.length}-leg parlay`); })));
   /* a lock, New legs and Reset redraw the panel and keep the focus where it was */
-  el.querySelectorAll('[data-pb-lock]').forEach(b=>b.addEventListener('click',()=>{
-    const s=b.dataset.pbLock, i=s.indexOf('|'); pbLockToggle(s.slice(0,i),s.slice(i+1)); redraw(`[data-pb-lock="${s}"]`); }));
-  el.querySelectorAll('[data-pb-turn]').forEach(b=>b.addEventListener('click',()=>{
-    pbTurn(b.dataset.pbTurn); redraw(`[data-pb-turn="${b.dataset.pbTurn}"]`); }));
-  el.querySelectorAll('[data-pb-reset]').forEach(b=>b.addEventListener('click',()=>{
-    const id=b.dataset.pbReset; pbViewOf(id); delete PB_VIEW.t[id]; redraw(`[data-pb-turn="${id}"]`); }));
+  el.querySelectorAll('[data-pb-lock]').forEach(b=>b.addEventListener('click',drawn(()=>{
+    const s=b.dataset.pbLock, i=s.indexOf('|'); pbLockToggle(s.slice(0,i),s.slice(i+1)); redraw(`[data-pb-lock="${s}"]`); })));
+  el.querySelectorAll('[data-pb-turn]').forEach(b=>b.addEventListener('click',drawn(()=>{
+    pbTurn(b.dataset.pbTurn); redraw(`[data-pb-turn="${b.dataset.pbTurn}"]`); })));
+  el.querySelectorAll('[data-pb-reset]').forEach(b=>b.addEventListener('click',drawn(()=>{
+    const id=b.dataset.pbReset; pbViewOf(id); delete PB_VIEW.t[id]; redraw(`[data-pb-turn="${id}"]`); })));
 }
+/* the panel on the screen was drawn before a game kicked off: what it shows is not what the tiers
+   are now (the card's Finish asks it too) */
+function pbStale(){ try{ return PB_SHOWN!=null&&pbGames().map(g=>g.id).join()!==PB_SHOWN; }catch(e){ return false; } }
+window.pbStale=pbStale;
 /* a game that kicks off while the page is open leaves the list and every tier: the page looks
    every half minute, and redraws the builder (which drops a started leg) and the panel */
 function pbWatch(){
@@ -4754,7 +4766,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='fc43a36';
+const PAGE_HASH='2cb2f6f';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -5609,6 +5621,8 @@ window.PARLAY_CARD=(function(){
   /* a suggested tier's Finish (data-pc-finish="pb|med", "elo|elo3"): the panel draws the button
      wherever this card is on the page, and one listener opens the card for whichever is pressed */
   function finishFrom(btn){
+    /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */
+    if(typeof window.pbStale==='function'&&window.pbStale()){ if(typeof window.renderParlay==='function') window.renderParlay(); return false; }
     const [kind,id]=String(btn.getAttribute('data-pc-finish')||'').split('|');
     const m=fromTier(kind,id); if(m) open(m,btn); return !!m;
   }

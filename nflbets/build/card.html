@@ -517,6 +517,8 @@ window.PARLAY_CARD=(function(){
   /* a suggested tier's Finish (data-pc-finish="pb|med", "elo|elo3"): the panel draws the button
      wherever this card is on the page, and one listener opens the card for whichever is pressed */
   function finishFrom(btn){
+    /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */
+    if(typeof window.pbStale==='function'&&window.pbStale()){ if(typeof window.renderParlay==='function') window.renderParlay(); return false; }
     const [kind,id]=String(btn.getAttribute('data-pc-finish')||'').split('|');
     const m=fromTier(kind,id); if(m) open(m,btn); return !!m;
   }
