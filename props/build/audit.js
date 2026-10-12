@@ -1,9 +1,9 @@
 const {JSDOM}=require('jsdom'); const fs=require('fs'); const Papa=require('papaparse');
-const errs=[]; let mem=null;
+const errs=[]; let mem=null; const calls=[];
 const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
  /* a real origin, so window.localStorage exists: the app reads the betting model's key and
     writes the live page's watchlist, and neither can be exercised on about:blank */
- {url:'https://demon-x13.github.io/nfl-hub/props/',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=u=>String(u).indexOf('payload.json')>=0
+ {url:'https://demon-x13.github.io/nfl-hub/props/',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=(u,o)=>(calls.push({url:String(u),cache:o&&o.cache||null}),String(u).indexOf('payload.json')>=0)
    ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync('../data/payload.json','utf8'))})
    : Promise.reject(new Error('x'));   /* the payload is fetched now, not baked in */
   w.confirm=()=>true;w.alert=()=>{};w.scrollTo=()=>{};w.URL.createObjectURL=()=>'blob:x';
@@ -1289,6 +1289,45 @@ setTimeout(async()=>{
     S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; S.stake=was; F('save')(); F('renderParlay')();
     chk(S.stake===was,'the stake did not go back after the amount checks');
     console.log(`P. the amount bet: one Bet amount box over the suggested parlays and the builder's stake, ${F('pbGames')().length?'every tier paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
+
+  /* ---- P2. the suggestions record at the panel's foot: props/data/suggest_ledger.json, beside the
+     payload, read once a load with no-store and kept outside S; nothing drawn while there is no file
+     (this audit's page has none) or a file that is not a ledger. On a made-up ledger, per level: the
+     parlays graded won or lost (a push and a pending parlay counted apart, an entry still to come and
+     a level with no parlay not at all), won, the wins expected by the fair chance (marked * where a
+     graded parlay had none) and by the model's, and the units on $1, each worked out here ---- */
+  { d.querySelector('#tabs button[data-tab="parlay"]').click();
+    const rec=()=>d.getElementById('pbRec'), txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
+    const ask=calls.filter(c=>/suggest_ledger\.json/.test(c.url));
+    chk(ask.length===1&&/^\.\.\/data\/suggest_ledger\.json\?t=\d+$/.test(ask[0].url)&&ask[0].cache==='no-store','the page did not ask for the suggestions record beside its payload, once, with no-store: '+JSON.stringify(ask));
+    chk(!!rec()&&rec().hidden&&!txt(rec()),'with no record file the panel draws a record anyway: '+txt(rec()));
+    const fetch0=w.fetch, load=async body=>{ w.fetch=()=>Promise.resolve(body===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(body))});
+      try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; } F('renderPb')(); };
+    const leg={gid:'g',week:5,pid:'p',stat:'receptions',k:3.5,side:'over',main:true,price:-110,src:'real'};
+    const T=(id,n,p,fair,dec)=>({id,n,legs:Array.from({length:n},()=>({...leg})),p,fair,dec,label:{safe:'Safe',med:'Medium',aggr:'Aggressive',xtrm:'Extreme'}[id]});
+    const G=(result,n,payout)=>({result,legs:Array.from({length:n},()=>result==='lost'?'loss':result==='push'?'void':result==='pending'?null:'win'),...(payout!=null?{payout}:{})});
+    const L={how:'made up',since:'2026-10-12',entries:{
+      '2026|05|2026-10-11T17:00:00Z':{kickoff:'2026-10-11T17:00:00Z',tiers:[T('safe',2,0.41,0.32,3.35),T('med',3,0.30,0.21,5.1),T('aggr',4,0.15,0.1,9),T('xtrm',5,0.07,0.05,20)],
+        grade:{safe:G('won',2,3.35),med:G('lost',3,0),aggr:G('push',4,1),xtrm:G('pending',5)}},
+      '2026|05|2026-10-11T20:25:00Z':{kickoff:'2026-10-11T20:25:00Z',tiers:[T('safe',2,0.52,0.44,2.6),T('med',3,0.28,null,6.2),T('aggr',4,0.13,0.09,12),T('xtrm',5,0.06,0.04,30)],
+        grade:{safe:G('lost',2,0),med:G('won',3,6.2),aggr:G('won',4,12),xtrm:G('lost',5,0)}},
+      '2026|05|2026-10-12T00:20:00Z':{kickoff:'2026-10-12T00:20:00Z',tiers:[{id:'safe',n:2,why:'made up'},T('med',3,0.5,0.5,4)],grade:{safe:G('won',2,9)}},
+      '2026|06|2026-10-16T00:15:00Z':{kickoff:'2026-10-16T00:15:00Z',tiers:[T('safe',2,0.6,0.5,3)]}}};
+    const want={safe:['Safe','2','1','0.8','0.9','+1.35','up'],med:['Medium','2','1','0.2*','0.6','+4.20','up'],aggr:['Aggressive','1','1','0.1','0.1','+11.00','up'],xtrm:['Extreme','1','0','0.0','0.1','\u22121.00','down']};
+    await load(L);
+    const row=id=>d.querySelector(`#pbRec tr[data-pb-rec="${id}"]`), cells=id=>row(id)?[...row(id).children].map(c=>c.textContent.trim()):[];
+    chk(!!rec()&&!rec().hidden&&/^Suggestions record/.test(txt(rec()))&&!!d.querySelector('#pbCard #pbRec'),'a made-up record is not drawn in the panel, headed Suggestions record');
+    chk(/starts on 12 October 2026, Monday night’s Bills at Rams the first/.test(txt(rec()))&&/default choices \(All, every game still to come, \$20\)/.test(txt(rec()))&&/frozen at kickoff/.test(txt(rec())),'the record does not say it starts on 12 October 2026 with Bills at Rams, each entry the default panel frozen at kickoff: '+txt(rec()));
+    chk([...d.querySelectorAll('#pbRec thead th')].map(c=>c.textContent).join('|')==='Level|Graded|Won|Expected, fair chance|Expected, model|Units on $1','the record\'s columns are not level, graded, won, expected by the fair chance and by the model, units on $1');
+    for(const id of ['safe','med','aggr','xtrm']){ const c=cells(id), u=row(id)&&row(id).lastElementChild;
+      chk(c.join('|')===want[id].slice(0,6).join('|')&&!!u&&u.classList.contains(want[id][6]),`the record's ${id} row reads ${c.join(' | ')}, not ${want[id].slice(0,6).join(' | ')}`); }
+    chk(/1 parlay is waiting on its games or stats/.test(txt(rec()))&&/1 push \(every leg a push or a void, the stake back\) is counted apart/.test(txt(rec()))&&/\* Not every parlay graded had a fair chance/.test(txt(rec())),'the record does not count its pending parlay and its push apart, or mark the sum a missing fair chance left short: '+txt(rec()));
+    w.eval('store.set(S)'); chk(!/Suggestions record|made up|suggest_ledger/.test(String(mem))&&!('rec' in S),'the record was saved with the visitor\'s state');
+    await load({how:'made up',entries:{}});
+    chk(!!rec()&&!rec().hidden&&/No suggested parlay has been graded yet/.test(txt(rec()))&&!d.querySelector('#pbRec table'),'a record with nothing graded does not say so: '+txt(rec()));
+    for(const bad of [404,[],{how:'x'},{entries:[]},'junk']){ await load(bad);
+      chk(!!rec()&&rec().hidden&&!txt(rec()),`a record file that is not one (${JSON.stringify(bad)}) drew something: `+txt(rec())); }
+    console.log('P2. the suggestions record: asked for once with no-store, nothing drawn without a file; a made-up record drawn level by level, pending and pushes apart, an empty one says so, a junk one draws nothing'); }
 
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;

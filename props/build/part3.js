@@ -846,7 +846,7 @@ async function boot(){
   if(!window.NO_BAKED){ try{ baked=applyBaked(); }catch(e){ console.error('built-in data failed to apply',e); setTimeout(()=>log('Built-in data could not be applied: '+(e&&e.message||e)+'. The upload buttons still work.','err'),0); } }
   if(baked&&(baked.stats.length||baked.prices||baked.inj||baked.sched)) save();
   { const bt=$('buildTag'); if(bt) bt.textContent=`${MODEL_BUILD} \u00b7 ${APP_BUILD}`; }
-  renderAll(); pbWatch();
+  renderAll(); pbWatch(); pbRecLoad();
   $('rebuildNote').hidden=!rebuilt;
   if(rebuilt){ $('rebuildNote').textContent=rebuilt; setTimeout(()=>log(rebuilt,'warn'),0); }
   if(baked&&(baked.stats.length||baked.prices||baked.inj)){
@@ -1535,6 +1535,55 @@ function pbRefill(id,r){
   if(!v.lock.length){ delete PB_VIEW.t[id]; return; }
   pbFill(id,v);
 }
+/* ---------- the suggestions record (props/data/suggest_ledger.json) ----------
+   The props job's record of this panel (props/build/suggest_ledger.js): its four levels on the default
+   choices (All, every game still to come, the default Bet amount), as the job last saw them before each
+   wave of kickoffs, frozen at that kickoff and graded as a book settles them. Read beside the payload
+   with no-store on every load, and kept outside S so it is never saved; a file that is not there, or
+   not a ledger, draws nothing. Drawn at the panel's foot from the entries' own grades (the summary the
+   file carries is for people reading it): per level the parlays graded won or lost (a push, the stake
+   back, is counted apart), won, the wins expected by the book's fair chance and by the model's (the
+   sums of the chances the panel showed; a parlay a push shortened counts on its full chance), and the
+   units on $1 a parlay. */
+let PB_REC=null;
+const PB_REC_URL=DATA_URL.replace(/payload\.json$/,'suggest_ledger.json');
+async function pbRecLoad(){
+  let L=null;
+  try{ const r=await fetch(PB_REC_URL+'?t='+Date.now(),{cache:'no-store'}); if(r.ok) L=await r.json(); }catch(e){ L=null; }
+  PB_REC=L&&typeof L==='object'&&L.entries&&typeof L.entries==='object'&&!Array.isArray(L.entries)?L:null;
+  const el=$('pbRec'); if(el) el.outerHTML=pbRecHtml();
+}
+window.pbRecLoad=pbRecLoad;
+function pbRecSum(L){
+  const out=PB_TIERS.map(([id,label])=>({id,label,graded:0,won:0,push:0,fair:0,fairN:0,model:0,units:0}));
+  let pending=0, entries=0;
+  for(const e of Object.values((L&&L.entries)||{})){ if(!e||!Array.isArray(e.tiers)) continue; entries++;
+    for(const t of e.tiers){ const g=e.grade&&e.grade[t&&t.id], s=out.find(x=>t&&x.id===t.id); if(!g||!s||!Array.isArray(t.legs)) continue;
+      if(g.result==='pending'){ pending++; continue; }
+      if(g.result==='push'){ s.push++; continue; }
+      if(g.result!=='won'&&g.result!=='lost') continue;
+      s.graded++; if(g.result==='won') s.won++;
+      s.model+=isFinite(+t.p)?+t.p:0; if(t.fair!=null&&isFinite(+t.fair)){ s.fair+=+t.fair; s.fairN++; }
+      s.units+=(g.result==='won'&&isFinite(+g.payout)?+g.payout:0)-1; } }
+  return {tiers:out,pending,entries};
+}
+function pbRecHtml(){
+  if(!PB_REC) return '<div id="pbRec" class="pb-rec" hidden></div>';
+  const R=pbRecSum(PB_REC), any=R.tiers.some(s=>s.graded), push=R.tiers.reduce((a,s)=>a+s.push,0), noFair=R.tiers.some(s=>s.fairN<s.graded);
+  const f1=v=>v.toFixed(1), un=v=>(v>0.0005?'+':v<-0.0005?'\u2212':'')+Math.abs(v).toFixed(2);
+  const rows=R.tiers.map(s=>`<tr data-pb-rec="${s.id}"><th scope="row">${esc(s.label)}</th><td class="num">${s.graded}</td><td class="num">${s.won}</td>`
+    +`<td class="num">${s.graded?f1(s.fair)+(s.fairN<s.graded?'*':''):'\u2013'}</td><td class="num">${s.graded?f1(s.model):'\u2013'}</td>`
+    +`<td class="num${s.units>0.0005?' up':s.units<-0.0005?' down':''}">${s.graded||s.push?un(s.units):'\u2013'}</td></tr>`).join('');
+  const notes=[];
+  if(R.pending) notes.push(`${R.pending} parlay${R.pending===1?' is':'s are'} waiting on ${R.pending===1?'its':'their'} games or stats.`);
+  if(push) notes.push(`${push} push${push===1?'':'es'} (every leg a push or a void, the stake back) ${push===1?'is':'are'} counted apart.`);
+  if(noFair) notes.push('* Not every parlay graded had a fair chance (a leg with no book price): those are left out of that sum.');
+  return `<div id="pbRec" class="pb-rec"><h3>Suggestions record</h3>
+    <p class="muted">It starts on 12 October 2026, Monday night’s Bills at Rams the first: each entry is this panel on its default choices (All, every game still to come, ${pbAmt(STAKE_DEFAULT)}) as the job last saw it before a wave of kickoffs, frozen at kickoff and graded as a book settles it (a push or a void leg drops out). Expected is the sum of the chances shown, by the book’s fair chance and by the model’s; units are on $1 a parlay.</p>
+    ${any?`<div class="pb-rec-wrap"><table><thead><tr><th scope="col">Level</th><th scope="col" class="num">Graded</th><th scope="col" class="num">Won</th><th scope="col" class="num">Expected, fair chance</th><th scope="col" class="num">Expected, model</th><th scope="col" class="num">Units on $1</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      :`<p class="pb-rec-none">No suggested parlay has been graded yet.</p>`}
+    ${notes.map(t=>`<p class="muted pb-rec-note">${t}</p>`).join('')}</div>`;
+}
 /* the tiers for the picks as they stand, from the cache when nothing they stand on has moved */
 function getPbTiers(){
   const u=pbUi(), games=pbGames();
@@ -1718,7 +1767,7 @@ function pbPanel(){
   const u=pbUi(), w=currentWeek(), games=pbGames(), mix=pbMix(u);
   const head=`<div class="pb-hd"><h2>Suggested parlays</h2><span class="pill">week ${w}</span></div>`;
   if(!games.length) return `<div class="card pb" id="pbCard">${head}
-    <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p></div>`;
+    <p class="pb-none">${seasonOver()?`The ${SEASON} regular season is over: no game is left to build a parlay from.`:`Every week ${w} game has kicked off, so there is nothing left to build from. Week ${w+1} opens once they are final.`}</p>${pbRecHtml()}</div>`;
   const r=pbViewSync(), nOn=games.filter(g=>!u.off.includes(g.id)).length, open=u.gx!=null?u.gx:pbWide(), form=formSig()!=='';
   const seg=`<span class="pb-seg" role="group" aria-label="What to build from">${PB_MIXES.map(([k,l])=>`<button type="button" class="${mix===k?'on':''}" data-pb-mix="${k}" aria-pressed="${mix===k}">${l}</button>`).join('')}</span>`;
   const chips=PB_KINDS.map(([k,l,s])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}${s?` <small>${s}</small>`:''}</span></label>`).join('');
@@ -1745,7 +1794,7 @@ function pbPanel(){
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t.why?t:pbShownTier(t.id),{ctl:!t.why})).join('')}</div>
     <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that the model says land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. Each level leads with the book’s fair chance, DraftKings’ prices with the margin taken out (est. where a leg is priced on one side only), with the model’s own beside it: the levels are chosen on the model’s chances, the floors included, and those have run higher than the book’s this season, so a leg the model rates ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance is left out.</p>
-    <div id="pbElo" class="pb-elo"></div></div>`;
+    <div id="pbElo" class="pb-elo"></div>${pbRecHtml()}</div>`;
 }
 function renderPb(){
   const el=$('pbPanel'); if(!el||!S||!S.sched) return;

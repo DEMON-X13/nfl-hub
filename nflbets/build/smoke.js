@@ -45,6 +45,8 @@ if (SEASON_OVER) {
 const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8');
 const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
+/* the suggestions record (props/build/suggest_ledger.js), as the page reads it beside the payload; none yet is a 404 */
+const LEDGER_REAL = (() => { try { return fs.readFileSync(path.join(ROOT, 'props', 'data', 'suggest_ledger.json'), 'utf8'); } catch (e) { return null; } })();
 /* the X Bet Log's file, as every device reads it */
 const XBETS_REAL = fs.readFileSync(path.join(ROOT, 'liveparlays', 'xbets.json'), 'utf8');
 /* the prop model's storage key, part2's own (the build hands it to the page) */
@@ -280,7 +282,7 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
 /* seed: what the browser holds before the page opens; file: the parlay file it reads in place of
    liveparlays/parlays.json; xbets: the X Bet Log's file in place of liveparlays/xbets.json (404:
    it does not answer). Every request is in `calls` with its method and cache mode. */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null } = {}) {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
@@ -294,6 +296,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         w.fetch = (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase();
           fetched.push(s.replace(/\?.*$/, '')); urls.push(s); calls.push({ url: s, method: m, cache: o && o.cache || null }); ALL_CALLS.push(m + ' ' + s);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); return Promise.reject(new TypeError('Failed to fetch')); }
+          if (s.includes('suggest_ledger.json')) { const t = ledger === 404 ? null : ledger ? JSON.stringify(ledger) : LEDGER_REAL;
+            return Promise.resolve(t == null ? { ok: false, status: 404 } : { ok: true, status: 200, json: async () => JSON.parse(t) }); }
           if (s.includes('state.json')) return noState
             ? Promise.resolve({ ok: false, status: 404 })
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
@@ -1506,6 +1510,47 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       chk(R.w.eval('S').stake === want && (!games || (!!box && box.value === shown)) && !/NaN/.test(txt(P)),
         `a saved amount of ${JSON.stringify(saved)} came back as ${JSON.stringify(R.w.eval('S').stake)}, the Bet amount box showing ${box ? JSON.stringify(box.value) : 'nothing'}, not ${shown}`); }
     R.w.close(); }
+
+  /* ---- the suggestions record at the foot of the Parlay Builder's panel: props/data/suggest_ledger.json,
+     asked for beside the payload once a load with no-store, the real file drawn as it stands, a made-up
+     one level by level and none at all drawing nothing. The numbers are worked out here from the
+     entries' grades: per level the parlays graded won or lost (a push and a pending parlay apart), won,
+     the wins expected by the fair chance and by the model's, the units on $1 ---- */
+  { const recOf = L => { const o = {}; for (const id of ['safe', 'med', 'aggr', 'xtrm']) o[id] = { g: 0, w: 0, f: 0, fn: 0, m: 0, u: 0, push: 0 };
+      for (const e of Object.values(L.entries || {})) for (const t of e.tiers || []) { const g = (e.grade || {})[t.id], r = o[t.id]; if (!g || !r || !t.legs) continue;
+        if (g.result === 'push') { r.push++; continue; } if (g.result !== 'won' && g.result !== 'lost') continue;
+        r.g++; if (g.result === 'won') r.w++; r.m += t.p; if (t.fair != null) { r.f += t.fair; r.fn++; } r.u += (g.result === 'won' ? g.payout : 0) - 1; }
+      return o; };
+    const rowsWant = L => { const o = recOf(L), lab = { safe: 'Safe', med: 'Medium', aggr: 'Aggressive', xtrm: 'Extreme' };
+      return Object.entries(o).map(([id, r]) => [lab[id], String(r.g), String(r.w), r.g ? r.f.toFixed(1) + (r.fn < r.g ? '*' : '') : '\u2013', r.g ? r.m.toFixed(1) : '\u2013',
+        r.g || r.push ? (r.u > 0.0005 ? '+' : r.u < -0.0005 ? '\u2212' : '') + Math.abs(r.u).toFixed(2) : '\u2013'].join('|')).join(' / '); };
+    const rowsShown = D => [...D.querySelectorAll('#pbRec tbody tr')].map(tr => [...tr.children].map(c => c.textContent.trim()).join('|')).join(' / ');
+    const ask = calls.filter(c => /suggest_ledger\.json/.test(c.url));
+    chk(ask.length === 1 && /^\.\.\/props\/data\/suggest_ledger\.json\?t=\d+$/.test(ask[0].url) && ask[0].method === 'GET' && ask[0].cache === 'no-store',
+      'the page did not ask for the suggestions record beside the payload, once, with no-store: ' + JSON.stringify(ask));
+    { const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay'); await wait(300);
+      const el = R.d.getElementById('pbRec'), real = LEDGER_REAL ? JSON.parse(LEDGER_REAL) : null;
+      chk(!!el && !!R.d.querySelector('#pbCard #pbRec') && (real ? !el.hidden && /^Suggestions record/.test(txt(el)) && /starts on 12 October 2026/.test(txt(el)) : el.hidden),
+        'the real suggestions record is not drawn at the foot of the panel: ' + txt(el));
+      if (real) { const any = Object.values(recOf(real)).some(r => r.g);
+        chk(any ? rowsShown(R.d) === rowsWant(real) : /No suggested parlay has been graded yet/.test(txt(el)), `the real record reads ${rowsShown(R.d) || txt(el)}, not ${rowsWant(real)}`); }
+      chk(!R.timedOut && R.errs.length === 0 && !/NaN|undefined/.test(txt(el)), 'the page threw, or the record reads NaN: ' + R.errs.join('; '));
+      R.w.close(); }
+    { const T = (id, n, p, fair, dec) => ({ id, n, p, fair, dec, legs: Array.from({ length: n }, () => ({ gid: 'g', week: 5, pid: 'p', stat: 'receptions', k: 3.5, side: 'over', main: true, price: -110, src: 'real' })) });
+      const G = (result, n, payout) => ({ result, legs: Array(n).fill(result === 'lost' ? 'loss' : result === 'push' ? 'void' : result === 'pending' ? null : 'win'), ...(payout != null ? { payout } : {}) });
+      const FIX = { how: 'the smoke\'s own', since: '2026-10-12', entries: {
+        '2026|05|2026-10-11T13:30:00Z': { kickoff: '2026-10-11T13:30:00Z', tiers: [T('safe', 2, 0.47, 0.36, 2.9), T('med', 3, 0.33, 0.24, 5.6), T('aggr', 4, 0.16, 0.11, 10.4), T('xtrm', 5, 0.07, 0.05, 26)],
+          grade: { safe: G('won', 2, 2.9), med: G('won', 3, 5.6), aggr: G('lost', 4, 0), xtrm: G('push', 5, 1) } },
+        '2026|05|2026-10-11T17:00:00Z': { kickoff: '2026-10-11T17:00:00Z', tiers: [T('safe', 2, 0.55, 0.41, 2.4), T('med', 3, 0.29, null, 6), T('aggr', 4, 0.14, 0.1, 11), T('xtrm', 5, 0.06, 0.04, 31)],
+          grade: { safe: G('lost', 2, 0), med: G('lost', 3, 0), aggr: G('pending', 4), xtrm: G('won', 5, 31) } } } };
+      const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { ledger: FIX }); await wait(300);
+      chk(rowsShown(R.d) === rowsWant(FIX) && rowsShown(R.d) === 'Safe|2|1|0.8|1.0|+0.90 / Medium|2|1|0.2*|0.6|+3.60 / Aggressive|1|0|0.1|0.2|\u22121.00 / Extreme|1|1|0.0|0.1|+30.00',
+        `a made-up record reads ${rowsShown(R.d)}, not ${rowsWant(FIX)}`);
+      chk(/1 parlay is waiting on its games or stats/.test(txt(R.d.getElementById('pbRec'))) && /1 push/.test(txt(R.d.getElementById('pbRec'))), 'the made-up record does not count its pending parlay and its push apart');
+      R.w.close();
+      const N = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { ledger: 404 }); await wait(300);
+      chk(!!N.d.getElementById('pbRec') && N.d.getElementById('pbRec').hidden && !txt(N.d.getElementById('pbRec')), 'with no record file the panel draws one anyway');
+      N.w.close(); } }
 
   /* ---- the X Bet Log is the file: the three weeks carried over from the retired store ($100
      deposited; the balance 98.71 after week 1, 102.37 after week 3, week 2 a week off, 123.39 after

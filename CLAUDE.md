@@ -51,6 +51,9 @@ at the next refresh:
 - `nhl/state.json`, `nhl/data/teams.json`, `nhl/data/box_*.jsonl`, `nhl/data/injuries.json`, `nhl/data/starters.json`, `nhl/data/players.json`, and `nhl/data/season_<year>.json` (written once, by the first run of the next season, from the last state of the finished one)
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
+- `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: the suggested
+  parlays frozen at each wave's kickoff and graded after, so a hand edit there rewrites the record and
+  the script's guard refuses it)
 - `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
@@ -218,6 +221,33 @@ is placed by the rule his prices are (`pool.match`, within the game); a name it 
 defence's touchdown and a key two book names would give two ids are left out. Only ids and the read
 times: the parlay card builds the links. `python3 test_dk_links.py` holds it to the real week-5 file and to its cases; at a
 rollover last season's file goes to `data/archive/` with its week's price files.
+
+Once the audit is clean, `weekly.py` runs the **suggestions record**, `node suggest_ledger.js` (the third
+change after the review of Sunday 11 October 2026, the owner's call): the Parlay Builder's four suggested
+parlays on its default choices (All, every game still to come, the default Bet amount), taken from the
+published page itself (`nflbets/index.html` booted in jsdom on the payload just baked, with `elo/data`
+beside it, since market + form decides which player legs qualify, and the window's clock at the run's
+time) by the page's own `getPbTiers`, into `props/data/suggest_ledger.json`, which the workflow commits
+with the rest of `props/data`. An entry is keyed `season|week|kickoff wave`, the wave being the earliest
+kickoff among the games still to come at the run: rewritten by any run while that kickoff is to come and
+the panel has changed, frozen from it and never changed again, so each is the panel as the job last saw
+it before that wave (a wave no run landed before has none; an entry not frozen that is no longer the wave
+is dropped; with no game to come nothing is taken). It keeps each level's legs, its model chance, fair
+chance and decimal price, or why it is empty. A frozen entry is graded by the app's own `settleLeg` once
+every leg has settled, as a book settles it: a leg lost loses; a push or void drops out and the rest are
+paid at `parlayDec` on the legs left; every leg a push or void is a push, the stake back; pending while a
+game or its stats are out; a grade once made is replaced only by a complete one. The `summary` gives per
+level the parlays graded won or lost, won, the wins expected by the fair chance and by the model's, and
+the units on $1. Its guard holds the new ledger to the file the run started from and to the last
+commit's: a frozen entry gone or changed in anything but its grade, an entry taken at or after its
+kickoff or new and not this run's, a grade that does not follow its legs, a summary that does not follow
+from the entries: refused, the file put back (the last commit's where the copy on disk had moved), exit 1.
+It never refuses the run or turns it red: `weekly.py` logs the refusal in its report and publishes the
+payload. It spends no credit. `node test_suggest_ledger.js` (about twenty seconds) runs it on made-up
+weeks cut from the payload: taken, rewritten before the kickoff, unchanged and not written, frozen,
+graded against planted wins, losses, voids and pushes worked out from the raw rows, a grade kept that a
+payload can no longer settle, no game to come, and the guard end to end and on hand-made ledgers. A
+change to the script comes with a run of it.
 
 ## Betting: the loop
 
@@ -622,8 +652,16 @@ builder (exactly those legs into `S.parlay`, on the Bet amount) shows the same n
 the tier said; Finish opens the parlay card on the Bet amount. The search is a beam over a pairwise copula approximation, with only the
 finalists worked by the real sums; the tiers are cached on a signature of the choices and the data
 (`PB_CACHE`), and a game that kicks off while the page is open leaves the list and every tier
-(`pbWatch` looks every half minute). The Elo picks are the panel's last section. With no game to come
-the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
+(`pbWatch` looks every half minute). The Elo picks are the panel's last section, and under them, at
+its foot, the **Suggestions record** (app v99, `pbRecHtml`): the props job's `suggest_ledger.json` (see
+the Props loop), read beside the payload once a load with no-store and kept outside `S` (`PB_REC`), drawn
+from the entries' own grades (`pbRecSum`), per level the parlays graded won or lost, won, the wins
+expected by the book's fair chance and by the model's, and the units on $1, pending parlays and pushes
+counted apart, with a line saying it starts on 12 October 2026 (Monday night's Bills at Rams the first
+wave) and that each entry is the default panel frozen at kickoff; no file, or one that is not a ledger,
+draws nothing. It is drawn when no game is left too. The audit's P2 holds it on made-up ledgers (no-store,
+nothing without a file, each row worked out, an empty and a junk file), and the nflbets smoke on the
+real file and a made-up one. With no game to come the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
 its stake box) is gone; a game page's own High/Medium/Low suggestions and their side switch stay.
 
 **The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:

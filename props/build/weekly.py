@@ -47,7 +47,11 @@ What it does, in order:
      outcome the pulls read on a game still to come (dk_links_wk{W}.json -> dk, dk_ids below),
      which the parlay card turns into an Open in DraftKings link
   5. assembles the page and runs the audit, which checks the payload against the raw files
-  6. prints a REPORT block
+  6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
+     the Parlay Builder's suggested parlays on their default choices, taken from the published page
+     on the payload just baked, frozen at each wave's kickoff and graded after. It never refuses the
+     run or turns it red: a ledger it refuses is logged in the report and the last good one stays
+  7. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
 Anything else wrong is a problem that fails the run after the commit. For the price rows that
@@ -455,7 +459,35 @@ def main():
     say('  '+audit)
     if not clean:
         problems.append('AUDIT NOT CLEAN: '+audit+'\n'+'\n'.join(l for l in out.splitlines() if l.strip().startswith(('FAIL','ERROR')))[:3000])
+    else: suggestions_record()
     return finish(a)
+
+def suggestions_record():
+    """The suggestions record (suggest_ledger.js, whose docstring has the rules): the panel's four
+    suggested parlays on its default choices, taken from the published page on the payload this run
+    baked, rewritten while their wave's kickoff is to come, frozen from it and graded after, in
+    data/suggest_ledger.json, which the workflow commits with the rest of props/data. Only after a
+    clean audit, and never a reason to refuse the run or turn it red: the payload is what the site
+    needs, the record is a record of it. When the script refuses (its guard found a frozen entry moved,
+    the page or the Elo files would not load) it has already put the last good ledger back; that is
+    said in the report, and a file left unreadable by a run that died mid-write is put back here."""
+    path=os.path.join(DATA,'suggest_ledger.json')
+    try: before=open(path,'rb').read()
+    except OSError: before=None
+    rc,out=run(['node','suggest_ledger.js'],HERE,'suggestions record',soft=True)
+    last=[l.strip() for l in out.splitlines() if l.startswith('suggest ledger:')]
+    if rc==0:
+        say('  '+(last[-1] if last else 'suggest ledger: ran')); return
+    try:
+        json.load(open(path,encoding='utf-8'))
+    except (OSError,ValueError):
+        try:
+            if before is None:
+                if os.path.exists(path): os.remove(path)
+            else: open(path,'wb').write(before)
+        except OSError as e: print(f"could not put the suggestions record back: {e}")
+    fails=[l.strip() for l in out.splitlines() if l.startswith('FAIL')][:5]
+    say('  suggestions record not updated, the last good ledger stays (the publish goes on): '+(last[-1] if last else out.strip()[-300:])+''.join('\n    '+f for f in fails))
 
 # DraftKings' own ids for the outcomes a price pull read (oddsfetch.py writes them, with the betslip
 # links, to dk_links_wk{W}.json), baked into the payload as `dk` keyed the way the page names a leg,

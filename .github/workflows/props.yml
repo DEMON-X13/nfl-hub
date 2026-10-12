@@ -104,7 +104,10 @@ jobs:
       - name: Commit if anything changed
         # props/raw/feat.pkl changes only on the first run of a new season, when weekly.py adds the
         # season just finished to it (the baselines come from there); it is committed here so the
-        # next run finds it ready. A refused run never commits it.
+        # next run finds it ready. A refused run never commits it. props/data carries the
+        # suggestions record too, props/data/suggest_ledger.json (props/build/suggest_ledger.js, run
+        # by weekly.py after a clean audit): the suggested parlays frozen at each wave's kickoff and
+        # graded after; a run whose record the script refused leaves the last good one in place.
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
@@ -127,10 +130,13 @@ jobs:
         # priced_at.json are the job's inputs: kept, the next run bakes them and does not buy
         # the same games again, where dropping them would throw the credits away.
         if: failure() && steps.weekly.outcome == 'failure'
+        # the suggestions record is the published payload's (weekly.py writes it only after a clean
+        # audit, so a refused run has not touched it): held back with the payload all the same
         run: |
           git checkout -- props/data/payload.json
+          git checkout -- props/data/suggest_ledger.json 2>/dev/null || true
           git add props/data
-          git reset -q -- props/data/payload.json
+          git reset -q -- props/data/payload.json props/data/suggest_ledger.json
           if git diff --cached --quiet; then echo "the refused run bought nothing"; else
             git config user.name "nfl-hub bot"
             git config user.email "bot@users.noreply.github.com"
