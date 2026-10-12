@@ -611,19 +611,27 @@ and Pays, then Profit the card's width), then one to a row, the card growing to 
 leg it has an id for in the card's order (`dkLeg`, `dkPlan`), and where it has none, the game's page
 ("Open game in DraftKings", every leg in one game to come) or DraftKings' NFL page ("Open DraftKings"),
 `dkPlan`'s `home`, to add them by hand; under the buttons the card says what it
-opens, dated by the oldest read of the legs it opens (`dk`'s `at` and `glat`; every leg is promised only
-while that is under a day old), links each leg on its own, and names the legs it cannot open and why (the
+opens, dated by the oldest read of the legs it opens (`dk`'s `at` and `glat`): the legs as DraftKings had
+them at that read, never a promise that every leg lands, since DraftKings drops an id whose line has moved
+or been pulled since and a game's player ids are read once, from a few hours to about 40 before its kickoff (Sunday night's on Saturday) (the day-long
+promise it made before went in October 2026, with `dkPlan`'s `fresh`), links each leg on its own, and names the legs it cannot open and why (the
 game's prices not pulled yet, its player prices not pulled yet, both with when they are and only for a leg
 on no book price in a game the payload has no DraftKings player price for (`dkPlayerPriced`, `dkLinesPriced`,
 `dkBooked`; a rung adds that only main lines are read), a market the pull does not read (`DK_READ`, oddsfetch's
 DEFAULT), no ids for its game (all of them in a payload baked before `dk`), a player's line on no book price
 DraftKings did not offer when read, a 2+ touchdown rung, an alternate line, a game kicked off, or a line DraftKings had
 elsewhere: "DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM ET)").
-**Share link** sends the parlay as text (a line a leg, each price marked est. or fair
-where it is not the book's and the title's likewise, the stake and what it pays, when DraftKings' lines
-were read, the legs to add by hand each with why in a few words, the site's address) with the button's
-link, always a DraftKings one, by `navigator.share`, or
-copied where there is none or it fails (a cancel does nothing); neither touches the image.
+**Share link** sends the parlay as one text (`linkText`: a line a leg, each price marked est. or fair
+where it is not the book's and the title's likewise, the stake and what it pays, the chances, then the
+button's link, always a DraftKings one, alone on its line under what it opens -- "DraftKings betslip (opens 2
+of the 4 legs as DraftKings had them; add legs 3 and 4 by hand):", never "all", or the game's page or DraftKings' NFL page "(add the legs by
+hand)" -- when DraftKings' lines were read with the caution that a line moved or pulled since is not on
+the slip, the legs to add by hand each with why in a few words, the site's address last) by
+`navigator.share({title, text})`, or copied, the same text, where there is no share sheet, it cannot share
+it or it fails (a cancel does nothing); neither touches the image. The link is never the share's `url`:
+on an iPhone WebKit hands the sheet the text and the url as two items, so Messages showed the link as a card
+with only DraftKings' domain and the sheet's Copy dropped it (WebKit bug 203221), which the owner saw as the
+link "compressed" and missing legs, and only sometimes, since Android's Chrome joins the two.
 **Start over** empties the builder. Finishing writes nothing: not `S.saved`, no key of the page,
 nothing anywhere else. The card's price is the builder's own: the build lifts renderParlay's
 pricing block out of `part3.js` into the card's `quote()` (its `/*QUOTE*/` slot), so it cannot
@@ -648,8 +656,9 @@ retired owner and reader layers marked, and (its section J) the parlay card: Fin
 every leg and the price, the image on a recorder canvas (jsdom draws nothing; it measures figures as
 a wide bold face does), a long shot's stake, payout and profit whole in the window and on the image
 (stepped down to fit, and a second row of tiles for a figure too wide even so), the share sheet,
-Open in DraftKings and Share link on made-up ids (none on the slip too: the game's page, the NFL page,
-the owner's game with its lines and no player prices), Escape, Tab and Start over, and that finishing writes
+Open in DraftKings and Share link on made-up ids (no url field and the whole betslip link alone on its
+line in the text, all, part and none on the slip: the game's page, the NFL page, the owner's game with its
+lines and no player prices; the same text copied without a share sheet; nothing promising every leg), Escape, Tab and Start over, and that finishing writes
 nothing. Both record every request a page
 makes, and a request to the retired store or its sign-in services, or anything but a read, fails
 them. The elo job runs `smoke.js`

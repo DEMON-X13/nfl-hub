@@ -847,11 +847,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
         /* Open in DraftKings: every leg with a key (all but a 2+ touchdown rung) opens, on its own made-up
            id, in the card's order, joined by + with each '#' as %23, no decoy among them; the rest named
-           under the buttons, and the note dated and promising every leg */
+           under the buttons, and the note dated, saying what it opens as DraftKings had it then and
+           promising no leg */
         { const DK = w.eval('PAY').dk || {}, ids = t.legs.map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(dkKey).length;
           chk(n > 0 && ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
             && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.getElementById('pcLink').hidden
-            && /^DraftKings’ lines as read .* ET: Open in DraftKings puts /.test(txt(d.getElementById('pcDkNote'))) && (n < t.legs.length || txt(d.getElementById('pcDkNote')).includes(`all ${t.n} legs`)),
+            && /^DraftKings’ lines as read .* ET: Open in DraftKings opens /.test(txt(d.getElementById('pcDkNote'))) && txt(d.getElementById('pcDkNote')).includes(`opens ${n < t.legs.length ? n + ' of the ' + t.legs.length + ' legs' : 'the ' + t.n + ' legs'} as DraftKings had ${n === 1 ? 'it' : 'them'} then; a leg whose line DraftKings has moved or pulled since will not be on the slip`)
+            && !/\bputs all\b|\ball \d+ legs on\b/.test(txt(d.getElementById('pcDkNote')) + ' ' + a.getAttribute('title')),
             `Open in DraftKings on the ${t.label} tier does not open its legs' own ids (${ids.length} of ${n} keyed, ${t.legs.length} legs): ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200)); }
         w.eval(`(function(){ const k=${keepDk}; if(k===null) delete PAY.dk; else PAY.dk=k; })()`);
         w.eval('PARLAY_CARD.close()'); await wait(20);

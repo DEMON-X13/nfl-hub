@@ -4882,7 +4882,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='21f6144';
+const PAGE_HASH='dedcf68';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -5368,10 +5368,13 @@ window.PARLAY_CARD=(function(){
      prices, and so their ids, were read) and glat (when its game lines were). DraftKings opens several
      outcomes on its betslip at ?outcomes=<id>+<id>, each '#' written %23; a leg it cannot open is
      named with why, and where the line DraftKings had when last read is not the leg's, that line and
-     when. An id names one outcome at one number, so a line DraftKings has moved since the read is not
-     on the slip: the note dates the read (the oldest of the legs it opens), and says every leg lands
-     only while that read is under a day old, the rule the game lines' g.ls follows (a game's player
-     prices are read once, often the Saturday before a Sunday game). An id comes only with a price
+     when. An id names one outcome at one number, so a line DraftKings has moved (or pulled) since the
+     read is not on the slip, and DraftKings drops it without a word: the note dates the read (the
+     oldest of the legs it opens) and says the link opens the legs as DraftKings had them then, never
+     that every leg will land. Until October 2026 it promised every leg for a day after the read (the
+     rule the game lines' g.ls follows), but a game's player prices are read once, from a few hours to
+     about 40 before its kickoff (Sunday night's on Saturday), and player lines move inside a day, so that promise could be wrong on the
+     very slip it named. An id comes only with a price
      the job bought, so a game whose prices (or whose player prices) have not been pulled yet has none
      to open: then the button and Share link take the visitor to the game's DraftKings page, or to
      DraftKings' NFL page, to add the legs by hand, and each leg says why. */
@@ -5387,7 +5390,6 @@ window.PARLAY_CARD=(function(){
   const dkHasPlayer=D=>Object.keys(D).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k));
   /* when the ids a leg is looked up in were read: a team's line and the total with the game lines
      (glat), a player's with his game's prices (at); null where the payload does not say */
-  const DAY_MS=24*3600e3;
   function dkRead(l,D){ const s=D&&(['ml','ats','total'].includes(l.stat)?D.glat:D.at), t=s?Date.parse(s):NaN; return isFinite(t)?new Date(t):null; }
   /* the player markets the price pull reads (oddsfetch.py's DEFAULT: DraftKings' main line on each,
      and the anytime touchdown); --full, which reads the rest and the alternate ladders, is never run */
@@ -5460,13 +5462,11 @@ window.PARLAY_CARD=(function(){
     const ok=each.filter(x=>x.id), miss=each.filter(x=>!x.id);
     let event=null;
     if(legs.length&&legs.every(l=>l.gid===legs[0].gid)&&!kickedOff(legs[0])){ const D=dkGame(legs[0]); if(D&&D.event) event=DKS+'event/'+encodeURIComponent(D.event); }
-    /* the read the link stands on: the oldest of the legs it opens (null where one is undated), and
-       fresh while that is under a day old; a leg it opens has not kicked off, so a day before now is
-       a day before min(now, its kickoff), as for g.ls */
+    /* the read the link stands on: the oldest of the legs it opens (null where one is undated). It
+       dates what the link opens; however recent, it promises nothing (see above) */
     const undated=ok.some(x=>!x.at), read=ok.length&&!undated?new Date(Math.min(...ok.map(x=>+x.at))):null;
-    const fresh=!!read&&Date.now()-read.getTime()<DAY_MS;
     /* where the visitor adds by hand what the slip cannot take: the game's page, else DraftKings' NFL page */
-    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,event,home:event||DKNFL,n:legs.length,read,fresh};
+    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,event,home:event||DKNFL,n:legs.length,read};
   }
   function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
@@ -5541,15 +5541,16 @@ window.PARLAY_CARD=(function(){
     const hand=dk.miss.length?`<ul>${dk.miss.map(x=>`<li data-pc-dkmiss="${x.n}">${name(x)}: ${h(x.why)}</li>`).join('')}</ul>`:'';
     /* none on the slip: the button opens the game's page (or DraftKings' NFL page) to add them there */
     if(!dk.ok.length) return `<p>${dk.n===1?'This leg cannot':'None of these legs can'} go on DraftKings\u2019 betslip from here, so ${dk.event?'Open game in DraftKings opens the game\u2019s page':'Open DraftKings opens its NFL page'}: add ${dk.n===1?'it':'them'} there by hand.</p>${hand}`;
-    /* dated always; "every leg lands" only while the read is under a day old */
+    /* dated always, and never a promise that every leg lands: the legs as DraftKings had them at that
+       read, and a line moved or pulled since is not on the slip */
     const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'DraftKings\u2019 lines as read '+h(readOf(dk.read)):'When DraftKings\u2019 lines were read is not recorded'}</span>: `;
-    const opens=dk.fresh?`Open in DraftKings puts ${dkWhich(dk,'all ')} on DraftKings\u2019 betslip, at DraftKings\u2019 own prices.`
-      :`Open in DraftKings opens ${dkWhich(dk,'these ')}; a leg whose line DraftKings has moved since will not be on the slip, so check it before you bet.`;
+    const opens=`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
     return `<p>${when}${opens}${one}${dk.miss.length?' Add by hand:':''}</p>${hand}`;
   }
-  /* the legs the link opens: "2 of the 3 legs", "the leg", or "all 3 legs" ("these 3 legs" where the
-     read is too old to promise them) */
-  const dkWhich=(dk,all)=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':all+dk.n+' legs');
+  /* the legs the link opens: "2 of the 3 legs", "the leg", "the 3 legs" (never "all": see above) */
+  const dkWhich=dk=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'the '+dk.n+' legs');
+  /* the legs to add by hand, by number: "leg 2", "legs 3 and 4", "legs 2, 3 and 5" */
+  const legNums=xs=>{ const n=xs.map(x=>x.n); return (n.length===1?'leg ':'legs ')+(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0]); };
   let cur=null, opener=null, flashT=null;
   const isOpen=()=>{ const md=$('pcModal'); return !!md&&!md.hidden; };
   const say=t=>{ clearTimeout(flashT); const e=$('pcMsg'); if(e) e.textContent=t||''; };
@@ -5571,8 +5572,8 @@ window.PARLAY_CARD=(function(){
     { const dk=m.dk||{}, a=$('pcDk'), them=dk.n===1?'the leg':'the legs';
       a.hidden=!dk.n; a.href=dk.url||dk.home||DKNFL;
       a.textContent=dk.url?'Open in DraftKings':dk.event?'Open game in DraftKings':'Open DraftKings';
-      a.title=!dk.url?(dk.event?`Opens the game\u2019s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings\u2019 NFL page, in a new tab, to add ${them} by hand`):dk.fresh?`Opens ${dkWhich(dk,'all ')} on DraftKings\u2019 betslip, in a new tab`
-        :`Opens ${dkWhich(dk,'these ')} on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+readOf(dk.read):'last read'}: check each leg is there`;
+      a.title=!dk.url?(dk.event?`Opens the game\u2019s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings\u2019 NFL page, in a new tab, to add ${them} by hand`)
+        :`Opens ${dkWhich(dk)} on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
       $('pcDkNote').innerHTML=dkHtml(dk); }
     /* on a phone the share sheet is the way to Photos, so it leads; the download stays beside it */
     const share=canShareFiles();
@@ -5732,27 +5733,47 @@ window.PARLAY_CARD=(function(){
     try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }
     catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
   }
-  /* Share link: the parlay in a few plain lines (each leg, its bet and price, labelled est. or fair
-     where it is not the book's, as on the card, and the title's price likewise; the stake and what it
-     pays; when DraftKings' lines were read; the legs to add by hand, each with why in a few words; the
-     site's address) with a DraftKings link, always: the betslip where any leg opens there, else the
-     game's page where every leg is in one game to come, else DraftKings' NFL page; by the share
-     sheet where the browser has one (navigator.share), else copied. Never the image: that is
-     Download's and the share sheet's above. A share sheet cancelled is no error and does nothing */
+  /* Share link: the parlay as one plain text, the DraftKings link inside it. Each leg, its bet and
+     price (labelled est. or fair where it is not the book's, as on the card, and the title's price
+     likewise); the stake and what it pays; the chances; then the DraftKings link on a line of its
+     own under a line saying what it opens ("DraftKings betslip (all 3 legs):", "(2 of the 4 legs;
+     add legs 3 and 4 by hand):"; with no leg on the slip the game's page where every leg is in one
+     game to come, else DraftKings' NFL page, "(add the legs by hand)"); when DraftKings' lines were
+     read, and that a line moved or pulled since will not be on the slip; the legs to add by hand,
+     each with why in a few words; the site's address last. By the share sheet where the browser has
+     one (navigator.share), else copied: the same text either way.
+
+     The link is in the text and never in the share's url field (the owner, October 2026: "sometimes
+     when i copy the button to share the draft kings link it like compresses the url and doesnt show
+     all legs"). On an iPhone WebKit hands the share sheet the text and the url as two items:
+     Messages draws the url as a card showing only sportsbook.draftkings.com (some apps send only the
+     bare domain), and the sheet's Copy keeps the text and drops the url (WebKit bug 203221), so a
+     paste had the legs and the site's address and no DraftKings link at all. Android's Chrome joins
+     the two, which is why it happened only sometimes. One text survives every one of those, the
+     whole betslip link in it to tap.
+
+     Never the image: that is Download's and the share sheet's above. A share sheet cancelled is no
+     error and does nothing */
   function linkText(m){
-    const P=s=>String(s==null?'':s).replace(/\u2212/g,'-'), dk=m.dk||{};
+    const P=s=>String(s==null?'':s).replace(/−/g,'-'), dk=m.dk||{};
     /* a price that is not the book's says so, as on the card: +210 est., +150 fair */
     const lines=m.legs.map((l,i)=>`${i+1}. ${l.who}: ${l.what} (${P(l.price)}${l.tag&&l.tag!=='book'?' '+l.tag:''})`);
     if(m.stake) lines.push(`Stake ${money(m.stake)} · Pays ${money(m.payout)}`);
     lines.push(chanceLines(m).map(lineText).join(' · '));
-    if(dk.url) lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}; check the slip before you bet`);
+    /* always a DraftKings link, alone on its line: the betslip, else the game's page, else DraftKings' NFL page */
+    const miss=dk.miss||[], url=dk.url||(dk.n?dk.home||DKNFL:null), them=dk.n===1?'the leg':'the legs';
+    if(dk.url){
+      /* what the link holds, in the note's own words (dkWhich): never "all", since a line moved since drops off */
+      lines.push(`DraftKings betslip (opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'}${miss.length?`; add ${legNums(miss)} by hand`:''}):`, dk.url);
+      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`); }
+    else if(url) lines.push(dk.event?`DraftKings, the game’s page (add ${them} by hand):`:`DraftKings’ NFL page (add ${them} by hand):`, url);
     /* the legs the slip cannot take, each with why in a few words, and where to add them */
-    if(dk.miss&&dk.miss.length){
-      lines.push(dk.url?'Add by hand at DraftKings:':dk.event?'Add by hand on the game\u2019s DraftKings page:':'Add by hand at DraftKings:');
-      for(const x of dk.miss) lines.push(`${x.n}. ${x.who} ${x.what} (${x.brief||x.why})`); }
+    if(miss.length){
+      lines.push(dk.url?'Add by hand at DraftKings:':dk.event?'Add by hand on the game’s DraftKings page:':'Add by hand at DraftKings:');
+      for(const x of miss) lines.push(`${x.n}. ${x.who} ${x.what} (${x.brief||x.why})`); }
     lines.push(SITE);
-    /* always a DraftKings link: the betslip, else the game's page, else DraftKings' NFL page */
-    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url:dk.url||(dk.n?dk.home||DKNFL:null)};
+    /* url is what the text links to, for the record: it is in the text, never shared on its own */
+    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url};
   }
   async function copyText(t){
     try{ if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){ await navigator.clipboard.writeText(t); return true; } }catch(e){}
@@ -5767,13 +5788,14 @@ window.PARLAY_CARD=(function(){
   }
   async function shareLink(){
     const m=cur; if(!m) return false;
-    const s=linkText(m), data={title:s.title,text:s.text}; if(s.url) data.url=s.url;
+    /* title and text only: the link is in the text (see linkText), never a url of its own */
+    const s=linkText(m), data={title:s.title,text:s.text};
     if(typeof navigator.share==='function'){
       let can=true; try{ if(typeof navigator.canShare==='function') can=navigator.canShare(data)!==false; }catch(e){ can=false; }
       if(can){ try{ await navigator.share(data); say(''); return true; }
         catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } } } }
-    /* no share sheet, or one that failed: the same text and the link, copied */
-    if(await copyText(s.text+(s.url?'\n'+s.url:''))){ flash(s.url?'Link copied':'Parlay copied'); return true; }
+    /* no share sheet, or one that failed: the same text, the link in it, copied */
+    if(await copyText(s.text)){ flash(s.url?'Link copied':'Parlay copied'); return true; }
     say('The link could not be copied.'); return false;
   }
   /* Start over: the builder emptied, in this browser only, as its own Clear ALL does */
