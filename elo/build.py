@@ -153,36 +153,83 @@ Limited), or the club files a practice report he is not on. That window used to 
 expected to start (Caleb Williams as Chicago's QB in week 5, eleven such starters in week 4,
 three of them quarterbacks). The page says how many clubs have filed.
 
-THE POWER RATINGS. Each team rated on its results this season, not on its players: a margin
-Elo in which every team starts the season at 0 (shown as 1500) and, after each final,
-    e = (R_home - R_away + H * home) / D          the home margin it expected, in points
-    d = clip(home margin, -C, C) - e
-    R_home += K * d,  R_away -= K * d             (zero-sum: the league stays centred)
-with K 1.3461, H 30.02 (0 at a neutral site), D 25, C 21. A favourite that wins by less than
-it was expected to loses points and the underdog gains them, both toward the middle; a
-blowout beyond 21 counts as 21. The chance against an average team on a neutral field is
-1 / (1 + 10^(-S * R / 400)) with S 1.5771, so it follows the order. The players count too, at
-two tenths: the rating used is 0.8 of R and 0.2 of each team's expected lineup on this
-season's player Elo (the game model's weights, a log-odds against a team of 1500s, centred on
-the league, turned into these points), which walk-forward took the log loss from 0.648 to 0.643
-on 2018-2025 at 0.3 (0.644 at 0.2, the owner's choice, keeping the results well ahead). Shown as
-1500 + 100 * R / 79 (79 Elo is the usual spread across the teams by the end of a regular
-season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season does.
+THE POWER RATINGS. Each team rated on its results this season, not on its players, and every
+game of the season judged again each time the table is built. Each final is one equation,
+    R_home - R_away = clip(home margin, -C, C) - H * home          (home 0 at a neutral site)
+weighted w = 0.5 ^ ((Wmax - week) / HALF), Wmax the latest week among the finals solved (the
+playoffs are weeks 19-22, and count as the regular season does), and the ratings are the
+weighted least-squares answer with every team pulled toward average as if it had also played
+LAM games against average teams (a ridge):
+    (X'WX + LAM I) R = X'W y        X: +1 for the home team, -1 for the away team
+so R comes out centred on 0 (shown as 1500), in points of margin against an average team on a
+neutral field. LAM 16, C 17, HALF 16 weeks, H 1.8397 (the 2012-2017 mean capped home margin,
+measured, not tuned); a tie is a margin of 0. Each team's rating breaks down exactly, game by
+game:
+    R_t = sum(w * score) / (sum(w) + LAM)
+    score = the team's capped margin, home field out, plus the opponent's rating now
+so a game is worth what the opponent has turned out to be, not what it was rated when they met.
+Why: until October 2026 the table was a margin Elo (every team at 0, and after each final
+R_home += K * d, R_away -= K * d, d the capped margin less the one expected from the two
+ratings at that moment), which judged a game once, on the opponent's rating that week, and
+never again. The owner's case: Atlanta, rated low, beat Green Bay 35-14 at Lambeau in week 3,
+Green Bay sank, and as Atlanta turned out better than its rating, Green Bay's loss kept
+counting as a loss to a weak team; and the teams that beat the Chargers early kept their full
+credit as the Chargers turned out among the worst. Now every game is re-scored: through week 5,
+Green Bay's loss to Atlanta counts 1.6 points less against it (a game score of -20.20 then,
+-18.57 now: Atlanta was -1.36 when they met, +0.27 now), and Arizona's win over the Chargers 2
+points less (13.84 to 11.79: the Chargers now -2.05). With five games most teams sit within
+about two points of average, so a re-judged opponent moves a game's score by a point or two
+against margins of up to 17: a correction, not a reshuffle (rank correlation 0.989 with the
+margin Elo's table through week 5; Atlanta is 2-3 with a point differential of -3, including a
+3-34 home loss to Carolina, and stays mid-table). There is no preseason rating (the table is
+this season's alone), so the Chargers were an average team, not a projected top one, when
+Arizona beat them.
+The chance against an average team on a neutral field is 1 / (1 + e^(-S * R)) with S 0.35941
+log-odds a point (a game's home side adds H0 0.33195 to the log-odds; the table never needs
+it). The players count too, at two tenths (PR_W, the owner's choice): the rating used is 0.8 of
+R and 0.2 of each team's expected lineup on this season's player Elo (the game model's weights,
+a log-odds against a team of 1500s, centred on the league, turned into points by 1 / S). Shown
+as 1500 + 100 * R / 1.932 (1.932 points is the usual spread of R across the teams at the end of
+a regular season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season
+does; after week 5 the shown spread is 61, against the margin Elo's 47, so the early table is
+less bunched than it was.
+The evidence, walk-forward (each game of weeks 2 on predicted by the table built on the finals
+of the weeks before it, this season's alone): every constant chosen on 2012-2017 (1441 games)
+and tested once on 2018-2025 (1999 games), log loss on the next game, the margin Elo with its
+constants fitted the same way (K 1.7252, H 45.44, S 1.3954):
+                          2012-2017            2018-2025
+                          alone  blended       alone  blended    weeks 2-6   7 on (blended)
+    margin Elo            0.6274  0.6248       0.6492  0.6454     0.6862    0.6273
+    this table            0.6266  0.6243       0.6480  0.6447     0.6863    0.6263
+On 2018-2025 that is -0.0012 alone (90% interval -0.0029 to +0.0005) and -0.0007 blended
+(-0.0021 to +0.0006), Brier 0.2277 against 0.2281, -0.0010 blended cutting at each kickoff
+instead of each week (Vegas: 0.6073). Without the recency weights (HALF infinite) it is 0.6272
+on 2012-2017, and HALF is flat from 10 to 20 weeks. A margin Elo with its K re-tuned the same
+way (2.0035) predicts as well (-0.0000 blended): the change is for the re-judging, not for
+accuracy, and it costs none. The margin Elo's constants the build used until now (K 1.3461,
+H 30.02, S 1.5771) were fitted on 2012-2025, so their 0.6426 blended on 2018-2025 is in-sample,
+not a test; on 2026 through week 5 (62 games, a look, never tuned on) they and this table are
+level, 0.6768 and 0.6769 blended (the margin Elo fitted on 2012-2017: 0.6818). Do not tune
+these on the season in play.
 Why not the lineups: rated walk-forward on 2018-2025 (weeks 2 on, parameters fitted on
 2012-2017), the old table, each team's expected lineup on this season's player Elo, had a log
 loss of 0.658 on the next game, and in weeks 2-6 0.696, no better than always taking the home
-team; this one 0.649 and 0.689 (Vegas 0.607 and 0.630). Last season carried in as a hidden
-prior fading game by game would take another 0.011 off (0.03 early), but the table is this
-season's alone, as asked. The ELO Model's game calls stay on the lineups and career ratings,
-which predict better still. `teams` in model.json carries the rating, the rating going into
-the team's last game (`before`), that chance (`p_avg`) and the regular-season record the
-rating was built on (`record`, wins, losses, ties); the Bets and Stats page's Power
-Ratings tab is drawn from it.
+team; this one 0.648 and 0.688 (Vegas 0.607 and 0.630). Last season carried in as a hidden
+prior fading game by game took another 0.011 off the margin Elo (0.03 early), but the table is
+this season's alone, as asked. The ELO Model's game calls stay on the lineups and career
+ratings, which predict better still. `teams` in model.json carries the rating, the rating going
+into the team's last game (`before`: the same solve on every final that kicked off before that
+game, with the lineup it took into it, which is what the table said then), that chance
+(`p_avg`) and the regular-season record the rating was built on (`record`, wins, losses, ties);
+the change since the last game is that game and every re-scoring since, so a team can move in
+a week it did not play, and any final moves every team. The Bets and Stats page's Team
+Rankings tab is drawn from it.
 
 OVERALL OFFENSE AND OVERALL DEFENSE (two pills in the ELO Ratings tab's position row). Each
-team's offense and defense rated on this season's games alone, in the power ratings' Elo format,
-on nine key stats from nflverse's play-by-play, scrimmage plays only (passes, sacks, scrambles and
-runs that have an EPA; kneels, spikes and two-point tries left out):
+team's offense and defense rated on this season's games alone, as an Elo (the format the power
+ratings had until October 2026), on nine key stats from nflverse's play-by-play, scrimmage plays
+only (passes, sacks, scrambles and runs that have an EPA; kneels, spikes and two-point tries
+left out):
 
     points          the offense's final score (games.csv)
     success rate    plays with a positive EPA, a share of plays
@@ -407,7 +454,7 @@ HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
-FORMULA = '2026-10-12'
+FORMULA = '2026-10-12b'
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
@@ -602,7 +649,15 @@ def load(offline, now):
     return games, stats, roster, charts, injuries, pbp, sources
 
 
-PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.2
+# THE POWER RATINGS (see the docstring): every constant chosen on 2012-2017 and never refitted. The
+# ridge's pull toward average in games (PR_LAM), the margin cap (PR_C), the recency half-life in weeks
+# (PR_HALF), the home field in points (PR_H, the 2012-2017 mean capped home margin, measured, not
+# tuned), the log-odds a point (PR_S), the home field in a game's log-odds (PR_H0: the table never
+# uses it, a game priced off the table would), the usual spread of R across the teams at the end of a
+# regular season (PR_SPREAD, 2012-2025, which only sets how a rating is drawn) and the lineups' share
+# (PR_W, the owner's choice)
+PR_LAM, PR_C, PR_HALF, PR_H = 16.0, 17.0, 16.0, 1.8397
+PR_S, PR_H0, PR_SPREAD, PR_W = 0.35941, 0.33195, 1.932, 0.2
 
 
 # OVERALL OFFENSE AND OVERALL DEFENSE (see the docstring). Each stat, as a team-game value from the
@@ -800,32 +855,51 @@ def unit_ratings(season_games, tg, score):
 
 
 def power_ratings(season_games, lineup=None, lineup_before=None):
-    """The teams' power ratings: this season's margin Elo with the lineups' player Elo blended
-    in at PR_W, in log-odds (see THE POWER RATINGS)."""
+    """The teams' power ratings: every final of this season solved together, each worth its capped
+    margin, home field out, against what the opponent has turned out to be, recent weeks a little
+    more and every team pulled toward average (a weighted ridge), with the lineups' player Elo
+    blended in at PR_W, in log-odds (see THE POWER RATINGS)."""
     g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
     g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
     g = g.sort_values(['kick', 'game_id'], kind='mergesort')
-    teams = set(g.home_team) | set(g.away_team)
-    R = {t: 0.0 for t in teams}
-    before, rec = {}, {t: [0, 0, 0] for t in teams}
-    for r in g[g.home_score.notna() & g.away_score.notna()].itertuples(index=False):
-        home = 0.0 if r.location == 'Neutral' else 1.0
-        e = (R[r.home_team] - R[r.away_team] + PR_H * home) / PR_D
-        d = max(-PR_C, min(PR_C, float(r.home_score - r.away_score))) - e
-        before[r.home_team], before[r.away_team] = R[r.home_team], R[r.away_team]
+    teams = sorted(set(g.home_team) | set(g.away_team))
+    ix = {t: i for i, t in enumerate(teams)}
+    fin = g[g.home_score.notna() & g.away_score.notna()]
+
+    def solve(sub):
+        # (X'WX + LAM I) R = X'W y: X +1 for the home team and -1 for the away team, so R is centred;
+        # y the capped home margin less the home field (none at a neutral site); w halves every
+        # PR_HALF weeks back from the latest week solved (the playoffs are weeks 19-22)
+        if sub.empty:
+            return np.zeros(len(teams))
+        wk = sub.week.to_numpy(float)
+        w = 0.5 ** ((wk.max() - wk) / PR_HALF)
+        X = np.zeros((len(sub), len(teams)))
+        rows = np.arange(len(sub))
+        X[rows, [ix[t] for t in sub.home_team]] = 1.0
+        X[rows, [ix[t] for t in sub.away_team]] = -1.0
+        home = (sub.location != 'Neutral').to_numpy(float)
+        y = np.clip((sub.home_score - sub.away_score).to_numpy(float), -PR_C, PR_C) - PR_H * home
+        return np.linalg.solve(X.T @ (X * w[:, None]) + PR_LAM * np.eye(len(teams)), X.T @ (w * y))
+
+    R = solve(fin)
+    rec, last_kick = {t: [0, 0, 0] for t in teams}, {}
+    for r in fin.itertuples(index=False):
+        last_kick[r.home_team] = last_kick[r.away_team] = r.kick
         if r.game_type == 'REG':
             m = r.home_score - r.away_score
             rec[r.home_team][0 if m > 0 else 1 if m < 0 else 2] += 1
             rec[r.away_team][1 if m > 0 else 0 if m < 0 else 2] += 1
-        R[r.home_team] += PR_K * d
-        R[r.away_team] -= PR_K * d
-    to_pts = 400 / (PR_S * math.log(10))      # a log-odds in the margin Elo's points
-    mix = lambda r, lg: (1 - PR_W) * r + PR_W * lg * to_pts if lg is not None else r
-    now = {t: mix(R[t], (lineup or {}).get(t)) for t in teams}
+    # before: the same solve on every final that kicked off before the team's last game, what the
+    # table said going into it; the change since is that game and every re-scoring since
+    at = {k: solve(fin[fin.kick < k]) for k in set(last_kick.values())}
+    before = {t: float(at[k][ix[t]]) for t, k in last_kick.items()}
+    mix = lambda r, lg: (1 - PR_W) * r + PR_W * lg / PR_S if lg is not None else r   # a log-odds in points
+    now = {t: mix(float(R[ix[t]]), (lineup or {}).get(t)) for t in teams}
     then = {t: mix(before[t], (lineup_before or {}).get(t)) for t in before}
     show = lambda v: round(1500 + 100 * v / PR_SPREAD)
     return {t: {'elo': show(now[t]), 'before': show(then[t]) if t in then else None,
-                'p_avg': round(1 / (1 + 10 ** (-PR_S * now[t] / 400)), 4), 'record': rec[t]} for t in sorted(teams)}
+                'p_avg': round(1 / (1 + math.exp(-PR_S * now[t])), 4), 'record': rec[t]} for t in teams}
 
 
 def _ranked(rows):
