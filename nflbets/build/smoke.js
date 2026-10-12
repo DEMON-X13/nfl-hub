@@ -172,6 +172,33 @@ const sticksIn = (w, cell, box) => { if (!cell || !box || w.getComputedStyle(cel
   for (let el = cell.parentElement; el && el !== box; el = el.parentElement) if (ovf(w, el).some(v => !/^(visible|clip)$/.test(v))) return false;
   return true; };
 const TEAM = t => ({ LA: 'Rams', KC: 'Chiefs', IND: 'Colts', NYG: 'Giants' }[t] || t);
+/* the book's fair chance on a leg, by the rule, worked here on its own from the page's payload and
+   schedule as they stand: both sides of its line priced (a player's main line, a game's two
+   moneylines or two spread prices on the leg's number, the total's over and under), that side's
+   no-vig chance; one side priced, its implied chance over the week's median overround on two-sided
+   lines of its kind (every kind's where it has none of its own), est.; no real price (legPrice's),
+   none. The audit's M7 holds the page's legFair to it case by case */
+function fairRule(w) {
+  const PAY = w.eval('PAY'), S = w.eval('S'), legPrice = w.eval('legPrice'), isG = w.eval('isGameLeg');
+  const imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), px = v => v != null && isFinite(v) && v !== 0, nv = (a, b) => imp(a) / (imp(a) + imp(b));
+  const med = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const vig = wk => { const by = { player: [], ml: [], ats: [], total: [] }, M = (PAY.mkt || {})[String(wk)] || {};
+    for (const pid in M) for (const st in M[pid]) { const L = M[pid][st]; if (L && px(L.over) && px(L.under)) by.player.push(imp(L.over) + imp(L.under)); }
+    for (const g of S.sched.filter(g => String(g.w) === String(wk))) { if (px(g.mla) && px(g.mlh)) by.ml.push(imp(g.mla) + imp(g.mlh));
+      if (g.sp != null && isFinite(g.sp) && px(g.spa) && px(g.sph)) by.ats.push(imp(g.spa) + imp(g.sph));
+      if (g.tot != null && isFinite(g.tot) && px(g.tov) && px(g.tou)) by.total.push(imp(g.tov) + imp(g.tou)); }
+    const o = { all: med([...by.player, ...by.ml, ...by.ats, ...by.total]) }; for (const k in by) o[k] = med(by[k]); return o; };
+  return l => { const lp = legPrice(l); if (!lp || lp.src !== 'real' || !px(lp.ml)) return null;
+    const g = S.sched.find(x => x.id === l.gid), u = l.side === 'under';
+    if (l.stat === 'total') { if (g && g.tot != null && +l.k === +g.tot && px(g.tov) && px(g.tou)) return { p: u ? nv(g.tou, g.tov) : nv(g.tov, g.tou), est: false }; }
+    else if (l.stat === 'ml' || l.stat === 'ats') { if (g && (l.team === g.h || l.team === g.a)) { const h = l.team === g.h;
+      const own = l.stat === 'ml' ? (h ? g.mlh : g.mla) : (h ? g.sph : g.spa), oth = l.stat === 'ml' ? (h ? g.mla : g.mlh) : (h ? g.spa : g.sph);
+      if ((l.stat === 'ml' || (g.sp != null && +l.k === (h ? -g.sp : +g.sp))) && px(own) && px(oth)) return { p: nv(own, oth), est: false }; } }
+    else if (l.main) { const x = (((PAY.mkt || {})[String(l.week)] || {})[l.pid] || {})[l.stat]; if (x && +x.line === +l.k && px(x.over) && px(x.under)) return { p: u ? nv(x.under, x.over) : nv(x.over, x.under), est: false }; }
+    const V = vig(l.week), ov = V[isG(l) ? l.stat : 'player'] || V.all; return ov > 0 ? { p: Math.max(0.001, Math.min(0.999, imp(lp.ml) / ov)), est: true } : null; };
+}
+/* a chance as the parlay card prints it */
+const pct1 = p => p > 0 && p < 0.0005 ? '<0.1%' : (p * 100).toFixed(1) + '%';
 
 /* the game the builder checks put their legs on: the season's last kickoff still to come, so
    it does not kick off while the smoke runs (the prop model drops a builder leg whose game has
@@ -596,7 +623,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       if (!on.length || !KINDS.some(k => u.k[k])) return 0; const p = w.eval('pbPool')(on); return w.eval('pbMaxLegs')([...p.pref, ...p.thin, ...(p.mkt || [])]); };
     /* what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
        return, a level none of whose parlays reaches its floor the likeliest of its size */
-    const ruleFor = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+` : 'the likeliest pair';
+    const ruleFor = t => t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+ by the model` : 'the likeliest pair';
     const provedLikeliest = (lab, t, list) => { if (!noMovers(list)) return; const b = likeliestOf(list, t.n, t.thin); if (!b) return;
       chk(t.corr >= b.best - 1e-12, `${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr * 100).toFixed(2)}% (${t.legs.map(l => l.name + ' ' + l.label).join(', ')}) where ${orderF(b.legs).map(l => l.name + ' ' + l.label).join(', ')} land ${(b.best * 100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${t.n} worked)`); };
     const hold = lab => { const r = w.eval('getPbTiers()'), u = U(), m = maxLegs(); let built = 0;
@@ -619,6 +646,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             `${lab}: the ${t.id} tier has two sides or two totals on one game, or two legs on one player`); }
         chk(w.eval('parlayProb')(t.legs).corr === t.corr && w.eval('parlayDec')(t.legs.map(l => ({ leg: l, ml: l.price }))) === t.dec && (!t.floor || t.likeliest || t.corr >= t.floor) && (!t.likeliest || t.floor > 0),
           `${lab}: the ${t.id} tier's chance or price is not the builder's sum, or it is under its floor without being the likeliest of its size`);
+        /* its fair chance is parlayProb on its legs at the rule's fair chances, and no leg on it is one the
+           model rates FAR_OFF or more above its fair chance */
+        { const fo = fairRule(w), fs = t.legs.map(fo), FAR = w.eval('FAR_OFF');
+          chk(fs.every(Boolean) ? (!!t.fair && t.fair.p != null && Math.abs(t.fair.p - w.eval('parlayProb')(t.legs.map((l, i) => ({ ...l, p: fs[i].p }))).corr) < 1e-9 && t.fair.est === fs.some(f => f.est)) : (!!t.fair && t.fair.p === null),
+            `${lab}: the ${t.id} tier's fair chance ${t.fair && t.fair.p} is not parlayProb on its legs at their fair chances`);
+          chk(t.legs.every((l, i) => !fs[i] || l.p - fs[i].p < FAR - 1e-9), `${lab}: the ${t.id} tier has a leg far off the market: ` + t.legs.filter((l, i) => fs[i] && l.p - fs[i].p >= FAR - 1e-9).map(l => l.name + ' ' + l.label).join(', ')); }
         /* Safe's likeliest pair and a level's likeliest of its size, worked out in full where every parlay is a plain product */
         if ((t.likeliest || !t.floor) && !t.mkt) provedLikeliest(lab, t, [...pool.pref, ...pool.thin]);
         /* a level with totals takes exactly as many as the legs with an edge leave to fill */
@@ -626,9 +659,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const card = d.querySelector(`#pbPanel .pb-tier.${t.id}`);
         chk(!!card && card.querySelectorAll('.pb-legs li').length === t.n && !!card.querySelector(`[data-pb-add="${t.id}"]`) && !!card.querySelector(`[data-pc-finish="pb|${t.id}"]`),
           `${lab}: the ${t.id} card does not show its legs with Add to builder and Finish`);
+        /* it leads with the fair chance, labelled so (est. where it is), "model says" beside it; with none, the model's and why */
+        if (card) { const first = card.querySelector('.pb-nums > div'), q = x => first && first.querySelector(x), F = t.fair, pc = v => (v * 100).toFixed(0) + '%';
+          chk(!!first && first.classList.contains('pb-chance') && (F && F.p != null
+            ? txt(q('b')) === pc(F.p) && txt(q('span')) === (F.est ? 'fair chance, est.' : 'fair chance') && txt(q('small')) === `model says ${pc(t.corr)}`
+            : txt(q('b')) === pc(t.corr) && txt(q('small')) === 'no fair chance: a leg has no book price'),
+            `${lab}: the ${t.id} card does not lead with its fair chance${F && F.p != null ? ' ' + pc(F.p) : ''} beside the model's ${pc(t.corr)}: ${first ? txt(first) : 'no figures'}`); }
         /* its rule says what it is, and nothing else on it speaks of the floor: the chance and the price */
         if (card) { const rule = card.querySelector('.pb-rule'), rest = card.cloneNode(true); rest.querySelectorAll('.pb-legs, .pb-thin, .pb-rule').forEach(x => x.remove());
-          chk(!!rule && txt(rule) === ruleFor(t) && ![...card.querySelectorAll('p')].some(p => !p.classList.contains('pb-thin')) && !/floor|usual|below|short of|of the time|%\+/i.test(txt(rest)),
+          chk(!!rule && txt(rule) === ruleFor(t) && ![...card.querySelectorAll('p')].some(p => !p.classList.contains('pb-thin')) && !/floor|usual|below|short of|of the time|%\+(?!\d)/i.test(txt(rest)),
             `${lab}: the ${t.id} card's rule reads "${rule ? txt(rule) : ''}", not "${ruleFor(t)}", or it carries a note: ${txt(rest).slice(0, 140)}`); } }
       /* with Game total ticked, one line says what a total in a tier is (and only then) */
       chk(txt(panel).includes('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.') === !!u.k.total,
@@ -672,14 +711,36 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
          every other total, so the tiers are built on any day of the week; then Add to builder and
          Finish on one of them */
       const keepPay = w.eval('JSON.stringify({m:PAY.mkt[String(currentWeek())]||null,t:S.sched.map(g=>[g.tov,g.tou])})');
-      w.eval(`(function(){ const cw=currentWeek(), M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{});
+      w.eval(`(function(){ const cw=currentWeek(), M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{}); let J=0;
         pbGames().forEach((g,gi)=>{ if(gi%2===0){ g.tov=-105; g.tou=-115; }
           const ro=rosterFor(g,false); for(const tm in ro) ro[tm].players.forEach((x,i)=>{ if(!x.starter) return;
-            for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue; ((M[x.pl.id]??={})[l.stat])={line:(i%2?Math.floor(l.mu*1.25):Math.floor(l.mu*0.8))+0.5,over:-112,under:-108,n:x.pl.n,g:g.id}; } }); });
+            for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue;
+              /* one line in three priced so the book's fair chance on the model's side is 25 points under the
+                 model's (far off the market), one 6 points under (an edge), the rest -112/-108 */
+              const ln=(i%2?Math.floor(l.mu*1.25):Math.floor(l.mu*0.8))+0.5, kind=(J++)%3; let over=-112, under=-108;
+              if(kind<2){ const pO=pOver(x.pl.grp,l.stat,l.mu,ln), ov=pO>=0.5, ps=ov?pO:1-pO, fs=Math.max(0.05,Math.min(0.9,ps-(kind===0?0.25:0.06))), fo=ov?fs:1-fs;
+                over=probToAmerican(fo*1.03); under=probToAmerican((1-fo)*1.03); }
+              ((M[x.pl.id]??={})[l.stat])={line:ln,over,under,n:x.pl.n,g:g.id}; } }); });
         PB_CACHE=new Map(); renderParlay(); })()`);
       await wait(60);
       const built = hold('made-up lines');
       chk(built >= 2, 'with a made-up line on every starter, fewer than two tiers were built');
+      /* far off the market: the legs the model rates 15 points or more above their fair chance are out of
+         the pool and every level, the panel says how many and why, and one is flagged on its game page */
+      { const fo = fairRule(w), FAR = w.eval('FAR_OFF'), isFar = l => { const f = fo(l); return !!f && l.p - f.p >= FAR - 1e-9; };
+        const on = w.eval('pbGames()'), pool = w.eval('pbPool')(on), mlP = w.eval('mlProb');
+        const left = w.eval('pricedLegs')(on).filter(c => w.eval('pbAllows')(c) && c.src === 'real' && c.p >= 0.45 && c.p < 0.97 && c.p - mlP(c.price) >= 0 && isFar(c));
+        chk(left.length > 0 && pool.far === left.length && [...pool.pref, ...pool.thin].every(c => !isFar(c)) && [...pool.pref, ...pool.thin].some(c => !isG(c)),
+          `the made-up lines left ${left.length} legs far off the market where the pool counts ${pool.far}, or one is in the pool, or no player leg is left in it`);
+        chk(txt(panel).includes(`${left.length} leg${left.length === 1 ? ' is' : 's are'} left out: the model rates ${left.length === 1 ? 'it' : 'each'} 15 points or more above the book’s fair chance`) && /still on the game pages, flagged far off the market/.test(txt(panel)),
+          'the panel does not say how many legs it left out far off the market and why: ' + ((txt(panel).match(/\d+ legs? (is|are) left out[^.]*\./) || ['nothing'])[0]));
+        const farL = w.eval('pricedLegs')(on).filter(l => l.main && !isG(l) && isFar(l)).sort((a, b) => String(a.key + a.side).localeCompare(String(b.key + b.side)))[0];
+        if (farL) { const keepUi = w.eval('JSON.stringify({game:S.ui.game,open:S.ui.open,rungs:S.ui.showRungs})');
+          w.eval(`S.ui.showRungs=false; S.ui.game=${JSON.stringify(farL.gid)}; S.ui.open={[${JSON.stringify(farL.pid)}]:true}; renderGame()`); await wait(20);
+          const f = fo(farL), want = `${farL.side === 'under' ? 'Under' : 'Over'} ${farL.k} model ${Math.round(farL.p * 100)}% · market ${Math.round(f.p * 100)}%: far off the market`;
+          const notes = [...d.querySelectorAll('#gameView p.faroff[data-far]')].map(txt);
+          chk(notes.includes(want) && !!d.querySelector('#gameView tr.far'), `the game page does not flag ${farL.name}'s far-off line as "${want}": ${notes.join(' / ') || 'no flag'}`);
+          w.eval(`(function(){ const k=${keepUi}; S.ui.game=k.game; S.ui.open=k.open||{}; S.ui.showRungs=k.rungs; closeGameModal(); })()`); await wait(20); } }
       /* Game total alone, as the owner ticked it: every level the priced totals make legs for is
          built of totals only, each marked no edge, and its card says why they are there */
       { const keepK = JSON.stringify(U().k); for (const k of KINDS) U().k[k] = k === 'total'; w.eval('PB_CACHE=new Map(); renderParlay()'); await wait(40);
@@ -744,6 +805,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(!!q && q.stake === AMT && (d.getElementById('pStake') || {}).value === String(AMT) && Math.abs(q.payout - AMT * t.dec) < 1e-6 && txt(d.querySelector('#parlayBody .bigp .payout')) === '$' + (AMT * q.useDec).toFixed(2),
           `Add to builder did not carry the Bet amount: the builder is on ${q ? q.stake : 'nothing'} and pays ${q ? q.payout : '-'}, the tier ${money(AMT * t.dec)} on ${amtTxt(AMT)}`);
         chk(/In the builder/.test(txt(d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`))), 'the tier does not say it is in the builder');
+        { const hero = d.querySelector('#parlayBody .bigp .hero'), F = q && q.fair;
+          chk(!!hero && !!F && (F.p != null ? Math.abs(F.p - t.fair.p) < 1e-12 && txt(hero.querySelector('b')) === (F.p * 100).toFixed(1) + '%' && txt(hero.querySelector('small')) === `model says ${(t.corr * 100).toFixed(1)}%`
+            : txt(hero.querySelector('small')) === "no fair chance: it needs every leg's book price"),
+            'the builder\'s summary after Add to builder does not lead with the tier\'s fair chance, the model\'s beside it: ' + (hero ? txt(hero) : 'no summary')); }
         w.eval(`S.parlay=${keepP}; save(); renderParlay()`); await wait(40);
         /* the tier's legs given DraftKings ids, made up (its lines are made up too, so the payload's own
            ids could never match them): each under the key a leg of its kind has, worked out here on its
@@ -761,7 +826,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const fb = d.querySelector(`#pbPanel [data-pc-finish="pb|${t.id}"]`); fb.click(); await wait(40);
         const view = d.getElementById('pcView'), cash = [...view.querySelectorAll('.pc-money b')].map(txt).join(' | ');
         chk(!d.getElementById('pcModal').hidden && new RegExp(t.label + ' parlay', 'i').test(txt(view)) && t.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
-          && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−') && txt(view).includes('Model’s chance all ' + t.n + ' land ' + (t.corr * 100).toFixed(1) + '%'),
+          && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t.dec}))`).replace('-', '−')
+          && txt(view.querySelector('.pc-chance')).startsWith(t.fair && t.fair.p != null ? `Fair chance all ${t.n} land ${pct1(t.fair.p)}${t.fair.est ? ' (est.)' : ''} model says ${pct1(t.corr)} · the price says ` : `Model’s chance all ${t.n} land ${pct1(t.corr)} · the price says `),
           `Finish on the ${t.label} tier does not open its card with its legs, price and chance: ` + txt(view).slice(0, 200));
         chk(cash === [money(AMT), money(AMT * t.dec), '+' + money(AMT * t.dec - AMT)].join(' | '),
           `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
@@ -823,7 +889,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       `ten made-up games with only Spread ticked: the levels are ${kinds}, not Safe and Extreme built with Medium and Aggressive the likeliest of their size`);
     chk(!d.querySelector('#pbPanel [data-pb-mix].on') && !d.querySelector('#pbPanel .pb-custom') && !/\bCustom\b/.test(txt(panel)), 'ten made-up games with only Spread ticked: a mix is lit or a Custom tag shows');
     for (const t of r.tiers) { const c = d.querySelector(`#pbPanel .pb-tier.${t.id}`), rule = c && c.querySelector('.pb-rule');
-      const want = t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+` : 'the likeliest pair';
+      const want = t.likeliest ? `the likeliest ${t.n} legs` : t.floor ? `best return that lands ${Math.round(t.floor * 100)}%+ by the model` : 'the likeliest pair';
       chk(!!c && !!rule && txt(rule) === want && c.querySelectorAll('.pb-legs li').length === t.n && txt(c).includes(`${(t.corr * 100).toFixed(0)}%`) && ![...c.querySelectorAll('p')].some(p => !p.classList.contains('pb-thin')),
         `ten made-up games: the ${t.id} card does not show its legs and chance under the rule "${want}" with no note: ${c ? txt(c).slice(0, 160) : 'no card'}`); }
     /* the likeliest 3 and 4 legs are the three and four likeliest -115 covers (a plain product, legs
@@ -1147,7 +1213,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       if (byGame.length >= 3 && weak) {
         const L = (c, price, side, extra) => Object.assign({ key: c.gid + '|' + c.pid + '|' + c.st, gid: c.gid, pid: c.pid, stat: c.st, k: 4.5, side, main: true, p: 0.5, price,
           src: 'real', mu: 4, name: eloP.players[c.pid].name, pos: 'X', grp: eloP.players[c.pid].group, team: 'X', opp: 'Y', week: 3, label: side + ' test line' }, extra || {});
-        const legs = [L(byGame[0], 120, 'over'), L(byGame[1], -110, 'over'), L(byGame[2], 110, 'over'),
+        /* the second the prop model rates at 90%, far off the market: an Elo pick is chosen on its own
+           chance, so it stays, flagged */
+        const legs = [L(byGame[0], 120, 'over'), L(byGame[1], -110, 'over', { p: 0.9 }), L(byGame[2], 110, 'over'),
           L(byGame[0], 130, 'over', { key: byGame[0].gid + '|' + byGame[0].pid + '|dup' }),        /* same player again */
           L(byGame[1], 1600, 'over', { key: 'long' }),                                              /* too long a price */
           L(byGame[2], -110, 'under', { key: 'under' }),                                            /* against his nudge */
@@ -1169,8 +1237,20 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           let lo = -8, hi = 8; for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Phi(m) < fair) lo = m; else hi = m; }
           const byHand = Phi(lo + a[2] / sd);
           chk(Math.abs(l.pe - want) < 1e-12 && Math.abs(l.pe - byHand) < 2e-4 && l.pe > fair, `an Elo pick's chance is not the book's fair chance moved by the matchup: ${l.pe} vs ${byHand}`); }
+        /* each pick's fair chance: parlayProb on its legs at the rule's fair chances (one leg a game, so their product) */
+        { const fo = fairRule(w);
+          chk([t2, t3].every(t => { const fs = t.legs.map(fo); return fs.every(Boolean) ? !!t.fair && Math.abs(t.fair.p - w.eval('parlayProb')(t.legs.map((l, i) => ({ ...l, p: fs[i].p }))).corr) < 1e-12 && t.fair.est === fs.some(f => f.est) : !!t.fair && t.fair.p === null; }),
+            'an Elo pick\'s fair chance is not parlayProb on its legs at their fair chances: ' + [t2, t3].map(t => JSON.stringify(t.fair)).join(' / ')); }
         w.eval('PB_CACHE=new Map(); renderPb()'); await wait(40);
         const card = d.querySelector('#pbPanel #pbElo');
+        /* each card leads with the fair chance, the Elo's beside it; the leg far off the market is flagged, and only it */
+        { const pc = v => (v * 100).toFixed(0) + '%', fo = fairRule(w);
+          chk([t2, t3].every(t => { const c = card && card.querySelector(`[data-pb-tier="${t.id}"]`), first = c && c.querySelector('.pb-nums > div'), F = t.fair;
+            return !!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(first.querySelector('b')) === pc(F.p) && txt(first.querySelector('small')) === `Elo says ${pc(t.p)}` : txt(first.querySelector('b')) === pc(t.p)); }),
+            'the Elo picks do not lead with the fair chance beside the Elo\'s: ' + [...(card ? card.querySelectorAll('.pb-nums > div:first-child') : [])].map(txt).join(' / '));
+          const far = card ? [...card.querySelectorAll('[data-pb-tier="elo3"] [data-pb-far]')].map(txt) : [], f1 = fo(legs[1]);
+          chk(far.length === 1 && !!f1 && far[0] === `model 90% · market ${Math.round(f1.p * 100)}%${f1.est ? ' est.' : ''}: far off the market` && !card.querySelector('[data-pb-tier="elo2"] [data-pb-far]'),
+            'the Elo pick\'s leg far off the market is not flagged, or another is: ' + far.join(' / ')); }
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
         chk(!!card && /Elo picks/.test(txt(card.querySelector('h3'))) && card.querySelectorAll('.pb-tier').length === 2 && card.querySelectorAll('.pb-legs .pe-badge').length === wantBadges, `the Elo picks are not a section of the suggested parlays, or their legs' shields are wrong: ${card ? card.querySelectorAll('.pb-legs .pe-badge').length : 'no section'} for ${wantBadges}`);
@@ -1193,7 +1273,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         if (fb) { fb.click(); await wait(40);
           const view = d.getElementById('pcView');
           chk(!d.getElementById('pcModal').hidden && /Elo pick/i.test(txt(view)) && t2.legs.every(l => txt(view).includes(l.name) && txt(view).includes(l.label))
-            && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t2.dec}))`).replace('-', '\u2212') && txt(view).includes('Elo\u2019s chance all 2 land ' + (t2.p * 100).toFixed(1) + '%'),
+            && txt(view.querySelector('.pc-price')) === w.eval(`fmtML(decToML(${t2.dec}))`).replace('-', '\u2212')
+            && txt(view.querySelector('.pc-chance')).startsWith(t2.fair && t2.fair.p != null ? `Fair chance all 2 land ${pct1(t2.fair.p)}${t2.fair.est ? ' (est.)' : ''} Elo says ${pct1(t2.p)} · the price says ` : `Elo\u2019s chance all 2 land ${pct1(t2.p)}`),
             'an Elo pick\'s card is not its legs, its price and its Elo chance: ' + txt(view));
           { const cash = [...view.querySelectorAll('.pc-money b')].map(txt).join(' | ');
             chk(cash === [money(eloAmt), money(eloAmt * t2.dec), '+' + money(eloAmt * t2.dec - eloAmt)].join(' | '), `an Elo pick's card is not on the Bet amount: ${cash} for ${amtTxt(eloAmt)} at ${t2.dec}`); }

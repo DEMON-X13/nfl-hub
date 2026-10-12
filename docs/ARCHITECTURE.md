@@ -437,7 +437,7 @@ beam on the search's own chance (`PB_WIDE`, 24 wide), its best three (`PB_LIKELY
 builder's own `parlayProb` and the highest of those taken (legs in different games are a plain
 product, so on spreads and moneylines it is the likeliest outright). The tier carries `likeliest:
 true`, and its card's rule reads "the likeliest 3 legs" (4, 5) where a level over its floor reads
-"best return that lands 25%+" and Safe "the likeliest pair"; the card shows its chance and price like
+"best return that lands 25%+ by the model" and Safe "the likeliest pair"; the card shows its chance and price like
 any other and says nothing about the floor (the owner's call, October 2026: every level shows a
 parlay, "just state the percentage"). The panel's footer says so in a line. On spreads alone (covers
 at 56-62%, three legs land about 20% and four about 11%) Medium and Aggressive fall back where they
@@ -485,6 +485,47 @@ With no game left to come the panel says so (the season over, or the week's game
 The old Suggested parlays window (`suggModal`, its Any/overs/unders switch and stake box) is gone; a
 game page's High/Medium/Low suggestions stay.
 
+**The book's fair chance, and legs far off it** (app v98, after the review of Sunday 11 October 2026
+found the model over-confident against DraftKings every week since week 2: on that Sunday's 389 main
+lines its Brier 0.258 against the book's 0.243, its sides 10-20 points above the book's fair chance
+landing 50% where it said 64%, 20+ points 55% where it said 77%; the 1pm Safe pair said 53% where its
+fair chance was about 24%). Labelling and selection, never a refit. `legFair(l)` in `part3.js` is a
+leg's fair chance, DraftKings' prices with the margin taken out: where both sides of the same line
+have a real price (a player's main line over and under in `PAY.mkt`, a game's two moneylines or its two
+spread prices on the leg's own number, the total's `tov`/`tou` on the posted total) that side's no-vig
+chance, `mlProb(own)/(mlProb(own)+mlProb(other))` as `devigOver` works it; where one side is (a ladder
+rung, an anytime touchdown, a team line or total missing its other price, a main line the payload has
+moved), the price's implied chance over the week's typical overround on two-sided lines of its kind
+(`fairVig`: the median, over that week's two-sided lines, of the two implied chances summed; player
+main lines for a player's leg, the moneylines, spreads or totals for a game's; every kind's where the
+week has none of its own; none at all, no fair chance), worked from the payload on every call, never
+a fixed number, `est: true` and marked est. wherever it is shown; a leg with no real price
+(`legPrice`'s est. or fair) has none. `parlayFair(legs)` is `parlayProb` on the legs with each chance
+replaced by its fair chance (legs in one game move together as the model's do); `p` is null, with
+`miss` legs counted, where a leg has none. Every level carries it (`pbTier` wraps `pbTierOf`;
+`pbWithFair`), and so do a game page's hands (`gameTiers`) and the Elo picks (`eloPicks` in
+`tab_elo.html`). `pbTierCard` leads with it (`pbChanceHtml`: the figure, "fair chance" or "fair
+chance, est.", and "model says 53%" beside it, the Elo picks' "Elo says"; with none, the chosen-on
+chance and "no fair chance: a leg has no book price"); the levels are still chosen on the model's
+chances, the floors included, so a level over its floor is ruled "... by the model". The builder's
+summary leads with it ("fair chance all 3 land", "model says ..."; with none, "model's chance all 3
+land" and why, in a line under the figures), each leg row gives its own (`.legfair`), and a game
+page's hand leads with it where every leg has one. A leg whose model chance on its side is `FAR_OFF`
+(0.15) or more above its fair chance (`legFarOff`, to a billionth; only where a fair chance exists) is
+left out of the panel's preferred and thin lists (`pbPool`, which counts it in `far`; the panel's note
+says how many and why) and of a game page's hands (`gameLegPool`), and is flagged "model 77% · market
+55%: far off the market" (`farText`) on the game pages (player main lines, the touchdown and the rungs
+on a book price, the Game bets card's team lines: a `p.faroff` under the table and the row marked
+`far`), in the builder's rows and on an Elo pick, whose own selection is the Elo matchup chance and is
+left alone. A total is the book's own chance and so never far off. The audit's M (every level's fair
+chance to `parlayProb` on its legs at theirs, no far leg, the card leading with it) and M7 (the rule
+worked on its own from the payload and held to `legFair` case by case: both sides, a moved main line,
+a rung, a touchdown, both team lines, a spread on another number, the total, one side missing, no line
+of its kind, none at all, an estimated price; then made-up lines one in three 25 points above the
+book's fair chance and one in three 6 points above: the pool's count and note, no far leg on a level
+or a game hand, the flag on the game page and in the builder, the builder's summary) hold it, and the
+nflbets smoke and `smoke_live.js` section J hold the same on the page, the Elo picks and the card.
+
 The Parlay Builder works as ever, and its Save and lock is **Finish parlay** on every device, which
 opens the **parlay card** (`nflbets/build/card.html`, every name `pc-`, set in by the build like
 the tabs):
@@ -492,8 +533,12 @@ a window (`#pcModal`, the page's modal style, over everything; Escape, Close or 
 closes it, Tab stays inside it, the focus goes back to Finish) showing the parlay as a card --
 each leg (who, the builder's own label for the market, line and side, the game and its kickoff,
 its price and whether that is the book's or an estimate), the parlay's price as the builder
-works it out (American, decimal and implied), the stake and what it pays, the model's chance
-beside the price's, the week and its dates, the site's mark and address -- and **Download
+works it out (American, decimal and implied), the stake and what it pays, the book's fair chance
+first ("Fair chance all 3 land 21.0%", "(est.)" where a leg is priced on one side only), then the
+model's ("model says 15.9%"; an Elo pick's, "Elo says") and the price's implied chance, or with no
+fair chance the model's and the price's and "No fair chance: it needs every leg's book price"
+(`chanceLines`, read by the window, the image and Share link's text alike), the week and its
+dates, the site's mark and address -- and **Download
 image** saves it as a PNG (`parlay-week6-3legs.png`), drawn with the canvas 2D API at twice its
 size (no library) and handed over by `canvas.toBlob` and an `<a download>`; where the browser
 can share a file (`navigator.canShare({files})`, a phone) a second button opens the share sheet,

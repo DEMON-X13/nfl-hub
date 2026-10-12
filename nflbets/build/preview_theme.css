@@ -110,3 +110,6 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 /* the preview says what it is */
 .pv-flag{display:inline-block;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--hot-soft);color:var(--hot-2);vertical-align:middle}
 @media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
+
+/* the far-off flag (app v98): the light look's dark amber is too dim on these panels */
+.faroff{color:var(--hot-2)}

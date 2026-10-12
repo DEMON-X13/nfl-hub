@@ -6,8 +6,12 @@
      reads and nobody's page writes), so no device keeps a list of its own: the Parlay Builder is
      everyone's to use, and its Save and lock is Finish parlay on every device. Finish parlay opens
      this window with the parlay drawn as a card -- every leg with its price, the parlay's price,
-     the stake and what it pays, the model's chance beside the book's, the week and its dates, and
-     the site's mark -- and Download saves it as a PNG, drawn on a canvas at twice its size. Where
+     the stake and what it pays, the book's fair chance first (DraftKings' prices with the margin
+     taken out, parlayFair in the props parts; est. where a leg is priced on one side only), the
+     model's chance beside it (an Elo pick's own, the Elo's) and the chance the price implies, the
+     week and its dates, and the site's mark -- and Download saves it as a PNG, drawn on a canvas at
+     twice its size. A parlay with a leg on no book price has no fair chance: the card gives the
+     model's chance alone and says the fair chance needs every leg's book price. Where
      the browser can share a file (a phone), the share sheet is offered too, which is how an image
      reaches Photos.
 
@@ -64,6 +68,8 @@
 .pc-money .pc-win b{color:#1B7A4E}
 .pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
 .pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
+.pc-chance div+div{margin-top:2px}
+.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#657386}
 .pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
 .pc-foot b{color:#4F607A;font-weight:600}
 .pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
@@ -129,7 +135,7 @@ window.PARLAY_CARD=(function(){
     if(typeof S!=='object'||!S||typeof parlayLegs!=='function') return null;
     const legs=parlayLegs(); if(!legs.length) return null;
 /*QUOTE*/
-    return {legs,wks,pr,prices,allBook,bookDec,sg,fairML,stake,override,realPrice,estPrice,useDec,payout,profit};
+    return {legs,wks,pr,fair,prices,allBook,bookDec,sg,fairML,stake,override,realPrice,estPrice,useDec,payout,profit};
   }
   /* one leg as the card shows it: who, what (the market, the line and the side, as the builder
      labels it), the game and its kickoff, and its price with where the price came from */
@@ -205,12 +211,13 @@ window.PARLAY_CARD=(function(){
   }
   function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
-  function card({kicker,legs,dec,priceNote,chance,chanceBy,stake,source}){
+  function card({kicker,legs,dec,priceNote,chance,chanceBy,fair,stake,source}){
     const w=legs.reduce((a,l)=>(+l.week&&(a==null||+l.week<a))?+l.week:a,null), n=legs.length;
     const m={source,kicker,title:n+'-leg parlay',week:w,weekText:weekText(w),dateText:dates(legs),
       price:ml(typeof decToML==='function'?decToML(dec):null),dec:isFinite(dec)?dec.toFixed(2):'–',implied:dec>1?pct(1/dec):'–',priceNote,
       legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
       chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
+      fair:fair&&fair.p!=null&&isFinite(fair.p)?pct(fair.p):null,fairEst:!!(fair&&fair.p!=null&&fair.est),
       made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
       file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png',
       dk:dkPlan(legs)};
@@ -222,7 +229,7 @@ window.PARLAY_CARD=(function(){
     const legs=q.legs.map((l,i)=>Object.assign({},l,{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
     return card({source:'builder',kicker:'Your parlay',legs,dec:q.useDec,
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
-      chance:q.pr.corr,chanceBy:'Model',stake:q.stake});
+      chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
   }
   /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the amount
      its tier pays on: the Bet amount box, which is the builder's own stake (pbStake) */
@@ -235,9 +242,21 @@ window.PARLAY_CARD=(function(){
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
     return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
-      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',stake:pbStake()});
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',fair:t.fair,stake:pbStake()});
   }
 
+  /* the chance, in two lines: the book's fair chance (est. where a leg is priced on one side only),
+     then whose chance the parlay is on (the model's, an Elo pick's the Elo's) and the price's; with
+     no fair chance, the model's and the price's, then why there is none. Each line is a list of
+     [text, bold] pieces, so the window, the image and the share text say the same */
+  function chanceLines(m){
+    const n=m.legs.length, by=m.chanceBy==='Elo'?'Elo':'model', price=[[' · the price says '],[m.implied,1]];
+    if(m.fair) return [[['Fair chance all '+n+' land '],[m.fair,1],...(m.fairEst?[[' (est.)']]:[])],
+      [...(m.chance?[[by+' says '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])]];
+    return [[...(m.chance?[[m.chanceBy+'\u2019s chance all '+n+' land '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])],
+      [['No fair chance: it needs every leg\u2019s book price']]];
+  }
+  const lineText=l=>l.map(x=>x[0]).join('');
   /* ---- the window ---- */
   function html(m){
     return `<div class="pc-card" id="pcCard">
@@ -250,7 +269,7 @@ window.PARLAY_CARD=(function(){
         <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
         <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
       ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
-      <div class="pc-chance">${m.chance?`${h(m.chanceBy)}\u2019s chance all ${m.legs.length} land <b>${h(m.chance)}</b> · `:''}the price says <b>${h(m.implied)}</b></div>
+      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.</small>`:''}</div>
       <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
     </div>`;
   }
@@ -350,7 +369,8 @@ window.PARLAY_CARD=(function(){
     return {rows,px:Math.min(14,Math.floor(19*(rows[0][0].tw-20)/w*10)/10)};
   }
   const tilesH=t=>t?4+t.rows.length*TILE_H+(t.rows.length-1)*TILE_GAP+12:0;
-  function size(m,t){ return HEAD_H+10+m.legs.length*LEG_H+tilesH(t)+40+52; }
+  const CHANCE_H=58;
+  function size(m,t){ return HEAD_H+10+m.legs.length*LEG_H+tilesH(t)+CHANCE_H+52; }
   async function draw(m,scale){
     scale=scale||2;
     await fonts();
@@ -412,11 +432,10 @@ window.PARLAY_CARD=(function(){
         ty+=TILE_H+TILE_GAP; });
       y+=tilesH(t);
     }
-    /* the chance: the model's beside the price's */
-    { let cx=L; const t1=m.chance?m.chanceBy+'’s chance all '+m.legs.length+' land ':'', yy=y+24;
-      if(t1){ cx+=text(x,t1,cx,yy,'500 13px '+FB,C.ink2); cx+=text(x,m.chance,cx,yy,'700 13px '+FB,C.ink); cx+=text(x,'  ·  ',cx,yy,'500 13px '+FB,C.ink2); }
-      cx+=text(x,'the price says ',cx,yy,'500 13px '+FB,C.ink2); text(x,m.implied,cx,yy,'700 13px '+FB,C.ink); }
-    y+=40;
+    /* the chance: the book's fair chance first, then the model's (or the Elo's) and the price's */
+    chanceLines(m).forEach((ln,i)=>{ let cx=L; const yy=y+24+i*18;
+      for(const [t1,b] of ln) cx+=text(x,t1,cx,yy,(b?'700 ':'500 ')+'13px '+FB,b?C.ink:C.ink2); });
+    y+=CHANCE_H;
     /* the site's mark */
     x.fillStyle=C.line; x.fillRect(M,y,CW,1);
     text(x,'Made '+m.made,R,y+31,'500 12px '+FB,C.muted,'right');
@@ -462,6 +481,7 @@ window.PARLAY_CARD=(function(){
     /* a price that is not the book's says so, as on the card: +210 est., +150 fair */
     const lines=m.legs.map((l,i)=>`${i+1}. ${l.who}: ${l.what} (${P(l.price)}${l.tag&&l.tag!=='book'?' '+l.tag:''})`);
     if(m.stake) lines.push(`Stake ${money(m.stake)} · Pays ${money(m.payout)}`);
+    lines.push(chanceLines(m).map(lineText).join(' · '));
     if(dk.url) lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}; check the slip before you bet`);
     if(dk.url&&dk.miss&&dk.miss.length) lines.push('Add by hand at DraftKings: '+dk.miss.map(x=>`${x.n}. ${x.who} ${x.what}`).join('; '));
     lines.push(SITE);
@@ -546,6 +566,6 @@ window.PARLAY_CARD=(function(){
       if(b&&!b.disabled&&!md.contains(b)) finishFrom(b); });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
-  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,shareLink,linkText,dkPlan,finishBuilder,finishFrom,current:()=>cur};
+  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,shareLink,linkText,chanceLines,dkPlan,finishBuilder,finishFrom,current:()=>cur};
 })();
 </script>

@@ -634,7 +634,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const AT_P = stamp(2 * 3600e3), AT_G = stamp(5 * 3600e3);
     const dkMade = (at = AT_P, glat = AT_G) => ({ [String(wk)]: { [g1.id]: { event: DK_EV, [`team:${g1.h}|ml`]: DK_ML, [`team:${g1.a}|ml`]: 'SMOKE1#ml_' + g1.a, glat },
       [g2.id]: { event: '880002', 'card-rb|rushing_yards|over|64.5': DK_RBS.over, 'card-rb|rushing_yards|under|64.5': DK_RBS.under, at, glat } } });
-    const pin = P => { for (const x of P.sched) if (x.id === g1.id || x.id === g2.id || (other && x.id === other.id)) { x.d = '2099-12-31'; x.t = '13:00'; } P.dk = dkMade(); return P; };
+    /* the book's prices on both legs' lines, so the card has a fair chance to lead with: the first game's
+       two moneylines, and the runner's main line over and under at 64.5 (at 63.5 in the second browser,
+       so his leg is on a line the payload has moved and its fair chance is the one-sided estimate) */
+    const RB_LINE = { over: 64.5, under: 63.5 }, ML_G1 = { a: 115, h: -135 }, RB_PX = { over: 105, under: -125 };
+    const pin = (P, side = 'over') => { for (const x of P.sched) { if (x.id === g1.id || x.id === g2.id || (other && x.id === other.id)) { x.d = '2099-12-31'; x.t = '13:00'; }
+        if (x.id === g1.id) { x.mla = ML_G1.a; x.mlh = ML_G1.h; } }
+      P.mkt = P.mkt || {}; P.mkt[String(wk)] = Object.assign({}, P.mkt[String(wk)], { 'card-rb': { rushing_yards: { line: RB_LINE[side], over: RB_PX.over, under: RB_PX.under, n: 'Card Runner', g: g2.id } } });
+      P.dk = dkMade(); return P; };
     const mlKey = `${g1.id}|team:${g1.h}|ml`, rbKey = `${g2.id}|card-rb|rushing_yards`;
     /* the runner's main line is an Over in the first browser and an Under in the second, so a card
        that opened DraftKings' Over for an Under (or the other way) fails one of them */
@@ -655,7 +662,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
        (the owner link's secret and a session still in it, which mean nothing now) */
     const wasOwner = w => { w.localStorage.setItem('nflowner_v1', 'the-old-owner-secret'); w.localStorage.setItem('nflsync_owner_v1', JSON.stringify({ uid: 'u', refreshToken: 'rt' })); };
     for (const [how, extra, side] of [['a plain browser', () => {}, 'over'], ['a browser that was the owner\'s', wasOwner, 'under']]) {
-      const v = await run({ url: URL_PB, pay: pin, file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
+      const v = await run({ url: URL_PB, pay: P => pin(P, side), file: { updated: null, games: [], parlays: [] }, seed: w => { w.localStorage.setItem(PROP_KEY, blob(side)); w.localStorage.setItem('my_parlays_v1', myOld); extra(w); } });
       const DK_RB = DK_RBS[side], rbLabel = Side(side) + ' 64.5 rushing yards', rbRe = rbLabel.replace(/\./g, '\\.');
       const { w, d } = v, tab = d.getElementById('tab-parlay');
       const reads = () => v.methods.every(m => m === 'GET');
@@ -676,8 +683,25 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(txt(view.querySelector('.pc-price')) === price && new RegExp(`${q.useDec.toFixed(2)} decimal`).test(txt(view)) && txt(view).includes((100 / q.useDec).toFixed(1) + '% implied'),
         `${how}: the card's price is not the builder's: ${txt(view.querySelector('.pc-price'))} for ${price}`);
       { const pays = txt(d.querySelector('#parlayBody .bigp .payout')), m = [...view.querySelectorAll('.pc-money b')].map(txt);
-        chk(m.length === 3 && m[0] === '$25.00' && m[1].replace(/,/g, '') === pays && txt(view).includes('Model’s chance all 2 land ' + (q.pr.corr * 100).toFixed(1) + '%'),
-          `${how}: the card's stake, payout or chance is not the builder's: ${m.join(' / ')} against ${pays}`); }
+        chk(m.length === 3 && m[0] === '$25.00' && m[1].replace(/,/g, '') === pays,
+          `${how}: the card's stake or payout is not the builder's: ${m.join(' / ')} against ${pays}`); }
+      /* the chance: the book's fair chance first, worked here from the prices pinned above (the money
+         line's two sides with the margin out; the runner's over and under where his line is the
+         payload's, else his price over the week's median overround, est.), the legs in different games
+         so a plain product; then the model's and the price's. In the window, in the image and in the
+         text Share link sends */
+      const imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), pc1 = p => (p * 100).toFixed(1) + '%';
+      const fML = imp(ML_G1.h) / (imp(ML_G1.h) + imp(ML_G1.a));
+      /* the week's median overround on its two-sided player lines: the pinned week's own, the runner's among them */
+      const twoSided = Object.values(Object.assign({}, P0.mkt && P0.mkt[String(wk)], { 'card-rb': { rushing_yards: { over: RB_PX.over, under: RB_PX.under } } }))
+        .flatMap(o => Object.values(o)).filter(L => L && L.over && L.under).map(L => imp(L.over) + imp(L.under)).sort((a, b) => a - b);
+      const vigP = twoSided.length % 2 ? twoSided[twoSided.length >> 1] : (twoSided[twoSided.length / 2 - 1] + twoSided[twoSided.length / 2]) / 2;
+      const fRB = side === 'over' ? imp(RB_PX.over) / (imp(RB_PX.over) + imp(RB_PX.under)) : Math.max(0.001, Math.min(0.999, imp(105) / vigP));
+      const fair = q.legs.reduce((a, l) => a * (l.stat === 'ml' ? fML : fRB), 1), est = side !== 'over';
+      const line1 = `Fair chance all 2 land ${pc1(fair)}${est ? ' (est.)' : ''}`, line2 = `model says ${pc1(q.pr.corr)} · the price says ${(100 / q.useDec).toFixed(1)}%`;
+      chk(!!q.fair && Math.abs(q.fair.p - fair) < 1e-12 && q.fair.est === est && txt(view.querySelector('.pc-chance')).startsWith(line1 + ' ' + line2)
+        && /Est\.: a leg is priced on one side only/.test(txt(view.querySelector('.pc-chance'))) === est,
+        `${how}: the card does not lead with the fair chance (${line1}), then the model's and the price's: ` + txt(view.querySelector('.pc-chance')));
       chk(new RegExp(`^${wk <= 18 ? 'Week ' + wk : '(Wild Card|Divisional|Conference|Super Bowl)'}`).test(txt(view.querySelector('.pc-sub'))) && /Dec 31/.test(txt(view.querySelector('.pc-sub')))
         && /X NFL Bets and Stats/i.test(txt(view)) && txt(view).includes('demon-x13.github.io/nfl-hub/nflbets'), `${how}: the card has no week and date, or no mark and address: ` + txt(view.querySelector('.pc-head')));
       chk(d.activeElement === d.getElementById('pcDownload'), `${how}: the window did not take the focus`);
@@ -710,6 +734,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         chk(!!link && !link.hidden && txt(link) === 'Share link', `${how}: the card has no Share link`);
         link.click(); await wait(30);
         const s0 = shared[0] || {};
+        chk((s0.text || '').includes(`\n${line1} · ${line2}\n`), `${how}: Share link does not send the fair chance first, then the model's and the price's: ` + JSON.stringify(s0.text));
         chk(shared.length === 1 && s0.url === dkA.getAttribute('href') && !s0.files && s0.title === '2-leg parlay ' + price.replace('−', '-') && legsIn(s0.text || '')
           && (s0.text || '').includes(`Stake ${cash[0]} · Pays ${cash[1]}`) && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s0.text || '') && !/Add by hand/.test(s0.text || '')
           && (s0.text || '').includes(`\nDraftKings lines as read ${readTxt(AT_G)}; check the slip before you bet\n`) && !/ est\.\)| fair\)|\(.*price\)$/.test((s0.text || '') + '\n' + s0.title),
@@ -768,10 +793,13 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         await wait(20); await reopen();
         { const qe = w.PARLAY_CARD.quote(), ne = qe.legs.findIndex(l => l.stat === 'receiving_yards') + 1, pe = w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))');
           chk(qe.legs.length === 3 && /\+210\s*est\./.test(txt(d.getElementById('pcView'))) && /estimated price/.test(txt(d.querySelector('#pcView .pc-sub'))), `${how}: the card does not mark the rung's estimated price: ` + txt(d.getElementById('pcView')));
+          /* a leg on no book price: no fair chance, the model's alone, and the card says why */
+          chk(!!qe.fair && qe.fair.p === null && txt(d.querySelector('#pcView .pc-chance')) === `Model’s chance all 3 land ${(qe.pr.corr * 100).toFixed(1)}% · the price says ${(100 / qe.useDec).toFixed(1)}% No fair chance: it needs every leg’s book price`,
+            `${how}: a parlay with a leg on no book price does not give the model's chance alone and say why: ` + txt(d.querySelector('#pcView .pc-chance')));
           d.getElementById('pcLink').click(); await wait(30);
           const se = shared[0] || {};
           chk(new RegExp(`(^|\\n)${ne}\\. Card Runner: 100\\+ receiving yards \\(\\+210 est\\.\\)(\\n|$)`).test(se.text || '') && se.title === `3-leg parlay ${pe} (estimated price)`
-            && (se.text || '').includes(`\nAdd by hand at DraftKings: ${ne}. Card Runner 100+ receiving yards`) && /\(-135\)/.test(se.text || ''),
+            && (se.text || '').includes(`\nAdd by hand at DraftKings: ${ne}. Card Runner 100+ receiving yards`) && /\(-135\)/.test(se.text || '') && /\nModel’s chance all 3 land [\d.]+% · the price says [\d.]+% · No fair chance: it needs every leg’s book price\n/.test(se.text || ''),
             `${how}: Share link sends an estimated price as if it were the book's, or does not name the leg to add by hand: ` + JSON.stringify(se)); }
         w.eval(`S.parlay=${JSON.stringify(builder(side))}; renderParlay()`); await wait(20); shared.length = 0;
         w.eval('PAY.dk={}'); await reopen();
@@ -828,6 +856,8 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       chk(['Home Side', 'To win', 'Card Runner', rbLabel, '−135', '+105', price, '2-leg parlay', 'X NFL BETS AND STATS', 'demon-x13.github.io/nfl-hub/nflbets', '$25.00'].every(t => rec.texts.some(x => x.includes(t))),
         `${how}: the image does not carry every leg, the price, the stake and the mark: ` + rec.texts.join(' | '));
       chk(!rec.texts.some(x => /DraftKings|Share link/.test(x)), `${how}: the image carries the DraftKings link or the Share link: ` + rec.texts.join(' | '));
+      { const all = rec.texts.join('');
+        chk(all.includes(line1) && all.includes(line2), `${how}: the image does not lead its chance with the fair chance (${line1}), then the model's and the price's: ` + rec.texts.filter(x => /chance|says|%/.test(x)).join(' | ')); }
       chk(new RegExp('Saved as ' + file).test(txt(d.getElementById('pcMsg'))), `${how}: the window does not say the image was saved`);
       /* Escape closes it, and the focus goes back to Finish; the builder keeps its legs */
       d.getElementById('pcDownload').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
@@ -911,7 +941,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
          to their rules in props' audit and smoke.js; here the tier is a fixed one on the two pinned
          games, so the card is checked on any day) */
       { const tierLegs = Object.values(builder(side)).map(l => Object.assign({ key: l.gid + '|' + l.pid + '|' + l.stat }, l));
-        w.eval(`getPbTiers=function(){ return {sig:'smoke',games:2,ticked:2,kinds:5,pref:2,thin:0,tiers:[{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0},
+        w.eval(`getPbTiers=function(){ return {sig:'smoke',games:2,ticked:2,kinds:5,pref:2,thin:0,tiers:[{id:'safe',label:'Safe',n:2,floor:0,legs:${JSON.stringify(tierLegs)},corr:0.41,indep:0.38,dec:3.1,thin:0,fair:{p:0.33,est:false,miss:0}},
           {id:'med',label:'Medium',n:3,floor:0.25,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'aggr',label:'Aggressive',n:4,floor:0.12,why:'Only 2 legs on your picks: tick more games or bet types.'},{id:'xtrm',label:'Extreme',n:5,floor:0.05,why:'Only 2 legs on your picks: tick more games or bet types.'}]}; };
           pbGames=function(){ return S.sched.filter(g=>${JSON.stringify([g1.id, g2.id])}.includes(g.id)); }; renderPb();`);
         await wait(30);
@@ -920,7 +950,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
           `${how}: a suggested tier has no Finish and Add to builder, or an empty tier offers one or does not say why`);
         const cash = () => [...d.querySelectorAll('#pcView .pc-money b')].map(txt).join(' | ');
         if (tb) { tb.click(); await wait(20);
-          chk(!md.hidden && /Safe parlay/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && /41\.0%/.test(txt(d.getElementById('pcView')))
+          chk(!md.hidden && /Safe parlay/i.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-price')) === '+210' && /Card Runner/.test(txt(d.getElementById('pcView'))) && txt(d.querySelector('#pcView .pc-chance')).startsWith('Fair chance all 2 land 33.0% model says 41.0% · the price says ')
             && cash() === '$40.00 | $124.00 | +$84.00',
             `${how}: the suggestion's card is not its legs, price, chance and the $40 amount it pays on: ` + txt(d.getElementById('pcView')));
           const tA = d.getElementById('pcDk');

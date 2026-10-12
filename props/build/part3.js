@@ -193,8 +193,11 @@ function gameBetsCard(g,locked){
     const onML=!!S.parlay[kML], onATS=!!S.parlay[kATS];
     const rML=locked?settleGameLeg({gid:g.id,team,stat:'ml',k:0}):null;
     const rATS=(locked&&ats)?settleGameLeg({gid:g.id,team,stat:'ats',k:ats.line}):null;
+    const far=[];
     const row=(b,on,key,book,res,label)=>{ const [c,lbl]=confTier(b.p);
-      return `<tr class="${on?'on':''}${res==='win'?' hit':(res==='loss'?' miss':'')}">
+      const ff=!locked&&book!=null&&isFinite(book)?legFarOff({gid:g.id,pid:'team:'+team,team,stat:key.split('|')[2],k:b.line==null?0:b.line,side:'over',main:false,p:b.p,price:book,src:'real',week:g.w}):null;
+      if(ff) far.push(`<p class="faroff" data-far><b>${label}</b> ${farText(b.p,ff)}</p>`);
+      return `<tr class="${on?'on':''}${ff?' far':''}${res==='win'?' hit':(res==='loss'?' miss':'')}">
         <td class="pick">${locked?mark(res):`<input type="checkbox" ${on?'checked':''} data-leg="${key}" data-k="${b.line==null?0:b.line}" data-side="over" aria-label="Add ${TEAM_NAMES[team]||team} ${label.toLowerCase()}">`}</td>
         <td class="thr">${label}</td>
         <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${Math.max(2,b.p*100).toFixed(0)}%"></div></div></td>
@@ -204,7 +207,7 @@ function gameBetsCard(g,locked){
     let h=`<div class="statblk"><h4>${tag(team)} ${TEAM_NAMES[team]||team} <em>our margin ${ml.mu>0?'+':''}${ml.mu.toFixed(1)}</em>${ats?`<em class="mline">book line ${ats.line>0?'+':''}${ats.line}</em>`:''}</h4><table class="rungs">`;
     h+=row(ml,onML,kML,bookML,rML,'To win');
     if(ats) h+=row(ats,onATS,kATS,bookSP,rATS,`To cover ${ats.line>0?'+':''}${ats.line}`);
-    return h+'</table></div>';
+    return h+'</table>'+far.join('')+'</div>';
   }).join('');
   /* the game total, over or under: one leg a game, so ticking one side takes the other off. The
      book's price where the payload has one; -110 marked est. where it has none */
@@ -274,7 +277,7 @@ function renderGame(){
   <div class="card">
     <h2 style="display:flex;align-items:center;gap:10px">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
     <p class="muted" style="margin:0">${d.day} ${d.t}${g.sp!=null?` \u00b7 ${g.sp>0?g.h+' favoured by '+g.sp:g.a+' favoured by '+Math.abs(g.sp)}`:` \u00b7 ${modelMargin(g)>0?g.h:g.a} favoured by ${Math.abs(modelMargin(g)).toFixed(1)} on our numbers`}${lineSource(g)?` \u00b7 lines: ${esc(lineSource(g))}`:''}${gameCtx(g,g.h).src==='market'?` \u00b7 ${g.tot} points expected between them`:` \u00b7 no betting line posted yet, so the game is built from our own team ratings (${(gameCtx(g,g.a).implied+gameCtx(g,g.h).implied).toFixed(0)} points expected)`}</p>
-    <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t.'}</p>
+    <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t. A line the model rates '+Math.round(FAR_OFF*100)+' points or more above the book\u2019s fair chance (its prices with the margin taken out) is marked far off the market and left out of the suggested parlays.'}</p>
   </div>`;
   html+=gameSuggestCard(g,locked);
   if(!showRungs()&&Object.values(S.parlay||{}).some(l=>l.gid===g.id&&!l.main&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='any_td'))
@@ -338,8 +341,9 @@ function renderGame(){
           const tk=legKey(g.id,x.pl.id,'any_td'), tcur=S.parlay[tk]; const ton=!!tcur&&(tcur.k||1)<2, ton2=!!tcur&&tcur.k===2;
           const tod=oddsFor(g.id,x.pl.id,'any_td',1);
           const p2=tdPlus(l.p,2), [c2,lbl2]=confTier(p2);
+          const tf=tod!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:tod,src:'real',week:g.w}):null;
           html+=`<div class="statblk"><h4>Touchdown</h4>
-            <table class="rungs"><tr class="${ton?'on':''}">
+            <table class="rungs"><tr class="${ton?'on':''}${tf?' far':''}">
             <td class="pick"><input type="checkbox" ${ton?'checked':''} data-leg="${tk}" data-k="1" data-side="over" aria-label="Add ${esc(x.pl.n)} to score a touchdown"></td>
             <td class="thr">Scores one</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${(l.p*100).toFixed(0)}%"></div></div></td>
@@ -352,10 +356,10 @@ function renderGame(){
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c2}" style="width:${Math.max(2,p2*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(p2*100).toFixed(0)}%</td><td><span class="conf ${c2}">${lbl2}</span></td>
             <td class="num est">${fmtML(bookPrice(p2))}<em>est.</em></td>
-            <td class="num book real"></td></tr></table></div>`;
+            <td class="num book real"></td></tr></table>${tf?`<p class="faroff" data-far><b>Scores one</b> ${farText(l.p,tf)}</p>`:''}</div>`;
           continue;
         }
-        const lk=legKey(g.id,x.pl.id,l.stat), cur=S.parlay[lk];
+        const lk=legKey(g.id,x.pl.id,l.stat), cur=S.parlay[lk], far=[];
         const L=marketLine(g.w,x.pl.id,l.stat);
         html+=`<div class="statblk"><h4>${l.m.lbl} <em>projected ${num(l.mu,l.mu<10?1:0)}</em>${L?`<em class="mline">book line ${L.line}</em>`:''}</h4><table class="rungs">`;
         if(L){
@@ -363,14 +367,18 @@ function renderGame(){
           const pO=pOver(x.pl.grp,l.stat,l.mu,L.line), tO=devigOver(L.over,L.under);
           const onO=cur&&cur.main&&cur.side==='over', onU=cur&&cur.main&&cur.side==='under';
           const gapO=(pO-mlProb(L.over))*100, gapU=((1-pO)-mlProb(L.under))*100;
-          html+=`<tr class="mainline ${onO?'on':''}">
+          const mf=side=>legFarOff({gid:g.id,pid:x.pl.id,stat:l.stat,k:L.line,side,main:true,p:side==='under'?1-pO:pO,price:side==='under'?L.under:L.over,src:'real',week:g.w});
+          const fO=mf('over'), fU=mf('under');
+          if(fO) far.push(`<p class="faroff" data-far><b>Over ${L.line}</b> ${farText(pO,fO)}</p>`);
+          if(fU) far.push(`<p class="faroff" data-far><b>Under ${L.line}</b> ${farText(1-pO,fU)}</p>`);
+          html+=`<tr class="mainline ${onO?'on':''}${fO?' far':''}">
             <td class="pick"><input type="checkbox" ${onO?'checked':''} data-leg="${lk}" data-k="${L.line}" data-side="over" data-main="1" aria-label="Add over ${L.line}"></td>
             <td class="thr">Over ${L.line}</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${confTier(pO)[0]}" style="width:${Math.max(2,pO*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(pO*100).toFixed(0)}%</td><td><span class="conf ${confTier(pO)[0]}">${confTier(pO)[1]}</span></td>
             <td class="num est"><span class="mkt">book ${(tO*100).toFixed(0)}%</span></td>
             <td class="num book real">${fmtML(L.over)}<em>${gapO>=3?'\u2191':(gapO<=-3?'\u2193':'')}</em></td></tr>
-          <tr class="mainline ${onU?'on':''}">
+          <tr class="mainline ${onU?'on':''}${fU?' far':''}">
             <td class="pick"><input type="checkbox" ${onU?'checked':''} data-leg="${lk}" data-k="${L.line}" data-side="under" data-main="1" aria-label="Add under ${L.line}"></td>
             <td class="thr">Under ${L.line}</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${confTier(1-pO)[0]}" style="width:${Math.max(2,(1-pO)*100).toFixed(0)}%"></div></div></td>
@@ -384,7 +392,9 @@ function renderGame(){
           if(!showRungs()&&!on) continue;
           const od=oddsFor(g.id,x.pl.id,l.stat,r.k);
           const v=rungView(x.pl,l.stat,l.mu,r.k,g.w);
-          html+=`<tr class="rung ${on?'on':''}">
+          const rf=od!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:l.stat,k:r.k,side:'over',main:false,p:r.p,price:od,src:'real',week:g.w}):null;
+          if(rf) far.push(`<p class="faroff" data-far><b>${r.k}+</b> ${farText(r.p,rf)}</p>`);
+          html+=`<tr class="rung ${on?'on':''}${rf?' far':''}">
             <td class="pick"><input type="checkbox" ${on?'checked':''} data-leg="${lk}" data-k="${r.k}" data-side="over"
               aria-label="Add ${esc(x.pl.n)} ${r.k} or more ${l.m.lbl.toLowerCase()} to the parlay"></td>
             <td class="thr">${r.k}+</td>
@@ -393,7 +403,7 @@ function renderGame(){
             <td class="num est">${fmtML(v.est)}<em>est.</em></td>
             <td class="num book real">${od!=null?fmtML(od):''}</td></tr>`;
         }
-        html+='</table></div>';
+        html+='</table>'+far.join('')+'</div>';
       }
       html+='</div>';
     }
@@ -1085,6 +1095,81 @@ function formAgrees(c){
   return a!=null&&a-mlProb(c.price)>=0.03;
 }
 function formSig(){ return typeof window.eloLoaded==='function'?(window.eloLoaded()?'form':'noform'):''; }
+/* ---------- the book's fair chance, and legs far off it ----------
+   The model's chances have run high against DraftKings' every week since week 2: on Sunday 11
+   October's 389 main lines its Brier score was 0.258 against the book's 0.243, and where it rated a
+   side 10 to 20 points above the book's fair chance that side landed 50% where it said 64% (20 points
+   and more: 55% where it said 77%). So the suggested parlays and the parlay card lead with the book's
+   fair chance, the model's own beside it, and a leg the model rates FAR_OFF (15 points) or more above
+   it is left out of the suggestions (pbPool, gameLegPool) and flagged wherever it is shown. Labelling
+   and selection only: nothing of the model is refitted on the season in play.
+
+   A leg's fair chance (legFair) is DraftKings' own, its price with the margin taken out:
+   - both sides of the same line priced (a player's main line over and under, PAY.mkt; a game's two
+     moneylines, or its two spread prices on the leg's own number; the total's over and under on the
+     posted total): that side's no-vig chance, its implied chance over the two summed (devigOver);
+   - one side priced (a ladder rung, an anytime touchdown, a team line or a total whose other side has
+     no price, a main line the payload has moved since the leg was added): its implied chance over the
+     week's typical overround on two-sided lines of its kind (fairVig: the median, over that week's
+     two-sided lines, of the two implied chances summed; player main lines for a player's leg, the
+     moneylines, spreads or totals for a game's), worked from the payload on every call, never a fixed
+     number; marked est. (est: true) wherever it is shown. With no two-sided line of its kind that
+     week, every two-sided line of the week; with none at all, no fair chance;
+   - no real price (the builder's est. and fair prices): no fair chance.
+   A parlay's (parlayFair) is the builder's own parlayProb on its legs with each leg's chance replaced
+   by its fair chance, so legs in one game move together exactly as the model's chances do; p is null
+   where a leg has none, and the parlay then shows the model's chance alone, saying why. */
+const FAR_OFF=0.15;
+const fairPx=v=>v!=null&&isFinite(v)&&v!==0;
+function fairMedian(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+/* the week's typical overround on its two-sided lines, by kind, and over all of them */
+function fairVig(week){
+  const w=String(week), by={player:[],ml:[],ats:[],total:[]}, two=(a,b)=>mlProb(a)+mlProb(b);
+  const M=PAY&&PAY.mkt&&PAY.mkt[w];
+  if(M) for(const pid in M){ const P=M[pid]; if(P&&typeof P==='object') for(const st in P){ const L=P[st];
+    if(L&&typeof L==='object'&&fairPx(L.over)&&fairPx(L.under)) by.player.push(two(L.over,L.under)); } }
+  for(const g of (S&&S.sched)||[]){ if(String(g.w)!==w) continue;
+    if(fairPx(g.mla)&&fairPx(g.mlh)) by.ml.push(two(g.mla,g.mlh));
+    if(g.sp!=null&&isFinite(g.sp)&&fairPx(g.spa)&&fairPx(g.sph)) by.ats.push(two(g.spa,g.sph));
+    if(g.tot!=null&&isFinite(g.tot)&&fairPx(g.tov)&&fairPx(g.tou)) by.total.push(two(g.tov,g.tou)); }
+  const out={week:w,all:fairMedian([...by.player,...by.ml,...by.ats,...by.total])};
+  for(const k in by) out[k]=fairMedian(by[k]);
+  return out;
+}
+/* one leg's fair chance on its own side: {p, est}, or null with no real price. memo: an object kept
+   for one pass, so each week's overround is worked once */
+function legFair(l,memo){
+  if(!l) return null;
+  const pr=legPrice(l); if(!pr||pr.src!=='real'||!fairPx(pr.ml)) return null;
+  const under=l.side==='under', g=((S&&S.sched)||[]).find(x=>x.id===l.gid)||null;
+  const nv=(own,other)=>mlProb(own)/(mlProb(own)+mlProb(other));
+  if(l.stat==='total'){
+    if(g&&g.tot!=null&&+l.k===+g.tot&&fairPx(g.tov)&&fairPx(g.tou)) return {p:under?nv(g.tou,g.tov):nv(g.tov,g.tou),est:false};
+  } else if(l.stat==='ml'||l.stat==='ats'){
+    const team=l.team||String(l.pid||'').replace(/^team:/,'');
+    if(g&&(team===g.h||team===g.a)){ const home=team===g.h;
+      const own=l.stat==='ml'?(home?g.mlh:g.mla):(home?g.sph:g.spa), other=l.stat==='ml'?(home?g.mla:g.mlh):(home?g.spa:g.sph);
+      const on=l.stat==='ml'||(g.sp!=null&&isFinite(g.sp)&&+l.k===(home?-g.sp:+g.sp));
+      if(on&&fairPx(own)&&fairPx(other)) return {p:nv(own,other),est:false}; }
+  } else if(l.main){
+    const L=marketLine(l.week,l.pid,l.stat);
+    if(L&&+L.line===+l.k&&fairPx(L.over)&&fairPx(L.under)) return {p:under?nv(L.under,L.over):nv(L.over,L.under),est:false};
+  }
+  const m=memo||{}, wk=String(l.week), V=m[wk]||(m[wk]=fairVig(l.week)), ov=V[isGameLeg(l)?l.stat:'player']||V.all;
+  if(!(ov>0)) return null;
+  return {p:Math.max(0.001,Math.min(0.999,mlProb(pr.ml)/ov)),est:true};
+}
+/* the leg's fair chance where the model rates its side FAR_OFF or more above it, else null */
+function legFarOff(l,memo){ const f=legFair(l,memo); return f&&l.p!=null&&isFinite(l.p)&&l.p-f.p>=FAR_OFF-1e-9?f:null; }
+function farText(p,f){ return `model ${Math.round(p*100)}% \u00b7 market ${Math.round(f.p*100)}%${f.est?' est.':''}: far off the market`; }
+/* a parlay's fair chance: {p, est, miss}; p null where a leg has no fair chance (miss of them) */
+function parlayFair(legs,memo,sims){
+  if(!Array.isArray(legs)||!legs.length) return null;
+  const m=memo||{}, f=legs.map(l=>legFair(l,m)), miss=f.filter(x=>!x).length;
+  if(miss) return {p:null,est:false,miss};
+  const pr=parlayProb(legs.map((l,i)=>({...l,side:l.side||'over',p:f[i].p})),sims);
+  return {p:pr.corr,est:f.some(x=>x.est),miss:0};
+}
 /* the side switch on a game page's suggested parlays: Any, or player overs only, or player
    unders only. A touchdown leg is an over; a game bet has no side and drops out. */
 const SUGGEST_SIDES=[['any','Any'],['over','Player overs'],['under','Player unders']];
@@ -1178,12 +1263,14 @@ function pbCap(list){
 /* the legs on the reader's picks: preferred (the full bar) and thin (at or above the book, no more) */
 function pbPool(games){
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
-  const pref=[], thin=[], plGames=new Set();
+  const pref=[], thin=[], plGames=new Set(), fm={}; let far=0;
   for(const c of pricedLegs(games)){
     if(!isGameLeg(c)) plGames.add(c.gid);
     if(!pbAllows(c)||c.src!=='real'||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
     if(c.grp!=='TEAM'&&formOut) continue;
+    /* the model FAR_OFF or more above the book's fair chance: left out, and counted for the panel */
+    if(legFarOff(c,fm)){ far++; continue; }
     if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
   /* the totals, with Game total ticked: both sides of each ticked game's posted total on a real
@@ -1193,7 +1280,7 @@ function pbPool(games){
   if(pbUi().k.total) for(const g of games) for(const side of ['over','under']){
     const c=totalLeg(g,side);
     if(c&&pbAllows(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX) mkt.push({...c,thin:false,market:true}); }
-  return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size};
+  return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size,far};
 }
 /* a leg that can join: not a line already on it, not a second side (to win or to cover) on one
    game, and not a second leg on one player (two lines on one man, his catches and his yards, are
@@ -1326,7 +1413,7 @@ function pbTierOn(t,pool,memo,kMax,base){
    totals as those legs leave to fill (pbTotalsFill) and no more, by the same two searches, so a
    total never takes the place of a leg with an edge */
 const pbTotalsFill=(n,pool)=>Math.max(0,n-pbMaxLegs([...pool.pref,...pool.thin]));
-function pbTier(t,pool,memo,base){
+function pbTierOf(t,pool,memo,base){
   /* base: the visitor's locked legs (pbTurn): every list is cut to the legs that fit beside them,
      and the searches fill the rest; with none the levels are exactly the panel's own */
   const B=base||[];
@@ -1335,6 +1422,9 @@ function pbTier(t,pool,memo,base){
   const r=pbTierOn(t,{pref:pool.pref,thin:pool.thin},memo,undefined,B); if(r||!(pool.mkt&&pool.mkt.length)) return r;
   return pbTierOn(t,{pref:[...pool.pref,...pool.thin],thin:pool.mkt},memo,pbTotalsFill(t[2]-B.length,pool),B);
 }
+/* a level with its fair chance (parlayFair on its legs, in the builder's order), worked once it is chosen */
+const pbWithFair=r=>r&&r.legs?{...r,fair:parlayFair(r.legs)}:r;
+function pbTier(t,pool,memo,base){ return pbWithFair(pbTierOf(t,pool,memo,base)); }
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
    book's price, and a game's player prices are pulled on game day or the day before: Thursday's
@@ -1351,13 +1441,13 @@ function pbWhy(n,pool,c){
 }
 function pbBuild(){
   const u=pbUi(), all=pbGames(), games=all.filter(g=>!u.off.includes(g.id)), kinds=PB_KINDS.map(([k])=>k).filter(k=>u.k[k]);
-  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,mkt:0,tiers:[],noPlayerPrices:false};
+  const out={games:all.length,ticked:games.length,kinds:kinds.length,pref:0,thin:0,mkt:0,far:0,tiers:[],noPlayerPrices:false};
   const empty=why=>PB_TIERS.map(([id,label,n,floor])=>({id,label,n,floor,why}));
   if(!all.length){ out.tiers=empty('No games left to build from.'); return out; }
   if(!kinds.length){ out.tiers=empty('No bet types ticked: tick at least one above.'); return out; }
   if(!games.length){ out.tiers=empty('No games ticked: tick at least one above.'); return out; }
   const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats)};
-  out.pref=pool.pref.length; out.thin=pool.thin.length; out.mkt=pool.mkt.length; out.noPlayerPrices=c.players&&!pool.plGames;
+  out.pref=pool.pref.length; out.thin=pool.thin.length; out.mkt=pool.mkt.length; out.far=pool.far; out.noPlayerPrices=c.players&&!pool.plGames;
   out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,pool,c)}; });
   return out;
 }
@@ -1424,7 +1514,7 @@ function pbFill(id,v){
   v.wrapped=false;
   /* what the level is chosen from, kept on it (ctx) so its card says so whatever is locked later */
   const ctx=()=>({nL:v.lock.length,left:pbLeft(v),locked:v.lock.map(pbId)});
-  if(v.lock.length>=spec[2]){ v.tier={...head,...pbExact(v.lock.slice(0,spec[2])),allLocked:true,ctx:ctx()}; return; }
+  if(v.lock.length>=spec[2]){ v.tier={...head,...pbWithFair(pbExact(v.lock.slice(0,spec[2]))),allLocked:true,ctx:ctx()}; return; }
   const locked=new Set(v.lock.map(pbId));
   const less=who=>{ const ok=c=>!locked.has(pbId(c))&&!who.has(pbWho(c)); return {pref:pool.pref.filter(ok),thin:pool.thin.filter(ok),mkt:(pool.mkt||[]).filter(ok)}; };
   let x=pbTier(spec,less(new Set(v.seen)),new Map(),v.lock);
@@ -1483,7 +1573,8 @@ function gameLegPool(g){
         out.push({...base,key,k:r.k,side:'over',main:false,p:r.p,price:rungView(x.pl,l.stat,l.mu,r.k,g.w).est,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }
     }
   }
-  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.price>=GAME_LEG_MIN&&c.p>=0.40&&c.p<0.97&&sideAllows(c));
+  const fm={};
+  return out.filter(c=>isFinite(c.price)&&c.price!==0&&c.price>=GAME_LEG_MIN&&c.p>=0.40&&c.p<0.97&&sideAllows(c)&&!legFarOff(c,fm));
 }
 function gameTiers(g){
   const sig=gameSuggestSig(g), hit=GAME_TIER_CACHE[g.id];
@@ -1515,7 +1606,7 @@ function gameTiers(g){
       if(!best||e.ev>best.ev) best={ev:e.ev,legs:[top[i],top[j]]}; }
     return best&&best.legs; };
   const done=legs=>{ const pr=parlayProb(legs,20000);
-    return {legs,corr:pr.corr,dec:parlayDec(legs.map(l=>({leg:l,ml:l.price})))}; };
+    return {legs,corr:pr.corr,dec:parlayDec(legs.map(l=>({leg:l,ml:l.price}))),fair:parlayFair(legs,{},20000)}; };
   const val={pool:pool.length}; let prev=null;
   for(const [id,,n,floor,minP] of GAME_TIERS){
     const f=1+floor/100;
@@ -1537,13 +1628,14 @@ function gameSuggestCard(g,locked){
   const block=([id,label,n,floor])=>{ const t=T[id];
     if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span></div><p class="muted" style="margin:6px 0 0;font-size:12px">This game does not have ${n} lines to build from yet.</p></div>`;
     return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span><span class="grow"></span><button class="btn quiet gsugg-all" data-gtier-add="${id}">Add all</button></div>
-      <div class="gsugg-nums"><b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">·</span> <b>${fmtML(decToML(t.dec))}</b>${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''}</div>
+      <div class="gsugg-nums">${t.fair&&t.fair.p!=null?`<b data-gsugg-fair="${t.fair.p}">${(t.fair.p*100).toFixed(0)}%</b> fair chance${t.fair.est?' (est.)':''} <span class="muted">·</span> model says <b>${(t.corr*100).toFixed(0)}%</b> to land`
+        :`<b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">(the model’s chance: no fair chance without every leg’s book price)</span>`} <span class="muted">·</span> <b>${fmtML(decToML(t.dec))}</b>${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''}</div>
       ${t.relaxed?`<p class="muted" style="margin:4px 0 0;font-size:11.5px">This game's lines cannot reach +${floor} at this chance yet; this is the best they allow.</p>`:''}
       <ul class="gsugg-legs">${t.legs.map(l=>{ const on=suggestLegOn(l);
         return `<li><label class="gsugg-pick${on?' on':''}"><input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Take':'Put'} ${esc(l.name)}, ${esc(l.label)}, ${on?'off':'on'} the parlay">
           <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='real'?'':'<i class="est"> est.</i>'}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`; }).join('')}</ul></div>`; };
   return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlays</h2></div>${side}
-    <p class="muted" style="margin:0 0 10px;font-size:12.5px">The best payout for the chance in this game, at 2, 3 and 4 legs: main lines and threshold ladders, with the book's price where it has one and an estimate (est.) where it does not. Every leg at least a 40% chance and no shorter than ${fmtML(GAME_LEG_MIN)}; High pays at least +100 and lands at least 35% of the time, Medium +250 and 20%, Low +500 and 10%. Chances allow for how the legs move together, and the price is what a book pays for them together.</p>
+    <p class="muted" style="margin:0 0 10px;font-size:12.5px">The best payout for the chance in this game, at 2, 3 and 4 legs: main lines and threshold ladders, with the book's price where it has one and an estimate (est.) where it does not. Every leg at least a 40% chance and no shorter than ${fmtML(GAME_LEG_MIN)}; High pays at least +100 and lands at least 35% of the time, Medium +250 and 20%, Low +500 and 10%. Chances allow for how the legs move together, and the price is what a book pays for them together. Each hand leads with the book's fair chance (its prices with the margin taken out) where every leg has a book price, the model's own beside it, and leaves out a line the model rates ${Math.round(FAR_OFF*100)} points or more above the book's fair chance.</p>
     <div class="gsugg-tiers g3">${GAME_TIERS.map(block).join('')}</div></div>`;
 }
 /* ---------- the panel, over the builder ---------- */
@@ -1579,10 +1671,10 @@ const pbLeft=v=>!v.wrapped&&v.seen.length>0;
 const pbCtx=(t,v)=>t.ctx||{nL:v.lock.length,left:pbLeft(v),locked:v.lock.map(pbId)};
 function pbRuleOf(t,v){
   const n=t.legs.length, pct=Math.round((t.floor||0)*100);
-  if(!t.turned||!v) return t.likeliest?`the likeliest ${n} legs`:t.floor?`best return that lands ${pct}%+`:'the likeliest pair';
+  if(!t.turned||!v) return t.likeliest?`the likeliest ${n} legs`:t.floor?`best return that lands ${pct}%+ by the model`:'the likeliest pair';
   if(t.allLocked) return n===2?'the pair you locked':`the ${n} legs you locked`;
   const c=pbCtx(t,v), mod=(c.left?' left':'')+pbBeside(c.nL);
-  return t.likeliest||!t.floor?`the likeliest ${n===2?'pair':n+' legs'}${mod}`:`best return${mod} that lands ${pct}%+`;
+  return t.likeliest||!t.floor?`the likeliest ${n===2?'pair':n+' legs'}${mod}`:`best return${mod} that lands ${pct}%+ by the model`;
 }
 function pbMktWhy(t,v){
   if(!t.turned||!v) return '';
@@ -1596,6 +1688,14 @@ function pbThinLine(legs,form){
   const tail=!form||!p?bar:!tm?both:`the team bet${s(tm)} ${bar}, and the player leg${s(p)} ${both}`;
   return `${n===1?'One leg has a thin edge: the model rates it':n+' legs have a thin edge: the model rates them'} at or above the book's price, but ${tail}.`;
 }
+/* a level's chance as its card shows it: the book's fair chance, labelled so (est. where a leg is
+   priced on one side only), with whose chance it was chosen on beside it ("model says 53%"; the Elo
+   picks' "Elo says"); with no fair chance, that chance alone, saying why */
+function pbChanceHtml(F,chance,o){
+  const pc=v=>(v*100).toFixed(0)+'%', by=(o&&o.by)||'model';
+  if(F&&F.p!=null) return `<div class="pb-chance"><b data-pb-fair="${F.p}">${pc(F.p)}</b><span${F.est?' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"':''}>fair chance${F.est?', est.':''}</span><small class="pb-model" data-pb-model="${chance}">${esc(by)} says ${pc(chance)}</small></div>`;
+  return `<div class="pb-chance"><b data-pb-model="${chance}">${pc(chance)}</b><span>${(o&&o.chanceBy)||'model’s chance'}</span><small class="pb-model">no fair chance: a leg has no book price</small></div>`;
+}
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
 function pbTierCard(t,o){
   o=o||{}; const card=!!window.PARLAY_CARD, chance=o.chance!=null?o.chance:t.corr;
@@ -1603,13 +1703,13 @@ function pbTierCard(t,o){
   const v=o.ctl?PB_VIEW.t[t.id]:null, allL=!!(v&&t.legs&&t.legs.every(l=>pbLocked(t.id,l)));
   const turn=o.ctl?`<span class="pb-turnbar"><button type="button" class="btn quiet small pb-turn" data-pb-turn="${t.id}" ${allL?'disabled title="Every leg is locked: unlock one for new legs"':'title="New legs for this level, keeping the ones you locked"'}>\u21bb New legs</button>${t.turned?`<button type="button" class="btn quiet small" data-pb-reset="${t.id}" title="Back to the panel's own ${esc(t.label)} parlay">Reset</button>`:''}</span>`:'';
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span>${t.turned?turn:''}</div><p class="pb-why">${esc(t.why)}</p></div>`;
-  const form=formSig()!=='', wrapped=o.ctl&&t.turned&&PB_VIEW.t[t.id]&&PB_VIEW.t[t.id].wrapped;
+  const form=formSig()!=='', wrapped=o.ctl&&t.turned&&PB_VIEW.t[t.id]&&PB_VIEW.t[t.id].wrapped, fm={};
   const lock=l=>{ if(!o.ctl) return ''; const on=pbLocked(t.id,l);
     return `<button type="button" class="pb-lock${on?' on':''}" data-pb-lock="${t.id}|${esc(pbId(l))}" aria-pressed="${on}" aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}" title="${on?'Locked: kept when you ask for new legs':'Lock to keep this leg when you ask for new legs'}">${on?'\ud83d\udd12':'\ud83d\udd13'}</button>`; };
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${turn}${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t,v)}</span>`:'')}</div>
-    <div class="pb-nums"><div><b>${(chance*100).toFixed(0)}%</b><span>${o.chanceBy||'chance'}</span></div><div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
-    <ul class="pb-legs">${t.legs.map(l=>`<li>${lock(l)}<span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small></span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`).join('')}</ul>
+    <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
+    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li>${lock(l)}<span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`; }).join('')}</ul>
     ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs,pbMktWhy(t,v))}</p>`:''}${wrapped?`<p class="pb-thin pb-wrap">Every other leg on your picks has had its turn here: back to the first.</p>`:''}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
 }
@@ -1630,7 +1730,8 @@ function pbPanel(){
   /* player bets ticked, none of their prices in, and a level built all the same (from team bets
      or totals): the levels say nothing of the missing player legs, so the panel does */
   if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.');
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
+  if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
@@ -1643,7 +1744,7 @@ function pbPanel(){
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
     <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t.why?t:pbShownTier(t.id),{ctl:!t.why})).join('')}</div>
-    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. These are the model's numbers, and its edges over book prices have not held up yet this season.</p>
+    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that the model says land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. Each level leads with the book’s fair chance, DraftKings’ prices with the margin taken out (est. where a leg is priced on one side only), with the model’s own beside it: the levels are chosen on the model’s chances, the floors included, and those have run higher than the book’s this season, so a leg the model rates ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance is left out.</p>
     <div id="pbElo" class="pb-elo"></div></div>`;
 }
 function renderPb(){
@@ -1737,6 +1838,7 @@ function renderParlay(o){
   }
   const wks=[...new Set(legs.map(l=>l.week))];
   const pr=parlayProb(legs.map(l=>({...l,side:l.side||'over'})));
+  const fair=parlayFair(legs);
   const prices=legs.map(legPrice);
   const allBook=prices.every(p=>p.src==='real');
   const multDec=prices.reduce((a,p)=>a*(mlToDec(p.ml)||1),1);
@@ -1756,12 +1858,13 @@ function renderParlay(o){
   let html=droppedNote+`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">${legs.length}-leg parlay <span class="pill">building</span></h2>
     <p class="muted" style="margin:0 0 12px">Every leg has to land. The chance below is worked out with the legs' real relationship to each other, not by multiplying them together.</p>
     <table><thead><tr><th>Player</th><th>The bet</th><th class="num">Projected</th><th class="num">Chance</th><th class="num">Price</th><th></th></tr></thead><tbody>`;
+  const fm={};
   legs.forEach((l,i)=>{
-    const [c,lbl]=confTier(l.p);
+    const [c,lbl]=confTier(l.p), f=legFair(l,fm), far=!!f&&l.p-f.p>=FAR_OFF-1e-9;
     html+=`<tr class="legrow"><td class="plr">${esc(l.name)}${l.grp==='TEAM'?'':injChip(l.pid)}<small>${esc(l.pos)} \u00b7 ${esc(l.team)} v ${esc(l.opp)} \u00b7 wk ${esc(l.week)}</small></td>
-      <td><b>${esc(l.label)}</b></td>
+      <td><b>${esc(l.label)}</b>${far?`<small class="faroff" data-far>${farText(l.p,f)}</small>`:''}</td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
-      <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span></td>
+      <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span>${f?`<small class="legfair" data-legfair="${f.p}" title="The book's fair chance on this leg: its price with the margin taken out${f.est?', estimated with the week\u2019s typical margin since only this side is priced':''}">fair ${(f.p*100).toFixed(0)}%${f.est?' est.':''}</small>`:''}</td>
       <td class="num">${fmtML(prices[i].ml)} <span class="muted" style="font-size:11px">${prices[i].src==='real'?'real':(prices[i].src==='est'?'est.':'fair')}</span></td>
       <td><button class="btn quiet" data-drop="${l.key}">Remove</button></td></tr>`;
   });
@@ -1778,11 +1881,14 @@ function renderParlay(o){
       <span class="muted">${sg?`Blank prices the legs that share a game together, the way a book does.`:(allBook?'Blank multiplies your real leg prices.':'Blank multiplies the estimated leg prices, which include a typical bookmaker cut.')}</span>
     </div>
     <div class="bigp">
-      <div class="box hero"><b>${(pr.corr*100).toFixed(1)}%</b><span>chance all ${legs.length} land</span></div>
-      <div class="box"><b>${fmtML(fairML)}</b><span>fair price for that chance</span></div>
+      ${fair&&fair.p!=null?`<div class="box hero"><b data-fair="${fair.p}">${(fair.p*100).toFixed(1)}%</b><span>fair chance all ${legs.length} land${fair.est?', est.':''}</span><small data-model="${pr.corr}">model says ${(pr.corr*100).toFixed(1)}%</small></div>`
+        :`<div class="box hero"><b data-model="${pr.corr}">${(pr.corr*100).toFixed(1)}%</b><span>model's chance all ${legs.length} land</span><small>no fair chance: it needs every leg's book price</small></div>`}
+      <div class="box"><b>${fmtML(fairML)}</b><span>fair price for the model's chance</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
       <div class="box tier ${confTier(pr.corr)[0]}"><b>${confTier(pr.corr)[1]}</b><span>confidence all ${legs.length} land</span></div>
     </div>
+    <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)':''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
+      :`The fair chance needs a book price on every leg; ${fair&&fair.miss===1?'one leg has':(fair?fair.miss:0)+' legs have'} none, so this is the model's chance alone.`}</p>
     ${sg&&override==null?`<p class="muted" style="margin:10px 0 0;font-size:12px">Legs here share a game, so they are priced together rather than multiplied: multiplying them would say <b>$${(stake*multDec).toFixed(2)}</b>, which is what a book pays only when the legs are in different games. The estimate carries a same-game cut fitted to real DraftKings tickets; type your book's own parlay price above to override it.</p>`:''}`;
   const canSave=wks.length===1&&(realPrice||estPrice);
   html+=`<div class="actions"><button class="btn go" id="pSave" ${canSave?'':'disabled'} title="${canSave?'Locks the legs, stake and price as they are now and moves it to Saved':(wks.length>1?'Legs must all be from the same week to save':'Set a price first')}">Save and lock this parlay</button><button class="btn quiet" id="pClear">Clear ALL</button></div></div>`;
