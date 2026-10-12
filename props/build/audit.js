@@ -1,10 +1,14 @@
 const {JSDOM}=require('jsdom'); const fs=require('fs'); const Papa=require('papaparse');
 const errs=[]; let mem=null; const calls=[];
+/* the payload the page boots on: the published one, or (PROPS_AUDIT_PAYLOAD) a copy baked elsewhere,
+   to try a change to the model's data before the job has baked it */
+const PAYLOAD_FILE=process.env.PROPS_AUDIT_PAYLOAD||'../data/payload.json';
+if(process.env.PROPS_AUDIT_PAYLOAD) console.log('payload: '+PAYLOAD_FILE);
 const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
  /* a real origin, so window.localStorage exists: the app reads the betting model's key and
     writes the live page's watchlist, and neither can be exercised on about:blank */
  {url:'https://demon-x13.github.io/nfl-hub/props/',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=(u,o)=>(calls.push({url:String(u),cache:o&&o.cache||null}),String(u).indexOf('payload.json')>=0)
-   ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync('../data/payload.json','utf8'))})
+   ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync(PAYLOAD_FILE,'utf8'))})
    : Promise.reject(new Error('x'));   /* the payload is fetched now, not baked in */
   w.confirm=()=>true;w.alert=()=>{};w.scrollTo=()=>{};w.URL.createObjectURL=()=>'blob:x';
   w.storage={get:async()=>mem?{value:mem}:null,set:async(k,v)=>{mem=v;return true;}};
@@ -335,6 +339,110 @@ setTimeout(async()=>{
       c1.checked=false; c1.dispatchEvent(new w.Event('change')); }
     d.getElementById('backBtn').click();
     console.log(`K. touchdowns: P(2+|p=0.5)=${(tdPlus(0.5,2)*100).toFixed(1)}%, settlement and toggling ok`); }
+
+  /* ---- K2. a quarterback's anytime touchdown: his own run or catch, never a pass (app v102) ----
+     The market and his stats carry it; its wording says what it is and a back's is unchanged; it
+     settles on his rushing and receiving touchdowns alone, from a stats row and from the live box
+     score; it moves with the total and with his own carries as TOTAL_RHO and corr.json say; and
+     market + form is asked with the leg's stat (none on a quarterback's touchdown). Where the payload
+     carries his model (model.QB.any_td, baked from data/final_model.json), every quarterback on a game
+     to come has the leg, its chance the logit on featVec capped by his projected carries at tdrate.QB
+     (x tdmult), worked here on its own; one with a book price is a priced leg at that price; and his
+     game page heads the block as his own run or catch, with boxes that put the leg on worded so. The
+     audit boots with NO_BAKED, so S.odds is empty here: the open weeks' own prices are ingested for
+     these checks (and S.odds put back after), and where none of them prices a quarterback who can be
+     suggested, one is planted at +235, so the priced leg is always held, never passed on nothing. A
+     payload baked before the model has none: those checks are skipped and said, never failed. */
+  { const MK=F('MKT'), GS=F('GRP_STATS'), TR=F('TOTAL_RHO'), tdLabel=F('tdLabel'), rowStats=F('rowStats'), espnStats=F('espnStats'),
+      featVec=F('featVec'), dot=F('dot'), oddsFor=F('oddsFor'), pricedLegs=F('pricedLegs'), suggestable=F('suggestable');
+    chk(MK.any_td.grps.includes('QB')&&GS.QB.includes('any_td'),'the anytime touchdown is not offered to a quarterback');
+    const q1=tdLabel('QB',1), q2=tdLabel('QB',2);
+    chk(/rushing or receiving TD/.test(q1)&&/not a TD pass/.test(q1)&&/2\+ rushing or receiving TDs/.test(q2)&&/not TD passes/.test(q2),`a quarterback's touchdown is not worded as his own run or catch: "${q1}", "${q2}"`);
+    chk(tdLabel('RB',1)==='Scores a touchdown'&&tdLabel('WR',2)==='Scores 2+ touchdowns'&&tdLabel('TE',1)==='Scores a touchdown','a back\'s, receiver\'s or tight end\'s touchdown wording changed');
+    /* settling, from a stats row as the file has it */
+    { const row={attempts:'31',completions:'22',passing_yards:'262',passing_tds:'3',passing_interceptions:'0',carries:'6',rushing_yards:'24',rushing_tds:'0',receptions:'0',targets:'0',receiving_yards:'0',receiving_tds:'0'};
+      const wk='99', pid='__qb_td__', had=S.actuals[wk];
+      const at=r=>{ S.actuals[wk]={[pid]:rowStats(r)}; return [1,2,3].map(k=>settleLeg({week:+wk,pid,stat:'any_td',k,side:'over',grp:'QB'})).join(','); };
+      const pass3=at(row), run1=at({...row,passing_tds:'1',rushing_tds:'1'}), both=at({...row,passing_tds:'0',rushing_tds:'1',receiving_tds:'1'});
+      if(had===undefined) delete S.actuals[wk]; else S.actuals[wk]=had;
+      chk(pass3==='loss,loss,loss',`three touchdown passes and no run should lose a quarterback's touchdown and his 2+: ${pass3}`);
+      chk(run1==='win,loss,loss',`a quarterback's rushing touchdown (and one pass) should win his touchdown and lose his 2+: ${run1}`);
+      chk(both==='win,win,loss',`a quarterback's run and catch should win his touchdown and his 2+: ${both}`); }
+    /* and live, from the box score */
+    { const box=(ptd,rtd)=>({boxscore:{players:[{team:{abbreviation:'WSH'},statistics:[
+        {name:'passing',labels:['C/ATT','YDS','AVG','TD','INT'],athletes:[{athlete:{displayName:'Jayden Daniels'},stats:['21/30','255','8.5',String(ptd),'0']}]},
+        {name:'rushing',labels:['CAR','YDS','AVG','TD','LONG'],athletes:[{athlete:{displayName:'Jayden Daniels'},stats:['7','48','6.9',String(rtd),'15']}]}]}]}});
+      const e0=espnStats(box(3,0),'WAS','Jayden Daniels'), e1=espnStats(box(0,1),'WAS','Jayden Daniels');
+      chk(e0&&e0.passing_tds===3&&e0.any_td===0&&e1&&e1.any_td===1,`live: a quarterback's touchdown passes counted, or his run not (${e0&&e0.any_td}, ${e1&&e1.any_td})`); }
+    /* moving together: the total, his own lines, a parlay of them */
+    const mq=(stat,pid)=>({gid:'gq',pid:pid||'q',team:'WAS',grp:'QB',stat,p:0.3,side:'over'}), tot={gid:'gq',pid:'game',team:'WAS',grp:'TEAM',stat:'total',p:0.5,side:'over'};
+    chk(TR['QB:any_td']===0.09&&legRho(mq('any_td'),tot)===0.09&&legRho(tot,mq('any_td'))===0.09,'a quarterback\'s touchdown does not move with the total as TOTAL_RHO says');
+    { const C=PAY.corr||{}, rc=C['self|QB:any_td|QB:carries'], rp=C['self|QB:any_td|QB:passing_tds'];
+      if(rc==null) console.log('K2. corr.json in this payload has no quarterback touchdown pairs (baked before them): his legs move with nothing but the total');
+      else { chk(rc>0&&legRho(mq('any_td'),mq('carries'))===rc&&legRho(mq('carries'),mq('any_td'))===rc,'a quarterback\'s touchdown and his carries are not correlated as corr.json says');
+        chk(rp<0&&legRho(mq('passing_tds'),mq('any_td'))===rp,'a quarterback\'s touchdown and his touchdown passes are not correlated as corr.json says');
+        const pp=parlayProb([{...mq('any_td'),p:0.3},{...mq('rushing_yards'),p:0.5}]); chk(pp.corr>pp.indep,'a quarterback\'s touchdown and his rushing yards on one parlay are not priced together'); } }
+    /* market + form is asked with the stat */
+    { let seen=null; const keepA=w.eloAltP, keepL=w.eloLoaded; w.eloAltP=(pid,side,price,src,stat)=>{ seen=stat; return null; }; w.eloLoaded=()=>true;
+      const ok=F('formAgrees')({pid:'q',grp:'QB',stat:'any_td',side:'over',price:200,src:'real'});
+      if(keepA===undefined) delete w.eloAltP; else w.eloAltP=keepA; if(keepL===undefined) delete w.eloLoaded; else w.eloLoaded=keepL;
+      chk(seen==='any_td'&&ok===false,`formAgrees does not hand market + form the leg's stat (${seen})`); }
+    const M=PAY.model.QB&&PAY.model.QB.any_td;
+    if(!M) console.log('K2. quarterback touchdown: offered, worded, settled, correlated; this payload predates its model (no model.QB.any_td), so no quarterback has the leg yet and the projection checks are skipped until the props job rebakes');
+    else {
+      const R=PAY.tdrate.QB, MM=PAY.model.QB;
+      chk(M.type==='logit'&&M.coef.length===15&&M.coef.every(isFinite),'model.QB.any_td is not a 15-number logit');
+      chk(PAY.prior.QB&&PAY.prior.QB.any_td>0&&PAY.prior.QB.any_td<1,'prior.QB.any_td missing or not a chance');
+      chk(!!R&&R.rush>0&&R.rush<0.2,'tdrate.QB missing: a quarterback\'s touchdown would go uncapped');
+      const open=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w));
+      const keepOdds=JSON.stringify(S.odds||{}); let planted=null, elig=0;
+      for(const wk of new Set(open.map(g=>+g.w))) F('ingestOdds')((PAY.prices||{})[String(wk)]||[],wk);
+      { const cand=[]; for(const g of open){ const r=rosterFor(g,false);
+          for(const team in r) for(const x of r[team].players) if(x.pl.grp==='QB'&&x.gp>=3&&suggestable(x.pl.id)) cand.push({g,x}); }
+        elig=cand.length;
+        if(elig&&!cand.some(c=>oddsFor(c.g.id,c.x.pl.id,'any_td',1)!=null)){ const c=cand[0];
+          ((S.odds[c.g.id]??={})[c.x.pl.id]??={}).any_td={'1':235}; planted=c.x.pl.n; } }
+      const legs=pricedLegs(open);
+      let nQ=0,nP=0,capped=0,mism=0,noLine=0,badLeg=0; const shown=[];
+      for(const g of open){ const r=rosterFor(g,false);
+        for(const team in r) for(const x of r[team].players){ if(x.pl.grp!=='QB') continue; nQ++;
+          const l=statLines(x).find(s=>s.stat==='any_td'); if(!l){ noLine++; continue; }
+          const p0=1/(1+Math.exp(-dot(M.coef,featVec(x.pl,'any_td',x.opp,x.ctx))));
+          const mc=MM.carries?Math.max(dot(MM.carries.coef,featVec(x.pl,'carries',x.opp,x.ctx)),0):0, mr=MM.receptions?Math.max(dot(MM.receptions.coef,featVec(x.pl,'receptions',x.opp,x.ctx)),0):0;
+          const cap=R?1-Math.exp(-(mc*R.rush+mr*R.rec)*(PAY.tdmult||1.5)):1, want=Math.min(p0,cap);
+          if(cap<p0) capped++;
+          if(!(Math.abs(l.p-want)<1e-12&&l.p>0&&l.p<1)) mism++;
+          const od=oddsFor(g.id,x.pl.id,'any_td',1);
+          if(od!=null&&x.gp>=3&&suggestable(x.pl.id)){ nP++; const L=legs.find(c=>c.pid===x.pl.id&&c.stat==='any_td');
+            if(!(L&&L.price===od&&L.src==='real'&&L.p===l.p&&L.k===1&&L.side==='over'&&L.label===q1&&L.grp==='QB')) badLeg++;
+            else if(shown.length<4) shown.push(`${x.pl.n} ${(l.p*100).toFixed(0)}% at ${od>0?'+':''}${od}`); } } }
+      chk(nQ>0||!open.length,'no quarterback on a game to come');
+      chk(noLine===0,`${noLine} quarterbacks on games to come with no touchdown line`);
+      chk(mism===0,`${mism} quarterback touchdown chances are not the logit capped by his carries at tdrate.QB`);
+      chk(badLeg===0,`${badLeg} quarterbacks with a book price on their touchdown have no priced leg at it, or one worded or priced otherwise`);
+      chk(!elig||nP>=1,`${elig} quarterbacks on games to come could be suggested, and none of them with a book price on his touchdown was checked as a priced leg`);
+      chk(legs.filter(c=>c.grp==='QB'&&c.stat==='any_td').length===nP,'a quarterback touchdown leg in pricedLegs for a quarterback with no price on it, or twice');
+      { const o=JSON.parse(keepOdds); for(const k of Object.keys(S.odds)) delete S.odds[k]; Object.assign(S.odds,o); }
+      /* his game page: the block, its wording, its boxes */
+      let page='no game to come';
+      if(open.length){ const gq=openUpcoming(), roster=rosterFor(gq,false);
+        const qx=Object.values(roster).flatMap(t=>t.players).find(x=>x.pl.grp==='QB');
+        const btn=qx&&d.querySelector(`.plrbtn[data-open="${qx.pl.id}"]`);
+        if(btn){ btn.click();
+          const key=gq.id+'|'+qx.pl.id+'|any_td', box=k=>d.querySelector(`.plrbody [data-leg="${key}"][data-k="${k}"]`);
+          const blk=box(1)&&box(1).closest('.statblk'), h=blk&&blk.querySelector('h4');
+          chk(!!h&&/^Rushing or receiving TD/.test(h.textContent.trim())&&/a TD pass does not count/.test((h.querySelector('em[data-qbtd]')||{}).textContent||''),`a quarterback's touchdown block is not headed as his own run or catch: "${h&&h.textContent.trim()}"`);
+          chk(!!box(1)&&/rushing or receiving touchdown/.test(box(1).getAttribute('aria-label')||''),'a quarterback\'s touchdown box does not say what it adds');
+          if(box(2)){ box(2).checked=true; box(2).dispatchEvent(new w.Event('change'));
+            const L2=S.parlay[key]; chk(!!L2&&L2.k===2&&L2.label===q2&&L2.grp==='QB',`his 2+ box put on "${L2&&L2.label}"`);
+            box(1).checked=true; box(1).dispatchEvent(new w.Event('change'));
+            const L1=S.parlay[key]; chk(!!L1&&L1.k===1&&L1.label===q1,`his touchdown box put on "${L1&&L1.label}"`);
+            box(1).checked=false; box(1).dispatchEvent(new w.Event('change')); chk(!S.parlay[key],'unticking his touchdown left it on'); }
+          else chk(false,'no 2+ box on a quarterback\'s touchdown');
+          page=`${qx.pl.n}'s game page heads it as his own run or catch and its boxes put on "${q1}"`; }
+        else chk(false,'no quarterback row on a game to come');
+        d.getElementById('backBtn').click(); }
+      console.log(`K2. quarterback touchdown: offered, worded, settled on his runs and catches only (a stats row and live), correlated; ${nQ} quarterbacks on games to come each with the leg, ${capped} held by his carries' cap, every chance the capped logit; ${nP} with a book price each a priced leg${planted?' (none on the open weeks\' prices, so one planted on '+planted+')':''}${shown.length?' ('+shown.join(', ')+')':''}; ${page}`); } }
 
   /* ---- G. state flow: upload, grade, rollover, backup round trip ---- */
   const g0=openUpcoming();
@@ -1738,6 +1846,7 @@ setTimeout(async()=>{
       const pen=espnStats(SUM,'ATL','Michael Penix');
       chk(pen&&pen.completions===18&&pen.attempts===27,'C/ATT was not split');
       chk(pen&&pen.passing_yards===241&&pen.passing_tds===2&&pen.passing_interceptions===1,'the passing line was misread');
+      chk(pen&&pen.any_td===0,'a quarterback\'s touchdown passes were counted as touchdowns he scored: '+(pen&&pen.any_td));
       const gay=espnStats(SUM,'WAS','Matt Gay');     /* our WAS against ESPN's WSH */
       chk(gay&&gay.fg_made===2&&gay.fg_att===3&&gay.kick_pts===9,'the kicking line was misread, or the team alias missed');
       chk(espnStats(SUM,'ATL','Nobody Here')===null,'a player with no line should read null, never zeroes');

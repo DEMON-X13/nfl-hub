@@ -202,7 +202,7 @@ const L_OUT = at(player('XX-OUT', gq, 'receptions', 2.5, 'over', true, -110), gO
 P2.injuries = [...(P2.injuries || []), { season: String(season), week: String(W), gsis_id: 'XX-OUT', team: gOut.h, report_status: 'Out', practice_status: 'Did Not Participate In Practice', injury: 'Knee' }];
 const OUTS = new Set(P2.injuries.filter(x => x.report_status === 'Out').map(x => String(+x.week) + '|' + x.gsis_id));
 const tier = (id, n, legs, extra = {}) => ({ id, label: SL.LABELS[id], n, floor: 0, legs, p: 0.3, fair: 0.25, fair_est: false, dec: r3(legs.reduce((a, l) => a * dec(l.price), 1)), likeliest: false, thin: 0, mkt: 0, ...extra });
-const kX = kicks[0] - 3 * H, kY = kicks[0] - 2 * H, kX2 = kicks[0] - 2.5 * H, kZ = kicks[0] - 1.5 * H;
+const kX = kicks[0] - 3 * H, kY = kicks[0] - 2 * H, kX2 = kicks[0] - 2.5 * H, kZ = kicks[0] - 1.5 * H, kQ = kicks[0] - 1.25 * H;
 const plant = (k, tiers, more = {}) => ({ season, week: W, kickoff: iso(k), games: games.map(g => g.id), baked_at: null, pool: { pref: 0, thin: 0, mkt: 0, far: 0 }, tiers, taken_at: iso(k - H), ...more });
 const X = plant(kX, [
   tier('safe', 2, [L_WIN, L_OVER]),                                   /* won, the whole price */
@@ -222,6 +222,10 @@ const Z = plant(kZ, [
   tier('med', 3, [L_PLAYED_U, L_WIN, L_OUT]),                          /* won: his under wins on zero, the Out leg void */
   tier('aggr', 4, [L_NAMED_U, L_ZERO, L_WIN, L_OVER]),                /* won: by his name, on zero; no snaps, void */
   tier('xtrm', 5, [L_UNK, L_WIN, L_OVER, L_TIE, L_NAMED_U]) ]);       /* pending: no snaps for his club yet, and not Out */
+/* Q: the planted quarterback's own touchdown (a run or a catch, app v102): his two touchdown passes and
+   no run do not win it */
+const L_QBTD = { ...player(qb.id, gq, 'any_td', 1, 'over', false, 235), label: 'Scores a rushing or receiving TD (not a TD pass)' };
+const Q = plant(kQ, [tier('safe', 2, [L_QBTD, L_WIN])]);              /* lost: the touchdown passes are not his */
 /* PS: last season's week W, an all-player Safe graded lost; this season's rows for the same players
    and week would win it: never regraded */
 const kP = kicks[0] - 365 * 24 * H, prevGid = `${season - 1}_${String(W).padStart(2, '0')}_${gq.a}_${gq.h}`;
@@ -229,7 +233,7 @@ const PS = { ...plant(kP, [tier('safe', 2, [{ ...L_OVER, gid: prevGid }, { ...L_
 PS.grade = { safe: { result: 'lost', legs: ['loss', 'loss'], payout: 0 } };
 const kPS = `${season - 1}|${String(W).padStart(2, '0')}|${iso(kP)}`;
 { const x = read(), wk = String(W).padStart(2, '0');
-  for (const [k, e] of [[kX, X], [kY, Y], [kX2, X2], [kZ, Z]]) x.entries[`${season}|${wk}|${iso(k)}`] = e;
+  for (const [k, e] of [[kX, X], [kY, Y], [kX2, X2], [kZ, Z], [kQ, Q]]) x.entries[`${season}|${wk}|${iso(k)}`] = e;
   x.entries[kPS] = PS;
   x.summary = SL.summarize(x.entries); fs.writeFileSync(LEDGER, JSON.stringify(x, null, 1)); }
 const plantedC = read();
@@ -291,6 +295,8 @@ chk(gx.aggr && gx.aggr.result === 'lost' && gx.aggr.payout === 0, 'D: a parlay w
 chk(gx.xtrm && gx.xtrm.result === 'push' && gx.xtrm.payout === 1 && gx.xtrm.legs.every(x => x === 'push' || x === 'void'), 'D: every leg a push or a void is not a push, the stake back: ' + JSON.stringify(gx.xtrm));
 const gy = (L.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kY)}`] || {}).grade || {};
 chk(!gy.med && gy.aggr && gy.aggr.result === 'won' && JSON.stringify(gy.aggr.legs) === '["win","win","push","void"]' && gy.aggr.payout === r3(dec(L_WIN.price) * dec(L_OVER.price)), 'D: a level with no parlay was graded, or a planted level was not: ' + JSON.stringify(gy));
+const gqb = (L.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kQ)}`] || {}).grade || {};
+chk(gqb.safe && gqb.safe.result === 'lost' && JSON.stringify(gqb.safe.legs) === '["loss","win"]', 'D: a quarterback\'s touchdown was won on his touchdown passes: ' + JSON.stringify(gqb.safe));
 const gz = (L.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kZ)}`] || {}).grade || {};
 chk(gz.safe && gz.safe.result === 'lost' && JSON.stringify(gz.safe.legs) === '["loss","win"]', 'D: a player who played with no stat line did not lose his over on zero: ' + JSON.stringify(gz.safe));
 chk(gz.med && gz.med.result === 'won' && JSON.stringify(gz.med.legs) === '["win","win","void"]' && gz.med.payout === r3(dec(L_PLAYED_U.price) * dec(L_WIN.price)),
@@ -305,7 +311,7 @@ chk(JSON.stringify((L.entries[kPS] || {}).grade) === JSON.stringify(PS.grade), '
   const once = new Map(), lid = l => [l.gid, l.pid, l.stat, l.side, l.k, l.main ? 1 : 0].join('|');
   for (const k of Object.keys(L.entries).sort()) { const e = L.entries[k]; for (const t of e.tiers) { const g = (e.grade || {})[t.id]; if (!g || !t.legs) continue;
     once.set([e.season, e.week, t.id, t.legs.map(lid).sort().join('+')].join('#'), { t, g }); } }
-  chk([...once.values()].filter(x => x.t.id === 'safe' && x.t.legs.some(l => l.pid === L_WIN.pid) && x.t.legs.some(l => l.pid === L_OVER.pid) && x.t.n === 2 && x.t.legs.every(l => l.gid !== prevGid)).length === 1
+  chk([...once.values()].filter(x => x.t.id === 'safe' && x.t.legs.some(l => l.pid === L_WIN.pid) && x.t.legs.some(l => l.pid === L_OVER.pid && l.stat === L_OVER.stat) && x.t.n === 2 && x.t.legs.every(l => l.gid !== prevGid)).length === 1
     && L.summary.repeats >= 1, 'D: X\'s Safe parlay, frozen again at a later wave, is not one parlay, or the summary counts no repeat');
   for (const { t, g } of once.values()) { if (g.result === 'pending') continue;
     const s = want[t.id]; if (g.result === 'push') { s.push++; continue; } s.graded++; if (g.result === 'won') s.won++; s.exp_model += t.p; s.exp_fair += t.fair || 0; s.units += g.payout - 1; }

@@ -131,7 +131,7 @@ function renderSlate(){
 
 /* ---------- a player's season, week by week (the Show stats button) ---------- */
 const WEEK_COLS={
-  QB:[['C/Att',a=>`${a.completions}/${a.attempts}`,null],['Pass yds','passing_yards'],['Pass TD','passing_tds'],['INT','passing_interceptions'],['Rush yds','rushing_yards']],
+  QB:[['C/Att',a=>`${a.completions}/${a.attempts}`,null],['Pass yds','passing_yards'],['Pass TD','passing_tds'],['INT','passing_interceptions'],['Rush yds','rushing_yards'],['Rush TD','rushing_tds']],
   RB:[['Car','carries'],['Rush yds','rushing_yards'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
   WR:[['Tgt','targets'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
   TE:[['Tgt','targets'],['Rec','receptions'],['Rec yds','receiving_yards'],['TD','tds']],
@@ -319,7 +319,7 @@ function renderGame(){
           if(l.prob){
             const av=a?a.any_td:null;
             const Ltd=marketLine(g.w,x.pl.id,'any_td');
-            html+=`<div class="tile"><span class="tl">Touchdown</span>
+            html+=`<div class="tile"><span class="tl">${x.pl.grp==='QB'?'Rush or rec TD':'Touchdown'}</span>
               <b class="tv ${av==null?'pend':(av>=1?'over':'far')}">${av==null?'\u2013':(av>=1?'Yes':'No')}</b>
               <span class="tp">${(l.p*100).toFixed(0)}% chance</span>
               <span class="tb${Ltd?'':' none'}">${Ltd?fmtML(Ltd.over):'no book line'}</span></div>`;
@@ -350,16 +350,17 @@ function renderGame(){
           const tod=oddsFor(g.id,x.pl.id,'any_td',1);
           const p2=tdPlus(l.p,2), [c2,lbl2]=confTier(p2);
           const tf=tod!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:tod,src:'real',week:g.w}):null;
-          html+=`<div class="statblk"><h4>Touchdown</h4>
+          const qb=x.pl.grp==='QB', what=qb?'a rushing or receiving touchdown':'a touchdown', whats=qb?'two or more rushing or receiving touchdowns':'two or more touchdowns';
+          html+=`<div class="statblk"><h4>${qb?'Rushing or receiving TD <em data-qbtd>his own run or catch; a TD pass does not count</em>':'Touchdown'}</h4>
             <table class="rungs"><tr class="${ton?'on':''}${tf?' far':''}">
-            <td class="pick"><input type="checkbox" ${ton?'checked':''} data-leg="${tk}" data-k="1" data-side="over" aria-label="Add ${esc(x.pl.n)} to score a touchdown"></td>
+            <td class="pick"><input type="checkbox" ${ton?'checked':''} data-leg="${tk}" data-k="1" data-side="over" aria-label="Add ${esc(x.pl.n)} to score ${what}"></td>
             <td class="thr">Scores one</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${(l.p*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(l.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
             <td class="num est">${fmtML(bookPrice(l.p))}<em>est.</em></td>
             <td class="num book real">${tod!=null?fmtML(tod):''}</td></tr>
             <tr class="${ton2?'on':''}">
-            <td class="pick"><input type="checkbox" ${ton2?'checked':''} data-leg="${tk}" data-k="2" data-side="over" aria-label="Add ${esc(x.pl.n)} to score two or more touchdowns"></td>
+            <td class="pick"><input type="checkbox" ${ton2?'checked':''} data-leg="${tk}" data-k="2" data-side="over" aria-label="Add ${esc(x.pl.n)} to score ${whats}"></td>
             <td class="thr">Scores two or more</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c2}" style="width:${Math.max(2,p2*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(p2*100).toFixed(0)}%</td><td><span class="conf ${c2}">${lbl2}</span></td>
@@ -996,7 +997,7 @@ function toggleLeg(key,k,g,side,main){
   const pr=project(pl,stat,opp,ctx); if(!pr) return;
   const m=MKT[stat];
   let p,label,price=null,src='est';
-  if(m.prob){ const kk=k>=2?k:1; p=kk>=2?tdPlus(pr.p,kk):pr.p; label=kk>=2?`Scores ${kk}+ touchdowns`:'Scores a touchdown'; price=bookPrice(p); k=kk; }
+  if(m.prob){ const kk=k>=2?k:1; p=kk>=2?tdPlus(pr.p,kk):pr.p; label=tdLabel(pl.grp,kk); price=bookPrice(p); k=kk; }
   else if(main){
     const L=marketLine(game.w,pid,stat); if(!L) return;
     const pO=pOver(pl.grp,stat,pr.mu,L.line);
@@ -1075,7 +1076,7 @@ function pricedLegs(games){
       for(const l of statLines(x)){
         const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'real'};
         if(l.prob){ const od=oddsFor(g.id,x.pl.id,'any_td',1);
-          if(od!=null) out.push({...base,key:legKey(g.id,x.pl.id,'any_td'),k:1,side:'over',main:false,p:l.p,price:od,mu:null,label:'Scores a touchdown'});
+          if(od!=null) out.push({...base,key:legKey(g.id,x.pl.id,'any_td'),k:1,side:'over',main:false,p:l.p,price:od,mu:null,label:tdLabel(x.pl.grp,1)});
           continue; }
         const L=marketLine(g.w,x.pl.id,l.stat);
         if(L){ const pO=pOver(x.pl.grp,l.stat,l.mu,L.line), lbl=l.m.lbl.toLowerCase();
@@ -1099,7 +1100,7 @@ function pricedLegs(games){
 function formAgrees(c){
   if(typeof window.eloAltP!=='function'||c.grp==='TEAM') return true;
   if(typeof window.eloLoaded==='function'&&!window.eloLoaded()) return false;
-  const a=window.eloAltP(c.pid,c.side,c.price,c.src);
+  const a=window.eloAltP(c.pid,c.side,c.price,c.src,c.stat);   /* none on a quarterback's touchdown: his rating is a passer's */
   return a!=null&&a-mlProb(c.price)>=0.03;
 }
 function formSig(){ return typeof window.eloLoaded==='function'?(window.eloLoaded()?'form':'noform'):''; }
@@ -1630,7 +1631,7 @@ function gameLegPool(g){
       if(GAME_NOT_OFFERED.has(l.stat)) continue;
       const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'est'};
       if(l.prob){ const key=legKey(g.id,x.pl.id,'any_td');
-        if(!have.has(key+'@1over')) out.push({...base,stat:'any_td',key,k:1,side:'over',main:false,p:l.p,price:bookPrice(l.p),mu:null,label:'Scores a touchdown'});
+        if(!have.has(key+'@1over')) out.push({...base,stat:'any_td',key,k:1,side:'over',main:false,p:l.p,price:bookPrice(l.p),mu:null,label:tdLabel(x.pl.grp,1)});
         continue; }
       const key=legKey(g.id,x.pl.id,l.stat);
       for(const r of l.rungs){ if(have.has(key+'@'+r.k+'over')) continue;

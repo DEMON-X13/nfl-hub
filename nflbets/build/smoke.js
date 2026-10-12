@@ -1181,6 +1181,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const pool = w.eval('pbPool(pbGames())'), mlProb = w.eval('mlProb'), altP = w.eval('window.eloAltP');
       chk(pool.pref.filter(c => c.grp !== 'TEAM').every(c => altP(c.pid, c.side, c.price, c.src) - mlProb(c.price) >= 0.03), 'a preferred player leg does not clear market + form');
       chk(altP('game', 'over', -110, 'real') === null, 'market + form prices a game total, which is no player\'s');
+      { const q = eloP.groups.QB.top[0];   /* a quarterback's rating is a passer's: no second price on the touchdown he scores himself (app v102) */
+        chk(altP(q.id, 'over', 200, 'real', 'any_td') === null && altP(q.id, 'over', 200, 'real', 'passing_yards') != null, 'market + form prices a quarterback\'s own touchdown on his passing rating, or no longer his passing line'); }
       chk(w.eval('getPbTiers().sig').split('|').includes('form'), 'the suggestions\' signature does not carry the Elo state: ' + w.eval('getPbTiers().sig')); } }
     /* the Props game view: the same shield on a ranked player's row */
     { [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'slate').click(); await wait(60);

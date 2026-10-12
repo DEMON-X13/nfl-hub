@@ -39,7 +39,7 @@ SEASONS=range(FIRST,BASE+1)
 # added later leaves the rows the model was fitted on exactly as they were
 FIT=range(2019,2026)
 
-GRP_STATS={'QB':['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards'],
+GRP_STATS={'QB':['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','any_td'],
  'RB':['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
  'WR':['targets','receptions','receiving_yards','any_td'],
  'TE':['targets','receptions','receiving_yards','any_td'],

@@ -535,7 +535,9 @@ window.eloPre=preElo;
    and the price about ties the book (Brier 0.2486 against 0.2498). So the Prop Record grades
    it on the rating each player took into the week (preElo), and it stays beside the model's
    chance, not in its place, until it earns more. Legs without a real book price, and team
-   legs, have no second price.
+   legs, have no second price; nor has a quarterback's own touchdown (a run or a catch, app v102):
+   his rating is a passer's, and nothing measured says it moves the touchdowns he scores himself
+   (they run a little against the ones he throws). A caller that knows the leg's stat passes it.
    The 40-point step belongs to the ratings it was fitted on, whose spread across a position
    (the standard deviation of every rated player's career rating in players.json, 25 September
    2026) was QB 34.1, RB 21.3, WR 27.6 and TE 27.0 (ALT.fitSd). The formula changes of 11 and 12
@@ -570,8 +572,9 @@ function groupOf(r){
   const p=typeof S==='object'&&S&&S.players&&S.players[r.pid];
   return p&&p.grp||null;
 }
-function altP(pid,side,price,src){
+function altP(pid,side,price,src,stat){
   if(!pid||String(pid).startsWith('team:')||pid==='game'||src!=='real'||price==null||!isFinite(price)||typeof mlProb!=='function') return null;
+  if(stat==='any_td'&&groupOf({pid})==='QB') return null;
   const imp=mlProb(price); if(!(imp>0&&imp<1)) return null;
   const e=window.eloOf(pid), z=e?altZ(e.elo,e.group):0, s=side==='under'?-1:1;
   return sgm(ALT.c+ALT.book*lgt(imp)+ALT.form*z*s);
@@ -585,7 +588,7 @@ function decorateAlt(){
     const b=tr.querySelector('button[data-drop]'); if(!b) return;
     const l=S.parlay[b.dataset.drop]; if(!l) return;
     const cell=tr.querySelectorAll('td')[3]; if(!cell||cell.querySelector('.pe-alt')) { if(cell&&cell.querySelector('.pe-alt')){ const v=+cell.querySelector('.pe-alt').dataset.p; if(v){ prod*=v; prodM*=l.p; n++; } } return; }
-    const p=altP(l.pid,l.side,l.price,l.src); if(p==null) return;
+    const p=altP(l.pid,l.side,l.price,l.src,l.stat); if(p==null) return;
     any=true; prod*=p; prodM*=l.p; n++;
     cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
     const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(l.price)):null;
