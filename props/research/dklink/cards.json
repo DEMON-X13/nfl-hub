@@ -1,0 +1,198 @@
+{
+ "card1": {
+  "legs": [
+   {
+    "leg": [
+     "Los Angeles Chargers",
+     "h2h",
+     null,
+     null
+    ],
+    "point": null,
+    "price": 154,
+    "sid": "0ML84695580_1"
+   },
+   {
+    "leg": [
+     "Detroit Lions",
+     "spreads",
+     null,
+     -5.5
+    ],
+    "point": -5.5,
+    "price": -108,
+    "sid": "0HC84695554N550_3"
+   },
+   {
+    "leg": [
+     "Seattle Seahawks",
+     "spreads",
+     null,
+     -3
+    ],
+    "point": -3.0,
+    "price": -115,
+    "sid": "0HC84695450N300_1"
+   }
+  ],
+  "link": "https://sportsbook.draftkings.com/?outcomes=0ML84695580_1+0HC84695554N550_3+0HC84695450N300_1"
+ },
+ "card2": {
+  "legs": [
+   {
+    "leg": [
+     "Cincinnati Bengals",
+     "spreads",
+     null,
+     -7
+    ],
+    "point": -7.0,
+    "price": -115,
+    "sid": "0HC84695628N700_3"
+   },
+   {
+    "leg": [
+     "New York Jets",
+     "h2h",
+     null,
+     null
+    ],
+    "point": null,
+    "price": -135,
+    "sid": "0ML84695637_1"
+   },
+   {
+    "leg": [
+     "Las Vegas Raiders",
+     "h2h",
+     null,
+     null
+    ],
+    "point": null,
+    "price": 154,
+    "sid": "0ML84695656_3"
+   }
+  ],
+  "link": "https://sportsbook.draftkings.com/?outcomes=0HC84695628N700_3+0ML84695637_1+0ML84695656_3"
+ },
+ "card3": {
+  "legs": [
+   {
+    "leg": [
+     "Emanuel Wilson",
+     "player_receptions",
+     "Under",
+     1.5
+    ],
+    "point": 1.5,
+    "price": 125,
+    "sid": "0QA376135267#2309712878_13L88808Q1-847255388Q20"
+   },
+   {
+    "leg": [
+     "Jared Goff",
+     "player_pass_yds",
+     "Over",
+     281.5
+    ],
+    "point": 281.5,
+    "price": -111,
+    "sid": "0QA376230553#2311947839_13L88808Q192214934Q20"
+   },
+   {
+    "leg": [
+     "Omarion Hampton",
+     "player_receptions",
+     "Over",
+     1.5
+    ],
+    "point": 1.5,
+    "price": 122,
+    "sid": "0QA376125949#2309707473_13L88808Q1-1669482518Q20"
+   },
+   {
+    "leg": [
+     "Seattle Seahawks",
+     "spreads",
+     null,
+     -3
+    ],
+    "point": -3.0,
+    "price": -115,
+    "sid": "0HC84695450N300_1"
+   },
+   {
+    "leg": [
+     "Tory Horton",
+     "player_receptions",
+     "Over",
+     1.5
+    ],
+    "point": 1.5,
+    "price": 148,
+    "sid": "0QA376134700#2309711312_13L88808Q1-1669482518Q20"
+   }
+  ],
+  "link": "https://sportsbook.draftkings.com/?outcomes=0QA376135267%232309712878_13L88808Q1-847255388Q20+0QA376230553%232311947839_13L88808Q192214934Q20+0QA376125949%232309707473_13L88808Q1-1669482518Q20+0HC84695450N300_1+0QA376134700%232309711312_13L88808Q1-1669482518Q20"
+ },
+ "card4": {
+  "legs": [
+   {
+    "leg": [
+     "Cam Ward",
+     "player_pass_tds",
+     "Under",
+     0.5
+    ],
+    "point": 0.5,
+    "price": 140,
+    "sid": "0QA376129038#2309683526_13L88808Q1262864673Q20"
+   },
+   {
+    "leg": [
+     "Kevin Coleman Jr.",
+     "player_receptions",
+     "Under",
+     1.5
+    ],
+    "point": 1.5,
+    "price": 132,
+    "sid": "0QA376136776#2314209477_13L88808Q1-847255388Q20"
+   },
+   {
+    "leg": [
+     "Malik Washington",
+     "player_receptions",
+     "Under",
+     4.5
+    ],
+    "point": 4.5,
+    "price": 102,
+    "sid": "0QA376136517#2312908496_13L88808Q1-2138696Q20"
+   },
+   {
+    "leg": [
+     "MarShawn Lloyd",
+     "player_rush_yds",
+     "Under",
+     27.5
+    ],
+    "point": 27.5,
+    "price": -113,
+    "sid": "0QA376093806#2313282874_13L88808Q1-1318678223Q20"
+   },
+   {
+    "leg": [
+     "Quinshon Judkins",
+     "player_rush_yds",
+     "Under",
+     60.5
+    ],
+    "point": 59.5,
+    "price": -111,
+    "sid": "0QA376115905#2311294642_13L88808Q11482169946Q20"
+   }
+  ],
+  "link": "https://sportsbook.draftkings.com/?outcomes=0QA376129038%232309683526_13L88808Q1262864673Q20+0QA376136776%232314209477_13L88808Q1-847255388Q20+0QA376136517%232312908496_13L88808Q1-2138696Q20+0QA376093806%232313282874_13L88808Q1-1318678223Q20+0QA376115905%232311294642_13L88808Q11482169946Q20"
+ }
+}

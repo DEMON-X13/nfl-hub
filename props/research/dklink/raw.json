@@ -1,0 +1,562 @@
+{
+ "id": "86457f91112732f21ad4bb7d37bd291c",
+ "sport_key": "americanfootball_nfl",
+ "sport_title": "NFL",
+ "commence_time": "2026-10-12T00:20:00Z",
+ "home_team": "Atlanta Falcons",
+ "away_team": "Baltimore Ravens",
+ "bookmakers": [
+  {
+   "key": "draftkings",
+   "title": "DraftKings",
+   "link": "https://sportsbook.draftkings.com/event/34118099",
+   "sid": "34118099",
+   "markets": [
+    {
+     "key": "player_pass_yds",
+     "last_update": "2026-10-11T15:24:38Z",
+     "link": null,
+     "sid": null,
+     "outcomes": [
+      {
+       "name": "Over",
+       "description": "Michael Penix Jr.",
+       "price": -112,
+       "point": 218.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376530769%232311848615_13L88808Q1248686034Q20",
+       "sid": "0QA376530769#2311848615_13L88808Q1248686034Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Michael Penix Jr.",
+       "price": -112,
+       "point": 218.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376530769%232311848616_13L88808Q1-1213168194Q20",
+       "sid": "0QA376530769#2311848616_13L88808Q1-1213168194Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Tyler Huntley",
+       "price": -113,
+       "point": 173.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376565659%232311845482_13L88808Q1-1368140600Q20",
+       "sid": "0QA376565659#2311845482_13L88808Q1-1368140600Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Tyler Huntley",
+       "price": -111,
+       "point": 173.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376565659%232311845483_13L88808Q1-1750001240Q20",
+       "sid": "0QA376565659#2311845483_13L88808Q1-1750001240Q20"
+      }
+     ]
+    },
+    {
+     "key": "player_reception_yds",
+     "last_update": "2026-10-11T15:24:38Z",
+     "link": null,
+     "sid": null,
+     "outcomes": [
+      {
+       "name": "Over",
+       "description": "Drake London",
+       "price": -114,
+       "point": 80.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394289%232311807812_13L88808Q1-452385338Q20",
+       "sid": "0QA376394289#2311807812_13L88808Q1-452385338Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Drake London",
+       "price": -110,
+       "point": 80.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394289%232311807813_13L88808Q1188781802Q20",
+       "sid": "0QA376394289#2311807813_13L88808Q1188781802Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Zay Flowers",
+       "price": -112,
+       "point": 67.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394608%232311832901_13L88808Q1-32262451Q20",
+       "sid": "0QA376394608#2311832901_13L88808Q1-32262451Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Zay Flowers",
+       "price": -112,
+       "point": 67.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394608%232311832902_13L88808Q1-1470625124Q20",
+       "sid": "0QA376394608#2311832902_13L88808Q1-1470625124Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Mark Andrews",
+       "price": -113,
+       "point": 31.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394452%232314971697_13L88808Q1521963119Q20",
+       "sid": "0QA376394452#2314971697_13L88808Q1521963119Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Mark Andrews",
+       "price": -111,
+       "point": 31.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394452%232314971698_13L88808Q1-1029314882Q20",
+       "sid": "0QA376394452#2314971698_13L88808Q1-1029314882Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Bijan Robinson",
+       "price": -110,
+       "point": 27.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394233%232311788345_13L88808Q11687747842Q20",
+       "sid": "0QA376394233#2311788345_13L88808Q11687747842Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Bijan Robinson",
+       "price": -114,
+       "point": 27.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394233%232311788346_13L88808Q1-1091112666Q20",
+       "sid": "0QA376394233#2311788346_13L88808Q1-1091112666Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Kyle Pitts",
+       "price": -112,
+       "point": 23.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394288%232311537812_13L88808Q1832051540Q20",
+       "sid": "0QA376394288#2311537812_13L88808Q1832051540Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Kyle Pitts",
+       "price": -112,
+       "point": 23.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394288%232311537813_13L88808Q11215289248Q20",
+       "sid": "0QA376394288#2311537813_13L88808Q11215289248Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Jahan Dotson",
+       "price": -109,
+       "point": 20.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393696%232311788219_13L88808Q1222461434Q20",
+       "sid": "0QA376393696#2311788219_13L88808Q1222461434Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Jahan Dotson",
+       "price": -115,
+       "point": 20.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393696%232311788220_13L88808Q1-1389246071Q20",
+       "sid": "0QA376393696#2311788220_13L88808Q1-1389246071Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Rashod Bateman",
+       "price": -113,
+       "point": 17.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394088%232311827862_13L88808Q1-1870021895Q20",
+       "sid": "0QA376394088#2311827862_13L88808Q1-1870021895Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Rashod Bateman",
+       "price": -111,
+       "point": 17.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394088%232311827904_13L88808Q1392644849Q20",
+       "sid": "0QA376394088#2311827904_13L88808Q1392644849Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Justice Hill",
+       "price": -117,
+       "point": 8.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394626%232311829216_13L88808Q1362015947Q20",
+       "sid": "0QA376394626#2311829216_13L88808Q1362015947Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Justice Hill",
+       "price": -108,
+       "point": 8.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394626%232311829217_13L88808Q1-1349259294Q20",
+       "sid": "0QA376394626#2311829217_13L88808Q1-1349259294Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Devontez Walker",
+       "price": -116,
+       "point": 8.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393922%232310652515_13L88808Q1362015947Q20",
+       "sid": "0QA376393922#2310652515_13L88808Q1362015947Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Devontez Walker",
+       "price": -108,
+       "point": 8.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393922%232310652601_13L88808Q1-1349259294Q20",
+       "sid": "0QA376393922#2310652601_13L88808Q1-1349259294Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Olamide Zaccheaus",
+       "price": -109,
+       "point": 8.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394106%232310814537_13L88808Q1362015947Q20",
+       "sid": "0QA376394106#2310814537_13L88808Q1362015947Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Olamide Zaccheaus",
+       "price": -115,
+       "point": 8.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394106%232310814538_13L88808Q1-1349259294Q20",
+       "sid": "0QA376394106#2310814538_13L88808Q1-1349259294Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Austin Hooper",
+       "price": -114,
+       "point": 6.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394012%232310652266_13L88808Q1-291429181Q20",
+       "sid": "0QA376394012#2310652266_13L88808Q1-291429181Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Austin Hooper",
+       "price": -110,
+       "point": 6.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394012%232310652296_13L88808Q1-1263895043Q20",
+       "sid": "0QA376394012#2310652296_13L88808Q1-1263895043Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Derrick Henry",
+       "price": -112,
+       "point": 5.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393726%232310651735_13L88808Q11516087027Q20",
+       "sid": "0QA376393726#2310651735_13L88808Q11516087027Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Derrick Henry",
+       "price": -112,
+       "point": 5.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393726%232310651775_13L88808Q1585233849Q20",
+       "sid": "0QA376393726#2310651775_13L88808Q1585233849Q20"
+      }
+     ]
+    },
+    {
+     "key": "player_receptions",
+     "last_update": "2026-10-11T15:24:38Z",
+     "link": null,
+     "sid": null,
+     "outcomes": [
+      {
+       "name": "Over",
+       "description": "Drake London",
+       "price": 120,
+       "point": 6.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393785%232311803731_13L88808Q1-122753611Q20",
+       "sid": "0QA376393785#2311803731_13L88808Q1-122753611Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Drake London",
+       "price": -153,
+       "point": 6.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393785%232311803732_13L88808Q1-1523053588Q20",
+       "sid": "0QA376393785#2311803732_13L88808Q1-1523053588Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Zay Flowers",
+       "price": 106,
+       "point": 5.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393646%232311209775_13L88808Q11193798451Q20",
+       "sid": "0QA376393646#2311209775_13L88808Q11193798451Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Zay Flowers",
+       "price": -135,
+       "point": 5.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393646%232311209776_13L88808Q1491250762Q20",
+       "sid": "0QA376393646#2311209776_13L88808Q1491250762Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Mark Andrews",
+       "price": -148,
+       "point": 3.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394242%232311280170_13L88808Q1730991375Q20",
+       "sid": "0QA376394242#2311280170_13L88808Q1730991375Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Mark Andrews",
+       "price": 116,
+       "point": 3.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394242%232311280172_13L88808Q1-616481466Q20",
+       "sid": "0QA376394242#2311280172_13L88808Q1-616481466Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Bijan Robinson",
+       "price": -115,
+       "point": 3.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394622%232311787837_13L88808Q1730991375Q20",
+       "sid": "0QA376394622#2311787837_13L88808Q1730991375Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Bijan Robinson",
+       "price": -111,
+       "point": 3.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394622%232311787838_13L88808Q1-616481466Q20",
+       "sid": "0QA376394622#2311787838_13L88808Q1-616481466Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Kyle Pitts",
+       "price": 105,
+       "point": 2.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394477%232311168315_13L88808Q1-2107084182Q20",
+       "sid": "0QA376394477#2311168315_13L88808Q1-2107084182Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Kyle Pitts",
+       "price": -134,
+       "point": 2.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394477%232311168316_13L88808Q11045072483Q20",
+       "sid": "0QA376394477#2311168316_13L88808Q11045072483Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Rashod Bateman",
+       "price": -155,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394349%232310652866_13L88808Q1-1669482518Q20",
+       "sid": "0QA376394349#2310652866_13L88808Q1-1669482518Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Rashod Bateman",
+       "price": 121,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394349%232310652917_13L88808Q1-847255388Q20",
+       "sid": "0QA376394349#2310652917_13L88808Q1-847255388Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Jahan Dotson",
+       "price": -150,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394415%232310653827_13L88808Q1-1669482518Q20",
+       "sid": "0QA376394415#2310653827_13L88808Q1-1669482518Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Jahan Dotson",
+       "price": 117,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394415%232310653898_13L88808Q1-847255388Q20",
+       "sid": "0QA376394415#2310653898_13L88808Q1-847255388Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Justice Hill",
+       "price": -117,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394555%232310654969_13L88808Q1-1669482518Q20",
+       "sid": "0QA376394555#2310654969_13L88808Q1-1669482518Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Justice Hill",
+       "price": -109,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394555%232310654978_13L88808Q1-847255388Q20",
+       "sid": "0QA376394555#2310654978_13L88808Q1-847255388Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Derrick Henry",
+       "price": 158,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394497%232311280377_13L88808Q1-1669482518Q20",
+       "sid": "0QA376394497#2311280377_13L88808Q1-1669482518Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Derrick Henry",
+       "price": -204,
+       "point": 1.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394497%232311280379_13L88808Q1-847255388Q20",
+       "sid": "0QA376394497#2311280379_13L88808Q1-847255388Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Austin Hooper",
+       "price": -238,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394071%232310652395_13L88808Q11748027846Q20",
+       "sid": "0QA376394071#2310652395_13L88808Q11748027846Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Austin Hooper",
+       "price": 184,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394071%232310652441_13L88808Q11828871616Q20",
+       "sid": "0QA376394071#2310652441_13L88808Q11828871616Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Olamide Zaccheaus",
+       "price": -226,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394609%232314254879_13L88808Q11748027846Q20",
+       "sid": "0QA376394609#2314254879_13L88808Q11748027846Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Olamide Zaccheaus",
+       "price": 175,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394609%232314254880_13L88808Q11828871616Q20",
+       "sid": "0QA376394609#2314254880_13L88808Q11828871616Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Devontez Walker",
+       "price": -215,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394410%232310653613_13L88808Q11748027846Q20",
+       "sid": "0QA376394410#2310653613_13L88808Q11748027846Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Devontez Walker",
+       "price": 166,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394410%232310653649_13L88808Q11828871616Q20",
+       "sid": "0QA376394410#2310653649_13L88808Q11828871616Q20"
+      }
+     ]
+    },
+    {
+     "key": "player_rush_yds",
+     "last_update": "2026-10-11T15:24:38Z",
+     "link": null,
+     "sid": null,
+     "outcomes": [
+      {
+       "name": "Over",
+       "description": "Bijan Robinson",
+       "price": -113,
+       "point": 86.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394519%232311793024_13L88808Q1-182041100Q20",
+       "sid": "0QA376394519#2311793024_13L88808Q1-182041100Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Bijan Robinson",
+       "price": -111,
+       "point": 86.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394519%232311793025_13L88808Q1-920947413Q20",
+       "sid": "0QA376394519#2311793025_13L88808Q1-920947413Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Derrick Henry",
+       "price": -113,
+       "point": 79.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394297%232314798791_13L88808Q1-555776238Q20",
+       "sid": "0QA376394297#2314798791_13L88808Q1-555776238Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Derrick Henry",
+       "price": -111,
+       "point": 79.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394297%232314798793_13L88808Q1-773410296Q20",
+       "sid": "0QA376394297#2314798793_13L88808Q1-773410296Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Brian Robinson Jr.",
+       "price": -109,
+       "point": 36.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393826%232311792858_13L88808Q1659496718Q20",
+       "sid": "0QA376393826#2311792858_13L88808Q1659496718Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Brian Robinson Jr.",
+       "price": -115,
+       "point": 36.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376393826%232311792859_13L88808Q11326323497Q20",
+       "sid": "0QA376393826#2311792859_13L88808Q11326323497Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Tyler Huntley",
+       "price": -108,
+       "point": 29.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376565631%232312861325_13L88808Q11479980551Q20",
+       "sid": "0QA376565631#2312861325_13L88808Q11479980551Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Tyler Huntley",
+       "price": -116,
+       "point": 29.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376565631%232312861326_13L88808Q11644667665Q20",
+       "sid": "0QA376565631#2312861326_13L88808Q11644667665Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Justice Hill",
+       "price": -109,
+       "point": 11.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394371%232311824526_13L88808Q1-1713198017Q20",
+       "sid": "0QA376394371#2311824526_13L88808Q1-1713198017Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Justice Hill",
+       "price": -115,
+       "point": 11.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394371%232311824527_13L88808Q1-666329404Q20",
+       "sid": "0QA376394371#2311824527_13L88808Q1-666329404Q20"
+      },
+      {
+       "name": "Over",
+       "description": "Michael Penix Jr.",
+       "price": -107,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376530799%232313356386_13L88808Q1346216354Q20",
+       "sid": "0QA376530799#2313356386_13L88808Q1346216354Q20"
+      },
+      {
+       "name": "Under",
+       "description": "Michael Penix Jr.",
+       "price": -117,
+       "point": 0.5,
+       "link": "https://sportsbook.draftkings.com/?outcomes=0QA376530799%232313356387_13L88808Q1-495610809Q20",
+       "sid": "0QA376530799#2313356387_13L88808Q1-495610809Q20"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
