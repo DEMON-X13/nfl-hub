@@ -56,6 +56,23 @@ all pass. What each one would have caught is said beside it.
              one more giveaway or sack lowers the offense and raises the defense; a game with no
              red-zone trip leaves every number finite; a final half in the play-by-play, or with
              an offense missing, is pending and moves nobody; a team on its bye keeps its ratings.
+  POWER      Team Rankings (`teams` in model.json, THE POWER RATINGS) against games.csv, solved
+             again with the gate's own code: the results part of every team the fixed point of
+             R_t = sum(w * score) / (sum(w) + LAM) over its finals (score its capped margin, home
+             field out, plus the opponent's rating; w halving every HALF weeks back from the
+             latest week), reached by iteration, never the build's matrix solve; every shown
+             rating and chance what that gives with the published lineup part; `before` the same
+             iteration on the finals that kicked off before the team's last one (their own latest
+             week the anchor), none for a team with no final; the record the season's regular-
+             season finals; the lineup part centred; the mean shown rating 1500 within 1; the
+             build's constants the gate's. And on fixtures (the build's power_ratings on invented
+             seasons): a team that beat an opponent who went on to win everything rates above one
+             whose opponent lost everything, though neither played again (the owner's re-judging);
+             a final after a team's last kickoff, its own opponents' included, never moves its
+             `before`, which is the table cut there; the shown mean 1500 within 1, with lineups and
+             without; no home term at a neutral site, and at home the home field comes off; a tie a
+             margin of 0. (A table that counted the team's own last game in `before`, turned home
+             field round or fell back to the sequential Elo published green.)
   UNITS      the build's own functions on fixtures: two equal teams at a neutral site are 50/50;
              a fullback listed first does not take the second running back's place; a club on its
              bye keeps its roster; a player out last week and not practising stays out.
@@ -458,6 +475,199 @@ def team_files_checks(M, games, cache):
             chk(len(set(shown)) > 1, f'TEAMS: every {side} rating is the same with {len(rated)} finals rated')
 
 
+# ---- Team Rankings (THE POWER RATINGS): the published table against games.csv ----
+# the gate's own copy of the build's constants (a deliberate change edits both and says why in the
+# build's docstring): the pull toward average in games, the margin cap, the recency half-life in
+# weeks, the home field in points, the log-odds a point, the usual spread that sets the shown
+# number, and the lineups' share
+POWER = {'LAM': 16.0, 'C': 17.0, 'HALF': 16.0, 'H': 1.8397, 'S': 0.35941, 'SPREAD': 1.932, 'W': 0.2}
+POWER_TYPES = ('REG', 'WC', 'DIV', 'CON', 'SB')
+
+
+def power_kick(day, time):
+    """a game's kickoff as games.csv writes it, to order the finals (no time: the start of the day)"""
+    return f'{day} {time if isinstance(time, str) and time.strip() else "00:00"}'
+
+
+def power_finals(season_games):
+    """the season's finals as (kickoff, week, home, away, home points, away points, neutral, type)"""
+    g = season_games[season_games.game_type.isin(POWER_TYPES) & season_games.home_score.notna() & season_games.away_score.notna()]
+    return [(power_kick(d, t), int(w), h, a, float(hp), float(ap), loc == 'Neutral', gt)
+            for d, t, w, h, a, hp, ap, loc, gt in zip(g.gameday, g.gametime, g.week, g.home_team, g.away_team,
+                                                      g.home_score, g.away_score, g.location, g.game_type)]
+
+
+def power_solve(finals, teams):
+    """The results part of every team, by iteration, never the build's matrix solve. Each final gives
+    each side a game score: its own margin capped at C, less H for the home side and plus H for the
+    visitor (neither at a neutral site), plus the opponent's rating; weighted by its week, halving
+    every HALF weeks back from the latest week among the finals given. A team's rating is the
+    weighted sum of its game scores over the sum of the weights plus LAM, repeated team by team
+    (Gauss-Seidel) until nothing moves. Returns ({team: rating}, converged)."""
+    R = {t: 0.0 for t in teams}
+    if not finals:
+        return R, True
+    top = max(f[1] for f in finals)
+    per = {t: [] for t in teams}
+    for _, wk, h, a, hp, ap, neutral, _ in finals:
+        w = 0.5 ** ((top - wk) / POWER['HALF'])
+        m = max(-POWER['C'], min(POWER['C'], hp - ap))
+        hf = 0.0 if neutral else POWER['H']
+        per[h].append((w, m - hf, a))
+        per[a].append((w, hf - m, h))
+    for _ in range(20000):
+        moved = 0.0
+        for t in teams:
+            num = sum(w * (s + R[o]) for w, s, o in per[t])
+            v = num / (sum(w for w, _, _ in per[t]) + POWER['LAM'])
+            moved, R[t] = max(moved, abs(v - R[t])), v
+        if moved < 1e-12:
+            return R, True
+    return R, False
+
+
+def power_checks(M, games):
+    """`teams` in model.json held to games.csv: the results part recomputed here, and every shown
+    number (`elo`, `p_avg`, `before`) what it gives with the published lineup part"""
+    for k, v in POWER.items():
+        chk(getattr(build, f'PR_{k}') == v, f'POWER: the build\'s PR_{k} is {getattr(build, f"PR_{k}")}, the gate\'s {v}: a constant moved without the gate')
+    T = M.get('teams')
+    if not isinstance(T, dict) or not T:
+        chk(False, 'POWER: model.json has no teams: Team Rankings has nothing to draw')
+        return
+    sg = games[(games.season == int(M['season'])) & games.game_type.isin(POWER_TYPES)]
+    teams = sorted(set(sg.home_team) | set(sg.away_team))
+    chk(sorted(T) == teams, f'POWER: the table\'s teams are not the season\'s: extra {sorted(set(T) - set(teams))}, missing {sorted(set(teams) - set(T))}')
+    parts = ('r', 'lg', 'r_before', 'lg_before')
+    lacking = [t for t in T if any(p not in T[t] for p in parts)]
+    chk(not lacking, f'POWER: teams without the parts behind their numbers ({", ".join(parts)}): {lacking[:4]}')
+    if lacking or sorted(T) != teams:
+        return
+    fin = power_finals(sg)
+    R, ok = power_solve(fin, teams)
+    chk(ok, 'POWER: the gate\'s iteration did not settle')
+    last = {}
+    for f in fin:
+        for t in (f[2], f[3]):
+            last[t] = max(last.get(t, ''), f[0])
+    at = {k: power_solve([f for f in fin if f[0] < k], teams)[0] for k in set(last.values())}
+    rec = {t: [0, 0, 0] for t in teams}
+    for _, _, h, a, hp, ap, _, gt in fin:
+        if gt == 'REG':
+            rec[h][0 if hp > ap else 1 if hp < ap else 2] += 1
+            rec[a][1 if hp > ap else 0 if hp < ap else 2] += 1
+    mix = lambda r, lg: (1 - POWER['W']) * r + POWER['W'] * lg / POWER['S'] if lg is not None else r
+    shown = lambda v: 1500 + 100 * v / POWER['SPREAD']
+    bad = {k: [] for k in ('r', 'elo', 'p_avg', 'before', 'record')}
+    for t in teams:
+        v = T[t]
+        if abs(v['r'] - R[t]) > 1e-4:
+            bad['r'].append(f'{t} {v["r"]} for {R[t]:.4f}')
+        now = mix(R[t], v['lg'])
+        if abs(v['elo'] - shown(now)) > 0.501:
+            bad['elo'].append(f'{t} {v["elo"]} for {shown(now):.1f}')
+        if abs(v['p_avg'] - 1 / (1 + math.exp(-POWER['S'] * now))) > 6e-5:
+            bad['p_avg'].append(f'{t} {v["p_avg"]} for {1 / (1 + math.exp(-POWER["S"] * now)):.4f}')
+        if t in last:
+            r0 = at[last[t]][t]
+            want = shown(mix(r0, v['lg_before']))
+            if v['before'] is None or v['r_before'] is None or abs(v['r_before'] - r0) > 1e-4 or abs(v['before'] - want) > 0.501:
+                bad['before'].append(f'{t} {v["before"]} (r {v["r_before"]}) for {want:.1f} (r {r0:.4f})')
+        elif v['before'] is not None or v['r_before'] is not None:
+            bad['before'].append(f'{t} {v["before"]} with no final played')
+        if list(v['record']) != rec[t]:
+            bad['record'].append(f'{t} {v["record"]} for {rec[t]}')
+    say = {'r': 'results parts that are not games.csv\'s finals solved again here (a game dropped or doubled, home field turned round, a sequential Elo)',
+           'elo': 'shown ratings that are not the results part and the lineup part mixed',
+           'p_avg': 'chances against an average team that are not the shown mix',
+           'before': '`before` that is not the finals before the team\'s last kickoff solved again (its own last game counted, or a later final)',
+           'record': 'records that are not the season\'s regular-season finals'}
+    for k, b in bad.items():
+        chk(not b, f'POWER: {say[k]}: {b[:4]}{" ..." if len(b) > 4 else ""} of {len(b)}')
+    # the lineup part is centred on the league (now, and going into each team's last game), so a
+    # shown 1500 is an average team and the table's mean is 1500 within the rounding
+    for k in ('lg', 'lg_before'):
+        lg = [T[t][k] for t in teams if T[t][k] is not None]
+        chk(not lg or abs(sum(lg) / len(lg)) < 1e-4, f'POWER: the lineup part `{k}` is not centred on the league: mean {sum(lg) / max(len(lg), 1):.5f}')
+    if all(T[t]['lg'] is not None for t in teams) or all(T[t]['lg'] is None for t in teams):
+        mean = sum(T[t]['elo'] for t in teams) / len(teams)
+        chk(abs(mean - 1500) <= 1, f'POWER: the shown ratings average {mean:.2f}, not 1500')
+
+
+def _power_season(games):
+    """an invented season for the build's power_ratings: (week, home, away, home pts, away pts,
+    neutral[, time[, game type]]) with the points None for a game still to come"""
+    rows = []
+    for i, (wk, h, a, hp, ap, neutral, *tm) in enumerate(games):
+        day = datetime.date(2030, 9, 8) + datetime.timedelta(days=7 * (wk - 1))
+        rows.append({'game_id': f'2030_{wk:02d}_{a}_{h}_{i}', 'season': 2030, 'week': wk, 'game_type': tm[1] if len(tm) > 1 else 'REG',
+                     'gameday': day.isoformat(), 'gametime': tm[0] if tm else '13:00', 'home_team': h, 'away_team': a,
+                     'home_score': float('nan') if hp is None else float(hp), 'away_score': float('nan') if ap is None else float(ap),
+                     'location': 'Neutral' if neutral else 'Home'})
+    return pd.DataFrame(rows)
+
+
+def power_fixture_checks():
+    """the build's power_ratings on invented seasons"""
+    P = lambda games, **kw: build.power_ratings(_power_season(games), **kw)
+    # the owner's re-judging: A beat B in week 1 and never played again; B then won (or lost) six
+    # games by 17. A's credit for beating B follows what B turned out to be (a sequential Elo,
+    # which judged the game once on B's rating that week, leaves A where it was)
+    later = lambda m: [(wk, 'B', o, 30 if m > 0 else 13, 13 if m > 0 else 30, True) for wk, o in zip(range(2, 8), 'CDEFGH')]
+    good, poor = P([(1, 'A', 'B', 24, 10, True)] + later(1)), P([(1, 'A', 'B', 24, 10, True)] + later(-1))
+    chk(good['A']['r'] > poor['A']['r'] + 0.3 and good['A']['elo'] > poor['A']['elo'],
+        f'POWER: a win over a team that went on to win everything counts no more than one over a team that lost everything (A {good["A"]["r"]} against {poor["A"]["r"]})')
+    chk(good['A']['before'] == poor['A']['before'] == 1500 and good['A']['r_before'] == poor['A']['r_before'] == 0,
+        f'POWER: a team going into its first game is not at 1500 ({good["A"]["before"]}, {poor["A"]["before"]})')
+    # before: the table cut at the team's last kickoff. A plays B in week 1 and C at 13:00 in week 2;
+    # B-D kicks off at 20:00 that day and B-C in week 3. Whatever those later games' scores, A's
+    # before is the table on week 1's finals alone, and A's own last game is not in it
+    base = [(1, 'A', 'B', 27, 20, True), (1, 'C', 'D', 17, 14, True), (2, 'A', 'C', 21, 20, True, '13:00')]
+    runs = [P(base + [(2, 'B', 'D', bd, 0, True, '20:00'), (3, 'B', 'C', bc, 0, True)]) for bd, bc in ((30, 0), (0, 30), (0, 0))]
+    cut = P(base[:2] + [(2, 'A', 'C', None, None, True, '13:00'), (2, 'B', 'D', None, None, True, '20:00'), (3, 'B', 'C', None, None, True)])
+    chk(all(x['A']['before'] == cut['A']['elo'] and x['A']['r_before'] == cut['A']['r'] for x in runs),
+        f'POWER: a final after a team\'s last kickoff moved its before, or its own last game was counted: {[x["A"]["r_before"] for x in runs]} against {cut["A"]["r"]}')
+    chk(len({x['A']['r'] for x in runs}) == 3, 'POWER: A did not move with what its opponents did after it played them')
+    # the shown table is centred: every team's mean is 1500 within the rounding, the lineups too
+    rng = np.random.default_rng(7)
+    clubs = [f'T{i:02d}' for i in range(16)]
+    season = []
+    for wk in range(1, 9):
+        order = rng.permutation(clubs)
+        for i in range(0, 16, 2):
+            season.append((wk, order[i], order[i + 1], int(rng.integers(0, 45)), int(rng.integers(0, 45)), bool(rng.random() < 0.1)))
+    lg = {t: float(v) for t, v in zip(clubs, rng.normal(0, 0.3, 16))}
+    mean_lg = sum(lg.values()) / 16
+    lg = {t: v - mean_lg for t, v in lg.items()}
+    for kw in ({}, {'lineup': lg, 'lineup_before': lg}):
+        X = P(season, **kw)
+        m = sum(v['elo'] for v in X.values()) / len(X)
+        chk(abs(m - 1500) <= 1, f'POWER: an invented season\'s shown ratings average {m:.2f}, not 1500 ({"with" if kw else "without"} lineups)')
+    # no home term at a neutral site: the same game with home and away swapped there rates the same;
+    # at the home side's ground the home field comes off its margin (3 points over 18 games' weight
+    # is 0.1667 a side at a neutral site, (3 - H) / 18 at home)
+    n, sw, hm = P([(1, 'A', 'B', 20, 17, True)]), P([(1, 'B', 'A', 17, 20, True)]), P([(1, 'A', 'B', 20, 17, False)])
+    chk(n['A']['r'] == sw['A']['r'] and n['B']['r'] == sw['B']['r'], f'POWER: home and away swapped at a neutral site moved the ratings ({n["A"]["r"]}, {sw["A"]["r"]})')
+    chk(abs(n['A']['r'] - 3 / 18) < 1e-4 and abs(hm['A']['r'] - (3 - POWER['H']) / 18) < 1e-4 and abs(hm['B']['r'] + hm['A']['r']) < 1e-4,
+        f'POWER: a 3-point win is {n["A"]["r"]} at a neutral site and {hm["A"]["r"]} at home, for {3 / 18:.4f} and {(3 - POWER["H"]) / 18:.4f}')
+    # a tie is a margin of 0: both sides at 0 at a neutral site (a tie in the record), and at the
+    # home side's ground the home side below average by the home field it did not turn into points
+    tie, tie_h = P([(1, 'A', 'B', 20, 20, True)]), P([(1, 'A', 'B', 20, 20, False)])
+    chk(abs(tie['A']['r']) < 1e-9 and abs(tie['B']['r']) < 1e-9 and tie['A']['elo'] == tie['B']['elo'] == 1500
+        and tie['A']['record'] == tie['B']['record'] == [0, 0, 1], f'POWER: a tie at a neutral site is not level at 1500 with a tie in each record: {tie["A"]}, {tie["B"]}')
+    chk(abs(tie_h['A']['r'] + POWER['H'] / 18) < 1e-4, f'POWER: a tie at home is not the home field below average: {tie_h["A"]["r"]}')
+    # a playoff final counts as the build counts it (POWER_TYPES): the same 10-point win at a neutral
+    # site in week 19 as a wild-card game moves both teams exactly as it would as a regular-season one
+    pre = [(1, 'A', 'B', 20, 17, True), (1, 'C', 'D', 24, 21, True)]
+    wc, rg = P(pre + [(19, 'A', 'C', 27, 17, True, '13:00', 'WC')]), P(pre + [(19, 'A', 'C', 27, 17, True, '13:00', 'REG')])
+    chk(all(abs(wc[t]['r'] - rg[t]['r']) < 1e-9 for t in 'ABCD') and abs(wc['A']['r'] - P(pre)['A']['r']) > 0.1,
+        f'POWER: a playoff final is not counted as the build counts the playoffs (A {wc["A"]["r"]} as a wild-card game, {rg["A"]["r"]} as a regular-season one)')
+    # the gate's own iteration agrees with the build on the invented season (each a check of the other)
+    X = P(season)
+    R, ok = power_solve(power_finals(_power_season(season)), clubs)
+    chk(ok and all(abs(X[t]['r'] - R[t]) < 1e-4 for t in clubs), 'POWER: the gate\'s iteration and the build\'s solve disagree on an invented season')
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--data', default=os.path.join(HERE, 'data'))
@@ -468,6 +678,7 @@ def main():
 
     unit_checks()
     unit_team_checks()
+    power_fixture_checks()
     P = load_json(os.path.join(a.data, 'players.json'))
     M = load_json(os.path.join(a.data, 'model.json'))
     MU = load_json(os.path.join(a.data, 'matchups.json')) if os.path.exists(os.path.join(a.data, 'matchups.json')) else {}
@@ -518,6 +729,8 @@ def main():
         chk(os.path.exists(p) and os.path.getsize(p) > 100, f'SOURCES: {name} is missing: the season under way cannot be built without it')
     # ---- TEAMS: Overall Offense and Overall Defense against games.csv and the play-by-play ----
     team_files_checks(M, games, a.cache)
+    # ---- POWER: Team Rankings against games.csv ----
+    power_checks(M, games)
     srcs = M.get('sources') or {}
     for k, v in srcs.items():
         if isinstance(v, dict) and v.get('required') and not v.get('ok'):

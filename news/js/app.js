@@ -68,7 +68,7 @@ function withPos(html, teams){
 }
 
 /* ============================ rank chip ============================ */
-/* The team's place on X NFL Bets' Team Rankings tab, the team Elo of this season's results
+/* The team's place on X NFL Bets' Team Rankings tab, the power ratings of this season's results
    (data/ranks2026.js, read from elo/data/model.json), falling back to teams.js. Until 2026-10-09 it
    was the Alpha Model's own Elo, called "power rank", which no page shows as a ranking. */
 const shortDay = d => { try { return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(d + "T12:00:00Z")); } catch (e) { return d; } };

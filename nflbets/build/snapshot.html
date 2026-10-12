@@ -785,8 +785,8 @@ function teamElo(P,g,F){
   const ea=T[a].elo, eh=T[h].elo, hi=eh>ea?h:ea>eh?a:null;
   const sum=`${hi?`<span data-gs-n="tedge">${tg(hi,true)} +${Math.abs(eh-ea)}</span>`:'<span data-gs-n="tedge">Even</span>'} · ${esc(a)} ${N('trank:'+a,'#'+rank(a))}, ${esc(h)} ${N('trank:'+h,'#'+rank(h))}`;
   return fold('gsTeams',T0,sum,`<table class="gs-vs" aria-label="${S0}"><thead><tr><th class="gs-a"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span></th><th class="gs-mlab"><span class="gs-key"><i></i>edge</span></th><th class="gs-h"><span class="gs-thn">${tg(h,true)}<span class="gs-tnm">${esc(teamName(h))}</span></span></th></tr></thead><tbody>${body}</tbody></table>
-    ${lags.length?`<p class="gs-note">* Rated before its latest game: ${lags.map(([t,x])=>esc(t)+' ('+esc(x)+')').join(', ')}. The record counts it; the rating takes it in when the Elo job next rebuilds the ratings.</p>`:''}
-    <p class="gs-note">Power Ratings are this season's results alone: every team started at 1500 and moves after each game by how far the score beat or missed what was expected, with each team's expected lineup on this season's player Elo blended in. The chance is against an average team on a neutral field. Ratings built ${esc(stamp(M.built_at))}.</p>`);
+    ${lags.length?`<p class="gs-note">* Rated before its latest game: ${lags.map(([t,x])=>esc(t)+' ('+esc(x)+')').join(', ')}. The record counts it; every team's rating takes it in when the Elo job next rebuilds the ratings.</p>`:''}
+    <p class="gs-note">Power Ratings are this season's results alone: every team started at 1500, and every game is re-scored each time the ratings are built, its margin plus how good the opponent has turned out to be, with each team's expected lineup on this season's player Elo blended in. The change since its last game includes the league's results since. The chance is against an average team on a neutral field. Ratings built ${esc(stamp(M.built_at))}.</p>`);
 }
 
 /* ---- Overall Offense against Overall Defense, both ways (`units`, as the ELO Ratings tab) ---- */

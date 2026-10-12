@@ -164,7 +164,8 @@ elo/
                                  schedule, the play-by-play (every team's stats and ratings
                                  replayed from it) and what was published (the last commit's
                                  data/ and history/: the top ten carried, frozen calls kept),
-                                 plus the build's functions on fixtures; the job runs it
+                                 Team Rankings (`teams`) solved again from games.csv by its
+                                 own iteration, plus the build's functions on fixtures; the job runs it
                                  before committing
   check_tab.js                   the ELO Ratings tab (nflbets/build/tab_elo.html) in jsdom on
                                  data/: kicked-off games leave the Mismatches, shields agree,
@@ -193,8 +194,9 @@ elo/
   data/model.json                generated: the fitted position weights (`coef`), the
                                  walk-forward record (and the who-played one, for comparison),
                                  this season's graded calls, frozen at kickoff, and the coming
-                                 week's (the Pick'em Record's ELO Model), `teams`, the team Elo
-                                 of this season's results (Power Ratings), `units` (Overall
+                                 week's (the Pick'em Record's ELO Model), `teams`, the team
+                                 ratings of this season's results, every game re-scored against
+                                 what its opponent has turned out to be (Power Ratings), `units` (Overall
                                  Offense and Overall Defense: each team's rating, its line, every
                                  key stat with its league rank, the weights), `phase`, and
                                  `sources` (what each download gave)
@@ -405,7 +407,7 @@ Elo matchup chance on each leg in the builder, a "market + form" price on each l
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks at the foot of the Parlay Builder's suggested parlays (`#pbElo`, drawn with the
 panel's own `pbTierCard` and kept to its ticked games and player sides by `pbAllows`). The ELO Model model's calls and record
-are on the Pick'em Record and the build's team Elo of results on Power Ratings, both through
+are on the Pick'em Record and the build's team ratings of results on Power Ratings, both through
 `betting/tools/build.js` (Power Ratings' Record column is the season's own results from
 `betting/state.json`, current within hours of a final, and a team whose latest final the Elo file
 has not taken in yet is starred until the Elo job, which the betting job starts on a new grade,
@@ -837,7 +839,7 @@ games whose stats are not out yet wait for the next run.
 
 `state.json` holds `teams`/`teamsH` (the team ratings and EPA of Alpha Model and of the
 Challenger, `MODEL_H`: Power Ratings shows Alpha Model's EPA, but its order and Elo are the
-team Elo of results in `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
+team ratings of results in `elo/data/model.json`), `schedule`, `processed` (graded games), `odds` (nflverse's
 moneylines, spread and total: the Pick'ems board's Vegas baseline), `qb`, `injuries`
 (the report's columns the app reads), `depth`, `roster`, `events`, `joker`, `broly`,
 `atKickoff` (each coming game's Alpha and Challenger call, recorded by every run before its
@@ -863,7 +865,8 @@ week before the opener (no game graded, no injury report yet), a week part playe
 playoff rounds, after the Super Bowl, and a season the Joker cannot call (`modelStatus`); a check
 with nothing to look at says it was skipped. Team Rankings stars a team whose regular-season
 finals outnumber its rating's record, or whose playoff final kicked off after the Elo file was
-built (the Elo file's record is the regular season's).
+built (the Elo file's record is the regular season's); the note under the table says the whole
+table predates that final, since every final re-scores every team's games.
 
 Every call is frozen at kickoff: Alpha's and the Challenger's through `atKickoff`, the Joker's and
 Broly's through `jobkit.freeze` (a game that has kicked off keeps the call of the last run before
