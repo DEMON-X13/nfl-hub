@@ -125,6 +125,15 @@ function page(MU, opts) {
     const m = p2.d.querySelector('#peBody tbody tr .pe-prov');
     chk(!!m && txt(m) === 'prov.' && /fewer than \d+ games/.test(m.title), 'a provisional player has no prov. mark in the rankings');
     if (had === undefined) delete P.groups.QB.top[0].prov; else P.groups.QB.top[0].prov = had; }
+  /* market + form reads a rating on the scale its rule was fitted on (ALT in tab_elo.html): across
+     each position the spread of z is the fitted spread over the 40-point step, whatever the
+     ratings' own spread is now (production scoring had widened it 2.4 times at running back) */
+  { const { w } = page(MU0); await wait(60);
+    for (const g of ['QB', 'RB', 'WR', 'TE']) {
+      const v = Object.values(P.players || {}).filter(e => e.group === g && isFinite(e.elo)).map(e => w.eloAltZ(e.elo, g));
+      const m = v.reduce((a, x) => a + x, 0) / v.length, sd = Math.sqrt(v.reduce((a, x) => a + (x - m) ** 2, 0) / v.length);
+      const want = { QB: 34.1, RB: 21.3, WR: 27.6, TE: 27.0 }[g] / 40;
+      chk(v.length >= 10 && Math.abs(sd - want) < 0.005, `market + form reads ${g} ratings ${(sd / want).toFixed(2)} times as far from 1500 as its rule was fitted to`); } }
   /* every ranked player has a trend line, one game in too (in week 1 the whole column was
      blank: a line needs two points, and the season's start is the first); checked with the
      top quarterback cut to his first game in this copy of the file only */

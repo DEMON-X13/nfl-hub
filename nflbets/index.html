@@ -4651,7 +4651,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='eb9b0cb';
+const PAGE_HASH='24027f0';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6329,13 +6329,45 @@ window.eloPre=preElo;
    and the price about ties the book (Brier 0.2486 against 0.2498). So the Prop Record grades
    it on the rating each player took into the week (preElo), and it stays beside the model's
    chance, not in its place, until it earns more. Legs without a real book price, and team
-   legs, have no second price. */
-const ALT={c:-0.05,book:0.8,form:0.3,step:40};
+   legs, have no second price.
+   The 40-point step belongs to the ratings it was fitted on, whose spread across a position
+   (the standard deviation of every rated player's career rating in players.json, 25 September
+   2026) was QB 34.1, RB 21.3, WR 27.6 and TE 27.0 (ALT.fitSd). The formula changes of 11 and 12
+   October (backs, receivers and tight ends on production; equal-weight placement; a new
+   quarterback at 1450) widened them to about 44, 51, 45 and 47, so the same step read a back
+   2.4 times further from 1500 than the rule was fitted to and could move a 50% book chance to
+   76% (the review of Sunday 11 October's parlays found it). So z is the rating's distance in
+   the position's own spread, put back on the fitted scale: (elo - 1500) / step x fitSd / sd,
+   sd measured from the file on every load (altZ). Nothing is refitted: the rule reads as it was
+   fitted, on whatever the ratings' spread is. */
+const ALT={c:-0.05,book:0.8,form:0.3,step:40,fitSd:{QB:34.1,RB:21.3,WR:27.6,TE:27.0}};
 const lgt=p=>Math.log(p/(1-p)), sgm=x=>1/(1+Math.exp(-x));
+/* each position's spread of career ratings in the file as loaded (every rated player in the map) */
+let ALT_SD=null;
+function altSd(){
+  if(ALT_SD&&ALT_SD.src===D.players) return ALT_SD.sd;
+  const by={}, P=(D.players&&D.players.players)||{};
+  for(const id in P){ const e=P[id]; if(e&&e.group&&isFinite(e.elo)) (by[e.group]=by[e.group]||[]).push(e.elo); }
+  const sd={}; for(const g in by){ const v=by[g], m=v.reduce((a,x)=>a+x,0)/v.length; if(v.length>=10) sd[g]=Math.sqrt(v.reduce((a,x)=>a+(x-m)*(x-m),0)/v.length); }
+  ALT_SD={src:D.players,sd}; return sd;
+}
+/* a rating's distance from 1500 in fitted steps, for a player of that position */
+function altZ(v,g){
+  const f=ALT.fitSd[g], sd=altSd()[g];
+  return (v-1500)/ALT.step*(f&&sd>0?f/sd:1);
+}
+window.eloAltZ=altZ;
+/* a graded line's player's position: the ratings file's, else the prop model's own roster */
+function groupOf(r){
+  const e=D.players&&D.players.players&&D.players.players[r.pid];
+  if(e&&e.group) return e.group;
+  const p=typeof S==='object'&&S&&S.players&&S.players[r.pid];
+  return p&&p.grp||null;
+}
 function altP(pid,side,price,src){
   if(!pid||String(pid).startsWith('team:')||pid==='game'||src!=='real'||price==null||!isFinite(price)||typeof mlProb!=='function') return null;
   const imp=mlProb(price); if(!(imp>0&&imp<1)) return null;
-  const e=window.eloOf(pid), z=e?(e.elo-1500)/ALT.step:0, s=side==='under'?-1:1;
+  const e=window.eloOf(pid), z=e?altZ(e.elo,e.group):0, s=side==='under'?-1:1;
   return sgm(ALT.c+ALT.book*lgt(imp)+ALT.form*z*s);
 }
 window.eloAltP=altP;
@@ -6363,7 +6395,7 @@ function trackAlt(){
   const old=body.querySelector('.pe-track'); if(old) old.remove();
   let rows; try{ rows=trackRecord().filter(r=>r.kind==='main'&&r.imp!=null&&r.side); }catch(e){ return; }
   if(!rows.length) return;
-  for(const r of rows){ const v=preElo(r.pid,r.w), z=v!=null?(v-1500)/ALT.step:0, s=r.side==='under'?-1:1; r.alt=sgm(ALT.c+ALT.book*lgt(r.imp)+ALT.form*z*s); }
+  for(const r of rows){ const v=preElo(r.pid,r.w), z=v!=null?altZ(v,groupOf(r)):0, s=r.side==='under'?-1:1; r.alt=sgm(ALT.c+ALT.book*lgt(r.imp)+ALT.form*z*s); }
   const brier=(rs,k)=>rs.reduce((a,r)=>a+(r[k]-r.hit)**2,0)/rs.length;
   const right=(rs,k)=>rs.filter(r=>(r[k]>=0.5)===(r.hit===1)).length;
   const hit=rs=>rs.reduce((a,r)=>a+r.hit,0)/rs.length;
