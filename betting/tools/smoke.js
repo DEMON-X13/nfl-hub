@@ -19,7 +19,8 @@
  * counted for every model at once, on the call frozen at kickoff; Team Rankings' record is the
  * season's and a rating that predates a final says so; a model that could not run is disclosed on
  * the Pick'em Record; the Joker's calls on the weeks its model was later refitted on (2026 weeks 1-2)
- * are its real ones, betting/joker/history/, never the refit's, and are drawn like every other week,
+ * are its real ones, betting/joker/history/ (held to the last commit's copy: BETTING_PREV_HISTORY
+ * names another folder), never the refit's, and are drawn like every other week,
  * with no mark, note or record without them; Joker Jr, a test model retired in October
  * 2026, is gone from a state this run wrote and draws nothing from one that still carries it.
  * Each holds whatever the week offers: a check with nothing to look at this week (no game graded
@@ -234,9 +235,14 @@ async function reality() {
       const started = S.schedule.filter(g => { const k = kick(g); return k != null && k <= pub; }).map(g => g.game_id);
       for (const gid of started) {
         for (const k of ['joker', 'broly']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
-          /* a Joker call in its history file may move onto the file's call and nowhere else (5n
-             holds it there): the refit's in-sample calls on 2026 weeks 1-2 were replaced so, once */
-          if (k === 'joker' && JH[gid]) { if (b) { n++; check(b.pick === JH[gid].pick && b.pHome === JH[gid].pHome, `5h: the Joker's call for ${gid} is not its history file's: ${J(b)}`); } continue; }
+          /* a Joker call in its history file may move onto the file's call once, from a call that
+             carries no src (the refit's in-sample calls on 2026 weeks 1-2, replaced so on 12 October
+             2026); once the last commit's call is the file's (it carries src), it is held like any
+             other, so an edit to the file cannot move a call after its kickoff (5n holds the file to
+             the last commit's too) */
+          if (k === 'joker' && JH[gid]) { if (b) { n++;
+            if (a && a.src) check(a.pick === b.pick && a.pHome === b.pHome && a.src === b.src, `5h: the Joker's call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`);
+            else check(b.pick === JH[gid].pick && b.pHome === JH[gid].pHome, `5h: the Joker's call for ${gid} is not its history file's: ${J(b)}`); } continue; }
           if (a && b) { n++; check(a.pick === b.pick && a.pHome === b.pHome, `5h: ${k}'s call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`); } }
         const call = st => (st.atKickoff || {})[gid] || (st.processed[gid] && { pick: st.processed[gid].pick, pHome: st.processed[gid].pHome, h: st.processed[gid].h });
         const fa = call(prev), fb = call(P), same = (x, y) => x == null || y == null || Math.abs(x - y) < 1e-6;
@@ -267,6 +273,17 @@ async function reality() {
         check(!!g && g.home_team === e.home && g.away_team === e.away && +g.week === +e.week, `5n: ${gid} in ${e.file} is not that game on the schedule`);
         if (g) check(Date.parse(e.kickoff) === kick(g), `5n: ${gid}'s kickoff in ${e.file} (${e.kickoff}) is not the schedule's`);
         if (e.src === 'published') check(Date.parse(e.at) < Date.parse(e.kickoff), `5n: ${gid} is marked published but its commit (${e.at}) is after its kickoff`); }
+      /* the file is written once: every game the last commit's copy of it holds is still there,
+         with the same pick, chance, source and kickoff (BETTING_PREV_HISTORY names another folder,
+         for tests) */
+      const files = [...new Set(ids.map(gid => JH[gid].file))];
+      for (const f of files) { let old = null;
+        try { old = JSON.parse(process.env.BETTING_PREV_HISTORY ? fs.readFileSync(path.join(process.env.BETTING_PREV_HISTORY, f), 'utf8')
+          : require('child_process').execSync(`git show HEAD:betting/joker/history/${f}`, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { old = null; }
+        if (!old) { console.log(`  (5n: ${f} is not in the last commit; nothing to hold it to)`); continue; }
+        for (const [gid, o] of Object.entries(old.games || {})) { const e = JH[gid];
+          const moved = !e ? 'gone' : ['pick', 'pHome', 'src', 'kickoff'].filter(x => J(o[x]) !== J(e[x])).map(x => `${x} ${J(o[x])} -> ${J(e[x])}`).join(', ');
+          check(!moved, `5n: ${gid}'s real call in ${f} was changed since the last commit: ${moved}`); } }
       const fit = P.jokerFit && +P.jokerFit.season === +P.season ? (P.jokerFit.weeks || []).map(Number) : [];
       const bare = S.schedule.filter(g => fit.includes(+g.week) && !JH[g.game_id]).map(g => g.game_id);
       check(!bare.length, `5n: the Joker was fitted on week(s) ${fit} after they were played and ${bare.slice(0, 3).join(', ')} has no real call in its history file`);

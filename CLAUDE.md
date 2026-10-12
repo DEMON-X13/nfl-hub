@@ -375,8 +375,8 @@ where each came from): week 2's are the calls `state.json` carried before each k
 2019-2025 alone, the one #117 put back), called after the games (`src: 'backtest'`), counted like any
 other week as the ELO Model's backtest weeks 1-2 are. 24-8 and +1 against Vegas on weeks 1-2, where
 the refit showed 25-7, +2. A week in `fitted_weeks` with a game missing from the file refuses the
-run; the smoke's 5n holds the published calls and grades to the file, and 5h lets such a call move
-only onto it. The Pick'em Record draws those weeks like every other week, counted in the Joker's
+run; the smoke's 5n holds the published calls and grades to the file and the file to the last commit's
+copy, and 5h let such a call move onto it once, from the refit's (no `src`), then holds it like any other. The Pick'em Record draws those weeks like every other week, counted in the Joker's
 record and its line against Vegas with no mark, label or note (the owner's call, October 2026).
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.

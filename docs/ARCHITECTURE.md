@@ -923,15 +923,20 @@ from `betting/joker/history/2026_w1_w2.json`, written once from git and never by
 are the calls `state.json` carried before each kickoff (`src: 'published'`, the commit and its time
 on each); week 1 was played before the Joker existed (its model was fitted on 15 September, after the
 week's last kickoff), so its calls are that original model's, fitted on 2019-2025 alone, called after
-the games on inputs from the games before each (`src: 'backtest'`, the same calls the state carried
-from its first commit). Both are the model #117 put back. Week 1 is counted like any other week, as
+the games on the ratings from the games before each and the game's own closing lines (`src: 'backtest'`, the
+same calls the state carried from its first commit). Its quarterback inputs give it no hindsight there:
+the backup-quarterback drop is zero in a team's first game of a season, and the starters' names, which
+games.csv records from the game itself, move none of the 16 chances when blanked (rescored from f0397e4's
+model on 12 October 2026, every chance the file's to four places). Both are the model #117 put back. Week 1 is counted like any other week, as
 the ELO Model's own backtest weeks 1-2 are on the same chart, so the models are compared on the same
 games; `src` rides on each call and grade, and the record draws no hatch, label or note (the owner's
 call of October 2026, kept). The real record: 13-3 in week 1, 11-5 in week 2, 24-8 and +1 against
-Vegas (the refit showed 25-7, +2); 53-24, +3, through week 5 (was 54-23, +4). From week 3 the refit
+Vegas (the refit showed 25-7, +2), one win fewer on the season than the refit showed. From week 3 the refit
 model's calls were made before kickoff and stand. `joker.py` refuses a run where a week in
 `fitted_weeks` has a game with no call in a history file, and the smoke test (5n) holds every call
-of the file to the published state and its grade; 5h lets such a call move only onto the file's.
+of the file to the published state and its grade, and every call the last commit's copy of the file
+held to that copy; 5h let such a call move onto the file's once, from the refit's call (which carries
+no `src`), and holds it from then like any other call after its kickoff.
 Each run also logs, in the job's
 output, any input that has drifted from the scale it was fitted on (`drift.py`). It refuses a season more than
 one past its frozen data.
