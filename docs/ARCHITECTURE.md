@@ -613,8 +613,11 @@ leg it has an id for in the card's order (`dkLeg`, `dkPlan`), and where it has n
 `dkPlan`'s `home`, to add them by hand; under the buttons the card says what it
 opens, dated by the oldest read of the legs it opens (`dk`'s `at` and `glat`; every leg is promised only
 while that is under a day old), links each leg on its own, and names the legs it cannot open and why (the
-game's prices not pulled yet, its player prices not pulled yet, both with when they are, no ids at all in
-a payload baked before `dk`, a player's line DraftKings did not offer when read, a 2+ touchdown rung, an alternate line, a game kicked off, or a line DraftKings had
+game's prices not pulled yet, its player prices not pulled yet, both with when they are and only for a leg
+on no book price in a game the payload has no DraftKings player price for (`dkPlayerPriced`, `dkLinesPriced`,
+`dkBooked`; a rung adds that only main lines are read), a market the pull does not read (`DK_READ`, oddsfetch's
+DEFAULT), no ids for its game (all of them in a payload baked before `dk`), a player's line on no book price
+DraftKings did not offer when read, a 2+ touchdown rung, an alternate line, a game kicked off, or a line DraftKings had
 elsewhere: "DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM ET)").
 **Share link** sends the parlay as text (a line a leg, each price marked est. or fair
 where it is not the book's and the title's likewise, the stake and what it pays, when DraftKings' lines

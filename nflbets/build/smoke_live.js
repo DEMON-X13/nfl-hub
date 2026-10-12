@@ -804,21 +804,39 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
             && (se.text || '').includes(`\nAdd by hand at DraftKings:\n${ne}. Card Runner 100+ receiving yards (alternate lines are not read here)\n`) && /\(-135\)/.test(se.text || '') && /\nModel’s chance all 3 land [\d.]+% · the price says [\d.]+% · No fair chance: it needs every leg’s book price\n/.test(se.text || ''),
             `${how}: Share link sends an estimated price as if it were the book's, or does not name the leg to add by hand: ` + JSON.stringify(se)); }
         w.eval(`S.parlay=${JSON.stringify(builder(side))}; renderParlay()`); await wait(20); shared.length = 0;
-        /* (b) legs in two games, neither with an id (dk baked, neither game's prices pulled yet): the
-           button opens DraftKings' NFL page, every leg is named with why, and Share link sends that page */
+        /* the cases where a leg has no id: what the payload holds says why. The runner's main line is in
+           PAY.mkt on the second game, a DraftKings player price on it, so for the cases of a game whose
+           player prices have not been pulled it is taken out (and put back after), and the player legs
+           are what the builder offers on such a game: est. rungs and an est. touchdown */
         const NFL = 'https://sportsbook.draftkings.com/leagues/football/nfl', PULLED = 'they are pulled on game day or the day before, Sunday’s games on Saturday morning';
+        const GAME_NP = 'its game’s DraftKings prices have not been pulled yet: ' + PULLED, PL_NP = 'DraftKings’ player prices for its game have not been pulled yet: ' + PULLED;
+        const RUNG = k => `; only DraftKings’ main lines are read, so ${k}+ opens only if ${k - 0.5} is its main line then`;
         const missOf = n => txt(note().querySelector(`[data-pc-dkmiss="${n}"]`));
-        w.eval('PAY.dk={}'); await reopen();
-        chk(!dkA.hidden && txt(dkA) === 'Open DraftKings' && dkA.getAttribute('href') === NFL && dkA.getAttribute('target') === '_blank' && /\bnoopener\b/.test(dkA.getAttribute('rel') || '')
-          && dkA.getAttribute('title') === 'Opens DraftKings’ NFL page, in a new tab, to add the legs by hand' && dkA.nextElementSibling === d.getElementById('pcLink')
-          && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open DraftKings opens its NFL page: add them there by hand.')
-          && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && [1, 2].every(n => missOf(n).endsWith(': its game’s DraftKings prices have not been pulled yet: ' + PULLED))
-          && !note().querySelector('a') && !d.getElementById('pcLink').hidden, `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why: ` + txt(note()) + ' / ' + dkA.outerHTML);
-        d.getElementById('pcLink').click(); await wait(30);
-        { const s2 = shared[0] || {};
-          chk(shared.length === 1 && s2.url === NFL && legsIn(s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '')
-            && q.legs.every((l, i) => (s2.text || '').includes(`\n${i + 1}. ${l.name} ${l.label} (its game’s prices are not pulled yet)\n`)) && (s2.text || '').includes('\nAdd by hand at DraftKings:\n'),
-            `${how}: Share link on a parlay DraftKings has none of, over two games, does not send DraftKings' NFL page and every leg to add by hand, with why: ` + JSON.stringify(s2)); }
+        const unprice = () => w.eval(`window.__rbMkt=PAY.mkt['${wk}']['card-rb']; delete PAY.mkt['${wk}']['card-rb']`), reprice = () => w.eval(`PAY.mkt['${wk}']['card-rb']=window.__rbMkt`);
+        const rung = { gid: g2.id, pid: 'card-rb', stat: 'receiving_yards', k: 25, side: 'over', main: false, p: 0.45, price: 150, src: 'est', mu: 22, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '25+ receiving yards' };
+        const td = Object.assign({}, rung, { stat: 'any_td', k: 1, p: 0.35, price: 185, mu: null, label: 'Scores a touchdown' });
+        const rungKey = `${g2.id}|card-rb|receiving_yards`, tdKey = `${g2.id}|card-rb|any_td`;
+        /* every leg on a line of its own in the shared text, and each to add by hand with its brief */
+        const reEsc = x => String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const legsOf = (qx, t) => qx.legs.every((l, i) => new RegExp(`(^|\\n)${i + 1}\\. ${reEsc(l.name)}: ${reEsc(l.label)} \\([+-]\\d+( est\\.)?\\)(\\n|$)`).test(t));
+        const handOf = (qx, t, brief) => qx.legs.every((l, i) => t.includes(`\n${i + 1}. ${l.name} ${l.label} (${brief(l)})\n`));
+        unprice();
+        /* (b) legs in two games, neither with an id (dk baked, neither game's prices pulled yet): the
+           button opens DraftKings' NFL page, every leg is named with why (a rung: and that only main
+           lines are read), and Share link sends that page */
+        w.eval(`S.parlay=${JSON.stringify({ [mlKey]: builder(side)[mlKey], [rungKey]: rung })}; renderParlay(); PAY.dk={}`); await wait(20); await reopen();
+        { const qb = w.PARLAY_CARD.quote(), nR = qb.legs.findIndex(l => l.pid === 'card-rb') + 1, nM = qb.legs.findIndex(l => l.stat === 'ml') + 1;
+          chk(qb.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open DraftKings' && dkA.getAttribute('href') === NFL && dkA.getAttribute('target') === '_blank' && /\bnoopener\b/.test(dkA.getAttribute('rel') || '')
+            && dkA.getAttribute('title') === 'Opens DraftKings’ NFL page, in a new tab, to add the legs by hand' && dkA.nextElementSibling === d.getElementById('pcLink')
+            && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open DraftKings opens its NFL page: add them there by hand.')
+            && note().querySelectorAll('[data-pc-dkmiss]').length === 2 && missOf(nM).endsWith(': ' + GAME_NP) && missOf(nR).endsWith(': ' + GAME_NP + RUNG(25))
+            && !note().querySelector('a') && !d.getElementById('pcLink').hidden, `${how}: a parlay DraftKings has none of, over two games, does not offer DraftKings' NFL page, or does not name every leg and why: ` + txt(note()) + ' / ' + dkA.outerHTML);
+          d.getElementById('pcLink').click(); await wait(30);
+          const s2 = shared[0] || {};
+          chk(shared.length === 1 && s2.url === NFL && legsOf(qb, s2.text || '') && !/DraftKings lines/.test(s2.text || '') && /\ndemon-x13\.github\.io\/nfl-hub\/nflbets$/.test(s2.text || '')
+            && handOf(qb, s2.text || '', l => l.stat === 'ml' ? 'its game’s prices are not pulled yet' : 'its game’s prices are not pulled yet, and only main lines are read') && (s2.text || '').includes('\nAdd by hand at DraftKings:\n'),
+            `${how}: Share link on a parlay DraftKings has none of, over two games, does not send DraftKings' NFL page and every leg to add by hand, with why: ` + JSON.stringify(s2));
+          shared.length = 0; }
         /* the Tab order is the same with the button standing for the NFL page */
         { const f = [...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && !el.hidden && !el.closest('[hidden]')).map(el => el.id).join(' ');
           chk(f === 'pcClose pcDk pcLink pcDownload pcAgain', `${how}: with no leg on the slip the card's controls are not Close, Open DraftKings, Share link, Download, Start over: ` + f); }
@@ -827,48 +845,76 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
         chk(!dkA.hidden && dkA.getAttribute('href') === NFL && [1, 2].every(n => missOf(n).endsWith(': no DraftKings ids were read for its game')),
           `${how}: a payload baked before DraftKings' ids does not keep its reason, or offers no DraftKings page: ` + txt(note()));
         /* (a) the owner's case: Monday night, the game's lines and page read (event, its money lines,
-           spreads and total, glat) and none of its player prices yet (no at); a parlay of two player legs
-           in it. Each says DraftKings' player prices for its game have not been pulled yet, the button
-           opens the game's page, and Share link sends that page with both legs to add */
+           spreads and total, glat) and none of its player prices yet (no at, nothing in PAY.mkt); a
+           parlay of two player legs in it, an est. rung and an est. touchdown. Each says DraftKings'
+           player prices for its game have not been pulled yet (the rung: and that it opens only if it is
+           the main line then), the button opens the game's page, and Share link sends that page with both
+           legs to add */
         const gameOnly = { [String(wk)]: { [g2.id]: { event: '880002', [`team:${g2.h}|ml`]: 'G2#ml_h', [`team:${g2.a}|ml`]: 'G2#ml_a', [`team:${g2.h}|ats|-3`]: 'G2#ats_h', [`team:${g2.a}|ats|3`]: 'G2#ats_a',
           'game|total|over|54.5': 'G2#o', 'game|total|under|54.5': 'G2#u', glat: AT_G } } };
-        const rung = { gid: g2.id, pid: 'card-rb', stat: 'receiving_yards', k: 25, side: 'over', main: false, p: 0.45, price: 150, src: 'real', mu: 22, name: 'Card Runner', pos: 'RB', grp: 'RB', team: g2.h, opp: g2.a, week: wk, label: '25+ receiving yards' };
-        const two = { [rbKey]: builder(side)[rbKey], [`${g2.id}|card-rb|receiving_yards`]: rung };
-        w.eval(`PAY.dk=${JSON.stringify(gameOnly)}; S.parlay=${JSON.stringify(two)}; renderParlay()`); await wait(20); await reopen(); shared.length = 0;
-        { const qa = w.PARLAY_CARD.quote(), EV = 'https://sportsbook.draftkings.com/event/880002';
+        w.eval(`PAY.dk=${JSON.stringify(gameOnly)}; S.parlay=${JSON.stringify({ [rungKey]: rung, [tdKey]: td })}; renderParlay()`); await wait(20); await reopen();
+        { const qa = w.PARLAY_CARD.quote(), EV = 'https://sportsbook.draftkings.com/event/880002', nR = qa.legs.findIndex(l => l.stat === 'receiving_yards') + 1, nT = qa.legs.findIndex(l => l.stat === 'any_td') + 1;
           chk(qa.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open game in DraftKings' && dkA.getAttribute('href') === EV && dkA.getAttribute('title') === 'Opens the game’s page in DraftKings, in a new tab, to add the legs by hand'
             && txt(note()).startsWith('None of these legs can go on DraftKings’ betslip from here, so Open game in DraftKings opens the game’s page: add them there by hand.')
-            && [1, 2].every(n => missOf(n).endsWith(': DraftKings’ player prices for its game have not been pulled yet: ' + PULLED)) && !note().querySelector('a'),
+            && missOf(nT).endsWith(': ' + PL_NP) && missOf(nR).endsWith(': ' + PL_NP + RUNG(25)) && !note().querySelector('a'),
             `${how}: the owner's case (game lines read, no player prices yet) does not say the player prices are not pulled yet, or does not open the game's DraftKings page: ` + txt(note()) + ' / ' + dkA.outerHTML);
           d.getElementById('pcLink').click(); await wait(30);
           const sa = shared[0] || {};
-          chk(shared.length === 1 && sa.url === EV && sa.title === '2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))') && !/DraftKings lines/.test(sa.text || '')
-            && (sa.text || '').includes('\nAdd by hand on the game’s DraftKings page:\n') && qa.legs.every((l, i) => (sa.text || '').includes(`\n${i + 1}. ${l.name} ${l.label} (player prices for its game are not pulled yet)\n`)),
+          chk(shared.length === 1 && sa.url === EV && sa.title.startsWith('2-leg parlay ' + w.eval('fmtML(decToML(PARLAY_CARD.quote().useDec))')) && !/DraftKings lines/.test(sa.text || '') && legsOf(qa, sa.text || '')
+            && (sa.text || '').includes('\nAdd by hand on the game’s DraftKings page:\n')
+            && handOf(qa, sa.text || '', l => l.stat === 'any_td' ? 'player prices for its game are not pulled yet' : 'player prices for its game are not pulled yet, and only main lines are read'),
             `${how}: Share link in the owner's case does not send the game's DraftKings page with both legs to add by hand, and why: ` + JSON.stringify(sa));
-          shared.length = 0; }
+          shared.length = 0;
+          /* in the same game, a market the pull never reads says so, never that a pull will bring it */
+          const mk = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'carries', k: 15, label: '15+ carries' }), Object.assign({}, rung, { stat: 'kick_pts', k: 8, label: '8+ kicking points' }), Object.assign({}, rung, { stat: 'passing_interceptions', k: 1, label: '1+ interceptions' })]);
+          chk(mk.miss.length === 3 && ['carries', 'kicking points', 'interceptions'].every((s, i) => (mk.miss[i].why || '').startsWith(`DraftKings’ ${s} lines are not read here (`) && mk.miss[i].brief === 'its market is not read here')
+            && !mk.miss.some(x => /pulled/.test(x.why.split('(')[0])),
+            `${how}: a market the pull never reads (carries, kicking points, interceptions) is said to come with the pull, or is not said to be unread: ` + JSON.stringify(mk.miss)); }
         /* (d) the same game with a player leg and its home money line: the slip opens the money line, the
            player leg is to add by hand, with why, and Share link sends the slip */
-        w.eval(`S.parlay=${JSON.stringify({ [rbKey]: builder(side)[rbKey], [`${g2.id}|team:${g2.h}|ml`]: Object.assign({}, builder(side)[mlKey], { gid: g2.id, pid: 'team:' + g2.h, team: g2.h, opp: g2.a }) })}; renderParlay()`); await wait(20); await reopen();
+        w.eval(`S.parlay=${JSON.stringify({ [tdKey]: td, [`${g2.id}|team:${g2.h}|ml`]: Object.assign({}, builder(side)[mlKey], { gid: g2.id, pid: 'team:' + g2.h, team: g2.h, opp: g2.a }) })}; renderParlay()`); await wait(20); await reopen();
         { const qd = w.PARLAY_CARD.quote(), nP = qd.legs.findIndex(l => l.pid === 'card-rb') + 1;
           chk(qd.legs.length === 2 && !dkA.hidden && txt(dkA) === 'Open in DraftKings' && dkA.getAttribute('href') === DKU(['G2#ml_h']) && /1 of the 2 legs/.test(txt(note()))
-            && missOf(nP).endsWith(': DraftKings’ player prices for its game have not been pulled yet: ' + PULLED) && note().querySelectorAll('[data-pc-dkmiss]').length === 1,
+            && missOf(nP).endsWith(': ' + PL_NP) && note().querySelectorAll('[data-pc-dkmiss]').length === 1,
             `${how}: a money line beside a player leg whose prices are not pulled does not open the money line alone, or does not say why the other is left: ` + txt(note()) + ' / ' + dkA.getAttribute('href'));
           d.getElementById('pcLink').click(); await wait(30);
           const sd = shared[0] || {};
-          chk(shared.length === 1 && sd.url === DKU(['G2#ml_h']) && (sd.text || '').includes(`\nAdd by hand at DraftKings:\n${nP}. Card Runner ${rbLabel} (player prices for its game are not pulled yet)\n`),
+          chk(shared.length === 1 && sd.url === DKU(['G2#ml_h']) && (sd.text || '').includes(`\nAdd by hand at DraftKings:\n${nP}. Card Runner Scores a touchdown (player prices for its game are not pulled yet)\n`),
             `${how}: Share link on a money line beside an unpulled player leg does not send the slip and the player leg to add by hand: ` + JSON.stringify(sd));
           shared.length = 0; }
-        /* (c) a player leg in a game whose player prices were read (at) with no id for him: DraftKings did
-           not offer it then, dated; and a game still to come with no ids under a payload that has dk */
-        { const dkC = { [String(wk)]: { [g2.id]: Object.assign({}, gameOnly[String(wk)][g2.id], { 'card-xx|receptions|over|4.5': 'X#1', at: AT_P }) } };
+        /* a leg the card prices from the book is never said to be unpulled or not offered: its price is
+           DraftKings', so a missing id is said neutrally (a links file that would not read, a name two
+           book rows gave two ids). The runner's main line on a book price in the owner's game (no at),
+           with and without his line in PAY.mkt; and a money line under an empty dk on a game whose lines
+           are DraftKings' (g.ls 'dk') */
+        { const book = Object.assign({}, builder(side)[rbKey]);
+          const nb = w.PARLAY_CARD.dkPlan([book]);
+          chk(!nb.url && (nb.miss[0] || {}).why === 'not among the DraftKings lines read for its game', `${how}: a book-priced player leg with no id in a game with no player ids is said to be unpulled: ` + JSON.stringify(nb.miss));
+          reprice(); const nb2 = w.PARLAY_CARD.dkPlan([Object.assign({}, book, { src: 'est' })]); unprice();
+          chk(!nb2.url && (nb2.miss[0] || {}).why === 'not among the DraftKings lines read for its game', `${how}: a player leg in a game whose DraftKings player prices are in the payload is said to be unpulled: ` + JSON.stringify(nb2.miss));
+          const g1At = `S.sched.find(x=>x.id===${JSON.stringify(g1.id)})`, lsWas = w.eval(`JSON.stringify(${g1At}.ls)`);
+          w.eval(`PAY.dk={}; ${g1At}.ls='dk'`);
+          const nl = w.PARLAY_CARD.dkPlan([Object.assign({}, builder(side)[mlKey])]);
+          w.eval(`${g1At}.ls=${lsWas === undefined ? 'undefined' : lsWas}`);
+          chk(!nl.url && (nl.miss[0] || {}).why === 'no DraftKings ids were read for its game', `${how}: a money line whose game lines are DraftKings' but with no ids is said to be unpulled: ` + JSON.stringify(nl.miss)); }
+        /* (c) a player leg in a game whose player prices were read (at) with no id for him and no book
+           price (an est. touchdown): DraftKings did not offer it then, dated; a rung: its alternate lines
+           are not read; the runner's book-priced main line with no id: neutral; and a game still to come
+           with no ids under a payload that has dk */
+        { const dkC = { [String(wk)]: { [g2.id]: Object.assign({}, gameOnly[String(wk)][g2.id], { 'card-xx|receptions|over|4.5': 'X#1', 'card-rb|carries|over|14.5': 'C#1', at: AT_P }) } };
           w.eval(`PAY.dk=${JSON.stringify(dkC)}`);
-          const c = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { k: 25 }), Object.assign({}, builder(side)[rbKey])]), whyC = n => (c.miss.find(x => x.n === n) || {}).why || '';
+          const c = w.PARLAY_CARD.dkPlan([Object.assign({}, rung), Object.assign({}, td), Object.assign({}, builder(side)[rbKey])]), whyC = n => (c.miss.find(x => x.n === n) || {}).why || '';
           chk(!c.url && c.event === 'https://sportsbook.draftkings.com/event/880002' && c.home === c.event && whyC(1) === 'DraftKings’ alternate lines are not read here'
-            && whyC(2) === `DraftKings did not offer this line when its prices were read (${readTxt(AT_P)})` && (c.miss.find(x => x.n === 2) || {}).brief === 'DraftKings did not offer it when read',
-            `${how}: a player leg on a game whose player prices were read, with no id for him, does not say DraftKings did not offer it then, dated: ` + JSON.stringify(c.miss));
+            && whyC(2) === `DraftKings did not offer this line when its prices were read (${readTxt(AT_P)})` && (c.miss.find(x => x.n === 2) || {}).brief === 'DraftKings did not offer it when read'
+            && whyC(3) === 'not among the DraftKings lines read for its game',
+            `${how}: a player leg on a game whose player prices were read, with no id for him, does not say DraftKings did not offer it then, dated (or a book-priced one says so): ` + JSON.stringify(c.miss));
+          /* a market the pull does not read is still opened where the payload has its id */
+          const cc = w.PARLAY_CARD.dkPlan([Object.assign({}, rung, { stat: 'carries', k: 15, label: '15+ carries' })]);
+          chk(cc.url === DKU(['C#1']) && !cc.miss.length, `${how}: a carries rung whose id the payload has does not open: ` + JSON.stringify(cc));
           const e = w.PARLAY_CARD.dkPlan([Object.assign({}, builder(side)[mlKey])]);
-          chk(!e.url && !e.event && e.home === NFL && /its game’s DraftKings prices have not been pulled yet/.test((e.miss[0] || {}).why || ''),
+          chk(!e.url && !e.event && e.home === NFL && (e.miss[0] || {}).why === GAME_NP,
             `${how}: a game to come with no ids does not say its prices have not been pulled yet, or offers a page other than DraftKings' NFL page: ` + JSON.stringify(e)); }
+        reprice();
         w.eval(`S.parlay=${JSON.stringify(builder(side))}; renderParlay()`); await wait(20); shared.length = 0;
         delete w.navigator.share;
         /* every kind of leg against made-up ids on the first pinned game: a team's line, the total, a

@@ -756,12 +756,18 @@ DraftKings** (a real link, in a new tab) opens the parlay on DraftKings' betslip
 (see the Props loop): each leg's DraftKings id under its own key, a rung k+ as DraftKings' Over k-0.5
 (or the whole k-1 its price was read from), in the card's order. Under the buttons the card says what it
 opens, gives each leg's own link too (DraftKings documents no link for several outcomes), and names every
-leg it cannot open and why: its game's DraftKings prices not pulled yet, or its game's lines read and
-none of its player prices yet (both with when they are pulled, the Parlay Builder panel's words: an id
-comes only with a price the job bought, so a game priced late has none; the owner's Monday night of 12
-October 2026, Bills at Rams, whose player prices the Monday pull had not read), no ids read for its game
-(a payload baked before `dk`), a player's line DraftKings did not offer when its game's player prices were
-read (dated), a 2+ touchdown rung or an alternate line the pull does not read, a game that has kicked
+leg it cannot open and why, from what the payload holds: its game's DraftKings prices not pulled yet, or
+its game's lines read and none of its player prices yet (both with when they are pulled, the Parlay
+Builder panel's words, and said only of a leg on no book price in a game with no DraftKings player price
+in the payload: an id comes only with a price the job bought, so a game priced late has none; the owner's
+Monday night of 12 October 2026, Bills at Rams, whose player prices the Monday pull had not read; a ladder
+rung adds that only DraftKings' main lines are read, so it opens only if it turns out to be the main
+line), a market the pull does not read (carries, attempts, completions, interceptions, rush + rec yards,
+targets and the kicking lines: only `oddsfetch.py`'s DEFAULT is pulled, so no pull brings their ids;
+an id the payload has for one is opened all the same), no ids read for its game (a payload baked before
+`dk`, or a game priced with none), a player's line on no book price DraftKings did not offer when its
+game's player prices were read (dated; a book-priced leg with no id is said neutrally, not among the
+lines read), a 2+ touchdown rung or an alternate line the pull does not read, a game that has kicked
 off, or a line DraftKings had elsewhere when last read ("DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM
 ET)", the page's main line where DraftKings has it; never "now"). The note is dated by the oldest read of
 the legs it opens (`at` for a player's leg, `glat` for a team's line and the total), and says every leg
@@ -884,8 +890,10 @@ is a rebuild too. `smoke_live.js` section J holds the card to all of the above: 
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
 Open in DraftKings on made-up ids (every leg, part with a moved line, none over two games with
 DraftKings' NFL page and none in a payload baked before `dk`, the owner's case of a game with its lines
-read and no player prices and its game page, a money line beside an unpulled player leg, a player leg
-DraftKings did not offer when read, every kind of leg with an
+read and no player prices (an est. rung and an est. touchdown) and its game page, carries, kicking points
+and interceptions there said to be unread (and a carries id the payload has opened), a money line beside an
+unpulled player leg, a player leg DraftKings did not offer when read, a book-priced leg never said to be
+unpulled or not offered, a money line on DraftKings' game lines with no ids, every kind of leg with an
 Under main line among them, a game kicked off; the runner's main line an Over in one browser and an
 Under in the other; the note and the button dated by the older read and promising every leg at five
 hours, not at 31 hours or undated), Share link (the share sheet's url the link's, the game's page or the
