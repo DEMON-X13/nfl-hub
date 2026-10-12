@@ -259,6 +259,10 @@ const RESULTS = {
   45,
   24
  ],
+ "wk5:TB-DAL": [
+  24,
+  16
+ ],
  "wk5:PHI-JAX": [
   17,
   19
@@ -307,9 +311,9 @@ const RESULTS = {
   32,
   29
  ],
- "wk5:TB-DAL": [
-  24,
-  16
+ "wk5:BAL-ATL": [
+  30,
+  23
  ]
 };
 const LINES = {
@@ -392,16 +396,18 @@ const LINES = {
  "wk5:SF-SEA": "SEA -3, O/U 46.5",
  "wk5:BAL-ATL": "ATL -3.5, O/U 44.5",
  "wk5:BUF-LAR": "LAR -3.5, O/U 54.5",
- "wk6:SEA-DEN": "SEA -3, O/U 42.5",
+ "wk6:SEA-DEN": "SEA -3, O/U 41.5",
  "wk6:HOU-JAX": "JAX -3, O/U 43.5",
- "wk6:TEN-IND": "IND -7, O/U 44.5",
+ "wk6:CHI-ATL": "CHI -3, O/U 47.5",
+ "wk6:BAL-CLE": "BAL -3.5, O/U 40.5",
+ "wk6:TEN-IND": "IND -7, O/U 43.5",
  "wk6:NYJ-NE": "NE -7, O/U 44.5",
- "wk6:NO-NYG": "NYG -1.5, O/U 45.5",
+ "wk6:NO-NYG": "NO -1.5, O/U 45.5",
  "wk6:CAR-PHI": "PHI -1.5, O/U 42.5",
  "wk6:PIT-TB": "PIT -3, O/U 40.5",
  "wk6:ARI-LAR": "LAR -12.5, O/U 52.5",
  "wk6:LAC-KC": "KC -8.5, O/U 43.5",
- "wk6:BUF-LV": "BUF -6, O/U 53.5",
+ "wk6:BUF-LV": "BUF -6, O/U 52.5",
  "wk6:DAL-GB": "GB -1.5, O/U 52.5",
  "wk6:WAS-SF": "SF -7.5, O/U 50.5"
 };
