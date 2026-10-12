@@ -1147,6 +1147,9 @@ setTimeout(async()=>{
         /* every level's card leads with its fair chance (fairShown is held in hold too) */
         for(const t of r.tiers.filter(t=>t.legs)){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`);
           chk(!!c&&c.querySelector('.pb-nums').firstElementChild.classList.contains('pb-chance')&&!c.querySelector('[data-pb-far]'),`the ${t.id} card does not lead with its chance, or flags a leg far off`);
+          /* the chance's label and the model's figure wrap inside their box: four levels side by side just
+             over 1100px leave it about 85px, and "FAIR CHANCE, EST." in 10px capitals is about 98 */
+          chk(!!c&&['.pb-chance span','.pb-chance small'].every(q=>{ const el=c.querySelector(q); return !el||w.getComputedStyle(el).whiteSpace==='normal'; }),`the ${t.id} card's fair-chance label is held to one line, and can run out of its box`);
           chk(!!c&&(!t.floor||t.likeliest||c.querySelector('.pb-rule').textContent.endsWith(' by the model')),`the ${t.id} card does not say its floor is on the model's chance`); }
         /* a game page's hands: no leg far off, and each hand's fair chance parlayProb on its legs at theirs */
         let hands=0;
@@ -1169,6 +1172,67 @@ setTimeout(async()=>{
           chk(notes.includes(want)&&notes.length===his.length&&view.querySelectorAll('tr.far').length===his.length,`the game page does not flag ${farL.name}'s far-off line as "${want}", or flags ${notes.length} where ${his.length} are far off: ${notes.join(' / ')}`);
           flagged=`${farL.name} ${farL.label} flagged on his game page`;
           const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; S.ui.showRungs=ku.rungs; F('closeGameModal')(); }
+        /* the other far-off flags: a touchdown and a ladder rung on a book price (one-sided, so est.),
+           planted 25 points under the model's chance on a starter of a game to come and drawn with the
+           ladders shown; and the Game bets card's to win and to cover, priced so the book's fair chance on
+           the model's side is 25 points under it, the other side's lines not flagged */
+        const gF=games[0], roF=rosterFor(gF,false), pick=[];
+        for(const tm in roF) roF[tm].players.forEach(x=>{ if(!x.starter) return; const ls=statLines(x), td=ls.find(l=>l.prob&&l.p>=0.2), ld=ls.find(l=>!l.prob&&l.rungs.some(r=>r.p>=0.3&&r.p<0.97));
+          if(td&&ld) pick.push({x,td,ld,r:ld.rungs.find(r=>r.p>=0.3&&r.p<0.97)}); });
+        const V=vig(cw), vp=V.player||V.all;
+        if(pick.length&&vp>0){ const {x,td,ld,r}=pick.sort((a,b)=>String(a.x.pl.id).localeCompare(String(b.x.pl.id)))[0];
+          const pTD=toML(Math.max(0.02,td.p-0.25)*vp), pR=toML(Math.max(0.02,r.p-0.25)*vp), O=((S.odds[gF.id]??={})[x.pl.id]??={});
+          O.any_td={...(O.any_td||{}),'1':pTD}; O[ld.stat]={...(O[ld.stat]||{}),[String(r.k)]:pR};
+          const legTD={gid:gF.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:td.p,price:pTD,src:'real',week:gF.w}, legR={gid:gF.id,pid:x.pl.id,stat:ld.stat,k:r.k,side:'over',main:false,p:r.p,price:pR,src:'real',week:gF.w};
+          const fT=fairOf(legTD), fR=fairOf(legR);
+          const keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open,rungs:S.ui.showRungs});
+          S.ui.showRungs=true; S.ui.game=gF.id; S.ui.open={[x.pl.id]:true}; F('renderGame')();
+          const view=d.getElementById('gameView'), notes=[...view.querySelectorAll('p.faroff[data-far]')].map(p=>p.textContent.replace(/\s+/g,' '));
+          const wantT=`Scores one model ${Math.round(td.p*100)}% · market ${Math.round(fT.p*100)}% est.: far off the market`, wantR=`${r.k}+ model ${Math.round(r.p*100)}% · market ${Math.round(fR.p*100)}% est.: far off the market`;
+          chk(!!fT&&!!fR&&fT.est&&fR.est&&isFar(legTD)&&isFar(legR)&&notes.includes(wantT)&&notes.includes(wantR)&&view.querySelectorAll('tr.far').length===notes.length&&view.querySelectorAll('tr.far').length>=2,
+            `a far-off touchdown or ladder rung on a book price is not flagged on its game page ("${wantT}", "${wantR}"): ${notes.join(' / ')||'no flag'}`);
+          const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; S.ui.showRungs=ku.rungs; F('closeGameModal')(); }
+        else chk(false,'no starter of a game to come has a touchdown and a ladder rung to plant far-off prices on');
+        { const g=gF; if(g.sp==null||!isFinite(g.sp)) g.sp=3.5;
+          const side=kind=>[g.a,g.h].map(t=>({t,b:gameBet(g,t,kind)})).sort((a,b)=>b.b.p-a.b.p)[0];
+          const mlS=side('ml'), atS=side('ats'), fM=Math.max(0.05,mlS.b.p-0.25), fA=Math.max(0.05,atS.b.p-0.25), hM=mlS.t===g.h, hA=atS.t===g.h;
+          const own=f=>toML(f*1.03), oth=f=>toML((1-f)*1.03);
+          if(hM){ g.mlh=own(fM); g.mla=oth(fM); } else { g.mla=own(fM); g.mlh=oth(fM); }
+          if(hA){ g.sph=own(fA); g.spa=oth(fA); } else { g.spa=own(fA); g.sph=oth(fA); }
+          w.eval('GAME_TIER_CACHE={}');
+          const box=d.createElement('div'); box.innerHTML=F('gameBetsCard')(g,false);
+          const notes=[...box.querySelectorAll('p.faroff[data-far]')].map(p=>p.textContent.replace(/\s+/g,' '));
+          const fm=nv(hM?g.mlh:g.mla,hM?g.mla:g.mlh), fa=nv(hA?g.sph:g.spa,hA?g.spa:g.sph), ln=atS.b.line;
+          const want=[`To win model ${Math.round(mlS.b.p*100)}% · market ${Math.round(fm*100)}%: far off the market`,`To cover ${ln>0?'+':''}${ln} model ${Math.round(atS.b.p*100)}% · market ${Math.round(fa*100)}%: far off the market`];
+          chk(want.every(x=>notes.includes(x))&&notes.length===2&&box.querySelectorAll('tr.far').length===2,
+            `the Game bets card does not flag a far-off to win and to cover (and only those): ${notes.join(' / ')||'no flag'}`); }
+        /* the game hands as each card draws them: one with a fair chance leads with it ("NN% fair chance",
+           (est.) where a leg is priced on one side), "model says MM% to land" after it; one without says
+           it has none. The week's own hands may all lack one (an estimated rung), so made-up hands are
+           drawn too: two book-priced main lines in two games, the same with the planted rung, and with a
+           leg on no book price */
+        { const gt0=w.gameTiers, nb=x=>x.replace(/\s+/g,' ').trim();
+          const card=(g,T)=>{ if(T) w.gameTiers=()=>T; try{ const b=d.createElement('div'); b.innerHTML=F('gameSuggestCard')(g,false); return b; } finally { w.gameTiers=gt0; } };
+          const handOk=(box,id,t)=>{ const blk=[...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.gsugg-tier-hd .conf.'+id)), nums=blk&&blk.querySelector('.gsugg-nums');
+            if(!nums) return false; const tx=nb(nums.textContent), M=(t.corr*100).toFixed(0), b0=nums.querySelector('b');
+            if(t.fair&&t.fair.p!=null){ const Fp=(t.fair.p*100).toFixed(0);
+              return b0.textContent===Fp+'%'&&+b0.dataset.gsuggFair===t.fair.p&&tx.startsWith(`${Fp}% fair chance${t.fair.est?' (est.)':''} · model says ${M}% to land · `); }
+            return tx.startsWith(`${M}% to land (the model’s chance: no fair chance without every leg’s book price) · `); };
+          let shown=0;
+          for(const g of games.slice(0,3)){ const T=F('gameTiers')(g), box=card(g,null);
+            for(const id of ['high','med','low']) if(T[id]){ shown++; chk(handOk(box,id,T[id]),`the ${id} hand of ${g.id} does not lead with its fair chance, or say it has none: `+nb((([...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.conf.'+id))||{}).textContent)||'')); } }
+          chk(/lands at least 35% of the time by the model's chance/.test(nb(card(games[0],null).textContent)),'a game page\'s suggested parlays do not say their floors are on the model\'s chance');
+          const mains=[...pool.pref,...pool.thin].filter(l=>l.main&&!isG(l)&&l.src==='real'&&fairOf(l)&&!fairOf(l).est).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)));
+          const two=mains.length?[mains[0],mains.find(l=>l.gid!==mains[0].gid)||mains.find(l=>l.pid!==mains[0].pid)].filter(Boolean):[];
+          if(two.length===2){ const hand=legs=>({legs,corr:pp(legs).corr,dec:3,fair:PF(legs)});
+            const rung=pick.length?{gid:gF.id,pid:pick[0].x.pl.id,stat:pick[0].ld.stat,k:pick[0].r.k,side:'over',main:false,p:pick[0].r.p,price:F('oddsFor')(gF.id,pick[0].x.pl.id,pick[0].ld.stat,pick[0].r.k),src:'real',week:gF.w,name:pick[0].x.pl.n,label:'rung',key:gF.id+'|'+pick[0].x.pl.id+'|'+pick[0].ld.stat}:null;
+            const est={...two[1],key:two[1].key+'|est',k:+two[1].k+20,main:false,src:'est',price:400};
+            const T={high:hand(two),med:rung&&rung.price!=null?hand([...two,rung]):null,low:hand([...two,est])};
+            chk(T.high.fair&&T.high.fair.p!=null&&!T.high.fair.est&&(!T.med||(T.med.fair.p!=null&&T.med.fair.est))&&T.low.fair.p===null,'the made-up hands are not one with a fair chance, one estimated and one with none');
+            const box=card(games[0],T);
+            for(const id of ['high','med','low']) if(T[id]) chk(handOk(box,id,T[id]),`a made-up ${id} hand (${id==='high'?'book-priced main lines':id==='med'?'with a rung priced on one side':'with a leg on no book price'}) does not lead with its fair chance, or say it has none: `+nb(box.textContent).slice(0,300)); }
+          else chk(false,'the made-up lines gave no two book-priced main lines to build a hand of');
+          flagged+=`; ${shown} game hands and made-up ones drawn with their fair chance; a far-off touchdown, ladder rung, to win and to cover flagged`; }
         /* the builder: the far-off leg flagged in its row, the near one not; the summary leads with the fair chance */
         if(farL&&nearL){ const keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice, put=l=>{ const {key,thin,...x}=l; S.parlay[key]=x; };
           S.parlay={}; S.bookPrice=null; put(farL); if(nearL.key!==farL.key) put(nearL); F('renderParlay')();
@@ -1179,12 +1243,22 @@ setTimeout(async()=>{
             'the builder does not flag its far-off leg (and only it), or does not give each leg its fair chance: '+rows.map(r=>r.textContent.replace(/\s+/g,' ')).join(' / '));
           chk(!!fr&&fr.p!=null&&!!hero&&hero.querySelector('b').textContent===(fr.p*100).toFixed(1)+'%'&&hero.querySelector('span').textContent===`fair chance all ${legs.length} land${fr.est?', est.':''}`&&hero.querySelector('small').textContent===`model says ${(pr*100).toFixed(1)}%`,
             'the builder\'s summary does not lead with the fair chance, the model\'s beside it: '+(hero?hero.textContent:'no summary'));
+          /* the confidence tile rates the fair chance, and says so: the far-off leg alone, its chance set in
+             the builder where the model's tier and the fair chance's differ */
+          { const tile=()=>d.querySelector('#parlayBody .bigp .box.tier'), ct=F('confTier'), f1=fairOf(farL).p, pm=f1<0.45?0.72:f1<0.7?0.85:0.3;
+            const {key,thin,...one}=farL; S.parlay={[key]:{...one,p:pm}}; F('renderParlay')();
+            const t1=tile(), [c1,l1]=ct(f1);
+            chk(ct(pm)[0]!==c1&&!!t1&&t1.classList.contains(c1)&&t1.querySelector('b').textContent===l1&&t1.querySelector('span').textContent==='confidence all 1 land, on the fair chance',
+              `the builder's confidence tile does not rate the fair chance (${(f1*100).toFixed(1)}%: ${l1}) where the model's ${(pm*100).toFixed(0)}% is ${ct(pm)[1]}: `+(t1?t1.textContent:'no tile')); }
           /* a leg on no book price: the model's chance alone, saying why */
           const est={gid:farL.gid,pid:farL.pid,stat:farL.stat,k:Math.max(1,Math.round(+farL.k)+3),side:'over',main:false,p:0.3,price:250,src:'est',mu:farL.mu,name:farL.name,pos:farL.pos,grp:farL.grp,team:farL.team,opp:farL.opp,week:farL.week,label:'est leg'};
           S.parlay={}; put(nearL); S.parlay[farL.gid+'|'+farL.pid+'|zz_est']={...est}; F('renderParlay')();
           const h2=d.querySelector('#parlayBody .bigp .hero');
           chk(!!h2&&/^model's chance all 2 land$/.test(h2.querySelector('span').textContent)&&h2.querySelector('small').textContent==="no fair chance: it needs every leg's book price"&&/one leg has none, so this is the model's chance alone/.test(d.getElementById('parlayBody').textContent),
             'with a leg on no book price the builder does not show the model\'s chance alone and say why: '+(h2?h2.textContent:'no summary'));
+          { const t2=d.querySelector('#parlayBody .bigp .box.tier'), p2=pp(F('parlayLegs')().map(l=>({...l,side:l.side||'over'}))).corr, [c2,l2]=F('confTier')(p2);
+            chk(!!t2&&t2.classList.contains(c2)&&t2.querySelector('b').textContent===l2&&t2.querySelector('span').textContent==='confidence all 2 land, on the model’s chance',
+              'with no fair chance the builder\'s confidence tile does not rate the model\'s chance and say so: '+(t2?t2.textContent:'no tile')); }
           S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')(); }
         S.ui.pb=JSON.parse(keepU); S.ui.suggestSide=keepSide;
         console.log(`M7. fair chance: ${ruleCases} cases of the rule, and on made-up lines ${nFar} legs far off the market left out (${nNear} player legs kept), none on a level or on ${hands} game hands; ${flagged}; the builder flags it and leads with the fair chance`); }
@@ -1295,7 +1369,9 @@ setTimeout(async()=>{
      (this audit's page has none) or a file that is not a ledger. On a made-up ledger, per level: the
      parlays graded won or lost (a push and a pending parlay counted apart, an entry still to come and
      a level with no parlay not at all), won, the wins expected by the fair chance (marked * where a
-     graded parlay had none) and by the model's, and the units on $1, each worked out here ---- */
+     graded parlay had none) and by the model's, and the units on $1 (a win a push shortened paying what
+     it was graded, not the level's price), each worked out here; a parlay an earlier wave froze too,
+     its legs in another order, counted once, from the last ---- */
   { d.querySelector('#tabs button[data-tab="parlay"]').click();
     const rec=()=>d.getElementById('pbRec'), txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
     const ask=calls.filter(c=>/suggest_ledger\.json/.test(c.url));
@@ -1303,17 +1379,21 @@ setTimeout(async()=>{
     chk(!!rec()&&rec().hidden&&!txt(rec()),'with no record file the panel draws a record anyway: '+txt(rec()));
     const fetch0=w.fetch, load=async body=>{ w.fetch=()=>Promise.resolve(body===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(body))});
       try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; } F('renderPb')(); };
-    const leg={gid:'g',week:5,pid:'p',stat:'receptions',k:3.5,side:'over',main:true,price:-110,src:'real'};
-    const T=(id,n,p,fair,dec)=>({id,n,legs:Array.from({length:n},()=>({...leg})),p,fair,dec,label:{safe:'Safe',med:'Medium',aggr:'Aggressive',xtrm:'Extreme'}[id]});
-    const G=(result,n,payout)=>({result,legs:Array.from({length:n},()=>result==='lost'?'loss':result==='push'?'void':result==='pending'?null:'win'),...(payout!=null?{payout}:{})});
+    /* each entry's levels on legs of their own (tag), as a week's panel's are */
+    const T=(id,n,p,fair,dec,tag)=>({id,n,legs:Array.from({length:n},(_,i)=>({gid:'g'+tag+i,week:5,pid:'p'+tag+id+i,stat:'receptions',k:3.5,side:'over',main:true,price:-110,src:'real'})),p,fair,dec,label:{safe:'Safe',med:'Medium',aggr:'Aggressive',xtrm:'Extreme'}[id]});
+    const G=(result,n,payout,legs)=>({result,legs:legs||Array.from({length:n},()=>result==='lost'?'loss':result==='push'?'void':result==='pending'?null:'win'),...(payout!=null?{payout}:{})});
+    const early=T('safe',2,0.40,0.31,3.1,'a'); early.legs.reverse();
     const L={how:'made up',since:'2026-10-12',entries:{
-      '2026|05|2026-10-11T17:00:00Z':{kickoff:'2026-10-11T17:00:00Z',tiers:[T('safe',2,0.41,0.32,3.35),T('med',3,0.30,0.21,5.1),T('aggr',4,0.15,0.1,9),T('xtrm',5,0.07,0.05,20)],
+      /* London: the 1pm entry's Safe parlay, frozen here too (its legs the other way round, an older price): one parlay, counted from 1pm */
+      '2026|05|2026-10-11T13:30:00Z':{kickoff:'2026-10-11T13:30:00Z',tiers:[early],grade:{safe:G('won',2,3.1)}},
+      '2026|05|2026-10-11T17:00:00Z':{kickoff:'2026-10-11T17:00:00Z',tiers:[T('safe',2,0.41,0.32,3.35,'a'),T('med',3,0.30,0.21,5.1,'a'),T('aggr',4,0.15,0.1,9,'a'),T('xtrm',5,0.07,0.05,20,'a')],
         grade:{safe:G('won',2,3.35),med:G('lost',3,0),aggr:G('push',4,1),xtrm:G('pending',5)}},
-      '2026|05|2026-10-11T20:25:00Z':{kickoff:'2026-10-11T20:25:00Z',tiers:[T('safe',2,0.52,0.44,2.6),T('med',3,0.28,null,6.2),T('aggr',4,0.13,0.09,12),T('xtrm',5,0.06,0.04,30)],
-        grade:{safe:G('lost',2,0),med:G('won',3,6.2),aggr:G('won',4,12),xtrm:G('lost',5,0)}},
-      '2026|05|2026-10-12T00:20:00Z':{kickoff:'2026-10-12T00:20:00Z',tiers:[{id:'safe',n:2,why:'made up'},T('med',3,0.5,0.5,4)],grade:{safe:G('won',2,9)}},
-      '2026|06|2026-10-16T00:15:00Z':{kickoff:'2026-10-16T00:15:00Z',tiers:[T('safe',2,0.6,0.5,3)]}}};
-    const want={safe:['Safe','2','1','0.8','0.9','+1.35','up'],med:['Medium','2','1','0.2*','0.6','+4.20','up'],aggr:['Aggressive','1','1','0.1','0.1','+11.00','up'],xtrm:['Extreme','1','0','0.0','0.1','\u22121.00','down']};
+      /* the Medium won with a leg pushed: paid 3.7 on the two left, not its 6.2 */
+      '2026|05|2026-10-11T20:25:00Z':{kickoff:'2026-10-11T20:25:00Z',tiers:[T('safe',2,0.52,0.44,2.6,'b'),T('med',3,0.28,null,6.2,'b'),T('aggr',4,0.13,0.09,12,'b'),T('xtrm',5,0.06,0.04,30,'b')],
+        grade:{safe:G('lost',2,0),med:G('won',3,3.7,['win','push','win']),aggr:G('won',4,12),xtrm:G('lost',5,0)}},
+      '2026|05|2026-10-12T00:20:00Z':{kickoff:'2026-10-12T00:20:00Z',tiers:[{id:'safe',n:2,why:'made up'},T('med',3,0.5,0.5,4,'c')],grade:{safe:G('won',2,9)}},
+      '2026|06|2026-10-16T00:15:00Z':{kickoff:'2026-10-16T00:15:00Z',tiers:[T('safe',2,0.6,0.5,3,'d')]}}};
+    const want={safe:['Safe','2','1','0.8','0.9','+1.35','up'],med:['Medium','2','1','0.2*','0.6','+1.70','up'],aggr:['Aggressive','1','1','0.1','0.1','+11.00','up'],xtrm:['Extreme','1','0','0.0','0.1','\u22121.00','down']};
     await load(L);
     const row=id=>d.querySelector(`#pbRec tr[data-pb-rec="${id}"]`), cells=id=>row(id)?[...row(id).children].map(c=>c.textContent.trim()):[];
     chk(!!rec()&&!rec().hidden&&/^Suggestions record/.test(txt(rec()))&&!!d.querySelector('#pbCard #pbRec'),'a made-up record is not drawn in the panel, headed Suggestions record');

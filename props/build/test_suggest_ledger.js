@@ -9,7 +9,8 @@
    scores, no stats), then played out a game at a time, with a made-up score wherever the real one
    is not in yet, so the test holds in any week of the season.
 
-     A  the day of W's first kickoff: the wave is that kickoff, and its entry is taken.
+     A  the day of W's first kickoff: the wave is that kickoff, and its entry is taken. A2: a run a
+        second before that kickoff keeps it (the page's clock is the run's, held still).
      B  hours later, the prices pulled again (here: W's player prices gone and the Safe parlay's games
         off the board): the entry is rewritten, and an entry no longer the wave is dropped.
      B2 the same payload again: nothing is written, byte for byte.
@@ -17,9 +18,12 @@
         is frozen exactly as B left it and graded as far as its legs allow, and the next wave is taken.
      D  W played out (made-up scores where the real ones are missing, a made-up void and push), with
         made-up frozen entries planted to hold every rule of a book's settlement: each level graded
-        by the legs' own results, worked here from the raw scores and stat rows and never by the
-        app's code; a grade kept when the payload can no longer settle it; both waves unmoved; the
-        next week's first wave taken.
+        by the legs' own results, worked here from the raw scores, stat rows, snap counts and injury
+        report and never by the app's code (a player with no stat line who took a snap graded on zero,
+        by his PFR id or his name; one with none, or Out with his club's snaps not in, void; neither,
+        pending); a grade kept when the payload can no longer settle it; last season's entry, whose
+        players have this season's rows in the same week, never regraded; a parlay frozen into two
+        waves counted once; both waves unmoved; the next week's first wave taken.
      E  W's last kickoff under way: no game to come, so nothing new is taken (E2: nothing written).
      F  the guard: a ledger on disk whose frozen entry was edited is refused and the last commit's
         put back, while a wave to come rewritten since that commit is not; a payload that is not there is refused with the file untouched; and check() on
@@ -37,6 +41,8 @@ const SL = require('./suggest_ledger.js');
 const REAL = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8'));
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'suggest_ledger_'));
 const LEDGER = path.join(DIR, 'suggest_ledger.json');
+/* the snap counts and the roster their PFR ids come from: none until D writes made-up ones */
+const SNAPS = path.join(DIR, 'snap_counts.csv'), ROSTER = path.join(DIR, 'roster.csv');
 
 let n = 0; const fails = [];
 const chk = (ok, msg) => { n++; if (!ok) fails.push(msg); };
@@ -55,7 +61,7 @@ let seq = 0;
 function run(pay, now, extra = {}) {
   const pf = path.join(DIR, `payload_${++seq}.json`); fs.writeFileSync(pf, JSON.stringify(pay));
   const r = cp.spawnSync('node', [SCRIPT], { encoding: 'utf8', env: { ...process.env, SUGGEST_NOW: iso(now), SUGGEST_PAYLOAD: pf,
-    SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: 'none', ...extra } });
+    SUGGEST_LEDGER: LEDGER, SUGGEST_PREV: 'none', SUGGEST_SNAPS: SNAPS, SUGGEST_ROSTER: ROSTER, ...extra } });
   const out = (r.stdout || '') + (r.stderr || '');
   return { code: r.status, out, last: out.trim().split('\n').pop() };
 }
@@ -115,6 +121,11 @@ for (const t of (eA ? eA.tiers : []).filter(t => t.legs)) {
   if (new Set(t.legs.map(l => l.gid)).size === t.legs.length) chk(Math.abs(t.dec - t.legs.reduce((a, l) => a * dec(l.price), 1)) < 0.002, `A: ${t.id}'s price is not its legs' product`);
 }
 chk(L.summary && L.summary.entries === 1 && L.summary.frozen_entries === 0, 'A: the summary does not count one entry, none frozen');
+/* A2: a run a second before that kickoff, whose boot takes longer than that: the wave is still
+   to come on the run's clock, so its entry stays (a page clock running on would drop it) */
+{ const keep = bytes(); r = run(P0, kicks[0] - 1000);
+  chk(r.code === 0 && !!read().entries[kA] && !/dropped/.test(r.last), 'A2: a run a second before the kickoff dropped its wave: ' + r.last);
+  fs.writeFileSync(LEDGER, keep); }
 
 /* B: the prices move before the kickoff: rewritten; an entry no longer the wave is dropped */
 const tB = tA + 4 * H;
@@ -173,8 +184,30 @@ const L_ATS_PUSH = team(gWin, winner(gWin), 'ats', -margin(gWin), -110);
 const L_OVER = player(qb.id, gq, 'passing_yards', 239.5, 'over', true, -115), L_UNDER = player(qb.id, gq, 'passing_yards', 239.5, 'under', true, -105);
 const L_EXACT = player(qb.id, gq, 'passing_tds', 2, 'over', true, 130), L_RUNG = player(qb.id, gq, 'passing_yards', 250, 'over', false, 200);
 const L_VOID = player('XX-0000001', gq, 'rushing_yards', 20.5, 'over', true, -110);
+/* no stat line, read against who played: the snap counts are in for every game of W but gOut's;
+   XX-PLAYED took 31 snaps (his PFR id, from the roster), XX-NAMED 12 (no PFR id: his name, within his
+   club, "Named Fallback Jr." on the page and "Named Fallback" at PFR), XX-ZERO a row of no snaps;
+   in gOut, whose snaps are not in, XX-OUT was Out on the report and XX-UNK on none */
+const gOut = others[3] || others[0], gNamed = gLose;
+const at = (l, g, team) => ({ ...l, gid: g.id, team });
+const L_PLAYED_O = player('XX-PLAYED', gq, 'receptions', 0.5, 'over', true, -150), L_PLAYED_U = { ...L_PLAYED_O, side: 'under', price: 120 };
+const L_NAMED_U = at({ ...player('XX-NAMED', gq, 'receiving_yards', 8.5, 'under', true, 110), name: 'Named Fallback Jr.' }, gNamed, gNamed.h);
+const L_ZERO = player('XX-ZERO', gq, 'receptions', 1.5, 'over', true, -105);
+const L_OUT = at(player('XX-OUT', gq, 'receptions', 2.5, 'over', true, -110), gOut, gOut.h), L_UNK = at(player('XX-UNK', gq, 'receptions', 2.5, 'over', true, -110), gOut, gOut.a);
+const snapRow = (g, team, who, pfr, off) => [g.id, `${season}${String(W).padStart(2, '0')}0x`, season, 'REG', W, who, pfr, 'WR', team, team === g.h ? g.a : g.h, off, 0.5, 0, 0, 2, 0.1].join(',');
+fs.writeFileSync(SNAPS, ['game_id,pfr_game_id,season,game_type,week,player,pfr_player_id,position,team,opponent,offense_snaps,offense_pct,defense_snaps,defense_pct,st_snaps,st_pct',
+  ...games.filter(g => g.id !== gOut.id).flatMap(g => [snapRow(g, g.h, 'Dummy Lineman', 'DummLi00', 60), snapRow(g, g.a, 'Dummy Lineman', 'DummLi01', 60)]),
+  snapRow(gq, qbTeam, 'Played Person', 'PlayXx00', 31), snapRow(gNamed, gNamed.h, 'Named Fallback', '', 12), [gq.id, 'x', season, 'REG', W, 'Zero Snaps', 'ZeroXx00', 'TE', qbTeam, '', 0, 0, 0, 0, 0, 0].join(',')].join('\n') + '\n');
+fs.writeFileSync(ROSTER, 'season,team,position,full_name,gsis_id,pfr_id\n' + [[season, qbTeam, 'WR', 'Played Person', 'XX-PLAYED', 'PlayXx00'], [season, qbTeam, 'TE', 'Zero Snaps', 'XX-ZERO', 'ZeroXx00'],
+  [season, gNamed.h, 'WR', 'Named Fallback', 'XX-NAMED', '']].map(r => r.join(',')).join('\n') + '\n');
+P2.injuries = [...(P2.injuries || []), { season: String(season), week: String(W), gsis_id: 'XX-OUT', team: gOut.h, report_status: 'Out', practice_status: 'Did Not Participate In Practice', injury: 'Knee' }];
+const SNAP = (() => { const by = new Map(), teams = new Set(); for (const line of fs.readFileSync(SNAPS, 'utf8').trim().split('\n').slice(1)) { const c = line.split(',');
+  teams.add(c[0] + '|' + c[8]); by.set(c[0] + '|' + (c[6] || c[8] + '|' + c[5].toLowerCase()), +c[10] + +c[12] + +c[14]); } return { by, teams }; })();
+const PFR = { 'XX-PLAYED': 'PlayXx00', 'XX-ZERO': 'ZeroXx00' };
+const OUTS = new Set(P2.injuries.filter(x => x.report_status === 'Out').map(x => String(+x.week) + '|' + x.gsis_id));
+const nm = n => String(n).toLowerCase().replace(/[.']/g, '').replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/\s+/g, ' ').trim();
 const tier = (id, n, legs, extra = {}) => ({ id, label: SL.LABELS[id], n, floor: 0, legs, p: 0.3, fair: 0.25, fair_est: false, dec: r3(legs.reduce((a, l) => a * dec(l.price), 1)), likeliest: false, thin: 0, mkt: 0, ...extra });
-const kX = kicks[0] - 3 * H, kY = kicks[0] - 2 * H;
+const kX = kicks[0] - 3 * H, kY = kicks[0] - 2 * H, kX2 = kicks[0] - 2.5 * H, kZ = kicks[0] - 1.5 * H;
 const plant = (k, tiers, more = {}) => ({ season, week: W, kickoff: iso(k), games: games.map(g => g.id), baked_at: null, pool: { pref: 0, thin: 0, mkt: 0, far: 0 }, tiers, taken_at: iso(k - H), ...more });
 const X = plant(kX, [
   tier('safe', 2, [L_WIN, L_OVER]),                                   /* won, the whole price */
@@ -186,7 +219,23 @@ const gone = { ...L_WIN, gid: `${season - 1}_05_AAA_BBB`, team: 'AAA', pid: 'tea
 const Y = plant(kY, [tier('safe', 2, [gone, { ...L_UNDER }]), { id: 'med', label: 'Medium', n: 3, floor: 0.25, why: 'made up' },
   tier('aggr', 4, [L_WIN, L_OVER, L_TIE, { ...L_UNDER, pid: 'XX-0000003' }]) ]);   /* won: a push and a void drop out */
 Y.grade = { safe: { result: 'won', legs: ['win', 'win'], payout: Y.tiers[0].dec } };
-{ const x = read(); x.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kX)}`] = X; x.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kY)}`] = Y;
+/* X2: X's Safe parlay again, its legs the other way round, frozen at a later wave: one parlay */
+const X2 = plant(kX2, [tier('safe', 2, [L_OVER, L_WIN])]);
+/* Z: players with no stat line, read against who played */
+const Z = plant(kZ, [
+  tier('safe', 2, [L_PLAYED_O, L_WIN]),                               /* lost: he played, no catch, the over loses */
+  tier('med', 3, [L_PLAYED_U, L_WIN, L_OUT]),                          /* won: his under wins on zero, the Out leg void */
+  tier('aggr', 4, [L_NAMED_U, L_ZERO, L_WIN, L_OVER]),                /* won: by his name, on zero; no snaps, void */
+  tier('xtrm', 5, [L_UNK, L_WIN, L_OVER, L_TIE, L_NAMED_U]) ]);       /* pending: no snaps for his club yet, and not Out */
+/* PS: last season's week W, an all-player Safe graded lost; this season's rows for the same players
+   and week would win it: never regraded */
+const kP = kicks[0] - 365 * 24 * H, prevGid = `${season - 1}_${String(W).padStart(2, '0')}_${gq.a}_${gq.h}`;
+const PS = { ...plant(kP, [tier('safe', 2, [{ ...L_OVER, gid: prevGid }, { ...L_EXACT, gid: prevGid }])]), season: season - 1, games: [prevGid] };
+PS.grade = { safe: { result: 'lost', legs: ['loss', 'loss'], payout: 0 } };
+const kPS = `${season - 1}|${String(W).padStart(2, '0')}|${iso(kP)}`;
+{ const x = read(), wk = String(W).padStart(2, '0');
+  for (const [k, e] of [[kX, X], [kY, Y], [kX2, X2], [kZ, Z]]) x.entries[`${season}|${wk}|${iso(k)}`] = e;
+  x.entries[kPS] = PS;
   x.summary = SL.summarize(x.entries); fs.writeFileSync(LEDGER, JSON.stringify(x, null, 1)); }
 const plantedC = read();
 r = run(P2, tD);
@@ -205,8 +254,15 @@ function settle(l) {
   }
   const rows = (P2.stats[String(l.week)] || []).filter(x => g && (x.team === g.h || x.team === g.a) && ['QB', 'RB', 'WR', 'TE', 'K', 'FB', 'HB'].includes(x.position));
   const row = rows.find(x => x.player_id === l.pid);
-  if (!row) return rows.length ? 'void' : null;
-  const v = l.stat === 'any_td' ? row.rushing_tds + row.receiving_tds : row[l.stat];
+  let v;
+  if (!row) {
+    if (!rows.length) return null;
+    /* no stat line: did he play? his club's snaps in: a snap, zero; none, void. Not in: Out, void; else wait */
+    if (!SNAP.teams.has(l.gid + '|' + l.team)) return OUTS.has(String(l.week) + '|' + l.pid) ? 'void' : null;
+    const s = SNAP.by.get(l.gid + '|' + (PFR[l.pid] || l.team + '|' + nm(l.name)));
+    if (!(s > 0)) return 'void';
+    v = 0;
+  } else v = l.stat === 'any_td' ? row.rushing_tds + row.receiving_tds : row[l.stat];
   if (l.stat === 'any_td') return v >= (l.k || 1) ? 'win' : 'loss';
   if (l.main) return v === l.k ? 'push' : ((l.side === 'under' ? v < l.k : v > l.k) ? 'win' : 'loss');
   return v >= l.k ? 'win' : 'loss';
@@ -227,6 +283,7 @@ for (const [k, e] of Object.entries(L.entries)) {
   if (Date.parse(e.kickoff) > tD) { chk(!e.grade, `D: ${k}, still to come, has a grade`); continue; }
   for (const t of e.tiers.filter(t => t.legs)) {
     const g = e.grade && e.grade[t.id], w = expect(t);
+    if (k === kPS) { chk(JSON.stringify(g) === JSON.stringify(PS.grade[t.id]), `D: last season's ${t.id} was regraded on this season's week ${W}: ${JSON.stringify(g)}`); continue; }
     if (k.endsWith(iso(kY)) && t.id === 'safe') { chk(JSON.stringify(g) === JSON.stringify(Y.grade.safe), 'D: a grade made before was undone by a payload that cannot settle it'); continue; }
     chk(same(g, w), `D: ${k} ${t.id} graded ${JSON.stringify(g)}, the legs say ${JSON.stringify(w)}`);
     if (g && g.result !== 'pending') graded++; else pend++;
@@ -239,14 +296,32 @@ chk(gx.aggr && gx.aggr.result === 'lost' && gx.aggr.payout === 0, 'D: a parlay w
 chk(gx.xtrm && gx.xtrm.result === 'push' && gx.xtrm.payout === 1 && gx.xtrm.legs.every(x => x === 'push' || x === 'void'), 'D: every leg a push or a void is not a push, the stake back: ' + JSON.stringify(gx.xtrm));
 const gy = (L.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kY)}`] || {}).grade || {};
 chk(!gy.med && gy.aggr && gy.aggr.result === 'won' && JSON.stringify(gy.aggr.legs) === '["win","win","push","void"]' && gy.aggr.payout === r3(dec(L_WIN.price) * dec(L_OVER.price)), 'D: a level with no parlay was graded, or a planted level was not: ' + JSON.stringify(gy));
-/* the summary, worked here from the grades */
+const gz = (L.entries[`${season}|${String(W).padStart(2, '0')}|${iso(kZ)}`] || {}).grade || {};
+chk(gz.safe && gz.safe.result === 'lost' && JSON.stringify(gz.safe.legs) === '["loss","win"]', 'D: a player who played with no stat line did not lose his over on zero: ' + JSON.stringify(gz.safe));
+chk(gz.med && gz.med.result === 'won' && JSON.stringify(gz.med.legs) === '["win","win","void"]' && gz.med.payout === r3(dec(L_PLAYED_U.price) * dec(L_WIN.price)),
+  'D: a player who played with no stat line did not win his under on zero, or one Out with no snap counts in was not void: ' + JSON.stringify(gz.med));
+chk(gz.aggr && gz.aggr.result === 'won' && JSON.stringify(gz.aggr.legs) === '["win","void","win","win"]' && gz.aggr.payout === r3(dec(L_NAMED_U.price) * dec(L_WIN.price) * dec(L_OVER.price)),
+  'D: a player found by name who played was not graded on zero, or one with no snaps was not void: ' + JSON.stringify(gz.aggr));
+chk(gz.xtrm && gz.xtrm.result === 'pending' && gz.xtrm.legs[0] === null, 'D: a player with no stat line, no snap counts for his club and not Out did not wait: ' + JSON.stringify(gz.xtrm));
+chk(JSON.stringify((L.entries[kPS] || {}).grade) === JSON.stringify(PS.grade), 'D: last season\'s entry was regraded: ' + JSON.stringify((L.entries[kPS] || {}).grade));
+/* the summary, worked here from the grades: a parlay (a season's week, a level, its legs in any order)
+   once, from the last frozen entry that holds it */
 { const want = {}; for (const id of SL.TIERS) want[id] = { graded: 0, won: 0, push: 0, exp_fair: 0, exp_model: 0, units: 0 };
-  for (const e of Object.values(L.entries)) for (const t of e.tiers) { const g = (e.grade || {})[t.id]; if (!g || g.result === 'pending') continue;
+  const once = new Map(), lid = l => [l.gid, l.pid, l.stat, l.side, l.k, l.main ? 1 : 0].join('|');
+  for (const k of Object.keys(L.entries).sort()) { const e = L.entries[k]; for (const t of e.tiers) { const g = (e.grade || {})[t.id]; if (!g || !t.legs) continue;
+    once.set([e.season, e.week, t.id, t.legs.map(lid).sort().join('+')].join('#'), { t, g }); } }
+  chk([...once.values()].filter(x => x.t.id === 'safe' && x.t.legs.some(l => l.pid === L_WIN.pid) && x.t.legs.some(l => l.pid === L_OVER.pid) && x.t.n === 2 && x.t.legs.every(l => l.gid !== prevGid)).length === 1
+    && L.summary.repeats >= 1, 'D: X\'s Safe parlay, frozen again at a later wave, is not one parlay, or the summary counts no repeat');
+  for (const { t, g } of once.values()) { if (g.result === 'pending') continue;
     const s = want[t.id]; if (g.result === 'push') { s.push++; continue; } s.graded++; if (g.result === 'won') s.won++; s.exp_model += t.p; s.exp_fair += t.fair || 0; s.units += g.payout - 1; }
   for (const id of SL.TIERS) { const a = L.summary.tiers[id], b = want[id];
     chk(a.graded === b.graded && a.won === b.won && a.push === b.push && Math.abs(a.exp_fair - b.exp_fair) < 1e-3 && Math.abs(a.exp_model - b.exp_model) < 1e-3 && Math.abs(a.units - b.units) < 2e-3,
       `D: the summary's ${id} is not its grades': ${JSON.stringify(a)} against ${JSON.stringify(b)}`); } }
 chk(graded >= 5, `D: only ${graded} levels graded on a week played out`);
+{ const t0 = X.tiers[0], three = {}; for (const h of [5, 4, 3]) three[`${season}|01|${iso(kX - h * H)}`] = { season, week: 1, kickoff: iso(kX - h * H), tiers: [{ ...t0, legs: h === 4 ? [...t0.legs].reverse() : t0.legs }], grade: { safe: { result: 'won', legs: ['win', 'win'], payout: t0.dec } } };
+  const sm = SL.summarize(three);
+  chk(sm.tiers.safe.graded === 1 && sm.tiers.safe.won === 1 && Math.abs(sm.tiers.safe.units - (t0.dec - 1)) < 2e-3 && sm.repeats === 2 && sm.frozen_entries === 3,
+    'D: one parlay on an unchanged panel across three waves is not counted once: ' + JSON.stringify(sm)); }
 /* the next week's first wave */
 const next = REAL.sched.filter(g => +g.w === W + 1).map(etKick).sort((a, b) => a - b).find(k => k > tD);
 if (next) chk(!!L.entries[`${season}|${String(W + 1).padStart(2, '0')}|${iso(next)}`], 'D: the next week\'s first wave was not taken');

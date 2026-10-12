@@ -532,6 +532,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
     await wait(60);
     chk(!w.eval('S').parlay[key], 'unticking did not take the leg off the parlay');
     chk(/Parlay Builder/.test(txt(d.getElementById('parlayBody'))), 'the builder still shows a parlay after unticking');
+    /* a team line far off the market is flagged on the board's card as on the game's own page: the
+       model's side to win priced so the book's fair chance on it is 25 points under the model's */
+    { const r = w.eval('S').sched.find(x => x.id === openCard.dataset.game), keep = [r.mla, r.mlh], toML = w.eval('probToAmerican');
+      const bet = t => w.gameBet(r, t, 'ml'), fav = bet(r.h).p >= bet(r.a).p ? r.h : r.a, p = bet(fav).p, f = Math.max(0.05, p - 0.25);
+      const own = toML(f * 1.03), oth = toML((1 - f) * 1.03), imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), fair = imp(own) / (imp(own) + imp(oth));
+      if (fav === r.h) { r.mlh = own; r.mla = oth; } else { r.mla = own; r.mlh = oth; }
+      openCard.click(); await wait(30); openCard.click(); await wait(60);
+      const notes = [...openCard.querySelectorAll('.gbets p.faroff[data-far]')].map(txt), want = `To win model ${Math.round(p * 100)}% · market ${Math.round(fair * 100)}%: far off the market`;
+      chk(notes.includes(want) && openCard.querySelectorAll('.gbets tr.far').length === notes.length, `the board's Game bets card does not flag a far-off to win as "${want}": ${notes.join(' / ') || 'no flag'}`);
+      r.mla = keep[0]; r.mlh = keep[1]; openCard.click(); await wait(30); openCard.click(); await wait(60); }
     if (openCard !== first) { openCard.click(); await wait(30); first.click(); await wait(60); }
   } else chk(cards.every(c => started(c.dataset.game)), 'no game offered lines although one has not kicked off');
   const lockedCard = cards.find(c => started(c.dataset.game));
@@ -1515,9 +1525,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      asked for beside the payload once a load with no-store, the real file drawn as it stands, a made-up
      one level by level and none at all drawing nothing. The numbers are worked out here from the
      entries' grades: per level the parlays graded won or lost (a push and a pending parlay apart), won,
-     the wins expected by the fair chance and by the model's, the units on $1 ---- */
+     the wins expected by the fair chance and by the model's, the units on $1 (a win a push shortened at
+     what it paid), each parlay once however many waves froze it (its season's week, level and legs in
+     any order), counted from the last ---- */
   { const recOf = L => { const o = {}; for (const id of ['safe', 'med', 'aggr', 'xtrm']) o[id] = { g: 0, w: 0, f: 0, fn: 0, m: 0, u: 0, push: 0 };
-      for (const e of Object.values(L.entries || {})) for (const t of e.tiers || []) { const g = (e.grade || {})[t.id], r = o[t.id]; if (!g || !r || !t.legs) continue;
+      const once = new Map(), E = L.entries || {};
+      for (const k of Object.keys(E).sort()) for (const t of E[k].tiers || []) { const g = (E[k].grade || {})[t.id]; if (!g || !o[t.id] || !t.legs) continue;
+        once.set(k.split('|').slice(0, 2).join('|') + '#' + t.id + '#' + t.legs.map(l => [l.gid, l.pid, l.stat, l.side, l.k, l.main ? 1 : 0].join('|')).sort().join('+'), { t, g }); }
+      for (const { t, g } of once.values()) { const r = o[t.id];
         if (g.result === 'push') { r.push++; continue; } if (g.result !== 'won' && g.result !== 'lost') continue;
         r.g++; if (g.result === 'won') r.w++; r.m += t.p; if (t.fair != null) { r.f += t.fair; r.fn++; } r.u += (g.result === 'won' ? g.payout : 0) - 1; }
       return o; };
@@ -1536,15 +1551,19 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(any ? rowsShown(R.d) === rowsWant(real) : /No suggested parlay has been graded yet/.test(txt(el)), `the real record reads ${rowsShown(R.d) || txt(el)}, not ${rowsWant(real)}`); }
       chk(!R.timedOut && R.errs.length === 0 && !/NaN|undefined/.test(txt(el)), 'the page threw, or the record reads NaN: ' + R.errs.join('; '));
       R.w.close(); }
-    { const T = (id, n, p, fair, dec) => ({ id, n, p, fair, dec, legs: Array.from({ length: n }, () => ({ gid: 'g', week: 5, pid: 'p', stat: 'receptions', k: 3.5, side: 'over', main: true, price: -110, src: 'real' })) });
-      const G = (result, n, payout) => ({ result, legs: Array(n).fill(result === 'lost' ? 'loss' : result === 'push' ? 'void' : result === 'pending' ? null : 'win'), ...(payout != null ? { payout } : {}) });
+    { const T = (id, n, p, fair, dec, tag) => ({ id, n, p, fair, dec, legs: Array.from({ length: n }, (_, i) => ({ gid: 'g' + tag + i, week: 5, pid: 'p' + tag + id + i, stat: 'receptions', k: 3.5, side: 'over', main: true, price: -110, src: 'real' })) });
+      const G = (result, n, payout, legs) => ({ result, legs: legs || Array(n).fill(result === 'lost' ? 'loss' : result === 'push' ? 'void' : result === 'pending' ? null : 'win'), ...(payout != null ? { payout } : {}) });
+      /* Thursday's entry froze the 4pm Extreme too, its legs the other way round and at an older price */
+      const thu = T('xtrm', 5, 0.05, 0.03, 28, 'b'); thu.legs.reverse();
       const FIX = { how: 'the smoke\'s own', since: '2026-10-12', entries: {
-        '2026|05|2026-10-11T13:30:00Z': { kickoff: '2026-10-11T13:30:00Z', tiers: [T('safe', 2, 0.47, 0.36, 2.9), T('med', 3, 0.33, 0.24, 5.6), T('aggr', 4, 0.16, 0.11, 10.4), T('xtrm', 5, 0.07, 0.05, 26)],
-          grade: { safe: G('won', 2, 2.9), med: G('won', 3, 5.6), aggr: G('lost', 4, 0), xtrm: G('push', 5, 1) } },
-        '2026|05|2026-10-11T17:00:00Z': { kickoff: '2026-10-11T17:00:00Z', tiers: [T('safe', 2, 0.55, 0.41, 2.4), T('med', 3, 0.29, null, 6), T('aggr', 4, 0.14, 0.1, 11), T('xtrm', 5, 0.06, 0.04, 31)],
+        '2026|05|2026-10-09T00:15:00Z': { kickoff: '2026-10-09T00:15:00Z', tiers: [thu], grade: { xtrm: G('won', 5, 28) } },
+        /* the Medium won with a leg pushed: paid 3.2 on the two left, not its 5.6 */
+        '2026|05|2026-10-11T13:30:00Z': { kickoff: '2026-10-11T13:30:00Z', tiers: [T('safe', 2, 0.47, 0.36, 2.9, 'a'), T('med', 3, 0.33, 0.24, 5.6, 'a'), T('aggr', 4, 0.16, 0.11, 10.4, 'a'), T('xtrm', 5, 0.07, 0.05, 26, 'a')],
+          grade: { safe: G('won', 2, 2.9), med: G('won', 3, 3.2, ['win', 'push', 'win']), aggr: G('lost', 4, 0), xtrm: G('push', 5, 1) } },
+        '2026|05|2026-10-11T17:00:00Z': { kickoff: '2026-10-11T17:00:00Z', tiers: [T('safe', 2, 0.55, 0.41, 2.4, 'b'), T('med', 3, 0.29, null, 6, 'b'), T('aggr', 4, 0.14, 0.1, 11, 'b'), T('xtrm', 5, 0.06, 0.04, 31, 'b')],
           grade: { safe: G('lost', 2, 0), med: G('lost', 3, 0), aggr: G('pending', 4), xtrm: G('won', 5, 31) } } } };
       const R = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#parlay', null, false, { ledger: FIX }); await wait(300);
-      chk(rowsShown(R.d) === rowsWant(FIX) && rowsShown(R.d) === 'Safe|2|1|0.8|1.0|+0.90 / Medium|2|1|0.2*|0.6|+3.60 / Aggressive|1|0|0.1|0.2|\u22121.00 / Extreme|1|1|0.0|0.1|+30.00',
+      chk(rowsShown(R.d) === rowsWant(FIX) && rowsShown(R.d) === 'Safe|2|1|0.8|1.0|+0.90 / Medium|2|1|0.2*|0.6|+1.20 / Aggressive|1|0|0.1|0.2|\u22121.00 / Extreme|1|1|0.0|0.1|+30.00',
         `a made-up record reads ${rowsShown(R.d)}, not ${rowsWant(FIX)}`);
       chk(/1 parlay is waiting on its games or stats/.test(txt(R.d.getElementById('pbRec'))) && /1 push/.test(txt(R.d.getElementById('pbRec'))), 'the made-up record does not count its pending parlay and its push apart');
       R.w.close();

@@ -369,6 +369,7 @@ body.modal-open{overflow:hidden}
 .pb-nums b{display:block;font-family:var(--display);font-size:17px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
 .pb-nums span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .pb-nums small{display:block;font-size:11px;font-weight:600;color:var(--ink-2);white-space:nowrap;margin-top:1px}
+.pb-nums .pb-chance span,.pb-nums .pb-chance small{white-space:normal;overflow-wrap:anywhere}
 .faroff{color:#8A5E05}
 small.faroff{display:block;font-size:11px;font-weight:600;margin-top:2px;white-space:normal}
 p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
@@ -1784,7 +1785,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v99 \u00b7 2026-10-12';
+const APP_BUILD='app v100 \u00b7 2026-10-12';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -4190,7 +4191,10 @@ function pbRefill(id,r){
    file carries is for people reading it): per level the parlays graded won or lost (a push, the stake
    back, is counted apart), won, the wins expected by the book's fair chance and by the model's (the
    sums of the chances the panel showed; a parlay a push shortened counts on its full chance), and the
-   units on $1 a parlay. */
+   units on $1 a parlay. A parlay counts once: an entry is the whole week's panel, so a level parlay
+   unchanged across waves is frozen into each of them; the same legs (in any order) of the same level in
+   a season's week (the entry's key, season|week|kickoff) are counted from the last entry that holds
+   them, as the job's summary counts them. */
 let PB_REC=null;
 const PB_REC_URL=DATA_URL.replace(/payload\.json$/,'suggest_ledger.json');
 async function pbRecLoad(){
@@ -4202,15 +4206,19 @@ async function pbRecLoad(){
 window.pbRecLoad=pbRecLoad;
 function pbRecSum(L){
   const out=PB_TIERS.map(([id,label])=>({id,label,graded:0,won:0,push:0,fair:0,fairN:0,model:0,units:0}));
-  let pending=0, entries=0;
-  for(const e of Object.values((L&&L.entries)||{})){ if(!e||!Array.isArray(e.tiers)) continue; entries++;
-    for(const t of e.tiers){ const g=e.grade&&e.grade[t&&t.id], s=out.find(x=>t&&x.id===t.id); if(!g||!s||!Array.isArray(t.legs)) continue;
-      if(g.result==='pending'){ pending++; continue; }
-      if(g.result==='push'){ s.push++; continue; }
-      if(g.result!=='won'&&g.result!=='lost') continue;
-      s.graded++; if(g.result==='won') s.won++;
-      s.model+=isFinite(+t.p)?+t.p:0; if(t.fair!=null&&isFinite(+t.fair)){ s.fair+=+t.fair; s.fairN++; }
-      s.units+=(g.result==='won'&&isFinite(+g.payout)?+g.payout:0)-1; } }
+  let pending=0, entries=0; const E=(L&&L.entries)||{}, last=new Map();
+  const lid=l=>l?[l.gid,l.pid,l.stat,l.side,l.k,l.main?1:0].join('|'):'';
+  /* each level parlay of a season's week once, from the last frozen entry that holds it */
+  for(const k of Object.keys(E).sort()){ const e=E[k]; if(!e||!Array.isArray(e.tiers)) continue; entries++;
+    for(const t of e.tiers){ const g=e.grade&&e.grade[t&&t.id]; if(!g||!out.some(x=>t&&x.id===t.id)||!Array.isArray(t.legs)) continue;
+      last.set([k.split('|').slice(0,2).join('|'),t.id,t.legs.map(lid).sort().join('+')].join('#'),{t,g}); } }
+  for(const {t,g} of last.values()){ const s=out.find(x=>x.id===t.id);
+    if(g.result==='pending'){ pending++; continue; }
+    if(g.result==='push'){ s.push++; continue; }
+    if(g.result!=='won'&&g.result!=='lost') continue;
+    s.graded++; if(g.result==='won') s.won++;
+    s.model+=isFinite(+t.p)?+t.p:0; if(t.fair!=null&&isFinite(+t.fair)){ s.fair+=+t.fair; s.fairN++; }
+    s.units+=(g.result==='won'&&isFinite(+g.payout)?+g.payout:0)-1; }
   return {tiers:out,pending,entries};
 }
 function pbRecHtml(){
@@ -4225,7 +4233,7 @@ function pbRecHtml(){
   if(push) notes.push(`${push} push${push===1?'':'es'} (every leg a push or a void, the stake back) ${push===1?'is':'are'} counted apart.`);
   if(noFair) notes.push('* Not every parlay graded had a fair chance (a leg with no book price): those are left out of that sum.');
   return `<div id="pbRec" class="pb-rec"><h3>Suggestions record</h3>
-    <p class="muted">It starts on 12 October 2026, Monday night’s Bills at Rams the first: each entry is this panel on its default choices (All, every game still to come, ${pbAmt(STAKE_DEFAULT)}) as the job last saw it before a wave of kickoffs, frozen at kickoff and graded as a book settles it (a push or a void leg drops out). Expected is the sum of the chances shown, by the book’s fair chance and by the model’s; units are on $1 a parlay.</p>
+    <p class="muted">It starts on 12 October 2026, Monday night’s Bills at Rams the first: each entry is this panel on its default choices (All, every game still to come, ${pbAmt(STAKE_DEFAULT)}) as the job last saw it before a wave of kickoffs, frozen at kickoff and graded as a book settles it (a push drops out, and so does a player who did not play; one who played with no stat line is graded on zero). A parlay the panel kept across waves counts once. Expected is the sum of the chances shown, by the book’s fair chance and by the model’s; units are on $1 a parlay.</p>
     ${any?`<div class="pb-rec-wrap"><table><thead><tr><th scope="col">Level</th><th scope="col" class="num">Graded</th><th scope="col" class="num">Won</th><th scope="col" class="num">Expected, fair chance</th><th scope="col" class="num">Expected, model</th><th scope="col" class="num">Units on $1</th></tr></thead><tbody>${rows}</tbody></table></div>`
       :`<p class="pb-rec-none">No suggested parlay has been graded yet.</p>`}
     ${notes.map(t=>`<p class="muted pb-rec-note">${t}</p>`).join('')}</div>`;
@@ -4330,7 +4338,7 @@ function gameSuggestCard(g,locked){
         return `<li><label class="gsugg-pick${on?' on':''}"><input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Take':'Put'} ${esc(l.name)}, ${esc(l.label)}, ${on?'off':'on'} the parlay">
           <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='real'?'':'<i class="est"> est.</i>'}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`; }).join('')}</ul></div>`; };
   return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlays</h2></div>${side}
-    <p class="muted" style="margin:0 0 10px;font-size:12.5px">The best payout for the chance in this game, at 2, 3 and 4 legs: main lines and threshold ladders, with the book's price where it has one and an estimate (est.) where it does not. Every leg at least a 40% chance and no shorter than ${fmtML(GAME_LEG_MIN)}; High pays at least +100 and lands at least 35% of the time, Medium +250 and 20%, Low +500 and 10%. Chances allow for how the legs move together, and the price is what a book pays for them together. Each hand leads with the book's fair chance (its prices with the margin taken out) where every leg has a book price, the model's own beside it, and leaves out a line the model rates ${Math.round(FAR_OFF*100)} points or more above the book's fair chance.</p>
+    <p class="muted" style="margin:0 0 10px;font-size:12.5px">The best payout for the chance in this game, at 2, 3 and 4 legs: main lines and threshold ladders, with the book's price where it has one and an estimate (est.) where it does not. Every leg at least a 40% chance and no shorter than ${fmtML(GAME_LEG_MIN)}; High pays at least +100 and lands at least 35% of the time by the model's chance, Medium +250 and 20%, Low +500 and 10%. Chances allow for how the legs move together, and the price is what a book pays for them together. Each hand leads with the book's fair chance (its prices with the margin taken out) where every leg has a book price, the model's own beside it, and leaves out a line the model rates ${Math.round(FAR_OFF*100)} points or more above the book's fair chance.</p>
     <div class="gsugg-tiers g3">${GAME_TIERS.map(block).join('')}</div></div>`;
 }
 /* ---------- the panel, over the builder ---------- */
@@ -4580,7 +4588,8 @@ function renderParlay(o){
         :`<div class="box hero"><b data-model="${pr.corr}">${(pr.corr*100).toFixed(1)}%</b><span>model's chance all ${legs.length} land</span><small>no fair chance: it needs every leg's book price</small></div>`}
       <div class="box"><b>${fmtML(fairML)}</b><span>fair price for the model's chance</span></div>
       <div class="box"><b class="payout">$${payout.toFixed(2)}</b><span>${(realPrice||estPrice)?`returned if it lands, $${profit.toFixed(2)} profit`:`if you got the fair price, $${profit.toFixed(2)} profit`}</span></div>
-      <div class="box tier ${confTier(pr.corr)[0]}"><b>${confTier(pr.corr)[1]}</b><span>confidence all ${legs.length} land</span></div>
+      ${(()=>{ const on=fair&&fair.p!=null, cp=on?fair.p:pr.corr, [c,l]=confTier(cp);
+        return `<div class="box tier ${c}" data-conf="${cp}"><b>${l}</b><span>confidence all ${legs.length} land, on the ${on?'fair':'model\u2019s'} chance</span></div>`; })()}
     </div>
     <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)':''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
       :`The fair chance needs a book price on every leg; ${fair&&fair.miss===1?'one leg has':(fair?fair.miss:0)+' legs have'} none, so this is the model's chance alone.`}</p>
@@ -4946,7 +4955,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='0e11a6f';
+const PAGE_HASH='5abc778';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){

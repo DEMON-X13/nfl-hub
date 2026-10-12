@@ -97,7 +97,9 @@ props/
                                  levels on the default choices, taken from the published
                                  page (nflbets/index.html in jsdom) on the payload just
                                  baked, per kickoff wave, frozen at that kickoff and
-                                 graded by settleLeg -> data/suggest_ledger.json; its
+                                 graded by settleLeg (a player with no stat line by
+                                 nflverse's snap counts: played, zero; not, void) ->
+                                 data/suggest_ledger.json, each parlay counted once; its
                                  guard refuses a ledger whose frozen entries moved
   build/test_suggest_ledger.js   its test: made-up weeks cut from the payload, the
                                  rewrite, the freeze, a book's settlement, the guard
@@ -534,8 +536,12 @@ worked on its own from the payload and held to `legFair` case by case: both side
 a rung, a touchdown, both team lines, a spread on another number, the total, one side missing, no line
 of its kind, none at all, an estimated price; then made-up lines one in three 25 points above the
 book's fair chance and one in three 6 points above: the pool's count and note, no far leg on a level
-or a game hand, the flag on the game page and in the builder, the builder's summary) hold it, and the
-nflbets smoke and `smoke_live.js` section J hold the same on the page, the Elo picks and the card.
+or a game hand, the flag on the game page (main lines, a touchdown and a rung on one-sided prices, the
+Game bets card's to win and to cover) and in the builder, the builder's summary and its confidence tile,
+which rates the fair chance where there is one (app v100), and each game hand as its card draws it, with
+made-up hands sure to take every branch) hold it, and the nflbets smoke and `smoke_live.js` section J
+hold the same on the page, the Elo picks and the card. App v100 (`patch_honest_review.py`) also says on
+a game page that its hands' floors are by the model's chance and lets the panel's fair-chance label wrap.
 
 **The suggestions record** (app v99, `patch_suggest_record.py`; the third change after that review)
 is what the panel suggested, written down before the games and graded after, so how the suggestions
@@ -543,7 +549,8 @@ do is read off the page rather than remembered. `props/build/suggest_ledger.js` 
 (`weekly.py`, once the audit is clean; never a reason to refuse or redden a run). It boots the published
 page, `nflbets/index.html`, in jsdom on the payload just baked, the Elo files beside it (market + form
 decides which player legs qualify, so the props app alone would not be the page a visitor sees) and the
-window's clock at the run's time, and reads the panel's four levels on the default choices (All, every
+window's clock held at the run's time (moving, a boot of a few seconds could carry it past a kickoff the
+script still counts as to come and drop that wave), and reads the panel's four levels on the default choices (All, every
 game still to come, the default Bet amount) with the page's own `getPbTiers`. An entry is keyed
 `season|week|kickoff wave`, the wave being the earliest kickoff among the games still to come: rewritten
 by a run while that kickoff is to come and the panel has changed, frozen from it (an entry not frozen
@@ -552,18 +559,28 @@ legs (game, week, player or team, stat, line, side, price, the model's and the f
 model chance (`parlayProb`), fair chance (`parlayFair`) and decimal price (`parlayDec`), or why it is
 empty. A frozen entry is graded by the app's own `settleLeg`/`settleGameLeg` once every leg has
 settled: a loss loses; a push or a void drops out, the rest paid at `parlayDec` on the legs left;
-every leg a push or void is a push; a grade once made is replaced only by a complete one. Its guard
+every leg a push or void is a push; a grade once made is replaced only by a complete one; only the
+page's own season is graded. A player with no stat line is void only if he did not play: nflverse
+writes a player's week only when he has a stat, so one who played without a target has none, and
+DraftKings grades him on zero. Who played is nflverse's snap counts (`raw/snap_counts_<season>.csv`,
+fetched by `weekly.py`, not required; the roster's PFR id, else his name within his club): a snap and
+he is graded on zero by `settleLeg` itself, none with his club's snaps in and he is void; no snap
+counts yet, Out on the report is void and anything else waits. The summary counts each parlay once (an
+entry is the whole week's panel, so a parlay unchanged across waves is in each; the same legs of the
+same level in a season's week count from the last entry that holds them). Its guard
 holds the new ledger to the one the run started from and to the last commit's: a frozen entry gone or
 changed (grades aside), an entry taken at or after its kickoff or not by this run, a grade that does
 not follow its legs or a summary that does not follow from the entries is refused, the file put back
 (the last commit's where the disk copy had moved), exit 1. `test_suggest_ledger.js` runs the script on
-made-up weeks cut from the payload (taken, rewritten, unchanged, frozen, graded on planted wins,
-losses, voids and pushes worked out from the raw rows, no game to come, the guard end to end and on
-hand-made ledgers). The page reads the file beside the payload (`PB_REC_URL`, no-store, `PB_REC`
+made-up weeks cut from the payload (taken, kept by a run a second before its kickoff, rewritten,
+unchanged, frozen, graded on planted wins, losses, voids and pushes worked out from the raw rows, the
+snap counts and the injury report, last season's entry never regraded, a repeated parlay counted once,
+no game to come, the guard end to end and on hand-made ledgers). The page reads the file beside the payload (`PB_REC_URL`, no-store, `PB_REC`
 outside `S`) and draws at the panel's foot, after the Elo picks and also when no game is left, a
-**Suggestions record** (`pbRecHtml`, from the entries' grades by `pbRecSum`): per level the parlays
-graded won or lost, won, the wins expected by the fair chance and by the model's, and the units on $1,
-pending parlays and pushes counted apart; no file, nothing. The audit's P2 and the nflbets smoke hold
+**Suggestions record** (`pbRecHtml`, from the entries' grades by `pbRecSum`, each parlay once as the
+job counts it): per level the parlays graded won or lost, won, the wins expected by the fair chance and
+by the model's, and the units on $1 (a win a push shortened at what it paid), pending parlays and pushes
+counted apart; no file, nothing. The audit's P2 and the nflbets smoke hold
 it on made-up ledgers (and the smoke on the real file).
 
 The Parlay Builder works as ever, and its Save and lock is **Finish parlay** on every device, which

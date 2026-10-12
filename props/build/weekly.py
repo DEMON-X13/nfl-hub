@@ -49,8 +49,10 @@ What it does, in order:
   5. assembles the page and runs the audit, which checks the payload against the raw files
   6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
      the Parlay Builder's suggested parlays on their default choices, taken from the published page
-     on the payload just baked, frozen at each wave's kickoff and graded after. It never refuses the
-     run or turns it red: a ledger it refuses is logged in the report and the last good one stays
+     on the payload just baked, frozen at each wave's kickoff and graded after, with nflverse's snap
+     counts (raw/snap_counts_<season>.csv, fetched here, not required) saying whether a player with no
+     stat line played. It never refuses the run or turns it red: a ledger it refuses is logged in the
+     report and the last good one stays
   7. prints a REPORT block
 A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
@@ -65,7 +67,7 @@ import os, sys, json, csv, subprocess, argparse, urllib.request, shutil, datetim
 HERE=os.path.dirname(os.path.abspath(__file__)); PKG=os.path.dirname(HERE)
 RAW=os.path.join(PKG,'raw'); DATA=os.path.join(PKG,'data'); RES=os.path.join(PKG,'research'); ROOT=os.path.dirname(PKG)
 sys.path.insert(0,DATA)
-from season import SEASON, BASE, FIRST, RAW_FILES, GAMES, STATS, ROSTER, INJURIES, DEPTH, SKILL
+from season import SEASON, BASE, FIRST, REL, RAW_FILES, GAMES, STATS, ROSTER, INJURIES, DEPTH, SKILL
 import names, mktbuild
 PY=sys.executable; ENV=dict(os.environ,PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
 STATCOLS=['player_id','player_display_name','position','season','week','season_type','team','opponent_team',
@@ -459,10 +461,13 @@ def main():
     say('  '+audit)
     if not clean:
         problems.append('AUDIT NOT CLEAN: '+audit+'\n'+'\n'.join(l for l in out.splitlines() if l.strip().startswith(('FAIL','ERROR')))[:3000])
-    else: suggestions_record()
+    else: suggestions_record(a.offline)
     return finish(a)
 
-def suggestions_record():
+SNAPS=f'snap_counts_{SEASON}.csv'
+SNAPS_URL=f'{REL}snap_counts/{SNAPS}'
+
+def suggestions_record(offline=False):
     """The suggestions record (suggest_ledger.js, whose docstring has the rules): the panel's four
     suggested parlays on its default choices, taken from the published page on the payload this run
     baked, rewritten while their wave's kickoff is to come, frozen from it and graded after, in
@@ -470,8 +475,19 @@ def suggestions_record():
     clean audit, and never a reason to refuse the run or turn it red: the payload is what the site
     needs, the record is a record of it. When the script refuses (its guard found a frozen entry moved,
     the page or the Elo files would not load) it has already put the last good ledger back; that is
-    said in the report, and a file left unreadable by a run that died mid-write is put back here."""
+    said in the report, and a file left unreadable by a run that died mid-write is put back here.
+
+    The record reads nflverse's snap counts (PFR's) to tell a player with no stat line who played (a
+    receiver never targeted, graded on zero, as DraftKings grades him) from one who did not (void).
+    They are fetched here and are not required: without them such a leg waits, and nothing else does."""
     path=os.path.join(DATA,'suggest_ledger.json')
+    dest=os.path.join(RAW,SNAPS)
+    if offline: say(f"  offline: {SNAPS} {'from raw/' if os.path.exists(dest) else 'missing'}")
+    else:
+        try: fetch(SNAPS_URL,dest)
+        except Exception as e:
+            if os.path.exists(dest): os.remove(dest)
+            say(f"  {SNAPS} did not download ({e}): a suggested leg on a player with no stat line waits for it")
     try: before=open(path,'rb').read()
     except OSError: before=None
     rc,out=run(['node','suggest_ledger.js'],HERE,'suggestions record',soft=True)
