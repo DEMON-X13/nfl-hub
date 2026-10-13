@@ -1808,7 +1808,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v102 \u00b7 2026-10-12';
+const APP_BUILD='app v103 \u00b7 2026-10-13';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -4144,11 +4144,12 @@ function pbTier(t,pool,memo,base){ return pbWithFair(pbTierOf(t,pool,memo,base))
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
    book's price, and a game's player prices are pulled on game day or the day before: Thursday's
-   game on Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and the
-   whole Sunday slate on Saturday morning (on the site by about 7:50am Pacific). With player bets
+   game on Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and
+   Sunday's afternoon and night games on Saturday morning (on the site by about 7:50am Pacific);
+   Sunday's early games, before 4pm Eastern, never (oddsfetch.py's early_sunday). With player bets
    ticked and none of the ticked games priced yet, that is the reason, and the tier says so rather
    than ask for more ticks (under Players only no tick would help). c: which of the two kinds are ticked */
-const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning.';
+const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
 function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`:`No ${n}-leg parlay on your picks`;
@@ -4501,9 +4502,9 @@ function pbPanel(){
   if(u.k.total) notes.push('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
   /* player bets ticked, none of their prices in, and a level built all the same (from team bets
      or totals): the levels say nothing of the missing player legs, so the panel does */
-  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.');
+  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
   if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
@@ -5024,7 +5025,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='17570b4';
+const PAGE_HASH='b2ecf60';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -5662,7 +5663,7 @@ window.PARLAY_CARD=(function(){
      DraftKings' NFL page, to add the legs by hand, and each leg says why. */
   const DKS='https://sportsbook.draftkings.com/', DKNFL=DKS+'leagues/football/nfl';
   /* when the pull reads a game's prices, as the Parlay Builder panel says it (PB_NO_PL in part3.js) */
-  const PULLED='they are pulled on game day or the day before, Sunday\u2019s games on Saturday morning';
+  const PULLED='they are pulled on game day or the day before, Sunday\u2019s afternoon and night games on Saturday morning, and never for Sunday\u2019s early games (before 4pm ET)';
   const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
   const pt=x=>String(+x), signed=x=>(+x>0?'+':'')+pt(x);
   function dkGame(l){ try{ const D=typeof PAY==='object'&&PAY&&PAY.dk, W=D&&D[String(l.week)]; return (W&&W[l.gid])||null; }catch(e){ return null; } }

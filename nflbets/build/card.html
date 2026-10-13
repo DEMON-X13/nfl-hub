@@ -165,7 +165,7 @@ window.PARLAY_CARD=(function(){
      DraftKings' NFL page, to add the legs by hand, and each leg says why. */
   const DKS='https://sportsbook.draftkings.com/', DKNFL=DKS+'leagues/football/nfl';
   /* when the pull reads a game's prices, as the Parlay Builder panel says it (PB_NO_PL in part3.js) */
-  const PULLED='they are pulled on game day or the day before, Sunday\u2019s games on Saturday morning';
+  const PULLED='they are pulled on game day or the day before, Sunday\u2019s afternoon and night games on Saturday morning, and never for Sunday\u2019s early games (before 4pm ET)';
   const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
   const pt=x=>String(+x), signed=x=>(+x>0?'+':'')+pt(x);
   function dkGame(l){ try{ const D=typeof PAY==='object'&&PAY&&PAY.dk, W=D&&D[String(l.week)]; return (W&&W[l.gid])||null; }catch(e){ return null; } }

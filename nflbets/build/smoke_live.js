@@ -1070,7 +1070,7 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
            PAY.mkt on the second game, a DraftKings player price on it, so for the cases of a game whose
            player prices have not been pulled it is taken out (and put back after), and the player legs
            are what the builder offers on such a game: est. rungs and an est. touchdown */
-        const NFL = 'https://sportsbook.draftkings.com/leagues/football/nfl', PULLED = 'they are pulled on game day or the day before, Sunday’s games on Saturday morning';
+        const NFL = 'https://sportsbook.draftkings.com/leagues/football/nfl', PULLED = 'they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET)';
         const GAME_NP = 'its game’s DraftKings prices have not been pulled yet: ' + PULLED, PL_NP = 'DraftKings’ player prices for its game have not been pulled yet: ' + PULLED;
         const RUNG = k => `; only DraftKings’ main lines are read, so ${k}+ opens only if ${k - 0.5} is its main line then`;
         const missOf = n => txt(note().querySelector(`[data-pc-dkmiss="${n}"]`));
