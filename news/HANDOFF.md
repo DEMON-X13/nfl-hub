@@ -37,9 +37,11 @@ not hours later on a scheduled run; `tools/week-request.md` says the same.
 ## What this is
 
 A single-file static site that tracks all 32 NFL teams week to week. Built for a small
-group of friends to read like a newsletter. Live at
-**https://demon-x13.github.io/nfl-hub/news/**, the `news/` folder of repo `DEMON-X13/nfl-hub`,
-published with GitHub Pages from `main`. (Moved from `DEMON-X13/nfl-news-tracker` on September 14, 2026;
+group of friends to read like a newsletter. Since October 13, 2026 it is read as the Season Tracker tab
+of X NFL Bets and Stats, **https://demon-x13.github.io/nfl-hub/nflbets/#tracker**, which frames this
+page from its own address, `news/index.html` in repo `DEMON-X13/nfl-hub`, published with GitHub Pages
+from `main`. Opened at **https://demon-x13.github.io/nfl-hub/news/** it goes to that tab
+(`news/?standalone` stays here, to check the page on its own); opened from disk it is the whole tracker. (Moved from `DEMON-X13/nfl-news-tracker` on September 14, 2026;
 that repo's page now redirects here. The hub also holds `betting/` and `props/`; never touch them from here.)
 
 Deployed from `news/`: `index.html`, `css/`, `js/`, and `data/`. All paths in this file are relative to `news/`.
@@ -59,7 +61,7 @@ above `data/weeks.js`, as `data/weeks.js` itself says.
 
 | File | What it holds |
 |---|---|
-| `index.html` | Markup only: head, app bar with `#barweek`, `#view`, overlay shell, one stylesheet link, one script tag per data file and one for `js/app.js` |
+| `index.html` | Markup only: head (its first script is the guard: the web address goes to `nflbets/#tracker`, a framed copy is `html.embed`), app bar with `#barweek`, `#view`, overlay shell, one stylesheet link, one script tag per data file and one for `js/app.js` |
 | `css/style.css` | The entire design system. One `:root` block of CSS variables at the top. |
 | `data/teams.js` | `const TEAMS`, 32 objects: abbreviation, name, colour and the preseason power rank (the rank chip's fallback). The summer write-ups that were in it went on 2026-10-03. |
 | `data/weekN.js` | `const WEEKN`, one file per published week: the games and each team's narrative in `WEEKN.teams`. `tools/patch_week5_ranks.py` took the Deep Dive and rank chip ranks out of Week 5's narrative on October 9, 2026 (they had moved under it). `week1.js` still builds its teams with its own `TM` helper and `const MU` (matchup bullets merged onto `WEEK1.teams`), and carries a `WEEK1.next` the page no longer reads. |
@@ -178,6 +180,11 @@ The owner reacted to each of these. Re-suggesting them wastes his time.
   disk and hosted, with no storage.
 - **Must still work via `file://`.** Everything is plain script tags, no fetch. Keep it that way.
 - **`index.html` is the required filename.** Anything else and GitHub Pages 404s.
+- **The guard stays the first script in `index.html`'s head, and never becomes a meta refresh.**
+  A meta refresh (or an unguarded `location.replace`) would fire inside X NFL Bets and Stats' frame
+  too and load that whole site into its own tab, and under `file://` too. The tab relies on `#ov` and
+  its class `on`, `.slot[data-game]`, `ov.dataset.game`, Escape closing the window, and the
+  `html.embed` rules in `css/style.css`; the smoke test holds each, with the tab's own script mounted.
 - Bullets over paragraphs. He has said long prose is hard to read.
 
 ---
@@ -213,7 +220,8 @@ node tools/pull-week.js N
    in `data/weekN.js`: headline, intro, each game note, and every team's headline, matchup,
    strengths, weaknesses, keys. Sets `updated` to the publish date.
 3. Adds `<script src="data/weekN.js"></script>` to `index.html` above `data/weeks.js` and
-   appends `WEEKN` in `data/weeks.js`. The page shows the last entry.
+   appends `WEEKN` in `data/weeks.js`. The page shows the last entry. The Season Tracker tab picks it
+   up on its next load with no rebuild of X NFL Bets and Stats.
 4. Runs the smoke test, commits, pushes. Pages redeploys within a minute or two.
 
 ```bash
@@ -302,7 +310,12 @@ node tools/smoke.js
 It renders `index.html` with the split files, then asserts: no script errors, the last week in
 `data/weeks.js` shown in the bar, a tile for every game on the slate (15 on Week 5's bye week), one score per game that has a final, no tabs
 or search or cards, the game overlay opens with both team blocks, keys sections and eleven
-stat bars, Escape and X close it, and a synthetic later week takes over the page.
+stat bars, Escape and X close it, and a synthetic later week takes over the page. It also holds
+the window's focus (into the X on open, Tab kept inside, back to the game's tile on close), the
+guard (the web address, framed, `?standalone`, a file), the `html.embed` rules, and the Season
+Tracker tab's own script (`../nflbets/build/tab_tracker.html`) mounted on this page in a bare host:
+a game opened lays the frame over the screen, and Escape, the X, the backdrop and leaving the tab
+put the page back.
 Run it before every commit. `node_modules` is ignored by git.
 
 Since October 9, 2026 it also holds the generated files to their sources, because until then it
@@ -427,5 +440,6 @@ consensus analysis), ESPN, NBC Sports (injury reports), Wikipedia (draft record)
 - The routine prompt pins the commit author to `DEMON-X13`, but the stop hook requires
   `noreply@anthropic.com` or GitHub marks the commit Unverified. Week 2 went out authored as
   Claude. Settle one of the two or this repeats every Wednesday.
-- He runs a separate NFL prediction model in Claude Code. This site is intentionally
-  separate from it, but the two could share a data layer later.
+- He runs a separate NFL prediction model in Claude Code. Since October 13, 2026 this site is
+  a tab of X NFL Bets and Stats (framed, so nothing of either page's code meets the other's);
+  the two could still share a data layer later.

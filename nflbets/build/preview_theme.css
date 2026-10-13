@@ -113,3 +113,7 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 
 /* the far-off flag (app v98): the light look's dark amber is too dim on these panels */
 .faroff{color:var(--hot-2)}
+
+/* the Season Tracker keeps its own light look (news/HANDOFF.md: no dark mode), so its frame is its own
+   canvas here rather than this look's dark one showing through */
+#tab-tracker .nt-frame,#tab-tracker .nt-frame.nt-lifted{background:#F6F5F2;color-scheme:light}

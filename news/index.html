@@ -3,6 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* On the web the Season Tracker is a tab of X NFL Bets and Stats (nflbets/#tracker), which frames
+   this page: opened at its own address it goes there (?standalone keeps it here). Framed, it is
+   html.embed (css/style.css: the bar is the week's heading, no back-to-top button of its own).
+   Opened as a file it is the whole tracker, as ever. Never a meta refresh: that would fire inside
+   the frame too and load the whole site into its own tab. Keep this the first script in the page. */
+(function () {
+  var framed; try { framed = window.self !== window.top; } catch (e) { framed = true; }
+  if (framed) document.documentElement.className += " embed";
+  else if (/^https?:$/.test(location.protocol) && !/(^\?|&)standalone(=|&|$)/.test(location.search)) location.replace("../nflbets/#tracker");
+})();
+</script>
 <title>2026 NFL Season Tracker</title>
 <meta name="description" content="This week's NFL slate, one page. Click a game for the matchup preview, both teams' positives and negatives, keys to victory, and the full stat breakdown. Updated every week.">
 <meta name="theme-color" content="#E4E4DE">

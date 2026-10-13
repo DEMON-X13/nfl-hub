@@ -249,6 +249,40 @@ async function run() {
   click('#ovx');
   check('X closes overlay', !ov.classList.contains('on'));
 
+  // focus: into the window when it opens, held there by Tab, back to the game's tile when it closes.
+  // ov.dataset.game names the game: X NFL Bets and Stats, which frames the tracker, keeps that tile where it stood
+  { const tick = () => new Promise(r => w.setTimeout(r, 5));
+    const key = gameKey(first), tile = d.querySelector('.slot[data-game="' + key + '"]');
+    tile.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await tick();
+    check('opening a game names it and moves focus to the close button', ov.dataset.game === key && d.activeElement && d.activeElement.id === 'ovx', ov.dataset.game + ' / ' + (d.activeElement && d.activeElement.id));
+    const tabbable = g('ovTabbable()'), tab = shift => { const e = new w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: shift, bubbles: true, cancelable: true }); d.activeElement.dispatchEvent(e); return e.defaultPrevented; };
+    const back = tab(true) && d.activeElement === tabbable[tabbable.length - 1], fwd = tab(false) && d.activeElement === tabbable[0];
+    check('Tab stays inside the open window', tabbable.length > 1 && tabbable[0].id === 'ovx' && back && fwd, tabbable.length + ' tabbable');
+    d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    check("closing gives focus back to the game's tile", !ov.classList.contains('on') && d.activeElement === tile);
+    const other = d.querySelectorAll('.slot')[1]; other.focus();
+    d.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    check('Escape with no window open moves nothing', d.activeElement === other); }
+
+  // the address. Opened as a file it is the whole tracker; the head script's guard, run on its own: a
+  // visitor at the web address goes to X NFL Bets and Stats' Season Tracker tab (?standalone stays), a
+  // framed copy is html.embed, and nothing about it is a meta refresh, which would fire inside the frame too
+  check('opened as a file, the tracker is itself', !d.documentElement.classList.contains('embed') && w.location.protocol === 'file:');
+  { const vm = require('vm'), html = fs.readFileSync(indexPath, 'utf8'), inline = [...html.matchAll(/<script>\n?([\s\S]*?)<\/script>/g)].map(m => m[1]);
+    const src = inline[0] || '', headFirst = html.indexOf('<script') === html.indexOf('<script>') && html.indexOf('<script>') < html.indexOf('</head>');
+    const guard = (protocol, framed, search = '') => { const to = [], de = { className: '' }, win = {}; win.self = win;
+      if (framed === 'throws') Object.defineProperty(win, 'top', { get() { throw new Error('cross-origin'); } }); else win.top = framed ? {} : win;
+      vm.runInNewContext(src, { window: win, location: { protocol, search, replace: u => to.push(u) }, document: { documentElement: de } });
+      return de.className.trim() + '|' + to.join(','); };
+    const got = [guard('https:', false), guard('http:', false), guard('https:', false, '?standalone'), guard('https:', true), guard('https:', 'throws'), guard('file:', false), guard('file:', true)].join(' ; ');
+    check('the web address leads to the Season Tracker tab (?standalone stays), a framed copy is html.embed, a file is itself',
+      got === '|../nflbets/#tracker ; |../nflbets/#tracker ; | ; embed| ; embed| ; | ; embed|', got);
+    check('the guard is the one inline script, first in the head, and nothing is a meta refresh',
+      inline.length === 1 && headFirst && !/http-equiv\s*=\s*["']?refresh/i.test(html), inline.length + ' inline script(s)'); }
+  { const css = fs.readFileSync(path.join(ROOT, 'css', 'style.css'), 'utf8');
+    const miss = ['html.embed{scroll-behavior:auto}', 'html.embed body{background:transparent}', 'html.embed .bar{position:static', 'html.embed .wrap{padding:0}', 'html.embed .brand{display:none}', 'html.embed .barweek span{display:inline', 'html.embed .top{display:none}'].filter(x => !css.includes(x));
+    check('framed, the bar is the week\'s heading and the back-to-top button is the framing page\'s (css/style.css, html.embed)', miss.length === 0, miss.join(' | ') || 'all there'); }
+
   // positions, on made-up players: a name two rosters share at different positions takes the position of the team
   // named before it, else of the game's team that has him, else none
   { const before = g('JSON.stringify(PLAYERS26.PHI || null) + JSON.stringify(PLAYERS26.LAR || null)');
@@ -271,6 +305,56 @@ async function run() {
   w.eval('WEEKS.push({id:"wk18", label:"Week 18", type:"recap", status:"live", dates:"", headline:"", intro:"", games:[{away:"DET",home:"GB",day:"Sun",time:"1:00 PM ET",kick:"2027-01-10T18:00:00Z",tv:"",venue:"",awayScore:20,homeScore:24}], teams:{}}); show("wk18");');
   check('after week 18 the page says the regular season is complete', /regular season is complete/.test(d.querySelector('footer').textContent) && !/New week posted/.test(d.querySelector('footer').textContent), d.querySelector('footer').textContent.trim());
   check('no errors after interactions', errs.length === 0, errs.join(' | ') || 'none');
+
+  // ---- the tab on X NFL Bets and Stats: nflbets/build/tab_tracker.html's own script, in a bare page at the
+  // site's address, framing this tracker (jsdom loads no src, so the tracker is written into the frame from
+  // disk, its files inlined in the order index.html lists them, and the frame's load played as a browser
+  // plays it). What the tab relies on here (#ov and its class on, .slot[data-game], ov.dataset.game, Escape,
+  // html.embed) is held here, in the news job, so a tracker change that breaks the tab fails this job and
+  // never the elo job, whose smoke of that page mounts a stand-in ----
+  { const TAB = fs.readFileSync(path.join(ROOT, '..', 'nflbets', 'build', 'tab_tracker.html'), 'utf8');
+    const css = (TAB.match(/<style>([\s\S]*?)<\/style>/) || [])[1], sec = (TAB.match(/(<section id="tab-tracker" hidden>[\s\S]*?<\/section>)/) || [])[1], js = (TAB.match(/<script>([\s\S]*?)<\/script>/) || [])[1];
+    if (!css || !sec || !js) check('the tab: nflbets/build/tab_tracker.html has its style, section and script', false);
+    else {
+      const host = `<!DOCTYPE html><html><head><style>${css}</style></head><body><header><h1>X NFL Bets and Stats</h1><nav id="tabs"><button data-tab="pickems" aria-selected="true">Pick'ems</button><button data-tab="tracker">Season Tracker</button></nav></header><main><section id="tab-pickems">board</section>${sec}</main>
+<script>document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!=='tab-'+b.dataset.tab);if(location.hash!=='#'+b.dataset.tab)history.replaceState(null,'','#'+b.dataset.tab);}));
+addEventListener('hashchange',()=>{const b=[...document.querySelectorAll('#tabs button')].find(x=>'#'+x.dataset.tab===location.hash);if(b&&b.getAttribute('aria-selected')!=='true')b.click();});<\/script>
+<script>${js}<\/script></body></html>`;
+      const herrs = [], hvc = new VirtualConsole(); hvc.on('jsdomError', e => herrs.push(e.message));
+      const H = new JSDOM(host, { url: 'https://demon-x13.github.io/nfl-hub/nflbets/', runScripts: 'dangerously', pretendToBeVisual: true, virtualConsole: hvc,
+        beforeParse(hw) { hw.scrollTo = () => {}; hw.addEventListener('error', e => herrs.push(e.message)); } });
+      const hw = H.window, hd = hw.document, tick = (ms = 20) => new Promise(r => hw.setTimeout(r, ms));
+      const tsec = hd.getElementById('tab-tracker'), f = tsec.querySelector('iframe');
+      [...hd.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'tracker').click(); await tick(40);
+      check('the tab: opened, it loads this tracker from the site, fresh', /^\.\.\/news\/index\.html\?t=\d+$/.test(f.getAttribute('src') || '') && hw.location.hash === '#tracker', f.getAttribute('src'));
+      const fw = f.contentWindow, fd = f.contentDocument, ferrs = [];
+      let page = fs.readFileSync(indexPath, 'utf8')
+        .replace(/<link rel="stylesheet" href="([^"]+)">/g, (m, h) => '<style>' + fs.readFileSync(path.join(ROOT, h), 'utf8') + '</style>')
+        .replace(/<script src="([^"]+)"><\/script>/g, (m, s) => '<script>' + fs.readFileSync(path.join(ROOT, s), 'utf8').replace(/<\/script/gi, '<\\/script') + '</script>');
+      fw.addEventListener('error', e => ferrs.push(e.message)); fw.scrollTo = () => {};
+      fd.open(); fd.write(page); fd.close(); fw.scrollTo = () => {};
+      f.dispatchEvent(new hw.Event('load')); await tick();
+      const fov = fd.getElementById('ov'), tiles = [...fd.querySelectorAll('.slot[data-game]')];
+      check('the tab: framed, the tracker draws its week with no errors and is html.embed', ferrs.length === 0 && herrs.length === 0 && tiles.length === WK.games.length && fd.documentElement.classList.contains('embed') && hd.getElementById('ntNote').hidden,
+        [...ferrs, ...herrs].join(' | ') || tiles.length + ' tiles');
+      if (fov && tiles.length) {
+        const key = tiles[tiles.length - 1].dataset.game, open = () => fd.querySelector(`.slot[data-game="${key}"]`).dispatchEvent(new fw.MouseEvent('click', { bubbles: true }));
+        const released = () => !fov.classList.contains('on') && !f.classList.contains('nt-lifted') && hd.documentElement.style.overflow === '' && tsec.style.minHeight === '' && !hd.querySelector('header').inert;
+        open(); await tick();
+        check('the tab: opening a game lays the frame over the screen, holds the page still and moves focus into the window',
+          fov.classList.contains('on') && fov.dataset.game === key && f.classList.contains('nt-lifted') && hd.documentElement.style.overflow === 'hidden' && hd.querySelector('header').inert && fd.activeElement && fd.activeElement.id === 'ovx');
+        fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await tick();
+        check("the tab: Escape closes the game, puts the frame back and focus on the game's tile", released() && fd.activeElement && fd.activeElement.dataset.game === key);
+        open(); await tick(); fov.dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await tick();
+        check('the tab: a click on the backdrop closes the game and puts the frame back', released());
+        open(); await tick(); fd.getElementById('ovx').dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await tick();
+        check('the tab: the X closes the game and puts the frame back', released());
+        open(); await tick(); hw.location.hash = '#pickems'; await tick(60);
+        check('the tab: leaving it by the address with a game open closes the game and frees the page', released() && tsec.hidden);
+      }
+      check('the tab: no errors in the page or the tracker', ferrs.length === 0 && herrs.length === 0, [...ferrs, ...herrs].join(' | ') || 'none');
+      H.window.close();
+    } }
 
   // ---- the cases the rules and their checks must keep, each from a week the real files produced (tools/cases.js) ----
   for (const c of require('./cases').cases()) check(`case ${c.name}: ${c.label}`, c.ok, c.ok ? undefined : c.detail);

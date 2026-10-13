@@ -5,7 +5,8 @@
  *                                      nowhere: the smoke compares it with the published page
  *
  *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it, its Parlay
- *                        Builder tab, and X Parlays on a tab of its own.
+ *                        Builder tab, X Parlays on a tab of its own, and the Season Tracker
+ *                        (news/) framed from its own address on its tab.
  *
  * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
@@ -111,6 +112,20 @@ for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'w
 for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
   throw new Error('elo/data/' + f + ' is missing: run python3 elo/build.py first');
 if (/(^|\n)(body|header|main|:root|\.card|\.bar|table)\{/.test(ELO_CSS)) throw new Error('a page-level rule in the Elo tab styles');
+/* the Season Tracker tab (tab_tracker.html, every name nt-): the tracker, news/, framed from its own
+   address when its tab is first opened. Nothing is read from news/ here and nothing of it goes into
+   the page, so the news job's commits and a new week's script tag never make this page stale; what
+   the tab relies on in the tracker is held by news/tools/smoke.js, which mounts this script on it */
+const trkTab = rd('nflbets', 'build', 'tab_tracker.html');
+const tpiece = (re, what) => { const m = trkTab.match(re); if (!m) throw new Error(`tab_tracker.html has no ${what}`); return m[1]; };
+const TRK_CSS = tpiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
+const TRK_HTML = tpiece(/(<section id="tab-tracker" hidden>[\s\S]*?<\/section>)/, 'section');
+const TRK_JS = tpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+if (/(^|\n)(body|header|main|:root|html|\.card|\.btn|\.modal|\.bar|table|th|td)\{/.test(TRK_CSS)) throw new Error('a page-level rule in the Season Tracker tab styles');
+if ((TRK_HTML.match(/<section/g) || []).length !== 1 || /pk-frame|data-embed|srcdoc|sandbox/.test(TRK_HTML) || !TRK_HTML.includes('<iframe class="nt-frame" data-src="../news/index.html" title="Season Tracker"></iframe>'))
+  throw new Error("the Season Tracker tab's section is not one section framing ../news/index.html by its own class (part3 hides every main section but the open tab's, and frames() fills every pk-frame with the betting app)");
+for (const need of ["f.dataset.src+'?t='+Date.now()", "classList.contains('nt-frame')", 'release()'])
+  if (!TRK_JS.includes(need)) throw new Error('tab_tracker.html no longer has ' + need);
 
 /* the betting app's colour table, tag() and the contrast maths behind it, and its confidence
    bands: cut where its walk-forward record changes, so a second copy here would drift off them */
@@ -280,6 +295,7 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
    unshown, since the prop model draws into it on every render */
 const TABS = [
   ['pickems', "Pick'ems"],
+  ['tracker', 'Season Tracker'],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builder'],
   ['xparlays', 'X Parlays'],
@@ -297,7 +313,7 @@ if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
-html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + TRK_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 /* the Parlay Builder keeps the prop model's own section and its address, #parlay: the suggested
    parlays panel over the builder. X Parlays is a section of its own after it, #xparlays. The
    parlay card's window sits at the end of the page, outside every tab, over everything. */
@@ -352,6 +368,11 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
   out = sub1(out, '</style>\n</head>', '</style>\n<style>' + SNAP_CSS + '</style>\n</head>', "the snapshot's styles");
   out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>' + SNAP_JS + '</script>\n</body>\n</html>\n', "the snapshot's script"); }
+/* the Season Tracker tab's styles and its script, last: the script finds the tab already opened when
+   the page is opened on #tracker (routeTabs ran in the Pick'ems tab's boot), and loads the frame */
+out = sub1(out, '</style>\n</head>', '</style>\n<style>' + TRK_CSS + '</style>\n</head>', "the Season Tracker tab's styles");
+out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>' + TRK_JS + '</script>\n</body>\n</html>\n', "the Season Tracker tab's script");
+if (out.split('id="tab-tracker"').length !== 2) throw new Error('the Season Tracker tab is not in the page exactly once');
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);

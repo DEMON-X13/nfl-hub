@@ -10,7 +10,7 @@ GitHub Pages serves the repo root:
 | `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer and the Player Elo tab; rebuilt by hand when a source changes, never by a job |
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
-| `news/` | Season Tracker, the newsletter-style site | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
+| `news/` | Season Tracker, the newsletter-style page, read as the Season Tracker tab of `nflbets/` (`nflbets/#tracker`), which frames it; `news/` itself leads there | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
 | `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
 | `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
 | `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
@@ -74,7 +74,9 @@ commits `props/data` itself. The betting job never touches the key.
 
 ## Season tracker
 
-`news/` is the tracker as it was. `tools/run-auto.js` works out the current
+`news/` is the tracker as it was, read since October 13, 2026 as the Season Tracker tab of
+X NFL Bets and Stats (`nflbets/#tracker`), which frames `news/index.html` from its own address;
+`news/` on its own leads to that tab (`news/?standalone` stays). `tools/run-auto.js` works out the current
 week from the nflverse schedule and runs `tools/pull-week.js`, which refreshes
 `data/results.js` (scores, records) and `data/stats2026.js` (the stat bars)
 from ESPN and TeamRankings, rebuilds the context files (`data/ranks2026.js`,

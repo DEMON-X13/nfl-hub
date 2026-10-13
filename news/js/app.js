@@ -317,13 +317,30 @@ function openGame(key){
   /* the two Deep Dives open and close together so they stay side by side */
   const dds = [...document.querySelectorAll("#ovbox details.dd")];
   dds.forEach(d => d.addEventListener("toggle", () => dds.forEach(x => { if (x !== d && x.open !== d.open) x.open = d.open; })));
+  /* which game is open: focus goes back to its tile on close, and a page that frames the tracker
+     keeps that tile where it was (nflbets/build/tab_tracker.html) */
+  ov.dataset.game = key;
   ov.classList.add("on"); ov.scrollTop = 0;
   document.body.style.overflow = "hidden";
   document.getElementById("ovx").addEventListener("click", closeOv);
+  /* focus into the window once it is up, never scrolling for it: a framing page lays the frame
+     over the screen first, and a focus that scrolled would move that page under it */
+  setTimeout(() => { if (ov.classList.contains("on")) document.getElementById("ovx").focus({ preventScroll: true }); }, 0);
 }
 function closeOv(){
-  document.getElementById("ov").classList.remove("on");
+  const ov = document.getElementById("ov");
+  if (!ov.classList.contains("on")) return;
+  ov.classList.remove("on");
   document.body.style.overflow = "";
+  const tile = [...document.querySelectorAll(".slot[data-game]")].find(s => s.dataset.game === ov.dataset.game);
+  if (tile) tile.focus({ preventScroll: true });
+}
+/* Tab stays inside the open window: its close button, the Deep Dive summaries, the links */
+function ovTabbable(){
+  return [...document.querySelectorAll("#ovbox button, #ovbox summary, #ovbox a[href]")].filter(x => {
+    const shut = x.parentElement && x.parentElement.closest("details:not([open])");
+    return !shut || (x.tagName === "SUMMARY" && x.parentElement === shut);
+  });
 }
 
 /* ============================ footer ============================ */
@@ -344,6 +361,12 @@ document.getElementById("view").addEventListener("click", e=>{
   const s = e.target.closest(".slot"); if (s) openGame(s.dataset.game);
 });
 document.getElementById("ov").addEventListener("click", e=>{ if (e.target.id==="ov") closeOv(); });
-document.addEventListener("keydown", e=>{ if (e.key==="Escape") closeOv(); });
+document.addEventListener("keydown", e=>{
+  if (e.key==="Escape") { closeOv(); return; }
+  if (e.key!=="Tab" || !document.getElementById("ov").classList.contains("on")) return;
+  const t = ovTabbable(); if (!t.length) return;
+  const i = t.indexOf(document.activeElement);
+  if (e.shiftKey ? i <= 0 : i === t.length - 1 || i < 0) { e.preventDefault(); t[e.shiftKey ? t.length - 1 : 0].focus(); }
+});
 document.getElementById("top").addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
 render();

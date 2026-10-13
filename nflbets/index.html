@@ -1251,6 +1251,23 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 }
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
+<style>
+/* as tall as the slate, so the page scrolls as one (framed, the tracker is html.embed: its bar is the
+   week's heading in the flow and its own back-to-top button is gone, news/css/style.css) */
+#tab-tracker .nt-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
+#tab-tracker .nt-frame.nt-failed{display:none}
+/* while a game's window is open the frame is laid over the whole screen: the tracker's window is
+   fixed to its frame, so it is then fixed to the screen as on the tracker's own page, and the slate
+   under its backdrop is drawn exactly where it was (the body placed by the script) */
+#tab-tracker .nt-frame.nt-lifted{position:fixed;inset:0;width:100%;height:100%!important;min-height:0;z-index:1000;background:var(--bg)}
+#tab-tracker .nt-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+#tab-tracker .nt-note[hidden]{display:none}
+#tab-tracker .nt-note a{color:inherit;font-weight:600}
+/* this page's back-to-top button, standing in for the tracker's own, on this tab only */
+.nt-top{position:fixed;right:16px;bottom:16px;z-index:40;width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-2);box-shadow:var(--sh-md);font:inherit;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.nt-top:hover{color:var(--ink)}
+@media print{.nt-top{display:none}}
+</style>
 </head>
 <body>
 <header>
@@ -1261,6 +1278,7 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
+    <button role="tab" data-tab="tracker">Season Tracker</button>
     <button role="tab" data-tab="slate">Props</button>
     <button role="tab" data-tab="parlay">Parlay Builder</button>
     <button role="tab" data-tab="xparlays">X Parlays</button>
@@ -1283,6 +1301,12 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   </div>
   <div id="pkBoard"></div>
   <p class="pk-foot" id="pkFoot"></p>
+</section>
+
+<section id="tab-tracker" hidden>
+  <p class="nt-note" id="ntNote" hidden>The Season Tracker did not load here. <a href="../news/index.html?standalone">Open it on its own page</a>, or reload this page to try again.</p>
+  <iframe class="nt-frame" data-src="../news/index.html" title="Season Tracker"></iframe>
+  <button class="nt-top" id="ntTop" type="button" aria-label="Back to top">&uarr;</button>
 </section>
 
 <section id="tab-ratings" hidden><iframe class="pk-frame" data-embed="ratings" title="Team Rankings"></iframe></section>
@@ -4906,7 +4930,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='96efdb5';
+const PAGE_HASH='1dfded8';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7759,6 +7783,92 @@ window.gameSnapshot=open;
 window.gameSnapshotClose=close;
 /* start waiting on the Elo files now, so a window opened later has them at once */
 eloFiles();
+})();
+</script>
+<script>
+(function(){
+const sec=document.getElementById('tab-tracker'), f=sec&&sec.querySelector('iframe.nt-frame');
+if(!f) return;
+/* this page inside its own tracker frame (a tracker whose guard sent its framed copy here): it never
+   frames the tracker again, so a misfire is one page deep, never a page inside a page inside a page */
+try{ const fe=window.frameElement; if(fe&&fe.classList&&fe.classList.contains('nt-frame')) return; }catch(e){}
+const root=document.documentElement, note=document.getElementById('ntNote'), top=document.getElementById('ntTop'), header=document.querySelector('header');
+/* a scroll at once on a page that scrolls smoothly (html{scroll-behavior:smooth}): Chrome reads the
+   behaviour before it restyles, so the inline 'auto' is read back before the scroll */
+const jump=y=>{ root.style.scrollBehavior='auto'; void getComputedStyle(root).scrollBehavior; scrollTo(0,y); root.style.scrollBehavior=''; };
+/* the page as if no game were open: the frame back in it, the page free to scroll, the header live.
+   Called on every new document and whenever lifting or dropping throws, so the page is never left
+   held still */
+const release=()=>{ f.classList.remove('nt-lifted'); sec.style.minHeight=''; root.style.overflow=''; if(header) header.inert=false; if(top) top.inert=false; };
+let cur=null;   /* the hooks on the tracker's current document */
+/* loaded the first time its tab is shown, like the betting frames. ?t= so a reload of this page
+   takes the tracker's page fresh: it lists the week files, and an old copy of it beside a new
+   data/weeks.js would name a week it never loads (the data files keep GitHub Pages' ten minutes) */
+const load=()=>{ if(sec.hidden||f.dataset.loaded) return; f.dataset.loaded='1'; f.src=f.dataset.src+'?t='+Date.now(); };
+/* leaving the tab (by the address; the bar is under the lifted frame) closes the window the tracker's own way */
+const shut=()=>{ try{ if(cur) cur.shut(); }catch(e){ release(); } };
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{ shut(); setTimeout(load,0); }));
+addEventListener('hashchange',shut);
+if(top) top.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
+f.addEventListener('load',()=>{
+  release(); cur=null;
+  let w,d; try{ w=f.contentWindow; d=f.contentDocument; }catch(e){ return; }   /* another origin: the tracker shows, unhooked */
+  if(!w||!d||!d.body) return;
+  try{ cur=hook(w,d); }catch(e){ release(); }
+});
+load();
+
+function hook(w,d){
+  const dr=d.documentElement;
+  /* the tracker drew its week, or what loaded is not the tracker (an error page, a tracker that
+     threw): then it says so, with the tracker's own page, in place of a blank box */
+  const ok=!!d.querySelector('#view .slot');
+  if(note) note.hidden=ok;
+  f.classList.toggle('nt-failed',!ok);
+  if(!ok) return null;
+  /* the frame takes its content's height and never scrolls up and down itself (frames() in
+     tab_pickems.html says why); measured by the document's own height, which shrinks as well as
+     grows (scrollHeight never drops below the frame's), so a phone turned back to portrait fits */
+  dr.style.overflowY='hidden';
+  const fit=()=>{ if(f.classList.contains('nt-lifted')) return;
+    const h=Math.ceil(dr.getBoundingClientRect().height); if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>1) f.style.height=h+'px'; };
+  fit();
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(d.body); else setInterval(fit,800);
+  const ov=d.getElementById('ov'); if(!ov) return null;
+  ov.style.overscrollBehavior='contain';
+  const tileOf=k=>[...d.querySelectorAll('.slot[data-game]')].find(s=>s.dataset.game===k)||null;
+  let open=null;
+  /* the body is placed where the frame was: same width and left edge, the frame's top as padding
+     (or the document scrolled up by it), and room below so it can scroll that far */
+  const place=r=>{ const vh=innerHeight;
+    Object.assign(d.body.style,{width:r.width+'px',marginLeft:r.left+'px',paddingTop:Math.max(0,r.top)+'px',paddingBottom:Math.max(0,vh-r.bottom)+'px'});
+    w.scrollTo(0,Math.max(0,-r.top)); };
+  const follow=()=>{ const s=sec.getBoundingClientRect(); d.body.style.width=s.width+'px'; d.body.style.marginLeft=s.left+'px'; };
+  const unplace=()=>{ Object.assign(d.body.style,{width:'',marginLeft:'',paddingTop:'',paddingBottom:''}); };
+  const lift=()=>{
+    const r=f.getBoundingClientRect(), t=tileOf(ov.dataset.game);
+    open={y:scrollY,vw:innerWidth,vh:innerHeight,key:ov.dataset.game,tileY:t?r.top+t.getBoundingClientRect().top:null};
+    sec.style.minHeight=r.height+'px';          /* the page keeps its length while the frame is out of it */
+    f.classList.add('nt-lifted'); root.style.overflow='hidden'; place(r);
+    /* the page behind the window is out of reach, to a screen reader too */
+    if(header) header.inert=true; if(top) top.inert=true;
+    addEventListener('resize',follow);
+  };
+  const drop=()=>{
+    const o=open; open=null; removeEventListener('resize',follow);
+    unplace(); w.scrollTo(0,0); release(); fit();
+    if(sec.hidden||!o) return;                   /* left by the address: nothing to put back */
+    /* back where the visitor was, at once (this page scrolls smoothly); if the screen changed size
+       while the window was open (a phone turned), with the game's tile where it stood */
+    const t=tileOf(o.key); let y=o.y;
+    if((innerWidth!==o.vw||innerHeight!==o.vh)&&t&&o.tileY!=null) y=scrollY+(f.getBoundingClientRect().top+t.getBoundingClientRect().top)-o.tileY;
+    jump(Math.max(0,y));
+  };
+  new MutationObserver(()=>{ const on=ov.classList.contains('on');
+    try{ if(on&&!open) lift(); else if(!on&&open) drop(); }catch(e){ open=null; try{ unplace(); }catch(_){} release(); } })
+    .observe(ov,{attributes:true,attributeFilter:['class']});
+  return { shut(){ if(!open) return; d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true})); if(open) drop(); } };
+}
 })();
 </script>
 </body>

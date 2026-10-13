@@ -350,7 +350,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
      bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Season Tracker|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-xparlays', 'tab-track', 'tab-week', 'tab-backup'])
@@ -1043,8 +1043,72 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
   chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
 
+  /* ---- Season Tracker: the tracker (news/) framed from its own address, loaded when its tab is first
+     opened, never in the page. jsdom loads no src, so a stand-in tracker is written into the frame (an
+     #ov the tracker opens by its class on, naming the game in ov.dataset.game and focusing #ovx, closed
+     by Escape, the X and the backdrop) and the frame's load is played as a browser plays it. The real
+     tracker under this tab's script is news/tools/smoke.js's to hold, in the news job: this smoke runs
+     every morning in the elo job, so nothing the tracker publishes may fail it ---- */
+  { const sec = d.getElementById('tab-tracker'), f = sec && sec.querySelector('iframe.nt-frame'), note = d.getElementById('ntNote');
+    chk(!!f && f.title === 'Season Tracker' && f.dataset.src === '../news/index.html' && !f.getAttribute('src') && !f.hasAttribute('srcdoc') && !f.hasAttribute('sandbox') && !f.dataset.embed && !f.classList.contains('pk-frame'),
+      'the Season Tracker frame is missing, filled before its tab is opened, sandboxed or taken for a betting frame');
+    chk(d.querySelectorAll('iframe').length === d.querySelectorAll('iframe.pk-frame').length + 1 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is neither one of the three betting tabs nor the Season Tracker');
+    chk(!!d.getElementById('ntTop') && sec.contains(d.getElementById('ntTop')) && !!note && note.hidden && sec.contains(note) && !sec.querySelector('section'),
+      "the Season Tracker's back-to-top button or its note is not inside its tab, the note shows before anything loaded, or the tab holds a section of its own (the tab bar would hide it)");
+    chk(!/news\/data\/|RANKS26|UNITS26|\bWEEKS\b/.test(HTML), 'the page carries the tracker\'s data or code: a news job commit would leave it stale');
+    if (f) {
+      const scrolls = [], was = w.scrollTo; w.scrollTo = (...a) => { scrolls.push(a); };
+      [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'tracker').click();
+      await wait(60);
+      const src = f.getAttribute('src') || '', at = new URL(src, w.location.href);
+      chk(!sec.hidden && d.getElementById('tab-pickems').hidden && w.location.hash === '#tracker' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Season Tracker', 'the Season Tracker tab did not open, or did not become the address #tracker');
+      chk(/^\.\.\/news\/index\.html\?t=\d+$/.test(src) && at.origin === new URL(w.location.href).origin && /\/nfl-hub\/news\/index\.html$/.test(at.pathname), 'the Season Tracker frame does not load the tracker from this site, fresh: ' + src);
+      const fw = f.contentWindow, fd = f.contentDocument;
+      if (!fw || !fd) chk(false, 'the Season Tracker frame has no document to write a stand-in into');
+      else {
+        const put = html => { fd.open(); fd.write(html); fd.close(); fw.scrollTo = () => {}; f.dispatchEvent(new w.Event('load')); };
+        /* what loads is not the tracker (GitHub's 404 page, a tracker that threw before it drew): the tab says so, with its own page */
+        put('<!DOCTYPE html><html><body><h1>404</h1></body></html>'); await wait(20);
+        chk(!note.hidden && f.classList.contains('nt-failed') && /did not load/.test(txt(note)) && note.querySelector('a') && note.querySelector('a').getAttribute('href') === '../news/index.html?standalone',
+          'a frame that loaded no tracker is not said to have failed, with the tracker\'s own page linked');
+        put(`<!DOCTYPE html><html class="embed"><body><div id="view"><button class="slot" data-game="AAA-BBB">one</button><button class="slot" data-game="CCC-DDD">two</button></div>
+<div class="ov" id="ov"><div id="ovbox"><button id="ovx">x</button></div></div>
+<script>const ov=document.getElementById('ov');
+document.getElementById('view').addEventListener('click',e=>{ const s=e.target.closest('.slot'); if(!s) return; ov.dataset.game=s.dataset.game; ov.classList.add('on'); setTimeout(()=>{ if(ov.classList.contains('on')) document.getElementById('ovx').focus(); },0); });
+function closeOv(){ if(!ov.classList.contains('on')) return; ov.classList.remove('on'); const t=[...document.querySelectorAll('.slot[data-game]')].find(s=>s.dataset.game===ov.dataset.game); if(t) t.focus(); }
+ov.addEventListener('click',e=>{ if(e.target===ov) closeOv(); }); document.getElementById('ovx').addEventListener('click',closeOv);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/script></body></html>`); await wait(30);
+        const ov = fd.getElementById('ov'), hdr = d.querySelector('header');
+        chk(note.hidden && !f.classList.contains('nt-failed') && fd.documentElement.style.overflowY === 'hidden' && !!ov && ov.style.overscrollBehavior === 'contain' && /^\d+px$/.test(f.style.height || '0px'),
+          'the Season Tracker frame, once loaded, can scroll up and down by itself, hands its window\'s scroll to this page, or still says it failed');
+        const open = k => { fd.querySelector(`.slot[data-game="${k}"]`).dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); };
+        const freed = () => !ov.classList.contains('on') && !f.classList.contains('nt-lifted') && d.documentElement.style.overflow === '' && sec.style.minHeight === '' && !hdr.inert && !d.getElementById('ntTop').inert;
+        open('CCC-DDD'); await wait(20);
+        chk(f.classList.contains('nt-lifted') && d.documentElement.style.overflow === 'hidden' && sec.style.minHeight !== '' && hdr.inert && fd.activeElement && fd.activeElement.id === 'ovx',
+          "opening a game in the Season Tracker did not lay its frame over the screen, hold the page still and its header out of reach, and move focus into the window");
+        scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+        chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && typeof scrolls[0][1] === 'number',
+          'Escape did not close the Season Tracker\'s game, put its frame back in the page and the page back where it was');
+        chk(fd.activeElement && fd.activeElement.dataset.game === 'CCC-DDD', "closing a game did not leave focus on its tile");
+        open('AAA-BBB'); await wait(20); ov.dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await wait(20);
+        chk(freed(), 'a click on the backdrop did not close the Season Tracker\'s game and put its frame back');
+        open('AAA-BBB'); await wait(20); w.location.hash = '#pickems'; await wait(60);
+        chk(freed() && sec.hidden && !d.getElementById('tab-pickems').hidden, 'leaving the Season Tracker by the address with a game open left its window open or the page held');
+        /* a game whose window throws as it is lifted never leaves the page held */
+        w.location.hash = '#tracker'; await wait(60);
+        { const gbr = f.getBoundingClientRect; f.getBoundingClientRect = () => { throw new Error('planted'); };
+          open('AAA-BBB'); await wait(20); f.getBoundingClientRect = gbr;
+          chk(d.documentElement.style.overflow === '' && !f.classList.contains('nt-lifted') && !hdr.inert, 'a throw while the Season Tracker\'s window was being opened left this page held still');
+          fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20); }
+        scrolls.length = 0; d.getElementById('ntTop').click();
+        chk(scrolls.length === 1 && scrolls[0][0] && scrolls[0][0].top === 0, "the Season Tracker's back-to-top button does not take the page to its top");
+      }
+      w.scrollTo = was;
+      w.location.hash = '#pickems'; await wait(60);
+    } }
+
   /* the tabs keep their addresses: #parlay is the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
-  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
+  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log'], ['#tracker', 'tab-tracker', 'Season Tracker']]) {
     w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
     chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
   /* back to the board by address */
