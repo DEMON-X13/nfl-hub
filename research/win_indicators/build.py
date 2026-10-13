@@ -25,16 +25,19 @@ official box score except where said:
   turnovers     interceptions thrown plus fumbles lost, a fumble charged to the team that
                 fumbled (fumbled_1_team: a muffed punt is the return team's), never on a play a
                 penalty wiped out; a turnover on downs is not a turnover
-  penalties     accepted penalties by the penalised team, every play: a foul declined or offset is
-                left out, one accepted for no yards (half the distance at the 1, the 2024 kickoff's
-                fouls placed at the 40) counted
+  penalties     plays with an accepted penalty, by the penalised team, every play: nflverse's flag
+                (a declined foul does not set it) less offsetting fouls; one accepted for no yards
+                (half the distance at the 1, the 2024 kickoff's fouls placed at the 40) counts; two
+                accepted fouls by one team on one play count once (about 1 in 550)
   drives        nflfastR's fixed_drive, every number worked out from its own plays (its
                 drive_inside20, drive_first_downs and drive_time_of_possession are keyed on the raw
                 drive number and land on the wrong fixed drive in about one game in eleven): a drive
-                is counted only with a snap that has a down; a red-zone trip is a snap inside the
-                20; its start is the spot of its first snap with a down (a kickoff re-kicked after a
-                penalty is no start); possession time is nflverse's drive_time_of_possession summed
-                over the raw drives, where it belongs
+                is counted only with a real down on it (a snap, a kick or a play a penalty wiped
+                out: a kneel-down or a spike is no down, so a victory formation is no drive); a
+                red-zone trip is a real down inside the 20; its start is the spot of its first real
+                down (a kickoff re-kicked after a penalty is no start); possession time is
+                nflverse's drive_time_of_possession summed over the raw drives, where it belongs
+  3rd/4th down  nflverse's conversion flags on every play but a kneel, a spike or a two-point try
   series        nflfastR's series (a set of downs) with a snap, a kneel-down or the half ending left
                 out: a success ends in a first down or a touchdown (drive success rate)
   special teams kickoffs, punts, field goals and extra points (play_type), EPA zero-sum between
@@ -43,7 +46,12 @@ official box score except where said:
   neutral       a snap with the offence's win probability 20-80% outside the last two minutes of
                 a half, the usual "neutral situation"; the play-based stats are built twice,
                 every snap and neutral snaps only (prefix n_), to see which stats only follow the
-                score (a team ahead runs, a team behind throws); a series is neutral by its first snap
+                score (a team ahead runs, a team behind throws); a series is neutral by its first
+                snap. A third time on a random set of plays the same size (prefix r_, the season as
+                the seed), the yardstick for how much edge a stat loses on fewer snaps alone
+  starters      games.csv's starting quarterback; where he took no dropback in the game (44
+                team-games, 33 of them in 2024), the game's lead passer (qb_listed keeps games.csv's).
+                Every passer's dropbacks from 1999 on, so a starter's form entering 2003 is known
 
 qb_hit, cpoe and air yards start in 2006 (nflverse has none before); those stats are NaN before.
 
@@ -72,8 +80,8 @@ COLS = ['game_id', 'season', 'season_type', 'week', 'game_date', 'home_team', 'a
         'series', 'series_result', 'passer_id', 'yardline_100', 'play_id']
 
 ST = ('kickoff', 'punt', 'field_goal', 'extra_point')
-# the plays that can open a drive or a series: they have a down
-DOWNED = ('pass', 'run', 'punt', 'field_goal', 'no_play', 'qb_kneel', 'qb_spike')
+# a real down: a snap, a kick or a play a penalty wiped out (never a kneel-down or a spike)
+REAL_DOWN = ('pass', 'run', 'punt', 'field_goal', 'no_play')
 
 
 def _f(s):
@@ -100,6 +108,9 @@ def play_flags(d):
     no_td = has_epa & (_f(d['touchdown']) == 0)
     early = has_epa & d['down'].isin([1, 2])
     epa, succ = _f(d['epa']), _f(d['success'])
+    # a third or fourth down is any play on one but a kneel, a spike or a two-point try (a defensive
+    # penalty that moves the chains counts, as in the box score)
+    down_play = ~pt.isin(['qb_kneel', 'qb_spike']) & ~tp
     f = pd.DataFrame({
         'snaps': snap, 'drop': drop, 'att': att, 'comp': comp,
         'pyds': np.where(att, _f(d['passing_yards']), 0.0),
@@ -120,8 +131,10 @@ def play_flags(d):
         'expl': (rush & (yg >= 10)) | (comp & (yg >= 20)),
         'fd': np.where(~tp, _f(d['first_down_rush']) + _f(d['first_down_pass']) + _f(d['first_down_penalty']), 0.0),
         'fd_play': np.where(snap, _f(d['first_down_rush']) + _f(d['first_down_pass']), 0.0),
-        'd3_conv': _f(d['third_down_converted']), 'd3_fail': _f(d['third_down_failed']),
-        'd4_conv': _f(d['fourth_down_converted']), 'd4_fail': _f(d['fourth_down_failed']),
+        'd3_conv': np.where(down_play, _f(d['third_down_converted']), 0.0),
+        'd3_fail': np.where(down_play, _f(d['third_down_failed']), 0.0),
+        'd4_conv': np.where(down_play, _f(d['fourth_down_converted']), 0.0),
+        'd4_fail': np.where(down_play, _f(d['fourth_down_failed']), 0.0),
         'tfl': snap & (_f(d['tackled_for_loss']) == 1),
         'qb_hits': drop & (_f(d['qb_hit']) == 1),
         'cpoe_n': att & d['cpoe'].notna(), 'cpoe': np.where(att & d['cpoe'].notna(), _f(d['cpoe']), 0.0),
@@ -140,24 +153,27 @@ def offence(d, prefix=''):
 
 
 def accepted_penalties(d):
-    """Plays with a penalty that stood: the first foul in the description neither declined nor offset."""
+    """Plays with a penalty that stood: nflverse's penalty flag, which a declined foul does not set,
+    less the plays whose fouls offset."""
     pen = d[(_f(d['penalty']) == 1) & d['penalty_team'].notna()]
-    desc = pen['desc'].fillna('')
-    first = desc.str.extract(r'(PENALTY on .*)', flags=0)[0].fillna('')
-    declined = first.str.match(r'PENALTY on [^,]+, [^,]+, [^,]*declined', case=False)
-    offset = desc.str.contains('offsetting', case=False)
-    return pen[~declined & ~offset]
+    return pen[~pen['desc'].fillna('').str.contains('offsetting', case=False)]
+
+
+def turnovers(d, prefix=''):
+    """Interceptions thrown (the offence's) and fumbles lost (the fumbler's), plays a penalty wiped
+    out and two-point tries left out."""
+    live = d[(d['play_type'] != 'no_play') & (_f(d['two_point_attempt']) == 0)]
+    ints = live[(_f(live['interception']) == 1) & live['posteam'].notna()]
+    fl = live[_f(live['fumble_lost']) == 1]
+    return pd.concat([ints.groupby(['game_id', 'posteam']).size().rename(prefix + 'ints_all').rename_axis(['game_id', 'team']),
+                      fl.groupby(['game_id', 'fumbled_1_team']).size().rename(prefix + 'fum_lost').rename_axis(['game_id', 'team'])],
+                     axis=1).fillna(0.0)
 
 
 def others(d):
     """What is charged to a team other than as the offence: turnovers, penalties, special teams."""
     live = d[d['play_type'] != 'no_play']
-    rows = []
-    # interceptions thrown are the offence's; fumbles the fumbler's
-    ints = live[(_f(live['interception']) == 1) & live['posteam'].notna() & (_f(live['two_point_attempt']) == 0)]
-    rows.append(ints.groupby(['game_id', 'posteam']).size().rename('ints_all').rename_axis(['game_id', 'team']))
-    fl = live[_f(live['fumble_lost']) == 1]
-    rows.append(fl.groupby(['game_id', 'fumbled_1_team']).size().rename('fum_lost').rename_axis(['game_id', 'team']))
+    rows = [turnovers(d)]
     fu = live[_f(live['fumble']) == 1]
     rows.append(fu.groupby(['game_id', 'fumbled_1_team']).size().rename('fumbles').rename_axis(['game_id', 'team']))
     pen = accepted_penalties(d)
@@ -187,15 +203,17 @@ def top_seconds(s):
 
 
 def drives(d):
-    """Drive stats by game and offence, each worked out from the fixed drive's own plays."""
+    """Drive stats by game and offence, each worked out from the fixed drive's own plays. A drive
+    counts only with a real down on it (a kneel-down or a spike is no down, so a victory formation
+    is no drive); a red-zone trip is a real down inside the 20."""
     x = d[d['posteam'].notna() & d['fixed_drive'].notna()].copy()
     x = x.sort_values(['game_id', 'play_id'])
-    downed = x['play_type'].isin(DOWNED) & x['down'].notna() & (_f(x['two_point_attempt']) == 0)
-    x['spot'] = np.where(downed, x['yardline_100'], np.nan)
-    x['in20p'] = downed & (x['yardline_100'] < 20)
+    real = x['play_type'].isin(REAL_DOWN) & x['down'].notna() & (_f(x['two_point_attempt']) == 0)
+    x['spot'] = np.where(real, x['yardline_100'], np.nan)
+    x['in20p'] = real & (x['yardline_100'] < 20)
     x['fdp'] = np.where(_f(x['two_point_attempt']) == 0,
                         _f(x['first_down_rush']) + _f(x['first_down_pass']) + _f(x['first_down_penalty']), 0.0)
-    x['team_d'] = x['posteam'].where(downed)
+    x['team_d'] = x['posteam'].where(real)
     g = x.groupby(['game_id', 'fixed_drive'], sort=False)
     dr = pd.DataFrame({
         'team': g['team_d'].agg(lambda s: s.mode().iat[0] if s.notna().any() else None),
@@ -204,7 +222,7 @@ def drives(d):
         'fds': g['fdp'].sum(),
         'start': g['spot'].first(),
     }).reset_index()
-    dr = dr[dr['team'].notna()]                       # a drive with no snap (a return to the half's end) is no drive
+    dr = dr[dr['team'].notna()]                       # no real down: a return to the half's end, a kneel-down
     dr['rz_td'] = dr['in20'] & (dr['result'] == 'Touchdown')
     dr['three_out'] = (dr['result'] == 'Punt') & (dr['fds'] == 0)
     dr['start_own'] = 100 - dr['start']
@@ -220,24 +238,25 @@ def drives(d):
     return out.astype(float)
 
 
-def series(d):
+def series(d, masks):
     """Drive success rate's counts by game and offence: sets of downs with a snap, the kneel-downs and
     the half's end left out, a success ending in a first down or a touchdown; and the same on the
-    series whose first snap was neutral."""
-    x = d[d['posteam'].notna() & d['series'].notna()].copy()
-    x = x.sort_values(['game_id', 'play_id'])
+    series whose first snap is in each of `masks` (prefix: a play mask)."""
+    x = d[d['posteam'].notna() & d['series'].notna()]
     snap = x['play_type'].isin(['pass', 'run']) & (_f(x['two_point_attempt']) == 0)
-    x['neu'] = np.where(snap, neutral(x), np.nan)
-    x['snap'] = snap
-    g = x[snap].groupby(['game_id', 'series'])
-    s = pd.DataFrame({'team': g['posteam'].agg(lambda v: v.mode().iat[0]), 'neu': g['neu'].first()})
-    res = x.groupby(['game_id', 'series'])['series_result'].first()
+    x = x[snap].sort_values(['game_id', 'play_id'])
+    g = x.groupby(['game_id', 'series'])
+    s = pd.DataFrame({'team': g['posteam'].agg(lambda v: v.mode().iat[0])})
+    for p, m in masks.items():
+        s[p] = m.reindex(x.index).groupby([x['game_id'], x['series']]).first()
+    res = d[d['series'].notna()].groupby(['game_id', 'series'])['series_result'].first()
     s['result'] = res.reindex(s.index)
     s = s[~s['result'].isin(['QB kneel', 'End of half'])].reset_index()
     s['ok'] = s['result'].isin(['First down', 'Touchdown'])
-    out = s.groupby(['game_id', 'team']).agg(dsr=('ok', 'sum'), dsr_n=('ok', 'size'))
-    n = s[s['neu'] == 1].groupby(['game_id', 'team']).agg(n_dsr=('ok', 'sum'), n_dsr_n=('ok', 'size'))
-    return pd.concat([out, n], axis=1).fillna(0.0).astype(float)
+    parts = [s.groupby(['game_id', 'team']).agg(dsr=('ok', 'sum'), dsr_n=('ok', 'size'))]
+    for p in masks:
+        parts.append(s[s[p] == 1].groupby(['game_id', 'team']).agg(**{p + 'dsr': ('ok', 'sum'), p + 'dsr_n': ('ok', 'size')}))
+    return pd.concat(parts, axis=1).fillna(0.0).astype(float)
 
 
 def qb_games(d):
@@ -249,11 +268,24 @@ def qb_games(d):
     return x.groupby(['game_id', 'team', 'passer_id']).agg(dropbacks=('epa', 'size'), epa=('epa', 'sum')).reset_index()
 
 
+def random_like_neutral(d, season):
+    """A random set of plays the size of the neutral ones (the same share of the season's snaps), drawn
+    with the season as the seed: the neutral test's yardstick for how much edge a stat loses on fewer
+    snaps alone."""
+    snap = d['play_type'].isin(['pass', 'run'])
+    share = (neutral(d) & snap).sum() / snap.sum()
+    u = np.random.default_rng(season).random(len(d))
+    return pd.Series(u < share, index=d.index)
+
+
 def season_table(season, games):
     d = common.pbp(season, COLS)
     if d.empty:
         raise SystemExit(f'{season}: no plays')
-    t = pd.concat([offence(d), offence(d[neutral(d)], 'n_'), others(d), drives(d), series(d)], axis=1).fillna(0.0)
+    neu, rnd = neutral(d), random_like_neutral(d, season)
+    t = pd.concat([offence(d), offence(d[neu], 'n_'), offence(d[rnd], 'r_'), others(d),
+                   turnovers(d[neu], 'n_'), turnovers(d[rnd], 'r_'), drives(d),
+                   series(d, {'n_': neu, 'r_': rnd})], axis=1).fillna(0.0)
     t = t.reset_index()
     # who played whom, by the play-by-play's codes, and the result, line and quarterbacks by games.csv
     meta = d.drop_duplicates('game_id')[['game_id', 'home_team', 'away_team', 'season_type', 'week', 'game_date']]
@@ -279,18 +311,33 @@ def season_table(season, games):
         raise SystemExit(f'{season}: games without two teams: {n[n != 2].index.tolist()[:5]}')
     q = qb_games(d)
     q['season'] = season
-    return t, q
+    # games.csv's starter took no dropback in a few games (33 in 2024): its record is wrong there, so
+    # the game's lead passer (most dropbacks) stands in
+    lead = q.sort_values('dropbacks', ascending=False).drop_duplicates(['game_id', 'team']).set_index(['game_id', 'team'])['passer_id']
+    played = set(zip(q['game_id'], q['team'], q['passer_id']))
+    miss = np.array([(g, tm, pid) not in played for g, tm, pid in zip(t['game_id'], t['team'], t['qb_id'])])
+    stand = lead.reindex(pd.MultiIndex.from_arrays([t['game_id'], t['team']])).values
+    t = t.copy()
+    t['qb_listed'] = t['qb_id']
+    t['qb_id'] = np.where(miss & pd.notna(stand), stand, t['qb_id'])
+    return t, q, int((miss & pd.notna(stand)).sum())
 
 
 def main():
     g = common.games()
     tabs, qbs = [], []
+    for s in common.WARMUP:                                   # a starter's form entering 2003
+        q = qb_games(common.pbp(s, COLS))
+        q['season'] = s
+        qbs.append(q)
+        print(s, 'warm-up:', len(q), 'passer-games')
     for s in common.SEASONS:
-        t, q = season_table(s, g)
+        t, q, fixed = season_table(s, g)
         tabs.append(t)
         qbs.append(q)
-        top = t.groupby('game_id')['top_s'].sum()
-        print(s, t['game_id'].nunique(), 'games;', f'possession time within 30 s of 60:00 in {(abs(top - 3600) <= 30).mean():.1%} of games')
+        top = t[t['overtime'] == 0].groupby('game_id')['top_s'].sum()
+        print(s, t['game_id'].nunique(), 'games;', f'possession time within 30 s of 60:00 in {(abs(top - 3600) <= 30).mean():.1%}'
+              f' of games without overtime; starter with no dropback replaced by the lead passer: {fixed}')
     t = pd.concat(tabs, ignore_index=True)
     # games.csv has every game of these seasons and the play-by-play every one of them
     want, have = set(g['game_id']), set(t['game_id'])

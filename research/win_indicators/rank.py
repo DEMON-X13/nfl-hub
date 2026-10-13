@@ -8,10 +8,11 @@ stat level between the two teams counted as a coin flip (half), so a stat that i
 (turnovers) is not flattered by leaving its level games out. Beside it: how often it is level,
 the winner's rate when it is not, its correlation with the final margin, and the same rate on
 neutral snaps only (win probability 20-80%, outside the last two minutes of a half). A stat
-"follows the score" (a team ahead runs and kneels, a team behind throws and goes for it) when
-less than half its edge over a coin flip survives on neutral snaps, or for a reason the neutral
-snaps cannot test (SCRIPT_REASON); those are kept in the table and kept out of the top 15 and of
-the forward selections.
+"follows the score" (a team ahead runs and kneels, a team behind throws and goes for it) when its
+edge over a coin flip on neutral snaps is less than half its edge on a random set of snaps as
+large (fewer snaps alone cost a stat some edge), or for a reason the neutral snaps cannot test
+(SCRIPT_REASON); those are kept in the table and kept out of the top 15 and of the forward
+selections, in the game and before it.
 
 BEFORE THE GAME: what carries forward, on the games where both teams have three games behind them
 that season (weeks 1-3 have a table of their own). Each team's season to date entering the game,
@@ -21,7 +22,8 @@ that rate; the log loss of a logistic regression on the stat alone (fitted leavi
 at a time, scored on the season left out); the same against the closing line, which is what a
 model has to beat (the closing spread with a cubic term, with and without the stat, the change in
 log loss on the season left out and a 90% interval from resampling whole seasons; the stat's sign
-on top of the line says whether it would be followed or faded); and split-half reliability (each
+on top of the line says whether it would be followed or faded; and what the best of the candidates
+finds there by chance, from shuffles); and split-half reliability (each
 team-season's odd games against its even games, how much of the stat is the team and how much the
 week), with its full-season value (Spearman-Brown). Then the indicators that are not a season to
 date of one stat: an Elo rating carried across seasons, opponent-adjusted point differential
@@ -49,7 +51,8 @@ RES = os.path.join(HERE, 'results')
 STATS = [
     # efficiency, every snap
     ('epa_play', 'EPA per play', 'efficiency', 'epa', 'epa_n', 'built on expected points: scoring plays in it'),
-    ('epa_ntd', 'EPA per play, touchdown plays left out', 'efficiency', 'epa_ntd', 'epa_ntd_n', ''),
+    ('epa_ntd', 'EPA per play, touchdown plays left out', 'efficiency', 'epa_ntd', 'epa_ntd_n',
+     'every touchdown play out, the defence\'s returns too'),
     ('success', 'Success rate', 'efficiency', 'succ', 'epa_n', ''),
     ('ypp', 'Yards per play', 'efficiency', 'yds', 'snaps', ''),
     ('early_epa', 'Early-down EPA per play (1st & 2nd)', 'efficiency', 'early_epa', 'early_n', ''),
@@ -120,16 +123,18 @@ SPEC = {s[0]: s for s in STATS + RESULTS}
 # worked out on their own (special_gaps), before the game only
 SPECIAL = [
     ('elo', 'Elo rating, carried across seasons', 'ratings',
-     "FiveThirtyEight's NFL Elo: K 20, their margin multiplier, home field 55 (none at a neutral site), a third "
-     'back to 1505 each season; games.csv from 1999 so 2003 starts warm; the gap shown leaves home field out'),
+     "FiveThirtyEight's published NFL Elo (their nfl-elo-game code): K 20, their margin multiplier, home field 65 "
+     '(none at a neutral site), a third back to 1505 each season; games.csv from 1999 so 2003 starts warm; the gap '
+     'shown leaves home field out'),
     ('srs', 'Opponent-adjusted point differential (SRS)', 'ratings',
      "this season's margins solved for every team's rating and home field together, the ratings pulled to 0 by "
      'a ridge of 3 games'),
     ('pt_blend', 'Point differential blended with last season', 'ratings',
      "(n x this season's + 4 x 2/3 x last season's) / (n + 4), n this season's games; last season's from games.csv"),
     ('qb', "Starting QB: his own EPA per dropback over his last 16 games", 'quarterback',
-     "games.csv's starter; his dropbacks for any team in his 16 games before this one, pulled toward -0.10 "
-     'with 200 dropbacks of weight (a new starter reads about replacement level)'),
+     "games.csv's starter (the lead passer where he took no dropback); his dropbacks for any team in his 16 games "
+     'before this one, from 1999 on, pulled toward -0.10 with 200 dropbacks of weight (a new starter reads about '
+     'replacement level)'),
 ]
 # last season's values, for the weeks 1-3 table
 LAST = [
@@ -145,7 +150,7 @@ GROUP = {**{s[0]: s[2] for s in STATS + RESULTS + SPECIAL}, **{s[0]: s[2] for s 
 NEUTRAL = {'epa_play', 'epa_ntd', 'success', 'ypp', 'early_epa', 'early_succ', 'expl_rate', 'fd_play', 'dsr',
            'drop_epa', 'drop_succ', 'anya', 'nya', 'ypa', 'rating', 'comp_pct', 'cpoe', 'int_rate', 'sack_rate',
            'pass_rate', 'ypc', 'drush_epa', 'drush_succ', 'rush_att', 'rush_yds', 'snaps', 'tot_yds', 'fds',
-           'pass_yds', 'sacks', 'tfl', 'qb_hits', 'adot'}
+           'pass_yds', 'sacks', 'tfl', 'qb_hits', 'adot', 'ints', 'fum_lost', 'to_margin'}
 # the stats that follow the score for a reason the neutral snaps cannot test
 SCRIPT_REASON = {
     'top': 'a team ahead runs the clock',
@@ -161,12 +166,13 @@ FROM_2006 = ('cpoe', 'qb_hits', 'adot')
 EPA_BASED = ('epa_play', 'epa_ntd', 'success', 'early_epa', 'early_succ', 'drop_epa', 'drop_succ', 'drush_epa',
              'drush_succ', 'st_epa')
 SEASON_TO_DATE_MIN = 3     # games behind both teams before the main pre-game table reads them
+NULL_RUNS = 40             # shuffles for what the first step on top of the line finds by chance
 ERA_SPLIT = 2013           # the two eras each rate is shown for: 2003-2013 and 2014-2025
 STEPS = 8                  # the in-game forward selection's steps (pre-game: 6)
 TOP = 15
 
 # fixed in advance (SPECIAL says where each comes from)
-ELO_K, ELO_HOME, ELO_REVERT, ELO_MEAN, ELO_FIRST = 20.0, 55.0, 1 / 3, 1505.0, 1999
+ELO_K, ELO_HOME, ELO_REVERT, ELO_MEAN, ELO_FIRST = 20.0, 65.0, 1 / 3, 1505.0, 1999
 SRS_RIDGE = 3.0
 BLEND_GAMES, BLEND_KEEP = 4.0, 2 / 3
 QB_GAMES, QB_PRIOR, QB_WEIGHT = 16, -0.10, 200.0
@@ -193,7 +199,7 @@ def parts(t, key, p=''):
         return c('pyds') - c('sack_yds'), one
     if key == 'to_margin':
         # the team's own value is minus its giveaways; the gap to the opponent is the margin
-        return -(t['ints_all'] + t['fum_lost']), one
+        return -(t[p + 'ints_all'] + t[p + 'fum_lost']), one
     if key == 'pythag':
         return t['pts'], one
     num, den = SPEC[key][3], SPEC[key][4]
@@ -250,16 +256,24 @@ def paired(t):
     return h, a
 
 
+LEVEL = 1e-9    # a gap this close to zero is level (two equal season-to-date values differ in the last bits)
+
+
+def level0(gap):
+    gap = np.asarray(gap, float)
+    return np.where(np.abs(gap) < LEVEL, 0.0, gap)
+
+
 def scores(gap, won):
     """Each game's score for the side the gap favours: 1 if it won, 0 if it lost, a half if level."""
-    gap, won = np.asarray(gap, float), np.asarray(won, float)
+    gap, won = level0(gap), np.asarray(won, float)
     return np.where(gap > 0, won, np.where(gap < 0, 1 - won, 0.5))
 
 
 def pick_rate(gap, won):
     """Share of games the team on the better side of the gap won, a level stat counted half;
     how often level; the rate when not level; the number of games."""
-    gap, won = np.asarray(gap, float), np.asarray(won, float)
+    gap, won = level0(gap), np.asarray(won, float)
     ok = ~np.isnan(gap)
     g, w = gap[ok], won[ok]
     if not len(g):
@@ -373,21 +387,23 @@ def in_game(t):
         ok = ~np.isnan(gap)
         corr = np.corrcoef(gap[ok], margin[ok])[0, 1]
         per = [pick_rate(gap[era == s], won[era == s])[0] for s in np.unique(era) if (~np.isnan(gap[era == s])).any()]
-        nr = np.nan
+        nr = rr = np.nan
         if key in NEUTRAL:
             ng = sign * (game_value(hr, key, 'n_').values - game_value(ar, key, 'n_').values)
             nr = pick_rate(ng, won)[0]
+            rg = sign * (game_value(hr, key, 'r_').values - game_value(ar, key, 'r_').values)
+            rr = pick_rate(rg, won)[0]
         if key in SCRIPT_REASON:
             script = SCRIPT_REASON[key]
-        elif not np.isnan(nr) and (nr - 0.5) < 0.5 * (r - 0.5):
-            script = f'on neutral snaps it falls to {nr:.1%}'
+        elif not np.isnan(nr) and (nr - 0.5) < 0.5 * (rr - 0.5):
+            script = f'on neutral snaps it falls to {nr:.1%} (on as many random snaps {rr:.1%})'
         else:
             script = ''
         rows.append(dict(key=key, stat=label, group=group, better='more' if sign > 0 else 'fewer',
                          pick_rate=r, level=level, win_when_won=when, corr_margin=corr,
                          rate_early=pick_rate(gap[era <= ERA_SPLIT], won[era <= ERA_SPLIT])[0],
                          rate_late=pick_rate(gap[era > ERA_SPLIT], won[era > ERA_SPLIT])[0],
-                         worst_season=min(per), best_season=max(per), neutral_rate=nr,
+                         worst_season=min(per), best_season=max(per), neutral_rate=nr, random_rate=rr,
                          follows_score=script, games=n, note=note))
     out = pd.DataFrame(rows).sort_values('pick_rate', ascending=False).reset_index(drop=True)
     out.index += 1
@@ -473,7 +489,7 @@ def elo_pre():
         m = r.home_score - r.away_score
         s = 1.0 if m > 0 else 0.0 if m < 0 else 0.5
         wdiff = diff if m > 0 else -diff
-        mult = np.log(max(abs(m), 1) + 1) * (1.0 if m == 0 else 2.2 / (wdiff * 0.001 + 2.2))
+        mult = np.log(max(abs(m), 1) + 1) * 2.2 / (1.0 if m == 0 else wdiff * 0.001 + 2.2)
         shift = ELO_K * mult * (s - p)
         elo[r.home_team], elo[r.away_team] = eh + shift, ea - shift
     return out
@@ -514,8 +530,10 @@ def qb_pre(t):
     this one, any team, any season, pulled toward QB_PRIOR with QB_WEIGHT dropbacks; and whether
     the starter differs from the team's previous game's."""
     q = pd.read_parquet(os.path.join(OUT, 'qb_games.parquet'))
-    dates = t.drop_duplicates('game_id').set_index('game_id')['game_date']
+    dates = common.games(common.WARMUP[0]).set_index('game_id')['gameday']     # the warm-up seasons' games too
     q['date'] = q['game_id'].map(dates)
+    if q['date'].isna().any():
+        raise SystemExit(f'qb_games has games games.csv does not date: {q.loc[q.date.isna(), "game_id"].unique()[:5]}')
     q = q.groupby(['passer_id', 'date', 'game_id'], as_index=False)[['dropbacks', 'epa']].sum()
     q = q.sort_values(['passer_id', 'date', 'game_id'])
     hist = {pid: (g['date'].values, np.r_[0, g['epa'].cumsum().values], np.r_[0, g['dropbacks'].cumsum().values])
@@ -545,10 +563,11 @@ def special_gaps(t, h, a, std_pt):
     elo = elo_pre()
     e = np.array([elo[g] if g in elo else (np.nan, np.nan) for g in gid], float)
     out['elo'] = e[:, 0] - e[:, 1]
-    srs = srs_pre(h, a)
+    srs = srs_pre(*paired(t))                   # fitted on every game, ties too; read on h's
     out['srs'] = np.array([srs.get(g, np.nan) for g in gid])
-    # last season's point differential per game, from games.csv (2002 on)
+    # last season's point differential per game, its regular season, from games.csv (2002 on)
     g = games_mapped(common.FIRST - 1)
+    g = g[g['game_type'] == 'REG']
     m = pd.concat([pd.DataFrame({'season': g['season'], 'team': g['home_team'], 'm': g['home_score'] - g['away_score']}),
                    pd.DataFrame({'season': g['season'], 'team': g['away_team'], 'm': g['away_score'] - g['home_score']})])
     last = m.groupby(['season', 'team'])['m'].mean()
@@ -564,9 +583,9 @@ def special_gaps(t, h, a, std_pt):
         this = np.nan_to_num(s['net'].values)
         return (n * this + BLEND_GAMES * BLEND_KEEP * np.nan_to_num(l)) / (n + BLEND_GAMES)
     out['pt_blend'] = blend(sh, lh) - blend(sa, la)
-    # last season's EPA and dropback EPA (the play-by-play starts in 2003, so from 2004)
+    # last season's EPA and dropback EPA, its regular season (the play-by-play starts in 2003, so from 2004)
     for key in ('epa_play', 'drop_epa'):
-        w = season_whole(t, key)
+        w = season_whole(t[t['season_type'] == 'REG'], key)
         wh = w.reindex(pd.MultiIndex.from_arrays([h['season'].values - 1, h['team'].values])).values
         wa = w.reindex(pd.MultiIndex.from_arrays([h['season'].values - 1, a['team'].values])).values
         out['last_' + key] = wh - wa
@@ -611,7 +630,7 @@ def evaluate(gap, y, ss, L, with_line=True):
     return row
 
 
-def pre_game(t, direction):
+def pre_game(t, direction, flagged):
     t = t.copy()
     t['_win'] = np.where(t['pts'] > t['opp_pts'], 1.0, np.where(t['pts'] == t['opp_pts'], 0.5, 0.0))
     h0, a0 = paired(t)
@@ -638,7 +657,8 @@ def pre_game(t, direction):
     spec, change = special_gaps(t, h0, a0, std_pt)
     enough = (nb_h >= SEASON_TO_DATE_MIN) & (nb_a >= SEASON_TO_DATE_MIN)
 
-    # the main table: both teams three games in, the same games for every row
+    # the main table: both teams three games in (the 2006-on stats on those from 2006, the field-goal
+    # rate on those where both teams have tried one)
     m = enough
     y, ss, LL = won[m], seasons[m], L[m]
     base_ll, _ = loso(LL, y, ss)
@@ -694,11 +714,33 @@ def pre_game(t, direction):
     qbsplit = pd.DataFrame(rows)
 
     # which pre-game signals are distinct: forward selection without and on top of the line
-    cands = {k: zs(v[m]) for k, v in nets.items() if k not in FROM_2006}
+    cands = {k: zs(v[m]) for k, v in nets.items() if k not in FROM_2006 and k not in flagged}
     cands.update({k: zs(spec[k][m]) for k in ('elo', 'srs', 'pt_blend', 'qb')})
     fw = {name: forward(cands, base, y, ss, steps=6) for name, base in (('pre_game_forward', None),
                                                                          ('pre_game_forward_on_line', LL))}
-    return main, pparts, early, allg, qbsplit, fw
+    null = best_by_chance(cands, LL, y, ss)
+    return main, pparts, early, allg, qbsplit, fw, null
+
+
+def best_by_chance(cands, base, y, ss, k=NULL_RUNS):
+    """What the forward selection's first step on top of the line finds by chance: the candidates'
+    rows shuffled together within each season (so they keep their links to each other and lose the
+    one to the result), the best change in log loss among them, k times."""
+    names = list(cands)
+    X = np.column_stack([cands[n] for n in names])
+    b0, _ = loso(base, y, ss)
+    best = []
+    for i in range(k):
+        rng = np.random.default_rng(1000 + i)
+        idx = np.arange(len(y))
+        for s in np.unique(ss):
+            w = np.where(ss == s)[0]
+            idx[w] = rng.permutation(w)
+        Xp = X[idx]
+        best.append(min((loso(np.column_stack([base, Xp[:, j]]), y, ss)[0] - b0).mean() for j in range(len(names))))
+    best = np.array(best) * 1000
+    return {'runs': k, 'candidates': len(names), 'best_by_chance_mean_x1000': float(best.mean()),
+            'best_by_chance_p95_x1000': float(np.percentile(best, 5)), 'all_x1000': [round(float(v), 4) for v in best]}
 
 
 def benchmarks(t):
@@ -753,7 +795,12 @@ def main():
         print(name); print(fw.round(4).to_string(), '\n')
 
     direction = dict(zip(ig['key'], ig['better']))
-    main_t, pparts, early, allg, qbsplit, fws = pre_game(t, direction)
+    main_t, pparts, early, allg, qbsplit, fws, null = pre_game(t, direction, flagged)
+    null['found_x1000'] = float(fws['pre_game_forward_on_line'].loc[1, 'd_logloss_x1000'])
+    null['found'] = fws['pre_game_forward_on_line'].loc[1, 'stat']
+    with open(f('pre_game_forward_on_line_null.json'), 'w') as fh:
+        json.dump(null, fh, indent=1)
+    print('on top of the line, by chance:', {k: v for k, v in null.items() if k != 'all_x1000'})
     main_t.to_csv(f('pre_game.csv'), float_format='%.4f', index_label='rank')
     pparts.to_csv(f('pre_game_offence_defence.csv'), float_format='%.4f', index=False)
     early.to_csv(f('pre_game_weeks_1_3.csv'), float_format='%.4f', index=False)

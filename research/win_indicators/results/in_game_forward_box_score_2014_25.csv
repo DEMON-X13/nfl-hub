@@ -7,4 +7,4 @@ step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
 5,int_rate,Interception rate,0.22150,0.90134,-25.52500,-28.37423,-22.36966
 6,pass_yds,Net passing yards,0.20764,0.90469,-13.85158,-18.64341,-9.18765
 7,net_punt,Net punt average,0.19790,0.91048,-9.74380,-14.60787,-4.00927
-8,d3_pct,Third-down conversion rate,0.19291,0.91443,-4.98759,-7.24749,-2.72383
+8,yds_drive,Yards per drive,0.19115,0.91322,-6.75459,-9.99252,-3.70052

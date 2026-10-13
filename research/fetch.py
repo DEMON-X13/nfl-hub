@@ -1,5 +1,6 @@
 """Download the raw files the studies read into research/data/raw/ (gitignored): nflverse's
-games.csv and the play-by-play of 2003-2025. The held-out seasons' play-by-play is never fetched.
+games.csv and the play-by-play of 2003-2025, and of 1999-2002 to warm up a history (a starting quarterback's
+form entering 2003). The held-out seasons' play-by-play is never fetched.
 
 nflverse revises old seasons now and then, so a later download can move a number in the last
 decimal; each study's README says when its files were read.
@@ -9,7 +10,7 @@ Run: python3 -I research/fetch.py [--force]   (a file already there is kept unle
 import os, sys, time, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import RAW, SEASONS, GAMES_URL, PBP_URL, pbp_path
+from common import RAW, SEASONS, WARMUP, GAMES_URL, PBP_URL, pbp_path
 
 
 def get(url, dest, force):
@@ -36,5 +37,5 @@ def get(url, dest, force):
 if __name__ == '__main__':
     force = '--force' in sys.argv[1:]
     get(GAMES_URL, os.path.join(RAW, 'games', 'games.csv'), force)
-    for s in SEASONS:
+    for s in WARMUP + SEASONS:
         get(PBP_URL.format(season=s), pbp_path(s), force)

@@ -14,7 +14,8 @@ nothing is frozen as a formula or wired into a site.
   12 October 2026 ("we are just collecting data right now").
 - **The data** is nflverse's: `games.csv` (schedule, scores, closing lines) and the play-by-play,
   downloaded by `python3 -I research/fetch.py` into `research/data/raw/` (gitignored, about
-  400 MB). `common.py`'s loaders refuse a held-out season.
+  450 MB). 1999-2002 are read only to warm up a history (a rating, a quarterback's form entering
+  2003), never explored. `common.py`'s loaders refuse a held-out season.
 - **Honest numbers.** A rate is shown on the games it was measured on, beside a baseline (the
   closing line's favourite, home field). Anything that predicts is scored on seasons it was not
   fitted on (leave one season out, or walk forward), with an interval, and many stats tried at

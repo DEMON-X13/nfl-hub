@@ -16,6 +16,7 @@ RAW = os.path.join(HERE, 'data', 'raw')            # gitignored
 HOLDOUT_FROM = 2026                                 # 2026 onward is never explored
 FIRST = 2003
 SEASONS = list(range(FIRST, HOLDOUT_FROM))          # 2003-2025
+WARMUP = list(range(1999, FIRST))                   # 1999-2002: read only to warm up a history (a starter's EPA)
 
 GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'
 PBP_URL = 'https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{season}.parquet'

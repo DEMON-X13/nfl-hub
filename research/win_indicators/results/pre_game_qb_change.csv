@@ -1,11 +1,11 @@
 games_with,key,stat,pick_rate,pick_lo,pick_hi,level,rate_early,rate_late,logloss_alone,games
-QB changed,qb,Starting QB: his own EPA per dropback over his last 16 games,0.6496,0.6271,0.6712,0.0010,0.6558,0.6443,0.6345,1006
-QB changed,drop_epa,Dropback EPA per play,0.6093,0.5879,0.6312,0.0000,0.6039,0.6140,0.6539,1006
-QB changed,epa_play,EPA per play,0.6133,0.5945,0.6335,0.0000,0.6126,0.6140,0.6539,1006
-QB changed,pt_diff,Point differential per game,0.6272,0.6032,0.6532,0.0040,0.6212,0.6324,0.6467,1006
-QB changed,elo,"Elo rating, carried across seasons",0.6272,0.6084,0.6452,0.0000,0.6255,0.6287,0.6486,1006
-same QBs,qb,Starting QB: his own EPA per dropback over his last 16 games,0.6216,0.6068,0.6362,0.0000,0.6136,0.6287,0.6417,4104
-same QBs,drop_epa,Dropback EPA per play,0.6216,0.6066,0.6362,0.0000,0.6209,0.6222,0.6439,4104
-same QBs,epa_play,EPA per play,0.6291,0.6162,0.6417,0.0000,0.6307,0.6278,0.6373,4104
-same QBs,pt_diff,Point differential per game,0.6334,0.6202,0.6468,0.0032,0.6364,0.6308,0.6323,4104
-same QBs,elo,"Elo rating, carried across seasons",0.6367,0.6273,0.6465,0.0000,0.6317,0.6411,0.6218,4104
+QB changed,qb,Starting QB: his own EPA per dropback over his last 16 games,0.6467,0.6248,0.6688,0.0010,0.6494,0.6444,0.6347,1009
+QB changed,drop_epa,Dropback EPA per play,0.6105,0.5887,0.6326,0.0000,0.6039,0.6161,0.6542,1009
+QB changed,epa_play,EPA per play,0.6145,0.5961,0.6344,0.0000,0.6126,0.6161,0.6536,1009
+QB changed,pt_diff,Point differential per game,0.6274,0.6028,0.6540,0.0040,0.6201,0.6335,0.6459,1009
+QB changed,elo,"Elo rating, carried across seasons",0.6303,0.6110,0.6495,0.0000,0.6255,0.6344,0.6478,1009
+same QBs,qb,Starting QB: his own EPA per dropback over his last 16 games,0.6218,0.6078,0.6360,0.0000,0.6157,0.6273,0.6418,4101
+same QBs,drop_epa,Dropback EPA per play,0.6213,0.6063,0.6359,0.0000,0.6209,0.6217,0.6439,4101
+same QBs,epa_play,EPA per play,0.6289,0.6158,0.6414,0.0000,0.6307,0.6273,0.6374,4101
+same QBs,pt_diff,Point differential per game,0.6330,0.6201,0.6464,0.0039,0.6364,0.6300,0.6325,4101
+same QBs,elo,"Elo rating, carried across seasons",0.6359,0.6262,0.6462,0.0000,0.6312,0.6402,0.6221,4101
