@@ -33,7 +33,8 @@ nhl/       X NHL Bets                moneylines, puck lines and totals
 ```
 
 Picks, bankroll, bets, odds and parlays a visitor makes stay in that browser's local
-storage. X's parlays and the X Bet Log are files in the repository (`liveparlays/parlays.json`,
+storage, and so does the visitor's choice of which of X's parlays to stop seeing on that device
+(the X on each card in X Parlays). X's parlays and the X Bet Log are files in the repository (`liveparlays/parlays.json`,
 `liveparlays/xbets.json`), read only by every device (below). Nothing on any page writes anywhere
 but the visitor's own browser; everything else changes only with a commit.
 
@@ -435,6 +436,31 @@ load and on Refresh now, read only on every device, a parlay marked `"cleared": 
 its games not read), a quiet line under the heading saying when the file last changed (its
 `updated`). Nothing a browser holds is drawn there: no saved parlays, no builder, no betting slips.
 
+Every card, live or settled, has an X at its top right (`.lp-x`, a 44px button named "Clear this
+parlay", `data-lp-clear` its id), the same for every visitor: there is no owner mode. It opens a
+small window over the page (`#lpAsk`, inside `#lpCard`, an `alertdialog`) asking "Clear this
+parlay?", naming it (legs, week, price, note) and saying it is cleared from X Parlays on this device
+only, nothing sent anywhere, and that X's parlays clear themselves for everyone the day after their
+last game; Cancel, Escape (ahead of any window beneath it) and a click outside clear nothing, Tab
+stays inside, the focus starts on Cancel and goes back to the X. A tap within 0.4 seconds of the
+window opening (a double tap's second, which on a phone can land on Clear) neither clears nor
+closes, while a key's click always counts; the window scrolls, its panel centred by auto margins,
+so Clear stays reachable on a phone on its side; and a hashchange (the back button) closes it,
+clearing nothing, as does any key pressed while its tab is hidden. Clear takes the parlay off X
+Parlays in this browser: its id, with when, joins the section's own key, `lp_cleared_here_v1` (a
+list of `{id, at}`), its games are no longer read, and the focus moves to the X now in its place.
+The list is the visitor's own choice of what to see on that device, never X's data: written only
+when it changes, removed when empty, pruned on every read of the file of any id the file no longer
+has or has cleared itself (not when the file does not answer), each change made on what storage
+holds at that moment (a second tab of the site never writes its older copy over a clear, and follows
+one through the `storage` event; Show them again brings back only the ones that tab showed as
+cleared), and never touched by `storage.js`
+(the build refuses one that names it). With some cleared, a quiet line at the foot says how many,
+with Show it (them) again; with every parlay cleared it is the whole card, in place of "Nothing to
+watch yet". With any cleared and every parlay shown settled, the card says "None of the parlays
+shown here is still live", not that none of X's is. Show them again empties the list, with no window, and reads their games again. The
+build holds the section's storage to that one key and its requests to reads.
+
 The Parlay Builder is the prop model's own tab (`#parlay`, `tab-parlay`): the suggested parlays
 (`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). Its first control is
 the **Bet amount** box (`#pbStake`, a number box with `inputmode="decimal"`, min $1, max $100,000,
@@ -662,7 +688,11 @@ it stands (the mixes and their boxes, a box by hand, a game unticked and the gam
 size, floor, legs and price against the builder's own sums, Add to builder, the choices kept, a game
 kicking off, and with `--season-over` the panel saying there is no game left); `nflbets/build/smoke_live.js` does the same for the
 X Parlays section against a stubbed parlay file and scoreboard, on a plain browser and on one the
-retired owner and reader layers marked, and (its section J) the parlay card: Finish, the window with
+retired owner and reader layers marked (its section O: every card's X, Cancel, Escape and a click
+outside clearing nothing, Clear removing exactly that parlay and keeping it gone after a reload but
+not on a fresh browser, the list pruned, the all-cleared line and Show them again, the focus, no
+request but reads, a double tap's second tap ignored, the window closed by leaving the tab and
+scrolling when tall, two tabs on one storage, and the still-live line with live parlays cleared), and (its section J) the parlay card: Finish, the window with
 every leg and the price, the image on a recorder canvas (jsdom draws nothing; it measures figures as
 a wide bold face does), a long shot's stake, payout and profit whole in the window and on the image
 (stepped down to fit, and a second row of tiles for a figure too wide even so), the share sheet,
@@ -685,7 +715,10 @@ stack; a run still going after ten minutes stops and fails, and one left waiting
 
 Both are files in the repository, beside each other in `liveparlays/`, and every device reads them,
 read only, on every load (`cache: 'no-store'`). There is no owner, no sign-in and no shared store:
-nothing on the page writes anywhere but the visitor's own browser storage.
+nothing on the page writes anywhere but the visitor's own browser storage. The X on a card in X
+Parlays clears it from that browser alone (`lp_cleared_here_v1`, above); for everyone, a parlay
+leaves the page when the file marks it cleared, by hand or by the betting job's `autoclear.py` the
+day after its last game.
 
 - **`liveparlays/parlays.json`** is X Parlays: `games` (the game ids, listed once), `parlays` (each
   an `id`, `week`, `stake`, `price`, `payout`, an optional `note`, and `legs` pointing at a game by
@@ -720,8 +753,9 @@ hold), a kept builder, a slip never deleted, a key it never wrote -- keeps it, u
 `xbets.js`, once the file is in, takes out the X Bet Log's last copy (`xbets_cache_<season>`) and
 moved-in mark (`xbets_joined_<season>`), and a week that never reached the store
 (`xbets_pending_<season>`) only when the file has it as it was written. Nothing that holds a
-visitor's own data is touched: the prop model's key, `my_parlays_v1`, the betting app's key and
-`x_nfl_bets_preshare_<season>` stay as they are.
+visitor's own data is touched: the prop model's key, `my_parlays_v1`, the betting app's key,
+`x_nfl_bets_preshare_<season>` and `lp_cleared_here_v1` (the parlays this browser cleared from X
+Parlays) stay as they are.
 
 Until 10 October 2026 both lived in a Firebase Realtime Database written from the owner's devices
 (an owner link and Firebase sign-in); its last state was carried into the two files that day (the
