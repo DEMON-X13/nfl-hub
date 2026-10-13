@@ -1,4 +1,11 @@
-"""Score the Broly Model on this season and write its picks into the published state.
+"""RETIRED on 13 October 2026 (the owner's call): the Broly Model is off the site. The betting job no
+longer runs this script, betting/tools/update.js drops what it published (state.broly,
+processed[gid].broly, modelStatus.broly) and the smoke test's 5m fails a state the job wrote that
+carries them, so it refuses to run. It is kept as the record of how the model ran; stats.py and
+fit.py beside it, which research/models_compare/backtest.py (study 4) imports, are its inputs and
+its fit.
+
+What it did: score the Broly Model on this season and write its picks into the published state.
 
     python betting/broly/broly.py            (from the hub root, after update.js and joker.py)
 
@@ -120,4 +127,5 @@ def main():
 
 
 if __name__ == "__main__":
-    J.run("broly", main)
+    sys.exit("the Broly Model is retired (13 October 2026): nothing on the site reads its calls, and "
+             "betting/tools/update.js drops them from state.json; this script writes nothing")

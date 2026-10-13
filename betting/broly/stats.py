@@ -1,5 +1,9 @@
 """The Broly Model's inputs, built the same way for fitting and for the weekly run.
 
+Retired with the model on 13 October 2026 (broly.py says why): the betting job no longer runs it.
+Kept because research/models_compare/backtest.py (study 4) builds the model's inputs from
+team_games, pregame and frame; change it only with a re-run of that study.
+
 For every team-game, from nflverse play-by-play: offensive plays and yards, third downs
 converted and failed, giveaways (interceptions and lost fumbles), red-zone trips and the
 touchdowns they ended in; points for and against from the schedule. Before each game a team

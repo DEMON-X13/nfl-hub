@@ -31,7 +31,7 @@ import pandas as pd
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))                    # the vendored harness package lives beside this file
-sys.path.insert(0, str(HERE.parent))             # betting/jobkit.py, what the Joker and Broly share
+sys.path.insert(0, str(HERE.parent))             # betting/jobkit.py, the Joker's job steps
 from harness import data, pbp, qb, sources       # noqa: E402
 from harness.ratings import Params, build_features, game_features  # noqa: E402
 from jobkit import neutral                       # noqa: E402

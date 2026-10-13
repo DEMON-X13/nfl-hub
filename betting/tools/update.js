@@ -15,7 +15,8 @@
  *
  * Gate: before writing, the app's embedded model numbers must equal
  * betting/tools/reference_models.json (the numbers the research harness
- * exported). A mismatch aborts the publish.
+ * exported). A mismatch aborts the publish. That covers MODEL_H too: the Challenger is off the
+ * site, but the app still embeds it as shipped and the gate holds the source to that file.
  *
  * A file the season needs and cannot be had fails the run before anything is written, so the
  * last good state stays live and the job goes red: games.csv always; the roster and depth chart
@@ -62,17 +63,27 @@ const PRIVATE = ['bets', 'bank', 'myPicks', 'lastBackup', 'lastBackupHow'];   //
  * published state and keeps every key of it, so a key that is no longer written still has to
  * be left out here or it is carried forward for good. */
 const RETIRED = ['picks', 'publishedBuild'];
-/* Joker Jr, a test model the job ran beside the Joker for a few days of October 2026, was
- * retired for trailing it. Its step published state.jokerLong (its calls), state.jokerLongInfo,
- * processed[gid].jokerLong (its grades) and, while it could not run, modelStatus.jokerLong; the
- * app is seeded with the published state and keeps all of them, so they are dropped here: those
- * keys and nothing else (a modelStatus left empty goes too, as jobkit.set_status never leaves an
- * empty one). On a state that carries none of them this changes nothing. */
-function dropJokerJr(out) {
-  delete out.jokerLong; delete out.jokerLongInfo;
-  for (const r of Object.values(out.processed || {})) if (r && typeof r === 'object') delete r.jokerLong;
+/* Models taken off the site. The app is seeded with the last published state and keeps every key
+ * of it, so a retired model's keys are dropped here or they are carried forward for good:
+ *  - Joker Jr, a test model run beside the Joker for a few days of October 2026, retired for
+ *    trailing it: state.jokerLong (its calls), state.jokerLongInfo, processed[gid].jokerLong (its
+ *    grades) and modelStatus.jokerLong.
+ *  - The Challenger Model (the app's MODEL_H), taken off the site on 13 October 2026, the owner's
+ *    call: state.teamsH (its ratings), processed[gid].h (its grades) and atKickoff[gid].h (its calls
+ *    on games to come). patches.js (6) stops the app rating or calling it; the app still embeds
+ *    MODEL_H, its source never edited.
+ *  - The Broly Model (betting/broly/), taken off the site the same day, its step gone from
+ *    update.yml: state.broly (its calls), processed[gid].broly (its grades) and modelStatus.broly.
+ * Those keys and nothing else (a modelStatus left empty goes too, as jobkit.set_status never leaves
+ * an empty one); processed[gid].atKickoff, Alpha's marker, stays. On a state that carries none of
+ * them this changes nothing. */
+const RETIRED_MODELS = { state: ['jokerLong', 'jokerLongInfo', 'teamsH', 'broly'], processed: ['jokerLong', 'h', 'broly'], atKickoff: ['h'], status: ['jokerLong', 'broly'] };
+function dropRetiredModels(out) {
+  for (const k of RETIRED_MODELS.state) delete out[k];
+  for (const r of Object.values(out.processed || {})) if (r && typeof r === 'object') for (const k of RETIRED_MODELS.processed) delete r[k];
+  for (const r of Object.values(out.atKickoff || {})) if (r && typeof r === 'object') for (const k of RETIRED_MODELS.atKickoff) delete r[k];
   if (out.modelStatus && typeof out.modelStatus === 'object') {
-    delete out.modelStatus.jokerLong;
+    for (const k of RETIRED_MODELS.status) delete out.modelStatus[k];
     if (!Object.keys(out.modelStatus).length) delete out.modelStatus;
   }
 }
@@ -228,7 +239,7 @@ async function main() {
 
   const out = {};
   for (const k of Object.keys(st)) if (!PRIVATE.includes(k) && !RETIRED.includes(k)) out[k] = st[k];
-  dropJokerJr(out);
+  dropRetiredModels(out);
   if (out.injuries && Array.isArray(out.injuries.rows))
     out.injuries = { ...out.injuries, rows: out.injuries.rows.map(r => Object.fromEntries(INJ_COLS.filter(c => c in r).map(c => [c, r[c]]))) };
 

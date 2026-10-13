@@ -260,18 +260,13 @@ function settleFinished(){
     let pr=fz;
     if(!pr&&typeof window.predict==='function'){ try{ pr=window.predict(g,S.teams); }catch(e){} }
     if(!pr) continue;
-    /* Every model that has a column has to be in the row, not just the main one. The grid
-       reads done.h for the challenger and has no fallback behind it, so a settled row
-       without it blanks the challenger's pick and drops the game from its record. The joker
-       falls back to S.joker and survived; the challenger had nothing to fall back to. */
-    let h=fz&&fz.h?fz.h:null;
-    if(!h&&S.teamsH&&typeof window.predict==='function'){
-      try{ h=window.predict(g,S.teamsH,(typeof MODEL_H!=='undefined'&&MODEL_H)?MODEL_H.pure:undefined); }catch(e){}
-    }
+    /* every model that has a column is in the row, not just Alpha: the Joker from S.joker, and
+       the ELO Model from S.elo, graded here from the scoreboard like the rest, or the record
+       compared them on fewer games than Alpha from the whistle until the job graded it. (The
+       Challenger and Broly Models were taken off the site on 13 October 2026: a frozen call
+       that still carries the Challenger's, fz.h, is not read.) */
     const jk=(S.joker&&S.joker[g.game_id])||null;
-    /* the ELO Model and Broly too: graded here from the scoreboard like the rest, or the record
-       compared them on fewer games than the others from the whistle until the job graded it */
-    const ek=(S.elo&&S.elo[g.game_id])||null, bk=(S.broly&&S.broly[g.game_id])||null;
+    const ek=(S.elo&&S.elo[g.game_id])||null;
     const result=s.hs-s.as;                                  /* home margin, as the job writes it */
     const winner=result>0?g.home_team:(result<0?g.away_team:null);
     const myPick=(S.myPicks&&S.myPicks[g.game_id])||null;
@@ -280,12 +275,9 @@ function settleFinished(){
       pick:pr.pick,conf:pr.conf,margin:pr.margin,pHome:pr.pHome,blended:!!pr.blended,
       result,correct:winner?pr.pick===winner:null,line:g.spread_line,
       myPick,myCorrect:myPick?(winner?myPick===winner:null):null,
-      h:h?{pick:h.pick,conf:h.conf,margin:h.margin,pHome:h.pHome,
-           correct:winner?h.pick===winner:null}:undefined,
       joker:jk?{pick:jk.pick,pHome:jk.pHome,
                 correct:winner?jk.pick===winner:null}:undefined,
       elo:ek&&ek.pick?{pick:ek.pick,correct:winner?ek.pick===winner:null}:undefined,
-      broly:bk&&bk.pick?{pick:bk.pick,pHome:bk.pHome,correct:winner?bk.pick===winner:null}:undefined,
       news:[],
       fromScoreboard:true};
     n++;
@@ -328,8 +320,8 @@ function dropNotes(){
   });
 }
 function after(){ stripMine(); allModels(); tidyStats(); ratingsExtras(); dropNotes(); }
-/* Records shows every model, always. The toggle defaulted to off, so the challenger, the
-   joker and Vegas were hidden behind a checkbox on the one tab that exists to compare them. */
+/* Records shows every model, always. The toggle defaulted to off, so the Joker, the ELO Model
+   and Vegas were hidden behind a checkbox on the one tab that exists to compare them. */
 function allModels(){
   if(S.showAllModels!==true){
     S.showAllModels=true;
@@ -361,8 +353,8 @@ function ratingsExtras(){
   document.querySelectorAll('#ratingsTable p.muted').forEach(p=>{
     if(/^Rank tags and the Elo change column/.test(p.textContent.trim())) p.remove();
   });
-  /* the tier shields stay beside the numbers; the key that spelled them out -- Challenger
-     1700+, Master 1650+ and so on -- goes */
+  /* the tier shields stay beside the numbers; the key that spelled them out -- Elite (the
+     app's Challenger) 1700+, Master 1650+ and so on -- goes */
   document.querySelectorAll('#ratingsTable .tierlegend').forEach(n=>n.remove());
   /* the table sat bare at its own width over a full-width card, and the two read as two
      things: it goes in a card of the same width, and fills it */
@@ -468,9 +460,9 @@ const patch = (from, to, what) => {
 };
 /* one week of picks behind a picker that opens on this week (the app's currentWeekDefault:
    the first week with a game not yet played, so a graded Thursday game does not move it on)
-   and offers only the weeks reached: the app's picker offered every scheduled week, where the main model and the
-   challenger show a call from today's ratings but the Joker and the Elo model, run for the
-   coming week only, have none, and a reader took the blanks for models that had stopped. */
+   and offers only the weeks reached: the app's picker offered every scheduled week, where Alpha
+   shows a call from today's ratings but the Joker and the Elo model, run for the coming week
+   only, have none, and a reader took the blanks for models that had stopped. */
 patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\${[...new Set(S.schedule.map(g=>+g.week))].sort((a,b)=>a-b).map(w=>\`<option value="\${w}" \${w===pickWeek?'selected':''}>\${w>18?'Playoffs '+(w-18):'Week '+w}</option>\`).join('')}</select></label>\`:''}</div>
     \${S.picksOpen?pickGrid(pickWeek,showAll):''}`,
 `      \${S.picksOpen?(()=>{ const cur=currentWeekDefault(); const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur;
@@ -478,11 +470,11 @@ patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\
     \${S.picksOpen?(()=>{ const cur=currentWeekDefault(); const pw=S.picksWeek&&+S.picksWeek<=cur?+S.picksWeek:cur; return pickGrid(pw,showAll); })():''}`,
   'the pick grid, this week by default, earlier weeks by the picker');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
-`  const elo=S.elo||{}, brl=S.broly||{};
-  const cols=[['Alpha Model','#1F6F4A'],...(showAll?[['Challenger Model','#3B6FB6'],['The Joker','#C0392B'],['ELO Model','#E8730A'],['Broly Model','#7A3FB0'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+`  const elo=S.elo||{};
+  const cols=[['Alpha Model','#1F6F4A'],...(showAll?[['The Joker','#C0392B'],['ELO Model','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
-`    const ek=(done&&done.elo)||elo[g.game_id]||null, bk=(done&&done.broly)||brl[g.game_id]||null;
-    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,ek?ek.pick:null,bk?bk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
+`    const ek=(done&&done.elo)||elo[g.game_id]||null;
+    const picks=[pr?pr.pick:null,...(showAll?[jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
 patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   renderBets();`,
 `  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';

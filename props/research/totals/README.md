@@ -196,7 +196,7 @@ commit's.
 
 ### What it does
 
-`shadow.py` runs in the betting job (`.github/workflows/update.yml`, after the Joker and Broly,
+`shadow.py` runs in the betting job (`.github/workflows/update.yml`, after the Joker,
 `continue-on-error`), whose slots land before every kickoff window, on the games.csv that run has
 just downloaded, and nothing else: the candidate needs schedules, scores and lines, no play-by-play.
 

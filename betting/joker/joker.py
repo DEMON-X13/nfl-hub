@@ -57,7 +57,7 @@ def fetch_pbp(season: int) -> bool:
         log(f"downloaded {dst.name} ({dst.stat().st_size/1e6:.1f} MB)")
         return True
     except Exception as e:  # before the season's first game the file may not exist yet
-        if dst.exists():     # last run's copy is not this run's: set aside, so Broly fetches its own
+        if dst.exists():     # last run's copy is not this run's: set aside, so nothing reads it as this run's
             dst.unlink()
         log(f"play-by-play {season} not available ({e})")
         return False

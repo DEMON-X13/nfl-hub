@@ -38,8 +38,8 @@ on:
     - cron: "17 2 * * 0"    # Saturday 10:17pm ET: backup for the next slot; 9 hours late is 7:17am ET, two hours before London
     - cron: "17 4 * * 0"    # Sunday 12:17am ET: the latest lines; 9 hours late is 9:17am ET, just before London's 9:30am ET kickoff
     # every hour at :37 on paper; GitHub fires about six of the 24 a day, with gaps of up to about
-    # 8 hours, so this is a background refresh of the lines in games.csv (which the Joker and
-    # Broly read) and the injury report, not a promise of hourly updates. The slots above are
+    # 8 hours, so this is a background refresh of the lines in games.csv (which the Joker
+    # reads) and the injury report, not a promise of hourly updates. The slots above are
     # the ones that matter.
     - cron: "37 * * * *"
   workflow_dispatch:
@@ -87,13 +87,10 @@ jobs:
       - run: pip install -r betting/joker/requirements.txt
       # a model that cannot run (a missing input, a crash) keeps its last good picks, writes why
       # into state.modelStatus (the Pick'em Record prints it) and exits 1: the step is marked and
-      # warned, and the lines, the grading and the other models still publish
+      # warned, and the lines, the grading and the rest of the job still publish
       - name: Score The Joker and write its picks into state.json
         continue-on-error: true
         run: python betting/joker/joker.py
-      - name: Score the Broly Model and write its picks into state.json
-        continue-on-error: true
-        run: python betting/broly/broly.py
       # the game-totals shadow (props/research/totals/README.md, "The shadow"): the frozen ratings
       # candidate's call on every game to come, from this run's games.csv alone, frozen at kickoff and
       # graded after the final, against a bar set before its first call. Research only: no page reads

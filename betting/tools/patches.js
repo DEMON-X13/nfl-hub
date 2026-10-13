@@ -32,7 +32,7 @@
  *     filed before the week of the opener, so its absence is not flagged as stale until then).
  *  3. Neutral sites (ingestGames): a game nflverse codes 'Home' that is played abroad is read
  *     as neutral (betting/neutral_sites.json), so PHI at JAX in London does not hand JAX home
- *     field in Alpha, the Challenger and the ratings.
+ *     field in Alpha and the ratings.
  *  4. Freeze at kickoff (freezeAtKickoff, processResults, pickGrid). The job records each
  *     coming game's call on every run before its kickoff, and from kickoff on keeps the last
  *     one: the game is graded on the pick a reader saw before it, never one recomputed after it
@@ -40,6 +40,9 @@
  *  5. The season's phase (seasonPhase): once every scheduled game is played the absences card
  *     says the season is over (or that the next round is not posted yet) instead of listing
  *     week 18's or the Super Bowl's absences as if they were coming.
+ *  6. The Challenger Model (MODEL_H) is off the site, the owner's call of 13 October 2026: the
+ *     app still embeds it (its source is never edited), but its ratings are never made, so it is
+ *     never rated, called or graded; update.js drops what earlier runs published of it.
  *
  * The app's version line (APP_BUILD) gains the patches' own version, HUB_PATCHES: bump it with
  * any change here or to what betting/tools/build.js lays over the app (the record, the pick grid),
@@ -141,9 +144,8 @@ function freezeAtKickoff(now){ now=now??Date.now(); S.atKickoff=S.atKickoff||{};
     const k=kickoffMs(g);
     if(k!=null&&k<=now) continue;
     if(g.result!=null||k==null||k>now+8*86400000||!S.teams[g.home_team]||!S.teams[g.away_team]){ delete S.atKickoff[id]; continue; }
-    const pr=predict(g,S.teams), h=S.teamsH?predict(g,S.teamsH,MODEL_H.pure):null;
-    S.atKickoff[id]={pick:pr.pick,conf:r6(pr.conf),margin:r6(pr.margin),pHome:r6(pr.pHome),blended:!!pr.blended,
-      h:h?{pick:h.pick,conf:r6(h.conf),margin:r6(h.margin),pHome:r6(h.pHome)}:null};
+    const pr=predict(g,S.teams);
+    S.atKickoff[id]={pick:pr.pick,conf:r6(pr.conf),margin:r6(pr.margin),pHome:r6(pr.pHome),blended:!!pr.blended};
   }
   for(const id of Object.keys(S.atKickoff)) if(!S.schedule.some(g=>g.game_id===id)) delete S.atKickoff[id];
   return Object.keys(S.atKickoff).length;
@@ -165,7 +167,7 @@ function injAsOf(now){ now=now??Date.now(); const w=currentWeekDefault(), bits=[
   return bits.length?'<p class="muted inj-asof" style="margin:8px 0 0">From nflverse: '+bits.join(' and ')+'.</p>':''; }
 `;
 
-const HUB_PATCHES = 'hub patches 4 \\u00b7 2026-10-10';
+const HUB_PATCHES = 'hub patches 5 \\u00b7 2026-10-13';
 
 function logic(html) {
   { const m = html.match(/^const APP_BUILD='([^'\n]*)';$/mg) || [];
@@ -232,18 +234,27 @@ function logic(html) {
     const prH=S.teamsH?predict(g,S.teamsH,MODEL_H.pure):null;`, `    /* the call made before kickoff, when the job recorded one (freezeAtKickoff) */
     const ak=S.atKickoff&&S.atKickoff[g.game_id];
     const pr=ak?{...ak}:predict(g,S.teams);
-    const prH=ak&&ak.h?{...ak.h}:(S.teamsH?predict(g,S.teamsH,MODEL_H.pure):null);`, 'processResults grades the call made before kickoff');
+    const prH=null;   /* the Challenger Model is retired (6): the app's graded row still reads prH */`, 'processResults grades the call made before kickoff');
   html = edit(html, '    S.processed[g.game_id].qb=applyQBGame(g);',
     '    S.processed[g.game_id].qb=applyQBGame(g);\n    if(ak){ S.processed[g.game_id].atKickoff=true; delete S.atKickoff[g.game_id]; }', 'processResults marks the frozen call');
   html = edit(html, `    const pr=done?{pick:done.pick}:predict(g,S.teams);
     const prH=done?(done.h||null):(S.teamsH?predict(g,S.teamsH,MODEL_H.pure):null);`, `    const fz=done?null:frozenCall(g);
     const pr=done?{pick:done.pick}:(fz||predict(g,S.teams));
-    const prH=done?(done.h||null):(fz?fz.h:(S.teamsH?predict(g,S.teamsH,MODEL_H.pure):null));`, 'pickGrid shows the call made before kickoff');
+    const prH=null;   /* the Challenger Model is retired (6): the app's own picks line still reads prH */`, 'pickGrid shows the call made before kickoff');
+
+  /* 6. the Challenger Model is retired (the owner's call, 13 October 2026): its ratings are never
+     made, so nothing rates or calls it. The app re-creates them wherever they are missing (a fresh
+     state, the load of a saved one, Rebuild ratings), so all three go; every other Challenger step
+     is guarded by S.teamsH, and its two reads of a call are null (4) */
+  html = edit(html, 'teamsH:JSON.parse(JSON.stringify(MODEL_H.teams)), ', '', 'freshState, no Challenger ratings');
+  html = edit(html, 'S.teamsH??=JSON.parse(JSON.stringify(MODEL_H.teams));', 'delete S.teamsH;', 'the saved state, its Challenger ratings dropped');
+  html = edit(html, 'S.teams=JSON.parse(JSON.stringify(MODEL.teams)); S.teamsH=JSON.parse(JSON.stringify(MODEL_H.teams));',
+    'S.teams=JSON.parse(JSON.stringify(MODEL.teams)); delete S.teamsH;', 'Rebuild ratings, no Challenger ratings');
   return html;
 }
 
 /* the season the app is built for and the storage key it keeps it under: the app is the one
-   place the season is set (freshState), and the job, the Joker and Broly all follow it */
+   place the season is set (freshState), and the job and the Joker follow it */
 function season(html) {
   const s = html.match(/function freshState\(\)\{\s*return \{ season:(\d{4}),/g) || [];
   const k = html.match(/^const KEY='([^']+)';$/mg) || [];

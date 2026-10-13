@@ -139,6 +139,11 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
   else { for (const k of ['params', 'league_means', 'pure', 'teams']) { if (!close(A[k], ref.A[k], 1e-9)) bad.push('MODEL.' + k); if (!close(H[k], ref.H[k], 1e-9)) bad.push('MODEL_H.' + k); }
     if (!close(QB, ref.QB, 1e-9)) bad.push('QB_MODEL'); }
   chk(app.length > 100000 && bad.length === 0, 'the betting app in the published page does not carry the reference model numbers: ' + bad.join(', '));
+  /* the Challenger Model and the Broly Model are off the site (October 2026, the owner's call):
+     outside the betting app's own source, which is never edited and still carries MODEL_H, the
+     page names neither (the Pick'ems board, the Game snapshot) */
+  { const rest = m ? HTML.replace(m[0], '\n</script>') : HTML, hit = rest.match(/.{0,40}(?:challenger|broly).{0,40}/i);
+    chk(!hit, 'the page still names the Challenger Model or the Broly Model outside the betting app: ' + (hit ? hit[0] : '')); }
 }
 /* the page's clock. In the season the page runs on the real one. The prop model's page is on its
    own week, liveWeek() in part2.js: the first week of the payload's schedule with a game not yet
@@ -1722,7 +1727,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    Defense (`units`), each expected starter's season Elo, rank, shield and Q (players.json and
    matchups.json `lineups` and `q`), in his position's rows and his team's column, the ranked
    players out (each group's `sidelined`), every model's pick, chance and grade (state.json's
-   processed, atKickoff, joker and broly, model.json's graded and next, Vegas from the closing
+   processed, atKickoff and joker, model.json's graded and next, Vegas from the closing
    moneylines), the line, and the Mismatches, which must be the Props tab's own
    (window.eloMismatches, and the bubbles on the Props tab). It opens on a game to come, on a
    game final on the scoreboard and on a graded one; closes on Escape, Close and a click
@@ -1736,7 +1741,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    The verdict is held as a visitor reads it: the headline (the Vegas favourite's nickname and the
    spread it is favoured by, or once played the winner and whether it was an upset, the line under
    it) and the confidence pill, which must be the board's own for that game; the model vote, Vegas
-   kept apart (how many of the five models agree with it, the dissenters named, the same count in
+   kept apart (how many of the three models agree with it, the dissenters named, the same count in
    Every call's summary); the played-game note under the score; the header's one-line game bar;
    each answer line a button that opens its card. The cards fold (Every call and Team strength
    open on a wide screen, every card folded on a phone) and every number in a folded card, a folded
@@ -1754,6 +1759,9 @@ async function snapshotChecks() {
   const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
   /* the verdict, then a folding card each */
   const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos', 'gsFiles'], SNAP_CARDS = SNAP_SECS.slice(1);
+  /* Every call's rows, in order: Vegas the baseline, then the three models on the site (the Challenger
+     Model and the Broly Model came off it in October 2026, the owner's call) */
+  const SNAP_MODELS = ['vegas', 'alpha', 'joker', 'elo'];
   const week = openWeek(st);
   const ordinal = n => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : (n % 10 < 4 ? n % 10 : 0)] || 'th');
   const pc = p => Math.round(p * 100) + '%';
@@ -1779,9 +1787,8 @@ async function snapshotChecks() {
     else if (sp != null && sp !== 0) vegas = { pick: sp > 0 ? g.home_team : g.away_team, p: null };
     const eg = (eloM.graded || []).find(x => x.game_id === g.game_id);
     const en = !eg && eloM.next && +eloM.next.season === +st.season ? (eloM.next.games || []).find(x => x.game_id === g.game_id) : null, e = eg || en;
-    return { vegas, alpha: pr ? one(pr) : one(ak), challenger: pr ? one(pr.h) : one(ak && ak.h), joker: one(pr && pr.joker) || one((st.joker || {})[g.game_id]),
-      elo: e ? { pick: e.pick, p: e.pick === g.home_team ? e.p_home : 1 - e.p_home, correct: eg ? eg.correct : undefined } : null,
-      broly: one(pr && pr.broly) || one((st.broly || {})[g.game_id]) }; };
+    return { vegas, alpha: pr ? one(pr) : one(ak), joker: one(pr && pr.joker) || one((st.joker || {})[g.game_id]),
+      elo: e ? { pick: e.pick, p: e.pick === g.home_team ? e.p_home : 1 - e.p_home, correct: eg ? eg.correct : undefined } : null }; };
   /* open a game on the board (its week picked first), then its snapshot from its button */
   const open = async (R, g) => {
     const sel = R.d.getElementById('pkWeek');
@@ -1836,7 +1843,10 @@ async function snapshotChecks() {
     else chk(!q('#gsPast') && !q('[data-gs-score]'), `snapshot (${label}): a game to come shows a score or says it was played`);
     /* every model's call */
     { const C = callsOf(g), bad = [];
-      for (const id of ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly']) {
+      const ids = [...md.querySelectorAll('#gsCalls li.gs-call')].map(li => li.dataset.gsModel).join();
+      if (ids !== SNAP_MODELS.join()) bad.push(`Every call's rows are ${ids || 'none'}, not ${SNAP_MODELS.join()}`);
+      if (/challenger|broly/i.test(txt(md))) bad.push('the window still names the Challenger Model or the Broly Model');
+      for (const id of SNAP_MODELS) {
         const tr = q(`#gsCalls [data-gs-model="${id}"]`), x = C[id];
         if (!tr) { bad.push(id + ' has no row'); continue; }
         if (!x) { if (tr.dataset.pick) bad.push(`${id} shows ${tr.dataset.pick}, the files have no call`); continue; }
@@ -1904,7 +1914,7 @@ async function snapshotChecks() {
        landed once played), Vegas's chance on the split bar, the Team Elo gap and ranks, the
        units' ranks and the top mismatch -- and each one the files give must be shown */
     { const C = callsOf(g), want = {}, need = new Set(), bad = [];
-      const IDS = ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly'], on = x => x && (x.pick === a || x.pick === h);
+      const IDS = SNAP_MODELS, on = x => x && (x.pick === a || x.pick === h);
       const calls = IDS.map(id => C[id]).filter(on), vg = on(C.vegas) ? C.vegas : null, mods = IDS.slice(1).filter(id => on(C[id]));
       const nA = mods.filter(id => C[id].pick === a).length, nH = mods.length - nA;
       const base = vg ? vg.pick : nH > nA ? h : nA > nH ? a : null, dis = base ? mods.filter(id => C[id].pick !== base) : [];
@@ -1984,7 +1994,7 @@ async function snapshotChecks() {
         else if (shown != null && !(Math.abs(parseFloat(em.style.width) - Math.max(0, Math.min(50, +shown - 50))) <= 0.51)) bad.push(`${id}'s bar is ${em.style.width || 'no'} wide for the ${shown}% it prints`);
         const col = typeof R.w.pkTagColor === 'function' ? R.w.pkTagColor(x.pick) : null;
         if (col && em.style.getPropertyValue('--gs-tc') !== col) bad.push(`${id}'s bar is in ${em.style.getPropertyValue('--gs-tc') || 'no colour'}, ${x.pick}'s is ${col}`); }
-      for (const id of ['vegas', 'alpha', 'challenger', 'joker', 'elo', 'broly']) if (C[id] && (C[id].pick === a || C[id].pick === h) && !rows.some(li => li.dataset.gsModel === id)) bad.push(`${id}'s call has no bar`);
+      for (const id of SNAP_MODELS) if (C[id] && (C[id].pick === a || C[id].pick === h) && !rows.some(li => li.dataset.gsModel === id)) bad.push(`${id}'s call has no bar`);
       /* the split bar: each side as wide as its chance */
       if (C.vegas && C.vegas.p != null) { const pH = C.vegas.pick === h ? C.vegas.p : 1 - C.vegas.p, pa = Math.round((1 - pH) * 100);
         const ba = q('#gsMatch .gs-split .pk-prob .pk-a'), bh = q('#gsMatch .gs-split .pk-prob .pk-h');

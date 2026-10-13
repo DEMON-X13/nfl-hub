@@ -3,8 +3,9 @@
    in the built app (betting/tools/build.js) and in the copy of the shields the Bets and Stats
    page lifts out of the source (nflbets/build/build.js):
 
-   - Challenger becomes Elite. The Challenger is also one of the models on the Pick'em Record,
-     and a Challenger shield beside the Challenger model read as the same thing.
+   - Challenger becomes Elite. It was renamed while a Challenger model stood on the Pick'em
+     Record (a Challenger shield beside it read as the same thing); that model is off the site
+     since 13 October 2026, and the name Elite is kept.
    - A ninth tier above it, HOF, from 1750: two and a half standard deviations up on the
      ladder's bell curve (elo/build.py, THE LADDER), well under one player in a hundred. It is
      worn as a gem, not a shield: cut facets on an iridescent fill that turns slowly, with two
