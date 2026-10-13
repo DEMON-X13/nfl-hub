@@ -164,14 +164,17 @@ props/
 elo/
   build.py                       THE SOURCE: the player Elo formula and the roster model,
                                  and Overall Offense and Overall Defense (an Elo on nine key
-                                 stats from the season's play-by-play, weighted), explained in
-                                 its docstring; downloads 2012-now nflverse player stats and
-                                 the season's play-by-play into cache/ (gitignored) and writes
+                                 stats from the season's play-by-play, weighted, each club
+                                 starting the season at 0.42 of its final rating the season
+                                 before, THE CARRY), explained in its docstring; downloads
+                                 2012-now nflverse player stats and the play-by-play of the
+                                 season and the two before it into cache/ (gitignored) and writes
                                  data/; exits 1 and writes nothing when a required source
                                  cannot be had
   check.py                       the gate: data/ against the roster, the injury report, the
                                  schedule, the play-by-play (every team's stats and ratings
-                                 replayed from it) and what was published (the last commit's
+                                 replayed from it, last season replayed too for the carry, with
+                                 the gate's own copy of the share) and what was published (the last commit's
                                  data/ and history/: the top ten carried, frozen calls kept),
                                  Team Rankings (`teams`) solved again from games.csv by its
                                  own iteration, plus the build's functions on fixtures; the job runs it
@@ -182,14 +185,21 @@ elo/
                                  out is priced by nothing but keeps his past weeks' ratings;
                                  Overall Offense and Overall Defense: the two pills, the 32
                                  teams, every value and rank the file's, the weights read from
-                                 the file, the sort, the team window, an old file's fallback;
+                                 the file, the sort, the team window, each club's line from its
+                                 own start, a club yet to play shown on its carried rating and
+                                 marked so, an old file's fallback (before the stats; before the
+                                 carry);
                                  the table scrolls in its own box at a desktop width with the
                                  page's stylesheet round it, the team column free to stick
   tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
                                  Overall Defense: 2012-2025 play-by-play, every constant fitted
-                                 on 2012-2017, the build's weights scored on 2018-2025; run by
-                                 hand, never by the job; says whether the build carries its
-                                 numbers
+                                 on 2012-2017 (the carry's share chosen there, one season left
+                                 out at a time), the build's weights scored on 2018-2025 with
+                                 the carry and without; run by hand, never by the job; says
+                                 whether the build carries its numbers
+  tools/deepdive_vs_units.py     the Season Tracker's Deep Dive against the Game snapshot's
+                                 units (and the units with the carry), the same team-games,
+                                 2018-2025, by stretch of the season; a test, run by hand
   tools/seed_calls.py            recovers the calls published before the ledger began, from
                                  the commits that changed data/model.json (HEAD's history, or
                                  a ref given), into history/
@@ -206,8 +216,9 @@ elo/
                                  week's (the Pick'em Record's ELO Model), `teams`, the team
                                  ratings of this season's results, every game re-scored against
                                  what its opponent has turned out to be (Power Ratings), `units` (Overall
-                                 Offense and Overall Defense: each team's rating, its line, every
-                                 key stat with its league rank, the weights), `phase`, and
+                                 Offense and Overall Defense: each team's rating, its start and
+                                 line, whether it is carried (no game yet), every key stat with
+                                 its league rank, the weights, the carry), `phase`, and
                                  `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
@@ -226,7 +237,9 @@ news/
   data/ranks2026.js  players2026.js  units2026.js
                                  generated by tools/context.js: the rank chip (the Team
                                  Rankings order from elo/data/model.json), players'
-                                 positions, the Deep Dive (UNITS26_META: week, build, report)
+                                 positions, the Deep Dive (UNITS26_META: week, build, report,
+                                 the Overall Offense/Defense build it read and the tag constants;
+                                 each team's `overall` is its pair from elo/data/model.json `units`)
   data/teams.js                  hand-written team reference
   tools/lib.js                   SEASON (the one place it is set), the CSV reader, the
                                  patient fetch, seasonState (regular / postseason / over after
@@ -239,6 +252,8 @@ news/
                                  last week's against snap counts (tools/out/weekN-lineups*)
   tools/lineup-checks.js         the lineup rules on the source data, run by the smoke test
                                  ("filed" is the official game status, nothing else)
+  tools/deepdive-checks.js       the Deep Dive's headline and weighted row tags stated on their
+                                 own (own copy of the constants), run by the smoke and the cases
   tools/cases.js                 fixed cases from real weeks the rules and checks must keep,
                                  each with the broken version the checks must fail; run by smoke
   tools/run-auto.js              works out where the season stands, then runs pull-week
@@ -383,7 +398,8 @@ Joker and the ELO Model -- graded once the game is played:
 `graded` or `next` in `elo/data/model.json`); Team strength (each team's Power Rating, rank, shield,
 change and chance against an average team, from `teams`, ranked as Team Rankings ranks them);
 Offense vs defense, Overall Offense against Overall Defense both ways ("When the Eagles have the
-ball": `units`, the overall rank and rating first, and folded under one button, `[data-gs-sub]`,
+ball": `units`, the overall rank and rating first, a unit with no game yet this season shown on its
+rating carried from last season and marked so, and folded under one button, `[data-gs-sub]`,
 the stats either rating weighs paired offense against defense, each rank over its value);
 the side of every comparison with the edge wears one mark, `gs-better`;
 Starters (the team's ranked players out first, each group's `sidelined`, the box red when someone
@@ -439,9 +455,14 @@ The position row ends with two pills, Overall Offense and Overall Defense, which
 the 32 teams in the card's place (`units` in `model.json`): rank, team, record, rating and
 shield, and each key stat with its league rank, the weighted ones first, sortable by column,
 scrolling sideways inside the card at every width with the team column held; a
-click on a team opens its window (its rating game by game, every stat ranked raw and with
-opponents counted, what each weighted stat adds, its coming opponent). The weights and the
-stats are read from the file, and a file from before them draws the old three columns.
+click on a team opens its window (its rating game by game from its own start, every stat ranked
+raw and with opponents counted, what each weighted stat adds, its coming opponent). Every team is
+rated from a season's first day, starting from 0.42 of its final rating the season before
+(`params.carry` of `params.carry_from`), so the opponents-counted ranks and the adds carry that
+share too; a team yet to play is ranked and shown on that carried rating, marked "carried from"
+that season in the table and its window. The weights and the stats are read from the file, a file
+from before them draws the old three columns, and one from before the carry (one start a side)
+draws its lines from that start, with no mark.
 The same script puts the Mismatches card on the Props tab (games still to kick off only), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
@@ -1152,8 +1173,9 @@ again after 5, 15, 30 and 60 seconds under a ten-minute budget a process, and a 
 answered at once with its status, so each job's "not posted yet" rules read it as before. The props
 job's downloads come before its odds pull, so a retry spends no credit. Each NFL job has a
 `timeout-minutes` (elo 40, props 45, betting 40, news 30), so a stalled socket fails the run within the
-hour, not at GitHub's six. The Elo job reads 49 nflverse files a run; the 43 of finished seasons are kept
-between runs by `actions/cache` (CLAUDE.md, "Player Elo: the loop").
+hour, not at GitHub's six. The Elo job reads 49 nflverse files a run in season, 43 of them finished seasons' (50 and 44 while the
+rankings are still on the finished season, which also reads the play-by-play of the season before it); the
+finished seasons' are kept between runs by `actions/cache` (CLAUDE.md, "Player Elo: the loop").
 
 ## Gotchas
 

@@ -733,7 +733,7 @@
   },
   "CLE": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T23:53:14.070Z",
    "units": {
     "qb": [
      {
@@ -778,10 +778,9 @@
       "q": "questionable: foot"
      },
      {
-      "id": "00-0040466",
-      "n": "Raheim Sanders",
-      "pos": "RB",
-      "q": "questionable: hip"
+      "id": "00-0038794",
+      "n": "Jaleel McLaughlin",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -1983,7 +1982,7 @@
   },
   "LAR": {
    "kick": "2026-10-18T20:05Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T23:53:14.070Z",
    "units": {
     "qb": [
      {
@@ -1994,8 +1993,8 @@
     ],
     "ol": [
      {
-      "id": "00-0036603",
-      "n": "Alaric Jackson",
+      "id": "00-0030097",
+      "n": "David Quessenberry",
       "pos": "T"
      },
      {

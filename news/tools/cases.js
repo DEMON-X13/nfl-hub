@@ -73,12 +73,65 @@
                           (alone, or newer than Bagent's): CHI and GB keep what their own notes say; and on
                           CLE's real roster a running back's "Sanders will start" never names the quarterback
                           Shedeur Sanders (a last name alone is the note's own player).
-     site-ranks           the narrative check catches the site's own ranks and lets third-party ones by. */
+     deepdive-weighted    two made-up teams whose edges the weights split from the old rule: the page's own
+                          deepDive() (js/app.js, run here on the fixture) tags each row on its weighted edge
+                          (the line's +0.7 is Even, the run game's +1.7 Favorable, the receivers' +1.6
+                          Favorable, the pass rush's -0.8 Even), the mirrored rows agree on the other team's
+                          page, and the checks pass; the page on the old unweighted rule (a file without
+                          tags) fails them, and so does a file whose constants were changed.
+     deepdive-headline    the headline is this team's Overall Offense against the opponent's Overall
+                          Defense from a made-up model.json (LA read as LAR), tagged by the gap read as
+                          points (+3.1 Easy one way, -1.8 Tough the other); a headline from the wrong side
+                          (this team's defense, or the opponent's offense) or the wrong club fails the checks,
+                          and so do the points shown doubled or turned round (beside the tag or in its title);
+                          a model.json of last season gives no headline (one that does not parse a fixed
+                          reason, a reason shown as text, never markup), and Overall ratings kept from an
+                          older file under the same build stamp, or carried while the file is last season's,
+                          fail the checks against the file.
+     site-ranks           the narrative check catches the site's own ranks (the Overall Offense and Overall
+                          Defense among them) and lets third-party ones by. */
 'use strict';
 const { SEASON, seasonState, siteRankQuote } = require('./lib');
 const { lineups, schedule, notePractice, espnIndex } = require('./context');
 const LC = require('./lineup-checks');
 const PW = require('./pull-week');
+const DC = require('./deepdive-checks');
+const fs = require('fs'), os = require('os'), path = require('path');
+const { overall } = require('./context');
+
+/* the page's own Deep Dive (js/app.js: ORD, shortDay and the deep dive block), run on a fixture's data files */
+function pageDeepDive(UNITS26, UNITS26_META) {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
+  const line = start => { const i = src.indexOf(start); if (i < 0) throw new Error(`js/app.js has no "${start}"`); return src.slice(i, src.indexOf('\n', i)); };
+  const a = src.indexOf('/* ============================ deep dive'), b = src.indexOf('/* 2026 record');
+  if (a < 0 || b < a) throw new Error('js/app.js: the deep dive block was not found');
+  return new Function('UNITS26', 'UNITS26_META', 'UNITS26_BASIS', 'UNITS26_LINEUPS',
+    [line('const ORD'), line('const shortDay'), src.slice(a, b), 'return deepDive;'].join('\n'))(UNITS26, UNITS26_META, '2025 season counted as 4 games', 'Lineups from a fixture');
+}
+/* a made-up team: each unit's rating (z) and rank, the opponent-facing pass and run defense beside them */
+const ddTeam = (z, g26 = 5) => ({ g26, ...Object.fromEntries(['qb', 'ol', 'rb', 'rec', 'front', 'db'].map(u => [u, { rank: 16, z: z[u], who: [], stats: [] }])),
+  vs: { passD: { rank: 16, z: z.passD }, runD: { rank: 16, z: z.runD } } });
+const DD_META = { season: SEASON, week: 6, phase: 'regular', built_at: '2026-10-13T16:00:00.000Z',
+  overall: { file: 'elo/data/model.json', built_at: '2026-10-13T15:48+00:00', season: SEASON },
+  tags: { rows: { weights: { qb: 1, ol: 0.5956, rb: 0.3792, rec: 0.8925, front: 0.5956, db: 0.8925 }, fav: 0.5, easy: 1.5, fit: '2012-2017' },
+    headline: { slope: 11.9126, fav: 0.9645, easy: 2.8935, fit: '2012-2017' } } };
+/* a model.json with every club's Overall Offense and Defense; MIN and NO set by hand, LA as the ELO build names the Rams */
+const CLUBS = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LV', 'LAC', 'LA', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS'];
+function ddModel(season = SEASON, built = '2026-10-13T15:48+00:00') {
+  const raw = { off: { MIN: 0.21, NO: -0.1 }, def: { MIN: 0.05, NO: -0.05 } }, units = { season, off: {}, def: {} };
+  for (const s of ['off', 'def']) {
+    CLUBS.forEach((t, i) => { if (!(t in raw[s])) raw[s][t] = +((s === 'off' ? 14 - i : i - 17) / 70).toFixed(6); });
+    const order = CLUBS.slice().sort((a, b) => raw[s][b] - raw[s][a]);
+    for (const t of CLUBS) units[s][t] = { elo: Math.round(1500 + raw[s][t] * 400), rank: order.indexOf(t) + 1, raw: raw[s][t], games: t === 'LA' ? 0 : 5, ...(t === 'LA' ? { carried: true } : { carried: false }), stats: {} };
+  }
+  return { built_at: built, units };
+}
+function withModel(M, fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dd-case-'));
+  try { fs.mkdirSync(path.join(dir, 'elo', 'data'), { recursive: true }); fs.mkdirSync(path.join(dir, 'news'));
+    fs.writeFileSync(path.join(dir, 'elo', 'data', 'model.json'), typeof M === 'string' ? M : JSON.stringify(M)); return fn(path.join(dir, 'news')); }
+  finally { fs.rmSync(dir, { recursive: true, force: true }); }
+}
 
 const Y = String(SEASON);
 const game = (week, day, time, away, home, score) => ({ season: Y, game_type: 'REG', week: String(week), gameday: day, gametime: time,
@@ -469,9 +522,88 @@ function cases() {
     }).filter(Boolean);
     add('announced-elsewhere', 'the running back Raheim Sanders "will start", in his note or in Shedeur\'s: Watson stays CLE\'s starter', !SAN.length, SAN.join(' | '));
   }
+  { // deepdive-weighted
+    const A = ddTeam({ qb: 0.4, ol: 0.5, rb: 0.9, rec: 0.4, front: 0.2, db: -0.3, passD: 0.1, runD: 0.2 });
+    const O = ddTeam({ qb: 0.1, ol: 1.0, rb: -0.2, rec: 0.4, front: -0.2, db: -1.2, passD: -0.3, runD: -0.8 });
+    const UN = { MIN: A, NO: O }, rowsOf = (U, M, a, o) => DC.parse(pageDeepDive(U, M)(a, o, 'r6')).rows;
+    let page, back, err = '';
+    try { page = rowsOf(UN, DD_META, 'MIN', 'NO'); back = rowsOf(UN, DD_META, 'NO', 'MIN'); } catch (e) { err = e.message; }
+    /* by hand: qb 0.7 x 1; ol 0.7 x 0.5956 = 0.42; rb 1.7 x 0.3792 = 0.64; rec 1.6 x 0.8925 = 1.43; front -0.8 x 0.5956 = -0.48; db -0.7 x 0.8925 = -0.62 */
+    const HAND = ['Favorable', 'Even', 'Favorable', 'Favorable', 'Even', 'Tough'];
+    add('deepdive-weighted', "the page tags each row on its weighted edge: the line's +0.7 Even, the run game's +1.7 and the receivers' +1.6 Favorable, the pass rush's -0.8 Even",
+      !err && page.join('|') === HAND.join('|'), err || `${page.join(',')} (by hand ${HAND.join(',')})`);
+    const mirror = t => DC.LV[4 - DC.LV.indexOf(t)];
+    add('deepdive-weighted', "the mirrored rows agree on the same weights: MIN's pass rush against NO's pass protection, its coverage against NO's receivers",
+      !err && page[4] === mirror(back[1]) && back[4] === mirror(page[1]) && page[5] === mirror(back[3]) && back[5] === mirror(page[3]), err || `${page.join(',')} / ${back.join(',')}`);
+    const f = err ? [err] : [...DC.checkMeta(DD_META), ...DC.checkDive(pageDeepDive(UN, DD_META)('MIN', 'NO', 'r6'), 'MIN', 'NO', A, O, DD_META), ...DC.checkDive(pageDeepDive(UN, DD_META)('NO', 'MIN', 'r6'), 'NO', 'MIN', O, A, DD_META)];
+    add('deepdive-weighted', 'the checks pass on that page', !f.length, f.join(' | ') || 'none');
+    /* the review's version: the old rule, the raw edge at 0.5 and 1.5 (what the page draws from a file without tags) */
+    const oldMeta = clone(DD_META); delete oldMeta.tags;
+    let fo = [], oldRows = [];
+    try { const html = pageDeepDive(UN, oldMeta)('MIN', 'NO', 'r6'); oldRows = DC.parse(html).rows; fo = DC.checkDive(html, 'MIN', 'NO', A, O, DD_META); } catch (e) { fo = []; err = e.message; }
+    add('deepdive-weighted', 'the old unweighted tags (Favorable, Favorable, Easy, Easy, Tough, Tough) fail the checks',
+      oldRows.join('|') === DC.unweightedTags(A, O).join('|') && oldRows.join('|') !== HAND.join('|') && fo.some(x => /rows:/.test(x)), `${oldRows.join(',')}; ${fo.join(' | ') || 'passed'}`);
+    const bent = clone(DD_META); bent.tags.rows.weights.rb = 1; bent.tags.headline.slope = 12.787;
+    const fb = DC.checkMeta(bent);
+    add('deepdive-weighted', "a file whose constants were changed (the run game weighted 1, the headline's first slope 12.787) fails the checks",
+      fb.length === 2 && fb.some(x => /row weight rb/.test(x)) && fb.some(x => /headline slope/.test(x)), fb.join(' | ') || 'passed');
+  }
+  { // deepdive-headline
+    const A = ddTeam({ qb: 0, ol: 0, rb: 0, rec: 0, front: 0, db: 0, passD: 0, runD: 0 }), O = clone(A);
+    let OV = null, err = '';
+    try { OV = withModel(ddModel(), overall); } catch (e) { err = e.message; }
+    const UN = { MIN: { ...A, overall: OV && { off: OV.off.MIN, def: OV.def.MIN } }, NO: { ...O, overall: OV && { off: OV.off.NO, def: OV.def.NO } } };
+    const headOf = (U, a, o, M = DD_META) => DC.parse(pageDeepDive(U, M)(a, o, 'r6')).head;
+    let h1 = null, h2 = null;
+    try { if (OV) { h1 = headOf(UN, 'MIN', 'NO'); h2 = headOf(UN, 'NO', 'MIN'); } } catch (e) { err = e.message; }
+    /* by hand: MIN's offense 0.21 against NO's defense -0.05: 11.9126 x 0.26 = +3.10, Easy; NO's offense -0.10 against MIN's defense 0.05: -1.79, Tough */
+    const ok1 = h1 && h1.tag === 'Easy' && /^Overall Offense 1st \(1584\) vs NO Overall Defense 18th \(1480\)$/.test(h1.text);
+    const ok2 = h2 && h2.tag === 'Tough' && /^Overall Offense 23rd \(1460\) vs MIN Overall Defense 11th \(1520\)$/.test(h2.text);
+    add('deepdive-headline', "the headline is this team's Overall Offense against the opponent's Overall Defense: MIN +3.1 points Easy, NO -1.8 Tough; LA is LAR",
+      !err && ok1 && ok2 && OV.off.LAR && !OV.off.LA && OV.off.LAR.carried === true, err || `${JSON.stringify(h1)} / ${JSON.stringify(h2)}`);
+    const f = OV ? [...DC.checkDive(pageDeepDive(UN, DD_META)('MIN', 'NO', 'r6'), 'MIN', 'NO', UN.MIN, UN.NO, DD_META), ...DC.checkDive(pageDeepDive(UN, DD_META)('NO', 'MIN', 'r6'), 'NO', 'MIN', UN.NO, UN.MIN, DD_META)] : [];
+    add('deepdive-headline', 'the checks pass on that page', OV && !f.length, f.join(' | ') || (OV ? 'none' : 'no file'));
+    /* the review's versions: the wrong side and the wrong club */
+    const broken = OV ? [
+      ['this team\'s defense', U => { U.MIN.overall = { off: U.MIN.overall.def, def: U.MIN.overall.def }; }],
+      ["the opponent's offense", U => { U.NO.overall = { off: U.NO.overall.off, def: U.NO.overall.off }; }],
+      ['the wrong club (MIN against its own defense)', U => { U.NO.overall = { off: U.NO.overall.off, def: U.MIN.overall.def }; }],
+    ].map(([what, bend]) => { const B = clone(UN); bend(B); const fb = DC.checkDive(pageDeepDive(B, DD_META)('MIN', 'NO', 'r6'), 'MIN', 'NO', UN.MIN, UN.NO, DD_META); return fb.some(x => /headline/.test(x)) ? null : what; }).filter(Boolean) : ['no file'];
+    add('deepdive-headline', 'a headline from the wrong side or the wrong club fails the checks', !broken.length, broken.length ? `passed: ${broken.join(', ')}` : 'all three fail');
+    /* the points shown: the page's own html with the figure beside the tag, or in its title, doubled
+       or turned round (the tag left right) fails the checks */
+    const pts = OV ? [
+      ['the points shown doubled', h => h.replace(/(class="ddedge">about )([+\u2212])([\d.]+)/, (m, a, s, x) => a + s + (2 * x).toFixed(1))],
+      ['the points shown with the sign turned round', h => h.replace(/(class="ddedge">about )([+\u2212])/, (m, a, s) => a + (s === '+' ? '\u2212' : '+'))],
+      ["the tag's title with the points doubled", h => h.replace(/(title="[^"]*about )([+\u2212])([\d.]+)( points)/, (m, a, s, x, e) => a + s + (2 * x).toFixed(1) + e)],
+    ].map(([what, bend]) => { const html = pageDeepDive(UN, DD_META)('MIN', 'NO', 'r6'), b = bend(html);
+      const fb = b === html ? ['not bent'] : DC.checkDive(b, 'MIN', 'NO', UN.MIN, UN.NO, DD_META);
+      return b !== html && fb.some(x => /headline (points|tag's title)/.test(x)) && DC.parse(b).head.tag === h1.tag ? null : what; }).filter(Boolean) : ['no file'];
+    add('deepdive-headline', 'a headline whose points are shown doubled or turned round, beside the tag or in its title, fails the checks', !pts.length, pts.length ? `passed: ${pts.join(', ')}` : 'all three fail');
+    /* last season's file: no headline, and Overall ratings kept from an older file fail */
+    let lastErr = '';
+    try { withModel(ddModel(SEASON - 1), overall); } catch (e) { lastErr = e.message; }
+    const noHead = (() => { const U = { MIN: A, NO: O }, Mm = { ...DD_META, overall: { file: 'elo/data/model.json', missing: lastErr } }; return DC.parse(pageDeepDive(U, Mm)('MIN', 'NO', 'r6')).head; })();
+    add('deepdive-headline', "a model.json of last season gives no headline, and says why", new RegExp(`for ${SEASON - 1}, not ${SEASON}`).test(lastErr) && !noHead, lastErr || 'read without complaint');
+    /* the reason is shown as text: a file that does not parse gives a fixed one, and markup in one is escaped */
+    let junkErr = '';
+    try { withModel('<img src=x onerror=alert(1)>', overall); } catch (e) { junkErr = e.message; }
+    const tagged = pageDeepDive({ MIN: A, NO: O }, { ...DD_META, overall: { file: 'elo/data/model.json', missing: 'built <b>x</b> & "y"' } })('MIN', 'NO', 'r6');
+    add('deepdive-headline', 'a model.json that does not parse gives a fixed reason, and a reason with markup in it is shown as text',
+      junkErr === '../elo/data/model.json does not parse' && tagged.includes('built &lt;b&gt;x&lt;/b&gt; &amp; &quot;y&quot;') && !tagged.includes('<b>x</b>'), `${junkErr} / ${(/not shown on this build: ([^.]*)/.exec(tagged) || [])[1]}`);
+    const full = ddModel(), U32 = Object.fromEntries(Object.keys(OV ? OV.off : {}).map(t => [t, { overall: { off: OV.off[t], def: OV.def[t] } }]));
+    const same = DC.checkOverall(U32, DD_META, full, SEASON);
+    const stale = clone(U32); stale.MIN.overall.off = { ...stale.MIN.overall.off, elo: 1550, rank: 3, raw: 0.125 };
+    const sf = DC.checkOverall(stale, DD_META, full, SEASON);
+    const old = DC.checkOverall(U32, DD_META, ddModel(SEASON - 1), SEASON);
+    add('deepdive-headline', "ratings kept from an older file under the same build stamp, or carried while model.json is last season's, fail against the file",
+      Object.keys(U32).length === 32 && !same.fails.length && sf.fails.length === 1 && /^MIN off/.test(sf.fails[0]) && old.fails.length === 1, `same ${same.fails.join(';') || 'ok'}; stale ${sf.fails.join(';') || 'passed'}; last season ${old.fails.join(';') || 'passed'}`);
+  }
   { // site-ranks
-    const site = ["the secondary ranks 26th in the site's units", 'ranks 1st in the tracker', 'Seahawks, 1st in the power ratings', 'It sits 25th in the power rankings', 'the Deep Dive has them Favorable', 'its power rank is 3rd'];
-    const other = ["PFF's unit grade of 72.4", 'ESPN FPI power ratings have them 3rd', 'a deep dive into the tape', "the NFL.com power rankings put them 5th", 'per TeamRankings, 3rd'];
+    const site = ["the secondary ranks 26th in the site's units", 'ranks 1st in the tracker', 'Seahawks, 1st in the power ratings', 'It sits 25th in the power rankings', 'the Deep Dive has them Favorable', 'its power rank is 3rd',
+      "the ELO Ratings tab ranks Minnesota's Overall Offense 27th", "the Jets' Overall Defense is 7th"];
+    const other = ["PFF's unit grade of 72.4", 'ESPN FPI power ratings have them 3rd', 'a deep dive into the tape', "the NFL.com power rankings put them 5th", 'per TeamRankings, 3rd',
+      'the best overall defense in the division', 'Overall, defense has carried them'];
     const missed = site.filter(x => !siteRankQuote(x)), caught = other.filter(x => siteRankQuote(x));
     add('site-ranks', "the site's own ranks are caught, a third party's with its source are not", !missed.length && !caught.length, `missed: ${missed.join(' | ') || 'none'}; caught: ${caught.join(' | ') || 'none'}`);
   }

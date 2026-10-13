@@ -8,7 +8,13 @@ answers 500 three times and then comes down is read (13 October 2026's depth_cha
 that answers 500 every time still refuses the run with nothing written; a 404 on a file the season
 to come has not posted is "no file yet", and on a finished season's file a refusal; past.lst lists
 the finished seasons' files and never the season in play's, games.csv or the roster; a cached copy
-of a finished season is read from the cache, and one that will not read is fetched again."""
+of a finished season is read from the cache, and one that will not read is fetched again. And on a
+three-season world (2012 and 2013 finished, 2014 to come): the play-by-play of the season two back,
+which Overall Offense and Overall Defense carry into the finished one, is read as a finished
+season's file and required, before the new season is under way and after while fewer than
+RANK_TEAMS clubs have a rated game in it, and not asked for at all once that many have (the
+rankings, and the units, are then on the new season, which carries the one before it alone);
+none is asked for before FIRST (2012), whose season starts from 0."""
 import contextlib
 import gzip
 import http.server
@@ -30,6 +36,10 @@ N.WAITS = (0, 0, 0, 0)            # the rule's tries, without the waits
 GAMES = ('season,game_id,game_type,week,gameday,gametime,home_team,away_team,home_score,away_score\n'
          '2012,2012_01_A_B,REG,1,2012-09-09,13:00,B,A,20,17\n'
          '2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,,\n')
+GAMES3 = ('season,game_id,game_type,week,gameday,gametime,home_team,away_team,home_score,away_score\n'
+          '2012,2012_01_A_B,REG,1,2012-09-09,13:00,B,A,20,17\n'
+          '2013,2013_01_A_B,REG,1,2013-09-08,13:00,B,A,24,21\n'
+          '2014,2014_01_A_B,REG,1,2014-09-07,13:00,B,A,,\n')
 CSV = 'season,week,game_id,position,player_id,team\n{y},1,{y}_01_A_B,QB,00-1,A\n'
 PBP = ','.join(B.PBP_COLS) + '\n' + ','.join(['{y}_01_A_B', 'B', 'A', 'B'] + ['0'] * (len(B.PBP_COLS) - 4)) + '\n'
 files, plan, hits = {}, {}, {}
@@ -69,10 +79,11 @@ def check(ok, what):
         fails.append(what)
 
 
-def world(live=False):
+def world(live=False, three=False):
     files.clear(); plan.clear(); hits.clear()
-    files['games.csv'] = GAMES.encode()
-    for y in ((2012, 2013) if live else (2012,)):
+    files['games.csv'] = (GAMES3 if three else GAMES).encode()
+    ys = (2012, 2013, 2014) if three else (2012, 2013)      # the last one the season to come
+    for y in (ys if live else ys[:-1]):
         for stem in ('stats_player_week', 'depth_charts', 'injuries', 'roster'):
             files[f'{stem}_{y}.csv'] = CSV.format(y=y).encode()
         files[f'play_by_play_{y}.csv.gz'] = gzip.compress(PBP.format(y=y).encode())
@@ -101,6 +112,7 @@ check(past == ['depth_charts_2012.csv', 'injuries_2012.csv', 'stats_player_week_
       f"past.lst lists the finished season's files alone (not games.csv, the roster or the season to come): {past}")
 check('no depth_charts file for 2013 yet' in log, 'a 404 on the season to come is "no file yet", not a refusal')
 check(hits.get('depth_charts_2013.csv') == 1, 'and that 404 was asked for once, never tried again')
+check(hits.get('play_by_play_2011.csv.gz') is None, 'no play-by-play is asked for before FIRST (2012 starts from 0)')
 
 world(); plan['depth_charts_2012.csv'] = [500, 500, 500, 200]
 err, past, log, _ = run()
@@ -134,6 +146,39 @@ world(live=True)
 err, past, log, _ = run(now='2013-09-12T12:00:00+00:00')
 check(err is None and past == ['depth_charts_2012.csv', 'injuries_2012.csv', 'play_by_play_2012.csv.gz', 'stats_player_week_2012.csv'],
       f"once the season is under way last season's play-by-play is a finished season's file too, and 2013's never are: {past}")
+
+world(three=True)
+err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
+check(err is None and past == ['depth_charts_2012.csv', 'depth_charts_2013.csv', 'injuries_2012.csv', 'injuries_2013.csv',
+                               'play_by_play_2012.csv.gz', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
+      f"before 2014 is under way 2012's play-by-play (carried into 2013, the season in play) is a finished season's file, and 2013's, read fresh, is not: {past}")
+world(three=True, live=True)
+err, past, log, _ = run(now='2014-09-12T12:00:00+00:00')
+check(err is None and past == ['depth_charts_2012.csv', 'depth_charts_2013.csv', 'injuries_2012.csv', 'injuries_2013.csv',
+                               'play_by_play_2012.csv.gz', 'play_by_play_2013.csv.gz', 'stats_player_week_2012.csv', 'stats_player_week_2013.csv'],
+      f"once 2014 is under way both seasons' play-by-play are finished seasons' files (2013's is carried into 2014, 2012's into 2013 while it stays the rankings'): {past}")
+world(three=True); del files['play_by_play_2012.csv.gz']
+err, past, log, _ = run(now='2014-08-01T12:00:00+00:00')
+check(err is not None and 'play_by_play 2012' in err and past is None,
+      f"a 404 on the play-by-play two seasons back refuses the run (it is required): {err!r}"[:200])
+
+
+def clubs(n, y=2014):
+    """a season's player stats with a quarterback's rated game for each of n clubs"""
+    rows = ''.join(f'{y},1,{y}_01_A_B,QB,00-{i},T{i},30\n' for i in range(n))
+    return ('season,week,game_id,position,player_id,team,attempts\n' + rows).encode()
+
+
+world(three=True, live=True); files['stats_player_week_2014.csv'] = clubs(B.RANK_TEAMS - 1)
+del files['play_by_play_2012.csv.gz']
+err, past, log, _ = run(now='2014-09-12T12:00:00+00:00')
+check(err is not None and 'play_by_play 2012' in err and past is None,
+      f"2014 under way with {B.RANK_TEAMS - 1} clubs rated: the rankings stay on 2013, which carries 2012, so its 404 refuses the run: {err!r}"[:200])
+world(three=True, live=True); files['stats_player_week_2014.csv'] = clubs(B.RANK_TEAMS)
+del files['play_by_play_2012.csv.gz']
+err, past, log, _ = run(now='2014-09-12T12:00:00+00:00')
+check(err is None and hits.get('play_by_play_2012.csv.gz') is None and 'play_by_play_2012.csv.gz' not in (past or []),
+      f"2014 under way with {B.RANK_TEAMS} clubs rated: the rankings are on 2014, which carries 2013 alone, so 2012's play-by-play is never asked for: {err!r} {past}"[:240])
 
 print(f'{len(fails)} failures')
 srv.shutdown()

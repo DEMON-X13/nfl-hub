@@ -23,7 +23,17 @@
                              rb     vs runD    EPA and yards per carry, QB runs, scrambles and
                                                kneel-downs taken out, made / allowed
                              rec    vs db      EPA and yards per target, made / allowed
-                           The page tags a row by the gap between the two ratings (app.js difficulty()).
+                           The page tags a row by the gap between the two ratings, weighted by how much
+                           that matchup alone has predicted an offense's points (META.tags.rows, below).
+                           Each team also carries `overall`: its Overall Offense and Overall Defense on
+                           X NFL Bets' ELO Ratings tab (shown Elo, rank, raw, games and, where the file
+                           has it, carried), read from ../elo/data/model.json `units` only when that block
+                           is of SEASON (overall() below; META.overall says which build, or why it is
+                           missing). The Deep Dive's headline sets this team's Overall Offense against the
+                           opponent's Overall Defense: tested on 2018-2025 from week 2 on it predicted an
+                           offense's points better than the six rows did (RMSE 9.44 against 9.60; weeks 2-4
+                           9.34 against 9.40), though not in week 1 (9.48 against 9.29), as tagged (one
+                           slope on the gap: elo/tools/deepdive_vs_units.py, "headline").
                            Team numbers blend 2025 (weighted as PRIOR_GAMES games) with every
                            2026 game so far, so each week this season counts for more; each team
                            carries its own 2026 game count (g26), since a team that has played the
@@ -100,6 +110,49 @@ function ranks(root, games) {
     .map(r => ({ day: r.gameday, kick: etToISO(r.gameday, r.gametime) }))
     .filter(x => !isFinite(built) || Date.parse(x.kick) < built).map(x => x.day).sort().pop() || '';
   return { R, asof, built: m.built_at || '' };
+}
+
+/* ---------------- the Deep Dive's headline and its tags ---------------- */
+/* The tag constants, carried in UNITS26_META.tags so the page reads them from the file and the smoke test
+   holds them to its own copy. All fitted on 2012-2017 regular-season weeks 2 on (never on 2026), by
+   elo/tools/deepdive_vs_units.py, which prints them and says whether this file carries them (run it
+   again after any refit of the units, units_fit.py, since the headline's slope is on their scale):
+     rows      each row's tag is difficulty(weight x edge) at 0.5 and 1.5. The weight is the row's points per
+               league SD of edge, fitted alone, over the quarterback row's 1.929: qb vs passD 1, ol vs front
+               0.5956 (1.149), rb vs runD 0.3792 (0.731), rec vs db 0.8925 (1.722). The pass rush row takes the
+               line's weight and coverage the receivers' (each mirror edge is minus its pair's, exactly). So a
+               tag means about the same points on every row, where before an Easy line was worth 2.6 points and
+               an Easy quarterback 4.4. Each row is that matchup alone: the rows overlap (quarterback and
+               receivers are one passing game, correlation 0.91), and their points summed overstate a game
+               about 2.2 times, so the page never adds them up.
+     headline  points = slope x (Overall Offense raw - opponent's Overall Defense raw), 11.9126 points a raw
+               unit (fitted with last season carried in at 0.42, as the ELO build rates them); Favorable from
+               0.9645 points and Easy from 2.8935, the quarterback row's thresholds in points (0.5 and 1.5 x
+               1.929), Tough and Very tough the same the other way. Read off the raw gap, not the shown Elo,
+               whose scale drifts through the season (re-standardised over every club with a rating, carried clubs included). */
+const DD_TAGS = {
+  rows: { weights: { qb: 1, ol: 0.5956, rb: 0.3792, rec: 0.8925, front: 0.5956, db: 0.8925 }, fav: 0.5, easy: 1.5, fit: '2012-2017' },
+  headline: { slope: 11.9126, fav: 0.9645, easy: 2.8935, fit: '2012-2017' },
+};
+/* Overall Offense and Overall Defense per club from ../elo/data/model.json `units`, the ELO Ratings tab's
+   pills (elo/build.py unit_ratings), only when they are of this season: the block follows the rankings'
+   season, the finished one until 16 clubs have played. LA is LAR, as ranks() maps it. */
+function overall(root) {
+  const file = path.resolve(root, '..', 'elo', 'data', 'model.json');
+  if (!fs.existsSync(file)) throw new Error('../elo/data/model.json not found');
+  let m;
+  try { m = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { throw new Error('../elo/data/model.json does not parse'); }
+  const u = m.units;
+  if (!u || !u.off || !u.def) throw new Error(`../elo/data/model.json (built ${m.built_at || '?'}) has no Overall Offense and Overall Defense`);
+  if (+u.season !== SEASON) throw new Error(`../elo/data/model.json (built ${m.built_at || '?'}) rates Overall Offense and Overall Defense for ${u.season}, not ${SEASON}`);
+  const side = s => {
+    const O = {};
+    for (const [t, v] of Object.entries(u[s])) if (v && [v.elo, v.rank, v.raw].every(x => typeof x === 'number' && isFinite(x)))
+      O[ab(t)] = { elo: v.elo, rank: v.rank, raw: v.raw, games: v.games ?? null, ...('carried' in v ? { carried: v.carried } : {}) };
+    if (Object.keys(O).length < 32) throw new Error(`../elo/data/model.json rates only ${Object.keys(O).length} clubs' Overall ${s === 'off' ? 'Offense' : 'Defense'}`);
+    return O;
+  };
+  return { off: side('off'), def: side('def'), built: m.built_at || '', season: +u.season };
 }
 
 /* ---------------- positions from the roster ---------------- */
@@ -943,9 +996,16 @@ async function build(opts = {}) {
   /* the chip is the hub's own file, not a download: if it is missing or short, keep the chip as it was and say so */
   let RK = null;
   try { RK = ranks(root, D.games); } catch (e) { warn(`ranks2026.js kept: ${e.message}`); }
+  /* the Deep Dive's headline is the same file's Overall Offense and Defense: without them the rows still publish */
+  let OV = null, ovWhy = '';
+  try { OV = overall(root); } catch (e) { ovWhy = e.message; warn(`Deep Dive headline left out: ${e.message}`); }
   const P = players(D.roster26);
   const { U, LU } = units({ team25: D.team25, team26: D.team26, player25: D.player25, player26: D.player26, snaps26: D.snaps26,
     roster: D.roster26, injuries: D.injuries26, chart, espn, week, kicks, lastGame: S.lastGame, opps: S.opps, now, reportModified: LAST_MODIFIED.injuries26 });
+  if (OV) for (const t of Object.keys(U)) {
+    if (OV.off[t] && OV.def[t]) U[t].overall = { off: OV.off[t], def: OV.def[t] };
+    else warn(`Deep Dive headline: ${t} has no Overall Offense or Defense in ../elo/data/model.json`);
+  }
 
   const day = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' }) : '';
   const lineSrc = [LU.chart ? `depth charts of ${day(LU.chart)}` : 'season usage (no current depth chart)',
@@ -955,7 +1015,9 @@ async function build(opts = {}) {
     (espn && espn.length ? '' : `. ESPN's injury list could not be read on this run`) + (D.snaps26.length ? '' : `. Snap counts could not be read, so the order inside a unit is the chart's`);
   const META = { season: SEASON, week, phase: S.phase, built_at: now,
     report: { modified: LAST_MODIFIED.injuries26 || '', practice_day: LU.reportDay, filed: Object.keys(LU.filed).filter(t => LU.filed[t]).sort() },
-    sources: { chart: LU.chart || null, espn: !!(espn && espn.length), snaps: D.snaps26.length > 0 } };
+    sources: { chart: LU.chart || null, espn: !!(espn && espn.length), snaps: D.snaps26.length > 0 },
+    overall: OV ? { file: 'elo/data/model.json', built_at: OV.built, season: OV.season } : { file: 'elo/data/model.json', missing: ovWhy },
+    tags: DD_TAGS };
 
   /* everything arrived: write */
   if (RK) {
@@ -979,6 +1041,7 @@ async function build(opts = {}) {
     META.built_at = oldBuilt;
     console.log(`units2026.js: unchanged since ${oldBuilt}, not rewritten`);
   } else fs.writeFileSync(unitsFile, unitsBody(META));
+  console.log(OV ? `units2026.js: headline from model.json built ${OV.built} (Overall Offense #1 ${Object.keys(OV.off).find(t => OV.off[t].rank === 1)}, Overall Defense #1 ${Object.keys(OV.def).find(t => OV.def[t].rank === 1)})` : `units2026.js: no headline (${ovWhy})`);
   console.log(`units2026.js: ${Object.keys(U).length} teams, week ${week} (${S.phase}), 2026 games ${Math.min(...Object.values(U).map(u => u.g26))} to ${Math.max(...Object.values(U).map(u => u.g26))}; lineups from ${lineSrc.join(', ')}; ${LU.repaired} chart id(s) repaired by name; filed: ${META.report.filed.join(' ') || 'none'}`);
   for (const l of LU.passedLog) console.log('  passed over: ' + l);
   for (const t of Object.keys(U)) if (U[t].qb.next || U[t].qb.next_none) console.log(`  ${t} qb: ${U[t].qb.who[0].n} (${U[t].qb.who[0].q}); ${U[t].qb.next ? `next ${U[t].qb.next.n} (from the ${U[t].qb.next.from})` : U[t].qb.next_none}`);
@@ -1001,5 +1064,5 @@ async function build(opts = {}) {
   return { week, phase: S.phase, U, meta: META };
 }
 
-module.exports = { build, units, ratings, lineups, normName, notePractice, weekPractice, espnIndex, announcedStarter, lastPracticeDay, etDay, schedule, gradeLineups, URLS };
+module.exports = { build, units, ratings, overall, DD_TAGS, lineups, normName, notePractice, weekPractice, espnIndex, announcedStarter, lastPracticeDay, etDay, schedule, gradeLineups, URLS };
 if (require.main === module) build().catch(e => { console.error(e.message || e); process.exit(1); });

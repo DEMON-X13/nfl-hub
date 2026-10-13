@@ -103,7 +103,9 @@ const fixLineAbbr = s => String(s || '').replace(/\b(WSH|LA|JAC)\b(?= [-+]|\s*$)
 /* The narrative never quotes the site's own ranks: the Deep Dive and the rank chip beside it move with
    every run, the narrative does not (on 2026-10-09, 146 of the 192 unit ranks the Week 5 file quoted
    had moved). The phrases are the ones the site's own voice uses: "in the tracker", "the site's units",
-   "the power ratings" (the chip's old name), "power rank", "Elo rank", "the Deep Dive". A third party's
+   "the power ratings" (the chip's old name), "power rank", "Elo rank", "the Deep Dive", and the
+   Deep Dive's headline, the ELO Ratings tab's "Overall Offense" and "Overall Defense" (capitalised as the
+   site names them: "the best overall defense" is a writer's own words). A third party's
    numbers with their source are the writer's to quote, so "PFF's unit grade", "ESPN's FPI power
    ratings", "the NFL.com power rankings" and "a deep dive into the tape" pass (until 2026-10-09 the
    pattern also caught those, and a narrative quoting one would have stopped the job). */
@@ -112,6 +114,7 @@ const RANK_QUOTE = [
   /\b(?:the |our )?site's (?:units?|unit (?:grades?|numbers)|(?:run|pass) defen[cs]e grade|lowest-graded|grades?|numbers|ranks?|ratings?)\b/i,
   /\bthe power (?:ratings?|rankings?)\b|\bpower rank\b|\bElo rank\b/i,
   /\bDeep Dive\b/,
+  /\bOverall (?:Offense|Defense)\b/,
 ];
 /* the first such phrase in a string, with a little of the text around it, or null */
 function siteRankQuote(text) {

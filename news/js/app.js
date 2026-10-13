@@ -83,20 +83,46 @@ function powerRank(ab){
 /* ============================ deep dive ============================ */
 /* Six units from data/units2026.js. Each faces the opposing unit it plays against, rated on the
    same numbers from both sides (tools/context.js), each rating in league standard deviations.
-   The tag is the edge: this unit's rating minus the one it faces. 1.5 or more is Easy, 0.5 or more
-   Favorable, within 0.5 Even, and the same the other way. (Until 2026-10-08 it was the gap between
-   two ranks of different stats, which put the receivers against the coverage on unlike numbers.) */
-function difficulty(edge){
+   The edge is this unit's rating minus the one it faces; the tag is that edge weighted by how much
+   the matchup alone has predicted an offense's points (UNITS26_META.tags.rows: the quarterback 1,
+   the receivers and coverage 0.89, the line and pass rush 0.60, the run game 0.38), then 1.5 or more
+   is Easy, 0.5 or more Favorable, within 0.5 Even, and the same the other way. Each row is that
+   matchup alone: the rows overlap, so they are never added up. (Until 2026-10-08 the tag was the gap
+   between two ranks of different stats; until 2026-10-13 it was the unweighted edge, so an Easy line
+   meant 2.6 points and an Easy quarterback 4.4.)
+   Above the rows, the headline: this team's Overall Offense against the opponent's Overall Defense on
+   X NFL Bets' ELO Ratings tab (U.overall, from elo/data/model.json), tagged by the gap read as points
+   (UNITS26_META.tags.headline), the better guide to an offense's points from week 2 on. */
+function difficulty(edge, fav = 0.5, easy = 1.5){
   if (edge == null || !isFinite(edge)) return ["even", "Even"];
-  if (edge >= 1.5)  return ["easy", "Easy"];
-  if (edge >= 0.5)  return ["fav", "Favorable"];
-  if (edge > -0.5)  return ["even", "Even"];
-  if (edge > -1.5)  return ["tough", "Tough"];
+  if (edge >= easy)  return ["easy", "Easy"];
+  if (edge >= fav)   return ["fav", "Favorable"];
+  if (edge > -fav)   return ["even", "Even"];
+  if (edge > -easy)  return ["tough", "Tough"];
   return ["vtough", "Very tough"];
+}
+const DD_META = () => typeof UNITS26_META !== "undefined" && UNITS26_META ? UNITS26_META : {};
+/* the headline: Overall Offense against the opponent's Overall Defense, or nothing when the file has none */
+function ddHeadline(ab, opp, U, O){
+  const M = DD_META(), H = M.tags && M.tags.headline, src = M.overall;
+  if (!H || !src || src.missing || !U.overall || !O.overall) return "";
+  const off = U.overall.off, def = O.overall.def;
+  const pts = H.slope * (off.raw - def.raw), [cls, tag] = difficulty(pts, H.fav, H.easy);
+  const p1 = v => (v >= 0 ? "+" : "\u2212") + Math.abs(v).toFixed(1);
+  const g = (t, e) => e.carried ? `${t} carried from last season, no game yet` : e.games != null ? `${t} ${e.games} game${e.games === 1 ? "" : "s"}` : "";
+  const games = [g(ab, off), g(opp, def)].filter(Boolean).join(", ");
+  const built = src.built_at ? ` of ${shortDay(String(src.built_at).slice(0, 10))}` : "";
+  return `<div class="ddhead">
+      <div class="ddhtop"><span class="ddhlbl">Overall</span><span class="dtag ${cls}" title="Overall Offense ${off.raw} minus ${opp}'s Overall Defense ${def.raw} on the raw scale, about ${p1(pts)} points a game to this offense at ${H.slope} points a unit (fitted on ${H.fit || "2012-2017"})">${tag}</span></div>
+      <div class="ddhvs">Overall Offense <strong>${ORD(off.rank)}</strong> (${off.elo}) vs ${opp} Overall Defense <strong>${ORD(def.rank)}</strong> (${def.elo})<span class="ddedge">about ${p1(pts)} pts</span></div>
+      <div class="ddhsrc">From X NFL Bets' ELO Ratings tab${built}${games ? ` (${games})` : ""}. The tag reads the gap as points: Favorable from about ${(+H.fav).toFixed(1)}, Easy from about ${(+H.easy).toFixed(1)}.</div>
+    </div>`;
 }
 function deepDive(ab, opp, row){
   if (typeof UNITS26 === "undefined" || !UNITS26[ab] || !UNITS26[opp]) return `<div class="tbsec empty ${row}"></div>`;
   const U = UNITS26[ab], O = UNITS26[opp];
+  const TR = (DD_META().tags || {}).rows || null;
+  const wOf = k => TR && TR.weights && isFinite(TR.weights[k]) ? TR.weights[k] : 1;
   const names = list => (list || []).map(p => `${p.n} (${p.pos}${p.q ? ", " + p.q : ""})`).join(", ");
   /* who is not playing: the quarterback row says who starts instead, the others list them */
   const missing = (u, isQB) => {
@@ -112,19 +138,20 @@ function deepDive(ab, opp, row){
     : u.next_none ? `<div class="ddout">${u.who[0].n} may not start (${u.who[0].q || "in doubt"}); ${u.next_none}.</div>` : "";
   const nums = st => (st || []).map(([label, v, r, unit]) => v == null ? "" : `${v}${unit || ""} ${label} (${ORD(r)})`).filter(Boolean).join(" &middot; ");
   const units = [
-    ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD, true],
-    ["Offensive line", "Pass protection", U.ol, `${opp} pass rush`, O.front],
-    ["Running backs", "Run game", U.rb, `${opp} run defense`, O.vs.runD],
-    ["Receivers", "Receivers", U.rec, `${opp} coverage`, O.db],
-    ["Pass rush", "Pass rush", U.front, `${opp} pass protection`, O.ol],
-    ["Defensive backs", "Coverage", U.db, `${opp} receivers`, O.rec],
+    ["Quarterback", "Passing offense", U.qb, `${opp} pass defense`, O.vs.passD, true, "qb"],
+    ["Offensive line", "Pass protection", U.ol, `${opp} pass rush`, O.front, false, "ol"],
+    ["Running backs", "Run game", U.rb, `${opp} run defense`, O.vs.runD, false, "rb"],
+    ["Receivers", "Receivers", U.rec, `${opp} coverage`, O.db, false, "rec"],
+    ["Pass rush", "Pass rush", U.front, `${opp} pass protection`, O.ol, false, "front"],
+    ["Defensive backs", "Coverage", U.db, `${opp} receivers`, O.rec, false, "db"],
   ];
   const sd = v => (v >= 0 ? "+" : "\u2212") + Math.abs(v).toFixed(1);
-  const rows = units.map(([label, mine, u, vs, v, isQB]) => {
-    const edge = u.z != null && v.z != null ? u.z - v.z : null;
-    const [cls, tag] = difficulty(edge);
+  const rows = units.map(([label, mine, u, vs, v, isQB, key]) => {
+    const edge = u.z != null && v.z != null ? u.z - v.z : null, w = wOf(key);
+    const [cls, tag] = edge == null ? difficulty(null) : difficulty(w * edge, TR ? TR.fav : 0.5, TR ? TR.easy : 1.5);
+    const why = edge == null ? "" : ` title="Edge ${sd(edge)}: this unit's rating minus the one it faces, in league standard deviations. The tag weighs it by ${w} (${sd(w * edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
     return `<div class="ddrow">
-      <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${cls}"${edge == null ? "" : ` title="Edge ${sd(edge)}: this unit's rating minus the one it faces, in league standard deviations"`}>${tag}</span></div>
+      <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${cls}"${why}>${tag}</span></div>
       <div class="ddvs">${mine} <b>${ORD(u.rank)}</b> vs ${vs} <b>${ORD(v.rank)}</b>${edge == null ? "" : `<span class="ddedge">edge ${sd(edge)}</span>`}</div>
       ${u.who && u.who.length ? `<div class="ddwho">${names(u.who)}</div>` : ""}
       ${missing(u, isQB)}${isQB ? nextQB(u) : ""}
@@ -136,8 +163,14 @@ function deepDive(ab, opp, row){
   const g26 = n => `${n} game${n === 1 ? "" : "s"}`;
   const basis = (typeof UNITS26_BASIS !== "undefined" ? UNITS26_BASIS : "") + (U.g26 != null ? `, plus ${ab}'s ${g26(U.g26)} of 2026${O.g26 != null && O.g26 !== U.g26 ? ` (${opp}'s ${g26(O.g26)})` : ""}` : "");
   const lineups = typeof UNITS26_LINEUPS !== "undefined" ? ` ${UNITS26_LINEUPS}.` : "";
+  const head = ddHeadline(ab, opp, U, O), M = DD_META();
+  const fw = v => String(+(+v).toFixed(2));
+  const weighed = TR && TR.weights ? ` weighted by how much that matchup alone has predicted an offense's points (quarterback ${fw(wOf("qb"))}, receivers and coverage ${fw(wOf("rec"))}, line and pass rush ${fw(wOf("ol"))}, run game ${fw(wOf("rb"))})` : "";
+  const asText = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const headNote = head ? " The Overall line is the site's ELO Ratings tab, offense against defense: it has predicted points better than the rows from week 2 on."
+    : M.overall && M.overall.missing ? ` Overall Offense and Overall Defense are not shown on this build: ${asText(M.overall.missing)}.` : "";
   return `<details class="tbsec dd ${row}"><summary><span class="ddlbl">Deep Dive</span><span class="ddhint">6 matchups</span></summary>
-    <p class="ddbasis">League ranks from team stats, ${basis}. Each row rates a unit and the unit it faces on the same numbers. The tag is this unit's edge, its rating minus the other's in league standard deviations: Easy is 1.5 or more, Favorable 0.5 or more, Even within 0.5, Tough and Very tough the same the other way.${lineups}</p>
+    ${head}<p class="ddbasis">League ranks from team stats, ${basis}. Each row rates a unit and the unit it faces on the same numbers. The tag is this unit's edge, its rating minus the other's in league standard deviations,${weighed}: Easy is ${TR ? TR.easy : 1.5} or more, Favorable ${TR ? TR.fav : 0.5} or more, Even within ${TR ? TR.fav : 0.5}, Tough and Very tough the same the other way. Each row is that matchup alone; the rows overlap, so they are not to be added up.${headNote}${lineups}</p>
     ${rows}</details>`;
 }
 

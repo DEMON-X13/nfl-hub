@@ -701,6 +701,7 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .pe-tmrow{cursor:pointer}
 .pe-tmrow:hover td{background:var(--panel-2)}
 .pe-tmrow.pe-np td{opacity:.6}
+.pe-carry{display:inline-block;margin-left:6px;padding:1px 6px;border:1px solid var(--line-2);border-radius:999px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 .pe-tline{margin:0 0 16px;overflow-x:auto}
 .pe-tline svg{display:block;width:100%;min-width:420px;height:auto}
 .pe-tnext{font-size:13px;color:var(--ink-2);margin:0 0 14px}
@@ -4906,7 +4907,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='96efdb5';
+const PAGE_HASH='43179dc';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6615,8 +6616,14 @@ function sourceNote(){
   return bits.length?`<p class="pe-note">${bits.map(b=>b.charAt(0).toUpperCase()+b.slice(1)).join('. ')}.</p>`:'';
 }
 /* the position row: a pill a rated group, then Overall Offense and Overall Defense once a team
-   has a rated game */
-const unitsOn=()=>{ const U=D.model&&D.model.units; return !!(U&&U.off&&U.def&&Object.values(U.off).some(v=>v.games)); };
+   has a rating: a rated game, or (from October 2026) its start carried from last season */
+const unitsOn=()=>{ const U=D.model&&D.model.units; return !!(U&&U.off&&U.def&&Object.values(U.off).some(v=>v.games||v.carried)); };
+/* the season the units carry in (`params.carry_from`) and the share, or null for a file without the carry */
+const unitCarry=()=>{ const p=D.model&&D.model.units&&D.model.units.params||{}; return p.carry&&p.carry_from!=null?{c:+p.carry,from:p.carry_from}:null; };
+/* a club with no rated game yet, shown on its carried rating: never hidden, always marked */
+const carryTag=v=>{ const C=unitCarry(); return v.carried&&C?`<span class="pe-carry" title="No game yet this season: its rating is ${Math.round(C.c*100)}% of its final rating in ${esc(C.from)}">carried from ${esc(C.from)}</span>`:''; };
+/* where a club's line starts: its own start (from October 2026), else the side's (older files), else 1500 */
+const unitStart=(U,side,v)=>v&&v.start!=null?v.start:(U.start||{})[side]!=null?U.start[side]:1500;
 function posRow(){
   const P=D.players, on=D.unit&&unitsOn();
   const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${!on&&k===D.pos}">${esc(P.groups[k].label)}</button>`).join(''):'';
@@ -6647,7 +6654,8 @@ function rankings(){
     ${sidelined(grp)}</div>`;
 }
 /* Overall Offense and Overall Defense: every team's offense and defense on this season's games,
-   in the rankings' format (`units` in model.json, OVERALL OFFENSE AND OVERALL DEFENSE in
+   each club starting from a share of last season's final rating (`params.carry` of
+   `params.carry_from`; a club yet to play is shown on it, marked carried), in the rankings' format (`units` in model.json, OVERALL OFFENSE AND OVERALL DEFENSE in
    elo/build.py). Each side is an Elo on several key stats, opponents counted, weighed as the
    file says (each entry of `units.stats` carries its weight, which elo/check.py holds to
    `units.weights`); every stat is shown with its league rank, the columns sort, and a click on a
@@ -6672,7 +6680,7 @@ function teamRows(side){
 }
 function teamsCard(){
   const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', T=U[side], P=D.players;
-  const stats=unitStats(side), old=!stats.length, n=Object.values(T).filter(v=>v.games).length;
+  const stats=unitStats(side), old=!stats.length, n=Object.values(T).filter(v=>v.games).length, C=unitCarry();
   const st=D.tsort||{key:'rank',dir:1};
   const sortTh=(key,label,cls='',extra='')=>`<th class="${cls}" data-sort="${key}"${st.key===key?` aria-sort="${st.dir>0?'descending':'ascending'}"`:''}>${label}${extra}</th>`;
   const mv=v=>v.change==null||v.change===0?'<span class="pe-flat">–</span>':`<span class="pe-${v.change>0?'up':'down'}" title="${v.change>0?'Up':'Down'} ${Math.abs(v.change)} since its last game">${v.change>0?'+':'−'}${Math.abs(v.change)}</span>`;
@@ -6681,8 +6689,8 @@ function teamsCard(){
     return `<td class="pe-st${first}" data-stat="${s.key}"><span class="pe-sv">${fmtStat(e&&e.v,s.fmt)}</span><small class="pe-ord ${ordCls(e&&e.rank)}">${ordinal2(e&&e.rank)}</small></td>`; };
   const what=dfn?'allowed':'scored';
   const oldCells=v=>`<td class="pe-n">${v.ppg}</td><td class="pe-n">${v.ypg}</td><td class="pe-n">${v.epa_play==null?'–':(v.epa_play>=0?'+':'−')+Math.abs(v.epa_play).toFixed(3)}</td>`;
-  const body=teamRows(side).map(v=>`<tr class="pe-tmrow${v.games?'':' pe-np'}" data-team="${esc(v.t)}"><td class="pe-rank">${v.rank}</td><td>${mv(v)}</td>
-      <td class="pe-name pe-tm">${tag(v.t,true)}<small>${v.games?`${v.games} game${v.games===1?'':'s'}`:'no game yet'}</small></td>
+  const body=teamRows(side).map(v=>`<tr class="pe-tmrow${v.games||v.carried?'':' pe-np'}${v.carried?' pe-carried':''}" data-team="${esc(v.t)}"><td class="pe-rank">${v.rank}</td><td>${mv(v)}</td>
+      <td class="pe-name pe-tm">${tag(v.t,true)}<small>${v.games?`${v.games} game${v.games===1?'':'s'}`:'no game yet'}${carryTag(v)}</small></td>
       <td class="pe-n">${recStr(v.record)}</td>
       <td class="pe-n"><span class="pe-elo">${v.elo}</span></td><td><span class="pe-shield">${shield(v.elo)}${tierName(v.elo)}</span></td>
       ${old?oldCells(v):stats.map((s,i)=>cell(v,s,i)).join('')}</tr>`).join('');
@@ -6692,13 +6700,13 @@ function teamsCard(){
   const wf=U.walk_forward||{};
   const sub=old
     ?`<p class="pe-sub">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, everyone starting at 1500, each game scored on points and EPA a play ${what}. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better.</p>`
-    :`<p class="pe-sub" id="peTeamsWhy">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, the way the player rankings are: everyone started at 1500, and after each game every key stat moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better${dfn?' (less allowed)':''}. Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
-      ${zero.length?`<p class="pe-note" id="peTeamsZero">${esc(listAnd(zero.map(s=>s.label)))} are shown with their ranks but weigh nothing: once the weighted stats are known, they told nothing more about a team's next game.${wf.rmse?` Fitted on ${esc(wf.fit)} and tested on ${esc(wf.test)}, these weights missed a team's points in its next game by ${wf.rmse.toFixed(2)} on average, and the old rating on points and EPA alone by ${wf.previous.toFixed(2)}: no less accurate, and built on the key stats.`:''}</p>`:''}`;
+    :`<p class="pe-sub" id="peTeamsWhy">Every team's ${dfn?'defense':'offense'} rated on this season's games${C?`, each starting from ${esc(C.c)} of its final rating in ${esc(C.from)} (the share of last season that best predicted a team's points in its next game, chosen on 2013-2017 and tested on 2018-2025), so every team is rated from the season's first day; one that has not played yet shows that carried rating, marked carried from ${esc(C.from)}. As in the player rankings,`:', the way the player rankings are: everyone started at 1500, and'} after each game every key stat moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better${dfn?' (less allowed)':''}. Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
+      ${zero.length?`<p class="pe-note" id="peTeamsZero">${esc(listAnd(zero.map(s=>s.label)))} are shown with their ranks but weigh nothing: once the weighted stats are known, they told nothing more about a team's next game.${wf.rmse?` Fitted on ${esc(wf.fit)} and tested on ${esc(wf.test)}, these weights missed a team's points in its next game by ${wf.rmse.toFixed(2)} on average, and the old rating on points and EPA alone${wf.no_carry!=null?', carried the same way,':''} by ${wf.previous.toFixed(2)}: no less accurate, and built on the key stats.${wf.no_carry!=null?` Rated on each season alone, with nothing carried, they missed by ${(+wf.no_carry).toFixed(2)}.`:''}`:''}</p>`:''}`;
   return `<div class="card" id="peUnits"><h2>${dfn?'Overall Defense':'Overall Offense'} <span class="pill">${esc(U.season||P.season)} ${esc(thru(P))}</span></h2>
     ${sub}
     ${sourceNote()}
     ${posRow()}
-    ${curveChart(Object.values(T).filter(v=>v.games).map(v=>v.elo),dfn?'defenses':'offenses')}
+    ${curveChart(Object.values(T).filter(v=>v.games||v.carried).map(v=>v.elo),dfn?'defenses':'offenses')}
     <div class="pe-tscroll"><table class="pe-t pe-tt"><thead><tr>${sortTh('rank','#')}<th>Move</th>${sortTh('team','Team','pe-tm')}${sortTh('record','Record','pe-n')}${sortTh('rank','Rating','pe-n')}<th>Tier</th>${heads}</tr></thead><tbody>${body}</tbody></table></div></div>`;
 }
 /* a team's window: its rating, its line game by game, every stat with both of its ranks, what
@@ -6731,7 +6739,7 @@ function teamModal(t){
     (el('tab-elo')||document.body).appendChild(m);
     m.addEventListener('click',e=>{ if(e.target===m) tmClose(); });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) tmClose(); }); }
-  const stats=unitStats(side), n=Object.keys(U[side]).length;
+  const stats=unitStats(side), n=Object.keys(U[side]).length, C=unitCarry();
   const rows=stats.map(s=>{ const e=v.stats&&v.stats[s.key]||{};
     return `<tr data-stat="${s.key}" class="${s.weight?'':'pe-weak'}"><td>${esc(s.label)}</td><td class="pe-n"><b>${fmtStat(e.v,s.fmt)}</b></td><td class="pe-n">${ordinal2(e.rank)||'–'}</td><td class="pe-n">${ordinal2(e.adj)||'–'}</td>
       <td class="pe-n">${s.weight?s.weight+'%':'–'}</td><td class="pe-n">${s.weight&&e.adds!=null?`<span class="pe-nud ${e.adds>0?'up':e.adds<0?'dn':'flat'}" style="display:inline">${e.adds>0?'+':e.adds<0?'−':''}${Math.abs(e.adds).toFixed(1)}</span>`:'–'}</td></tr>`; }).join('');
@@ -6742,13 +6750,14 @@ function teamModal(t){
     <div class="pe-pl-tiles">
       <div><span>Rating</span><b>${v.elo}</b><small>${esc(tierName(v.elo))}</small></div>
       <div><span>Rank</span><b>#${v.rank}</b><small>of ${n} ${dfn?'defenses':'offenses'}</small></div>
-      <div><span>Last game</span><b>${v.change==null?'–':(v.change>0?'+':v.change<0?'−':'')+Math.abs(v.change)}</b><small>${v.before==null?'no game yet':'from '+v.before}</small></div>
+      <div><span>Last game</span><b>${v.change==null?'–':(v.change>0?'+':v.change<0?'−':'')+Math.abs(v.change)}</b><small>${v.before==null?(v.carried&&C?'carried from '+esc(C.from):'no game yet'):'from '+v.before}</small></div>
       <div><span>Games</span><b>${v.games}</b><small>${recStr(v.record)}</small></div>
     </div>
+    ${v.carried&&C?`<p class="pe-note" id="peTmCarried">No game yet this season: ${tag(t,true)}'s rating is carried from ${esc(C.from)}, ${Math.round(C.c*100)}% of where it finished then on every stat (${esc(unitStart(U,side,v))} on today's curve), and moves from its first game.</p>`:''}
     ${next}
-    ${teamLine(v,(U.start||{})[side]!=null?U.start[side]:1500)}
+    ${teamLine(v,unitStart(U,side,v))}
     ${stats.length?`<table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">${dfn?'Allowed':'Value'}</th><th class="pe-n">League rank</th><th class="pe-n" title="The rank of the stat's own rating, which counts who the team played">Opponents counted</th><th class="pe-n">Weight</th><th class="pe-n" title="What the stat adds to the rating, in rating points">Adds</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="pe-note">League rank is the season's raw number against the other teams; opponents counted ranks the stat's own rating, which credits a good game against a good ${dfn?'offense':'defense'} more than the same game against a weak one. Adds is what each weighted stat puts on the rating, in rating points from 1500.${zero.length?` Faded rows weigh nothing: ${esc(listAnd(zero.map(s=>lc(s.label))))} told nothing more about a team's next game once the weighted stats were known.`:''}</p>`:''}</div>`;
+    <p class="pe-note">League rank is the season's raw number against the other teams; opponents counted ranks the stat's own rating, which credits a good game against a good ${dfn?'offense':'defense'} more than the same game against a weak one${C?` (and carries the share of ${esc(C.from)} the rating starts from)`:''}. Adds is what each weighted stat puts on the rating, in rating points from 1500.${zero.length?` Faded rows weigh nothing: ${esc(listAnd(zero.map(s=>lc(s.label))))} told nothing more about a team's next game once the weighted stats were known.`:''}</p>`:''}</div>`;
   el('peTmClose').addEventListener('click',tmClose);
   m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
 }
@@ -7261,11 +7270,13 @@ function teamsOf(F,g){
   const order=Object.entries(T).map(([t,v])=>({t,...v})).sort((x,y)=>y.elo-x.elo);
   return {M,T,order,rank:t=>order.findIndex(x=>x.t===t)+1};
 }
-/* Overall Offense and Overall Defense, as the ELO Ratings tab has them */
+/* Overall Offense and Overall Defense, as the ELO Ratings tab has them: on once a team has a
+   rating (a rated game, or its start carried from last season); C the carry the file names */
 function unitsOf(F){
   const U=F&&F.model&&F.model.units;
   if(!U||!U.off||!U.def) return null;
-  return {U,on:Object.values(U.off).some(v=>v.games)};
+  const p=U.params||{};
+  return {U,on:Object.values(U.off).some(v=>v.games||v.carried),C:p.carry&&p.carry_from!=null?{c:+p.carry,from:p.carry_from}:null};
 }
 /* which side of one possession ranks higher: the offense or the defense (1st the best on each) */
 const possession=(U,o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return null;
@@ -7493,7 +7504,7 @@ function unitsSec(P,g,F){
   const X=unitsOf(F);
   if(!X) return fold('gsUnits',T0,'did not load',`<p class="gs-msg">The unit ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
   if(!X.on) return fold('gsUnits',T0,'not yet','<p class="gs-msg">Overall Offense and Overall Defense start once a team has a rated game this season.</p>');
-  const U=X.U, all=U.stats||[], a=g.away_team, h=g.home_team;
+  const U=X.U, all=U.stats||[], a=g.away_team, h=g.home_team, C=X.C;
   /* the stats either rating weighs, in the offense's order, then the defense's */
   const keys=[...new Set(all.filter(s=>s.weight&&s.side==='off').map(s=>s.key).concat(all.filter(s=>s.weight&&s.side==='def').map(s=>s.key)))];
   const meta=(side,k)=>all.find(s=>s.side===side&&s.key===k)||null;
@@ -7501,7 +7512,7 @@ function unitsSec(P,g,F){
   const ov=(t,s,b)=>{ const v=U[s]&&U[s][t], lab=`<span class="gs-lab">${esc(t)} ${s==='off'?'offense':'defense'}</span>`;
     if(!v) return `<div class="gs-uside${s==='def'?' gs-ud':''}">${lab}<span class="gs-msg">no rating for ${esc(t)}</span></div>`;
     return `<div class="gs-uside${s==='def'?' gs-ud':''}" data-gs-unit="${s}:${esc(t)}">${lab}<span class="gs-uov gs-v${b?' gs-better':''}"><span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n(s)}</small></span>
-      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':'<span class="gs-tiern">no game yet</span>'}</span></div>`; };
+      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':v.carried&&C?`<span class="gs-tiern" data-gs-carried title="No game yet this season: ${esc(C.c)} of its final rating in ${esc(C.from)}">carried from ${esc(C.from)}</span>`:'<span class="gs-tiern">no game yet</span>'}</span></div>`; };
   const pair=(o,d,id)=>{ const p=possession(U,o,d), vo=U.off[o], vd=U.def[d];
     const edge=!p?'':p.team?`<span class="gs-uedge">edge ${V(`${tg(p.team,true)} ${p.edge==='off'?'offense':'defense'}`,true)}</span>`:'<span class="gs-uedge">even</span>';
     const rows=keys.map(k=>{ const mo=meta('off',k), md=meta('def',k), so=vo&&vo.stats&&vo.stats[k]||{}, sd=vd&&vd.stats&&vd.stats[k]||{};
@@ -7518,7 +7529,7 @@ function unitsSec(P,g,F){
   const so=!!OPEN.gsUStats;
   return fold('gsUnits',T0,sum,`<div class="gs-units">${pair(a,h,'gsUStatsA')}${pair(h,a,'gsUStatsH')}</div>
     <button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>
-    <p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.</p>`);
+    <p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted${C?`, each team starting the season from ${esc(C.c)} of its final rating in ${esc(C.from)} (one with no game yet is shown on that, marked carried)`:''}; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.</p>`);
 }
 
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */
