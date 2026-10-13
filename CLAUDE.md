@@ -887,9 +887,13 @@ node nflbets/build/smoke_live.js  # the X Parlays section from its file on its o
 
 The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
 board's week the way the board does (the first with a game still to play, else the last), checks
-what needs a game to come only when there is one, and, once the payload's last game is about to
-kick off, boots the page two days before it so the builder checks still have a game
-to stand on. `--season-over` gives every game a result first; run it after a change to the smoke or
+what needs a game to come only when there is one, and, once the page's own week (`liveWeek()`: the
+first with a game not yet final, else the last) has no game still to kick off (within the hour of its last
+kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
+dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
+that week's last kickoff so the panel, the Elo picks and the builder checks still have a game to stand on;
+a missing section there is a failed check, never a crash. `SMOKE_PAYLOAD=<file>` boots it on another
+payload, to try a week the job has not baked. `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.

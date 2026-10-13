@@ -19,6 +19,9 @@
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
  * carries what the retired layers left shows exactly the files and loses none of its own data.
  * jsdom and PapaParse are borrowed from props/build, so this needs no install of its own.
+ *
+ *   SMOKE_PAYLOAD=<file> node nflbets/build/smoke.js   boots the page on that payload instead of
+ *                                                       props/data/payload.json (to try a week the job has not baked)
  */
 'use strict';
 const fs = require('fs');
@@ -43,7 +46,8 @@ if (SEASON_OVER) {
   }
 }
 const PARLAYS = fs.readFileSync(path.join(ROOT, 'liveparlays', 'parlays.json'), 'utf8');
-const PAYLOAD = fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
+const PAYLOAD = fs.readFileSync(process.env.SMOKE_PAYLOAD ? path.resolve(process.env.SMOKE_PAYLOAD) : path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8');
+const PAYLOAD_TXT = PAYLOAD;
 const ELO_P = fs.readFileSync(path.join(ROOT, 'elo', 'data', 'players.json'), 'utf8');
 /* the suggestions record (props/build/suggest_ledger.js), as the page reads it beside the payload; none yet is a 404 */
 const LEDGER_REAL = (() => { try { return fs.readFileSync(path.join(ROOT, 'props', 'data', 'suggest_ledger.json'), 'utf8'); } catch (e) { return null; } })();
@@ -136,18 +140,25 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
     if (!close(QB, ref.QB, 1e-9)) bad.push('QB_MODEL'); }
   chk(app.length > 100000 && bad.length === 0, 'the betting app in the published page does not carry the reference model numbers: ' + bad.join(', '));
 }
-/* the page's clock. In the season the page runs on the real one. Once the prop model's last game
-   is about to kick off (its final weekend, the playoffs, the off-season, until next season's
-   schedule is in the payload) no game can take a builder leg, and much of what is checked here
-   (the builder, the badges and second prices on its legs, the Finish card) has nothing
-   to stand on; the page is then booted two days before that last kickoff, as it was on the
-   Friday of the season's final weekend. The board, the results and the grades come from the
-   files, so they are checked as they are. Schedule times are US Eastern, read through the time
-   zone database rather than a date the clocks change on. */
+/* the page's clock. In the season the page runs on the real one. The prop model's page is on its
+   own week, liveWeek() in part2.js: the first week of the payload's schedule with a game not yet
+   final (no score, and under four hours since its kickoff), else the last week. Once every game of
+   that week has kicked off or is within the hour of it (Monday night under way before the job
+   rebakes after its final, the season's final weekend, the playoffs, the off-season until next
+   season's schedule is in the payload), no game can take a builder leg, and much of what is checked
+   here (the panel, the Elo picks, the badges and second prices on the builder's legs, the Finish
+   card) has nothing to stand on; the page is then booted two days before that week's last kickoff,
+   as it was on the Friday or Saturday of that week. The board, the results and the grades come
+   from the files, so they are checked as they are. Schedule times are US Eastern, read through the
+   time zone database rather than a date the clocks change on. */
 const etKick = r => { const naive = Date.parse(`${r.d}T${r.t || '13:00'}:00Z`); if (!isFinite(naive)) return NaN;
   const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(new Date(naive)).find(p => p.type === 'timeZoneName');
   const m = tz && tz.value.match(/GMT([+-]\d+)/); return naive - (m ? +m[1] : -5) * 3600e3; };
-const LAST_KICK = Math.max(...(JSON.parse(PAYLOAD).sched || []).map(etKick).filter(isFinite));
+const PAGE_WEEK = (() => { const sch = JSON.parse(PAYLOAD).sched || [], now = Date.now();
+  const final = g => (g.hs != null && g.as != null && isFinite(g.hs) && isFinite(g.as)) || (isFinite(etKick(g)) && now >= etKick(g) + 4 * 3600e3);
+  const ws = [...new Set(sch.map(g => +g.w))].sort((a, b) => a - b);
+  return ws.find(w => sch.some(g => +g.w === w && !final(g))) ?? ws[ws.length - 1]; })();
+const LAST_KICK = Math.max(...(JSON.parse(PAYLOAD).sched || []).filter(g => +g.w === PAGE_WEEK).map(etKick).filter(isFinite));
 const PAGE_SHIFT_MS = isFinite(LAST_KICK) && Date.now() > LAST_KICK - 3600e3 ? Date.now() - (LAST_KICK - 2 * 86400e3) : 0;
 function shiftClock(w) {
   if (!PAGE_SHIFT_MS) return;
@@ -156,7 +167,7 @@ function shiftClock(w) {
     static now() { return D0.now() - PAGE_SHIFT_MS; } }
   w.Date = D;
 }
-if (PAGE_SHIFT_MS) console.log(`the payload's last game kicks off within the hour or has: the page is run as at ${new Date(Date.now() - PAGE_SHIFT_MS).toISOString()}, two days before it`);
+if (PAGE_SHIFT_MS) console.log(`the page's week ${PAGE_WEEK} has no game still to kick off: the page is run as at ${new Date(Date.now() - PAGE_SHIFT_MS).toISOString()}, two days before its last kickoff`);
 const txt = el => el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
 /* a dollar figure to the cent with its thousands marked, and an amount as a tier names it ("$35",
    "$12.50"), worked here rather than by the page's own helpers */
@@ -381,7 +392,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       return v && (!w || txt(w) !== v); });
     chk(bad.length === 0, `the board's picks are not the Vegas favourites on ${bad.length} games`); }
   /* the score prediction: the spread split around the book's total, whole points */
-  const PAYLOAD = JSON.parse(fs.readFileSync(path.join(ROOT, 'props', 'data', 'payload.json'), 'utf8'));
+  const PAYLOAD = JSON.parse(PAYLOAD_TXT);
   let predOk = 0, predAll = 0;
   for (const c of cards) {
     const g = state.schedule.find(x => x.game_id === c.dataset.game), v = vegasPick(g);
@@ -1267,7 +1278,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             return !!first && first.classList.contains('pb-chance') && (F && F.p != null ? txt(first.querySelector('b')) === pc(F.p) && txt(first.querySelector('small')) === `Elo says ${pc(t.p)}` : txt(first.querySelector('b')) === pc(t.p)); }),
             'the Elo picks do not lead with the fair chance beside the Elo\'s: ' + [...(card ? card.querySelectorAll('.pb-nums > div:first-child') : [])].map(txt).join(' / '));
           const far = card ? [...card.querySelectorAll('[data-pb-tier="elo3"] [data-pb-far]')].map(txt) : [], f1 = fo(legs[1]);
-          chk(far.length === 1 && !!f1 && far[0] === `model 90% · market ${Math.round(f1.p * 100)}%${f1.est ? ' est.' : ''}: far off the market` && !card.querySelector('[data-pb-tier="elo2"] [data-pb-far]'),
+          chk(far.length === 1 && !!f1 && far[0] === `model 90% · market ${Math.round(f1.p * 100)}%${f1.est ? ' est.' : ''}: far off the market` && !!card && !card.querySelector('[data-pb-tier="elo2"] [data-pb-far]'),
             'the Elo pick\'s leg far off the market is not flagged, or another is: ' + far.join(' / ')); }
         /* a leg carries a shield where its player is ranked this season, and only there */
         const wantBadges = [t2, t3].flatMap(t => t.legs).filter(l => eloP.players[l.pid] && eloP.players[l.pid].rank).length;
@@ -1276,11 +1287,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const eloStake0 = w.eval('S.stake'), amtBox = d.getElementById('pbStake');
         if (amtBox) { amtBox.value = '12.5'; amtBox.dispatchEvent(new w.Event('input')); amtBox.dispatchEvent(new w.Event('change')); await wait(20); }
         const eloAmt = amtBox ? 12.5 : eloStake0;
-        chk(!!amtBox && [t2, t3].every(t => { const p = card.querySelector(`[data-pb-tier="${t.id}"] [data-pb-pay]`);
+        chk(!!amtBox && !!card && [t2, t3].every(t => { const p = card.querySelector(`[data-pb-tier="${t.id}"] [data-pb-pay]`);
           return !!p && +p.dataset.pbPay === t.dec && txt(p.querySelector('b')) === money(12.5 * t.dec) && txt(p.querySelector('span')) === '$12.50 pays'; }),
-          'the Elo picks do not pay the Bet amount ($12.50) times their price: ' + [...card.querySelectorAll('.pb-nums div:last-child')].map(x => [...x.children].map(txt).join(' ')).join(' / '));
+          'the Elo picks do not pay the Bet amount ($12.50) times their price: ' + [...(card ? card.querySelectorAll('.pb-nums div:last-child') : [])].map(x => [...x.children].map(txt).join(' ')).join(' / '));
         /* Add to builder puts exactly those legs in the builder */
-        { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = card.querySelector('[data-pb-elo-add="elo2"]');
+        { const keepP = w.eval('JSON.stringify(S.parlay)'), ab = card && card.querySelector('[data-pb-elo-add="elo2"]');
           if (ab) { ab.click(); await wait(40); const P = w.eval('S').parlay;
             chk(Object.keys(P).length === 2 && t2.legs.every(l => P[l.key] && P[l.key].side === l.side && P[l.key].pe === undefined), 'an Elo pick\'s Add to builder did not put exactly its legs in the builder'); }
           else chk(false, 'an Elo pick has no Add to builder');
@@ -1335,7 +1346,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
          league average facing a unit below the league's: then there is no card, and no failure */
       const rows0 = onWeek ? w.eloMismatches() : [];
       if (onWeek && !rows0.length) chk(!card, 'a week with no mismatches still draws the card');
-      if (onWeek && rows0.length) {
+      if (onWeek && rows0.length && !card) chk(false, `the week has ${rows0.length} mismatches and the Props list draws no card for them`);
+      else if (onWeek && rows0.length) {
         const rows = rows0, bubbles = [...card.querySelectorAll('.pe-mm-b')];
         chk(rows.length > 0 && bubbles.length === Math.min(5, rows.length) && rows.every((r, i) => i === 0 || r.score <= rows[i - 1].score) && rows.every(r => r.zp > 0 && r.zd < 0),
           'the mismatch bubbles are not the five biggest favourable gaps');

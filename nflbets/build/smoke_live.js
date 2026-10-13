@@ -644,9 +644,14 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
       w.location.hash = '#parlay'; w.dispatchEvent(new w.HashChangeEvent('hashchange')); await wait(60);
       chk(dlg(d).hidden && !d.body.classList.contains('modal-open') && shownIds(d) === 'early,night' && key(w) === null,
         'moving to another tab left the Clear this parlay? window open behind it, the page held still, or cleared the parlay');
-      const b = d.querySelector('#tab-parlay button, #tab-parlay [tabindex]') || d.body; try { b.focus(); } catch (e) {}
+      /* the focus on the Parlay Builder's own tab button, as the visitor who pressed it holds it: the
+         tab bar is always there, where the tab's panel can have no control at all (once a week's
+         games have all kicked off it says so and draws none, and the body, which cannot take the
+         focus, left it on the hidden Cancel, so the check below read a Tab that moved nothing) */
+      const b = d.querySelector('#tabs [data-tab="parlay"]'); try { b.focus(); } catch (e) {}
+      chk(!!b && d.activeElement === b, 'the focus could not be put on the Parlay Builder\'s tab button, so Tab on another tab is not tried: ' + (d.activeElement && d.activeElement.outerHTML.slice(0, 60)));
       const was = d.activeElement; key0(w, { key: 'Tab' });
-      chk(d.activeElement !== d.getElementById('lpAskNo') && d.activeElement !== d.getElementById('lpAskYes'), 'Tab on another tab lands on the hidden window\'s buttons');
+      chk(d.activeElement === was && d.activeElement !== d.getElementById('lpAskNo') && d.activeElement !== d.getElementById('lpAskYes'), 'Tab on another tab lands on the hidden window\'s buttons');
       let esc = 0; d.addEventListener('keydown', e => { if (e.key === 'Escape') esc++; });
       key0(w, { key: 'Escape' }, was);
       chk(esc === 1, 'Escape on another tab is taken by the hidden Clear this parlay? window');
