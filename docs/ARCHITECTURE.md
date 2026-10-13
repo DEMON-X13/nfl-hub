@@ -296,6 +296,10 @@ research/                        the homework toward the next game model (README
   equation15/                    study 3: an equation on the 15 indicators (equation.py: 50
                                  variations scored with each season left out on 2004-2023, the
                                  best frozen in results/equation.json and tested on 2024-2025)
+  models_compare/                study 4: the site's five game models (Alpha, the Challenger, the
+                                 Joker, Broly, the ELO Model) run walk forward on 2021-2025 with
+                                 their own code and side by side (backtest.py; elo_features.py
+                                 runs elo/build.py with its cache and output in out/, 2026 dropped)
   exam/                          the one place a held-out season (2026 on) is read, to apply a
                                  frozen equation: blind_2026.py, study 3's equation on 2026
 ```

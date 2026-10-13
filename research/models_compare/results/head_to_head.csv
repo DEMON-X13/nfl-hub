@@ -1,0 +1,11 @@
+a,b,games_apart,a_right,b_right,chance_alone
+Alpha,Challenger,108,57,51,0.631
+Alpha,Joker,336,181,155,0.173
+Alpha,Broly,217,101,116,0.342
+Alpha,ELO Model,276,140,136,0.857
+Challenger,Joker,320,170,150,0.288
+Challenger,Broly,207,93,114,0.164
+Challenger,ELO Model,270,134,136,0.951
+Joker,Broly,247,103,144,0.011
+Joker,ELO Model,340,159,181,0.255
+Broly,ELO Model,259,139,120,0.263
