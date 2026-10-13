@@ -18,7 +18,7 @@
                        line it was favoured by under it -- on the board's own split bar; the
                        spread, total and moneylines with one line naming their sources; and five
                        lines that answer the questions a visitor comes with, each a button that
-                       opens its card: the model picks (how many of the five models agree with
+                       opens its card: the model picks (how many of the three models agree with
                        Vegas, the ones that do not named, and once played how many calls were
                        right), the Team Elo gap, which side ranks higher on offense against
                        defense each way, who is out and how many starters are questionable, and
@@ -26,9 +26,9 @@
        then a card each, folded to a one-line summary (on a wide screen Every call and Team
        strength open, the rest folded; on a phone all folded; Open all and Close all), each a
        click to open:
-         every call    Vegas, Alpha Model, the Challenger Model, the Joker, the ELO Model and the
-                       Broly Model: pick and chance on one lean chart (each bar leans from 50/50
-                       to the side its call picks, in that team's colour), graded once played
+         every call    Vegas, Alpha Model, the Joker and the ELO Model: pick and chance on one lean
+                       chart (each bar leans from 50/50 to the side its call picks, in that team's
+                       colour), graded once played
          team strength each team's Power Rating (elo/data/model.json `teams`): rating, shield,
                        rank, change since its last game, chance against an average team
          offense vs    Overall Offense against Overall Defense, both ways (`units`), and folded
@@ -529,7 +529,7 @@ function lineOf(P,g){
 }
 /* every model's call: the graded call once the job has graded the game (as the Pick'em Record
    grades it), the call frozen at kickoff once it has started, the latest published one before */
-const MODELS=[['vegas','Vegas','var(--ink)'],['alpha','Alpha Model','#1F6F4A'],['challenger','Challenger Model','#3B6FB6'],['joker','The Joker','#C0392B'],['elo','ELO Model','#E8730A'],['broly','Broly Model','#7A3FB0']];
+const MODELS=[['vegas','Vegas','var(--ink)'],['alpha','Alpha Model','#1F6F4A'],['joker','The Joker','#C0392B'],['elo','ELO Model','#E8730A']];
 function callsOf(P,g,F){
   const S0=P.ST.state||{}, gid=g.game_id, pr=(S0.processed||{})[gid]||null, ak=(S0.atKickoff||{})[gid]||null, M=F&&F.model;
   const one=x=>x&&x.pick?{pick:x.pick,pHome:x.pHome!=null?+x.pHome:null,correct:x.correct}:null;
@@ -539,16 +539,14 @@ function callsOf(P,g,F){
   return {
     vegas:v?{pick:v.pick,p:v.conf,correct:v.graded?v.correct:undefined}:null,
     alpha:pr?one(pr):one(ak),
-    challenger:pr?one(pr.h):one(ak&&ak.h),
     joker:one(pr&&pr.joker)||one((S0.joker||{})[gid]),
     elo:eg?{pick:eg.pick,pHome:eg.p_home,correct:eg.correct}:en?{pick:en.pick,pHome:en.p_home}:null,
-    broly:one(pr&&pr.broly)||one((S0.broly||{})[gid]),
     graded:!!pr, eloGraded:!!eg, eloNext:M&&M.next?+M.next.week:null };
 }
 /* a call's chance for the side it picks, and whether it landed (the file's grade, else the winner) */
 const chanceOf=(x,g)=>x.p!=null?x.p:x.pHome!=null?(x.pick===g.home_team?x.pHome:1-x.pHome):null;
 const hitOf=(x,win)=>x.correct===true||x.correct===false?x.correct:(win?x.pick===win:null);
-/* the vote, Vegas kept apart as the baseline: how many of the five models with a call agree with
+/* the vote, Vegas kept apart as the baseline: how many of the three models with a call agree with
    Vegas's pick (or, with no line, pick the side most of them pick), the ones that do not, the
    ones with no call yet, and once played how many of all the calls landed */
 function voteOf(P,g,F,st){
@@ -730,7 +728,7 @@ function callsSec(P,g,F){
     if(id==='vegas') return 'no line posted yet';
     if(id==='elo') return F&&F.model?(C.eloNext!=null&&+g.week>C.eloNext&&!st.started?`called in week ${+g.week}`:'no call on file'):(F?'the Elo ratings did not load':'loading…');
     if(st.started||st.fin) return 'no call on file';
-    return id==='alpha'||id==='challenger'?'called in the eight days before kickoff':'called in the week of the game';
+    return id==='alpha'?'called in the eight days before kickoff':'called in the week of the game';
   };
   const rows=MODELS.map(([id,label,col])=>{
     const x=C[id], name=`<span class="gs-mname"><i class="gs-dot" style="--gs-mc:${col}"></i><span>${label}</span>${id==='vegas'?'<small>baseline</small>':''}</span>`;

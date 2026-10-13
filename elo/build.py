@@ -433,6 +433,15 @@ failed injury or roster download used to publish IR and Out players as ranked st
 failed team-stats download every offense and defense at 1500, on a green run. A download is
 written whole or not at all. What each source gave is in `sources` in model.json, and the page
 says when the player stats or the play-by-play lag a final or a club has not filed its statuses.
+Every club is read in today's code (TEAM_NOW): games.csv, the depth charts and the injury reports
+write a club as it was called that season (OAK before 2020, SD before 2017, STL before 2016), the
+player stats, rosters and play-by-play as it is called now (LV, LAC, LA). Read as written, the
+game model matched none of those clubs' players to their games before the moves: until 13 October
+2026 the 263 such games of 2012-2019 were left out of its fit and walk-forward, and the matchup
+formula read the clubs' home games as away games. The player ratings, which read the stats by game
+id and opponent, were never affected. The fix moved the game model's weights (and with them the
+coming calls and the lineup part of the power ratings, by two points at most), its walk-forward
+record and the matchup formula's fit. The game ids stay as nflverse writes them.
 
 Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
 (the fitted weights and the who-played walk-forward are kept for the record and the smoke
@@ -462,7 +471,10 @@ HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
-FORMULA = '2026-10-12b'
+FORMULA = '2026-10-13'
+# the clubs that moved, from the code of the day (games.csv, the depth charts, the injury
+# reports) to today's (the player stats, rosters and play-by-play): THE SOURCES
+TEAM_NOW = {'OAK': 'LV', 'SD': 'LAC', 'STL': 'LA'}
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
@@ -657,6 +669,14 @@ def load(offline, now):
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)
     stats = stats[stats.game_id.notna()]
+    # every club in today's code (THE SOURCES): the schedule, the depth charts and the injury
+    # reports write the code of the day, the player stats, rosters and play-by-play today's
+    now_code = lambda s: s.replace(TEAM_NOW)
+    games['home_team'], games['away_team'] = now_code(games.home_team), now_code(games.away_team)
+    for d in list(charts.values()) + list(injuries.values()):
+        for c in ('club_code', 'team'):
+            if c in d.columns:
+                d[c] = now_code(d[c])
     return games, stats, roster, charts, injuries, pbp, sources
 
 

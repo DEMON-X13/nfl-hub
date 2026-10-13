@@ -1,5 +1,5 @@
-"""What the Joker (joker/joker.py) and the Broly Model (broly/broly.py) share as steps of the
-betting job, after update.js has written state.json:
+"""What the Joker (joker/joker.py) runs on as a step of the betting job, after update.js has written
+state.json (the Broly Model, broly/broly.py, ran on it too until it was retired on 13 October 2026):
 
   * where things are: data/ (the job's downloads) and betting/state.json, with BETTING_DATA,
     BETTING_STATE and BETTING_NOW (an ISO time standing in for the clock) for tests;
@@ -15,7 +15,7 @@ betting job, after update.js has written state.json:
   * grading, and the status line: a model whose required inputs could not be had refuses to
     rescore, keeps its last good picks in the state, says so there (`modelStatus`, which the
     Pick'em Record prints) and exits 1, which the workflow logs as a warning and carries on
-    past, so one model's missing file cannot hold back the lines, the grading and the others.
+    past, so the model's missing file cannot hold back the lines, the grading and the rest of the job.
 """
 from __future__ import annotations
 

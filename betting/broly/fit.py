@@ -9,6 +9,11 @@ home minus away, standardised, with a light ridge. Tested before it shipped on 2
 season predicted by a fit on the seasons before it: 65.8% straight up against the Vegas
 favourite's 66.4% (-9 over eight seasons), log loss 0.611 against 0.609 for the line alone.
 Do not refit on the season in progress.
+
+Retired with the model on 13 October 2026 (broly.py says why): nothing refits it for the site any
+more, and no prior_<season>.json is needed at a new season. It stays because
+research/models_compare/backtest.py imports logit_fit to fit the model walk forward; model.json and
+prior_2025.json are the weights the site ran, kept as the record.
 """
 from __future__ import annotations
 

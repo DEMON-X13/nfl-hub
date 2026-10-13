@@ -40,6 +40,11 @@ all pass. What each one would have caught is said beside it.
              call in the ledger marked published was made before its kickoff. (2026_03_SEA_WAS
              was shown as WAS and graded as SEA; a build that regrades the season must fail.)
   SOURCES    the season's injury report, roster and play-by-play are present; no group is empty.
+  GAMES      the game model's walk-forward counts, for every finished season, every final games.csv
+             has decided in it (a tie is no decision). (games.csv, the depth charts and the injury
+             reports write OAK, SD and STL for the seasons before those moves and the player stats
+             LV, LAC and LA: until October 2026 the 263 games of those clubs in 2012-2019 matched
+             none of their players and were silently left out, 218-251 of about 267 a season.)
   TEAMS      Overall Offense and Overall Defense against games.csv and the season's play-by-play,
              read again here with the gate's own code: 32 teams a side, ranked 1 to 32 once each
              in the order of their ratings (the teams that have played first); the weights shares
@@ -717,6 +722,14 @@ def main():
         if c['game_id'] in started and not c.get('frozen'):
             chk(False, f'CALENDAR: {c["game_id"]} had kicked off but was called afresh rather than kept at its frozen call')
             break
+
+    # ---- GAMES: the game model saw every decided final of every finished season ----
+    for s, v in sorted((M.get('walk_forward') or {}).items()):
+        if int(s) >= season:
+            continue                      # the season in play: a final whose stats are still to come is not in it yet
+        fin = games[(games.season == int(s)) & games.result.notna() & (games.result != 0)]
+        chk(v.get('games') == len(fin), f'GAMES: the game model\'s walk-forward has {v.get("games")} games for {s}, games.csv '
+            f'{len(fin)} decided finals: games were left out of the fit (a club\'s code not matched?)')
 
     # ---- SOURCES ----
     for g in groups:

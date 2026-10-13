@@ -149,8 +149,43 @@ The other three cannot be run before 2021 on the site's own files.
 These two leave out the relocated teams' games before their moves. Both join games.csv, which writes the
 codes of the day (OAK, SD, STL), to nflverse files that write today's codes (LV, LAC, LA). The ELO Model
 has no inputs for 263 games of 2012-2019 (217 of them in 2013-2019). Broly has none for 33 games of
-2018-2020, every Raiders game of 2018-2019 among them. The site's own fits have the same gap. It touches
-no 2021-2025 call.
+2018-2020, every Raiders game of 2018-2019 among them. The site's own fits had the same gap. No 2021-2025
+game is missing a call, but the fits that made those calls learned without the games left out. Both
+were fixed on 13 October 2026, after this study was run; the next section gives the study again with
+the fix.
+
+## Again, with the team-code fix
+
+The ELO Model's build (`elo/build.py`, THE SOURCES) and Broly's inputs (`betting/broly/stats.py`) were
+fixed on 13 October 2026 to read every club in today's code. The ELO Model now has inputs for every
+decided game of 2013-2025, and Broly for all 4,897 of 2008-2025. The study run again
+(`results/after_team_codes/`), 2021-2025 regular season, the same 1,355 games:
+
+| Model | As it ran (the tables above) | With the fix |
+|---|---|---|
+| Broly | 895-460 (66.1%) | 904-451 (66.7%) |
+| Alpha | 880-475 (64.9%) | 880-475 (64.9%) |
+| ELO Model | 876-479 (64.6%) | 872-483 (64.4%) |
+| Challenger | 874-481 (64.5%) | 874-481 (64.5%) |
+| Joker | 854-501 (63.0%) | 854-501 (63.0%) |
+
+Alpha, the Challenger and the Joker do not change: their files start in 2019 and their harness already
+read every club in today's code.
+
+- **Broly** picks the betting favourite in 98.8% of games with the fix (97.9% before). It gains 9 games
+  and is now ahead of the Joker (149-99), the Challenger (119-89) and the ELO Model (141-109) on the
+  games where they differ. With ten pairs compared, only the Joker gap is clear of chance; the other
+  two would turn up about one time in three.
+- **The ELO Model** loses 4 games, which is within chance. Alone against the other four it went 37-58,
+  and the Joker went 40-82.
+- **The five's split** is almost the same: all five agree on 831 games (61%), the majority right 71.5%;
+  on a 3 to 2 split the majority goes 116-121.
+
+Further back with the fix: the ELO Model 2,151-1,244 on 2013-2025 (63.4%, 3,395 games where it had
+3,181), and Broly 1,408-711 on 2018-2025 (66.4%).
+
+`backtest.py` now runs the fixed code, so a re-run writes these numbers. The tables above and
+`results/*.csv` are the run before the fix, as of commit 7302e5e.
 
 ## This season so far
 

@@ -21,8 +21,10 @@
  * the Pick'em Record; the Joker's calls on the weeks its model was later refitted on (2026 weeks 1-2)
  * are its real ones, betting/joker/history/ (held to the last commit's copy: BETTING_PREV_HISTORY
  * names another folder), never the refit's, and are drawn like every other week,
- * with no mark, note or record without them; Joker Jr, a test model retired in October
- * 2026, is gone from a state this run wrote and draws nothing from one that still carries it.
+ * with no mark, note or record without them; the retired models, Joker Jr (a test model, October
+ * 2026) and the Challenger and Broly Models (taken off the site on 13 October 2026), are gone from a
+ * state this run wrote and draw nothing from one that still carries them, and the app makes no
+ * Challenger ratings or calls.
  * Each holds whatever the week offers: a check with nothing to look at this week (no game graded
  * yet, no Thursday game, a bye) is skipped, and the rules themselves are also run on cases made
  * up here, so they are tested every week. It holds in every phase of a season (the week before
@@ -210,12 +212,10 @@ async function reality() {
   /* 5g. every coming game of this week has a call from every model, and a graded game is graded on
      the call published for it; a model the job could not run says why instead (modelStatus) */
   { const ms = P.modelStatus || {};
-    for (const [k, name] of [['joker', 'the Joker'], ['broly', 'the Broly Model']]) {
+    for (const [k, name] of [['joker', 'the Joker']]) {
       if (ms[k]) { check(typeof ms[k].why === 'string' && ms[k].why && ms[k].since, `5g: ${name}'s status has no reason or time`); continue; }
       const calls = P[k] || {};
-      /* Broly prices a game from both moneylines or, without them, the spread (betting/broly/stats.py market_prob) */
-      const both = o => !!o && o.home != null && o.away != null;
-      const need = weekGames.filter(g => g.result == null && (k !== 'broly' || g.spread_line != null || both((P.odds || {})[g.game_id])));
+      const need = weekGames.filter(g => g.result == null);
       const missing = need.filter(g => !calls[g.game_id]);
       check(!missing.length, `5g: ${name} has no call for ${missing.map(g => g.game_id).join(', ')} this week and no status saying why`);
       const off = Object.entries(P.processed).filter(([gid, r]) => r[k] && calls[gid] && r[k].pick !== calls[gid].pick).map(([gid]) => gid);
@@ -234,7 +234,7 @@ async function reality() {
          its call for such a game is either the last one before kickoff or already frozen */
       const started = S.schedule.filter(g => { const k = kick(g); return k != null && k <= pub; }).map(g => g.game_id);
       for (const gid of started) {
-        for (const k of ['joker', 'broly']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
+        for (const k of ['joker']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
           /* a Joker call in its history file may move onto the file's call once, from a call that
              carries no src (the refit's in-sample calls on 2026 weeks 1-2, replaced so on 12 October
              2026); once the last commit's call is the file's (it carries src), it is held like any
@@ -244,10 +244,12 @@ async function reality() {
             if (a && a.src) check(a.pick === b.pick && a.pHome === b.pHome && a.src === b.src, `5h: the Joker's call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`);
             else check(b.pick === JH[gid].pick && b.pHome === JH[gid].pHome, `5h: the Joker's call for ${gid} is not its history file's: ${J(b)}`); } continue; }
           if (a && b) { n++; check(a.pick === b.pick && a.pHome === b.pHome, `5h: ${k}'s call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`); } }
-        const call = st => (st.atKickoff || {})[gid] || (st.processed[gid] && { pick: st.processed[gid].pick, pHome: st.processed[gid].pHome, h: st.processed[gid].h });
+        /* Alpha's call (the Challenger's, h, which a state before 13 October 2026 carries beside
+           it, is retired and no longer held) */
+        const call = st => (st.atKickoff || {})[gid] || (st.processed[gid] && { pick: st.processed[gid].pick, pHome: st.processed[gid].pHome });
         const fa = call(prev), fb = call(P), same = (x, y) => x == null || y == null || Math.abs(x - y) < 1e-6;
-        if (fa && fb && fa.pick) { n++; check(fa.pick === fb.pick && same(fa.pHome, fb.pHome) && ((fa.h && fa.h.pick) || null) === ((fb.h && fb.h.pick) || null) && same(fa.h && fa.h.pHome, fb.h && fb.h.pHome),
-          `5h: Alpha's or the Challenger's call for ${gid} moved after kickoff: ${fa.pick} ${fa.pHome}/${fa.h && fa.h.pick} -> ${fb.pick} ${fb.pHome}/${fb.h && fb.h.pick}`); }
+        if (fa && fb && fa.pick) { n++; check(fa.pick === fb.pick && same(fa.pHome, fb.pHome),
+          `5h: Alpha's call for ${gid} moved after kickoff: ${fa.pick} ${fa.pHome} -> ${fb.pick} ${fb.pHome}`); }
       }
       console.log(`  5h: ${n} calls on games kicked off by ${P.published} held from the state before it`); } }
 
@@ -334,7 +336,9 @@ async function reality() {
       const board = live.w.eval(`predict(S.schedule.find(x=>x.game_id===${J(g.game_id)}),S.teams)`);
       st.atKickoff = Object.assign({}, st.atKickoff || {}, { [g.game_id]: { pick: other(board.pick), conf: 0.55, margin: 1, pHome: other(board.pick) === g.home_team ? 0.55 : 0.45, blended: false, h: { pick: other(board.pick), conf: 0.55, margin: 1, pHome: 0.5 } } });
       st.joker = Object.assign({}, st.joker, { [g.game_id]: (st.joker || {})[g.game_id] || { pick: g.home_team, pHome: 0.6 } });
-      st.broly = Object.assign({}, st.broly, { [g.game_id]: (st.broly || {})[g.game_id] || { pick: g.away_team, pHome: 0.4 } });
+      /* the frozen call carries the Challenger's (h) and the state a Broly call, as a state from before
+         13 October 2026 did: both retired, neither is taken */
+      st.broly = Object.assign({}, st.broly, { [g.game_id]: { pick: g.away_team, pHome: 0.4 } });
       const E = JSON.parse(eloModel); E.next = E.next || { games: [] }; E.next.games = (E.next.games || []).filter(x => x.game_id !== g.game_id).concat([{ game_id: g.game_id, pick: g.home_team }]);
       const espn = { events: [{ id: '1', date: y.toISOString(), competitions: [{ status: { type: { state: 'post', shortDetail: 'Final' } },
         competitors: [{ homeAway: 'home', team: { abbreviation: g.home_team }, score: '24' }, { homeAway: 'away', team: { abbreviation: g.away_team }, score: '17' }] }] }] };
@@ -342,11 +346,12 @@ async function reality() {
       const SB = b.w.eval('S'), row = SB.processed[g.game_id];
       check(!!row && row.fromScoreboard, `5k: a final on the scoreboard (${g.game_id}) was not settled`);
       if (row) {
-        check(row.pick === other(board.pick) && row.h && row.h.pick === other(board.pick), `5k: the settled game was graded on today's call (${row.pick}), not the one frozen at kickoff (${other(board.pick)})`);
-        for (const k of ['joker', 'elo', 'broly']) check(row[k] && typeof row[k].correct === 'boolean', `5k: the scoreboard final was not counted for ${k}`);
+        check(row.pick === other(board.pick), `5k: the settled game was graded on today's call (${row.pick}), not the one frozen at kickoff (${other(board.pick)})`);
+        check(!('h' in row) && !('broly' in row), '5k: the settled game carries a retired model\'s call (the Challenger\'s h or Broly\'s): ' + JSON.stringify(row).slice(0, 200));
+        for (const k of ['joker', 'elo']) check(row[k] && typeof row[k].correct === 'boolean', `5k: the scoreboard final was not counted for ${k}`);
         const tx = b.d.getElementById('modelChart').textContent.replace(/\s+/g, ' ');
         const n = k => Object.values(SB.processed).filter(r => k(r) === true || k(r) === false).length;
-        const cnt = { 'Alpha Model': n(r => r.correct), 'The Joker': n(r => r.joker && r.joker.correct), 'ELO Model': n(r => r.elo && r.elo.correct), 'Broly Model': n(r => r.broly && r.broly.correct) };
+        const cnt = { 'Alpha Model': n(r => r.correct), 'The Joker': n(r => r.joker && r.joker.correct), 'ELO Model': n(r => r.elo && r.elo.correct) };
         for (const [name, c] of Object.entries(cnt)) { const m = tx.match(new RegExp(name + ' (\\d+)–(\\d+)'));
           check(!!m && +m[1] + +m[2] === c, `5k: ${name}'s record does not count the settled final (${m && m[0]}, ${c} decided)`); }
       }
@@ -371,7 +376,7 @@ async function reality() {
     /* the record is drawn once a game is graded: before the first final, one made-up graded game */
     if (!Object.keys(st.processed).length) { const g = st.schedule[0];
       Object.assign(g, { result: 7, home_score: 24, away_score: 17 });
-      st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, h: null, news: [] }; }
+      st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, news: [] }; }
     const wks = [...new Set(Object.values(st.processed).map(r => +r.week))].sort((x, y) => x - y);
     /* the history file's weeks when the record has them, else a week made up for the test */
     const hw = [...new Set(Object.values(JH).map(e => +e.week))].filter(x => wks.includes(x));
@@ -380,10 +385,10 @@ async function reality() {
     if (!Object.values(st.processed).some(r => r.joker && HW.weeks.includes(+r.week))) {
       const r = Object.values(st.processed).find(x => HW.weeks.includes(+x.week) && x.result != null && x.result !== 0);
       if (r) r.joker = { pick: r.home, pHome: 0.6, correct: r.result > 0 }; }
-    st.modelStatus = { broly: { since: P.published, why: 'made up for the smoke test' } };
+    st.modelStatus = { joker: { since: P.published, why: 'made up for the smoke test' } };
     const b = boot(st); await new Promise(r => setTimeout(r, 700));
     const notes = b.d.querySelector('#modelChart .rv-notes'), nt = notes ? notes.textContent : '';
-    check(/Broly Model could not be rescored/.test(nt) && /made up for the smoke test/.test(nt), '5l: a model that could not run is not disclosed: ' + nt.slice(0, 300));
+    check(/The Joker could not be rescored/.test(nt) && /made up for the smoke test/.test(nt), '5l: a model that could not run is not disclosed: ' + nt.slice(0, 300));
     /* the Joker's history weeks, drawn as any week: each cell, the tooltip, the season cell and the legend */
     const alike = (b, fit, tag) => {
       const S2 = b.w.eval('S'), rows = Object.values(S2.processed).filter(r => r.correct !== null);
@@ -435,42 +440,63 @@ async function reality() {
     }
     check(b.errors.length === 0, '5l: runtime errors: ' + b.errors.join('; ')); }
 
-  /* 5m. Joker Jr, a test model retired in October 2026, stays retired. A state this run wrote (its
-     stamp is not the last commit's) carries none of what its step published (update.js drops it);
-     the last commit's may, until the job's next run. And a state that still carries all of it, its
-     calls, grades and a status saying it could not run, draws exactly what the same state without
-     it draws: the record's chart and notes, the week-by-week grid and the pick grid */
-  { const has = st => 'jokerLong' in st || 'jokerLongInfo' in st || Object.values(st.processed || {}).some(r => r && 'jokerLong' in r) || !!(st.modelStatus && 'jokerLong' in st.modelStatus);
+  /* 5m. the retired models stay retired: Joker Jr, a test model retired in October 2026, and the
+     Challenger and Broly Models, taken off the site on 13 October 2026 (the owner's call). A state
+     this run wrote (its stamp is not the last commit's) carries none of what they published
+     (update.js dropRetiredModels, its RETIRED_MODELS the list here); the last commit's may, until the
+     job's next run. A state that still carries all of it, their ratings, calls, grades and a status
+     saying one could not run, draws exactly what the same state without it draws: the record's chart
+     and notes, the week-by-week grid and the pick grid. And the app makes no Challenger: booted on
+     such a state it keeps no Challenger ratings (patches.js 6), and a game still to come is frozen
+     with no Challenger call */
+  { const GONE = { state: ['jokerLong', 'jokerLongInfo', 'teamsH', 'broly'], processed: ['jokerLong', 'h', 'broly'], atKickoff: ['h'], status: ['jokerLong', 'broly'] };
+    const has = st => GONE.state.some(k => k in st) || Object.values(st.processed || {}).some(r => r && GONE.processed.some(k => k in r))
+      || Object.values(st.atKickoff || {}).some(r => r && GONE.atKickoff.some(k => k in r)) || !!(st.modelStatus && GONE.status.some(k => k in st.modelStatus));
     let prev = null; try { prev = JSON.parse(process.env.BETTING_PREV_STATE ? fs.readFileSync(process.env.BETTING_PREV_STATE, 'utf8')
       : require('child_process').execSync('git show HEAD:betting/state.json', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { prev = null; }
-    if (prev && prev.published !== P.published) check(!has(P), '5m: a state written since the last commit still carries Joker Jr\'s keys (update.js dropJokerJr)');
-    else if (has(P)) console.log('  (5m: the state is the last commit\'s and still carries Joker Jr\'s keys; the job\'s next run drops them)');
-    const st = JSON.parse(state); delete st.jokerLong; delete st.jokerLongInfo;
-    for (const r of Object.values(st.processed)) delete r.jokerLong;
-    if (st.modelStatus) { delete st.modelStatus.jokerLong; if (!Object.keys(st.modelStatus).length) delete st.modelStatus; }
+    if (prev && prev.published !== P.published) check(!has(P), '5m: a state written since the last commit still carries a retired model\'s keys (update.js dropRetiredModels)');
+    else if (has(P)) console.log('  (5m: the state is the last commit\'s and still carries a retired model\'s keys; the job\'s next run drops them)');
+    const st = JSON.parse(state);
+    for (const k of GONE.state) delete st[k];
+    for (const r of Object.values(st.processed)) for (const k of GONE.processed) delete r[k];
+    for (const r of Object.values(st.atKickoff || {})) for (const k of GONE.atKickoff) delete r[k];
+    if (st.modelStatus) { for (const k of GONE.status) delete st.modelStatus[k]; if (!Object.keys(st.modelStatus).length) delete st.modelStatus; }
     /* the record and its grids are drawn once a game is graded: before the first final, one made-up graded game */
     if (!Object.keys(st.processed).length) { const g = st.schedule[0];
       Object.assign(g, { result: 7, home_score: 24, away_score: 17 });
-      st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, h: null, news: [] }; }
+      st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, news: [] }; }
     st.showAllModels = true;
     const jr = JSON.parse(J(st)), wk = w.eval('currentWeekDefault()');
     jr.jokerLong = {};
     for (const g of jr.schedule.filter(x => +x.week <= wk)) jr.jokerLong[g.game_id] = { pick: g.away_team, pHome: 0.45, backfill: true };
     for (const r of Object.values(jr.processed)) r.jokerLong = { pick: r.away, pHome: 0.45, correct: r.result != null ? r.result < 0 : null, backfill: true };
     jr.jokerLongInfo = { since: P.published, fitted_on: '2010-2025 regular season and playoffs', walk_forward: { long_fit: 0.65, joker_recipe_2019_start: 0.63, vegas: 0.66, games: 1355 } };
-    jr.modelStatus = Object.assign({}, jr.modelStatus, { jokerLong: { since: P.published, why: 'its fitted model is missing (made up for the smoke test)' } });
+    jr.modelStatus = Object.assign({}, jr.modelStatus, { jokerLong: { since: P.published, why: 'its fitted model is missing (made up for the smoke test)' },
+      broly: { since: P.published, why: 'made up for the smoke test' } });
+    /* the Challenger's and Broly's keys as the state carried them before 13 October 2026: the
+       Challenger's ratings, its call on every game graded and frozen, Broly's calls and grades */
+    jr.teamsH = JSON.parse(J(jr.teams)); jr.broly = {};
+    for (const g of jr.schedule.filter(x => +x.week <= wk)) jr.broly[g.game_id] = { pick: g.away_team, pHome: 0.45 };
+    for (const r of Object.values(jr.processed)) { r.h = { pick: r.away, conf: 0.55, margin: -1, pHome: 0.45, correct: r.result != null ? r.result < 0 : null };
+      r.broly = { pick: r.away, pHome: 0.45, correct: r.result != null ? r.result < 0 : null }; }
+    for (const r of Object.values(jr.atKickoff || {})) r.h = { pick: r.pick, conf: 0.55, margin: 1, pHome: 0.5 };
     const draw = async s => { const b = boot(s); await new Promise(r => setTimeout(r, 700));
       b.w.eval(`S.picksOpen=true; S.picksWeek=${wk}; renderRecord()`); await new Promise(r => setTimeout(r, 60));
       const t = sel => [...b.d.querySelectorAll(sel)].map(x => x.textContent.replace(/\s+/g, ' ').trim()).join(' | ');
-      return { chart: t('#modelChart'), lines: b.d.querySelectorAll('#modelChart svg polyline').length, grid: t('#recordTable table.rv-grid tbody tr'),
-        picks: t('.pickgrid thead th') + ' || ' + t('.pickgrid tbody tr'), errors: b.errors }; };
+      const out = { chart: t('#modelChart'), lines: b.d.querySelectorAll('#modelChart svg polyline').length, grid: t('#recordTable table.rv-grid tbody tr'),
+        picks: t('.pickgrid thead th') + ' || ' + t('.pickgrid tbody tr'), errors: b.errors };
+      /* the app as it runs: Challenger ratings kept, or a game still to come frozen with a Challenger call */
+      out.seeded = b.w.eval("'teamsH' in S");
+      out.akH = b.w.eval("freezeAtKickoff(Date.now()), Object.entries(S.atKickoff||{}).some(([id,a])=>a&&('h' in a)&&!frozenCall(S.schedule.find(g=>g.game_id===id)))");
+      return out; };
     const a = await draw(st), z = await draw(jr);
-    check(!/Joker Jr|jokerLong/.test(a.chart + a.grid + a.picks + z.chart + z.grid + z.picks), '5m: the record names Joker Jr: ' + (z.chart.match(/.{0,80}(Joker Jr|jokerLong).{0,80}/) || [''])[0]);
-    check(a.chart === z.chart && a.lines === z.lines, '5m: a state carrying Joker Jr\'s calls, grades or status draws a different chart or notes: ' + z.chart.slice(0, 300));
-    check(!!a.grid && a.grid === z.grid, '5m: a state carrying Joker Jr\'s grades draws a different week-by-week grid: ' + z.grid.slice(0, 300));
-    check(/The Joker/.test(a.picks) && a.picks === z.picks, '5m: a state carrying Joker Jr\'s calls draws a different pick grid: ' + z.picks.slice(0, 300));
+    check(!/Joker Jr|jokerLong|Challenger|Broly/.test(a.chart + a.grid + a.picks + z.chart + z.grid + z.picks), '5m: the record names a retired model: ' + ((z.chart + z.picks).match(/.{0,80}(Joker Jr|jokerLong|Challenger|Broly).{0,80}/) || [''])[0]);
+    check(a.chart === z.chart && a.lines === z.lines, '5m: a state carrying a retired model\'s calls, grades or status draws a different chart or notes: ' + z.chart.slice(0, 300));
+    check(!!a.grid && a.grid === z.grid, '5m: a state carrying a retired model\'s grades draws a different week-by-week grid: ' + z.grid.slice(0, 300));
+    check(/The Joker/.test(a.picks) && a.picks === z.picks, '5m: a state carrying a retired model\'s calls draws a different pick grid: ' + z.picks.slice(0, 300));
+    check(!a.seeded && !z.seeded && !a.akH && !z.akH, '5m: the app still makes the Challenger (patches.js 6): its ratings kept ' + [a.seeded, z.seeded] + ', a game to come frozen with its call ' + [a.akH, z.akH]);
     check(!a.errors.length && !z.errors.length, '5m: runtime errors: ' + a.errors.concat(z.errors).join('; '));
-    console.log(`  5m: a state carrying Joker Jr's ${Object.keys(jr.jokerLong).length} calls, ${Object.keys(jr.processed).length} grades and a status draws the record as one without them`); }
+    console.log(`  5m: a state carrying Joker Jr's ${Object.keys(jr.jokerLong).length} calls, the Challenger's ratings and ${Object.keys(jr.processed).length} grades, Broly's ${Object.keys(jr.broly).length} calls and grades and their statuses draws the record as one without them; the app keeps no Challenger`); }
 }
 
 /* ---------------------------------------------------------------- 6. the X Bet Log, handed in
@@ -713,13 +739,9 @@ async function xbetLog() {
     check(/Wins against Vegas/.test(rtxt) && !!rec.querySelector('svg.rv-chart') && !rec.querySelector('svg.wowchart'), 'embed: the record does not draw Wins against Vegas: ' + rtxt.slice(0, 120));
     check(new RegExp('ELO Model ' + want + '\u2013' + (gradedIds.length - want)).test(rtxt), `embed: the legend should give ELO Model ${want}\u2013${gradedIds.length - want}: ` + rtxt.slice(0, 300));
     check(rec.querySelectorAll('svg.rv-chart polyline[stroke="#E8730A"]').length === 1, 'embed: the Elo model has no line on the chart');
-    /* the Broly Model, when the job has scored it: its record in the legend and its own line */
-    { const bg = Object.values(SE.processed).filter(r => r.broly && typeof r.broly.correct === 'boolean'), bw = bg.filter(r => r.broly.correct).length;
-      if (bg.length) {
-        check(new RegExp('Broly Model ' + bw + '\u2013' + (bg.length - bw)).test(rtxt), `embed: the legend should give Broly Model ${bw}\u2013${bg.length - bw}: ` + rtxt.slice(0, 400));
-        check(rec.querySelectorAll('svg.rv-chart polyline[stroke="#7A3FB0"]').length === 1, 'embed: the Broly Model has no line on the chart');
-      } }
-    check(/Challenger Model \d+\u2013\d+/.test(rtxt) && !/Challenger \d/.test(rtxt) && !/ELO based/.test(rtxt), 'embed: the Challenger Model or the ELO Model still has its old name: ' + rtxt.slice(0, 300));
+    /* the Challenger and Broly Models were taken off the site on 13 October 2026: no legend, line or note */
+    check(!/Challenger|Broly/.test(rtxt) && !rec.querySelector('svg.rv-chart polyline[stroke="#3B6FB6"], svg.rv-chart polyline[stroke="#7A3FB0"]'), 'embed: the record still draws a retired model: ' + (rtxt.match(/.{0,80}(Challenger|Broly).{0,80}/) || [''])[0]);
+    check(!/ELO based/.test(rtxt), 'embed: the ELO Model still has its old name: ' + rtxt.slice(0, 300));
     /* Vegas is the baseline: the headline tiles are its record, and the old names are gone */
     { const win = r => r.result > 0 ? r.home : r.away, im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
       let c = 0, n = 0; for (const [gid, r] of Object.entries(SE.processed)) { if (r.result == null || r.result === 0) continue; const o = (SE.odds || {})[gid];
@@ -761,14 +783,14 @@ async function xbetLog() {
     /* every model with a decided game, in order, then Vegas: a model that has none (the Joker in a
        season it could not call, say) is left out rather than shown empty */
     { const dec = f => Object.values(SE.processed).some(r => { const v = f(r); return v === true || v === false; });
-      const order = [['Alpha Model', r => r.correct], ['Challenger Model', r => r.h && r.h.correct], ['The Joker', r => r.joker && r.joker.correct],
-        ['ELO Model', r => r.elo && r.elo.correct], ['Broly Model', r => r.broly && r.broly.correct]].filter(([n, f]) => (SE.showAllModels || n === 'Alpha Model') && dec(f)).map(([n]) => n).concat('Vegas');
+      const order = [['Alpha Model', r => r.correct], ['The Joker', r => r.joker && r.joker.correct],
+        ['ELO Model', r => r.elo && r.elo.correct]].filter(([n, f]) => (SE.showAllModels || n === 'Alpha Model') && dec(f)).map(([n]) => n).concat('Vegas');
       check(gridRows.includes('ELO Model') && gridRows.join('|') === order.join('|'), 'embed: the week-by-week grid rows are wrong: ' + gridRows.join('|') + ' (want ' + order.join('|') + ')'); }
     { const eloRow = [...de.querySelectorAll('#recordTable table.rv-grid tbody tr')].find(tr => tr.querySelector('th').textContent.trim() === 'ELO Model');
       check(!!eloRow && eloRow.querySelector('td.rv-season b').textContent === `${want}\u2013${gradedIds.length - want}`, 'embed: the grid\'s Elo season cell is wrong'); }
     de.getElementById('picksToggle').click(); await sleep(80);
     const gridHead = [...de.querySelector('.pickgrid').querySelectorAll('thead th')].map(th => th.textContent.trim());
-    check(gridHead.includes('ELO Model') && gridHead.includes('Broly Model') && gridHead.includes('Challenger Model') && gridHead.includes('Alpha Model') && !gridHead.includes('Main Model'), 'embed: the pick grid lacks a model column: ' + gridHead.join('|'));
+    check(gridHead.join('|') === 'Game|Alpha Model|The Joker|ELO Model|Vegas', 'embed: the pick grid\'s columns should be Game, Alpha Model, The Joker, ELO Model and Vegas: ' + gridHead.join('|'));
     const firstRow = de.querySelector('.pickgrid tbody tr');
     check(!!firstRow && firstRow.querySelectorAll('td').length === gridHead.length, 'embed: the pick grid rows do not match its columns');
     /* one week at a time: this week by default, the weeks before it in the picker, nothing beyond */
