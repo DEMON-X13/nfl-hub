@@ -62,6 +62,9 @@ concurrency:
 jobs:
   betting:
     runs-on: ubuntu-latest
+    # a normal run takes a few minutes; a stalled download (lib/netfetch.py and .js give each try a
+    # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours
+    timeout-minutes: 40
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
       # in line (concurrency), and one queued behind another would otherwise start from the state the other

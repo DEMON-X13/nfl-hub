@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import json
 import sys
-import urllib.request
 from pathlib import Path
 
 import numpy as np
@@ -57,7 +56,7 @@ def main():
     pbp_path = J.DATA / f"play_by_play_{season}.parquet"
     if not pbp_path.exists():
         try:
-            urllib.request.urlretrieve(PBP_URL.format(season=season), pbp_path); log(f"downloaded {pbp_path.name}")
+            J.download(PBP_URL.format(season=season), pbp_path); log(f"downloaded {pbp_path.name}")
         except Exception as e:  # noqa: BLE001
             if pbp_path.exists():
                 pbp_path.unlink()

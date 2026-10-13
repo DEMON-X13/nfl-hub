@@ -19,6 +19,7 @@
    file did not download), so the job stops before its commit and the last good files stay live.   */
 const fs = require('fs'), path = require('path');
 const lib = require('./lib');
+const netfetch = require('../../lib/netfetch.js');
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const WEEK = parseInt(args.find(a => /^\d+$/.test(a)) || '', 10);
@@ -38,21 +39,13 @@ const NAME = {};
 /* a source that refuses one set of headers sometimes accepts another; try three before giving up */
 /* order matters: from GitHub's servers ESPN refuses the browser-like UA (403) but accepts a plain one (checked 2026-09-15) */
 const HEADER_SETS = [{ 'User-Agent': 'nfl-hub-season-tracker/1.0 (+https://github.com/DEMON-X13/nfl-hub)', 'Accept': 'application/json,text/html' }, {}, UA.headers];
-async function fetchRetry(url) {
-  let last;
-  for (let i = 0; i < HEADER_SETS.length; i++) {
-    try {
-      const r = await fetch(url, { headers: HEADER_SETS[i] });
-      if (r.ok) return r;
-      last = new Error(r.status + ' ' + url);
-      if (![403, 408, 429, 500, 502, 503, 504].includes(r.status)) break;
-    } catch (e) { last = e; }
-    await new Promise(res => setTimeout(res, 1500));
-  }
-  throw last;
-}
-const getJSON = async url => (await fetchRetry(url)).json();
-const getText = async url => (await fetchRetry(url)).text();
+/* lib/netfetch.js, the rule every NFL job shares, here with the header sets in turn and 403 tried again;
+   ESPN and teamrankings are not required sources, so these wait less (2, 5 and 10 seconds, four tries) */
+const SOFT_WAITS = [2000, 5000, 10000];
+const get = (url, read) => netfetch.fetchRetry(url, { headers: HEADER_SETS, retryOn: [403], waits: SOFT_WAITS, read, timeoutMs: 60000, name: url.replace(/^https?:\/\//, '').slice(0, 80) })
+  .then(r => r.body, e => { throw e.status ? Object.assign(new Error(e.status + ' ' + url), { status: e.status }) : e; });
+const getJSON = url => get(url, 'json');
+const getText = url => get(url, 'text');
 
 /* full team names from data/teams.js, used when ESPN is not available to supply them */
 const FULL = {};

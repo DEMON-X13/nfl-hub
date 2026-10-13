@@ -427,7 +427,7 @@ over or opening.
 
 THE SOURCES. Every file a season under way needs -- its player stats, depth charts, injury
 report, roster and play-by-play, and every past season's stats, charts and reports -- is
-required: a download that fails (after three tries; a 404 is not retried) stops the build
+required: a download that fails (after lib/netfetch.py's five tries; a 404 is not retried) stops the build
 before anything is written, so the job commits nothing and the last good files stay live. A
 failed injury or roster download used to publish IR and Out players as ranked starters, and a
 failed team-stats download every offense and defense at 1500, on a green run. A download is
@@ -448,12 +448,15 @@ test; no page draws them), each file written whole once everything is built:
     elo/data/calls.json     the ledger of calls as published before kickoff (THE CALLS)
 elo/check.py and elo/check_tab.js are the gate the job runs before it commits.
 """
-import argparse, bisect, datetime, json, math, os, time, urllib.error, urllib.request, zoneinfo
+import argparse, bisect, datetime, json, math, os, sys, zoneinfo
 import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'lib'))
+import netfetch  # noqa: E402  (lib/netfetch.py: the download rule the NFL jobs share)
 CACHE = os.path.join(HERE, 'cache')
+PAST_LIST = os.path.join(CACHE, 'past.lst')   # the finished seasons' files load() read (the job's cache)
 OUT = os.path.join(HERE, 'data')
 HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
@@ -532,36 +535,21 @@ class Missing(Exception):
     """a source file that could not be had"""
 
 
-def fetch(url, dest, offline, tries=3):
-    """the file at url, cached at dest. A download is written whole or not at all (a cut-off
-    transfer must not sit in the cache as a short file), and a failure other than a 404 is
-    tried again, since nflverse's release host drops the odd request."""
+def fetch(url, dest, offline):
+    """the file at url, cached at dest. The download is lib/netfetch.py's (the rule every NFL job
+    shares): written whole or not at all, a transient failure (a 5xx, 429, timeout, reset, or an empty
+    or HTML body) tried again on waits of 5, 15, 30 and 60 seconds under one retry budget for the run,
+    since nflverse's release host drops the odd request (three 500s in a row on depth_charts_2019.csv
+    refused the run of 13 October 2026), and a 404 answered at once."""
     if os.path.exists(dest):
         return dest
     if offline:
         raise Missing(f'offline and {os.path.basename(dest)} is not cached')
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
-    err = None
-    for i in range(tries):
-        try:
-            print(f'  downloading {os.path.basename(dest)}')
-            with urllib.request.urlopen(url, timeout=120) as r:
-                body = r.read()
-            if not body.strip():
-                raise Missing('an empty file')
-            with open(dest + '.part', 'wb') as f:
-                f.write(body)
-            os.replace(dest + '.part', dest)
-            return dest
-        except urllib.error.HTTPError as e:
-            err = e
-            if e.code == 404:
-                break
-        except Exception as e:
-            err = e
-        if i + 1 < tries:
-            time.sleep(5 * (i + 1))
-    raise Missing(f'{os.path.basename(dest)}: {err}')
+    print(f'  downloading {os.path.basename(dest)}', flush=True)
+    try:
+        return netfetch.download(url, dest)
+    except netfetch.FetchError as e:
+        raise Missing(str(e)) from e
 
 
 def kickoff(gameday, gametime):
@@ -598,7 +586,9 @@ def load(offline, now):
     games = games[games.season >= FIRST].copy()
     sched = int(games.season.max())              # the newest schedule nflverse has posted
     live = under_way(games, sched, now)
-    sources, missing = {}, []
+    sources, missing, past = {}, [], []
+    if os.path.exists(PAST_LIST):
+        os.remove(PAST_LIST)                     # written again below only when every source was had
 
     def read(name, url, y, required, fresh, ext='csv', usecols=None):
         dest = os.path.join(CACHE, f'{name}_{y}.{ext}')
@@ -607,7 +597,16 @@ def load(offline, now):
             os.remove(dest)
         try:
             # usecols names every column read, so a column nflverse renames fails here, loudly
-            d = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False, usecols=usecols)
+            try:
+                d = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False, usecols=usecols)
+            except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError, EOFError) as e:
+                # a finished season's copy the job's cache restored and that will not read is fetched
+                # once more, so one bad copy cannot refuse every run after it
+                if offline or fresh or not os.path.exists(dest):
+                    raise
+                print(f'  the cached {os.path.basename(dest)} did not read ({str(e)[:120]}): fetching it again', flush=True)
+                os.remove(dest)
+                d = pd.read_csv(fetch(url.format(y=y), dest, offline), low_memory=False, usecols=usecols)
             if not len(d):
                 raise Missing(f'{name}_{y}.{ext} has no rows')
         except (Missing, pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, OSError) as e:
@@ -620,6 +619,8 @@ def load(offline, now):
             return None
         if y >= sched - 1:
             sources[f'{name}_{y}'] = {'ok': True, 'rows': int(len(d))}
+        if not fresh:
+            past.append(os.path.basename(dest))
         return d
 
     frames, charts, injuries = [], {}, {}
@@ -647,6 +648,11 @@ def load(offline, now):
     if missing:
         raise SystemExit('elo: required sources could not be had, so nothing is written and the published '
                          'files stay:\n  ' + '\n  '.join(missing))
+    # the finished seasons' files, which never change: the job keeps exactly these between runs
+    # (actions/cache in elo.yml), so a run asks nflverse for the season in play, games.csv and the
+    # roster alone. A file read fresh (the season in play, the roster, games.csv) is never listed.
+    with open(PAST_LIST, 'w') as f:
+        f.write(''.join(n + '\n' for n in sorted(past)))
     stats = pd.concat(frames, ignore_index=True)
     stats = stats[stats.position.isin(GROUP)].copy()
     stats['group'] = stats.position.map(GROUP)

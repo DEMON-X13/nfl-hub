@@ -35,6 +35,8 @@ concurrency:
 jobs:
   rate:
     runs-on: ubuntu-latest
+    # a normal run takes about five minutes; a stalled download fails the run here, not at GitHub's six hours
+    timeout-minutes: 40
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
       # in line (concurrency), and one queued behind another would otherwise start from the state the other
@@ -46,8 +48,26 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r elo/requirements.txt
+      # The finished seasons' nflverse files (2012 to last season's player stats, depth charts and injury
+      # reports, and last season's play-by-play once this one is under way: about 230 MB, 43 of the 49
+      # files a run reads) never change, so they are kept between runs instead of asked for again five
+      # times a day: one failed request among them refused the run of 13 October 2026. The season in
+      # play, games.csv and the roster are never kept: build.py deletes and downloads them every run.
+      # build.py writes elo/cache/past.lst, the finished seasons' files it read, once every source was
+      # had; the steps after the gates keep exactly those, under a key that changes only when that set
+      # does (a new season). A restore that misses only means a full download, as before. Bump v1 to
+      # throw the kept files away (if nflverse ever republishes a past season).
+      - name: Restore the finished seasons' files
+        id: restore
+        uses: actions/cache/restore@v5
+        with:
+          path: elo/cache-past
+          key: elo-nflverse-past-v1-none            # never saved: the newest under the prefix is taken
+          restore-keys: elo-nflverse-past-v1-
+      - run: mkdir -p elo/cache && if [ -d elo/cache-past ]; then cp elo/cache-past/* elo/cache/ 2>/dev/null || true; ls elo/cache | wc -l; fi
       - name: Rate every player and fit the roster model
-        # exits 1 without writing anything when a required source cannot be downloaded
+        # exits 1 without writing anything when a required source cannot be downloaded (lib/netfetch.py
+        # has tried each failed one five times, over nearly two minutes, first)
         run: python elo/build.py
       - name: Check the files against the roster, the injury report, the schedule and the published record
         run: python elo/check.py
@@ -82,3 +102,18 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      - name: Stage the finished seasons' files to keep
+        id: past
+        if: always()
+        run: |
+          [ -f elo/cache/past.lst ] || { echo "no past.lst: the build did not get its sources, nothing to keep"; exit 0; }
+          rm -rf elo/cache-past && mkdir elo/cache-past
+          while read -r f; do cp "elo/cache/$f" elo/cache-past/; done < elo/cache/past.lst
+          echo "key=elo-nflverse-past-v1-$(sort elo/cache/past.lst | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+      - name: Keep them for the next run (a new entry only when the set of finished seasons changes)
+        if: always() && steps.past.outputs.key != '' && steps.past.outputs.key != steps.restore.outputs.cache-matched-key
+        uses: actions/cache/save@v5
+        continue-on-error: true
+        with:
+          path: elo/cache-past
+          key: ${{ steps.past.outputs.key }}

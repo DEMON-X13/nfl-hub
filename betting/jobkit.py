@@ -9,6 +9,9 @@ betting job, after update.js has written state.json:
   * the freeze at kickoff: a game that has kicked off keeps the call it had on the last run
     before it, so the record grades the pick a reader saw, never one rescored afterwards on a
     closing line that moved or a model that was refitted;
+  * downloads (`download`): lib/netfetch.py's rule, the one every NFL job shares, so a file is
+    written whole or not at all, a transient failure (a 5xx, 429, timeout, reset) is tried again on
+    waits of 5, 15, 30 and 60 seconds, and no try can hang the job (it once had no timeout at all);
   * grading, and the status line: a model whose required inputs could not be had refuses to
     rescore, keeps its last good picks in the state, says so there (`modelStatus`, which the
     Pick'em Record prints) and exits 1, which the workflow logs as a warning and carries on
@@ -26,6 +29,8 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "lib"))
+import netfetch  # noqa: E402  (lib/netfetch.py: the download rule the NFL jobs share)
 DATA = Path(os.environ.get("BETTING_DATA") or ROOT / "data")
 STATE = Path(os.environ.get("BETTING_STATE") or ROOT / "betting" / "state.json")
 NEUTRAL = json.loads((ROOT / "betting" / "neutral_sites.json").read_text(encoding="utf-8"))
@@ -39,6 +44,13 @@ class Refuse(Exception):
 
 def log(msg):
     print(datetime.now().strftime("%H:%M:%S"), msg, flush=True)
+
+
+def download(url: str, dst) -> Path:
+    """url -> dst, whole or not at all, by lib/netfetch.py's rule; raises netfetch.FetchError (an
+    OSError) when the file still cannot be had, `code` 404 for one not posted yet"""
+    return Path(netfetch.download(url, str(dst), timeout=120, min_bytes=200,
+                                  log=lambda m: log(m.strip())))
 
 
 def now() -> datetime:

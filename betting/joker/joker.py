@@ -34,7 +34,6 @@ from __future__ import annotations
 import json
 import re
 import sys
-import urllib.request
 from pathlib import Path
 
 import joblib
@@ -53,7 +52,7 @@ PBP_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_
 def fetch_pbp(season: int) -> bool:
     dst = J.DATA / f"play_by_play_{season}.parquet"
     try:
-        urllib.request.urlretrieve(PBP_URL.format(season=season), dst)
+        J.download(PBP_URL.format(season=season), dst)
         log(f"downloaded {dst.name} ({dst.stat().st_size/1e6:.1f} MB)")
         return True
     except Exception as e:  # before the season's first game the file may not exist yet
