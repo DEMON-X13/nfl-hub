@@ -419,7 +419,7 @@
   },
   "CHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T18:31:54.361Z",
+   "built_at": "2026-10-13T20:36:47.863Z",
    "units": {
     "qb": [
      {
@@ -487,15 +487,15 @@
     ],
     "front": [
      {
+      "id": "00-0039840",
+      "n": "Austin Booker",
+      "pos": "DE"
+     },
+     {
       "id": "00-0036480",
       "n": "Dayo Odeyingbo",
       "pos": "DE",
       "q": "questionable: quadriceps"
-     },
-     {
-      "id": "00-0035647",
-      "n": "Montez Sweat",
-      "pos": "DE"
      },
      {
       "id": "00-0035525",

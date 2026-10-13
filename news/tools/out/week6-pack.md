@@ -22,7 +22,7 @@ Seattle Seahawks, injuries:
 - AJ Barner (TE) Active: Barner caught three of five targets for 20 yards during Sunday's 32-29 loss versus the 49ers.
 - Drew Lock (QB) Questionable, Forearm: Lock (forearm) was listed as a limited participant on Monday's estimated practice report, John Boyle of the Seahawks' official site reports.
 - Drake Thomas (LB) Questionable, Ankle: Thomas (ankle) was listed as a non-participant on Monday's estimated injury report, John Boyle of the Seahawks' official site reports.
-- Irv Charles (WR) Injured Reserve, Knee: Charles (knee) was estimated as a full practice participant on Monday's injury report, John Boyle of the Seahawks' official site reports.
+- Irv Charles (WR) Active: Charles (knee) was estimated as a full practice participant on Monday's injury report, John Boyle of the Seahawks' official site reports.
 - Leonard Williams (DT) Questionable, Ankle: questionable
 - Beau Stephens (G) Questionable, Shoulder: questionable
 - Zach Charbonnet (RB) Out, Knee - ACL: The Seahawks listed Charbonnet (knee) as a limited participant on Monday's practice estimate, Bob Condotta of The Seattle Times reports.
@@ -112,8 +112,8 @@ Houston Texans, injuries:
 Houston Texans, ESPN headlines:
 
 Jacksonville Jaguars, injuries:
+- Anton Harrison (OT) Injured Reserve, Knee: Harrison (knee) is set to undergo arthroscopic knee surgery once back from London, Ian Rapoport of NFL Network reported Tuesday.
 - Eric Murray (S) Questionable, Concussion: questionable
-- Anton Harrison (OT) Out, Knee: out
 - Albert Regis (DT) Active
 - Wesley Williams (DE) Active
 - CJ Williams (WR) Active
@@ -152,6 +152,7 @@ Searches to run:
 
 Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Montez Sweat (DE) Suspension, Suspension: The NFL announced Tuesday that Sweat has been suspended two games for violating the league's performance-enhancing substances policy, Brad Biggs of the Chicago Tribune reports.
 - Caleb Williams (QB) Questionable, Hamstring: questionable
 - Kyle Monangai (RB) Questionable, Toe: questionable
 - Keyshaun Elliott (LB) Questionable, Quadriceps: questionable
@@ -175,7 +176,6 @@ Chicago Bears, injuries:
 - Joe Thuney (G) Active
 - Jonah Jackson (G) Active
 - Cam Lewis (CB) Active: Lewis (hip) was a full participant in Wednesday's practice.
-- Dillon Thieneman (S) Active: Thieneman recorded seven total tackles during Sunday's 23-12 win over the Jets.
 
 Chicago Bears, ESPN headlines:
 
@@ -492,7 +492,7 @@ Searches to run:
 
 Carolina Panthers, injuries:
 - Jalen Coker (WR) Questionable, Quadriceps: Coker (quadriceps) was spotted participating in the Panthers' unofficial practice session Tuesday, Alex Zietlow of The Charlotte Observer reports.
-- Cam Jackson (DT) Injured Reserve, Knee: ir
+- Cam Jackson (DT) Injured Reserve, Shoulder: ir
 - Taylor Moton (OT) Out, Illness: Head coach Dave Canales said Monday that the Panthers plan to open Moton's (illness) 21-day practice window during Week 6 prep, Steve Reed of the Associated Press reports.
 - Tershawn Wharton (DT) Out, Neck: Head coach Dave Canales said Monday that the Panthers plan to open Wharton's (neck0 21-day practice window this week, Steve Reed of the Associated Press reports.
 - Devin Lloyd (LB) Active: Lloyd recorded nine total tackles (five solo) during Sunday night's 32-26 win against Detroit.
@@ -520,13 +520,13 @@ Carolina Panthers, injuries:
 Carolina Panthers, ESPN headlines:
 
 Philadelphia Eagles, injuries:
+- Jalyx Hunt (LB) Doubtful, Ankle: Eagles defensive coordinator Vic Fangio said Tuesday it would take something "miraculous" for Hunt (ankle) to play Week 6 against the Panthers, Dave Zangaro of NBC Sports Philadelphia reports.
 - DeVonta Smith (WR) Questionable, Hamstring: questionable
 - Drew Kendall (C) Questionable, Knee: questionable
 - Marcus Epps (S) Questionable, Groin: questionable
 - Jonathan Greenard (LB) Questionable, Ankle: questionable
 - Saquon Barkley (RB) Questionable, Hamstring: questionable
 - Hollywood Brown (WR) Questionable, Ankle: questionable
-- Jalyx Hunt (LB) Doubtful, Ankle: doubtful
 - Zach Ertz (TE) Active: Ertz reverted to the Eagles' practice squad Monday, per the NFL's transaction log.
 - Jalen Carter (DT) Active: Carter logged five tackles (three solo), including 2.0 sacks, one pass defense and two forced fumbles during the Eagles' 19-17 loss to the Jaguars on Sunday in London.
 - Will Shipley (RB) Doubtful, Foot: Shipley (foot) was diagnosed with a partial tear of his plantar fascia after exiting Sunday's 19-17 loss to the Jaguars in London and could be sidelined multiple weeks, Adam Schefter of ESPN reports.
@@ -627,6 +627,7 @@ Searches to run:
 - "NFL week 6 picks ARI LAR"
 
 Arizona Cardinals, injuries:
+- James Conner (RB) Injured Reserve, Foot: Conner (foot) is "getting close" to practicing, but the Cardinals aren't expected to open his 21-day evaluation window this week, John Gambadoro of Arizona Sports 98.7 FM reports.
 - Andrew Wingard (S) Questionable, Knee: questionable
 - Tyler Allgeier (RB) Active: Allgeier rushed three times for seven yards and caught both of his targets for nine yards during Sunday's 45-21 loss to the Lions.
 - Andrew Billings (DT) Active
@@ -651,7 +652,6 @@ Arizona Cardinals, injuries:
 - Hunter Long (TE) Injured Reserve, Knee: The Cardinals placed Long (knee) on injured reserve Tuesday.
 - Elijah Higgins (TE) Active: Higgins caught both of his targets for 19 yards and a touchdown in Sunday's loss to the Giants.
 - Josh Fryar (OT) Active
-- Reggie Virgil (WR) Active
 
 Arizona Cardinals, ESPN headlines:
 
@@ -724,7 +724,7 @@ Los Angeles Chargers, injuries:
 Los Angeles Chargers, ESPN headlines:
 
 Kansas City Chiefs, injuries:
-- Tyquan Thornton (WR) Out, Ankle: out
+- Tyquan Thornton (WR) Injured Reserve, Ankle: The Chiefs placed Thornton (ankle) on injured reserve Tuesday.
 - Nick Bolton (LB) Active: Bolton posted nine tackles (four solo) during the Chiefs' 30-27 win over the Raiders on Sunday.
 - Mansoor Delane (CB) Active: Delane tallied 10 tackles (seven solo) and one pass defense during the Chiefs' 30-27 win over the Raiders on Sunday.
 - Josh Simmons (OT) Questionable, Back: questionable
@@ -753,7 +753,7 @@ Kansas City Chiefs, injuries:
 Kansas City Chiefs, ESPN headlines:
 
 ### Buffalo Bills at Las Vegas Raiders
-Sun, Oct 18, 4:25 PM ET, CBS, Allegiant Stadium, Las Vegas. Line: BUF -4.5, O/U 53.5
+Sun, Oct 18, 4:25 PM ET, CBS, Allegiant Stadium, Las Vegas. Line: BUF -5.5, O/U 53.5
 
 Searches to run:
 - "Buffalo Bills Las Vegas Raiders preview week 6"
