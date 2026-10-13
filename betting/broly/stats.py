@@ -2,7 +2,9 @@
 
 Retired with the model on 13 October 2026 (broly.py says why): the betting job no longer runs it.
 Kept because research/models_compare/backtest.py (study 4) builds the model's inputs from
-team_games, pregame and frame; change it only with a re-run of that study.
+team_games, pregame and frame; change it only with a re-run of that study. The same day, after the
+retirement, every club is read in today's code (TEAM_NOW): the model as it ran left the relocated
+clubs' games of 2008-2020 out, and study 4's README gives its numbers both ways.
 
 For every team-game, from nflverse play-by-play: offensive plays and yards, third downs
 converted and failed, giveaways (interceptions and lost fumbles), red-zone trips and the
@@ -25,9 +27,21 @@ FEATURES = ["d_ppg", "d_papg", "d_tod", "d_third", "d_rz", "d_ypp", "d_yppa"]
 COLS = ["m_l"] + FEATURES
 PBP_COLS = ["game_id", "season", "week", "posteam", "defteam", "play_type", "yards_gained", "interception",
             "fumble_lost", "third_down_converted", "third_down_failed", "drive", "drive_inside20", "fixed_drive_result"]
+# games.csv writes a club by its code of the day (OAK before 2020, SD before 2017, STL before 2016), the
+# play-by-play by today's (LV, LAC, LA): read as written, the 452 games of those clubs in 2008-2020 matched
+# none of their plays and were left out of the fit (fixed 13 October 2026, after the model was retired)
+TEAM_NOW = {"OAK": "LV", "SD": "LAC", "STL": "LA"}
+
+
+def today_codes(games: pd.DataFrame) -> pd.DataFrame:
+    """games.csv with every club in today's code, the game ids as nflverse writes them"""
+    g = games.copy()
+    g["home_team"], g["away_team"] = g.home_team.replace(TEAM_NOW), g.away_team.replace(TEAM_NOW)
+    return g
 
 
 def team_games(pbp: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
+    games = today_codes(games)
     p = pbp[pbp.posteam.notna()]
     sc = p[p.play_type.isin(["pass", "run"])]
     g = sc.groupby(["game_id", "season", "week", "posteam", "defteam"])
@@ -106,7 +120,7 @@ def market_prob(r) -> float:
 
 def frame(games: pd.DataFrame, pg: dict) -> pd.DataFrame:
     rows = []
-    for _, r in games.iterrows():
+    for _, r in today_codes(games).iterrows():
         h, a = pg.get((r.game_id, r.home_team)), pg.get((r.game_id, r.away_team))
         mp = market_prob(r)
         if not h or not a or np.isnan(mp):

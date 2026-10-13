@@ -435,11 +435,13 @@ written whole or not at all. What each source gave is in `sources` in model.json
 says when the player stats or the play-by-play lag a final or a club has not filed its statuses.
 Every club is read in today's code (TEAM_NOW): games.csv, the depth charts and the injury reports
 write a club as it was called that season (OAK before 2020, SD before 2017, STL before 2016), the
-player stats, rosters and play-by-play as it is called now (LV, LAC, LA). Read as written, every
-game those three clubs played before their moves found none of their players: until 13 October
-2026 the 263 such games of 2012-2019 were left out of the game model's fit and walk-forward, their
-players' ratings never moved on them, and their opponents' did. The game ids stay as nflverse
-writes them.
+player stats, rosters and play-by-play as it is called now (LV, LAC, LA). Read as written, the
+game model matched none of those clubs' players to their games before the moves: until 13 October
+2026 the 263 such games of 2012-2019 were left out of its fit and walk-forward, and the matchup
+formula read the clubs' home games as away games. The player ratings, which read the stats by game
+id and opponent, were never affected. The fix moved the game model's weights (and with them the
+coming calls and the lineup part of the power ratings, by two points at most), its walk-forward
+record and the matchup formula's fit. The game ids stay as nflverse writes them.
 
 Everything it writes goes to elo/data/, which the X NFL Bets and Stats page reads on load
 (the fitted weights and the who-played walk-forward are kept for the record and the smoke

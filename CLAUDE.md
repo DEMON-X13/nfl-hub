@@ -400,8 +400,9 @@ The build refuses to write anything when a file the season under way needs (its 
 charts, injury report, roster, play-by-play) or any past season's cannot be downloaded: it exits 1 and the
 last good files stay live. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
 and the injury reports write OAK, SD and STL for the seasons before those moves, the player stats LV, LAC
-and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 matched none of their
-players and were left out of the fit and the ratings. The season comes from games.csv alone (a new schedule becomes the season in
+and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 were left out of the game
+model's fit and walk-forward, and the matchup formula read their home games as away games (the player
+ratings, read by game id and opponent, were never affected). The season comes from games.csv alone (a new schedule becomes the season in
 play once its first game is 36 hours old; until then the finished season stays, and its week 1 is called
 in the fortnight before; the rankings switch once 16 clubs have a rated game); the playoffs are rated as
 they come and `phase` says regular, postseason, over or opening. `elo/check.py` holds the new files against
@@ -412,7 +413,8 @@ for a game this run can no longer call keeps its pick and its `src`; a call in `
 stands there unless a later call, itself published before kickoff, replaced it; and Team Rankings (`teams`, which
 carries each shown number's parts, `r` and `lg`) is solved again from games.csv by the gate's own iteration, never the
 build's matrix solve, `before` included (POWER in its docstring, with fixtures for the re-judging, a later final, a
-neutral site and a tie).
+neutral site and a tie); and the game model's walk-forward counts every decided final of each finished season in
+games.csv (GAMES: a club whose code is not matched, as OAK, SD and STL were not until October 2026, fails it).
 
 A game's score (THE SCORES in the build) is EPA for a quarterback, production for a back, receiver or
 tight end (yards from scrimmage, 20 a touchdown and 10 for a back, less 25 a fumble lost: EPA rated a
