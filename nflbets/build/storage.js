@@ -29,7 +29,9 @@
  * key stays where it is, unread. The X Bet Log's leftovers are
  * xbets.js's, once its file has been read. Nothing that holds a visitor's own data is touched: the
  * prop model's key (the builder, the saved parlays, the stake), my_parlays_v1, the betting app's
- * key and x_nfl_bets_preshare_<season> stay exactly as they are. */
+ * key and x_nfl_bets_preshare_<season> stay exactly as they are, and so does lp_cleared_here_v1,
+ * the parlays this visitor cleared from X Parlays on this device (the X Parlays section's own key,
+ * which it prunes itself; build.js refuses this file if it names it). */
 (function(){
   /* the prop model's key: the build writes part2's own KEY over this default */
   const PROP_KEY=/*PROP_KEY*/'props_2026_v1', PROP_PARTS=['parlay','saved','stake','bookPrice','margin'];

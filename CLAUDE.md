@@ -680,6 +680,26 @@ only, a parlay marked `cleared` left out, a quiet line under the heading saying 
 changed; a settled parlay, gone or with every game over, last and in full under Finished, which says
 each clears itself the day after its last game) and nothing else.
 
+Every card on it, live or settled, has an X at its top right (the owner, 12 October 2026: "all of this
+should look the same for everyone"), a 44px button named "Clear this parlay" that keeps clear of the
+header's chips on a phone. It opens a small window, `#lpAsk`, asking "Clear this parlay?", naming it
+(legs, week, price) and saying it is cleared from this device only and that X's parlays clear
+themselves for everyone the day after their last game, with Cancel and Clear (Escape, Cancel and a
+click outside clear nothing; Tab stays inside; the focus goes back to the X; a tap within 0.4 seconds
+of it opening, a double tap's second, neither clears nor closes; it scrolls when taller than the
+screen; leaving the tab closes it). Clear takes the parlay
+off X Parlays in that browser alone, its games no longer read: its id, with when, goes into the
+section's own key, `lp_cleared_here_v1`, never a retired one, which `storage.js` never removes (the
+build refuses one that names it) and which is pruned on every read of the file of any id the file no
+longer has or has cleared itself. Every change starts from what storage holds then, so two tabs of the
+site in one browser never write an older list over each other, and a tab follows the other's change
+(the `storage` event). With some cleared, "None of X's parlays is still live" becomes "None of the
+parlays shown here is still live", since a cleared one may still be running. Nothing is sent anywhere: there is no owner mode, sign-in or token,
+and a parlay leaves the page for everyone only by the file (`"cleared": true`, by hand or by
+`autoclear.py`). With some cleared a quiet line at the foot says how many, with Show it (them) again;
+with every one cleared that line is the card ("You cleared 2 parlays on this device"), and Show them
+again empties the list with no window. `smoke_live.js` section O holds all of it.
+
 The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
 in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). At the top of its controls is
 a **Bet amount** box (`#pbStake`: dollars, the decimal keypad on a phone, $1 to $100,000 in steps of
@@ -862,14 +882,18 @@ rebuilding it too:
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"; the Parlay Builder's panel, X Parlays and the X Bet Log from their files
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
-node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab, on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
+node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
 ```
 
 The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
 board's week the way the board does (the first with a game still to play, else the last), checks
-what needs a game to come only when there is one, and, once the payload's last game is about to
-kick off, boots the page two days before it so the builder checks still have a game
-to stand on. `--season-over` gives every game a result first; run it after a change to the smoke or
+what needs a game to come only when there is one, and, once the page's own week (`liveWeek()`: the
+first with a game not yet final, else the last) has no game still to kick off (within the hour of its last
+kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
+dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
+that week's last kickoff so the panel, the Elo picks and the builder checks still have a game to stand on;
+a missing section there is a failed check, never a crash. `SMOKE_PAYLOAD=<file>` boots it on another
+payload, to try a week the job has not baked. `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
@@ -1001,7 +1025,9 @@ The owner publishes a change and expects it on every device on the next load. No
 may quietly outrank what the job published:
 
 - **Published data wins over anything a browser kept.** Local storage holds only what the
-  visitor made -- their own builder, saved slips, picks, bankroll, settings -- and nothing of X's.
+  visitor made -- their own builder, saved slips, picks, bankroll, settings, the parlays they
+  cleared from X Parlays on that device -- and nothing of X's. That cleared list only hides; it
+  never changes or outranks the file, and it is pruned to the file on every load.
   Schedule, scores, stats, prices, ratings and projections are read from
   `props/data/payload.json` and `betting/state.json` on every load, and X's parlays and the X
   Bet Log from `liveparlays/`. The prop model keys its
@@ -1020,7 +1046,9 @@ may quietly outrank what the job published:
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **X's parlays and the X Bet Log are files, the same on every device, read only everywhere.**
   There is no owner, no sign-in and no shared store: nothing on the page writes anywhere but the
-  visitor's own browser storage. The two files are the source, beside each other in `liveparlays/`:
+  visitor's own browser storage. The X on a card in X Parlays clears it from that browser only
+  (`lp_cleared_here_v1`, under "Bets and Stats: the loop"); for everyone, a parlay leaves the page
+  when the file marks it cleared. The two files are the source, beside each other in `liveparlays/`:
   - `liveparlays/parlays.json` is X Parlays: the parlays X placed at the book. Claude adds one from
     the slip the owner sends in chat (the game, each leg's player, team, stat, line and side, the
     stake, the price and the payout; the file's `how` says how each is written), corrects a line
@@ -1071,9 +1099,11 @@ may quietly outrank what the job published:
   never written to the repo or anywhere else. A visitor's own builder, picks, bankroll, bet log and
   odds live in their browser's local storage only; a parlay they finish becomes a card they
   download, saved nowhere; X's parlays and the X Bet Log are the files in `liveparlays/`, which no
-  page writes. What a browser saved before (the prop model's saved list, `my_parlays_v1`, the
-  betting app's own Bet Log and `x_nfl_bets_preshare_<season>`) stays in its storage, undrawn and
-  never deleted. Anything held per-session and not meant to persist
+  page writes. Which of X's parlays a visitor has cleared from X Parlays on a device
+  (`lp_cleared_here_v1`) is that visitor's own choice of what to see there, kept in that browser
+  alone, never X's data and never sent anywhere. What a browser saved before (the prop model's saved
+  list, `my_parlays_v1`, the betting app's own Bet Log and `x_nfl_bets_preshare_<season>`) stays in
+  its storage, undrawn and never deleted. Anything held per-session and not meant to persist
   (for example the game pages' suggested parlays, cached in `GAME_TIER_CACHE` in `part3.js`) is kept outside the saved state object `S`, so
   it is never serialised.
 - **No secrets in the repo.** `ODDS_API_KEY` is a repository secret and only the

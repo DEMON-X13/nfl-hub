@@ -4,7 +4,10 @@
  *
  * The section reads liveparlays/parlays.json, the scoreboard and the box scores, and draws one
  * list, X Parlays: the parlays in the file, the same on every device, read only everywhere. A
- * parlay the file marks cleared is not drawn. No device keeps a list of its own: the Parlay
+ * parlay the file marks cleared is not drawn. Every card has an X at its top right, the same for
+ * every visitor: it asks "Clear this parlay?" and Clear takes the parlay off X Parlays in that
+ * browser alone, kept under the section's own key (lp_cleared_here_v1) and sent nowhere (section
+ * O). No device keeps a list of its own: the Parlay
  * Builder finishes a parlay as a card to download (nflbets/build/card.html), saved nowhere. There
  * is no owner, no sign-in and no shared store: the page writes nothing anywhere but the browser's
  * own storage. X Parlays is a tab of its own (#xparlays); the Parlay Builder (#parlay) is the
@@ -357,7 +360,9 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     const live = await run({ state: 'in' });
     chk(!live.d.getElementById('clear') && !live.d.getElementById('restoreAll'), 'Clear settled, or the way back, is still on the page');
     chk(/\[hidden\]\{display:none!important\}/.test(HTML), 'a hidden button is still drawn: the .btn display rule beats the hidden attribute without this');
-    chk(live.d.querySelectorAll('#lpCard .savedp').length === 2 && !live.d.querySelector('#lpCard [data-rm], #lpCard .hidebtn, #lpCard button:not(#now)'), 'a placed parlay offers a delete, or X Parlays offers a control beside Refresh now');
+    /* the one control a card carries is its X, which clears it on this device alone (section O) */
+    chk(live.d.querySelectorAll('#lpCard .savedp').length === 2 && !live.d.querySelector('#lpCard [data-rm], #lpCard .hidebtn, #lpCard button:not(#now):not(.lp-x):not(#lpAskNo):not(#lpAskYes):not(#lpShowAll)'),
+      'a placed parlay offers a delete, or X Parlays offers a control beside Refresh now and each card\'s X');
     /* the section only: the Props game list carries its own LIVE pill once a real game has kicked off */
     chk(!live.d.querySelector('#lpCard .pill.warn') && !/\d of \d in/.test(txt(live.d.getElementById('lpCard'))), 'a running parlay still carries the "n of m in" tag');
     chk(typeof live.w.LIVE_IO === 'undefined' && typeof live.w.NFLSYNC === 'undefined' && live.w.localStorage.getItem('live_parlays_v1') === null, 'the shared key (LIVE_IO) or the sync layer is still on the page, or the section wrote a key');
@@ -502,6 +507,231 @@ const allKeys = w => { const o = {}; for (let i = 0; i < w.localStorage.length; 
     { const v = { lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: { 'file|w3-dk-sgp-5': 1 } };
       const k4 = await run({ seed: w => w.localStorage.setItem('live_parlays_v1', JSON.stringify(v)) });
       chk(k4.w.localStorage.getItem('live_parlays_v1') === null, 'the old shared key holding only the line the file carries and a deletion was kept'); }
+  }
+
+  // ---- O. the X on every card: Clear this parlay?, and it is cleared on this device alone ----
+  /* Every visitor sees the same X Parlays, with an X at the top right of every card, live or
+     settled. The X asks first; Cancel, Escape and a click outside clear nothing; Clear takes that
+     parlay off X Parlays in this browser, kept under the section's own key (lp_cleared_here_v1:
+     the ids, each with when it was cleared), pruned of ids the file no longer has or has cleared,
+     and never sent anywhere. Another browser still sees it. */
+  {
+    const HK = 'lp_cleared_here_v1';
+    const seedHere = list => w => w.localStorage.setItem(HK, JSON.stringify(list));
+    const at = '2026-10-12T20:00:00.000Z';
+    const key = w => w.localStorage.getItem(HK);
+    const ids = w => { try { return (JSON.parse(key(w)) || []).map(x => x.id).join(); } catch (e) { return 'junk'; } };
+    const shownIds = d => [...d.querySelectorAll('#lpCard .savedp')].map(c => c.getAttribute('data-lp-id')).join();
+    const xOf = (d, id) => [...d.querySelectorAll('#lpCard [data-lp-clear]')].find(b => b.getAttribute('data-lp-clear') === id);
+    const dlg = d => d.getElementById('lpAsk');
+    const key0 = (w, k, el) => (el || w.document.activeElement || w.document.body).dispatchEvent(new w.KeyboardEvent('keydown', Object.assign({ bubbles: true }, k)));
+    /* every card has its X, live and settled: a real button, named, at the card's top right */
+    for (const st of ['in', 'post']) {
+      const r = await run({ state: st });
+      const cs = [...r.d.querySelectorAll('#lpCard .savedp')];
+      chk(cs.length === 2 && cs.every(c => { const b = c.firstElementChild;
+        return c.querySelectorAll('.lp-x').length === 1 && b && b.matches('button.lp-x[type="button"][data-lp-clear]') && b.getAttribute('aria-label') === 'Clear this parlay'
+          && b.getAttribute('data-lp-clear') === c.getAttribute('data-lp-id') && !!b.querySelector('svg[aria-hidden="true"]') && !txt(b); }),
+        `a card ${st === 'post' ? 'settled' : 'live'} has no X of its own at its top right named "Clear this parlay": ` + cs.map(c => c.innerHTML.slice(0, 80)).join(' | '));
+      chk(dlg(r.d) && dlg(r.d).hidden && r.w.localStorage.getItem(HK) === null, 'the Clear this parlay? window is open on load, or the page wrote its key before anything was cleared');
+      r.w.close();
+    }
+    /* the X's look: a 44px target at the top right, clear of the header's chips (the card's
+       padding and the header's own room hold the X, so the chips wrap before it on a phone), in
+       the page's own tokens, so the light page and the preview's dark look both carry it */
+    { const rule = (h, sel) => { const m = h.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\{([^}]*)\\}')); return m ? m[1] : ''; };
+      const PV = fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8');
+      for (const [name, h] of [['the page', HTML], ['the preview', PV]]) {
+        const x = rule(h, '#lpCard .lp-x'), head = rule(h, '#lpCard .sp-head'), card = rule(h, '#lpCard .savedp');
+        const px = (s, p) => +((s.match(new RegExp('(?:^|;)' + p + ':(-?[\\d.]+)px')) || [])[1]);
+        const padR = +((card.match(/padding:[\d.]+px ([\d.]+)px/) || [])[1]);
+        chk(/position:absolute/.test(x) && px(x, 'width') >= 44 && px(x, 'height') >= 44 && px(x, 'top') >= 0 && px(x, 'right') >= 0 && /position:relative/.test(card)
+          && padR + px(head, 'padding-right') >= px(x, 'right') + px(x, 'width') && /var\(--muted\)/.test(x) && /#lpCard \.lp-x:focus-visible\{[^}]*var\(--ring\)/.test(h),
+          `${name}: the X is not a 44px target at the card's top right clear of the header, in the page's tokens with a focus ring: ` + x + ' / ' + head + ' / ' + card);
+        /* the window scrolls, its panel centred by its own auto margins, so a panel taller than a
+           phone on its side still reaches Clear with the page behind held still */
+        chk(/#lpCard \.lp-dlg\{[^}]*overflow-y:auto/.test(h) && /#lpCard \.lp-dlg\{[^}]*align-items:flex-start/.test(h) && /#lpCard \.lp-dlg-panel\{[^}]*margin:auto/.test(h),
+          `${name}: the Clear this parlay? window does not scroll when its panel is taller than the screen: ` + rule(h, '#lpCard .lp-dlg') + ' / ' + rule(h, '#lpCard .lp-dlg-panel'));
+        chk(/#lpCard \.lp-dlg\{[^}]*position:fixed/.test(h) &&/#lpCard \.lp-dlg-panel\{[^}]*background:var\(--panel\)[^}]*color:var\(--ink\)/.test(h) && /#lpCard \.lp-dlg-btns \.btn\{[^}]*min-height:44px/.test(h)
+          && /#lpCard \.lp-here \.btn\{[^}]*min-height:44px/.test(h),
+          `${name}: the Clear this parlay? window is not over the page in the page's tokens, or its buttons or Show them again are under 44px`);
+      }
+    }
+    /* the X asks; Cancel, Escape and a click outside clear nothing, and the focus goes back to the X */
+    const A = await run({ state: 'in' });
+    /* a page with no X and no window (an older build) fails here once, rather than throwing below */
+    const canRun = !!xOf(A.d, 'early') && !!dlg(A.d) && !!A.d.getElementById('lpAskYes');
+    chk(canRun, 'X Parlays has no X on its cards or no Clear this parlay? window: the rest of section O cannot run');
+    if (canRun) {
+    { const { w, d, calls, methods } = A, n0 = calls.length;
+      chk(shownIds(d) === 'early,night', 'the cards are not the file\'s: ' + shownIds(d));
+      for (const how of ['Cancel', 'Escape', 'a click outside']) {
+        const x = xOf(d, 'early'); x.focus(); x.click();
+        const D = dlg(d), panel = D && D.querySelector('[role="alertdialog"]');
+        chk(!!D && !D.hidden && !!panel && panel.getAttribute('aria-modal') === 'true' && txt(d.getElementById(panel.getAttribute('aria-labelledby'))) === 'Clear this parlay?'
+          && txt(d.getElementById('lpAskWhat')) === '4-leg parlay · week 2 · +580 · sunday'
+          && /on this device only/.test(txt(panel)) && /nothing is sent anywhere/.test(txt(panel)) && /clear themselves for everyone the day after their last game/.test(txt(panel))
+          && d.activeElement === d.getElementById('lpAskNo') && txt(d.getElementById('lpAskNo')) === 'Cancel' && txt(d.getElementById('lpAskYes')) === 'Clear' && d.body.classList.contains('modal-open'),
+          `the X does not open "Clear this parlay?" naming the parlay (legs, week, price), saying it is this device only and that X's parlays clear themselves for everyone, with the focus on Cancel (${how}): ` + txt(panel));
+        /* Tab stays inside: from Clear to Cancel, and back from Cancel to Clear */
+        if (how === 'Cancel') {
+          d.getElementById('lpAskYes').focus(); key0(w, { key: 'Tab' });
+          const fwd = d.activeElement === d.getElementById('lpAskNo');
+          key0(w, { key: 'Tab', shiftKey: true });
+          chk(fwd && d.activeElement === d.getElementById('lpAskYes'), 'Tab leaves the Clear this parlay? window');
+          d.getElementById('lpAskNo').click();
+        } else if (how === 'Escape') key0(w, { key: 'Escape' });
+        else {
+          /* a click inside the window is not outside it */
+          d.getElementById('lpAskText').click();
+          chk(!D.hidden, 'a click inside the Clear this parlay? window closed it');
+          D.click();
+        }
+        chk(D.hidden && shownIds(d) === 'early,night' && key(w) === null && !d.body.classList.contains('modal-open') && d.activeElement === xOf(d, 'early'),
+          `${how} cleared the parlay, left the window open, wrote the key or did not give the focus back to the X: ` + JSON.stringify({ hidden: D.hidden, shown: shownIds(d), key: key(w), focus: d.activeElement && d.activeElement.outerHTML.slice(0, 60) }));
+      }
+      /* Clear: exactly that parlay leaves, kept in this browser's own key with when it was cleared,
+         the focus on the X now in its place, and nothing sent anywhere */
+      const before = Date.now();
+      xOf(d, 'early').click(); d.getElementById('lpAskYes').click();
+      let st = null; try { st = JSON.parse(key(w)); } catch (e) {}
+      chk(dlg(d).hidden && shownIds(d) === 'night' && Array.isArray(st) && st.length === 1 && st[0].id === 'early' && Date.parse(st[0].at) >= before - 1000 && Date.parse(st[0].at) <= Date.now() + 1000,
+        'Clear did not take exactly that parlay off X Parlays, kept in this browser under ' + HK + ' with when: ' + JSON.stringify({ shown: shownIds(d), st }));
+      chk(d.activeElement === xOf(d, 'night'), 'after a Clear the focus is not on the X that takes its place: ' + (d.activeElement && d.activeElement.outerHTML.slice(0, 60)));
+      chk(calls.length === n0 && methods.every(m => m === 'GET'), 'clearing a parlay sent a request, or the page sent something but a read: ' + calls.slice(n0).join(' '));
+      /* one left: a quiet line says one is cleared here, with the way back */
+      chk(/^You cleared 1 parlay on this device ?Show it again$/.test(txt(d.querySelector('#app .lp-here'))) && !/Nothing to watch yet/.test(txt(d.getElementById('app'))),
+        'with one parlay cleared the card does not say so quietly at its foot: ' + txt(d.querySelector('#app .lp-here')));
+      /* the other too: the card says so quietly, with Show them again, and not that there is nothing to watch */
+      xOf(d, 'night').click(); d.getElementById('lpAskYes').click();
+      chk(shownIds(d) === '' && ids(w) === 'early,night' && /^You cleared 2 parlays on this device ?Show them again$/.test(txt(d.getElementById('app')))
+        && d.activeElement === d.getElementById('lpShowAll') && !d.querySelector('#app .empty'),
+        'with every parlay cleared on this device the card does not say so quietly with Show them again (the focus on it): ' + txt(d.getElementById('app')));
+      /* Show them again: no window, the list emptied (the key gone), every card back, and their games read again */
+      const n1 = calls.length;
+      d.getElementById('lpShowAll').click();
+      chk(dlg(d).hidden && shownIds(d) === 'early,night' && key(w) === null && !d.querySelector('#app .lp-here') && d.activeElement === xOf(d, 'early'),
+        'Show them again did not bring every parlay back at once and empty the list: ' + JSON.stringify({ shown: shownIds(d), key: key(w) }));
+      await wait(300);
+      chk(calls.slice(n1).some(u => /parlays\.json/.test(u)) && calls.slice(n1).some(u => /\/summary\?event=401\b/.test(u)) && methods.every(m => m === 'GET'),
+        'Show them again did not read the parlays\' games again, or sent something but a read: ' + calls.slice(n1).join(' '));
+      w.close(); }
+    /* Escape with the window open closes it alone: no window beneath it closes too */
+    { const r = await run({ state: 'in' }), { w, d } = r;
+      xOf(d, 'night').click();
+      let other = 0; d.addEventListener('keydown', e => { if (e.key === 'Escape') other++; });
+      key0(w, { key: 'Escape' });
+      chk(dlg(d).hidden && other === 0 && d.activeElement === xOf(d, 'night'), 'Escape on the Clear this parlay? window reached the page beneath it');
+      w.close(); }
+    /* a double tap on the X: the second tap, landing a moment after the window opened (on Clear,
+       which can sit under the X on a phone, or on the backdrop), neither clears nor closes; a key's
+       click (no pointer) and a tap after the moment do */
+    { const r = await run({ state: 'in' }), { w, d } = r;
+      const tap = el => el.dispatchEvent(new w.MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+      xOf(d, 'early').click();
+      tap(d.getElementById('lpAskYes'));
+      chk(!dlg(d).hidden && shownIds(d) === 'early,night' && key(w) === null, 'a second tap on Clear just after the window opened cleared the parlay without the visitor answering');
+      tap(dlg(d));
+      chk(!dlg(d).hidden, 'a second tap on the backdrop just after the window opened closed it');
+      await wait(450);
+      tap(d.getElementById('lpAskYes'));
+      chk(dlg(d).hidden && shownIds(d) === 'night' && ids(w) === 'early', 'a tap on Clear once the window has been open a moment did not clear the parlay');
+      w.close(); }
+    /* the window is X Parlays' own: leaving the tab closes it, clearing nothing, and nothing hidden
+       keeps the page held still or takes its keys */
+    { const r = await run({ state: 'in' }), { w, d } = r;
+      xOf(d, 'early').click();
+      w.location.hash = '#parlay'; w.dispatchEvent(new w.HashChangeEvent('hashchange')); await wait(60);
+      chk(dlg(d).hidden && !d.body.classList.contains('modal-open') && shownIds(d) === 'early,night' && key(w) === null,
+        'moving to another tab left the Clear this parlay? window open behind it, the page held still, or cleared the parlay');
+      /* the focus on the Parlay Builder's own tab button, as the visitor who pressed it holds it: the
+         tab bar is always there, where the tab's panel can have no control at all (once a week's
+         games have all kicked off it says so and draws none, and the body, which cannot take the
+         focus, left it on the hidden Cancel, so the check below read a Tab that moved nothing) */
+      const b = d.querySelector('#tabs [data-tab="parlay"]'); try { b.focus(); } catch (e) {}
+      chk(!!b && d.activeElement === b, 'the focus could not be put on the Parlay Builder\'s tab button, so Tab on another tab is not tried: ' + (d.activeElement && d.activeElement.outerHTML.slice(0, 60)));
+      const was = d.activeElement; key0(w, { key: 'Tab' });
+      chk(d.activeElement === was && d.activeElement !== d.getElementById('lpAskNo') && d.activeElement !== d.getElementById('lpAskYes'), 'Tab on another tab lands on the hidden window\'s buttons');
+      let esc = 0; d.addEventListener('keydown', e => { if (e.key === 'Escape') esc++; });
+      key0(w, { key: 'Escape' }, was);
+      chk(esc === 1, 'Escape on another tab is taken by the hidden Clear this parlay? window');
+      /* and the window open on a tab hidden without a hashchange closes at the next key */
+      w.location.hash = '#xparlays'; w.dispatchEvent(new w.HashChangeEvent('hashchange')); await wait(60);
+      xOf(d, 'night').click(); d.getElementById('tab-xparlays').hidden = true;
+      let esc2 = 0; d.addEventListener('keydown', e => { if (e.key === 'Escape') esc2++; });
+      key0(w, { key: 'Escape' }, d.body);
+      chk(dlg(d).hidden && esc2 === 1 && !d.body.classList.contains('modal-open') && key(w) === null, 'a Clear this parlay? window left open on a hidden tab still takes the keys');
+      w.close(); }
+    /* two tabs of the site in one browser share its storage: a clear in one is not undone by the
+       other's older copy of the list (its Refresh now, or its own clear), and the other follows it */
+    { const A2 = await run({ state: 'in' }), B2 = await run({ state: 'in' });
+      /* jsdom keeps a storage for each window: B's is set to what the shared storage holds once A writes */
+      const share = () => { const v = A2.w.localStorage.getItem(HK); if (v === null) B2.w.localStorage.removeItem(HK); else B2.w.localStorage.setItem(HK, v); };
+      xOf(A2.d, 'early').click(); A2.d.getElementById('lpAskYes').click(); share();
+      B2.d.getElementById('now').click(); await wait(300);
+      chk(ids(B2.w) === 'early', 'Refresh now in a second tab wrote its older list over a clear made in the first: ' + key(B2.w));
+      xOf(B2.d, 'night').click(); B2.d.getElementById('lpAskYes').click();
+      chk(ids(B2.w) === 'early,night', 'a clear in a second tab lost the first tab\'s clear: ' + key(B2.w));
+      /* the storage event: the other tab redraws on what the storage now holds */
+      B2.w.localStorage.setItem(HK, JSON.stringify([{ id: 'early', at }].slice(0, 1)));
+      B2.w.dispatchEvent(new B2.w.StorageEvent('storage', { key: HK }));
+      chk(shownIds(B2.d) === 'night', 'a tab does not follow a change another tab made to the cleared list: ' + shownIds(B2.d));
+      /* Show them again brings back the ones this tab shows as cleared, not one another tab clears after */
+      B2.w.localStorage.setItem(HK, JSON.stringify([{ id: 'early', at }, { id: 'night', at }]));
+      B2.d.getElementById('lpShowAll').click();
+      chk(ids(B2.w) === 'night' && shownIds(B2.d) === 'early', 'Show them again in one tab brought back a parlay another tab cleared after it last read the list: ' + key(B2.w));
+      await wait(300); A2.w.close(); B2.w.close(); }
+    /* "None of X's parlays is still live" is said of X's file only when nothing is cleared here: X's
+       two live parlays cleared on this device, a third already lost mid-game (CAR 17, ATL 20 is past
+       an under 36.5), and the line speaks only for the one shown */
+    { const file = JSON.parse(JSON.stringify(FILE));
+      file.parlays.push({ id: 'dead', week: 2, stake: 5, price: 150, payout: 12.5, legs: [{ game: 0, player: 'Total', team: 'ATL', stat: 'total', line: 36.5, side: 'under', main: true }] });
+      const r = await run({ state: 'in', file, seed: seedHere([{ id: 'early', at }, { id: 'night', at }]) });
+      const t = txt(r.d.getElementById('app'));
+      chk(shownIds(r.d) === 'dead' && !/None of X’s parlays is still live/.test(t) && /None of the parlays shown here is still live/.test(t),
+        'with X\'s live parlays cleared on this device the card says none of X\'s parlays is still live: ' + t.slice(0, 160));
+      const r2 = await run({ state: 'in', file });
+      chk(shownIds(r2.d) === 'early,night,dead' && !/still live/.test(txt(r2.d.getElementById('app'))),
+        'with nothing cleared and two of X\'s parlays live the card says none is still live: ' + txt(r2.d.getElementById('app')).slice(0, 160));
+      r.w.close(); r2.w.close(); }
+    /* the same browser after a reload: the parlay stays cleared, and its games are not followed */
+    { const r = await run({ state: 'in', seed: seedHere([{ id: 'early', at }]) });
+      chk(shownIds(r.d) === 'night' && ids(r.w) === 'early' && /^You cleared 1 parlay on this device/.test(txt(r.d.querySelector('#app .lp-here'))),
+        'after a reload the parlay cleared on this device is back, or the list was lost: ' + shownIds(r.d));
+      chk(!r.calls.some(u => /\/summary\?event=401\b/.test(u)) && r.calls.some(u => /\/summary\?event=403\b/.test(u)),
+        'the games of a parlay cleared on this device are still followed, or the other\'s are not: ' + r.calls.filter(u => u.includes('/summary?')).join(' '));
+      r.w.close(); }
+    /* a fresh browser has every parlay: a clear is that device's alone */
+    { const r = await run({ state: 'in' });
+      chk(shownIds(r.d) === 'early,night' && key(r.w) === null, 'a fresh browser does not see every parlay in the file: ' + shownIds(r.d));
+      r.w.close(); }
+    /* pruned: an id the file no longer has, and one the file has cleared for everyone, leave the list */
+    { const file = JSON.parse(JSON.stringify(FILE)); file.parlays[0].cleared = true;     /* night, cleared by the file */
+      const r = await run({ file, seed: seedHere([{ id: 'early', at }, { id: 'long-gone', at }, { id: 'night', at }]) });
+      chk(ids(r.w) === 'early' && JSON.parse(key(r.w))[0].at === at && shownIds(r.d) === '' && /^You cleared 1 parlay on this device/.test(txt(r.d.getElementById('app'))),
+        'the list was not pruned to the ids the file still has and has not cleared: ' + key(r.w));
+      const r2 = await run({ file, seed: seedHere([{ id: 'long-gone', at }, { id: 'night', at }]) });
+      chk(key(r2.w) === null && shownIds(r2.d) === 'early', 'a list of ids the file no longer shows is not taken out of the browser: ' + key(r2.w));
+      /* a file that does not answer prunes nothing: it cannot say what is gone */
+      const r3 = await run({ data: 404, seed: seedHere([{ id: 'early', at }, { id: 'long-gone', at }]) });
+      chk(ids(r3.w) === 'early,long-gone', 'with the file unread the list was pruned anyway: ' + key(r3.w));
+      /* junk under the key: the page draws every parlay, and the junk goes */
+      const r4 = await run({ seed: w => w.localStorage.setItem(HK, '{not json') });
+      chk(shownIds(r4.d) === 'early,night' && key(r4.w) === null, 'junk under the key broke X Parlays or stayed: ' + shownIds(r4.d));
+      for (const x of [r, r2, r3, r4]) x.w.close(); }
+    /* a browser the retired owner layer marked: its flags go, the cleared list is the visitor's and stays */
+    { const OLD2 = { nflowner_v1: 'the-old-owner-secret', nflsync_owner_v1: JSON.stringify({ uid: 'u' }), xparlays_v1: JSON.stringify({ at: '2026-10-10T05:00:00Z', dropped: 0 }),
+        xparlays_cache_v1: JSON.stringify({ rev: 'r-old' }), live_parlays_v1: JSON.stringify({ lines: { 'file|w3-dk-sgp-5|4': 239.5 }, removed: { 'file|night': 1 } }), [HK]: JSON.stringify([{ id: 'night', at }]) };
+      const r = await run({ state: 'in', seed: w => { for (const [k, v] of Object.entries(OLD2)) w.localStorage.setItem(k, v); } });
+      const keys = allKeys(r.w);
+      chk(['nflowner_v1', 'nflsync_owner_v1', 'xparlays_v1', 'xparlays_cache_v1', 'live_parlays_v1'].every(k => !(k in keys)) && keys[HK] === OLD2[HK] && shownIds(r.d) === 'early'
+        && r.d.querySelectorAll('#lpCard .lp-x').length === 1,
+        'on a browser the retired owner layer marked, its flags stayed, or the cleared list was touched, or the card is not the same as anyone\'s: ' + JSON.stringify({ keys: Object.keys(keys), shown: shownIds(r.d) }));
+      xOf(r.d, 'early').click(); r.d.getElementById('lpAskYes').click();
+      chk(ids(r.w) === 'night,early' && shownIds(r.d) === '', 'on a browser the retired owner layer marked, Clear does not work as on any other');
+      r.w.close(); }
+    }
+    A.w.close();
   }
 
   // ---- D3. the scoreboard chips carry the result ----

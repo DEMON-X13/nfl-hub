@@ -731,8 +731,21 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 #lpCard .res.win{color:var(--pick)}
 #lpCard .res.loss{color:var(--miss)}
 #lpCard .res.tie{color:var(--gold)}
-#lpCard .savedp{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
-#lpCard .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+#lpCard .savedp{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh-xs)}
+#lpCard .sp-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-right:34px}
+#lpCard .lp-x{position:absolute;top:3px;right:3px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;padding:0;margin:0;border:0;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;transition:background .15s var(--ease),color .15s var(--ease)}
+#lpCard .lp-x svg{width:16px;height:16px;display:block;pointer-events:none}
+#lpCard .lp-x:hover{background:var(--panel-2);color:var(--ink)}
+#lpCard .lp-x:focus-visible{outline:none;box-shadow:var(--ring);color:var(--ink)}
+#lpCard .lp-here{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0 0;font-size:13px;color:var(--ink-2)}
+#lpCard .lp-here .btn{min-height:44px}
+#lpCard .lp-dlg{position:fixed;inset:0;z-index:70;background:rgba(11,21,38,.55);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px}
+#lpCard .lp-dlg-panel{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:0 24px 70px rgba(0,0,0,.35);width:100%;max-width:420px;margin:auto;padding:20px 20px 18px}
+#lpCard .lp-dlg-panel h3{font-family:var(--display);font-size:19px;font-weight:700;letter-spacing:-.3px;line-height:1.2;margin:0 0 8px;color:var(--ink)}
+#lpCard .lp-dlg-what{margin:0 0 10px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+#lpCard .lp-dlg-text{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+#lpCard .lp-dlg-btns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+#lpCard .lp-dlg-btns .btn{min-height:44px;min-width:104px}
 #lpCard .sp-head .grow{flex:1}
 #lpCard .sp-title{font-family:var(--display);font-size:17px;font-weight:700;letter-spacing:-.3px}
 #lpCard .lp-win{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
@@ -1328,6 +1341,14 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
     <button class="btn quiet" id="now">Refresh now</button>
   </div>
     <div id="app"></div>
+    <div class="lp-dlg" id="lpAsk" hidden>
+    <div class="lp-dlg-panel" role="alertdialog" aria-modal="true" aria-labelledby="lpAskTitle" aria-describedby="lpAskWhat lpAskText">
+      <h3 id="lpAskTitle">Clear this parlay?</h3>
+      <p class="lp-dlg-what" id="lpAskWhat"></p>
+      <p class="lp-dlg-text" id="lpAskText">It is cleared from X Parlays on this device only, and nothing is sent anywhere; you can show it again at the foot of the list. X’s parlays clear themselves for everyone the day after their last game.</p>
+      <div class="lp-dlg-btns"><button type="button" class="btn quiet" id="lpAskNo">Cancel</button><button type="button" class="btn danger" id="lpAskYes">Clear</button></div>
+    </div>
+  </div><!-- /lpAsk -->
   </div>
 </section>
 
@@ -1484,7 +1505,9 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
  * key stays where it is, unread. The X Bet Log's leftovers are
  * xbets.js's, once its file has been read. Nothing that holds a visitor's own data is touched: the
  * prop model's key (the builder, the saved parlays, the stake), my_parlays_v1, the betting app's
- * key and x_nfl_bets_preshare_<season> stay exactly as they are. */
+ * key and x_nfl_bets_preshare_<season> stay exactly as they are, and so does lp_cleared_here_v1,
+ * the parlays this visitor cleared from X Parlays on this device (the X Parlays section's own key,
+ * which it prunes itself; build.js refuses this file if it names it). */
 (function(){
   /* the prop model's key: the build writes part2's own KEY over this default */
   const PROP_KEY=/*PROP_KEY*/"props_2026_v1", PROP_PARTS=['parlay','saved','stake','bookPrice','margin'];
@@ -4882,7 +4905,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='ae78a58';
+const PAGE_HASH='17570b4';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -4917,9 +4940,17 @@ const nameOf=n=>typeof normName==='function'?normName(n):String(n||'').toLowerCa
    static page has nowhere safe to keep one, so the file is edited in the repository and the
    section picks the change up on the next load. It reads the file on every load (and on Refresh
    now), never from a cache, follows each parlay live against ESPN's scoreboard and box scores,
-   and writes nothing anywhere. A parlay the file marks "cleared" (settled, and no longer wanted
+   and sends nothing anywhere. A parlay the file marks "cleared" (settled, and no longer wanted
    on the page) stays there as history and is not drawn, nor are its games read. A line the book
    moved before X placed a bet is in the file as the line X took.
+
+   Every card has an X at its top right, the same for every visitor: it asks "Clear this parlay?"
+   and, on Clear, takes that parlay off X Parlays on this device. That is the visitor's own choice
+   of what to see here, never X's data: it is kept in this browser's storage alone, under
+   lp_cleared_here_v1 (the parlay ids, each with when it was cleared), and nothing is sent or
+   changed anywhere else. X's parlays clear themselves for everyone the day after their last game
+   (the file's "cleared"), so the list is pruned of any id the file no longer has or has cleared
+   itself. Show them again empties it.
 
    Nothing a browser holds is drawn here: the Parlay Builder above stays the visitor's to use, and
    finishing a parlay there opens it as a card to download (nflbets/build/card.html), saved
@@ -4961,7 +4992,45 @@ function readFile(v){
 }
 /* when the file says X's parlays last changed */
 const updatedOf=v=>{ const t=v&&typeof v.updated==='string'?Date.parse(v.updated):NaN; return isFinite(t)?t:null; };
-const STATE={parlays:[],updated:null,games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false,asked:new Set()};
+/* ---- the parlays this device has cleared: this browser's own list, under one key of its own ----
+   [{id, at}], the parlay's id in the file and when it was cleared here. Storage that refuses (a
+   private window, blocked site data) leaves the list in memory for the visit, and the page still
+   draws. */
+const HERE_KEY='lp_cleared_here_v1';
+/* the list as storage holds it now, or null where storage cannot be read */
+function hereLoad(){
+  let raw; try{ raw=localStorage.getItem(HERE_KEY); }catch(e){ return null; }
+  let v=null; try{ v=JSON.parse(raw||'null'); }catch(e){ v=null; }
+  const seen=new Set();
+  return (Array.isArray(v)?v:[]).filter(x=>x&&typeof x.id==='string'&&x.id&&!seen.has(x.id)&&seen.add(x.id))
+    .map(x=>({id:x.id,at:typeof x.at==='string'?x.at:null}));
+}
+/* Storage is shared by every tab of the site in this browser, so each change starts from what it
+   holds now, never from this tab's copy: a second tab open since before a clear would otherwise
+   write its older list over it. Where storage refuses (a private window, blocked site data) the
+   list in memory is the list for the visit. */
+let hereMem=false;
+function hereNow(){
+  if(hereMem) return STATE.here.slice();
+  const v=hereLoad(); if(v===null){ hereMem=true; return STATE.here.slice(); }
+  return v;
+}
+/* the list as it should stand in storage: written only where it differs, removed when empty, so a
+   browser that never cleared anything never has the key */
+function hereWrite(list){
+  STATE.here=list;
+  if(hereMem) return;
+  try{
+    const want=list.length?JSON.stringify(list):null;
+    if(localStorage.getItem(HERE_KEY)===want) return;
+    if(want===null) localStorage.removeItem(HERE_KEY); else localStorage.setItem(HERE_KEY,want);
+  }catch(e){ hereMem=true; }
+}
+const STATE={parlays:[],updated:null,games:{},box:{},err:null,dataErr:null,at:0,busy:false,settled:{},loaded:false,asked:new Set(),here:[],again:false};
+STATE.here=hereNow();
+const isHere=id=>STATE.here.some(x=>x.id===id);
+/* the parlays drawn: the file's, less the ones this device has cleared */
+const shown=()=>STATE.parlays.filter(p=>!isHere(p.id));
 const legGames=ps=>{ const s2=new Set(); for(const p of ps) for(const l of p.legs) if(l.gid) s2.add(l.gid); return s2; };
 async function getJSON(u){ const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
 async function refresh(){
@@ -4971,9 +5040,13 @@ async function refresh(){
   try{
     const f=await getJSON(DATA+'?t='+Date.now());
     STATE.parlays=readFile(f); STATE.updated=updatedOf(f); STATE.dataErr=null;
+    /* a parlay the file no longer has, or has cleared for everyone, leaves this device's list */
+    const inFile=new Set(STATE.parlays.map(p=>p.id));
+    hereWrite(hereNow().filter(x=>inFile.has(x.id)));
   }catch(e){ STATE.dataErr=String(e&&e.message||e); }
   STATE.loaded=true;
-  const ps=STATE.parlays;
+  /* the games of the parlays drawn: one this device has cleared is not followed */
+  const ps=shown();
   const want=legGames(ps);
   for(const gid of want) STATE.asked.add(gid);
   if(want.size){
@@ -5002,6 +5075,8 @@ async function refresh(){
     }catch(e){ STATE.err=String(e&&e.message||e); }
   }
   STATE.busy=false; document.getElementById('dot').classList.remove('on'); draw();
+  /* Show them again while a read was under way: read again for the parlays it brought back */
+  if(STATE.again){ STATE.again=false; refresh(); }
 }
 function zeroStats(l){
   const s2={tds:0};
@@ -5215,15 +5290,22 @@ function draw(){
   drawList();
   foot();
 }
+/* the quiet line saying what this device has cleared, with the way back */
+function hereLine(n){
+  return `<div class="lp-here"><span>You cleared ${n} parlay${n===1?'':'s'} on this device</span><button type="button" class="btn quiet" id="lpShowAll">Show ${n===1?'it':'them'} again</button></div>`;
+}
+const X_ICON='<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>';
 function drawList(){
   const app=document.getElementById('app'); if(!app) return;
-  const ps=STATE.parlays.slice();
+  const ps=shown(), nHere=STATE.parlays.length-ps.length;
   let html='';
   {
     if(STATE.dataErr) html+=`<div class="note"><b>X's placed parlays could not be read: ${esc(STATE.dataErr)}</b> They come from <code>liveparlays/parlays.json</code> in the repository, read on every load; the rest of the tab is not affected.</div>`;
     else if(STATE.err) html+=`<div class="note"><b>Live scores are not loading (${esc(STATE.err)}).</b> This browser could not reach ESPN's live scoreboard, which the page reads directly. An ad or tracker blocker, a VPN, or a work or school network usually causes it; try with the blocker paused, or on another device. The parlays below are still right; only the live numbers against them are stale.</div>`;
   }
   if(!ps.length){
+    /* every parlay cleared on this device: it says so quietly, with the way back */
+    if(nHere){ app.innerHTML=html+hereLine(nHere); return; }
     /* empty says so and no more */
     app.innerHTML=html+`<div class="empty"><b style="font-family:var(--display);font-size:19px;color:var(--ink);display:block">Nothing to watch yet</b></div>`;
     return;
@@ -5243,7 +5325,9 @@ function drawList(){
   const rank=p=>{ const e=endsAt(p), s2=startsAt(p); return [isSettled(p)?1:0,s2===null?FAR:s2,e===null?FAR:e,p.week||0]; };
   const sorted=ps.sort((x,y)=>{ const a=rank(x),b=rank(y); return (a[0]-b[0])||(a[1]-b[1])||(a[2]-b[2])||(a[3]-b[3]); });
   const nSettled=sorted.filter(isSettled).length;
-  if(nSettled===sorted.length) html+='<p class="lp-quiet">None of X’s parlays is still live.</p>';
+  /* said of the parlays drawn: one cleared on this device may be live still, and its games are not
+     followed here, so with any cleared the line speaks only for the ones shown */
+  if(nSettled===sorted.length) html+=nHere?'<p class="lp-quiet">None of the parlays shown here is still live.</p>':'<p class="lp-quiet">None of X’s parlays is still live.</p>';
   let lastKey;
   for(const p of sorted){
     const s0=startsAt(p), w0=winOf(s0), w1=winOf(endsAt(p));
@@ -5261,7 +5345,8 @@ function drawList(){
     const tag=gone?'<span class="pill bad">gone</span>':(done?(allVoid?'<span class="pill">void</span>':'<span class="pill ok">landed</span>'):'')
       +(voids&&!gone&&!allVoid?`<span class="pill">${voids} void</span>`:'');
     /* every parlay here is one X placed at the book */
-    html+=`<div class="savedp src">
+    html+=`<div class="savedp src" data-lp-id="${esc(p.id)}">
+      <button type="button" class="lp-x" data-lp-clear="${esc(p.id)}" aria-label="Clear this parlay" title="Clear this parlay">${X_ICON}</button>
       <div class="sp-head"><span class="sp-title">${p.legs.length}-leg parlay</span>
         <span class="pill">placed</span>
         ${p.week?`<span class="muted" style="font-size:12px">week ${+p.week}</span>`:''}
@@ -5275,8 +5360,86 @@ function drawList(){
       ${gameStrip(p)}
       ${p.legs.map(legRow).join('')}</div>`;
   }
+  if(nHere) html+=hereLine(nHere);
   app.innerHTML=html;
 }
+/* ---- Clear this parlay?: the X opens it; Cancel, Escape or a click outside closes it and
+   clears nothing; Clear takes the parlay off this device's X Parlays. Tab stays inside the
+   window, and the focus goes back to the X (after a Clear, to the next card's X, else to Show
+   them again). Nothing is sent anywhere. ---- */
+let askId=null, askAt=0;
+/* a tap that lands within a moment of the window opening is the same finger's double tap on the X,
+   not an answer: it neither clears (Clear can sit right under the X on a phone) nor closes. A key
+   (a click with no pointer, detail 0) always counts. */
+const tooSoon=e=>!!e&&e.detail>0&&Date.now()-askAt<400;
+const $lp=id=>document.getElementById(id);
+const askOpen=()=>{ const d=$lp('lpAsk'); return !!d&&!d.hidden; };
+const xFor=id=>[...document.querySelectorAll('#app [data-lp-clear]')].find(b=>b.getAttribute('data-lp-clear')===id)||null;
+function ask(id){
+  const p=STATE.parlays.find(x=>x.id===id), d=$lp('lpAsk'); if(!p||!d) return;
+  askId=id;
+  $lp('lpAskWhat').textContent=[`${p.legs.length}-leg parlay`,p.week?`week ${+p.week}`:'',p.price!=null?fmtML(p.price):'',p.note||''].filter(Boolean).join(' \u00b7 ');
+  d.hidden=false; askAt=Date.now(); document.body.classList.add('modal-open');
+  try{ $lp('lpAskNo').focus(); }catch(e){}
+}
+/* quiet: closed because the visitor left the tab, so the focus is not sent back into it */
+function askClose(clear,quiet){
+  const d=$lp('lpAsk'); if(!d||d.hidden) return;
+  const id=askId; askId=null; d.hidden=true;
+  if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
+  let back=null;
+  if(clear&&id){
+    /* where its X stood, so the focus lands on the X that takes its place */
+    const xs=[...document.querySelectorAll('#app [data-lp-clear]')], at=xs.indexOf(xFor(id));
+    const list=hereNow();
+    hereWrite(list.some(x=>x.id===id)?list:list.concat([{id,at:new Date().toISOString()}]));
+    draw();
+    const now=[...document.querySelectorAll('#app [data-lp-clear]')];
+    back=now[Math.min(Math.max(at,0),now.length-1)]||$lp('lpShowAll')||$lp('now');
+  } else back=xFor(id)||$lp('now');
+  if(!quiet) try{ if(back) back.focus(); }catch(e){}
+}
+function showAgain(){
+  /* the ones this tab shows as cleared come back; one another tab cleared since stays cleared */
+  const mine=new Set(STATE.here.map(x=>x.id));
+  hereWrite(hereNow().filter(x=>!mine.has(x.id)));
+  draw();
+  const first=document.querySelector('#app [data-lp-clear]'); try{ if(first) first.focus(); }catch(e){}
+  /* their games were not followed while they were cleared: read them now */
+  if(STATE.busy) STATE.again=true; else refresh();
+}
+document.getElementById('app').addEventListener('click',e=>{
+  const x=e.target&&e.target.closest&&e.target.closest('[data-lp-clear]');
+  if(x){ ask(x.getAttribute('data-lp-clear')); return; }
+  if(e.target&&e.target.closest&&e.target.closest('#lpShowAll')) showAgain();
+});
+$lp('lpAskNo').addEventListener('click',()=>askClose(false));
+$lp('lpAskYes').addEventListener('click',e=>{ if(!tooSoon(e)) askClose(true); });
+$lp('lpAsk').addEventListener('click',e=>{ if(e.target===e.currentTarget&&!tooSoon(e)) askClose(false); });
+/* the window is X Parlays' own: leaving the tab (the back button, a link to another) closes it and
+   clears nothing, so no hidden window holds the page still or keeps Tab and Escape */
+window.addEventListener('hashchange',()=>askClose(false,true));
+/* another tab of the site cleared a parlay, or showed them again: this one follows */
+window.addEventListener('storage',e=>{
+  if(e.key!==HERE_KEY&&e.key!==null) return;
+  if(hereMem) return;
+  const v=hereLoad(); if(v===null) return;
+  const back=STATE.here.some(x=>!v.some(y=>y.id===x.id));
+  STATE.here=v; draw();
+  /* a parlay shown again here had its games unfollowed: read them */
+  if(back){ if(STATE.busy) STATE.again=true; else refresh(); }
+});
+/* Escape ahead of the windows beneath it, so it closes this one alone; Tab kept inside */
+window.addEventListener('keydown',e=>{
+  if(!askOpen()) return;
+  /* a window left open on a tab no longer shown is closed, and the key goes where it was meant */
+  if($lp('lpAsk').parentElement.closest('[hidden]')){ askClose(false,true); return; }
+  if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); askClose(false); return; }
+  if(e.key!=='Tab') return;
+  const f=[$lp('lpAskNo'),$lp('lpAskYes')], at=document.activeElement;
+  if(e.shiftKey&&(at===f[0]||!$lp('lpAsk').contains(at))){ e.preventDefault(); f[1].focus(); }
+  else if(!e.shiftKey&&(at===f[1]||!$lp('lpAsk').contains(at))){ e.preventDefault(); f[0].focus(); }
+},true);
 /* the live stamp (when the scores were last read) and, under the heading, when X's parlays
    last changed: the file's own word for it */
 function foot(){
