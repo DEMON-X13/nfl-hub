@@ -1437,11 +1437,12 @@ function pbTier(t,pool,memo,base){ return pbWithFair(pbTierOf(t,pool,memo,base))
 /* why a tier is empty, in the reader's terms: the picks do not make that many legs (one a player,
    one side and one total a game), since every level shows a parlay whenever they do. A player leg needs the
    book's price, and a game's player prices are pulled on game day or the day before: Thursday's
-   game on Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and the
-   whole Sunday slate on Saturday morning (on the site by about 7:50am Pacific). With player bets
+   game on Thursday, Monday's on Monday, a Friday game's on Thursday, and Saturday's games and
+   Sunday's afternoon and night games on Saturday morning (on the site by about 7:50am Pacific);
+   Sunday's early games, before 4pm Eastern, never (oddsfetch.py's early_sunday). With player bets
    ticked and none of the ticked games priced yet, that is the reason, and the tier says so rather
    than ask for more ticks (under Players only no tick would help). c: which of the two kinds are ticked */
-const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning.';
+const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
 function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`:`No ${n}-leg parlay on your picks`;
@@ -1794,9 +1795,9 @@ function pbPanel(){
   if(u.k.total) notes.push('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
   /* player bets ticked, none of their prices in, and a level built all the same (from team bets
      or totals): the levels say nothing of the missing player legs, so the panel does */
-  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.');
+  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
   if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">

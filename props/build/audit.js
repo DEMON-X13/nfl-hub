@@ -626,7 +626,7 @@ setTimeout(async()=>{
     const ruleFor=t=>t.likeliest?`the likeliest ${t.n} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+ by the model`:'the likeliest pair';
     /* the reason a tier gives with no player price on file: when they really come (PR #213: the
        Sunday slate on Saturday morning, every other game on its day or the day before) */
-    const NO_PL='No player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning.', noPlLow=NO_PL[0].toLowerCase()+NO_PL.slice(1);
+    const NO_PL='No player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).', noPlLow=NO_PL[0].toLowerCase()+NO_PL.slice(1);
     /* a card's own words, beyond its legs: the rule beside its name says what the parlay is, and
        nothing else on it speaks of the floor (the owner wants the chance and the price, no note):
        no paragraph but the thin-edge line, and no word of a floor outside the rule and the legs */
@@ -1035,7 +1035,7 @@ setTimeout(async()=>{
       /* a level built with no player price on file says nothing of the missing player legs, so the
          panel does, whenever one is built; and player bets with Game total build their levels from
          the totals, with that note */
-      const PL_NOTE='Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.';
+      const PL_NOTE='Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
       F('renderPb')(); chk(d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes(PL_NOTE)===rA.tiers.some(t=>t.legs),'with no player price on file and All ticked, the note that the tiers are built without player legs is missing, or shows with no tier built');
       /* a level needs two legs, so only where two or more games have a priced total (a one-game
          Monday has one, and builds nothing) */
@@ -2232,7 +2232,7 @@ setTimeout(async()=>{
             if(off&&!/^ruled out/.test(gp.why)) bad.push(`${gp.name} (${gp.slot}): ${gp.why}`);
             if(!off&&/^ruled out/.test(gp.why)) bad.push(`${gp.name} is not out but reads "${gp.why}"`); } }
         chk(!bad.length,`gap notes that misstate why a player is not shown: ${bad.slice(0,4).join('; ')}`);
-        const D=PAY.depth||{}; let tried=0, ok=0;
+        const D=PAY.depth||{}; let tried=0, ok=0, noHist=0;
         for(const team of new Set(Object.values(D).map(d=>d[0]))){
           const q=rk=>Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===rk&&SV.players[id]&&SV.players[id].team===team&&!SV.inactive[id]);
           const one=q(1), two=q(2), g=SV.sched.find(x=>+x.w===cw&&(x.a===team||x.h===team))||SV.sched.find(x=>x.a===team||x.h===team);
@@ -2240,12 +2240,16 @@ setTimeout(async()=>{
           tried++; const P2=SV.players[two], keep=[P2.gp,P2.base_gp]; P2.gp=1; P2.base_gp=0;
           SV.inactive[one]={week:cw,status:'Out',inj:'Thumb'};
           try{ const r=F('rosterFor')(g,false)[team], qb=r.players.filter(x=>x.pl.grp==='QB'&&x.starter), gap=r.gaps.find(x=>x.id===one);
+            /* a QB2 with no NFL rows at all (Stetson Bennett, LA, week 6 of 2026) has nothing to project
+               from, so he cannot be shown: the gap note names him as the man who steps in instead */
+            const use2=F('usage')(P2,g.a===team?g.h:g.a,F('gameCtx')(g,team));
             if(qb.length===1&&qb[0].pl.id===two&&gap&&gap.why==='ruled out, thumb') ok++;
+            else if(!(use2>0)&&!qb.length&&gap&&gap.why==='ruled out, thumb'&&r.gaps.some(x=>x.id===two&&/^steps in for him; /.test(x.why))){ ok++; noHist++; }
             else chk(false,`${team}: QB1 ruled out and a one-game QB2: the starter shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, and QB1 reads "${gap?gap.why:'nothing'}"`);
           } finally { P2.gp=keep[0]; P2.base_gp=keep[1]; delete SV.inactive[one]; }
           if(tried>=4) break; }
         chk(tried>0,'no team on the chart has a QB1 and a QB2 to test the next man up with');
-        console.log(`V4. ruled out: ${n} gap notes this week, each giving the real reason; ${ok} of ${tried} teams start a one-game QB2 when QB1 is ruled out`); }
+        console.log(`V4. ruled out: ${n} gap notes this week, each giving the real reason; ${ok} of ${tried} teams start a one-game QB2 when QB1 is ruled out${noHist?` (${noHist} of them a QB2 with no NFL history, named as the man who steps in)`:''}`); }
 
       /* V5. the injury report: the payload carries the downloaded one, its Outs leave the page, its
          Questionables wear a Q; and the rules, on a made-up report for a real team */

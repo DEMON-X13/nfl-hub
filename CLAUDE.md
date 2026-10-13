@@ -230,6 +230,17 @@ no credits) replays the season's schedule through `weekly.py`'s windows and `odd
 `choose()` at every lateness up to 9.4 hours and with pulls dropped, and holds the crons to
 `PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`.
 
+Sunday's early games, every Sunday kickoff before 4pm Eastern (the 1pm window, London and the other
+games abroad), are never bought player prices (the owner's call, 13 October 2026: he bets props on the
+afternoon and night games): `oddsfetch.py`'s `early_sunday()` skips them in `choose()`, in every mode,
+catch-ups included, unless `--early` is passed by hand. That is about 9 of a week's games at 6 credits
+each, so the free tier's 500 credits a month cover a five-week month with room over. Their moneylines,
+spreads and totals still come in the slate's one game-lines call (and their DraftKings ids with them),
+and their player legs are shown at the model's estimate, as any game without a book price. The page
+says so wherever it says when player prices are pulled (app v103, `patch_early_sunday.py`: the Parlay
+Builder's empty tiers and notes, and the parlay card); `test_pull_schedule.py`'s (e) holds that no
+early game is ever bought.
+
 Every pull also keeps DraftKings' own id (sid) for each outcome it reads, free on the same calls
 (`includeSids`), in `props/data/dk_links_wk{W}.json`, keyed by the book's names
 (`game|player|stat|Over/Under/Yes|point`, `game|game|ml/spread/total|side|point`, `game|event`); a game
