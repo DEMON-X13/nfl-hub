@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Weekly Picks</title>
+<!-- Weekly Picks: a standalone page where a visitor picks the winner of every game of the week
+     and saves the picks as a file to send to X. Hand-written, one file, nothing built. The games
+     are the Pick'ems board's: betting/state.json's schedule, read on every load, the board's week
+     (the first with a game still to play, else the last). The picks are the visitor's own: kept in
+     this browser only (so a reload keeps them) and in the file they save, sent nowhere. A game that
+     has kicked off by the visitor's clock can no longer be picked or changed. -->
+<style>
+  :root{--bg:#0F1B2D;--card:#1A2B45;--line:#2A3D5C;--ink:#E9EEF4;--mute:#9AA4B0;--accent:#4FA3FF;--good:#3FB950;--warn:#E3B341}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  main{max-width:720px;margin:0 auto;padding:24px 16px 120px}
+  a{color:var(--accent)}
+  h1{font-size:28px;margin:0 0 4px}
+  .sub{color:var(--mute);margin:0 0 20px;font-size:15px;line-height:1.45}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+  label.f{display:block;font-size:13px;color:var(--mute);margin:0 0 6px}
+  input[type=text],input[type=number]{width:100%;font:inherit;font-size:16px;color:var(--ink);background:#0F1B2D;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+  input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .game{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+  .game:first-child{border-top:0}
+  .when{font-size:13px;color:var(--mute);line-height:1.35}
+  .when b{display:block;color:var(--ink);font-size:14px}
+  .match{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .at{color:var(--mute);font-size:13px;min-width:18px;text-align:center}
+  .team{flex:1 1 0;min-width:0;min-height:48px;display:flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-weight:700;font-size:15px;
+        border-radius:12px;border:2px solid transparent;cursor:pointer;padding:6px 10px;opacity:.55;transition:opacity .12s,transform .12s,border-color .12s}
+  .team .nm{font-weight:500;font-size:13px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .team:hover:not(:disabled){opacity:.85}
+  .team[aria-pressed=true]{opacity:1;border-color:#fff;box-shadow:0 0 0 2px var(--bg),0 6px 16px -8px #000}
+  .team[aria-pressed=true]::after{content:"\2713";font-size:16px}
+  .match.none .team{opacity:.9}
+  .team:disabled{cursor:not-allowed}
+  .lock{font-size:12px;color:var(--warn);margin-top:6px}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:#0B1424;border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .bar .in{max-width:720px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .count{flex:1 1 140px;font-size:14px;color:var(--mute)}
+  .count b{color:var(--ink)}
+  .btn{font:inherit;font-weight:600;font-size:15px;min-height:44px;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#06121F}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .msg{font-size:13px;color:var(--good);width:100%}
+  .msg.err{color:#FF7B72}
+  .note{font-size:14px;color:var(--mute);line-height:1.45}
+  @media (max-width:480px){
+    .game{grid-template-columns:1fr;gap:6px}
+    .when b{display:inline;margin-right:6px}
+    .team .nm{display:none}
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="sub" style="margin:0 0 8px"><a href="../">NFL Hub</a></p>
+  <h1 id="title">Weekly Picks</h1>
+  <p class="sub" id="lede">Loading this week's games…</p>
+
+  <div class="card">
+    <label class="f" for="who">Your name</label>
+    <input type="text" id="who" autocomplete="name" maxlength="60" placeholder="So X knows whose picks these are">
+  </div>
+
+  <div class="card" id="games"><p class="note">Loading…</p></div>
+
+  <div class="card" id="tbCard" hidden>
+    <label class="f" for="tb" id="tbLabel">Tiebreaker: total points in the last game</label>
+    <input type="number" id="tb" inputmode="numeric" min="0" max="200" step="1" placeholder="e.g. 45">
+  </div>
+
+  <p class="note">Tap the team you think wins each game. Your picks stay in this browser until you
+  save them; nothing is sent anywhere. <b>Save file</b> downloads them as a file you can send to X.
+  A game that has kicked off can no longer be picked or changed.</p>
+  <p class="note"><button class="btn" id="clear" type="button">Clear my picks</button></p>
+</main>
+
+<div class="bar"><div class="in">
+  <div class="count" id="count">0 picked</div>
+  <button class="btn" id="share" type="button" hidden>Send file</button>
+  <button class="btn primary" id="save" type="button" disabled>Save file</button>
+  <div class="msg" id="msg" role="status" aria-live="polite"></div>
+</div></div>
+
+<script src="../news/data/teams.js"></script>
+<script>
+(function(){
+const STATE_URL='../betting/state.json';
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* the teams' names and colours are the Season Tracker's list; nflverse's LA is its LAR */
+const TEAM={};
+(typeof TEAMS!=='undefined'?TEAMS:[]).forEach(t=>{ TEAM[t.ab]=t; });
+const team=ab=>TEAM[ab]||TEAM[ab==='LA'?'LAR':ab]||{ab,name:ab,color:'#33465F'};
+const short=ab=>team(ab).name.split(' ').slice(-1)[0];
+/* white or near-black text, whichever reads on the team's colour */
+function inkOn(hex){
+  const n=parseInt(hex.slice(1),16), c=[n>>16,(n>>8)&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});
+  const L=.2126*c[0]+.7152*c[1]+.0722*c[2];
+  return (1.05)/(L+.05)>=(L+.05)/.05?'#fff':'#0B1424';
+}
+
+/* the schedule's kickoff (US Eastern) as an instant, as the Pick'ems board reads it */
+function kickAt(d,t){
+  if(!d||!t) return null;
+  const guess=new Date(`${d}T${t}:00Z`);
+  const inZone=z=>new Date(guess.toLocaleString('en-US',{timeZone:z}));
+  const k=new Date(guess.getTime()+(inZone('UTC')-inZone('America/New_York')));
+  return isNaN(k)?null:k;
+}
+const neutral=g=>g.location==='Neutral'||g.gametime==='09:30';
+const PLAYOFF={19:'Wild Card',20:'Divisional',21:'Conference',22:'Super Bowl'};
+const weekName=w=>w>18?(PLAYOFF[w]||'Playoffs '+(w-18)):'Week '+w;
+
+const G={season:null,week:null,games:[]};
+/* the visitor's own picks, in this browser only, one key a season and week */
+let P={who:'',picks:{},tb:''};
+const key=()=>`weekly_picks_${G.season}_w${G.week}`;
+function load(){ try{ const s=JSON.parse(localStorage.getItem(key())||'null'); if(s&&typeof s==='object') P={who:s.who||'',picks:s.picks||{},tb:s.tb||''}; }catch(e){} }
+function store(){ try{ localStorage.setItem(key(),JSON.stringify(P)); }catch(e){} }
+/* the name carries from week to week */
+function lastName(){ try{ return localStorage.getItem('weekly_picks_name')||''; }catch(e){ return ''; } }
+function keepName(n){ try{ localStorage.setItem('weekly_picks_name',n); }catch(e){} }
+
+const started=g=>{ const k=kickAt(g.gameday,g.gametime); return k?Date.now()>=k.getTime():g.result!=null; };
+
+function chip(g,ab){
+  const t=team(ab), on=P.picks[g.game_id]===ab;
+  return `<button type="button" class="team" data-g="${esc(g.game_id)}" data-t="${esc(ab)}" aria-pressed="${on}"
+    style="background:${t.color};color:${inkOn(t.color)}" ${started(g)?'disabled':''}
+    aria-label="${esc(t.name)}${on?', picked':''}">${esc(ab)}<span class="nm">${esc(short(ab))}</span></button>`;
+}
+function draw(){
+  if(!G.games.length){ el('games').innerHTML='<p class="note">No games are scheduled for this week.</p>'; return; }
+  el('games').innerHTML=G.games.map(g=>{
+    const k=kickAt(g.gameday,g.gametime);
+    const day=k?k.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'}):(g.gameday||'');
+    const time=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
+    const picked=P.picks[g.game_id];
+    const lock=started(g)?`<div class="lock">Kicked off${picked?'; your pick is in':': no pick made'}</div>`:'';
+    return `<div class="game"><div class="when"><b>${esc(day)}</b>${esc(time)}</div>
+      <div><div class="match${picked?'':' none'}">${chip(g,g.away_team)}<span class="at">${neutral(g)?'vs':'at'}</span>${chip(g,g.home_team)}</div>${lock}</div></div>`;
+  }).join('');
+  count();
+}
+function count(){
+  const n=G.games.filter(g=>P.picks[g.game_id]).length;
+  el('count').innerHTML=`<b>${n}</b> of ${G.games.length} picked`;
+  el('save').disabled=!n;
+  el('share').disabled=!n;
+}
+
+/* the file: everything X needs to read and grade it, in plain JSON */
+function file(){
+  const tbG=G.games[G.games.length-1];
+  const out={
+    kind:'nfl-hub-weekly-picks',version:1,
+    name:P.who.trim(),season:G.season,week:G.week,week_name:weekName(G.week),
+    saved_at:new Date().toISOString(),
+    picked:G.games.filter(g=>P.picks[g.game_id]).length,games:G.games.length,
+    tiebreaker:tbG&&P.tb!==''&&isFinite(+P.tb)?{game_id:tbG.game_id,game:`${tbG.away_team} at ${tbG.home_team}`,total_points:+P.tb}:null,
+    picks:G.games.map(g=>{
+      const k=kickAt(g.gameday,g.gametime);
+      return {game_id:g.game_id,game:`${g.away_team} ${neutral(g)?'vs':'at'} ${g.home_team}`,
+        away:g.away_team,home:g.home_team,kickoff:k?k.toISOString():null,pick:P.picks[g.game_id]||null};
+    })
+  };
+  const slug=(out.name||'anon').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'anon';
+  return {name:`picks-${G.season}-week${G.week}-${slug}.json`,text:JSON.stringify(out,null,2)};
+}
+function say(t,err){ const m=el('msg'); m.textContent=t; m.className='msg'+(err?' err':''); }
+function nameCheck(){
+  if(P.who.trim()) return true;
+  say('Add your name first, so X knows whose picks these are.',true); el('who').focus(); return false;
+}
+function save(){
+  if(!nameCheck()) return;
+  const f=file(), blob=new Blob([f.text],{type:'application/json'}), url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=f.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  say(`Saved ${f.name}. Send that file to X.`);
+}
+/* a phone's share sheet can send the file straight to a chat, where the browser can share files */
+function shareable(){
+  try{ return !!(navigator.canShare&&navigator.canShare({files:[new File(['{}'],'x.json',{type:'application/json'})]})); }catch(e){ return false; }
+}
+async function share(){
+  if(!nameCheck()) return;
+  const f=file(), fl=new File([f.text],f.name,{type:'application/json'});
+  try{ await navigator.share({files:[fl],title:`${weekName(G.week)} picks`}); say('Sent.'); }
+  catch(e){ if(e&&e.name==='AbortError') return; say('Could not open the share sheet; use Save file instead.',true); }
+}
+
+el('games').addEventListener('click',e=>{
+  const b=e.target.closest('.team'); if(!b||b.disabled) return;
+  const g=G.games.find(x=>x.game_id===b.dataset.g); if(!g||started(g)){ draw(); return; }
+  P.picks[g.game_id]=P.picks[g.game_id]===b.dataset.t?undefined:b.dataset.t;
+  if(!P.picks[g.game_id]) delete P.picks[g.game_id];
+  store(); draw(); say('');
+});
+el('who').addEventListener('input',()=>{ P.who=el('who').value; keepName(P.who); store(); });
+el('tb').addEventListener('input',()=>{ P.tb=el('tb').value; store(); });
+el('save').addEventListener('click',save);
+el('share').addEventListener('click',share);
+el('clear').addEventListener('click',()=>{
+  /* only the games still to kick off: a pick made before a kickoff stays */
+  G.games.forEach(g=>{ if(!started(g)) delete P.picks[g.game_id]; });
+  P.tb=''; el('tb').value=''; store(); draw(); say('Cleared.');
+});
+/* a game that kicks off while the page is open locks */
+setInterval(()=>{ if(G.games.length) draw(); },30000);
+
+(async function boot(){
+  try{
+    const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('state.json: HTTP '+r.status);
+    const st=await r.json();
+    const sched=(st.schedule||[]).filter(g=>g&&g.week!=null);
+    if(!sched.length) throw new Error('the schedule is empty');
+    G.season=st.season;
+    /* the board's week: the first with a game still to play, else the last */
+    const open=sched.filter(g=>g.result==null).map(g=>+g.week);
+    G.week=open.length?Math.min(...open):Math.max(...sched.map(g=>+g.week));
+    G.games=sched.filter(g=>+g.week===G.week).sort((a,b)=>{
+      const ka=kickAt(a.gameday,a.gametime), kb=kickAt(b.gameday,b.gametime);
+      return (ka?ka.getTime():0)-(kb?kb.getTime():0)||a.game_id.localeCompare(b.game_id);
+    });
+  }catch(e){
+    el('lede').textContent='';
+    el('games').innerHTML=`<p class="note"><b>This week's games could not be loaded.</b> ${esc(e.message||e)}. Try again in a moment.</p>`;
+    return;
+  }
+  load();
+  if(!P.who) P.who=lastName();
+  el('who').value=P.who; el('tb').value=P.tb;
+  el('title').textContent=`${weekName(G.week)} Picks`;
+  document.title=`${weekName(G.week)} Picks`;
+  const first=kickAt(G.games[0].gameday,G.games[0].gametime), last=kickAt(G.games[G.games.length-1].gameday,G.games[G.games.length-1].gametime);
+  const d=x=>x?x.toLocaleDateString(undefined,{month:'short',day:'numeric'}):'';
+  el('lede').textContent=`${G.season} season, ${G.games.length} games, ${d(first)} to ${d(last)}. Pick a winner in each, then save the file and send it to X.`;
+  const tbG=G.games[G.games.length-1];
+  el('tbLabel').textContent=`Tiebreaker (optional): total points in ${team(tbG.away_team).name} at ${team(tbG.home_team).name}`;
+  el('tbCard').hidden=false;
+  if(shareable()) el('share').hidden=false;
+  draw();
+})();
+})();
+</script>
+</body>
+</html>
