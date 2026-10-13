@@ -1,0 +1,49 @@
+{
+ "event": {
+  "id": "86457f91112732f21ad4bb7d37bd291c",
+  "sport_key": "americanfootball_nfl",
+  "sport_title": "NFL",
+  "commence_time": "2026-10-12T00:20:00Z",
+  "home_team": "Atlanta Falcons",
+  "away_team": "Baltimore Ravens"
+ },
+ "legs": [
+  {
+   "leg": "Jahan Dotson Under 1.5 player_receptions",
+   "found": true,
+   "point": 1.5,
+   "price": 117,
+   "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394415%232310653898_13L88808Q1-847255388Q20",
+   "sid": "0QA376394415#2310653898_13L88808Q1-847255388Q20",
+   "market_link": null
+  },
+  {
+   "leg": "Justice Hill Under 11.5 player_rush_yds",
+   "found": true,
+   "point": 11.5,
+   "price": -115,
+   "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394371%232311824527_13L88808Q1-666329404Q20",
+   "sid": "0QA376394371#2311824527_13L88808Q1-666329404Q20",
+   "market_link": null
+  },
+  {
+   "leg": "Kyle Pitts Over 23.5 player_reception_yds",
+   "found": true,
+   "point": 23.5,
+   "price": -112,
+   "link": "https://sportsbook.draftkings.com/?outcomes=0QA376394288%232311537812_13L88808Q1832051540Q20",
+   "sid": "0QA376394288#2311537812_13L88808Q1832051540Q20",
+   "market_link": null
+  },
+  {
+   "leg": "Tyler Huntley Under 174.5 player_pass_yds",
+   "found": true,
+   "point": 173.5,
+   "price": -111,
+   "link": "https://sportsbook.draftkings.com/?outcomes=0QA376565659%232311845483_13L88808Q1-1750001240Q20",
+   "sid": "0QA376565659#2311845483_13L88808Q1-1750001240Q20",
+   "market_link": null
+  }
+ ],
+ "combined": "https://sportsbook.draftkings.com/?outcomes=0QA376394415%232310653898_13L88808Q1-847255388Q20+0QA376394371%232311824527_13L88808Q1-666329404Q20+0QA376394288%232311537812_13L88808Q1832051540Q20+0QA376565659%232311845483_13L88808Q1-1750001240Q20"
+}

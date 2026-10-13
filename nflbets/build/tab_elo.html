@@ -1,0 +1,858 @@
+<!-- The Player Elo tab: its own styles, its section, its script. build.js sets these into the
+     prop model's page the way it sets the Pick'ems tab in, so every class and id is prefixed
+     pe- and the script is one closure. Nothing is computed here: elo/build.py rates every
+     player and fits the game model, and this tab reads what it wrote. -->
+<style>
+.pe-wrap h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pe-wrap h2 .pill{font-family:var(--body)}
+.pe-sub{color:var(--ink-2);font-size:13px;line-height:1.6;margin:0 0 14px}
+.pe-pos{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.pe-pos button{font:600 12px/1 var(--body);padding:8px 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-2);cursor:pointer}
+.pe-pos button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+table.pe-t{width:100%;border-collapse:collapse;font-size:13px}
+table.pe-t th{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 10px 8px;white-space:nowrap}
+table.pe-t td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:middle;white-space:nowrap}
+table.pe-t td.pe-n,table.pe-t th.pe-n{text-align:right;font-variant-numeric:tabular-nums}
+table.pe-t .pe-rank{color:var(--muted);font-weight:600;width:28px}
+table.pe-t .pe-name{font-weight:600;color:var(--ink)}
+table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}
+.pe-elo{font-family:var(--display);font-weight:700;font-size:15px;color:var(--ink)}
+.pe-up{color:var(--pick);font-weight:600} .pe-down{color:var(--miss);font-weight:600} .pe-flat{color:var(--muted)}
+.pe-spark{display:inline-block;vertical-align:middle}
+.pe-shield{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.pe-shield .tierbadge{display:inline-block;width:20px;height:22px;vertical-align:middle;flex:none}
+.pe-curve{margin:0 0 16px;max-width:680px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pe-cv-in{position:relative;min-width:520px;padding-top:34px}
+.pe-curve svg{display:block;width:100%;height:auto;overflow:visible}
+.pe-curve .pe-cv-key{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-2);margin:6px 0 0}
+.pe-curve .pe-cv-key i{display:inline-block;width:14px;height:0;border-top:2px dashed var(--ink-2);vertical-align:middle;margin-right:6px}
+.pe-curve .pe-cv-key b{display:inline-block;width:10px;height:10px;border-radius:3px;background:linear-gradient(90deg,#A05A2C,#D4A017,#3B82F6,#7C3AED);vertical-align:middle;margin-right:6px}
+.pe-cv-tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;line-height:1.45;padding:7px 9px;border-radius:8px;white-space:nowrap;transform:translate(-50%,-100%);opacity:0;transition:opacity .1s}
+.pe-cv-tip.on{opacity:1}
+.pe-edge{font-size:11px;color:var(--ink-2)}
+.pe-edge b{color:var(--ink)}
+.pe-more{margin-top:10px}
+/* a ranked player's shield beside his name in the Parlay Builder, with his place at the position */
+.plr .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.plr .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* the same shield on a player's row in the Props game view and the Pick'ems game bodies */
+.plrbtn .who .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.plrbtn .who .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* the second price on a player leg: the book's chance nudged by the player's form */
+.pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
+.pe-alt b{color:var(--ink-2);font-weight:600}
+.pe-altsum{margin:10px 0 0;font-size:12px;color:var(--ink-2)}
+/* Elo picks: the last section of the Parlay Builder's suggested parlays (#pbElo), styled with the panel's own tier cards */
+/* mismatches: five bubbles over the Props game list, the rest in a window */
+.pe-mm{margin:0 0 16px}
+.pe-mm h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pe-mm h2 small{font-family:var(--body);font-size:12px;font-weight:500;color:var(--muted)}
+.pe-mm-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;padding:10px 0 0 10px}
+.pe-mm-b{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:16px;padding:14px 12px 10px;display:flex;flex-direction:column;gap:6px;min-width:0;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,transform .15s}
+.pe-mm-b:hover{border-color:var(--line-2);transform:translateY(-1px)}
+.pe-mm-top{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
+.pe-mm-n{position:absolute;top:-10px;left:-10px;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#fff;color:#0F1B2D;border:1px solid var(--line-2);box-shadow:0 1px 3px rgba(15,27,45,.18);font-family:var(--display);font-weight:700;font-size:12px}
+.pe-mm-sh{display:inline-flex;flex:none}
+.pe-mm-sh .tierbadge{width:16px;height:18px}
+#peMmClose,#pePlClose{font-family:var(--body);font-size:13px}
+.pe-mm-nm{font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-mm-t .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+.pe-mm-vs{display:flex;align-items:center;justify-content:center;gap:4px;font-size:11px;color:var(--ink-2)}
+.pe-mm-vs .pk-ttag{font-size:10.5px;padding:3px 4px;min-width:32px;border-radius:5px}
+.pe-mm-score{display:flex;align-items:center;gap:8px}
+.pe-mm-score b{font-family:var(--display);font-size:20px;line-height:1;color:var(--ink)}
+.pe-mm-bar{flex:1;height:6px;border-radius:999px;background:var(--line);overflow:hidden}
+.pe-mm-bar i{display:block;height:100%;border-radius:999px;background:var(--pick)}
+.pe-mm-sub{font-size:12px;color:var(--ink-2);line-height:1.4}
+.pe-mm-sub b{color:var(--ink-2);font-weight:600}
+.pe-mm-more{margin-top:12px;display:flex;justify-content:center}
+/* the player a mismatch opened, in his game: ringed in the pick colour, with a short pulse */
+.plrbtn.pe-hl{border-color:var(--pick);background:var(--pick-soft);box-shadow:0 0 0 2px var(--pick);animation:pe-hl 1.6s ease-out 2}
+.plrbody.pe-hl{border-color:var(--pick);box-shadow:0 0 0 2px var(--pick)}
+@keyframes pe-hl{0%{box-shadow:0 0 0 2px var(--pick),0 0 0 0 rgba(27,122,78,.45)}100%{box-shadow:0 0 0 2px var(--pick),0 0 0 12px rgba(27,122,78,0)}}
+@media (prefers-reduced-motion:reduce){.plrbtn.pe-hl{animation:none}}
+.pe-mm-t td,.pe-mm-t th{white-space:nowrap}
+.pe-mm-t{width:100%}
+.pe-mm-t .pe-c{text-align:center;width:17%}
+.pe-mm-nm small{font-weight:600;color:var(--muted);margin-left:3px}
+/* the edge, coloured by how big it is */
+.pe-g4{color:var(--pick)!important} .pe-g3{color:#3F8F5E!important} .pe-g2{color:#8A5E05!important} .pe-g1{color:var(--muted)!important}
+.pe-mm-t .pe-edge b{font-family:var(--display);font-size:15px} .pe-mm-t .pe-edge small{display:block;font-size:11px;font-weight:600}
+.pe-mm-t .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-3px;font-size:11px;font-weight:600;color:var(--muted)}
+@media(max-width:900px){ .pe-mm-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:78%;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px 0 4px 10px} .pe-mm-b{scroll-snap-align:start} }
+.pe-nud{display:block;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.pe-nud.up{color:var(--pick)} .pe-nud.dn{color:var(--miss)} .pe-nud.flat{color:var(--muted);font-weight:500}
+.pe-plrow{cursor:pointer}
+.pe-plrow:hover td{background:var(--panel-2)}
+.pe-plbtn{all:unset;cursor:pointer;font-weight:600;color:var(--ink)}
+.pe-plbtn:hover,.pe-plbtn:focus-visible{text-decoration:underline;text-underline-offset:3px}
+/* a player's window: his rating, then his matchup this week */
+.pe-pl h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pe-pl h2 .tierbadge{width:24px;height:26px;flex:none}
+.pe-pl-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:4px 0 18px}
+.pe-pl-tiles div{background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;min-width:0}
+.pe-pl-tiles b{display:block;font-family:var(--display);font-size:18px;color:var(--ink)}
+.pe-pl-tiles span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.pe-pl-tiles small{display:block;font-size:11.5px;color:var(--ink-2);margin-top:2px}
+.pe-pl h3{font-size:15px;margin:0 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pe-pl-def{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.pe-pl-def span{font-size:12px;color:var(--ink-2);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.pe-pl-def b{color:var(--ink)}
+.pe-pl td.pe-n b{font-family:var(--display);font-size:14px}
+.pe-pl tr.pe-weak td{opacity:.55}
+@media(max-width:640px){ .pe-pl-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} }
+#pbElo .pb-legs .nm .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:-2px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+#pbElo .pb-legs .nm .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+.pe-track table{margin-top:6px}
+.pe-note{color:var(--muted);font-size:12px;line-height:1.7;margin:14px 0 0}
+/* Overall Offense and Overall Defense: two pills at the end of the position row, a table of the
+   32 teams with each key stat and its league rank, sortable, and a team's window */
+.pe-pos .pe-unitpill{border-color:var(--ink-2);color:var(--ink);font-weight:700}
+.pe-pos .pe-unitpill:first-of-type{margin-left:6px}
+table.pe-tt th[data-sort]{cursor:pointer;user-select:none}
+table.pe-tt th[data-sort]:hover,table.pe-tt th[aria-sort]{color:var(--ink)}
+table.pe-tt th[aria-sort="descending"]::after{content:' ▼';font-size:9px}
+table.pe-tt th[aria-sort="ascending"]::after{content:' ▲';font-size:9px}
+table.pe-tt th small{display:block;font-size:10px;letter-spacing:0;text-transform:none;color:var(--muted);font-weight:600;margin-top:2px}
+table.pe-tt td.pe-st{text-align:right;font-variant-numeric:tabular-nums}
+table.pe-tt .pe-w0f{border-left:1px dashed var(--line-2)}
+table.pe-tt .pe-tm{position:sticky;left:0;background:var(--panel);z-index:1}
+table.pe-tt th.pe-tm{background:var(--panel-2)}
+/* fifteen columns are wider than a desktop card: the table scrolls sideways inside its own box at
+   every width (the page never does), and the team column sticks in it. The page clips every table
+   (overflow:hidden, for the rounded corners), which would make the table the box the team column
+   sticks in, and a table never scrolls: so this one is let out, a plain table at every width, and
+   the box around it carries the corners */
+.pe-tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-md)}
+.pe-tscroll table.pe-tt{display:table;overflow:visible}
+.pe-ord{display:inline-block;margin-left:5px;font-size:10.5px;font-weight:600;color:var(--muted);min-width:30px;text-align:left}
+.pe-ord.top{color:var(--pick)} .pe-ord.bot{color:var(--miss)}
+.pe-tmrow{cursor:pointer}
+.pe-tmrow:hover td{background:var(--panel-2)}
+.pe-tmrow.pe-np td{opacity:.6}
+.pe-tline{margin:0 0 16px;overflow-x:auto}
+.pe-tline svg{display:block;width:100%;min-width:420px;height:auto}
+.pe-tnext{font-size:13px;color:var(--ink-2);margin:0 0 14px}
+.pe-tnext b{color:var(--ink)}
+/* questionable on the week's report: still listed, with a Q */
+.pe-q{font-size:10px;font-weight:700;padding:1px 6px;margin-left:6px;vertical-align:1px;color:#8A5E05;background:rgba(212,160,23,.14);border-color:rgba(212,160,23,.4)}
+.pe-prov{font-size:10px;font-weight:600;padding:1px 6px;margin-left:6px;vertical-align:1px;color:var(--ink-2);background:transparent;border-style:dashed}
+/* the tab's record lines wrap on a phone instead of widening the page past the screen */
+#tab-elo .bar{flex-wrap:wrap}
+#tab-elo .bar .rec{white-space:normal;min-width:0;overflow-wrap:anywhere}
+@media(max-width:900px){
+  table.pe-t{display:block;overflow-x:auto}
+  table.pe-t td,table.pe-t th{padding-left:6px;padding-right:6px}
+  table.pe-t .pe-name small{white-space:normal}
+  /* a phone keeps the rank, the player, the rating and the tier; the rest is a swipe away or gone */
+  .pe-m0{display:none}
+}
+</style>
+<section id="tab-elo" hidden>
+  <div class="bar">
+    <span class="rec" id="peWalkRec"></span>
+    <span class="rec" id="peCallRec"></span>
+    <span class="grow"></span>
+    <span class="livestamp" id="peStamp"></span>
+  </div>
+  <div id="peBody" class="pe-wrap"></div>
+</section>
+<script>
+/* ---------- the Player Elo tab ----------
+   Every player rated by position, game by game since 2012, and a third game model built on
+   nothing but those ratings. elo/build.py does the work on the job's schedule and writes
+   elo/data/players.json, model.json and matchups.json; this reads them on every load. The
+   model's calls and its record live on the Pick'em Record tab beside the other models'; this
+   tab is the rankings, and a click on a player opens his window: his rating and his matchup
+   this week. */
+(function(){
+const P_URL='../elo/data/players.json', M_URL='../elo/data/model.json', MU_URL='../elo/data/matchups.json';
+const D={players:null,model:null,mu:null,pos:'QB',more:false,unit:null,tsort:null};
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct=p=>Math.round(p*100)+'%';
+const tag=(t,mini)=>window.pkTag?window.pkTag(t,window.pkTagColor?window.pkTagColor(t):null,false,mini?'mini':'')
+  :'<span class="pill">'+esc(t)+'</span>';
+/* the tier is the betting app's own, as betting/tools/tiers.js reshapes it, on the same scale the
+   teams wear: HOF 1750+ (a gem), Elite 1700+,
+   Master 1650+, Diamond 1600+, Platinum 1550+, Gold 1500+, Silver 1450+, Bronze 1400+, Iron 1350+,
+   and Wood under it */
+const shield=elo=>window.pkTierBadge?window.pkTierBadge(elo):'';
+const tierName=elo=>{ const t=window.pkEloTier?window.pkEloTier(elo):null; return t?t[0]:''; };
+function spark(pts){
+  if(!pts||!pts.length) return '';
+  /* one game in (all of week 1): the line runs from 1500, where every player starts the season */
+  if(pts.length<2) pts=[[pts[0][0]-1,1500],pts[0]];
+  const v=pts.map(p=>p[1]), lo=Math.min(...v), hi=Math.max(...v), W=84, H=22;
+  const x=i=>(i/(v.length-1))*(W-2)+1, y=e=>hi===lo?H/2:H-1-((e-lo)/(hi-lo))*(H-2);
+  const d=v.map((e,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(e).toFixed(1)).join(' ');
+  const up=v[v.length-1]>=v[0];
+  return `<svg class="pe-spark" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true"><path d="${d}" fill="none" stroke="${up?'var(--pick)':'var(--miss)'}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+function move(r){
+  const d=r.start_rank-r.rank;
+  if(!d) return '<span class="pe-flat">–</span>';
+  return d>0?`<span class="pe-up">▲${d}</span>`:`<span class="pe-down">▼${-d}</span>`;
+}
+/* ---- matchups: the coming week's projections from form, Elo and the defenders faced ----
+   elo/build.py fits, for every position and stat, a player's next game on his recent average
+   (half-life four games), home, what the defence has allowed, his own Elo and the Elo of the
+   opposing DL, LB and DB he will face, on every regular's game since 2016, and the same
+   without the two Elo terms. The difference between the two is the Elo nudge. A stat's
+   nudge is trusted when, called season by season by the fit on the seasons before, it
+   lowered the error and its biggest fifth of nudges landed on their side 53% of the time
+   or better; the others are shown faded and are not used for Elo picks. */
+const MU_LBL={passing_yards:'Pass yds',passing_tds:'Pass TD',attempts:'Att',completions:'Comp',passing_interceptions:'INT',
+  rushing_yards:'Rush yds',carries:'Carries',receptions:'Rec',receiving_yards:'Rec yds',targets:'Tgt',scrim_yards:'Rush+rec',any_td:'TDs'};
+function muTrusted(g,st){ const r=D.mu&&D.mu.record&&D.mu.record[g+'|'+st]; const p=r&&r.past;
+  return !!p&&p.rmse_elo<p.rmse_form&&p.right_top>=0.53; }
+function muNudge(pid,st){ const pl=D.mu&&D.mu.players&&D.mu.players[pid]; if(!pl||!pl.stats[st]||!muTrusted(pl.group,st)) return null;
+  const f=D.mu.fit[pl.group+'|'+st]; return f?{nudge:pl.stats[st][2],sd:f.sd,proj:pl.stats[st][1],form:pl.stats[st][0]}:null; }
+/* who will not play. The matchups file is rebuilt from that day's roster and injury report:
+   Out and Doubtful, and before a club files its statuses, anyone out at its last report who has
+   not practised since (or whose club has filed nothing yet) are off its expected lineup, and
+   `out` says why for each. The props payload is read on every load too, and the page keeps the
+   week's Out and Doubtful in S.inactive; a player ruled out since the Elo build is still in the
+   file, so a player's window and the Mismatches leave him out here rather than show a matchup
+   he will not play. */
+const outWhy=pid=>(D.mu&&D.mu.out&&D.mu.out[pid])||null;
+const ruledOut=pid=>!!((typeof S==='object'&&S&&S.inactive&&S.inactive[pid])||outWhy(pid));
+window.eloRuledOut=ruledOut;
+/* a game that has kicked off is not this week's matchup any more: the file is built in the
+   morning and stands until the next build, so the page checks the clock itself (the props
+   parts' gameStarted, on the schedule the page already has) */
+function gameOn(gid){
+  if(typeof S!=='object'||!S||!Array.isArray(S.sched)||typeof gameStarted!=='function') return false;
+  const g=S.sched.find(x=>x.id===gid); return !!g&&gameStarted(g);
+}
+window.eloGameOn=gameOn;
+/* a player's season shield, the same one his ranking and his builder badge wear (the season
+   rating on the position's bell curve); null when he has no place this season */
+const seOf=pid=>{ const e=D.players&&D.players.players&&D.players.players[pid]; return e&&e.se!=null?e.se:null; };
+/* each defence's units ranked across the league (`league.defs`, all 32), 1st the best (the
+   highest rated); a file without it falls back to the teams playing this week */
+function defRanks(){
+  const byTeam={}; for(const v of Object.values((D.mu&&D.mu.players)||{})) if(v.opp_def) byTeam[v.opp]=v.opp_def;
+  if(D.mu&&D.mu.league&&D.mu.league.defs) Object.assign(byTeam,D.mu.league.defs);
+  const teams=Object.keys(byTeam), out={n:teams.length};
+  for(const u of ['DL','LB','DB']){ const order=teams.slice().sort((a,b)=>byTeam[b][u]-byTeam[a][u]); out[u]=Object.fromEntries(order.map((t,i)=>[t,i+1])); }
+  return out;
+}
+const UNIT_NAME={DL:'Pass rush and run front (DL)',LB:'Linebackers',DB:'Secondary'};
+/* a player's window, opened from his row in the rankings: his place this season, then the
+   coming game as the matchup formula sees it, a row a stat (faded where the Elo part has not
+   held up season by season since 2017, and not used for Elo picks) */
+function playerModal(pid){
+  const P=D.players, g=D.pos, r=(P.groups[g].top||[]).find(x=>x.id===pid); if(!r) return;
+  let m=el('pePlModal');
+  if(!m){ m=document.createElement('div'); m.id='pePlModal'; m.className='modal'; m.hidden=true;
+    m.innerHTML='<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Player"><div id="pePlView"></div></div>';
+    (el('tab-elo')||document.body).appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m) plClose(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) plClose(); }); }
+  const M=D.mu, v=M&&M.players&&M.players[pid], stats=M&&M.stats&&M.stats[g];
+  const dec=x=>Math.abs(x)>=10?x.toFixed(0):x.toFixed(1);
+  let mu;
+  if(!stats) mu=`<p class="pe-sub">There is no matchup formula for ${esc(P.groups[g].label.toLowerCase())}: the projections cover quarterbacks, running backs, receivers and tight ends.</p>`;
+  else if(outWhy(pid)) mu=`<p class="pe-sub">Not expected to play: ${esc(outWhy(pid))}, so there is no matchup to show.</p>`;
+  else if(!v) mu=`<p class="pe-sub">No matchup for week ${esc(M.week)}: he is not an expected starter in this week's file, or his team is on its bye.</p>`;
+  else if(ruledOut(pid)) mu=`<p class="pe-sub">Ruled out for week ${esc(M.week)} on the injury report, so there is no matchup to show.</p>`;
+  else {
+    const R=defRanks(), rk=u=>R[u]&&R[u][v.opp]?`${ordinal(R[u][v.opp])} of ${R.n}`:'–';
+    const rows=stats.map(st=>{ const a=v.stats[st]; if(!a) return '';
+      const [form,proj,n]=a, shown=dec(Math.abs(n)), zero=/^0(\.0)?$/.test(shown), cls=zero?'flat':(n>0?'up':'dn');
+      return `<tr class="${muTrusted(g,st)?'':'pe-weak'}"><td>${MU_LBL[st]||st}</td><td class="pe-n">${dec(form)}</td>
+        <td class="pe-n"><span class="pe-nud ${cls}" style="display:inline">${zero?'0.0':(n>0?'+':'−')+shown}</span></td><td class="pe-n"><b>${dec(proj)}</b></td></tr>`; }).join('');
+    mu=`<h3>Week ${esc(M.week)}: ${tag(v.team,true)} <span class="muted" style="font-weight:500">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</h3>
+      ${gameOn(v.game_id)?`<p class="pe-sub pe-begun"><b>This game has kicked off.</b> The projection below was made before it, from the ratings he took into it; it is no longer a matchup to bet on, and the Mismatches leave it out.</p>`:''}
+      <div class="pe-pl-def">${['DL','LB','DB'].map(u=>`<span>${UNIT_NAME[u]}: <b>${rk(u)}</b></span>`).join('')}</div>
+      <table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">Recent form</th><th class="pe-n">Elo matchup</th><th class="pe-n">Projection</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="pe-note">Recent form is his recent average (the latest games count most). The Elo matchup is what his own rating and the ratings of the ${esc(v.opp)} defenders he faces add or take away; the defences are ranked among all 32, 1st the best. Faded rows are stats where the Elo part has not held up in past seasons, and are not used for Elo picks.</p>`;
+  }
+  el('pePlView').innerHTML=`<div class="card pe-pl"><h2>${shield(r.elo)}${esc(r.name)} <span class="pill">${esc(r.pos)} · ${esc(r.team)}</span>${qTag(r)}<span style="flex:1"></span><button class="btn quiet" id="pePlClose">Close</button></h2>
+    <div class="pe-pl-tiles">
+      <div><span>Season Elo</span><b>${r.elo}</b><small>${esc(tierName(r.elo))}</small></div>
+      <div><span>Rank</span><b>#${r.rank}</b><small>of ${esc(P.groups[g].active)} ${esc(P.groups[g].label.toLowerCase())}</small></div>
+      <div><span>Career</span><b>${r.career!=null?r.career:'–'}</b><small>peak ${r.peak} in ${r.peak_season}</small></div>
+      <div><span>This season</span><b>${r.games}</b><small>game${r.games===1?'':'s'} rated</small></div>
+    </div>${mu}</div>`;
+  el('pePlClose').addEventListener('click',plClose);
+  m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
+}
+function plClose(){ const m=el('pePlModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
+/* the ladder as a bell curve: how many of the position's ranked players wear each shield,
+   beside what a normal curve on the same scale expects (elo/build.py, THE LADDER) */
+function curveChart(vals,label){
+  if(!vals||vals.length<5||!window.pkEloTier) return '';
+  /* 50-point bins from 1200 to 1800 (six standard deviations), edges clamped in; each bin
+     wears the shield its range earns, and the dashed line is n players on a normal curve */
+  const n=vals.length, LO=1200, HI=1800, BW=50, W=640, H=200, padB=46, padT=22, nb=(HI-LO)/BW, cw=W/nb, gap=2;
+  const bins=Array.from({length:nb},(_,i)=>{ const lo=LO+i*BW, t=window.pkEloTier(lo+1);
+    const cnt=vals.filter(v=>Math.min(HI-1,Math.max(LO,v))>=lo&&Math.min(HI-1,Math.max(LO,v))<lo+BW).length;
+    return {lo,name:t[0],fill:t[0]==='HOF'?'url(#tg-hof-gem)':t[2],cnt}; });
+  const dens=e=>n*BW*Math.exp(-(((e-1500)/100)**2)/2)/(100*Math.sqrt(2*Math.PI));
+  const top=Math.max(...bins.map(b=>b.cnt),dens(1500),1), y=v=>padT+(H-padT-padB)*(1-v/top), base=H-padB, X=e=>(e-LO)/(HI-LO)*W;
+  const bars=bins.map((b,i)=>{ const x=i*cw+gap/2, w=cw-gap, yy=y(b.cnt), h=base-yy, r=Math.min(4,h/2);
+    const path=h>0?`M${x} ${base}V${yy+r}Q${x} ${yy} ${x+r} ${yy}H${x+w-r}Q${x+w} ${yy} ${x+w} ${yy+r}V${base}Z`:'';
+    const range=i===0?`under ${b.lo+BW}`:i===nb-1?`${b.lo} and up`:`${b.lo}–${b.lo+BW-1}`;
+    const tip=`<b>${b.name}</b> · ${range}<br>${b.cnt} ${esc(label)} (${Math.round(b.cnt/n*100)}%)`;
+    return `<g class="pe-cv-bin" data-tip="${esc(tip)}" data-x="${(x+w/2)/W}" data-y="${yy/H}">
+      <rect x="${i*cw}" y="0" width="${cw}" height="${base}" fill="transparent"/>
+      ${path?`<path d="${path}" fill="${b.fill}"/>`:''}
+      ${b.cnt?`<text x="${x+w/2}" y="${yy-5}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${b.cnt}</text>`:''}</g>`; }).join('');
+  /* the tiers along the axis, each under its own stretch */
+  const bands=[[LO,1350],[1350,1400],[1400,1450],[1450,1500],[1500,1550],[1550,1600],[1600,1650],[1650,1700],[1700,1750],[1750,HI]].map(([lo,hi])=>{
+    const t=window.pkEloTier(lo+1), cx=(X(lo)+X(hi))/2;
+    return `<line x1="${X(lo)}" x2="${X(lo)}" y1="${base}" y2="${base+5}" stroke="var(--line-2)"/>
+      <text x="${cx}" y="${base+18}" text-anchor="middle" font-size="9.5" font-weight="600" fill="var(--ink-2)">${t[0]}</text>
+      <text x="${cx}" y="${base+31}" text-anchor="middle" font-size="9.5" fill="var(--muted)">${lo===LO?'<1350':hi===HI?'1750+':lo}</text>`; }).join('');
+  const pts=[]; for(let k=0;k<=96;k++){ const e=LO+k*(HI-LO)/96; pts.push(`${k?'L':'M'}${X(e).toFixed(1)} ${y(dens(e)).toFixed(1)}`); }
+  return `<div class="pe-curve" role="img" aria-label="${esc(label)} by rating: ${bins.filter(b=>b.cnt).map(b=>b.lo+' '+b.cnt).join(', ')}">
+    <div class="pe-cv-in"><svg viewBox="0 0 ${W} ${H}">${bars}<line x1="0" x2="${W}" y1="${base}" y2="${base}" stroke="var(--line-2)"/>${bands}
+      <path d="${pts.join(' ')}" fill="none" stroke="var(--ink-2)" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/></svg><div class="pe-cv-tip"></div></div>
+    <div class="pe-cv-key"><span><b></b>${n} ranked ${esc(label)}, coloured by shield</span><span><i></i>a bell curve: 1500 the average, 100 points a standard deviation</span></div></div>`;
+}
+function curveHover(root){
+  const box=root.querySelector('.pe-cv-in'); if(!box) return; const tip=box.querySelector('.pe-cv-tip');
+  box.querySelectorAll('.pe-cv-bin').forEach(g=>{
+    g.addEventListener('mouseenter',()=>{ const r=box.querySelector('svg').getBoundingClientRect();
+      const bt=box.getBoundingClientRect(); tip.innerHTML=g.dataset.tip; tip.style.left=(r.left-bt.left+(+g.dataset.x)*r.width)+'px'; tip.style.top=(r.top-bt.top+(+g.dataset.y)*r.height-6)+'px'; tip.classList.add('on'); });
+    g.addEventListener('mouseleave',()=>tip.classList.remove('on')); });
+}
+/* a questionable player stays ranked and listed, with a Q and the report's words */
+const qTag=r=>r&&r.q?` <span class="pill pe-q" title="${esc(r.q)}">Q</span>`:'';
+/* ranked on fewer real-role games than the file's prov_games (3): his place is provisional */
+const provTag=r=>r&&r.prov?` <span class="pill pe-prov" title="Provisional: ranked on fewer than ${esc((D.players&&D.players.prov_games)||3)} games in a real role, so his place can still move a long way">prov.</span>`:'';
+/* how far the season has got, as the build words it: "through week 4, and 1 of 15 week-5 games",
+   "through the Divisional round", or "final" (an older file has only the week) */
+const thru=P=>P.through?(P.through==='final'?'final':P.through):'through week '+P.through_week;
+/* what the build could not have yet, said where the numbers are, so a lag reads as a lag */
+function sourceNote(){
+  const M=D.model, s=(M&&M.sources)||{}, bits=[];
+  const pend=s.player_stats_pending||[]; if(pend.length) bits.push(`${pend.length} final game${pend.length===1?' is':'s are'} not in nflverse's player stats yet, so ${pend.length===1?'it is':'they are'} not rated`);
+  const tp=s.team_stats_pending||[]; if(tp.length) bits.push(`Overall Offense and Overall Defense wait on nflverse's play-by-play for ${tp.length} final game${tp.length===1?'':'s'}, which ${tp.length===1?'is':'are'} not rated yet`);
+  const rep=Object.values(s.injury_report||{}), wk=D.mu&&D.mu.week, mine=rep.filter(r=>r.week===wk);
+  const filed=mine.filter(r=>r.statuses_filed).length;
+  if(mine.length&&filed<mine.length) bits.push(`week ${esc(wk)}'s game statuses are filed for ${filed} of ${mine.length} clubs; until a club files, a player out at its last report who has not practised since is counted out`);
+  return bits.length?`<p class="pe-note">${bits.map(b=>b.charAt(0).toUpperCase()+b.slice(1)).join('. ')}.</p>`:'';
+}
+/* the position row: a pill a rated group, then Overall Offense and Overall Defense once a team
+   has a rated game */
+const unitsOn=()=>{ const U=D.model&&D.model.units; return !!(U&&U.off&&U.def&&Object.values(U.off).some(v=>v.games)); };
+function posRow(){
+  const P=D.players, on=D.unit&&unitsOn();
+  const btns=P.groups?Object.keys(P.groups).map(k=>`<button role="tab" data-pos="${k}" aria-selected="${!on&&k===D.pos}">${esc(P.groups[k].label)}</button>`).join(''):'';
+  const units=unitsOn()?['off','def'].map(s=>`<button role="tab" class="pe-unitpill" data-unit="${s}" aria-selected="${on&&D.unit===s}">${s==='off'?'Overall Offense':'Overall Defense'}</button>`).join(''):'';
+  return `<div class="pe-pos" role="tablist">${btns}${units}</div>`;
+}
+function rankings(){
+  if(D.unit&&unitsOn()) return teamsCard();
+  const P=D.players, g=D.pos, grp=P.groups[g];
+  const rows=grp.top.slice(0,D.more?25:10).map(r=>{
+    return `<tr class="pe-plrow" data-pe-pl="${esc(r.id)}"><td class="pe-rank">${r.rank}</td><td>${move(r)}</td>
+      <td class="pe-name"><button type="button" class="pe-plbtn" data-pe-pl="${esc(r.id)}">${esc(r.name)}</button>${qTag(r)}${provTag(r)}<small>${esc(r.pos)} · ${esc(r.team)} · ${r.games} game${r.games===1?'':'s'} this season</small></td>
+      <td class="pe-m0">${tag(r.team,true)}</td>
+      <td class="pe-n"><span class="pe-elo"${r.raw!=null?` title="Raw season rating ${r.raw}"`:''}>${r.elo}</span></td>
+      <td><span class="pe-shield">${shield(r.elo)}${tierName(r.elo)}</span></td>
+      <td class="pe-n" title="The rating with every season behind it, which the game model, matchups and market + form use${r.career_raw!=null?' (raw '+r.career_raw+')':''}">${r.career!=null?r.career:'–'}</td>
+      <td class="pe-m0">${spark(r.this_season)}</td>
+      <td class="pe-n pe-m0">${r.peak}<small class="muted" style="font-size:11px"> · ${r.peak_season}</small></td></tr>`; }).join('');
+  const opening=P.phase==='opening'&&P.season_in_play&&P.season_in_play!==P.season;
+  return `<div class="card"><h2>Rankings <span class="pill">${esc(P.season)} ${esc(thru(P))}</span></h2>
+    ${opening?`<p class="pe-note">${esc(P.season_in_play)} has begun: its rankings take over from ${esc(P.season)}'s final table once most clubs have played week 1.</p>`:''}
+    <p class="pe-sub">This season only, rated the way a ranked ladder rates: every player started ${esc(P.season)} at 1500 but uncertain, so his first games are placement games that move him far (up to 174 points a game) and each game after moves him less as his level settles, in such a way that every game he plays ends up counting the same. Every game is scored against the defence or offence he faced, so a big day against a weak unit counts for less than the same day against a strong one. ${esc(grp.active)} ${esc(grp.label.toLowerCase())} able to play have played a real role in at least half of their club's games, enough to be ranked (a club's bye or a game it has yet to play does not count against its players). A questionable player stays listed, with a Q, and one ranked on fewer than ${esc(P.prov_games||3)} games in a real role is marked prov. (provisional). The rating shown puts the position on a bell curve: 1500 is the average ${esc(grp.label.toLowerCase().replace(/s$/,''))}, and every 100 points is a standard deviation better, so the shields thin out toward the top as a ladder's do. Click a player for his matchup this week. Movement is against the rank each held before the latest week; the line is his rating this season, game by game. Career is the rating with every season behind it, on the same curve, which the game model, the matchups and market + form use.</p>
+    ${sourceNote()}
+    ${posRow()}
+    ${curveChart(grp.curve,grp.label.toLowerCase())}
+    <table class="pe-t"><thead><tr><th>#</th><th>Move</th><th>Player</th><th class="pe-m0">Team</th><th class="pe-n">Elo</th><th>Tier</th><th class="pe-n">Career</th><th class="pe-m0">Trend</th><th class="pe-n pe-m0">Peak</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="pe-more"><button class="btn quiet" id="peMore">${D.more?'Top 10 only':'Show the top 25'}</button></div>
+    ${sidelined(grp)}</div>`;
+}
+/* Overall Offense and Overall Defense: every team's offense and defense on this season's games,
+   in the rankings' format (`units` in model.json, OVERALL OFFENSE AND OVERALL DEFENSE in
+   elo/build.py). Each side is an Elo on several key stats, opponents counted, weighed as the
+   file says (each entry of `units.stats` carries its weight, which elo/check.py holds to
+   `units.weights`); every stat is shown with its league rank, the columns sort, and a click on a
+   team opens its window. Nothing here knows the weights: the text and the columns are read from
+   the file (an older file without `stats` gets the old three columns). */
+const ordinal2=n=>n==null?'':ordinal(n);
+const fmtStat=(v,f)=>v==null?'–':f==='pct'?(v*100).toFixed(1)+'%':f==='epa'?(v>=0?'+':'−')+Math.abs(v).toFixed(3):f==='f2'?v.toFixed(2):v.toFixed(1);
+const recStr=r=>r?`${r[0]}-${r[1]}${r[2]?'-'+r[2]:''}`:'–';
+const listAnd=xs=>xs.length<2?xs.join(''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1];
+/* a label inside a sentence: "Points a game" reads "points a game", "EPA a play" stays */
+const lc=s=>String(s).replace(/^[A-Z](?=[a-z])/,c=>c.toLowerCase());
+function unitStats(side){ const U=D.model.units; return (U.stats||[]).filter(s=>s.side===side); }
+/* the side's teams in the order on screen: overall rank, or a column best first (# keeps the rank) */
+function teamRows(side){
+  const U=D.model.units, T=U[side], st=D.tsort||{key:'rank',dir:1};
+  const rows=Object.entries(T).map(([t,v])=>({t,...v}));
+  const winp=r=>{ const g=r.record?r.record[0]+r.record[1]+r.record[2]:0; return g?(r.record[0]+r.record[2]/2)/g:-1; };
+  const key=r=>{ if(st.key==='rank') return r.rank; if(st.key==='team') return r.t; if(st.key==='record') return -winp(r);
+    const e=r.stats&&r.stats[st.key]; return e&&e.rank!=null?e.rank:1e9; };
+  rows.sort((a,b)=>{ const x=key(a), y=key(b); const c=typeof x==='string'?x.localeCompare(y):x-y; return (c||a.rank-b.rank)*(c?st.dir:1); });
+  return rows;
+}
+function teamsCard(){
+  const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', T=U[side], P=D.players;
+  const stats=unitStats(side), old=!stats.length, n=Object.values(T).filter(v=>v.games).length;
+  const st=D.tsort||{key:'rank',dir:1};
+  const sortTh=(key,label,cls='',extra='')=>`<th class="${cls}" data-sort="${key}"${st.key===key?` aria-sort="${st.dir>0?'descending':'ascending'}"`:''}>${label}${extra}</th>`;
+  const mv=v=>v.change==null||v.change===0?'<span class="pe-flat">–</span>':`<span class="pe-${v.change>0?'up':'down'}" title="${v.change>0?'Up':'Down'} ${Math.abs(v.change)} since its last game">${v.change>0?'+':'−'}${Math.abs(v.change)}</span>`;
+  const ordCls=r=>r==null?'':r<=8?'top':r>n-8?'bot':'';
+  const cell=(v,s,i)=>{ const e=v.stats&&v.stats[s.key]; const first=!s.weight&&i>0&&stats[i-1].weight?' pe-w0f':'';
+    return `<td class="pe-st${first}" data-stat="${s.key}"><span class="pe-sv">${fmtStat(e&&e.v,s.fmt)}</span><small class="pe-ord ${ordCls(e&&e.rank)}">${ordinal2(e&&e.rank)}</small></td>`; };
+  const what=dfn?'allowed':'scored';
+  const oldCells=v=>`<td class="pe-n">${v.ppg}</td><td class="pe-n">${v.ypg}</td><td class="pe-n">${v.epa_play==null?'–':(v.epa_play>=0?'+':'−')+Math.abs(v.epa_play).toFixed(3)}</td>`;
+  const body=teamRows(side).map(v=>`<tr class="pe-tmrow${v.games?'':' pe-np'}" data-team="${esc(v.t)}"><td class="pe-rank">${v.rank}</td><td>${mv(v)}</td>
+      <td class="pe-name pe-tm">${tag(v.t,true)}<small>${v.games?`${v.games} game${v.games===1?'':'s'}`:'no game yet'}</small></td>
+      <td class="pe-n">${recStr(v.record)}</td>
+      <td class="pe-n"><span class="pe-elo">${v.elo}</span></td><td><span class="pe-shield">${shield(v.elo)}${tierName(v.elo)}</span></td>
+      ${old?oldCells(v):stats.map((s,i)=>cell(v,s,i)).join('')}</tr>`).join('');
+  const heads=old?`<th class="pe-n">Pts/g ${what}</th><th class="pe-n">Yds/g ${what}</th><th class="pe-n">EPA/play</th>`
+    :stats.map((s,i)=>sortTh(s.key,esc(s.short),'pe-n'+(!s.weight&&i>0&&stats[i-1].weight?' pe-w0f':''),s.weight?`<small>${s.weight}%</small>`:'<small>shown only</small>')).join('');
+  const weighted=stats.filter(s=>s.weight), zero=stats.filter(s=>!s.weight);
+  const wf=U.walk_forward||{};
+  const sub=old
+    ?`<p class="pe-sub">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, everyone starting at 1500, each game scored on points and EPA a play ${what}. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better.</p>`
+    :`<p class="pe-sub" id="peTeamsWhy">Every team's ${dfn?'defense':'offense'} rated on this season's games alone, the way the player rankings are: everyone started at 1500, and after each game every key stat moves by how far it beat or missed what was expected against the ${dfn?'offense':'defense'} it faced, home field counted. The rating weighs ${listAnd(weighted.map(s=>`${esc(lc(s.label))} <b>${s.weight}%</b>`))}. Because opponents count, a team can stand above one with better raw numbers: a team's window ranks each stat both ways. Shown on a bell curve across the teams, 1500 the average and every 100 points a standard deviation better${dfn?' (less allowed)':''}. Each stat carries its league rank (the best eight green, the worst eight red); click a column to sort by it, best first, and a team for its rating game by game.</p>
+      ${zero.length?`<p class="pe-note" id="peTeamsZero">${esc(listAnd(zero.map(s=>s.label)))} are shown with their ranks but weigh nothing: once the weighted stats are known, they told nothing more about a team's next game.${wf.rmse?` Fitted on ${esc(wf.fit)} and tested on ${esc(wf.test)}, these weights missed a team's points in its next game by ${wf.rmse.toFixed(2)} on average, and the old rating on points and EPA alone by ${wf.previous.toFixed(2)}: no less accurate, and built on the key stats.`:''}</p>`:''}`;
+  return `<div class="card" id="peUnits"><h2>${dfn?'Overall Defense':'Overall Offense'} <span class="pill">${esc(U.season||P.season)} ${esc(thru(P))}</span></h2>
+    ${sub}
+    ${sourceNote()}
+    ${posRow()}
+    ${curveChart(Object.values(T).filter(v=>v.games).map(v=>v.elo),dfn?'defenses':'offenses')}
+    <div class="pe-tscroll"><table class="pe-t pe-tt"><thead><tr>${sortTh('rank','#')}<th>Move</th>${sortTh('team','Team','pe-tm')}${sortTh('record','Record','pe-n')}${sortTh('rank','Rating','pe-n')}<th>Tier</th>${heads}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+/* a team's window: its rating, its line game by game, every stat with both of its ranks, what
+   each weighted one adds, and its coming opponent's rank on the other side of the ball */
+function teamLine(v,start){
+  const pts=[[null,start],...(v.line||[])]; if(pts.length<2) return '';
+  const W=560, H=140, L=36, R=16, T=16, B=24, vals=pts.map(p=>p[1]);
+  const lo=Math.min(...vals,1500)-10, hi=Math.max(...vals,1500)+10;
+  const x=i=>L+i*(W-L-R)/(pts.length-1), y=e=>T+(H-T-B)*(1-(e-lo)/(hi-lo));
+  const d=pts.map((p,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(p[1]).toFixed(1)).join(' ');
+  const up=vals[vals.length-1]>=vals[0];
+  return `<div class="pe-tline" role="img" aria-label="Rating game by game: ${pts.slice(1).map(p=>'week '+p[0]+' '+p[1]).join(', ')}"><svg viewBox="0 0 ${W} ${H}">
+    <line x1="${L}" x2="${W-R}" y1="${y(1500)}" y2="${y(1500)}" stroke="var(--line-2)" stroke-dasharray="4 4"/><text x="${L-6}" y="${y(1500)+4}" text-anchor="end" font-size="10" fill="var(--muted)">1500</text>
+    <path d="${d}" fill="none" stroke="${up?'var(--pick)':'var(--miss)'}" stroke-width="2" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p[1])}" r="${i?3.5:2.5}" fill="${i?'var(--ink)':'var(--muted)'}"><title>${i?'Week '+p[0]:'Season start'}: ${p[1]}</title></circle>
+      <text x="${x(i)}" y="${H-6}" text-anchor="middle" font-size="10" fill="var(--muted)">${i?'Wk '+p[0]:'Start'}</text>`).join('')}
+    <text x="${x(pts.length-1)}" y="${y(vals[vals.length-1])-8}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${vals[vals.length-1]}</text></svg></div>`;
+}
+function nextGame(t){
+  const N=D.model.next, U=D.model.units; if(!N||!Array.isArray(N.games)||+N.season!==+U.season) return null;
+  for(const g of N.games){ const p=String(g.game_id).split('_'); if(p.length<4) continue;
+    if(p[2]===t||p[3]===t) return {week:+p[1],home:p[3]===t,opp:p[3]===t?p[2]:p[3]}; }
+  return null;
+}
+function teamModal(t){
+  const U=D.model.units, side=D.unit==='def'?'def':'off', dfn=side==='def', v=U[side]&&U[side][t]; if(!v) return;
+  let m=el('peTmModal');
+  if(!m){ m=document.createElement('div'); m.id='peTmModal'; m.className='modal'; m.hidden=true;
+    m.innerHTML='<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Team"><div id="peTmView"></div></div>';
+    (el('tab-elo')||document.body).appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m) tmClose(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) tmClose(); }); }
+  const stats=unitStats(side), n=Object.keys(U[side]).length;
+  const rows=stats.map(s=>{ const e=v.stats&&v.stats[s.key]||{};
+    return `<tr data-stat="${s.key}" class="${s.weight?'':'pe-weak'}"><td>${esc(s.label)}</td><td class="pe-n"><b>${fmtStat(e.v,s.fmt)}</b></td><td class="pe-n">${ordinal2(e.rank)||'–'}</td><td class="pe-n">${ordinal2(e.adj)||'–'}</td>
+      <td class="pe-n">${s.weight?s.weight+'%':'–'}</td><td class="pe-n">${s.weight&&e.adds!=null?`<span class="pe-nud ${e.adds>0?'up':e.adds<0?'dn':'flat'}" style="display:inline">${e.adds>0?'+':e.adds<0?'−':''}${Math.abs(e.adds).toFixed(1)}</span>`:'–'}</td></tr>`; }).join('');
+  const nx=nextGame(t), other=dfn?'off':'def', ov=nx&&U[other]&&U[other][nx.opp];
+  const next=nx?`<p class="pe-tnext" id="peTmNext">Next: week ${esc(nx.week)} ${nx.home?'vs':'at'} ${tag(nx.opp,true)}, whose ${dfn?'offense':'defense'} is <b>${ov?ordinal(ov.rank):'–'}</b> of ${n} in Overall ${dfn?'Offense':'Defense'}${ov?` (${ov.elo}, ${esc(tierName(ov.elo))})`:''}.</p>`:'';
+  const zero=stats.filter(s=>!s.weight);
+  el('peTmView').innerHTML=`<div class="card pe-pl"><h2>${shield(v.elo)}${tag(t,true)} <span class="pill">Overall ${dfn?'Defense':'Offense'}</span><span style="flex:1"></span><button class="btn quiet" id="peTmClose">Close</button></h2>
+    <div class="pe-pl-tiles">
+      <div><span>Rating</span><b>${v.elo}</b><small>${esc(tierName(v.elo))}</small></div>
+      <div><span>Rank</span><b>#${v.rank}</b><small>of ${n} ${dfn?'defenses':'offenses'}</small></div>
+      <div><span>Last game</span><b>${v.change==null?'–':(v.change>0?'+':v.change<0?'−':'')+Math.abs(v.change)}</b><small>${v.before==null?'no game yet':'from '+v.before}</small></div>
+      <div><span>Games</span><b>${v.games}</b><small>${recStr(v.record)}</small></div>
+    </div>
+    ${next}
+    ${teamLine(v,(U.start||{})[side]!=null?U.start[side]:1500)}
+    ${stats.length?`<table class="pe-t"><thead><tr><th>Stat</th><th class="pe-n">${dfn?'Allowed':'Value'}</th><th class="pe-n">League rank</th><th class="pe-n" title="The rank of the stat's own rating, which counts who the team played">Opponents counted</th><th class="pe-n">Weight</th><th class="pe-n" title="What the stat adds to the rating, in rating points">Adds</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="pe-note">League rank is the season's raw number against the other teams; opponents counted ranks the stat's own rating, which credits a good game against a good ${dfn?'offense':'defense'} more than the same game against a weak one. Adds is what each weighted stat puts on the rating, in rating points from 1500.${zero.length?` Faded rows weigh nothing: ${esc(listAnd(zero.map(s=>lc(s.label))))} told nothing more about a team's next game once the weighted stats were known.`:''}</p>`:''}</div>`;
+  el('peTmClose').addEventListener('click',tmClose);
+  m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
+}
+function tmClose(){ const m=el('peTmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
+/* the injured, the reserved, the retired and the unsigned are not ranked; the ones whose
+   rating would have placed them are listed here, where they would have stood */
+function sidelined(grp){
+  const s=(grp.sidelined||[]).filter(x=>x.would_rank<=(D.more?25:10));
+  if(!s.length) return '';
+  return `<p class="pe-note"><b style="color:var(--ink)">Not ranked:</b> ${s.map(x=>`${esc(x.name)} (${esc(x.team)}, ${x.elo}, would be #${x.would_rank}: ${esc(x.why)})`).join('; ')}.</p>`;
+}
+/* the shields' gradients, once, for every badge on the page */
+function defs(){
+  if(document.getElementById('peDefs')||!window.pkTierDefs) return;
+  const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box);
+}
+/* the Parlay Builder: a ranked player's shield and place go in front of his name on each leg.
+   The leg's key carries his id (game|player|stat); a team leg has none. Runs after every
+   builder redraw and once the ratings arrive. */
+function badge(pid){
+  /* the place is this season's; a player without enough of a season has none and no badge */
+  const e=D.players&&D.players.players&&D.players.players[pid]; if(!e||!e.rank||e.se==null) return '';
+  return `<span class="pe-badge" title="${esc(tierName(e.se))} · #${e.rank} at ${esc(e.group)} this season · Elo ${e.se} (career ${e.elo})">${shield(e.se)}#${e.rank}</span>`;
+}
+function decorate(){
+  if(!D.players) return; defs();
+  /* the Props game view and the Pick'ems game bodies: every player row carries his id */
+  document.querySelectorAll('button.plrbtn[data-open]').forEach(btn=>{
+    const who=btn.querySelector('.who'); if(!who||who.querySelector('.pe-badge')) return;
+    const html=badge(btn.dataset.open); if(html) who.insertAdjacentHTML('afterbegin',html);
+  });
+  document.querySelectorAll('#parlayBody tr.legrow').forEach(tr=>{
+    if(tr.querySelector('.pe-badge')) return;
+    const b=tr.querySelector('button[data-drop]'), td=tr.querySelector('td.plr'); if(!b||!td) return;
+    const pid=String(b.dataset.drop).split('|')[1]; const html=badge(pid); if(html) td.insertAdjacentHTML('afterbegin',html);
+  });
+  decorateAlt();
+}
+window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
+/* a player's rating as it stood before week w of this season: after his last game before
+   it, or where the season began. Grading a past week on today's rating would be hindsight.
+   A player out now is not in the map (nothing prices him or suggests his lines), but his
+   season so far is in `past`, so the weeks he did play are still graded on his rating. */
+function preElo(pid,w){
+  const e=window.eloOf(pid)||(D.players&&D.players.past&&D.players.past[pid])||null; if(!e) return null;
+  let v=e.s0!=null?e.s0:e.elo;
+  for(const [o,r] of (e.h||[])) if(o<w) v=r;
+  return v;
+}
+window.eloPre=preElo;
+
+/* ---- market + form: a second price on every player leg the book has priced ----
+   The prop model's own chance on a book line has run over-confident: on weeks 1 and 2 it
+   said 62% and 51% happened, while the book's own price said 54%. What did carry signal
+   looked to be the player's rating: overs on the top players hit, unders on them missed,
+   and the reverse below. So this price starts from the book's chance and moves it by the
+   player's Elo on the side of the bet: logit p = -0.05 + 0.8 logit(book) + 0.3 z s, z the
+   rating's distance from 1500 in 40-point steps, s +1 for an over and -1 for an under.
+   Fitted on weeks 1 and 2 of 2026 (765 lines), but with the ratings as they stood after
+   those weeks, which had already seen the games. Replayed on the ratings each week began
+   with, the pull is nothing in week 1 (-0.03 +/- 0.13), real in week 2 (+0.29 +/- 0.13),
+   and the price about ties the book (Brier 0.2486 against 0.2498). So the Prop Record grades
+   it on the rating each player took into the week (preElo), and it stays beside the model's
+   chance, not in its place, until it earns more. Legs without a real book price, and team
+   legs, have no second price; nor has a quarterback's own touchdown (a run or a catch, app v102):
+   his rating is a passer's, and nothing measured says it moves the touchdowns he scores himself
+   (they run a little against the ones he throws). A caller that knows the leg's stat passes it.
+   The 40-point step belongs to the ratings it was fitted on, whose spread across a position
+   (the standard deviation of every rated player's career rating in players.json, 25 September
+   2026) was QB 34.1, RB 21.3, WR 27.6 and TE 27.0 (ALT.fitSd). The formula changes of 11 and 12
+   October (backs, receivers and tight ends on production; equal-weight placement; a new
+   quarterback at 1450) widened them to about 44, 51, 45 and 47, so the same step read a back
+   2.4 times further from 1500 than the rule was fitted to and could move a 50% book chance to
+   76% (the review of Sunday 11 October's parlays found it). So z is the rating's distance in
+   the position's own spread, put back on the fitted scale: (elo - 1500) / step x fitSd / sd,
+   sd measured from the file on every load (altZ). Nothing is refitted: the rule reads as it was
+   fitted, on whatever the ratings' spread is. */
+const ALT={c:-0.05,book:0.8,form:0.3,step:40,fitSd:{QB:34.1,RB:21.3,WR:27.6,TE:27.0}};
+const lgt=p=>Math.log(p/(1-p)), sgm=x=>1/(1+Math.exp(-x));
+/* each position's spread of career ratings in the file as loaded (every rated player in the map) */
+let ALT_SD=null;
+function altSd(){
+  if(ALT_SD&&ALT_SD.src===D.players) return ALT_SD.sd;
+  const by={}, P=(D.players&&D.players.players)||{};
+  for(const id in P){ const e=P[id]; if(e&&e.group&&isFinite(e.elo)) (by[e.group]=by[e.group]||[]).push(e.elo); }
+  const sd={}; for(const g in by){ const v=by[g], m=v.reduce((a,x)=>a+x,0)/v.length; if(v.length>=10) sd[g]=Math.sqrt(v.reduce((a,x)=>a+(x-m)*(x-m),0)/v.length); }
+  ALT_SD={src:D.players,sd}; return sd;
+}
+/* a rating's distance from 1500 in fitted steps, for a player of that position */
+function altZ(v,g){
+  const f=ALT.fitSd[g], sd=altSd()[g];
+  return (v-1500)/ALT.step*(f&&sd>0?f/sd:1);
+}
+window.eloAltZ=altZ;
+/* a graded line's player's position: the ratings file's, else the prop model's own roster */
+function groupOf(r){
+  const e=D.players&&D.players.players&&D.players.players[r.pid];
+  if(e&&e.group) return e.group;
+  const p=typeof S==='object'&&S&&S.players&&S.players[r.pid];
+  return p&&p.grp||null;
+}
+function altP(pid,side,price,src,stat){
+  if(!pid||String(pid).startsWith('team:')||pid==='game'||src!=='real'||price==null||!isFinite(price)||typeof mlProb!=='function') return null;
+  if(stat==='any_td'&&groupOf({pid})==='QB') return null;
+  const imp=mlProb(price); if(!(imp>0&&imp<1)) return null;
+  const e=window.eloOf(pid), z=e?altZ(e.elo,e.group):0, s=side==='under'?-1:1;
+  return sgm(ALT.c+ALT.book*lgt(imp)+ALT.form*z*s);
+}
+window.eloAltP=altP;
+window.eloLoaded=()=>!!D.players;
+function decorateAlt(){
+  if(!D.players||typeof S!=='object'||!S||!S.parlay) return;
+  let any=false, prod=1, prodM=1, n=0;
+  document.querySelectorAll('#parlayBody tr.legrow').forEach(tr=>{
+    const b=tr.querySelector('button[data-drop]'); if(!b) return;
+    const l=S.parlay[b.dataset.drop]; if(!l) return;
+    const cell=tr.querySelectorAll('td')[3]; if(!cell||cell.querySelector('.pe-alt')) { if(cell&&cell.querySelector('.pe-alt')){ const v=+cell.querySelector('.pe-alt').dataset.p; if(v){ prod*=v; prodM*=l.p; n++; } } return; }
+    const p=altP(l.pid,l.side,l.price,l.src,l.stat); if(p==null) return;
+    any=true; prod*=p; prodM*=l.p; n++;
+    cell.insertAdjacentHTML('beforeend',`<small class="pe-alt" data-p="${p.toFixed(4)}" title="The book's chance for this line, moved by the player's rating on the side of the bet. Beside the model's chance, not in its place.">market + form <b>${Math.round(p*100)}%</b></small>`);
+    const mn=muNudge(l.pid,l.stat), mp=mn?muP(l,mlProb(l.price)):null;
+    if(mp!=null) cell.insertAdjacentHTML('beforeend',`<small class="pe-alt pe-muleg" title="His Elo against the defenders he faces this week moves his projection ${mn.nudge>=0?'+':''}${mn.nudge.toFixed(1)}; the book's chance moved by that.">Elo matchup ${mn.nudge>=0?'+':'−'}${Math.abs(mn.nudge).toFixed(1)} <b>${Math.round(mp*100)}%</b></small>`);
+  });
+  const table=document.querySelector('#parlayBody tr.legrow')&&document.querySelector('#parlayBody tr.legrow').closest('table');
+  const old=document.querySelector('#parlayBody .pe-altsum'); if(old) old.remove();
+  if(table&&n>=2) table.insertAdjacentHTML('afterend',`<p class="pe-altsum"><b>Market + form</b> puts the ${n} priced leg${n===1?'':'s'} at <b>${(prod*100).toFixed(1)}%</b> to all land, multiplied as independent; the model's own chances multiply to ${(prodM*100).toFixed(1)}%.</p>`);
+}
+/* the Prop Record: the same three chances graded on every book line so far, week by week */
+function trackAlt(){
+  const body=document.getElementById('trackBody'); if(!body||!D.players||typeof trackRecord!=='function') return;
+  const old=body.querySelector('.pe-track'); if(old) old.remove();
+  let rows; try{ rows=trackRecord().filter(r=>r.kind==='main'&&r.imp!=null&&r.side); }catch(e){ return; }
+  if(!rows.length) return;
+  for(const r of rows){ const v=preElo(r.pid,r.w), z=v!=null?altZ(v,groupOf(r)):0, s=r.side==='under'?-1:1; r.alt=sgm(ALT.c+ALT.book*lgt(r.imp)+ALT.form*z*s); }
+  const brier=(rs,k)=>rs.reduce((a,r)=>a+(r[k]-r.hit)**2,0)/rs.length;
+  const right=(rs,k)=>rs.filter(r=>(r[k]>=0.5)===(r.hit===1)).length;
+  const hit=rs=>rs.reduce((a,r)=>a+r.hit,0)/rs.length;
+  const said=(rs,k)=>rs.reduce((a,r)=>a+r[k],0)/rs.length;
+  const weeks=[...new Set(rows.map(r=>r.w))].sort((a,b)=>a-b);
+  const line=(lab,rs)=>`<tr><td>${lab}</td><td class="num">${rs.length}</td><td class="num">${(said(rs,'p')*100).toFixed(0)}%</td><td class="num">${(said(rs,'imp')*100).toFixed(0)}%</td><td class="num">${(said(rs,'alt')*100).toFixed(0)}%</td><td class="num">${(hit(rs)*100).toFixed(1)}%</td><td class="num">${brier(rs,'p').toFixed(3)}</td><td class="num">${brier(rs,'imp').toFixed(3)}</td><td class="num"><b>${brier(rs,'alt').toFixed(3)}</b></td><td class="num">${right(rs,'p')}</td><td class="num">${right(rs,'alt')}</td></tr>`;
+  const html=`<div class="card pe-track"><h2>Market + form against the model</h2>
+    <p class="muted" style="margin:0 0 8px">Every book line graded so far, three chances on each: the model's, the book's own, and market + form (the book's chance moved by the Elo the player took into that week, on the side of the bet). Lower Brier is better; "side right" counts lines where the side a chance favoured is the side that happened. The second price is shown in the Parlay Builder beside the model's; it replaces nothing until it has held for more than two weeks.</p>
+    <table><thead><tr><th>Week</th><th class="num">Lines</th><th class="num">Model said</th><th class="num">Book said</th><th class="num">M+F said</th><th class="num">Happened</th><th class="num">Model Brier</th><th class="num">Book Brier</th><th class="num">M+F Brier</th><th class="num">Model side right</th><th class="num">M+F side right</th></tr></thead>
+    <tbody>${weeks.map(w=>line('Week '+w,rows.filter(r=>r.w===w))).join('')}${line('All',rows)}</tbody></table></div>`;
+  body.insertAdjacentHTML('afterbegin',html);
+}
+/* ---- Elo picks: parlays of ranked players whose rating says they beat the book's price ----
+   Each leg is a line the book has priced for a ranked player. The player's chance is the
+   book's own (its price read as a chance) moved by his Elo matchup: the nudge the matchup
+   formula (above) gives that stat this week, his own Elo against the defenders he faces, in
+   units of the stat's typical miss. Only stats where that nudge has held up season by
+   season are used. A leg is a pick when that chance times the payout comes out above the
+   stake. Plus-money legs come first, then the best expected return; prices are held
+   between -200 and +300 and the chance at 30% or better, because an alt line at +1600 is
+   where the rating's nudge is least trustworthy and a parlay of them almost never lands.
+   One leg a player and one a game, so the book pays the legs multiplied and the chance is
+   the chances multiplied. The first version (the player's own Elo, no matchup) was replayed
+   on weeks 1 and 2 and its singles lost; the matchup nudge is small by design, so few legs
+   clear the book's cut. A fun model, not an edge. */
+const EP={lo:-200,hi:300,floor:0.30,sizes:[2,3,4],vig:1.045};
+/* the normal curve and its inverse (Acklam's), for moving a chance by a nudge in sd units */
+const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; };
+function nq(p){ const a=[-39.69683028665376,220.9460984245205,-275.9285104469687,138.357751867269,-30.66479806614716,2.506628277459239],
+  b=[-54.47609879822406,161.5858368580409,-155.6989798598866,66.80131188771972,-13.28068155288572],
+  c=[-0.007784894002430293,-0.3223964580411365,-2.400758277161838,-2.549732539343734,4.374664141464968,2.938163982698783],
+  d=[0.007784695709041462,0.3224671290700398,2.445134137142996,3.754408661907416], lo=0.02425;
+  if(p<lo){ const q=Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p>1-lo){ const q=Math.sqrt(-2*Math.log(1-p)); return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  const q=p-0.5, r=q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+/* a leg's chance by the Elo matchup: the book's chance with a typical two-way margin
+   (4.5%) taken out, moved by the nudge in the stat's typical miss toward the side it
+   favours. So a leg is only a pick when the matchup outweighs what the book keeps. */
+function muP(l,imp){ const m=muNudge(l.pid,l.stat); if(!m||!(m.sd>0)) return null;
+  const fair=Math.min(0.99,Math.max(0.01,imp/EP.vig));
+  return ncdf(nq(fair)+(l.side==='under'?-1:1)*m.nudge/m.sd); }
+window.eloMatchupP=muP;
+function eloPicks(){
+  if(!D.players||typeof pricedLegs!=='function'||typeof mlProb!=='function') return null;
+  let legs; try{ legs=pricedLegs(); }catch(e){ return null; }
+  const c=[];
+  for(const l of legs){
+    if(l.grp==='TEAM'||l.src!=='real'||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
+    if(typeof pbAllows==='function'&&!pbAllows(l)) continue;   /* the Parlay Builder's ticked games and player sides */
+    const e=window.eloOf(l.pid); if(!e) continue;
+    const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
+    const pe=muP(l,imp); if(pe==null) continue;
+    const ev=pe*mlToDec(l.price)-1;
+    if(pe>=EP.floor&&ev>0) c.push({...l,pe,ev,imp});
+  }
+  c.sort((a,b)=>((a.price<0)-(b.price<0))||(b.ev-a.ev));
+  const best=[], seen=new Set();
+  for(const l of c){ if(seen.has(l.pid)) continue; seen.add(l.pid); best.push(l); }
+  const tiers=[];
+  for(const n of EP.sizes){
+    const pick=[], games=new Set();
+    for(const l of best){ if(pick.length>=n) break; if(games.has(l.gid)) continue; games.add(l.gid); pick.push(l); }
+    if(pick.length<n) break;
+    const p=pick.reduce((a,l)=>a*l.pe,1), d=pick.reduce((a,l)=>a*mlToDec(l.price),1);
+    /* the book's fair chance on the same legs (parlayFair in the props parts: DraftKings' prices with
+       the margin taken out), which the card leads with, the Elo matchup chance beside it */
+    tiers.push({id:'elo'+n,label:`Elo ${n}-leg`,legs:pick,p,dec:d,fair:typeof parlayFair==='function'?parlayFair(pick):null,sig:'elo|'+pick.map(l=>l.key+'|'+l.side+'|'+l.k).join(',')});
+  }
+  return {tiers,candidates:best.length,games:new Set(best.map(l=>l.gid)).size};
+}
+/* the Elo picks, as their own section at the foot of the Parlay Builder's suggested parlays:
+   built from the same ticked games and player sides, each tier added to the builder or
+   finished as a card like the panel's own */
+function eloSuggest(){
+  const v=document.getElementById('pbElo'); if(!v) return;
+  const r=eloPicks(); if(!r||typeof pbTierCard!=='function'){ v.innerHTML=''; return; }
+  const w=typeof currentWeek==='function'?currentWeek():'', sides=typeof pbPlayerSides!=='function'||pbPlayerSides();
+  let body;
+  if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders above for the Elo picks: every leg is a player's line.</p>`;
+  else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
+    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.</p>`;
+  else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
+      rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
+  v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>
+    <p class="muted pb-lead" style="margin:0 0 12px">Ranked players whose Elo matchup says they beat the book's price: the book's chance moved by the player's Elo against the defenders he faces this week (click a player on the ELO Ratings tab for his matchup). A fun model, not an edge: the matchup nudge has landed on its side 53 to 63% of the time on its biggest calls since 2017, depending on the stat, which is less than a book's cut on most single legs. Each pick leads with the book's fair chance (DraftKings' prices with the margin taken out) and gives the Elo matchup chance beside it; a leg the prop model rates ${typeof FAR_OFF==='number'?Math.round(FAR_OFF*100):15} points or more above the book's fair chance is flagged far off the market.</p>${body}`;
+  v.querySelectorAll('[data-pb-elo-add]').forEach(b=>b.addEventListener('click',()=>{
+    const t=r.tiers.find(x=>x.id===b.dataset.pbEloAdd); if(t&&typeof pbPut==='function') pbPut(t.legs,`the ${t.label} parlay`); }));
+}
+window.eloPicks=eloPicks;
+if(typeof renderPb==='function'){ const drawPb=renderPb;
+  renderPb=function(){ const r=drawPb.apply(this,arguments); try{ eloSuggest(); }catch(e){} return r; }; }
+if(typeof renderTrack==='function'){ const drawTrack=renderTrack;
+  renderTrack=function(){ const r=drawTrack.apply(this,arguments); trackAlt(); return r; }; }
+if(typeof renderParlay==='function'){ const drawParlay=renderParlay;
+  renderParlay=function(){ const r=drawParlay.apply(this,arguments); decorate(); return r; }; }
+/* ---- mismatches: where a player's Elo meets a weak unit ----
+   Each expected starter this week (matchups.json) scored as how far his Elo stands above
+   his position's (in standard deviations, among every team's starters) plus how far the unit
+   he faces stands below the league's (among all 32 defences, `league` in matchups.json; the
+   games still to play alone were the pool before, and on a Monday that was two teams, the
+   weaker of two defences shown as "ranked 2nd"): a quarterback against the
+   opposing secondary and line together, a receiver or tight end against the secondary, a
+   back against the line and linebackers. The top five sit over the Props game list as
+   bubbles; Show more opens the top thirty. Each carries the matchup formula's projection for
+   the player's leading stat. Only on the week the matchups are for. */
+const MM_UNIT={QB:{units:['DB','DL'],name:'pass defense'},WR:{units:['DB'],name:'pass defense'},TE:{units:['DB'],name:'pass defense'},RB:{units:['DL','LB'],name:'run defense'}};
+/* how big an edge is, in words and a colour: 3 and up huge, 2 big, 1 solid, less slight */
+const mmGrade=s=>{const x=Math.round(s*10)/10; return x>=3?['Huge','pe-g4']:x>=2?['Big','pe-g3']:x>=1?['Solid','pe-g2']:['Slight','pe-g1'];};
+const MM_LEAD={QB:'passing_yards',RB:'rushing_yards',WR:'receiving_yards',TE:'receiving_yards'};
+function mismatches(){
+  const M=D.mu; if(!M||!M.players) return [];
+  /* this week's games still to kick off: a game under way or played is no edge to look for */
+  const P=Object.entries(M.players).map(([pid,v])=>({pid,...v})).filter(v=>MM_UNIT[v.group]&&!ruledOut(v.pid)&&!gameOn(v.game_id));
+  const unitOf=v=>MM_UNIT[v.group].units.reduce((a,u)=>a+v.opp_def[u],0)/MM_UNIT[v.group].units.length;
+  const zs=(arr)=>{ const m=arr.reduce((a,x)=>a+x,0)/arr.length, sd=Math.sqrt(arr.reduce((a,x)=>a+(x-m)**2,0)/Math.max(1,arr.length-1))||1; return x=>(x-m)/sd; };
+  const pz={}, dz={}, L=M.league||{};
+  const norm=(m,sd)=>x=>(x-m)/(sd||1);
+  for(const g of Object.keys(MM_UNIT)){ const n=L.norms&&L.norms[g];
+    if(n) pz[g]=norm(n[0],n[1]); else { const grp=P.filter(v=>v.group===g); if(grp.length>1) pz[g]=zs(grp.map(v=>v.elo)); } }
+  /* each defence once per unit mix: the whole league when the file carries it, else the teams playing this week */
+  const byTeam={}; for(const v of P) byTeam[v.opp]=v.opp_def;
+  if(L.defs) Object.assign(byTeam,L.defs);
+  for(const g of Object.keys(MM_UNIT)){ const vals=Object.values(byTeam).map(d=>MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length); dz[g]=zs(vals); }
+  /* each unit ranked among the league's defences (this week's without league.defs), 1 the best */
+  const rankOf={}; for(const g of Object.keys(MM_UNIT)){ const vals=Object.entries(byTeam).map(([t,d])=>[t,MM_UNIT[g].units.reduce((a,u)=>a+d[u],0)/MM_UNIT[g].units.length]).sort((x,y)=>y[1]-x[1]);
+    rankOf[g]={n:vals.length,r:Object.fromEntries(vals.map(([t],i)=>[t,i+1]))}; }
+  return P.filter(v=>pz[v.group]).map(v=>{ const d=unitOf(v), a=pz[v.group](v.elo), b=dz[v.group](d);
+      const lead=MM_LEAD[v.group], st=v.stats&&v.stats[lead];
+      return {...v,unit:Math.round(d),unitName:MM_UNIT[v.group].name,defRank:rankOf[v.group].r[v.opp],defN:rankOf[v.group].n,zp:a,zd:b,score:a-b,lead,proj:st?st[1]:null,nudge:st?st[2]:null}; })
+    .filter(v=>v.zp>0&&v.zd<0).sort((x,y)=>y.score-x.score);
+}
+const MM_LBL={passing_yards:'pass yds',rushing_yards:'rush yds',receiving_yards:'rec yds'};
+const ordinal=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]||'th');
+/* the plain words: a Diamond RB against a run D ranked 30th */
+const mmLine=v=>`vs a ${esc(v.unitName)} ranked ${ordinal(v.defRank)}`;
+const mmProj=v=>v.proj==null?'':`<b>${Math.round(v.proj)} ${MM_LBL[v.lead]}</b> projected${v.nudge?` (${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup)`:''}`;
+function mmName(pid){ return (D.players&&D.players.players&&D.players.players[pid]&&D.players.players[pid].name)||pid; }
+/* a click on a player opens his game with his stats already open, scrolled to and highlighted */
+function mmOpen(gid,pid){ if(typeof S!=='object'||!S||!S.ui||typeof renderGame!=='function') return;
+  S.ui.game=gid; S.ui.open=pid?{[pid]:true}:{}; if(typeof save==='function') save(); renderGame(); if(pid) mmFocus(pid); }
+function mmFocus(pid){
+  const view=document.getElementById('gameView'), modal=document.getElementById('gameModal'); if(!view) return;
+  const row=[...view.querySelectorAll('[data-open]')].find(b=>b.dataset.open===pid); if(!row) return;
+  const body=row.nextElementSibling&&row.nextElementSibling.classList.contains('plrbody')?row.nextElementSibling:null;
+  for(const n of [row,body]) if(n) n.classList.add('pe-hl');
+  if(modal&&!modal.hidden) modal.scrollTop+=row.getBoundingClientRect().top-modal.getBoundingClientRect().top-72;
+  else row.scrollIntoView({block:'start'});
+}
+function mismatchCard(){
+  const view=document.getElementById('slateView'); if(!view) return;
+  const old=document.getElementById('peMism'); if(old) old.remove();
+  const sel=document.getElementById('weekSel'), wk=sel?+sel.value:null;
+  if(!D.mu||!D.players||!wk||+D.mu.week!==wk) return;
+  const rows=mismatches(); if(!rows.length) return;
+  const max=rows[0].score||1;
+  const bubble=(v,i)=>`<button class="pe-mm-b" data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" title="Open ${esc(mmName(v.pid))}'s stats in ${esc(v.team)} ${v.home?'vs':'at'} ${esc(v.opp)}">
+      <span class="pe-mm-n" title="Mismatch rank this week">${i+1}</span>
+      <div class="pe-mm-top">${seOf(v.pid)!=null?`<span class="pe-mm-sh" title="${esc(tierName(seOf(v.pid)))} · this season">${shield(seOf(v.pid))}</span>`:''}<span class="pe-mm-nm">${esc(mmName(v.pid))}<small>(${esc(v.group)})</small></span></div>
+      <div class="pe-mm-vs">${tag(v.team,true)}<span>${v.home?'vs':'at'}</span>${tag(v.opp,true)}</div>
+      <div class="pe-mm-score"><b class="${mmGrade(v.score)[1]}" title="${mmGrade(v.score)[0]} edge">${v.score.toFixed(1)}</b><span class="pe-mm-bar"><i style="width:${Math.max(6,Math.round(100*v.score/max))}%"></i></span></div>
+      <div class="pe-mm-sub">${mmLine(v)}.<br>${mmProj(v)}.</div></button>`;
+  const begun=Object.values(D.mu.players).some(v=>gameOn(v.game_id));
+  /* until a club files its game statuses, who starts is the build's reading of the practice
+     reports (a player out last week who has not practised since is counted out): say so */
+  const rep=Object.values(D.mu.reports||{}).filter(r=>r.week===+D.mu.week), filed=rep.filter(r=>r.statuses_filed).length;
+  const pending=rep.length&&filed<rep.length?`<p class="pe-mm-sub" style="margin:6px 0 0">Game statuses are filed for ${filed} of ${rep.length} clubs; until a club files, a player out last week who has not practised since is counted out, and a starter can still change.</p>`:'';
+  const html=`<div class="card pe-mm" id="peMism"><h2>Mismatches <small>week ${esc(D.mu.week)}: the best players against the weakest units they face${begun?', in the games still to kick off':''}</small></h2>${pending}
+    <div class="pe-mm-row">${rows.slice(0,5).map(bubble).join('')}</div>
+    ${rows.length>5?`<div class="pe-mm-more"><button class="btn quiet" id="peMmMore">Show the top ${Math.min(30,rows.length)}</button></div>`:''}</div>`;
+  const bar=view.querySelector('.bar'); if(bar) bar.insertAdjacentHTML('afterend',html); else view.insertAdjacentHTML('afterbegin',html);
+  const card=document.getElementById('peMism');
+  card.querySelectorAll('[data-mm-game]').forEach(b=>b.addEventListener('click',()=>mmOpen(b.dataset.mmGame,b.dataset.mmPid)));
+  const more=document.getElementById('peMmMore'); if(more) more.addEventListener('click',()=>mismatchModal(rows.slice(0,30)));
+}
+function mismatchModal(rows){
+  let m=document.getElementById('peMmModal');
+  if(!m){ m=document.createElement('div'); m.id='peMmModal'; m.className='modal'; m.hidden=true;
+    m.innerHTML='<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Mismatches"><div id="peMmView"></div></div>';
+    (document.getElementById('tab-slate')||document.body).appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target===m) mmClose(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!m.hidden) mmClose(); }); }
+  const body=rows.map((v,i)=>`<tr data-mm-game="${esc(v.game_id)}" data-mm-pid="${esc(v.pid)}" style="cursor:pointer"><td class="pe-n">${i+1}</td><td class="pe-name">${badge(v.pid)}${esc(mmName(v.pid))} <span class="muted" style="font-weight:600">(${esc(v.group)})</span></td>
+    <td class="pe-c">${tag(v.team,true)} <span class="muted">${v.home?'vs':'at'}</span> ${tag(v.opp,true)}</td><td class="pe-c">${ordinal(v.defRank)} of ${v.defN}<small class="muted" style="display:block;font-size:11px">${esc(v.unitName)}</small></td>
+    <td class="pe-c pe-edge ${mmGrade(v.score)[1]}"><b>${v.score.toFixed(1)}</b><small>${mmGrade(v.score)[0]}</small></td><td class="pe-n">${v.proj==null?'–':Math.round(v.proj)+' '+MM_LBL[v.lead]}${v.nudge?`<small class="muted" style="display:block;font-size:11px">${v.nudge>=0?'+':'−'}${Math.abs(v.nudge).toFixed(1)} from the matchup</small>`:''}</td></tr>`).join('');
+  document.getElementById('peMmView').innerHTML=`<div class="card"><h2 style="display:flex;align-items:center;gap:10px">Mismatches, week ${esc(D.mu.week)} <span class="pill">top ${rows.length}</span><span style="flex:1"></span><button class="btn quiet" id="peMmClose">Close</button></h2>
+    <p class="pe-sub">The biggest edges this week between an expected starter and the defense he faces. <b>Edge</b> is how far above his position's average the player stands plus how far below the league's average that defense stands, both in standard deviations: 3 and up is huge, 2 to 3 big, 1 to 2 solid, under 1 slight. <b>Facing</b> ranks the defense among all 32, 1st the best: quarterbacks, receivers and tight ends against the pass defense, backs against the run defense. Click a row to open the game at his stats.</p>
+    <div style="overflow-x:auto"><table class="pe-t pe-mm-t"><thead><tr><th class="pe-n">#</th><th>Player</th><th class="pe-c">Game</th><th class="pe-c">Facing</th><th class="pe-c" title="How lopsided the matchup is: the player's standing at his position plus the defence's weakness, in standard deviations">Edge</th><th class="pe-n">Projection</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+  document.getElementById('peMmClose').addEventListener('click',mmClose);
+  m.querySelectorAll('tr[data-mm-game]').forEach(r=>r.addEventListener('click',()=>{ mmClose(); mmOpen(r.dataset.mmGame,r.dataset.mmPid); }));
+  m.hidden=false; document.body.classList.add('modal-open'); m.scrollTop=0;
+}
+function mmClose(){ const m=document.getElementById('peMmModal'); if(m){ m.hidden=true; if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open'); } }
+window.eloMismatches=mismatches;
+if(typeof renderSlate==='function'){ const drawSlate=renderSlate;
+  renderSlate=function(){ const r=drawSlate.apply(this,arguments); try{ mismatchCard(); }catch(e){} return r; }; }
+if(typeof renderGame==='function'){ const drawGame=renderGame;
+  renderGame=function(){ const r=drawGame.apply(this,arguments); decorate(); return r; }; }
+/* the Pick'ems board draws a game's players itself when a game is opened */
+document.addEventListener('click',()=>setTimeout(decorate,0),true);
+document.addEventListener('app-ready',decorate);
+function draw(){
+  const body=el('peBody');
+  if(!D.players||!D.model){ body.innerHTML=`<div class="card"><h2>ELO Ratings</h2><p class="pe-sub">${D.err?esc(D.err):'Loading the ratings…'}</p></div>`; return; }
+  defs(); decorate(); trackAlt();
+  body.innerHTML=rankings();
+  body.querySelectorAll('.pe-pos button[data-unit]').forEach(b=>b.addEventListener('click',()=>{ if(D.unit!==b.dataset.unit) D.tsort=null; D.unit=b.dataset.unit; draw(); }));
+  body.querySelectorAll('tr.pe-plrow').forEach(tr=>tr.addEventListener('click',()=>playerModal(tr.dataset.pePl)));
+  body.querySelectorAll('tr.pe-tmrow').forEach(tr=>tr.addEventListener('click',()=>teamModal(tr.dataset.team)));
+  /* a column sorts best first; the same column again turns it round */
+  body.querySelectorAll('table.pe-tt th[data-sort]').forEach(th=>th.addEventListener('click',()=>{ const k=th.dataset.sort, cur=D.tsort||{key:'rank',dir:1};
+    D.tsort={key:k,dir:cur.key===k?-cur.dir:1}; draw(); }));
+  body.querySelectorAll('.pe-pos button[data-pos]').forEach(b=>b.addEventListener('click',()=>{ D.pos=b.dataset.pos; D.unit=null; draw(); }));
+  const more=el('peMore'); if(more) more.addEventListener('click',()=>{ D.more=!D.more; draw(); });
+  body.querySelectorAll('.pe-curve').forEach(c=>curveHover(c.parentElement));
+  const r=D.model.record, wf=D.model.walk_forward||{}, ws=Object.keys(wf).sort();
+  const prior=ws.filter(s=>+s<r.season);
+  if(prior.length){ const tot=prior.reduce((a,s)=>a+wf[s].games,0), ok=prior.reduce((a,s)=>a+Math.round(wf[s].accuracy*wf[s].games),0);
+    el('peWalkRec').textContent=`${prior[0]}–${prior[prior.length-1]} ${pct(ok/tot)} walk-forward`; }
+  /* the ELO Model's season record as the Pick'em Record counts it, split the honest way: calls
+     published before kickoff (frozen there, never regraded), and the backtest of the games it
+     was never called on beforehand (weeks 1-2 of 2026, made after the games on pre-game ratings) */
+  const pub=r&&r.published, bt=r&&r.backtest;
+  if(pub){ const ln=(x,lab)=>x&&(x[0]+x[1])?`${x[0]}–${x[1]} ${lab}`:'';
+    const parts=[ln(pub,'called before kickoff'),ln(bt,'backtest')].filter(Boolean);
+    const cr=el('peCallRec'); cr.textContent=parts.length?`ELO Model ${r.season}: ${parts.join(', ')}`:'';
+    cr.title=`The Pick'em Record grades each game on the call published before its kickoff${r.published_from_week?` (from week ${r.published_from_week})`:''}. A backtest is a game the model was not published for until after it was played: called on the ratings it had before the game, but not ahead of time.`; }
+  const d=new Date(D.model.built_at);
+  el('peStamp').textContent=isNaN(d)?'':'rated '+d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+/* the Game snapshot on the Pick'ems tab (nflbets/build/snapshot.html) draws from these same three
+   files: it waits on this one read of them rather than asking for them again */
+let filesRead=null; const FILES=new Promise(r=>{ filesRead=r; });
+window.eloFiles=()=>FILES;
+async function boot(){
+  const get=async u=>{ const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(u.replace(/^\.\.\//,'')+' '+r.status); return r.json(); };
+  try{
+    const [p,m]=await Promise.all([get(P_URL),get(M_URL)]);
+    D.players=p; D.model=m;
+  }catch(e){ D.err='The ratings could not be loaded: '+(e.message||e); }
+  let muErr=null;
+  try{ D.mu=await get(MU_URL); }catch(e){ muErr=String(e&&e.message||e); }
+  filesRead({players:D.players,model:D.model,mu:D.mu,err:D.err||null,muErr});
+  draw();
+  /* the Parlay Builder's suggestions stand on market + form, so they are drawn again now */
+  try{ if(typeof S==='object'&&S&&S.sched&&typeof renderPb==='function') renderPb(); }catch(e){}
+  try{ mismatchCard(); }catch(e){}
+}
+draw();
+boot();
+})();
+</script>

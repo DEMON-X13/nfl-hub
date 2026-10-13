@@ -1,11 +1,14 @@
-"""Walk-forward scoring harness for the X NFL betting model.
+"""The pieces of the X NFL betting model's walk-forward research harness that the Joker's
+inputs are built from (features.py), vendored here so the weekly run rebuilds them exactly as
+the formula was tested:
 
-Three layers, per PROJECT_BRIEF.md:
-  1. EPA          - per-play value. A *source* (harness/sources.py) turns raw data into
-                    one row per team per game. This is the layer variants replace.
-  2. Team ratings - Elo + EWMA state machine (harness/ratings.py). Fixed.
-  3. Prediction   - linear margin model + logistic win prob (harness/fit.py). Refit
-                    walk-forward, on prior seasons only (harness/score.py).
+  data.py     - the games loader (nflverse games.csv), team codes kept across moves
+  sources.py  - the stat source: one row per team per game, EPA per play and the rest
+  pbp.py      - play-by-play loading and the team-game aggregation the source uses
+  ratings.py  - the Elo + EWMA rating state machine, a port of the app's own, read
+                before each game
+  qb.py       - the quarterback ratings and the backup-quarterback drop
 
-Every variant goes through the same code path: run.py <VARIANT>.
+The rest of the harness (the margin model's fit, the walk-forward scoring, the variants and
+their tuning) stayed with the research; nothing here refits.
 """

@@ -1,0 +1,465 @@
+<!-- The Pick'ems tab: its own styles, its section, its script. build.js sets these into the
+     prop model's page, so every class and id here is prefixed pk- to stay clear of the prop
+     model's own, which share the page. The script is one closure for the same reason. -->
+<style>
+/* the board row: the betting app's columns -- date, matchup, split bar, confidence, final
+   score -- at the Props tab's size and type, so the two tabs read as one page: the same
+   grid gutters, the same row padding, the same 13px display-face matchup and tags, the same
+   date block, the same 20px score */
+/* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
+.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
+.pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pk-sep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
+.pk-gamehead .pk-c{text-align:center}
+.pk-game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
+.pk-game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
+.pk-game.pk-open{border-color:var(--line-2)}
+.pk-game .pk-when{color:var(--ink-2);font-size:12px;line-height:1.35}
+.pk-game .pk-when b{color:var(--ink);font-weight:600;display:block;font-size:13px;margin-bottom:5px}
+.pk-matchup{font-family:var(--display);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;min-width:0}
+.pk-matchup .pk-at{color:var(--muted);font-size:11px;font-family:var(--body);font-weight:500;letter-spacing:.02em;flex:none}
+.pk-matchup .pk-tw{position:relative;display:inline-flex;flex:none}
+.pk-matchup .pk-res{position:absolute;top:-8px;width:16px;height:16px;border-radius:50%;background:var(--panel);border:1.5px solid currentColor;font-size:11px;font-weight:800;line-height:13px;text-align:center;font-family:var(--body);box-shadow:0 1px 2px rgba(15,27,45,.2)}
+.pk-matchup .pk-tw.pk-away .pk-res{left:-9px} .pk-matchup .pk-tw.pk-home .pk-res{right:-9px}
+.pk-matchup .pk-res.pk-ok{color:var(--pick)} .pk-matchup .pk-res.pk-bad{color:var(--miss)}
+.pk-ttag{display:inline-block;text-align:center;font-family:var(--display);font-size:13px;font-weight:700;line-height:1;padding:5px 8px;border-radius:7px;border:1.5px solid;letter-spacing:.03em;flex:none;box-shadow:0 1px 2px rgba(15,27,45,.18),inset 0 1px 0 rgba(255,255,255,.18);text-shadow:0 1px 0 rgba(0,0,0,.12)}
+.pk-ttag.pk-win{font-weight:800;box-shadow:0 2px 6px -1px rgba(15,27,45,.35),inset 0 1px 0 rgba(255,255,255,.18)}
+.pk-ttag.pk-mini{padding:4px 5px;min-width:40px;vertical-align:-1px}
+.pk-probrow{display:flex;align-items:center;gap:10px;padding:0 14px;justify-content:center;min-width:0}
+.pk-tlab{font-family:var(--display);font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.02em;flex:none;min-width:40px;text-align:center}
+.pk-tlab.pk-win{color:var(--ink);font-weight:800}
+.pk-probrow .pk-prob{flex:1;min-width:0}
+.pk-prob{position:relative;height:28px;border-radius:999px;overflow:hidden;background:#E6EBF1;display:flex;box-shadow:inset 0 1px 3px rgba(15,27,45,.12)}
+.pk-prob .pk-a,.pk-prob .pk-h{display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
+.pk-prob .pk-a{justify-content:flex-start;border-right:1px solid rgba(15,27,45,.18)} .pk-prob .pk-h{justify-content:flex-end;margin-left:auto}
+.pk-prob .pk-a span.pk-w,.pk-prob .pk-h span.pk-w{font-weight:800}
+.pk-conf{text-align:center}
+.pk-tier{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px 4px 8px;border-radius:999px;background:#E9EEF4;color:var(--ink-2);white-space:nowrap}
+.pk-tier::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:#8A5E05} .pk-tier.pk-coin{background:#FCECEA;color:#A8453A}
+.pk-result{text-align:center;line-height:1.2;white-space:nowrap}
+/* the score the model expects, in the final score's shape but quieter */
+.pk-pred{text-align:center;line-height:1.2;white-space:nowrap}
+.pk-pred .pk-psc{display:block;font-family:var(--display);font-size:17px;font-weight:700;color:var(--ink-2);letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.pk-pred .pk-muted{display:block;font-size:11px;color:var(--muted);line-height:1.3}
+.pk-pred .pk-plab{display:none}
+/* the side the model has ahead, as a smaller copy of the matchup's team tag */
+.pk-pred .pk-pby{display:inline-flex;align-items:center;gap:5px}
+.pk-pred .pk-pby .pk-ttag{font-size:10px;padding:3px 5px;min-width:32px;border-radius:5px;border-width:1px}
+.pk-sc{display:block;font-family:var(--display);font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.pk-sc.pk-pend{color:var(--muted)}
+.pk-result .pk-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
+.pk-result .pk-mwin.pk-ok{color:var(--pick)} .pk-result .pk-mwin.pk-bad{color:var(--miss)} .pk-result .pk-mwin.pk-tie{color:var(--ink-2)}
+.pk-result .pk-muted{display:block;font-size:11px;color:var(--ink-2);line-height:1.3}
+/* the prop model's Game bets card, opened inside the same row. Its classes are the prop
+   model's, so it is styled by the prop model's stylesheet; only the card chrome comes off */
+.pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
+.pk-gbody .gbets{background:none;border:0;border-radius:0;padding:0;margin:0;box-shadow:none}
+.pk-gbody .gbets h2{font-size:16px;margin:0 0 6px}
+.livestamp.bad{color:var(--miss)}
+.pk-tolegs{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.pk-tolegs a{color:var(--ink-2)}
+.pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+/* the two lines a game is read on, when they differ: the board's and the prop model's */
+.pk-lines{margin:0 0 8px;font-size:12px;color:#8A5E05}
+/* a game at a neutral site: "vs", not "at" */
+.pk-matchup .pk-at.pk-neutral{color:var(--ink-2);font-weight:600}
+/* a framed betting tab: full width, no border, as tall as the tab it shows */
+.pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
+.pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
+.pk-foot a{color:var(--ink-2)}
+/* the Game snapshot's button, at the head of an opened game (the window is snapshot.html's) */
+.pk-snaprow{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin:0 0 12px}
+.pk-snapbtn{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.pk-snapbtn svg{flex:none}
+.pk-snapwhat{font-size:12px;color:var(--muted);line-height:1.4}
+@media(max-width:900px){
+  .pk-gamehead{display:none}
+  /* one card per game, laid out the way the Props tab lays its out */
+  .pk-game{grid-template-columns:1fr 1fr auto;gap:6px 10px;padding:13px 14px;justify-content:normal}
+  .pk-game .pk-when{grid-column:1/3;grid-row:1;display:flex;gap:8px;align-items:baseline}
+  .pk-game .pk-when b{display:inline;font-size:13px;margin:0}
+  .pk-game .pk-result{grid-column:3;grid-row:1/3;align-self:center;padding-left:6px}
+  .pk-matchup{grid-column:1/3;grid-row:2}
+  .pk-probrow{grid-column:1/-1;grid-row:3;margin-top:4px;padding:0}
+  .pk-conf{grid-column:1/3;grid-row:4;text-align:left}
+  .pk-pred{grid-column:3;grid-row:4;text-align:right;padding-left:6px}
+  .pk-pred .pk-psc{display:inline;font-size:15px;margin:0}
+  .pk-pred .pk-plab{display:inline;font-size:11px;color:var(--muted);margin-right:6px}
+  .pk-pred .pk-muted{display:none}
+  .pk-game .pk-gbody{grid-row:5}
+  .pk-gbody table.rungs{display:block;overflow-x:auto;white-space:nowrap}
+}
+</style>
+<section id="tab-pickems">
+  <div class="bar">
+    <label>Week <select id="pkWeek"></select></label>
+    <span class="rec" id="pkWeekRec"></span>
+    <span class="rec" id="pkSeasonRec"></span>
+    <span class="grow"></span>
+    <span class="livestamp" id="pkStamp"></span>
+    <button class="btn quiet" id="pkNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
+  </div>
+  <div id="pkBoard"></div>
+  <p class="pk-foot" id="pkFoot"></p>
+</section>
+<script>
+/* ---------- the Pick'ems tab ----------
+   Vegas is the baseline. The call on each game is the Vegas favourite: the chance each side
+   wins from the closing moneylines nflverse publishes (state.json's odds, the book's margin
+   taken out), the spread when a game has no moneyline, and the spread and total for the
+   score it expects. The models (Alpha Model, the Challenger Model, the Joker, the ELO Model, the Broly Model) are measured
+   against it on the Pick'em Record. Open a game and the prop model's Game Bets sit underneath: the chance each
+   side wins and covers, off its own team ratings, against what a book is charging. The prop
+   model is the rest of this page, so its prices are its own functions on its own state.
+
+   Nothing is stored and nothing is picked here yet. */
+(function(){
+/*BETTING*/
+const STATE_URL='../betting/state.json';
+/* season: the betting job's own, from state.json (the board's one source), never written in here */
+const ST={sched:[],odds:{},season:null,state:null};
+/* the scoreboard as last read, by game id: nothing here is saved anywhere */
+const PK_LIVE={games:{},at:0,err:null,busy:false};
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* the betting app's tag, in this tab's own class names */
+const tag=(...a)=>BET.tag(...a).replace(/class="([^"]*)"/,(m,c)=>'class="'+c.split(' ').map(x=>'pk-'+x).join(' ')+'"');
+
+/* the prop model's schedule row for a game, which is where its spread and the book's prices
+   live. Keyed by the same nflverse id both sites use; null until the prop model has booted. */
+const mkt=gid=>(typeof S==='object'&&S&&S.sched||[]).find(x=>x.id===gid)||null;
+
+/* the schedule's kickoff (US Eastern) as an instant: Eastern's offset on that day is read
+   from the browser's own zone tables, so the clock change needs no date written in here */
+function kickAt(d,t){
+  const guess=new Date(`${d}T${t}:00Z`);
+  const inZone=z=>new Date(guess.toLocaleString('en-US',{timeZone:z}));
+  const k=new Date(guess.getTime()+(inZone('UTC')-inZone('America/New_York')));
+  return isNaN(k)?null:k;
+}
+/* the date and kickoff in the viewer's own time zone, with the zone's short name */
+function fmtDate(g){
+  if(!g.gameday) return ['',''];
+  const k=g.gametime?kickAt(g.gameday,g.gametime):null, d=k||new Date(g.gameday+'T12:00:00');
+  const day=d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const t=k?k.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'';
+  return [day,t];
+}
+const winnerOf=g=>g.result==null?null:(g.result>0?g.home_team:(g.result<0?g.away_team:null));
+/* a game at a neutral site. nflverse marks most of them Neutral, but not every one (2026's
+   PHI at JAX in London is down as a Jaguars home game), and every 9:30am Eastern kickoff is
+   one played abroad, so either says it */
+const neutral=g=>g.location==='Neutral'||g.gametime==='09:30';
+/* nflverse runs the playoffs on as weeks 19-22 */
+const PLAYOFF={19:'Wild Card',20:'Divisional',21:'Conference',22:'Super Bowl'};
+const weekName=w=>w>18?(PLAYOFF[w]||'Playoffs '+(w-18)):'Week '+w;
+/* ESPN's numbering: the regular season is seasontype 2, the playoffs seasontype 3 with weeks of
+   their own (wild card 1 ... the Super Bowl 5, after the Pro Bowl's 4) */
+const espnWeek=w=>w<=18?{type:2,week:w}:{type:3,week:w>=22?5:w-18};
+/* where a game stands: the published result when the job has graded it, otherwise what the
+   scoreboard said when it was last read. final says the game is over; live says it is on. */
+function outcome(g){
+  if(g.result!=null) return {final:true,live:false,as:g.away_score,hs:g.home_score,winner:winnerOf(g),clock:''};
+  const s=PK_LIVE.games[g.game_id];
+  if(!s||s.as==null||s.hs==null||s.state==='pre') return null;
+  const winner=s.hs>s.as?g.home_team:(s.as>s.hs?g.away_team:null);
+  return {final:s.state==='post',live:s.state==='live',as:s.as,hs:s.hs,winner,clock:s.clock||''};
+}
+
+/* what Vegas says: the home side's chance from the two moneylines with the book's margin
+   taken out, or from the spread (a margin spread 13.5 points about it) where a game has no
+   moneyline. The spread is the margin it expects, home side positive. Graded once the game
+   has a published result. */
+const ncdf=z=>{ const t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2), q=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-q:q; };
+const mlImp=x=>x<0?-x/(-x+100):100/(x+100);
+function call(g){
+  const o=ST.odds[g.game_id], sp=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null;
+  let pHome=null;
+  if(o&&isFinite(o.home)&&isFinite(o.away)&&o.home&&o.away){ const h=mlImp(+o.home), a=mlImp(+o.away); pHome=h/(h+a); }
+  else if(sp!=null&&sp!==0) pHome=ncdf(sp/13.5);
+  if(pHome==null) return null;
+  const pick=pHome>=0.5?g.home_team:g.away_team, conf=Math.max(pHome,1-pHome);
+  const margin=sp!=null?sp:13.5*Math.log(pHome/(1-pHome))/1.7;
+  const graded=g.result!=null&&isFinite(g.result);
+  return {pick,conf,pHome,margin,graded,correct:graded&&+g.result!==0?pick===winnerOf(g):null};
+}
+
+/* the Game snapshot's button heads every opened game, priced or not: the window it opens
+   (nflbets/build/snapshot.html) draws everything the site has on the game */
+const snapBtn=g=>`<div class="pk-snaprow"><button type="button" class="btn quiet pk-snapbtn" data-snap="${esc(g.game_id)}" aria-haspopup="dialog"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h5v5H2zM9 2.5h5v5H9zM2 9.5h5v4H2zM9 9.5h5v4H9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Game snapshot</button><span class="pk-snapwhat">Records, team and player Elo, the matchups and every model's call, in one window</span></div>`;
+/* the prop model's Game bets card for this game, exactly as the game's own page draws it:
+   both teams, to win and to cover, and the game total over or under, a box on each line while
+   the game can still be bet and a tick or a cross on each once it has a score. The card is the prop model's own function
+   on its own schedule row, so this is the same card and not a copy of one. */
+function gameBody(g){
+  if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
+  const row=mkt(g.game_id);
+  if(!row||!gameBet(row,row.h,'ml')) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
+  const locked=gameStarted(row);
+  let card=gameBetsCard(row,locked);
+  if(card.split('class="card gbets"').length!==2) throw new Error("the Game bets card is not the shape this tab expects");
+  card=card.replace('class="card gbets"','class="gbets"');
+  /* the board's call and score are on nflverse's line; these prices are on the prop model's,
+     which can be a different pull. Where the two spreads differ, say so, so a by-3 above and a
+     +3.5 below read as two lines rather than a mistake. */
+  const vs=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null, ps=row.sp!=null&&isFinite(row.sp)?+row.sp:null;
+  if(vs!=null&&ps!=null&&vs!==ps){
+    const fav=x=>x>0?`${g.home_team} \u2212${x}`:(x<0?`${g.away_team} \u2212${-x}`:'a pick\'em');
+    const meta=(typeof PAY==='object'&&PAY&&PAY.mkt_meta&&PAY.mkt_meta[String(row.w)])||null;
+    card=`<p class="pk-lines">The call and the score above are on nflverse's line, ${esc(fav(vs))}; these prices are on the prop model's, ${esc(fav(ps))}${meta&&meta.src?` (${esc(meta.src)}${meta.asof?', as of '+esc(meta.asof):''})`:''}.</p>`+card;
+  }
+  const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')||k.startsWith(g.game_id+'|game|')).length;
+  const note=locked?''
+    :`<p class="pk-tolegs">Ticked lines go to your <a href="#parlay">Parlay Builder</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
+  return `<div class="pk-gbody">${snapBtn(g)}${card}${note}</div>`;
+}
+/* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
+   so the row shows what is on the parlay now */
+function wireLegs(){
+  el('pkBoard').addEventListener('change',e=>{
+    const box=e.target; if(!box.matches||!box.matches('input[data-leg]')) return;
+    const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;
+    toggleLeg(box.dataset.leg,+box.dataset.k,mkt(g.game_id),box.dataset.side||'over',box.dataset.main==='1');
+    const body=card.querySelector('.pk-gbody'); if(body) body.outerHTML=gameBody(g);
+  });
+  /* the Game snapshot's button opens its window over the page */
+  el('pkBoard').addEventListener('click',e=>{
+    const b=e.target.closest&&e.target.closest('button[data-snap]'); if(!b) return;
+    if(typeof window.gameSnapshot==='function') window.gameSnapshot(b.dataset.snap,b);
+  });
+}
+
+/* did the call land: the job's grade once it has one, the scoreboard's winner until then */
+function landed(c,o){
+  if(!c||!o||!o.final) return null;
+  if(c.graded) return c.correct;
+  return o.winner?c.pick===o.winner:null;
+}
+/* the score Vegas expects: the spread split around the game's total. The total is the book's, posted before kickoff, when there
+   is one, and otherwise the prop model's own points for each side, so nothing here knows the
+   result. Whole points, and never a tie against the favourite. */
+function predicted(g,c){
+  if(!c||c.margin==null||!isFinite(c.margin)) return null;
+  const row=mkt(g.game_id);
+  /* nflverse's total beside its spread when state.json carries one, so the score is one line */
+  let tot=g.total_line!=null&&isFinite(g.total_line)?+g.total_line:null, src='book total';
+  if(tot==null) tot=row&&row.tot!=null&&isFinite(row.tot)?+row.tot:null;
+  if(tot==null&&row&&typeof modelPoints==='function'){
+    tot=modelPoints(g.away_team,g.home_team,false)+modelPoints(g.home_team,g.away_team,true); src='model total'; }
+  if(tot==null||!isFinite(tot)) return null;
+  let hs=Math.round((tot+c.margin)/2), as=Math.round((tot-c.margin)/2);
+  if(hs===as){ if(c.pick===g.home_team) hs++; else as++; }
+  return {as,hs,tot,src};
+}
+function predCell(g,c){
+  const p=predicted(g,c);
+  if(!p) return '<span class="pk-psc">–</span>';
+  const lead=p.hs>p.as?g.home_team:g.away_team, by=Math.abs(p.hs-p.as);
+  return `<span class="pk-plab">Predicted</span><span class="pk-psc" title="${esc(g.away_team)} ${p.as}, ${esc(g.home_team)} ${p.hs}: the model's margin around the ${p.src} of ${Math.round(p.tot*2)/2}">${p.as}–${p.hs}</span><span class="pk-muted pk-pby">${tag(lead,BET.tagColor(lead),false,'mini')} by ${by}</span>`;
+}
+function resultCell(g,c){
+  const o=outcome(g);
+  if(!o) return '<b class="pk-sc pk-pend">0 : 0</b>';
+  const score=`${o.as}–${o.hs}`;
+  if(o.live){
+    /* on now: who leads, coloured by whether the call is ahead, the clock under it */
+    const line=o.winner?`${o.winner} leading ${score}`:`Tied ${score}`;
+    const cls=!c||!o.winner?'tie':(c.pick===o.winner?'ok':'bad');
+    return `<span class="pk-mwin pk-${cls}">${esc(line)}</span><span class="pk-muted">${esc(o.clock)}</span>`;
+  }
+  const line=o.winner?`${o.winner} won ${score}`:`Tie ${score}`;
+  const hit=landed(c,o);
+  if(hit===null) return `<span class="pk-mwin pk-tie">${esc(line)}</span><span class="pk-muted">${c&&c.graded?'':'Awaiting stats'}</span>`;
+  return `<span class="pk-mwin ${hit?'pk-ok':'pk-bad'}">${esc(line)}</span><span class="pk-muted">${hit?'Pick hit':'Pick missed'}</span>`;
+}
+function render(){
+  const w=+el('pkWeek').value;
+  const games=ST.sched.filter(g=>+g.week===w)
+    .sort((a,b)=>((a.gameday||'')+(a.gametime||'')).localeCompare((b.gameday||'')+(b.gametime||'')));
+  records(w);
+  if(!games.length){ el('pkBoard').innerHTML='<div class="empty">No games scheduled for that week.</div>'; return; }
+  /* the regular season over and no playoff game in the betting job's schedule: say so, rather
+     than leave week 18 looking like a week still to come */
+  const over=ST.sched.length&&ST.sched.every(g=>g.result!=null)&&!ST.sched.some(g=>+g.week>18)
+    ?`<div class="pk-note" id="pkOver"><b>The ${esc(String(ST.season||''))} regular season is over.</b> The playoffs are not on this board: the betting job's schedule is the regular season. Every week stays here to look back on.</div>`:'';
+  const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Score prediction</div><div class="pk-c">Final score</div></div>';
+  const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
+  const row=g=>{
+    const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
+    const pick=c?c.pick:null;
+    const pa=c?Math.round((1-c.pHome)*100):50, ph=100-pa;
+    const [tc,tl]=c?BET.tier(c.conf):['','–'];
+    /* tick or cross on the winner's tag: did the model's pick win? */
+    let markA='',markH='';
+    const hit=landed(c,o);
+    if(win&&hit!==null){
+      const mk=`<span class="pk-res ${hit?'pk-ok':'pk-bad'}" title="${hit?'Pick hit':'Pick missed'}">${hit?'✓':'✗'}</span>`;
+      if(win===g.away_team) markA=mk; else markH=mk; }
+    return `<div class="pk-game${o&&o.final?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
+      <div class="pk-when"><b>${esc(day)}</b>${esc(time)}</div>
+      <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span>${neutral(g)?`<span class="pk-at pk-neutral" title="${esc('Neutral site'+(g.stadium?': '+g.stadium:''))}">vs</span>`:'<span class="pk-at">at</span>'}<span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
+      <div class="pk-probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
+        <span class="pk-tlab${pick===g.away_team?' pk-win':''}">${esc(g.away_team)}</span>
+        <div class="pk-prob"><div class="pk-a" style="width:${pa}%;background:${pa>=ph?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.away_team?'pk-w':''}">${pa>=14?pa+'%':''}</span></div><div class="pk-h" style="width:${ph}%;background:${ph>pa?BET.PROB_HI:BET.PROB_LO};color:#0B162A"><span class="${pick===g.home_team?'pk-w':''}">${ph>=14?ph+'%':''}</span></div></div>
+        <span class="pk-tlab${pick===g.home_team?' pk-win':''}">${esc(g.home_team)}</span>
+      </div>
+      <div class="pk-conf">${c?`<span class="pk-tier pk-${tc}">${tl} ${Math.round(c.conf*100)}%</span>`:'<span class="pk-tier">no call yet</span>'}</div>
+      <div class="pk-pred">${predCell(g,c)}</div>
+      <div class="pk-result">${resultCell(g,c)}</div>
+    </div>`;
+  };
+  /* the games still to play, live ones too, first in kickoff order; the finals under a heading,
+     so the evening's games are not below a screen of results */
+  const fin=g=>{ const o=outcome(g); return !!(o&&o.final); };
+  const todo=games.filter(g=>!fin(g)), done=games.filter(fin);
+  el('pkBoard').innerHTML=over+HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
+  el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
+    if(e.target.closest('.pk-gbody')) return;          /* the prices are not a toggle */
+    const open=card.classList.toggle('pk-open');
+    card.setAttribute('aria-expanded',open?'true':'false');
+    const had=card.querySelector('.pk-gbody');
+    if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
+    else if(!open&&had) had.remove();
+  }));
+  for(const gid of wasOpen){ const card=[...el('pkBoard').querySelectorAll('.pk-game')].find(x=>x.dataset.game===gid); if(card) card.click(); }
+}
+
+/* the scoreboard, read from ESPN in this browser: free, no odds-API credits, no job. One
+   call covers the week on screen, asked for in the season state.json is for and in ESPN's own
+   numbering of the week, so a playoff week reads too. The prop model's own ESPN reader maps
+   the games onto this board's week (both sites key them the same way). Nothing read here is
+   stored or graded: the week is still settled by the betting job, from nflverse, on its next
+   run. */
+async function readScores(){
+  if(PK_LIVE.busy) return;
+  PK_LIVE.busy=true; stamp('reading…');
+  try{
+    const wk=+el('pkWeek').value, e=espnWeek(wk);
+    const season=ST.season||(typeof SEASON!=='undefined'?SEASON:'');
+    const r=await fetch(`${ESPN_SB}?seasontype=${e.type}&week=${e.week}&dates=${season}`,{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    PK_LIVE.games=espnGames(await r.json(),ST.sched.filter(g=>+g.week===wk).map(g=>({id:g.game_id,h:g.home_team,a:g.away_team})));
+    PK_LIVE.err=null; PK_LIVE.at=Date.now();
+  }catch(e){ PK_LIVE.err=String(e&&e.message||e); }
+  finally{ PK_LIVE.busy=false; }
+  stamp(); render();
+}
+function stamp(text){
+  const s=el('pkStamp'); if(!s) return;
+  s.classList.toggle('bad',!!PK_LIVE.err);
+  s.textContent=text!=null?text:(PK_LIVE.err?'scores not loading':(PK_LIVE.at?'scores '+new Date(PK_LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):''));
+}
+
+/* the Props tab's stamp, in this page's words: nothing until the scoreboard has been read,
+   then when, or that it is not loading. The prop model's own version opens on "scores off",
+   which named a picker this page does not have. */
+window.slateStamp=function(){
+  const s=document.getElementById('slateStamp'); if(!s) return;
+  s.classList.toggle('bad',!!LIVE.err);
+  s.textContent=LIVE.err?'scores not loading':(LIVE.at?'scores '+new Date(LIVE.at).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit',second:'2-digit'}):(LIVE.busy?'reading…':''));
+};
+
+/* Vegas's record: the favourite against the result, game by game */
+function records(w){
+  const rows=ST.sched.map(g=>({week:+g.week,c:call(g)})).filter(r=>r.c&&r.c.graded);
+  const line=f=>{ const r=rows.filter(f); const won=r.filter(x=>x.c.correct===true).length, lost=r.filter(x=>x.c.correct===false).length;
+    return `${won}–${lost}`; };
+  el('pkWeekRec').innerHTML=`Vegas · ${w>18?esc(weekName(w)):'week '+w} <b>${line(r=>r.week===w)}</b>`;
+  el('pkSeasonRec').innerHTML=`Season <b>${line(()=>true)}</b>`;
+}
+
+function foot(){
+  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Challenger Model, the Joker, the ELO Model and the Broly Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging; its Game snapshot button opens everything else the site has on the game.`;
+}
+
+/* the Game snapshot (nflbets/build/snapshot.html) reads the board through this: the season as
+   loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site */
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET};
+
+/* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
+   bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
+   on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
+   its button off the bar's right edge. Only the bar scrolls, never the page */
+function routeTabs(){
+  const nav=document.getElementById('tabs'), btns=[...document.querySelectorAll('#tabs button')];
+  const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
+    if(r.left>=n.left&&r.right<=n.right) return;
+    nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
+  const chosen=()=>btns.find(x=>x.getAttribute('aria-selected')==='true');
+  const go=()=>{ const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
+  btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); reveal(b); }));
+  window.addEventListener('hashchange',go); go();
+  /* the web fonts can widen the buttons after the first layout: once more when they are in */
+  if(document.readyState!=='complete') window.addEventListener('load',()=>reveal(chosen()),{once:true});
+  try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>reveal(chosen())); }catch(e){}
+}
+
+/* the betting tabs are the betting site's own page, framed. A frame loads the first time its
+   tab is opened and then follows the height of what it shows, so the page scrolls as one.
+   The frame never scrolls itself up and down: its height is set from its content, so a vertical
+   overflow is met by the frame growing, never by a scrollbar of its own. With one allowed, a
+   classic scrollbar (Windows Chrome's, with its arrows) stuck there with nothing to scroll: the
+   charts are drawn at the frame's width, so the content was measured with the scrollbar's 15-17px
+   taken off, came out a few px taller without it, overflowed again, and Chrome kept the bar.
+   Sideways it still scrolls when something is really wider than the frame.
+
+   The frame's document is this page's own: the betting app is carried here as a string
+   (BET_APP, set by the build) and becomes the frame's srcdoc when its tab is first opened,
+   with the tab's name written in front of it. Nothing is fetched for it and nothing can be
+   cached apart from this page, so a refresh of this page refreshes the frames with it. */
+function frames(){
+  const load=f=>{
+    if(f.dataset.loaded||!f.dataset.embed||typeof BET_APP!=='string') return;
+    f.dataset.loaded='1';
+    f.addEventListener('load',()=>{
+      let doc=null; try{ doc=f.contentDocument; }catch(e){ return; }
+      if(!doc||!doc.documentElement) return;
+      doc.documentElement.style.overflowY='hidden';
+      const fit=()=>{ const h=doc.documentElement.scrollHeight; if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>2) f.style.height=h+'px'; };
+      fit();
+      if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
+    });
+    let doc=BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed));
+    /* nflbets/preview.html sets a theme for the frames too; the live page sets none */
+    if(typeof window.PREVIEW_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.PREVIEW_FRAME_HEAD+doc.slice(i); }
+    f.setAttribute('srcdoc',doc);
+  };
+  const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);
+  document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>setTimeout(show,0)));
+  show();
+}
+
+async function boot(){
+  routeTabs(); wireLegs();
+  let failed=false;
+  try{
+    const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const st=await r.json();
+    ST.sched=st.schedule||[]; ST.odds=st.odds||{}; ST.state=st;
+    ST.season=+st.season||(ST.sched[0]?+String(ST.sched[0].game_id).slice(0,4):null);
+  }catch(e){
+    el('pkBoard').innerHTML=`<div class="pk-note"><b>The season could not be loaded.</b> ${esc(e.message||e)}<br>This tab reads <code>betting/state.json</code>; nothing is stored here.</div>`;
+    failed=true;
+  }
+  /* the frames are wired either way: the betting tabs do not depend on this tab's fetch */
+  frames();
+  if(failed){ foot(); return; }
+  const weeks=[...new Set(ST.sched.map(g=>+g.week))].sort((a,b)=>a-b);
+  /* this week: the first with a game still to play */
+  const openOn=weeks.find(w=>ST.sched.some(g=>+g.week===w&&g.result==null))||weeks[weeks.length-1];
+  el('pkWeek').innerHTML=weeks.map(x=>`<option value="${x}" ${x===openOn?'selected':''}>${weekName(x)}</option>`).join('');
+  el('pkWeek').addEventListener('change',render);
+  el('pkNow').addEventListener('click',readScores);
+  render(); foot();
+  /* read once on load, so a game that has finished since the job last ran shows its result
+     without being asked. The scoreboard is mapped onto the prop model's schedule, so this
+     waits for the prop model to have one. */
+  const ready=new Promise(res=>{ if(typeof S==='object'&&S&&S.sched) res(); else document.addEventListener('app-ready',res,{once:true}); });
+  /* the prop model holds the book's totals, so the predictions fill in once it is up */
+  ready.then(()=>{ render(); setTimeout(readScores,300); });
+}
+boot();
+})();
+</script>

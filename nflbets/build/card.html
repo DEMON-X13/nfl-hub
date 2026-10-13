@@ -1,0 +1,645 @@
+<!-- A parlay from the builder as a card: its styles, its window, its script. build.js sets these
+     into the Bets and Stats page the way it sets the Pick'ems and Player Elo tabs in, every class
+     and id prefixed pc-, the script one closure.
+
+     Visitors come to the site to see X's parlays (liveparlays/parlays.json, which every device
+     reads and nobody's page writes), so no device keeps a list of its own: the Parlay Builder is
+     everyone's to use, and its Save and lock is Finish parlay on every device. Finish parlay opens
+     this window with the parlay drawn as a card -- every leg with its price, the parlay's price,
+     the stake and what it pays, the book's fair chance first (DraftKings' prices with the margin
+     taken out, parlayFair in the props parts; est. where a leg is priced on one side only), the
+     model's chance beside it (an Elo pick's own, the Elo's) and the chance the price implies, the
+     week and its dates, and the site's mark -- and Download saves it as a PNG, drawn on a canvas at
+     twice its size. A parlay with a leg on no book price has no fair chance: the card gives the
+     model's chance alone and says the fair chance needs every leg's book price. Where
+     the browser can share a file (a phone), the share sheet is offered too, which is how an image
+     reaches Photos.
+
+     Open in DraftKings opens the parlay on DraftKings' betslip from the payload's dk (DraftKings' own
+     id for every outcome the price pull read, baked by props/build/weekly.py), and the note under
+     the buttons names any leg it cannot open and why. Share link sends the parlay as a few lines of
+     text with that link, by the share sheet or the clipboard. Neither touches the image.
+
+     Nothing is saved: not to the prop model's saved list, not to X's parlays, not to any key of
+     this page. The builder keeps its legs, so the parlay can be changed and finished again; Start
+     over clears it. A suggested parlay (a tier of the Parlay Builder's suggestions, or one of its
+     Elo picks) is finished the same way, from its own Finish button, on the amount in the panel's
+     Bet amount box, which is the builder's own stake (pbStake()) and the one its tier pays on.
+
+     The builder's numbers are the builder's own: build.js lifts its pricing block out of
+     renderParlay in props/build/part3.js into quote() below (the /*QUOTE*/ slot), so the card's
+     price can never drift from the one the builder shows. -->
+<style>
+#pcModal{z-index:60}
+#pcModal [hidden]{display:none!important}
+#pcModal .modal-panel{max-width:560px;padding:16px 18px 20px}
+.pc-top{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.pc-top h2{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.3px;margin:0;color:var(--ink)}
+.pc-top .pc-grow{flex:1}
+/* the card is drawn in the site's own colours whatever the page's theme: it is the picture the
+   download makes, so it looks the same here as it will in a phone's photos */
+.pc-card{background:#FFFFFF;color:#0F1B2D;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(15,27,45,.08),0 14px 34px -14px rgba(15,27,45,.45);
+  font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.4}
+.pc-head{background:linear-gradient(135deg,#0B1526 0%,#132238 55%,#1B2E4A 100%);color:#fff;padding:16px 20px 15px;position:relative}
+.pc-head::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,rgba(211,154,31,0),rgba(211,154,31,.8),rgba(211,154,31,0))}
+.pc-mark{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#B9C5D4;margin:0 0 10px}
+.pc-mark i{width:6px;height:6px;border-radius:50%;background:#D39A1F;box-shadow:0 0 8px rgba(211,154,31,.8);flex:none}
+.pc-kick{margin-left:auto;font-size:10.5px;letter-spacing:.06em;padding:3px 9px;border-radius:999px;background:rgba(211,154,31,.18);color:#F0C565;white-space:nowrap}
+.pc-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.pc-title{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+.pc-price{font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:32px;font-weight:700;letter-spacing:-.5px;line-height:1.05;color:#F0C565;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pc-sub{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 14px;margin-top:6px;font-size:12.5px;color:#B9C5D4;font-variant-numeric:tabular-nums}
+.pc-legs{list-style:none;margin:0;padding:4px 20px 2px}
+.pc-legs li{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-top:1px solid #E4E9F0;margin:0}
+.pc-legs li:first-child{border-top:0}
+.pc-n{width:22px;height:22px;border-radius:50%;border:1.5px solid #D5DCE6;font-size:11px;font-weight:700;color:#4F607A;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pc-who{display:block;font-weight:700;font-size:15px;color:#0F1B2D;overflow-wrap:anywhere}
+.pc-what{display:block;font-size:14px;color:#0F1B2D;overflow-wrap:anywhere}
+.pc-meta{display:block;font-size:12px;color:#657386;margin-top:1px}
+.pc-lp{text-align:right;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#0F1B2D}
+.pc-lp small{display:block;font-family:"Inter Tight","Inter",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#657386;margin-top:2px}
+.pc-money{display:flex;flex-wrap:wrap;gap:8px;padding:6px 20px 0}
+/* a figure is never cut: each tile takes an equal share of the row and never less than its
+   figure (a flex item's own minimum is its content), and a tile that will not fit beside the
+   others goes onto a row of its own */
+.pc-money div{flex:1 1 0;background:#F7F9FB;border:1px solid #E4E9F0;border-radius:10px;padding:8px 10px}
+.pc-money span{display:block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#657386}
+.pc-money b{display:block;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:#0F1B2D;white-space:nowrap}
+.pc-money .pc-win b{color:#1B7A4E}
+.pc-chance{padding:12px 20px 0;font-size:13px;color:#4F607A}
+.pc-chance b{color:#0F1B2D;font-variant-numeric:tabular-nums}
+.pc-chance div+div{margin-top:2px}
+.pc-chance small{display:block;margin-top:4px;font-size:11.5px;color:#657386}
+.pc-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 12px;margin:14px 0 0;padding:10px 20px 13px;border-top:1px solid #E4E9F0;font-size:12px;color:#657386}
+.pc-foot b{color:#4F607A;font-weight:600}
+.pc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0}
+.pc-actions a.btn{text-align:center}
+/* what Open in DraftKings opens, and the legs it cannot, under the buttons */
+.pc-dk{font-size:12.5px;color:var(--ink-2);margin:10px 0 0;line-height:1.5}
+.pc-dk:empty{display:none}
+.pc-dk p{margin:0 0 4px}
+.pc-dk ul{margin:2px 0 4px;padding-left:18px}
+.pc-dk a{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.pc-msg{min-height:1.4em;font-size:12.5px;color:var(--ink-2);margin:8px 0 0}
+.pc-note{font-size:12px;color:var(--ink-2);margin:2px 0 0;line-height:1.5}
+@media(max-width:430px){
+  #pcModal .modal-panel{padding:12px 12px 22px}
+  .pc-head{padding:14px 15px 13px} .pc-legs{padding:2px 15px} .pc-money{padding:6px 15px 0;gap:6px} .pc-chance{padding:11px 15px 0} .pc-foot{padding:10px 15px 12px}
+  .pc-title{font-size:22px} .pc-price{font-size:27px} .pc-money div{padding:7px 8px} .pc-money b{font-size:clamp(14px,4.2vw,16px)}
+  .pc-actions .btn{flex:1 1 auto}
+}
+</style>
+<div id="pcModal" class="modal" hidden>
+  <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pcTitle" tabindex="-1">
+    <div class="pc-top"><h2 id="pcTitle">Your parlay card</h2><span class="pc-grow"></span><button type="button" class="btn quiet" id="pcClose">Close</button></div>
+    <div id="pcView"></div>
+    <div class="pc-actions">
+      <a class="btn pc-dkbtn" id="pcDk" href="https://sportsbook.draftkings.com/" target="_blank" rel="noopener" hidden>Open in DraftKings</a>
+      <button type="button" class="btn quiet" id="pcLink" title="Send this parlay and its DraftKings link to someone">Share link</button>
+      <button type="button" class="btn go" id="pcDownload">Download image</button>
+      <button type="button" class="btn quiet" id="pcShare" hidden>Share or save to Photos</button>
+      <button type="button" class="btn quiet" id="pcAgain" title="Clear the Parlay Builder and start a new parlay">Start over</button>
+    </div>
+    <div class="pc-dk" id="pcDkNote"></div>
+    <p class="pc-msg" id="pcMsg" role="status" aria-live="polite"></p>
+    <p class="pc-note">Yours alone: this card is not saved anywhere, on this site or in X&#8217;s parlays. Change the builder and finish again for a new one.</p>
+  </div>
+</div>
+<script>
+window.PARLAY_CARD=(function(){
+  const SITE='demon-x13.github.io/nfl-hub/nflbets';
+  const $=id=>document.getElementById(id);
+  const h=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  /* every dollar figure whole, with its thousands marked: $17,620.00 */
+  const money=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pct=p=>p>0&&p<0.0005?'<0.1%':(p*100).toFixed(1)+'%';      // a long shot reads as under a tenth of a percent, not 0.0%
+  const ml=x=>x==null||!isFinite(x)?'–':(x>0?'+'+x:'−'+Math.abs(x));
+  /* the playoffs run on as weeks 19-22 */
+  const weekText=w=>w==null?'':(w<=18?'Week '+w:({19:'Wild Card round',20:'Divisional round',21:'Conference championships',22:'Super Bowl'}[w]||'Week '+w));
+  const game=gid=>(typeof S==='object'&&S&&Array.isArray(S.sched))?S.sched.find(x=>x.id===gid)||null:null;
+  const ET={timeZone:'America/New_York'};
+  const kick=g=>{ try{ return typeof kickoff==='function'&&g?kickoff(g):null; }catch(e){ return null; } };
+  const dayOf=d=>d.toLocaleDateString('en-US',Object.assign({weekday:'short',month:'short',day:'numeric'},ET));
+  const whenOf=d=>d.toLocaleString('en-US',Object.assign({weekday:'short',hour:'numeric',minute:'2-digit'},ET))+' ET';
+  /* when DraftKings' lines were read: the day and date too, since a read can be a day or two old */
+  const readOf=d=>d.toLocaleString('en-US',Object.assign({weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'},ET))+' ET';
+  /* the days the legs are played on: one day, or the first and the last */
+  function dates(legs){
+    const ks=legs.map(l=>kick(game(l.gid))).filter(Boolean).sort((a,b)=>a-b);
+    if(!ks.length) return '';
+    const a=dayOf(ks[0]), b=dayOf(ks[ks.length-1]);
+    return a===b?a:a+' – '+b;
+  }
+  /* the builder's numbers, as renderParlay works them out: its own lines, lifted at build time */
+  function quote(){
+    if(typeof S!=='object'||!S||typeof parlayLegs!=='function') return null;
+    const legs=parlayLegs(); if(!legs.length) return null;
+/*QUOTE*/
+    return {legs,wks,pr,fair,prices,allBook,bookDec,sg,fairML,stake,override,realPrice,estPrice,useDec,payout,profit};
+  }
+  /* one leg as the card shows it: who, what (the market, the line and the side, as the builder
+     labels it), the game and its kickoff, and its price with where the price came from */
+  function leg(l,price,src){
+    const g=game(l.gid), k=kick(g), team=l.grp==='TEAM';
+    const meta=[team?'':l.pos, l.team&&l.opp?l.team+' v '+l.opp:'', k?whenOf(k):''].filter(Boolean).join(' · ');
+    return {who:l.name||l.team||'', what:l.label||'', meta, price:ml(price), tag:src==='real'?'book':(src==='fair'?'fair':'est.')};
+  }
+  /* ---- DraftKings: the parlay on DraftKings' betslip ----
+     PAY.dk is DraftKings' own id for every outcome the price pull read on a game still to come,
+     baked by props/build/weekly.py (dk_ids) under the week and the game, keyed the way a leg is
+     named here: <pid>|<stat>|over|<point> (or under: a player's line at DraftKings' point),
+     <pid>|any_td (his touchdown), team:<ABBR>|ml, team:<ABBR>|ats|<the team's own line>,
+     game|total|over|<point> (or under) and event (the game's page), with at (when the game's player
+     prices, and so their ids, were read) and glat (when its game lines were). DraftKings opens several
+     outcomes on its betslip at ?outcomes=<id>+<id>, each '#' written %23; a leg it cannot open is
+     named with why, and where the line DraftKings had when last read is not the leg's, that line and
+     when. An id names one outcome at one number, so a line DraftKings has moved (or pulled) since the
+     read is not on the slip, and DraftKings drops it without a word: the note dates the read (the
+     oldest of the legs it opens) and says the link opens the legs as DraftKings had them then, never
+     that every leg will land. Until October 2026 it promised every leg for a day after the read (the
+     rule the game lines' g.ls follows), but a game's player prices are read once, from a few hours to
+     about 40 before its kickoff (Sunday night's on Saturday), and player lines move inside a day, so that promise could be wrong on the
+     very slip it named. An id comes only with a price
+     the job bought, so a game whose prices (or whose player prices) have not been pulled yet has none
+     to open: then the button and Share link take the visitor to the game's DraftKings page, or to
+     DraftKings' NFL page, to add the legs by hand, and each leg says why. */
+  const DKS='https://sportsbook.draftkings.com/', DKNFL=DKS+'leagues/football/nfl';
+  /* when the pull reads a game's prices, as the Parlay Builder panel says it (PB_NO_PL in part3.js) */
+  const PULLED='they are pulled on game day or the day before, Sunday\u2019s afternoon and night games on Saturday morning, and never for Sunday\u2019s early games (before 4pm ET)';
+  const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
+  const pt=x=>String(+x), signed=x=>(+x>0?'+':'')+pt(x);
+  function dkGame(l){ try{ const D=typeof PAY==='object'&&PAY&&PAY.dk, W=D&&D[String(l.week)]; return (W&&W[l.gid])||null; }catch(e){ return null; } }
+  /* a payload baked with ids at all (dk), as against one baked before them */
+  function dkBaked(){ try{ return typeof PAY==='object'&&!!PAY&&!!PAY.dk&&typeof PAY.dk==='object'; }catch(e){ return false; } }
+  /* a player's id among a game's: anything but its game lines, its page and the read times */
+  const dkHasPlayer=D=>Object.keys(D).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k));
+  /* when the ids a leg is looked up in were read: a team's line and the total with the game lines
+     (glat), a player's with his game's prices (at); null where the payload does not say */
+  function dkRead(l,D){ const s=D&&(['ml','ats','total'].includes(l.stat)?D.glat:D.at), t=s?Date.parse(s):NaN; return isFinite(t)?new Date(t):null; }
+  /* the player markets the price pull reads (oddsfetch.py's DEFAULT: DraftKings' main line on each,
+     and the anytime touchdown); --full, which reads the rest and the alternate ladders, is never run */
+  const DK_READ=['passing_yards','passing_tds','rushing_yards','receiving_yards','receptions','any_td'];
+  /* the payload's own evidence that the pull read prices for a leg's game: a DraftKings player price
+     on it (a main line in PAY.mkt, or a price row), and, for its game lines, g.ls 'dk'. An id comes
+     only with a price, so a game with no id and no price has not been pulled; one with prices and no
+     id (a links file that would not read, a name two book rows gave two ids) is said neutrally */
+  function dkPlayerPriced(l){ try{ const w=String(l.week), M=PAY.mkt&&PAY.mkt[w], R=PAY.prices&&PAY.prices[w];
+    if(M&&Object.values(M).some(s=>s&&typeof s==='object'&&Object.values(s).some(x=>x&&x.g===l.gid))) return true;
+    return Array.isArray(R)&&R.some(r=>r&&r.game_id===l.gid); }catch(e){ return false; } }
+  function dkLinesPriced(l){ const g=game(l.gid); return !!g&&g.ls==='dk'; }
+  /* the leg carries a book price on the card (the builder's own reading of it, else the leg's) */
+  const dkBooked=l=>l.card?l.card.tag==='book':l.src==='real';
+  const statLbl=s=>{ try{ if(typeof MKT==='object'&&MKT&&MKT[s]&&MKT[s].lbl) return MKT[s].lbl.toLowerCase(); }catch(e){} return String(s||'').replace(/_/g,' '); };
+  /* one leg: {id, at} where DraftKings has it, else {why, brief} (brief: the same in a few words, for
+     the text Share link sends) */
+  function dkLeg(l){
+    if(kickedOff(l)) return {why:'its game has kicked off',brief:'its game has kicked off'};
+    const D=dkGame(l), team=l.stat==='ml'||l.stat==='ats', player=!team&&l.stat!=='total', at=dkRead(l,D);
+    /* a payload baked before ids says only that */
+    if(!D&&!dkBaked()) return {why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'};
+    /* a market the pull does not read: where no id turns up for it, that is why, and no pull will
+       bring one (an id the payload does have for it is opened all the same) */
+    const unread=!(player&&!DK_READ.includes(l.stat))?null:{why:`DraftKings’ ${statLbl(l.stat)} lines are not read here (the price pull reads passing, rushing and receiving yards, receptions, passing touchdowns and anytime touchdowns)`,brief:'its market is not read here'};
+    if(l.stat==='any_td'&&(+l.k||1)>=2) return {why:(+l.k)+'+ touchdowns is not among the DraftKings lines this page reads',brief:(+l.k)+'+ touchdowns is not a line read here'};
+    const rung=player&&!l.main&&l.stat!=='any_td';
+    if(player){
+      /* no player price read for its game, and none on the leg: the pull has not reached it yet (a
+         rung opens even then only where it turns out to be DraftKings' main line) */
+      if(!dkBooked(l)&&!dkPlayerPriced(l)&&!(D&&(D.at||dkHasPlayer(D)))){
+        if(unread) return unread;
+        const head=(D||dkLinesPriced(l))?'DraftKings’ player prices for its game have not been pulled yet':'its game’s DraftKings prices have not been pulled yet';
+        const tail=rung?`; only DraftKings’ main lines are read, so ${pt(l.k)}+ opens only if ${pt(+l.k-0.5)} is its main line then`:'';
+        return {why:head+': '+PULLED+tail,brief:(D||dkLinesPriced(l)?'player prices for its game are not pulled yet':'its game’s prices are not pulled yet')+(rung?', and only main lines are read':'')}; }
+    }else if(!D&&!dkLinesPriced(l)&&!dkPlayerPriced(l))
+      return {why:'its game’s DraftKings prices have not been pulled yet: '+PULLED,brief:'its game’s prices are not pulled yet'};
+    /* prices read for its game, and no id for it */
+    if(!D) return unread||{why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'};
+    let key=null, near=null, show=pt;
+    if(l.stat==='ml') key=l.pid+'|ml';
+    else if(l.stat==='ats'){ key=l.pid+'|ats|'+pt(l.k); near=l.pid+'|ats|'; show=signed; }
+    else if(l.stat==='total'){ key='game|total|'+l.side+'|'+pt(l.k); near='game|total|'+l.side+'|'; }
+    else if(l.stat==='any_td') key=l.pid+'|any_td';
+    else if(l.main){ key=[l.pid,l.stat,l.side,pt(l.k)].join('|'); near=[l.pid,l.stat,l.side,''].join('|'); }
+    else {
+      /* a rung, k or more: DraftKings' Over k-0.5 is the same bet (an Over on a whole k-1 is the
+         line the price file read it from, as oddsfetch's threshold() does) */
+      for(const p of [+l.k-0.5,+l.k-1]){ const id=D[[l.pid,l.stat,'over',pt(p)].join('|')]; if(id) return {id,at}; }
+      return unread||{why:'DraftKings’ alternate lines are not read here',brief:'alternate lines are not read here'}; }
+    if(D[key]) return {id:D[key],at};
+    if(near){
+      const pts=Object.keys(D).filter(k=>k.startsWith(near)).map(k=>k.slice(near.length)).filter(x=>x!==''&&isFinite(+x)).map(Number);
+      if(pts.length){
+        /* the main line the page has for him where DraftKings has it, else DraftKings' nearest */
+        let M=null; try{ M=(!team&&l.stat!=='total'&&typeof marketLine==='function')?marketLine(l.week,l.pid,l.stat):null; }catch(e){}
+        const p=(M&&pts.includes(+M.line))?+M.line:pts.sort((a,b)=>Math.abs(a-l.k)-Math.abs(b-l.k))[0];
+        /* DraftKings' line as the pull last read it, never "now": the read can be a day or more old */
+        return {why:`DraftKings had it at ${show(p)} when its lines were last read`+(at?` (${readOf(at)})`:''),brief:`DraftKings had it at ${show(p)}`,now:p}; } }
+    /* a player's leg on no book price, on a game whose player prices were read: DraftKings did not
+       offer it then (a leg the card prices from the book has an id unless it was dropped: neutral) */
+    if(unread) return unread;
+    if(player&&D.at&&!dkBooked(l)) return {why:'DraftKings did not offer this line when its prices were read'+(at?` (${readOf(at)})`:''),brief:'DraftKings did not offer it when read'};
+    return {why:'not among the DraftKings lines read for its game',brief:'not among the lines read'};
+  }
+  /* the parlay: the betslip link for every leg DraftKings has, in the card's order, the legs it
+     cannot open, and the game's own page where every leg is in one game */
+  function dkPlan(legs){
+    const each=legs.map((l,i)=>Object.assign({n:i+1,who:(l.card&&l.card.who)||l.name||'',what:(l.card&&l.card.what)||l.label||''},dkLeg(l)));
+    const ok=each.filter(x=>x.id), miss=each.filter(x=>!x.id);
+    let event=null;
+    if(legs.length&&legs.every(l=>l.gid===legs[0].gid)&&!kickedOff(legs[0])){ const D=dkGame(legs[0]); if(D&&D.event) event=DKS+'event/'+encodeURIComponent(D.event); }
+    /* the read the link stands on: the oldest of the legs it opens (null where one is undated). It
+       dates what the link opens; however recent, it promises nothing (see above) */
+    const undated=ok.some(x=>!x.at), read=ok.length&&!undated?new Date(Math.min(...ok.map(x=>+x.at))):null;
+    /* where the visitor adds by hand what the slip cannot take: the game's page, else DraftKings' NFL page */
+    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,event,home:event||DKNFL,n:legs.length,read};
+  }
+  function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
+  /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
+  function card({kicker,legs,dec,priceNote,chance,chanceBy,fair,stake,source}){
+    const w=legs.reduce((a,l)=>(+l.week&&(a==null||+l.week<a))?+l.week:a,null), n=legs.length;
+    const m={source,kicker,title:n+'-leg parlay',week:w,weekText:weekText(w),dateText:dates(legs),
+      price:ml(typeof decToML==='function'?decToML(dec):null),dec:isFinite(dec)?dec.toFixed(2):'–',implied:dec>1?pct(1/dec):'–',priceNote,
+      legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
+      chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
+      fair:fair&&fair.p!=null&&isFinite(fair.p)?pct(fair.p):null,fairEst:!!(fair&&fair.p!=null&&fair.est),
+      made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
+      file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png',
+      dk:dkPlan(legs)};
+    return m;
+  }
+  /* from the builder: the legs as they stand, priced as the builder prices them */
+  function fromBuilder(){
+    const q=quote(); if(!q) return null;
+    const legs=q.legs.map((l,i)=>Object.assign({},l,{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
+    return card({source:'builder',kicker:'Your parlay',legs,dec:q.useDec,
+      priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
+      chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});
+  }
+  /* from a tier of the Parlay Builder's suggestions (getPbTiers) or its Elo picks, on the amount
+     its tier pays on: the Bet amount box, which is the builder's own stake (pbStake) */
+  function fromTier(kind,id){
+    let t=null;
+    try{ t=kind==='elo'?((typeof window.eloPicks==='function'&&window.eloPicks())||{tiers:[]}).tiers.find(x=>x.id===id)
+      :kind==='pb'?(typeof window.pbShownTier==='function'?window.pbShownTier(id)
+        :(typeof getPbTiers==='function'?getPbTiers().tiers.find(x=>x.id===id):null)):null;
+      if(t&&!Array.isArray(t.legs)) t=null; }catch(e){ t=null; }
+    if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
+    const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
+    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
+      chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',fair:t.fair,stake:pbStake()});
+  }
+
+  /* the chance, in two lines: the book's fair chance (est. where a leg is priced on one side only),
+     then whose chance the parlay is on (the model's, an Elo pick's the Elo's) and the price's; with
+     no fair chance, the model's and the price's, then why there is none. Each line is a list of
+     [text, bold] pieces, so the window, the image and the share text say the same */
+  function chanceLines(m){
+    const n=m.legs.length, by=m.chanceBy==='Elo'?'Elo':'model', price=[[' · the price says '],[m.implied,1]];
+    if(m.fair) return [[['Fair chance all '+n+' land '],[m.fair,1],...(m.fairEst?[[' (est.)']]:[])],
+      [...(m.chance?[[by+' says '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])]];
+    return [[...(m.chance?[[m.chanceBy+'\u2019s chance all '+n+' land '],[m.chance,1]]:[]),...(m.chance?price:[['the price says '],[m.implied,1]])],
+      [['No fair chance: it needs every leg\u2019s book price']]];
+  }
+  const lineText=l=>l.map(x=>x[0]).join('');
+  /* ---- the window ---- */
+  function html(m){
+    return `<div class="pc-card" id="pcCard">
+      <div class="pc-head">
+        <div class="pc-mark"><span>X NFL Bets and Stats</span><i></i><span class="pc-kick">${h(m.kicker)}</span></div>
+        <div class="pc-row"><span class="pc-title">${h(m.title)}</span><span class="pc-price" title="${h(m.priceNote)}">${h(m.price)}</span></div>
+        <div class="pc-sub"><span>${h([m.weekText,m.dateText].filter(Boolean).join(' · '))}</span><span>${h(m.dec)} decimal · ${h(m.implied)} implied · ${h(m.priceNote)}</span></div>
+      </div>
+      <ol class="pc-legs">${m.legs.map((l,i)=>`<li><span class="pc-n">${i+1}</span>
+        <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
+        <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
+      ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
+      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.</small>`:''}</div>
+      <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
+    </div>`;
+  }
+  /* under the buttons: what Open in DraftKings opens, each leg on its own (DraftKings documents no
+     link for several outcomes, so one at a time is there too), and the legs to add by hand, why */
+  function dkHtml(dk){
+    if(!dk||!dk.n) return '';
+    const name=x=>`${x.n}. ${h(x.who)}${x.what?', '+h(x.what):''}`;
+    const one=dk.ok.length>1?` One leg at a time: ${dk.ok.map(x=>`<a href="${h(dkUrl([x.id]))}" target="_blank" rel="noopener" data-pc-dkleg="${x.n}" aria-label="Open leg ${x.n}, ${h(x.who)} ${h(x.what)}, in DraftKings">${x.n}</a>`).join(' · ')}.`:'';
+    const hand=dk.miss.length?`<ul>${dk.miss.map(x=>`<li data-pc-dkmiss="${x.n}">${name(x)}: ${h(x.why)}</li>`).join('')}</ul>`:'';
+    /* none on the slip: the button opens the game's page (or DraftKings' NFL page) to add them there */
+    if(!dk.ok.length) return `<p>${dk.n===1?'This leg cannot':'None of these legs can'} go on DraftKings\u2019 betslip from here, so ${dk.event?'Open game in DraftKings opens the game\u2019s page':'Open DraftKings opens its NFL page'}: add ${dk.n===1?'it':'them'} there by hand.</p>${hand}`;
+    /* dated always, and never a promise that every leg lands: the legs as DraftKings had them at that
+       read, and a line moved or pulled since is not on the slip */
+    const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'DraftKings\u2019 lines as read '+h(readOf(dk.read)):'When DraftKings\u2019 lines were read is not recorded'}</span>: `;
+    const opens=`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
+    return `<p>${when}${opens}${one}${dk.miss.length?' Add by hand:':''}</p>${hand}`;
+  }
+  /* the legs the link opens: "2 of the 3 legs", "the leg", "the 3 legs" (never "all": see above) */
+  const dkWhich=dk=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'the '+dk.n+' legs');
+  /* the legs to add by hand, by number: "leg 2", "legs 3 and 4", "legs 2, 3 and 5" */
+  const legNums=xs=>{ const n=xs.map(x=>x.n); return (n.length===1?'leg ':'legs ')+(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0]); };
+  let cur=null, opener=null, flashT=null;
+  const isOpen=()=>{ const md=$('pcModal'); return !!md&&!md.hidden; };
+  const say=t=>{ clearTimeout(flashT); const e=$('pcMsg'); if(e) e.textContent=t||''; };
+  /* a word that goes again after a moment */
+  const flash=t=>{ say(t); flashT=setTimeout(()=>{ const e=$('pcMsg'); if(e&&e.textContent===t) e.textContent=''; },2500); };
+  /* the share sheet, where the browser can share an image file (phones): it is how an image
+     reaches the photo library */
+  function canShareFiles(){
+    try{ return typeof navigator!=='undefined'&&typeof navigator.canShare==='function'&&typeof navigator.share==='function'&&typeof File==='function'
+      &&navigator.canShare({files:[new File([new Blob([''],{type:'image/png'})],'card.png',{type:'image/png'})]}); }catch(e){ return false; }
+  }
+  function open(m,from){
+    const md=$('pcModal'); if(!md||!m) return false;
+    cur=m; opener=from||document.activeElement||null;
+    $('pcView').innerHTML=html(m);
+    $('pcAgain').hidden=m.source!=='builder';
+    /* DraftKings: the betslip link where any leg has an id there, and what it opens; where none has,
+       the game's page (or DraftKings' NFL page) to add the legs by hand */
+    { const dk=m.dk||{}, a=$('pcDk'), them=dk.n===1?'the leg':'the legs';
+      a.hidden=!dk.n; a.href=dk.url||dk.home||DKNFL;
+      a.textContent=dk.url?'Open in DraftKings':dk.event?'Open game in DraftKings':'Open DraftKings';
+      a.title=!dk.url?(dk.event?`Opens the game\u2019s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings\u2019 NFL page, in a new tab, to add ${them} by hand`)
+        :`Opens ${dkWhich(dk)} on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
+      $('pcDkNote').innerHTML=dkHtml(dk); }
+    /* on a phone the share sheet is the way to Photos, so it leads; the download stays beside it */
+    const share=canShareFiles();
+    $('pcShare').hidden=!share;
+    $('pcShare').className='btn '+(share?'go':'quiet'); $('pcDownload').className='btn '+(share?'quiet':'go');
+    say('');
+    md.hidden=false; document.body.classList.add('modal-open'); md.scrollTop=0;
+    /* the window opens at its top (the title, the price and Close in view); focus must not scroll it down to the buttons */
+    try{ $(share?'pcShare':'pcDownload').focus({preventScroll:true}); }catch(e){}
+    md.scrollTop=0;
+    return true;
+  }
+  function close(){
+    const md=$('pcModal'); if(!md||md.hidden) return;
+    md.hidden=true; cur=null;
+    if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
+    /* focus goes back where it came from: the button that opened it, or the builder's Finish
+       if a redraw has replaced that one */
+    const back=opener&&opener.isConnected?opener:$('pFinish');
+    opener=null;
+    try{ if(back) back.focus(); }catch(e){}
+  }
+
+  /* ---- the image: the same card on a canvas, twice its size for a sharp picture ---- */
+  const C={bg:'#EDF0F4',n0:'#0B1526',n1:'#132238',n2:'#1B2E4A',gold:'#D39A1F',goldT:'#F0C565',head2:'#B9C5D4',panel:'#FFFFFF',panel2:'#F7F9FB',
+    ink:'#0F1B2D',ink2:'#4F607A',muted:'#657386',line:'#E4E9F0',line2:'#D5DCE6',pick:'#1B7A4E'};
+  const FD='"Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FB='"Inter Tight", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+  const W=540, M=18, P=24;
+  /* the page's own fonts, if the browser has them, for as long as a moment takes */
+  async function fonts(){
+    try{ const F=document.fonts; if(!F||typeof F.load!=='function') return;
+      await Promise.race([Promise.all(['700 26px "Space Grotesk"','500 14px "Inter Tight"','700 14px "Inter Tight"'].map(f=>F.load(f).catch(()=>null))),new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  }
+  function rr(x,a,b,w,hh,r){ x.beginPath(); x.moveTo(a+r,b); x.lineTo(a+w-r,b); x.quadraticCurveTo(a+w,b,a+w,b+r); x.lineTo(a+w,b+hh-r); x.quadraticCurveTo(a+w,b+hh,a+w-r,b+hh);
+    x.lineTo(a+r,b+hh); x.quadraticCurveTo(a,b+hh,a,b+hh-r); x.lineTo(a,b+r); x.quadraticCurveTo(a,b,a+r,b); x.closePath(); }
+  /* text cut to a width, with an ellipsis */
+  function fit(x,t,max){ t=String(t||''); if(x.measureText(t).width<=max) return t;
+    while(t.length>1&&x.measureText(t+'…').width>max) t=t.slice(0,-1); return t+'…'; }
+  function text(x,t,a,b,font,color,align,max){ x.font=font; x.fillStyle=color; x.textAlign=align||'left'; x.textBaseline='alphabetic';
+    const s=max?fit(x,t,max):String(t); x.fillText(s,a,b); return x.measureText(s).width; }
+  const LEG_H=74, HEAD_H=134, TILE_H=58, TILE_GAP=8;
+  /* what it pays: Stake, Pays and Profit, every figure whole. Three across, the figures step down
+     from 19px to 14px until each fits its tile; if one still does not, the tiles take two rows
+     (Stake and Pays, then Profit the card's width), then one to a row; only past anything a real
+     stake makes does the font go under 14px. Never fit()'s ellipsis on a dollar figure. */
+  function tiles(x,m,L,R){
+    if(!m.stake) return null;
+    const vals=[['STAKE',money(m.stake),C.ink],['PAYS',money(m.payout),C.ink],['PROFIT','+'+money(m.profit),C.pick]];
+    const wid=(t,px)=>{ x.font='700 '+px+'px '+FD; return x.measureText(t).width; };
+    const lay=per=>{ const rows=[]; for(let i=0;i<vals.length;i+=per) rows.push(vals.slice(i,i+per));
+      return rows.map(r=>{ const tw=(R-L-(r.length-1)*TILE_GAP)/r.length; return r.map(([k,v,col])=>({k,v,col,tw})); }); };
+    for(const per of [3,2,1]){ const rows=lay(per);
+      for(let px=19;px>=14;px--) if(rows.every(r=>r.every(t=>wid(t.v,px)<=t.tw-20))) return {rows,px}; }
+    const rows=lay(1), w=Math.max(...rows.map(r=>wid(r[0].v,19)));
+    return {rows,px:Math.min(14,Math.floor(19*(rows[0][0].tw-20)/w*10)/10)};
+  }
+  const tilesH=t=>t?4+t.rows.length*TILE_H+(t.rows.length-1)*TILE_GAP+12:0;
+  const CHANCE_H=58;
+  function size(m,t){ return HEAD_H+10+m.legs.length*LEG_H+tilesH(t)+CHANCE_H+52; }
+  async function draw(m,scale){
+    scale=scale||2;
+    await fonts();
+    const c=document.createElement('canvas');
+    const x=c.getContext&&c.getContext('2d'); if(!x) return null;
+    /* the tiles are laid out first, by measure, since their rows set the card's height; sizing
+       the canvas then resets the context, so the scale comes after */
+    const CW=W-2*M, L=M+P, R=M+CW-P, t=tiles(x,m,L,R), CH=size(m,t), H=CH+2*M;
+    c.width=Math.round(W*scale); c.height=Math.round(H*scale);
+    x.scale(scale,scale);
+    x.fillStyle=C.bg; x.fillRect(0,0,W,H);
+    /* the card, with a soft shadow, and its header band */
+    x.save(); x.shadowColor='rgba(15,27,45,.22)'; x.shadowBlur=24; x.shadowOffsetY=8; rr(x,M,M,CW,CH,18); x.fillStyle=C.panel; x.fill(); x.restore();
+    x.save(); rr(x,M,M,CW,CH,18); x.clip();
+    const g=x.createLinearGradient(M,M,M+CW,M+HEAD_H); g.addColorStop(0,C.n0); g.addColorStop(.55,C.n1); g.addColorStop(1,C.n2);
+    x.fillStyle=g; x.fillRect(M,M,CW,HEAD_H);
+    const gl=x.createLinearGradient(M,0,M+CW,0); gl.addColorStop(0,'rgba(211,154,31,0)'); gl.addColorStop(.5,'rgba(211,154,31,.85)'); gl.addColorStop(1,'rgba(211,154,31,0)');
+    x.fillStyle=gl; x.fillRect(M,M+HEAD_H-2,CW,2);
+    x.restore();
+    /* the mark, the kicker, the title and the price */
+    let y=M+30;
+    if('letterSpacing' in x) x.letterSpacing='1px';
+    const mw=text(x,'X NFL BETS AND STATS',L,y,'700 11px '+FB,C.head2);
+    if('letterSpacing' in x) x.letterSpacing='0px';
+    x.beginPath(); x.arc(L+mw+9,y-4,3,0,Math.PI*2); x.fillStyle=C.gold; x.fill();
+    { x.font='700 10.5px '+FB; const k=String(m.kicker||'').toUpperCase(), kw=x.measureText(k).width+18;
+      rr(x,R-kw,y-14,kw,20,10); x.fillStyle='rgba(211,154,31,.2)'; x.fill(); text(x,k,R-kw/2,y,'700 10.5px '+FB,C.goldT,'center'); }
+    y=M+76;
+    const pw=text(x,m.price,R,y,'700 32px '+FD,C.goldT,'right');
+    text(x,m.title,L,y,'700 26px '+FD,'#FFFFFF','left',R-L-pw-16);
+    y=M+108;
+    const right=m.dec+' decimal · '+m.implied+' implied';
+    const rw=text(x,right,R,y,'500 12.5px '+FB,C.head2,'right');
+    text(x,[m.weekText,m.dateText].filter(Boolean).join(' · '),L,y,'500 12.5px '+FB,C.head2,'left',R-L-rw-14);
+    text(x,m.priceNote,R,y+16,'500 11px '+FB,'#8C9AAE','right');
+    /* the legs */
+    y=M+HEAD_H+10;
+    m.legs.forEach((l,i)=>{
+      if(i){ x.fillStyle=C.line; x.fillRect(L,y,R-L,1); }
+      x.beginPath(); x.arc(L+11,y+22,11,0,Math.PI*2); x.lineWidth=1.5; x.strokeStyle=C.line2; x.stroke();
+      text(x,String(i+1),L+11,y+26,'700 11px '+FB,C.ink2,'center');
+      const lpw=Math.max(text(x,l.price,R,y+26,'700 17px '+FD,C.ink,'right'),
+        text(x,String(l.tag||'').toUpperCase(),R,y+44,'600 10px '+FB,C.muted,'right'));
+      const tx=L+34, tw=R-tx-lpw-14;
+      text(x,l.who,tx,y+25,'700 15.5px '+FB,C.ink,'left',tw);
+      text(x,l.what,tx,y+45,'500 14px '+FB,C.ink,'left',tw);
+      if(l.meta) text(x,l.meta,tx,y+63,'500 12px '+FB,C.muted,'left',R-tx);
+      y+=LEG_H;
+    });
+    /* what it pays */
+    if(t){
+      let ty=y+4;
+      t.rows.forEach(r=>{ let tx=L;
+        r.forEach(tl=>{
+          rr(x,tx,ty,tl.tw,TILE_H,10); x.fillStyle=C.panel2; x.fill(); x.lineWidth=1; x.strokeStyle=C.line; x.stroke();
+          text(x,tl.k,tx+11,ty+20,'700 10px '+FB,C.muted);
+          text(x,tl.v,tx+11,ty+46,'700 '+t.px+'px '+FD,tl.col);
+          tx+=tl.tw+TILE_GAP; });
+        ty+=TILE_H+TILE_GAP; });
+      y+=tilesH(t);
+    }
+    /* the chance: the book's fair chance first, then the model's (or the Elo's) and the price's */
+    chanceLines(m).forEach((ln,i)=>{ let cx=L; const yy=y+24+i*18;
+      for(const [t1,b] of ln) cx+=text(x,t1,cx,yy,(b?'700 ':'500 ')+'13px '+FB,b?C.ink:C.ink2); });
+    y+=CHANCE_H;
+    /* the site's mark */
+    x.fillStyle=C.line; x.fillRect(M,y,CW,1);
+    text(x,'Made '+m.made,R,y+31,'500 12px '+FB,C.muted,'right');
+    text(x,m.site,L,y+31,'600 12px '+FB,C.ink2,'left',R-L-120);
+    return c;
+  }
+  /* the card as a PNG */
+  async function png(m){
+    const c=await draw(m||cur,2);
+    if(!c) throw new Error('this browser cannot draw the image');
+    return await new Promise((res,rej)=>{ try{ c.toBlob(b=>b?res(b):rej(new Error('the image came out empty')),'image/png'); }catch(e){ rej(e); } });
+  }
+  function saveFile(blob,name){
+    const u=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=u; a.download=name; a.rel='noopener'; a.style.display='none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(u); }catch(e){} },30000);
+  }
+  async function download(){
+    const m=cur; if(!m) return false; say('Drawing the image…');
+    try{ saveFile(await png(m),m.file); say('Saved as '+m.file+'.'); return true; }
+    catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
+  }
+  async function share(){
+    const m=cur; if(!m) return false; say('Drawing the image…');
+    let blob=null;
+    try{ blob=await png(m);
+      const f=new File([blob],m.file,{type:'image/png'});
+      if(canShareFiles()&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:'X NFL Bets and Stats: '+m.title}); say(''); return true; } }
+    catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } }
+    /* no share sheet after all: the download */
+    try{ if(!blob) blob=await png(m); saveFile(blob,m.file); say('Saved as '+m.file+'.'); return true; }
+    catch(e){ say('The image could not be made: '+(e&&e.message||e)); return false; }
+  }
+  /* Share link: the parlay as one plain text, the DraftKings link inside it. Each leg, its bet and
+     price (labelled est. or fair where it is not the book's, as on the card, and the title's price
+     likewise); the stake and what it pays; the chances; then the DraftKings link on a line of its
+     own under a line saying what it opens ("DraftKings betslip (all 3 legs):", "(2 of the 4 legs;
+     add legs 3 and 4 by hand):"; with no leg on the slip the game's page where every leg is in one
+     game to come, else DraftKings' NFL page, "(add the legs by hand)"); when DraftKings' lines were
+     read, and that a line moved or pulled since will not be on the slip; the legs to add by hand,
+     each with why in a few words; the site's address last. By the share sheet where the browser has
+     one (navigator.share), else copied: the same text either way.
+
+     The link is in the text and never in the share's url field (the owner, October 2026: "sometimes
+     when i copy the button to share the draft kings link it like compresses the url and doesnt show
+     all legs"). On an iPhone WebKit hands the share sheet the text and the url as two items:
+     Messages draws the url as a card showing only sportsbook.draftkings.com (some apps send only the
+     bare domain), and the sheet's Copy keeps the text and drops the url (WebKit bug 203221), so a
+     paste had the legs and the site's address and no DraftKings link at all. Android's Chrome joins
+     the two, which is why it happened only sometimes. One text survives every one of those, the
+     whole betslip link in it to tap.
+
+     Never the image: that is Download's and the share sheet's above. A share sheet cancelled is no
+     error and does nothing */
+  function linkText(m){
+    const P=s=>String(s==null?'':s).replace(/−/g,'-'), dk=m.dk||{};
+    /* a price that is not the book's says so, as on the card: +210 est., +150 fair */
+    const lines=m.legs.map((l,i)=>`${i+1}. ${l.who}: ${l.what} (${P(l.price)}${l.tag&&l.tag!=='book'?' '+l.tag:''})`);
+    if(m.stake) lines.push(`Stake ${money(m.stake)} · Pays ${money(m.payout)}`);
+    lines.push(chanceLines(m).map(lineText).join(' · '));
+    /* always a DraftKings link, alone on its line: the betslip, else the game's page, else DraftKings' NFL page */
+    const miss=dk.miss||[], url=dk.url||(dk.n?dk.home||DKNFL:null), them=dk.n===1?'the leg':'the legs';
+    if(dk.url){
+      /* what the link holds, in the note's own words (dkWhich): never "all", since a line moved since drops off */
+      lines.push(`DraftKings betslip (opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'}${miss.length?`; add ${legNums(miss)} by hand`:''}):`, dk.url);
+      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`); }
+    else if(url) lines.push(dk.event?`DraftKings, the game’s page (add ${them} by hand):`:`DraftKings’ NFL page (add ${them} by hand):`, url);
+    /* the legs the slip cannot take, each with why in a few words, and where to add them */
+    if(miss.length){
+      lines.push(dk.url?'Add by hand at DraftKings:':dk.event?'Add by hand on the game’s DraftKings page:':'Add by hand at DraftKings:');
+      for(const x of miss) lines.push(`${x.n}. ${x.who} ${x.what} (${x.brief||x.why})`); }
+    lines.push(SITE);
+    /* url is what the text links to, for the record: it is in the text, never shared on its own */
+    return {title:`${m.title} ${P(m.price)}${m.priceNote&&m.priceNote!=='book price'?' ('+m.priceNote+')':''}`,text:lines.join('\n'),url};
+  }
+  async function copyText(t){
+    try{ if(navigator.clipboard&&typeof navigator.clipboard.writeText==='function'){ await navigator.clipboard.writeText(t); return true; } }catch(e){}
+    /* a browser without the clipboard call: a hidden box, selected and copied */
+    const back=document.activeElement, ta=document.createElement('textarea');
+    try{ ta.value=t; ta.setAttribute('readonly',''); ta.setAttribute('aria-hidden','true'); ta.tabIndex=-1;
+      ta.style.cssText='position:fixed;top:0;left:-9999px;opacity:0';
+      ($('pcModal')||document.body).appendChild(ta); ta.select();
+      return typeof document.execCommand==='function'&&!!document.execCommand('copy'); }
+    catch(e){ return false; }
+    finally{ ta.remove(); try{ if(back&&back.focus) back.focus({preventScroll:true}); }catch(e){} }
+  }
+  async function shareLink(){
+    const m=cur; if(!m) return false;
+    /* title and text only: the link is in the text (see linkText), never a url of its own */
+    const s=linkText(m), data={title:s.title,text:s.text};
+    if(typeof navigator.share==='function'){
+      let can=true; try{ if(typeof navigator.canShare==='function') can=navigator.canShare(data)!==false; }catch(e){ can=false; }
+      if(can){ try{ await navigator.share(data); say(''); return true; }
+        catch(e){ if(e&&e.name==='AbortError'){ say(''); return false; } } } }
+    /* no share sheet, or one that failed: the same text, the link in it, copied */
+    if(await copyText(s.text)){ flash(s.url?'Link copied':'Parlay copied'); return true; }
+    say('The link could not be copied.'); return false;
+  }
+  /* Start over: the builder emptied, in this browser only, as its own Clear ALL does */
+  function again(){
+    if(typeof S!=='object'||!S) return;
+    S.parlay={}; S.bookPrice=null;
+    try{ if(typeof save==='function') save(); }catch(e){}
+    close();
+    try{ if(typeof renderParlay==='function') renderParlay(); if(S.ui&&S.ui.game&&typeof renderGame==='function') renderGame(); }catch(e){}
+    /* Finish went with the legs: the focus goes to the suggestions' first control, over the builder */
+    try{ const b=document.querySelector('#pbPanel [data-pb-mix]'); if(b) b.focus(); }catch(e){}
+  }
+
+  /* ---- on every device: Finish where Save was ---- */
+  const FINISH_TIP='Opens this parlay as a card you can download. Nothing is saved: not here, not in X’s parlays.';
+  /* the builder's Save and lock, after every redraw of the builder: the same button, with the
+     builder's own rule for when it can be pressed (one week, and a price), cloned so its save
+     goes with the old one */
+  function finishBuilder(){
+    const b=$('pSave'); if(!b) return false;
+    const nb=b.cloneNode(true);
+    nb.id='pFinish'; nb.textContent='Finish parlay';
+    nb.title=nb.disabled?String(b.title||'').replace(/ to save$/,' to finish'):FINISH_TIP;
+    b.replaceWith(nb);
+    nb.addEventListener('click',()=>{ const m=fromBuilder(); if(m) open(m,nb); });
+    return true;
+  }
+  /* a suggested tier's Finish (data-pc-finish="pb|med", "elo|elo3"): the panel draws the button
+     wherever this card is on the page, and one listener opens the card for whichever is pressed */
+  function finishFrom(btn){
+    /* a game kicked off since the panel was drawn: redraw it rather than open a parlay nobody saw */
+    if(typeof window.pbStale==='function'&&window.pbStale()){ if(typeof window.renderParlay==='function') window.renderParlay(); return false; }
+    const [kind,id]=String(btn.getAttribute('data-pc-finish')||'').split('|');
+    const m=fromTier(kind,id); if(m) open(m,btn); return !!m;
+  }
+  /* wiring: the window's own buttons, Escape (ahead of the windows beneath it, so it closes this
+     one alone), a click outside the card, Tab kept inside, and the suggestions window watched */
+  function wire(){
+    const md=$('pcModal'); if(!md||md.dataset.wired) return; md.dataset.wired='1';
+    $('pcClose').addEventListener('click',close);
+    $('pcDownload').addEventListener('click',download);
+    $('pcShare').addEventListener('click',share);
+    $('pcLink').addEventListener('click',shareLink);
+    $('pcAgain').addEventListener('click',again);
+    md.addEventListener('click',e=>{ if(e.target===md) close(); });
+    window.addEventListener('keydown',e=>{
+      if(!isOpen()) return;
+      if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); close(); return; }
+      if(e.key!=='Tab') return;
+      const f=[...md.querySelectorAll('button,a[href],input,select,[tabindex]:not([tabindex="-1"])')].filter(el=>!el.disabled&&!el.hidden&&!el.closest('[hidden]'));
+      if(!f.length) return;
+      const first=f[0], last=f[f.length-1], at=document.activeElement;
+      if(e.shiftKey&&(at===first||!md.contains(at))){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey&&(at===last||!md.contains(at))){ e.preventDefault(); first.focus(); }
+    },true);
+    document.addEventListener('click',e=>{ const b=e.target&&e.target.closest&&e.target.closest('[data-pc-finish]');
+      if(b&&!b.disabled&&!md.contains(b)) finishFrom(b); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
+  return {quote,fromBuilder,fromTier,open,close,isOpen,draw,png,download,share,shareLink,linkText,chanceLines,dkPlan,finishBuilder,finishFrom,current:()=>cur};
+})();
+</script>

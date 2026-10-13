@@ -1,0 +1,27 @@
+{
+ "why": "nflverse's games.csv codes the odd game played abroad as 'Home' (2026_05_PHI_JAX at Tottenham, while JAX's own London games and every other international game of 2024-2026 are 'Neutral'), and every model here reads that field for home field. A 'Home' row played at one of these stadiums, or named under games, is read as 'Neutral' by the betting job (update.js through the app's ingestGames, betting/tools/patches.js), the Joker (features.games_table) and the smoke test, which checks the published schedule against this list. The stadium field is matched only to turn 'Home' into 'Neutral', never the other way: nflverse lists a home team's own stadium for several neutral games (2025_04_MIN_PIT in Dublin reads 'Acrisure Stadium'), so the location field stays the authority everywhere else. The names are nflverse's own spellings of the non-US stadiums it has used since 2007, plus the ones announced for coming seasons. Toronto's Rogers Centre is left out: the Bills' Toronto Series games were Bills home games by designation, and nflverse codes them so.",
+ "stadiums": [
+  "Wembley Stadium",
+  "Twickenham Stadium",
+  "Tottenham Stadium",
+  "Tottenham Hotspur Stadium",
+  "Allianz Arena",
+  "FC Bayern Munich Stadium",
+  "Deutsche Bank Park",
+  "Olympiastadion",
+  "Azteca Stadium",
+  "Estadio Azteca",
+  "Estadio Banorte",
+  "Arena Corinthians",
+  "Neo Quimica Arena",
+  "Maracana Stadium",
+  "Bernabeu",
+  "Santiago Bernabeu",
+  "Stade de France",
+  "Croke Park",
+  "Melbourne Cricket Ground"
+ ],
+ "games": {
+  "2026_05_PHI_JAX": "Neutral"
+ }
+}

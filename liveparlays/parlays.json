@@ -1,0 +1,1516 @@
+{
+ "how": "X's placed parlays: what X Parlays shows, on every device, read only. Claude keeps this file from the slips the owner sends in chat; the page only reads it, on every load, so a change here is what every device sees on its next load. A parlay is id (any name not used before), week, stake, price (the American odds it was placed at), payout (what it pays, stake included), note (optional) and legs. A leg needs: game (an index into games below), player (spelled as ESPN spells him), team, stat, line, side (over or under), and main (true for a book main line like 43.5, false for a 'N+' threshold). Stats: passing_yards, passing_tds, passing_interceptions, attempts, completions, carries, rushing_yards, receptions, receiving_yards, targets, scrim_yards, any_td, fg_made, fg_att, kick_pts, and ml or ats for a whole-game bet, total for the game's points. A whole-game bet takes line 0 (the spread for ats), team set to the side you are on, and player set to whatever you want it called; a total takes the line and side over or under. A line the book moved before X placed the bet is written as the line X took. A parlay X has cleared (settled, and no longer wanted on the page) stays here as history with \"cleared\": true and is not drawn. A finished one clears itself: the betting job marks it cleared (cleared_by auto, cleared_on the date) two Eastern days after its last game, once every game has a final in games.csv (liveparlays/tools/autoclear.py), so it shows in full on its game day and the next day. updated is when this file last changed what X Parlays shows.",
+ "updated": "2026-10-13T12:06:24Z",
+ "games": [
+  "2026_02_NO_BAL",
+  "2026_02_PHI_TEN",
+  "2026_02_LV_LAC",
+  "2026_02_MIA_SF",
+  "2026_02_CAR_ATL",
+  "2026_02_CIN_HOU",
+  "2026_02_GB_NYJ",
+  "2026_02_IND_KC",
+  "2026_02_NYG_LA",
+  "2026_03_ATL_GB",
+  "2026_03_NYJ_DET",
+  "2026_03_SEA_WAS",
+  "2026_03_KC_MIA",
+  "2026_03_HOU_IND",
+  "2026_03_CAR_CLE",
+  "2026_03_LV_NO",
+  "2026_03_MIN_TB",
+  "2026_03_BAL_DAL",
+  "2026_03_LA_DEN",
+  "2026_03_ARI_SF",
+  "2026_03_LAC_BUF",
+  "2026_03_PHI_CHI",
+  "2026_04_PIT_CLE",
+  "2026_04_DET_CAR",
+  "2026_04_ATL_NO",
+  "2026_05_TB_DAL",
+  "2026_05_BAL_ATL",
+  "2026_05_CIN_MIA",
+  "2026_05_CLE_NYJ",
+  "2026_05_LV_NE",
+  "2026_05_DEN_LAC",
+  "2026_05_DET_ARI",
+  "2026_05_SF_SEA",
+  "2026_05_HOU_TEN",
+  "2026_05_CHI_GB",
+  "2026_05_BUF_LA"
+ ],
+ "parlays": [
+  {
+   "id": "w5-dk-tbdal-3-unders",
+   "cleared": true,
+   "week": 5,
+   "stake": 2,
+   "price": 550,
+   "payout": 13.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 25,
+     "player": "Kenneth Gainwell",
+     "team": "TB",
+     "stat": "rushing_yards",
+     "line": 12.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 25,
+     "player": "Bucky Irving",
+     "team": "TB",
+     "stat": "receiving_yards",
+     "line": 12.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 25,
+     "player": "Javonte Williams",
+     "team": "DAL",
+     "stat": "rushing_yards",
+     "line": 67.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-tbdal-2",
+   "cleared": true,
+   "week": 5,
+   "stake": 2,
+   "price": 244,
+   "payout": 6.88,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 25,
+     "player": "Chris Godwin",
+     "team": "TB",
+     "stat": "receiving_yards",
+     "line": 34.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 25,
+     "player": "KaVontae Turpin",
+     "team": "DAL",
+     "stat": "receptions",
+     "line": 0.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-tbdal-5-boost",
+   "cleared": true,
+   "week": 5,
+   "stake": 2,
+   "price": 1275,
+   "payout": 27.5,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 25,
+     "player": "Buccaneers",
+     "team": "TB",
+     "stat": "ats",
+     "line": 13.5,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Jalon Daniels",
+     "team": "TB",
+     "stat": "passing_interceptions",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Chris Godwin",
+     "team": "TB",
+     "stat": "receptions",
+     "line": 4,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Dak Prescott",
+     "team": "DAL",
+     "stat": "passing_yards",
+     "line": 250,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 25,
+     "player": "Buccaneers at Cowboys",
+     "team": "DAL",
+     "stat": "total",
+     "line": 44.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-atlno-ml-over",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 238,
+   "payout": 3.38,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 24,
+     "player": "Falcons",
+     "team": "ATL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Falcons at Saints",
+     "team": "ATL",
+     "stat": "total",
+     "line": 47.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-atlno-3-boost",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 750,
+   "payout": 8.5,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 24,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "rushing_yards",
+     "line": 88,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Drake London",
+     "team": "ATL",
+     "stat": "receiving_yards",
+     "line": 81,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Chris Olave",
+     "team": "NO",
+     "stat": "receptions",
+     "line": 7,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-atlno-3-td",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 296,
+   "payout": 3.96,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 24,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "rushing_yards",
+     "line": 88,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Chris Olave",
+     "team": "NO",
+     "stat": "receptions",
+     "line": 7,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 24,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-detcar-3a",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 500,
+   "payout": 6.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 23,
+     "player": "Amon-Ra St. Brown",
+     "team": "DET",
+     "stat": "receiving_yards",
+     "line": 76,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 23,
+     "player": "Jared Goff",
+     "team": "DET",
+     "stat": "passing_yards",
+     "line": 250,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 23,
+     "player": "Jahmyr Gibbs",
+     "team": "DET",
+     "stat": "any_td",
+     "line": 2,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-detcar-3b",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 366,
+   "payout": 4.66,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 23,
+     "player": "Bryce Young",
+     "team": "CAR",
+     "stat": "completions",
+     "line": 20,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 23,
+     "player": "Jake Bates",
+     "team": "DET",
+     "stat": "kick_pts",
+     "line": 8,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 23,
+     "player": "Jahmyr Gibbs",
+     "team": "DET",
+     "stat": "scrim_yards",
+     "line": 130,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-rodgers-3",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 518,
+   "payout": 6.18,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 22,
+     "player": "Aaron Rodgers",
+     "team": "PIT",
+     "stat": "completions",
+     "line": 20,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 22,
+     "player": "Aaron Rodgers",
+     "team": "PIT",
+     "stat": "passing_yards",
+     "line": 217,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 22,
+     "player": "Aaron Rodgers",
+     "team": "PIT",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-sgp-3",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": 600,
+   "payout": 7.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 22,
+     "player": "Jerry Jeudy",
+     "team": "CLE",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 22,
+     "player": "Travis Homer",
+     "team": "PIT",
+     "stat": "rushing_yards",
+     "line": 6.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 22,
+     "player": "Jaylen Warren",
+     "team": "PIT",
+     "stat": "receptions",
+     "line": 3.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w4-dk-pit-spread",
+   "cleared": true,
+   "week": 4,
+   "stake": 1,
+   "price": -120,
+   "payout": 1.83,
+   "note": "straight bet",
+   "legs": [
+    {
+     "game": 22,
+     "player": "Steelers",
+     "team": "PIT",
+     "stat": "ats",
+     "line": -2.5,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-sgp-phichi-4",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 1200,
+   "payout": 13.0,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 21,
+     "player": "Jalen Hurts",
+     "team": "PHI",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 21,
+     "player": "Jalen Hurts",
+     "team": "PHI",
+     "stat": "passing_yards",
+     "line": 230,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 21,
+     "player": "Kalif Raymond",
+     "team": "CHI",
+     "stat": "receptions",
+     "line": 2.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 21,
+     "player": "Dontayvion Wicks",
+     "team": "PHI",
+     "stat": "receiving_yards",
+     "line": 43,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-sgp-phichi-3",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 500,
+   "payout": 6.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 21,
+     "player": "Eagles at Bears",
+     "team": "CHI",
+     "stat": "total",
+     "line": 42.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 21,
+     "player": "Saquon Barkley",
+     "team": "PHI",
+     "stat": "rushing_yards",
+     "line": 80,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 21,
+     "player": "Eagles",
+     "team": "PHI",
+     "stat": "ats",
+     "line": -6.5,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-sgp-5",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 3450,
+   "payout": 35.5,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 18,
+     "player": "Kyren Williams",
+     "team": "LA",
+     "stat": "rushing_yards",
+     "line": 54,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Davante Adams",
+     "team": "LA",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "rushing_yards",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_yards",
+     "line": 239.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-2",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 212,
+   "payout": 3.12,
+   "legs": [
+    {
+     "game": 10,
+     "player": "Amon-Ra St. Brown",
+     "team": "DET",
+     "stat": "receiving_yards",
+     "line": 80,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 11,
+     "player": "Jaxon Smith-Njigba",
+     "team": "SEA",
+     "stat": "receiving_yards",
+     "line": 80,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-lines-3",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 905,
+   "payout": 10.05,
+   "note": "+50% boost",
+   "legs": [
+    {
+     "game": 12,
+     "player": "Chiefs",
+     "team": "KC",
+     "stat": "ats",
+     "line": -10,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 13,
+     "player": "Colts",
+     "team": "IND",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 14,
+     "player": "Panthers",
+     "team": "CAR",
+     "stat": "ats",
+     "line": -1.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-ml-3",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 675,
+   "payout": 7.75,
+   "legs": [
+    {
+     "game": 15,
+     "player": "Raiders",
+     "team": "LV",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 16,
+     "player": "Vikings",
+     "team": "MIN",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 17,
+     "player": "Ravens",
+     "team": "BAL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-sgpx-4",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 1546,
+   "payout": 16.46,
+   "note": "SGPx · +50% boost",
+   "legs": [
+    {
+     "game": 16,
+     "player": "Jalen McMillan",
+     "team": "TB",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 17,
+     "player": "Justice Hill",
+     "team": "BAL",
+     "stat": "rushing_yards",
+     "line": 15,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 18,
+     "player": "Terrance Ferguson",
+     "team": "LA",
+     "stat": "receiving_yards",
+     "line": 50.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 18,
+     "player": "Terrance Ferguson",
+     "team": "LA",
+     "stat": "receptions",
+     "line": 3.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-dk-props-6",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "note": "top of the slip not in the screenshot",
+   "legs": [
+    {
+     "game": 17,
+     "player": "Derrick Henry",
+     "team": "BAL",
+     "stat": "rushing_yards",
+     "line": 92,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 19,
+     "player": "Trey McBride",
+     "team": "ARI",
+     "stat": "receiving_yards",
+     "line": 60,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 10,
+     "player": "Jahmyr Gibbs",
+     "team": "DET",
+     "stat": "rushing_yards",
+     "line": 70,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 20,
+     "player": "Josh Allen",
+     "team": "BUF",
+     "stat": "passing_yards",
+     "line": 250,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 20,
+     "player": "Josh Allen",
+     "team": "BUF",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 20,
+     "player": "Josh Allen",
+     "team": "BUF",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w2-ml-4",
+   "cleared": true,
+   "week": 2,
+   "stake": 2,
+   "price": 142,
+   "payout": 4.84,
+   "legs": [
+    {
+     "game": 0,
+     "player": "Ravens",
+     "team": "BAL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 1,
+     "player": "Eagles",
+     "team": "PHI",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 2,
+     "player": "Chargers",
+     "team": "LAC",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 3,
+     "player": "49ers",
+     "team": "SF",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w2-ml-3",
+   "cleared": true,
+   "week": 2,
+   "stake": 1,
+   "price": 503,
+   "payout": 6.03,
+   "legs": [
+    {
+     "game": 4,
+     "player": "Falcons",
+     "team": "ATL",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 5,
+     "player": "Texans",
+     "team": "HOU",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 6,
+     "player": "Packers",
+     "team": "GB",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w2-props-4",
+   "cleared": true,
+   "week": 2,
+   "stake": 1,
+   "legs": [
+    {
+     "game": 7,
+     "player": "Daniel Jones",
+     "team": "IND",
+     "stat": "passing_yards",
+     "line": 216.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 7,
+     "player": "Jonathan Taylor",
+     "team": "IND",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 7,
+     "player": "Patrick Mahomes",
+     "team": "KC",
+     "stat": "passing_yards",
+     "line": 220.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 7,
+     "player": "Travis Kelce",
+     "team": "KC",
+     "stat": "receiving_yards",
+     "line": 41.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w2-sgp-5",
+   "cleared": true,
+   "week": 2,
+   "stake": 2,
+   "price": 1700,
+   "payout": 36.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 8,
+     "player": "Rams",
+     "team": "LA",
+     "stat": "ats",
+     "line": -6.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 8,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_tds",
+     "line": 2,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 8,
+     "player": "Cam Skattebo",
+     "team": "NYG",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 8,
+     "player": "Cam Skattebo",
+     "team": "NYG",
+     "stat": "rushing_yards",
+     "line": 52,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 8,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_yards",
+     "line": 240,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w3-sgp-5",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 2100,
+   "payout": 22.0,
+   "note": "same game · +50% boost",
+   "legs": [
+    {
+     "game": 9,
+     "player": "Packers",
+     "team": "GB",
+     "stat": "ats",
+     "line": -5.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 9,
+     "player": "Michael Penix Jr.",
+     "team": "ATL",
+     "stat": "passing_interceptions",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Skyy Moore",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 10,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Jordan Love",
+     "team": "GB",
+     "stat": "completions",
+     "line": 18.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 9,
+     "player": "Jordan Love",
+     "team": "GB",
+     "stat": "passing_tds",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w3-sgp-6",
+   "cleared": true,
+   "week": 3,
+   "stake": 1,
+   "price": 4200,
+   "payout": 43.0,
+   "note": "same game",
+   "legs": [
+    {
+     "game": 9,
+     "player": "Jordan Love",
+     "team": "GB",
+     "stat": "passing_yards",
+     "line": 220,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Matthew Golden",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 50,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Christian Watson",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 71,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Christian Watson",
+     "team": "GB",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Tucker Kraft",
+     "team": "GB",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 9,
+     "player": "Skyy Moore",
+     "team": "GB",
+     "stat": "receiving_yards",
+     "line": 9,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-balatl-4-boost",
+   "week": 5,
+   "stake": 1,
+   "price": 1560,
+   "payout": 16.6,
+   "note": "same game · +30% boost",
+   "legs": [
+    {
+     "game": 26,
+     "player": "Jahan Dotson",
+     "team": "ATL",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 26,
+     "player": "Justice Hill",
+     "team": "BAL",
+     "stat": "rushing_yards",
+     "line": 11.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 26,
+     "player": "Kyle Pitts Sr.",
+     "team": "ATL",
+     "stat": "receiving_yards",
+     "line": 23.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 26,
+     "player": "Tyler Huntley",
+     "team": "BAL",
+     "stat": "passing_yards",
+     "line": 173.5,
+     "side": "under",
+     "main": true
+    }
+   ],
+   "cleared": true,
+   "cleared_on": "2026-10-13",
+   "cleared_by": "auto"
+  },
+  {
+   "id": "w5-dk-lines-3-boost",
+   "week": 5,
+   "stake": 2,
+   "price": 1090,
+   "payout": 23.8,
+   "note": "+50% boost",
+   "legs": [
+    {
+     "game": 27,
+     "player": "Bengals",
+     "team": "CIN",
+     "stat": "ats",
+     "line": -7,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 28,
+     "player": "Jets",
+     "team": "NYJ",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 29,
+     "player": "Raiders",
+     "team": "LV",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    }
+   ],
+   "cleared": true,
+   "cleared_on": "2026-10-13",
+   "cleared_by": "auto"
+  },
+  {
+   "id": "w5-dk-lines-3",
+   "week": 5,
+   "stake": 1,
+   "price": 814,
+   "payout": 9.14,
+   "legs": [
+    {
+     "game": 30,
+     "player": "Chargers",
+     "team": "LAC",
+     "stat": "ml",
+     "line": 0,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 31,
+     "player": "Lions",
+     "team": "DET",
+     "stat": "ats",
+     "line": -5.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 32,
+     "player": "Seahawks",
+     "team": "SEA",
+     "stat": "ats",
+     "line": -3,
+     "side": "over",
+     "main": true
+    }
+   ],
+   "cleared": true,
+   "cleared_on": "2026-10-13",
+   "cleared_by": "auto"
+  },
+  {
+   "id": "w5-dk-sgpx-5",
+   "week": 5,
+   "stake": 1,
+   "price": 3698,
+   "payout": 37.98,
+   "note": "SGPx",
+   "legs": [
+    {
+     "game": 31,
+     "player": "Jared Goff",
+     "team": "DET",
+     "stat": "passing_yards",
+     "line": 281.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 30,
+     "player": "Omarion Hampton",
+     "team": "LAC",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 32,
+     "player": "Emanuel Wilson",
+     "team": "SEA",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 32,
+     "player": "Seahawks",
+     "team": "SEA",
+     "stat": "ats",
+     "line": -3,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 32,
+     "player": "Tory Horton",
+     "team": "SEA",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "over",
+     "main": true
+    }
+   ],
+   "cleared": true,
+   "cleared_on": "2026-10-13",
+   "cleared_by": "auto"
+  },
+  {
+   "id": "w5-dk-sgpx-5-boost",
+   "week": 5,
+   "stake": 2,
+   "price": 4163,
+   "payout": 85.26,
+   "note": "SGPx · +20% boost",
+   "legs": [
+    {
+     "game": 33,
+     "player": "Cam Ward",
+     "team": "TEN",
+     "stat": "passing_tds",
+     "line": 0.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 34,
+     "player": "MarShawn Lloyd",
+     "team": "GB",
+     "stat": "rushing_yards",
+     "line": 27.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 28,
+     "player": "Quinshon Judkins",
+     "team": "CLE",
+     "stat": "rushing_yards",
+     "line": 59.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 27,
+     "player": "Kevin Coleman Jr.",
+     "team": "MIA",
+     "stat": "receptions",
+     "line": 1.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 27,
+     "player": "Malik Washington",
+     "team": "MIA",
+     "stat": "receptions",
+     "line": 4.5,
+     "side": "under",
+     "main": true
+    }
+   ],
+   "cleared": true,
+   "cleared_on": "2026-10-13",
+   "cleared_by": "auto"
+  },
+  {
+   "id": "w5-dk-balatl-henry-4-boost",
+   "week": 5,
+   "stake": 2,
+   "price": 1170,
+   "payout": 25.4,
+   "note": "same game · +30% boost",
+   "legs": [
+    {
+     "game": 26,
+     "player": "Derrick Henry",
+     "team": "BAL",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 26,
+     "player": "Derrick Henry",
+     "team": "BAL",
+     "stat": "rushing_yards",
+     "line": 80.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 26,
+     "player": "Bijan Robinson",
+     "team": "ATL",
+     "stat": "rushing_yards",
+     "line": 100,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 26,
+     "player": "Ravens at Falcons",
+     "team": "ATL",
+     "stat": "total",
+     "line": 43.5,
+     "side": "over",
+     "main": true
+    }
+   ],
+   "cleared": true,
+   "cleared_on": "2026-10-13",
+   "cleared_by": "auto"
+  },
+  {
+   "id": "w5-dk-bufla-4-boost",
+   "week": 5,
+   "stake": 2,
+   "price": 810,
+   "payout": 18.2,
+   "note": "same game · +20% boost",
+   "legs": [
+    {
+     "game": 35,
+     "player": "Matthew Stafford",
+     "team": "LA",
+     "stat": "passing_yards",
+     "line": 280,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 35,
+     "player": "Kyren Williams",
+     "team": "LA",
+     "stat": "any_td",
+     "line": 1,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 35,
+     "player": "Tyler Higbee",
+     "team": "LA",
+     "stat": "receiving_yards",
+     "line": 25,
+     "side": "over",
+     "main": false
+    },
+    {
+     "game": 35,
+     "player": "Davante Adams",
+     "team": "LA",
+     "stat": "receiving_yards",
+     "line": 60,
+     "side": "over",
+     "main": false
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-bufla-adams-rec",
+   "week": 5,
+   "stake": 2,
+   "price": 118,
+   "payout": 4.36,
+   "note": "straight bet",
+   "legs": [
+    {
+     "game": 35,
+     "player": "Davante Adams",
+     "team": "LA",
+     "stat": "receptions",
+     "line": 4.5,
+     "side": "over",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-bufla-3-boost",
+   "week": 5,
+   "stake": 1,
+   "price": 650,
+   "payout": 7.5,
+   "note": "same game · +30% boost",
+   "legs": [
+    {
+     "game": 35,
+     "player": "Jordan Whittington",
+     "team": "LA",
+     "stat": "receiving_yards",
+     "line": 5.5,
+     "side": "over",
+     "main": true
+    },
+    {
+     "game": 35,
+     "player": "Khalil Shakir",
+     "team": "BUF",
+     "stat": "receiving_yards",
+     "line": 45.5,
+     "side": "under",
+     "main": true
+    },
+    {
+     "game": 35,
+     "player": "Ty Johnson",
+     "team": "BUF",
+     "stat": "rushing_yards",
+     "line": 6.5,
+     "side": "under",
+     "main": true
+    }
+   ]
+  },
+  {
+   "id": "w5-dk-bufla-rams-9-5",
+   "week": 5,
+   "stake": 2,
+   "price": 188,
+   "payout": 5.76,
+   "note": "straight bet · alternate spread",
+   "legs": [
+    {
+     "game": 35,
+     "player": "Rams",
+     "team": "LA",
+     "stat": "ats",
+     "line": -9.5,
+     "side": "over",
+     "main": false
+    }
+   ]
+  }
+ ]
+}

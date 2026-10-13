@@ -1,0 +1,79 @@
+name: Update college site
+
+on:
+  schedule:
+    # In UTC. Eastern is UTC-4 until the first Sunday of November, UTC-5 after: the ET times
+    # below are EDT, an hour earlier in EST. ESPN's public feeds are the only source: free.
+    #
+    # GitHub starts this repo's scheduled runs 3 to 9 hours late (this job's measured 4.0-7.8h,
+    # the repo's 2.7-9.4h), never early by much. So every slot that must land BEFORE a kickoff
+    # is queued about ten hours ahead of it, and every slot meant to land AFTER something (the
+    # finals, a poll) is queued at it. A game's call and line are the last run's before its
+    # kickoff; the page itself stops offering a game at kickoff by the visitor's clock and reads
+    # live scores from ESPN in the browser, so a late run never shows a started game as bettable.
+    # Off the hour, because :00 is the minute most often delayed.
+    - cron: "17 6 * * *"    # daily 2:17am ET: lands ~9am-3pm UTC. Last night's finals (Tue-Fri nights,
+                            # all of Saturday on Sunday), Wednesday's for a Tuesday-night CFP ranking,
+                            # and Saturday's for the noon kickoffs (16:00 UTC)
+    - cron: "17 10 * * 6"   # Saturday 6:17am ET: lands ~1-7pm UTC, before the 3:30pm ET kickoffs (19:30 UTC)
+    - cron: "47 13 * * *"   # daily 9:47am ET: lands ~5-11pm UTC, before the evening kickoffs any night
+                            # (7-8pm ET, 23:00-00:00 UTC): Tuesday/Wednesday in November, Thursday,
+                            # Friday and Saturday night
+    - cron: "47 21 * * 6"   # Saturday 5:47pm ET: lands ~1-7am UTC Sunday, the afternoon games final
+    - cron: "47 17 * * 0"   # Sunday 1:47pm ET: lands ~9pm-3am UTC, after the AP poll (Sunday ~2pm ET)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  cfb:
+    runs-on: ubuntu-latest
+    steps:
+      # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
+      # in line (concurrency), and one queued behind another would otherwise start from the state the other
+      # has since replaced, and lose the push to a conflict on its own file
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: cfb/tools
+      # The job proved first on fabricated weeks (a kickoff, a failed feed, a dropped line or
+      # game, a postponement, a line held for the grade, Army-Navy week, the title games, the
+      # playoff, a new season), offline, in a scratch folder
+      - name: Simulate the job over a fabricated season
+        run: node cfb/tools/simulate.js
+      # Exits 1 and writes nothing when a scoreboard the season needs did not download (the
+      # last publish stays live); a far-off week or the polls that fail are carried and said so
+      - name: Read the season, rate, call, grade and write state.json
+        run: node cfb/tools/update.js
+      - name: Write the CFB News tab's file
+        run: node cfb/tools/news.js
+      # Strict: the files must be the ones this job writes (schema 2), and the calls and lines
+      # frozen before a kickoff must match the last commit's
+      - name: Smoke test the page over the new state
+        run: node cfb/tools/smoke.js
+        env:
+          CFB_SMOKE_STRICT: "1"
+      - name: Commit if anything changed
+        run: |
+          git config user.name "nfl-hub bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add cfb/state.json cfb/news.json cfb/data/teams.json cfb/data/history.json
+          if git diff --cached --quiet; then echo "nothing changed"; else
+            git commit -m "cfb: update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            ok=0
+            for i in 1 2 3; do
+              if git pull --rebase && git push; then ok=1; break; fi
+              git rebase --abort 2>/dev/null || true   # a failed rebase left in place fails every retry
+              echo "push raced another job, retrying ($i)"; sleep 15
+            done
+            [ "$ok" = 1 ]
+          fi

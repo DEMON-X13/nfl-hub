@@ -3,77 +3,103 @@
      node tools/context.js            (from news/)   or   require('./context').build()
 
    Writes three plain script data files (the page stays file:// friendly, no fetch):
-     data/ranks2026.js     RANKS26: every team's Power Ratings rank and Elo, read from the
-                           betting site's published state (../betting/state.json), the same
-                           board the betting page shows. Replaces the old preseason rank.
+     data/ranks2026.js     RANKS26: every team's rank and Elo on X NFL Bets' Team Rankings tab, read
+                           from ../elo/data/model.json (`teams`, the power ratings of this season's
+                           results, every final solved together and re-scored against what its
+                           opponent has turned out to be, with the lineups at two tenths) in the
+                           order that tab draws it. RANKS26_ASOF is the last game the ratings
+                           have taken in. Until 2026-10-09 it was the Alpha Model's team Elo from
+                           ../betting/state.json, which no page shows as a ranking any more; the two
+                           disagreed by 6.4 places a team (Seattle 1st on the chip, 9th on the tab).
      data/players2026.js   PLAYERS26: team -> { name: position } from the nflverse roster,
                            keyed by full name, football name and first name, so the page
                            can write "(QB)" after a player's name.
-     data/units2026.js     UNITS26: the Deep Dive. Six units per team with a league rank,
-                           the numbers behind it, and who is playing there:
-                             qb     passing offense       EPA per dropback
-                             ol     offensive line        sack rate allowed, yards per carry
-                             rb     run game              rushing EPA per carry, yards per carry
-                             rec    receivers             YAC per catch, share of throws gaining 20+
-                             front  pass and run rush     sacks + QB hits per dropback, rush EPA allowed
-                             db     defensive backs       pass EPA allowed per dropback, INT + PD rate
+     data/units2026.js     UNITS26: the Deep Dive. Six units per team, each with a rating in league
+                           standard deviations (z), its rank, the numbers behind it, who is playing
+                           there and who is not. Every row sets a unit against the unit it really
+                           plays, measured on the same numbers from both sides:
+                             qb     vs passD   pass EPA per dropback, made / allowed
+                             ol     vs front   sack rate and QB-hit rate, allowed / forced
+                             rb     vs runD    EPA and yards per carry, QB runs, scrambles and
+                                               kneel-downs taken out, made / allowed
+                             rec    vs db      EPA and yards per target, made / allowed
+                           The page tags a row by the gap between the two ratings (app.js difficulty()).
                            Team numbers blend 2025 (weighted as PRIOR_GAMES games) with every
-                           2026 game so far, so each week this season counts for more.
-   Sources: nflverse-data releases (team stats 2025 and 2026, player stats 2026, snap counts
-   2026, roster 2026). A source that cannot be reached leaves its file as it was.        */
+                           2026 game so far, so each week this season counts for more; each team
+                           carries its own 2026 game count (g26), since a team that has played the
+                           week's Thursday game has one more than the rest.
+                           UNITS26_META says which week and season the lineups are for, when they last
+                           changed (built_at: a run that changes nothing leaves the file alone) and
+                           from what, and the smoke test holds them to it.
+                           Until 2026-10-08 the receivers were rated on YAC per catch and 20+ throws
+                           (a style, not how well they play), the line and the front on different
+                           stats, sacks were counted twice in pressure, and the who-lists were
+                           season usage with no injury check (TB's QB row named an injured
+                           Baker Mayfield). See lineups() for how the names are chosen now.
+   Also writes, beside them:
+     tools/out/weekN-lineups.json   the lineups as each team's kickoff found them (a team's entry stops
+                           changing at its kickoff), so a later run can grade them against who played
+     tools/out/weekN-lineups-grade.md   that grade, once nflverse has the week's snap counts
+     tools/.cache/lineup-sources.json   the injury report, roster and schedule this build read (not
+                           committed), stamped with the run (run_at): the smoke test checks the lineups
+                           against the same files, and in the job that they are this run's
+
+   Sources: nflverse-data releases (team and player stats 2025 and 2026, snap counts, roster,
+   injury report and depth charts 2026), the nflverse schedule and, when pull-week.js passes it,
+   ESPN's injury list. Every nflverse file but the snap counts is required: if one cannot be
+   downloaded after four tries the build writes nothing and exits non-zero, so the job stops before
+   its commit and the last good files stay live. (Until 2026-10-09 a missing injury report quietly
+   published lineups with no injury check, and a missing stats file kept the whole Deep Dive,
+   lineups included, on a green run.) The snap counts only order the lists and ESPN's list only adds
+   to the check: without either the build goes on, logs a warning and says so on the page.        */
 'use strict';
 const fs = require('fs'), path = require('path');
+const { SEASON, GAMES_URL, parseCSV, fetchText, ab, seasonState, etToISO, unplayed } = require('./lib');
 
-const SEASON = 2026, PRIOR = 2025, PRIOR_GAMES = 4;
+const PRIOR = SEASON - 1, PRIOR_GAMES = 4;
 const REL = 'https://github.com/nflverse/nflverse-data/releases/download';
 const URLS = {
+  games: GAMES_URL,
   team25: `${REL}/stats_team/stats_team_week_${PRIOR}.csv`,
   team26: `${REL}/stats_team/stats_team_week_${SEASON}.csv`,
   player26: `${REL}/stats_player/stats_player_week_${SEASON}.csv`,
-  snaps26: `${REL}/snap_counts/snap_counts_${SEASON}.csv`,
+  player25: `${REL}/stats_player/stats_player_week_${PRIOR}.csv`,
   roster26: `${REL}/rosters/roster_${SEASON}.csv`,
+  injuries26: `${REL}/injuries/injuries_${SEASON}.csv`,
+  depth26: `${REL}/depth_charts/depth_charts_${SEASON}.csv`,
+  snaps26: `${REL}/snap_counts/snap_counts_${SEASON}.csv`,
 };
-/* the tracker uses LAR for the Rams; nflverse uses LA (and a few old codes) */
-const AB = { LA: 'LAR', STL: 'LAR', OAK: 'LV', SD: 'LAC', WSH: 'WAS', JAC: 'JAX' };
-const ab = t => AB[t] || t;
+const OPTIONAL = new Set(['snaps26']);
+const PRESEASON = new Set(['team26', 'player26', 'injuries26', 'snaps26']);   // may not exist before the first game
 
-function parseCSV(text) {
-  const rows = []; let row = [], cell = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
-    else if (ch === '"') q = true;
-    else if (ch === ',') { row.push(cell); cell = ''; }
-    else if (ch === '\n') { row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
-    else cell += ch;
-  }
-  if (cell || row.length) { row.push(cell); rows.push(row); }
-  const head = rows.shift();
-  return rows.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
-}
-async function getCSV(url) {
-  let last;
-  for (const headers of [{ 'User-Agent': 'nfl-hub-season-tracker/1.0 (+https://github.com/DEMON-X13/nfl-hub)' }, {}]) {
-    try { const r = await fetch(url, { headers, redirect: 'follow' }); if (r.ok) return parseCSV(await r.text()); last = new Error(r.status + ' ' + url); }
-    catch (e) { last = e; }
-  }
-  throw last;
+/* the job reads these lines in its log; a GitHub warning shows on the run's summary page */
+const warn = msg => console.log(process.env.GITHUB_ACTIONS ? `::warning::${msg}` : `warning: ${msg}`);
+
+const LAST_MODIFIED = {};
+async function getCSV(name, opts) {
+  const { text, lastModified } = await fetchText(URLS[name], opts);
+  LAST_MODIFIED[name] = lastModified;
+  return parseCSV(text);
 }
 const num = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
-const writeData = (file, name, obj, extra = '') =>
-  fs.writeFileSync(file, `/* Generated by tools/context.js. Do not edit by hand. */\nconst ${name} = ${JSON.stringify(obj)};\n${extra}`);
+const dataFile = (name, obj, extra = '') => `/* Generated by tools/context.js. Do not edit by hand. */\nconst ${name} = ${JSON.stringify(obj)};\n${extra}`;
 
-/* ---------------- power ranks from the betting site's published board ---------------- */
-function ranks(root, out) {
-  const stateFile = path.resolve(root, '..', 'betting', 'state.json');
-  if (!fs.existsSync(stateFile)) { console.log('ranks2026.js kept: ../betting/state.json not found'); return; }
-  const st = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
-  const teams = Object.entries(st.teams || {}).map(([t, v]) => [ab(t), v.elo]).filter(([, e]) => isFinite(e)).sort((a, b) => b[1] - a[1]);
-  if (teams.length < 32) { console.log(`ranks2026.js kept: only ${teams.length} teams on the board`); return; }
+/* ---------------- the rank chip: X NFL Bets' Team Rankings ---------------- */
+/* Ordered as betting/tools/ratings_viz.js orders the tab: Elo, highest first, ties in the file's order
+   (Array.prototype.sort is stable). As of the last final whose kickoff came before model.json was built. */
+function ranks(root, games) {
+  const file = path.resolve(root, '..', 'elo', 'data', 'model.json');
+  if (!fs.existsSync(file)) throw new Error('../elo/data/model.json not found');
+  const m = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const teams = Object.entries(m.teams || {}).map(([t, v]) => [ab(t), v && v.elo]).filter(([, e]) => isFinite(e));
+  if (teams.length < 32) throw new Error(`only ${teams.length} teams on Team Rankings`);
+  teams.sort((a, b) => b[1] - a[1]);
   const R = {}; teams.forEach(([t, e], i) => { R[t] = { rank: i + 1, elo: Math.round(e) }; });
-  const asof = st.published ? new Date(st.published).toISOString().slice(0, 10) : '';
-  writeData(path.join(out, 'ranks2026.js'), 'RANKS26', R, `const RANKS26_ASOF = ${JSON.stringify(asof)};\n`);
-  console.log(`ranks2026.js: ${teams.length} teams, #1 ${teams[0][0]}, as of ${asof}`);
+  const built = Date.parse(String(m.built_at || '').replace(/\+00:00$/, 'Z'));
+  const asof = games.filter(r => r.season === String(SEASON) && String(r.home_score || '').trim())
+    .map(r => ({ day: r.gameday, kick: etToISO(r.gameday, r.gametime) }))
+    .filter(x => !isFinite(built) || Date.parse(x.kick) < built).map(x => x.day).sort().pop() || '';
+  return { R, asof, built: m.built_at || '' };
 }
 
 /* ---------------- positions from the roster ---------------- */
@@ -86,7 +112,7 @@ for (const [a, b] of [['Josh', 'Joshua'], ['Mike', 'Michael'], ['Matt', 'Matthew
   ['Pat', 'Patrick'], ['Steve', 'Steven'], ['Tim', 'Timothy'], ['Cam', 'Cameron'], ['Trey', 'Treyvon'], ['Kenny', 'Kenneth'], ['Ken', 'Kenneth']]) {
   (NICK[a] ??= []).push(b); (NICK[b] ??= []).push(a);
 }
-function players(roster, out) {
+function players(roster) {
   const P = {};
   for (const r of roster) {
     if (['CUT', 'RET'].includes(r.status)) continue;
@@ -98,26 +124,39 @@ function players(roster, out) {
       if (n && n.trim().split(' ').length >= 2 && !n.includes('undefined') && !t[n]) t[n] = pos;
     }
   }
-  const n = Object.values(P).reduce((a, t) => a + Object.keys(t).length, 0);
-  if (Object.keys(P).length < 32) { console.log(`players2026.js kept: roster covered ${Object.keys(P).length} teams`); return P; }
-  writeData(path.join(out, 'players2026.js'), 'PLAYERS26', P);
-  console.log(`players2026.js: ${n} names across ${Object.keys(P).length} teams`);
+  if (Object.keys(P).length < 32) throw new Error(`the roster covered ${Object.keys(P).length} teams`);
   return P;
 }
 
-/* ---------------- Deep Dive unit grades ---------------- */
-function teamTotals(rows) {
+/* ---------------- Deep Dive: the ratings ---------------- */
+/* QB runs, scrambles and kneel-downs come out of the run game: they are a quarterback's, not the
+   backs', and a scramble is a dropback. Summed per team and week from the player file. */
+function qbRushing(players) {
+  const Q = {};
+  for (const r of players || []) {
+    if (r.season_type && r.season_type !== 'REG') continue;
+    if (r.position !== 'QB') continue;
+    const e = (Q[ab(r.team) + '|' + r.week] ??= { car: 0, ryd: 0, repa: 0 });
+    e.car += num(r.carries); e.ryd += num(r.rushing_yards); e.repa += num(r.rushing_epa);
+  }
+  return Q;
+}
+function teamTotals(rows, qbr = {}) {
   /* per team: offence totals from its own rows, defence-allowed totals from opponents' rows */
-  const T = {};
-  const get = t => (T[t] ??= { g: 0, att: 0, sk: 0, pepa: 0, comp: 0, yac: 0, p20: 0, car: 0, ryd: 0, repa: 0,
-    oatt: 0, osk: 0, opepa: 0, ocar: 0, oryd: 0, orepa: 0, dsk: 0, dhit: 0, dint: 0, dpd: 0 });
+  const T = {}, NONE = { car: 0, ryd: 0, repa: 0 };
+  const get = t => (T[t] ??= { g: 0, att: 0, sk: 0, pepa: 0, tgt: 0, tepa: 0, tyd: 0, hitA: 0, car: 0, ryd: 0, repa: 0,
+    oatt: 0, osk: 0, opepa: 0, otgt: 0, otepa: 0, otyd: 0, ocar: 0, oryd: 0, orepa: 0, dhit: 0 });
   for (const r of rows) {
     if (r.season_type && r.season_type !== 'REG') continue;
-    const t = get(ab(r.team)), o = get(ab(r.opponent_team));
-    t.g++; t.att += num(r.attempts); t.sk += num(r.sacks_suffered); t.pepa += num(r.passing_epa); t.comp += num(r.completions);
-    t.yac += num(r.passing_yards_after_catch); t.p20 += num(r.passing_20); t.car += num(r.carries); t.ryd += num(r.rushing_yards); t.repa += num(r.rushing_epa);
-    t.dsk += num(r.def_sacks); t.dhit += num(r.def_qb_hits); t.dint += num(r.def_interceptions); t.dpd += num(r.def_pass_defended);
-    o.oatt += num(r.attempts); o.osk += num(r.sacks_suffered); o.opepa += num(r.passing_epa); o.ocar += num(r.carries); o.oryd += num(r.rushing_yards); o.orepa += num(r.rushing_epa);
+    const t = get(ab(r.team)), o = get(ab(r.opponent_team)), q = qbr[ab(r.team) + '|' + r.week] || NONE;
+    t.g++; t.att += num(r.attempts); t.sk += num(r.sacks_suffered); t.pepa += num(r.passing_epa);
+    t.tgt += num(r.targets); t.tepa += num(r.receiving_epa); t.tyd += num(r.receiving_yards);
+    t.car += num(r.carries) - q.car; t.ryd += num(r.rushing_yards) - q.ryd; t.repa += num(r.rushing_epa) - q.repa;
+    t.dhit += num(r.def_qb_hits);
+    o.hitA += num(r.def_qb_hits);   // the hits this defence put on the other team's quarterback
+    o.oatt += num(r.attempts); o.osk += num(r.sacks_suffered); o.opepa += num(r.passing_epa);
+    o.otgt += num(r.targets); o.otepa += num(r.receiving_epa); o.otyd += num(r.receiving_yards);
+    o.ocar += num(r.carries) - q.car; o.oryd += num(r.rushing_yards) - q.ryd; o.orepa += num(r.rushing_epa) - q.repa;
   }
   return T;
 }
@@ -136,19 +175,27 @@ function blend(prior, cur) {
 const div = (a, b) => b > 0 ? a / b : null;
 function rankOf(values, t, higherBetter) {
   const arr = Object.entries(values).filter(([, v]) => v != null).sort((a, b) => higherBetter ? b[1] - a[1] : a[1] - b[1]);
-  return arr.findIndex(([k]) => k === t) + 1;
+  const i = arr.findIndex(([k]) => k === t);
+  return i < 0 ? null : i + 1;
 }
-function units(team25, team26, player26, snaps26, out, rosterPos = {}) {
-  const B = blend(teamTotals(team25), teamTotals(team26));
+/* Eight ratings, each in league standard deviations (0 is average, + is better for that side).
+   Every row on the page sets one against its mirror, measured on the same numbers:
+     qb    vs passD   pass EPA per dropback, made and allowed
+     ol    vs front   sack rate and QB-hit rate (sacks included), allowed and forced
+     rb    vs runD    EPA and yards per carry by anyone but a quarterback, made and allowed
+     rec   vs db      EPA and yards per target, made and allowed                            */
+function ratings(team25, team26, player25, player26) {
+  const B = blend(teamTotals(team25, qbRushing(player25)), teamTotals(team26, qbRushing(player26)));
   const teams = Object.keys(B).filter(t => t.length >= 2 && t.length <= 3);
   const M = {};
   for (const t of teams) {
     const x = B[t], db = x.att + x.sk, odb = x.oatt + x.osk;
     M[t] = {
-      pass_epa: div(x.pepa, db), sack_rate: div(x.sk, db), ypc: div(x.ryd, x.car), rush_epa: div(x.repa, x.car),
-      yac: div(x.yac, x.comp), expl: div(x.p20, x.att),
-      press: div(x.dsk + x.dhit, odb), o_rush_epa: div(x.orepa, x.ocar), o_ypc: div(x.oryd, x.ocar),
-      o_pass_epa: div(x.opepa, odb), ballhawk: div(x.dint + x.dpd, odb), g26: x.g26,
+      pass_epa: div(x.pepa, db), o_pass_epa: div(x.opepa, odb),
+      sack_rate: div(x.sk, db), hit_rate: div(x.hitA, db), o_sack_rate: div(x.osk, odb), o_hit_rate: div(x.dhit, odb),
+      rush_epa: div(x.repa, x.car), ypc: div(x.ryd, x.car), o_rush_epa: div(x.orepa, x.ocar), o_ypc: div(x.oryd, x.ocar),
+      rec_epa: div(x.tepa, x.tgt), rec_ypt: div(x.tyd, x.tgt), o_rec_epa: div(x.otepa, x.otgt), o_rec_ypt: div(x.otyd, x.otgt),
+      g26: x.g26,
     };
   }
   const col = k => Object.fromEntries(teams.map(t => [t, M[t][k]]));
@@ -157,88 +204,802 @@ function units(team25, team26, player26, snaps26, out, rosterPos = {}) {
     const sd = Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length) || 1;
     return t => M[t][k] == null ? 0 : sign * (M[t][k] - mu) / sd;
   };
-  const score = {
+  const RATE = {
     qb: t => z('pass_epa', 1)(t),
-    ol: t => (z('sack_rate', -1)(t) + z('ypc', 1)(t)) / 2,
+    passD: t => z('o_pass_epa', -1)(t),
+    ol: t => (z('sack_rate', -1)(t) + z('hit_rate', -1)(t)) / 2,
+    front: t => (z('o_sack_rate', 1)(t) + z('o_hit_rate', 1)(t)) / 2,
     rb: t => (z('rush_epa', 1)(t) + z('ypc', 1)(t)) / 2,
-    rec: t => (z('yac', 1)(t) + z('expl', 1)(t)) / 2,
-    front: t => (z('press', 1)(t) + z('o_rush_epa', -1)(t)) / 2,
-    db: t => (z('o_pass_epa', -1)(t) + z('ballhawk', 1)(t)) / 2,
+    runD: t => (z('o_rush_epa', -1)(t) + z('o_ypc', -1)(t)) / 2,
+    rec: t => (z('rec_epa', 1)(t) + z('rec_ypt', 1)(t)) / 2,
+    db: t => (z('o_rec_epa', -1)(t) + z('o_rec_ypt', -1)(t)) / 2,
   };
-  score.passD = t => (z('o_pass_epa', -1)(t) + z('ballhawk', 1)(t) + z('press', 1)(t)) / 3;
-  score.runD = t => (z('o_rush_epa', -1)(t) + z('o_ypc', -1)(t)) / 2;
-  const S = {}, R = {};
-  for (const u of Object.keys(score)) { S[u] = Object.fromEntries(teams.map(t => [t, score[u](t)])); }
-  for (const u of Object.keys(score)) { R[u] = Object.fromEntries(teams.map(t => [t, rankOf(S[u], t, true)])); }
-  /* sub-ranks for the numbers shown */
-  const sub = {
-    pass_epa: t => rankOf(col('pass_epa'), t, true), sack_rate: t => rankOf(col('sack_rate'), t, false), ypc: t => rankOf(col('ypc'), t, true),
-    rush_epa: t => rankOf(col('rush_epa'), t, true), yac: t => rankOf(col('yac'), t, true), expl: t => rankOf(col('expl'), t, true),
-    press: t => rankOf(col('press'), t, true), o_rush_epa: t => rankOf(col('o_rush_epa'), t, false), o_pass_epa: t => rankOf(col('o_pass_epa'), t, false),
-    ballhawk: t => rankOf(col('ballhawk'), t, true),
-  };
-
-  /* who is playing each unit, from 2026 player stats and snap counts */
-  const P = {};
-  const add = (t, n, pos, k, v) => { const e = ((P[t] ??= {})[n] ??= { pos, att: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, int: 0, pd: 0, osn: 0, dsn: 0 }); e[k] += v; if (!e.pos && pos) e.pos = pos; };
-  for (const r of player26) {
-    if (r.season_type && r.season_type !== 'REG') continue;
-    const t = ab(r.team), n = r.player_display_name || r.player_name, pos = r.position;
-    add(t, n, pos, 'att', num(r.attempts)); add(t, n, pos, 'car', num(r.carries)); add(t, n, pos, 'tgt', num(r.targets));
-    add(t, n, pos, 'sk', num(r.def_sacks)); add(t, n, pos, 'hit', num(r.def_qb_hits)); add(t, n, pos, 'tfl', num(r.def_tackles_for_loss));
-    add(t, n, pos, 'int', num(r.def_interceptions)); add(t, n, pos, 'pd', num(r.def_pass_defended));
+  /* each rating restandardised, so a gap of 1 means one league standard deviation on every row */
+  const Z = {}, R = {};
+  for (const u of Object.keys(RATE)) {
+    const raw = Object.fromEntries(teams.map(t => [t, RATE[u](t)]));
+    const v = Object.values(raw), mu = v.reduce((a, b) => a + b, 0) / v.length;
+    const sd = Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length) || 1;
+    Z[u] = Object.fromEntries(teams.map(t => [t, Math.round((raw[t] - mu) / sd * 100) / 100]));
+    R[u] = Object.fromEntries(teams.map(t => [t, rankOf(Z[u], t, true)]));
   }
-  for (const r of snaps26) {
-    if (r.game_type && r.game_type !== 'REG') continue;
-    const t = ab(r.team), n = r.player, pos = r.position;
-    add(t, n, pos, 'osn', num(r.offense_snaps)); add(t, n, pos, 'dsn', num(r.defense_snaps));
-    const e = P[t][n]; if (pos) e.pos = e.pos && e.pos !== pos && ['DB', 'DL', 'OL', 'LB'].includes(e.pos) ? pos : (e.pos || pos);
-  }
-  /* the position shown is the roster's where we have it; the stat feeds use codes like SAF, OT and HB */
-  const FEED = { SAF: 'S', OT: 'T', OG: 'G', HB: 'RB', EDGE: 'OLB' };
-  const shown = (t, n, pos) => (rosterPos[t] && rosterPos[t][n]) || FEED[pos] || pos;
-  const top = (t, filter, key, k) => Object.entries(P[t] || {}).filter(([, e]) => filter(e.pos || '') && e[key] > 0).sort((a, b) => b[1][key] - a[1][key]).slice(0, k).map(([n, e]) => ({ n, pos: shown(t, n, e.pos) }));
-  const isQB = p => p === 'QB', isRB = p => ['RB', 'HB', 'FB'].includes(p), isRec = p => ['WR', 'TE'].includes(p);
-  const isOL = p => ['T', 'G', 'C', 'OL', 'OT', 'OG'].includes(p), isFront = p => ['DE', 'DT', 'NT', 'DL', 'LB', 'OLB', 'ILB', 'MLB', 'EDGE'].includes(p);
-  const isDB = p => ['CB', 'S', 'FS', 'SS', 'DB', 'SAF'].includes(p);
-  const frontKey = (t) => Object.entries(P[t] || {}).filter(([, e]) => isFront(e.pos || '')).map(([n, e]) => [n, e, 2 * e.sk + e.hit + e.tfl + e.dsn / 100]).sort((a, b) => b[2] - a[2]).slice(0, 3).map(([n, e]) => ({ n, pos: shown(t, n, e.pos) }));
-
-  const U = {};
+  const sub = (k, higherBetter) => t => rankOf(col(k), t, higherBetter);
   const r2 = v => v == null ? null : Math.round(v * 100) / 100, pc = v => v == null ? null : Math.round(v * 1000) / 10, r1 = v => v == null ? null : Math.round(v * 10) / 10;
+  const S = {};
   for (const t of teams) {
     const m = M[t];
-    U[t] = {
-      g26: m.g26,
-      qb: { rank: R.qb[t], who: top(t, isQB, 'att', 1), stats: [['EPA per dropback', r2(m.pass_epa), sub.pass_epa(t)]] },
-      ol: { rank: R.ol[t], who: top(t, isOL, 'osn', 5), stats: [['sack rate allowed', pc(m.sack_rate), sub.sack_rate(t), '%'], ['yards per carry', r1(m.ypc), sub.ypc(t)]] },
-      rb: { rank: R.rb[t], who: top(t, isRB, 'car', 2), stats: [['rush EPA per carry', r2(m.rush_epa), sub.rush_epa(t)], ['yards per carry', r1(m.ypc), sub.ypc(t)]] },
-      rec: { rank: R.rec[t], who: top(t, isRec, 'tgt', 3), stats: [['YAC per catch', r1(m.yac), sub.yac(t)], ['throws gaining 20+', pc(m.expl), sub.expl(t), '%']] },
-      front: { rank: R.front[t], who: frontKey(t), stats: [['pressure (sacks and QB hits) per dropback', pc(m.press), sub.press(t), '%'], ['rush EPA allowed per carry', r2(m.o_rush_epa), sub.o_rush_epa(t)]] },
-      db: { rank: R.db[t], who: top(t, isDB, 'dsn', 3), stats: [['pass EPA allowed per dropback', r2(m.o_pass_epa), sub.o_pass_epa(t)], ['INT + passes defended per dropback', pc(m.ballhawk), sub.ballhawk(t), '%']] },
-      /* what the opposing offence faces: whole pass defence (coverage and rush) and run defence */
-      vs: { passD: R.passD[t], runD: R.runD[t] },
+    S[t] = {
+      qb: [['EPA per dropback', r2(m.pass_epa), sub('pass_epa', true)(t)]],
+      ol: [['sack rate allowed', pc(m.sack_rate), sub('sack_rate', false)(t), '%'], ['QB hits allowed per dropback', pc(m.hit_rate), sub('hit_rate', false)(t), '%']],
+      rb: [['EPA per carry, QB runs out', r2(m.rush_epa), sub('rush_epa', true)(t)], ['yards per carry, QB runs out', r1(m.ypc), sub('ypc', true)(t)]],
+      rec: [['EPA per target', r2(m.rec_epa), sub('rec_epa', true)(t)], ['yards per target', r1(m.rec_ypt), sub('rec_ypt', true)(t)]],
+      front: [['sack rate', pc(m.o_sack_rate), sub('o_sack_rate', true)(t), '%'], ['QB hits per dropback', pc(m.o_hit_rate), sub('o_hit_rate', true)(t), '%']],
+      db: [['EPA per target allowed', r2(m.o_rec_epa), sub('o_rec_epa', false)(t)], ['yards per target allowed', r1(m.o_rec_ypt), sub('o_rec_ypt', false)(t)]],
     };
   }
-  if (teams.length < 32) { console.log(`units2026.js kept: stats covered ${teams.length} teams`); return; }
-  const g26 = Math.max(...teams.map(t => M[t].g26));
-  writeData(path.join(out, 'units2026.js'), 'UNITS26', U,
-    `const UNITS26_BASIS = ${JSON.stringify(`2025 season counted as ${PRIOR_GAMES} games, plus ${g26} game${g26 === 1 ? '' : 's'} of 2026`)};\n`);
-  console.log(`units2026.js: ${teams.length} teams, ${g26} 2026 game(s) blended with 2025`);
+  return { teams, Z, R, S, g26: Object.fromEntries(teams.map(t => [t, M[t].g26])) };
 }
 
+/* ---------------- Deep Dive: who is playing ---------------- */
+/* Each unit's names are the coming game's lineup: the team's latest depth chart before kickoff,
+   passing over anyone who will not play. The first rule that speaks wins:
+     1. the roster: anyone not ACT on it, or now on another team. INA (inactive for the last game)
+        waits for the report: practising this week (full or limited) clears it, otherwise he is out.
+     2. the official game status, once the team has filed it: a team has filed when its rows on the
+        week's report carry a game status, and only then. Out or Doubtful is out; Questionable with no
+        practice on that report is out (in weeks 2 to 4, 6 of the 10 Questionable starters who had not
+        practised sat); Questionable and practising is listed with a tag; a filed report that does not
+        designate him clears him. A practice report does not count, however close to kickoff: for a
+        Thursday game, two days before is Tuesday's practice, which nflverse posts on Wednesday with no
+        game statuses, and counting it put Mayfield and Winfield (out per ESPN, not practising) back
+        in TB's lineup on the Wednesday before TB at DAL in a test of that rule.
+     3. before the team files, ESPN's list where it says Out, Doubtful, injured reserve or suspended.
+        ESPN's Questionable clears no one: from Tuesday to Friday it is a placeholder. (On 2026-10-07
+        ESPN moved Hendrickson, Gonzalez, Elliss, Banks and DeVonta Smith from Tuesday's Out to
+        Questionable, none of them practising, and the Deep Dive listed all five as playing.)
+     4. before the team files: out in the team's last game (its last game, not last week's, so a bye
+        counts) and not practising since: the report's practice status, or ESPN's practice note where
+        it is newer than the report or the report has no row for the team yet. With no practice
+        reported at all this week he is still out.
+     5. ESPN Questionable with no practice on the last practice day before kickoff (its note says so)
+        is out, as in rule 2. The last practice day is the day before a Thursday game (the short week
+        files its game statuses with Wednesday's report) and two days before any other.
+     6. anyone else not practising is listed, tagged "not practising"; and the quarterback row names
+        the next quarterback whenever the starter carries a tag: the next one on the chart these rules
+        let play, else (a chart, or a team with no chart, with no such backup) the team's other active
+        quarterbacks these rules let play, most 2026 dropbacks first; with none, the row says so
+        (next_none). Until 2026-10-09 only the chart, or with no chart only a quarterback who had
+        thrown in 2026, was looked at, and a team whose chart carried an injured QB2 named nobody.
+     7. the quarterback ESPN's current notes name, plainly, as this week's starter starts, when rules 1
+        to 5 let him play; every quarterback the chart has ahead of him (with no chart, the one 2026
+        usage picked) is passed over, "not starting: <name> named the starter, per ESPN", with his tag
+        when he carries one ("not starting (questionable: hamstring): ..."). An official Out or
+        Doubtful, or any rule above, still rules the named one out, and then the chart decides as
+        before. Decided before rule 6 looks for a next quarterback. The reading (which notes count,
+        the words accepted and refused, the dating) is announcedStarter() below, shared with the check.
+        Until 2026-10-10 there was no such rule: CHI's row listed Caleb Williams (Questionable, limited
+        Friday) with Tyson Bagent next, while ESPN's notes on Bagent and on Keenum both said Ben Johnson
+        had named Bagent the Week 5 starter, and the week's narrative said so too.
+   A team with no chart within ten days of kickoff falls back on 2026 usage, still minus the out.
+   A chart starter passed over is kept as out, so the page can say who is missing and why. */
+const STATUS = { RES: 'on injured reserve', PUP: 'on the PUP list', NON: 'on the non-football injury list', SUS: 'suspended',
+  RET: 'retired', CUT: 'released', DEV: 'on the practice squad', EXE: 'on the exempt list', TRD: 'traded', TRT: 'traded' };
+const normName = s => String(s || '').toLowerCase().replace(/[.'’,]/g, '').replace(/-/g, ' ')
+  .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim();
+const lc = s => String(s || '').trim().toLowerCase();
+const CHART_DAYS = 10;
+const isQB = p => p === 'QB', isRB = p => ['RB', 'HB', 'FB'].includes(p), isRec = p => ['WR', 'TE'].includes(p);
+const isOL = p => ['T', 'G', 'C', 'OL', 'OT', 'OG'].includes(p), isFront = p => ['DE', 'DT', 'NT', 'DL', 'LB', 'OLB', 'ILB', 'MLB', 'EDGE'].includes(p);
+const isDB = p => ['CB', 'S', 'FS', 'SS', 'DB', 'SAF'].includes(p);
+const FRONT_SLOTS = ['LDE', 'LDT', 'NT', 'RDT', 'RDE', 'DE', 'DT', 'WLB', 'LILB', 'MLB', 'RILB', 'SLB', 'LOLB', 'ROLB', 'OLB', 'ILB', 'LB'];
+const DB_SLOTS = ['LCB', 'RCB', 'SS', 'FS', 'NB', 'CB', 'S'];
+const OL_SLOTS = ['LT', 'LG', 'C', 'RG', 'RT'];
+
+/* dates as Eastern calendar days, "YYYY-MM-DD", so they compare as strings */
+const etDay = iso => { const d = new Date(iso); return isNaN(d) ? '' : new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d); };
+const addDays = (day, n) => { const d = new Date(day + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const weekdayOf = day => WEEKDAYS[new Date(day + 'T12:00:00Z').getUTCDay()];
+/* the last practice before a game: Wednesday for a Thursday game, two days before kickoff otherwise
+   (Friday for Sunday, Saturday for Monday, Thursday for Saturday, Monday for a Wednesday game) */
+const lastPracticeDay = kickDay => kickDay ? addDays(kickDay, weekdayOf(kickDay) === 'thursday' ? -1 : -2) : '';
+
+/* the report's practice column, and ESPN's practice notes ("did not participate at practice Thursday",
+   "was a non-participant", "remained absent from practice", "was limited", "practiced in full") */
+const practiceOf = (s, why) => /did not/i.test(s || '') ? (/not injury related/i.test(why || '') ? 'rest' : 'dnp') : /limited/i.test(s || '') ? 'limited' : /full/i.test(s || '') ? 'full' : null;
+const N_ANY = /practi[cs]|participa|warmups|walkthrough|workout|\bDNP\b/i;
+const N_DNP = /\b(did not|didn'?t|won'?t|will not|unable to) (participate|practice|take part)|non-?participant|\bmiss(?:ed|es|ing)?\b[^,.;]*practice|\babsent\b|\b(?:not|wasn'?t|weren'?t) (?:present|spotted|seen|on the field)|\bsat out\b|\b(?:held|kept) out\b|\bDNP\b/i;
+const N_LIM = /\blimited\b/i, N_FULL = /\bfull(?:[- ]go|y)?\b|\bin full\b/i;
+/* A note is cut into sentences and each sentence into clauses at its conjunctions; in a sentence that
+   speaks of practice, every clause with a practice status counts, the latest day winning ("didn't
+   practice Wednesday but returned limited Thursday" is a DNP Wednesday and a limited Thursday, and
+   "was limited Wednesday after missing practice Tuesday" a limited Wednesday; until 2026-10-09 a
+   clause was cut only at ", but" and had to name practice itself, so the first read as no practice on
+   Thursday and the second as no practice on Tuesday) */
+const CLAUSE = /,?\s*\b(?:and then|but|after|before|while|then)\s+|,\s*and\s+/i;
+/* Inside a clause the practice's day is a weekday that goes with the practice, never one that names
+   the game ("Sunday's game", "Monday night's game", "Sunday's 24-18 loss", "for Sunday", "ahead of
+   Thursday Night Football", "play Sunday", "start against the Giants on Sunday") or the day someone
+   spoke ("said Monday"); of several ("Wednesday or Thursday") the latest. A clause in the future or
+   conditional ("will be a full participant", "aiming for him to have a full practice week") is a plan,
+   not a practice, and does not count; "won't practice" does. A practice is never dated on or before
+   the team's last game (`since`): a clause whose days all fall there speaks of last week. Until
+   2026-10-09 the last weekday in a clause was taken, so ESPN's common Friday line ("was a
+   non-participant for Friday's practice and is questionable for Sunday's game", "was a full participant
+   in Friday's practice and doesn't have an injury designation for Sunday's game") read as a practice
+   on the previous Sunday: Allen's no practice Friday was lost, and a player back in full Friday after
+   an absence was passed over as not practising since his last game. */
+const N_PRACTICE = /practi[cs]|walk-?through|workout|warmups|\bsession\b|\bDNP\b/i;
+const WEEKDAY_RE = /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/gi;
+const AFTER_PRACTICE = /^(?:['’]s)?\s+(?:practi[cs]e|session|workout|walk-?through)/i;
+const AFTER_GAME = /^(?:['’]s)?(?:\s+night(?:['’]s)?)?\s+(?:(?!practi|session)[\w.'’-]+\s+){0,3}?(?:game|contest|matchup|match-up|tilt|clash|showdown|opener|meeting|football|kickoff|win|loss|victory|defeat)\b/i;
+const BEFORE_GAME = /(?:\b(?:play|plays|playing|start|starts|starting|suit up|suits up|suiting up|dress|dresses|face|faces|facing|against|versus|vs\.?)\s+(?:[\w.'’-]+\s+){0,3}?(?:on\s+)?|\b(?:for|ahead of|into|by)\s+)$/i;
+const BEFORE_SAID = /\b(?:said|says|told|announced|noted|indicated|confirmed|reported|reports|relayed|revealed|added|explained|stated)\s+(?:on\s+)?$/i;
+const FUTURE = /\b(?:will|would|could|should|might|may|expect(?:s|ed|ing)? to|anticipat\w*|aim(?:s|ed|ing)? (?:for|to)|hop(?:e|es|ed|ing) to|plan(?:s|ned|ning)? to|set to|slated to|on track to|likely to|in line to|figures? to)\b/i;
+function notePractice(text, noteDay, since = '') {
+  if (!text || !noteDay) return null;
+  let best = null;
+  const clauses = [];
+  for (const sent of String(text).split(/(?<=[.;])\s+/)) {
+    if (N_ANY.test(sent)) clauses.push(...sent.split(CLAUSE));
+  }
+  for (const c of clauses) {
+    const m = N_DNP.exec(c) || N_LIM.exec(c) || N_FULL.exec(c);
+    if (!m) continue;
+    const st = N_DNP.test(c) ? 'dnp' : N_LIM.test(c) ? 'limited' : 'full';
+    if (FUTURE.test(c.slice(0, m.index).split(/[,;:]/).pop())) continue;   // a plan or a forecast, not a practice ("Smith, who will be a game-time decision, did not practice" still counts)
+    const named = [];
+    let games = 0;
+    for (const w of c.matchAll(WEEKDAY_RE)) {
+      const before = c.slice(0, w.index), after = c.slice(w.index + w[0].length);
+      if (!AFTER_PRACTICE.test(after) && (AFTER_GAME.test(after) || BEFORE_GAME.test(before) || BEFORE_SAID.test(before))) { games++; continue; }
+      for (let i = 0; i < 7; i++) { const d = addDays(noteDay, -i); if (weekdayOf(d) === w[1].toLowerCase()) { named.push(d); break; } }
+    }
+    /* "did not participate in Friday's 34-17 preseason loss": a game, not a practice */
+    if (games && !named.length && !N_PRACTICE.test(c)) continue;
+    const day = named.length ? named.sort().pop() : noteDay;
+    if (since && day <= since) continue;   // last week's practice
+    if (!best || day > best.day) best = { st, day };
+  }
+  return best;
+}
+
+/* The practice a player's week shows: the report's practice column, or ESPN's note where it is newer.
+   A note counts only when it was written after the team's last game (`since`), and it wins when the
+   report has no practice for him (no row for his team this week, or his row has no practice status) or
+   names an earlier practice day than the note does. "unlisted" is a team that has filed a practice
+   report without him on it (he practised in full). One reader for the build and its check
+   (lineup-checks.js), so the two cannot read a note differently: until 2026-10-09 the check also
+   required a note to be newer than the file's newest practice day when the team had no rows yet, and
+   on a Wednesday night it failed a Sunday team's back who the build rightly listed. */
+function weekPractice({ row, teamOnReport, reportDay, note, since }) {
+  let base = null;
+  if (row && practiceOf(row.practice_status)) base = { st: practiceOf(row.practice_status, row.practice_primary_injury), day: reportDay || '', src: 'report' };
+  else if (!row && teamOnReport) base = { st: 'unlisted', day: reportDay || '', src: 'report' };
+  const noteDay = note && note.date ? etDay(note.date) : '';
+  const n = noteDay && (!since || noteDay > since) ? notePractice(`${note.comment || ''} ${note.long || ''}`, noteDay, since) : null;
+  if (n && (!base || !base.day || n.day > base.day)) return { ...n, src: 'espn' };
+  return base || { st: null };
+}
+
+/* ESPN's list keyed by the player each entry means. ESPN writes the name a player goes by ("Olu
+   Fashanu", "Hollywood Brown", "Mike Danna"), which is the depth chart's and often not the roster's
+   full name ("Olumuyiwa Fashanu", "Marquise Brown", "Michael Danna"). Each entry is matched, on its
+   team, to a gsis id through every name the files give a player, in this order: the roster's full
+   name, the chart's names, then the roster's football and first names with the last name. A name two
+   players share matches neither. An entry no id takes is kept by name. One index for
+   the build and its check (lineup-checks.js): until 2026-10-09 the build looked ESPN up by the chart's
+   name and the check by the roster's, so the check missed "Olu Fashanu"'s Friday practice and failed
+   a lineup the build had right. Returns (id, team, name) => the entry or null. */
+function espnIndex(espn, roster, chartNames) {
+  const steps = [{}, {}, {}];
+  const put = (i, team, name, id) => { if (!team || !name || !id) return; ((steps[i][`${team}|${normName(name)}`] ??= new Set())).add(id); };
+  for (const r of roster || []) {
+    if (!r.gsis_id) continue;
+    const t = ab(r.team);
+    put(0, t, r.full_name, r.gsis_id);
+    for (const f of [r.football_name, r.first_name]) if (f && r.last_name) put(2, t, `${f} ${r.last_name}`, r.gsis_id);
+  }
+  for (const c of chartNames || []) put(1, c.team, c.name, c.id);
+  const byId = {}, byName = {};
+  for (const e of espn || []) {
+    const k = `${e.team}|${normName(e.name)}`;
+    let id = null;
+    for (const s of steps) { const ids = s[k]; if (!ids) continue; if (ids.size === 1) id = [...ids][0]; break; }
+    if (id) byId[id] ??= e; else byName[k] ??= e;
+  }
+  return (id, team, name) => (id && byId[id]) || byName[`${team}|${normName(name)}`] || null;
+}
+
+/* A quarterback announced as this week's starter (rule 7 of lineups()). ESPN's notes carry it before the
+   team files, in the starter's own note ("Bears head coach Ben Johnson said that Bagent will start
+   Sunday's game against the Packers in Green Bay") or a teammate's ("Keenum is expected to remain in a
+   backup role ... after head coach Ben Johnson said that Tyson Bagent will start at quarterback in Week
+   5"). Only the team's own ESPN entries are read, and only the team's own quarterbacks on the roster
+   count: in a note a quarterback is named by his full name (the roster's, the chart's, or his football
+   or first name with his last), or in his own note (the entry espnIndex() gives him) by his last name
+   alone, so another team's quarterback, and a teammate who shares a last name, never count.
+   Accepted, when the sentence is plain:
+     X will start / will make the start (his first start ...) / will get the start / will draw the start /
+     will be the starter (the team's starting quarterback) / will be under center / will return to the
+     starting lineup; X is expected, set, slated, scheduled or going to start; X has cleared (is healthy,
+     ...) and will start; X is starting; X has been (was) named the starter (the team's starting
+     quarterback); named (names, naming) X the starter (as the starter, the Week 5 starter); will start X.
+     Read on every ESPN note in the committed packs (6,694, weeks 1 to 5) as if each were current, these
+     take 11, each a real announcement for that week's game (Bagent in Week 5 from his note and Keenum's,
+     Jayden Daniels, Huntley, Mariota twice, Kyler Murray from his note and Wentz's, Penix, Lock), and
+     none else.
+   Refused:
+     a hedge or a condition anywhere in the sentence (START_HEDGE): if, unless, should, could, would, may,
+       might, whether, likely, probably, possibly, perhaps, in line to, figures to, projected to, on
+       track to, in the event, pending, depending, assuming, barring, provided that, in case, game-time
+       decision, plans to or on, hopes to, leaning, trending ("will start if", "could start", "would
+       start", "is in line to start should ...");
+     a choice in the clause: "X or Y will start", either;
+     a note that leaves it open anywhere (START_OPEN): "has not yet confirmed", "hasn't decided", "didn't
+       name", "won't commit", "declined to name", undecided, unclear, uncertain, remains to be seen (ESPN's Oct 3 line: "Bagent is
+       expected to start Sunday versus the Jets ... However, coach Ben Johnson has not yet confirmed the
+       plan.");
+     another game: a note dated on or before the team's last game (Eastern days, the practice reader's
+       rule) or at or after this week's kickoff; a sentence naming another week ("in Week 6"), next week
+       or next Sunday, the week after or after the bye, last week or last game; a game weekday that is
+       not this game's ("Thursday night's game" before a Sunday game; a weekday is the game's by the
+       practice reader's own tests, so "said Friday" and "ruled out Friday" are not); a team other than
+       these two after against, versus, vs, facing, at, in, to, over, hosting or visiting;
+     "will not start", "won't start", and start as begin ("will start throwing").
+   Of notes naming different quarterbacks the newest wins; two as new that disagree name none. One reader
+   for the build and its check (lineup-checks.js). Returns { id, n, said, from, date } or null. */
+const TEAM_WORDS = { ARI: ['Cardinals', 'Arizona'], ATL: ['Falcons', 'Atlanta'], BAL: ['Ravens', 'Baltimore'], BUF: ['Bills', 'Buffalo'],
+  CAR: ['Panthers', 'Carolina'], CHI: ['Bears', 'Chicago'], CIN: ['Bengals', 'Cincinnati'], CLE: ['Browns', 'Cleveland'], DAL: ['Cowboys', 'Dallas'],
+  DEN: ['Broncos', 'Denver'], DET: ['Lions', 'Detroit'], GB: ['Packers', 'Green Bay'], HOU: ['Texans', 'Houston'], IND: ['Colts', 'Indianapolis'],
+  JAX: ['Jaguars', 'Jags', 'Jacksonville'], KC: ['Chiefs', 'Kansas City'], LV: ['Raiders', 'Las Vegas'], LAC: ['Chargers'], LAR: ['Rams'],
+  MIA: ['Dolphins', 'Miami'], MIN: ['Vikings', 'Minnesota'], NE: ['Patriots', 'Pats', 'New England'], NO: ['Saints', 'New Orleans'], NYG: ['Giants'],
+  NYJ: ['Jets'], PHI: ['Eagles', 'Philadelphia'], PIT: ['Steelers', 'Pittsburgh'], SF: ['49ers', 'Niners', 'San Francisco'], SEA: ['Seahawks', 'Seattle'],
+  TB: ['Buccaneers', 'Bucs', 'Tampa Bay', 'Tampa'], TEN: ['Titans', 'Tennessee'], WAS: ['Commanders', 'Washington'] };
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const TEAM_OF_WORD = {};
+for (const [t, ws] of Object.entries(TEAM_WORDS)) for (const w of ws) TEAM_OF_WORD[w] = t;
+const TEAM_NAMED = new RegExp(`\\b(?:against|versus|vs\\.?|facing|faces|face|at|in|to|over|hosting|hosts|host|visiting|visits|visit)\\s+(?:the\\s+)?(${Object.keys(TEAM_OF_WORD).sort((a, b) => b.length - a.length).map(esc).join('|')})\\b`, 'g');
+const START_HEDGE = /\b(?:if|unless|should|could|would|may|might|whether|likely|probably|possibly|perhaps|tentatively|presumably|in line to|figures? to|projected to|projects? to|on track to|in the event|pending|depending|assuming|barring|provided that|in case|game-time decision|plan(?:s|ned|ning)? (?:to|on)|hop(?:e|es|ed|ing) to|leaning|trending)\b/i;
+const START_OPEN = /\b(?:(?:(?:has|have|had|did|does|do|would|could)(?:n['’]t| not)|won['’]t|will not)(?: yet)?|not yet(?: been)?|yet to(?: be)?)\s+(?:officially\s+)?(?:confirm|decide|name|announce|determine|commit)\w*|\b(?:declin|refus)\w* to (?:name|commit|say|confirm|announce)|\b(?:undecided|unclear|uncertain|remains to be seen|to be determined)\b/i;
+const START_CHOICE = /\b(?:or|either|nor)\b/i;
+const START_ELSEWHERE = /\b(?:next|following)\s+(?:week|weekend|season|year|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b|\b(?:last|previous)\s+(?:week|weekend|game|season|year|sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b|\bweek after\b|\bafter the bye\b/i;
+const START_PAREN = '(?:\\s*\\([^)]*\\))?';
+const START_BEGIN = '(?!\\s+(?:to\\b|(?!thanksgiving\\b|morning\\b|evening\\b|opening\\b)[a-z]+ing\\b))';
+/* the starter, the team's starting quarterback, the Week 5 starter; never "the starter's backup" */
+const START_ROLE = `(?:as\\s+)?(?:(?:the|his|their|its)\\s+)?(?:[\\w.'’-]+['’]s?\\s+)?(?:[\\w-]+\\s+){0,2}?(?:starter|starting (?:quarterback|QB|signal-caller))\\b(?!['’])`;
+const START_VERB = `(?:start${START_BEGIN}(?!\\s+(?:the game\\s+)?on the bench)|make (?:the|his|another|a)\\b[^.,;()]{0,30}?\\bstart\\b|(?:get|draw|earn|receive) (?:the|another|his)\\s+(?:starting\\s+)?(?:start|nod)\\b|be ${START_ROLE}|be under center\\b|return to the starting lineup\\b)`;
+const startForms = N => [
+  /* "Bagent will start", "Daniels (elbow) will start", "Murray has cleared concussion protocol and will start" */
+  `\\b(?:${N})${START_PAREN}(?:\\s+(?:has|had|is|was)\\s+[^.;,()]{1,60}?\\s+and)?\\s+(?:will|is (?:set|slated|scheduled|expected|going) to|['’]ll)\\s+(?:(?:again|also|instead|still|officially|then|once again)\\s+)?${START_VERB}`,
+  `\\b(?:${N})${START_PAREN}\\s+(?:has been|have been|had been|was|is)\\s+(?:officially\\s+)?(?:named|tabbed|tapped|picked|chosen|selected|confirmed as|announced as)\\s+${START_ROLE}`,
+  `\\b(?:named|names|naming|tabbed|tapped|picked|chose|selected|announced|confirmed)\\s+(?:${N})${START_PAREN}\\s+${START_ROLE}`,
+  `\\bwill start (?:${N})\\b`,
+  `\\b(?:${N})${START_PAREN}\\s+is starting${START_BEGIN}`,
+].map(s => new RegExp(s));   // case kept: names are proper nouns, and a last name alone must not follow a capitalised word
+/* a name as a pattern: its words, either apostrophe, a period optional, a suffix allowed after; a last
+   name alone must not follow a capitalised word (that word would be someone else's first name) */
+const namePattern = n => String(n || '').replace(/,?\s+(?:jr|sr|ii|iii|iv|v)\.?$/i, '').trim().split(/\s+/)
+  .map(w => esc(w).replace(/['’]/g, '[\'’]?').replace(/\\\./g, '\\.?')).join('\\s+') + '(?:,?\\s+(?:Jr|Sr|II|III|IV|V)\\b\\.?)?';
+const SENTENCE = /(?<!\b(?:Jr|Sr|No|vs|St|Mr|Dr|Mt|Ft)\.)(?<=[.;!?])\s+(?=["“'‘(]?[A-Z])/;
+function announcedStarter({ team, espn, espnOf, roster, chartNames, since = '', kick = '', week, opp }) {
+  if (!team || !kick || !espn || !espn.length) return null;   // no game this week (a bye), or no list
+  const of = espnOf || espnIndex(espn, roster, chartNames);
+  const qbs = (roster || []).filter(r => r.gsis_id && ab(r.team) === team && r.position === 'QB').map(r => {
+    const full = new Set([r.full_name, r.football_name && `${r.football_name} ${r.last_name}`, r.first_name && `${r.first_name} ${r.last_name}`].filter(x => x && x.trim().split(/\s+/).length > 1));
+    for (const c of chartNames || []) if (c.team === team && c.id === r.gsis_id && c.name) full.add(c.name);
+    return { id: r.gsis_id, n: r.full_name, full: [...full].map(namePattern).join('|'),
+      last: r.last_name ? `(?<![A-Z][\\w'’.-]*\\s)${namePattern(r.last_name)}` : '' };
+  });
+  if (!qbs.length) return null;
+  const kickT = kick ? Date.parse(kick) : NaN, gameDay = kick ? weekdayOf(etDay(kick)) : '';
+  const allowed = new Set([team, opp].filter(Boolean));
+  const found = [];
+  for (const e of espn) {
+    if (e.team !== team) continue;
+    /* dated as the practice reader dates a note: after the team's last game, Eastern days; and before kickoff */
+    const noteDay = e.date ? etDay(e.date) : '';
+    if (!noteDay || (since && noteDay <= since) || (isFinite(kickT) && Date.parse(e.date) >= kickT)) continue;
+    const text = `${e.comment || ''} ${e.long || ''}`.trim();
+    if (!text || START_OPEN.test(text)) continue;
+    const own = qbs.find(q => of(q.id, team, q.n) === e);
+    for (const sent of text.split(SENTENCE)) {
+      if (START_HEDGE.test(sent) || START_ELSEWHERE.test(sent)) continue;
+      if ([...sent.matchAll(/\bweek\s+(\d{1,2})\b/gi)].some(m => +m[1] !== +week)) continue;
+      if ([...sent.matchAll(TEAM_NAMED)].some(m => !allowed.has(TEAM_OF_WORD[m[1]]))) continue;
+      let otherDay = false;
+      for (const w of sent.matchAll(WEEKDAY_RE)) {
+        const before = sent.slice(0, w.index), after = sent.slice(w.index + w[0].length);
+        if (!AFTER_PRACTICE.test(after) && !BEFORE_SAID.test(before) && (AFTER_GAME.test(after) || BEFORE_GAME.test(before)) && w[1].toLowerCase() !== gameDay) otherDay = true;
+      }
+      if (otherDay) continue;
+      /* clauses cut where the practice reader cuts them: "X or Y" is refused only in the clause naming the starter */
+      for (const clause of sent.split(CLAUSE)) {
+        if (START_CHOICE.test(clause)) continue;
+        for (const q of qbs) {
+          const N = q === own && q.last ? `${q.full}|${q.last}` : q.full;
+          if (N && startForms(N).some(re => re.test(clause))) found.push({ id: q.id, n: q.n, said: sent.trim(), from: e.name, date: e.date });
+        }
+      }
+    }
+  }
+  if (!found.length) return null;
+  const newest = Math.max(...found.map(f => Date.parse(f.date))), top = found.filter(f => Date.parse(f.date) === newest);
+  return new Set(top.map(f => f.id)).size === 1 ? top[0] : null;
+}
+
+function lineups(src) {
+  const { roster, injuries, chart, espn, player26, snaps26, week, kicks, lastGame, teams } = src;
+  /* the report's newest practice: nflverse files a day's report the next morning (about 14:30 UTC),
+     so the file's Last-Modified day, less one, is the last practice day it holds */
+  const reportDay = src.reportModified && isFinite(Date.parse(src.reportModified)) ? addDays(etDay(src.reportModified), -1) : '';
+  /* the roster, by id and by team and name */
+  const byId = {}, byTeamName = {}, byPfr = {};
+  for (const r of roster || []) {
+    if (!r.gsis_id) continue;
+    const e = { id: r.gsis_id, n: r.full_name, team: ab(r.team), status: r.status, pos: r.depth_chart_position || r.position };
+    byId[r.gsis_id] = e;
+    for (const nm of new Set([r.full_name, `${r.football_name || r.first_name} ${r.last_name}`])) byTeamName[`${e.team}|${normName(nm)}`] ??= r.gsis_id;
+    if (r.pfr_id) byPfr[r.pfr_id] = r.gsis_id;
+  }
+  const idOf = (team, name, id) => (id && byId[id]) ? id : (byTeamName[`${team}|${normName(name)}`] || null);
+  /* this week's report, and each week's by id for the team's last game */
+  const rep = {}, byWeek = {}, teamRows = {}, teamStatus = {};
+  for (const r of injuries || []) {
+    if (r.season_type && r.season_type !== 'REG') continue;
+    (byWeek[+r.week] ??= {})[r.gsis_id] = r;
+    if (+r.week === week) {
+      rep[r.gsis_id] = r; teamRows[ab(r.team)] = true;
+      if (lc(r.report_status)) teamStatus[ab(r.team)] = true;
+    }
+  }
+  const kickDay = t => kicks[t] ? etDay(kicks[t]) : '';
+  /* filed: the team's rows on this week's report carry a game status. Nothing else counts: a practice
+     report, however close to kickoff, says who practised, not who will play */
+  const filed = {};
+  for (const t of teams) filed[t] = !!teamStatus[t];
+  const reported = Object.keys(rep).length > 0;
+
+  /* the chart: each team's latest snapshot before its kickoff, its ids checked against the roster */
+  const snap = {};
+  for (const r of chart || []) {
+    if (r.pos_grp === 'Special Teams') continue;
+    const team = ab(r.team), k = kicks[team];
+    if (k && r.dt >= k) continue;
+    if (!snap[team] || r.dt > snap[team].dt) snap[team] = { dt: r.dt, rows: [] };
+    if (r.dt === snap[team].dt) snap[team].rows.push(r);
+  }
+  const chartId = (team, r) => {
+    if (r.gsis_id && byId[r.gsis_id]) return { id: r.gsis_id, repaired: false };
+    const id = idOf(team, r.player_name, null);
+    if (id) return { id, repaired: true };
+    /* no roster to check it against: the chart's own id still finds him in the injury report */
+    return { id: /^00-\d{7}$/.test(r.gsis_id || '') ? r.gsis_id : null, repaired: false };
+  };
+  /* every name the charts give a player, for matching ESPN's list (and kept for the check) */
+  const chartNames = [];
+  for (const [team, s] of Object.entries(snap)) {
+    const seen = new Set();
+    for (const r of s.rows) { const { id } = chartId(team, r); const k = `${id}|${r.player_name}`; if (id && r.player_name && !seen.has(k)) { seen.add(k); chartNames.push({ team, id, name: r.player_name }); } }
+  }
+  const espOf = espnIndex(espn, roster, chartNames);
+  const sinceOf = team => lastGame[team] && lastGame[team].kick ? etDay(lastGame[team].kick) : '';
+
+  /* practice this week: weekPractice() above, shared with the check */
+  const practice = (id, team, name) => weekPractice({ row: id && rep[id], teamOnReport: !!teamRows[team], reportDay, note: espOf(id, team, name), since: sinceOf(team) });
+  const practising = p => p.st === 'limited' || p.st === 'full' || p.st === 'unlisted';
+
+  function ruling(id, team, name, r) {
+    const x = id && rep[id], pr = practice(id, team, name), e = espOf(id, team, name || (r && r.n));
+    const injury = lc((x && (x.report_primary_injury || x.practice_primary_injury)) || (e && e.type));
+    const w = injury ? ` (${injury})` : '';
+    /* 2. the official game status */
+    if (x && lc(x.report_status)) {
+      const st = lc(x.report_status);
+      if (st === 'out' || st === 'doubtful') return { out: true, why: `${st}${w}` };
+      if (st === 'questionable') {
+        if (pr.st === 'dnp') return { out: true, why: `questionable${w} and not practising before the game` };
+        return { out: false, q: `questionable${injury ? `: ${injury}` : ''}`, practising: practising(pr) };
+      }
+      return { out: false, practising: practising(pr) };
+    }
+    if (filed[team]) return { out: false, practising: practising(pr) };
+    /* 3. ESPN's rulings, before the team files */
+    if (e) {
+      const st = lc(e.status), what = lc(e.type);
+      if (st === 'injured reserve') return { out: true, why: 'on injured reserve, per ESPN' };
+      if (st === 'out' || st === 'doubtful' || st === 'suspension') return { out: true, why: `${st === 'suspension' ? 'suspended' : st}${what && st !== 'suspension' ? ` (${what})` : ''}, per ESPN` };
+    }
+    /* 4. out in the team's last game and not practising since */
+    const lg = lastGame[team], p = lg && id && byWeek[lg.week] && byWeek[lg.week][id];
+    if (p && lc(p.report_status) === 'out' && !practising(pr)) {
+      return { out: true, why: `out in week ${lg.week} and ${pr.st === 'dnp' ? 'not practising' : 'no practice reported since'}${w}` };
+    }
+    /* 5. ESPN Questionable with no practice on the last practice day before kickoff */
+    const eq = e && lc(e.status) === 'questionable';
+    if (eq && pr.src === 'espn' && pr.st === 'dnp' && kickDay(team) && pr.day >= lastPracticeDay(kickDay(team))) {
+      return { out: true, why: `questionable${w} and not practising ${weekdayOf(pr.day).replace(/^./, c => c.toUpperCase())}, per ESPN` };
+    }
+    /* 6. listed, with what is known */
+    const tags = [];
+    if (eq) tags.push(`questionable${injury ? `: ${injury}` : ''}`);
+    if (pr.st === 'dnp') tags.push(eq ? 'not practising' : `not practising${injury ? `: ${injury}` : ''}`);
+    return { out: false, ...(tags.length ? { q: tags.join(', ') } : {}), practising: practising(pr) };
+  }
+  function avail(id, team, name) {
+    const r = id && byId[id];
+    if (r) {
+      if (r.team !== team) return { out: true, why: `with ${r.team} now` };
+      if (r.status && r.status !== 'ACT' && r.status !== 'INA') return { out: true, why: STATUS[r.status] || 'off the active roster' };
+    }
+    const a = ruling(id, team, name, r);
+    if (a.out) return a;
+    /* INA: inactive for the last game; only a full or limited practice this week clears it */
+    const pr = practice(id, team, name);
+    if (r && r.status === 'INA' && !(pr.st === 'limited' || pr.st === 'full')) return { out: true, why: 'inactive last game' };
+    const { practising: _, ...rest } = a;
+    return rest;
+  }
+
+  /* 2026 usage on this team, by id: the order inside a unit, and the fallback */
+  const use = {};
+  const U = (team, id) => ((use[team] ??= {})[id] ??= { att: 0, db: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, osn: 0, dsn: 0, lastWk: 0, lastAtt: 0 });
+  for (const r of player26 || []) {
+    if (r.season_type && r.season_type !== 'REG') continue;
+    const team = ab(r.team), id = idOf(team, r.player_display_name || r.player_name, r.player_id) || r.player_id; if (!id) continue;
+    const e = U(team, id);
+    e.att += num(r.attempts); e.db += num(r.attempts) + num(r.sacks_suffered); e.car += num(r.carries); e.tgt += num(r.targets);
+    e.sk += num(r.def_sacks); e.hit += num(r.def_qb_hits); e.tfl += num(r.def_tackles_for_loss);
+    if (num(r.attempts) > 0 && +r.week >= e.lastWk) { e.lastWk = +r.week; e.lastAtt = num(r.attempts); }
+    e.pos ??= r.position; e.n ??= r.player_display_name || r.player_name;
+  }
+  for (const r of snaps26 || []) {
+    if (r.game_type && r.game_type !== 'REG') continue;
+    const team = ab(r.team), id = (r.pfr_player_id && byPfr[r.pfr_player_id]) || idOf(team, r.player, null) || `pfr:${r.pfr_player_id || r.player}`;
+    const e = U(team, id); e.osn += num(r.offense_snaps); e.dsn += num(r.defense_snaps); e.pos ??= r.position; e.n ??= r.player;
+  }
+  const lastPass = {};
+  for (const t of Object.keys(use)) lastPass[t] = Math.max(0, ...Object.values(use[t]).map(e => e.lastWk));
+  const usage = (team, id) => (use[team] && use[team][id]) || { att: 0, db: 0, car: 0, tgt: 0, sk: 0, hit: 0, tfl: 0, osn: 0, dsn: 0, lastWk: 0, lastAtt: 0 };
+  const frontKey = e => 2 * e.sk + e.hit + e.tfl + e.dsn / 100;
+
+  let repaired = 0, chartUsed = '';
+  const out = {}, passedLog = [];
+  for (const team of teams) {
+    const s = snap[team], kick = kicks[team] || src.now || new Date().toISOString();
+    const fresh = s && (Date.parse(kick) - Date.parse(s.dt)) / 864e5 <= CHART_DAYS;
+    const person = (id, name, chartPos) => {
+      const r = id && byId[id], a = avail(id, team, name);
+      return { id, n: (r && r.n) || name, pos: (r && r.pos) || chartPos, ...a };
+    };
+    const used = new Set(), passed = {};
+    const shown = p => ({ ...(p.id ? { id: p.id } : {}), n: p.n, pos: p.pos, ...(p.q ? { q: p.q } : {}) });
+    const entry = (p, unit) => {
+      if (!p.out) return shown(p);
+      ((passed[unit] ??= []).some(x => x.n === p.n)) || passed[unit].push({ ...(p.id ? { id: p.id } : {}), n: p.n, pos: p.pos, why: p.why });
+      return null;
+    };
+    const L = {};
+    let next = null;
+    /* 7. the quarterback ESPN's current notes name as this week's starter (announcedStarter above) starts
+       when the rules let him play; whoever was ahead of him is passed over, not starting */
+    const ann = announcedStarter({ team, espn, espnOf: espOf, roster, chartNames, since: sinceOf(team), kick: kicks[team] || '', week, opp: (src.opps || {})[team] });
+    const named = ann ? person(ann.id, ann.n, 'QB') : null;
+    const takesOver = () => named && !named.out && !(L.qb[0] && (L.qb[0].id && named.id ? L.qb[0].id === named.id : normName(L.qb[0].n) === normName(named.n)));
+    const startNamed = ahead => {
+      for (const a of ahead) { const p = person(a.id, a.n, 'QB'); entry(p.out ? p : { ...p, out: true, why: `not starting${p.q ? ` (${p.q})` : ''}: ${named.n} named the starter, per ESPN` }, 'qb'); }
+      L.qb = [shown(named)];
+    };
+    if (fresh) {
+      chartUsed = chartUsed > s.dt ? chartUsed : s.dt;
+      const rows = s.rows.map(r => {
+        const { id, repaired: fixed } = chartId(team, r);
+        if (fixed) repaired++;
+        return { id, name: r.player_name, slot: r.pos_abb, rank: +r.pos_rank || 99, grp: r.pos_grp || '' };
+      });
+      const key = r => r.id || `name:${normName(r.name)}`;
+      /* the first available player in each slot, in the slots' order; anyone ahead of him is out */
+      const fill = (slots, unit, per = 1, filter = () => true) => {
+        const picks = [];
+        for (const slot of slots) {
+          const inSlot = rows.filter(r => r.slot === slot && filter(r)).sort((a, b) => a.rank - b.rank);
+          let got = 0;
+          for (const r of inSlot) {
+            if (got >= per) break;
+            if (used.has(key(r))) continue;
+            const p = person(r.id, r.name, r.slot), e = entry(p, unit);
+            if (!e) continue;
+            used.add(key(r)); picks.push({ ...e, u: usage(team, r.id) }); got++;
+          }
+        }
+        return picks;
+      };
+      const strip = arr => arr.map(({ u, ...e }) => e);
+      L.qb = strip(fill(['QB'], 'qb'));
+      if (takesOver()) {
+        /* everyone on the chart above him; if he is not on it, everyone down to the one it would have started */
+        const qbRows = rows.filter(r => r.slot === 'QB').sort((a, b) => a.rank - b.rank);
+        const at = qbRows.findIndex(r => r.id && r.id === named.id), pick = L.qb[0] ? qbRows.findIndex(r => key(r) === (L.qb[0].id || `name:${normName(L.qb[0].n)}`)) : -1;
+        const ahead = qbRows.slice(0, at >= 0 ? at : pick + 1);
+        for (const r of ahead) used.delete(key(r));
+        startNamed(ahead.map(r => ({ id: r.id, n: r.name })));
+        used.add(named.id || `name:${normName(named.n)}`);
+      }
+      /* the next quarterback on the chart, available, for a starter who carries a tag */
+      if (L.qb[0] && L.qb[0].q) {
+        for (const r of rows.filter(r => r.slot === 'QB').sort((a, b) => a.rank - b.rank)) {
+          if (used.has(key(r))) continue;
+          const p = person(r.id, r.name, r.slot);
+          if (!p.out) { next = { ...shown(p), from: 'chart' }; break; }
+        }
+      }
+      L.ol = strip(fill(OL_SLOTS, 'ol'));
+      L.rb = strip(fill(['RB'], 'rb', 2));
+      /* receivers: the chart ranks wide receivers 1..n across its three WR slots; the starters are the first three */
+      const wr = rows.filter(r => r.slot === 'WR').sort((a, b) => a.rank - b.rank);
+      const recPicks = [];
+      for (const r of wr) { if (recPicks.length >= 3) break; if (used.has(key(r))) continue; const p = person(r.id, r.name, 'WR'), e = entry(p, 'rec'); if (!e) continue; used.add(key(r)); recPicks.push({ ...e, u: usage(team, r.id) }); }
+      recPicks.push(...fill(['TE'], 'rec'));
+      L.rec = strip(recPicks.sort((a, b) => b.u.tgt - a.u.tgt).slice(0, 3));
+      const defSlots = [...new Set(rows.filter(r => /^Base/.test(r.grp) || /D$/.test(r.grp)).map(r => r.slot))];
+      L.front = strip(fill(defSlots.filter(x => FRONT_SLOTS.includes(x)), 'front').sort((a, b) => frontKey(b.u) - frontKey(a.u)).slice(0, 3));
+      L.db = strip(fill(defSlots.filter(x => DB_SLOTS.includes(x)), 'db').sort((a, b) => b.u.dsn - a.u.dsn).slice(0, 3));
+    } else {
+      /* no chart: 2026 usage on this team, current roster only, minus the out */
+      const mine = Object.entries(use[team] || {});
+      const top = (filter, score, k, unit, record = true) => {
+        const picks = [];
+        for (const [id, e] of mine.filter(([id, e]) => filter((byId[id] && byId[id].pos) || e.pos || '') && score(e) > 0).sort((a, b) => score(b[1]) - score(a[1]))) {
+          if (picks.length >= k) break;
+          const p = person(byId[id] ? id : null, e.n, e.pos), x = record ? entry(p, unit) : (p.out ? null : shown(p));
+          if (x) picks.push(x);
+        }
+        return picks;
+      };
+      /* the quarterback: whoever threw most in the team's last game, then the season */
+      const qbScore = e => (e.lastWk === lastPass[team] ? 1e6 * e.lastAtt : 0) + e.att;
+      L.qb = top(isQB, qbScore, 1, 'qb');
+      if (takesOver()) startNamed(L.qb.map(p => ({ id: p.id, n: p.n })));
+      if (L.qb[0] && L.qb[0].q) { next = top(isQB, qbScore, 2, 'qb', false).find(p => p.n !== L.qb[0].n) || null; if (next) next.from = 'usage'; }
+      L.ol = top(isOL, e => e.osn, 5, 'ol');
+      L.rb = top(isRB, e => e.car, 2, 'rb');
+      L.rec = top(isRec, e => e.tgt, 3, 'rec');
+      L.front = top(isFront, frontKey, 3, 'front');
+      L.db = top(isDB, e => e.dsn, 3, 'db');
+    }
+    /* a quarterback in doubt and no backup found above: the team's other active quarterbacks, by the
+       same rules, most 2026 dropbacks first; none available is said, not left blank */
+    let nextNone = null;
+    if (L.qb[0] && L.qb[0].q && !next) {
+      const starter = normName(L.qb[0].n);
+      const cands = Object.values(byId).filter(r => r.team === team && isQB(r.pos) && (r.status === 'ACT' || r.status === 'INA') && normName(r.n) !== starter)
+        .sort((a, b) => usage(team, b.id).db - usage(team, a.id).db || a.n.localeCompare(b.n));
+      const why = [];
+      for (const r of cands) { const p = person(r.id, r.n, 'QB'); if (!p.out) { next = { ...shown(p), from: 'roster' }; break; } why.push(`${p.n} is ${p.why}`); }
+      if (!next) nextNone = cands.length ? `no other quarterback on the roster can play (${why.join('; ')})` : 'no other quarterback on the active roster';
+    }
+    for (const u of Object.keys(passed)) for (const p of passed[u]) passedLog.push(`${team} ${u}: ${p.n} (${p.pos}) ${p.why}`);
+    /* whose numbers the passing rank mostly is, when that is not the starter's */
+    let note = null;
+    const qbs = Object.entries(use[team] || {}).filter(([, e]) => isQB(e.pos || '') && e.db > 0).sort((a, b) => b[1].db - a[1].db);
+    const tot = qbs.reduce((a, [, e]) => a + e.db, 0);
+    if (L.qb[0] && qbs.length && tot > 0) {
+      const [lid, le] = qbs[0], ln = (byId[lid] && byId[lid].n) || le.n;
+      if (ln !== L.qb[0].n && le.db / tot > 0.5) note = `The passing numbers are the team's, mostly ${ln}'s dropbacks.`;
+    }
+    out[team] = { L, out: passed, next, nextNone, note, chart: fresh ? s.dt : null };
+  }
+  return { teams: out, chart: chartUsed, reported, reportDay, filed, repaired, passedLog, chartNames };
+}
+
+function units(src) {
+  const RT = ratings(src.team25, src.team26, src.player25, src.player26);
+  const { teams, Z, R, S, g26 } = RT;
+  if (teams.length < 32) throw new Error(`the stats covered ${teams.length} teams`);
+  const LU = lineups({ ...src, teams });
+  const U = {};
+  for (const t of teams) {
+    const lu = LU.teams[t];
+    const unit = u => ({ rank: R[u][t], z: Z[u][t], who: lu.L[u] || [], ...(lu.out[u] ? { out: lu.out[u] } : {}), stats: S[t][u] });
+    U[t] = {
+      g26: g26[t],
+      qb: { ...unit('qb'), ...(lu.next ? { next: lu.next } : {}), ...(lu.nextNone ? { next: null, next_none: lu.nextNone } : {}), ...(lu.note ? { note: lu.note } : {}) }, ol: unit('ol'), rb: unit('rb'), rec: unit('rec'), front: unit('front'), db: unit('db'),
+      vs: { passD: { rank: R.passD[t], z: Z.passD[t] }, runD: { rank: R.runD[t], z: Z.runD[t] } },
+    };
+  }
+  return { U, LU };
+}
+
+/* ---------------- the week, its kickoffs and each team's last game ---------------- */
+function schedule(games, now) {
+  const st = seasonState(games);
+  const rows = games.filter(r => r.season === String(SEASON) && r.game_type === 'REG');
+  const kicks = {}, lastGame = {}, opps = {};
+  for (const r of rows.filter(r => +r.week === st.week)) {
+    const k = etToISO(r.gameday, r.gametime), a = ab(r.away_team), h = ab(r.home_team);
+    kicks[a] = k; kicks[h] = k; opps[a] = h; opps[h] = a;
+  }
+  /* each team's last game before this week: rule 4 looks there, so a team back from a bye is covered */
+  for (const r of rows.filter(r => +r.week < st.week)) {
+    const k = etToISO(r.gameday, r.gametime);
+    for (const t of [ab(r.away_team), ab(r.home_team)]) if (!lastGame[t] || +r.week > lastGame[t].week) lastGame[t] = { week: +r.week, kick: k };
+  }
+  return { ...st, kicks, lastGame, opps, now };
+}
+
+/* the chart file holds every snapshot since March (60 MB): keep the header and the last few weeks before parsing */
+async function getChart(sinceISO) {
+  const { text, lastModified } = await fetchText(URLS.depth26);
+  LAST_MODIFIED.depth26 = lastModified;
+  const nl = text.indexOf('\n'), since = sinceISO.slice(0, 10);
+  const keep = [text.slice(0, nl)];
+  for (const line of text.slice(nl + 1).split('\n')) if (line.slice(0, 10) >= since) keep.push(line);
+  return parseCSV(keep.join('\n') + '\n');
+}
+
+/* ---------------- lineups kept per week, and graded against who played ---------------- */
+/* tools/out/weekN-lineups.json: each team's lineup as the last run before its kickoff left it */
+function freezeLineups(file, week, U, kicks, nowISO) {
+  let F = { season: SEASON, week, teams: {} };
+  try { const old = JSON.parse(fs.readFileSync(file, 'utf8')); if (old.season === SEASON && old.week === week) F = old; } catch (e) { /* a new week */ }
+  let changed = 0;
+  for (const t of Object.keys(kicks)) {
+    if (!U[t] || Date.parse(kicks[t]) <= Date.parse(nowISO)) continue;   // kicked off: keep what was shown before
+    const names = Object.fromEntries(['qb', 'ol', 'rb', 'rec', 'front', 'db'].map(u => [u, U[t][u].who.map(p => ({ id: p.id || null, n: p.n, pos: p.pos, ...(p.q ? { q: p.q } : {}) }))]));
+    const was = F.teams[t];
+    if (was && was.kick === kicks[t] && JSON.stringify(was.units) === JSON.stringify(names)) continue;   // the same lineup: its time stays
+    F.teams[t] = { kick: kicks[t], built_at: nowISO, units: names };
+    changed++;
+  }
+  if (changed) fs.writeFileSync(file, JSON.stringify(F, null, 1) + '\n');
+  return changed;
+}
+/* every named player against nflverse's snap counts for that game: a starter with no snaps did not play */
+function gradeLineups(F, snaps, roster) {
+  const pfrOf = {}; for (const r of roster || []) if (r.gsis_id && r.pfr_id) pfrOf[r.gsis_id] = r.pfr_id;
+  /* by id where the roster gives one; else by name, or first initial and last name ("Greg" and "Gregory") */
+  const short = n => { const w = normName(n).split(' '); return w.length > 1 ? `${w[0][0]}.${w.slice(1).join(' ')}` : w[0]; };
+  const played = new Set(), byName = new Set(), teamsIn = new Set();
+  for (const r of snaps || []) {
+    if (+r.week !== F.week || (r.game_type && r.game_type !== 'REG')) continue;
+    const t = ab(r.team); teamsIn.add(t);
+    if (num(r.offense_snaps) + num(r.defense_snaps) > 0) { played.add(r.pfr_player_id); byName.add(`${t}|${normName(r.player)}`); byName.add(`${t}|${short(r.player)}`); }
+  }
+  const missed = []; let named = 0;
+  for (const [t, e] of Object.entries(F.teams)) {
+    if (!teamsIn.has(t)) continue;
+    for (const [u, list] of Object.entries(e.units)) for (const p of list) {
+      named++;
+      const ok = (p.id && pfrOf[p.id] && played.has(pfrOf[p.id])) || byName.has(`${t}|${normName(p.n)}`) || byName.has(`${t}|${short(p.n)}`);
+      if (!ok) missed.push({ team: t, unit: u, ...p });
+    }
+  }
+  return { named, missed, teams: [...teamsIn].filter(t => F.teams[t]).length };
+}
+const GRADE_WARN = 0.05;   // above 5% of named starters without a snap, or any quarterback, the run warns
+function gradeWeeks(outDir, current, snaps, roster) {
+  for (let w = current - 1; w >= Math.max(1, current - 3); w--) {
+    const f = path.join(outDir, `week${w}-lineups.json`), g = path.join(outDir, `week${w}-lineups-grade.md`);
+    if (!fs.existsSync(f)) continue;
+    const F = JSON.parse(fs.readFileSync(f, 'utf8'));
+    const G = gradeLineups(F, snaps, roster);
+    if (!G.teams) continue;
+    const share = G.named ? G.missed.length / G.named : 0, qbs = G.missed.filter(m => m.unit === 'qb');
+    const body = [`# Week ${w} Deep Dive lineups against who played`, '',
+      `Graded ${new Date().toISOString().slice(0, 10)} from nflverse's snap counts: ${G.teams} teams, ${G.named} players named, ${G.missed.length} without a snap (${(share * 100).toFixed(1)}%).`, '',
+      ...(G.missed.length ? G.missed.map(m => `- ${m.team} ${m.unit}: ${m.n} (${m.pos}${m.q ? ', ' + m.q : ''})`) : ['- every named player played'])].join('\n') + '\n';
+    const undated = t => t.replace(/^Graded \d{4}-\d\d-\d\d /m, 'Graded ');
+    if (!fs.existsSync(g) || undated(fs.readFileSync(g, 'utf8')) !== undated(body)) fs.writeFileSync(g, body);
+    console.log(`week ${w} lineups graded: ${G.missed.length} of ${G.named} named players without a snap`);
+    if (share > GRADE_WARN || qbs.length) warn(`week ${w} Deep Dive: ${G.missed.length} of ${G.named} named players did not play${qbs.length ? `, quarterback ${qbs.map(q => q.team + ' ' + q.n).join(', ')}` : ''} (tools/out/week${w}-lineups-grade.md)`);
+  }
+}
+
+/* opts: out, root, and from pull-week.js the week, its games ({away, home, kick}) and ESPN's injury
+   list ([{team, name, pos, status, type, comment, long, date}]). Run alone, it works the week and
+   kickoffs out itself; the week always comes from the nflverse schedule (tools/lib.js seasonState). */
 async function build(opts = {}) {
   const root = opts.root || path.resolve(__dirname, '..');
   const out = opts.out || path.join(root, 'data');
+  const toolsOut = opts.toolsOut || path.join(root, 'tools', 'out');
+  const cacheDir = opts.cache || path.join(root, 'tools', '.cache');
+  const now = opts.now || new Date().toISOString();
   fs.mkdirSync(out, { recursive: true });
-  try { ranks(root, out); } catch (e) { console.log('ranks2026.js kept:', e.message); }
-  let roster = null, t25 = null, t26 = null, p26 = null, s26 = null;
-  try { roster = await getCSV(URLS.roster26); } catch (e) { console.log('roster unavailable:', e.message); }
-  let rosterPos = {};
-  if (roster) { try { rosterPos = players(roster, out) || {}; } catch (e) { console.log('players2026.js kept:', e.message); } }
-  try { [t25, t26, p26, s26] = await Promise.all([getCSV(URLS.team25), getCSV(URLS.team26), getCSV(URLS.player26), getCSV(URLS.snaps26).catch(() => [])]); }
-  catch (e) { console.log('units2026.js kept: stats unavailable:', e.message); return; }
-  try { units(t25, t26, p26, s26, out, rosterPos); } catch (e) { console.log('units2026.js kept:', e.message); }
+
+  /* every required source first: nothing is written unless all of them arrived */
+  const names = ['games', 'roster26', 'team25', 'team26', 'player25', 'player26', 'injuries26', 'snaps26'];
+  const got = await Promise.allSettled(names.map(n => getCSV(n, opts.fetch)));
+  /* Before the season's first game nflverse has no current-season stats, snap counts or injury report:
+     those files answer 404 (not retried) until there is something in them. With the schedule in hand
+     and no game of the season played, such a 404 is "no games yet", not a failure; any other failure,
+     or a 404 once a game has been played, still stops the build. */
+  const gi = names.indexOf('games');
+  const noGamesYet = got[gi].status === 'fulfilled' && !got[gi].value.some(r => String(r.season) === String(SEASON) && r.game_type === 'REG' && !unplayed(r));
+  const D = {}, failed = [];
+  names.forEach((n, i) => {
+    const why = got[i].reason && got[i].reason.message;
+    if (got[i].status === 'fulfilled') D[n] = got[i].value;
+    else if (noGamesYet && PRESEASON.has(n) && /^404\b/.test(why || '')) { D[n] = []; console.log(`${n}: not published yet (404) and no ${SEASON} game played: none yet`); }
+    else if (OPTIONAL.has(n)) { D[n] = []; warn(`${n} unavailable (${why}): the Deep Dive lists keep the chart's order without snap counts`); }
+    else failed.push(`${n}: ${why}`);
+  });
+  if (failed.length) throw new Error(`required source unavailable, nothing written: ${failed.join('; ')}`);
+  const S = schedule(D.games, now);
+  if (S.phase === 'none') throw new Error(`the nflverse schedule has no ${SEASON} regular season`);
+  if (opts.week && opts.week !== S.week) console.log(`note: asked for week ${opts.week}, the schedule's week is ${S.week}; using ${S.week}`);
+  const week = S.week;
+  /* pull-week.js's kickoffs (ESPN's) where it has them, the schedule's otherwise */
+  const kicks = { ...S.kicks };
+  if (opts.games && (!opts.week || opts.week === week)) for (const g of opts.games) if (g.kick) { kicks[g.away] = g.kick; kicks[g.home] = g.kick; }
+  const firstKick = Object.values(kicks).filter(Boolean).sort()[0] || now;
+  let chart;
+  try { chart = await getChart(new Date(Math.min(Date.parse(firstKick), Date.parse(now)) - CHART_DAYS * 864e5).toISOString()); }
+  catch (e) { throw new Error(`required source unavailable, nothing written: depth26: ${e.message}`); }
+  for (const n of ['injuries26', 'depth26', 'roster26']) console.log(`${n}: Last-Modified ${LAST_MODIFIED[n] || 'not given'}`);
+  const espn = Array.isArray(opts.espn) ? opts.espn : null;
+  /* an empty list is as good as none (pull-week.js passes [] when ESPN answered with nothing usable): warn either way */
+  if (!espn || !espn.length) warn(`ESPN injury list ${espn ? 'empty' : 'not available'}: the lineups rest on the nflverse report alone`);
+
+  /* the chip is the hub's own file, not a download: if it is missing or short, keep the chip as it was and say so */
+  let RK = null;
+  try { RK = ranks(root, D.games); } catch (e) { warn(`ranks2026.js kept: ${e.message}`); }
+  const P = players(D.roster26);
+  const { U, LU } = units({ team25: D.team25, team26: D.team26, player25: D.player25, player26: D.player26, snaps26: D.snaps26,
+    roster: D.roster26, injuries: D.injuries26, chart, espn, week, kicks, lastGame: S.lastGame, opps: S.opps, now, reportModified: LAST_MODIFIED.injuries26 });
+
+  const day = iso => iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' }) : '';
+  const lineSrc = [LU.chart ? `depth charts of ${day(LU.chart)}` : 'season usage (no current depth chart)',
+    LU.reported ? `the week ${week} injury report${LU.reportDay ? ` (practice through ${day(LU.reportDay + 'T16:00:00Z')})` : ''}` : `the injury report (no week ${week} rows yet)`,
+    espn && espn.length ? 'ESPN injuries' : null].filter(Boolean);
+  const lineText = `Lineups from ${lineSrc.length > 1 ? lineSrc.slice(0, -1).join(', ') + ' and ' + lineSrc[lineSrc.length - 1] : lineSrc[0]}` +
+    (espn && espn.length ? '' : `. ESPN's injury list could not be read on this run`) + (D.snaps26.length ? '' : `. Snap counts could not be read, so the order inside a unit is the chart's`);
+  const META = { season: SEASON, week, phase: S.phase, built_at: now,
+    report: { modified: LAST_MODIFIED.injuries26 || '', practice_day: LU.reportDay, filed: Object.keys(LU.filed).filter(t => LU.filed[t]).sort() },
+    sources: { chart: LU.chart || null, espn: !!(espn && espn.length), snaps: D.snaps26.length > 0 } };
+
+  /* everything arrived: write */
+  if (RK) {
+    fs.writeFileSync(path.join(out, 'ranks2026.js'), dataFile('RANKS26', RK.R, `const RANKS26_ASOF = ${JSON.stringify(RK.asof)};\nconst RANKS26_SRC = ${JSON.stringify({ file: 'elo/data/model.json', built_at: RK.built })};\n`));
+    console.log(`ranks2026.js: Team Rankings order, #1 ${Object.keys(RK.R).find(t => RK.R[t].rank === 1)}, through ${RK.asof} (model.json built ${RK.built})`);
+  }
+  fs.writeFileSync(path.join(out, 'players2026.js'), dataFile('PLAYERS26', P));
+  console.log(`players2026.js: ${Object.values(P).reduce((a, t) => a + Object.keys(t).length, 0)} names across ${Object.keys(P).length} teams`);
+  /* units2026.js is rewritten only when something in it besides its build time changed: built_at says
+     when the Deep Dive last changed, and a run that changes nothing commits nothing (until 2026-10-09
+     the stamp moved on every run, so all nineteen runs a week committed). The smoke test proves the
+     run itself from the snapshot below (run_at), not from this stamp. */
+  const unitsFile = path.join(out, 'units2026.js');
+  const unitsBody = m => dataFile('UNITS26', U,
+    `const UNITS26_BASIS = ${JSON.stringify(`${PRIOR} season counted as ${PRIOR_GAMES} games`)};\n` +
+    `const UNITS26_LINEUPS = ${JSON.stringify(lineText)};\n` +
+    `const UNITS26_META = ${JSON.stringify(m)};\n`);
+  let oldBuilt = null;
+  try { const m = fs.readFileSync(unitsFile, 'utf8').match(/^const UNITS26_META = (.*);$/m); oldBuilt = m && JSON.parse(m[1]).built_at; } catch (e) { /* no file yet */ }
+  if (oldBuilt && fs.readFileSync(unitsFile, 'utf8') === unitsBody({ ...META, built_at: oldBuilt })) {
+    META.built_at = oldBuilt;
+    console.log(`units2026.js: unchanged since ${oldBuilt}, not rewritten`);
+  } else fs.writeFileSync(unitsFile, unitsBody(META));
+  console.log(`units2026.js: ${Object.keys(U).length} teams, week ${week} (${S.phase}), 2026 games ${Math.min(...Object.values(U).map(u => u.g26))} to ${Math.max(...Object.values(U).map(u => u.g26))}; lineups from ${lineSrc.join(', ')}; ${LU.repaired} chart id(s) repaired by name; filed: ${META.report.filed.join(' ') || 'none'}`);
+  for (const l of LU.passedLog) console.log('  passed over: ' + l);
+  for (const t of Object.keys(U)) if (U[t].qb.next || U[t].qb.next_none) console.log(`  ${t} qb: ${U[t].qb.who[0].n} (${U[t].qb.who[0].q}); ${U[t].qb.next ? `next ${U[t].qb.next.n} (from the ${U[t].qb.next.from})` : U[t].qb.next_none}`);
+
+  /* the sources the smoke test checks the lineups against: the same files, not a later download */
+  fs.mkdirSync(cacheDir, { recursive: true });
+  const keepInj = D.injuries26.filter(r => r.season_type === 'REG' && (+r.week === week || Object.values(S.lastGame).some(g => g.week === +r.week)));
+  fs.writeFileSync(path.join(cacheDir, 'lineup-sources.json'), JSON.stringify({ built_at: META.built_at, run_at: new Date().toISOString(), season: SEASON, week, report_modified: LAST_MODIFIED.injuries26 || '',
+    injuries: keepInj, roster: D.roster26.map(r => ({ gsis_id: r.gsis_id, team: r.team, status: r.status, full_name: r.full_name, football_name: r.football_name, first_name: r.first_name, last_name: r.last_name, position: r.position })),
+    chart_names: LU.chartNames, kicks,
+    games: D.games.filter(r => r.season === String(SEASON)).map(r => ({ game_id: r.game_id, season: r.season, game_type: r.game_type, week: r.week, gameday: r.gameday, gametime: r.gametime, away_team: r.away_team, home_team: r.home_team, away_score: r.away_score, home_score: r.home_score })),
+    espn: espn || null, model_built_at: RK ? RK.built : null }));
+
+  if (S.phase === 'regular') {
+    fs.mkdirSync(toolsOut, { recursive: true });
+    const n = freezeLineups(path.join(toolsOut, `week${week}-lineups.json`), week, U, kicks, now);
+    console.log(`tools/out/week${week}-lineups.json: ${n} team(s) before kickoff updated`);
+  }
+  gradeWeeks(toolsOut, S.phase === 'regular' ? week : S.lastWeek + 1, D.snaps26, D.roster26);
+  return { week, phase: S.phase, U, meta: META };
 }
 
-module.exports = { build };
-if (require.main === module) build().catch(e => { console.error(e); process.exit(1); });
+module.exports = { build, units, ratings, lineups, normName, notePractice, weekPractice, espnIndex, announcedStarter, lastPracticeDay, etDay, schedule, gradeLineups, URLS };
+if (require.main === module) build().catch(e => { console.error(e.message || e); process.exit(1); });

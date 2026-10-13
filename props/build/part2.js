@@ -2,9 +2,13 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const TEAM_COLORS={"ARI":["#97233F","#000000","#FFB612","#A5ACAF"],"ATL":["#A71930","#000000","#A5ACAF","#A30D2D"],"BAL":["#241773","#9E7C0C","#C60C30"],"BUF":["#00338D","#C60C30","#0C2E82","#D50A0A"],"CAR":["#0085CA","#000000","#BFC0BF"],"CHI":["#0B162A","#E64100"],"CIN":["#FB4F14","#000000","#D32F1E"],"CLE":["#FF3C00","#311D00","#A5ACAF","#D32F1E"],"DAL":["#002244","#B0B7BC","#ACC0C6","#A5ACAF"],"DEN":["#002244","#FB4F14","#00234C","#FF5200"],"DET":["#0076B6","#B0B7BC","#000000","#004E89"],"GB":["#203731","#FFB612","#1C2D25","#EEAD1E"],"HOU":["#03202F","#A71930","#00071C","#A30D2D"],"IND":["#002C5F","#A5ACAF","#013369","#9BA1A2"],"JAX":["#006778","#000000","#9F792C","#D7A22A"],"KC":["#E31837","#FFB612","#000000"],"LA":["#003594","#FFD100","#001532","#AF925D"],"LAC":["#007BC7","#FFC20E","#FFB612","#001532"],"LV":["#000000","#A5ACAF","#A6AEB0"],"MIA":["#008E97","#F58220","#005778"],"MIN":["#4F2683","#FFC62F","#E9BF9B","#000000"],"NE":["#002244","#C60C30","#B0B7BC","#001532"],"NO":["#D3BC8D","#000000","#9F8958"],"NYG":["#0B2265","#A71930","#A5ACAF","#012352"],"NYJ":["#125740","#000000","#FFFFFF"],"PHI":["#004C54","#A5ACAF","#ACC0C6","#000000"],"PIT":["#000000","#FFB612","#C60C30","#00539B"],"SEA":["#002244","#69BE28","#A5ACAF","#001532"],"SF":["#AA0000","#B3995D","#000000","#A5ACAF"],"TB":["#A71930","#322F2B","#000000","#FF7900"],"TEN":["#0C2340","#4B92DB","#C8102E"],"WAS":["#5A1414","#FFB612","#000000","#5B2B2F"]};
 const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
-const MODEL_BUILD='2026.1 fit 2019-2025';
-const DATA_BUILD=PAY.build||'baseline';
-const APP_BUILD='app v51 \u00b7 2026-09-20';
+const MODEL_BUILD='2026.2 fit 2019-2025';
+let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
+/* what the saved season is checked against. DATA_BUILD is the model's own hash and moves
+   only when rosters or depth charts do; this is the moment the payload was baked, so it
+   moves on every run of the job and a published change always reaches every device. */
+let DATA_STAMP='baseline';
+const APP_BUILD='app v103 \u00b7 2026-10-13';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -20,7 +24,7 @@ const MARKETS=[
  {k:'receiving_yards',short:'rec yards',lbl:'Receiving yards',grps:['RB','WR','TE'],dec:1,alias:['rec_yds','receiving yards','rec yards']},
  {k:'targets',short:'targets',lbl:'Targets',grps:['WR','TE'],dec:1,alias:['targets','tgt']},
  {k:'scrim_yards',short:'rush + rec yards',lbl:'Rush + rec yards',grps:['RB'],dec:1,alias:['scrim_yds','scrimmage yards','rush+rec']},
- {k:'any_td',short:'touchdown',lbl:'Anytime TD',grps:['RB','WR','TE'],prob:true,alias:['anytime_td','atd','anytime touchdown','td']},
+ {k:'any_td',short:'touchdown',lbl:'Anytime TD',grps:['QB','RB','WR','TE'],prob:true,alias:['anytime_td','atd','anytime touchdown','td']},
  {k:'fg_made',short:'field goals',lbl:'Field goals made',grps:['K'],dec:2,noedge:true,alias:['fg','fg_made','field goals']},
  {k:'fg_att',short:'FG attempts',lbl:'FG attempts',grps:['K'],dec:2,noedge:true,alias:['fg_att','fg attempts']},
  {k:'kick_pts',short:'kicking points',lbl:'Kicking points',grps:['K'],dec:1,noedge:true,alias:['kicking_points','kick_pts','kicker points']},
@@ -38,7 +42,7 @@ const TCOLS=['t_pass_att','t_carries','t_plays','t_pass_yds','t_rush_yds','t_tar
 const DCOLS=['d_pass_yds','d_rush_yds','d_pass_att','d_carries','d_tds'];
 /* projected but not offered as a bet: targets still drives usage ranking and receptions */
 const NO_BET=new Set(['targets']);
-const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards'],
+const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','any_td'],
  RB:['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
  WR:['targets','receptions','receiving_yards','any_td'],
  TE:['targets','receptions','receiving_yards','any_td'],
@@ -55,6 +59,10 @@ const store={
 };
 const $=id=>document.getElementById(id);
 let S=null, saveTimer=null;
+/* who can play, from the payload on every load and never saved with S: the roster's status for
+   each player (ACT; DEV the practice squad; RES a reserve list; CUT released ...) and this week's
+   injury report beyond the ruled out (Questionable, not practising, limited) */
+let RSTAT={}, INJ={};
 function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(S);
   $('saveState').textContent = r==='saved'?'Autosaved':'Not saved: export a backup'; },300); }
 
@@ -66,9 +74,9 @@ const ewm=acc=>acc[1]>0?acc[0]/acc[1]:0;
 
 /* ---------- fresh state built from the embedded 2025 baseline ---------- */
 function freshState(){
-  const st={season:SEASON,build:MODEL_BUILD,dataBuild:DATA_BUILD,week:1,players:{},teams:{},defs:{},defg:{},
+  const st={build:MODEL_BUILD,dataBuild:DATA_BUILD,dataStamp:DATA_STAMP,players:{},teams:{},defs:{},defg:{},
     sched:JSON.parse(JSON.stringify(PAY.sched)),processed:{},processedGames:{},
-    accuracy:{},inactive:{},depth:{},odds:{},parlay:{},saved:[],actuals:{},projections:{},headlines:{},stake:20,bookPrice:null,margin:'typical',
+    inactive:{},depth:{},odds:{},parlay:{},saved:[],actuals:{},projections:{},headlines:{},stake:20,bookPrice:null,margin:'typical',
     ui:{game:null,open:{},showAll:false}};
   for(const p of PAY.players){
     const o={id:p.id,n:p.n,pos:p.p,grp:p.g,team:p.t,gp:0,base_gp:p.gp,e5:{},e3:{},car:{},py:{}};
@@ -146,7 +154,7 @@ function gameCtx(g,team){
   const teamSpread=(sp!=null)?(isHome?-sp:sp)
     :(isHome?-modelMargin(g):modelMargin(g));
   return {home:isHome?1:0, sprd:clip(teamSpread/7,-3,3), implied, src,
-    imp:clip((implied-PAY.norm.implied_mean)/(PAY.norm.implied_sd||1),-3,3), hasLine:sp!=null&&tot!=null};
+    imp:clip((implied-PAY.norm.implied_mean)/(PAY.norm.implied_sd||1),-3,3)};
 }
 
 /* ---------- game bets: a team to win, a team to cover ----------
@@ -166,11 +174,61 @@ function gameBet(g,team,kind){
   const pH=1-gbNorm((g.sp-mu)/MARGIN_SD);      /* home covers when its margin beats the spread */
   return {p:isHome?pH:1-pH,line:isHome?-g.sp:g.sp,mu:isHome?mu:-mu};
 }
+/* ---------- the game total: over or under the posted points ----------
+   The chance is the market's own: mu is the posted total, and the over's chance is its over and
+   under prices with the book's margin taken out (devigOver), an even 50% where either price is
+   missing. Nothing of the model's goes into it. props/research/totals/ built four dedicated
+   points formulas on 2012-2023 and tested each once, frozen, on 2024 to 2026: none beat the
+   posted total, and the rule used before (the model's own points, modelPoints for each side,
+   pulled halfway to the posted total) was measurably worse than it over those 635 games (MAE
+   +0.13 points, 90% interval +0.04 to +0.23; Brier +0.0042, +0.0012 to +0.0073; its 3-point-edge
+   picks 66-81, -20.3 units). The model's points (modelTotal) are shown beside the total on the
+   Game bets card as the model's points, a display only, kept out of the chance, the edge and
+   the suggestions. TOTAL_SD is how far final totals have landed from the posted total: 13.2
+   points across the 4,175 regular-season games of 2010-2025 in nflverse's games.csv, measured
+   once and never on the season in play. It prices a total on a number other than the posted
+   one, Normal(posted total, 13.2), and nothing else. The book's price for a side is the over or
+   under odds the payload carries beside the total (nflverse's, or DraftKings' with its own
+   number); with none on file the leg is shown at an estimated -110. At the book's own chance
+   a total has no edge, so a suggested parlay takes one only as the last fill, where the legs with
+   an edge cannot make a level, and marks it no edge (pbPool's market legs, pbTier). */
+const TOTAL_SD=13.2, TOTAL_EST=-110;
+function modelTotal(g){ return modelPoints(g.a,g.h,false)+modelPoints(g.h,g.a,true); }
+/* the market's chance of the over on the posted total: both prices with the margin out, else 50% */
+function totalOver(g){ const o=totalBook(g,'over'), u=totalBook(g,'under'); return (o!=null&&u!=null)?devigOver(o,u):0.5; }
+/* side 'over' or 'under': the chance that side lands on the posted total, or on k where k is
+   another number (Normal about the posted total, TOTAL_SD). null with no total posted */
+function totalBet(g,side,k){
+  if(g.tot==null||!isFinite(g.tot)) return null;
+  const line=(k==null||!isFinite(k))?g.tot:+k;
+  const pO=line===g.tot?totalOver(g):1-gbNorm((line-g.tot)/TOTAL_SD);
+  return {p:side==='under'?1-pO:pO,line,mu:g.tot};
+}
+function totalBook(g,side){ const v=side==='under'?g.tou:g.tov; return (v!=null&&isFinite(v)&&v!==0)?v:null; }
+/* the leg itself, as the builder and the suggestions carry it: one key a game, so its over and
+   its under can never both be on a parlay */
+function totalLeg(g,side){
+  const b=totalBet(g,side); if(!b) return null;
+  const book=totalBook(g,side);
+  return {key:legKey(g.id,'game','total'),gid:g.id,pid:'game',stat:'total',k:b.line,side,main:true,p:b.p,
+    price:book!=null?book:TOTAL_EST,src:book!=null?'real':'est',mu:b.mu,
+    name:`${TEAM_NAMES[g.a]||g.a} at ${TEAM_NAMES[g.h]||g.h}`,pos:'Game',grp:'TEAM',team:g.a,opp:g.h,week:g.w,
+    label:`${side==='under'?'Under':'Over'} ${b.line} points`};
+}
 /* chance of k or more touchdowns from the any-time chance p, touchdowns treated as Poisson */
 function tdPlus(p,k){ const lam=-Math.log(Math.max(1e-9,1-Math.min(p,1-1e-9))); let s=0,t=1; for(let i=0;i<k;i++){ s+=t; t*=lam/(i+1); } return Math.max(0,Math.min(1,1-Math.exp(-lam)*s)); }
-function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'); }
+/* a touchdown leg's wording. A quarterback's anytime touchdown is one he scores himself, on a run or
+   a catch, as DraftKings settles it: a touchdown pass he throws does not count, so his leg says so */
+function tdLabel(grp,k){
+  const kk=k>=2?k:1;
+  if(grp==='QB') return kk>=2?`Scores ${kk}+ rushing or receiving TDs (not TD passes)`:'Scores a rushing or receiving TD (not a TD pass)';
+  return kk>=2?`Scores ${kk}+ touchdowns`:'Scores a touchdown';
+}
+function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'||l.stat==='total'); }
 function settleGameLeg(l){
   const g=S.sched.find(x=>x.id===l.gid); if(!g||!hasScore(g)) return null;
+  /* a game total: the final's points against the line, on the side bet */
+  if(l.stat==='total'){ const t=g.hs+g.as, k=+l.k; if(t===k) return 'push'; return (l.side==='under'?t<k:t>k)?'win':'loss'; }
   const margin=l.team===g.h?g.hs-g.as:g.as-g.hs;
   const v=l.stat==='ml'?margin:margin+l.k;   /* l.k is the team's spread line */
   return v>0?'win':(v<0?'loss':'push');
@@ -215,7 +273,7 @@ function project(pl,stat,opp,ctx){
     }
     return {p};
   }
-  return {mu:Math.max(dot(m.coef,x),0), count:!!m.count};
+  return {mu:Math.max(dot(m.coef,x),0)};
 }
 
 /* ---------- projection to probability, via the stored outcome shape ---------- */
@@ -244,15 +302,6 @@ function pOver(grp,stat,mu,line){
   const F=cdfBlend(grp,stat,mu,line/Math.max(mu,0.05)); if(F==null) return null;
   return clip(1-F,0.001,0.999);
 }
-function fairLine(grp,stat,mu){
-  /* the line where the blended chance of going over is 50% */
-  let lo=mu*0.2, hi=mu*3+1;
-  for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(pOver(grp,stat,mu,mid)>0.5) lo=mid; else hi=mid; }
-  return (lo+hi)/2;
-}
-
-/* ---------- odds helpers ---------- */
-function mlToProb(ml){ if(ml==null||!isFinite(ml)||ml===0) return null; return ml>0?100/(ml+100):Math.abs(ml)/(Math.abs(ml)+100); }
 
 /* ---------- build every playable line for one game ---------- */
 function playersFor(team){
@@ -260,8 +309,26 @@ function playersFor(team){
 }
 
 /* ---------- correlated parlays: gaussian copula over the shipped pair table ---------- */
+/* a game total against the player lines of its own game: how a stat's miss (his line against his
+   last five games, weighted) moved with the total's miss (the final's points against the posted
+   total), as normal-score correlations over 2019-2024's regular season, starters only, from
+   raw/feat.pkl and games.csv. Passing touchdowns and yards ride with the total; a kicker's field
+   goals a little against it. Below 0.03 is left out as nothing. A quarterback's own touchdown (a run
+   or a catch) was measured the same way in October 2026 (props/research/qb_td.py, which gives every
+   entry here back to within 0.014). */
+const TOTAL_RHO={'QB:attempts':0.10,'QB:completions':0.16,'QB:passing_yards':0.29,'QB:passing_tds':0.44,'QB:rushing_yards':0.05,'QB:any_td':0.09,
+  'RB:rushing_yards':0.06,'RB:receiving_yards':0.06,'RB:scrim_yards':0.08,'RB:any_td':0.17,
+  'WR:receptions':0.12,'WR:receiving_yards':0.16,'WR:any_td':0.17,
+  'TE:receptions':0.07,'TE:receiving_yards':0.12,'TE:any_td':0.12,
+  'K:fg_att':-0.07,'K:kick_pts':0.14};
 function legRho(a,b){
   if(a.gid!==b.gid) return 0;
+  /* the total moves with its game's passing and scoring lines (TOTAL_RHO, the side of each leg
+     is the leg's own); with a win or cover bet on the same game hardly at all (0.05 for a cover
+     and 0.01 for a win, measured on 2010-2025), so not at all here */
+  if(a.stat==='total'||b.stat==='total'){
+    if(a.stat==='total'&&b.stat==='total') return 0.95;
+    const o=a.stat==='total'?b:a; return isGameLeg(o)?0:(TOTAL_RHO[o.grp+':'+o.stat]||0); }
   /* game legs: unrelated to player legs (not measured); two from the same game are strongly related */
   if(isGameLeg(a)||isGameLeg(b)){ if(!(isGameLeg(a)&&isGameLeg(b))) return 0; const same=a.team===b.team; return a.stat===b.stat?(same?0.95:-0.95):(same?0.75:-0.75); }
   const ka=a.grp+':'+a.stat, kb=b.grp+':'+b.stat;
@@ -313,10 +380,8 @@ function parlayProb(legs,sims=40000){
     for(let i=0;i<n&&ok;i++){ let z=0; for(let k=0;k<=i;k++) z+=L[i][k]*g[k]; if(dir[i]*z<=thr[i]) ok=false; }
     if(ok) hits++;
   }
-  return {indep,corr:hits/sims,pairs,shrunk:lam>0};
+  return {indep,corr:hits/sims,pairs};
 }
-
-/* every play the model would actually bet, strongest first */
 
 /* ---------- threshold ladders: "10+, 20+, 30+" style ---------- */
 const LADDER={
@@ -371,10 +436,29 @@ function depthOf(pl){
   return {team:d[0],pos:d[1],rank:d[2]};
 }
 function depthLabel(pl){ const d=depthOf(pl); return d&&d.pos===pl.grp?d.pos+d.rank:null; }
+/* why a charted player is not on the page. Every reason a player is out starts "ruled out", so a
+   reader is never told an injured starter merely lacks games */
+const SEASON_WHY={RES:'on a reserve list',CUT:'released',RET:'retired',EXE:'exempt list',TRD:'traded',TRT:'traded',NONE:'on no roster'};
+function inactiveWhy(r){
+  if(!r||typeof r!=='object') return 'ruled out';
+  if(r.week==='season') return 'ruled out ('+(SEASON_WHY[r.status]||'not on the active roster')+')';
+  const inj=r.inj?', '+String(r.inj).toLowerCase():'';
+  if(r.status==='Out') return 'ruled out'+inj;
+  if(r.status==='Doubtful') return 'ruled out (doubtful'+inj+')';
+  if(r.status==='Pending') return 'ruled out until his status is filed (out last game, '+(r.why||'no word yet')+')';
+  return 'ruled out ('+String(r.status||'').toLowerCase()+inj+')';
+}
+/* a practice-squad player plays only when he is elevated: he is a starter when his team's chart
+   has him or he played in one of the two weeks before this game, and a backup otherwise */
+function devOk(x,w){
+  if(RSTAT[x.pl.id]!=='DEV'||x.rank!=null) return true;
+  return [w-1,w-2].some(k=>!!actualFor(k,x.pl.id));
+}
 /* the players who will actually be on the field enough to matter.
    the depth chart decides the order when we have it, usage when we don't. */
 function rosterFor(g,showAll){
   const byTeam={};
+  const D=(S.depth&&Object.keys(S.depth).length)?S.depth:PAY.depth;
   for(const [team,opp] of [[g.a,g.h],[g.h,g.a]]){
     const ctx=gameCtx(g,team);
     const list=playersFor(team).map(pl=>{
@@ -382,6 +466,8 @@ function rosterFor(g,showAll){
       return {pl,team,opp,ctx,use:usage(pl,opp,ctx),gp:pl.gp+pl.base_gp,
         rank:(d&&d.team===team&&d.pos===pl.grp)?d.rank:null};
     }).filter(x=>x.use>0);
+    /* where this team's ruled-out players stand on the chart */
+    const outAt={}; for(const id in (D||{})){ const d=D[id]; if(d[0]===team&&S.inactive[id]) (outAt[d[1]]??=[]).push(d[2]); }
     const out=[];
     for(const grp of ['QB','RB','WR','TE','K']){
       const pool=list.filter(x=>x.pl.grp===grp).sort((a,b)=>{
@@ -390,20 +476,32 @@ function rosterFor(g,showAll){
         if(b.rank!=null) return 1;
         return b.use-a.use;
       });
-      const cut=pool.filter(x=>x.gp>=3&&(x.rank!=null?x.rank<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
+      /* a ruled-out starter is gone from the pool already, so the chart's ranks are re-counted
+         over who is left: the next man up takes the slot rather than an unranked player with
+         enough projected usage to walk in on his own */
+      let place=0; for(const x of pool) x.eff=x.rank!=null?++place:null;
+      /* a charted player moved up because someone above him is ruled out starts now, however few
+         games he has: the page shows him, marked thin history, rather than nobody at all */
+      for(const x of pool) x.up=x.rank!=null&&(outAt[grp]||[]).some(r=>r<x.rank);
+      const cut=pool.filter(x=>(x.gp>=3||x.up)&&devOk(x,+g.w)&&(x.eff!=null?x.eff<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
                     .slice(0,DEPTH[grp]);
       for(const x of (showAll?pool:cut)) out.push({...x,starter:cut.includes(x)});
     }
     /* depth-chart starters we simply cannot project, so the gap is visible */
     const shown=new Set(out.map(x=>x.pl.id));
     const gaps=[];
-    const D=(S.depth&&Object.keys(S.depth).length)?S.depth:PAY.depth;
-    for(const id in D){
+    for(const id in (D||{})){
       const [t,pos,rank,nm]=D[id];
       if(t!==team||shown.has(id)) continue;
       const lead={QB:1,RB:2,WR:3,TE:1,K:1}[pos];
-      if(lead&&rank<=lead) gaps.push({name:nm,slot:pos+rank,
-        why:S.players[id]?'not enough games played':'no NFL history'});
+      if(!lead||rank>lead||gaps.some(x=>x.id===id)) continue;
+      const off=S.inactive[id];
+      gaps.push({id,name:nm,slot:pos+rank,out:!!off,
+        why:off?inactiveWhy(off):(S.players[id]?'not enough games played':'no NFL history')});
+      /* and the man who steps in, when the page cannot show him either */
+      if(off){ const next=Object.keys(D).filter(j=>D[j][0]===team&&D[j][1]===pos&&D[j][2]>rank&&!S.inactive[j]).sort((a,b)=>D[a][2]-D[b][2])[0];
+        if(next&&!shown.has(next)&&!gaps.some(x=>x.id===next)) gaps.push({id:next,name:D[next][3],slot:pos+D[next][2],out:false,
+          why:'steps in for him; '+(S.players[next]?'not enough games played to project':'no NFL history to project')}); }
     }
     byTeam[team]={opp,players:out,gaps};
   }
@@ -433,14 +531,12 @@ function gameHeadline(g){
      recomputed from results that now include this very game */
   const kept=(S.headlines&&S.headlines[String(g.w)]&&S.headlines[String(g.w)][g.id])||null;
   if(gameFinal(g)&&kept) return kept.map(x=>({k:x.k,v:{mu:x.mu,pl:S.players[x.pid]||{id:x.pid,n:x.n},team:x.team}}));
-  const snap=null, frozen=false;
   const pick=(grps,stat)=>{
     let best=null;
     for(const team in roster) for(const x of roster[team].players){
       if(!grps.includes(x.pl.grp)) continue;
-      let mu;
-      if(frozen){ const s0=snap[x.pl.id]&&snap[x.pl.id][stat]; if(!s0||s0.mu==null) continue; mu=s0.mu; }
-      else { const r=project(x.pl,stat,x.opp,x.ctx); if(!r||r.mu==null||!isFinite(r.mu)) continue; mu=r.mu; }
+      const r=project(x.pl,stat,x.opp,x.ctx); if(!r||r.mu==null||!isFinite(r.mu)) continue;
+      const mu=r.mu;
       if(!best||mu>best.mu) best={mu,pl:x.pl,team};
     }
     return best;
@@ -525,12 +621,18 @@ function rungView(pl,stat,mu,k,week){
 }
 
 /* ---------- kickoff lock ---------- */
+/* schedule times are US Eastern: daylight time from the second Sunday of March to the first
+   Sunday of November (the change is at 2am, when no game is played), for the date's own year */
+function easternOffset(d){
+  const y=+String(d).slice(0,4), m=+String(d).slice(5,7), day=+String(d).slice(8,10);
+  const sunday=(mon,nth)=>{ const first=new Date(Date.UTC(y,mon-1,1)).getUTCDay(); return 1+(7-first)%7+7*(nth-1); };
+  const dst=(m>3&&m<11)||(m===3&&day>=sunday(3,2))||(m===11&&day<sunday(11,1));
+  return dst?'-04:00':'-05:00';
+}
 function kickoff(g){
   if(!g.d) return null;
   const t=g.t||'13:00';
-  /* schedule times are US Eastern; clocks go back on the first Sunday of November */
-  const off=(g.d>='2026-11-01')?'-05:00':'-04:00';
-  const dt=new Date(`${g.d}T${t}:00${off}`);
+  const dt=new Date(`${g.d}T${t}:00${easternOffset(g.d)}`);
   return isNaN(dt)?null:dt;
 }
 function gameStarted(g){ const k=kickoff(g); return !!k&&Date.now()>=k.getTime(); }
@@ -538,21 +640,196 @@ function hasScore(g){ return g.hs!=null&&g.as!=null&&isFinite(g.hs)&&isFinite(g.
 /* final once a score is in, or once four hours have passed since kickoff */
 function gameFinal(g){ if(hasScore(g)) return true; const k=kickoff(g); return !!k&&Date.now()>=k.getTime()+4*3600*1000; }
 function actualFor(week,pid){ return (S.actuals&&S.actuals[String(week)]&&S.actuals[String(week)][pid])||null; }
+/* who took part in a finished game, by nflverse's snap counts as the props job baked them (PAY.snaps:
+   week -> game -> club -> the players the page projects who took a snap and have no stat line;
+   weekly.py's who_played). true: he took a snap. false: his club's snaps are in and he took none (or,
+   with no club on the leg, both clubs' are in). null: no word on his club yet */
+function tookPart(l){
+  const W=PAY&&PAY.snaps&&PAY.snaps[String(l.week)], G=W&&W[l.gid]; if(!G) return null;
+  for(const t in G) if((G[t]||[]).includes(l.pid)) return true;
+  const team=l.team||(S.players&&S.players[l.pid]&&S.players[l.pid].team);
+  if(team&&G[team]) return false;
+  const g=S.sched.find(x=>x.id===l.gid);
+  return g&&G[g.h]&&G[g.a]?false:null;
+}
+/* Out on that week's injury report: the payload keeps the current week's report and every earlier
+   week's Outs */
+function reportedOut(week,pid){
+  return ((PAY&&PAY.injuries)||[]).some(r=>r&&r.gsis_id===pid&&+r.week===+week&&+r.season===SEASON&&String(r.report_status||'').trim()==='Out');
+}
 /* did a leg land? null while the stats for that week haven't been loaded */
 function settleLeg(l){
   if(isGameLeg(l)) return settleGameLeg(l);
-  const a=actualFor(l.week,l.pid); if(!a) return null;
+  let a=actualFor(l.week,l.pid);
+  /* no stat line once his game's stats are in. nflverse writes a player's week only when he has a
+     stat, so that alone is not "did not play": a receiver never targeted has none, and a book grades
+     a player who takes part in one play on what he did. He took a snap: graded on zero (an over and a
+     rung lose, an under wins). His club's snaps are in without him: void. No snap counts for his club
+     yet: void if that week's injury report had him Out, otherwise it waits */
+  if(!a){
+    if(!(l.gid&&S.processedGames&&S.processedGames[l.gid])) return null;
+    const took=tookPart(l);
+    if(took===false) return 'void';
+    if(took===null) return reportedOut(l.week,l.pid)?'void':null;
+    a=rowStats({});
+  }
   const v=a[l.stat]; if(v==null) return null;
   if(l.stat==='any_td'){ const k=l.k||1; if(k>=2){ if(a.tds==null) return null; return a.tds>=k?'win':'loss'; } return v>=1?'win':'loss'; }
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
   return v>=l.k?'win':'loss';
 }
+/* ---------- live tracking: ESPN's public feeds ----------
+   Free, no key, no quota: this never touches the odds API. Everything here is pure -- it
+   takes a payload and returns numbers -- so the audit can test it without a network. */
+const ESPN_SB='https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+const ESPN_SUM='https://site.api.espn.com/apis/site/v2/sports/football/nfl/summary?event=';
+const ESPN_AB={WSH:'WAS',LAR:'LA',JAC:'JAX'};          /* ESPN's abbreviation -> ours, where they differ */
+const espnAb=a=>{const u=String(a||'').toUpperCase(); return ESPN_AB[u]||u;};
+/* a name both sources can agree on: no case, accents, punctuation or suffix */
+function normName(n){ return String(n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[.'\u2019]/g,'').replace(/-/g,' ').replace(/\b(jr|sr|ii|iii|iv)\b/g,'').replace(/\s+/g,' ').trim(); }
+/* last name plus first initial. Inside one team that is unique in practice, and it survives
+   "A.J." against "AJ" and "Marvin Harrison Jr." against "Marvin Harrison". */
+function nameKey(n){ const p=normName(n).split(' ').filter(Boolean); if(!p.length) return '';
+  return p[p.length-1]+'|'+p[0][0]; }
+/* where each stat we bet on sits in ESPN's box score: the group, the column's label, and for
+   the two columns that carry a pair ("C/ATT", "FG") which side of the slash. Read by label
+   and never by position, so a column added upstream cannot silently shift the numbers. */
+const ESPN_COL={
+  completions:['passing','C/ATT',0], attempts:['passing','C/ATT',1],
+  passing_yards:['passing','YDS'], passing_tds:['passing','TD'], passing_interceptions:['passing','INT'],
+  carries:['rushing','CAR'], rushing_yards:['rushing','YDS'],
+  receptions:['receiving','REC'], receiving_yards:['receiving','YDS'], targets:['receiving','TGTS'],
+  fg_made:['kicking','FG',0], fg_att:['kicking','FG',1], kick_pts:['kicking','PTS']};
+function espnNum(s){ if(s==null) return null; const v=parseFloat(String(s).replace(/,/g,'')); return isFinite(v)?v:null; }
+/* one player's line out of a summary payload, keyed by our own stat names */
+function espnStats(sum,team,who){
+  const tm=espnAb(team), out={}; let seen=false;
+  const sides=((sum&&sum.boxscore&&sum.boxscore.players)||[]).filter(b=>espnAb(b.team&&b.team.abbreviation)===tm);
+  const nmOf=a=>(a.athlete&&(a.athlete.displayName||a.athlete.shortName))||'';
+  /* the whole name first: two on one team can share a last name and an initial (Bijan and
+     Brian Robinson), and matching on that alone hands one of them the other's numbers. Last
+     name plus initial only when nobody on the team carries the whole name. */
+  const full=normName(who);
+  const whole=sides.some(b=>(b.statistics||[]).some(g=>(g.athletes||[]).some(a=>normName(nmOf(a))===full)));
+  const want=whole?full:nameKey(who), keyOf=whole?normName:nameKey;
+  for(const b of sides){
+    for(const grp of (b.statistics||[])){
+      const labels=(grp.labels||[]).map(x=>String(x).toUpperCase());
+      for(const a of (grp.athletes||[])){
+        const nm=nmOf(a);
+        if(keyOf(nm)!==want) continue;
+        seen=true;
+        for(const stat in ESPN_COL){
+          const c=ESPN_COL[stat]; if(c[0]!==grp.name) continue;
+          const i=labels.indexOf(c[1]); if(i<0) continue;
+          let raw=(a.stats||[])[i];
+          if(c[2]!=null) raw=String(raw==null?'':raw).split('/')[c[2]];
+          const v=espnNum(raw); if(v!=null) out[stat]=v;
+        }
+        /* a touchdown he scored himself, which is what the board's "scores a touchdown" means */
+        if(grp.name==='rushing'||grp.name==='receiving'){
+          const i=labels.indexOf('TD');
+          if(i>=0){ const v=espnNum((a.stats||[])[i]); if(v!=null) out.tds=(out.tds||0)+v; }
+        }
+      }
+    }
+  }
+  if(!seen) return null;                                  /* not on the sheet: say so, don't guess zero */
+  if(out.rushing_yards!=null||out.receiving_yards!=null)
+    out.scrim_yards=(out.rushing_yards||0)+(out.receiving_yards||0);
+  out.any_td=out.tds||0;
+  return out;
+}
+/* where a player leg stands. state: pre | live | post */
+function liveLeg(leg,val,state){
+  const k=+leg.k, r={val,k,state:'pending',need:null};
+  if(state==='pre') return r;
+  if(val==null){ r.state='unknown'; return r; }
+  const done=state==='post';
+  if(leg.stat==='any_td'||!leg.main){                     /* "k or more" */
+    if(val>=k) r.state='hit'; else { r.need=k-val; r.state=done?'missed':'live'; }
+    return r;
+  }
+  if(leg.side==='under'){                                 /* gone the moment it busts */
+    if(val>k) r.state='missed'; else { r.state=done?(val===k?'push':'hit'):'live'; r.need=+(k-val).toFixed(2); }
+    return r;
+  }
+  if(val>k) r.state='hit'; else { r.need=+(k-val).toFixed(2); r.state=done?(val===k?'push':'missed'):'live'; }
+  return r;
+}
+/* where a team leg stands, off the scoreboard alone. sc: {home,away,hs,as,state} */
+function liveGameLeg(leg,sc){
+  if(!sc||sc.state==='pre') return {val:null,k:+leg.k||0,need:null,state:'pending'};
+  const isHome=leg.team===sc.home, mine=isHome?sc.hs:sc.as, theirs=isHome?sc.as:sc.hs;
+  if(mine==null||theirs==null) return {val:null,k:+leg.k||0,need:null,state:'unknown'};
+  const done=sc.state==='post';
+  /* a game total: points only go up, so an over is won the moment the total passes the line
+     and an under lost; each otherwise waits for the final */
+  if(leg.stat==='total'){ const t=sc.hs+sc.as, k=+leg.k||0, under=leg.side==='under';
+    if(t>k) return {val:t,k,need:null,state:under?'missed':'hit'};
+    return {val:t,k,need:under?null:+(k-t).toFixed(1),state:done?(t===k?'push':(under?'hit':'missed')):'live'}; }
+  if(leg.stat==='ml'){ const up=mine-theirs;
+    return {val:up,k:0,need:null,state:done?(up>0?'hit':(up===0?'push':'missed')):'live'}; }
+  const m=mine-theirs+(+leg.k||0);                        /* the line is from this team's side */
+  return {val:m,k:0,need:null,state:done?(m>0?'hit':(m===0?'push':'missed')):'live'};
+}
+/* a scoreboard payload down to the games we care about, keyed by our own game id */
+function espnGames(sb,sched){
+  const out={};
+  for(const e of ((sb&&sb.events)||[])){
+    const c=(e.competitions&&e.competitions[0])||{}, cs=c.competitors||[];
+    const home=cs.find(x=>x.homeAway==='home'), away=cs.find(x=>x.homeAway==='away');
+    if(!home||!away) continue;
+    const h=espnAb(home.team&&home.team.abbreviation), a=espnAb(away.team&&away.team.abbreviation);
+    const g=(sched||[]).find(x=>x.h===h&&x.a===a); if(!g) continue;
+    const st=((c.status||e.status||{}).type)||{};
+    /* the kickoff, so a reader can put games in the order they are played */
+    const when=Date.parse(String(e.date||c.date||''));
+    out[g.id]={eid:String(e.id),home:h,away:a,hs:espnNum(home.score),as:espnNum(away.score),
+      state:st.state==='post'?'post':(st.state==='in'?'live':'pre'),clock:String(st.shortDetail||st.detail||''),
+      kick:isFinite(when)?when:null};
+  }
+  return out;
+}
+
+/* ---------- the betting model's parlays, read across ----------
+   One origin serves both sites, so its key is readable here. Read only and defensively:
+   this page never writes to it, storage can be refused outright, and a malformed entry is
+   skipped rather than guessed at. Both apps use nflverse game ids, so nothing is translated. */
+const BET_KEY='x_nfl_viewer_picks_2026';
+function bettingParlays(raw){
+  if(raw===undefined){ try{ raw=localStorage.getItem(BET_KEY); }catch(e){ return []; } }
+  if(!raw) return [];
+  let v=null; try{ v=JSON.parse(raw); }catch(e){ return []; }
+  const build=v&&v.bank&&v.bank.build;
+  if(!Array.isArray(build)) return [];
+  const out=[];
+  for(const b of build){
+    if(!b||b.type!=='parlay'||!Array.isArray(b.legs)) continue;
+    const legs=[];
+    for(const l of b.legs){
+      if(!l||!l.game_id||!l.pick) continue;
+      const ml=(l.ml==null||!isFinite(+l.ml))?null:+l.ml;
+      legs.push({gid:String(l.game_id),team:String(l.pick),stat:'ml',k:0,side:'over',main:false,grp:'TEAM',
+        name:TEAM_NAMES[l.pick]||String(l.pick),label:'To win',price:ml,week:+b.week||null});
+    }
+    if(legs.length<2) continue;                       /* two legs or it is not a parlay */
+    const dec=legs.reduce((a,l)=>a*(l.price==null?1:(mlToDec(l.price)||1)),1);
+    const stake=Math.max(0,+b.stake||0);
+    out.push({id:String(b.id||''),week:+b.week||null,stake,legs,dec,
+      priced:legs.every(l=>l.price!=null),payout:stake*dec});
+  }
+  return out;
+}
+
 /* ---------- track record: every frozen pre-game chance against what happened ----------
    Reads only S.projections (frozen at grade time) and S.actuals. Snapshots written before
    v27 hold just the projection; their rungs are rebuilt from it with the same static tables,
-   which gives the identical pre-game chance. A player with no stat line is skipped, as a
-   leg would be. A book main line is scored on the side the model favoured; a push is skipped.
-   Where a price exists (a sheet you uploaded, or the built-in main-line price) it rides along as
+   which gives the identical pre-game chance. A player with no stat line is skipped; one who
+   played in his role with none has the job's row of zeros in PAY.stats (from_snaps), and is scored
+   on it, as a leg on him is graded. A book main line is scored on the side the model favoured; a push is skipped.
+   Where a price exists (a rung price the job pulled, or the book's main-line price) it rides along as
    ml (American) and imp (the book's implied chance, cut included). */
 function trackRecord(){
   const out=[]; const P=S.projections||{};
@@ -594,8 +871,19 @@ function settleParlay(p){
   const res=p.legs.map(settleLeg);
   if(res.some(r=>r===null)) return {status:'pending',legs:res};
   if(res.some(r=>r==='loss')) return {status:'lost',legs:res};
-  if(res.every(r=>r==='push')) return {status:'void',legs:res};
+  if(res.every(r=>r==='push'||r==='void')) return {status:'void',legs:res};
   return {status:'won',legs:res};
+}
+/* what a settled parlay returns: a void or pushed leg comes out and the rest pay at their own
+   prices, the way a book settles it, so the locked payout is divided by that leg's price */
+function settledReturn(p,s){
+  s=s||settleParlay(p);
+  if(s.status==='lost') return 0;
+  if(s.status==='void') return p.stake;
+  if(s.status!=='won') return null;
+  let pay=p.payout;
+  s.legs.forEach((r,i)=>{ if(r==='void'||r==='push'){ const d=mlToDec(p.legs[i]&&p.legs[i].price); if(d) pay/=d; } });
+  return Math.max(p.stake,pay);
 }
 
 /* the week the season is actually on: the earliest one still having games played.
@@ -606,3 +894,13 @@ function liveWeek(){
   return ws[ws.length-1];
 }
 function weekOpen(w){ return w<=liveWeek(); }
+/* every regular-season game final: the model covers the regular season, and says so */
+function seasonOver(){ return !!(S&&S.sched&&S.sched.length)&&S.sched.every(g=>gameFinal(g)); }
+/* where a game's lines came from: DraftKings' pull while it is under a day old, nflverse's
+   posted line (the Pick'ems board's) after that. null for a payload that does not say. */
+function lineSource(g){
+  if(!g||!g.ls) return null;
+  if(g.ls==='dk'){ const t=g.lat?new Date(g.lat):null;
+    return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
+  return "nflverse's posted line, as on the Pick'ems board";
+}
