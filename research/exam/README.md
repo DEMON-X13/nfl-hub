@@ -32,6 +32,26 @@ quarterback, where games.csv names a starter who took no snap (6 team-games, mos
 such as Seattle's in weeks 3-5); his form is from earlier games only. With games.csv's starters as
 listed, one pick flips (SF at SEA) and the record is 49-28-1.
 
+## Against the site's models, same 78 games
+
+The owner asked whether it is worth tracking as a model or too like the ones the site has. Two
+independent counts, matching, of how often it picks the same team as each, and each record:
+
+| Model | Same pick as the equation | 2026 record |
+|---|---|---|
+| Alpha | 72 of 78 (92%) | 48-29-1 |
+| Challenger | 66 (85%) | 48-29-1 |
+| Broly | 65 (83%) | 49-28-1 |
+| ELO Model | 63 (81%) | 47-30-1 |
+| Joker | 59 (76%) | 53-24-1 |
+| **The equation** | | **48-29-1** |
+
+It agrees with Alpha more than any two of the site's models agree with each other (the most is
+Challenger and Broly, 88.5%), its chances track Alpha's closest of any pair (correlation 0.91), and in
+the 6 games they differ each was right 3 times. It is close to a copy of Alpha, not a view of its own;
+the Joker and the ELO Model are the ones that most often stand apart from the rest. (Joker week 1 and
+ELO weeks 1-2 are backtests, called after the games; leaving them out changes none of this.)
+
 Every game, its pick and its chance: `results/blind_2026_games.csv`. Re-run as the season goes on; the
 record grows and the equation stays as it is.
 
