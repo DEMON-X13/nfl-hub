@@ -1,7 +1,7 @@
 {
  "how": "The suggestions record, written by props/build/suggest_ledger.js in the props job: the Parlay Builder's four suggested parlays under the default choices (All, every game still to kick off, the default Bet amount), taken from the published page on the payload just baked, keyed by season|week|kickoff wave (the earliest kickoff still to come at the run), rewritten while that kickoff is to come and frozen from it, so each entry is the panel as the job last saw it before that wave. A frozen entry is graded by the app's settleLeg once every leg has settled (a push or void leg drops out as a book drops it; every leg a push or void is a push; a player with no stat line who took a snap, by nflverse's snap counts, is graded on zero, one who did not is void), the payout on a $1 stake. summary: per level, parlays graded won or lost, each parlay once however many waves showed it, won, the wins expected by the fair chance and by the model's, and units on $1. Never edited by hand: the script refuses a ledger whose frozen entries moved.",
  "since": "2026-10-12",
- "updated": "2026-10-13T15:45:37Z",
+ "updated": "2026-10-13T19:10:08Z",
  "summary": {
   "tiers": {
    "safe": {"label":"Safe","graded":1,"won":1,"lost":0,"push":0,"exp_fair":0.1888,"fair_n":1,"exp_model":0.3029,"units":3.199},
@@ -111,8 +111,8 @@
    "week": 6,
    "kickoff": "2026-10-16T00:15:00Z",
    "games": ["2026_06_SEA_DEN","2026_06_HOU_JAX","2026_06_CHI_ATL","2026_06_BAL_CLE","2026_06_TEN_IND","2026_06_NYJ_NE","2026_06_NO_NYG","2026_06_CAR_PHI","2026_06_PIT_TB","2026_06_ARI_LA","2026_06_LAC_KC","2026_06_BUF_LV","2026_06_DAL_GB","2026_06_WAS_SF"],
-   "baked_at": "2026-10-13T15:43+00:00",
-   "pool": {"pref":9,"thin":3,"mkt":28,"far":0},
+   "baked_at": "2026-10-13T19:08+00:00",
+   "pool": {"pref":7,"thin":6,"mkt":28,"far":0},
    "tiers": [
     {
      "id": "safe",
@@ -139,12 +139,12 @@
      "legs": [
       {"gid":"2026_06_LAC_KC","week":6,"pid":"team:LAC","team":"LAC","grp":"TEAM","stat":"ats","k":8.5,"side":"over","main":false,"price":-115,"src":"real","name":"Chargers","label":"To cover +8.5","p":0.622,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_CAR_PHI","week":6,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-115,"src":"real","name":"Eagles","label":"To win","p":0.6189,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_06_DAL_GB","week":6,"pid":"team:GB","team":"GB","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-118,"src":"real","name":"Packers","label":"To win","p":0.585,"fair":0.5174,"fair_est":false,"thin":false,"market":false}
+      {"gid":"2026_06_DAL_GB","week":6,"pid":"team:GB","team":"GB","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-122,"src":"real","name":"Packers","label":"To win","p":0.585,"fair":0.5261,"fair_est":false,"thin":false,"market":false}
      ],
      "p": 0.2252,
-     "fair": 0.135,
+     "fair": 0.1373,
      "fair_est": false,
-     "dec": 6.457,
+     "dec": 6.36,
      "likeliest": true,
      "thin": 0,
      "mkt": 0
@@ -155,15 +155,15 @@
      "n": 4,
      "floor": 0.12,
      "legs": [
+      {"gid":"2026_06_BUF_LV","week":6,"pid":"team:BUF","team":"BUF","grp":"TEAM","stat":"ats","k":-4.5,"side":"over","main":false,"price":-115,"src":"real","name":"Bills","label":"To cover -4.5","p":0.5709,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_LAC_KC","week":6,"pid":"team:LAC","team":"LAC","grp":"TEAM","stat":"ats","k":8.5,"side":"over","main":false,"price":-115,"src":"real","name":"Chargers","label":"To cover +8.5","p":0.622,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_CAR_PHI","week":6,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-115,"src":"real","name":"Eagles","label":"To win","p":0.6189,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_06_DAL_GB","week":6,"pid":"team:GB","team":"GB","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-118,"src":"real","name":"Packers","label":"To win","p":0.585,"fair":0.5174,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_NYJ_NE","week":6,"pid":"team:NE","team":"NE","grp":"TEAM","stat":"ats","k":-7.5,"side":"over","main":false,"price":-105,"src":"real","name":"Patriots","label":"To cover -7.5","p":0.5554,"fair":0.4892,"fair_est":false,"thin":false,"market":false}
      ],
-     "p": 0.1251,
-     "fair": 0.066,
+     "p": 0.122,
+     "fair": 0.0652,
      "fair_est": false,
-     "dec": 12.607,
+     "dec": 12.758,
      "likeliest": false,
      "thin": 0,
      "mkt": 0
@@ -174,22 +174,22 @@
      "n": 5,
      "floor": 0.05,
      "legs": [
-      {"gid":"2026_06_PIT_TB","week":6,"pid":"team:TB","team":"TB","grp":"TEAM","stat":"ats","k":2.5,"side":"over","main":false,"price":-105,"src":"real","name":"Buccaneers","label":"To cover +2.5","p":0.5517,"fair":0.4892,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_06_BUF_LV","week":6,"pid":"team:BUF","team":"BUF","grp":"TEAM","stat":"ats","k":-4.5,"side":"over","main":false,"price":-115,"src":"real","name":"Bills","label":"To cover -4.5","p":0.5709,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_LAC_KC","week":6,"pid":"team:LAC","team":"LAC","grp":"TEAM","stat":"ats","k":8.5,"side":"over","main":false,"price":-115,"src":"real","name":"Chargers","label":"To cover +8.5","p":0.622,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_CAR_PHI","week":6,"pid":"team:PHI","team":"PHI","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-115,"src":"real","name":"Eagles","label":"To win","p":0.6189,"fair":0.5108,"fair_est":false,"thin":false,"market":false},
-      {"gid":"2026_06_DAL_GB","week":6,"pid":"team:GB","team":"GB","grp":"TEAM","stat":"ml","k":0,"side":"over","main":false,"price":-118,"src":"real","name":"Packers","label":"To win","p":0.585,"fair":0.5174,"fair_est":false,"thin":false,"market":false},
+      {"gid":"2026_06_CHI_ATL","week":6,"pid":"team:ATL","team":"ATL","grp":"TEAM","stat":"ats","k":3,"side":"over","main":false,"price":100,"src":"real","name":"Falcons","label":"To cover +3","p":0.5339,"fair":0.4783,"fair_est":false,"thin":false,"market":false},
       {"gid":"2026_06_NYJ_NE","week":6,"pid":"team:NE","team":"NE","grp":"TEAM","stat":"ats","k":-7.5,"side":"over","main":false,"price":-105,"src":"real","name":"Patriots","label":"To cover -7.5","p":0.5554,"fair":0.4892,"fair_est":false,"thin":false,"market":false}
      ],
-     "p": 0.069,
-     "fair": 0.0323,
+     "p": 0.0652,
+     "fair": 0.0312,
      "fair_est": false,
-     "dec": 24.614,
+     "dec": 25.516,
      "likeliest": false,
      "thin": 0,
      "mkt": 0
     }
    ],
-   "taken_at": "2026-10-13T15:45:37Z"
+   "taken_at": "2026-10-13T19:10:08Z"
   }
  }
 }
