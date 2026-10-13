@@ -1,0 +1,5 @@
+model,games_alone,right,wrong,pct
+Alpha,66,28,38,0.4242
+Joker,160,64,96,0.4
+ELO Model,98,43,55,0.4388
+QB Elo,42,15,27,0.3571

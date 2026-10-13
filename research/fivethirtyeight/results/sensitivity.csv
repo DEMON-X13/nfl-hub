@@ -1,0 +1,4 @@
+season,home_field_rebuild,home_field_sensitivity,games,picks_differ,mean_abs_diff,max_abs_diff,rebuild_right,rebuild_wrong,rebuild_brier,sensitivity_right,sensitivity_wrong,sensitivity_brier
+2023,48.6781,47.82,285,1,0.0011,0.0016,179,106,0.2279,178,107,0.2278
+2024,48.6781,47.38,285,1,0.0017,0.0027,195,90,0.2069,194,91,0.2068
+2025,48.6781,45.74,285,0,0.0037,0.0056,190,94,0.2094,190,94,0.2091

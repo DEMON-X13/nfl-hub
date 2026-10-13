@@ -1,0 +1,6 @@
+model,games,brier,log_loss
+Alpha,1355,0.2225,0.6364
+Joker,1355,0.2227,0.6361
+ELO Model,1355,0.2217,0.6346
+QB Elo,1355,0.2201,0.6286
+"QB Elo, pregame starter",1355,0.2224,0.6349

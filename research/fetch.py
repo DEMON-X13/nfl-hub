@@ -12,11 +12,14 @@ Run: python3 -I research/fetch.py [--force]   (a file already there is kept unle
      python3 -I research/fetch.py --fivethirtyeight
                                               (study 5's files: FiveThirtyEight's own NFL Elo file, 1920-2022,
                                                from the copy kept on GitHub since 538's own host went dark,
-                                               checked against its SHA-256; nflverse's weekly player stats
-                                               1999-2025, a quarterback's box score; nflverse's draft picks)
+                                               and 538's nfl-elo-game file, 1920-2020, to check that copy
+                                               against, each checked against its SHA-256; nflverse's weekly
+                                               player stats 1999-2025, a quarterback's box score; nflverse's
+                                               draft picks)
 
-FiveThirtyEight's data is under the Creative Commons Attribution 4.0 licence: credit FiveThirtyEight,
-imply no endorsement. Its file is kept in data/ (gitignored) and never committed.
+FiveThirtyEight's data is under the Creative Commons Attribution 4.0 licence
+(https://creativecommons.org/licenses/by/4.0/): credit FiveThirtyEight, say what was changed, imply no
+endorsement. Its files are kept in data/ (gitignored) and never committed.
 """
 import hashlib, os, sys, time, urllib.request
 
@@ -48,9 +51,13 @@ def get(url, dest, force):
 
 # FiveThirtyEight's nfl_elo.csv: its host (projects.fivethirtyeight.com/nfl-api/) went dark when ABC
 # closed the site on 5 March 2025; Jonathan Cervas keeps the last good capture on GitHub. Its numbers
-# match 538's own nfl-elo-game repo on every game of 1920-2020 (research/fivethirtyeight/README.md)
+# match 538's own nfl-elo-game repo on every game of 1920-2020, ratings and score (the chance differs in one, Super
+# Bowl XLIII; research/fivethirtyeight/qbelo.py checks it on every run: results/facts.csv)
 F538_URL = 'https://raw.githubusercontent.com/jcervas/Data/master/fivethirtyeight/projects.fivethirtyeight.com/nfl-api/nfl_elo.csv'
 F538_SHA256 = '8f6831ac223de245b612044601bc369a6b222a808cb55e737939504118525733'
+# 538's own nfl-elo-game repository (its 2014 plain Elo, 1920 to the 2020 season): the copy above is checked against it
+F538_GAMES_URL = 'https://raw.githubusercontent.com/fivethirtyeight/nfl-elo-game/master/data/nfl_games.csv'
+F538_GAMES_SHA256 = 'af16cf3c5848393057fad07feea278f0a85ab7b57ddbfe42ed96b5c80e7d519d'
 STATS_URL = 'https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_{season}.csv'
 DRAFT_URL = 'https://github.com/nflverse/nflverse-data/releases/download/draft_picks/draft_picks.csv'
 
@@ -69,6 +76,12 @@ if __name__ == '__main__':
         if digest != F538_SHA256:
             os.remove(dest)
             sys.exit(f'nfl_elo.csv is not the file this study checked (sha256 {digest}): removed')
+        dest = os.path.join(RAW, 'fivethirtyeight', 'nfl_games.csv')
+        get(F538_GAMES_URL, dest, force)
+        digest = hashlib.sha256(open(dest, 'rb').read()).hexdigest()
+        if digest != F538_GAMES_SHA256:
+            os.remove(dest)
+            sys.exit(f'nfl_games.csv is not the file this study checked (sha256 {digest}): removed')
         for s in WARMUP + SEASONS:
             get(STATS_URL.format(season=s), stats_path(s), force)
         get(DRAFT_URL, os.path.join(RAW, 'draft_picks.csv'), force)
