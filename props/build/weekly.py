@@ -71,6 +71,8 @@ RAW=os.path.join(PKG,'raw'); DATA=os.path.join(PKG,'data'); RES=os.path.join(PKG
 sys.path.insert(0,DATA)
 from season import SEASON, BASE, FIRST, REL, RAW_FILES, GAMES, STATS, ROSTER, INJURIES, DEPTH, SKILL
 import names, mktbuild
+sys.path.insert(0,os.path.join(ROOT,'lib'))
+import netfetch                  # lib/netfetch.py: the download rule the NFL jobs share
 PY=sys.executable; ENV=dict(os.environ,PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
 STATCOLS=['player_id','player_display_name','position','season','week','season_type','team','opponent_team',
  'completions','attempts','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','rushing_tds',
@@ -191,15 +193,13 @@ def read_rows(name):
     with open(p,newline='',encoding='utf-8') as f: return list(csv.DictReader(f))
 
 def fetch(url,dest):
-    """url -> dest, whole or not at all: a failure raises, and leaves no part file behind"""
-    tmp=dest+'.part'
-    try:
-        req=urllib.request.Request(url,headers={'User-Agent':'prop-model-weekly/1.0'})
-        with urllib.request.urlopen(req,timeout=180) as r, open(tmp,'wb') as f: shutil.copyfileobj(r,f)
-        if os.path.getsize(tmp)<200: raise IOError('empty response')
-        os.replace(tmp,dest)
-    finally:
-        if os.path.exists(tmp): os.remove(tmp)
+    """url -> dest, whole or not at all: lib/netfetch.py's rule, the one every NFL job shares. A
+    transient failure (a 5xx, 429, timeout, reset, or an empty or HTML answer) is tried again on waits
+    of 5, 15, 30 and 60 seconds under one retry budget for the run, before any credit is spent (the
+    downloads come before the odds pull); a 404 is answered at once and raised with its code, so "not
+    posted yet" keeps its meaning. What still fails raises netfetch.FetchError (an OSError, `code` the
+    last HTTP status), and the refusal rules below apply as before."""
+    netfetch.download(url,dest,timeout=180,min_bytes=200,headers={'User-Agent':'prop-model-weekly/1.0'})
 
 def download(offline):
     """{file: True (fresh), False (failed), None (not posted yet: a 404)}"""

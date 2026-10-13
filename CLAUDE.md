@@ -113,7 +113,8 @@ by hand those comparisons are skipped and the rest run. Run by hand against a pa
 baked before 9 October 2026 it fails V2 (lines on the wrong player) until the job rebakes it.
 
 `weekly.py` also refuses (exits 1 before the workflow's commit step, so the last good data
-stays live) when a required nflverse download fails or comes back wrong -- the schedule,
+stays live) when a required nflverse download fails (after `lib/netfetch.py`'s tries; `python3
+test_fetch.py` holds weekly.py's downloads to them) or comes back wrong -- the schedule,
 the player stats, the roster or the injury report -- or when the stats would cover fewer
 games than the published payload; those are checked before any credit is spent, and a run
 refused after a pull still has its prices kept (unpublished) by the workflow. The depth
@@ -408,8 +409,17 @@ python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offen
 ```
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
-charts, injury report, roster, play-by-play) or any past season's cannot be downloaded: it exits 1 and the
-last good files stay live. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
+charts, injury report, roster, play-by-play) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
+tries, under Conventions): it exits 1 and the last good files stay live. The finished seasons' files (2012 to
+last season's stats, depth charts and injury reports, and last season's play-by-play once this one is under
+way: 43 of the 49 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
+build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source was had, and
+the job saves exactly those under a key on their names (a new entry only when a season finishes; bump `v1`
+in it to throw them away), so a run asks nflverse for the season in play, games.csv and the roster alone,
+which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
+makes to a finished season's file later is not read until `v1` is bumped (and `elo/check.py` reads the same
+copies, so nothing flags it): bump it when nflverse says it republished past seasons. `python3 elo/test_fetch.py`
+holds the downloads and `past.lst` to their cases on a local server. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
 and the injury reports write OAK, SD and STL for the seasons before those moves, the player stats LV, LAC
 and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 were left out of the game
 model's fit and walk-forward, and the matchup formula read their home games as away games (the player
@@ -1031,5 +1041,19 @@ may quietly outrank what the job published:
   its storage, undrawn and never deleted. Anything held per-session and not meant to persist
   (for example the game pages' suggested parlays, cached in `GAME_TIER_CACHE` in `part3.js`) is kept outside the saved state object `S`, so
   it is never serialised.
+- **Downloads go through `lib/netfetch.py` (Python) or `lib/netfetch.js` (Node)**, one rule for every
+  NFL job (`elo/build.py`, `weekly.py`, `update.js`, the Joker through `betting/jobkit.py`'s
+  `download`, the Season Tracker's `lib.js` and `pull-week.js`), after a burst of 500s on one nflverse
+  file refused the Elo job on 13 October 2026 (three tries over 15 seconds; a re-run passed): a 5xx,
+  408, 425 or 429, a timeout, a reset, a transfer cut short or an empty or HTML body is tried again on
+  waits of 5, 15, 30 and 60 seconds (five tries), every wait out of one ten-minute budget a process; a
+  404 and any other 4xx are answered at once, so "not posted yet" keeps its meaning (the error carries
+  the status); each try has a timeout; a file is written whole or not at all. What still fails says how
+  many tries over how long, and every job's refusal rules apply as before. Every NFL job has a
+  `timeout-minutes`. `python3 lib/test_netfetch.py` and `node lib/test_netfetch.js` hold the rule to its
+  cases. Never call `urlopen`, `urlretrieve` or a bare `fetch` for a job's source (`shadow.py`'s own
+  download of games.csv is used only by hand: the betting job hands it the run's file). The ten-minute
+  budget counts the waits, not the tries, so a host that accepts and then hangs is held by each try's
+  timeout and the job's `timeout-minutes`.
 - **No secrets in the repo.** `ODDS_API_KEY` is a repository secret and only the
   props workflow touches it.

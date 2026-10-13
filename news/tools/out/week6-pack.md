@@ -83,6 +83,7 @@ Searches to run:
 - "NFL week 6 picks HOU JAX"
 
 Houston Texans, injuries:
+- Woody Marks (RB) Active: Marks is expected to handle a lead role out of the backfield during Sunday's game against the Jaguars in London after Texans head coach DeMeco Ryans announced Monday that fellow running back David Montgomery (groin) is viewed as week-to-week, Aaron Wilson of KPRC 2 Houston reports.
 - Kayshon Boutte (WR) Active: Boutte caught three of five targets for 38 yards during Sunday's 26-3 win over the Titans.
 - Marlin Klein (TE) Active
 - Febechi Nwaiwu (G) Active
@@ -97,7 +98,6 @@ Houston Texans, injuries:
 - Dalton Schultz (TE) Active: Schultz caught three of four targets for 30 yards during Sunday's 26-3 win over the Titans.
 - Xavier Hutchinson (WR) Active: Hutchinson caught four of five targets for 65 yards in Sunday's 26-3 win over the Titans.
 - Jaylin Noel (WR) Active: Noel caught all five of his targets for 41 yards and a touchdown during Sunday's 26-3 win over Tennessee.
-- Woody Marks (RB) Active: Marks carried the ball 15 times for 62 yards and caught all four of his targets for 23 yards in Sunday's 26-3 win over the Titans.
 - C.J. Stroud (QB) Active: Stroud completed 26 of 34 passes for 261 yards and a touchdown in Sunday's 26-3 win over the Titans. He added five rushing yards and a TD on six carries.
 - Nico Collins (WR) Active: Collins caught five of seven targets for 56 yards in Sunday's 26-3 win over the Titans.
 - Kayden McDonald (DT) Active: McDonald (ankle) is active for Sunday's game against the Titans.
@@ -151,7 +151,7 @@ Searches to run:
 - "NFL week 6 picks CHI ATL"
 
 Chicago Bears, injuries:
-- Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
 - Case Keenum (QB) Active: Keenum completed 11 of 18 passes for 108 yards, zero touchdowns and one interception while adding a four-yard carry during the Bears' 31-7 loss to the Packers on Sunday. He also lost a fumble.
 - Tyson Bagent (QB) Active: Head coach Ben Johnson said Monday that a decision hasn't been made regarding whether Bagent, Case Keenum or Caleb Williams (hamstring) will take reps with the first-team offense during the Bears' first Week 6 practice Wednesday, Sean Hammond of the Chicago Tribune reports.
 - Kyle Monangai (RB) Out, Toe: out
@@ -209,7 +209,7 @@ Atlanta Falcons, injuries:
 Atlanta Falcons, ESPN headlines:
 
 ### Baltimore Ravens at Cleveland Browns
-Sun, Oct 18, 1:00 PM ET, Fox, Huntington Bank Field, Cleveland. Line: BAL -4.5, O/U 40.5
+Sun, Oct 18, 1:00 PM ET, Fox, Huntington Bank Field, Cleveland. Line: BAL -4.5, O/U 41.5
 
 Searches to run:
 - "Baltimore Ravens Cleveland Browns preview week 6"
@@ -384,6 +384,7 @@ New York Jets, injuries:
 New York Jets, ESPN headlines:
 
 New England Patriots, injuries:
+- TreVeyon Henderson (RB) Doubtful, Ankle: Henderson is expected to miss multiple weeks after he was diagnosed with a right high-ankle sprain following an MRI on Monday, Adam Schefter of ESPN reports.
 - Karon Prunty (CB) Out, Hamstring: out
 - Carlton Davis III (CB) Out, Neck: out
 - Christian Gonzalez (CB) Out, Shoulder: out
@@ -392,7 +393,6 @@ New England Patriots, injuries:
 - Channing Canada (CB) Out, Hamstring: out
 - A.J. Brown (WR) Injured Reserve, Ankle: Patriots head coach Mike Vrabel said Monday that Brown (ankle) has "a chance" to return to practice this week, Mark Daniels of MassLive.com reports.
 - Andy Borregales (PK) Active: Borregales made his lone field-goal attempt and all six extra-point tries during Sunday's 45-17 win over Las Vegas.
-- TreVeyon Henderson (RB) Questionable, Ankle: Henderson (ankle) is slated to undergo further medical testing Monday after exiting Sunday's 45-17 win over the Raiders, Ian Rapoport of NFL Network reports.
 - Efton Chism III (WR) Active: Chism caught five of six targets for 57 yards and added a two-yard rush during Sunday's 45-17 win over the Raiders.
 - Hunter Henry (TE) Active: Henry caught three of four targets for 44 yards and a touchdown during Sunday's 45-17 win over the Raiders.
 - Romeo Doubs (WR) Active: Doubs caught one of three targets for 16 yards in Sunday's 45-17 win over the Raiders.
@@ -413,7 +413,7 @@ New England Patriots, injuries:
 New England Patriots, ESPN headlines:
 
 ### New Orleans Saints at New York Giants
-Sun, Oct 18, 1:00 PM ET, Fox, MetLife Stadium, East Rutherford. Line: NYG -1.5, O/U 45.5
+Sun, Oct 18, 1:00 PM ET, Fox, MetLife Stadium, East Rutherford. Line: NO -1.5, O/U 45.5
 
 Searches to run:
 - "New Orleans Saints New York Giants preview week 6"
@@ -491,12 +491,12 @@ Searches to run:
 - "NFL week 6 picks CAR PHI"
 
 Carolina Panthers, injuries:
+- Cam Jackson (DT) Injured Reserve, Knee: ir
 - Taylor Moton (OT) Out, Illness: The Panthers will open the 21-day practice window for Moton (illness) during Week 6 prep, Steve Reed of the Associated Press reports.
-- Tershawn Wharton (DT) Out, Neck: Head coach Dave Canales said Monday that the Panthers will open the 21-day practice window for Wharton (neck) this week, Steve Reed of the Associated Press reports.
+- Tershawn Wharton (DT) Out, Neck: Head coach Dave Canales said Monday that the Panthers plan to open Wharton's (neck0 21-day practice window this week, Steve Reed of the Associated Press reports.
 - Jalen Coker (WR) Questionable, Quadriceps: Head coach Dave Canales said Monday that Coker is "on track" to return from a one-game absence against the Eagles on Sunday, Joe Person of The Athletic reports.
 - Devin Lloyd (LB) Active: Lloyd recorded nine total tackles (five solo) during Sunday night's 32-26 win against Detroit.
 - Akayleb Evans (CB) Active: Evans recorded 11 total tackles (nine solo) and a pass defensed during Sunday night's 32-26 win over the Lions.
-- Cam Jackson (DT) Questionable, Knee: questionable
 - Damien Lewis (G) Questionable, Elbow: questionable
 - Tommy Tremble (TE) Active: Tremble caught all four targets for 12 yards in Sunday night's win over the Lions.
 - Brycen Tremayne (WR) Active: Tremayne caught two of three passes for 32 yards during Sunday's 32-26 win over the Lions.
@@ -520,6 +520,7 @@ Carolina Panthers, injuries:
 Carolina Panthers, ESPN headlines:
 
 Philadelphia Eagles, injuries:
+- Jalyx Hunt (LB) Doubtful, Ankle: doubtful
 - Zach Ertz (TE) Active: Ertz reverted to the Eagles' practice squad Monday, per the NFL's transaction log.
 - DeVonta Smith (WR) Out, Hamstring: Head coach Nick Sirianni expressed hope Monday that Smith (hamstring) will return for this Sunday's game against the Panthers, Zach Berman of The Athletic reports.
 - Saquon Barkley (RB) Out, Hamstring: Head coach Nick Sirianni said Monday that he's "hopeful" that both Barkley (hamstring) and DeVonta Smith (hamstring) will both be cleared to play against the Panthers this coming Sunday, Zach Berman of The Athletic reports.
@@ -536,7 +537,6 @@ Philadelphia Eagles, injuries:
 - Dameon Pierce (RB) Active: Pierce carried the ball 11 times for 14 yards and caught two of five targets for minus-2 yards in Sunday's 19-17 loss to the Jaguars.
 - Dallas Goedert (TE) Active: Goedert caught six of nine targets for 38 yards in Sunday's 19-17 loss to the Jaguars.
 - Jalen Hurts (QB) Active: Hurts completed 21 of 40 passes for 220 yards and a touchdown in Sunday's 19-17 loss to the Jaguars. He added two rushing yards on two carries.
-- Jalyx Hunt (LB) Questionable, Ankle: Hunt (ankle/knee) has been ruled out for the remainder of Sunday's game against the Jaguars in London.
 - Tyler Steen (G) Active: Steen (shoulder) is questionable to return to Sunday's game against the Jaguars in London.
 - Michael Carter II (CB) Questionable, Abdomen: Carter (abdomen) has been ruled out for the remainder of Sunday's game against the Jaguars in London.
 - Jeremiah Trotter Jr. (LB) Active: Trotter was ejected from Sunday's game in London after receiving an unnecessary roughness penalty for fighting with the Jaguars' Bryan Thomas following the opening kickoff, Michael DiRocco of ESPN.com reports.
@@ -549,7 +549,7 @@ Philadelphia Eagles, injuries:
 Philadelphia Eagles, ESPN headlines:
 
 ### Pittsburgh Steelers at Tampa Bay Buccaneers
-Sun, Oct 18, 1:00 PM ET, CBS, Raymond James Stadium, Tampa. Line: PIT -3, O/U 40.5
+Sun, Oct 18, 1:00 PM ET, CBS, Raymond James Stadium, Tampa. Line: PIT -2.5, O/U 40.5
 
 Searches to run:
 - "Pittsburgh Steelers Tampa Bay Buccaneers preview week 6"
@@ -617,7 +617,7 @@ Tampa Bay Buccaneers, injuries:
 Tampa Bay Buccaneers, ESPN headlines:
 
 ### Arizona Cardinals at Los Angeles Rams
-Sun, Oct 18, 4:05 PM ET, Fox, SoFi Stadium, Inglewood. Line: LAR -13.5, O/U 52.5
+Sun, Oct 18, 4:05 PM ET, Fox, SoFi Stadium, Inglewood. Line: LAR -12.5, O/U 52.5
 
 Searches to run:
 - "Arizona Cardinals Los Angeles Rams preview week 6"
@@ -753,7 +753,7 @@ Kansas City Chiefs, injuries:
 Kansas City Chiefs, ESPN headlines:
 
 ### Buffalo Bills at Las Vegas Raiders
-Sun, Oct 18, 4:25 PM ET, CBS, Allegiant Stadium, Las Vegas. Line: BUF -6, O/U 53.5
+Sun, Oct 18, 4:25 PM ET, CBS, Allegiant Stadium, Las Vegas. Line: BUF -5.5, O/U 53.5
 
 Searches to run:
 - "Buffalo Bills Las Vegas Raiders preview week 6"
@@ -864,7 +864,7 @@ Green Bay Packers, injuries:
 - Donovan Jennings (G) Active
 - Aaron Banks (G) Out, Toe: out
 - Anthony Campbell (DT) Out, Ankle: out
-- Micah Parsons (DE) Out, Knee - ACL: Parsons (knee) isn't expected to return to practice this week ahead of the Packers' Week 6 game against the Cowboys on Sunday, Adam Schefter of ESPN reports.
+- Micah Parsons (DE) Out, Knee - ACL: The Packers aren't planning on opening Parsons' (knee) 21-day practice window this week ahead of Sunday's game against the Cowboys, Adam Schefter of ESPN reports.
 - Pierre Strong Jr. (RB) Active: Strong took the field for 24 of the Packers' 59 offensive snaps in Sunday's 31-7 win over the Bears, finishing with five carries for seven yards and three catches for 11 yards on four targets.
 - Tyrod Taylor (QB) Active: Taylor played the final two snaps of Sunday's 31-7 win over the Bears, losing two yards on a pair of kneeldowns.
 - Javon Hargrave (DT) Out, Achilles: MRI tests Monday confirmed that Hargrave tore his Achilles during the Packers' 31-7 win over the Bears on Sunday, Adam Schefter of ESPN reports.

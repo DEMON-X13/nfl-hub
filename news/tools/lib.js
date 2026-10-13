@@ -6,6 +6,7 @@
    season"). When nflverse posts the next season's schedule, run-auto.js says so on every run and
    keeps working on this one, so a spring schedule release never flips the job to an empty season.   */
 'use strict';
+const { fetchRetry } = require('../../lib/netfetch.js');   // the download rule the NFL jobs share
 
 const SEASON = 2026;
 const GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
@@ -26,23 +27,25 @@ function parseCSV(text) {
   return rows.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]])));
 }
 
-/* A download that fails is tried again: four attempts, 2, 5 and 10 seconds apart, alternating a
-   descriptive user agent with none. nflverse's release links answer a 500 now and then (three in a
-   row on 2026-10-09) and work a few seconds later. Returns the text and the file's Last-Modified. */
-const WAITS = [2000, 5000, 10000];
+/* A download that fails is tried again by lib/netfetch.js, the rule every NFL job shares: a 5xx, 429,
+   403 (here only: alternating a descriptive user agent with none), timeout or reset is tried again on
+   waits of 5, 15, 30 and 60 seconds, five tries over nearly two minutes. nflverse's release links answer
+   a 500 now and then (three in a row on 2026-10-09; on 2026-10-13 a burst outlasted the Elo job's 15
+   seconds of tries, which this one's 17 would not have survived either) and work a little later. A 404
+   and any other 4xx are answered at once. Returns the text and the file's Last-Modified; an error's
+   message starts with the HTTP status where there was one ("404 <url>"), which context.js and
+   lineup-checks.js read as "not published yet" before the season's first game. */
+const WAITS = [5000, 15000, 30000, 60000];
 async function fetchText(url, opts = {}) {
-  const tries = opts.tries || 4, wait = opts.wait == null ? WAITS : opts.wait;
-  let last;
-  for (let i = 0; i < tries; i++) {
-    try {
-      const r = await fetch(url, { headers: i % 2 ? {} : { 'User-Agent': UA }, redirect: 'follow' });
-      if (r.ok) return { text: await r.text(), lastModified: r.headers.get('last-modified') || '' };
-      last = new Error(r.status + ' ' + url);
-      if (![403, 408, 429, 500, 502, 503, 504].includes(r.status)) break;
-    } catch (e) { last = e; }
-    if (i < tries - 1) await new Promise(res => setTimeout(res, Array.isArray(wait) ? (wait[i] ?? wait[wait.length - 1] ?? 0) : wait));
+  const waits = opts.wait == null ? WAITS : Array.isArray(opts.wait) ? opts.wait : Array(Math.max(0, (opts.tries || 5) - 1)).fill(opts.wait);
+  try {
+    const { body, res } = await fetchRetry(url, { waits: opts.tries ? waits.slice(0, opts.tries - 1) : waits, headers: [{ 'User-Agent': UA }, {}], retryOn: [403] });
+    return { text: body, lastModified: res.headers.get('last-modified') || '' };
+  } catch (e) {
+    if (!e.status) throw e;
+    const x = new Error(`${e.status} ${url}${e.tries > 1 ? ` (on ${e.tries} tries)` : ''}`); x.status = e.status;
+    throw x;
   }
-  throw last;
 }
 
 /* The tracker's teams use LAR for the Rams; nflverse uses LA (and a few old codes) */

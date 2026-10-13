@@ -47,7 +47,7 @@
    Sources: nflverse-data releases (team and player stats 2025 and 2026, snap counts, roster,
    injury report and depth charts 2026), the nflverse schedule and, when pull-week.js passes it,
    ESPN's injury list. Every nflverse file but the snap counts is required: if one cannot be
-   downloaded after four tries the build writes nothing and exits non-zero, so the job stops before
+   downloaded after five tries (lib/netfetch.js) the build writes nothing and exits non-zero, so the job stops before
    its commit and the last good files stay live. (Until 2026-10-09 a missing injury report quietly
    published lineups with no injury check, and a missing stats file kept the whole Deep Dive,
    lineups included, on a green run.) The snap counts only order the lists and ESPN's list only adds

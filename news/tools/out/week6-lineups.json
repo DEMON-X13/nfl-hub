@@ -213,7 +213,7 @@
   },
   "HOU": {
    "kick": "2026-10-18T13:30Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T15:43:43.998Z",
    "units": {
     "qb": [
      {
@@ -263,11 +263,6 @@
     ],
     "rec": [
      {
-      "id": "00-0038618",
-      "n": "Xavier Hutchinson",
-      "pos": "WR"
-     },
-     {
       "id": "00-0034383",
       "n": "Dalton Schultz",
       "pos": "TE"
@@ -275,6 +270,11 @@
      {
       "id": "00-0036554",
       "n": "Nico Collins",
+      "pos": "WR"
+     },
+     {
+      "id": "00-0038608",
+      "n": "Kayshon Boutte",
       "pos": "WR"
      }
     ],
@@ -419,7 +419,7 @@
   },
   "CHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T15:43:43.998Z",
    "units": {
     "qb": [
      {
@@ -430,8 +430,8 @@
     ],
     "ol": [
      {
-      "id": "00-0039459",
-      "n": "Theo Benedet",
+      "id": "00-0040740",
+      "n": "Ozzy Trapilo",
       "pos": "T"
      },
      {
@@ -1150,7 +1150,7 @@
   },
   "NE": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T15:43:43.998Z",
    "units": {
     "qb": [
      {
@@ -1194,10 +1194,9 @@
       "pos": "RB"
      },
      {
-      "id": "00-0040734",
-      "n": "TreVeyon Henderson",
-      "pos": "RB",
-      "q": "questionable: ankle"
+      "id": "00-0040556",
+      "n": "Corey Kiner",
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -1463,7 +1462,7 @@
   },
   "CAR": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T15:43:43.998Z",
    "units": {
     "qb": [
      {
@@ -1519,14 +1518,15 @@
       "pos": "WR"
      },
      {
+      "id": "00-0039491",
+      "n": "Jalen Coker",
+      "pos": "WR",
+      "q": "questionable: quadriceps"
+     },
+     {
       "id": "00-0037005",
       "n": "Tommy Tremble",
       "pos": "TE"
-     },
-     {
-      "id": "00-0037614",
-      "n": "John Metchie III",
-      "pos": "WR"
      }
     ],
     "front": [

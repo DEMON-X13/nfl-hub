@@ -43,6 +43,7 @@ const EVENTS = path.join(ROOT, 'betting', 'events.json');
 const DATA = path.join(ROOT, 'data');
 const REF = path.join(__dirname, 'reference_models.json');
 const patches = require('./patches.js');
+const { fetchRetry } = require('../../lib/netfetch.js');   // the download rule the NFL jobs share
 /* the season and the storage key are the app's own (freshState and KEY), the one place they are set */
 const { season: SEASON, key: KEY } = patches.season(fs.readFileSync(APP, 'utf8'));
 const args = new Set(process.argv.slice(2));
@@ -100,10 +101,10 @@ async function download() {
   for (const [name, url] of Object.entries(FILES)) {
     const dest = path.join(DATA, name);
     try {
-      const r = await fetch(url, { redirect: 'follow' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const txt = await r.text();
-      if (txt.length < 200 || /<html/i.test(txt.slice(0, 300))) throw new Error('not a CSV');
+      /* lib/netfetch.js, the rule every NFL job shares: a 5xx, 429, timeout, reset or a body that is
+         not a CSV is tried again on waits of 5, 15, 30 and 60 seconds (one burst of 500s on nflverse's
+         host must not refuse the run), a 404 and other 4xx answered at once, and no try can hang */
+      const { body: txt } = await fetchRetry(url, { name, log, check: t => (t.length < 200 || /<html/i.test(t.slice(0, 300))) ? 'not a CSV' : null });
       fs.writeFileSync(dest, txt);
       log(`downloaded ${name} (${(txt.length / 1048576).toFixed(1)} MB)`);
     } catch (e) {
