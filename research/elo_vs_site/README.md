@@ -89,11 +89,75 @@ For the next model, when the owner calls for it: memory early in the season (an 
 from last season), re-judging as the season goes (the Team Rankings way), and players at least as strong
 a base as team results.
 
+## Side by side, 2003-2025 (the owner's follow-up, 13 October 2026)
+
+"Can we do a side by side comparison where we run our current team rankings against the same years
+the fivethirtyeight formula did and see which one fares out better." Both ratings called every game
+of 2003-2025 (6,218, playoffs in, ties out) from what each knew before it. Each picks the team its own
+win chance favours, home field included, so a week-1 Team Rankings table (every team level) picks the
+home team. Team Rankings here is its results part, run by `elo/build.py`'s own `power_ratings()`: 80%
+of the tab. Its other 20%, the expected starters on player Elo, starts in 2012 and needs the site's
+player build, so it is compared below on the site's own published test. (`side_by_side.py`)
+
+| Season | Games | FiveThirtyEight right | Team Rankings right | Better |
+|---|---|---|---|---|
+| 2003 | 267 | 172 (64.4%) | 170 (63.7%) | FiveThirtyEight |
+| 2004 | 267 | 171 (64.0%) | 172 (64.4%) | Team Rankings |
+| 2005 | 267 | 181 (67.8%) | 184 (68.9%) | Team Rankings |
+| 2006 | 267 | 156 (58.4%) | 155 (58.1%) | FiveThirtyEight |
+| 2007 | 267 | 173 (64.8%) | 172 (64.4%) | FiveThirtyEight |
+| 2008 | 266 | 170 (63.9%) | 165 (62.0%) | FiveThirtyEight |
+| 2009 | 267 | 185 (69.3%) | 173 (64.8%) | FiveThirtyEight |
+| 2010 | 267 | 166 (62.2%) | 159 (59.6%) | FiveThirtyEight |
+| 2011 | 267 | 170 (63.7%) | 178 (66.7%) | Team Rankings |
+| 2012 | 266 | 166 (62.4%) | 165 (62.0%) | FiveThirtyEight |
+| 2013 | 266 | 176 (66.2%) | 172 (64.7%) | FiveThirtyEight |
+| 2014 | 266 | 184 (69.2%) | 179 (67.3%) | FiveThirtyEight |
+| 2015 | 267 | 176 (65.9%) | 174 (65.2%) | FiveThirtyEight |
+| 2016 | 265 | 171 (64.5%) | 171 (64.5%) | level |
+| 2017 | 267 | 174 (65.2%) | 166 (62.2%) | FiveThirtyEight |
+| 2018 | 265 | 166 (62.6%) | 169 (63.8%) | Team Rankings |
+| 2019 | 266 | 170 (63.9%) | 161 (60.5%) | FiveThirtyEight |
+| 2020 | 268 | 176 (65.7%) | 169 (63.1%) | FiveThirtyEight |
+| 2021 | 284 | 166 (58.5%) | 161 (56.7%) | FiveThirtyEight |
+| 2022 | 282 | 178 (63.1%) | 179 (63.5%) | Team Rankings |
+| 2023 | 285 | 172 (60.4%) | 162 (56.8%) | FiveThirtyEight |
+| 2024 | 285 | 197 (69.1%) | 177 (62.1%) | FiveThirtyEight |
+| 2025 | 284 | 181 (63.7%) | 177 (62.3%) | FiveThirtyEight |
+| 2003-2025 | 6218 | 3997 (64.3%) | 3910 (62.9%) | FiveThirtyEight |
+
+FiveThirtyEight picked more winners in 17 seasons, Team Rankings in 5, one level; 87 more right in all.
+
+| Stage of the season | Games | FiveThirtyEight right | Team Rankings right |
+|---|---|---|---|
+| Weeks 1-2 | 730 | 62.1% | 57.4% |
+| Weeks 3-5 | 1,027 | 62.7% | 58.2% |
+| Weeks 6-9 | 1,280 | 63.9% | 62.9% |
+| Weeks 10-13 | 1,376 | 65.6% | **66.4%** |
+| Weeks 14-18 | 1,540 | 65.2% | 65.2% |
+| Playoffs | 265 | 66.0% | 64.5% |
+
+**The full current table, player part in**, on the site's own test (`elo/build.py`, THE POWER RATINGS:
+regular-season weeks 2-18, each week from the finals of the weeks before; log loss, lower is better):
+
+| Seasons | Games | Team Rankings, full table (site's published) | Team Rankings, results part | FiveThirtyEight |
+|---|---|---|---|---|
+| 2012-2017 (the table's constants were chosen here) | 1,441 | 0.6243 | 0.6266 | 0.6235 |
+| 2018-2025 (the table's test) | 1,999 | 0.6447 | 0.6480 | 0.6408 |
+
+The results part reproduces the site's published numbers exactly; the full table's are the site's own,
+not rerun here. On 2018-2025 the results part picked 61.7% right, FiveThirtyEight 63.2%.
+
+**Which fares better:** FiveThirtyEight's formula, over the whole of 2003-2025 and against the full current
+table on its own test seasons. Team Rankings is behind in weeks 1-9, when it knows only this season,
+and level or ahead from week 10.
+
 ## Run it
 
 ```
 python3 -I research/win_indicators/build.py   # the team-game table this reads (after research/fetch.py)
 python3 -I research/elo_vs_site/compare.py    # results/ratings.csv, study_elo_vs_site.csv, vs_elo_model_by_season.csv
+python3 -I research/elo_vs_site/side_by_side.py   # results/side_by_side_*.csv: Team Rankings against FiveThirtyEight, season by season
 ```
 
 `compare.py` runs Team Rankings with `elo/build.py`'s own `power_ratings()`, the app Elo with the
