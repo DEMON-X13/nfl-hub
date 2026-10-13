@@ -14,6 +14,10 @@ the job's own code, weekly.current_week, weekly.pull_window (hours_to_next_pull 
 wait) and oddsfetch.choose (the games a pull buys), on a clock set to each run's start, over every
 game of the season's schedule as an odds-API event at its kickoff, and holds the schedule to:
 
+Sunday's early games (kickoff before 4pm Eastern) are never bought player prices (oddsfetch.early_sunday,
+the owner's call of 13 October 2026), so (a)-(d) and the drops are held on every other game, and
+(e) holds that no early Sunday game is ever bought, at any lateness, by a pull or a catch-up.
+
   (a) every Sunday game is priced by the Saturday pull, landed on the site by 9am Pacific on the
       Saturday before (PDT until 1 November, PST after) at every lateness up to 9.4 hours
   (b) no game is priced twice by the regular pulls, but Thanksgiving's early game, which the
@@ -94,6 +98,7 @@ def pacific(t):
     return f"{(t - o * H):%a %H:%M} {'PDT' if o == 7 else 'PST'}"
 
 def eastern_day(g): return datetime.date.fromisoformat(g['d']).weekday()   # the schedule's own date
+def early(g): return oddsfetch.early_sunday(weekly.kickoff(g))             # never bought player prices
 
 def saturday_9am_pacific(g):
     """9am Pacific on the Saturday before a Sunday game, as a UTC instant"""
@@ -218,9 +223,12 @@ def short(gid, games):
 # ---------------------------------------------------------------- the checks on one replay
 def hold(label, sched, log, old_log=None, pulls=None):
     """(a), (b), (c) and the catch-ups spending nothing, on a replay where every pull ran"""
-    games = {g['id']: g for g in sched}; got = by_game(log)
+    every = {g['id']: g for g in sched}; got = by_game(log)
+    games = {gid: g for gid, g in every.items() if not early(g)}
     sat_slots = {s for s in pulls if s[0] == 5}
     bad = collections.defaultdict(list)
+    for gid, g in every.items():
+        if early(g) and got.get(gid): bad['e'].append(f"{short(gid, every)} (Sunday's early window) priced by {slot_name(got[gid][0].slot)}")
     for gid, g in games.items():
         ko = weekly.kickoff(g); rs = got.get(gid, [])
         if not rs: bad['c'].append(f"{short(gid, games)} never priced"); continue
@@ -242,14 +250,15 @@ def hold(label, sched, log, old_log=None, pulls=None):
         for w in sorted(set(cn) | set(co)):
             if cn[w] > co[w]: bad['d'].append(f"week {w}: {cn[w]} credits, {co[w]} before")
             designed = sum(1 for gid, rs in got.items() if games[gid]['w'] == w and designed_double(games[gid], rs))
-            if nn[w] != sum(1 for g in sched if g['w'] == w) + designed:
-                bad['d'].append(f"week {w}: {nn[w]} games bought for {sum(1 for g in sched if g['w'] == w)} games")
+            if nn[w] != sum(1 for g in sched if g['w'] == w and not early(g)) + designed:
+                bad['d'].append(f"week {w}: {nn[w]} games bought for {sum(1 for g in sched if g['w'] == w and not early(g))} games after the early window")
     for k, what in (('a', '(a) every Sunday game priced by the Saturday pull, on the site by 9am Pacific Saturday'),
                     ('s', 'every Saturday game priced by the Saturday pull'),
                     ('b', '(b) no game priced twice but Thanksgiving\'s early game, and none the old schedule priced once'),
                     ('c', '(c) every game priced, and on the site, before its kickoff'),
                     ('d', '(d) credits a week no more than before, each game bought once'),
-                    ('x', 'the catch-ups spend nothing when every pull ran')):
+                    ('x', 'the catch-ups spend nothing when every pull ran'),
+                    ('e', "(e) no game in Sunday's early window (before 4pm Eastern) bought player prices")):
         if k == 'd' and old_log is None: continue
         check(not bad[k], f"{label}: {what}: " + '; '.join(bad[k][:6]) + (f" (+{len(bad[k]) - 6} more)" if len(bad[k]) > 6 else ''))
 
@@ -334,6 +343,8 @@ def main():
         print(f"    week {w:>2}  " + (cells[0] + '   (the same at every lateness)' if len(set(cells)) == 1 else ' | '.join(cells)))
 
     # 3. the credits, old and new, week by week
+    print(f"\nSUNDAY'S EARLY WINDOW (before 4pm Eastern), never bought player prices: "
+          f"{sum(1 for g in sched if early(g))} of {len(sched)} games")
     print('\nCREDITS A WEEK: 6 a game for the player markets, 3 a pull that prices any game for the slate\'s game lines')
     for name, s in seasons:
         same = len({tuple(sorted(credits(logs[(name, L)][0])[0].items())) for L in LATENESS}) == 1
@@ -375,7 +386,7 @@ def main():
     # 6. drops
     print('\nDROPPED PULLS (GitHub sometimes never starts a scheduled run)')
     for name, s in seasons:
-        games = {g['id']: g for g in s}
+        games = {g['id']: g for g in s if not early(g)}
         lost_sat = collections.Counter(); lost_old = collections.Counter(); n = 0
         for l1 in LATENESS:          # Saturday's 12:07 run
             for l2 in LATENESS:      # 16:07
@@ -385,6 +396,7 @@ def main():
                     drop = lambda k, sl, at: k == 'pull' and sl[0] == 5
                     log = simulate(s, weekly.PULL_SLOTS, catchups, late=late, drop=drop); got = by_game(log); n += 1
                     bad = []
+                    if any(got.get(g['id']) for g in s if early(g)): check(False, f"{name}, the Saturday pull dropped: an early Sunday game bought")
                     for gid, g in games.items():
                         rs = got.get(gid, []); ko = weekly.kickoff(g)
                         if len(rs) > 1 and not designed_double(g, rs): bad.append(f"{short(gid, games)} priced {len(rs)} times")

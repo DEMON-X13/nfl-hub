@@ -14,6 +14,9 @@ Usage (never put the key on the command line; the shell history would keep it):
                        the catch-up weekly.py runs on every score-only run, so a scheduled pull that
                        GitHub dropped costs a game its prices only until the next run of the job
 A game that has kicked off is never priced, in any mode: an in-play price is not a pre-game line.
+Sunday's early games (kickoff before 4pm Eastern) are never bought player prices either, in any
+mode, unless --early says so (EARLY_SUNDAY_BEFORE below): their game lines still come in the
+slate's one game-lines call.
 A game priced less than REPRICE_HOURS ago is skipped too (--force prices it anyway), so a manual
 pull followed by the scheduled one GitHub delivered hours late does not buy the same game twice,
 nor does a scheduled pull a catch-up has just done the work of. Each pull prices up to the next
@@ -42,14 +45,15 @@ Credits: one event request costs (markets requested) x (regions); the free tier 
 about 115 a week. The default pull is 6 markets a game (DEFAULT below: the main lines for
 passing, rushing and receiving yards, receptions and passing TDs, plus anytime TD) and 3 for the
 slate's game lines (moneyline, spread and total), about 7 credits a game, ~112 for a 16-game week
-split across the week's pulls. That is the free tier almost exactly; a month with five game weeks
-runs short at the end. A pull that prices no game spends nothing: the event list is free and the
+split across the week's pulls, which was the free tier almost exactly. With Sunday's early games
+left out (about 9 a week) a week costs about 45-60, a five-week month about 250-300. A pull that prices no game spends nothing: the event list is free and the
 game lines are pulled only with a game.
 --full adds the alternate ladders and attempts, completions, interceptions and carries, which
 needs a paid tier. Every call prints what is left.
 """
 import os, sys, json, csv, math, argparse, urllib.request, urllib.parse, urllib.error, collections
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 BASE='https://api.the-odds-api.com/v4/sports/americanfootball_nfl'
 # the-odds-api market key -> the app's market key
@@ -114,6 +118,21 @@ def get(path,params,key):
         return data
 
 REPRICE_HOURS=12  # a game priced this recently is not bought again unless --force says so
+# Sunday's early games, every Sunday kickoff before 4pm Eastern (the 1pm window, London and the
+# other morning games abroad), are never bought player prices (the owner's call, 13 October 2026:
+# "i rarely if ever do player props for that and usually like to do them for afternoon and night
+# games only"). That is about 9 of a week's 14 to 16 games at 6 credits each, so the free tier's
+# 500 a month now covers a five-week month with room over. Their moneylines, spreads and totals
+# still come in the slate's one game-lines call. --early buys them anyway, for a week wanted by hand.
+ET=ZoneInfo('America/New_York')
+EARLY_SUNDAY_BEFORE=16  # hour, Eastern
+def early_sunday(ko):
+    """Whether a kickoff (an aware datetime) is one of Sunday's early games: a Sunday in Eastern
+    time before EARLY_SUNDAY_BEFORE. nflbets/build and the props parts hold the same rule
+    (noPropsPull) on the schedule's Eastern date and time."""
+    if ko is None: return False
+    e=ko.astimezone(ET)
+    return e.weekday()==6 and e.hour<EARLY_SUNDAY_BEFORE
 GAMELINE_COLS=['game_id','away_moneyline','home_moneyline','spread_line','away_spread_odds','home_spread_odds','total_line','over_odds','under_odds','pulled_at']
 def game_lines(key,book,regions,ids,now=None):
     """Moneylines, spreads and totals for the whole slate in one call. The bulk /odds endpoint
@@ -243,11 +262,12 @@ def merge_lines(path,rows,done):
         w=csv.DictWriter(f,fieldnames=['game_id','stat','player','line','over','under'],extrasaction='ignore'); w.writeheader()
         for r in out: w.writerow(r)
     return len(out)
-def choose(events,ids,now,hours=None,missing=False,have=(),priced=None,force=False,say=print):
+def choose(events,ids,now,hours=None,missing=False,have=(),priced=None,force=False,say=print,early=False):
     """The (event, game id) pairs this pull prices, in the events' order: a game of the week
     (ids), kicking off within hours of now (all of them without hours), never one that has
     kicked off, with --missing only one with no prices on file (have: the game ids in
-    prices_wk{W}.csv), and not one priced less than REPRICE_HOURS ago unless force says so."""
+    prices_wk{W}.csv), not one priced less than REPRICE_HOURS ago unless force says so, and not
+    one of Sunday's early games (early_sunday) unless early says so."""
     out=[]
     for ev in events:
         gid=ids.get((TEAMS.get(ev.get('away_team')),TEAMS.get(ev.get('home_team'))))
@@ -257,6 +277,7 @@ def choose(events,ids,now,hours=None,missing=False,have=(),priced=None,force=Fal
         if hours and ko and (ko-now).total_seconds()>hours*3600: continue
         # never a game that has started, in any mode: its prices would be in-play ones
         if ko and ko<=now: say(f"   {gid}: kicked off {ko:%a %H:%M} UTC, not priced"); continue
+        if early_sunday(ko) and not early: say(f"   {gid}: Sunday's early window, no player prices bought (--early to)"); continue
         if missing and gid in have: continue
         last=(priced or {}).get(gid)
         if last and not force:
@@ -279,6 +300,7 @@ def main():
     ap.add_argument('--hours',type=float,help='only games kicking off within this many hours (weekly.py passes the hours to the next scheduled pull)')
     ap.add_argument('--missing',action='store_true',help='only games with no prices in prices_wk{W}.csv that have not kicked off; nothing else is spent')
     ap.add_argument('--force',action='store_true',help=f'price a game even if it was priced less than {REPRICE_HOURS} hours ago')
+    ap.add_argument('--early',action='store_true',help="also price Sunday's early games (before 4pm Eastern), which are skipped by default")
     ap.add_argument('--now',help='pretend it is this UTC time (ISO), for testing the windows on saved events')
     ap.add_argument('--sample-gamelines',help='a saved /odds response to read the game lines from instead of calling the API')
     a=ap.parse_args()
@@ -307,7 +329,7 @@ def main():
     if a.missing and os.path.exists(f'prices_wk{a.week}.csv'):
         with open(f'prices_wk{a.week}.csv',newline='',encoding='utf-8') as f: have={r['game_id'] for r in csv.DictReader(f)}
     priced=read_priced()
-    for ev,gid in choose(events,ids,now,a.hours,a.missing,have,priced,a.force):
+    for ev,gid in choose(events,ids,now,a.hours,a.missing,have,priced,a.force,early=a.early):
         matched+=1
         if a.sample: parse_event(ev,gid,mains,alts,book); continue
         for markets in ([DEFAULT] + ([FULL_EXTRA] if a.full else [])):
