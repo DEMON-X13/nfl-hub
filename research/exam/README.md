@@ -25,6 +25,13 @@ Through Sunday 11 October 2026 (78 games; Monday night's game was not yet in nfl
 | 5 | 9 | 4 (and 1 tie) |
 | **2026** | **48** | **29** (62.3%, 1 tie) |
 
+An independent check rebuilt every pick (48-29-1, to the last decimal), refit the equation from
+2004-2023 to the same numbers, and corrupted every game from each date on to confirm nothing from a game
+or a later one reaches its call. One thing is read from the game itself, as in training: who started at
+quarterback, where games.csv names a starter who took no snap (6 team-games, mostly games.csv errors
+such as Seattle's in weeks 3-5); his form is from earlier games only. With games.csv's starters as
+listed, one pick flips (SF at SEA) and the record is 49-28-1.
+
 Every game, its pick and its chance: `results/blind_2026_games.csv`. Re-run as the season goes on; the
 record grows and the equation stays as it is.
 
