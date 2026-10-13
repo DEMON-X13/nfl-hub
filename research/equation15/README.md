@@ -33,9 +33,11 @@ The weights, the 15 pre-game indicators of study 1 (`results/equation_weights.cs
 | Point differential per game | 0.004 | 0.3% |
 | Points per drive | -0.002 | 0.2% |
 
-Four indicators carry about 71% of the weight: the quarterback, Elo, blended point differential and SRS.
-The rest mostly measure the same thing as those four, so the fit gives them little, and a few go
-slightly negative (they correct for overlap; alone, each still favours the better team).
+In this equation four indicators carry 71% of the weight: the quarterback, Elo, blended point
+differential and SRS. That split is not a fixed fact about the indicators: the 15 overlap heavily, and
+variations that pick within two games of this one share the weight very differently (those four from 29%
+to 44%, points per drive from -0.002 to 0.375). The negative weights correct for overlap; alone, each
+indicator still favours the better team.
 
 ## How it was found
 
@@ -52,11 +54,13 @@ so no season was scored by weights it helped choose (`results/variations.csv`, 5
 
 | Best of each | Early season | Weights | Picked right, 2004-2023 |
 |---|---|---|---|
-| **Pre-game 15 (chosen)** | this season alone | ridge 300 | **65.2%** (3,508 of 5,382) |
+| **Pre-game 15 (chosen)** | no blend (Elo, the QB and blended point differential carry their own history) | ridge 300 | **65.2%** (3,508 of 5,382) |
 | In-game 15 | 8 games of last season | ridge 300 | 64.1% (3,448 of 5,382) |
 
-The top pre-game variations are within a few games of each other (65.2% to 64.8% for the top 20); the
-in-game 15 never got past 64.1%. The chosen one was then fitted once on all of 2004-2023 and frozen.
+The top pre-game variations are a tie: the chosen one beat the next three by 2 games of 5,382, and the
+top 20 run from 65.2% to 64.8%. Choosing among them inside the same left-out seasons gives 65.0%
+(3,499), the fairer figure for the choice. The in-game 15 never got past 64.1%. The chosen one was then
+fitted once on all of 2004-2023 and frozen.
 
 ## The test: 2024 and 2025
 
@@ -70,11 +74,16 @@ Run once, on seasons the equation never saw (`results/test_2024_2025.csv`):
 | Weeks 1-3 | 59.4% (57 of 96) | 67.7% (65 of 96) |
 | Weeks 4 on | 65.8% (311 of 473) | 63.6% (301 of 473) |
 
-On the same 569 games the FiveThirtyEight Elo alone picked 66.4% (378), and the home team 52.9%
-(`results/references.csv`).
+On the same 569 games the FiveThirtyEight Elo alone picked 66.4% (378), and the home team 53.5%
+(`results/references.csv`, a neutral site counted a half). The equation and Elo pick differently in 70
+games: the equation was right in 30, Elo in 40, a gap chance alone produces about a quarter of the time.
+On 2004-2023, each season left out, the equation picked 61 more than Elo alone (3,508 against 3,447).
+The variations tied with the chosen one in training would have picked 375 to 377 of the 569; that was
+looked at only after the test, so 368 stands.
 
-Study 1 ranked the indicators on 2003-2025, so 2024 and 2025 helped choose which 15 these are; they had
-no part in the weights, the variation chosen or the scaling.
+No 2024 or 2025 game went into the weights, the scaling or the choice of variation (checked by refitting
+on 2004-2023 alone). Study 1 ranked the indicators on 2003-2025; ranked on 2003-2023 alone, the same 15
+come out in each list.
 
 ## Run it
 

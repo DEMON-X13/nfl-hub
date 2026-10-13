@@ -22,15 +22,16 @@ What is varied, every variation scored the same way on 2004-2023 (each season ca
 equation fitted on the other nineteen, so no season is scored by weights it helped choose):
   - the list: in-game 15 or pre-game 15
   - early season: each team's season to date blended with last regular season, (n x this season +
-    k x 2/3 x last season) / (n + k), n its games so far, k = 0 (this season alone), 2, 4, 8, 16:
-    with k = 0 a team with no game yet is average, so week 1 is home field alone
+    k x 2/3 x last season) / (n + k), n its games so far, k = 0 (this season alone), 2, 4, 8, 16;
+    with k = 0 a stat a team has no game of yet reads average. Elo, the quarterback and the blended
+    point differential carry their own history and are never blended here
   - the weights: a logistic regression (the weights that fit the results best), the same with a
     ridge pull toward zero of 3, 30 or 300 (the 15 overlap, so a pull keeps any one from swinging),
     or every indicator weighed the same
 The best variation is the one that picks the most winners there. It is then fitted once on all of
 2004-2023, frozen in results/equation.json, and run once on 2024 and 2025, seasons it never saw.
 2003 is left out of the fitting since it has no season before it in the play-by-play. Study 1 ranked
-the indicators on 2003-2025, so 2024 and 2025 helped choose which 15 these are, not their weights.
+the indicators on 2003-2025; ranked on 2003-2023 alone, the same 15 come out in each list.
 
 Run: python3 -I research/equation15/equation.py   (after research/win_indicators/build.py)
 """
@@ -176,11 +177,12 @@ def main():
     # references on the same games: the home team, and the FiveThirtyEight Elo alone (study 1)
     elo = P['elo']['gap']
     refs = []
+    # a neutral site's home team is a coin flip for the first (counted a half, as study 1 counts a level call)
     for name, pr in (('the home team', np.where(site_all > 0, 0.56, 0.5)),
                      ('FiveThirtyEight Elo alone', 1 / (1 + 10 ** (-(elo + R.ELO_HOME * site_all) / 400)))):
-        refs.append(dict(reference=name, train_pick_rate=score(pr[tr], y_all[tr])[0], test_pick_rate=score(pr[te], y_all[te])[0],
-                         test_2024=score(pr[te & (seas_all == 2024)], y_all[te & (seas_all == 2024)])[0],
-                         test_2025=score(pr[te & (seas_all == 2025)], y_all[te & (seas_all == 2025)])[0]))
+        rate = lambda m: R.pick_rate(pr[m] - 0.5, y_all[m])[0]
+        refs.append(dict(reference=name, train_pick_rate=rate(tr), test_pick_rate=rate(te),
+                         test_2024=rate(te & (seas_all == 2024)), test_2025=rate(te & (seas_all == 2025))))
 
     # the best variation of each list, fitted once on 2004-2023, frozen, and run on 2024 and 2025; the
     # best of the two (by the record above) is the equation
