@@ -88,16 +88,21 @@ props/
   build/part3.js                 THE SOURCE: rendering, wiring, the parlay engines
   build/assemble.py              part1 + part2 + part3 -> the audit's page (payload.json
                                  only checked: the app fetches it at boot)
-  build/audit.js                 ~26k checks. THE COMMIT GATE
+  build/audit.js                 ~28k checks. THE COMMIT GATE: failures and runtime
+                                 errors refuse the publish, warnings (W.<kind>, each
+                                 kind's reason in WARN) publish and redden the run
   build/payload.py               rebuilds data/payload.json (weekly.py runs it)
-  build/test_audit_gate.py       weekly.py's reading of the audit's summary line, on cases
+  build/test_audit_gate.py       weekly.py's reading of the audit's summary line, on cases,
+                                 warnings among them, and its tail (audit_step, finish,
+                                 props.yml's last step) on a planted warning and failure
   build/test_pull_schedule.py    the price pulls' schedule replayed over the season's games
                                  (weekly.py's windows, oddsfetch.py's choose()) at every
                                  lateness and with pulls dropped, offline: no credit spent
   build/weekly.py                the whole refresh: download, price, bake, assemble,
                                  audit, then the suggestions record (props.yml commits);
                                  exits 1, publishing nothing, when a required download
-                                 fails or the audit is not clean; at a rollover moves last
+                                 fails or the audit is not clean (warnings alone publish,
+                                 listed as problems); at a rollover moves last
                                  season's price files to data/archive/<season>/
   build/suggest_ledger.js        the suggestions record: the Parlay Builder's four
                                  levels on the default choices, taken from the published
@@ -190,7 +195,11 @@ elo/
                                  marked so, an old file's fallback (before the stats; before the
                                  carry);
                                  the table scrolls in its own box at a desktop width with the
-                                 page's stylesheet round it, the team column free to stick
+                                 page's stylesheet round it, the team column free to stick;
+                                 and the money the files feed: market + form on every rated
+                                 player, the Elo matchup chance on every matchup line, the Elo
+                                 picks' chance and price the products of their legs', no
+                                 error (the gate on that, the page smoke running after the commit)
   tools/units_fit.py             the fit and the walk-forward test behind Overall Offense and
                                  Overall Defense: 2012-2025 play-by-play, every constant fitted
                                  on 2012-2017 (the carry's share chosen there, one season left
@@ -748,7 +757,7 @@ line in the text, all, part and none on the slip: the game's page, the NFL page,
 lines and no player prices; the same text copied without a share sheet; nothing promising every leg), Escape, Tab and Start over, and that finishing writes
 nothing. Both record every request a page
 makes, and a request to the retired store or its sign-in services, or anything but a read, fails
-them. The elo job runs `smoke.js`
+them. The elo job runs `smoke.js`, after its commit (a page check, never a gate on the Elo data),
 every morning, playoffs and off-season included, so it holds in any week: the board's week is
 taken as the board takes it (the first with a game to play, else the last), the checks that need
 a game still to come run only when there is one, and once the payload's last game is about to kick
@@ -824,7 +833,11 @@ nflbets/index.html + payload.json + elo/data  ->  suggest_ledger.js  ->  data/su
 `payload.json` is fetched when the app boots (`let PAY=null` and `DATA_URL` in front of
 part2: `../data/payload.json` in the audit's copy, `../props/data/payload.json` on the Bets
 and Stats page), so the page and the data are separate files. Its keys: `sched` (272
-games), `players` (about 470, each with seeded EWMA stat history), `toff`/`tdef`/`tdefg`
+games), `players` (about 590: about 460 with last season's rows, each with seeded EWMA stat history,
+and since app v104 every other player the depth chart lists at a position the page projects who is on
+a roster, ACT, DEV or INA, carried with `gp` and `cn` 0 and no stat arrays: a backup who has not played
+since, a veteran who did not play last season or whose few snaps fell under `keep()`'s bar, a rookie;
+`payload.py`), `toff`/`tdef`/`tdefg`
 (team offence, defence, defence-by-position), `mkt` + `mkt_meta` (real main lines per
 week, each with the book's name `n` and game `g`; `mkt_v` 2 says they carry them), `prices`
 (raw odds rows per week, each with the player id `pid` it was matched to; `unmatched` lists
@@ -839,7 +852,10 @@ void, and waits where there is no club, unless the report had him Out), `corr`
 model pieces), `mkt_scale` and `tdrate` (from `data/scale.json` and `data/tdrate.json`) and
 `tdmult` (the touchdown cap), `norm` (league means by position group, and the implied-points
 spread), `injuries` (this week's report in full, with practice status, and earlier weeks'
-Outs and Doubtfuls), `roster` (every skill player's team, roster status, name and the week
+Outs and Doubtfuls, and every earlier row of a player in `ina`), `ina` (the skill players the roster
+has inactive for their club's last game: status INA, or an ACT row with nflverse's inactive code, I01 or
+I02, which is how a club whose rows have moved on to the next week writes it; `bake` in `weekly.py`),
+`roster` (every skill player's team, roster status, name and the week
 the row is for, then where they differ his football name with his surname (or null) and
 his legal form, `names_of` in `names.py`, which the audit matches book
 names against, and anyone else the page can show, whatever position the roster gives him),
@@ -862,9 +878,24 @@ own where its total is used), absent on a payload baked before them.
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled
 out in `S.inactive` (Out, Doubtful, Questionable without practice, "pending" -- out or
-doubtful in his team's last game, no stat line in it, and no status yet --, a game-day
-inactive, and a reserve list, a release or a retirement, kept as `week:'season'`). The season replays week by week, each week graded
+doubtful in his team's last game, or inactive for it (`ina`) after being on its report in any status
+(app v104, the Elo build's WHO PLAYS rule, which reads inactive the same way, INA or the I01/I02 code,
+since the same day: Caleb Williams, Questionable and then inactive in week 5 of
+2026), no stat line in it, and no status yet: held until he practises or his club files a report he
+is not on --, a game-day inactive, and a reserve list, a release or a retirement, kept as
+`week:'season'`). The season replays week by week, each week graded
 on its own injury report, before today's roster and report are applied.
+
+Who starts is `rosterFor` in `part2.js`: the depth chart's order over the players who are not ruled
+out, the chart re-counted past the ruled out, a player shown with three games or with a place on the
+chart within his position's depth (one or two games are marked thin history; `pricedLegs` takes nobody
+under three, and a game page's hands only one the chart moved up). A player with no game the model counts
+last season or this (`noHistory`), or one moved up whose games give the
+model no workload (`nothingToProject`), has nothing to project from: he gets no lines (`statLines`
+returns none), so no price, headline, game hand, suggested parlay or Elo pick, and is shown in his
+place (a starter's slot on the chart, or one it moves him up to) marked thin history with a line saying
+so, never replaced there by the next man down (app v104; before it a club whose QB1 was out with a QB2
+like that started nobody).
 
 `S` is the live state object, built by `freshState()` in `part2.js` from `PAY`
 and then updated as weeks are ingested. It holds `players`, `teams`, `defs`,
@@ -932,8 +963,20 @@ Record: `trackBody`), `tab-week` (Weekly Update) and `tab-backup` (Backup).
 
 `weekly.py` exits with an error when `audit.js` is not clean (its summary line read as
 numbers by `audit_verdict`, 0 failures and 0 runtime errors, a missing line not clean;
-`build/test_audit_gate.py` holds that to its cases), so the job stops before its commit step: a failing check means the site silently stops updating and the
-scheduled run is marked failed. It does the same when a required download (schedule,
+`build/test_audit_gate.py` holds that to its cases), so the job stops before its commit step: a failing check means the site stops updating and the
+scheduled run is marked failed. Its warnings do not: a check the audit names as presentation only
+(`W.<kind>` in `audit.js`, the kinds and their reasons in `WARN`: who is shown starting or listed,
+an ordering, which correctly priced parlay a level or a game hand picks, a note's wording in the
+panel, a rule the week's data left untested, the credit panel) counts on the summary line
+("28944 checks, 0 failures, 2 warnings, 0 runtime errors"), the run publishes, and the warnings go
+into the problems file, so the job goes red after its commit (`audit_warnings`). Everything else
+blocks: a number, a price or a leg on the wrong player or game, a sum, settlement, the payload
+against its sources, a runtime error, a chance or payout floor a card states against its numbers;
+and V6 blocks a suggested leg or candidate on anyone this week's report has Out, Doubtful or
+Questionable, the roster has off its active list, released, inactive this week or on no roster, or
+the inactive rule holds out, worked out by the audit from the sources (`NOPLAY`), whatever the
+listing warnings say. A check on made-up data
+stays blocking: only a code change can fail it. It does the same when a required download (schedule,
 stats, roster, injury report) fails, or the stats would shrink -- both before any credit is
 spent -- except that a 404 on the stats or the injury report, with none of this season's
 published yet, is a file nflverse has not posted: the run publishes without it and says so.
@@ -1151,7 +1194,8 @@ TeamRankings, and drafts `data/weekN.js`. **The narrative is written by a
 person.** A draft is not live until it is added to `data/weeks.js` and
 `index.html`. Read `news/HANDOFF.md` before touching anything here. The narrative
 never quotes the Deep Dive's or the rank chip's ranks (they move under it; the
-smoke test fails a live week that does). After week 18 the tracker stays on
+smoke test warns on a live week that does: the narrative is a person's, and the run still
+publishes the week's scores and stats; so do the Deep Dive's lineup checks, which warn). After week 18 the tracker stays on
 week 18 and says the regular season is complete; it does not cover the playoffs.
 
 ## Workflows
@@ -1159,10 +1203,13 @@ week 18 and says the regular season is complete; it does not cover the playoffs.
 | Workflow | When | Does |
 |---|---|---|
 | `props.yml` | 4 price pulls a week (UTC): Mon, Wed and Thu 08:17, and Sat 05:17 for Saturday's games and the whole Sunday slate, on the site by about 7:50am Pacific Saturday at the worst lateness (the owner's call, October 2026: all of Saturday to look; the Sunday prices are about a day old by kickoff). Each prices up to the next slot plus 10 hours, since GitHub fires this repo's crons about 2-9.4 hours late, and each game is bought once. With `--catch-up` (a game a dropped pull left unpriced, nothing otherwise): 8 post-game and stats runs, Saturday 16:07 and 23:07 for a dropped weekend pull, and a daily 12:07 run that lands after nflverse posts the day's injury report. `build/test_pull_schedule.py` replays the season through the windows | `weekly.py --no-commit` (download, price, bake, assemble, audit, then the suggestions record, `suggest_ledger.js`, which never fails the run), then the workflow commits `props/data` (the ledger with it) to `main` unless `weekly.py` refused the run (a required download failed, the stats would shrink, the audit is not clean), in which case it commits only the price files the run bought, never `payload.json`; afterwards the run fails if `weekly.py` reported problems |
-| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js` and `joker/joker.py` (which may fail on its own without stopping the publish), the game-totals shadow `props/research/totals/shadow.py` with `shadow_check.py` (the same), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, the same), `smoke.js` (which builds the app); commits `betting/state.json`, `props/research/totals/shadow/ledger.json` and `liveparlays/parlays.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
-| `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the page or a week file | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the page, the lineups against the report they came from, and `cases.js`); commits only what changed: `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
-| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | restores the finished seasons' nflverse files (`actions/cache`, `elo/cache-past`, the set `elo/cache/past.lst` names), `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data`; saves the finished seasons' files when their set changed |
+| `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js` and `joker/joker.py` (which may fail on its own without stopping the publish), the game-totals shadow `props/research/totals/shadow.py` with `shadow_check.py` (the same), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, the same), `smoke.js` (which builds the app; its few presentation checks warn, publish, and redden the run's last step, which runs only after a smoke with no failure); commits `betting/state.json`, `props/research/totals/shadow/ledger.json` and `liveparlays/parlays.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
+| `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the page or a week file | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the page, the lineups against the report they came from, and `cases.js`; the lineup and narrative checks warn, publish, and redden the run's last step, which runs only after a smoke with no failure); commits only what changed: `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
+| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | restores the finished seasons' nflverse files (`actions/cache`, `elo/cache-past`, the set `elo/cache/past.lst` names), `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, commits `elo/data`; then the nflbets smoke (a page check: it reddens the run, never holds the ratings back); saves the finished seasons' files when their set changed |
 | `cfb.yml` | 17x/week: daily 06:17 and 13:47 UTC, Saturday 10:17 and 21:47, Sunday 17:47 (each queued ~10 hours before the kickoffs it must precede, since GitHub starts them 3-9 hours late) | `cfb/tools/simulate.js`, `update.js` (exits 1 before the commit on a feed it cannot carry), `news.js`, `smoke.js` (strict); commits `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` and, at a rollover, `cfb/data/history.json` |
+
+Every workflow runs on `ubuntu-24.04`, pinned: `ubuntu-latest` becomes Ubuntu 26.04 on 19 October
+2026, to be tried on purpose in a dispatched branch run before the pin moves.
 
 Only `props.yml` spends money (`ODDS_API_KEY`, ~7 credits a game, ~112 a week,
 500 free a month). The other four use free sources.

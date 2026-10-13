@@ -48,7 +48,8 @@ concurrency:
 
 jobs:
   news:
-    runs-on: ubuntu-latest
+    # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
+    runs-on: ubuntu-24.04
     # a normal run takes a few minutes; a stalled download (lib/netfetch.py and .js give each try a
     # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours
     timeout-minutes: 30
@@ -70,10 +71,16 @@ jobs:
         working-directory: news
         run: node tools/run-auto.js
       # the page, and the lineups against the injury report, roster and schedule they were built from
+      # Its failures hold the run's files back; its warnings (who the Deep Dive lists and its notes,
+      # the narrative quoting a rank: smoke.js names them) publish, and the last step goes red on them
       - name: Smoke test the page
+        id: smoke
         working-directory: news
+        env:
+          SMOKE_WARNINGS_FILE: ${{ runner.temp }}/news-smoke-warnings.txt
         run: node tools/smoke.js
       - name: Commit if anything changed
+        id: commit
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
@@ -90,3 +97,21 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      - name: Fail the run if the smoke test warned (the files are already published)
+        # only after a smoke with no failure (a failed smoke holds the commit back and says so itself;
+        # smoke.js writes the file only then too), and worded from the commit's own outcome
+        if: always() && steps.smoke.outcome == 'success'
+        env:
+          COMMIT: ${{ steps.commit.outcome }}
+        run: |
+          f="${{ runner.temp }}/news-smoke-warnings.txt"
+          if [ -s "$f" ]; then
+            if [ "$COMMIT" = success ]; then
+              echo "::error::the tracker's smoke test warned: the files were published, and these presentation checks need a look"
+            else
+              echo "::error::the tracker's smoke test passed its blocking checks and warned, but the commit step did not succeed ($COMMIT), so the files were not published; these presentation checks need a look too"
+            fi
+            sed 's/^/  - /' "$f"
+            exit 1
+          fi
+          echo "the smoke test reported no warnings"

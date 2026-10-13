@@ -189,6 +189,10 @@ def unit_checks():
         {'gsis_id': 'b1', 'team': 'B', 'week': 5, 'status': 'ACT'},
         {'gsis_id': 'b2', 'team': 'B', 'week': 4, 'status': 'ACT'},
         {'gsis_id': 'b3', 'team': 'B', 'week': 5, 'status': 'INA'},
+        # A's: a3 active but coded inactive for the last game (I01, Caleb Williams after week 5 of
+        # 2026), a4 active and coded active (A01); both Questionable at A's week-3 report
+        {'gsis_id': 'a3', 'team': 'A', 'week': 4, 'status': 'ACT', 'status_description_abbr': 'I01'},
+        {'gsis_id': 'a4', 'team': 'A', 'week': 4, 'status': 'ACT', 'status_description_abbr': 'A01'},
     ])
     inj = pd.DataFrame([
         # B's week-5 report (statuses filed): b1 questionable and practising
@@ -196,6 +200,8 @@ def unit_checks():
         {'gsis_id': 'b3', 'team': 'B', 'week': 5, 'report_status': 'Questionable', 'practice_status': 'Did Not Participate In Practice', 'report_primary_injury': 'Knee'},
         # A's week-3 report: a1 out; week 6 not filed yet (no rows)
         {'gsis_id': 'a1', 'team': 'A', 'week': 3, 'report_status': 'Out', 'practice_status': 'Did Not Participate In Practice', 'report_primary_injury': 'Hamstring'},
+        {'gsis_id': 'a3', 'team': 'A', 'week': 3, 'report_status': 'Questionable', 'practice_status': 'Limited Participation in Practice', 'report_primary_injury': 'Hip'},
+        {'gsis_id': 'a4', 'team': 'A', 'week': 3, 'report_status': 'Questionable', 'practice_status': 'Limited Participation in Practice', 'report_primary_injury': 'Hip'},
         # C: x1 out in week 4, not practising in week 5 (statuses not filed); x2 out in week 4,
         # practising fully; x3 out in week 4 and not on C's week-5 report
         {'gsis_id': 'x1', 'team': 'C', 'week': 4, 'report_status': 'Out', 'practice_status': 'Did Not Participate In Practice', 'report_primary_injury': 'Thumb'},
@@ -208,6 +214,8 @@ def unit_checks():
     chk(out.get('a1') is not None and 'not filed' in out['a1'], f'UNITS: a player out at his club\'s last report, with this week\'s not filed, should stay out: {out.get("a1")}')
     chk(out.get('b1') is None and 'b1' in q, f'UNITS: a questionable player who practised should be listed with a Q: {out.get("b1")} {q.get("b1")}')
     chk(out.get('b3') is not None, 'UNITS: a questionable player who did not practise at the last report should be counted out')
+    chk(out.get('a3') is not None and 'inactive' in out['a3'] and out.get('a4') is None,
+        f'UNITS: an active row coded inactive (I01) after being on the last report should stay out until he practises, and one coded active should not: {out.get("a3")}, {out.get("a4")}')
     chk(out.get('a2') == 'on injured reserve', 'UNITS: an injured reserve player on a club on its bye lost his status')
     chk(out.get('b2') == 'a free agent', 'UNITS: a player who left his club after week 4 is not a free agent')
     chk('a1' in team and team['a1'] == 'A', 'UNITS: a club on its bye lost its roster')
