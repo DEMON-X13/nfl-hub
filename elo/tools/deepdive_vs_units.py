@@ -22,8 +22,21 @@ Both are mapped to points the same way units_fit.py maps the snapshot's: least s
 intercept and home field, fitted on 2012-2017 weeks 2 on, scored by RMSE on 2018-2025 weeks 2 on.
 The regular season only, since the Deep Dive is (the tracker does not cover the playoffs), so the
 snapshot's number here differs a little from UNIT_WF's, which counts the playoffs too.
+
+The snapshot with the carry (13 October 2026, after this test): the same, each club starting a
+season at build.UNIT_CARRY of its final rating the season before, that season rated from 0 (the
+build's one-step carry, units_fit.run_elo with carry). UNIT_CARRY was chosen by units_fit.py on
+2013-2017 alone; this is its one test, 2018-2025, beside the snapshot without it and the Deep Dive,
+week by week stretch, week 1 apart (no measure but the Deep Dive's prior had anything there before).
+
+The Deep Dive's headline and tags (13 October 2026): the headline as the page tags it, one slope on
+the carried raw gap (Overall Offense minus the opponent's Overall Defense), scored beside the rest;
+and, at the end, the constants news/tools/context.js carries in DD_TAGS worked out from the fits
+above (each row's points per SD of edge alone, their ratios to the quarterback row's, the headline's
+slope and its thresholds in points), with whether context.js carries them. A refit of the units
+moves the slope: run this again then.
 """
-import argparse, os, sys
+import argparse, os, re, sys
 
 import numpy as np
 import pandas as pd
@@ -120,6 +133,8 @@ def main():
     Wt = build.UNIT_W
     comp = lambda R, side: sum(Wt[side][k] / 100 * R[:, KEYS.index(k)] for k in Wt[side])
     snap = np.column_stack([comp(O, 'off'), comp(D, 'def')])
+    Oc, Dc = uf.run_elo(t, Z, H, build.UNIT_K, build.UNIT_CARRY)
+    snapc = np.column_stack([comp(Oc, 'off'), comp(Dc, 'def')])
 
     print('the Deep Dive\'s ratings going into each game (context.js ratings(), replayed):')
     t = t.rename(columns={'def': 'dfn'})
@@ -160,6 +175,9 @@ def main():
     print('\nRMSE of the offense\'s points, 2018-2025 regular season weeks 2 on, then by season:')
     score(np.zeros((len(t), 0)), 'league average and home field')
     p_snap = score(snap, 'the snapshot: Overall Offense, Overall Defense')
+    p_snapc = score(snapc, f'the snapshot with the carry ({build.UNIT_CARRY})')
+    HEAD = 'the Deep Dive headline: offense minus defense, one slope'
+    score(snapc[:, 0] - snapc[:, 1], HEAD)
     p_dd = score(edges, 'the Deep Dive: its four edges, free weights')
     score(edges.sum(1), 'the Deep Dive: the four edges added up')
     score(np.column_stack([DO[:, [U[k] for k in ('qb', 'ol', 'rb', 'rec')]], DDf[:, [U[k] for k in ('passD', 'front', 'runD', 'db')]]]),
@@ -173,16 +191,54 @@ def main():
     better = sum(a_ < b_ for a_, b_ in zip(res['the Deep Dive: its four edges, free weights'][1], res['the snapshot: Overall Offense, Overall Defense'][1]))
     print(f'\n  Deep Dive minus snapshot: squared error a team-game {d.mean() / 2:+.3f}, standard error {se:.3f} (by game); '
           f'the Deep Dive better in {better} of {uf.TEST_LAST - uf.FIT_LAST} seasons')
-    print('\nby stretch of the season (RMSE, 2018-2025):')
-    for lo, hi in ((2, 4), (5, 9), (10, 18)):
-        m = em & (week >= lo) & (week <= hi)
+    carried = f'the snapshot with the carry ({build.UNIT_CARRY})'
+    better_c = sum(a_ < b_ for a_, b_ in zip(res[carried][1], res['the snapshot: Overall Offense, Overall Defense'][1]))
+    print(f'  the snapshot with the carry better than without it in {better_c} of {uf.TEST_LAST - uf.FIT_LAST} seasons')
+    print('\nby stretch of the season (RMSE, 2018-2025; week 1 mapped with the weeks-2-on fit):')
+    for lo, hi in ((2, 4), (5, 9), (10, 18), (2, 18), (1, 1)):
+        m = (reg & (season > uf.FIT_LAST) & (week == 1)) if lo == 1 else em & (week >= lo) & (week <= hi)
         line = ', '.join(f'{n} {np.sqrt(np.mean((res[k][2][m] - y[m]) ** 2)):.3f}' for n, k in
                          (('league', 'league average and home field'), ('snapshot', 'the snapshot: Overall Offense, Overall Defense'),
+                          ('with the carry', carried), ('headline', HEAD),
                           ('Deep Dive', 'the Deep Dive: its four edges, free weights'), ('both', 'both together')))
-        print(f'  weeks {lo}-{hi} ({m.sum()} team-games): {line}')
+        print(f'  week{"s " + str(lo) + "-" + str(hi) if lo > 1 else " 1"} ({m.sum()} team-games): {line}')
+    print('\npaired, the squared error a team-game, standard error by game (2018-2025):')
+    for lo, hi in ((2, 18), (2, 4), (1, 1)):
+        m = (reg & (season > uf.FIT_LAST) & (week == 1)) if lo == 1 else em & (week >= lo) & (week <= hi)
+        for name, other in (('without it', p_snap), ('the Deep Dive', p_dd)):
+            q = pd.Series((p_snapc[m] - y[m]) ** 2 - (other[m] - y[m]) ** 2).groupby(t.game_id.values[m]).sum()
+            print(f'  the carry minus {name}, week{"s " + str(lo) + "-" + str(hi) if lo > 1 else " 1"}: {q.mean() / 2:+.3f} (se {float(q.std() / np.sqrt(len(q)) / 2):.3f})')
     w_ = res['the Deep Dive: its four edges, free weights'][3]
     print('\n  the Deep Dive\'s fitted points per standard deviation of edge: ' +
           ', '.join(f'{a_}-{b_} {v:+.2f}' for (a_, b_), v in zip(EDGES, w_[1:5])))
+    tags(res, HEAD)
+
+
+def tags(res, head):
+    """The Deep Dive's tag constants (news/tools/context.js DD_TAGS), from the fits above, all on
+    2012-2017 weeks 2 on: each row's weight is its points per SD of edge fitted alone over the
+    quarterback row's (the pass rush row takes the line's, coverage the receivers'); the headline's
+    slope is the one-slope fit on the carried raw gap, Overall Offense minus the opponent's Overall
+    Defense, and its thresholds the quarterback row's 0.5 and 1.5 SD in points. A refit of the units
+    (units_fit.py) moves the slope: run this again and carry what it prints into context.js."""
+    alone = {a_: float(res[f'the Deep Dive: {a_} - {b_} alone'][3][1]) for a_, b_ in EDGES}
+    qb = alone['qb']
+    w = {k: round(alone[k] / qb, 4) for k in ('qb', 'ol', 'rb', 'rec')}
+    w.update(front=w['ol'], db=w['rec'])
+    slope = round(float(res[head][3][1]), 4)
+    fav, easy = round(0.5 * qb, 4), round(1.5 * qb, 4)
+    print('\nthe Deep Dive\'s tag constants (2012-2017 weeks 2 on):')
+    print('  each row alone, points per SD of edge: ' + ', '.join(f'{a_}-{b_} {alone[a_]:.5f}' for a_, b_ in EDGES))
+    print('  row weights (over the quarterback row\'s): ' + ', '.join(f'{k} {v}' for k, v in w.items()) + '; tags at 0.5 and 1.5')
+    print(f'  headline: {slope} points a raw unit of the gap, Favorable from {fav} and Easy from {easy} points')
+    src = open(os.path.join(os.path.dirname(os.path.dirname(HERE)), 'news', 'tools', 'context.js')).read()
+    blk = re.search(r'const DD_TAGS = \{([\s\S]*?)\n\};', src)
+    num = lambda pat: (lambda m: float(m.group(1)) if m else None)(re.search(pat, blk.group(1))) if blk else None
+    have_w = {k: num(rf'weights: \{{[^}}]*\b{k}: ([\d.]+)') for k in w}
+    have = (have_w, num(r'headline: \{ slope: ([\d.]+)'), num(r'headline: \{[^}]*\bfav: ([\d.]+)'), num(r'headline: \{[^}]*\beasy: ([\d.]+)'),
+            num(r'rows: \{[^}]*\}[^}]*\bfav: ([\d.]+)'), num(r'rows: \{[^}]*\}[^}]*\beasy: ([\d.]+)'))
+    same = have == (w, slope, fav, easy, 0.5, 1.5)
+    print('  news/tools/context.js carries these constants' if same else f'  news/tools/context.js DIFFERS: it has {have}')
 
 
 if __name__ == '__main__':

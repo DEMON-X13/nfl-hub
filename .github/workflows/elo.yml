@@ -49,8 +49,10 @@ jobs:
           python-version: "3.12"
       - run: pip install -r elo/requirements.txt
       # The finished seasons' nflverse files (2012 to last season's player stats, depth charts and injury
-      # reports, and last season's play-by-play once this one is under way: about 230 MB, 43 of the 49
-      # files a run reads) never change, so they are kept between runs instead of asked for again five
+      # reports, last season's play-by-play once this one is under way, and the season before last's,
+      # which Overall Offense and Overall Defense carry in until the rankings move to the new season
+      # and which is not read after: in season about 230 MB, 43 of the 49 files a run reads) never
+      # change, so they are kept between runs instead of asked for again five
       # times a day: one failed request among them refused the run of 13 October 2026. The season in
       # play, games.csv and the roster are never kept: build.py deletes and downloads them every run.
       # build.py writes elo/cache/past.lst, the finished seasons' files it read, once every source was

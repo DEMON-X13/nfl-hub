@@ -5,6 +5,9 @@
        built from (tools/lineup-checks.js; the build's own snapshot in tools/.cache when it matches,
        a fresh download otherwise), and to the week the schedule says is current;
      - the rank chip against the X NFL Bets Team Rankings tab's own file, ../elo/data/model.json;
+     - the Deep Dive's headline (Overall Offense against the opponent's Overall Defense) against the same
+       file, its tag and every row's weighted tag against the rules worked out on their own
+       (tools/deepdive-checks.js), on every game of the slate, and the tag constants to their values;
      - each team's stat bars against its own game count in results.js;
      - the live week's narrative: it never quotes the Deep Dive's or the rank chip's ranks, which
        move with every run while the narrative stays as written (on 2026-10-09, 146 of the 192 unit
@@ -19,6 +22,7 @@ const fs = require('fs'), path = require('path');
 const { JSDOM, requestInterceptor, VirtualConsole } = require('jsdom');
 const { SEASON, siteRankQuote } = require('./lib');
 const LC = require('./lineup-checks');
+const DC = require('./deepdive-checks');
 
 const ROOT = path.resolve(__dirname, '..');
 const OFFLINE = process.env.NEWS_SMOKE_OFFLINE === '1';
@@ -168,13 +172,25 @@ async function run() {
       if (U[first.away].g26 != null) { const b = dds[0].querySelector('.ddbasis').textContent;
         check("deep dive basis is the team's own 2026 game count", b.includes(`${first.away}'s ${U[first.away].g26} game`), b.slice(0, 120)); }
       else skip("deep dive basis is the team's own 2026 game count", 'units2026.js predates per-team game counts: rebuild with node tools/context.js');
-      // each row's tag is the edge between the two ratings it shows, and the mirrored rows agree
-      const LV = ['Very tough', 'Tough', 'Even', 'Favorable', 'Easy'];
-      const tagOf = e => e >= 1.5 ? 'Easy' : e >= 0.5 ? 'Favorable' : e > -0.5 ? 'Even' : e > -1.5 ? 'Tough' : 'Very tough';
-      const pairs = (A, O) => [[A.qb, O.vs.passD], [A.ol, O.front], [A.rb, O.vs.runD], [A.rec, O.db], [A.front, O.ol], [A.db, O.rec]].map(([u, v]) => tagOf(u.z - v.z));
-      const shown = i => [...dds[i].querySelectorAll('.dtag')].map(e => e.textContent);
-      const want = [pairs(U[first.away], U[first.home]), pairs(U[first.home], U[first.away])];
-      check('deep dive tags are the edge between the ratings shown', shown(0).join('|') === want[0].join('|') && shown(1).join('|') === want[1].join('|'), shown(0).join(',') + ' / ' + want[0].join(','));
+      // each row's tag is the edge between the two ratings it shows, weighted by what that matchup alone has
+      // predicted (tools/deepdive-checks.js, its own constants), and the mirrored rows agree, on the same weights
+      const LV = DC.LV;
+      const shown = i => [...dds[i].querySelectorAll('.ddrow .dtag')].map(e => e.textContent);
+      const want = [DC.rowTags(U[first.away], U[first.home]), DC.rowTags(U[first.home], U[first.away])];
+      check('deep dive tags are the weighted edge between the ratings shown', shown(0).join('|') === want[0].join('|') && shown(1).join('|') === want[1].join('|'), shown(0).join(',') + ' / ' + want[0].join(','));
+      { const f = DC.checkMeta(META);
+        check('deep dive tag constants are their own values (row weights, 0.5 and 1.5; headline 11.9126 points a unit, 0.9645 and 2.8935)', f.length === 0, f.join('; ') || JSON.stringify(META.tags)); }
+      // the headline: this team's Overall Offense against the opponent's Overall Defense, from model.json, above the rows
+      { let M = null; try { M = JSON.parse(fs.readFileSync(path.resolve(ROOT, '..', 'elo', 'data', 'model.json'), 'utf8')); } catch (e) { /* no hub file */ }
+        const r = DC.checkOverall(U, META, M, SEASON);
+        check(`deep dive Overall Offense and Defense are model.json's (${r.mode})`, r.fails.length === 0, r.fails.length ? `${r.fails.length}: ${r.fails.slice(0, 4).join(' | ')}` : `built ${META.overall && (META.overall.built_at || META.overall.missing)}`);
+        const heads = dds.map(x => x.querySelector('.ddhead')), H = DC.headlineWant(U[first.away], U[first.home], META);
+        if (H) check('deep dive headline at the top of each team, before the basis and the rows', heads.every(h => h && !h.closest('.ddrow') && h.nextElementSibling && h.nextElementSibling.classList.contains('ddbasis') && /ELO Ratings tab/.test(h.textContent)),
+          heads.map(h => h ? h.textContent.replace(/\s+/g, ' ').trim().slice(0, 140) : 'none').join(' / '));
+        else check('no deep dive headline without Overall ratings of the season', heads.every(h => !h), META.overall && META.overall.missing); }
+      { const dd = g('deepDive'), bad = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a, o]) => U[a] && U[o])
+          .flatMap(([a, o]) => DC.checkDive(dd(a, o, 'r6'), a, o, U[a], U[o], META));
+        check('deep dive headline and weighted tags hold on every game of the slate', bad.length === 0, bad.length ? `${bad.length}: ${bad.slice(0, 4).join(' | ')}` : `${WK.games.length * 2} team pages`); }
       const mirror = t => LV[4 - LV.indexOf(t)];
       check('mirrored rows agree: pass rush against pass protection, coverage against receivers', shown(0)[4] === mirror(shown(1)[1]) && shown(1)[4] === mirror(shown(0)[1]) && shown(0)[5] === mirror(shown(1)[3]) && shown(1)[5] === mirror(shown(0)[3]), shown(0).join(',') + ' / ' + shown(1).join(','));
       // every team's ratings: a full league of ranks per unit, a finite rating each

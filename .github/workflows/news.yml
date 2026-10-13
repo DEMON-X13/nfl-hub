@@ -34,7 +34,7 @@ on:
     # to the page or a week's narrative, so a narrative the smoke test refuses (it quotes the site's own
     # ranks, say) fails on its own push, not on the next scheduled run hours later
     branches: [main]
-    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "lib/netfetch.js", "news/tools/lineup-checks.js", "news/tools/cases.js",
+    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "lib/netfetch.js", "news/tools/lineup-checks.js", "news/tools/deepdive-checks.js", "news/tools/cases.js",
             "news/data/week*.js", "news/data/weeks.js", "news/js/app.js", "news/index.html"]
 
 permissions:

@@ -1,0 +1,118 @@
+== 1. baseline reproduces the committed walk_forward (elo/data/model.json at origin/main)
+  2013: committed {'games': 266, 'accuracy': 0.6504, 'logloss': 0.6526}  dump {'games': 266, 'accuracy': 0.6504, 'logloss': 0.6526}  rebuilt {'games': 266, 'accuracy': 0.6504, 'logloss': 0.6526}  same
+  2014: committed {'games': 266, 'accuracy': 0.6504, 'logloss': 0.6332}  dump {'games': 266, 'accuracy': 0.6504, 'logloss': 0.6332}  rebuilt {'games': 266, 'accuracy': 0.6504, 'logloss': 0.6332}  same
+  2015: committed {'games': 267, 'accuracy': 0.6142, 'logloss': 0.6648}  dump {'games': 267, 'accuracy': 0.6142, 'logloss': 0.6648}  rebuilt {'games': 267, 'accuracy': 0.6142, 'logloss': 0.6648}  same
+  2016: committed {'games': 265, 'accuracy': 0.6113, 'logloss': 0.642}  dump {'games': 265, 'accuracy': 0.6113, 'logloss': 0.642}  rebuilt {'games': 265, 'accuracy': 0.6113, 'logloss': 0.642}  same
+  2017: committed {'games': 267, 'accuracy': 0.6142, 'logloss': 0.6294}  dump {'games': 267, 'accuracy': 0.6142, 'logloss': 0.6294}  rebuilt {'games': 267, 'accuracy': 0.6142, 'logloss': 0.6294}  same
+  2018: committed {'games': 265, 'accuracy': 0.6642, 'logloss': 0.6334}  dump {'games': 265, 'accuracy': 0.6642, 'logloss': 0.6334}  rebuilt {'games': 265, 'accuracy': 0.6642, 'logloss': 0.6334}  same
+  2019: committed {'games': 266, 'accuracy': 0.5602, 'logloss': 0.674}  dump {'games': 266, 'accuracy': 0.5602, 'logloss': 0.674}  rebuilt {'games': 266, 'accuracy': 0.5602, 'logloss': 0.674}  same
+  2020: committed {'games': 268, 'accuracy': 0.6567, 'logloss': 0.6111}  dump {'games': 268, 'accuracy': 0.6567, 'logloss': 0.6111}  rebuilt {'games': 268, 'accuracy': 0.6567, 'logloss': 0.6111}  same
+  2021: committed {'games': 284, 'accuracy': 0.6373, 'logloss': 0.6337}  dump {'games': 284, 'accuracy': 0.6373, 'logloss': 0.6337}  rebuilt {'games': 284, 'accuracy': 0.6373, 'logloss': 0.6337}  same
+  2022: committed {'games': 282, 'accuracy': 0.6206, 'logloss': 0.634}  dump {'games': 282, 'accuracy': 0.6206, 'logloss': 0.634}  rebuilt {'games': 282, 'accuracy': 0.6206, 'logloss': 0.634}  same
+  2023: committed {'games': 285, 'accuracy': 0.6105, 'logloss': 0.652}  dump {'games': 285, 'accuracy': 0.6105, 'logloss': 0.652}  rebuilt {'games': 285, 'accuracy': 0.6105, 'logloss': 0.652}  same
+  2024: committed {'games': 285, 'accuracy': 0.6912, 'logloss': 0.5998}  dump {'games': 285, 'accuracy': 0.6912, 'logloss': 0.5998}  rebuilt {'games': 285, 'accuracy': 0.6912, 'logloss': 0.5998}  same
+  2025: committed {'games': 284, 'accuracy': 0.6549, 'logloss': 0.6457}  dump {'games': 284, 'accuracy': 0.6549, 'logloss': 0.6457}  rebuilt {'games': 284, 'accuracy': 0.6549, 'logloss': 0.6457}  same
+  2026: committed {'games': 78, 'accuracy': 0.6923, 'logloss': 0.6388}  dump {'games': 78, 'accuracy': 0.6923, 'logloss': 0.6388}  rebuilt {'games': 78, 'accuracy': 0.6923, 'logloss': 0.6388}  same  (2026: information only; its data have moved since the commit)
+  2013-2025 seasons not reproduced: 0
+
+== variant limited: ELO_QB_Q_OUT='Limited'
+  QB-weeks added to the outs, 2012: 14; started (first dropback) 2; had a dropback 2; did not start 12; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2013-2025: 267; started (first dropback) 102; had a dropback 112; did not start 165; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2018-2025: 188; started (first dropback) 71; had a dropback 77; did not start 117; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2026 (information only): 3; started (first dropback) 0; had a dropback 0; did not start 3; team-week with no play-by-play game 0
+  team-games whose expected QB changed, 2013-2025: 181 in 175 games; actual starter = variant QB 77, = baseline QB 90, neither 14, no play-by-play 0
+  team-games whose expected QB changed, 2018-2025: 130 in 125 games; actual starter = variant QB 55, = baseline QB 63, neither 12, no play-by-play 0
+  team-games whose expected QB changed, 2026 (information only): 1 in 1 games; actual starter = variant QB 1, = baseline QB 0, neither 0, no play-by-play 0
+  2013-2025: games 3550; right 2250 -> 2252 (net +2); accuracy 0.6338 -> 0.6344; log loss 0.63874 -> 0.63957
+      paired log-loss diff (variant - baseline) mean +0.000829, se 0.000874 (t +0.95); games with p changed 3550, with an expected QB changed 175, pick changed 74 (right under variant 38-36, under baseline 36-38)
+      log-loss diff summed: on the games with a QB changed +3.3904 (mean +0.01937, se 0.01726); on the rest (refit only) -0.4458
+  2018-2025: games 2219; right 1414 -> 1422 (net +8); accuracy 0.6372 -> 0.6408; log loss 0.63534 -> 0.63533
+      paired log-loss diff (variant - baseline) mean -0.000010, se 0.000995 (t -0.01); games with p changed 2219, with an expected QB changed 125, pick changed 46 (right under variant 27-19, under baseline 19-27)
+      log-loss diff summed: on the games with a QB changed +0.0046 (mean +0.00004, se 0.01729); on the rest (refit only) -0.0275
+  2026 (information only): games 78; right 54 -> 53 (net -1); accuracy 0.6923 -> 0.6795; log loss 0.63882 -> 0.63760
+      paired log-loss diff (variant - baseline) mean -0.001218, se 0.001777 (t -0.69); games with p changed 78, with an expected QB changed 1, pick changed 1 (right under variant 0-1, under baseline 1-0)
+      log-loss diff summed: on the games with a QB changed -0.1282 (mean -0.12820, se nan); on the rest (refit only) +0.0332
+  by season: games, right base/var, log loss base/var, QB-changed games
+    2013: 266 games, right 173/171, log loss 0.6526/0.6571, QB changed in 6
+    2014: 266 games, right 173/170, log loss 0.6332/0.6354, QB changed in 14
+    2015: 267 games, right 164/160, log loss 0.6648/0.6651, QB changed in 9
+    2016: 265 games, right 162/165, log loss 0.6420/0.6442, QB changed in 12
+    2017: 267 games, right 164/164, log loss 0.6294/0.6314, QB changed in 9
+    2018: 265 games, right 176/176, log loss 0.6334/0.6339, QB changed in 11
+    2019: 266 games, right 149/151, log loss 0.6740/0.6730, QB changed in 11
+    2020: 268 games, right 176/178, log loss 0.6111/0.6090, QB changed in 15
+    2021: 284 games, right 181/181, log loss 0.6337/0.6355, QB changed in 16
+    2022: 282 games, right 175/177, log loss 0.6340/0.6334, QB changed in 21
+    2023: 285 games, right 174/176, log loss 0.6520/0.6510, QB changed in 17
+    2024: 285 games, right 197/198, log loss 0.5998/0.5988, QB changed in 20
+    2025: 284 games, right 186/185, log loss 0.6457/0.6491, QB changed in 14
+    2026 (info): 78 games, right 54/53, log loss 0.6388/0.6376, QB changed in 1
+  BAR (2013-2025 log loss no worse AND right picks no fewer): log loss 0.63957 vs 0.63874, right 2252 vs 2250: NOT MET
+
+== variant didnot: ELO_QB_Q_OUT='Did Not'
+  QB-weeks added to the outs, 2012: 1; started (first dropback) 0; had a dropback 0; did not start 1; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2013-2025: 54; started (first dropback) 10; had a dropback 13; did not start 44; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2018-2025: 39; started (first dropback) 8; had a dropback 9; did not start 31; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2026 (information only): 4; started (first dropback) 0; had a dropback 0; did not start 4; team-week with no play-by-play game 0
+  team-games whose expected QB changed, 2013-2025: 28 in 28 games; actual starter = variant QB 17, = baseline QB 9, neither 2, no play-by-play 0
+  team-games whose expected QB changed, 2018-2025: 22 in 22 games; actual starter = variant QB 13, = baseline QB 7, neither 2, no play-by-play 0
+  team-games whose expected QB changed, 2026 (information only): 0 in 0 games; actual starter = variant QB 0, = baseline QB 0, neither 0, no play-by-play 0
+  2013-2025: games 3550; right 2250 -> 2246 (net -4); accuracy 0.6338 -> 0.6327; log loss 0.63874 -> 0.63847
+      paired log-loss diff (variant - baseline) mean -0.000271, se 0.000431 (t -0.63); games with p changed 3021, with an expected QB changed 28, pick changed 10 (right under variant 3-7, under baseline 7-3)
+      log-loss diff summed: on the games with a QB changed -1.1569 (mean -0.04132, se 0.05477); on the rest (refit only) +0.1937
+  2018-2025: games 2219; right 1414 -> 1411 (net -3); accuracy 0.6372 -> 0.6359; log loss 0.63534 -> 0.63483
+      paired log-loss diff (variant - baseline) mean -0.000514, se 0.000567 (t -0.91); games with p changed 2219, with an expected QB changed 22, pick changed 7 (right under variant 2-5, under baseline 5-2)
+      log-loss diff summed: on the games with a QB changed -1.1709 (mean -0.05322, se 0.05710); on the rest (refit only) +0.0301
+  2026 (information only): games 78; right 54 -> 53 (net -1); accuracy 0.6923 -> 0.6795; log loss 0.63882 -> 0.63897
+      paired log-loss diff (variant - baseline) mean +0.000150, se 0.000186 (t +0.81); games with p changed 78, with an expected QB changed 0, pick changed 1 (right under variant 0-1, under baseline 1-0)
+      log-loss diff summed: on the games with a QB changed +0.0000 (mean +nan, se nan); on the rest (refit only) +0.0117
+  by season: games, right base/var, log loss base/var, QB-changed games
+    2013: 266 games, right 173/173, log loss 0.6526/0.6526, QB changed in 0
+    2014: 266 games, right 173/174, log loss 0.6332/0.6306, QB changed in 3
+    2015: 267 games, right 164/162, log loss 0.6648/0.6666, QB changed in 2
+    2016: 265 games, right 162/162, log loss 0.6420/0.6436, QB changed in 1
+    2017: 267 games, right 164/164, log loss 0.6294/0.6292, QB changed in 0
+    2018: 265 games, right 176/177, log loss 0.6334/0.6325, QB changed in 3
+    2019: 266 games, right 149/147, log loss 0.6740/0.6742, QB changed in 0
+    2020: 268 games, right 176/176, log loss 0.6111/0.6081, QB changed in 2
+    2021: 284 games, right 181/180, log loss 0.6337/0.6334, QB changed in 5
+    2022: 282 games, right 175/175, log loss 0.6340/0.6336, QB changed in 3
+    2023: 285 games, right 174/174, log loss 0.6520/0.6513, QB changed in 2
+    2024: 285 games, right 197/196, log loss 0.5998/0.6006, QB changed in 6
+    2025: 284 games, right 186/186, log loss 0.6457/0.6457, QB changed in 1
+    2026 (info): 78 games, right 54/53, log loss 0.6388/0.6390, QB changed in 0
+  BAR (2013-2025 log loss no worse AND right picks no fewer): log loss 0.63847 vs 0.63874, right 2246 vs 2250: NOT MET
+
+== variant limited_didnot: ELO_QB_Q_OUT='Limited,Did Not'
+  QB-weeks added to the outs, 2012: 15; started (first dropback) 2; had a dropback 2; did not start 13; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2013-2025: 321; started (first dropback) 112; had a dropback 125; did not start 209; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2018-2025: 227; started (first dropback) 79; had a dropback 86; did not start 148; team-week with no play-by-play game 0
+  QB-weeks added to the outs, 2026 (information only): 7; started (first dropback) 0; had a dropback 0; did not start 7; team-week with no play-by-play game 0
+  team-games whose expected QB changed, 2013-2025: 208 in 201 games; actual starter = variant QB 94, = baseline QB 99, neither 15, no play-by-play 0
+  team-games whose expected QB changed, 2018-2025: 151 in 145 games; actual starter = variant QB 68, = baseline QB 70, neither 13, no play-by-play 0
+  team-games whose expected QB changed, 2026 (information only): 1 in 1 games; actual starter = variant QB 1, = baseline QB 0, neither 0, no play-by-play 0
+  2013-2025: games 3550; right 2250 -> 2252 (net +2); accuracy 0.6338 -> 0.6344; log loss 0.63874 -> 0.63929
+      paired log-loss diff (variant - baseline) mean +0.000554, se 0.000966 (t +0.57); games with p changed 3550, with an expected QB changed 201, pick changed 76 (right under variant 39-37, under baseline 37-39)
+      log-loss diff summed: on the games with a QB changed +2.2562 (mean +0.01122, se 0.01673); on the rest (refit only) -0.2894
+  2018-2025: games 2219; right 1414 -> 1421 (net +7); accuracy 0.6372 -> 0.6404; log loss 0.63534 -> 0.63483
+      paired log-loss diff (variant - baseline) mean -0.000515, se 0.001136 (t -0.45); games with p changed 2219, with an expected QB changed 145, pick changed 47 (right under variant 27-20, under baseline 20-27)
+      log-loss diff summed: on the games with a QB changed -1.1247 (mean -0.00776, se 0.01708); on the rest (refit only) -0.0189
+  2026 (information only): games 78; right 54 -> 53 (net -1); accuracy 0.6923 -> 0.6795; log loss 0.63882 -> 0.63774
+      paired log-loss diff (variant - baseline) mean -0.001082, se 0.001810 (t -0.60); games with p changed 78, with an expected QB changed 1, pick changed 1 (right under variant 0-1, under baseline 1-0)
+      log-loss diff summed: on the games with a QB changed -0.1298 (mean -0.12980, se nan); on the rest (refit only) +0.0454
+  by season: games, right base/var, log loss base/var, QB-changed games
+    2013: 266 games, right 173/171, log loss 0.6526/0.6571, QB changed in 6
+    2014: 266 games, right 173/171, log loss 0.6332/0.6329, QB changed in 17
+    2015: 267 games, right 164/160, log loss 0.6648/0.6668, QB changed in 11
+    2016: 265 games, right 162/165, log loss 0.6420/0.6457, QB changed in 13
+    2017: 267 games, right 164/164, log loss 0.6294/0.6313, QB changed in 9
+    2018: 265 games, right 176/176, log loss 0.6334/0.6330, QB changed in 14
+    2019: 266 games, right 149/151, log loss 0.6740/0.6731, QB changed in 11
+    2020: 268 games, right 176/178, log loss 0.6111/0.6062, QB changed in 16
+    2021: 284 games, right 181/180, log loss 0.6337/0.6352, QB changed in 21
+    2022: 282 games, right 175/177, log loss 0.6340/0.6331, QB changed in 24
+    2023: 285 games, right 174/176, log loss 0.6520/0.6503, QB changed in 19
+    2024: 285 games, right 197/198, log loss 0.5998/0.5995, QB changed in 25
+    2025: 284 games, right 186/185, log loss 0.6457/0.6491, QB changed in 15
+    2026 (info): 78 games, right 54/53, log loss 0.6388/0.6377, QB changed in 1
+  BAR (2013-2025 log loss no worse AND right picks no fewer): log loss 0.63929 vs 0.63874, right 2252 vs 2250: NOT MET

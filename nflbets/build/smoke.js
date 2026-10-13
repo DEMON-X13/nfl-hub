@@ -1389,9 +1389,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       } else chk(!card, 'mismatches show on a week they are not for');
       [...d.querySelectorAll('#tabs button')].find(x => x.dataset.tab === 'elo').click(); await wait(40); }
     /* Overall Offense and Overall Defense: two pills in the position row, each a table of the 32
-       teams in rank order (the ones that have played best first), each with its shield; a position
-       pill brings the players back (the tab's own gate, elo/check_tab.js, checks the rest) */
-    { const U = eloM.units, played = U ? Object.values(U.off).filter(v => v.games).length : 0, card = () => d.getElementById('peUnits');
+       teams in rank order (the ones with a rating best first: played, or carried from last season),
+       each with its shield, a club yet to play marked carried from the season the file names, and no
+       other; a position pill brings the players back (the tab's own gate, elo/check_tab.js, checks the rest) */
+    { const U = eloM.units, played = U ? Object.values(U.off).filter(v => v.games || v.carried).length : 0, card = () => d.getElementById('peUnits');
       const pill = side => body.querySelector(`.pe-pos button[data-unit="${side}"]`), was = (body.querySelector('.pe-pos [aria-selected="true"]') || {}).dataset;
       if (!played) chk(!pill('off') && !card(), 'Overall Offense shows with no games rated');
       else {
@@ -1400,9 +1401,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(!!pill(side) && txt(pill(side)) === name, 'no ' + name + ' pill in the position row'); if (!pill(side)) break;
           pill(side).click(); await wait(30);
           const rows = card() ? [...card().querySelectorAll('tbody tr.pe-tmrow')] : [], T = U[side];
-          const vals = rows.filter(r => T[r.dataset.team] && T[r.dataset.team].games).map(r => +txt(r.querySelector('.pe-elo')));
+          const vals = rows.filter(r => T[r.dataset.team] && (T[r.dataset.team].games || T[r.dataset.team].carried)).map(r => +txt(r.querySelector('.pe-elo')));
           chk(rows.length === Object.keys(T).length && rows.every((r, i) => T[r.dataset.team].rank === i + 1) && vals.every((v, i) => !i || v <= vals[i - 1]) && rows.every(r => r.querySelector('.pe-shield svg')),
             `${name} is not every team in rank order, best first, with shields`);
+          { const from = (U.params || {}).carry_from, bad = rows.filter(r => { const v = T[r.dataset.team], m = r.querySelector('.pe-carry');
+              return v.carried ? !m || txt(m) !== `carried from ${from}` : !!m; }).map(r => r.dataset.team);
+            chk(!bad.length, `${name}: a club yet to play is not marked carried from ${from}, or one that has played is: ${bad.join(', ')}`); }
           chk(!!card() && txt(card().querySelector('h2')).startsWith(name) && !!card().querySelector('.pe-curve') && body.querySelectorAll('.card').length === 1, `the ${name} card has the wrong title, no curve, or sits beside the players`);
           /* fifteen columns are wider than a desktop card: on the whole page's styles the table scrolls
              inside its card, and the team column sticks there */
@@ -1775,7 +1779,7 @@ async function snapshotChecks() {
     return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
   const tRank = t => Object.entries(eloM.teams || {}).sort((a, b) => b[1].elo - a[1].elo).findIndex(([k]) => k === t) + 1;
   const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
-  const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games));
+  const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games || v.carried));
   /* a stat as the ELO Ratings tab prints it */
   const fmtStat = (v, f) => v == null ? '–' : f === 'pct' ? (v * 100).toFixed(1) + '%' : f === 'epa' ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(3) : f === 'f2' ? v.toFixed(2) : v.toFixed(1);
   /* every model's call on a game, from the files: the graded one, else the one published */
@@ -1869,7 +1873,10 @@ async function snapshotChecks() {
     if (unitsOn) for (const [t, s] of [[a, 'off'], [h, 'def'], [h, 'off'], [a, 'def']]) { const v = eloM.units[s] && eloM.units[s][t], box = q(`[data-gs-unit="${s}:${t}"]`);
       if (!v) { chk(/no rating for/.test(txt(q('#gsUnits'))), `snapshot (${label}): a unit the file lacks is not said`); continue; }
       chk(!!box && txt(box.querySelector('[data-gs-urank]')) === ordinal(v.rank) && txt(box.querySelector('[data-gs-uelo]')) === String(v.elo),
-        `snapshot (${label}): ${t}'s Overall ${s === 'off' ? 'Offense' : 'Defense'} is not the file's ${ordinal(v.rank)}, ${v.elo}: ${box ? txt(box).slice(0, 80) : 'missing'}`); }
+        `snapshot (${label}): ${t}'s Overall ${s === 'off' ? 'Offense' : 'Defense'} is not the file's ${ordinal(v.rank)}, ${v.elo}: ${box ? txt(box).slice(0, 80) : 'missing'}`);
+      const cm = box && box.querySelector('[data-gs-carried]'), from = (eloM.units.params || {}).carry_from;
+      chk(v.carried ? !!cm && txt(cm) === `carried from ${from}` : !cm,
+        `snapshot (${label}): ${t}'s Overall ${s === 'off' ? 'Offense' : 'Defense'} ${v.carried ? `is yet to play and not marked carried from ${from}` : 'has played and is marked carried'}`); }
     /* position by position: each lineup's rated starters, each in his team's column under his
        position, with the ELO Ratings tab's season Elo, rank, shield and Q */
     { const L = eloMu.lineups || {}, pls = [...md.querySelectorAll('#gsPos .gs-pl[data-pid]')], bad = [];
@@ -2311,6 +2318,40 @@ async function snapshotChecks() {
       && txt(o2.md.querySelector(`[data-gs-rec="${any.home_team}"]`)) === recOf(any.home_team, false) && !!o2.md.querySelector('#gsCalls [data-gs-model="alpha"][data-pick]'),
       'snapshot: with the ratings missing the window does not say so in each section and draw the matchup: ' + M2.errs.join('; '));
     M2.w.close();
+  }
+  /* a club yet to play this season (made so in a copy of model.json: the away offense and the home
+     defense of a game): its units are shown on their carried ratings, ranked, marked carried from the
+     season the file names, and the note says each team starts from the file's share of it */
+  if (any && unitsOn && (eloM.units.params || {}).carry_from != null) {
+    const M6 = JSON.parse(ELO_M), from = M6.units.params.carry_from, c = M6.units.params.carry;
+    for (const [s, t] of [['off', any.away_team], ['def', any.home_team]]) { const v = M6.units[s][t];
+      if (v) Object.assign(v, { games: 0, line: [], before: null, change: null, carried: true, start: v.elo }); }
+    const swap = w2 => { let real = null; Object.defineProperty(w2, 'fetch', { configurable: true, set: f => { real = f; },
+      get: () => (u, o) => /elo\/data\/model\.json/.test(String(u)) ? Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(M6)) }) : real(u, o) }); };
+    const C6 = await run(st, undefined, wk => scoreboard(st, wk), false, { seed: swap }); await wait(400);
+    const o = await open(C6, any), md = o.md;
+    const mark = (s, t) => { const b = md && md.querySelector(`[data-gs-unit="${s}:${t}"]`), m = b && b.querySelector('[data-gs-carried]');
+      return !!b && !!m && txt(m) === `carried from ${from}` && txt(b.querySelector('[data-gs-uelo]')) === String(M6.units[s][t].elo) && txt(b.querySelector('[data-gs-urank]')) === ordinal(M6.units[s][t].rank); };
+    chk(!!o.btn && C6.errs.length === 0 && mark('off', any.away_team) && mark('def', any.home_team)
+      && !md.querySelector(`[data-gs-unit="def:${any.away_team}"] [data-gs-carried]`) && !md.querySelector(`[data-gs-unit="off:${any.home_team}"] [data-gs-carried]`)
+      && txt(md.querySelector('#gsUnits .gs-note')).includes(`starting the season from ${c} of its final rating in ${from}`),
+      `snapshot: a unit yet to play is not shown on its carried rating, ranked and marked carried from ${from}, or the note does not give the carry: ` + C6.errs.join('; '));
+    C6.w.close();
+    /* the day the carry is for: every club carried and none played (made so in a copy): both duels
+       drawn on the carried ratings, each unit marked, and nothing says the units have not started */
+    const M7 = JSON.parse(ELO_M);
+    for (const s of ['off', 'def']) for (const v of Object.values(M7.units[s]))
+      Object.assign(v, { games: 0, line: [], before: null, change: null, carried: true, record: [0, 0, 0], start: v.elo });
+    const swap7 = w2 => { let real = null; Object.defineProperty(w2, 'fetch', { configurable: true, set: f => { real = f; },
+      get: () => (u, o) => /elo\/data\/model\.json/.test(String(u)) ? Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(M7)) }) : real(u, o) }); };
+    const C7 = await run(st, undefined, wk => scoreboard(st, wk), false, { seed: swap7 }); await wait(400);
+    const o7 = await open(C7, any), md7 = o7.md;
+    const mark7 = (s, t) => { const b = md7 && md7.querySelector(`[data-gs-unit="${s}:${t}"]`), m = b && b.querySelector('[data-gs-carried]');
+      return !!b && !!m && txt(m) === `carried from ${from}` && txt(b.querySelector('[data-gs-uelo]')) === String(M7.units[s][t].elo); };
+    chk(!!o7.btn && C7.errs.length === 0 && [any.home_team, any.away_team].every(t => mark7('off', t) && mark7('def', t))
+      && !/not yet/i.test(txt(md7.querySelector('#gsUnits'))) && !/start once a team has a rated game/.test(txt(md7)),
+      `snapshot: with every club carried and none played, the window does not draw both duels on the carried ratings, marked carried from ${from}: ` + C7.errs.join('; '));
+    C7.w.close();
   }
   /* a playoff game (a wild-card game after week 18, still to play): the window draws, and says
      what the files have for it */

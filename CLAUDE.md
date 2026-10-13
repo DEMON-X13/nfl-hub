@@ -77,10 +77,22 @@ day after week 18). The Deep Dive's lineups follow the nflverse injury report an
 (`context.js` says the rule; a team has filed only when its game statuses are on the report, never
 on a practice report), and every nflverse file but the snap counts is required: one that does not
 download fails the run before the commit, so the last good files stay live (before the season's
-first game a 404 on a current-season file is "no games yet"). The smoke test checks the lineups
+first game a 404 on a current-season file is "no games yet"). Each Deep Dive opens on a headline, the
+team's Overall Offense against the opponent's Overall Defense as the ELO Ratings tab shows them
+(`units` in `elo/data/model.json`, read by `context.js` only when it is of the season, LA as LAR, with the
+build it came from in `UNITS26_META.overall`; without it the rows publish and the page says so), tagged by
+the gap read as points (11.9126 a raw unit, Favorable from 0.9645, Easy from 2.8935): from week 2 on it
+predicted an offense's points better than the rows on 2018-2025 (9.44 against 9.60; `elo/tools/deepdive_vs_units.py`
+prints it and every tag constant, and says whether `context.js` carries them: run it again after a refit of the units). Each of the six rows
+is tagged on its edge weighted by what that matchup alone has predicted (2012-2017: quarterback 1,
+receivers and coverage 0.8925, line and pass rush 0.5956, run game 0.3792) at 0.5 and 1.5; the rows overlap
+and are never added up. The constants are in `UNITS26_META.tags`, which the page reads and the smoke holds
+to `tools/deepdive-checks.js`'s own copy. The smoke test checks the lineups
 against the report, roster and schedule they were built from (`lineup-checks.js`, which never
 shares the build's shortcuts, only its reading of a source: which ESPN entry is which player and what
-day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab),
+day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab), the
+Deep Dive's headline against the same file (exact on the same build, the board's order a run behind) and
+its tags against the rules on every game of the slate,
 the stat bars against `results.js`, that the live week's narrative quotes none of the site's own
 ranks, and the fixed cases in `tools/cases.js` (each with the broken version a review caught, which
 the checks must fail); on a checkout whose `units2026.js` is older than the report it fails until
@@ -406,16 +418,17 @@ python3 elo/build.py             # downloads nflverse player stats 2012-now into
 python3 elo/check.py             # the gate: the files against the roster, injury report, schedule and published calls; "0 failures"
 node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom from props/build); "0 failures"
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
-python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017
+python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
 ```
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
 tries, under Conventions): it exits 1 and the last good files stay live. The finished seasons' files (2012 to
-last season's stats, depth charts and injury reports, and last season's play-by-play once this one is under
-way: 43 of the 49 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
+last season's stats, depth charts and injury reports, last season's play-by-play once this one is under way,
+and the season before last's while the rankings are still on the finished season, which the units carry in
+and which is not read once the rankings move: in season 43 of the 49 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
 build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source was had, and
-the job saves exactly those under a key on their names (a new entry only when a season finishes; bump `v1`
+the job saves exactly those under a key on their names (a new entry only when that set changes: a season finishing, the rankings moving to it; bump `v1`
 in it to throw them away), so a run asks nflverse for the season in play, games.csv and the roster alone,
 which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
 makes to a finished season's file later is not read until `v1` is bumped (and `elo/check.py` reads the same
@@ -482,8 +495,17 @@ matchup this week); at the end of its position row, two pills, Overall Offense a
 each of nine key stats from nflverse's play-by-play, opponents and home field counted, each side a fixed weighted sum
 (offense points 35, success rate 25, EPA a play 15, giveaways 15, sack rate 10; defense points allowed 50, big plays
 allowed 30, takeaways 10, sacks 10), fitted on 2012-2017 by `elo/tools/units_fit.py` and no less accurate walk-forward
-on 2018-2025 than the old points-and-EPA measure (9.508 against 9.520, not a real gain); third down, red zone, yards a
-play and the rest are shown with their league ranks and weigh nothing. The table scrolls sideways inside its card at
+on 2018-2025 than the old points-and-EPA measure (9.508 against 9.520, both rated from 0 before the carry, not a real
+gain; with the carry 9.431 against the old measure carried the same way, 9.441, `UNIT_WF`); third down, red zone, yards a
+play and the rest are shown with their league ranks and weigh nothing. Every club starts a season at `UNIT_CARRY` (0.42)
+of its final rating the season before on every stat (THE CARRY in the build, 13 October 2026: last season rated from 0
+on its own play-by-play, so the build reads the play-by-play of the season before the units' too; the weights, K and
+home field held), chosen on 2013-2017 by leaving one season out at a time and tested once on 2018-2025, regular-season
+weeks 2 on: 9.424 against 9.501 with nothing carried, weeks 2-4 9.325 against 9.597, where the Season Tracker's Deep
+Dive had 9.403 (`elo/tools/deepdive_vs_units.py`; week 1 9.492, the Deep Dive still better there at 9.293). So every
+club is rated, ranked and on the curve from the season's first day: one yet to play is shown on its carried rating and
+marked "carried from" last season (`carried`, its `start` its line's first point) on the tab, in its window and in the
+Game snapshot, never hidden; `elo/check.py` replays last season with its own copy of the share. The table scrolls sideways inside its card at
 every width, the team column held, the columns sort, and a click on a team opens
 its window (its rating game by game, every stat ranked raw and with opponents counted, its coming opponent). The page
 reads the weights and the stats from the file and still draws an older file's three columns. A final the

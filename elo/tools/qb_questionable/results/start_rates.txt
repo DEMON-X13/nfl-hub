@@ -1,0 +1,296 @@
+QUESTIONABLE STARTING QUARTERBACKS: DO THEY START? NFL regular season 2013-2025 (the 2026 files are never opened)
+incumbent = the QB with the most offense snaps in the club's previous game that season (known before kickoff).
+started = led the club's QB offense snaps this game (PFR snap counts); played no st. = offense snaps but not the most;
+ST only = a snap row with no offense snap; no snap = no snap row (inactive, or dressed and unused).
+games.csv starter = the incumbent is nflverse games.csv's home_qb_id/away_qb_id for the game (a second reading of "started").
+Questionable meant "50-50" before 2016 (Probable existed); from 2016 Probable was dropped and Questionable is the
+"uncertain to play" tag the site reads today, so 2016-2025 is the era that matches the rule being considered.
+==================================================================================================================================
+[A] Questionable incumbent, 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                     34      29      2   0    3    85.3% [69.9,  93.6]      91.2% [77.0,  97.0]      91.2% [77.0,  97.0]    
+  Limited                 124      68      5   0   51    54.8% [46.1,  63.3]      58.9% [50.1,  67.1]      56.5% [47.7,  64.9]    
+  Did Not Participate      24      10      0   0   14    41.7% [24.5,  61.2]      41.7% [24.5,  61.2]      45.8% [27.9,  64.9]    
+  all                     182     107      7   0   68    58.8% [51.5,  65.7]      62.6% [55.4,  69.3]      61.5% [54.3,  68.3]    
+
+[A] Questionable incumbent, 2016-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                     31      27      1   0    3    87.1% [71.1,  94.9]      90.3% [75.1,  96.7]      90.3% [75.1,  96.7]    
+  Limited                 102      55      5   0   42    53.9% [44.3,  63.3]      58.8% [49.1,  67.9]      56.9% [47.2,  66.1]    
+  Did Not Participate      21       9      0   0   12    42.9% [24.5,  63.5]      42.9% [24.5,  63.5]      47.6% [28.3,  67.6]    
+  all                     154      91      6   0   57    59.1% [51.2,  66.5]      63.0% [55.1,  70.2]      62.3% [54.5,  69.6]    
+
+[A] Questionable incumbent, 2013-2015
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                      3       2      1   0    0    66.7% [20.8,  93.9]     100.0% [43.9, 100.0]     100.0% [43.9, 100.0]    
+  Limited                  22      13      0   0    9    59.1% [38.7,  76.7]      59.1% [38.7,  76.7]      54.5% [34.7,  73.1]    
+  Did Not Participate       3       1      0   0    2    33.3% [ 6.1,  79.2]      33.3% [ 6.1,  79.2]      33.3% [ 6.1,  79.2]    
+  all                      28      16      1   0   11    57.1% [39.1,  73.5]      60.7% [42.4,  76.4]      57.1% [39.1,  73.5]    
+
+[A] Doubtful incumbent (sanity check), 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                      2       0      0   0    2     0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]    
+  Limited                   4       0      0   0    4     0.0% [ 0.0,  49.0]       0.0% [ 0.0,  49.0]       0.0% [ 0.0,  49.0]    
+  Did Not Participate      21       0      0   0   21     0.0% [ 0.0,  15.5]       0.0% [ 0.0,  15.5]       4.8% [ 0.8,  22.7]    
+  all                      27       0      0   0   27     0.0% [ 0.0,  12.5]       0.0% [ 0.0,  12.5]       3.7% [ 0.7,  18.3]    
+
+[A] Doubtful incumbent (sanity check), 2016-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                      2       0      0   0    2     0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]    
+  Limited                   3       0      0   0    3     0.0% [ 0.0,  56.1]       0.0% [ 0.0,  56.1]       0.0% [ 0.0,  56.1]    
+  Did Not Participate      19       0      0   0   19     0.0% [ 0.0,  16.8]       0.0% [ 0.0,  16.8]       5.3% [ 0.9,  24.6]    
+  all                      24       0      0   0   24     0.0% [ 0.0,  13.8]       0.0% [ 0.0,  13.8]       4.2% [ 0.7,  20.2]    
+
+[A] Out incumbent (sanity check), 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                      2       0      0   0    2     0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]    
+  Limited                  11       0      0   0   11     0.0% [ 0.0,  25.9]       0.0% [ 0.0,  25.9]       0.0% [ 0.0,  25.9]    
+  Did Not Participate      91       0      0   0   91     0.0% [ 0.0,   4.1]       0.0% [ 0.0,   4.1]       2.2% [ 0.6,   7.7]    
+  other                     7       0      0   0    7     0.0% [ 0.0,  35.4]       0.0% [ 0.0,  35.4]       0.0% [ 0.0,  35.4]    
+  all                     111       0      0   0  111     0.0% [ 0.0,   3.3]       0.0% [ 0.0,   3.3]       1.8% [ 0.5,   6.3]    
+
+[A] Probable incumbent (2013-2015 only; context), 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                    168     161      3   0    4    95.8% [91.7,  98.0]      97.6% [94.0,  99.1]      97.0% [93.2,  98.7]    
+  Limited                  18      17      1   0    0    94.4% [74.2,  99.0]     100.0% [82.4, 100.0]     100.0% [82.4, 100.0]    
+  all                     186     178      4   0    4    95.7% [91.7,  97.8]      97.8% [94.6,  99.2]      97.3% [93.9,  98.8]    
+
+[A] incumbent on the practice report with no game status, 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                    741     691     26   0   24    93.3% [91.2,  94.8]      96.8% [95.2,  97.8]      95.0% [93.2,  96.4]    
+  Limited                  62      57      3   0    2    91.9% [82.5,  96.5]      96.8% [89.0,  99.1]      93.5% [84.6,  97.5]    
+  Did Not Participate      20      10      0   0   10    50.0% [29.9,  70.1]      50.0% [29.9,  70.1]      55.0% [34.2,  74.2]    
+  all                     823     758     29   0   36    92.1% [90.1,  93.8]      95.6% [94.0,  96.8]      93.9% [92.1,  95.4]    
+
+[A] incumbent not on that week's report at all, 2013-2025: 4684/5068 started,  92.4% [91.7,  93.1]
+
+==================================================================================================================================
+BY SEASON, Questionable incumbent: started/n by last practice (start rate)
+  season                   Full                Limited    Did Not Participate                  other                    all
+  2013      0/0        -           4/6    66.7%           0/0        -           0/0        -           4/6    66.7%       
+  2014      0/1     0.0%           5/9    55.6%           0/1     0.0%           0/0        -           5/11   45.5%       
+  2015      2/2   100.0%           4/7    57.1%           1/2    50.0%           0/0        -           7/11   63.6%       
+  2016      4/4   100.0%           7/8    87.5%           1/1   100.0%           0/0        -          12/13   92.3%       
+  2017      3/4    75.0%           2/7    28.6%           0/0        -           0/0        -           5/11   45.5%       
+  2018      1/1   100.0%           5/8    62.5%           3/4    75.0%           0/0        -           9/13   69.2%       
+  2019      7/7   100.0%           4/8    50.0%           0/0        -           0/0        -          11/15   73.3%       
+  2020      2/2   100.0%           8/12   66.7%           1/1   100.0%           0/0        -          11/15   73.3%       
+  2021      4/6    66.7%           4/8    50.0%           0/3     0.0%           0/0        -           8/17   47.1%       
+  2022      0/1     0.0%          10/19   52.6%           2/3    66.7%           0/0        -          12/23   52.2%       
+  2023      5/5   100.0%           9/14   64.3%           0/2     0.0%           0/0        -          14/21   66.7%       
+  2024      0/0        -           2/8    25.0%           1/6    16.7%           0/0        -           3/14   21.4%       
+  2025      1/1   100.0%           4/10   40.0%           1/1   100.0%           0/0        -           6/12   50.0%       
+
+BLOCKS OF SEASONS, Questionable incumbent (labelled information; not used to choose anything)
+  2013-2015  Full: 2/3  66.7% [20.8,  93.9]   Limited: 13/22  59.1% [38.7,  76.7]   Did Not Participate: 1/3  33.3% [ 6.1,  79.2]
+  2016-2018  Full: 8/9  88.9% [56.5,  98.0]   Limited: 14/23  60.9% [40.8,  77.8]   Did Not Participate: 4/5  80.0% [37.6,  96.4]
+  2019-2021  Full: 13/15  86.7% [62.1,  96.3]   Limited: 16/28  57.1% [39.1,  73.5]   Did Not Participate: 1/4  25.0% [ 4.6,  69.9]
+  2022-2025  Full: 6/7  85.7% [48.7,  97.4]   Limited: 25/51  49.0% [35.9,  62.3]   Did Not Participate: 4/12  33.3% [13.8,  60.9]
+
+BY SEASON, Doubtful incumbent: started/n
+  2013: 0/1  2014: 0/2  2015: 0/0  2016: 0/3  2017: 0/0  2018: 0/4  2019: 0/0  2020: 0/3  2021: 0/3  2022: 0/2  2023: 0/3  2024: 0/5  2025: 0/1
+
+==================================================================================================================================
+DEPTH CHART: for a Questionable incumbent, who started? "next QB on chart" = the top QB on that week's chart other than
+the incumbent (weekly chart through 2024; 2025 the last daily snapshot before kickoff).
+  Q + Limited, 2013-2025: n=124  who started: {'incumbent': 68, 'next QB on chart': 47, 'another QB': 9}
+      incumbent's rank among the chart's QBs (0 = not on it / no chart): {0: 2, 1: 110, 2: 10, 3: 2}
+      when the incumbent did not start (56): the next QB on the chart started 47,  83.9% [72.2,  91.3]
+      the next QB on the chart started, of all 124: 47,  37.9% [29.8,  46.7]
+  Q + Did Not Participate, 2013-2025: n=24  who started: {'next QB on chart': 13, 'incumbent': 10, 'another QB': 1}
+      incumbent's rank among the chart's QBs (0 = not on it / no chart): {1: 23, 2: 1}
+      when the incumbent did not start (14): the next QB on the chart started 13,  92.9% [68.5,  98.7]
+      the next QB on the chart started, of all 24: 13,  54.2% [35.1,  72.1]
+  Q + Full, 2013-2025: n=34  who started: {'incumbent': 29, 'next QB on chart': 3, 'another QB': 2}
+      incumbent's rank among the chart's QBs (0 = not on it / no chart): {1: 33, 2: 1}
+      when the incumbent did not start (5): the next QB on the chart started 3,  60.0% [23.1,  88.2]
+      the next QB on the chart started, of all 34: 3,   8.8% [ 3.0,  23.0]
+  Q + Limited, 2016-2025: n=102  who started: {'incumbent': 55, 'next QB on chart': 38, 'another QB': 9}
+      incumbent's rank among the chart's QBs (0 = not on it / no chart): {1: 92, 2: 9, 3: 1}
+      when the incumbent did not start (47): the next QB on the chart started 38,  80.9% [67.5,  89.6]
+      the next QB on the chart started, of all 102: 38,  37.3% [28.5,  46.9]
+  Q + Did Not Participate, 2016-2025: n=21  who started: {'next QB on chart': 11, 'incumbent': 9, 'another QB': 1}
+      incumbent's rank among the chart's QBs (0 = not on it / no chart): {1: 20, 2: 1}
+      when the incumbent did not start (12): the next QB on the chart started 11,  91.7% [64.6,  98.5]
+      the next QB on the chart started, of all 21: 11,  52.4% [32.4,  71.7]
+  Q + Full, 2016-2025: n=31  who started: {'incumbent': 27, 'next QB on chart': 2, 'another QB': 2}
+      incumbent's rank among the chart's QBs (0 = not on it / no chart): {1: 30, 2: 1}
+      when the incumbent did not start (4): the next QB on the chart started 2,  50.0% [15.0,  85.0]
+      the next QB on the chart started, of all 31: 2,   6.5% [ 1.8,  20.7]
+
+  Q + Limited 2013-2025, where the incumbent did not start: the game, the incumbent, who started, the chart's next QB
+    2013 wk4  OAK Terrelle Pryor         no snap row            off snaps   0  started: Matt Flynn             chart next: Matt Flynn             [next QB on chart]
+    2013 wk11 OAK Terrelle Pryor         no snap row            off snaps   0  started: Matt McGloin           chart next: Matt McGloin           [next QB on chart]
+    2014 wk2  ARI Carson Palmer          no snap row            off snaps   0  started: Drew Stanton           chart next: Drew Stanton           [next QB on chart]
+    2014 wk4  TEN Jake Locker            no snap row            off snaps   0  started: Charlie Whitehurst     chart next: Charlie Whitehurst     [next QB on chart]
+    2014 wk5  MIN Teddy Bridgewater      no snap row            off snaps   0  started: Christian Ponder       chart next: Christian Ponder       [next QB on chart]
+    2014 wk6  ARI Drew Stanton           no snap row            off snaps   0  started: Carson Palmer          chart next: Carson Palmer          [next QB on chart]
+    2015 wk4  IND Andrew Luck            no snap row            off snaps   0  started: Matt Hasselbeck        chart next: Matt Hasselbeck        [next QB on chart]
+    2015 wk6  BUF Tyrod Taylor           no snap row            off snaps   0  started: EJ Manuel              chart next: EJ Manuel              [next QB on chart]
+    2015 wk12 STL Case Keenum            no snap row            off snaps   0  started: Nick Foles             chart next: Nick Foles             [next QB on chart]
+    2016 wk10 NYJ Ryan Fitzpatrick       no snap row            off snaps   0  started: Bryce Petty            chart next: Bryce Petty            [next QB on chart]
+    2017 wk2  MIN Sam Bradford           no snap row            off snaps   0  started: Case Keenum            chart next: Case Keenum            [next QB on chart]
+    2017 wk5  OAK Derek Carr             no snap row            off snaps   0  started: EJ Manuel              chart next: EJ Manuel              [next QB on chart]
+    2017 wk5  TEN Marcus Mariota         no snap row            off snaps   0  started: Matt Cassel            chart next: Matt Cassel            [next QB on chart]
+    2017 wk11 ARI Drew Stanton           no snap row            off snaps   0  started: Blaine Gabbert         chart next: Blaine Gabbert         [next QB on chart]
+    2017 wk14 BUF Tyrod Taylor           no snap row            off snaps   0  started: Nathan Peterman        chart next: Nathan Peterman        [next QB on chart]
+    2018 wk2  TEN Marcus Mariota         no snap row            off snaps   0  started: Blaine Gabbert         chart next: Blaine Gabbert         [next QB on chart]
+    2018 wk6  MIA Ryan Tannehill         no snap row            off snaps   0  started: Brock Osweiler         chart next: David Fales            [another QB]
+    2018 wk9  SF  C.J. Beathard          no snap row            off snaps   0  started: Nick Mullens           chart next: Nick Mullens           [next QB on chart]
+    2019 wk8  ATL Matt Ryan              no snap row            off snaps   0  started: Matt Schaub            chart next: Matt Schaub            [next QB on chart]
+    2019 wk10 DET Matthew Stafford       no snap row            off snaps   0  started: Jeff Driskel           chart next: David Blough           [another QB]
+    2019 wk13 DET Jeff Driskel           no snap row            off snaps   0  started: David Blough           chart next: Matthew Stafford       [another QB]
+    2019 wk17 HOU Deshaun Watson         no snap row            off snaps   0  started: AJ McCarron            chart next: AJ McCarron            [next QB on chart]
+    2020 wk11 CAR Teddy Bridgewater      no snap row            off snaps   0  started: PJ Walker              chart next: Will Grier             [another QB]
+    2020 wk12 MIA Tua Tagovailoa         no snap row            off snaps   0  started: Ryan Fitzpatrick       chart next: Ryan Fitzpatrick       [next QB on chart]
+    2020 wk15 NYG Daniel Jones           no snap row            off snaps   0  started: Colt McCoy             chart next: Colt McCoy             [next QB on chart]
+    2020 wk16 DET Matthew Stafford       played, did not start  off snaps   4  started: Chase Daniel           chart next: Chase Daniel           [next QB on chart]
+    2021 wk6  MIA Jacoby Brissett        played, did not start  off snaps   1  started: Tua Tagovailoa         chart next: Reid Sinnett           [another QB]
+    2021 wk8  DAL Dak Prescott           no snap row            off snaps   0  started: Cooper Rush            chart next: Cooper Rush            [next QB on chart]
+    2021 wk9  MIA Tua Tagovailoa         no snap row            off snaps   0  started: Jacoby Brissett        chart next: Jacoby Brissett        [next QB on chart]
+    2021 wk13 PHI Jalen Hurts            no snap row            off snaps   0  started: Gardner Minshew        chart next: Gardner Minshew        [next QB on chart]
+    2022 wk4  MIA Tua Tagovailoa         played, did not start  off snaps  25  started: Teddy Bridgewater      chart next: Teddy Bridgewater      [next QB on chart]
+    2022 wk7  DEN Russell Wilson         no snap row            off snaps   0  started: Brett Rypien           chart next: Brett Rypien           [next QB on chart]
+    2022 wk10 ARI Kyler Murray           no snap row            off snaps   0  started: Colt McCoy             chart next: Colt McCoy             [next QB on chart]
+    2022 wk10 LA  Matthew Stafford       no snap row            off snaps   0  started: John Wolford           chart next: John Wolford           [next QB on chart]
+    2022 wk12 CHI Justin Fields          no snap row            off snaps   0  started: Trevor Siemian         chart next: Trevor Siemian         [next QB on chart]
+    2022 wk14 LA  John Wolford           played, did not start  off snaps   3  started: Baker Mayfield         chart next: Bryce Perkins          [another QB]
+    2022 wk18 BAL Tyler Huntley          no snap row            off snaps   0  started: Anthony Brown          chart next: Anthony Brown          [next QB on chart]
+    2022 wk18 MIA Teddy Bridgewater      no snap row            off snaps   0  started: Skylar Thompson        chart next: Skylar Thompson        [next QB on chart]
+    2022 wk18 NYJ Mike White             no snap row            off snaps   0  started: Joe Flacco             chart next: Joe Flacco             [next QB on chart]
+    2023 wk4  CLE Deshaun Watson         no snap row            off snaps   0  started: Dorian Thompson-Robinson chart next: Dorian Thompson-Robinson [next QB on chart]
+    2023 wk4  LV  Jimmy Garoppolo        no snap row            off snaps   0  started: Aidan O'Connell        chart next: Brian Hoyer            [another QB]
+    2023 wk12 ATL Taylor Heinicke        no snap row            off snaps   0  started: Desmond Ridder         chart next: Desmond Ridder         [next QB on chart]
+    2023 wk16 TEN Will Levis             no snap row            off snaps   0  started: Ryan Tannehill         chart next: Ryan Tannehill         [next QB on chart]
+    2023 wk18 ATL Taylor Heinicke        no snap row            off snaps   0  started: Desmond Ridder         chart next: Desmond Ridder         [next QB on chart]
+    2024 wk4  MIA Skylar Thompson        no snap row            off snaps   0  started: Tyler Huntley          chart next: Tyler Huntley          [next QB on chart]
+    2024 wk7  TEN Will Levis             no snap row            off snaps   0  started: Mason Rudolph          chart next: Mason Rudolph          [next QB on chart]
+    2024 wk10 JAX Trevor Lawrence        no snap row            off snaps   0  started: Mac Jones              chart next: Mac Jones              [next QB on chart]
+    2024 wk16 CLE Jameis Winston         no snap row            off snaps   0  started: Dorian Thompson-Robinson chart next: Dorian Thompson-Robinson [next QB on chart]
+    2024 wk17 MIA Tua Tagovailoa         no snap row            off snaps   0  started: Tyler Huntley          chart next: Tyler Huntley          [next QB on chart]
+    2024 wk18 NE  Drake Maye             played, did not start  off snaps   3  started: Joe Milton III         chart next: Jacoby Brissett        [another QB]
+    2025 wk4  SF  Mac Jones              no snap row            off snaps   0  started: Brock Purdy            chart next: Brock Purdy            [next QB on chart]
+    2025 wk6  ARI Kyler Murray           no snap row            off snaps   0  started: Jacoby Brissett        chart next: Jacoby Brissett        [next QB on chart]
+    2025 wk8  ATL Michael Penix Jr.      no snap row            off snaps   0  started: Kirk Cousins           chart next: Kirk Cousins           [next QB on chart]
+    2025 wk9  CAR Andy Dalton            no snap row            off snaps   0  started: Bryce Young            chart next: Bryce Young            [next QB on chart]
+    2025 wk12 PIT Aaron Rodgers          no snap row            off snaps   0  started: Mason Rudolph          chart next: Mason Rudolph          [next QB on chart]
+    2025 wk18 GB  Malik Willis           no snap row            off snaps   0  started: Clayton Tune           chart next: Jordan Love            [another QB]
+
+==================================================================================================================================
+SENSITIVITY: the incumbent read from games.csv (the previous game's home_qb_id/away_qb_id, i.e. the QB who started it
+even if he left early); outcome still "led QB offense snaps" (and the games.csv starter column beside it).
+[B] Questionable incumbent (games.csv), 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                     39      32      2   0    5    82.1% [67.3,  91.0]      87.2% [73.3,  94.4]      87.2% [73.3,  94.4]    
+  Limited                 137      70      5   0   62    51.1% [42.8,  59.3]      54.7% [46.4,  62.8]      53.3% [45.0,  61.4]    
+  Did Not Participate      24      10      0   0   14    41.7% [24.5,  61.2]      41.7% [24.5,  61.2]      41.7% [24.5,  61.2]    
+  all                     200     112      7   0   81    56.0% [49.1,  62.7]      59.5% [52.6,  66.1]      58.5% [51.6,  65.1]    
+
+[B] Questionable incumbent (games.csv), 2016-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                     34      30      1   0    3    88.2% [73.4,  95.3]      91.2% [77.0,  97.0]      91.2% [77.0,  97.0]    
+  Limited                 114      57      5   0   52    50.0% [41.0,  59.0]      54.4% [45.2,  63.2]      53.5% [44.4,  62.4]    
+  Did Not Participate      20       9      0   0   11    45.0% [25.8,  65.8]      45.0% [25.8,  65.8]      45.0% [25.8,  65.8]    
+  all                     168      96      6   0   66    57.1% [49.6,  64.4]      60.7% [53.2,  67.8]      60.1% [52.6,  67.2]    
+
+[B] Doubtful incumbent (games.csv), 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                      2       0      0   0    2     0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]       0.0% [ 0.0,  65.8]    
+  Limited                   6       0      0   0    6     0.0% [ 0.0,  39.0]       0.0% [ 0.0,  39.0]      16.7% [ 3.0,  56.4]    
+  Did Not Participate      22       0      0   0   22     0.0% [ 0.0,  14.9]       0.0% [ 0.0,  14.9]       4.5% [ 0.8,  21.8]    
+  all                      30       0      0   0   30     0.0% [ 0.0,  11.4]       0.0% [ 0.0,  11.4]       6.7% [ 1.8,  21.3]    
+
+==================================================================================================================================
+SENSITIVITY: the QB at the top of that week's depth chart (every club-game, week 1 and a club's first game included;
+weekly chart through 2024, 2025 the last daily snapshot before kickoff).
+[C] Questionable chart QB1, 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                     50      38      3   0    9    76.0% [62.6,  85.7]      82.0% [69.2,  90.2]      82.0% [69.2,  90.2]    
+  Limited                 170      81      8   0   81    47.6% [40.3,  55.1]      52.4% [44.9,  59.7]      49.4% [42.0,  56.9]    
+  Did Not Participate      27      10      0   0   17    37.0% [21.5,  55.8]      37.0% [21.5,  55.8]      40.7% [24.5,  59.3]    
+  all                     247     129     11   0  107    52.2% [46.0,  58.4]      56.7% [50.4,  62.7]      55.1% [48.8,  61.1]    
+
+[C] Questionable chart QB1, 2016-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                     41      35      2   0    4    85.4% [71.6,  93.1]      90.2% [77.5,  96.1]      90.2% [77.5,  96.1]    
+  Limited                 140      64      8   0   68    45.7% [37.7,  54.0]      51.4% [43.2,  59.6]      48.6% [40.4,  56.8]    
+  Did Not Participate      22       9      0   0   13    40.9% [23.3,  61.3]      40.9% [23.3,  61.3]      45.5% [26.9,  65.3]    
+  all                     203     108     10   0   85    53.2% [46.3,  59.9]      58.1% [51.3,  64.7]      56.7% [49.8,  63.3]    
+
+[C] Doubtful chart QB1, 2013-2025
+  last practice             n started played  ST   no   start rate, Wilson 95%   played at all            games.csv starter       
+                                      no st. only snap
+  Full                      3       0      0   0    3     0.0% [ 0.0,  56.1]       0.0% [ 0.0,  56.1]       0.0% [ 0.0,  56.1]    
+  Limited                   9       0      0   0    9     0.0% [ 0.0,  29.9]       0.0% [ 0.0,  29.9]      22.2% [ 6.3,  54.7]    
+  Did Not Participate      26       0      0   0   26     0.0% [ 0.0,  12.9]       0.0% [ 0.0,  12.9]       3.8% [ 0.7,  18.9]    
+  all                      38       0      0   0   38     0.0% [ 0.0,   9.2]       0.0% [ 0.0,   9.2]       7.9% [ 2.7,  20.8]    
+
+[C] by whether chart QB1 was also the incumbent (led the previous game): Questionable chart QB1, start rate, and naming the
+    starter IN (chart QB1) against OUT (the chart's next QB the report does not rule out)
+  2013-2025 Q + Limited              club's first game                                    n=  2  IN right   2 100.0% [34.2, 100.0]  OUT right   0   0.0% [ 0.0,  65.8]
+  2013-2025 Q + Limited              not the incumbent (did not lead the previous game)   n= 58  IN right  15  25.9% [16.3,  38.4]  OUT right  37  63.8% [50.9,  74.9]
+  2013-2025 Q + Limited              the incumbent                                        n=110  IN right  64  58.2% [48.8,  67.0]  OUT right  39  35.5% [27.1,  44.7]
+  2013-2025 Q + Limited              all chart QB1                                        n=170  IN right  81  47.6% [40.3,  55.1]  OUT right  76  44.7% [37.4,  52.2]  sign test p=0.7497
+  2013-2025 Q + Did Not Participate  not the incumbent (did not lead the previous game)   n=  4  IN right   0   0.0% [ 0.0,  49.0]  OUT right   3  75.0% [30.1,  95.4]
+  2013-2025 Q + Did Not Participate  the incumbent                                        n= 23  IN right  10  43.5% [25.6,  63.2]  OUT right  13  56.5% [36.8,  74.4]
+  2013-2025 Q + Did Not Participate  all chart QB1                                        n= 27  IN right  10  37.0% [21.5,  55.8]  OUT right  16  59.3% [40.7,  75.5]  sign test p=0.3269
+  2013-2025 Q + Full                 club's first game                                    n=  2  IN right   1  50.0% [ 9.5,  90.5]  OUT right   1  50.0% [ 9.5,  90.5]
+  2013-2025 Q + Full                 not the incumbent (did not lead the previous game)   n= 15  IN right   9  60.0% [35.7,  80.2]  OUT right   5  33.3% [15.2,  58.3]
+  2013-2025 Q + Full                 the incumbent                                        n= 33  IN right  28  84.8% [69.1,  93.3]  OUT right   3   9.1% [ 3.1,  23.6]
+  2013-2025 Q + Full                 all chart QB1                                        n= 50  IN right  38  76.0% [62.6,  85.7]  OUT right   9  18.0% [ 9.8,  30.8]  sign test p=0.0000
+  2016-2025 Q + Limited              not the incumbent (did not lead the previous game)   n= 48  IN right  13  27.1% [16.6,  41.0]  OUT right  29  60.4% [46.3,  73.0]
+  2016-2025 Q + Limited              the incumbent                                        n= 92  IN right  51  55.4% [45.3,  65.2]  OUT right  34  37.0% [27.8,  47.2]
+  2016-2025 Q + Limited              all chart QB1                                        n=140  IN right  64  45.7% [37.7,  54.0]  OUT right  63  45.0% [37.0,  53.3]  sign test p=1.0000
+  2016-2025 Q + Did Not Participate  not the incumbent (did not lead the previous game)   n=  2  IN right   0   0.0% [ 0.0,  65.8]  OUT right   1  50.0% [ 9.5,  90.5]
+  2016-2025 Q + Did Not Participate  the incumbent                                        n= 20  IN right   9  45.0% [25.8,  65.8]  OUT right  11  55.0% [34.2,  74.2]
+  2016-2025 Q + Did Not Participate  all chart QB1                                        n= 22  IN right   9  40.9% [23.3,  61.3]  OUT right  12  54.5% [34.7,  73.1]  sign test p=0.6636
+  2016-2025 Q + Full                 club's first game                                    n=  1  IN right   1 100.0% [20.7, 100.0]  OUT right   0   0.0% [ 0.0,  79.3]
+  2016-2025 Q + Full                 not the incumbent (did not lead the previous game)   n= 10  IN right   8  80.0% [49.0,  94.3]  OUT right   1  10.0% [ 1.8,  40.4]
+  2016-2025 Q + Full                 the incumbent                                        n= 30  IN right  26  86.7% [70.3,  94.7]  OUT right   2   6.7% [ 1.8,  21.3]
+  2016-2025 Q + Full                 all chart QB1                                        n= 41  IN right  35  85.4% [71.6,  93.1]  OUT right   3   7.3% [ 2.5,  19.4]  sign test p=0.0000
+
+==================================================================================================================================
+SPLITS of Q + Limited (2013-2025 and 2016-2025): by the game's weekday (a Thursday game's report is an estimate)
+  2013-2025 Thursday     : 6/11 started,  54.5% [28.0,  78.7]
+  2013-2025 not Thursday : 62/113 started,  54.9% [45.7,  63.7]
+  2016-2025 Thursday     : 5/9 started,  55.6% [26.7,  81.1]
+  2016-2025 not Thursday : 50/93 started,  53.8% [43.7,  63.5]
+
+==================================================================================================================================
+NAMING THE STARTER: rule IN (expect the Questionable incumbent) against rule OUT (expect the next QB on that week's chart
+whom the report does not rule out, Out or Doubtful). Correct = the expected QB led the club's QB offense snaps.
+Sign test on the games where exactly one of the two rules was right.
+  Q + Limited                         2013-2025: n=124  IN right  68  54.8% [46.1,  63.3]   OUT right  48  38.7% [30.6,  47.5]   neither  8   sign test p=0.0773
+  Q + Did Not Participate             2013-2025: n= 24  IN right  10  41.7% [24.5,  61.2]   OUT right  14  58.3% [38.8,  75.5]   neither  0   sign test p=0.5413
+  Q + Full                            2013-2025: n= 34  IN right  29  85.3% [69.9,  93.6]   OUT right   3   8.8% [ 3.0,  23.0]   neither  2   sign test p=0.0000
+  Q + Limited or Did Not Participate  2013-2025: n=148  IN right  78  52.7% [44.7,  60.6]   OUT right  62  41.9% [34.2,  49.9]   neither  8   sign test p=0.2047
+  Q + Limited                         2016-2025: n=102  IN right  55  53.9% [44.3,  63.3]   OUT right  39  38.2% [29.4,  47.9]   neither  8   sign test p=0.1214
+  Q + Did Not Participate             2016-2025: n= 21  IN right   9  42.9% [24.5,  63.5]   OUT right  12  57.1% [36.5,  75.5]   neither  0   sign test p=0.6636
+  Q + Full                            2016-2025: n= 31  IN right  27  87.1% [71.1,  94.9]   OUT right   2   6.5% [ 1.8,  20.7]   neither  2   sign test p=0.0000
+  Q + Limited or Did Not Participate  2016-2025: n=123  IN right  64  52.0% [43.3,  60.7]   OUT right  51  41.5% [33.1,  50.3]   neither  8   sign test p=0.2631
+
+==================================================================================================================================
+EXPLORATORY SPLITS of Q + Limited incumbents (evidence only; nothing here is used to choose a rule)
+  2013-2025 previous game offense snap share <  95%:  24/47  started,  51.1% [37.2,  64.7]
+  2013-2025 previous game offense snap share >= 95%:  44/77  started,  57.1% [46.0,  67.6]
+  2016-2025 previous game offense snap share <  95%:  19/39  started,  48.7% [33.9,  63.8]
+  2016-2025 previous game offense snap share >= 95%:  36/63  started,  57.1% [44.9,  68.6]
+  2013-2025 injury concussion/head                   :   1/6   started,  16.7% [ 3.0,  56.4]
+  2013-2025 injury lower body                        :  32/58  started,  55.2% [42.5,  67.3]
+  2013-2025 injury other/illness/none given          :   5/5   started, 100.0% [56.6, 100.0]
+  2013-2025 injury throwing side: hand/arm/shoulder  :  19/36  started,  52.8% [37.0,  68.0]
+  2013-2025 injury trunk: ribs/chest/back            :  11/19  started,  57.9% [36.3,  76.9]
+
