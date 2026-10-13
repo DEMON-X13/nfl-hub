@@ -1,0 +1,10 @@
+step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
+0,,(start: home field alone),0.68555,0.56208,0.00000,,
+1,anya,ANY/A (adjusted net yards per attempt),0.41530,0.80637,-270.25682,-281.36142,-258.25400
+2,dsr,Drive success rate (sets of downs that earn a first down or TD),0.35275,0.84255,-62.54966,-70.13778,-55.72721
+3,to_margin,Turnover margin,0.28976,0.87343,-62.98277,-70.85690,-54.91463
+4,int_rate,Interception rate,0.26371,0.88421,-26.05364,-29.65988,-22.48661
+5,fg_pct,Field-goal rate,0.23980,0.89868,-23.90841,-27.55422,-20.47544
+6,pass_yds,Net passing yards,0.22046,0.90576,-19.33594,-23.85380,-15.15677
+7,punts,Punts,0.21108,0.91058,-9.38735,-12.90427,-6.03246
+8,net_punt,Net punt average,0.20584,0.91380,-5.23337,-8.20058,-1.98174
