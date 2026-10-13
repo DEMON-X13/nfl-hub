@@ -1026,6 +1026,8 @@ python3 -I research/elo_vs_site/compare.py       # study 2: the study's Elo agai
 python3 -I research/elo_vs_site/side_by_side.py  # study 2's follow-up: Team Rankings against FiveThirtyEight, 2003-2025 season by season
 python3 -I research/equation15/equation.py       # study 3: the 15-indicator equation the owner asked for, fitted on 2004-2023, tested on 2024-2025
 python3 -I research/fetch.py --exam && python3 -I research/exam/blind_2026.py   # the frozen study 3 equation's blind test on 2026
+python3 -I research/models_compare/elo_features.py   # study 4, once: the ELO Model's inputs, elo/build.py in a sandbox (2026 not read, the site untouched)
+python3 -I research/models_compare/backtest.py       # study 4: the site's five game models walk forward on 2021-2025, side by side
 ```
 
 ## The sites behave like websites
