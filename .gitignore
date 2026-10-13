@@ -11,3 +11,4 @@ props/research/totals/out/
 # research/: downloaded raw files and built tables (research/README.md)
 research/data/
 research/*/out/
+research/exam/out/

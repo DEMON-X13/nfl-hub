@@ -296,6 +296,8 @@ research/                        the homework toward the next game model (README
   equation15/                    study 3: an equation on the 15 indicators (equation.py: 50
                                  variations scored with each season left out on 2004-2023, the
                                  best frozen in results/equation.json and tested on 2024-2025)
+  exam/                          the one place a held-out season (2026 on) is read, to apply a
+                                 frozen equation: blind_2026.py, study 3's equation on 2026
 ```
 
 ## Bets and Stats: one page over both models

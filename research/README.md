@@ -9,8 +9,9 @@ nothing is frozen as a formula or wired into a site.
 ## The rules every study keeps
 
 - **Seasons.** 2003-2025 are explored (`SEASONS` in `common.py`). 2026 on is the final exam
-  (`HOLDOUT_FROM`): never downloaded or read here, so the model can be tested on seasons it has
-  never seen. The cut was 2024 until the owner put 2024 and 2025 into the exploration on
+  (`HOLDOUT_FROM`): never downloaded or read by a study, so a model can be tested on seasons it has
+  never seen. `exam/` is the one place it is read, only to apply an equation already frozen
+  (`common.open_exam()`); nothing is fitted or chosen there. The cut was 2024 until the owner put 2024 and 2025 into the exploration on
   12 October 2026 ("we are just collecting data right now").
 - **The data** is nflverse's: `games.csv` (schedule, scores, closing lines) and the play-by-play,
   downloaded by `python3 -I research/fetch.py` into `research/data/raw/` (gitignored, about
@@ -33,3 +34,4 @@ nothing is frozen as a formula or wired into a site.
 | 1 | `win_indicators/` | Since 2003, what are the top 15 win indicators in the NFL? | In the game, passing efficiency and EPA (86%), drive success and turnover margin; before it, team strength with memory (Elo, blended point differential, about 63.5%) and the starting quarterback; turnovers, red-zone and third-down rates barely carry from week to week |
 | 2 | `elo_vs_site/` | How is the Elo rating different from ours? | Same family as the betting app's Elo (same picks; the app's raw chances run too sure); Team Rankings has no memory: FiveThirtyEight's Elo picked more winners in 17 of 23 seasons (64.3% against 62.9%), Team Rankings level or ahead from week 10; the player-based ELO Model beats a team Elo from 2020 |
 | 3 | `equation15/` | An equation on the 15 indicators, weighted and tested on 2024 and 2025 (the owner asked for it) | The pre-game 15 with a ridge pull: 65.2% right on 2004-2023, each season left out (65.0% counting the choice among near-tied variations), 61 games more than the FiveThirtyEight Elo alone there; 64.7% on 2024-2025 (66.7% and 62.7%), where Elo alone picked 66.4%, a gap within chance |
+| exam | `exam/` | How would that formula do in a blind test for this year? | Study 3's frozen equation on 2026: 48 right, 29 wrong, 1 tie through 11 October (62.3%) |

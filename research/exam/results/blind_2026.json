@@ -1,0 +1,11 @@
+{
+ "season": 2026,
+ "through": "2026-10-11",
+ "games": 78,
+ "right": 48,
+ "wrong": 29,
+ "ties": 1,
+ "pick_rate": 0.6233766233766234,
+ "equation": "research/equation15/results/equation.json (fitted on 2004-2023, unchanged)",
+ "starters_replaced_by_lead_passer_2026": 6
+}

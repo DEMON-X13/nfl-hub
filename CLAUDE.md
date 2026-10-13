@@ -1010,7 +1010,9 @@ question, each with its scripts, its README and its committed `results/`. **No m
 there, or anywhere, until the owner gives the all clear**; a study may fit a small regression only
 to ask whether something carries signal. 2003-2025 are explored (1999-2002 read only to warm up a
 history); 2026 on is held out and never read (`research/common.py`'s `HOLDOUT_FROM`, whose loaders
-refuse it), so the model can be tested on seasons it has never seen. Study 3 (`equation15/`) is the
+refuse it), so the model can be tested on seasons it has never seen. `research/exam/` is the one
+place a held-out season is read (`common.open_exam()`, from `fetch.py --exam`'s own downloads), only
+to apply an equation already frozen; nothing is fitted, re-scaled or chosen there. Study 3 (`equation15/`) is the
 equation the owner asked for on 13 October 2026, fitted on 2004-2023 and tested once on 2024-2025; it
 is research, not wired into any site. Answer the question the owner asks: the
 betting line is not the yardstick for a study unless he asks about it (his direction, 13 October 2026).
@@ -1023,6 +1025,7 @@ python3 -I research/win_indicators/report.py     # its README's tables, from res
 python3 -I research/elo_vs_site/compare.py       # study 2: the study's Elo against the site's ratings, same games
 python3 -I research/elo_vs_site/side_by_side.py  # study 2's follow-up: Team Rankings against FiveThirtyEight, 2003-2025 season by season
 python3 -I research/equation15/equation.py       # study 3: the 15-indicator equation the owner asked for, fitted on 2004-2023, tested on 2024-2025
+python3 -I research/fetch.py --exam && python3 -I research/exam/blind_2026.py   # the frozen study 3 equation's blind test on 2026
 ```
 
 ## The sites behave like websites

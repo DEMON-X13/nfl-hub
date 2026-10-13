@@ -6,10 +6,14 @@ nflverse revises old seasons now and then, so a later download can move a number
 decimal; each study's README says when its files were read.
 
 Run: python3 -I research/fetch.py [--force]   (a file already there is kept unless --force)
+     python3 -I research/fetch.py --exam      (the exam's own fresh games.csv and the held-out seasons'
+                                               play-by-play into data/raw/exam/, always downloaded anew:
+                                               for a frozen equation's blind test, research/exam/)
 """
 import os, sys, time, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
 from common import RAW, SEASONS, WARMUP, GAMES_URL, PBP_URL, pbp_path
 
 
@@ -35,6 +39,13 @@ def get(url, dest, force):
 
 
 if __name__ == '__main__':
+    if '--exam' in sys.argv[1:]:
+        import datetime
+        common.open_exam()
+        get(GAMES_URL, os.path.join(common.EXAM, 'games.csv'), True)
+        for s in range(common.HOLDOUT_FROM, datetime.date.today().year + 1):
+            get(PBP_URL.format(season=s), pbp_path(s), True)
+        sys.exit(0)
     force = '--force' in sys.argv[1:]
     get(GAMES_URL, os.path.join(RAW, 'games', 'games.csv'), force)
     for s in WARMUP + SEASONS:
