@@ -16,9 +16,12 @@
 
    One thing the record says about itself, under the legend: a model the job could not rescore
    on its last run (S.modelStatus, written by betting/jobkit.py: its picks are the last good
-   ones, and why). Every week of every model is drawn the same way: the weeks of 2026 the Joker
-   was refitted on after they were played (S.jokerFit, from betting/joker/model.json, kept in the
-   state as data) are shaded, labelled and counted like any other, the owner's call. */
+   ones, and why). Every week of every model is drawn the same way, the owner's call. The Joker's
+   2026 weeks 1-2 are its real calls (betting/joker/history/2026_w1_w2.json, the owner's call of 12
+   October 2026, never the refit's in-sample ones): week 2 the calls published before kickoff, week 1
+   a backtest by the model as it stood before the refit, which never saw 2026 (src on each call).
+   Week 1 is counted like any other week, as the ELO Model's backtest weeks 1-2 are, so every model
+   is measured on the same games. */
 function recordViz(rows){
   const card=document.querySelector('#modelChart .card'), tab=document.getElementById('recordTable');
   if(!card||!rows||!rows.length) return;

@@ -1,0 +1,10 @@
+step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
+0,,(start: home field alone),0.68555,0.56208,0.00000,,
+1,epa_play,EPA per play,0.26917,0.87826,-416.38312,-426.20637,-406.86802
+2,st_epa,Special-teams EPA,0.15972,0.93438,-109.44929,-117.67199,-100.63957
+3,pen_yds,Penalty yards,0.12131,0.95079,-38.41266,-43.65947,-33.20597
+4,pens,Penalties (accepted),0.11776,0.95449,-3.54861,-5.21024,-1.90252
+5,dsr,Drive success rate (sets of downs that earn a first down or TD),0.11563,0.95465,-2.12385,-3.79178,-0.26715
+6,to_margin,Turnover margin,0.10953,0.95690,-6.10111,-7.94313,-4.30072
+7,epa_ntd,"EPA per play, touchdown plays left out",0.10533,0.95883,-4.20523,-6.77401,-1.64155
+8,yds_drive,Yards per drive,0.10230,0.95883,-3.03229,-4.68218,-1.39837

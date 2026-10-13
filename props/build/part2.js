@@ -2,13 +2,13 @@ const TEAM_NAMES={ARI:"Cardinals",ATL:"Falcons",BAL:"Ravens",BUF:"Bills",CAR:"Pa
 const TEAM_COLORS={"ARI":["#97233F","#000000","#FFB612","#A5ACAF"],"ATL":["#A71930","#000000","#A5ACAF","#A30D2D"],"BAL":["#241773","#9E7C0C","#C60C30"],"BUF":["#00338D","#C60C30","#0C2E82","#D50A0A"],"CAR":["#0085CA","#000000","#BFC0BF"],"CHI":["#0B162A","#E64100"],"CIN":["#FB4F14","#000000","#D32F1E"],"CLE":["#FF3C00","#311D00","#A5ACAF","#D32F1E"],"DAL":["#002244","#B0B7BC","#ACC0C6","#A5ACAF"],"DEN":["#002244","#FB4F14","#00234C","#FF5200"],"DET":["#0076B6","#B0B7BC","#000000","#004E89"],"GB":["#203731","#FFB612","#1C2D25","#EEAD1E"],"HOU":["#03202F","#A71930","#00071C","#A30D2D"],"IND":["#002C5F","#A5ACAF","#013369","#9BA1A2"],"JAX":["#006778","#000000","#9F792C","#D7A22A"],"KC":["#E31837","#FFB612","#000000"],"LA":["#003594","#FFD100","#001532","#AF925D"],"LAC":["#007BC7","#FFC20E","#FFB612","#001532"],"LV":["#000000","#A5ACAF","#A6AEB0"],"MIA":["#008E97","#F58220","#005778"],"MIN":["#4F2683","#FFC62F","#E9BF9B","#000000"],"NE":["#002244","#C60C30","#B0B7BC","#001532"],"NO":["#D3BC8D","#000000","#9F8958"],"NYG":["#0B2265","#A71930","#A5ACAF","#012352"],"NYJ":["#125740","#000000","#FFFFFF"],"PHI":["#004C54","#A5ACAF","#ACC0C6","#000000"],"PIT":["#000000","#FFB612","#C60C30","#00539B"],"SEA":["#002244","#69BE28","#A5ACAF","#001532"],"SF":["#AA0000","#B3995D","#000000","#A5ACAF"],"TB":["#A71930","#322F2B","#000000","#FF7900"],"TEN":["#0C2340","#4B92DB","#C8102E"],"WAS":["#5A1414","#FFB612","#000000","#5B2B2F"]};
 const TAG_OVERRIDE={GB:'#203731', WAS:'#5A1414', TEN:'#4B92DB'};
 const SEASON=2026, KEY='props_2026_v1';
-const MODEL_BUILD='2026.1 fit 2019-2025';
+const MODEL_BUILD='2026.2 fit 2019-2025';
 let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPayload */
 /* what the saved season is checked against. DATA_BUILD is the model's own hash and moves
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v90 \u00b7 2026-10-11';
+const APP_BUILD='app v102 \u00b7 2026-10-12';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -24,7 +24,7 @@ const MARKETS=[
  {k:'receiving_yards',short:'rec yards',lbl:'Receiving yards',grps:['RB','WR','TE'],dec:1,alias:['rec_yds','receiving yards','rec yards']},
  {k:'targets',short:'targets',lbl:'Targets',grps:['WR','TE'],dec:1,alias:['targets','tgt']},
  {k:'scrim_yards',short:'rush + rec yards',lbl:'Rush + rec yards',grps:['RB'],dec:1,alias:['scrim_yds','scrimmage yards','rush+rec']},
- {k:'any_td',short:'touchdown',lbl:'Anytime TD',grps:['RB','WR','TE'],prob:true,alias:['anytime_td','atd','anytime touchdown','td']},
+ {k:'any_td',short:'touchdown',lbl:'Anytime TD',grps:['QB','RB','WR','TE'],prob:true,alias:['anytime_td','atd','anytime touchdown','td']},
  {k:'fg_made',short:'field goals',lbl:'Field goals made',grps:['K'],dec:2,noedge:true,alias:['fg','fg_made','field goals']},
  {k:'fg_att',short:'FG attempts',lbl:'FG attempts',grps:['K'],dec:2,noedge:true,alias:['fg_att','fg attempts']},
  {k:'kick_pts',short:'kicking points',lbl:'Kicking points',grps:['K'],dec:1,noedge:true,alias:['kicking_points','kick_pts','kicker points']},
@@ -42,7 +42,7 @@ const TCOLS=['t_pass_att','t_carries','t_plays','t_pass_yds','t_rush_yds','t_tar
 const DCOLS=['d_pass_yds','d_rush_yds','d_pass_att','d_carries','d_tds'];
 /* projected but not offered as a bet: targets still drives usage ranking and receptions */
 const NO_BET=new Set(['targets']);
-const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards'],
+const GRP_STATS={QB:['attempts','completions','passing_yards','passing_tds','passing_interceptions','carries','rushing_yards','any_td'],
  RB:['carries','rushing_yards','receptions','targets','receiving_yards','scrim_yards','any_td'],
  WR:['targets','receptions','receiving_yards','any_td'],
  TE:['targets','receptions','receiving_yards','any_td'],
@@ -189,8 +189,9 @@ function gameBet(g,team,kind){
    once and never on the season in play. It prices a total on a number other than the posted
    one, Normal(posted total, 13.2), and nothing else. The book's price for a side is the over or
    under odds the payload carries beside the total (nflverse's, or DraftKings' with its own
-   number); with none on file the leg is shown at an estimated -110. A total is never in a
-   suggested parlay: at the book's own chance it has no edge for one to find. */
+   number); with none on file the leg is shown at an estimated -110. At the book's own chance
+   a total has no edge, so a suggested parlay takes one only as the last fill, where the legs with
+   an edge cannot make a level, and marks it no edge (pbPool's market legs, pbTier). */
 const TOTAL_SD=13.2, TOTAL_EST=-110;
 function modelTotal(g){ return modelPoints(g.a,g.h,false)+modelPoints(g.h,g.a,true); }
 /* the market's chance of the over on the posted total: both prices with the margin out, else 50% */
@@ -216,6 +217,13 @@ function totalLeg(g,side){
 }
 /* chance of k or more touchdowns from the any-time chance p, touchdowns treated as Poisson */
 function tdPlus(p,k){ const lam=-Math.log(Math.max(1e-9,1-Math.min(p,1-1e-9))); let s=0,t=1; for(let i=0;i<k;i++){ s+=t; t*=lam/(i+1); } return Math.max(0,Math.min(1,1-Math.exp(-lam)*s)); }
+/* a touchdown leg's wording. A quarterback's anytime touchdown is one he scores himself, on a run or
+   a catch, as DraftKings settles it: a touchdown pass he throws does not count, so his leg says so */
+function tdLabel(grp,k){
+  const kk=k>=2?k:1;
+  if(grp==='QB') return kk>=2?`Scores ${kk}+ rushing or receiving TDs (not TD passes)`:'Scores a rushing or receiving TD (not a TD pass)';
+  return kk>=2?`Scores ${kk}+ touchdowns`:'Scores a touchdown';
+}
 function isGameLeg(l){ return l&&(l.stat==='ml'||l.stat==='ats'||l.stat==='total'); }
 function settleGameLeg(l){
   const g=S.sched.find(x=>x.id===l.gid); if(!g||!hasScore(g)) return null;
@@ -305,8 +313,10 @@ function playersFor(team){
    last five games, weighted) moved with the total's miss (the final's points against the posted
    total), as normal-score correlations over 2019-2024's regular season, starters only, from
    raw/feat.pkl and games.csv. Passing touchdowns and yards ride with the total; a kicker's field
-   goals a little against it. Below 0.03 is left out as nothing. */
-const TOTAL_RHO={'QB:attempts':0.10,'QB:completions':0.16,'QB:passing_yards':0.29,'QB:passing_tds':0.44,'QB:rushing_yards':0.05,
+   goals a little against it. Below 0.03 is left out as nothing. A quarterback's own touchdown (a run
+   or a catch) was measured the same way in October 2026 (props/research/qb_td.py, which gives every
+   entry here back to within 0.014). */
+const TOTAL_RHO={'QB:attempts':0.10,'QB:completions':0.16,'QB:passing_yards':0.29,'QB:passing_tds':0.44,'QB:rushing_yards':0.05,'QB:any_td':0.09,
   'RB:rushing_yards':0.06,'RB:receiving_yards':0.06,'RB:scrim_yards':0.08,'RB:any_td':0.17,
   'WR:receptions':0.12,'WR:receiving_yards':0.16,'WR:any_td':0.17,
   'TE:receptions':0.07,'TE:receiving_yards':0.12,'TE:any_td':0.12,
@@ -630,12 +640,39 @@ function hasScore(g){ return g.hs!=null&&g.as!=null&&isFinite(g.hs)&&isFinite(g.
 /* final once a score is in, or once four hours have passed since kickoff */
 function gameFinal(g){ if(hasScore(g)) return true; const k=kickoff(g); return !!k&&Date.now()>=k.getTime()+4*3600*1000; }
 function actualFor(week,pid){ return (S.actuals&&S.actuals[String(week)]&&S.actuals[String(week)][pid])||null; }
+/* who took part in a finished game, by nflverse's snap counts as the props job baked them (PAY.snaps:
+   week -> game -> club -> the players the page projects who took a snap and have no stat line;
+   weekly.py's who_played). true: he took a snap. false: his club's snaps are in and he took none (or,
+   with no club on the leg, both clubs' are in). null: no word on his club yet */
+function tookPart(l){
+  const W=PAY&&PAY.snaps&&PAY.snaps[String(l.week)], G=W&&W[l.gid]; if(!G) return null;
+  for(const t in G) if((G[t]||[]).includes(l.pid)) return true;
+  const team=l.team||(S.players&&S.players[l.pid]&&S.players[l.pid].team);
+  if(team&&G[team]) return false;
+  const g=S.sched.find(x=>x.id===l.gid);
+  return g&&G[g.h]&&G[g.a]?false:null;
+}
+/* Out on that week's injury report: the payload keeps the current week's report and every earlier
+   week's Outs */
+function reportedOut(week,pid){
+  return ((PAY&&PAY.injuries)||[]).some(r=>r&&r.gsis_id===pid&&+r.week===+week&&+r.season===SEASON&&String(r.report_status||'').trim()==='Out');
+}
 /* did a leg land? null while the stats for that week haven't been loaded */
 function settleLeg(l){
   if(isGameLeg(l)) return settleGameLeg(l);
-  const a=actualFor(l.week,l.pid);
-  /* no stat line once his game's stats are in: he did not play, and a book voids the leg */
-  if(!a) return (l.gid&&S.processedGames&&S.processedGames[l.gid])?'void':null;
+  let a=actualFor(l.week,l.pid);
+  /* no stat line once his game's stats are in. nflverse writes a player's week only when he has a
+     stat, so that alone is not "did not play": a receiver never targeted has none, and a book grades
+     a player who takes part in one play on what he did. He took a snap: graded on zero (an over and a
+     rung lose, an under wins). His club's snaps are in without him: void. No snap counts for his club
+     yet: void if that week's injury report had him Out, otherwise it waits */
+  if(!a){
+    if(!(l.gid&&S.processedGames&&S.processedGames[l.gid])) return null;
+    const took=tookPart(l);
+    if(took===false) return 'void';
+    if(took===null) return reportedOut(l.week,l.pid)?'void':null;
+    a=rowStats({});
+  }
   const v=a[l.stat]; if(v==null) return null;
   if(l.stat==='any_td'){ const k=l.k||1; if(k>=2){ if(a.tds==null) return null; return a.tds>=k?'win':'loss'; } return v>=1?'win':'loss'; }
   if(l.main){ if(v===l.k) return 'push'; return (l.side==='under'?v<l.k:v>l.k)?'win':'loss'; }
@@ -789,8 +826,9 @@ function bettingParlays(raw){
 /* ---------- track record: every frozen pre-game chance against what happened ----------
    Reads only S.projections (frozen at grade time) and S.actuals. Snapshots written before
    v27 hold just the projection; their rungs are rebuilt from it with the same static tables,
-   which gives the identical pre-game chance. A player with no stat line is skipped, as a
-   leg would be. A book main line is scored on the side the model favoured; a push is skipped.
+   which gives the identical pre-game chance. A player with no stat line is skipped; one who
+   played in his role with none has the job's row of zeros in PAY.stats (from_snaps), and is scored
+   on it, as a leg on him is graded. A book main line is scored on the side the model favoured; a push is skipped.
    Where a price exists (a rung price the job pulled, or the book's main-line price) it rides along as
    ml (American) and imp (the book's implied chance, cut included). */
 function trackRecord(){

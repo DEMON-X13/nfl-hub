@@ -1,10 +1,14 @@
 const {JSDOM}=require('jsdom'); const fs=require('fs'); const Papa=require('papaparse');
-const errs=[]; let mem=null;
+const errs=[]; let mem=null; const calls=[];
+/* the payload the page boots on: the published one, or (PROPS_AUDIT_PAYLOAD) a copy baked elsewhere,
+   to try a change to the model's data before the job has baked it */
+const PAYLOAD_FILE=process.env.PROPS_AUDIT_PAYLOAD||'../data/payload.json';
+if(process.env.PROPS_AUDIT_PAYLOAD) console.log('payload: '+PAYLOAD_FILE);
 const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
  /* a real origin, so window.localStorage exists: the app reads the betting model's key and
     writes the live page's watchlist, and neither can be exercised on about:blank */
- {url:'https://demon-x13.github.io/nfl-hub/props/',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=u=>String(u).indexOf('payload.json')>=0
-   ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync('../data/payload.json','utf8'))})
+ {url:'https://demon-x13.github.io/nfl-hub/props/',runScripts:'dangerously',pretendToBeVisual:true,beforeParse(w){w.Papa=Papa;w.NO_BAKED=true;w.fetch=(u,o)=>(calls.push({url:String(u),cache:o&&o.cache||null}),String(u).indexOf('payload.json')>=0)
+   ? Promise.resolve({ok:true,status:200,json:async()=>JSON.parse(fs.readFileSync(PAYLOAD_FILE,'utf8'))})
    : Promise.reject(new Error('x'));   /* the payload is fetched now, not baked in */
   w.confirm=()=>true;w.alert=()=>{};w.scrollTo=()=>{};w.URL.createObjectURL=()=>'blob:x';
   w.storage={get:async()=>mem?{value:mem}:null,set:async(k,v)=>{mem=v;return true;}};
@@ -336,6 +340,110 @@ setTimeout(async()=>{
     d.getElementById('backBtn').click();
     console.log(`K. touchdowns: P(2+|p=0.5)=${(tdPlus(0.5,2)*100).toFixed(1)}%, settlement and toggling ok`); }
 
+  /* ---- K2. a quarterback's anytime touchdown: his own run or catch, never a pass (app v102) ----
+     The market and his stats carry it; its wording says what it is and a back's is unchanged; it
+     settles on his rushing and receiving touchdowns alone, from a stats row and from the live box
+     score; it moves with the total and with his own carries as TOTAL_RHO and corr.json say; and
+     market + form is asked with the leg's stat (none on a quarterback's touchdown). Where the payload
+     carries his model (model.QB.any_td, baked from data/final_model.json), every quarterback on a game
+     to come has the leg, its chance the logit on featVec capped by his projected carries at tdrate.QB
+     (x tdmult), worked here on its own; one with a book price is a priced leg at that price; and his
+     game page heads the block as his own run or catch, with boxes that put the leg on worded so. The
+     audit boots with NO_BAKED, so S.odds is empty here: the open weeks' own prices are ingested for
+     these checks (and S.odds put back after), and where none of them prices a quarterback who can be
+     suggested, one is planted at +235, so the priced leg is always held, never passed on nothing. A
+     payload baked before the model has none: those checks are skipped and said, never failed. */
+  { const MK=F('MKT'), GS=F('GRP_STATS'), TR=F('TOTAL_RHO'), tdLabel=F('tdLabel'), rowStats=F('rowStats'), espnStats=F('espnStats'),
+      featVec=F('featVec'), dot=F('dot'), oddsFor=F('oddsFor'), pricedLegs=F('pricedLegs'), suggestable=F('suggestable');
+    chk(MK.any_td.grps.includes('QB')&&GS.QB.includes('any_td'),'the anytime touchdown is not offered to a quarterback');
+    const q1=tdLabel('QB',1), q2=tdLabel('QB',2);
+    chk(/rushing or receiving TD/.test(q1)&&/not a TD pass/.test(q1)&&/2\+ rushing or receiving TDs/.test(q2)&&/not TD passes/.test(q2),`a quarterback's touchdown is not worded as his own run or catch: "${q1}", "${q2}"`);
+    chk(tdLabel('RB',1)==='Scores a touchdown'&&tdLabel('WR',2)==='Scores 2+ touchdowns'&&tdLabel('TE',1)==='Scores a touchdown','a back\'s, receiver\'s or tight end\'s touchdown wording changed');
+    /* settling, from a stats row as the file has it */
+    { const row={attempts:'31',completions:'22',passing_yards:'262',passing_tds:'3',passing_interceptions:'0',carries:'6',rushing_yards:'24',rushing_tds:'0',receptions:'0',targets:'0',receiving_yards:'0',receiving_tds:'0'};
+      const wk='99', pid='__qb_td__', had=S.actuals[wk];
+      const at=r=>{ S.actuals[wk]={[pid]:rowStats(r)}; return [1,2,3].map(k=>settleLeg({week:+wk,pid,stat:'any_td',k,side:'over',grp:'QB'})).join(','); };
+      const pass3=at(row), run1=at({...row,passing_tds:'1',rushing_tds:'1'}), both=at({...row,passing_tds:'0',rushing_tds:'1',receiving_tds:'1'});
+      if(had===undefined) delete S.actuals[wk]; else S.actuals[wk]=had;
+      chk(pass3==='loss,loss,loss',`three touchdown passes and no run should lose a quarterback's touchdown and his 2+: ${pass3}`);
+      chk(run1==='win,loss,loss',`a quarterback's rushing touchdown (and one pass) should win his touchdown and lose his 2+: ${run1}`);
+      chk(both==='win,win,loss',`a quarterback's run and catch should win his touchdown and his 2+: ${both}`); }
+    /* and live, from the box score */
+    { const box=(ptd,rtd)=>({boxscore:{players:[{team:{abbreviation:'WSH'},statistics:[
+        {name:'passing',labels:['C/ATT','YDS','AVG','TD','INT'],athletes:[{athlete:{displayName:'Jayden Daniels'},stats:['21/30','255','8.5',String(ptd),'0']}]},
+        {name:'rushing',labels:['CAR','YDS','AVG','TD','LONG'],athletes:[{athlete:{displayName:'Jayden Daniels'},stats:['7','48','6.9',String(rtd),'15']}]}]}]}});
+      const e0=espnStats(box(3,0),'WAS','Jayden Daniels'), e1=espnStats(box(0,1),'WAS','Jayden Daniels');
+      chk(e0&&e0.passing_tds===3&&e0.any_td===0&&e1&&e1.any_td===1,`live: a quarterback's touchdown passes counted, or his run not (${e0&&e0.any_td}, ${e1&&e1.any_td})`); }
+    /* moving together: the total, his own lines, a parlay of them */
+    const mq=(stat,pid)=>({gid:'gq',pid:pid||'q',team:'WAS',grp:'QB',stat,p:0.3,side:'over'}), tot={gid:'gq',pid:'game',team:'WAS',grp:'TEAM',stat:'total',p:0.5,side:'over'};
+    chk(TR['QB:any_td']===0.09&&legRho(mq('any_td'),tot)===0.09&&legRho(tot,mq('any_td'))===0.09,'a quarterback\'s touchdown does not move with the total as TOTAL_RHO says');
+    { const C=PAY.corr||{}, rc=C['self|QB:any_td|QB:carries'], rp=C['self|QB:any_td|QB:passing_tds'];
+      if(rc==null) console.log('K2. corr.json in this payload has no quarterback touchdown pairs (baked before them): his legs move with nothing but the total');
+      else { chk(rc>0&&legRho(mq('any_td'),mq('carries'))===rc&&legRho(mq('carries'),mq('any_td'))===rc,'a quarterback\'s touchdown and his carries are not correlated as corr.json says');
+        chk(rp<0&&legRho(mq('passing_tds'),mq('any_td'))===rp,'a quarterback\'s touchdown and his touchdown passes are not correlated as corr.json says');
+        const pp=parlayProb([{...mq('any_td'),p:0.3},{...mq('rushing_yards'),p:0.5}]); chk(pp.corr>pp.indep,'a quarterback\'s touchdown and his rushing yards on one parlay are not priced together'); } }
+    /* market + form is asked with the stat */
+    { let seen=null; const keepA=w.eloAltP, keepL=w.eloLoaded; w.eloAltP=(pid,side,price,src,stat)=>{ seen=stat; return null; }; w.eloLoaded=()=>true;
+      const ok=F('formAgrees')({pid:'q',grp:'QB',stat:'any_td',side:'over',price:200,src:'real'});
+      if(keepA===undefined) delete w.eloAltP; else w.eloAltP=keepA; if(keepL===undefined) delete w.eloLoaded; else w.eloLoaded=keepL;
+      chk(seen==='any_td'&&ok===false,`formAgrees does not hand market + form the leg's stat (${seen})`); }
+    const M=PAY.model.QB&&PAY.model.QB.any_td;
+    if(!M) console.log('K2. quarterback touchdown: offered, worded, settled, correlated; this payload predates its model (no model.QB.any_td), so no quarterback has the leg yet and the projection checks are skipped until the props job rebakes');
+    else {
+      const R=PAY.tdrate.QB, MM=PAY.model.QB;
+      chk(M.type==='logit'&&M.coef.length===15&&M.coef.every(isFinite),'model.QB.any_td is not a 15-number logit');
+      chk(PAY.prior.QB&&PAY.prior.QB.any_td>0&&PAY.prior.QB.any_td<1,'prior.QB.any_td missing or not a chance');
+      chk(!!R&&R.rush>0&&R.rush<0.2,'tdrate.QB missing: a quarterback\'s touchdown would go uncapped');
+      const open=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w));
+      const keepOdds=JSON.stringify(S.odds||{}); let planted=null, elig=0;
+      for(const wk of new Set(open.map(g=>+g.w))) F('ingestOdds')((PAY.prices||{})[String(wk)]||[],wk);
+      { const cand=[]; for(const g of open){ const r=rosterFor(g,false);
+          for(const team in r) for(const x of r[team].players) if(x.pl.grp==='QB'&&x.gp>=3&&suggestable(x.pl.id)) cand.push({g,x}); }
+        elig=cand.length;
+        if(elig&&!cand.some(c=>oddsFor(c.g.id,c.x.pl.id,'any_td',1)!=null)){ const c=cand[0];
+          ((S.odds[c.g.id]??={})[c.x.pl.id]??={}).any_td={'1':235}; planted=c.x.pl.n; } }
+      const legs=pricedLegs(open);
+      let nQ=0,nP=0,capped=0,mism=0,noLine=0,badLeg=0; const shown=[];
+      for(const g of open){ const r=rosterFor(g,false);
+        for(const team in r) for(const x of r[team].players){ if(x.pl.grp!=='QB') continue; nQ++;
+          const l=statLines(x).find(s=>s.stat==='any_td'); if(!l){ noLine++; continue; }
+          const p0=1/(1+Math.exp(-dot(M.coef,featVec(x.pl,'any_td',x.opp,x.ctx))));
+          const mc=MM.carries?Math.max(dot(MM.carries.coef,featVec(x.pl,'carries',x.opp,x.ctx)),0):0, mr=MM.receptions?Math.max(dot(MM.receptions.coef,featVec(x.pl,'receptions',x.opp,x.ctx)),0):0;
+          const cap=R?1-Math.exp(-(mc*R.rush+mr*R.rec)*(PAY.tdmult||1.5)):1, want=Math.min(p0,cap);
+          if(cap<p0) capped++;
+          if(!(Math.abs(l.p-want)<1e-12&&l.p>0&&l.p<1)) mism++;
+          const od=oddsFor(g.id,x.pl.id,'any_td',1);
+          if(od!=null&&x.gp>=3&&suggestable(x.pl.id)){ nP++; const L=legs.find(c=>c.pid===x.pl.id&&c.stat==='any_td');
+            if(!(L&&L.price===od&&L.src==='real'&&L.p===l.p&&L.k===1&&L.side==='over'&&L.label===q1&&L.grp==='QB')) badLeg++;
+            else if(shown.length<4) shown.push(`${x.pl.n} ${(l.p*100).toFixed(0)}% at ${od>0?'+':''}${od}`); } } }
+      chk(nQ>0||!open.length,'no quarterback on a game to come');
+      chk(noLine===0,`${noLine} quarterbacks on games to come with no touchdown line`);
+      chk(mism===0,`${mism} quarterback touchdown chances are not the logit capped by his carries at tdrate.QB`);
+      chk(badLeg===0,`${badLeg} quarterbacks with a book price on their touchdown have no priced leg at it, or one worded or priced otherwise`);
+      chk(!elig||nP>=1,`${elig} quarterbacks on games to come could be suggested, and none of them with a book price on his touchdown was checked as a priced leg`);
+      chk(legs.filter(c=>c.grp==='QB'&&c.stat==='any_td').length===nP,'a quarterback touchdown leg in pricedLegs for a quarterback with no price on it, or twice');
+      { const o=JSON.parse(keepOdds); for(const k of Object.keys(S.odds)) delete S.odds[k]; Object.assign(S.odds,o); }
+      /* his game page: the block, its wording, its boxes */
+      let page='no game to come';
+      if(open.length){ const gq=openUpcoming(), roster=rosterFor(gq,false);
+        const qx=Object.values(roster).flatMap(t=>t.players).find(x=>x.pl.grp==='QB');
+        const btn=qx&&d.querySelector(`.plrbtn[data-open="${qx.pl.id}"]`);
+        if(btn){ btn.click();
+          const key=gq.id+'|'+qx.pl.id+'|any_td', box=k=>d.querySelector(`.plrbody [data-leg="${key}"][data-k="${k}"]`);
+          const blk=box(1)&&box(1).closest('.statblk'), h=blk&&blk.querySelector('h4');
+          chk(!!h&&/^Rushing or receiving TD/.test(h.textContent.trim())&&/a TD pass does not count/.test((h.querySelector('em[data-qbtd]')||{}).textContent||''),`a quarterback's touchdown block is not headed as his own run or catch: "${h&&h.textContent.trim()}"`);
+          chk(!!box(1)&&/rushing or receiving touchdown/.test(box(1).getAttribute('aria-label')||''),'a quarterback\'s touchdown box does not say what it adds');
+          if(box(2)){ box(2).checked=true; box(2).dispatchEvent(new w.Event('change'));
+            const L2=S.parlay[key]; chk(!!L2&&L2.k===2&&L2.label===q2&&L2.grp==='QB',`his 2+ box put on "${L2&&L2.label}"`);
+            box(1).checked=true; box(1).dispatchEvent(new w.Event('change'));
+            const L1=S.parlay[key]; chk(!!L1&&L1.k===1&&L1.label===q1,`his touchdown box put on "${L1&&L1.label}"`);
+            box(1).checked=false; box(1).dispatchEvent(new w.Event('change')); chk(!S.parlay[key],'unticking his touchdown left it on'); }
+          else chk(false,'no 2+ box on a quarterback\'s touchdown');
+          page=`${qx.pl.n}'s game page heads it as his own run or catch and its boxes put on "${q1}"`; }
+        else chk(false,'no quarterback row on a game to come');
+        d.getElementById('backBtn').click(); }
+      console.log(`K2. quarterback touchdown: offered, worded, settled on his runs and catches only (a stats row and live), correlated; ${nQ} quarterbacks on games to come each with the leg, ${capped} held by his carries' cap, every chance the capped logit; ${nP} with a book price each a priced leg${planted?' (none on the open weeks\' prices, so one planted on '+planted+')':''}${shown.length?' ('+shown.join(', ')+')':''}; ${page}`); } }
+
   /* ---- G. state flow: upload, grade, rollover, backup round trip ---- */
   const g0=openUpcoming();
   chk(!d.getElementById('gameModal').hidden&&!d.getElementById('slateView').hidden,'game overlay did not open over the list');
@@ -475,8 +583,9 @@ setTimeout(async()=>{
      below the book; one leg a line, a player and (for a game bet) a game; a tier's chance and price
      are the builder's own sums; thin legs only where the preferred legs could not fill the tier;
      and a pick that leaves fewer legs than a tier needs gets the reason, not a smaller parlay; and
-     no tier ever holds a game total (priced at the book's own chance, it has no edge), with one
-     line saying so whenever Game total is ticked. Run on the week as it is, and again on made-up
+     a game total (priced at the book's own chance, it has no edge) is in a tier only as the last
+     fill, a market leg marked so, where the same level from the legs with an edge is empty, with
+     one line saying so whenever Game total is ticked. Run on the week as it is, and again on made-up
      lines (each starter's main line set off his own projection, a price on every total: -105/-115
      on half, +100/+100 with no margin and +110/+105 with less than none on the rest) so the player
      legs and the totals are always tried. */
@@ -494,7 +603,7 @@ setTimeout(async()=>{
     const setKinds=ks=>{ for(const k of KINDS) U().k[k]=ks.includes(k); w.eval('PB_CACHE=new Map()'); };
     let built=0, said=0, legsSeen=0, thinSeen=0, corrTiers=0, likeliestSeen=0, likeliestWorked=0, combosWorked=0;
     /* "the likeliest" worked out in full. Where no two legs that could share a parlay move together
-       (different games, or one team bet a game), every parlay's chance is a plain product and
+       (different games, or a game's side and its total), every parlay's chance is a plain product and
        parlayProb works it exactly, so every parlay of the tier's size with its count of thin legs
        is worked, and none may land likelier than the tier. That holds whatever the legs are priced
        at, so a fallback chosen by any other measure (the best return under the floor, say) fails
@@ -503,10 +612,10 @@ setTimeout(async()=>{
     const fitsF=F('pbFits'), orderF=F('pbOrder'), rhoF=F('legRho'), LIKELY_CAP=250000;
     const noMovers=list=>{ for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++)
       if(fitsF([list[i]],list[j])&&Math.abs(rhoF(list[i],list[j]))>=0.03) return false; return true; };
-    const likeliestOf=(list,n,thin)=>{ let best=-1, legs=null, seen=0;
+    const likeliestOf=(list,n,thin,mk)=>{ let best=-1, legs=null, seen=0;
       const rec=(i0,cur,th)=>{ if(seen>LIKELY_CAP) return;
         if(cur.length===n){ if(th!==thin) return; seen++; const pr=F('parlayProb')(orderF(cur)).corr; if(pr>best){ best=pr; legs=cur.slice(); } return; }
-        for(let i=i0;i<list.length;i++){ const c=list[i], th2=th+(c.thin?1:0); if(th2>thin||!fitsF(cur,c)) continue; cur.push(c); rec(i+1,cur,th2); cur.pop(); } };
+        for(let i=i0;i<list.length;i++){ const c=list[i], th2=th+((mk?c.market:c.thin)?1:0); if(th2>thin||!fitsF(cur,c)) continue; cur.push(c); rec(i+1,cur,th2); cur.pop(); } };
       rec(0,[],0); return seen>LIKELY_CAP||!legs?null:{best,legs,seen}; };
     /* a level's best return over its floor, searched on its own (the search a level tries first),
        and what a card's rule says it is: Safe the likeliest pair, a level over its floor its best
@@ -514,7 +623,7 @@ setTimeout(async()=>{
     const bestRet=w.eval("typeof pbBestReturn==='function'?pbBestReturn:null");
     chk(!!bestRet,'the page has no search for a level\'s best return over its floor on its own (pbBestReturn)');
     const maxLegsOf=F('pbMaxLegs'), pbIdOf=l=>l.key+'|'+l.side+'|'+l.k;
-    const ruleFor=t=>t.likeliest?`the likeliest ${t.n} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+`:'the likeliest pair';
+    const ruleFor=t=>t.likeliest?`the likeliest ${t.n} legs`:t.floor?`best return that lands ${Math.round(t.floor*100)}%+ by the model`:'the likeliest pair';
     /* the reason a tier gives with no player price on file: when they really come (PR #213: the
        Sunday slate on Saturday morning, every other game on its day or the day before) */
     const NO_PL='No player prices yet: they are pulled on game day or the day before, Sunday’s games on Saturday morning.', noPlLow=NO_PL[0].toLowerCase()+NO_PL.slice(1);
@@ -524,14 +633,25 @@ setTimeout(async()=>{
     const cardWords=(c,t,lab)=>{ const rule=c.querySelector('.pb-rule'), rest=c.cloneNode(true);
       rest.querySelectorAll('.pb-legs,.pb-thin,.pb-rule').forEach(x=>x.remove());
       chk(!!rule&&rule.textContent===ruleFor(t),`${lab}: the ${t.id} card's rule reads "${rule?rule.textContent:''}", not "${ruleFor(t)}"`);
-      chk(![...c.querySelectorAll('p')].some(p=>!p.classList.contains('pb-thin'))&&!/floor|usual|below|short of|of the time|%\+/i.test(rest.textContent),
+      chk(![...c.querySelectorAll('p')].some(p=>!p.classList.contains('pb-thin'))&&!/floor|usual|below|short of|of the time|%\+(?!\d)/i.test(rest.textContent),
         `${lab}: the ${t.id} card carries a note beside its chance and price: "${rest.textContent.replace(/\s+/g,' ').trim().slice(0,160)}"`); };
+    /* a card leads with its fair chance, labelled so (est. where it is), whose chance it was chosen on
+       beside it ("model says 26%"); with no fair chance, that chance alone, saying why */
+    const fairShown=(c,t,lab,by)=>{ const first=c.querySelector('.pb-nums')&&c.querySelector('.pb-nums').firstElementChild, q=s=>first&&first.querySelector(s);
+      const b=q('b'), sp=q('span'), sm=q('small'), ch=by==='Elo'?t.p:t.corr, Fr=t.fair, pc=v=>(v*100).toFixed(0)+'%';
+      if(Fr&&Fr.p!=null) chk(!!b&&b.textContent===pc(Fr.p)&&!!sp&&sp.textContent===(Fr.est?'fair chance, est.':'fair chance')&&!!sm&&sm.textContent===`${by} says ${pc(ch)}`,
+        `${lab}: the ${t.id} card does not lead with its fair chance ${pc(Fr.p)}${Fr.est?' (est.)':''} beside "${by} says ${pc(ch)}": "${first?first.textContent:'no figures'}"`);
+      else chk(!!b&&b.textContent===pc(ch)&&!!sm&&/^no fair chance: a leg has no book price$/.test(sm.textContent),`${lab}: the ${t.id} card has no fair chance and does not say why beside the model's: "${first?first.textContent:'no figures'}"`); };
     /* every rule a tier keeps, on the picks as they stand */
     const hold=(lab)=>{
       const r=F('getPbTiers')(), games=F('pbGames')(), u=U();
       chk(r.tiers.length===4&&r.tiers.map(t=>t.id+t.n).join()===SPEC.map(s=>s[0]+s[2]).join(),`${lab}: the tiers are not Safe, Medium, Aggressive and Extreme at 2, 3, 4 and 5 legs`);
-      const pool=games.length&&KINDS.some(k=>u.k[k])&&games.some(g=>!u.off.includes(g.id))?F('pbPool')(games.filter(g=>!u.off.includes(g.id))):{pref:[],thin:[]};
-      const maxLegs=F('pbMaxLegs')([...pool.pref,...pool.thin]);
+      const pool=games.length&&KINDS.some(k=>u.k[k])&&games.some(g=>!u.off.includes(g.id))?F('pbPool')(games.filter(g=>!u.off.includes(g.id))):{pref:[],thin:[],mkt:[]};
+      const mkt=pool.mkt||[], maxLegs=F('pbMaxLegs')([...pool.pref,...pool.thin,...mkt]);
+      /* the market list: only totals, only with Game total ticked, each on a ticked game at the
+         market's own chance (totalLeg's) on a real price, 45-97%, never thin */
+      chk(mkt.every(c=>c.stat==='total'&&c.market===true&&c.thin===false&&c.src==='real'&&c.p>=0.45&&c.p<0.97&&!u.off.includes(c.gid)
+        &&Math.abs(c.p-F('totalLeg')(S.sched.find(g=>g.id===c.gid),c.side).p)<1e-12)&&(!!u.k.total||!mkt.length),`${lab}: the market list holds something other than a ticked game's total at the market's chance, or holds one with Game total unticked`);
       /* the pool itself, whichever legs a tier happens to take: nothing under the book, no estimated
          price, nothing of a kind or game not ticked, a preferred leg only over the full bar */
       chk([...pool.pref,...pool.thin].every(c=>c.p>=mlP(c.price)&&c.src==='real'&&!!u.k[kindOf(c)]&&!u.off.includes(c.gid)),`${lab}: a leg under the book, on an estimated price, or of a kind or game not ticked is among the legs a tier may take`);
@@ -555,40 +675,55 @@ setTimeout(async()=>{
           continue; }
         built++; legsSeen+=t.legs.length;
         chk(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
-        chk(!t.legs.some(l=>l.stat==='total'),`${lab}: the ${t.id} tier holds a game total (${t.legs.filter(l=>l.stat==='total').map(l=>l.label).join(', ')})`);
+        /* a total only as the last fill: every total a market leg, counted, and only where the same
+           level built from the legs with an edge alone is empty */
+        chk(t.legs.every(l=>(l.stat==='total')===!!l.market)&&(t.mkt||0)===t.legs.filter(l=>l.market).length,`${lab}: the ${t.id} tier has a total that is not a market leg, or miscounts them`);
+        if(t.mkt) chk(F('pbTier')(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:pool.thin,mkt:[]},new Map())===null,`${lab}: the ${t.id} tier took a game total where the legs with an edge make a parlay of its size`);
         chk(maxLegs>=n,`${lab}: a ${n}-leg ${t.id} tier from picks that only make ${maxLegs}`);
         for(const l of t.legs){ const g=S.sched.find(x=>x.id===l.gid);
           chk(!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(x=>x.id===l.gid),`${lab}: ${l.name} ${l.label} is of a kind or a game not ticked, or its game is not on the list`);
           chk(!!g&&!F('gameStarted')(g),`${lab}: ${l.name} ${l.label} is on a game that has kicked off`);
           chk(l.src==='real'&&isFinite(l.price)&&l.price!==0&&l.p>=0.45&&l.p<0.97,`${lab}: ${l.name} ${l.label} has no real price, or a chance out of 45-97%`);
-          chk(l.p>=mlP(l.price),`${lab}: ${l.name} ${l.label} is rated below the book (${(l.p*100).toFixed(1)}% against ${(mlP(l.price)*100).toFixed(1)}%)`);
-          chk(l.thin===!(l.p-mlP(l.price)>=0.03&&F('formAgrees')(l)),`${lab}: ${l.name} ${l.label} is marked thin wrongly`);
+          if(l.market) chk(l.stat==='total'&&l.thin===false,`${lab}: ${l.name} ${l.label} is a market leg that is not a total, or is marked thin`);
+          else { chk(l.p>=mlP(l.price),`${lab}: ${l.name} ${l.label} is rated below the book (${(l.p*100).toFixed(1)}% against ${(mlP(l.price)*100).toFixed(1)}%)`);
+            chk(l.thin===!(l.p-mlP(l.price)>=0.03&&F('formAgrees')(l)),`${lab}: ${l.name} ${l.label} is marked thin wrongly`); }
           if(l.thin) thinSeen++; }
         chk(new Set(t.legs.map(l=>l.key)).size===n,`${lab}: the ${t.id} tier has one line twice (or both sides of one)`);
         const gl=t.legs.filter(isG), pl=t.legs.filter(l=>!isG(l));
-        chk(new Set(gl.map(l=>l.gid)).size===gl.length,`${lab}: the ${t.id} tier has two game bets on one game`);
+        const sides=gl.filter(l=>l.stat!=='total'), tots=gl.filter(l=>l.stat==='total');
+        chk(new Set(sides.map(l=>l.gid)).size===sides.length&&new Set(tots.map(l=>l.gid)).size===tots.length,`${lab}: the ${t.id} tier has two sides, or two totals, on one game`);
         chk(new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: the ${t.id} tier has two legs on one player`);
         /* the card's numbers are the builder's own sums on the legs as the builder orders them */
         const order=t.legs.map(l=>l.key).join(), want=[...t.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
         chk(order===want,`${lab}: the ${t.id} tier's legs are not in the builder's order`);
         chk(pp(t.legs).corr===t.corr&&pd(t.legs.map(l=>({leg:l,ml:l.price})))===t.dec,`${lab}: the ${t.id} tier's chance or price is not what parlayProb and parlayDec say`);
+        /* its fair chance is the builder's own sum on its legs at their fair chances (est. where one
+           is), and no leg on it is one the model rates FAR_OFF or more above its fair chance */
+        { const fs=t.legs.map(l=>F('legFair')(l)), FAR=w.eval('FAR_OFF');
+          chk(fs.every(Boolean)?(!!t.fair&&t.fair.p===pp(t.legs.map((l,i)=>({...l,p:fs[i].p}))).corr&&t.fair.est===fs.some(f=>f.est)):(!!t.fair&&t.fair.p===null&&t.fair.miss===fs.filter(f=>!f).length),
+            `${lab}: the ${t.id} tier's fair chance ${t.fair?t.fair.p:'(none)'} is not parlayProb on its legs at their fair chances`);
+          chk(t.legs.every((l,i)=>!fs[i]||l.p-fs[i].p<FAR-1e-9),`${lab}: the ${t.id} tier has a leg the model rates ${FAR*100} points or more above its fair chance: ${t.legs.filter((l,i)=>fs[i]&&l.p-fs[i].p>=FAR-1e-9).map(l=>l.name+' '+l.label).join(', ')}`); }
         if(floor&&!t.likeliest) chk(t.corr>=floor,`${lab}: the ${t.id} tier lands ${(t.corr*100).toFixed(1)}%, under its ${floor*100}% floor, and is not marked the likeliest of its size`);
         chk(t.thin===t.legs.filter(l=>l.thin).length,`${lab}: the ${t.id} tier miscounts its thin legs`);
         /* a level falls back to the likeliest parlay of its size only when no parlay of that size
            clears its floor at any count of thin legs (its best-return search finds none), never
            Safe; it prefers the fewest thin legs, as Safe does: as many as the preferred legs leave */
+        /* a level with a total was built on every leg with an edge as its base and the totals as fill */
+        const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:mkt}:{pref:pool.pref,thin:pool.thin}, fill=t.mkt?t.mkt:t.thin, kTop=t.mkt?Math.max(0,n-maxLegsOf(from.pref)):undefined;
+        /* every level with totals takes exactly as many as the legs with an edge leave to fill */
+        if(t.mkt) chk(t.mkt===kTop,`${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave ${kTop} to fill`);
         if(t.likeliest){ likeliestSeen++;
           chk(!!floor,`${lab}: Safe is marked as a fallback to the likeliest pair`);
-          chk(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),pool,new Map())===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
-          chk(t.thin===Math.max(0,n-maxLegsOf(pool.pref)),`${lab}: the likeliest ${n} legs take ${t.thin} thin legs where the preferred legs leave ${Math.max(0,n-maxLegsOf(pool.pref))} to fill`); }
+          chk(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop)===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
+          chk(fill===Math.max(0,n-maxLegsOf(from.pref)),`${lab}: the likeliest ${n} legs take ${fill} ${t.mkt?'totals':'thin legs'} where the ${t.mkt?'legs with an edge':'preferred legs'} leave ${Math.max(0,n-maxLegsOf(from.pref))} to fill`); }
         /* the likeliest pair, and a level's likeliest of its size, worked out in full where every
            parlay is a plain product: no parlay of its size with as many thin legs lands likelier */
-        if(t.likeliest||!floor){ const all=[...pool.pref,...pool.thin];
-          if(noMovers(all)){ const b=likeliestOf(all,n,t.thin);
+        if(t.likeliest||!floor){ const all=[...from.pref,...from.thin];
+          if(noMovers(all)){ const b=likeliestOf(all,n,fill,!!t.mkt);
             if(b){ likeliestWorked++; combosWorked+=b.seen;
               chk(t.corr>=b.best-1e-12,`${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% (${t.legs.map(l=>l.name+' '+l.label).join(', ')}) where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${n} worked)`); } } }
         /* a level over its floor is the best-return search's own parlay, unchanged */
-        else if(floor&&bestRet){ const b=bestRet(SPEC.find(s=>s[0]===t.id),pool,new Map());
+        else if(floor&&bestRet){ const b=bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop);
           chk(!!b&&b.legs.map(pbIdOf).join()===t.legs.map(pbIdOf).join(),`${lab}: the ${t.id} tier is not its best return over its floor`); }
         /* thin legs only fill what the preferred could not */
         if(t.thin&&!t.likeliest) chk(!bestRet||bestRet(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:[]},new Map())===null,`${lab}: the ${t.id} tier took a thin leg the preferred legs did not need`);
@@ -598,18 +733,22 @@ setTimeout(async()=>{
         /* the mixes: Teams only is game bets, Players only is players' lines */
         if(!u.k.over&&!u.k.under) chk(t.legs.every(isG),`${lab}: a player leg with neither player box ticked`);
         if(!u.k.ml&&!u.k.ats&&!u.k.total) chk(!t.legs.some(isG),`${lab}: a game bet with no team box ticked`); }
-      /* the card on the page says the same, and with Game total ticked one line says why no total is in a tier */
+      /* the card on the page says the same, and with Game total ticked one line says what a total in a tier is */
       F('renderPb')();
-      { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' '), nt=tx.includes('Game totals are priced at the book’s own chance, so they never make a suggested parlay; add one by hand from a game’s Game bets card.');
-        chk(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say totals never make a suggested parlay':'Game total is not ticked and the panel still says totals never make one'}`);
+      { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' '), nt=tx.includes('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
+        chk(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say a total has no edge and only fills':'Game total is not ticked and the panel still speaks of totals'}`);
         if(u.k.total&&!u.k.ml&&!u.k.ats&&!u.k.over&&!u.k.under) chk(!/No line on your picks has a real sportsbook price/.test(tx),`${lab}: with only Game total ticked the panel says no line has a price the model rates at or above the book`); }
       for(const t of r.tiers){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`); if(!c){ chk(false,`${lab}: no card for the ${t.id} tier`); continue; }
         const tx=c.textContent.replace(/\s+/g,' ');
+        /* a total on a card is marked no edge, and one line says what that is; nothing else is */
+        if(t.legs) chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&t.legs.every((l,i)=>/no edge/.test(c.querySelectorAll('.pb-legs li')[i].textContent)===!!l.market)
+          &&/because your picks do not make a parlay of this size from legs with an edge/.test(tx)===!!t.mkt,`${lab}: the ${t.id} card does not mark its totals no edge, or its line about them is ${t.mkt?'missing':'there with no total'}`);
         if(!t.legs) chk(tx.includes(t.why)&&!c.querySelector('[data-pb-add]'),`${lab}: the empty ${t.id} card does not give its reason, or offers Add to builder`);
         else { const stake=w.eval("typeof pbStake==='function'?pbStake():NaN"), pay=c.querySelector('[data-pb-pay]');
           chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(F('fmtML')(F('decToML')(t.dec)))
             &&!!c.querySelector(`[data-pb-add="${t.id}"]`),`${lab}: the ${t.id} card does not show its legs, chance and price`);
           chk(stake===S.stake&&payOk(pay,stake,t.dec),`${lab}: the ${t.id} card does not pay the Bet amount (${amtTxt(stake)}) times its price ${t.dec}: "${pay?[...pay.children].map(x=>x.textContent).join(' '):'no payout'}"`);
+          fairShown(c,t,lab,'model');
           cardWords(c,t,lab); } }
       return r; };
     const keepU=JSON.stringify(U());
@@ -624,7 +763,7 @@ setTimeout(async()=>{
     setKinds(['ats']); hold('this week, spreads only');
     /* and the week's moneylines alone, and Teams only on the first four games: each a pick where a
        level may fall back, and hold works every likeliest tier out in full against every parlay of
-       its size (one team bet a game, so every parlay is a plain product) */
+       its size (a game's side and its total are unrelated, so every parlay is a plain product) */
     setKinds(['ml']); hold('this week, moneylines only');
     { const g4=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g4.slice(4).map(g=>g.id); w.eval('PB_CACHE=new Map()');
       hold('this week, teams only, the first four games'); U().off=[]; }
@@ -654,10 +793,11 @@ setTimeout(async()=>{
       for(const g of games.slice(1)){ const c=d.querySelector(`#pbPanel [data-pb-game="${g.id}"]`); c.checked=false; c.dispatchEvent(new w.Event('change')); }
       chk(U().off.length===games.length-1&&!U().off.includes(one.id),'unticking the games one by one did not leave one ticked');
       hold('one game');
-      /* Teams only on one game: one game bet a game makes one leg, so every tier says there are too few */
+      /* Teams only on one game: a side and its total make two legs at most, so Safe is that pair or
+         says why, and every bigger level says there are too few */
       d.querySelector('#pbPanel [data-pb-mix="teams"]').click();
       const r1=hold('one game, teams only');
-      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks: tick more games or bet types\.$/.test(t.why)),'one game\'s team bets did not leave every tier saying there are too few legs: '+r1.tiers.map(t=>t.why).join(' / '));
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.filter(l=>l.stat==='total').length===1&&t.legs.filter(l=>l.stat!=='total').length===1:(!t.legs&&/^(Only [12] legs?|No legs) on your picks: tick more games or bet types\.$/.test(t.why))),'one game\'s team bets did not make at most a side and its total, or a level too big for them did not say there are too few legs: '+r1.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
       d.querySelector('#pbPanel [data-pb-games="all"]').click(); d.querySelector('#pbPanel [data-pb-mix="all"]').click(); }
     setKinds([]); { const r0=F('getPbTiers')(); chk(r0.tiers.every(t=>!t.legs&&/No bet types ticked/.test(t.why)),'with no bet type ticked the tiers did not say so'); }
     setKinds(KINDS); F('renderPb')();
@@ -690,11 +830,143 @@ setTimeout(async()=>{
       setKinds(KINDS);
       const rA=F('getPbTiers')();
       chk(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
-      chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the suggestions, the game pages\' or the Elo picks are built from');
-      /* only Game total ticked: every total priced (-105/-115, +100/+100 with no margin, +110/+105 with less than none), and still no tier */
-      { setKinds(['total']); const rT=F('getPbTiers')();
-        chk(rT.tiers.every(t=>!t.legs&&/^No legs on your picks: tick more games or bet types\.$/.test(t.why)),'with only Game total ticked and every total priced, a tier was built or did not say there are no legs: '+rT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
-        setKinds(KINDS); }
+      /* M6. lock a leg and ask for new legs, on the made-up lines: the locked leg stays on every
+         turn, the rest are legs the card has not shown until it starts over, every turn keeps the
+         level's rules, the card draws it and Add to builder takes it; Reset and a changed box put
+         the level back */
+      { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+        const T=rA.tiers.find(t=>t.legs&&t.n>=3), idOf=F('pbId'), mlPx=F('mlProb');
+        const okTier=(x,lab)=>{ const gl=x.legs.filter(isG), sd=gl.filter(l=>l.stat!=='total'), tt=gl.filter(l=>l.stat==='total'), pl=x.legs.filter(l=>!isG(l)), u=U();
+          const ord=[...x.legs].sort((a,b)=>(a.week-b.week)||String(a.name).localeCompare(String(b.name))).map(l=>l.key).join();
+          chk(x.legs.length===x.n&&new Set(x.legs.map(l=>l.key)).size===x.n&&new Set(sd.map(l=>l.gid)).size===sd.length&&new Set(tt.map(l=>l.gid)).size===tt.length&&new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: not ${x.n} different lines, one side and one total a game and one leg a player`);
+          chk(x.legs.every(l=>!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(g=>g.id===l.gid)&&l.src==='real'&&l.p>=0.45&&l.p<0.97&&(l.market?l.stat==='total':l.p>=mlPx(l.price))),`${lab}: a leg of a kind or game not ticked, on no real price, out of 45-97%, or under the book`);
+          chk(x.legs.map(l=>l.key).join()===ord&&pp(x.legs).corr===x.corr&&pd(x.legs.map(l=>({leg:l,ml:l.price})))===x.dec&&x.thin===x.legs.filter(l=>l.thin).length&&(x.mkt||0)===x.legs.filter(l=>l.market).length,`${lab}: its chance, price or counts are not the builder's own sums on its legs`); };
+        chk(!!T,'with made-up lines on every starter no level of three legs or more was built');
+        if(T){ const cardOf=()=>d.querySelector(`#pbPanel .pb-tier.${T.id}`), lid=idOf(T.legs[0]);
+          chk(cardOf().querySelectorAll('[data-pb-lock]').length===T.legs.length&&!!cardOf().querySelector(`[data-pb-turn="${T.id}"]`)&&!cardOf().querySelector('[data-pb-reset]'),`the ${T.id} card has no lock on each leg or no New legs, or offers Reset before a turn`);
+          chk(!d.querySelector('#pbElo [data-pb-lock], #pbElo [data-pb-turn]'),'the Elo picks carry locks or New legs');
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).click();
+          chk(cardOf().querySelector(`[data-pb-lock="${T.id}|${lid}"]`).getAttribute('aria-pressed')==='true'&&cardOf().querySelectorAll('[data-pb-lock][aria-pressed="true"]').length===1,'the lock did not take, or took more than the one leg');
+          chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T.legs.map(idOf)),'a lock alone changed the legs');
+          /* the card remembers who it has shown (a player, a team, a game's total), not the line */
+          const whoOf=F('pbWho'), seen=new Set(T.legs.filter(l=>idOf(l)!==lid).map(whoOf)); let turns=0, wrapped=false;
+          while(turns<8&&!wrapped){ cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click(); turns++;
+            const x=F('pbShownTier')(T.id); wrapped=!!w.eval(`PB_VIEW.t['${T.id}'].wrapped`);
+            if(!x.legs){ chk(/unlock one/.test(x.why)&&/unlock one/.test(cardOf().textContent),`turn ${turns}: an empty turn does not say to unlock a leg`); break; }
+            okTier(x,`new legs, turn ${turns}`);
+            chk(x.legs.some(l=>idOf(l)===lid)&&x.turned===true,`turn ${turns}: the locked leg is not on it`);
+            const fresh=x.legs.filter(l=>idOf(l)!==lid);
+            if(!wrapped) chk(fresh.every(l=>!seen.has(whoOf(l))),`turn ${turns}: a player, team or total the card had shown came back before the start-over, on this line or another: ${fresh.filter(l=>seen.has(whoOf(l))).map(l=>l.name+' '+l.label).join(', ')}`);
+            else chk(/back to the first/.test(cardOf().textContent),`turn ${turns}: the start-over is not said on the card`);
+            fresh.forEach(l=>seen.add(whoOf(l)));
+            /* a turned card says what it is: chosen from the legs left (until it starts over) beside the lock */
+            const rule=cardOf().querySelector('.pb-rule').textContent;
+            chk(/ beside your lock$| beside your lock that lands \d+%\+ by the model$/.test(rule)&&(wrapped||/ left /.test(rule))&&(x.likeliest||!x.floor?/^the likeliest /.test(rule):/^best return /.test(rule)),`turn ${turns}: the turned card is ruled "${rule}", not the level's rule on the legs left beside the lock`);
+            if(x.mkt) chk(!/because your picks do not make a parlay/.test(cardOf().textContent)&&/here because (the legs with an edge (your picks have left for this card|on your picks) do not make a parlay of this size beside your lock|you locked)/.test(cardOf().textContent),`turn ${turns}: the totals line on the turned card does not say why they are there`);
+            const li=[...cardOf().querySelectorAll('.pb-legs li')];
+            chk(li.length===x.n&&x.legs.every((l,i)=>li[i].textContent.includes(l.name)&&li[i].textContent.includes(l.label))&&cardOf().querySelector('[data-pb-pay]').dataset.pbPay===String(x.dec)
+              &&!!cardOf().querySelector(`[data-pb-reset="${T.id}"]`),`turn ${turns}: the card does not draw the turned legs and their price, or has no Reset`); }
+          chk(turns>=1,'New legs did nothing');
+          /* Add to builder takes the legs on the card */
+          const x=F('pbShownTier')(T.id), keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice;
+          if(x&&x.legs){ cardOf().querySelector(`[data-pb-add="${T.id}"]`).click();
+            chk(Object.keys(S.parlay).length===x.n&&x.legs.every(l=>S.parlay[l.key]&&S.parlay[l.key].k===l.k&&S.parlay[l.key].side===l.side),'Add to builder after New legs did not take the legs on the card'); }
+          S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')();
+          /* Reset, then a changed box: the level is the panel's own again */
+          if(cardOf().querySelector(`[data-pb-reset="${T.id}"]`)) cardOf().querySelector(`[data-pb-reset="${T.id}"]`).click();
+          chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(F('getPbTiers')().tiers.find(t=>t.id===T.id).legs.map(idOf))&&!cardOf().querySelector('[data-pb-lock][aria-pressed="true"]'),'Reset did not put the level back to the panel\'s own, or kept a lock');
+          cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+          setKinds(KINDS.filter(k=>k!=='under')); F('renderPb')(); setKinds(KINDS); F('renderPb')();
+          chk(!w.eval(`PB_VIEW.t['${T.id}']`)||(!w.eval(`PB_VIEW.t['${T.id}'].tier`)&&!w.eval(`PB_VIEW.t['${T.id}'].lock.length`)),'a changed box left a turned level or a lock behind');
+          const bare=()=>{ const v=w.eval(`PB_VIEW.t['${T.id}']`); return !v||(!v.tier&&!v.lock.length); };
+          /* None and then All is a change of picks too, though no card is drawn under None */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(F('pbShownTier')(T.id).legs[0])}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+            d.querySelector('#pbPanel [data-pb-games="none"]').click(); d.querySelector('#pbPanel [data-pb-games="all"]').click();
+            chk(bare()&&JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(F('getPbTiers')().tiers.find(t=>t.id===T.id).legs.map(idOf)),'ticking None and then All brought a turned level or a lock back'); }
+          /* every leg locked: New legs is off and does nothing; a level of locked legs alone (which a
+             kickoff can leave) is ruled as the visitor's own, never as the level's search */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); const T0=F('pbShownTier')(T.id), r0=cardOf().querySelector('.pb-rule').textContent;
+            for(const l of T0.legs) cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(l)}"]`).click();
+            const tb=cardOf().querySelector(`[data-pb-turn="${T.id}"]`);
+            chk(tb.disabled&&/unlock one/.test(tb.title),'with every leg locked New legs is not off, or does not say to unlock one');
+            F('pbTurn')(T.id); F('renderPb')();
+            chk(JSON.stringify(F('pbShownTier')(T.id).legs.map(idOf))===JSON.stringify(T0.legs.map(idOf))&&cardOf().querySelector('.pb-rule').textContent===r0,'New legs with every leg locked changed the level or its rule');
+            const v=F('pbViewOf')(T.id); F('pbFill')(T.id,v); F('renderPb')();
+            const x=F('pbShownTier')(T.id), rule=cardOf().querySelector('.pb-rule').textContent;
+            chk(!!x.allLocked&&JSON.stringify(x.legs.map(idOf).sort())===JSON.stringify(T0.legs.map(idOf).sort())&&/^the (pair|\d+ legs) you locked$/.test(rule)&&cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`a level of locked legs alone is ruled "${rule}", or is not the locked legs, or offers New legs`);
+            /* unlock one: the card still says how the parlay was chosen, and New legs is back */
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(x.legs[0])}"]`).click();
+            chk(cardOf().querySelector('.pb-rule').textContent===rule&&!cardOf().querySelector(`[data-pb-turn="${T.id}"]`).disabled,`after an unlock the level of locked legs is ruled "${cardOf().querySelector('.pb-rule').textContent}", or New legs is still off`); }
+          /* a turn beside a lock, then the lock undone: the rule is still the one the parlay was chosen by */
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); const L0=F('pbShownTier')(T.id).legs[0];
+            cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(L0)}"]`).click(); cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+            const r1=cardOf().querySelector('.pb-rule').textContent;
+            if(F('pbShownTier')(T.id).legs){ cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(L0)}"]`).click();
+              chk(/ beside your lock/.test(r1)&&cardOf().querySelector('.pb-rule').textContent===r1,`a turn beside a lock is ruled "${r1}", and "${cardOf().querySelector('.pb-rule').textContent}" once the lock is undone`); } }
+          /* a game kicking off is not a change of picks: the lock on a game still to come stays and the
+             level is filled again around it, with no leg on the game under way; the lock on that one falls away */
+          let kicked='no leg of the level on a later kickoff than another';
+          { w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            const gs=F('pbGames')(), ko=g=>F('kickoff')(g).getTime(), T1=F('pbShownTier')(T.id), kOf=l=>ko(gs.find(g=>g.id===l.gid));
+            const first=Math.min(...T1.legs.map(kOf)), Le=T1.legs.find(l=>kOf(l)===first), Ll=T1.legs.find(l=>kOf(l)>first);
+            if(Le&&Ll){
+              cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Ll)}"]`).click(); cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Le)}"]`).click();
+              const now0=w.Date.now, off=first+60e3-now0.call(w.Date); w.Date.now=()=>now0.call(w.Date)+off; F('renderPb')();
+              const on=new Set(F('pbGames')().map(g=>g.id)), v=w.eval(`PB_VIEW.t['${T.id}']`), x=F('pbShownTier')(T.id);
+              chk(!!v&&v.lock.length===1&&idOf(v.lock[0])===idOf(Ll)&&!!x.legs&&x.legs.length===T1.legs.length&&x.legs.some(l=>idOf(l)===idOf(Ll))&&x.legs.every(l=>on.has(l.gid))
+                &&cardOf().querySelector(`[data-pb-lock="${T.id}|${idOf(Ll)}"]`).getAttribute('aria-pressed')==='true'&&/ beside your lock/.test(cardOf().querySelector('.pb-rule').textContent),
+                `a kickoff dropped the lock on a game still to come, kept the one on the game under way, or did not fill the level again around it: ${x.legs?x.legs.map(l=>l.name+' '+l.label).join(', '):x.why}`);
+              if(x.legs) okTier(x,'filled again after a kickoff');
+              w.Date.now=now0; F('renderPb')();
+              /* New legs pressed in the half minute after a kickoff, before the page has redrawn: the
+                 panel is redrawn without the game and nothing is turned */
+              { const seen0=(w.eval(`PB_VIEW.t['${T.id}']`)||{seen:[]}).seen.length;
+                w.Date.now=()=>now0.call(w.Date)+off; chk(!!w.eval('pbStale()'),'the panel drawn before a kickoff is not stale after it');
+                cardOf().querySelector(`[data-pb-turn="${T.id}"]`).click();
+                const on1=F('pbGames')().map(g=>g.id), v1=w.eval(`PB_VIEW.t['${T.id}']`)||{seen:[]};
+                chk(v1.seen.length===seen0&&w.eval('PB_SHOWN')===on1.join()&&!w.eval('pbStale()')&&F('getPbTiers')().tiers.every(t=>!t.legs||F('pbShownTier')(t.id).legs.every(l=>on1.includes(l.gid))),
+                  `New legs pressed on a panel drawn before a kickoff turned the level (${seen0} seen, now ${v1.seen.length}) or did not redraw it without the game`);
+                w.Date.now=now0; F('renderPb')(); }
+              kicked=`a kickoff kept the lock on ${Ll.name} and dropped the one on ${Le.name}, and a click before the redraw only redrew`; } }
+          w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+          /* a small pick runs out and starts over: Teams only on three games, Safe turned until no
+             unshown leg is left, every turn a valid pair */
+          let nW=0, wr=false;
+          { const g3=F('pbGames')(); setKinds(['ml','ats','total']); U().off=g3.slice(3).map(g=>g.id); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')();
+            if(F('getPbTiers')().tiers.find(t=>t.id==='safe'&&t.legs)){
+              const sw=new Set(F('pbShownTier')('safe').legs.map(whoOf));
+              while(nW<40&&!wr){ d.querySelector('#pbPanel [data-pb-turn="safe"]').click(); nW++; wr=!!w.eval("PB_VIEW.t['safe']&&PB_VIEW.t['safe'].wrapped");
+                const x=F('pbShownTier')('safe'), c=d.querySelector('#pbPanel .pb-tier.safe'); if(!x||!x.legs) continue;
+                okTier(x,`Safe on three games, turn ${nW}`);
+                chk(c.querySelector('.pb-rule').textContent===(wr?'the likeliest pair':'the likeliest pair left'),`Safe on three games, turn ${nW}: ruled "${c.querySelector('.pb-rule').textContent}"`);
+                if(!wr) chk(x.legs.every(l=>!sw.has(whoOf(l))),`Safe on three games, turn ${nW}: a team or total it had shown came back before the start-over`);
+                if(x.mkt&&!wr) chk(/here because the legs with an edge your picks have left for this card do not make a parlay of this size\./.test(c.textContent),`Safe on three games, turn ${nW}: the totals line does not say the legs with an edge left do not make the pair`);
+                x.legs.forEach(l=>sw.add(whoOf(l))); }
+              chk(wr&&/back to the first/.test(d.querySelector('#pbPanel .pb-tier.safe').textContent),`Safe on three games never started over in ${nW} turns, or did not say so`); }
+            U().off=[]; setKinds(KINDS); w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
+          console.log(`M6. lock and new legs: ${turns} turns of the ${T.label} level, the locked leg on each, ${seen.size} players, teams and totals seen${wrapped?', then back to the first':''}; Safe on three games started over after ${nW} turns; ${kicked}`); }
+        w.eval('PB_VIEW={sig:null,t:{}}'); F('renderPb')(); }
+      chk(!F('pricedLegs')(games,true).some(l=>l.stat==='total')&&!F('pricedLegs')(games).some(l=>l.stat==='total'),'a game total is among the legs the game pages\' hands or the Elo picks are built from');
+      /* only Game total ticked, every total priced (-105/-115, +100/+100 with no margin, +110/+105
+         with less than none): every level a game makes legs for is built, of totals only, each a
+         market leg; under All on the same prices the legs with an edge fill every level, so no total */
+      { setKinds(['total']); const rT=F('getPbTiers')(), nT=new Set(F('pbPool')(games).mkt.map(l=>l.gid)).size;
+        chk(rT.tiers.every(t=>t.n>nT?!t.legs:(!!t.legs&&t.legs.every(l=>l.stat==='total'&&l.market)&&t.mkt===t.n&&!t.thin)),
+          'with only Game total ticked and every total priced, a level was not built of totals alone: '+rT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+        hold('made-up lines, Game total alone');
+        setKinds(KINDS); const rAll=F('getPbTiers')();
+        chk(rAll.tiers.every(t=>!t.legs||!t.mkt||F('pbTier')(SPEC.find(s=>s[0]===t.id),{...F('pbPool')(games),mkt:[]},new Map())===null),'under All a level took a total though the legs with an edge make it'); }
+      /* a total never stands where a leg with an edge could (the second review's case): two thin
+         moneylines on two games and three totals at -120, both moneylines and one total landing
+         22%, under Medium's 25%, where one moneyline and two totals clear it. Medium and Aggressive
+         keep both moneylines and take only the totals left to fill */
+      { const wk=F('currentWeek')(), mk=(g,o)=>({gid:g,week:wk,k:0,main:true,src:'real',grp:'TEAM',pos:'Game',...o});
+        const thinL=[mk('gA',{key:'gA|team:AAA|ml',pid:'team:AAA',stat:'ml',side:'over',team:'AAA',name:'AAA',label:'To win',p:0.93,price:-1000,thin:true}),
+          mk('gB',{key:'gB|team:BBB|ml',pid:'team:BBB',stat:'ml',side:'over',team:'BBB',name:'BBB',label:'To win',p:0.46,price:130,thin:true})];
+        const tots=['gA','gB','gC'].map(g=>mk(g,{key:g+'|game|total',pid:'game',stat:'total',side:'over',k:44.5,team:'X'+g,name:g+' total',label:'Over 44.5 points',p:0.5217,price:-120,thin:false,market:true}));
+        for(const id of ['med','aggr']){ const s=SPEC.find(x=>x[0]===id), r=F('pbTier')(s,{pref:[],thin:thinL,mkt:tots},new Map());
+          chk(!!r&&r.legs.filter(l=>l.stat==='ml').length===2&&r.mkt===s[2]-2,`a total took the place of a moneyline with an edge on the ${id} level: ${r?r.legs.map(l=>l.name+' '+l.label).join(', '):'none'}`); } }
       /* market + form gates the player legs once the Elo tab is on the page */
       w.eloLoaded=()=>false; w.eval('PB_CACHE=new Map()');
       chk(F('getPbTiers')().tiers.every(t=>!t.legs||t.legs.every(isG)),'before the Elo files load a player leg is suggested');
@@ -730,7 +1002,7 @@ setTimeout(async()=>{
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
        market + form (a player leg's second price), so it never reads as wanting it (a game total
-       is never in a tier) */
+       is never thin: pbMktLine speaks for it) */
     { const C=F('pbTierCard'), base={gid:'gT',name:'Thin',label:'a leg',price:-110,p:0.53,week:F('currentWeek')(),thin:true,side:'over',k:0,main:false};
       const tm={...base,key:'gT|team:AAA|ml',pid:'team:AAA',stat:'ml',grp:'TEAM'}, pl={...base,key:'gT|p1|receiving_yards',pid:'p1',stat:'receiving_yards',grp:'WR'};
       const line=legs=>{ const x=d.createElement('div'); x.innerHTML=C({id:'safe',label:'Safe',n:legs.length,floor:0,legs,corr:0.3,dec:3,thin:legs.filter(l=>l.thin).length});
@@ -760,10 +1032,21 @@ setTimeout(async()=>{
       chk(!/tick more/.test(tx)&&!/No line on your picks has a real sportsbook price/.test(tx),'with no player price on file, Players only still says to tick more, or repeats it in the note');
       setKinds(KINDS); const rA=hold('no player prices, all');
       chk(rA.noPlayerPrices&&rA.tiers.every(t=>t.legs?t.legs.every(isG):t.why.endsWith(', and '+noPlLow)),'with no player price on file, All builds a player leg, or an empty tier does not say no player prices are on file: '+rA.tiers.map(t=>t.why||'built').join(' / '));
-      /* All on one game: its team bets make one leg (one game bet a game), so no tier can be built,
-         and each says both why: too few legs, and no player prices yet */
+      /* a level built with no player price on file says nothing of the missing player legs, so the
+         panel does, whenever one is built; and player bets with Game total build their levels from
+         the totals, with that note */
+      const PL_NOTE='Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s games on Saturday morning.';
+      F('renderPb')(); chk(d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes(PL_NOTE)===rA.tiers.some(t=>t.legs),'with no player price on file and All ticked, the note that the tiers are built without player legs is missing, or shows with no tier built');
+      /* a level needs two legs, so only where two or more games have a priced total (a one-game
+         Monday has one, and builds nothing) */
+      setKinds(['over','under','total']); const rPT=hold('no player prices, player bets and Game total'), nTot=new Set(F('pbPool')(games).mkt.map(l=>l.gid)).size; F('renderPb')();
+      chk((nTot<2||rPT.tiers.some(t=>t.legs))&&rPT.tiers.every(t=>!t.legs||t.legs.every(l=>l.market))&&d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes(PL_NOTE)===rPT.tiers.some(t=>t.legs),
+        'with no player price on file, player bets and Game total do not build their levels from the totals with the note that player prices are not in yet: '+rPT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+      setKinds(KINDS);
+      /* All on one game: its team bets make two legs at most (a side and its total), so only Safe
+         can be built, and every bigger level says both why: too few legs, and no player prices yet */
       U().off=games.slice(1).map(g=>g.id); w.eval('PB_CACHE=new Map()'); const r1=hold('no player prices, all, one game');
-      chk(r1.tiers.every(t=>!t.legs&&/^(Only 1 leg|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow)),
+      chk(r1.tiers.every(t=>t.n===2&&t.legs?t.legs.every(isG):(!t.legs&&/^(Only [12] legs?|No legs) on your picks, and /.test(t.why)&&t.why.endsWith(', and '+noPlLow))),
         'with no player price on file, All on one game does not give both reasons on every tier: '+r1.tiers.map(t=>t.why||'built').join(' / '));
       U().off=[];
       S.odds=JSON.parse(keepO); if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
@@ -858,6 +1141,236 @@ setTimeout(async()=>{
       chk(/has kicked off, so there is nothing left to build from/.test(panel.textContent),'with every game of the week under way the panel does not say so');
       w.eval('pbGames=window.__pbKeep[0]; seasonOver=window.__pbKeep[1];'); delete w.__pbKeep; }
     S.ui.pb=JSON.parse(keepU); F('save')(); F('renderParlay')(); } }
+
+  /* ---- M7. the book's fair chance, and legs far off it ----
+     A leg's fair chance is DraftKings' own: where both sides of its line are priced (a player's main
+     line, a game's two moneylines or spread prices on the leg's number, the total's over and under),
+     that side's no-vig chance; where one side is, the price's implied chance over the week's median
+     overround on two-sided lines of its kind (every kind where the week has none of its own), marked
+     est.; with no real price, none. Worked here on its own from the payload and held, on made-up lines,
+     to legFair; a parlay's is parlayProb on its legs at their fair chances (legs in one game moving
+     together). Then, on made-up lines built so that some legs are FAR_OFF (15 points) or more above
+     their fair chance and some are not: no such leg in the panel's pool, its count the panel's note,
+     none on a level or a game page's hand, each flagged on the game page and in the builder, and the
+     builder's summary leading with the fair chance. Holds on any week: a lean one, one game left, no
+     player prices of its own (the made-up lines stand in for them). */
+  { const cw=F('currentWeek')(), FAR=w.eval('FAR_OFF'), LF=F('legFair'), PF=F('parlayFair'), pp=F('parlayProb'), isG=F('isGameLeg'), toML=F('probToAmerican');
+    const imp=a=>a>0?100/(a+100):-a/(-a+100), px=v=>v!=null&&isFinite(v)&&v!==0, nv=(a,b)=>imp(a)/(imp(a)+imp(b)), near=(a,b)=>a!=null&&b!=null&&Math.abs(a-b)<1e-12;
+    const med=a=>{ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; };
+    /* the week's typical overround on its two-sided lines, by kind and over all of them */
+    const vig=wk=>{ const by={player:[],ml:[],ats:[],total:[]}, M=PAY.mkt[String(wk)]||{};
+      for(const pid in M) for(const st in M[pid]){ const L=M[pid][st]; if(L&&px(L.over)&&px(L.under)) by.player.push(imp(L.over)+imp(L.under)); }
+      for(const g of S.sched.filter(g=>String(g.w)===String(wk))){ if(px(g.mla)&&px(g.mlh)) by.ml.push(imp(g.mla)+imp(g.mlh));
+        if(g.sp!=null&&isFinite(g.sp)&&px(g.spa)&&px(g.sph)) by.ats.push(imp(g.spa)+imp(g.sph));
+        if(g.tot!=null&&isFinite(g.tot)&&px(g.tov)&&px(g.tou)) by.total.push(imp(g.tov)+imp(g.tou)); }
+      const o={all:med([...by.player,...by.ml,...by.ats,...by.total])}; for(const k in by) o[k]=med(by[k]); return o; };
+    /* a leg's fair chance by the rule, on the price the builder gives it (legPrice) */
+    const fairOf=l=>{ const lp=F('legPrice')(l); if(!lp||lp.src!=='real'||!px(lp.ml)) return null;
+      const g=S.sched.find(x=>x.id===l.gid), u=l.side==='under';
+      if(l.stat==='total'){ if(g&&g.tot!=null&&+l.k===+g.tot&&px(g.tov)&&px(g.tou)) return {p:u?nv(g.tou,g.tov):nv(g.tov,g.tou),est:false}; }
+      else if(l.stat==='ml'||l.stat==='ats'){ if(g&&(l.team===g.h||l.team===g.a)){ const h=l.team===g.h, own=l.stat==='ml'?(h?g.mlh:g.mla):(h?g.sph:g.spa), oth=l.stat==='ml'?(h?g.mla:g.mlh):(h?g.spa:g.sph);
+        if((l.stat==='ml'||(g.sp!=null&&+l.k===(h?-g.sp:+g.sp)))&&px(own)&&px(oth)) return {p:nv(own,oth),est:false}; } }
+      else if(l.main){ const x=((PAY.mkt[String(l.week)]||{})[l.pid]||{})[l.stat]; if(x&&+x.line===+l.k&&px(x.over)&&px(x.under)) return {p:u?nv(x.under,x.over):nv(x.over,x.under),est:false}; }
+      const V=vig(l.week), ov=V[isG(l)?l.stat:'player']||V.all; return ov>0?{p:Math.max(0.001,Math.min(0.999,imp(lp.ml)/ov)),est:true}:null; };
+    const gap=l=>{ const f=fairOf(l); return f?l.p-f.p:null; }, isFar=l=>{ const x=gap(l); return x!=null&&x>=FAR-1e-9; };
+    const g0=S.sched.filter(g=>+g.w===cw).sort((a,b)=>String(a.id).localeCompare(String(b.id)))[0];
+    const keepM=JSON.stringify(PAY.mkt[String(cw)]||null), keepO=JSON.stringify(S.odds||{}), KF=['sp','tot','mla','mlh','spa','sph','tov','tou'], keepG=S.sched.map(g=>KF.map(k=>g[k]));
+    const restore=()=>{ if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM); S.odds=JSON.parse(keepO);
+      S.sched.forEach((g,i)=>KF.forEach((k,j)=>{ if(keepG[i][j]===undefined) delete g[k]; else g[k]=keepG[i][j]; })); w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}'); };
+    let ruleCases=0;
+    try{
+      /* ---- the rule, one leg at a time, on made-up prices for a game of the week ---- */
+      const M=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{});
+      M['audit-p1']={receptions:{line:4.5,over:-130,under:110,n:'Audit One',g:g0.id}};
+      Object.assign(g0,{sp:3.5,tot:44.5,mla:150,mlh:-170,spa:-105,sph:-115,tov:-120,tou:100});
+      ((S.odds[g0.id]??={})['audit-p1']={receptions:{'6':150},any_td:{'1':180}});
+      const base={gid:g0.id,week:cw,src:'real',name:'Audit',pos:'WR',grp:'WR',team:g0.a,opp:g0.h,p:0.6};
+      const pl=o=>({...base,pid:'audit-p1',stat:'receptions',key:g0.id+'|audit-p1|'+(o.stat||'receptions'),...o});
+      const tm=(team,o)=>({...base,pid:'team:'+team,team,opp:team===g0.h?g0.a:g0.h,grp:'TEAM',pos:'Game',side:'over',main:false,...o});
+      const one=(lab,l,want)=>{ ruleCases++; const got=LF(l), own=fairOf(l);
+        chk(want===null?got===null&&own===null:(!!got&&!!own&&near(got.p,want.p)&&near(own.p,want.p)&&got.est===want.est&&own.est===want.est),
+          `fair chance, ${lab}: the page says ${got?got.p+(got.est?' est.':''):'none'}, the rule ${want?want.p+(want.est?' est.':''):'none'}`); };
+      const V=vig(cw);
+      one('a main line\'s over, both sides priced',pl({k:4.5,main:true,side:'over',price:-130}),{p:nv(-130,110),est:false});
+      one('a main line\'s under, both sides priced',pl({k:4.5,main:true,side:'under',price:110}),{p:nv(110,-130),est:false});
+      chk(near(LF(pl({k:4.5,main:true,side:'over',price:-130})).p,F('devigOver')(-130,110))&&near(LF(pl({k:4.5,main:true,side:'over',price:-130})).p+LF(pl({k:4.5,main:true,side:'under',price:110})).p,1),'a main line\'s fair chances are not devigOver\'s, or its two sides do not make one');
+      one('a main line the payload has moved',pl({k:5.5,main:true,side:'over',price:-130}),{p:imp(-130)/V.player,est:true});
+      one('a ladder rung with a book price',pl({k:6,main:false,side:'over',price:150}),{p:imp(150)/V.player,est:true});
+      one('an anytime touchdown with a book price',pl({stat:'any_td',k:1,main:false,side:'over',price:180}),{p:imp(180)/V.player,est:true});
+      one('a rung on an estimated price',pl({k:7,main:false,side:'over',price:200,src:'est'}),null);
+      one('the away side to win, both priced',tm(g0.a,{stat:'ml',k:0,price:150}),{p:nv(150,-170),est:false});
+      one('the home side to win, both priced',tm(g0.h,{stat:'ml',k:0,price:-170}),{p:nv(-170,150),est:false});
+      one('the home side to cover its own number',tm(g0.h,{stat:'ats',k:-3.5,price:-115}),{p:nv(-115,-105),est:false});
+      one('the away side to cover another number',tm(g0.a,{stat:'ats',k:4.5,price:-125}),{p:imp(-125)/V.ats,est:true});
+      one('the total\'s over, both priced',{...base,key:g0.id+'|game|total',pid:'game',stat:'total',k:44.5,side:'over',main:true,price:-120,grp:'TEAM'},{p:nv(-120,100),est:false});
+      one('the total\'s under, both priced',{...base,key:g0.id+'|game|total',pid:'game',stat:'total',k:44.5,side:'under',main:true,price:100,grp:'TEAM'},{p:nv(100,-120),est:false});
+      one('a team bet on an estimated price',tm(g0.a,{stat:'ml',k:0,price:150,src:'est'}),null);
+      g0.mlh=null; one('the away side to win, its other side unpriced',tm(g0.a,{stat:'ml',k:0,price:150}),{p:imp(150)/vig(cw).ml,est:true}); g0.mlh=-170;
+      /* no two-sided player line that week: the week's every two-sided line; none at all: no fair chance */
+      { const keep=PAY.mkt[String(cw)]; delete PAY.mkt[String(cw)]; const Va=vig(cw);
+        one('a rung in a week with no player main line',pl({k:6,main:false,side:'over',price:150}),Va.all>0?{p:imp(150)/Va.all,est:true}:null);
+        PAY.mkt[String(cw)]=keep; }
+      one('a rung in a week with no line at all',{...pl({k:6,main:false,side:'over',price:150}),gid:'2099_99_AAA_BBB',week:99},null);
+      /* a parlay's fair chance: parlayProb on its legs at their fair chances, two legs of one team moving together */
+      { const qb={...base,pid:'audit-qb',stat:'passing_yards',grp:'QB',pos:'QB',k:250.5,main:true,side:'over',price:-110,key:g0.id+'|audit-qb|passing_yards'};
+        M['audit-qb']={passing_yards:{line:250.5,over:-110,under:-110,n:'Audit QB',g:g0.id}};
+        const wr={...pl({k:4.5,main:true,side:'over',price:-130}),stat:'receiving_yards',key:g0.id+'|audit-p1|receiving_yards'};
+        M['audit-p1'].receiving_yards={line:4.5,over:-130,under:110,n:'Audit One',g:g0.id};
+        const legs=[qb,wr], f=PF(legs), byFair=pp(legs.map(l=>({...l,p:fairOf(l).p}))).corr;
+        chk(!!f&&f.p===byFair&&f.est===false&&pp(legs).pairs.length>0,`a same-game parlay's fair chance ${f&&f.p} is not parlayProb on its legs at their fair chances (${byFair}), or its legs do not move together`);
+        const f2=PF([qb,pl({k:6,main:false,side:'over',price:150})]);
+        chk(!!f2&&f2.est===true&&f2.p!=null,'a parlay with a rung priced on one side is not marked est.');
+        const f3=PF([qb,pl({k:7,main:false,side:'over',price:200,src:'est'})]);
+        chk(!!f3&&f3.p===null&&f3.miss===1,'a parlay with a leg on an estimated price has a fair chance'); }
+      restore();
+
+      /* ---- far off the market: made-up lines on every starter of the week's games to come, one in
+         three priced so the book's fair chance on the model's side is 25 points under the model's (far
+         off), one in three 6 points under (an edge, not far), the rest at -112/-108 ---- */
+      const games=F('pbGames')();
+      if(!games.length) console.log('M7. fair chance: '+ruleCases+' cases of the rule; no game to come for the far-off checks');
+      else {
+        const MM=(PAY.mkt[String(cw)]=PAY.mkt[String(cw)]||{}); let j=0, nFar=0, nNear=0;
+        for(const g of games){ const ro=rosterFor(g,false);
+          for(const tm in ro) ro[tm].players.forEach(x=>{ if(!x.starter) return;
+            for(const l of statLines(x)){ if(l.prob||!(l.mu>2)) continue;
+              const ln=Math.floor(l.mu)+0.5, pO=pOver(x.pl.grp,l.stat,l.mu,ln), ov=pO>=0.5, ps=ov?pO:1-pO, kind=j++%3;
+              let over=-112, under=-108;
+              if(kind<2){ const fs=Math.max(0.05,Math.min(0.9,ps-(kind===0?0.25:0.06))), fo=ov?fs:1-fs; over=toML(fo*1.03); under=toML((1-fo)*1.03); }
+              ((MM[x.pl.id]??={})[l.stat])={line:ln,over,under,n:x.pl.n,g:g.id}; } }); }
+        const U=S.ui.pb, keepU=JSON.stringify(U), keepSide=S.ui.suggestSide;
+        for(const k of ['ml','ats','total','over','under']) U.k[k]=true; U.off=[]; S.ui.suggestSide='any'; w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}');
+        /* the pool: no leg far off, and the count the panel gives is the legs left out for it alone */
+        const pool=F('pbPool')(games), mlP=F('mlProb'), formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
+        const left=F('pricedLegs')(games).filter(c=>F('pbAllows')(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&c.p-mlP(c.price)>=0&&!(c.grp!=='TEAM'&&formOut)&&isFar(c));
+        nFar=left.length; nNear=[...pool.pref,...pool.thin].filter(c=>!isG(c)).length;
+        chk(nFar>0&&nNear>0,`the made-up lines did not put both far-off legs (${nFar}) and player legs within ${FAR*100} points of the market (${nNear}) on the picks`);
+        chk([...pool.pref,...pool.thin].every(c=>!isFar(c))&&pool.far===nFar,`the panel's pool holds a leg far off the market, or counts ${pool.far} left out where ${nFar} are`);
+        const r=F('getPbTiers')();
+        chk(r.far===nFar&&r.tiers.every(t=>!t.legs||t.legs.every(l=>!isFar(l))),'a level holds a leg far off the market, or the tiers do not carry the count');
+        F('renderPb')();
+        { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' ');
+          chk(tx.includes(`${nFar} leg${nFar===1?' is':'s are'} left out: the model rates ${nFar===1?'it':'each'} 15 points or more above the book’s fair chance`)&&/still on the game pages, flagged far off the market/.test(tx),
+            `the panel does not say how many legs it left out far off the market (${nFar}) and why: `+(tx.match(/\d+ legs? (is|are) left out[^.]*\./)||['nothing'])[0]); }
+        /* every level's card leads with its fair chance (fairShown is held in hold too) */
+        for(const t of r.tiers.filter(t=>t.legs)){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`);
+          chk(!!c&&c.querySelector('.pb-nums').firstElementChild.classList.contains('pb-chance')&&!c.querySelector('[data-pb-far]'),`the ${t.id} card does not lead with its chance, or flags a leg far off`);
+          /* the chance's label and the model's figure wrap inside their box: four levels side by side just
+             over 1100px leave it about 85px, and "FAIR CHANCE, EST." in 10px capitals is about 98 */
+          chk(!!c&&['.pb-chance span','.pb-chance small'].every(q=>{ const el=c.querySelector(q); return !el||w.getComputedStyle(el).whiteSpace==='normal'; }),`the ${t.id} card's fair-chance label is held to one line, and can run out of its box`);
+          chk(!!c&&(!t.floor||t.likeliest||c.querySelector('.pb-rule').textContent.endsWith(' by the model')),`the ${t.id} card does not say its floor is on the model's chance`); }
+        /* a game page's hands: no leg far off, and each hand's fair chance parlayProb on its legs at theirs */
+        let hands=0;
+        for(const g of games.slice(0,3)){ const T=F('gameTiers')(g);
+          chk(F('gameLegPool')(g).every(c=>!isFar(c)),`a game page's leg pool (${g.id}) holds a leg far off the market`);
+          for(const id of ['high','med','low']){ const t=T[id]; if(!t) continue; hands++;
+            const fs=t.legs.map(l=>LF(l));
+            chk(t.legs.every(l=>!isFar(l)),`the ${id} hand of ${g.id} holds a leg far off the market`);
+            chk(fs.every(Boolean)?(!!t.fair&&t.fair.p===pp(t.legs.map((l,i)=>({...l,p:fs[i].p})),20000).corr):(!!t.fair&&t.fair.p===null),`the ${id} hand of ${g.id}: its fair chance is not parlayProb on its legs at theirs`); } }
+        /* flagged on the game page: a far-off main line of a starter, his game opened on him */
+        const farL=F('pricedLegs')(games).filter(l=>l.main&&!isG(l)&&isFar(l)).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)))[0];
+        const nearL=[...pool.pref,...pool.thin].filter(l=>!isG(l)&&l.main).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)))[0];
+        let flagged='no far-off main line to open';
+        if(farL){ const keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open,rungs:S.ui.showRungs});
+          S.ui.showRungs=false; S.ui.game=farL.gid; S.ui.open={[farL.pid]:true}; F('renderGame')();
+          const view=d.getElementById('gameView'), notes=[...view.querySelectorAll('p.faroff[data-far]')].map(p=>p.textContent.replace(/\s+/g,' '));
+          const f=fairOf(farL), want=`${farL.side==='under'?'Under':'Over'} ${farL.k} model ${Math.round(farL.p*100)}% · market ${Math.round(f.p*100)}%: far off the market`;
+          /* every far-off line of his shown (main lines both sides, the touchdown on a book price; the ladders are hidden) and no other */
+          const his=F('pricedLegs')([S.sched.find(g=>g.id===farL.gid)]).filter(l=>l.pid===farL.pid&&(l.main||l.stat==='any_td')&&isFar(l));
+          chk(notes.includes(want)&&notes.length===his.length&&view.querySelectorAll('tr.far').length===his.length,`the game page does not flag ${farL.name}'s far-off line as "${want}", or flags ${notes.length} where ${his.length} are far off: ${notes.join(' / ')}`);
+          flagged=`${farL.name} ${farL.label} flagged on his game page`;
+          const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; S.ui.showRungs=ku.rungs; F('closeGameModal')(); }
+        /* the other far-off flags: a touchdown and a ladder rung on a book price (one-sided, so est.),
+           planted 25 points under the model's chance on a starter of a game to come and drawn with the
+           ladders shown; and the Game bets card's to win and to cover, priced so the book's fair chance on
+           the model's side is 25 points under it, the other side's lines not flagged */
+        const gF=games[0], roF=rosterFor(gF,false), pick=[];
+        for(const tm in roF) roF[tm].players.forEach(x=>{ if(!x.starter) return; const ls=statLines(x), td=ls.find(l=>l.prob&&l.p>=0.2), ld=ls.find(l=>!l.prob&&l.rungs.some(r=>r.p>=0.3&&r.p<0.97));
+          if(td&&ld) pick.push({x,td,ld,r:ld.rungs.find(r=>r.p>=0.3&&r.p<0.97)}); });
+        const V=vig(cw), vp=V.player||V.all;
+        if(pick.length&&vp>0){ const {x,td,ld,r}=pick.sort((a,b)=>String(a.x.pl.id).localeCompare(String(b.x.pl.id)))[0];
+          const pTD=toML(Math.max(0.02,td.p-0.25)*vp), pR=toML(Math.max(0.02,r.p-0.25)*vp), O=((S.odds[gF.id]??={})[x.pl.id]??={});
+          O.any_td={...(O.any_td||{}),'1':pTD}; O[ld.stat]={...(O[ld.stat]||{}),[String(r.k)]:pR};
+          const legTD={gid:gF.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:td.p,price:pTD,src:'real',week:gF.w}, legR={gid:gF.id,pid:x.pl.id,stat:ld.stat,k:r.k,side:'over',main:false,p:r.p,price:pR,src:'real',week:gF.w};
+          const fT=fairOf(legTD), fR=fairOf(legR);
+          const keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open,rungs:S.ui.showRungs});
+          S.ui.showRungs=true; S.ui.game=gF.id; S.ui.open={[x.pl.id]:true}; F('renderGame')();
+          const view=d.getElementById('gameView'), notes=[...view.querySelectorAll('p.faroff[data-far]')].map(p=>p.textContent.replace(/\s+/g,' '));
+          const wantT=`Scores one model ${Math.round(td.p*100)}% · market ${Math.round(fT.p*100)}% est.: far off the market`, wantR=`${r.k}+ model ${Math.round(r.p*100)}% · market ${Math.round(fR.p*100)}% est.: far off the market`;
+          chk(!!fT&&!!fR&&fT.est&&fR.est&&isFar(legTD)&&isFar(legR)&&notes.includes(wantT)&&notes.includes(wantR)&&view.querySelectorAll('tr.far').length===notes.length&&view.querySelectorAll('tr.far').length>=2,
+            `a far-off touchdown or ladder rung on a book price is not flagged on its game page ("${wantT}", "${wantR}"): ${notes.join(' / ')||'no flag'}`);
+          const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; S.ui.showRungs=ku.rungs; F('closeGameModal')(); }
+        else chk(false,'no starter of a game to come has a touchdown and a ladder rung to plant far-off prices on');
+        { const g=gF; if(g.sp==null||!isFinite(g.sp)) g.sp=3.5;
+          const side=kind=>[g.a,g.h].map(t=>({t,b:gameBet(g,t,kind)})).sort((a,b)=>b.b.p-a.b.p)[0];
+          const mlS=side('ml'), atS=side('ats'), fM=Math.max(0.05,mlS.b.p-0.25), fA=Math.max(0.05,atS.b.p-0.25), hM=mlS.t===g.h, hA=atS.t===g.h;
+          const own=f=>toML(f*1.03), oth=f=>toML((1-f)*1.03);
+          if(hM){ g.mlh=own(fM); g.mla=oth(fM); } else { g.mla=own(fM); g.mlh=oth(fM); }
+          if(hA){ g.sph=own(fA); g.spa=oth(fA); } else { g.spa=own(fA); g.sph=oth(fA); }
+          w.eval('GAME_TIER_CACHE={}');
+          const box=d.createElement('div'); box.innerHTML=F('gameBetsCard')(g,false);
+          const notes=[...box.querySelectorAll('p.faroff[data-far]')].map(p=>p.textContent.replace(/\s+/g,' '));
+          const fm=nv(hM?g.mlh:g.mla,hM?g.mla:g.mlh), fa=nv(hA?g.sph:g.spa,hA?g.spa:g.sph), ln=atS.b.line;
+          const want=[`To win model ${Math.round(mlS.b.p*100)}% · market ${Math.round(fm*100)}%: far off the market`,`To cover ${ln>0?'+':''}${ln} model ${Math.round(atS.b.p*100)}% · market ${Math.round(fa*100)}%: far off the market`];
+          chk(want.every(x=>notes.includes(x))&&notes.length===2&&box.querySelectorAll('tr.far').length===2,
+            `the Game bets card does not flag a far-off to win and to cover (and only those): ${notes.join(' / ')||'no flag'}`); }
+        /* the game hands as each card draws them: one with a fair chance leads with it ("NN% fair chance",
+           (est.) where a leg is priced on one side), "model says MM% to land" after it; one without says
+           it has none. The week's own hands may all lack one (an estimated rung), so made-up hands are
+           drawn too: two book-priced main lines in two games, the same with the planted rung, and with a
+           leg on no book price */
+        { const gt0=w.gameTiers, nb=x=>x.replace(/\s+/g,' ').trim();
+          const card=(g,T)=>{ if(T) w.gameTiers=()=>T; try{ const b=d.createElement('div'); b.innerHTML=F('gameSuggestCard')(g,false); return b; } finally { w.gameTiers=gt0; } };
+          const handOk=(box,id,t)=>{ const blk=[...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.gsugg-tier-hd .conf.'+id)), nums=blk&&blk.querySelector('.gsugg-nums');
+            if(!nums) return false; const tx=nb(nums.textContent), M=(t.corr*100).toFixed(0), b0=nums.querySelector('b');
+            if(t.fair&&t.fair.p!=null){ const Fp=(t.fair.p*100).toFixed(0);
+              return b0.textContent===Fp+'%'&&+b0.dataset.gsuggFair===t.fair.p&&tx.startsWith(`${Fp}% fair chance${t.fair.est?' (est.)':''} · model says ${M}% to land · `); }
+            return tx.startsWith(`${M}% to land (the model’s chance: no fair chance without every leg’s book price) · `); };
+          let shown=0;
+          for(const g of games.slice(0,3)){ const T=F('gameTiers')(g), box=card(g,null);
+            for(const id of ['high','med','low']) if(T[id]){ shown++; chk(handOk(box,id,T[id]),`the ${id} hand of ${g.id} does not lead with its fair chance, or say it has none: `+nb((([...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.conf.'+id))||{}).textContent)||'')); } }
+          chk(/lands at least 35% of the time by the model's chance/.test(nb(card(games[0],null).textContent)),'a game page\'s suggested parlays do not say their floors are on the model\'s chance');
+          const mains=[...pool.pref,...pool.thin].filter(l=>l.main&&!isG(l)&&l.src==='real'&&fairOf(l)&&!fairOf(l).est).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)));
+          const two=mains.length?[mains[0],mains.find(l=>l.gid!==mains[0].gid)||mains.find(l=>l.pid!==mains[0].pid)].filter(Boolean):[];
+          if(two.length===2){ const hand=legs=>({legs,corr:pp(legs).corr,dec:3,fair:PF(legs)});
+            const rung=pick.length?{gid:gF.id,pid:pick[0].x.pl.id,stat:pick[0].ld.stat,k:pick[0].r.k,side:'over',main:false,p:pick[0].r.p,price:F('oddsFor')(gF.id,pick[0].x.pl.id,pick[0].ld.stat,pick[0].r.k),src:'real',week:gF.w,name:pick[0].x.pl.n,label:'rung',key:gF.id+'|'+pick[0].x.pl.id+'|'+pick[0].ld.stat}:null;
+            const est={...two[1],key:two[1].key+'|est',k:+two[1].k+20,main:false,src:'est',price:400};
+            const T={high:hand(two),med:rung&&rung.price!=null?hand([...two,rung]):null,low:hand([...two,est])};
+            chk(T.high.fair&&T.high.fair.p!=null&&!T.high.fair.est&&(!T.med||(T.med.fair.p!=null&&T.med.fair.est))&&T.low.fair.p===null,'the made-up hands are not one with a fair chance, one estimated and one with none');
+            const box=card(games[0],T);
+            for(const id of ['high','med','low']) if(T[id]) chk(handOk(box,id,T[id]),`a made-up ${id} hand (${id==='high'?'book-priced main lines':id==='med'?'with a rung priced on one side':'with a leg on no book price'}) does not lead with its fair chance, or say it has none: `+nb(box.textContent).slice(0,300)); }
+          else chk(false,'the made-up lines gave no two book-priced main lines to build a hand of');
+          flagged+=`; ${shown} game hands and made-up ones drawn with their fair chance; a far-off touchdown, ladder rung, to win and to cover flagged`; }
+        /* the builder: the far-off leg flagged in its row, the near one not; the summary leads with the fair chance */
+        if(farL&&nearL){ const keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice, put=l=>{ const {key,thin,...x}=l; S.parlay[key]=x; };
+          S.parlay={}; S.bookPrice=null; put(farL); if(nearL.key!==farL.key) put(nearL); F('renderParlay')();
+          const legs=F('parlayLegs')(), fr=PF(legs), body=d.getElementById('parlayBody'), rows=[...body.querySelectorAll('tr.legrow')];
+          const pr=pp(legs.map(l=>({...l,side:l.side||'over'}))).corr, hero=body.querySelector('.bigp .hero');
+          chk(rows.length===legs.length&&legs.every((l,i)=>{ const ff=fairOf(l), fl=rows[i].querySelector('small.faroff'); return isFar(l)?!!fl&&fl.textContent===`model ${Math.round(l.p*100)}% · market ${Math.round(ff.p*100)}%${ff.est?' est.':''}: far off the market`:!fl; })
+            &&legs.every((l,i)=>{ const lf=rows[i].querySelector('.legfair'), ff=fairOf(l); return !!lf&&lf.textContent===`fair ${(ff.p*100).toFixed(0)}%${ff.est?' est.':''}`; }),
+            'the builder does not flag its far-off leg (and only it), or does not give each leg its fair chance: '+rows.map(r=>r.textContent.replace(/\s+/g,' ')).join(' / '));
+          chk(!!fr&&fr.p!=null&&!!hero&&hero.querySelector('b').textContent===(fr.p*100).toFixed(1)+'%'&&hero.querySelector('span').textContent===`fair chance all ${legs.length} land${fr.est?', est.':''}`&&hero.querySelector('small').textContent===`model says ${(pr*100).toFixed(1)}%`,
+            'the builder\'s summary does not lead with the fair chance, the model\'s beside it: '+(hero?hero.textContent:'no summary'));
+          /* the confidence tile rates the fair chance, and says so: the far-off leg alone, its chance set in
+             the builder where the model's tier and the fair chance's differ */
+          { const tile=()=>d.querySelector('#parlayBody .bigp .box.tier'), ct=F('confTier'), f1=fairOf(farL).p, pm=f1<0.45?0.72:f1<0.7?0.85:0.3;
+            const {key,thin,...one}=farL; S.parlay={[key]:{...one,p:pm}}; F('renderParlay')();
+            const t1=tile(), [c1,l1]=ct(f1);
+            chk(ct(pm)[0]!==c1&&!!t1&&t1.classList.contains(c1)&&t1.querySelector('b').textContent===l1&&t1.querySelector('span').textContent==='confidence all 1 land, on the fair chance',
+              `the builder's confidence tile does not rate the fair chance (${(f1*100).toFixed(1)}%: ${l1}) where the model's ${(pm*100).toFixed(0)}% is ${ct(pm)[1]}: `+(t1?t1.textContent:'no tile')); }
+          /* a leg on no book price: the model's chance alone, saying why */
+          const est={gid:farL.gid,pid:farL.pid,stat:farL.stat,k:Math.max(1,Math.round(+farL.k)+3),side:'over',main:false,p:0.3,price:250,src:'est',mu:farL.mu,name:farL.name,pos:farL.pos,grp:farL.grp,team:farL.team,opp:farL.opp,week:farL.week,label:'est leg'};
+          S.parlay={}; put(nearL); S.parlay[farL.gid+'|'+farL.pid+'|zz_est']={...est}; F('renderParlay')();
+          const h2=d.querySelector('#parlayBody .bigp .hero');
+          chk(!!h2&&/^model's chance all 2 land$/.test(h2.querySelector('span').textContent)&&h2.querySelector('small').textContent==="no fair chance: it needs every leg's book price"&&/one leg has none, so this is the model's chance alone/.test(d.getElementById('parlayBody').textContent),
+            'with a leg on no book price the builder does not show the model\'s chance alone and say why: '+(h2?h2.textContent:'no summary'));
+          { const t2=d.querySelector('#parlayBody .bigp .box.tier'), p2=pp(F('parlayLegs')().map(l=>({...l,side:l.side||'over'}))).corr, [c2,l2]=F('confTier')(p2);
+            chk(!!t2&&t2.classList.contains(c2)&&t2.querySelector('b').textContent===l2&&t2.querySelector('span').textContent==='confidence all 2 land, on the model’s chance',
+              'with no fair chance the builder\'s confidence tile does not rate the model\'s chance and say so: '+(t2?t2.textContent:'no tile')); }
+          S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')(); }
+        S.ui.pb=JSON.parse(keepU); S.ui.suggestSide=keepSide;
+        console.log(`M7. fair chance: ${ruleCases} cases of the rule, and on made-up lines ${nFar} legs far off the market left out (${nNear} player legs kept), none on a level or on ${hands} game hands; ${flagged}; the builder flags it and leads with the fair chance`); }
+    } finally { restore(); F('renderParlay')(); } }
 
   /* ---- P. the amount bet: the Bet amount box at the top of the suggested parlays and the
      builder's own stake are one amount, S.stake, kept with the visitor's state. Every tier pays
@@ -958,6 +1471,51 @@ setTimeout(async()=>{
     S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; S.stake=was; F('save')(); F('renderParlay')();
     chk(S.stake===was,'the stake did not go back after the amount checks');
     console.log(`P. the amount bet: one Bet amount box over the suggested parlays and the builder's stake, ${F('pbGames')().length?'every tier paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
+
+  /* ---- P2. the suggestions record at the panel's foot: props/data/suggest_ledger.json, beside the
+     payload, read once a load with no-store and kept outside S; nothing drawn while there is no file
+     (this audit's page has none) or a file that is not a ledger. On a made-up ledger, per level: the
+     parlays graded won or lost (a push and a pending parlay counted apart, an entry still to come and
+     a level with no parlay not at all), won, the wins expected by the fair chance (marked * where a
+     graded parlay had none) and by the model's, and the units on $1 (a win a push shortened paying what
+     it was graded, not the level's price), each worked out here; a parlay an earlier wave froze too,
+     its legs in another order, counted once, from the last ---- */
+  { d.querySelector('#tabs button[data-tab="parlay"]').click();
+    const rec=()=>d.getElementById('pbRec'), txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
+    const ask=calls.filter(c=>/suggest_ledger\.json/.test(c.url));
+    chk(ask.length===1&&/^\.\.\/data\/suggest_ledger\.json\?t=\d+$/.test(ask[0].url)&&ask[0].cache==='no-store','the page did not ask for the suggestions record beside its payload, once, with no-store: '+JSON.stringify(ask));
+    chk(!!rec()&&rec().hidden&&!txt(rec()),'with no record file the panel draws a record anyway: '+txt(rec()));
+    const fetch0=w.fetch, load=async body=>{ w.fetch=()=>Promise.resolve(body===404?{ok:false,status:404,json:async()=>{throw new Error('404');}}:{ok:true,status:200,json:async()=>JSON.parse(JSON.stringify(body))});
+      try{ await w.pbRecLoad(); } finally { w.fetch=fetch0; } F('renderPb')(); };
+    /* each entry's levels on legs of their own (tag), as a week's panel's are */
+    const T=(id,n,p,fair,dec,tag)=>({id,n,legs:Array.from({length:n},(_,i)=>({gid:'g'+tag+i,week:5,pid:'p'+tag+id+i,stat:'receptions',k:3.5,side:'over',main:true,price:-110,src:'real'})),p,fair,dec,label:{safe:'Safe',med:'Medium',aggr:'Aggressive',xtrm:'Extreme'}[id]});
+    const G=(result,n,payout,legs)=>({result,legs:legs||Array.from({length:n},()=>result==='lost'?'loss':result==='push'?'void':result==='pending'?null:'win'),...(payout!=null?{payout}:{})});
+    const early=T('safe',2,0.40,0.31,3.1,'a'); early.legs.reverse();
+    const L={how:'made up',since:'2026-10-12',entries:{
+      /* London: the 1pm entry's Safe parlay, frozen here too (its legs the other way round, an older price): one parlay, counted from 1pm */
+      '2026|05|2026-10-11T13:30:00Z':{kickoff:'2026-10-11T13:30:00Z',tiers:[early],grade:{safe:G('won',2,3.1)}},
+      '2026|05|2026-10-11T17:00:00Z':{kickoff:'2026-10-11T17:00:00Z',tiers:[T('safe',2,0.41,0.32,3.35,'a'),T('med',3,0.30,0.21,5.1,'a'),T('aggr',4,0.15,0.1,9,'a'),T('xtrm',5,0.07,0.05,20,'a')],
+        grade:{safe:G('won',2,3.35),med:G('lost',3,0),aggr:G('push',4,1),xtrm:G('pending',5)}},
+      /* the Medium won with a leg pushed: paid 3.7 on the two left, not its 6.2 */
+      '2026|05|2026-10-11T20:25:00Z':{kickoff:'2026-10-11T20:25:00Z',tiers:[T('safe',2,0.52,0.44,2.6,'b'),T('med',3,0.28,null,6.2,'b'),T('aggr',4,0.13,0.09,12,'b'),T('xtrm',5,0.06,0.04,30,'b')],
+        grade:{safe:G('lost',2,0),med:G('won',3,3.7,['win','push','win']),aggr:G('won',4,12),xtrm:G('lost',5,0)}},
+      '2026|05|2026-10-12T00:20:00Z':{kickoff:'2026-10-12T00:20:00Z',tiers:[{id:'safe',n:2,why:'made up'},T('med',3,0.5,0.5,4,'c')],grade:{safe:G('won',2,9)}},
+      '2026|06|2026-10-16T00:15:00Z':{kickoff:'2026-10-16T00:15:00Z',tiers:[T('safe',2,0.6,0.5,3,'d')]}}};
+    const want={safe:['Safe','2','1','0.8','0.9','+1.35','up'],med:['Medium','2','1','0.2*','0.6','+1.70','up'],aggr:['Aggressive','1','1','0.1','0.1','+11.00','up'],xtrm:['Extreme','1','0','0.0','0.1','\u22121.00','down']};
+    await load(L);
+    const row=id=>d.querySelector(`#pbRec tr[data-pb-rec="${id}"]`), cells=id=>row(id)?[...row(id).children].map(c=>c.textContent.trim()):[];
+    chk(!!rec()&&!rec().hidden&&/^Suggestions record/.test(txt(rec()))&&!!d.querySelector('#pbCard #pbRec'),'a made-up record is not drawn in the panel, headed Suggestions record');
+    chk(/starts on 12 October 2026, Monday night’s Bills at Rams the first/.test(txt(rec()))&&/default choices \(All, every game still to come, \$20\)/.test(txt(rec()))&&/frozen at kickoff/.test(txt(rec())),'the record does not say it starts on 12 October 2026 with Bills at Rams, each entry the default panel frozen at kickoff: '+txt(rec()));
+    chk([...d.querySelectorAll('#pbRec thead th')].map(c=>c.textContent).join('|')==='Level|Graded|Won|Expected, fair chance|Expected, model|Units on $1','the record\'s columns are not level, graded, won, expected by the fair chance and by the model, units on $1');
+    for(const id of ['safe','med','aggr','xtrm']){ const c=cells(id), u=row(id)&&row(id).lastElementChild;
+      chk(c.join('|')===want[id].slice(0,6).join('|')&&!!u&&u.classList.contains(want[id][6]),`the record's ${id} row reads ${c.join(' | ')}, not ${want[id].slice(0,6).join(' | ')}`); }
+    chk(/1 parlay is waiting on its games or stats/.test(txt(rec()))&&/1 push \(every leg a push or a void, the stake back\) is counted apart/.test(txt(rec()))&&/\* Not every parlay graded had a fair chance/.test(txt(rec())),'the record does not count its pending parlay and its push apart, or mark the sum a missing fair chance left short: '+txt(rec()));
+    w.eval('store.set(S)'); chk(!/Suggestions record|made up|suggest_ledger/.test(String(mem))&&!('rec' in S),'the record was saved with the visitor\'s state');
+    await load({how:'made up',entries:{}});
+    chk(!!rec()&&!rec().hidden&&/No suggested parlay has been graded yet/.test(txt(rec()))&&!d.querySelector('#pbRec table'),'a record with nothing graded does not say so: '+txt(rec()));
+    for(const bad of [404,[],{how:'x'},{entries:[]},'junk']){ await load(bad);
+      chk(!!rec()&&rec().hidden&&!txt(rec()),`a record file that is not one (${JSON.stringify(bad)}) drew something: `+txt(rec())); }
+    console.log('P2. the suggestions record: asked for once with no-store, nothing drawn without a file; a made-up record drawn level by level, pending and pushes apart, an empty one says so, a junk one draws nothing'); }
 
   /* ---- L. record chips beside the week dropdown ---- */
   { const main=F('trackRecord')().filter(r=>r.kind==='main'); const wkx=main.length?main[0].w:1;
@@ -1288,6 +1846,7 @@ setTimeout(async()=>{
       const pen=espnStats(SUM,'ATL','Michael Penix');
       chk(pen&&pen.completions===18&&pen.attempts===27,'C/ATT was not split');
       chk(pen&&pen.passing_yards===241&&pen.passing_tds===2&&pen.passing_interceptions===1,'the passing line was misread');
+      chk(pen&&pen.any_td===0,'a quarterback\'s touchdown passes were counted as touchdowns he scored: '+(pen&&pen.any_td));
       const gay=espnStats(SUM,'WAS','Matt Gay');     /* our WAS against ESPN's WSH */
       chk(gay&&gay.fg_made===2&&gay.fg_att===3&&gay.kick_pts===9,'the kicking line was misread, or the team alias missed');
       chk(espnStats(SUM,'ATL','Nobody Here')===null,'a player with no line should read null, never zeroes');
@@ -1768,17 +2327,43 @@ setTimeout(async()=>{
         chk(!bad.length,`kickoffs an hour out: ${bad.slice(0,5).join(', ')}`);
         console.log(`V8. kickoffs: ${tests.length} dates, this season's games and 2027-28's clock changes, all on US Eastern`); }
 
-      /* V9. a leg on a player who did not play is void once his game's stats are in, and a won
-         parlay with a void leg pays on the rest at their own prices */
+      /* V9. a player with no stat line once his game's stats are in, by who played (PAY.snaps, planted
+         here): one who took a snap is graded on zero, as DraftKings graded Tory Horton's receptions
+         over 1.5 in week 5 (an over and a rung lose, an under wins); one his club's snaps leave out is
+         void; with no snap counts for his club, void if the week's report had him Out, else he waits.
+         And a won parlay with a void leg pays on the rest at their own prices */
       { const g=SV.sched.find(x=>SV.processedGames[x.id]&&x.hs!=null&&x.hs!==x.as);
-        if(g){ const leg={week:+g.w,gid:g.id,pid:'00-NOT-A-PLAYER',team:g.h,stat:'receptions',k:3,side:'over',main:false,price:-110};
-          const win={week:+g.w,gid:g.id,team:g.hs>g.as?g.h:g.a,stat:'ml',k:0,price:-150};
-          chk(F('settleLeg')(leg)==='void','a leg on a player with no stat line in a graded game is not void');
-          chk(F('settleLeg')({...leg,gid:'not-graded-yet'})===null,'a leg whose game has no stats yet should wait');
-          const p={stake:10,payout:10*F('mlToDec')(-110)*F('mlToDec')(-150),legs:[leg,win]}, s=F('settleParlay')(p);
-          chk(s.status==='won'&&Math.abs(F('settledReturn')(p,s)-10*F('mlToDec')(-150))<1e-9,'a won parlay with a void leg does not pay the rest at their prices');
-          const pv={stake:10,payout:19,legs:[leg]}; chk(F('settleParlay')(pv).status==='void'&&F('settledReturn')(pv)===10,'an all-void parlay does not return the stake'); }
-        console.log(`V9. void legs: ${g?'settle void, and the rest of the parlay pays at its own prices':'no graded game to test on'}`); }
+        if(g){ const wk=String(+g.w), keepS=PAY.snaps, keepI=PAY.injuries, st=F('settleLeg');
+          try{
+            PAY.snaps={...(keepS||{}),[wk]:{...((keepS||{})[wk]||{}),[g.id]:{[g.h]:['00-PLAYED-NO-LINE'],[g.a]:[]}}};
+            const ran={week:+g.w,gid:g.id,pid:'00-PLAYED-NO-LINE',team:g.h,stat:'receptions',k:1.5,side:'over',main:true,price:-150};
+            chk(!F('actualFor')(+g.w,ran.pid)&&F('tookPart')(ran)===true,'the planted player has a stat line, or the snap counts do not say he played');
+            chk(st(ran)==='loss','a player who played with no stat line does not lose his receptions over 1.5 on zero');
+            chk(st({...ran,side:'under',price:120})==='win','a player who played with no stat line does not win his under on zero');
+            chk(st({...ran,main:false,k:1})==='loss'&&st({...ran,stat:'any_td',main:false,k:1})==='loss'&&st({...ran,stat:'receiving_yards',k:0,side:'over'})==='push','a player who played with no stat line is not graded on zero (a rung, his touchdown, a line of 0)');
+            const leg={week:+g.w,gid:g.id,pid:'00-NOT-A-PLAYER',team:g.h,stat:'receptions',k:3,side:'over',main:false,price:-110};
+            chk(st(leg)==='void','a player with no snap, his club\'s snaps in, is not void');
+            chk(st({...leg,team:undefined})==='void','a leg with no club on a player neither club\'s snaps have is not void');
+            chk(st({...leg,gid:'not-graded-yet'})===null,'a leg whose game has no stats yet should wait');
+            /* his club's snap counts not in yet */
+            PAY.snaps[wk][g.id]={[g.h]:[]};
+            const unk={...leg,pid:'00-NO-WORD-YET',team:g.a};
+            chk(st(unk)===null&&st({...unk,team:undefined})===null,'a player with no stat line and no snap counts for his club does not wait');
+            PAY.injuries=[...(keepI||[]),{season:String(SEASON),week:wk,gsis_id:'00-NO-WORD-YET',team:g.a,report_status:'Doubtful',practice_status:'',injury:''}];
+            chk(st(unk)===null,'a player Doubtful, no stat line and no snap counts for his club, does not wait');
+            PAY.injuries=[...(keepI||[]),{season:String(SEASON),week:wk,gsis_id:'00-NO-WORD-YET',team:g.a,report_status:'Out',practice_status:'',injury:'Knee'}];
+            chk(st(unk)==='void','a player Out on the week\'s report, no stat line and no snap counts for his club, is not void');
+            chk(st({...unk,week:+g.w+1})===null,'another week\'s report decided this one');
+            PAY.injuries=keepI; delete PAY.snaps[wk][g.id];
+            chk(st(unk)===null,'a player with no stat line in a game with no snap counts at all does not wait');
+            PAY.snaps[wk][g.id]={[g.h]:['00-PLAYED-NO-LINE'],[g.a]:[]};
+            const win={week:+g.w,gid:g.id,team:g.hs>g.as?g.h:g.a,stat:'ml',k:0,price:-150};
+            const p={stake:10,payout:10*F('mlToDec')(-110)*F('mlToDec')(-150),legs:[leg,win]}, s=F('settleParlay')(p);
+            chk(s.status==='won'&&Math.abs(F('settledReturn')(p,s)-10*F('mlToDec')(-150))<1e-9,'a won parlay with a void leg does not pay the rest at their prices');
+            const pv={stake:10,payout:19,legs:[leg]}; chk(F('settleParlay')(pv).status==='void'&&F('settledReturn')(pv)===10,'an all-void parlay does not return the stake');
+            chk(F('settleParlay')({stake:10,payout:30,legs:[ran,win]}).status==='lost','a parlay with a leg on a player who played with no stat line is not lost on his over');
+          } finally { PAY.snaps=keepS; if(keepS===undefined) delete PAY.snaps; PAY.injuries=keepI; } }
+        console.log(`V9. no stat line: ${g?'graded on zero when he took a snap, void when his club\'s snaps leave him out, else void only if Out, waiting otherwise; a void leg drops out of a parlay':'no graded game to test on'}`); }
 
       /* V10. nothing the job downloaded is missing from what it published: every finished game's
          stats (or, by hand, every game final four days before the bake) */
@@ -1842,6 +2427,54 @@ setTimeout(async()=>{
             chk(/not expected to play/.test(body.textContent)&&!!body.querySelector('.legrow .inj.inj-out'),'a builder leg on a player ruled out is not marked');
             delete SV.inactive[x.pl.id]; SV.parlay=JSON.parse(keepP); F('closeGame')(); F('renderParlay')(); did=true; } }
         console.log(`V14. tags: ${did?'Q on the game page, ruled out in the builder with what a book does':'no game to show them on'}`); }
+
+      /* V15. who played, as the job baked it: PAY.snaps (the players with no stat line who took a snap)
+         and the rows of zeros (from_snaps) for those who took one in their role, held to each other and
+         to the page, and with PROPS_AUDIT_RAW to the snap counts and stats it read */
+      { const SN=PAY.snaps||{}, bad=[]; let nz=0, nl=0, settled=0;
+        const gidOf=(wk,team)=>{ const g=SV.sched.find(x=>+x.w===+wk&&(x.h===team||x.a===team)); return g?g.id:null; };
+        const listed=(wk,gid,team,pid)=>!!(SN[wk]&&SN[wk][gid]&&(SN[wk][gid][team]||[]).includes(pid));
+        for(const wk in SN) for(const gid in SN[wk]){ const g=gOf(gid);
+          if(!g||String(+g.w)!==String(+wk)) bad.push(`snaps for ${gid} under week ${wk}`);
+          for(const team in SN[wk][gid]){ if(g&&team!==g.h&&team!==g.a) bad.push(`snaps for ${team} in ${gid}`); nl+=(SN[wk][gid][team]||[]).length;
+            if(!(PAY.stats[wk]||[]).some(r=>r.team===team&&!r.from_snaps)) bad.push(`snaps for ${gid} ${team}, whose stats are not in`); } }
+        for(const wk in (PAY.stats||{})){ const real=new Set(PAY.stats[wk].filter(r=>!r.from_snaps).map(r=>r.player_id));
+          for(const r of PAY.stats[wk]){ if(!r.from_snaps) continue; nz++;
+            const gid=gidOf(wk,r.team), cols=Object.keys(r).filter(k=>typeof r[k]==='number'&&!['season','week','from_snaps'].includes(k));
+            if(!listed(wk,gid,r.team,r.player_id)) bad.push(`a row of zeros for ${r.player_id} (${gid} ${r.team}) who is not in that club's snaps`);
+            if(cols.some(k=>r[k]!==0)) bad.push(`the row of zeros for ${r.player_id} in week ${wk} has a stat`);
+            if(real.has(r.player_id)) bad.push(`${r.player_id} has a stat row and a row of zeros in week ${wk}`);
+            if(!F('posGrp')(r.position)) bad.push(`a row of zeros for ${r.player_id} at ${r.position}, a position the page does not project`);
+            const a=F('actualFor')(+wk,r.player_id);
+            if(!a||a.receptions!==0||a.passing_yards!==0||a.kick_pts!==0) bad.push(`the page has no zero line for ${r.player_id} in week ${wk}`);
+            else if(gid&&settled<40){ settled++; const l={week:+wk,gid,pid:r.player_id,team:r.team,stat:'receptions',k:0.5,side:'over',main:true,price:-110};
+              if(F('settleLeg')(l)!=='loss'||F('settleLeg')({...l,side:'under'})!=='win') bad.push(`${r.player_id} in week ${wk}, on the field with no stat line, is not graded on zero`); } } }
+        /* a listed player with no row of zeros (a snap on defence or special teams only) is graded on zero too */
+        { let one=0; for(const wk in SN) for(const gid in SN[wk]) for(const team in SN[wk][gid]) for(const pid of SN[wk][gid][team]){
+            if(one>=20||F('actualFor')(+wk,pid)) continue; one++;
+            if(F('settleLeg')({week:+wk,gid,pid,team,stat:'receptions',k:0.5,side:'over',main:true,price:-110})!=='loss') bad.push(`${pid} (${gid}), in the snaps with no stat line, is not graded on zero`); } }
+        let rawSaid='';
+        if(NEED){ const sp=path.join(__dirname,'..','raw',`snap_counts_${SEASON}.csv`);
+          if(!fs.existsSync(sp)) rawSaid='; raw/snap_counts not downloaded this run (it is never required), so not compared';
+          else if(rStats&&rRoster){ const snapRows=Papa.parse(fs.readFileSync(sp,'utf8'),{header:true,skipEmptyLines:true}).data;
+            const hasLine=new Set(rStats.filter(r=>+r.season===SEASON&&r.season_type==='REG').map(r=>r.game_id+'|'+r.player_id));
+            const pfr={}; for(const r of rRoster) if(r.gsis_id&&r.pfr_id&&!pfr[r.pfr_id]) pfr[r.pfr_id]=r.gsis_id;
+            const posOf=id=>String((rawRo[id]&&rawRo[id].position)||'').toUpperCase();
+            const snapped=new Set(), names={}; let checked=0;
+            for(const s of snapRows){ const n=v=>{ const x=parseFloat(v); return isFinite(x)?x:0; }, all=n(s.offense_snaps)+n(s.defense_snaps)+n(s.st_snaps), id=pfr[s.pfr_player_id];
+              if(all>0){ snapped.add(s.game_id+'|'+s.team+'|'+(id||'')); (names[s.game_id+'|'+s.team]??=[]).push(s.player); }
+              if(!id||!(n(s.offense_snaps)>0)||!SKILL.has(posOf(id))||posOf(id)==='K'||hasLine.has(s.game_id+'|'+id)) continue;
+              const g=gOf(s.game_id); if(!g||!SN[String(+g.w)]||!SN[String(+g.w)][s.game_id]||!(s.team in SN[String(+g.w)][s.game_id])) continue;
+              checked++;
+              if(!listed(String(+g.w),s.game_id,s.team,id)) bad.push(`${s.player} (${s.game_id} ${s.team}) ran ${s.offense_snaps} offensive snaps with no stat line and is not in the snaps`);
+              if(!(PAY.stats[String(+g.w)]||[]).some(r=>r.from_snaps&&r.player_id===id)) bad.push(`${s.player} (${s.game_id}) has no row of zeros`); }
+            for(const wk in SN) for(const gid in SN[wk]) for(const team in SN[wk][gid]) for(const pid of SN[wk][gid][team]){
+              if(hasLine.has(gid+'|'+pid)) bad.push(`${pid} is in the snaps of ${gid} with a stat line in raw/pw`);
+              const me=who(pid);
+              if(!snapped.has(gid+'|'+team+'|'+pid)&&!(names[gid+'|'+team]||[]).some(n=>nameRule(n,me.name,me.alias))) bad.push(`${pid} is in the snaps of ${gid} ${team} with no snap in raw/snap_counts`); }
+            rawSaid=`; against raw/snap_counts, ${checked} players placed by PFR id with an offensive snap and no stat line all listed with their row of zeros`; } }
+        chk(!bad.length,`who played: ${bad.length} wrong (${bad.slice(0,4).join('; ')})`);
+        console.log(`V15. who played: ${Object.keys(SN).length?`${nl} players with no stat line took a snap, ${nz} rows of zeros, each graded on zero${rawSaid}`:'no snap counts in the payload yet (a payload baked before them): a player with no stat line waits unless Out'}`); }
 
       if(skipped.length) console.log(`V. raw files not compared (PROPS_AUDIT_RAW is not set; weekly.py sets it): ${skipped.join(', ')}`);
       if(notPosted.length) console.log(`V. raw files not compared because nflverse has not posted them yet: ${notPosted.join(', ')}`);

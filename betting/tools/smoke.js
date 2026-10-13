@@ -18,8 +18,10 @@
  * committed state: BETTING_PREV_STATE names another file, for tests); a scoreboard final is
  * counted for every model at once, on the call frozen at kickoff; Team Rankings' record is the
  * season's and a rating that predates a final says so; a model that could not run is disclosed on
- * the Pick'em Record, and the weeks the Joker was refitted on after they were played are drawn
- * like every other week, with no mark, note or record without them; Joker Jr, a test model retired in October
+ * the Pick'em Record; the Joker's calls on the weeks its model was later refitted on (2026 weeks 1-2)
+ * are its real ones, betting/joker/history/ (held to the last commit's copy: BETTING_PREV_HISTORY
+ * names another folder), never the refit's, and are drawn like every other week,
+ * with no mark, note or record without them; Joker Jr, a test model retired in October
  * 2026, is gone from a state this run wrote and draws nothing from one that still carries it.
  * Each holds whatever the week offers: a check with nothing to look at this week (no game graded
  * yet, no Thursday game, a bye) is skipped, and the rules themselves are also run on cases made
@@ -82,9 +84,19 @@ function boot(st, opts = {}) {
   return { w: dom.window, d: dom.window.document, errors, fetched };
 }
 const kick = PATCHES.kickoffMs;
+/* the Joker's real calls on the games its model was refitted on after they were played (2026 weeks
+   1-2): betting/joker/history/<season>_*.json, written once from git; joker.py publishes them */
+function jokerHistory(season) {
+  const dir = path.join(ROOT, 'betting', 'joker', 'history'), out = {};
+  if (!fs.existsSync(dir)) return out;
+  for (const f of fs.readdirSync(dir).filter(f => f.startsWith(season + '_') && f.endsWith('.json')).sort()) {
+    const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+    if (+d.season !== +season) throw new Error(`betting/joker/history/${f} is for ${d.season}, not ${season}`);
+    for (const [gid, e] of Object.entries(d.games)) out[gid] = Object.assign({ file: f }, e); }
+  return out; }
 const DAY = 86400000;
 async function reality() {
-  const P = JSON.parse(state), pub = Date.parse(P.published);
+  const P = JSON.parse(state), pub = Date.parse(P.published), JH = jokerHistory(P.season);
   const J = JSON.stringify;
   /* 5a. one season: the app's (freshState), published as `season`, every scheduled game in it */
   check(P.season === APP_SEASON, `5a: the state's season ${P.season} is not the app's ${APP_SEASON}`);
@@ -223,6 +235,14 @@ async function reality() {
       const started = S.schedule.filter(g => { const k = kick(g); return k != null && k <= pub; }).map(g => g.game_id);
       for (const gid of started) {
         for (const k of ['joker', 'broly']) { const a = (prev[k] || {})[gid], b = (P[k] || {})[gid];
+          /* a Joker call in its history file may move onto the file's call once, from a call that
+             carries no src (the refit's in-sample calls on 2026 weeks 1-2, replaced so on 12 October
+             2026); once the last commit's call is the file's (it carries src), it is held like any
+             other, so an edit to the file cannot move a call after its kickoff (5n holds the file to
+             the last commit's too) */
+          if (k === 'joker' && JH[gid]) { if (b) { n++;
+            if (a && a.src) check(a.pick === b.pick && a.pHome === b.pHome && a.src === b.src, `5h: the Joker's call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`);
+            else check(b.pick === JH[gid].pick && b.pHome === JH[gid].pHome, `5h: the Joker's call for ${gid} is not its history file's: ${J(b)}`); } continue; }
           if (a && b) { n++; check(a.pick === b.pick && a.pHome === b.pHome, `5h: ${k}'s call for ${gid} moved after kickoff: ${J(a)} -> ${J(b)}`); } }
         const call = st => (st.atKickoff || {})[gid] || (st.processed[gid] && { pick: st.processed[gid].pick, pHome: st.processed[gid].pHome, h: st.processed[gid].h });
         const fa = call(prev), fb = call(P), same = (x, y) => x == null || y == null || Math.abs(x - y) < 1e-6;
@@ -230,6 +250,47 @@ async function reality() {
           `5h: Alpha's or the Challenger's call for ${gid} moved after kickoff: ${fa.pick} ${fa.pHome}/${fa.h && fa.h.pick} -> ${fb.pick} ${fb.pHome}/${fb.h && fb.h.pick}`); }
       }
       console.log(`  5h: ${n} calls on games kicked off by ${P.published} held from the state before it`); } }
+
+  /* 5n. the Joker's weeks 1-2 are the calls it really made. Its model was refitted on 24 September
+     2026 with those games' results in its training (tune_2026.py), so its calls on them are fits;
+     the owner asked on 12 October 2026 for the record it actually had. Every game of the history
+     file is called in the published state as the file has it (state.joker and the grade, pick,
+     chance and source), the grade follows the result, and every game of a week the model was
+     fitted on after it was played (state.jokerFit) is in the file */
+  { const ids = Object.keys(JH);
+    if (!ids.length) console.log(`  (5n skipped: no history file of the Joker's for ${P.season})`);
+    else {
+      const before = fails, calls = P.joker || {};
+      const head = { src: (x, e) => x.src === e.src, pick: (x, e) => x.pick === e.pick, pHome: (x, e) => x.pHome === e.pHome };
+      const off = (x, e) => Object.keys(head).filter(k => !head[k](x, e)).map(k => `${k} ${J(x[k])} not ${J(e[k])}`).join(', ');
+      for (const gid of ids) { const e = JH[gid], c = calls[gid], r = P.processed[gid];
+        check(!!c && !off(c, e), `5n: the Joker's call for ${gid} is not its real one (${e.file}): ${c ? off(c, e) : 'none'}`);
+        if (r && r.result != null) {
+          const winner = r.result > 0 ? r.home : r.result < 0 ? r.away : null;
+          check(!!r.joker && !off(r.joker, e) && r.joker.correct === (winner === null ? null : e.pick === winner),
+            `5n: ${gid} is graded on a Joker call other than its real one (${e.file}): ${r.joker ? off(r.joker, e) || 'correct ' + r.joker.correct : 'none'}`); }
+        const g = S.schedule.find(x => x.game_id === gid);
+        check(!!g && g.home_team === e.home && g.away_team === e.away && +g.week === +e.week, `5n: ${gid} in ${e.file} is not that game on the schedule`);
+        if (g) check(Date.parse(e.kickoff) === kick(g), `5n: ${gid}'s kickoff in ${e.file} (${e.kickoff}) is not the schedule's`);
+        if (e.src === 'published') check(Date.parse(e.at) < Date.parse(e.kickoff), `5n: ${gid} is marked published but its commit (${e.at}) is after its kickoff`); }
+      /* the file is written once: every game the last commit's copy of it holds is still there,
+         with the same pick, chance, source and kickoff (BETTING_PREV_HISTORY names another folder,
+         for tests) */
+      const files = [...new Set(ids.map(gid => JH[gid].file))];
+      for (const f of files) { let old = null;
+        try { old = JSON.parse(process.env.BETTING_PREV_HISTORY ? fs.readFileSync(path.join(process.env.BETTING_PREV_HISTORY, f), 'utf8')
+          : require('child_process').execSync(`git show HEAD:betting/joker/history/${f}`, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }).toString()); } catch (e) { old = null; }
+        if (!old) { console.log(`  (5n: ${f} is not in the last commit; nothing to hold it to)`); continue; }
+        for (const [gid, o] of Object.entries(old.games || {})) { const e = JH[gid];
+          const moved = !e ? 'gone' : ['pick', 'pHome', 'src', 'kickoff'].filter(x => J(o[x]) !== J(e[x])).map(x => `${x} ${J(o[x])} -> ${J(e[x])}`).join(', ');
+          check(!moved, `5n: ${gid}'s real call in ${f} was changed since the last commit: ${moved}`); } }
+      const fit = P.jokerFit && +P.jokerFit.season === +P.season ? (P.jokerFit.weeks || []).map(Number) : [];
+      const bare = S.schedule.filter(g => fit.includes(+g.week) && !JH[g.game_id]).map(g => g.game_id);
+      check(!bare.length, `5n: the Joker was fitted on week(s) ${fit} after they were played and ${bare.slice(0, 3).join(', ')} has no real call in its history file`);
+      if (fails === before) {
+        const n = ids.filter(gid => P.processed[gid] && P.processed[gid].joker), w = n.filter(gid => P.processed[gid].joker.correct === true).length;
+        const src = ids.reduce((a, gid) => (a[JH[gid].src] = (a[JH[gid].src] || 0) + 1, a), {});
+        console.log(`  5n: the Joker's ${ids.length} calls from its history file are the state's (${Object.entries(src).map(([k, v]) => v + ' ' + k).join(', ')}), graded ${w}-${n.length - w}`); } } }
 
   /* 5i. Team Rankings: the record is the season's results, and a rating that predates a final says so */
   { const EM = JSON.parse(eloModel), T = EM.teams || {}, tr = [...d.querySelectorAll('#ratingsTable table.rt-v tbody tr')];
@@ -301,34 +362,35 @@ async function reality() {
     } }
 
   /* 5l. the record says what it is: a model the job could not rescore is disclosed under the legend.
-     And every week is drawn alike: the weeks of this season the Joker was refitted on after they
-     were played (S.jokerFit, which the state keeps as data) are shaded, labelled, counted and shown
-     in the tooltip like any other week of any model, with no hatch, label, note, asterisk or record
-     without them (the owner's call, October 2026) */
+     And every week is drawn alike: the Joker's weeks whose calls come from its history file (2026
+     weeks 1-2, its real calls; week 1 a backtest, as the ELO Model's weeks 1-2 are) are shaded,
+     labelled, counted and shown in the tooltip like any other week of any model, with no hatch,
+     label, note, asterisk or record without them (the owner's call, October 2026, kept on 12
+     October when the refit's calls were replaced by the real ones) */
   { const st = JSON.parse(state);
     /* the record is drawn once a game is graded: before the first final, one made-up graded game */
     if (!Object.keys(st.processed).length) { const g = st.schedule[0];
       Object.assign(g, { result: 7, home_score: 24, away_score: 17 });
       st.processed[g.game_id] = { week: +g.week, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, result: 7, correct: true, line: 3, h: null, news: [] }; }
     const wks = [...new Set(Object.values(st.processed).map(r => +r.week))].sort((x, y) => x - y);
-    /* the published fit when it is this season's, else one made up for the test */
-    if (!(st.jokerFit && +st.jokerFit.season === +st.season && (st.jokerFit.weeks || []).some(x => wks.includes(+x)))) delete st.jokerFit;
-    st.jokerFit = st.jokerFit || { season: st.season, weeks: wks.slice(0, 1), fitted_on: 'made up for the smoke test' };
+    /* the history file's weeks when the record has them, else a week made up for the test */
+    const hw = [...new Set(Object.values(JH).map(e => +e.week))].filter(x => wks.includes(x));
+    const HW = { weeks: hw.length ? hw : wks.slice(0, 1) };
     /* a season the Joker could not call (its status says why) still has the rule tested, on one made-up call */
-    if (!Object.values(st.processed).some(r => r.joker && st.jokerFit.weeks.includes(+r.week))) {
-      const r = Object.values(st.processed).find(x => st.jokerFit.weeks.includes(+x.week) && x.result != null && x.result !== 0);
+    if (!Object.values(st.processed).some(r => r.joker && HW.weeks.includes(+r.week))) {
+      const r = Object.values(st.processed).find(x => HW.weeks.includes(+x.week) && x.result != null && x.result !== 0);
       if (r) r.joker = { pick: r.home, pHome: 0.6, correct: r.result > 0 }; }
     st.modelStatus = { broly: { since: P.published, why: 'made up for the smoke test' } };
     const b = boot(st); await new Promise(r => setTimeout(r, 700));
     const notes = b.d.querySelector('#modelChart .rv-notes'), nt = notes ? notes.textContent : '';
     check(/Broly Model could not be rescored/.test(nt) && /made up for the smoke test/.test(nt), '5l: a model that could not run is not disclosed: ' + nt.slice(0, 300));
-    /* the Joker's refitted weeks, drawn as any week: each cell, the tooltip, the season cell and the legend */
+    /* the Joker's history weeks, drawn as any week: each cell, the tooltip, the season cell and the legend */
     const alike = (b, fit, tag) => {
       const S2 = b.w.eval('S'), rows = Object.values(S2.processed).filter(r => r.correct !== null);
       const fw = (fit.weeks || []).map(Number);
       const tx = sel => [...b.d.querySelectorAll(sel)].map(x => x.textContent).join(' ').replace(/\s+/g, ' ');
       const all = tx('#modelChart') + ' ' + tx('#recordTable');
-      check(!/fitted|refitted|fit, not a prediction|after the fact|hatched/i.test(all), `5l${tag}: the record still marks the Joker's refitted weeks: ` + (all.match(/.{0,80}(fitted|after the fact|hatched).{0,60}/i) || [''])[0]);
+      check(!/fitted|refitted|fit, not a prediction|after the fact|hatched|backtest/i.test(all), `5l${tag}: the record marks the Joker's history weeks: ` + (all.match(/.{0,80}(fitted|after the fact|hatched|backtest).{0,60}/i) || [''])[0]);
       check(!b.d.querySelector('#recordTable td.rv-fit'), `5l${tag}: a cell of the week-by-week grid is still drawn as fitted`);
       const weeks = [...new Set(rows.map(r => +r.week))].sort((x, y) => x - y);
       const jok = r => r.joker && (r.joker.correct === true || r.joker.correct === false) ? r.joker.correct : null;
@@ -362,14 +424,13 @@ async function reality() {
       check(at >= 0 && lg[at + want.length] !== '*',
         `5l${tag}: the Joker's legend does not count every week (${T.w}–${T.l}, ${sign(net)} vs Vegas, no mark): ${lg.slice(0, 300)}`);
       return seen; };
-    const before5l = fails, seen = alike(b, st.jokerFit, '');
-    check(seen > 0, `5l: no refitted week of the Joker's was there to hold to the rule (${st.jokerFit.weeks})`);
-    if (fails === before5l) console.log(`  5l: the Joker's refitted week${st.jokerFit.weeks.length > 1 ? 's' : ''} ${st.jokerFit.weeks.join(', ')} drawn like any other (${seen} on the grid, the tooltip, the season and the legend)`);
-    /* and the published state, when the job has written a fit for this season and the Joker has a
-       graded call in one of its weeks */
-    if (P.jokerFit && +P.jokerFit.season === +P.season && Object.values(P.processed).some(r => r.joker && (P.jokerFit.weeks || []).map(Number).includes(+r.week))) {
+    const before5l = fails, seen = alike(b, HW, '');
+    check(seen > 0, `5l: no history week of the Joker's was there to hold to the rule (${HW.weeks})`);
+    if (fails === before5l) console.log(`  5l: the Joker's ${hw.length ? 'history' : 'made-up'} week${HW.weeks.length > 1 ? 's' : ''} ${HW.weeks.join(', ')} drawn like any other (${seen} on the grid, the tooltip, the season and the legend)`);
+    /* and the published state, when the Joker has a graded call from its history file */
+    if (Object.keys(JH).some(gid => P.processed[gid] && P.processed[gid].joker)) {
       const e = boot(P); await new Promise(r => setTimeout(r, 700));
-      alike(e, P.jokerFit, ' (published)');
+      alike(e, { weeks: [...new Set(Object.values(JH).map(x => +x.week))] }, ' (published)');
       check(e.errors.length === 0, '5l (published): runtime errors: ' + e.errors.join('; '));
     }
     check(b.errors.length === 0, '5l: runtime errors: ' + b.errors.join('; ')); }
@@ -588,7 +649,7 @@ async function xbetLog() {
     check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
   { const rt = da.getElementById('ratingsTable');
     check(rt.parentElement.id === 'ratingsCard' && rt.parentElement.classList.contains('card') && rt.parentElement.parentElement.id === 'tab-ratings', 'admin: the ratings table is not in a card of its own');
-    /* the team Elo of this season's results: every team, best first, each with its record, shield and change since its last game */
+    /* the power ratings of this season's results: every team, best first, each with its record, shield and change since its last game */
     { const rows = [...rt.querySelectorAll('table.rt-v tbody tr')], vals = rows.map(tr => +tr.querySelector('.elocell b').textContent), want = JSON.parse(eloModel).teams;
       check(rows.length === 32 && rows.length === Object.keys(want).length && vals.every((v, i) => i === 0 || v <= vals[i - 1]), 'admin: Power Ratings does not show the 32 team ratings, best first');
       check(Math.abs(vals.reduce((x, v) => x + v, 0) / vals.length - 1500) < 2, 'admin: the team ratings do not average 1500');

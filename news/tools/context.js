@@ -4,8 +4,10 @@
 
    Writes three plain script data files (the page stays file:// friendly, no fetch):
      data/ranks2026.js     RANKS26: every team's rank and Elo on X NFL Bets' Team Rankings tab, read
-                           from ../elo/data/model.json (`teams`, the team Elo of this season's results)
-                           in the order that tab draws it. RANKS26_ASOF is the last game the ratings
+                           from ../elo/data/model.json (`teams`, the power ratings of this season's
+                           results, every final solved together and re-scored against what its
+                           opponent has turned out to be, with the lineups at two tenths) in the
+                           order that tab draws it. RANKS26_ASOF is the last game the ratings
                            have taken in. Until 2026-10-09 it was the Alpha Model's team Elo from
                            ../betting/state.json, which no page shows as a ranking any more; the two
                            disagreed by 6.4 places a team (Seattle 1st on the chip, 9th on the tab).

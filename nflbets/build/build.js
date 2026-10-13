@@ -136,6 +136,9 @@ const lpiece = (re, what) => { const m = livePage.match(re); if (!m) throw new E
 const LIVE_CSS = lpiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
 const LIVE_BAR = lpiece(/<main>\s*(<p class="lp-upd" id="lpUpdated"><\/p>\s*<div class="bar">[\s\S]*?<\/div>)\s*<noscript>/, 'updated line and control bar');
 let LIVE_JS = lpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
+/* Clear this parlay?, the window the X on each card opens: inside the card, so its styles are
+   scoped with the rest */
+const LIVE_ASK = lpiece(/\n\s*(<div class="lp-dlg" id="lpAsk" hidden>[\s\S]*?<\/div><!-- \/lpAsk -->)\n/, 'Clear this parlay? window');
 /* Scope every rule to the section's cards. Page-level rules -- the page shell, the button and card
    bases the prop model already has -- are dropped; the rest keep their look inside the cards
    and touch nothing outside them. Handles one level of @media. */
@@ -162,7 +165,7 @@ function scopeCss(css, scopes) {
   return block(css);
 }
 const LIVE_SCOPED = scopeCss(LIVE_CSS, ['#lpCard']);
-for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#lpCard .gm{', '#lpCard .lp-upd{'])
+for (const need of ['#lpCard .savedp{', '#lpCard .sp-leg{', '#lpCard .pbar{', '#lpCard .gm{', '#lpCard .lp-upd{', '#lpCard .lp-x{', '#lpCard .lp-dlg{', '#lpCard .lp-dlg-panel{', '#lpCard .lp-here{'])
   if (!LIVE_SCOPED.includes(need)) throw new Error('the scoped live styles lost ' + need);
 if (/(^|\n)(body|header|main|:root)\{/.test(LIVE_SCOPED)) throw new Error('a page-level live rule survived scoping');
 const lsub = (from, to, what) => { LIVE_JS = sub1(LIVE_JS, from, to, 'the live script: ' + what); };
@@ -171,12 +174,25 @@ lsub("const DATA='parlays.json';", "const DATA='../liveparlays/parlays.json';", 
 /* lp-, not live-: the prop model has a liveRefresh of its own, and a global by that name
    would replace it */
 lsub("draw(); refresh();", "window.lpDraw=draw; window.lpRefresh=refresh; draw(); refresh();", 'boot');
-for (const need of ['function readFile(', 'o.cleared===true', 'const updatedOf=', "{cache:'no-store'}", 'function espnWeek(', 'function drawList(', "getElementById('lpUpdated')"])
+for (const need of ['function readFile(', 'o.cleared===true', 'const updatedOf=', "{cache:'no-store'}", 'function espnWeek(', 'function drawList(', "getElementById('lpUpdated')",
+  "const HERE_KEY='lp_cleared_here_v1';", 'data-lp-clear=', 'aria-label="Clear this parlay"', 'function ask(', 'function askClose(', 'function showAgain(', 'id="lpShowAll"'])
   if (!LIVE_JS.includes(need)) throw new Error('the live script no longer has ' + need + ', which the section relies on');
+for (const need of ['role="alertdialog"', 'aria-modal="true"', 'id="lpAskNo"', 'id="lpAskYes"', 'Clear this parlay?'])
+  if (!LIVE_ASK.includes(need)) throw new Error('the Clear this parlay? window no longer has ' + need);
 /* one list, X's, from the file, read only on every device: nothing of the section reads, draws or
    writes a browser's own parlays, and nothing on it changes X's */
-for (const gone of ['MY_KEY', 'myCard', 'myApp', 'LISTS.', 'LIVE_IO', 'NFLSYNC', 'lpOwner', 'lpKeep', 'localStorage', 'data-rm', 'data-edit', 'data-stake-of', 'data-reset', "id=\"clear\"", 'propState', 'S.saved'])
-  if (LIVE_JS.includes(gone) || LIVE_BAR.includes(gone)) throw new Error('the live section still has ' + gone + ': X Parlays is the file, read only, on every device');
+for (const gone of ['MY_KEY', 'myCard', 'myApp', 'LISTS.', 'LIVE_IO', 'NFLSYNC', 'lpOwner', 'lpKeep', 'data-rm', 'data-edit', 'data-stake-of', 'data-reset', "id=\"clear\"", 'propState', 'S.saved', 'sessionStorage', 'indexedDB'])
+  if (LIVE_JS.includes(gone) || LIVE_BAR.includes(gone) || LIVE_ASK.includes(gone)) throw new Error('the live section still has ' + gone + ': X Parlays is the file, read only, on every device');
+/* the one thing the section keeps is the visitor's own: the parlays this device has cleared, under
+   a key of its own (never a retired one, which storage.js takes out) and no other. Every use of the
+   browser's storage is that key's, the section sends nothing (no write, no other address), and the
+   storage layer never removes the key. */
+{ const uses = [...LIVE_JS.matchAll(/localStorage\s*\.\s*(\w+)\s*\(([^,)]*)/g)];
+  if (!uses.length || uses.some(m => !['getItem', 'setItem', 'removeItem'].includes(m[1]) || m[2].trim() !== 'HERE_KEY') || (LIVE_JS.match(/localStorage/g) || []).length !== uses.length)
+    throw new Error("the live section uses this browser's storage for something other than its own list of cleared parlays (HERE_KEY)");
+  for (const gone of ["method:'PUT'", "method:'PATCH'", "method:'POST'", "method:'DELETE'", 'keepalive', 'sendBeacon', 'XMLHttpRequest'])
+    if (LIVE_JS.includes(gone)) throw new Error('the live section has ' + gone + ': it sends nothing anywhere');
+  if (/['"]lp_cleared_here_v1['"]/.test(STORAGE_JS)) throw new Error('nflbets/build/storage.js names lp_cleared_here_v1: the cleared list is the visitor\'s own, which the storage layer never touches'); }
 /* the card: its styles (nothing page-level), its window, and its script with the builder's
    pricing set into it */
 const cpiece = (re, what) => { const m = cardSrc.match(re); if (!m) throw new Error(`card.html has no ${what}`); return m[1]; };
@@ -195,12 +211,12 @@ for (const need of ['const pr=parlayProb(', 'const prices=legs.map(legPrice);', 
 for (const need of ['const canSave=wks.length===1&&(realPrice||estPrice);', "id=\"pSave\" ${canSave?'':'disabled'}", 'Legs must all be from the same week to save', '>Save and lock this parlay</button>', 'data-pb-add="${t.id}"', "data-pc-finish=\"${o.kind||'pb'}|${t.id}\"", 'function getPbTiers(', 'function pbStake(', 'id="pbStake"', 'data-pb-pay="${t.dec}"'])
   if (!part3.includes(need)) throw new Error("the builder's save or the suggested parlays' buttons moved (" + need + "); the parlay card stands in for them on every device");
 CARD_JS = sub1(CARD_JS, '/*QUOTE*/', QUOTE, "the card's QUOTE slot");
-for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'"])
+for (const need of ['window.PARLAY_CARD=', "const SITE='demon-x13.github.io/nfl-hub/nflbets';", 'function finishBuilder(', 'function finishFrom(', "$('pSave')", "closest('[data-pc-finish]')", "getPbTiers().tiers", 'stake:pbStake()', 'c.toBlob(', "'image/png'", 'URL.createObjectURL(', 'navigator.share(', "nb.textContent='Finish parlay'", 'PAY.dk', 'function dkPlan(', 'function shareLink('])
   if (!CARD_JS.includes(need)) throw new Error('nflbets/build/card.html no longer has ' + need);
 /* Finish on every device: nothing in the card asks whose device it is */
 for (const gone of ['lpOwner', 'NFLSYNC', 'visitor('])
   if (CARD_JS.includes(gone)) throw new Error('nflbets/build/card.html still has ' + gone + ': the builder finishes a parlay on every device');
-for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function getPbTiers('])
+for (const need of ['function parlayLegs', 'function parlayProb', 'function legPrice', 'function parlayDec', 'const sameGame', 'function probToAmerican', 'function mlToDec', 'function decToML', 'function kickoff', 'function save(', 'function getPbTiers(', 'function gameStarted', 'function marketLine'])
   if (!(part2 + part3).includes(need)) throw new Error('the prop model no longer defines ' + need + ', which the parlay card uses');
 { const elo = rd('nflbets', 'build', 'tab_elo.html');
   if (!elo.includes("kind:'elo'") || !elo.includes('window.eloPicks=eloPicks;') || !elo.includes("getElementById('pbElo')"))
@@ -211,6 +227,7 @@ const LIVE_SECTION = `<div class="card" id="lpCard">
     <h2>X Parlays</h2>
     ${LIVE_BAR}
     <div id="app"></div>
+    ${LIVE_ASK}
   </div>`;
 const LIVE_SCRIPT = `<script>
 /* the X Parlays section: liveparlays/build/page.html, in a closure. Names it shares with

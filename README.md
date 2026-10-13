@@ -1,7 +1,7 @@
 # nfl-hub
 
-One repo, six scheduled jobs (one per model or site, in `.github/workflows/`) and
-four sites with pages. Each job downloads its sources, runs its model without
+One repo, five scheduled jobs (one per model or site, in `.github/workflows/`) and
+three sites with pages. Each job downloads its sources, runs its model without
 anyone clicking anything, and commits the data; the pages fetch it on load.
 GitHub Pages serves the repo root:
 
@@ -14,7 +14,7 @@ GitHub Pages serves the repo root:
 | `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
 | `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
 | `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
-| `nhl/` | a redirect: X NHL Bets moved to `DEMON-X13/nhl-hub` | `nhl-hub` |
+| `nhl/` | a redirect: X NHL Bets moved to `DEMON-X13/nhl-hub` on 2026-10-13 | `nhl-hub` |
 
 ## Betting site
 

@@ -1,0 +1,4 @@
+{"card1": [["Los Angeles Chargers","h2h",null,null],["Detroit Lions","spreads",null,-5.5],["Seattle Seahawks","spreads",null,-3]],
+ "card2": [["Cincinnati Bengals","spreads",null,-7],["New York Jets","h2h",null,null],["Las Vegas Raiders","h2h",null,null]],
+ "card3": [["Emanuel Wilson","player_receptions","Under",1.5],["Jared Goff","player_pass_yds","Over",281.5],["Omarion Hampton","player_receptions","Over",1.5],["Seattle Seahawks","spreads",null,-3],["Tory Horton","player_receptions","Over",1.5]],
+ "card4": [["Cam Ward","player_pass_tds","Under",0.5],["Kevin Coleman Jr.","player_receptions","Under",1.5],["Malik Washington","player_receptions","Under",4.5],["MarShawn Lloyd","player_rush_yds","Under",27.5],["Quinshon Judkins","player_rush_yds","Under",60.5]]}

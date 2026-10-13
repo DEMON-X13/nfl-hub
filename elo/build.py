@@ -47,13 +47,56 @@ two and three targets after a season of eight or nine, were both skipped before 
 his rating stood frozen at 2025's). Every season every rating is pulled a quarter of the way back to 1500, since
 rosters, schemes and ages change.
 
-THE SCORES. For a QB, RB, WR or TE the score is expected points added on the plays he
-touched (nflverse's passing_epa + rushing_epa + receiving_epa), which already prices yards,
-downs, turnovers and sacks against the situation. For a kicker it is points over what an
+A player's first rating is 1500, a quarterback's 1450 (QB_START) from 2013 on, and the game
+model fills an expected quarterback with no rating yet the same way. 1500 is the average
+starter's level, and a new quarterback is seldom that: on his first real start his result fell
+0.124 short of what 1500 expected (S - E, 156 starts) and over his first eight 0.048 (956), so a
+backup on a few snaps stood above any starter below the average (Curtis Painter, -0.75 EPA a play
+on 17 dropbacks in 2013, at 1484 above Eli Manning's 1437). At 1450 the career rating puts the
+club's quarterback above his backup at the season's end in 73.3% of the clear cases since 2013
+(69.8% at 1500) and 84.2% of the 70%-of-snaps ones (81.7%), and the game model's walk-forward
+2013-2025 goes from 0.6402 to 0.6387 in log loss (2114 and 2112 right of 3,333); next season's
+EPA is ranked as before (0.470 against 0.471).
+
+THE SCORES. For a QB the score is expected points added on the plays he touched (nflverse's
+passing_epa + rushing_epa + receiving_epa), which already prices yards, downs, turnovers and
+sacks against the situation. For a RB, WR or TE (PRODUCED) it is what he produced: yards from
+scrimmage, 20 for each touchdown (10 for a back, TD_YARDS), less 25 for each fumble lost. These three were scored on EPA
+too until October 2026, and it rated them backwards. The average carry loses expected points
+(the league's backs ran at -0.05 to -0.09 EPA a carry every season), so the more a team trusted
+a back with the ball the lower he scored: a club's lead back was rated above the back behind
+him at the season's end in only 121 of 273 team-seasons since 2013 (44%), and in week 5 of 2026
+Brian Robinson, a backup with 194 rushing yards and four touchdowns, stood 5th among backs and
+Bijan Robinson, with 494 yards, 30th. Receivers were less wrong, a target being worth a little
+on average, but the lead receiver stood above the next in only 74% of team-seasons and the lead
+tight end in 67%. Scored on production the three are 92%, 87% and 89%, and the ratings read as
+a measure of who is good: Walker, Gibbs, Bijan Robinson, Henry and Taylor lead the backs.
+The record on the same data, walk-forward 2013-2025 on 3,333 games: 2101 right (63.0%) and a
+log loss of 0.6392 on EPA, 2111 (63.3%) and 0.6398 on production, level within the noise; the
+matchups' projections are better on every rushing and receiving yards line (rushing yards
+33.792 to 33.694 against the form alone's 33.752, where EPA had made them worse; receiving
+yards 35.440 to 35.398 for receivers and 26.965 to 26.882 for tight ends). Tried on the backs
+and not kept: EPA over the league's average carry (the lead back on top in 54%), and half EPA,
+half production (88%, 63.7% and 0.6393, but Brian Robinson still 16th). A back's touchdown
+counts 10, not 20, since October 2026: at 20 it was worth four average carries, and the goal-line
+carries a club hands out decided who stood where (David Montgomery 23rd in week 5 of 2026 on
+2.65 yards a carry and three touchdowns, Brian Robinson a backup on four touchdowns from 47
+opportunities). At 10 the season rating after week 5 ranks the rest of a back's season better (Spearman
+0.539 to 0.551, +0.012 with a 90% interval of +0.006 to +0.018, 2013-2025), next season's
+output a little better on every measure (within the noise), the lead back above the next as
+often, and Montgomery is 34th; the game model's walk-forward is level (2112 right either way, log
+loss 0.6383 at 20, 0.6387 at 10). A quarterback stays on
+EPA: his volume is not a cost, and EPA prices his sacks and interceptions as production does
+not. For a kicker it is points over what an
 average kicker makes from each distance bucket. For a defender (DL, LB, DB) it is a weighted
 sum of the events he made: sacks, tackles for loss, hits, forced and recovered fumbles,
-interceptions, passes defended, touchdowns and tackles. Offensive linemen and punters have no
-box-score signal worth rating and are left out.
+interceptions, passes defended, touchdowns and tackles; a defensive lineman's QB hits count
+double (DL_HIT_EXTRA): a hit is the pressure the box score records, and at one point against
+a sack's four it counted for little. That ranks next season better: on 2013-2025, the career rating
+against next season's score a game 0.604 to 0.612 and against sacks and hits per 100 snaps
+0.606 to 0.625 (90% intervals of +0.005 to +0.011 and +0.015 to +0.022), the season rating
+after week 5 against the rest of the season 0.454 to 0.475, with the game model level.
+Offensive linemen and punters have no box-score signal worth rating and are left out.
 
 THE GAME MODEL. For every game since 2012 each team's strength at each position group is the
 depth-weighted mean of the pre-game ratings of the players expected to start (QB1; RB1 and
@@ -110,36 +153,88 @@ Limited), or the club files a practice report he is not on. That window used to 
 expected to start (Caleb Williams as Chicago's QB in week 5, eleven such starters in week 4,
 three of them quarterbacks). The page says how many clubs have filed.
 
-THE POWER RATINGS. Each team rated on its results this season, not on its players: a margin
-Elo in which every team starts the season at 0 (shown as 1500) and, after each final,
-    e = (R_home - R_away + H * home) / D          the home margin it expected, in points
-    d = clip(home margin, -C, C) - e
-    R_home += K * d,  R_away -= K * d             (zero-sum: the league stays centred)
-with K 1.3461, H 30.02 (0 at a neutral site), D 25, C 21. A favourite that wins by less than
-it was expected to loses points and the underdog gains them, both toward the middle; a
-blowout beyond 21 counts as 21. The chance against an average team on a neutral field is
-1 / (1 + 10^(-S * R / 400)) with S 1.5771, so it follows the order. The players count too, at
-two tenths: the rating used is 0.8 of R and 0.2 of each team's expected lineup on this
-season's player Elo (the game model's weights, a log-odds against a team of 1500s, centred on
-the league, turned into these points), which walk-forward took the log loss from 0.648 to 0.643
-on 2018-2025 at 0.3 (0.644 at 0.2, the owner's choice, keeping the results well ahead). Shown as
-1500 + 100 * R / 79 (79 Elo is the usual spread across the teams by the end of a regular
-season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season does.
+THE POWER RATINGS. Each team rated on its results this season, not on its players, and every
+game of the season judged again each time the table is built. Each final is one equation,
+    R_home - R_away = clip(home margin, -C, C) - H * home          (home 0 at a neutral site)
+weighted w = 0.5 ^ ((Wmax - week) / HALF), Wmax the latest week among the finals solved (the
+playoffs are weeks 19-22, and count as the regular season does), and the ratings are the
+weighted least-squares answer with every team pulled toward average as if it had also played
+LAM games against average teams (a ridge):
+    (X'WX + LAM I) R = X'W y        X: +1 for the home team, -1 for the away team
+so R comes out centred on 0 (shown as 1500), in points of margin against an average team on a
+neutral field. LAM 16, C 17, HALF 16 weeks, H 1.8397 (the 2012-2017 mean capped home margin,
+measured, not tuned); a tie is a margin of 0. Each team's rating breaks down exactly, game by
+game:
+    R_t = sum(w * score) / (sum(w) + LAM)
+    score = the team's capped margin, home field out, plus the opponent's rating now
+so a game is worth what the opponent has turned out to be, not what it was rated when they met.
+Why: until October 2026 the table was a margin Elo (every team at 0, and after each final
+R_home += K * d, R_away -= K * d, d the capped margin less the one expected from the two
+ratings at that moment), which judged a game once, on the opponent's rating that week, and
+never again. The owner's case: Atlanta, rated low, beat Green Bay 35-14 at Lambeau in week 3,
+Green Bay sank, and as Atlanta turned out better than its rating, Green Bay's loss kept
+counting as a loss to a weak team; and the teams that beat the Chargers early kept their full
+credit as the Chargers turned out among the worst. Now every game is re-scored: through week 5,
+Green Bay's loss to Atlanta counts 1.6 points less against it (a game score of -20.20 then,
+-18.57 now: Atlanta was -1.36 when they met, +0.27 now), and Arizona's win over the Chargers 2
+points less (13.84 to 11.79: the Chargers now -2.05). With five games most teams sit within
+about two points of average, so a re-judged opponent moves a game's score by a point or two
+against margins of up to 17: a correction, not a reshuffle (rank correlation 0.988 with the
+margin Elo's table through week 5; Atlanta is 2-3 with a point differential of -3, including a
+3-34 home loss to Carolina, and stays mid-table). There is no preseason rating (the table is
+this season's alone), so the Chargers were an average team, not a projected top one, when
+Arizona beat them.
+The chance against an average team on a neutral field is 1 / (1 + e^(-S * R)) with S 0.35941
+log-odds a point (a game's home side adds H0 0.33195 to the log-odds; the table never needs
+it). The players count too, at two tenths (PR_W, the owner's choice): the rating used is 0.8 of
+R and 0.2 of each team's expected lineup on this season's player Elo (the game model's weights,
+a log-odds against a team of 1500s, centred on the league, turned into points by 1 / S). Shown
+as 1500 + 100 * R / 1.932 (1.932 points is the usual spread of R across the teams at the end of
+a regular season, 2012-2025), so everyone starts at 1500 and the tiers spread as the season
+does; after week 5 the shown spread is 61, against the margin Elo's 47, so the early table is
+less bunched than it was.
+The evidence, walk-forward (each game of weeks 2 on predicted by the table built on the finals
+of the weeks before it, this season's alone): every constant chosen on 2012-2017 (1441 games)
+and tested once on 2018-2025 (1999 games), log loss on the next game, the margin Elo with its
+constants fitted the same way (K 1.7252, H 45.44, S 1.3954):
+                          2012-2017            2018-2025
+                          alone  blended       alone  blended    weeks 2-6   7 on (blended)
+    margin Elo            0.6274  0.6248       0.6492  0.6454     0.6862    0.6273
+    this table            0.6266  0.6243       0.6480  0.6447     0.6863    0.6263
+On 2018-2025 that is -0.0012 alone (90% interval -0.0029 to +0.0005) and -0.0007 blended
+(-0.0021 to +0.0006), Brier 0.2277 against 0.2281, -0.0010 blended cutting at each kickoff
+instead of each week (Vegas: 0.6073). Without the recency weights (HALF infinite) it is 0.6272
+on 2012-2017, and HALF is flat from 10 to 20 weeks. A margin Elo with its K re-tuned the same
+way (2.0035) predicts as well (-0.0000 blended): the change is for the re-judging, not for
+accuracy, and it costs none. The margin Elo's constants the build used until now (K 1.3461,
+H 30.02, S 1.5771) were fitted on 2012-2025, so their 0.6426 blended on 2018-2025 is in-sample,
+not a test; on 2026 through week 5 (62 games, a look, never tuned on) they and this table are
+level, 0.6768 and 0.6769 blended (the margin Elo fitted on 2012-2017: 0.6818). Do not tune
+these on the season in play.
 Why not the lineups: rated walk-forward on 2018-2025 (weeks 2 on, parameters fitted on
 2012-2017), the old table, each team's expected lineup on this season's player Elo, had a log
 loss of 0.658 on the next game, and in weeks 2-6 0.696, no better than always taking the home
-team; this one 0.649 and 0.689 (Vegas 0.607 and 0.630). Last season carried in as a hidden
-prior fading game by game would take another 0.011 off (0.03 early), but the table is this
-season's alone, as asked. The ELO Model's game calls stay on the lineups and career ratings,
-which predict better still. `teams` in model.json carries the rating, the rating going into
-the team's last game (`before`), that chance (`p_avg`) and the regular-season record the
-rating was built on (`record`, wins, losses, ties); the Bets and Stats page's Power
-Ratings tab is drawn from it.
+team; this one 0.648 and 0.688 (Vegas 0.607 and 0.630). Last season carried in as a hidden
+prior fading game by game took another 0.011 off the margin Elo (0.03 early), but the table is
+this season's alone, as asked. The ELO Model's game calls stay on the lineups and career
+ratings, which predict better still. `teams` in model.json carries the rating (`elo`), its
+chance against an average team (`p_avg`), the rating going into the team's last game (`before`:
+the same solve on every final that kicked off before that game, its lineup part the team's
+expected lineup now, not the one it took into that game, on the player ratings as they stood
+before the week of its last game the player stats have rated; so it is not exactly what the
+table showed then), the regular-season record the rating was built on (`record`, wins, losses,
+ties) and the parts behind each shown number, which elo/check.py holds to games.csv with its own
+code (`r` and `r_before`, the results part in points; `lg` and `lg_before`, the lineup part in
+log-odds, centred on the league, none where a team has no lineup). The change since the last
+game is that game, every re-scoring since and what the players' ratings did since, so a team
+can move in a week it did not play, and any final moves every team. The Bets and Stats page's
+Team Rankings tab is drawn from it.
 
 OVERALL OFFENSE AND OVERALL DEFENSE (two pills in the ELO Ratings tab's position row). Each
-team's offense and defense rated on this season's games alone, in the power ratings' Elo format,
-on nine key stats from nflverse's play-by-play, scrimmage plays only (passes, sacks, scrambles and
-runs that have an EPA; kneels, spikes and two-point tries left out):
+team's offense and defense rated on this season's games alone, as an Elo (the format the power
+ratings had until October 2026), on nine key stats from nflverse's play-by-play, scrimmage plays
+only (passes, sacks, scrambles and runs that have an EPA; kneels, spikes and two-point tries
+left out):
 
     points          the offense's final score (games.csv)
     success rate    plays with a positive EPA, a share of plays
@@ -253,14 +348,35 @@ completed season.
 THE RANKINGS are of this season alone. Beside the rating above, every player carries a second
 one that starts the season at 1500 and moves only on this season's games, by the same
 formula against the same units but with placement games, as Glicko and the ranked ladders of
-games do it: a new rating is uncertain, so its K starts at 160 and shrinks with every game
-(160, 109, 78, 60, 49, 42 ... toward 32), and a player's first few games carry him most of
-the way to his level, after which he moves only as far as his play keeps proving. Everyone
+games do it: a new rating is uncertain, so its K starts high and shrinks with every game,
+K = max(32, 695 / (games + 4)): 174, 139, 116, 99, 87 ... 35 at game 17. 695 is one over the
+slope of E at even odds (400 / (ln 10 x 0.25)), so to first order the rating after n games is
+the plain mean of their results with a prior of three games at 1500: every game counts the same
+(times its weight w). The schedule before October 2026, 32 + 128 x 0.6^games (160, 109, 78,
+60, 49 ...), counted a season's first game about twice as much as a later one. On 2013-2025,
+on the same games, equal weights rank next season's output better (Spearman, score a game:
+backs 0.605 to 0.621, linemen 0.542 to 0.558, defensive backs 0.429 to 0.450; tight ends' yards
+a target 0.152 to 0.166; each with a 90% interval above zero, and no position worse beyond
+the noise), the rest of the season from week 5 better for backs (0.520 to 0.539), tight ends, receivers, linemen and
+linebackers, and the starter above his backup more often everywhere but at running back (91.7%
+to 90.9%). The kickers' week 5 (0.160 to 0.139) and the backs' yards a carry (0.165 to 0.158)
+went the other way, both inside the noise. The season rating of a full-time defender now stands
+further above a part-timer's with the same output a snap (the partial correlation with snap
+share: linemen 0.28 to 0.32, linebackers 0.72 to 0.75, defensive backs 0.67 to 0.70); for the
+linemen, whose snap share ranks next season's output a snap beyond this season's (0.17), that is
+skill the box score misses, and the schedule puts no more weight on playing time itself (a
+rating with every result set to 0.5, playing time alone, has a partial of 0.66 for linemen
+under the old schedule and 0.63 under this one). The Power Ratings' blend is level (0.6462 to
+0.6461 in log loss on 2018-2025), so its two tenths stand. Everyone
 starts at 1500 with that uncertainty rather than at the bottom: a start at the bottom would
 rank players by how many games they have had, not how well they played. The table ranks that one, and a player needs enough rated games
 this season to be ranked -- games in a real role (at least half his position's normal
 workload) in at least half of his club's rated games, so the table is not filled with players
-a few snaps have left near 1500. It was half the weeks in which anyone had played, so a lone
+a few snaps have left near 1500. A ranked player with fewer than three games in a real role
+is marked provisional (`prov` on his row in the table, `prov_games` in players.json): in a
+season's first weeks the bar is two games, and two games put Drew Lock 7th among the
+quarterbacks and Za'Darius Smith 5th among the defensive linemen in week 5 of 2026. A bar of
+three would empty the table in weeks 1 and 2, so it is a mark, not a bar. It was half the weeks in which anyone had played, so a lone
 Thursday game raised the bar for all 32 clubs: from Friday to Monday the #1 tight end and four
 top-15 quarterbacks fell out of the table with no note, and a club's bye counted against its
 players. "Through week N" is the latest week whose games are all rated, with the week under
@@ -343,7 +459,7 @@ HISTORY = os.path.join(HERE, 'history')
 FIRST = 2012
 # the formula's version: bumped with a deliberate change to the ratings, the lineups or the game
 # model, so elo/check.py knows a reshuffled table is the change and not a fault
-FORMULA = '2026-10-10'
+FORMULA = '2026-10-12b'
 ET = zoneinfo.ZoneInfo('America/New_York')     # games.csv gives kickoffs in US Eastern; DST from the zone, never a date
 UNDER_WAY = 36          # hours after a season's first kickoff by which nflverse has its player stats: from then on its files are required
 CALL_LEAD = 15          # minutes: a call made closer to kickoff than this is not counted as published before it
@@ -388,15 +504,23 @@ FACET = {'QB': 'pass_d', 'WR': 'pass_d', 'TE': 'pass_d', 'RB': 'rush_d', 'DB': '
 # the depth a team fields at each group, and how much each slot counts in the game model
 DEPTH = {'QB': [1.0], 'RB': [1.0, 0.5], 'WR': [1.0, 0.7, 0.45], 'TE': [1.0], 'K': [1.0],
          'DL': [1.0, 0.8, 0.6, 0.4], 'LB': [1.0, 0.7, 0.4], 'DB': [1.0, 0.8, 0.6, 0.5, 0.4]}
+# the groups scored on what they produced (yards, touchdowns, fumbles lost) rather than on EPA (THE SCORES)
+PRODUCED = ['RB', 'WR', 'TE']
 # a game's weight is involvement over this norm, capped at one
-VOLUME = {'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
+VOLUME ={'QB': 25, 'RB': 12, 'WR': 6, 'TE': 4, 'K': 3, 'DL': 5, 'LB': 5, 'DB': 5}
 K_NEW, K_SET, K_UNIT, SETTLED = 56.0, 32.0, 120.0, 8
-# the season rating's placement: K = K_SET + (K_PLACE - K_SET) * K_DECAY^games, so the first
-# games move it hard (160, 109, 78, 60, 49 ...) and it settles toward 32, as Glicko's shrinking
-# uncertainty does; the shown rating puts each position on a bell curve, 100 points a standard
-# deviation from 1500 (see THE RANKINGS)
-K_PLACE, K_DECAY, SHOW_SD = 160.0, 0.6, 100.0
+# the season rating's placement: K = max(K_SET, K_PLACE_SUM / (games + K_PLACE_N)), so the
+# first games move it hard (174, 139, 116, 99, 87 ...) and every game ends up counting the same:
+# K_PLACE_SUM is one over the slope of E at even odds, 400 / (ln 10 * 0.25), which makes the
+# rating (to first order) the mean of its games' results with a prior of K_PLACE_N - 1 games at
+# 1500; the shown rating puts each position on a bell curve, 100 points a standard deviation
+# from 1500 (see THE RANKINGS)
+K_PLACE_SUM, K_PLACE_N, SHOW_SD = 695.0, 4, 100.0
 REPLACEMENT = 1450.0
+PROV_GAMES = 3      # a ranked player with fewer real-role games than this is marked provisional (prov)
+QB_START = 1450.0   # a quarterback's first career rating (from the second season on): a new one is seldom an average starter
+TD_YARDS = {'RB': 10.0}    # a touchdown, in yards of production (PRODUCED); 20 where not named
+DL_HIT_EXTRA = 1.0  # a defensive lineman's QB hit counts double: this on top of every defender's one
 LEFT_EARLY = 0.35   # involvement under this share of a regular's recent median: the game is not rated
 CARRY = 0.75      # share of the distance from 1500 a rating keeps across an offseason
 # an average kicker's make rate by distance, for points over expectation
@@ -530,7 +654,15 @@ def load(offline, now):
     return games, stats, roster, charts, injuries, pbp, sources
 
 
-PR_K, PR_H, PR_D, PR_C, PR_S, PR_SPREAD, PR_W = 1.3461, 30.02, 25.0, 21.0, 1.5771, 79.0, 0.2
+# THE POWER RATINGS (see the docstring): every constant chosen on 2012-2017 and never refitted. The
+# ridge's pull toward average in games (PR_LAM), the margin cap (PR_C), the recency half-life in weeks
+# (PR_HALF), the home field in points (PR_H, the 2012-2017 mean capped home margin, measured, not
+# tuned), the log-odds a point (PR_S), the home field in a game's log-odds (PR_H0: the table never
+# uses it, a game priced off the table would), the usual spread of R across the teams at the end of a
+# regular season (PR_SPREAD, 2012-2025, which only sets how a rating is drawn) and the lineups' share
+# (PR_W, the owner's choice)
+PR_LAM, PR_C, PR_HALF, PR_H = 16.0, 17.0, 16.0, 1.8397
+PR_S, PR_H0, PR_SPREAD, PR_W = 0.35941, 0.33195, 1.932, 0.2
 
 
 # OVERALL OFFENSE AND OVERALL DEFENSE (see the docstring). Each stat, as a team-game value from the
@@ -728,32 +860,59 @@ def unit_ratings(season_games, tg, score):
 
 
 def power_ratings(season_games, lineup=None, lineup_before=None):
-    """The teams' power ratings: this season's margin Elo with the lineups' player Elo blended
-    in at PR_W, in log-odds (see THE POWER RATINGS)."""
+    """The teams' power ratings: every final of this season solved together, each worth its capped
+    margin, home field out, against what the opponent has turned out to be, recent weeks a little
+    more and every team pulled toward average (a weighted ridge), with the lineups' player Elo
+    blended in at PR_W, in log-odds (see THE POWER RATINGS)."""
     g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
     g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
     g = g.sort_values(['kick', 'game_id'], kind='mergesort')
-    teams = set(g.home_team) | set(g.away_team)
-    R = {t: 0.0 for t in teams}
-    before, rec = {}, {t: [0, 0, 0] for t in teams}
-    for r in g[g.home_score.notna() & g.away_score.notna()].itertuples(index=False):
-        home = 0.0 if r.location == 'Neutral' else 1.0
-        e = (R[r.home_team] - R[r.away_team] + PR_H * home) / PR_D
-        d = max(-PR_C, min(PR_C, float(r.home_score - r.away_score))) - e
-        before[r.home_team], before[r.away_team] = R[r.home_team], R[r.away_team]
+    teams = sorted(set(g.home_team) | set(g.away_team))
+    ix = {t: i for i, t in enumerate(teams)}
+    fin = g[g.home_score.notna() & g.away_score.notna()]
+
+    def solve(sub):
+        # (X'WX + LAM I) R = X'W y: X +1 for the home team and -1 for the away team, so R is centred;
+        # y the capped home margin less the home field (none at a neutral site); w halves every
+        # PR_HALF weeks back from the latest week solved (the playoffs are weeks 19-22)
+        if sub.empty:
+            return np.zeros(len(teams))
+        wk = sub.week.to_numpy(float)
+        w = 0.5 ** ((wk.max() - wk) / PR_HALF)
+        X = np.zeros((len(sub), len(teams)))
+        rows = np.arange(len(sub))
+        X[rows, [ix[t] for t in sub.home_team]] = 1.0
+        X[rows, [ix[t] for t in sub.away_team]] = -1.0
+        home = (sub.location != 'Neutral').to_numpy(float)
+        y = np.clip((sub.home_score - sub.away_score).to_numpy(float), -PR_C, PR_C) - PR_H * home
+        return np.linalg.solve(X.T @ (X * w[:, None]) + PR_LAM * np.eye(len(teams)), X.T @ (w * y))
+
+    R = solve(fin)
+    rec, last_kick = {t: [0, 0, 0] for t in teams}, {}
+    for r in fin.itertuples(index=False):
+        last_kick[r.home_team] = last_kick[r.away_team] = r.kick
         if r.game_type == 'REG':
             m = r.home_score - r.away_score
             rec[r.home_team][0 if m > 0 else 1 if m < 0 else 2] += 1
             rec[r.away_team][1 if m > 0 else 0 if m < 0 else 2] += 1
-        R[r.home_team] += PR_K * d
-        R[r.away_team] -= PR_K * d
-    to_pts = 400 / (PR_S * math.log(10))      # a log-odds in the margin Elo's points
-    mix = lambda r, lg: (1 - PR_W) * r + PR_W * lg * to_pts if lg is not None else r
-    now = {t: mix(R[t], (lineup or {}).get(t)) for t in teams}
+    # before: the same solve on every final that kicked off before the team's last game, the results
+    # part the table had going into it (its lineup part is lineup_before: today's lineup on the
+    # ratings of then); the change since is that game, every re-scoring since and the players' ratings
+    at = {k: solve(fin[fin.kick < k]) for k in set(last_kick.values())}
+    before = {t: float(at[k][ix[t]]) for t, k in last_kick.items()}
+    mix = lambda r, lg: (1 - PR_W) * r + PR_W * lg / PR_S if lg is not None else r   # a log-odds in points
+    now = {t: mix(float(R[ix[t]]), (lineup or {}).get(t)) for t in teams}
     then = {t: mix(before[t], (lineup_before or {}).get(t)) for t in before}
     show = lambda v: round(1500 + 100 * v / PR_SPREAD)
+    rnd = lambda v, n: None if v is None else round(float(v), n)
+    # the parts beside what is shown, so elo/check.py can hold the table to games.csv: the results
+    # part in points (`r`, and `r_before` going into the last game) and the lineup part in log-odds
+    # (`lg`, `lg_before`; none where a team has no lineup)
     return {t: {'elo': show(now[t]), 'before': show(then[t]) if t in then else None,
-                'p_avg': round(1 / (1 + 10 ** (-PR_S * now[t] / 400)), 4), 'record': rec[t]} for t in sorted(teams)}
+                'p_avg': round(1 / (1 + math.exp(-PR_S * now[t])), 4), 'record': rec[t],
+                'r': rnd(R[ix[t]], 4), 'lg': rnd((lineup or {}).get(t), 5),
+                'r_before': rnd(before.get(t), 4), 'lg_before': rnd((lineup_before or {}).get(t), 5) if t in then else None}
+            for t in teams}
 
 
 def _ranked(rows):
@@ -915,9 +1074,15 @@ def scores(d):
     vol = pd.Series(0.0, index=d.index)
     off = g.isin(['QB', 'RB', 'WR', 'TE'])
     score[off] = epa[off]
+    # a back or a receiver is scored on what he produced, not on EPA, which rates volume as a cost (THE SCORES)
+    td = g.map(TD_YARDS).fillna(20.0)
+    made = (n('rushing_yards') + n('receiving_yards') + td * (n('rushing_tds') + n('receiving_tds'))
+            - 25 * (n('rushing_fumbles_lost') + n('receiving_fumbles_lost')))
+    score[g.isin(PRODUCED)] = made[g.isin(PRODUCED)]
     score[g == 'K'] = fg[g == 'K']
     dl = g.isin(['DL', 'LB', 'DB'])
     score[dl] = defense[dl]
+    score[g == 'DL'] += DL_HIT_EXTRA * n('def_qb_hits')[g == 'DL']
     vol[g == 'QB'] = (n('attempts') + n('carries') + n('sacks_suffered'))[g == 'QB']
     vol[g == 'RB'] = (n('carries') + n('targets'))[g == 'RB']
     vol[g.isin(['WR', 'TE'])] = (n('targets') + n('carries'))[g.isin(['WR', 'TE'])]
@@ -1187,7 +1352,7 @@ def main():
     def strength(pids_groups):
         out = {}
         for g in GROUPS:
-            rs = sorted((R.get(p, 1500.0) for p, gg in pids_groups if gg == g), reverse=True)
+            rs = sorted((R.get(p, QB_START if g == 'QB' else 1500.0) for p, gg in pids_groups if gg == g), reverse=True)
             wts = DEPTH[g]
             rs = (rs + [REPLACEMENT] * len(wts))[:len(wts)]
             out[g] = sum(r * w for r, w in zip(rs, wts)) / sum(wts)
@@ -1266,8 +1431,8 @@ def main():
             for r in d.itertuples(index=False):
                 pid, g = r.player_id, r.group
                 if pid not in R:
-                    R[pid], N[pid] = 1500.0, 0
-                    season_start[(season, pid)] = 1500.0
+                    R[pid], N[pid] = (QB_START if g == 'QB' and season > FIRST else 1500.0), 0
+                    season_start[(season, pid)] = R[pid]
                 info[pid] = {'name': r.player_display_name, 'pos': r.position, 'group': g, 'team': r.team}
                 # a regular who left early: his involvement collapsed against his own recent
                 # norm, so the game says nothing about how good he is and is not rated
@@ -1300,7 +1465,7 @@ def main():
                     RS, NS, NQ, HS = RSd[int(season)], NSd[int(season)], NQd[int(season)], HSd[int(season)]
                     rs = RS.get(pid, 1500.0)
                     Es = 1 / (1 + 10 ** ((Uv - rs) / 400))
-                    RS[pid] = rs + (K_SET + (K_PLACE - K_SET) * K_DECAY ** NS.get(pid, 0)) * r.w * (S - Es)
+                    RS[pid] = rs + max(K_SET, K_PLACE_SUM / (NS.get(pid, 0) + K_PLACE_N)) * r.w * (S - Es)
                     NS[pid] = NS.get(pid, 0) + 1
                     NQ[pid] = NQ.get(pid, 0) + (1 if r.w >= 0.5 else 0)
                     HS.setdefault(pid, []).append([int(ordw), round(RS[pid], 1)])
@@ -1588,6 +1753,7 @@ def main():
                    'this_season': [[o, round(r, 1)] for o, r in HS.get(pid, [])]}
             if pid in q_now:
                 row['q'] = q_now[pid]        # questionable: listed, with a Q
+            row['prov'] = NQ.get(pid, 0) < PROV_GAMES   # ranked on fewer than three real-role games
             rows.append(row)
         for x in sidelined:
             x['elo'] = show(x.pop('raw'))
@@ -1647,6 +1813,7 @@ def main():
         'built_at': model['built_at'], 'formula': FORMULA, 'season': rank_season, 'season_in_play': last, 'phase': phase,
         'through_week': tw, 'through': tlabel, 'partial': partial,
         'rule': 'a real role (half the position\'s normal workload) in at least half of his club\'s rated games',
+        'prov_games': PROV_GAMES,
         'groups': groups_out, 'players': players, 'past': past,
     }
     mu = matchups(mu_log, game_feat, coming, call_season, mu_lineups)

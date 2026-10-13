@@ -22,8 +22,8 @@ without narrating the steps:
 ## The sites and their parts
 
 GitHub Pages serves the repo root. Three sites have pages: `nflbets/`, `news/` and `cfb/` (the
-root `index.html` links them, and X NHL Bets in its own repo). `pickems/` and `live/` hold only redirects for old
-bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
+root `index.html` links them, and X NHL Bets in its own repo). `pickems/` and `live/` hold only
+redirects for old bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
 `parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
 with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
 by hand when a source changes, and reads the models' data on every load. `news/` and `cfb/`
@@ -36,7 +36,7 @@ each have their own job too (`news.yml`, `cfb.yml`).
 | `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
-| `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-11; `index.html` redirects there | `nhl-hub` |
+| `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
 | `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
 
@@ -50,6 +50,9 @@ at the next refresh:
 - `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` (and `cfb/data/history.json` gains the season just finished on the job's first run of a new one; otherwise it is source)
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
+- `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: the suggested
+  parlays frozen at each wave's kickoff and graded after, so a hand edit there rewrites the record and
+  the script's guard refuses it)
 - `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
@@ -157,9 +160,10 @@ and the rule used before (the model's points pulled halfway to the total) was wo
 there (MAE +0.13 points, Brier +0.0042, its 3-point-edge picks 66-81 for -20.3 units). A model may take
 the chance back only by passing that study's preregistered rule on seasons it has never seen; never
 tune one on the season in play. A no-vig chance sits under the chance its price implies, so a total
-could never clear the panel's bar, and `pricedLegs` leaves the totals out altogether; with Game total
-ticked the panel says so in one line. The audit's J2 holds the chance to the no-vig chance of the
-prices on every game and with the model's points moved, and M holds that no tier ever holds a total.
+never clears the panel's bar and `pricedLegs` leaves the totals out; with Game total ticked the
+suggested parlays take them only as the last fill, marked no edge (app v91-v93, below). The audit's J2
+holds the chance to the no-vig chance of the prices on every game and with the model's points moved,
+and M holds a total in a tier to that.
 A total moves with its game's passing and scoring lines (`TOTAL_RHO`, measured on 2019-2024) and is
 unrelated to a win or cover bet on the same game.
 
@@ -178,6 +182,32 @@ are up in units; otherwise FAIL and the tracking stops. A PASS only makes it a c
 its own; before 285 the summary never says passing. `shadow_equiv.py` proves its numbers are the research
 harness's own (identical on every development game), `test_shadow.py` is its test (README.md there,
 "The shadow"). Never edit the ledger or the bar by hand.
+
+A quarterback has an anytime touchdown since app v102 (`patch_qb_td.py`; the owner asked, October
+2026): his own rushing or receiving touchdown, as DraftKings settles it, never a pass he throws, and
+settled so everywhere it already was (the stats' `any_td`, the live box score's, `settleLeg`, the
+suggestions record: rushing plus receiving touchdowns only). It is worded so wherever it is named
+("Scores a rushing or receiving TD (not a TD pass)", `tdLabel`; his game page heads it "Rushing or
+receiving TD"); a back's, receiver's or tight end's reads as before. Its numbers are
+`props/research/qb_td.py`'s, merged into `final_model.json`, `tdrate.json` and `corr.json` by its
+`--write`, which adds only the quarterback's entries and asserts nothing else moved: a logit on
+`featVec` fitted the way fit4.py fitted the other positions' (the script recovers that method and
+gives their coefficients back to within 0.018), on the rows the page serves: each club's starter judged
+before the game (`pregame_starter`, most pass attempts over his recent games), 2019-2024, since the page
+offers the leg to the chart's QB1 alone and a fit on every row, backups' relief and kneel-downs in, read
+the starters about 1.5 points low. Held out once on 2025's starters, capped as the page runs it (his
+projected carries at the league's 0.047 touchdowns a carry, times `tdmult`), it beat the league's
+starter rate (log loss 0.4018 against 0.4307, Brier 0.1223 against 0.1307), said 15.4% where they
+scored 15.5%, and was level with his own shrunk career rate (0.4035, 0.1217), as over a 2021-2025
+walk-forward on the starters (said 15.5%, scored 15.6%);
+`TOTAL_RHO['QB:any_td']` 0.09 and 12 `corr.json` pairs were measured as theirs were. The cap is the
+league's rate, so it holds a quarterback who runs in his own goal-line plays under what he does (Josh
+Allen, said about 60%, capped to 40-43%); a per-player rate would be its own change,
+tested walk-forward. Market + form gives his touchdown no second price (his rating is a passer's;
+`eloAltP` takes the leg's stat), so the panel takes one only as a thin edge. The audit's K2 holds it
+(on a payload baked before the model it says so and skips the projection checks; with it, a quarterback's
+book price, the open weeks' own or one it plants, must reach a priced leg), and
+`PROPS_AUDIT_PAYLOAD` boots the audit on another payload, to try data the job has not baked.
 
 `.github/workflows/props.yml` runs four price pulls a week (Mon, Wed and Thu 08:17 UTC, and Sat
 05:17 UTC for the weekend: Saturday's games and the whole Sunday slate, London to Sunday night;
@@ -200,6 +230,84 @@ no credits) replays the season's schedule through `weekly.py`'s windows and `odd
 `choose()` at every lateness up to 9.4 hours and with pulls dropped, and holds the crons to
 `PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`.
 
+Every pull also keeps DraftKings' own id (sid) for each outcome it reads, free on the same calls
+(`includeSids`), in `props/data/dk_links_wk{W}.json`, keyed by the book's names
+(`game|player|stat|Over/Under/Yes|point`, `game|game|ml/spread/total|side|point`, `game|event`); a game
+priced again replaces its entries. The bake (`dk_ids` in `weekly.py`) turns them into the payload's `dk`,
+for the games still to come only, keyed the way the page names a leg, under the week and the game:
+`<pid>|<stat>|over|<point>` (and `under`: a player's line at DraftKings' point), `<pid>|any_td` (the
+book's Yes), `team:<ABBR>|ml`, `team:<ABBR>|ats|<the team's own line>`, `game|total|over|<point>` (and
+`under`) and `event`, each point written as the page writes a number (`dk_point`: 79.5, 80, -3), and
+when they were read: `at`, the game's player prices (`priced_at.json`), and `glat`, its game lines
+(`gamelines_wk{W}.csv`'s `pulled_at`). An id names one outcome at one number, and a Sunday game's player
+ids are read once, on Saturday, so they can be a day and more old by kickoff: the card dates what it
+opens. A player
+is placed by the rule his prices are (`pool.match`, within the game); a name it cannot place, a team
+defence's touchdown and a key two book names would give two ids are left out. Only ids and the read
+times: the parlay card builds the links. `python3 test_dk_links.py` holds it to the real week-5 file and to its cases; at a
+rollover last season's file goes to `data/archive/` with its week's price files.
+
+Once the audit is clean, `weekly.py` runs the **suggestions record**, `node suggest_ledger.js` (the third
+change after the review of Sunday 11 October 2026, the owner's call): the Parlay Builder's four suggested
+parlays on its default choices (All, every game still to come, the default Bet amount), taken from the
+published page itself (`nflbets/index.html` booted in jsdom on the payload just baked, with `elo/data`
+beside it, since market + form decides which player legs qualify, and the window's clock held at the
+run's time, so a boot of a few seconds cannot carry it past a kickoff) by the page's own `getPbTiers`, into `props/data/suggest_ledger.json`, which the workflow commits
+with the rest of `props/data`. An entry is keyed `season|week|kickoff wave`, the wave being the earliest
+kickoff among the games still to come at the run: rewritten by any run while that kickoff is to come and
+the panel has changed, frozen from it and never changed again, so each is the panel as the job last saw
+it before that wave (a wave no run landed before has none; an entry not frozen that is no longer the wave
+is dropped; with no game to come nothing is taken). It keeps each level's legs, its model chance, fair
+chance and decimal price, or why it is empty. A frozen entry is graded by the app's own `settleLeg` once
+every leg has settled, as a book settles it: a leg lost loses; a push or void drops out and the rest are
+paid at `parlayDec` on the legs left; every leg a push or void is a push, the stake back; pending while a
+game or its stats are out; a grade once made is replaced only by a complete one; only the page's own
+season is graded (the app's actuals are this season's, keyed by week, so last season's week 5 would read
+this one's). A player with no stat line is graded as the page grades him (**who played**, below). The
+`summary` gives per level the parlays graded won or lost, won, the wins expected by the fair chance and by
+the model's, and the units on $1, each parlay once: an entry is the whole week's panel, so a parlay
+unchanged across waves is frozen into each, and the same legs (in any order) of the same level in a
+season's week are counted from the last entry that holds them (`repeats` says how many that set aside). Its guard holds the new ledger to the file the run started from and to the last
+commit's: a frozen entry gone or changed in anything but its grade, an entry taken at or after its
+kickoff or new and not this run's, a grade that does not follow its legs, a summary that does not follow
+from the entries: refused, the file put back (the last commit's where the copy on disk had moved), exit 1.
+It never refuses the run or turns it red: `weekly.py` logs the refusal in its report and publishes the
+payload. It spends no credit. `node test_suggest_ledger.js` (about twenty seconds) runs it on made-up
+weeks cut from the payload: taken (and kept by a run a second before its kickoff), rewritten before the
+kickoff, unchanged and not written, frozen, graded against planted wins, losses, voids and pushes worked
+out from the raw rows, the payload's snaps (planted) and the injury report (a player who played with no
+stat line on zero; one his club's snaps leave out, void; one Out with no snap counts yet, void; neither,
+pending), a grade kept that a payload can no longer settle, last season's entry never regraded
+on this season's rows, a parlay two waves froze counted once, no game to come, and the guard end to end
+and on hand-made ledgers. A
+change to the script comes with a run of it.
+
+**Who played** (app v101, after the review of Sunday 11 October 2026: Tory Horton, SEA, ran 11 offensive
+snaps in week 5 with no target, DraftKings graded his receptions over 1.5 a loss, and the page showed it
+void). nflverse writes a player's week only when he has a stat, so no row is not "did not play".
+`weekly.py` fetches nflverse's snap counts (`raw/snap_counts_<season>.csv`, PFR's, never required) with
+the other files, and the bake (`who_played`) places each row on a player by its PFR id through the
+roster file, else by its name within its game (`names.Pool`, the price rows' rule) when that player is
+on the row's club (nflverse's `players.csv` placed nothing those two miss on 2026 weeks 1-5 and is not
+read). It writes the payload's `snaps`, `snaps[week][game][club]` = the players the page projects who
+took a snap of any kind and have no stat line, a club for every game whose snap counts and stats are
+both in (a club with a skill-position row no player takes is left out, and the name logged), and a row
+of zeros in `stats` (every column, `from_snaps: 1`) for each who took a snap in his role (on offence; a
+kicker on special teams), so the projections (`applyGame`) and the Track Record see the game: about 15%
+of receiver games and 37% of tight-end games at 15-35% of snaps had no row. `settleLeg` (with
+`tookPart` and `reportedOut` in `part2.js`), for a player with no stat line once his game's stats are
+in: a snap, graded on zero (an over and a rung lose, an under wins); his club's snaps in without him,
+void; no snap counts for his club yet, void if that week's report had him Out, otherwise it waits. The
+page, the Track Record and the suggestions record all grade this way, from the payload alone; ESPN's
+game summary, which the live tracking reads, lists only players with a stat and was not used. A run with
+no snap counts carries the published payload's (`carry_snaps`), and a club whose stats are in with no
+snap counts 72 hours after kickoff turns the run red after its commit (`snaps_overdue`). The audit's V9
+plants snap counts and holds every branch; V15 holds the payload's snaps and rows of zeros to each other
+and the page, and with `PROPS_AUDIT_RAW` to `raw/snap_counts` and `raw/pw`. `python3
+test_who_played.py` holds the bake to its cases (PFR id, name, special teams only, a kicker, a player
+traded since, a name no player takes, the carry and the overdue rule, `weekly.bake` end to end). Never
+tune the model on the 2026 results these rows add.
+
 ## Betting: the loop
 
 ```
@@ -219,7 +327,8 @@ the absences card, no quarterback who missed the last game on the report counted
 this week's report clears him, no 'Home' game abroad, a call from every model for every coming
 game (or `modelStatus` saying why), no call moved after its kickoff (against the last commit),
 scoreboard finals counted for every model on the frozen call, Team Rankings' record, the record's
-disclosure of a model that could not run, and the Joker's refitted weeks drawn like any other.
+disclosure of a model that could not run, the Joker's calls on 2026 weeks 1-2 its history file's
+(5n), and those weeks drawn like any other.
 The files it holds the state to are the ones `update.js` refuses without (`patches.filesDue`: the roster and depth chart from a week before the opener, the injury report
 from its first kickoff, the stats once a final is a day and a half old), and it passes in every
 phase of a season: the week before the opener, week 1, between playoff rounds and after the Super
@@ -241,8 +350,9 @@ hourly" slot fires about six times a day with gaps of up to 8 hours: a backgroun
 an hourly promise. It runs `update.js`, `joker.py`, `broly.py` (each model step may fail alone:
 its last good picks stay, `modelStatus` says why on the Pick'em Record), the game-totals shadow
 (`props/research/totals/shadow.py` and its check, which may fail alone too; see the game totals under
-Props) and `smoke.js` (which builds the app itself), commits `betting/state.json` and the shadow's
-ledger, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
+Props), the clearing of X's finished parlays (`liveparlays/tools/autoclear.py` after its test, which may
+fail alone and then puts the file back; see "X's parlays and the X Bet Log") and `smoke.js` (which builds
+the app itself), commits `betting/state.json`, the shadow's ledger and `liveparlays/parlays.json`, and starts `elo.yml` when a final was graded (even if the smoke or the commit failed: the Elo
 job reads nflverse, not this state), so Team Rankings' Elo does not wait for the Elo job's own late slot.
 The **Broly Model** (`betting/broly/`) is the betting line plus six team stats: points per game,
 points allowed, turnover differential, third-down rate, red-zone touchdown rate and yards per
@@ -254,10 +364,19 @@ Pick'em Record draws like the Joker. Before it shipped it was tested on 2018-202
 fitted on the ones before: 65.8% straight up against the Vegas favourite's 66.4%. At a new
 season, run `fit.py` on the seasons through the last one so `prior_<last>.json` exists (without
 it Broly refuses and says so). Both score playoff games too, and both freeze a game's call at its
-kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, the owner's
-call); `model.json` names the weeks (`fitted_weeks`, published as `state.jokerFit` and kept there as
-data), and the Pick'em Record draws them like every other week, counted in the Joker's record and its
-line against Vegas with no mark, label or note (the owner's call, October 2026).
+kickoff. The Joker was refitted with 2026 weeks 1-2 in its training (`tune_2026.py`, 24 September);
+`model.json` names the weeks (`fitted_weeks`, published as `state.jokerFit` and kept there as data),
+but its calls on those games are fits, so they are not the record: the owner asked on 12 October 2026
+for the record it actually had. `joker.py` takes every week 1-2 call, on every run, from
+`betting/joker/history/2026_w1_w2.json` (written once from git, never by the job; its header says
+where each came from): week 2's are the calls `state.json` carried before each kickoff
+(`src: 'published'`), week 1's, played before the Joker existed, the original model's (fitted on
+2019-2025 alone, the one #117 put back), called after the games (`src: 'backtest'`), counted like any
+other week as the ELO Model's backtest weeks 1-2 are. 24-8 and +1 against Vegas on weeks 1-2, where
+the refit showed 25-7, +2. A week in `fitted_weeks` with a game missing from the file refuses the
+run; the smoke's 5n holds the published calls and grades to the file and the file to the last commit's
+copy, and 5h let such a call move onto it once, from the refit's (no `src`), then holds it like any other. The Pick'em Record draws those weeks like every other week, counted in the Joker's
+record and its line against Vegas with no mark, label or note (the owner's call, October 2026).
 `joker.py` reads the files `update.js` downloads into `/data` and fetches the season's
 play-by-play, so it runs after it and needs the network.
 
@@ -281,11 +400,26 @@ they come and `phase` says regular, postseason, over or opening. `elo/check.py` 
 their sources and against the last publish (the last commit's `elo/data`, which the site serves until the run
 commits): a top-ten player of the published rankings is still ranked or sidelined unless his club has played, had a
 game rated (the player stats land a night after the score) or he changed clubs; every call the published ledger had
-for a game this run can no longer call keeps its pick and its `src`; and a call in `elo/history/` is graded as it
-stands there unless a later call, itself published before kickoff, replaced it.
+for a game this run can no longer call keeps its pick and its `src`; a call in `elo/history/` is graded as it
+stands there unless a later call, itself published before kickoff, replaced it; and Team Rankings (`teams`, which
+carries each shown number's parts, `r` and `lg`) is solved again from games.csv by the gate's own iteration, never the
+build's matrix solve, `before` included (POWER in its docstring, with fixtures for the re-judging, a later final, a
+neutral site and a tie).
+
+A game's score (THE SCORES in the build) is EPA for a quarterback, production for a back, receiver or
+tight end (yards from scrimmage, 20 a touchdown and 10 for a back, less 25 a fumble lost: EPA rated a
+club's lead back above his backup in only 44% of seasons, since the average carry loses expected
+points), points over expected for a kicker, and a weighted count of events for a defender (a
+lineman's QB hits count double); a quarterback's first career rating is 1450, not 1500. The October
+2026 evaluation of every position (each tested by full rebuilds against the same data, walk-forward
+held) kept the rest: quiet games skipped, the kickers' expectation, the defensive backs' and
+linebackers' scores, which still measure involvement more than coverage or role (open questions:
+an edge group across DL and LB, blocking credit for tight ends).
 
 The rankings are of this season alone: each player's second rating (`RS` in the build) starts
-the season at 1500 with placement games (K 160 shrinking toward 32, Glicko's idea) and moves only on this season's games;
+the season at 1500 with placement games (K = max(32, 695/(games+4)): 174 shrinking toward 32, so that every game ends up counting the
+same, where the schedule before October 2026 counted a season's first game about twice as much) and moves only on this season's games;
+a ranked player with fewer than three real-role games is marked provisional (`prov`, "prov." on the table);
 the number shown is that rating on a bell curve within the position (1500 the average, 100 points a standard
 deviation, so the shields split a position as a ranked ladder does; the raw value stays in `raw`); a player is ranked only with games
 in a real role in at least half of his club's rated games (a club's bye or a Thursday game elsewhere does not move his bar), and
@@ -337,7 +471,7 @@ rebuild of the page. The Elo model also stands on the Pick'em Record chart, tabl
 grid as a fourth model: `betting/tools/build.js` reads `elo/data/model.json` beside the season
 in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
 `S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating; a game under way or awaiting its stats stays in `next` with its frozen call); `record_viz.js` (below) draws it on the chart and the table, and the build widens the app's own Joker lines in the pick grid to draw it there, each edit asserted
-to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings is a team Elo of this season's results (every team 1500 at the start, both teams moved after each final by how far the margin beat or missed the expected one, a blowout capped at 21, blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred), the tier shields, the change since its last game and the chance against an average team; it replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Challenger Model, the Joker, the ELO Model (the Elo game model) and the Broly Model (below); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only on every device (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
+to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings (the Team Rankings tab) rate each team on this season's results alone, every game re-scored at each build (every team 1500 at the start; a weighted ridge of all the season's finals solved together, each worth its margin capped at 17, home field out, plus the opponent's rating now, so a game counts for what the opponent has turned out to be, not what it was rated when they met; recent weeks weigh a little more, a 16-week half-life, and every team is pulled toward average as if it had also played 16 average games; blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; every constant chosen on 2012-2017 and tested once on 2018-2025, where it predicts the next game as well as the margin Elo it replaced in October 2026 (0.6447 against 0.6454 blended), which judged each game once, on the opponent's rating that week (the owner's Falcons-over-Packers and Chargers cases); THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred, and the note says the whole table predates it, since a final moves every team), the tier shields, the change since its last game (`before` is the same solve on the finals before that game, so the change includes the league's results since and a team moves in a week it does not play) and the chance against an average team; the margin Elo had replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Challenger Model, the Joker, the ELO Model (the Elo game model) and the Broly Model (below); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only on every device (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
 for Sunday's calls on Friday's final report (GitHub starts this repo's scheduled runs 4-9 hours late, so a slot is queued
 early enough to land before the London and 1pm kickoffs; Tuesday's run takes in Monday night; the rest move only who is
 expected to play), runs `elo/check.py`, `elo/check_tab.js` and the nflbets smoke (skipped between the Super Bowl and the
@@ -420,7 +554,7 @@ meant to land after the finals or the Sunday AP poll are queued at them. It comm
 
 ## Hockey
 
-X NHL Bets lives in its own repo, `DEMON-X13/nhl-hub`, since 2026-10-11, with its own CLAUDE.md;
+X NHL Bets moved to its own repo, `DEMON-X13/nhl-hub`, on 2026-10-13, with its own CLAUDE.md;
 `nhl/index.html` here only redirects to it.
 
 ## Bets and Stats: the loop
@@ -436,7 +570,28 @@ front of it as its own `pk-` prefixed section, and the X Parlays section lifted 
 `liveparlays/build/page.html` into a section of its own, `tab-xparlays` (styles scoped to `#lpCard`,
 script in a closure): X's card (`#lpCard`, X's placed parlays from `liveparlays/parlays.json`, read
 only, a parlay marked `cleared` left out, a quiet line under the heading saying when the file last
-changed) and nothing else.
+changed; a settled parlay, gone or with every game over, last and in full under Finished, which says
+each clears itself the day after its last game) and nothing else.
+
+Every card on it, live or settled, has an X at its top right (the owner, 12 October 2026: "all of this
+should look the same for everyone"), a 44px button named "Clear this parlay" that keeps clear of the
+header's chips on a phone. It opens a small window, `#lpAsk`, asking "Clear this parlay?", naming it
+(legs, week, price) and saying it is cleared from this device only and that X's parlays clear
+themselves for everyone the day after their last game, with Cancel and Clear (Escape, Cancel and a
+click outside clear nothing; Tab stays inside; the focus goes back to the X; a tap within 0.4 seconds
+of it opening, a double tap's second, neither clears nor closes; it scrolls when taller than the
+screen; leaving the tab closes it). Clear takes the parlay
+off X Parlays in that browser alone, its games no longer read: its id, with when, goes into the
+section's own key, `lp_cleared_here_v1`, never a retired one, which `storage.js` never removes (the
+build refuses one that names it) and which is pruned on every read of the file of any id the file no
+longer has or has cleared itself. Every change starts from what storage holds then, so two tabs of the
+site in one browser never write an older list over each other, and a tab follows the other's change
+(the `storage` event). With some cleared, "None of X's parlays is still live" becomes "None of the
+parlays shown here is still live", since a cleared one may still be running. Nothing is sent anywhere: there is no owner mode, sign-in or token,
+and a parlay leaves the page for everyone only by the file (`"cleared": true`, by hand or by
+`autoclear.py`). With some cleared a quiet line at the foot says how many, with Show it (them) again;
+with every one cleared that line is the card ("You cleared 2 parlays on this device"), and Show them
+again empties the list with no window. `smoke_live.js` section O holds all of it.
 
 The Parlay Builder tab is the prop model's suggested parlays panel (`#pbPanel`, drawn by `renderPb()`
 in `part3.js`, from `renderParlay()`) over the builder (`#parlayBody`). At the top of its controls is
@@ -458,7 +613,7 @@ Player unders (a touchdown and a ladder rung are overs; a box changed by hand li
 or no mix at all: there is no Custom tag); and the week's games still to kick off, all ticked to start, with All and None. From those
 alone it builds four tiers, each on its own: Safe, the likeliest 2-leg parlay; Medium, Aggressive and
 Extreme, the 3-, 4- and 5-leg parlay with the best expected return (chance times payout) that lands at
-least 25%, 12% and 5% of the time (`PB_TIERS`); where no parlay of a level's size reaches its floor
+least 25%, 12% and 5% of the time by the model's chance (`PB_TIERS`); where no parlay of a level's size reaches its floor
 with any count of thin legs, the likeliest parlay of that size instead (`pbLikeliest`, chosen as Safe
 is: the fewest thin legs, then the highest chance by the builder's own sums), marked `likeliest` and
 ruled "the likeliest 3 legs" (4, 5) on its card, with its chance and price and no note about the floor
@@ -468,10 +623,14 @@ qualifies as the old Suggested parlays window's did (a real price, the model's c
 points above the chance that price implies, the book's margin left in, market + form agreeing on a
 player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at
 or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet has
-no market + form); never a leg below the book. A game total is never in a tier: it is priced at the
-book's own chance, so it has no edge to offer, and the Game total box only brings up the line saying
-so ("Game totals are priced at the book's own chance, so they never make a suggested parlay; add one
-by hand from a game's Game bets card."). One team bet a game, one leg a player, no line twice. A tier is empty only when the picks do not make that many legs, and then says why ("Only 3 legs on your picks: tick more games or
+no market + form); never a leg below the book. A game total has no edge (it is the book's own
+chance), so it is never preferred or thin: with Game total ticked the week's totals are a third list,
+the market legs (`pool.mkt`), taken only where the legs with an edge cannot make a level of its size,
+those legs then the base and the totals the only fill, the fewest first (`pbTier`); each is marked no
+edge on its card with a line saying why (`pbMktLine`). With player bets ticked and none of their prices
+in yet, a note says the levels are built without player legs. A game gives one side (to win or to
+cover) and its total, which a book takes on one ticket and which are unrelated (`legRho`); one leg a
+player, no line twice. A tier is empty only when the picks do not make that many legs, and then says why ("Only 3 legs on your picks: tick more games or
 bet types", or, with player bets ticked before any of the ticked games has a player price, "No
 player prices yet: they are pulled on game day or the day before, Sunday's games on Saturday morning."), never a smaller parlay. Its chance and price are the builder's own (`parlayProb`,
 `parlayDec`, same-game legs priced together), worked on the legs in the builder's order, so Add to
@@ -479,17 +638,118 @@ builder (exactly those legs into `S.parlay`, on the Bet amount) shows the same n
 the tier said; Finish opens the parlay card on the Bet amount. The search is a beam over a pairwise copula approximation, with only the
 finalists worked by the real sums; the tiers are cached on a signature of the choices and the data
 (`PB_CACHE`), and a game that kicks off while the page is open leaves the list and every tier
-(`pbWatch` looks every half minute). The Elo picks are the panel's last section. With no game to come
-the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
+(`pbWatch` looks every half minute). The Elo picks are the panel's last section, and under them, at
+its foot, the **Suggestions record** (app v99, `pbRecHtml`): the props job's `suggest_ledger.json` (see
+the Props loop), read beside the payload once a load with no-store and kept outside `S` (`PB_REC`), drawn
+from the entries' own grades (`pbRecSum`, app v100: each parlay once, from the last entry that holds it,
+as the job's summary counts it), per level the parlays graded won or lost, won, the wins expected by the
+book's fair chance and by the model's, and the units on $1 (a win a push shortened at what it paid),
+pending parlays and pushes counted apart, with a line saying it starts on 12 October 2026 (Monday night's Bills at Rams the first
+wave) and that each entry is the default panel frozen at kickoff; no file, or one that is not a ledger,
+draws nothing. It is drawn when no game is left too. The audit's P2 holds it on made-up ledgers (no-store,
+nothing without a file, each row worked out, an empty and a junk file), and the nflbets smoke on the
+real file and a made-up one. With no game to come the panel says so. The old Suggested parlays window (`#suggModal`, its Any/overs/unders switch and
 its stake box) is gone; a game page's own High/Medium/Low suggestions and their side switch stay.
+
+**The book's fair chance, and legs far off it** (app v98, the owner's call after Sunday 11 October 2026:
+the model has run over-confident against DraftKings every week since week 2, and the suggestions, built
+from its biggest edges, collected its mistakes; the 1pm Safe pair said 53% where its fair chance was
+about 24%). Labelling and selection only, never a refit on the season in play. A leg's fair chance
+(`legFair` in `part3.js`) is DraftKings' own, its prices with the margin taken out: where both sides of
+the same line have a real price (a player's main line over and under, `PAY.mkt`; a game's two
+moneylines, or its two spread prices on the leg's own number; the total's over and under on the posted
+total) that side's no-vig chance (`devigOver`'s sum); where only one side is (a ladder rung, an anytime
+touchdown, a team line or total missing its other price, a main line the payload has moved), the price's
+implied chance over that week's typical overround on two-sided lines of its kind (`fairVig`: the median
+of the two implied chances summed, player main lines for a player's leg, the moneylines, spreads or
+totals for a game's, every kind's where the week has none of its own), worked from the payload on every
+call and marked est. wherever it is shown; a leg with no real price has none. A parlay's
+(`parlayFair`) is the builder's own `parlayProb` on its legs with each chance replaced by its fair
+chance, so same-game legs move together as the model's do; with a leg that has none it is null and the
+parlay shows the model's chance alone, saying the fair chance needs every leg's book price. Every
+level's card and the Elo picks' lead with it, labelled fair chance (", est." where it is), "model says
+53%" (the Elo picks: "Elo says") beside it; the levels are still chosen on the model's chances, so a
+level over its floor is ruled "best return that lands 25%+ by the model" (and the label wraps inside its
+box, app v100: four levels side by side just over 1100px leave it narrower than "FAIR CHANCE, EST."). The
+builder's summary leads with it ("fair chance all 3 land", "model says" beside it) and its confidence
+tile rates it ("confidence all 3 land, on the fair chance"; the model's chance, said so, where there is
+none; app v100), each builder row gives its leg's ("fair 55%"), a game page's High/Medium/Low hand leads
+with it where every leg has a book price (the hands' floors, 35%, 20% and 10%, said to be by the model's
+chance), and the parlay card does too (below). A leg the model rates `FAR_OFF` (15 points) or more above its fair chance on its
+side (`legFarOff`; only where a fair chance exists) is left out of the panel's preferred and thin lists
+(`pbPool` counts it in `far`, and the panel's note says how many and why) and of a game page's hands
+(`gameLegPool`), and flagged "model 77% · market 55%: far off the market" (`farText`) on the game pages
+(the player lines, the touchdown and rungs on a book price, the Game bets card's team lines), in the
+builder's rows and on an Elo pick, whose own selection (the Elo matchup chance) is left alone. The
+audit's M holds every level's fair chance to `parlayProb` on its legs at theirs and its card to leading
+with it; M7 works the rule on its own from the payload and holds `legFair` to it case by case, then
+made-up lines one in three 25 points above the book's fair chance and one in three 6 points above: the
+pool's count and note, no far leg on a level or a game hand, the flag on the game page (a main line; a
+touchdown and a ladder rung planted on one-sided book prices, the ladders shown; the Game bets card's to
+win and to cover) and in the builder, the builder's summary and confidence tile, each game hand as its
+card draws it and made-up hands that are sure to take each branch (book-priced main lines, one with a
+rung priced on one side, one with a leg on no book price), and the label free to wrap. The nflbets smoke holds the same on the page and the Elo picks, and
+`smoke_live.js` section J the card, its image and Share link's text (fair, est. and none).
 
 No device keeps a list of its own (the owner's call: visitors come to see X's parlays), and on
 every device the builder's Save and lock is **Finish parlay**: it opens the parlay card
 (`nflbets/build/card.html`, `pc-` prefixed, its own closure), a window showing the parlay as a
-card (each leg and its price, the parlay's price, the stake and what it pays, the model's chance
-beside the price's, the week and its dates, the site's mark) with **Download image** (a PNG drawn
+card (each leg and its price, the parlay's price, the stake and what it pays, the book's fair chance
+first, then the model's (an Elo pick's, the Elo's) and the price's implied, or with no fair chance the
+model's and why, the same lines in the window, the image and Share link's text (`chanceLines`), the
+week and its dates, the site's mark) with **Download image** (a PNG drawn
 on a canvas at twice its size, `parlay-week6-3legs.png`; the share sheet too where the browser can
-share a file, which is how a phone saves it to Photos) and **Start over**. Every dollar figure on
+share a file, which is how a phone saves it to Photos) and **Start over**. Beside them, **Open in
+DraftKings** (a real link, in a new tab) opens the parlay on DraftKings' betslip,
+`https://sportsbook.draftkings.com/?outcomes=<id>+<id>` with each `#` as `%23`, from the payload's `dk`
+(see the Props loop): each leg's DraftKings id under its own key, a rung k+ as DraftKings' Over k-0.5
+(or the whole k-1 its price was read from), in the card's order. Under the buttons the card says what it
+opens, gives each leg's own link too (DraftKings documents no link for several outcomes), and names every
+leg it cannot open and why, from what the payload holds: its game's DraftKings prices not pulled yet, or
+its game's lines read and none of its player prices yet (both with when they are pulled, the Parlay
+Builder panel's words, and said only of a leg on no book price in a game with no DraftKings player price
+in the payload: an id comes only with a price the job bought, so a game priced late has none; the owner's
+Monday night of 12 October 2026, Bills at Rams, whose player prices the Monday pull had not read; a ladder
+rung adds that only DraftKings' main lines are read, so it opens only if it turns out to be the main
+line), a market the pull does not read (carries, attempts, completions, interceptions, rush + rec yards,
+targets and the kicking lines: only `oddsfetch.py`'s DEFAULT is pulled, so no pull brings their ids;
+an id the payload has for one is opened all the same), no ids read for its game (a payload baked before
+`dk`, or a game priced with none), a player's line on no book price DraftKings did not offer when its
+game's player prices were read (dated; a book-priced leg with no id is said neutrally, not among the
+lines read), a 2+ touchdown rung or an alternate line the pull does not read, a game that has kicked
+off, or a line DraftKings had elsewhere when last read ("DraftKings had it at 79.5 when its lines were last read (Sat, Oct 17, 1:17 AM
+ET)", the page's main line where DraftKings has it; never "now"). The note is dated by the oldest read of
+the legs it opens (`at` for a player's leg, `glat` for a team's line and the total), and never promises
+that every leg lands: it opens "the 3 legs" (or "2 of the 3 legs") as DraftKings had them at that read,
+and a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it; the
+button's title says the same. DraftKings drops a moved id without a word, and a game's player ids are
+read once, from a few hours to about 40 before its kickoff (Sunday night's on Saturday), so the day-long "puts all 3 legs on DraftKings' betslip"
+it said before could be wrong on the very slip it named (dropped October 2026, with `fresh`). With no leg it can open the button
+stays, to add the legs by hand: **Open game in DraftKings**, the game's page, where every leg is in one
+game still to come with its event id, else **Open DraftKings**, DraftKings' NFL page
+(`https://sportsbook.draftkings.com/leagues/football/nfl`), and the note says so. **Share
+link**, beside it, is for sending the parlay to people (the owner, October 2026): one plain text, by the
+share sheet (`navigator.share({title, text})`, `canShare` asked about the same) or, with no share sheet,
+one that cannot share it or one that fails other than by a cancel, copied (the clipboard, else a hidden
+box; the card says Link copied), the same text either way. The title is "3-leg parlay +330" (with
+"(estimated price)" or "(fair price)" where the card says so); the text a plain line a leg (who, the bet,
+its price, "+210 est." or "+150 fair" where it is not the book's, as on the card), the stake and what it
+pays, the chances, then the DraftKings link alone on its own line under what it opens ("DraftKings betslip
+(opens the 3 legs as DraftKings had them):", "DraftKings betslip (opens 2 of the 4 legs as DraftKings had
+them; add legs 3 and 4 by hand):", never "all"; with no leg on the slip
+"DraftKings, the game's page (add the legs by hand):" or "DraftKings' NFL page (add the legs by hand):"),
+when DraftKings' lines were read and that a leg moved or pulled since will not be on the slip ("DraftKings
+lines as read ...: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check
+it before you bet"), the legs to add by hand, a line each with why in a few words ("player prices for its
+game are not pulled yet"), and the site's address last, as where it came from. The link is in the text and
+never in the share's `url` field (the owner, October 2026: "sometimes when i copy the button to share the
+draft kings link it like compresses the url and doesnt show all legs"): on an iPhone WebKit hands the share
+sheet the text and the url as two items, Messages draws the url as a card showing only
+sportsbook.draftkings.com, some apps send only the bare domain, and the sheet's Copy keeps the text and
+drops the url (WebKit bug 203221), while Android's Chrome joins the two, so it went wrong only sometimes.
+Before October 12 a parlay with no leg on the slip sent the site's address alone, which the owner took for
+a link to GitHub. A cancel does nothing, and neither button ever draws or downloads the image, which
+carries neither. Every dollar figure on
 it is whole, thousands marked: the window's tiles wrap onto a second row rather than cut one, and
 the image's step down from 19px to 14px, then take a second row. Finishing saves
 nothing anywhere; a suggested tier's Finish (the panel's and the Elo picks', `data-pc-finish`,
@@ -515,14 +775,18 @@ rebuilding it too:
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"; the Parlay Builder's panel, X Parlays and the X Bet Log from their files
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
-node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab, on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
+node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
 ```
 
 The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
 board's week the way the board does (the first with a game still to play, else the last), checks
-what needs a game to come only when there is one, and, once the payload's last game is about to
-kick off, boots the page two days before it so the builder checks still have a game
-to stand on. `--season-over` gives every game a result first; run it after a change to the smoke or
+what needs a game to come only when there is one, and, once the page's own week (`liveWeek()`: the
+first with a game not yet final, else the last) has no game still to kick off (within the hour of its last
+kickoff or past it: Monday night under way before the props job rebakes after its final, which the Elo job,
+dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
+that week's last kickoff so the panel, the Elo picks and the builder checks still have a game to stand on;
+a missing section there is a failed check, never a crash. `SMOKE_PAYLOAD=<file>` boots it on another
+payload, to try a week the job has not baked. `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
@@ -589,8 +853,27 @@ checked in a real browser at 390 and 360 over every game, such as NYG at WAS and
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
-Escape, Tab and Start over, and nothing written by finishing, on a plain browser and on one the
-retired owner layer marked. Both smokes record every request a page makes: one to the retired
+Open in DraftKings on made-up ids (every leg, part with a moved line, none over two games with
+DraftKings' NFL page and none in a payload baked before `dk`, the owner's case of a game with its lines
+read and no player prices (an est. rung and an est. touchdown) and its game page, carries, kicking points
+and interceptions there said to be unread (and a carries id the payload has opened), a money line beside an
+unpulled player leg, a player leg DraftKings did not offer when read, a book-priced leg never said to be
+unpulled or not offered, a money line on DraftKings' game lines with no ids, every kind of leg with an
+Under main line among them, a game kicked off; the runner's main line an Over in one browser and an
+Under in the other; the note and the button dated by the older read and saying what the link opens as
+DraftKings had it then at five hours, at 31 hours and undated, never that every leg lands), Share link
+(a title and a text and no url field, `canShare` asked about the same; the exact betslip link, every id in
+the card's order, alone on its line in the text under what it opens: all, 1 of 2, 2 of 4 with the legs to
+add by hand by number, none with the game's page or the NFL page; the read and its caution; every leg in
+its text and each to add by hand with why, an estimated rung's price and the parlay's marked as on the card,
+nothing promising every leg, a cancel doing nothing, and the same text copied by the clipboard and by the
+hidden box when the share sheet is missing, cannot share it or fails), Escape, the Tab order (Close, Open in DraftKings,
+Share link, Download, Start over, each leg's link) and Start over, and nothing written by finishing, on
+a plain browser and on one the retired owner layer marked. `smoke.js` holds a real tier's link to
+made-up ids under keys it works out on its own, with the other side of each line and the other team
+under decoys (the tier's lines are made up, so the payload's own ids could never match them), and,
+where the payload has ids for a game still to come, a builder parlay of its money line and a player's
+Under to the payload's own ids (skipped, and said, on a payload baked before `dk`). Both smokes record every request a page makes: one to the retired
 Firebase store or its sign-in services, or anything but a read, fails them.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
 `nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the
@@ -613,13 +896,40 @@ A parlay X placed at the book goes in `liveparlays/parlays.json`, and a week of 
 `liveparlays/xbets.json`, by Claude from what the owner sends, as each file's `how` field
 describes: every device shows it on its next load.
 
+## Research: the homework toward the next model
+
+`research/` (README.md first) is the owner's study series toward a new game model, one folder a
+question, each with its scripts, its README and its committed `results/`. **No model is built
+there, or anywhere, until the owner gives the all clear**; a study may fit a small regression only
+to ask whether something carries signal. 2003-2025 are explored (1999-2002 read only to warm up a
+history); 2026 on is held out and never read (`research/common.py`'s `HOLDOUT_FROM`, whose loaders
+refuse it), so the model can be tested on seasons it has never seen. `research/exam/` is the one
+place a held-out season is read (`common.open_exam()`, from `fetch.py --exam`'s own downloads), only
+to apply an equation already frozen; nothing is fitted, re-scaled or chosen there. Study 3 (`equation15/`) is the
+equation the owner asked for on 13 October 2026, fitted on 2004-2023 and tested once on 2024-2025; it
+is research, not wired into any site. Answer the question the owner asks: the
+betting line is not the yardstick for a study unless he asks about it (his direction, 13 October 2026).
+
+```
+python3 -I research/fetch.py                     # nflverse games.csv + play-by-play 1999-2025 into research/data/ (gitignored)
+python3 -I research/win_indicators/build.py      # study 1's team-game table
+python3 -I research/win_indicators/rank.py       # its rankings -> research/win_indicators/results/
+python3 -I research/win_indicators/report.py     # its README's tables, from results/
+python3 -I research/elo_vs_site/compare.py       # study 2: the study's Elo against the site's ratings, same games
+python3 -I research/elo_vs_site/side_by_side.py  # study 2's follow-up: Team Rankings against FiveThirtyEight, 2003-2025 season by season
+python3 -I research/equation15/equation.py       # study 3: the 15-indicator equation the owner asked for, fitted on 2004-2023, tested on 2024-2025
+python3 -I research/fetch.py --exam && python3 -I research/exam/blind_2026.py   # the frozen study 3 equation's blind test on 2026
+```
+
 ## The sites behave like websites
 
 The owner publishes a change and expects it on every device on the next load. Nothing
 may quietly outrank what the job published:
 
 - **Published data wins over anything a browser kept.** Local storage holds only what the
-  visitor made -- their own builder, saved slips, picks, bankroll, settings -- and nothing of X's.
+  visitor made -- their own builder, saved slips, picks, bankroll, settings, the parlays they
+  cleared from X Parlays on that device -- and nothing of X's. That cleared list only hides; it
+  never changes or outranks the file, and it is pruned to the file on every load.
   Schedule, scores, stats, prices, ratings and projections are read from
   `props/data/payload.json` and `betting/state.json` on every load, and X's parlays and the X
   Bet Log from `liveparlays/`. The prop model keys its
@@ -638,12 +948,20 @@ may quietly outrank what the job published:
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **X's parlays and the X Bet Log are files, the same on every device, read only everywhere.**
   There is no owner, no sign-in and no shared store: nothing on the page writes anywhere but the
-  visitor's own browser storage. The two files are the source, beside each other in `liveparlays/`:
+  visitor's own browser storage. The X on a card in X Parlays clears it from that browser only
+  (`lp_cleared_here_v1`, under "Bets and Stats: the loop"); for everyone, a parlay leaves the page
+  when the file marks it cleared. The two files are the source, beside each other in `liveparlays/`:
   - `liveparlays/parlays.json` is X Parlays: the parlays X placed at the book. Claude adds one from
     the slip the owner sends in chat (the game, each leg's player, team, stat, line and side, the
     stake, the price and the payout; the file's `how` says how each is written), corrects a line
     the book moved by writing the line X took, and marks a parlay the owner no longer wants on the
-    page `"cleared": true`, which keeps it in the file as history and off the page.
+    page `"cleared": true`, which keeps it in the file as history and off the page. A finished
+    parlay clears itself (the owner's call, October 2026): the betting job's
+    `liveparlays/tools/autoclear.py` marks it `"cleared": true` (with `cleared_on` and
+    `cleared_by: "auto"`) once every game has a final in games.csv and two Eastern days have begun
+    since its last game, so it shows in full on its game day and the next; `test_autoclear.py` is its
+    test. The file is written with `json.dumps(indent=1, ensure_ascii=False)`, its own style, so a
+    clear is a small diff; write it the same way by hand.
   - `liveparlays/xbets.json` is the X Bet Log: `season`, `deposit` and `weeks` (`w1` to `w22`, each
     `staked`, `returned` and an optional plain-text `note`), plus `updated`. Claude adds or changes
     a week from what the owner sends (the week, what was staked, what came back).
@@ -683,9 +1001,11 @@ may quietly outrank what the job published:
   never written to the repo or anywhere else. A visitor's own builder, picks, bankroll, bet log and
   odds live in their browser's local storage only; a parlay they finish becomes a card they
   download, saved nowhere; X's parlays and the X Bet Log are the files in `liveparlays/`, which no
-  page writes. What a browser saved before (the prop model's saved list, `my_parlays_v1`, the
-  betting app's own Bet Log and `x_nfl_bets_preshare_<season>`) stays in its storage, undrawn and
-  never deleted. Anything held per-session and not meant to persist
+  page writes. Which of X's parlays a visitor has cleared from X Parlays on a device
+  (`lp_cleared_here_v1`) is that visitor's own choice of what to see there, kept in that browser
+  alone, never X's data and never sent anywhere. What a browser saved before (the prop model's saved
+  list, `my_parlays_v1`, the betting app's own Bet Log and `x_nfl_bets_preshare_<season>`) stays in
+  its storage, undrawn and never deleted. Anything held per-session and not meant to persist
   (for example the game pages' suggested parlays, cached in `GAME_TIER_CACHE` in `part3.js`) is kept outside the saved state object `S`, so
   it is never serialised.
 - **No secrets in the repo.** `ODDS_API_KEY` is a repository secret and only the

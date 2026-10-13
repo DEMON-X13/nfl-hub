@@ -1,9 +1,11 @@
-/* Power Ratings, a team Elo of this season's results (0.8) blended with each team's expected
-   lineup on this season's player Elo (0.2): every team 1500 at the start, moved
-   after each final by how far the margin beat or missed the one expected (THE POWER RATINGS in
+/* Power Ratings, this season's results (0.8) blended with each team's expected lineup on this
+   season's player Elo (0.2): every team 1500 at the start, and every game of the season re-scored
+   at each build, its capped margin, home field out, plus how good the opponent has turned out to
+   be, recent weeks a little more, every team pulled toward average (THE POWER RATINGS in
    elo/build.py; `teams` in elo/data/model.json, which the published-mode hook reads into
    window.__eloTeams), so the tier shields follow it. The change and the rank arrows are since
-   the team's last game; the chance is against an average team on a neutral field. The record is
+   the team's last game, the league's results since included (a team moves in a week it does not
+   play); the chance is against an average team on a neutral field. The record is
    the season's own regular-season results (S.schedule, which the betting job updates within hours
    of a final and the page settles from the scoreboard at the whistle), not the rating file's: the
    Elo file is rebuilt by the Elo job, which runs later, and a record read from it showed TB 0-4 on
@@ -18,11 +20,11 @@ function ratingsViz(){
   const rows=Object.entries(T).map(([t,v])=>({t,...v})).sort((a,b)=>b.elo-a.elo);
   const prior=rows.filter(x=>x.before!=null).sort((a,b)=>b.before-a.before), rankBefore=Object.fromEntries(prior.map((x,i)=>[x.t,i+1]));
   const mv=(t,i)=>{ if(!rankBefore[t]) return ''; const d=rankBefore[t]-(i+1);
-    if(d===0) return '<span class="rankmv flat" title="No change since its last game">·</span>';
-    return `<span class="rankmv ${d>0?'up':'down'}" title="${d>0?'Up':'Down'} ${Math.abs(d)} since its last game"><i>${d>0?'▲':'▼'}</i>${Math.abs(d)}</span>`; };
+    if(d===0) return '<span class="rankmv flat" title="No change since its last game, the league\'s results since included">·</span>';
+    return `<span class="rankmv ${d>0?'up':'down'}" title="${d>0?'Up':'Down'} ${Math.abs(d)} since its last game, the league's results since included"><i>${d>0?'▲':'▼'}</i>${Math.abs(d)}</span>`; };
   const eloMv=x=>{ if(x.before==null) return ''; const d=x.elo-x.before;
-    if(d===0) return '<span class="elomv flat" title="No change since its last game">·</span>';
-    return `<span class="elomv ${d>0?'up':'down'}" title="${d>0?'Gained':'Lost'} ${Math.abs(d)} Elo since its last game">${d>0?'+':'−'}${Math.abs(d)}</span>`; };
+    if(d===0) return '<span class="elomv flat" title="No change since its last game, the league\'s results since included">·</span>';
+    return `<span class="elomv ${d>0?'up':'down'}" title="${d>0?'Gained':'Lost'} ${Math.abs(d)} Elo since its last game, the league's results since included">${d>0?'+':'−'}${Math.abs(d)}</span>`; };
   const epa=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(3);
   /* the regular-season record from the season's results; the rating file's when the season has none */
   const reg=g=>g.game_type?g.game_type==='REG':+g.week<=18;
@@ -48,9 +50,9 @@ function ratingsViz(){
     const e=m?`<td class="num">${epa(stateVal(m,'off_epa','off_epa'))}</td><td class="num">${epa(stateVal(m,'d_off_epa','off_epa'))}</td>`:'<td></td><td></td>';
     return `<tr><td class="muted">${i+1}</td><td style="white-space:nowrap">${tag(x.t,tagColor(x.t),true,'mini')} <span class="muted">${TEAM_NAMES[x.t]||''}</span>${mv(x.t,i)}</td><td class="num rt-rec">${wl(x.t)}</td><td class="num" style="white-space:nowrap"><span class="elocell">${tierBadge(x.elo)}<b>${x.elo}</b></span>${bh?`<span class="rt-lag" title="This rating is from before ${bh}: the Elo job has not taken that game in yet">*</span>`:''}</td><td class="movecell">${eloMv(x)}</td><td class="num rt-pct">${Math.round(x.p_avg*100)}%</td>${e}</tr>`; };
   el.innerHTML=TIER_DEFS+`<h2>Team rankings <span class="pill">Team Elo</span></h2>
-    <p class="muted" style="margin:0 0 10px">Each team rated on this season's results alone: everyone started at 1500, and after every game both teams move by how far the score beat or missed what was expected, home field counted. A favourite that only scrapes past a weaker team loses points and the underdog gains them; a blowout counts no more than 21 points. The players count for two tenths: each team's expected lineup on this season's player Elo is blended in, so injuries and who starts move it too. The ratings spread out as the season goes, so the top shields are earned. The change and the arrows are since the team's last game. Vs average is its chance against an average team on a neutral field.</p>
+    <p class="muted" style="margin:0 0 10px">Each team rated on this season's results alone, everyone starting at 1500. Every game this season is re-scored each time the table is built: its margin (capped at 17, home field out) plus how good the opponent has turned out to be, so a win over a team that has since proved strong earns more than it did that week and a loss to one costs less, and a win over a team that has since proved weak earns less. Recent weeks count a little more, and every team is pulled toward average as if it had also played 16 average games. The players count for two tenths: each team's expected lineup on this season's player Elo is blended in, so injuries and who starts move it too. The ratings spread out as the season goes, so the top shields are earned. The change and the arrows are since the team's last game, the league's results since included, so a team can move in a week it does not play. Vs average is its chance against an average team on a neutral field.</p>
     <div class="rt-wrap"><table class="rt-v"><thead><tr><th>#</th><th>Team</th><th class="num">Record</th><th class="num">Elo</th><th class="num">Elo change</th><th class="num">Vs average</th><th class="num">Off EPA/play</th><th class="num">Def EPA/play</th></tr></thead><tbody>`
     +rows.map(row).join('')+'</tbody></table></div>';
   /* the rows are drawn above, so the teams the ratings trail are known by now */
-  if(lagging.length) el.insertAdjacentHTML('beforeend',`<p class="muted rt-lagnote" style="margin:8px 0 0">* Rated before their latest game: ${lagging.map(([t,g])=>t+' ('+g+')').join(', ')}. The record counts it; the Elo, its change and the chance against an average team take it in when the Elo job next rebuilds the ratings${isFinite(built)?' (last built '+new Date(built).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+')':''}.</p>`);
+  if(lagging.length) el.insertAdjacentHTML('beforeend',`<p class="muted rt-lagnote" style="margin:8px 0 0">* Rated before their latest game: ${lagging.map(([t,g])=>t+' ('+g+')').join(', ')}. The record counts it. Each final re-scores every team's games, so the whole table predates it, not only these teams: every Elo, change and chance against an average team takes it in when the Elo job next rebuilds the ratings${isFinite(built)?' (last built '+new Date(built).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+')':''}.</p>`);
 }

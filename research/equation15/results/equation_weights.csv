@@ -1,0 +1,16 @@
+indicator,key,weight_per_sd,sd_of_gap,weight_per_unit,share_of_weight
+Point differential blended with last season,pt_blend,0.160520,7.167540,0.022395,0.152384
+"Elo rating, carried across seasons",elo,0.235546,135.306286,0.001741,0.223606
+Opponent-adjusted point differential (SRS),srs,0.119456,6.223990,0.019193,0.113400
+"Pythagorean win expectation (points, exponent 2.37)",pythag,0.029642,0.251005,0.118091,0.028139
+Points per drive,ppd,-0.002016,1.031885,-0.001954,0.001914
+Point differential per game,pt_diff,0.003688,10.707144,0.000344,0.003501
+Starting QB: his own EPA per dropback over his last 16 games,qb,0.236164,0.132388,1.783879,0.224193
+EPA per play,epa_play,-0.011089,0.206159,-0.053791,0.010527
+Dropback EPA per play,drop_epa,-0.051099,0.317094,-0.161147,0.048509
+Win rate,win_pct,-0.005021,0.712755,-0.007045,0.004767
+"EPA per play, touchdown plays left out",epa_ntd,0.019413,0.161314,0.120343,0.018429
+ANY/A (adjusted net yards per attempt),anya,0.020857,2.954795,0.007059,0.019800
+Drive success rate (sets of downs that earn a first down or TD),dsr,0.044427,0.088761,0.500526,0.042175
+Passer rating,rating,-0.047228,27.883774,-0.001694,0.044834
+Early-down EPA per play (1st & 2nd),early_epa,0.067230,0.189077,0.355568,0.063822

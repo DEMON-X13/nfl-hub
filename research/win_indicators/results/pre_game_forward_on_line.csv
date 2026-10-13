@@ -1,0 +1,8 @@
+step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
+0,,(start: the closing spread),0.60499,0.67339,0.00000,,
+1,st_epa,Special-teams EPA,0.60433,0.67378,-0.66635,-1.42499,0.10794
+2,qb,Starting QB: his own EPA per dropback over his last 16 games,0.60392,0.67515,-0.40414,-1.19761,0.38464
+3,pass_yds,Net passing yards,0.60357,0.67339,-0.35418,-1.30649,0.66100
+4,punt_ret,Punt return yards,0.60340,0.67417,-0.17134,-0.88021,0.54988
+5,drop_epa,Dropback EPA per play,0.60331,0.67378,-0.08131,-0.56349,0.39121
+6,punts,Punts,0.60329,0.67299,-0.02513,-0.24137,0.18353

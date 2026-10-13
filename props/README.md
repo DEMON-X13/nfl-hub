@@ -81,6 +81,20 @@ stops one big game in limited action producing nonsense), opponent allowed to th
 position, team volume, opponent defence, implied points, home, spread, |spread|,
 plus three interactions. Ridge, one model per position per stat.
 
+**Anytime touchdown.** A logistic regression on the same features, one per position, its
+chance then held under what the player's expected touches allow at the league's touchdown
+rates per carry and per catch (`data/tdrate.json`, times `tdmult`, 1.5). A quarterback has had
+one since app v102 (`research/qb_td.py`, which recovers fit4.py's method from its output: it
+gives the backs', receivers' and tight ends' coefficients back to within 0.018): his own rushing
+or receiving touchdown, never a pass he throws, as DraftKings settles it. Fitted on 2019-2024 on
+each club's starter judged before the game (the page offers the leg to the chart's QB1 alone; a fit
+on every row, backups in, read the starters about 1.5 points low) and held out once on 2025's
+starters, where, capped as the page runs it, it beat the league's starter rate (log loss 0.4018
+against 0.4307, Brier 0.1223 against 0.1307), said 15.4% where they scored 15.5%, and was level
+with his own shrunk career rate (0.4035, 0.1217), as over a 2021-2025 walk-forward. His cap is his projected carries at the
+league's 0.047 touchdowns a carry, so a quarterback who runs in his own goal-line plays (Josh
+Allen) is held under what he does; a per-player rate would be a change of its own.
+
 **Distribution.** A projection is a mean; means sit above a typical night. The app
 carries the measured shape of each stat's outcomes as quantile tables, split into
 four tiers by projection size, blended across tier edges. This is why a receiver
@@ -98,7 +112,9 @@ into the payload as `mkt_scale`) is applied. Then a
 bookmaker's cut goes on top — the tail shape of that cut is an ASSUMPTION, not a
 measurement, because no free source publishes alternate-line prices.
 
-**Parlays** (`corr.py`, `corr2.py`): 329 measured pairs, Gaussian copula, 40k sims.
+**Parlays** (`corr.py`, `corr2.py`): 329 measured pairs (and 12 for the quarterback's
+touchdown, app v102, measured by `research/qb_td.py` the nearest way it could recover), Gaussian
+copula, 40k sims.
 Correlations from 2019-2024 agree with 2025 at 0.97. Multiplying legs is off by
 14 points on the strongest pairs.
 
