@@ -1019,6 +1019,7 @@ python3 -I research/win_indicators/build.py      # study 1's team-game table
 python3 -I research/win_indicators/rank.py       # its rankings -> research/win_indicators/results/
 python3 -I research/win_indicators/report.py     # its README's tables, from results/
 python3 -I research/elo_vs_site/compare.py       # study 2: the study's Elo against the site's ratings, same games
+python3 -I research/elo_vs_site/side_by_side.py  # study 2's follow-up: Team Rankings against FiveThirtyEight, 2003-2025 season by season
 ```
 
 ## The sites behave like websites
