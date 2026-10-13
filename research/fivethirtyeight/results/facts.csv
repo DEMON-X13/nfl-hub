@@ -1,0 +1,49 @@
+fact,value,what
+f538_rows,17379,games in 538's nfl_elo.csv
+f538_first_date,1920-09-26,its first game
+f538_last_date,2023-02-12,its last game (the 2022 season's Super Bowl)
+f538_first_qb_season,1950,the first season with quarterback columns
+f538_rows_1999_2022,6421,its games of 1999-2022
+f538_linked_to_games_csv,6421,those matched to a games.csv game on the same date with the same two teams
+f538_same_score_as_games_csv,6421,"of those, with the same score as games.csv"
+nfl_elo_game_rows,16810,games in 538's nfl-elo-game data/nfl_games.csv
+nfl_elo_game_matched,16810,"of those, found in nfl_elo.csv on the same date with the same two teams"
+nfl_elo_game_max_rating_diff,0.0,"the largest difference in either plain rating before the game, Elo"
+nfl_elo_game_score_mismatches,0,games with a different score
+nfl_elo_game_prob_diffs,1,games whose plain Elo chance differs by more than 1e-6: 2009-02-01 PIT-ARI 0.668 against 0.581
+gamescsv_starter_differs_2023,0,team-games of 2023 where games.csv's named starter is not the first quarterback to drop back
+gamescsv_starter_did_not_play_2023,0,"of those, games.csv's named starter has no line in the game's player stats (he did not play)"
+gamescsv_starter_differs_2024,37,team-games of 2024 where games.csv's named starter is not the first quarterback to drop back
+gamescsv_starter_did_not_play_2024,33,"of those, games.csv's named starter has no line in the game's player stats (he did not play)"
+gamescsv_starter_differs_2025,8,team-games of 2025 where games.csv's named starter is not the first quarterback to drop back
+gamescsv_starter_did_not_play_2025,7,"of those, games.csv's named starter has no line in the game's player stats (he did not play)"
+starter_changed_2003_2025,1384,"team-games (2003-2025, playoffs in) whose starter is not the team's previous starter, of 12464"
+starter_changed_share_2003_2025,0.111,"the same, as a share"
+starter_changed_prev_did_not_play_2003_2025,1290,"of those, the previous starter has no line in the game (did not play)"
+starter_changed_prev_did_not_play_share_2003_2025,0.9321,"the same, as a share of the changes"
+starter_changed_2021_2025_reg,369,"team-games (2021-2025 regular seasons, study 4's window) whose starter is not the team's previous starter, of 2718"
+starter_changed_share_2021_2025_reg,0.1358,"the same, as a share"
+starter_changed_prev_did_not_play_2021_2025_reg,341,"of those, the previous starter has no line in the game (did not play)"
+starter_changed_prev_did_not_play_share_2021_2025_reg,0.9241,"the same, as a share of the changes"
+opener_team_rating_misses_2019,19,teams whose quarterback rating at 538's 2019 opener is 0.01 Elo or more off the season-start rule
+opener_team_rating_misses_2019_max_elo,1.0301,"the largest of them, Elo"
+opener_team_rating_miss_HOU_2021,72.22,"538's opening team quarterback rating off the season-start rule, Elo (built on its projected starter)"
+opener_team_rating_miss_NYJ_2022,-18.91,"538's opening team quarterback rating off the season-start rule, Elo (built on its projected starter)"
+opener_team_rating_miss_CLE_2022,74.02,"538's opening team quarterback rating off the season-start rule, Elo (built on its projected starter)"
+resting_starter_games_1999_2022,34,"538's +-250 resting-starter hand entries, 1999-2022"
+resting_starter_games_2019_2022,4,"the same, 2019-2022"
+tb_2020_road_games,8,Tampa Bay's 2020 road games with the home side's 33 reversed (66 apart)
+domestic_moves_called_neutral,6,"games moved inside the US that 538 called neutral, 1999-2022: 2021_01_GB_NO, 2003_08_MIA_SD, 2005_04_BUF_NO, 2005_06_ATL_NO, 2005_16_DET_NO, 2010_14_NYG_MIN"
+domestic_moves_called_neutral_2019_2022,1,"the same, 2019-2022"
+win_total_vs_538_mean_abs_wins,0.18,"win_totals.csv (16-game scale) against the win total 538's 2019-2022 openers imply: mean |difference|, wins"
+win_total_vs_538_corr,0.992,the same: correlation
+win_total_scale_2021_16game,-0.04,"538's 2021 openers: the win total they imply less win_totals.csv's x 16/17, mean, wins"
+win_total_scale_2021_unscaled,-0.55,"the same against the 17-game total unscaled, mean, wins"
+win_total_scale_2022_16game,0.02,"538's 2022 openers: the win total they imply less win_totals.csv's x 16/17, mean, wins"
+win_total_scale_2022_unscaled,-0.48,"the same against the 17-game total unscaled, mean, wins"
+win_total_corr_same_season,0.547,win_totals.csv 2019-2025 (expected wins a game) against the team's win share in that regular season: correlation
+win_total_corr_season_before,0.768,the same against the season before
+hfa_2022_first,48.6781,"538's 2022 home field at the season's start, Elo (HFA_2022, which the forecast check reproduces)"
+hfa_2022_last,50.4967,"538's home field at its last game, the 2022 season's Super Bowl, Elo"
+home_margin_2012_2021,2.0091,"games.csv's mean home margin at a home team's own ground, 2012-2021, points"
+sensitivity_elo_per_point,24.23,"SENSITIVITY's scale: 538's 2022 home field over that margin, Elo a point"
