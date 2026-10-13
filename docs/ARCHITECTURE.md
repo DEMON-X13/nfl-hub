@@ -290,6 +290,9 @@ research/                        the homework toward the next game model (README
   win_indicators/                study 1: the top win indicators since 2003, in the game and
                                  before it (build.py, rank.py, report.py writes the README's
                                  tables; results/ committed, out/ gitignored)
+  elo_vs_site/                   study 2: the study's Elo against the site's own ratings (the
+                                 app's Elo, Team Rankings via elo/build.py's power_ratings(), the
+                                 ELO Model's published walk-forward) on the same games
 ```
 
 ## Bets and Stats: one page over both models
