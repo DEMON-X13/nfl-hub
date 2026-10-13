@@ -29,3 +29,4 @@ nothing is frozen as a formula or wired into a site.
 | # | Folder | The question | Answer in short |
 |---|---|---|---|
 | 1 | `win_indicators/` | Since 2003, what are the top 15 win indicators in the NFL? | In the game, passing efficiency and EPA (86%), drive success and turnover margin; before it, team strength with memory (Elo, blended point differential, about 63.5%) and the starting quarterback; nothing adds to the closing line (67%); turnovers, red-zone and third-down rates barely carry from week to week |
+| 2 | `elo_vs_site/` | How is the Elo rating different from ours? | Same family as the betting app's Elo (same picks; the app's raw chances run too sure); Team Rankings has no memory, a coin flip in weeks 1-2 and level or better from week 10; the player-based ELO Model beats a team Elo from 2020; none beats the closing line |
