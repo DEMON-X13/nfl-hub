@@ -19,7 +19,7 @@
   "before": "no verdict before 285: until then the summary gives the running numbers and how many of the 285 are in, never a verdict or a word of passing"
  },
  "bar_registered": "2026-10-11T02:01:51Z",
- "run_at": "2026-10-13T12:06:22Z",
+ "run_at": "2026-10-13T12:58:04Z",
  "fits": {
   "2026": {
    "b0": 1.294144,
@@ -703,17 +703,17 @@
    "home": "LA",
    "kickoff": "2026-10-18T20:05:00Z",
    "line": 52.5,
-   "over_odds": -105,
-   "under_odds": -115,
+   "over_odds": -110,
+   "under_odds": -110,
    "p_model": 0.512184,
-   "p_market": 0.489166,
+   "p_market": 0.5,
    "mu": 52.903,
    "sd": 13.1937,
    "model_total": 50.888,
    "pick": null,
    "pick_price": null,
    "pick_price_est": null,
-   "called_at": "2026-10-13T12:06:22Z",
+   "called_at": "2026-10-13T12:58:04Z",
    "frozen": false,
    "frozen_at": null,
    "final": null
