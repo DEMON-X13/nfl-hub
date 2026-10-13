@@ -1,0 +1,6 @@
+,Alpha,Joker,ELO Model,QB Elo,"QB Elo, pregame starter"
+Alpha,1.0,0.752,0.7978,0.8583,0.8539
+Joker,0.752,1.0,0.7476,0.7697,0.7668
+ELO Model,0.7978,0.7476,1.0,0.8155,0.8244
+QB Elo,0.8583,0.7697,0.8155,1.0,0.9631
+"QB Elo, pregame starter",0.8539,0.7668,0.8244,0.9631,1.0

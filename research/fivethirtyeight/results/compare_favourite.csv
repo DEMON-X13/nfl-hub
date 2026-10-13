@@ -1,0 +1,9 @@
+model,games,same_as_favourite,share
+Alpha,1355,1142,0.8428
+Challenger,1355,1150,0.8487
+Joker,1355,1104,0.8148
+Broly,1355,1338,0.9875
+ELO Model,1355,1110,0.8192
+QB Elo,1355,1188,0.8768
+"QB Elo, pregame starter",1355,1174,0.8664
+Plain Elo (ours),1355,1115,0.8229

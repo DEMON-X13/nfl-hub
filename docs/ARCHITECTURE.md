@@ -306,7 +306,9 @@ research/                        the homework toward the next game model (README
                                  until the owner gives the all clear
   common.py  fetch.py            the seasons explored (2003-2025; 1999-2002 only to warm up a
                                  history; 2026 on held out and never read) and the loaders; the
-                                 downloader into data/ (gitignored)
+                                 downloader into data/ (gitignored); fetch.py --fivethirtyeight
+                                 fetches study 5's files (538's two Elo files, each checked against
+                                 its SHA-256, nflverse's weekly player stats and draft picks)
   win_indicators/                study 1: the top win indicators since 2003, in the game and
                                  before it (build.py, rank.py, report.py writes the README's
                                  tables; results/ committed, out/ gitignored)
@@ -321,6 +323,12 @@ research/                        the homework toward the next game model (README
                                  Challenger and Broly since retired) run walk forward on 2021-2025 with
                                  their own code and side by side (backtest.py; elo_features.py
                                  runs elo/build.py with its cache and output in out/, 2026 dropped)
+  fivethirtyeight/               study 5: FiveThirtyEight's quarterback-adjusted Elo rebuilt from
+                                 its published rules and checked against 538's own file (qbelo.py:
+                                 the rule checks, the REBUILD, PREGAME, LINES, PROOF and SENSITIVITY
+                                 runs; locations.csv and venues.csv, the clubs' and venues' points),
+                                 then set beside Alpha, the Joker and the ELO Model on study 4's
+                                 games (compare.py); results/ committed, out/ gitignored
   exam/                          the one place a held-out season (2026 on) is read, to apply a
                                  frozen equation: blind_2026.py, study 3's equation on 2026
 ```

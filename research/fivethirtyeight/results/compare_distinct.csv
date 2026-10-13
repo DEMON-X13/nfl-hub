@@ -1,0 +1,9 @@
+a,b,games,same_pick,games_apart,a_right,b_right,chance_alone
+Alpha,Challenger,1355,0.9203,108,57,51,0.631
+QB Elo,Alpha,1355,0.8583,192,90,102,0.427
+QB Elo,Challenger,1355,0.8731,172,83,89,0.703
+QB Elo,Broly,1355,0.8745,170,67,103,0.007
+QB Elo,Plain Elo (ours),1355,0.8708,175,97,78,0.173
+"QB Elo, pregame starter",Alpha,1355,0.8539,198,94,104,0.523
+"QB Elo, pregame starter",Challenger,1355,0.8686,178,87,91,0.822
+"QB Elo, pregame starter",Plain Elo (ours),1355,0.8841,157,89,68,0.11
