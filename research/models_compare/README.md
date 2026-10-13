@@ -149,8 +149,10 @@ The other three cannot be run before 2021 on the site's own files.
 These two leave out the relocated teams' games before their moves. Both join games.csv, which writes the
 codes of the day (OAK, SD, STL), to nflverse files that write today's codes (LV, LAC, LA). The ELO Model
 has no inputs for 263 games of 2012-2019 (217 of them in 2013-2019). Broly has none for 33 games of
-2018-2020, every Raiders game of 2018-2019 among them. The site's own fits have the same gap. It touches
-no 2021-2025 call.
+2018-2020, every Raiders game of 2018-2019 among them. The site's own fits had the same gap. No 2021-2025
+game is missing a call, but the fits that made those calls learned without the games left out. The ELO
+Model's build was fixed on 13 October 2026, after this study was run (`elo/build.py`, THE SOURCES); these
+numbers are the model as it was. Broly, retired the same day, was not changed.
 
 ## This season so far
 
