@@ -34,7 +34,7 @@ on:
     # to the page or a week's narrative, so a narrative the smoke test refuses (it quotes the site's own
     # ranks, say) fails on its own push, not on the next scheduled run hours later
     branches: [main]
-    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "news/tools/lineup-checks.js", "news/tools/cases.js",
+    paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "lib/netfetch.js", "news/tools/lineup-checks.js", "news/tools/cases.js",
             "news/data/week*.js", "news/data/weeks.js", "news/js/app.js", "news/index.html"]
 
 permissions:
@@ -49,6 +49,9 @@ concurrency:
 jobs:
   news:
     runs-on: ubuntu-latest
+    # a normal run takes a few minutes; a stalled download (lib/netfetch.py and .js give each try a
+    # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours
+    timeout-minutes: 30
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
       # in line (concurrency), and one queued behind another would otherwise start from the state the other

@@ -44,6 +44,8 @@ but the visitor's own browser; everything else changes only with a commit.
 CLAUDE.md               build loops, conventions, how the owner works
 docs/ARCHITECTURE.md    this file
 index.html              landing page
+lib/netfetch.py, .js    the download rule every NFL job shares (retries on a 5xx, 429, timeout or
+                        reset; a 404 at once; written whole), with test_netfetch.py and .js
 
 betting/
   app/x_nfl_betting_model.html   THE SOURCE. one file, ~300KB, copied in from
@@ -1121,11 +1123,20 @@ week 18 and says the regular season is complete; it does not cover the playoffs.
 | `props.yml` | 4 price pulls a week (UTC): Mon, Wed and Thu 08:17, and Sat 05:17 for Saturday's games and the whole Sunday slate, on the site by about 7:50am Pacific Saturday at the worst lateness (the owner's call, October 2026: all of Saturday to look; the Sunday prices are about a day old by kickoff). Each prices up to the next slot plus 10 hours, since GitHub fires this repo's crons about 2-9.4 hours late, and each game is bought once. With `--catch-up` (a game a dropped pull left unpriced, nothing otherwise): 8 post-game and stats runs, Saturday 16:07 and 23:07 for a dropped weekend pull, and a daily 12:07 run that lands after nflverse posts the day's injury report. `build/test_pull_schedule.py` replays the season through the windows | `weekly.py --no-commit` (download, price, bake, assemble, audit, then the suggestions record, `suggest_ledger.js`, which never fails the run), then the workflow commits `props/data` (the ledger with it) to `main` unless `weekly.py` refused the run (a required download failed, the stats would shrink, the audit is not clean), in which case it commits only the price files the run bought, never `payload.json`; afterwards the run fails if `weekly.py` reported problems |
 | `update.yml` (the betting job) | Fri/Mon/Tue mornings ET with an afternoon catch-up each, post-game runs, two runs before each Thursday, Saturday and Sunday kickoff window (set so a 9-hour late start still lands before kickoff), an ":37 hourly" slot GitHub fires about six times a day, and on demand with a "rebuild" switch | betting `update.js`, `joker/joker.py` and `broly/broly.py` (each may fail on its own without stopping the publish), the game-totals shadow `props/research/totals/shadow.py` with `shadow_check.py` (the same), `smoke.js` (which builds the app); commits `betting/state.json` and `props/research/totals/shadow/ledger.json`; starts `elo.yml` when a final was graded, even if the smoke or the commit failed (the Elo job reads nflverse, not this state) |
 | `news.yml` | about 19 slots a week (UTC): five post-game runs, a mid-day refresh Mon/Tue/Fri, and eleven for the Deep Dive's lineups timed to the injury report (Tue and Wed afternoon, Wed evening and early Thu for Thursday games, Thu afternoon for Thursday night, Fri evening, Sat afternoon to early Sun four times for Sunday), each early enough to land before its kickoff at the 2.3-9.4 hour lateness GitHub shows this repo; and on a push to its tools, the page or a week file | `run-auto.js` (`pull-week.js`, which runs `context.js`; a required nflverse file that fails stops the run before the commit), `smoke.js` (the page, the lineups against the report they came from, and `cases.js`); commits only what changed: `results.js`, `stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`, `week*.js` and `tools/out` |
-| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data` |
+| `elo.yml` | queued daily 12:40 UTC (08:40 EDT), Saturday 20:40 and Sunday 03:40 UTC; GitHub starts them 4-9 hours late, so the weekend slots are set to land before Sunday's first kickoff | restores the finished seasons' nflverse files (`actions/cache`, `elo/cache-past`, the set `elo/cache/past.lst` names), `elo/build.py` (refuses to write on a failed required download), `elo/check.py`, `elo/check_tab.js`, the nflbets smoke; commits `elo/data`; saves the finished seasons' files when their set changed |
 | `cfb.yml` | 17x/week: daily 06:17 and 13:47 UTC, Saturday 10:17 and 21:47, Sunday 17:47 (each queued ~10 hours before the kickoffs it must precede, since GitHub starts them 3-9 hours late) | `cfb/tools/simulate.js`, `update.js` (exits 1 before the commit on a feed it cannot carry), `news.js`, `smoke.js` (strict); commits `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` and, at a rollover, `cfb/data/history.json` |
 
 Only `props.yml` spends money (`ODDS_API_KEY`, ~7 credits a game, ~112 a week,
 500 free a month). The other four use free sources.
+
+Every download the four NFL jobs make goes through `lib/netfetch.py` or `lib/netfetch.js`: a transient
+failure (a 5xx, 408, 425 or 429, a timeout, a reset, a cut-off transfer, an empty or HTML body) is tried
+again after 5, 15, 30 and 60 seconds under a ten-minute budget a process, and a 404 or other 4xx is
+answered at once with its status, so each job's "not posted yet" rules read it as before. The props
+job's downloads come before its odds pull, so a retry spends no credit. Each NFL job has a
+`timeout-minutes` (elo 40, props 45, betting 40, news 30), so a stalled socket fails the run within the
+hour, not at GitHub's six. The Elo job reads 49 nflverse files a run; the 43 of finished seasons are kept
+between runs by `actions/cache` (CLAUDE.md, "Player Elo: the loop").
 
 ## Gotchas
 
