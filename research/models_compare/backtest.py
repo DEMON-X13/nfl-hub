@@ -298,8 +298,8 @@ def main():
     alone.to_csv(os.path.join(RES, 'alone.csv'), index=False)
     favourite.to_csv(os.path.join(RES, 'favourite.csv'), index=False)
     long.to_csv(os.path.join(RES, 'longer_runs.csv'), index=False)
-    summary = {'window': '2021-2025 regular season', 'games_all_five_call': int(len(both)), 'ties': int((both.winner == 'tie').sum()),
-               'decided': int(len(dec)), 'regular_season_games': int(len(win)), 'missing_by_model': {NAMES[m]: v for m, v in missing.items() if v},
+    summary = {'window': '2021-2025 regular season', 'regular_season_games': int(len(win)), 'ties': int((win.winner == 'tie').sum()),
+               'decided': int((win.winner != 'tie').sum()), 'decided_all_five_call': int(len(dec)), 'missing_by_model': {NAMES[m]: v for m, v in missing.items() if v},
                'checks': {'elo_walk_forward_matches_model_json': not elo_diff, 'elo_differences': {str(k): v for k, v in elo_diff.items()},
                           'broly_2018_2025_reg_and_post': bro_check, 'broly_published': 'fit.py: 65.8% on 2018-2025',
                           'alpha_2021_2025_reg_and_post': alpha_check, 'alpha_published': 'the app: 63.8% on 2021-2025 (1,420 picks)',

@@ -1,9 +1,9 @@
 {
  "window": "2021-2025 regular season",
- "games_all_five_call": 1355,
- "ties": 0,
- "decided": 1355,
  "regular_season_games": 1359,
+ "ties": 4,
+ "decided": 1355,
+ "decided_all_five_call": 1355,
  "missing_by_model": {},
  "checks": {
   "elo_walk_forward_matches_model_json": true,

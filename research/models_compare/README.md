@@ -21,7 +21,14 @@ is 41 games apart over 1,355. All five picked the same team in 61% of games.
 
 Each model was run as the site builds it, with its own code and data. It was refitted season by season
 on the seasons before the one it calls (walk forward), so no season was called by weights that saw it.
-Every call is of a regular-season game, made from what was known before kickoff.
+Only the weights are refitted, though. Each model's design (its inputs, its settings, the choice to ship
+it) was made by people who had seen these seasons, so all five records lean a little optimistic.
+
+Every call is of a regular-season game, made from what was known before kickoff, with one exception.
+Alpha, the Challenger and the Joker take a game's quarterback to be the passer with the most dropbacks in
+it (the betting harness's rule, `betting/joker/harness/qb.py`). That rule knows about an injury during the
+game, which happened in 122 team-games. Taking games.csv's listed starter instead gives Alpha 883 right
+(3 more), the Challenger 873 (1 fewer) and the Joker 855 (1 more).
 
 The window is 2021-2025: 1,359 games, 4 ties (no decision), 1,355 decided. All five called every
 decided game.
@@ -36,6 +43,21 @@ decided game.
 
 Alpha, the Challenger and the Joker start in 2019 because the betting job's frozen files start there.
 In 2021 they learned from two seasons; the site's own versions learned from seven (2019-2025).
+
+The refits follow the site's own recipes, with three differences:
+
+- **Alpha's settings.** The app's settings say `warm` 0, and the backtest uses 0. The team ratings the app
+  ships were built with 6. A run with 6 changes 30 of Alpha's picks and gives 884-471 (4 more right).
+- **Alpha's and the Challenger's fit.** The backtest fits the formula in one least-squares step. The app
+  fitted it in two, the quarterback term apart. Doing it the app's way changes 3 of Alpha's picks and 2 of
+  the Challenger's.
+- **The Joker's quarterback input.** For a game still to come, the live Joker sees no quarterback drop,
+  because the game has no play-by-play yet. Setting the drop to 0 on the test games changes 12 picks, with
+  the same record. Weather and the referee may be filled in only after a game. Blanking them as well
+  changes 20 picks and gives 852-503.
+
+The Joker's record also moves with choices that should not matter. Taking league averages over all seven
+seasons, rather than the seasons before the one called, flips 111 of its 1,355 picks and gives 861-494.
 
 ## Each model's record
 
@@ -112,7 +134,8 @@ Every model, picking against the other four, was right less than half the time.
 
 Broly starts from the moneylines' chance and picks the betting favourite in 97.9% of games. The Joker
 has the spread and both moneylines among its inputs and picks the favourite in 81.5%. The others do not
-read the line and pick the favourite in 84.3% (Alpha), 84.9% (Challenger) and 82.1% (ELO Model) of games.
+read the game's line and pick the favourite in 84.3% (Alpha), 84.9% (Challenger) and 82.1% (ELO Model) of
+games. The Challenger reads the market's season win totals, once, before the season.
 
 ## Further back, where a model can be run
 
@@ -122,6 +145,12 @@ read the line and pick the favourite in 84.3% (Alpha), 84.9% (Challenger) and 82
 | Broly | 2018-2025 | 1,374-712 (65.9%) |
 
 The other three cannot be run before 2021 on the site's own files.
+
+These two leave out the relocated teams' games before their moves. Both join games.csv, which writes the
+codes of the day (OAK, SD, STL), to nflverse files that write today's codes (LV, LAC, LA). The ELO Model
+has no inputs for 263 games of 2012-2019 (217 of them in 2013-2019). Broly has none for 33 games of
+2018-2020, every Raiders game of 2018-2019 among them. The site's own fits have the same gap. It touches
+no 2021-2025 call.
 
 ## This season so far
 
@@ -145,10 +174,13 @@ weeks; over 2021-2025 the Joker had the fewest right in four of five seasons.
 - **Broly's walk forward** is 65.7% on 2018-2025, playoffs included; `betting/broly/fit.py` says 65.8%.
 - **Alpha's refit** is 65.1% on 2021-2025 with playoffs (924 of 1,420). The app's own coefficients, fitted
   on 2019-2025, get 65.0% (923) on the same games. They pick the same team as the refit in 88% to 99% of
-  games, depending on the season. The app's changelog quotes 63.8% for this window, measured before its
-  later neutral-site and prior-carry fixes.
+  games, depending on the season. The app's changelog quotes 63.8% for this window. No variant tried here
+  scored under 64.7%, and nothing in this repository shows how that figure was measured.
+- **The Challenger's coefficients** in the app are reproduced exactly by its two-step fit on 2019-2025.
 - **The Joker's walk forward** is 63.0% on 2021-2025 regular season; `betting/joker/model.json` says
   63.4%.
+- **An independent check** rebuilt every model from scratch, reproduced every chance to four decimals and
+  every table exactly, and found that a rerun writes identical files.
 
 ## Run it
 
