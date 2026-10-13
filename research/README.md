@@ -27,4 +27,4 @@ nothing is frozen as a formula or wired into a site.
 
 | # | Folder | The question | Answer in short |
 |---|---|---|---|
-| 1 | `win_indicators/` | Since 2003, what are the top 15 win indicators in the NFL? | see its README |
+| 1 | `win_indicators/` | Since 2003, what are the top 15 win indicators in the NFL? | In the game, passing efficiency and EPA (86%), drive success and turnover margin; before it, team strength with memory (Elo, blended point differential, about 63.5%) and the starting quarterback; nothing adds to the closing line (67%); turnovers, red-zone and third-down rates barely carry from week to week |

@@ -1,10 +1,10 @@
-step,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
-0,(start),0.68555,0.56208,0.00000,,
-1,ANY/A (adjusted net yards per attempt),0.41530,0.80637,-270.25682,-281.36142,-258.25400
-2,Rushing yards,0.34027,0.84577,-75.02323,-82.77157,-68.30539
-3,Fumbles lost,0.29572,0.86378,-44.55250,-50.23591,-38.76343
-4,Penalty yards,0.27580,0.87391,-19.91703,-24.21598,-15.49438
-5,Field-goal rate,0.25876,0.88228,-17.04060,-20.78565,-13.21446
-6,Third-down conversion rate,0.24156,0.89627,-17.19938,-22.44046,-12.40079
-7,Net punt average,0.23031,0.90206,-11.25273,-14.96616,-6.85950
-8,First downs per snap,0.21856,0.90962,-11.75099,-14.33325,-9.36221
+step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
+0,,(start: home field alone),0.68555,0.56208,0.00000,,
+1,anya,ANY/A (adjusted net yards per attempt),0.41530,0.80637,-270.25682,-281.36142,-258.25400
+2,dsr,Drive success rate (sets of downs that earn a first down or TD),0.35275,0.84255,-62.54966,-70.13778,-55.72721
+3,to_margin,Turnover margin,0.28976,0.87343,-62.98277,-70.85690,-54.91463
+4,int_rate,Interception rate,0.26371,0.88421,-26.05364,-29.65988,-22.48661
+5,fg_pct,Field-goal rate,0.23980,0.89868,-23.90841,-27.55422,-20.47544
+6,pass_yds,Net passing yards,0.22046,0.90576,-19.33594,-23.85380,-15.15677
+7,punts,Punts,0.21108,0.91058,-9.38735,-12.90427,-6.03246
+8,net_punt,Net punt average,0.20584,0.91380,-5.23337,-8.20058,-1.98174

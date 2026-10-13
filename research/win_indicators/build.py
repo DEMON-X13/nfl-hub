@@ -1,36 +1,53 @@
-"""Build the team-game table the win-indicators study ranks: one row per team per game,
-2003-2025, regular season and playoffs, with every candidate stat kept as a numerator and a
-denominator so a season-to-date value pools plays rather than averaging games.
+"""Build the tables the win-indicators study ranks, 2003-2025, regular season and playoffs:
 
-Every number is read from nflverse's play-by-play; the result and home/away from games.csv by
-game id (the play-by-play writes today's team codes, games.csv the codes of the day, so the two
-are joined on the game alone). The definitions, which follow the official box score where one
-exists:
+  out/team_games.parquet   one row per team per game, every candidate stat kept as a numerator and
+                           a denominator so a season-to-date value pools plays rather than averaging
+                           games; the starting quarterback (games.csv) on each row
+  out/qb_games.parquet     each passer's dropbacks and their EPA in each game, for the starting-QB
+                           indicator
 
-  snaps         play_type pass or run: every real offensive snap, sacks and scrambles included;
-                kneels, spikes and plays wiped out by a penalty (play_type no_play) left out
+Every number is read from nflverse's play-by-play; the result, home/away, the closing line and the
+starting quarterbacks from games.csv by game id (the play-by-play writes today's team codes,
+games.csv the codes of the day, so the two are joined on the game alone). The definitions follow the
+official box score except where said:
+
+  snaps         play_type pass or run, two-point tries left out: every real offensive snap, sacks
+                and scrambles included. Kneels and spikes are left out of every stat (the box
+                score counts a kneel as a rush and a spike as an attempt, but neither is football
+                played: a kneel is the winner running out the clock), and so are plays wiped out by
+                a penalty (play_type no_play)
   dropbacks     snaps with qb_dropback (passes, sacks, scrambles)
   attempts      passes thrown: complete, incomplete or intercepted, never a sack or a spike
   pass yards    passing_yards on attempts (the passer's official yards); sack yards apart
-  rushes        play_type run (scrambles count as rushes, as in the box score; kneels do not);
-                designed runs are rushes without qb_scramble
+  rushes        play_type run (scrambles count as rushes, as in the box score); designed runs are
+                rushes without qb_scramble
   explosive     a rush of 10+ yards or a completion of 20+
   turnovers     interceptions thrown plus fumbles lost, a fumble charged to the team that
                 fumbled (fumbled_1_team: a muffed punt is the return team's), never on a play a
                 penalty wiped out; a turnover on downs is not a turnover
-  penalties     accepted penalties (penalty yards above zero), by the penalised team, every play
-  drives        nflfastR's fixed_drive: its result, whether it reached the opponent's 20, its
-                first downs and its time of possession
+  penalties     accepted penalties by the penalised team, every play: a foul declined or offset is
+                left out, one accepted for no yards (half the distance at the 1, the 2024 kickoff's
+                fouls placed at the 40) counted
+  drives        nflfastR's fixed_drive, every number worked out from its own plays (its
+                drive_inside20, drive_first_downs and drive_time_of_possession are keyed on the raw
+                drive number and land on the wrong fixed drive in about one game in eleven): a drive
+                is counted only with a snap that has a down; a red-zone trip is a snap inside the
+                20; its start is the spot of its first snap with a down (a kickoff re-kicked after a
+                penalty is no start); possession time is nflverse's drive_time_of_possession summed
+                over the raw drives, where it belongs
+  series        nflfastR's series (a set of downs) with a snap, a kneel-down or the half ending left
+                out: a success ends in a first down or a touchdown (drive success rate)
   special teams kickoffs, punts, field goals and extra points (play_type), EPA zero-sum between
-                the two teams, so the gap between them is each side's net
+                the two teams, so the gap between them is each side's net; a blocked punt counts as
+                a punt of no yards
   neutral       a snap with the offence's win probability 20-80% outside the last two minutes of
                 a half, the usual "neutral situation"; the play-based stats are built twice,
                 every snap and neutral snaps only (prefix n_), to see which stats only follow the
-                score (a team ahead runs, a team behind throws)
+                score (a team ahead runs, a team behind throws); a series is neutral by its first snap
 
 qb_hit, cpoe and air yards start in 2006 (nflverse has none before); those stats are NaN before.
 
-Run: python3 -I build.py   (from research/win_indicators; writes out/team_games.parquet)
+Run: python3 -I build.py   (from research/win_indicators)
 """
 import os, sys
 
@@ -46,34 +63,43 @@ OUT = os.path.join(HERE, 'out')
 COLS = ['game_id', 'season', 'season_type', 'week', 'game_date', 'home_team', 'away_team', 'posteam',
         'defteam', 'play_type', 'down', 'yards_gained', 'qb_dropback', 'qb_scramble', 'sack',
         'complete_pass', 'incomplete_pass', 'interception', 'passing_yards', 'pass_touchdown',
-        'rush_touchdown', 'epa', 'success', 'wp', 'half_seconds_remaining', 'first_down_rush',
-        'first_down_pass', 'first_down_penalty', 'third_down_converted', 'third_down_failed',
+        'rush_touchdown', 'touchdown', 'two_point_attempt', 'epa', 'success', 'wp', 'half_seconds_remaining',
+        'first_down_rush', 'first_down_pass', 'first_down_penalty', 'third_down_converted', 'third_down_failed',
         'fourth_down_converted', 'fourth_down_failed', 'fumble', 'fumble_lost', 'fumbled_1_team',
-        'penalty', 'penalty_team', 'penalty_yards', 'qb_hit', 'tackled_for_loss', 'cpoe', 'air_yards',
+        'penalty', 'penalty_team', 'penalty_yards', 'desc', 'qb_hit', 'tackled_for_loss', 'cpoe', 'air_yards',
         'field_goal_result', 'kick_distance', 'return_team', 'return_yards', 'touchback',
-        'punt_blocked', 'fixed_drive', 'fixed_drive_result', 'drive_inside20', 'drive_first_downs',
-        'drive_time_of_possession', 'yardline_100', 'play_id']
+        'punt_blocked', 'fixed_drive', 'fixed_drive_result', 'drive', 'drive_time_of_possession',
+        'series', 'series_result', 'passer_id', 'yardline_100', 'play_id']
 
 ST = ('kickoff', 'punt', 'field_goal', 'extra_point')
+# the plays that can open a drive or a series: they have a down
+DOWNED = ('pass', 'run', 'punt', 'field_goal', 'no_play', 'qb_kneel', 'qb_spike')
 
 
 def _f(s):
     return s.fillna(0).astype(float)
 
 
+def neutral(d):
+    return d['wp'].between(0.2, 0.8) & (d['half_seconds_remaining'] > 120)
+
+
 def play_flags(d):
     """The per-play numerators of the offence's stats (the team on posteam)."""
     pt = d['play_type']
-    snap = pt.isin(['pass', 'run'])
+    tp = _f(d['two_point_attempt']) == 1
+    snap = pt.isin(['pass', 'run']) & ~tp
     sack = snap & (_f(d['sack']) == 1)
-    att = (pt == 'pass') & ~sack & ((_f(d['complete_pass']) + _f(d['incomplete_pass']) + _f(d['interception'])) > 0)
+    att = snap & (pt == 'pass') & ~sack & ((_f(d['complete_pass']) + _f(d['incomplete_pass']) + _f(d['interception'])) > 0)
     comp = att & (_f(d['complete_pass']) == 1)
-    rush = pt == 'run'
+    rush = snap & (pt == 'run')
     drush = rush & (_f(d['qb_scramble']) == 0)
     drop = snap & (_f(d['qb_dropback']) == 1)
     yg = _f(d['yards_gained'])
     has_epa = snap & d['epa'].notna()
-    early = snap & d['down'].isin([1, 2])
+    no_td = has_epa & (_f(d['touchdown']) == 0)
+    early = has_epa & d['down'].isin([1, 2])
+    epa, succ = _f(d['epa']), _f(d['success'])
     f = pd.DataFrame({
         'snaps': snap, 'drop': drop, 'att': att, 'comp': comp,
         'pyds': np.where(att, _f(d['passing_yards']), 0.0),
@@ -83,16 +109,16 @@ def play_flags(d):
         'rush': rush, 'ryds': np.where(rush, yg, 0.0),
         'drush': drush, 'dryds': np.where(drush, yg, 0.0),
         'yds': np.where(snap, yg, 0.0),
-        'epa_n': has_epa, 'epa': np.where(has_epa, _f(d['epa']), 0.0),
-        'succ': np.where(has_epa, _f(d['success']), 0.0),
-        'drop_epa_n': has_epa & drop, 'drop_epa': np.where(has_epa & drop, _f(d['epa']), 0.0),
-        'drop_succ': np.where(has_epa & drop, _f(d['success']), 0.0),
-        'drush_epa_n': has_epa & drush, 'drush_epa': np.where(has_epa & drush, _f(d['epa']), 0.0),
-        'drush_succ': np.where(has_epa & drush, _f(d['success']), 0.0),
-        'early_n': early & d['epa'].notna(), 'early_epa': np.where(early & d['epa'].notna(), _f(d['epa']), 0.0),
-        'early_succ': np.where(early & d['epa'].notna(), _f(d['success']), 0.0),
+        'epa_n': has_epa, 'epa': np.where(has_epa, epa, 0.0),
+        'succ': np.where(has_epa, succ, 0.0),
+        'epa_ntd_n': no_td, 'epa_ntd': np.where(no_td, epa, 0.0),
+        'drop_epa_n': has_epa & drop, 'drop_epa': np.where(has_epa & drop, epa, 0.0),
+        'drop_succ': np.where(has_epa & drop, succ, 0.0),
+        'drush_epa_n': has_epa & drush, 'drush_epa': np.where(has_epa & drush, epa, 0.0),
+        'drush_succ': np.where(has_epa & drush, succ, 0.0),
+        'early_n': early, 'early_epa': np.where(early, epa, 0.0), 'early_succ': np.where(early, succ, 0.0),
         'expl': (rush & (yg >= 10)) | (comp & (yg >= 20)),
-        'fd': _f(d['first_down_rush']) + _f(d['first_down_pass']) + _f(d['first_down_penalty']),
+        'fd': np.where(~tp, _f(d['first_down_rush']) + _f(d['first_down_pass']) + _f(d['first_down_penalty']), 0.0),
         'fd_play': np.where(snap, _f(d['first_down_rush']) + _f(d['first_down_pass']), 0.0),
         'd3_conv': _f(d['third_down_converted']), 'd3_fail': _f(d['third_down_failed']),
         'd4_conv': _f(d['fourth_down_converted']), 'd4_fail': _f(d['fourth_down_failed']),
@@ -113,20 +139,30 @@ def offence(d, prefix=''):
     return out.add_prefix(prefix)
 
 
+def accepted_penalties(d):
+    """Plays with a penalty that stood: the first foul in the description neither declined nor offset."""
+    pen = d[(_f(d['penalty']) == 1) & d['penalty_team'].notna()]
+    desc = pen['desc'].fillna('')
+    first = desc.str.extract(r'(PENALTY on .*)', flags=0)[0].fillna('')
+    declined = first.str.match(r'PENALTY on [^,]+, [^,]+, [^,]*declined', case=False)
+    offset = desc.str.contains('offsetting', case=False)
+    return pen[~declined & ~offset]
+
+
 def others(d):
     """What is charged to a team other than as the offence: turnovers, penalties, special teams."""
     live = d[d['play_type'] != 'no_play']
     rows = []
     # interceptions thrown are the offence's; fumbles the fumbler's
-    ints = live[(_f(live['interception']) == 1) & live['posteam'].notna()]
+    ints = live[(_f(live['interception']) == 1) & live['posteam'].notna() & (_f(live['two_point_attempt']) == 0)]
     rows.append(ints.groupby(['game_id', 'posteam']).size().rename('ints_all').rename_axis(['game_id', 'team']))
     fl = live[_f(live['fumble_lost']) == 1]
     rows.append(fl.groupby(['game_id', 'fumbled_1_team']).size().rename('fum_lost').rename_axis(['game_id', 'team']))
     fu = live[_f(live['fumble']) == 1]
     rows.append(fu.groupby(['game_id', 'fumbled_1_team']).size().rename('fumbles').rename_axis(['game_id', 'team']))
-    pen = d[(_f(d['penalty']) == 1) & (_f(d['penalty_yards']) > 0) & d['penalty_team'].notna()]
+    pen = accepted_penalties(d)
     rows.append(pen.groupby(['game_id', 'penalty_team']).size().rename('pens').rename_axis(['game_id', 'team']))
-    rows.append(pen.groupby(['game_id', 'penalty_team'])['penalty_yards'].sum().rename('pen_yds').rename_axis(['game_id', 'team']))
+    rows.append(_f(pen['penalty_yards']).groupby([pen['game_id'], pen['penalty_team']]).sum().rename('pen_yds').rename_axis(['game_id', 'team']))
     # special teams
     st = d[d['play_type'].isin(ST) & d['posteam'].notna()]
     rows.append(st.groupby(['game_id', 'posteam'])['epa'].sum().rename('st_epa_pos').rename_axis(['game_id', 'team']))
@@ -146,81 +182,123 @@ def others(d):
 
 
 def top_seconds(s):
-    m, sec = s.str.split(':', n=1, expand=True)[0], s.str.split(':', n=1, expand=True)[1]
-    return pd.to_numeric(m, errors='coerce') * 60 + pd.to_numeric(sec, errors='coerce')
+    p = s.fillna('').str.split(':', n=1, expand=True)
+    return pd.to_numeric(p[0], errors='coerce') * 60 + pd.to_numeric(p[1] if 1 in p else None, errors='coerce')
 
 
 def drives(d):
-    """Drive stats by game and offence, on nflfastR's fixed_drive."""
+    """Drive stats by game and offence, each worked out from the fixed drive's own plays."""
     x = d[d['posteam'].notna() & d['fixed_drive'].notna()].copy()
-    x['first_spot'] = np.where(x['play_type'].isin(['pass', 'run', 'punt', 'field_goal', 'no_play', 'qb_kneel', 'qb_spike']),
-                               x['yardline_100'], np.nan)
     x = x.sort_values(['game_id', 'play_id'])
-    g = x.groupby(['game_id', 'fixed_drive'])
+    downed = x['play_type'].isin(DOWNED) & x['down'].notna() & (_f(x['two_point_attempt']) == 0)
+    x['spot'] = np.where(downed, x['yardline_100'], np.nan)
+    x['in20p'] = downed & (x['yardline_100'] < 20)
+    x['fdp'] = np.where(_f(x['two_point_attempt']) == 0,
+                        _f(x['first_down_rush']) + _f(x['first_down_pass']) + _f(x['first_down_penalty']), 0.0)
+    x['team_d'] = x['posteam'].where(downed)
+    g = x.groupby(['game_id', 'fixed_drive'], sort=False)
     dr = pd.DataFrame({
-        'team': g['posteam'].agg(lambda s: s.mode().iat[0]),
+        'team': g['team_d'].agg(lambda s: s.mode().iat[0] if s.notna().any() else None),
         'result': g['fixed_drive_result'].first(),
-        'in20': g['drive_inside20'].max(),
-        'fds': g['drive_first_downs'].max(),
-        'top': g['drive_time_of_possession'].first(),
-        'start': g['first_spot'].first(),
+        'in20': g['in20p'].max(),
+        'fds': g['fdp'].sum(),
+        'start': g['spot'].first(),
     }).reset_index()
-    dr['top_s'] = top_seconds(dr['top'].fillna(''))
-    dr['td'] = dr['result'] == 'Touchdown'
-    dr['rz_td'] = (dr['in20'] == 1) & dr['td']
-    dr['three_out'] = (dr['result'] == 'Punt') & (_f(dr['fds']) == 0)
+    dr = dr[dr['team'].notna()]                       # a drive with no snap (a return to the half's end) is no drive
+    dr['rz_td'] = dr['in20'] & (dr['result'] == 'Touchdown')
+    dr['three_out'] = (dr['result'] == 'Punt') & (dr['fds'] == 0)
     dr['start_own'] = 100 - dr['start']
     out = dr.groupby(['game_id', 'team']).agg(
         drives=('fixed_drive', 'size'), rz_trips=('in20', 'sum'), rz_tds=('rz_td', 'sum'),
-        three_outs=('three_out', 'sum'), top_s=('top_s', 'sum'),
-        start_sum=('start_own', 'sum'), start_n=('start_own', 'count'))
+        three_outs=('three_out', 'sum'), start_sum=('start_own', 'sum'), start_n=('start_own', 'count'))
+    # possession time: nflverse's, on the raw drives it is written for
+    y = d[d['posteam'].notna() & d['drive'].notna()]
+    raw = y.groupby(['game_id', 'drive']).agg(team=('posteam', lambda s: s.mode().iat[0]),
+                                              top=('drive_time_of_possession', 'first')).reset_index()
+    raw['top_s'] = top_seconds(raw['top'])
+    out['top_s'] = raw.groupby(['game_id', 'team'])['top_s'].sum()
     return out.astype(float)
+
+
+def series(d):
+    """Drive success rate's counts by game and offence: sets of downs with a snap, the kneel-downs and
+    the half's end left out, a success ending in a first down or a touchdown; and the same on the
+    series whose first snap was neutral."""
+    x = d[d['posteam'].notna() & d['series'].notna()].copy()
+    x = x.sort_values(['game_id', 'play_id'])
+    snap = x['play_type'].isin(['pass', 'run']) & (_f(x['two_point_attempt']) == 0)
+    x['neu'] = np.where(snap, neutral(x), np.nan)
+    x['snap'] = snap
+    g = x[snap].groupby(['game_id', 'series'])
+    s = pd.DataFrame({'team': g['posteam'].agg(lambda v: v.mode().iat[0]), 'neu': g['neu'].first()})
+    res = x.groupby(['game_id', 'series'])['series_result'].first()
+    s['result'] = res.reindex(s.index)
+    s = s[~s['result'].isin(['QB kneel', 'End of half'])].reset_index()
+    s['ok'] = s['result'].isin(['First down', 'Touchdown'])
+    out = s.groupby(['game_id', 'team']).agg(dsr=('ok', 'sum'), dsr_n=('ok', 'size'))
+    n = s[s['neu'] == 1].groupby(['game_id', 'team']).agg(n_dsr=('ok', 'sum'), n_dsr_n=('ok', 'size'))
+    return pd.concat([out, n], axis=1).fillna(0.0).astype(float)
+
+
+def qb_games(d):
+    """Each passer's dropbacks with an EPA and their EPA, by game and team."""
+    f = play_flags(d)
+    m = (f['drop_epa_n'] == 1) & d['passer_id'].notna()
+    x = pd.DataFrame({'game_id': d['game_id'][m], 'team': d['posteam'][m], 'passer_id': d['passer_id'][m],
+                      'epa': f['drop_epa'][m]})
+    return x.groupby(['game_id', 'team', 'passer_id']).agg(dropbacks=('epa', 'size'), epa=('epa', 'sum')).reset_index()
 
 
 def season_table(season, games):
     d = common.pbp(season, COLS)
     if d.empty:
         raise SystemExit(f'{season}: no plays')
-    neutral = d['wp'].between(0.2, 0.8) & (d['half_seconds_remaining'] > 120)
-    t = pd.concat([offence(d), offence(d[neutral], 'n_'), others(d), drives(d)], axis=1).fillna(0.0)
+    t = pd.concat([offence(d), offence(d[neutral(d)], 'n_'), others(d), drives(d), series(d)], axis=1).fillna(0.0)
     t = t.reset_index()
-    # who played whom, by the play-by-play's codes, and the result by games.csv
+    # who played whom, by the play-by-play's codes, and the result, line and quarterbacks by games.csv
     meta = d.drop_duplicates('game_id')[['game_id', 'home_team', 'away_team', 'season_type', 'week', 'game_date']]
     meta = meta.merge(games[['game_id', 'home_score', 'away_score', 'location', 'game_type', 'spread_line',
-                             'home_moneyline', 'away_moneyline', 'home_rest', 'away_rest', 'div_game', 'overtime']],
+                             'home_moneyline', 'away_moneyline', 'home_rest', 'away_rest', 'div_game', 'overtime',
+                             'home_qb_id', 'away_qb_id']],
                       on='game_id', how='left', validate='one_to_one')
     if meta['home_score'].isna().any():
         raise SystemExit(f'{season}: games without a score in games.csv: {meta.loc[meta.home_score.isna(), "game_id"].tolist()}')
     t = t.merge(meta, on='game_id', how='left', validate='many_to_one')
     t['home'] = (t['team'] == t['home_team']).astype(int)
-    t['opp'] = np.where(t['home'] == 1, t['away_team'], t['home_team'])
-    bad = ~t['team'].isin(pd.concat([t['home_team'], t['away_team']]).unique()) | ((t['team'] != t['home_team']) & (t['team'] != t['away_team']))
+    bad = (t['team'] != t['home_team']) & (t['team'] != t['away_team'])
     if bad.any():
         raise SystemExit(f'{season}: a team in a game it did not play: {t.loc[bad, ["game_id", "team"]].values[:5]}')
+    t['opp'] = np.where(t['home'] == 1, t['away_team'], t['home_team'])
     t['pts'] = np.where(t['home'] == 1, t['home_score'], t['away_score'])
     t['opp_pts'] = np.where(t['home'] == 1, t['away_score'], t['home_score'])
+    t['qb_id'] = np.where(t['home'] == 1, t['home_qb_id'], t['away_qb_id'])
+    t = t.drop(columns=['home_qb_id', 'away_qb_id'])
     t['season'] = season
     n = t.groupby('game_id').size()
     if (n != 2).any():
         raise SystemExit(f'{season}: games without two teams: {n[n != 2].index.tolist()[:5]}')
-    return t
+    q = qb_games(d)
+    q['season'] = season
+    return t, q
 
 
 def main():
     g = common.games()
-    tabs = []
+    tabs, qbs = [], []
     for s in common.SEASONS:
-        t = season_table(s, g)
+        t, q = season_table(s, g)
         tabs.append(t)
-        print(s, t['game_id'].nunique(), 'games')
+        qbs.append(q)
+        top = t.groupby('game_id')['top_s'].sum()
+        print(s, t['game_id'].nunique(), 'games;', f'possession time within 30 s of 60:00 in {(abs(top - 3600) <= 30).mean():.1%} of games')
     t = pd.concat(tabs, ignore_index=True)
     # games.csv has every game of these seasons and the play-by-play every one of them
-    want = set(g['game_id'])
-    have = set(t['game_id'])
+    want, have = set(g['game_id']), set(t['game_id'])
     if want != have:
         raise SystemExit(f'games.csv and the play-by-play disagree: {sorted(want ^ have)[:10]}')
     os.makedirs(OUT, exist_ok=True)
     t.to_parquet(os.path.join(OUT, 'team_games.parquet'), index=False)
+    pd.concat(qbs, ignore_index=True).to_parquet(os.path.join(OUT, 'qb_games.parquet'), index=False)
     print('wrote', len(t), 'team-games,', t['game_id'].nunique(), 'games')
 
 

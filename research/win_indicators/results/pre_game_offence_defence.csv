@@ -1,0 +1,34 @@
+key,stat,part,pick_rate,pick_lo,pick_hi,level,rate_early,rate_late,logloss_alone,games
+pt_diff,Point differential per game,net,0.6322,0.6207,0.6442,0.0033,0.6334,0.6311,0.6349,5110
+pt_diff,Point differential per game,offence,0.6183,0.6083,0.6284,0.0068,0.6170,0.6195,0.6473,5110
+pt_diff,Point differential per game,defence,0.5796,0.5663,0.5927,0.0067,0.5840,0.5758,0.6668,5110
+epa_play,EPA per play,net,0.6260,0.6160,0.6359,0.0000,0.6272,0.6250,0.6404,5110
+epa_play,EPA per play,offence,0.6180,0.6053,0.6316,0.0000,0.6101,0.6250,0.6464,5110
+epa_play,EPA per play,defence,0.5624,0.5501,0.5738,0.0000,0.5626,0.5623,0.6776,5110
+drop_epa,Dropback EPA per play,net,0.6192,0.6074,0.6312,0.0000,0.6176,0.6206,0.6455,5110
+drop_epa,Dropback EPA per play,offence,0.6196,0.6062,0.6332,0.0000,0.6176,0.6213,0.6486,5110
+drop_epa,Dropback EPA per play,defence,0.5581,0.5432,0.5723,0.0000,0.5638,0.5531,0.6772,5110
+drush_epa,Designed-run EPA per carry,net,0.5689,0.5519,0.5859,0.0000,0.5796,0.5594,0.6729,5110
+drush_epa,Designed-run EPA per carry,offence,0.5616,0.5496,0.5734,0.0000,0.5642,0.5594,0.6752,5110
+drush_epa,Designed-run EPA per carry,defence,0.5290,0.5127,0.5450,0.0000,0.5300,0.5280,0.6830,5110
+success,Success rate,net,0.5973,0.5851,0.6091,0.0000,0.5913,0.6025,0.6539,5110
+success,Success rate,offence,0.5991,0.5842,0.6140,0.0002,0.5934,0.6042,0.6563,5110
+success,Success rate,defence,0.5316,0.5158,0.5478,0.0002,0.5498,0.5155,0.6842,5110
+dsr,Drive success rate (sets of downs that earn a first down or TD),net,0.6143,0.6060,0.6232,0.0000,0.6155,0.6132,0.6480,5110
+dsr,Drive success rate (sets of downs that earn a first down or TD),offence,0.6039,0.5917,0.6153,0.0008,0.6032,0.6045,0.6537,5110
+dsr,Drive success rate (sets of downs that earn a first down or TD),defence,0.5309,0.5175,0.5438,0.0008,0.5348,0.5275,0.6837,5110
+anya,ANY/A (adjusted net yards per attempt),net,0.6170,0.6048,0.6293,0.0000,0.6218,0.6128,0.6464,5110
+anya,ANY/A (adjusted net yards per attempt),offence,0.6127,0.6006,0.6246,0.0000,0.6151,0.6106,0.6524,5110
+anya,ANY/A (adjusted net yards per attempt),defence,0.5614,0.5462,0.5766,0.0000,0.5709,0.5531,0.6757,5110
+ypp,Yards per play,net,0.6059,0.5909,0.6215,0.0000,0.6105,0.6018,0.6490,5110
+ypp,Yards per play,offence,0.5982,0.5838,0.6124,0.0000,0.5951,0.6010,0.6585,5110
+ypp,Yards per play,defence,0.5431,0.5282,0.5577,0.0000,0.5513,0.5358,0.6795,5110
+to_margin,Turnover margin,net,0.5750,0.5658,0.5843,0.0260,0.5738,0.5761,0.6705,5110
+to_margin,Turnover margin,offence,0.5623,0.5485,0.5750,0.0659,0.5642,0.5607,0.6744,5110
+to_margin,Turnover margin,defence,0.5499,0.5407,0.5590,0.0587,0.5377,0.5607,0.6790,5110
+rz_td_pct,Red-zone TD rate (TD trips / trips inside the 20),net,0.5515,0.5402,0.5631,0.0004,0.5669,0.5378,0.6794,5110
+rz_td_pct,Red-zone TD rate (TD trips / trips inside the 20),offence,0.5578,0.5458,0.5707,0.0115,0.5732,0.5442,0.6782,5110
+rz_td_pct,Red-zone TD rate (TD trips / trips inside the 20),defence,0.5167,0.5014,0.5314,0.0139,0.5215,0.5125,0.6857,5110
+d3_pct,Third-down conversion rate,net,0.5714,0.5604,0.5823,0.0000,0.5642,0.5778,0.6683,5110
+d3_pct,Third-down conversion rate,offence,0.5830,0.5679,0.5973,0.0023,0.5826,0.5833,0.6669,5110
+d3_pct,Third-down conversion rate,defence,0.5183,0.5028,0.5340,0.0029,0.5284,0.5094,0.6849,5110

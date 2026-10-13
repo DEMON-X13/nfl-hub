@@ -1,8 +1,8 @@
-step,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
-0,(start),0.68564,0.56184,0.00000,,
-1,Point differential per game,0.63493,0.63914,-50.70412,-56.82620,-44.22343
-2,Yards per play,0.63378,0.64188,-1.15568,-2.37114,0.05001
-3,Punt return yards,0.63309,0.63953,-0.68241,-1.78704,0.41110
-4,Win rate,0.63251,0.64012,-0.58511,-1.45839,0.33600
-5,Early-down success rate,0.63210,0.64599,-0.40289,-1.17640,0.41387
-6,Yards per pass attempt,0.63195,0.64599,-0.15367,-0.66856,0.36170
+step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
+0,,(start: home field alone),0.68564,0.56184,0.00000,,
+1,pt_blend,Point differential blended with last season,0.62729,0.64912,-58.34381,-64.80256,-51.70942
+2,qb,Starting QB: his own EPA per dropback over his last 16 games,0.62019,0.65421,-7.09726,-9.97550,-4.31380
+3,ypc,Yards per carry,0.61900,0.65499,-1.19322,-2.52044,0.21930
+4,elo,"Elo rating, carried across seasons",0.61778,0.65460,-1.22029,-2.18138,-0.20799
+5,punt_ret,Punt return yards,0.61690,0.65616,-0.88532,-2.01435,0.18714
+6,srs,Opponent-adjusted point differential (SRS),0.61662,0.65656,-0.27420,-1.06416,0.53759

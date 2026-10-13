@@ -31,10 +31,16 @@ def pbp_path(season):
     return os.path.join(RAW, 'pbp', f'play_by_play_{season}.parquet')
 
 
-def games():
-    """The schedule, scores and closing lines, held-out seasons dropped."""
+def games(first=FIRST):
+    """The schedule, scores and closing lines, held-out seasons dropped. `first` reaches back before
+    2003 where a study needs games.csv's earlier seasons (a rating's warm-up, last season's
+    results); the play-by-play starts at FIRST."""
     g = pd.read_csv(os.path.join(RAW, 'games', 'games.csv'), low_memory=False)
-    return g[g['season'].between(FIRST, HOLDOUT_FROM - 1)].reset_index(drop=True)
+    return g[g['season'].between(first, HOLDOUT_FROM - 1)].reset_index(drop=True)
+
+
+# games.csv writes the codes of the day, the play-by-play today's
+TEAM_NOW = {'OAK': 'LV', 'SD': 'LAC', 'STL': 'LA'}
 
 
 def pbp(season, columns=None):

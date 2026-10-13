@@ -1,8 +1,8 @@
-step,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
-0,(start),0.60499,0.67339,0.00000,,
-1,Yards per drive,0.60426,0.67397,-0.73144,-1.55834,0.20849
-2,Punt return yards,0.60368,0.67397,-0.58437,-1.46379,0.33192
-3,Punts,0.60351,0.67515,-0.16994,-0.60461,0.31895
-4,Time of possession,0.60344,0.67691,-0.06252,-0.58838,0.48460
-5,Designed-run success rate,0.60345,0.67652,0.00828,-0.56588,0.59581
-6,Fumbles (lost or not),0.60348,0.67534,0.02595,-0.33996,0.39963
+step,key,stat,logloss,pick_rate,d_logloss_x1000,d_lo_x1000,d_hi_x1000
+0,,(start: the closing spread),0.60499,0.67339,0.00000,,
+1,yds_drive,Yards per drive,0.60431,0.67339,-0.68036,-1.53225,0.26774
+2,punt_ret,Punt return yards,0.60373,0.67456,-0.58490,-1.47403,0.33304
+3,qb,Starting QB: his own EPA per dropback over his last 16 games,0.60336,0.67573,-0.36396,-1.10489,0.39297
+4,ypc,Yards per carry,0.60310,0.67397,-0.25960,-1.08068,0.66780
+5,punts,Punts,0.60298,0.67534,-0.12586,-0.60283,0.40157
+6,kick_ret,Kickoff return yards,0.60297,0.67299,-0.00692,-0.69142,0.64951

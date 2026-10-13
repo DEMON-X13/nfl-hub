@@ -1,55 +1,63 @@
-rank,key,stat,group,pick_rate,level,logloss_alone,games,rate_early,rate_late,d_logloss_x1000,d_lo_x1000,d_hi_x1000,z_with_line,reliability,note
-1,line,The closing spread (the Vegas favourite),market,0.6732,0.0031,0.6050,5110,,,,,,,,
-2,pt_diff,Point differential per game,results,0.6322,0.0033,0.6349,5110,0.6334,0.6311,0.0890,-0.0524,0.2446,-0.7013,0.5325,
-3,epa_play,EPA per play,efficiency,0.6252,0.0000,0.6401,5110,0.6239,0.6265,-0.3633,-0.9225,0.1519,-2.2572,0.5473,
-4,drop_epa,Dropback EPA per play,passing,0.6190,0.0000,0.6454,5110,0.6172,0.6206,-0.3355,-1.0206,0.3515,-2.3285,0.4847,
-5,win_pct,Win rate,results,0.6190,0.1202,0.6435,5110,0.6113,0.6257,0.1234,0.0634,0.1849,-0.1514,0.4837,
-6,anya,ANY/A (adjusted net yards per attempt),passing,0.6170,0.0000,0.6464,5110,0.6218,0.6128,-0.0514,-0.4426,0.3868,-1.4516,0.4580,has pass TDs in it
-7,rating,Passer rating,passing,0.6137,0.0000,0.6510,5110,0.6239,0.6047,-0.1024,-0.4541,0.2613,-1.5010,0.4444,has pass TDs in it
-8,early_epa,Early-down EPA per play (1st & 2nd),efficiency,0.6131,0.0000,0.6488,5110,0.6209,0.6062,0.0600,-0.2660,0.4366,-1.0723,0.4598,
-9,fd_play,First downs per snap,efficiency,0.6100,0.0000,0.6514,5110,0.6168,0.6040,-0.4214,-1.0476,0.2201,-2.4136,0.5580,
-10,ypp,Yards per play,efficiency,0.6059,0.0000,0.6487,5110,0.6093,0.6029,0.0476,-0.2838,0.4022,-1.1544,0.4921,
-11,nya,Net yards per pass attempt (sacks in),passing,0.6043,0.0000,0.6508,5110,0.6122,0.5973,-0.0758,-0.6063,0.4861,-1.6650,0.4495,
-12,rz_trips,Red-zone trips,volume,0.5999,0.0249,0.6580,5110,0.6061,0.5944,-0.0402,-0.4796,0.4267,-1.5096,0.3577,
-13,drop_succ,Dropback success rate,passing,0.5998,0.0000,0.6551,5110,0.6009,0.5988,-0.2170,-0.6510,0.2510,-1.8625,0.4821,
-14,success,Success rate,efficiency,0.5978,0.0000,0.6535,5110,0.5905,0.6044,0.0517,-0.1787,0.2950,-0.9610,0.5124,
-15,ypa,Yards per pass attempt,passing,0.5949,0.0000,0.6587,5110,0.6068,0.5844,-0.1428,-0.5525,0.2993,-1.6691,0.4138,
-16,tot_yds,Total yards,volume,0.5897,0.0006,0.6567,5110,0.5882,0.5911,-0.6350,-1.5037,0.3345,-2.8705,0.4716,
-17,yds_drive,Yards per drive,efficiency,0.5873,0.0000,0.6574,5110,0.5822,0.5918,-0.7314,-1.5583,0.2085,-3.0172,0.4674,
-18,fds,First downs,volume,0.5867,0.0078,0.6654,5110,0.5836,0.5894,-0.6432,-1.3595,0.0985,-2.8101,0.4210,
-19,cpoe,Completion % over expected,passing,0.5841,0.0000,0.6660,4458,0.5956,0.5767,-0.1526,-0.5644,0.2856,-1.5722,0.4324,2006 on
-20,early_succ,Early-down success rate,efficiency,0.5841,0.0002,0.6621,5110,0.5805,0.5872,0.2165,0.1025,0.3489,0.0208,0.4026,
-21,punts,Punts,special teams,0.5840,0.0207,0.6614,5110,0.5855,0.5826,0.0898,0.0360,0.1550,0.0744,0.2942,
-22,expl_rate,"Explosive-play rate (10+ run, 20+ catch)",efficiency,0.5814,0.0000,0.6658,5110,0.5847,0.5785,0.1860,0.1034,0.2879,0.0558,0.3721,
-23,sacks,Sacks taken,pressure,0.5805,0.0155,0.6651,5110,0.5863,0.5754,0.2286,-0.0342,0.5201,0.6956,0.3114,
-24,rush_att,Rushing attempts,rushing,0.5794,0.0041,0.6702,5110,0.5769,0.5815,-0.0407,-0.2928,0.2124,-1.1903,0.4060,
-25,qb_hits,QB hits taken,passing,0.5788,0.0123,0.6678,4458,0.5839,0.5756,-0.0881,-0.5693,0.4147,1.5389,0.4468,2006 on
-26,rush_yds,Rushing yards,rushing,0.5770,0.0006,0.6687,5110,0.5799,0.5745,0.1672,0.0911,0.2530,-0.2033,0.4560,
-27,pass_rate,Pass rate (dropbacks / snaps),passing,0.5759,0.0000,0.6680,5110,0.5792,0.5730,0.1359,0.0693,0.2167,0.0935,0.3896,
-28,to_margin,Turnover margin,turnovers,0.5750,0.0260,0.6705,5110,0.5738,0.5761,0.1083,-0.0006,0.2309,0.4181,0.1535,
-29,ints,Interceptions thrown,turnovers,0.5741,0.0331,0.6708,5110,0.5732,0.5749,0.0798,0.0065,0.1581,0.3350,0.1844,
-30,d3_pct,Third-down conversion rate,efficiency,0.5714,0.0000,0.6683,5110,0.5642,0.5778,-0.2306,-1.0466,0.5816,-2.2586,0.2697,
-31,start_pos,Average drive start (own yard line),field position,0.5701,0.0000,0.6708,5110,0.5642,0.5752,0.1114,-0.0691,0.3018,0.6810,0.2660,
-32,sack_rate,Sack rate (sacks / dropbacks),passing,0.5699,0.0000,0.6718,5110,0.5701,0.5697,0.3629,0.2319,0.5190,0.0677,0.3379,
-33,comp_pct,Completion rate,passing,0.5690,0.0002,0.6704,5110,0.5711,0.5671,-0.1579,-0.5331,0.2861,-1.6499,0.4297,
-34,int_rate,Interception rate,passing,0.5689,0.0000,0.6727,5110,0.5659,0.5715,0.0918,0.0389,0.1497,-0.2003,0.1798,
-35,d4_att,Fourth-down attempts,volume,0.5685,0.0344,0.6736,5110,0.5746,0.5631,0.0926,-0.0079,0.2058,-0.3777,0.1860,
-36,drush_epa,Designed-run EPA per carry,rushing,0.5675,0.0000,0.6726,5110,0.5788,0.5575,0.2386,0.1439,0.3424,0.0179,0.3022,
-37,three_out_rate,Three-and-out rate (drives),efficiency,0.5606,0.0002,0.6746,5110,0.5575,0.5632,-0.0246,-0.3306,0.2887,-1.2478,0.2247,
-38,pass_yds,Net passing yards,passing,0.5584,0.0006,0.6756,5110,0.5507,0.5653,-0.5091,-1.3917,0.4371,-2.6579,0.4348,
-39,top,Time of possession,volume,0.5577,0.0004,0.6762,5110,0.5455,0.5686,-0.6174,-1.2823,0.0638,-2.7467,0.3345,
-40,punt_ret,Punt return yards,special teams,0.5546,0.0012,0.6765,5110,0.5469,0.5614,-0.5178,-1.3970,0.3861,2.7231,0.2713,
-41,kick_ret,Kickoff return yards,special teams,0.5542,0.0004,0.6752,5110,0.5684,0.5417,-0.3375,-1.2555,0.5490,-2.4882,0.4006,
-42,ypc,Yards per carry,rushing,0.5532,0.0000,0.6777,5110,0.5605,0.5468,0.1169,-0.2377,0.4890,1.0081,0.3159,
-43,fumbles,Fumbles (lost or not),turnovers,0.5526,0.0282,0.6808,5110,0.5575,0.5483,0.0839,-0.2441,0.4145,1.1028,0.1229,
-44,rz_td_pct,Red-zone TD rate (TD trips / trips inside the 20),efficiency,0.5497,0.0008,0.6794,5110,0.5638,0.5372,0.1927,0.0935,0.3124,-0.0465,0.0932,
-45,drush_succ,Designed-run success rate,rushing,0.5483,0.0000,0.6757,5110,0.5530,0.5442,0.1954,-0.1049,0.5157,0.8458,0.2785,
-46,fum_lost,Fumbles lost,turnovers,0.5290,0.0517,0.6828,5110,0.5338,0.5247,0.1382,0.0615,0.2289,0.2746,0.0088,
-47,snaps,Offensive snaps,volume,0.5215,0.0031,0.6846,5110,0.5144,0.5278,-0.5467,-1.3971,0.3083,-2.7552,0.1928,
-48,tfl,Tackled for loss (snaps),pressure,0.5182,0.0239,0.6851,5110,0.5271,0.5103,0.0511,-0.1436,0.2488,-0.8389,0.2380,
-49,pens,Penalties (accepted),discipline,0.5123,0.0149,0.6857,5110,0.5313,0.4956,0.0886,-0.1038,0.2903,0.8929,0.1763,
-50,st_epa,Special-teams EPA,special teams,0.5110,0.0000,0.6855,5110,0.4912,0.5284,-0.6663,-1.4250,0.1079,2.8574,0.2621,
-51,fg_pct,Field-goal rate,special teams,0.5100,0.0063,0.6857,5102,0.5073,0.5124,0.3020,0.0942,0.5271,-0.3827,0.0602,
-52,net_punt,Net punt average,special teams,0.5049,0.0000,0.6861,5110,0.4846,0.5229,-0.5839,-1.5708,0.4094,2.9313,0.2822,
-53,pen_yds,Penalty yards,discipline,0.5046,0.0025,0.6861,5110,0.5313,0.4810,0.2408,0.0517,0.4541,0.5001,0.1703,
-54,adot,Average depth of target,passing,0.4815,0.0002,0.6864,4458,0.4642,0.4926,0.1886,-0.2090,0.7135,-0.8476,0.4441,2006 on
+rank,key,stat,group,pick_rate,level,logloss_alone,games,pick_lo,pick_hi,rate_early,rate_late,d_logloss_x1000,d_lo_x1000,d_hi_x1000,z_with_line,on_top_of_line,note,reliability,reliability_season
+1,line,The closing spread (the Vegas favourite),market,0.6732,0.0031,0.6050,5110,,,,,,,,,,,,
+2,pt_blend,Point differential blended with last season,ratings,0.6357,0.0002,0.6273,5110,0.6245,0.6478,0.6309,0.6399,0.0842,-0.1138,0.2838,-0.7513,nothing,"(n x this season's + 4 x 2/3 x last season's) / (n + 4), n this season's games; last season's from games.csv",,
+3,elo,"Elo rating, carried across seasons",ratings,0.6348,0.0000,0.6274,5110,0.6259,0.6443,0.6305,0.6386,0.1595,0.0914,0.2305,-0.0496,nothing,"FiveThirtyEight's NFL Elo: K 20, their margin multiplier, home field 55 (none at a neutral site), a third back to 1505 each season; games.csv from 1999 so 2003 starts warm; the gap shown leaves home field out",,
+4,srs,Opponent-adjusted point differential (SRS),ratings,0.6339,0.0000,0.6312,5110,0.6230,0.6447,0.6426,0.6261,0.1595,0.0217,0.3111,-0.5473,nothing,"this season's margins solved for every team's rating and home field together, the ratings pulled to 0 by a ridge of 3 games",,
+5,pythag,"Pythagorean win expectation (points, exponent 2.37)",results,0.6338,0.0002,0.6356,5110,0.6234,0.6448,0.6343,0.6333,0.1224,-0.0112,0.2642,-0.5575,nothing,,0.5289,0.6919
+6,pt_diff,Point differential per game,results,0.6322,0.0033,0.6349,5110,0.6207,0.6442,0.6334,0.6311,0.0890,-0.0524,0.2446,-0.7013,nothing,,0.5325,0.6949
+7,ppd,Points per drive,results,0.6317,0.0000,0.6364,5110,0.6213,0.6423,0.6334,0.6302,0.1041,-0.0710,0.2949,-0.7769,nothing,"every point a team scored, over its drives",0.5270,0.6902
+8,qb,Starting QB: his own EPA per dropback over his last 16 games,quarterback,0.6271,0.0002,0.6399,5110,0.6148,0.6391,0.6218,0.6318,-0.2343,-0.8525,0.4024,2.0758,nothing,"games.csv's starter; his dropbacks for any team in his 16 games before this one, pulled toward -0.10 with 200 dropbacks of weight (a new starter reads about replacement level)",,
+9,epa_play,EPA per play,efficiency,0.6260,0.0000,0.6404,5110,0.6160,0.6359,0.6272,0.6250,-0.4126,-0.9914,0.1207,-2.3592,nothing,built on expected points: scoring plays in it,0.5455,0.7059
+10,drop_epa,Dropback EPA per play,passing,0.6192,0.0000,0.6455,5110,0.6074,0.6312,0.6176,0.6206,-0.3570,-1.0570,0.3368,-2.3728,nothing,built on expected points,0.4833,0.6517
+11,win_pct,Win rate,results,0.6190,0.1202,0.6435,5110,0.6094,0.6294,0.6113,0.6257,0.1234,0.0634,0.1849,-0.1514,nothing,,0.4837,0.6520
+12,epa_ntd,"EPA per play, touchdown plays left out",efficiency,0.6180,0.0000,0.6464,5110,0.6081,0.6279,0.6218,0.6147,-0.3801,-1.0559,0.2838,-2.3760,nothing,,0.5152,0.6801
+13,anya,ANY/A (adjusted net yards per attempt),passing,0.6170,0.0000,0.6464,5110,0.6048,0.6293,0.6218,0.6128,-0.0514,-0.4426,0.3868,-1.4516,nothing,has pass TDs in it,0.4580,0.6283
+14,dsr,Drive success rate (sets of downs that earn a first down or TD),efficiency,0.6143,0.0000,0.6480,5110,0.6060,0.6232,0.6155,0.6132,-0.4554,-0.9687,0.0675,-2.3890,nothing,,0.5466,0.7068
+15,rating,Passer rating,passing,0.6137,0.0000,0.6510,5110,0.6051,0.6227,0.6239,0.6047,-0.1024,-0.4541,0.2613,-1.5010,nothing,has pass TDs in it,0.4444,0.6153
+16,early_epa,Early-down EPA per play (1st & 2nd),efficiency,0.6131,0.0000,0.6488,5110,0.5979,0.6282,0.6209,0.6062,0.0600,-0.2660,0.4366,-1.0723,nothing,,0.4598,0.6299
+17,fd_play,First downs per snap,efficiency,0.6067,0.0000,0.6518,5110,0.5946,0.6193,0.6134,0.6007,-0.4404,-1.0663,0.2102,-2.4511,nothing,,0.5558,0.7145
+18,ypp,Yards per play,efficiency,0.6059,0.0000,0.6490,5110,0.5909,0.6215,0.6105,0.6018,0.0333,-0.3115,0.4014,-1.1998,nothing,,0.4903,0.6580
+19,nya,Net yards per pass attempt (sacks in),passing,0.6043,0.0000,0.6508,5110,0.5914,0.6174,0.6122,0.5973,-0.0758,-0.6063,0.4861,-1.6650,nothing,,0.4495,0.6202
+20,drop_succ,Dropback success rate,passing,0.5990,0.0000,0.6553,5110,0.5859,0.6121,0.6034,0.5951,-0.2389,-0.6876,0.2346,-1.9186,nothing,,0.4819,0.6504
+21,rz_trips,Red-zone trips,volume,0.5984,0.0250,0.6581,5110,0.5878,0.6094,0.6034,0.5940,-0.0492,-0.4995,0.4199,-1.5371,nothing,,0.3530,0.5218
+22,success,Success rate,efficiency,0.5973,0.0000,0.6539,5110,0.5851,0.6091,0.5913,0.6025,0.0272,-0.2377,0.3074,-1.0767,nothing,,0.5123,0.6775
+23,ypa,Yards per pass attempt,passing,0.5949,0.0000,0.6587,5110,0.5838,0.6063,0.6068,0.5844,-0.1428,-0.5525,0.2993,-1.6691,nothing,,0.4138,0.5854
+24,yds_drive,Yards per drive,efficiency,0.5904,0.0000,0.6568,5110,0.5774,0.6041,0.5888,0.5918,-0.6804,-1.5322,0.2677,-2.9499,nothing,,0.4736,0.6428
+25,tot_yds,Total yards,volume,0.5903,0.0002,0.6567,5110,0.5792,0.6026,0.5882,0.5922,-0.6392,-1.5125,0.3348,-2.8788,nothing,,0.4716,0.6410
+26,fds,First downs,volume,0.5867,0.0078,0.6654,5110,0.5769,0.5968,0.5836,0.5894,-0.6432,-1.3595,0.0985,-2.8101,nothing,,0.4210,0.5925
+27,cpoe,Completion % over expected,passing,0.5841,0.0000,0.6660,4458,0.5722,0.5969,0.5956,0.5767,-0.1526,-0.5644,0.2856,-1.5722,nothing,2006 on,0.4324,0.6038
+28,early_succ,Early-down success rate,efficiency,0.5841,0.0002,0.6621,5110,0.5680,0.6004,0.5805,0.5872,0.2165,0.1025,0.3489,0.0208,nothing,,0.4026,0.5741
+29,punts,Punts,special teams,0.5840,0.0207,0.6614,5110,0.5734,0.5960,0.5855,0.5826,0.0898,0.0360,0.1550,0.0744,nothing,,0.2942,0.4547
+30,expl_rate,"Explosive-play rate (10+ run, 20+ catch)",efficiency,0.5814,0.0000,0.6659,5110,0.5675,0.5952,0.5838,0.5793,0.1850,0.1025,0.2862,0.0471,nothing,,0.3703,0.5405
+31,sacks,Sacks taken,pressure,0.5805,0.0155,0.6651,5110,0.5664,0.5940,0.5863,0.5754,0.2286,-0.0342,0.5201,0.6956,nothing,,0.3114,0.4749
+32,rush_att,Rushing attempts,rushing,0.5795,0.0051,0.6701,5110,0.5693,0.5900,0.5753,0.5831,-0.0439,-0.2955,0.2088,-1.1980,nothing,,0.4057,0.5772
+33,qb_hits,QB hits taken,passing,0.5788,0.0123,0.6678,4458,0.5637,0.5947,0.5839,0.5756,-0.0881,-0.5693,0.4147,1.5389,nothing,2006 on,0.4468,0.6177
+34,rush_yds,Rushing yards,rushing,0.5769,0.0012,0.6688,5110,0.5614,0.5931,0.5796,0.5745,0.1662,0.0877,0.2540,-0.2135,nothing,,0.4558,0.6262
+35,pass_rate,Pass rate (dropbacks / snaps),passing,0.5761,0.0000,0.6681,5110,0.5626,0.5892,0.5788,0.5737,0.1340,0.0679,0.2121,0.0605,nothing,,0.3891,0.5602
+36,to_margin,Turnover margin,turnovers,0.5750,0.0260,0.6705,5110,0.5658,0.5843,0.5738,0.5761,0.1083,-0.0006,0.2309,0.4181,nothing,,0.1535,0.2662
+37,ints,Interceptions thrown,turnovers,0.5741,0.0331,0.6708,5110,0.5641,0.5847,0.5732,0.5749,0.0798,0.0065,0.1581,0.3350,nothing,,0.1844,0.3114
+38,start_pos,Average drive start (own yard line),field position,0.5730,0.0000,0.6706,5110,0.5628,0.5838,0.5713,0.5745,0.1172,-0.0420,0.2852,0.6031,nothing,,0.2688,0.4237
+39,d3_pct,Third-down conversion rate,efficiency,0.5714,0.0000,0.6683,5110,0.5604,0.5823,0.5642,0.5778,-0.2306,-1.0466,0.5816,-2.2586,nothing,,0.2697,0.4248
+40,sack_rate,Sack rate (sacks / dropbacks),passing,0.5697,0.0000,0.6717,5110,0.5561,0.5832,0.5701,0.5693,0.3634,0.2302,0.5190,0.0885,nothing,,0.3378,0.5050
+41,comp_pct,Completion rate,passing,0.5690,0.0002,0.6704,5110,0.5570,0.5821,0.5711,0.5671,-0.1579,-0.5331,0.2861,-1.6499,nothing,,0.4297,0.6011
+42,int_rate,Interception rate,passing,0.5689,0.0000,0.6727,5110,0.5596,0.5780,0.5659,0.5715,0.0918,0.0389,0.1497,-0.2003,nothing,,0.1798,0.3048
+43,drush_epa,Designed-run EPA per carry,rushing,0.5689,0.0000,0.6729,5110,0.5519,0.5859,0.5796,0.5594,0.2292,0.1355,0.3331,-0.1005,nothing,,0.3002,0.4618
+44,d4_att,Fourth-down attempts,volume,0.5685,0.0344,0.6736,5110,0.5559,0.5814,0.5746,0.5631,0.0926,-0.0079,0.2058,-0.3777,nothing,,0.1860,0.3136
+45,three_out_rate,Three-and-out rate (drives),efficiency,0.5610,0.0002,0.6747,5110,0.5499,0.5717,0.5580,0.5636,-0.0436,-0.3682,0.2889,-1.3201,nothing,,0.2215,0.3626
+46,pass_yds,Net passing yards,passing,0.5584,0.0006,0.6756,5110,0.5439,0.5730,0.5507,0.5653,-0.5091,-1.3917,0.4371,-2.6579,nothing,,0.4348,0.6061
+47,top,Time of possession,volume,0.5560,0.0000,0.6763,5110,0.5470,0.5648,0.5430,0.5675,-0.6430,-1.3160,0.0298,-2.7862,nothing,,0.3340,0.5008
+48,punt_ret,Punt return yards,special teams,0.5546,0.0012,0.6765,5110,0.5413,0.5677,0.5469,0.5614,-0.5178,-1.3970,0.3861,2.7231,nothing,,0.2713,0.4268
+49,kick_ret,Kickoff return yards,special teams,0.5542,0.0004,0.6752,5110,0.5370,0.5704,0.5684,0.5417,-0.3375,-1.2555,0.5490,-2.4882,nothing,,0.4006,0.5720
+50,fumbles,Fumbles (lost or not),turnovers,0.5526,0.0282,0.6808,5110,0.5404,0.5649,0.5575,0.5483,0.0839,-0.2441,0.4145,1.1028,nothing,,0.1229,0.2189
+51,rz_td_pct,Red-zone TD rate (TD trips / trips inside the 20),efficiency,0.5515,0.0004,0.6794,5110,0.5402,0.5631,0.5669,0.5378,0.1919,0.0947,0.3034,0.0524,nothing,,0.0892,0.1638
+52,ypc,Yards per carry,rushing,0.5511,0.0000,0.6778,5110,0.5371,0.5662,0.5580,0.5450,0.1195,-0.2365,0.4920,1.0023,nothing,,0.3154,0.4796
+53,drush_succ,Designed-run success rate,rushing,0.5487,0.0000,0.6759,5110,0.5328,0.5647,0.5534,0.5446,0.2054,-0.0467,0.4813,0.7302,nothing,,0.2786,0.4358
+54,fum_lost,Fumbles lost,turnovers,0.5290,0.0517,0.6828,5110,0.5184,0.5397,0.5338,0.5247,0.1382,0.0615,0.2289,0.2746,nothing,,0.0088,0.0174
+55,snaps,Offensive snaps,volume,0.5224,0.0037,0.6844,5110,0.5100,0.5345,0.5142,0.5297,-0.5357,-1.3756,0.3100,-2.7349,nothing,,0.1929,0.3234
+56,tfl,Tackled for loss (snaps),pressure,0.5182,0.0239,0.6851,5110,0.5081,0.5288,0.5271,0.5103,0.0511,-0.1436,0.2488,-0.8389,nothing,,0.2380,0.3845
+57,pens,Penalties (accepted),discipline,0.5159,0.0160,0.6856,5110,0.5018,0.5311,0.5352,0.4987,0.0930,-0.0845,0.2733,0.8339,nothing,,0.1841,0.3110
+58,st_epa,Special-teams EPA,special teams,0.5110,0.0000,0.6855,5110,0.4945,0.5273,0.4912,0.5284,-0.6663,-1.4250,0.1079,2.8574,nothing,built on expected points,0.2621,0.4153
+59,fg_pct,Field-goal rate,special teams,0.5100,0.0063,0.6857,5102,0.4926,0.5263,0.5073,0.5124,0.3020,0.0942,0.5271,-0.3827,nothing,,0.0602,0.1135
+60,pen_yds,Penalty yards,discipline,0.5053,0.0023,0.6861,5110,0.4915,0.5189,0.5313,0.4823,0.2405,0.0521,0.4533,0.4992,nothing,,0.1693,0.2896
+61,net_punt,Net punt average,special teams,0.5049,0.0000,0.6861,5110,0.4910,0.5196,0.4846,0.5229,-0.5839,-1.5708,0.4094,2.9313,nothing,a blocked punt is a punt of no yards,0.2822,0.4402
+62,adot,Average depth of target,passing,0.4815,0.0002,0.6864,4458,0.4692,0.4949,0.4642,0.4926,0.1886,-0.2090,0.7135,-0.8476,nothing,2006 on,0.4441,0.6150
