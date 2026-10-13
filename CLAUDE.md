@@ -981,7 +981,10 @@ refuse it), so the model can be tested on seasons it has never seen. `research/e
 place a held-out season is read (`common.open_exam()`, from `fetch.py --exam`'s own downloads), only
 to apply an equation already frozen; nothing is fitted, re-scaled or chosen there. Study 3 (`equation15/`) is the
 equation the owner asked for on 13 October 2026, fitted on 2004-2023 and tested once on 2024-2025; it
-is research, not wired into any site. Answer the question the owner asks: the
+is research, not wired into any site. Study 5 (`fivethirtyeight/`), which the owner asked for on 13 October
+2026, rebuilds FiveThirtyEight's quarterback-adjusted Elo from its published rules; 538's files (CC BY 4.0,
+Data: FiveThirtyEight) are downloaded, never committed; it is research, not wired into any site. Answer the
+question the owner asks: the
 betting line is not the yardstick for a study unless he asks about it (his direction, 13 October 2026).
 
 ```
@@ -995,6 +998,9 @@ python3 -I research/equation15/equation.py       # study 3: the 15-indicator equ
 python3 -I research/fetch.py --exam && python3 -I research/exam/blind_2026.py   # the frozen study 3 equation's blind test on 2026
 python3 -I research/models_compare/elo_features.py   # study 4, once: the ELO Model's inputs, elo/build.py in a sandbox (2026 not read, the site untouched)
 python3 -I research/models_compare/backtest.py       # study 4: the five game models the site ran until 13 October 2026, walk forward on 2021-2025, side by side
+python3 -I research/fetch.py --fivethirtyeight   # study 5's files: FiveThirtyEight's nfl_elo.csv and nfl-elo-game file (each refused unless its SHA-256 matches), nflverse weekly player stats 1999-2025, draft picks
+python3 -I research/fivethirtyeight/qbelo.py     # study 5: FiveThirtyEight's QB Elo rebuilt from its rules, checked against 538's own file, run on through 2025 (and PREGAME, the same with each team's previous starter)
+python3 -I research/fivethirtyeight/compare.py   # study 5: the QB Elo beside Alpha, the Joker and the ELO Model on study 4's 2021-2025 games, and over 2003-2025
 ```
 
 ## The sites behave like websites

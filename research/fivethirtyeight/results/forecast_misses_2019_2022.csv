@@ -1,0 +1,37 @@
+game_id,season,date,team1,team2,miss_elo,why,detail
+2019_01_LA_CAR,2019,2019-09-08,CAR,LAR,1.48,unexplained,
+2019_01_KC_JAX,2019,2019-09-08,JAX,KC,1.39,unexplained,
+2019_01_SF_TB,2019,2019-09-08,TB,SF,-0.67,unexplained,
+2019_02_KC_OAK,2019,2019-09-15,OAK,KC,-1.29,unexplained,
+2019_02_CLE_NYJ,2019,2019-09-16,NYJ,CLE,-0.4,unexplained,
+2019_05_JAX_CAR,2019,2019-10-06,CAR,JAX,-0.98,unexplained,
+2019_06_CAR_TB,2019,2019-10-13,TB,CAR,2.77,unexplained,
+2019_07_MIA_BUF,2019,2019-10-20,BUF,MIA,-18.27,unexplained,
+2019_07_LAC_TEN,2019,2019-10-20,TEN,LAC,6.22,unexplained,
+2019_07_NO_CHI,2019,2019-10-20,CHI,NO,7.49,unexplained,
+2019_10_DET_CHI,2019,2019-11-10,CHI,DET,-0.74,unexplained,
+2019_13_NYJ_CIN,2019,2019-12-01,CIN,NYJ,73.56,forecast with another starter,Ryan Finley for CIN (the file names Andy Dalton)
+2019_13_WAS_CAR,2019,2019-12-01,CAR,WSH,4.05,unexplained,
+2019_15_NYJ_BAL,2019,2019-12-12,BAL,NYJ,8.08,unexplained,
+2019_16_NYG_WAS,2019,2019-12-22,WSH,NYG,10.9,forecast with another starter,Eli Manning for NYG (the file names Daniel Jones)
+2019_17_PIT_BAL,2019,2019-12-29,BAL,PIT,-85.88,unexplained,
+2020_01_TB_NO,2020,2020-09-13,NO,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_02_KC_LAC,2020,2020-09-20,LAC,KC,6.01,forecast with another starter,Tyrod Taylor for LAC (the file names Justin Herbert)
+2020_03_TB_DEN,2020,2020-09-27,DEN,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_05_TB_CHI,2020,2020-10-08,CHI,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_07_TB_LV,2020,2020-10-25,OAK,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_08_TB_NYG,2020,2020-11-02,NYG,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_10_TB_CAR,2020,2020-11-15,CAR,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_15_TB_ATL,2020,2020-12-20,ATL,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2020_16_TB_DET,2020,2020-12-26,DET,TB,66.0,Tampa Bay 2020: the home side's 33 reversed,
+2021_01_GB_NO,2021,2021-09-12,NO,GB,59.05,538 called a game moved inside the US neutral,
+2021_18_GB_DET,2021,2022-01-09,DET,GB,-250.0,resting starters: 250 by hand,
+2022_10_IND_LV,2022,2022-11-13,OAK,IND,-115.56,forecast with another starter,Sam Ehlinger for IND (the file names Matt Ryan)
+2022_12_HOU_MIA,2022,2022-11-27,MIA,HOU,-30.23,forecast with another starter,Davis Mills for HOU (the file names Kyle Allen)
+2022_14_LV_LA,2022,2022-12-08,LAR,OAK,34.39,forecast with another starter,John Wolford for LAR (the file names Baker Mayfield)
+2022_14_CAR_SEA,2022,2022-12-11,SEA,CAR,-77.19,forecast with another starter,P.J. Walker for CAR (the file names Sam Darnold)
+2022_18_TB_ATL,2022,2023-01-08,ATL,TB,-250.0,resting starters: 250 by hand,
+2022_18_LAC_DEN,2022,2023-01-08,DEN,LAC,-250.0,resting starters: 250 by hand,
+2022_18_LA_SEA,2022,2023-01-08,SEA,LAR,80.27,forecast with another starter,Matthew Stafford for LAR (the file names Baker Mayfield)
+2022_18_DAL_WAS,2022,2023-01-08,WSH,DAL,-62.14,forecast with another starter,Taylor Heinicke for WSH (the file names Sam Howell)
+2022_18_NYG_PHI,2022,2023-01-08,PHI,NYG,-250.0,resting starters: 250 by hand,

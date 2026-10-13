@@ -1,0 +1,16 @@
+a,b,seasons,games,same_pick,games_apart,a_right,b_right,chance_alone,a_record,b_record
+QB Elo (rebuild),Plain Elo (ours),2003-2022,5364,0.9206,426,231,195,0.09,3477-1887,3441-1923
+QB Elo (rebuild),Plain Elo (ours),2023-2025,854,0.87,111,62,49,0.255,564-290,551-303
+QB Elo (rebuild),Plain Elo (ours),2003-2025,6218,0.9136,537,293,244,0.038,4041-2177,3992-2226
+QB Elo (rebuild),"QB Elo, pregame starter",2003-2022,5364,0.9718,151,70,81,0.416,3477-1887,3488-1876
+QB Elo (rebuild),"QB Elo, pregame starter",2023-2025,854,0.9637,31,18,13,0.473,564-290,559-295
+QB Elo (rebuild),"QB Elo, pregame starter",2003-2025,6218,0.9707,182,88,94,0.711,4041-2177,4047-2171
+"QB Elo, pregame starter",Plain Elo (ours),2003-2022,5364,0.929,381,214,167,0.018,3488-1876,3441-1923
+"QB Elo, pregame starter",Plain Elo (ours),2023-2025,854,0.8782,104,56,48,0.493,559-295,551-303
+"QB Elo, pregame starter",Plain Elo (ours),2003-2025,6218,0.922,485,270,215,0.014,4047-2171,3992-2226
+QB Elo (rebuild),538's QB Elo (published),2003-2018,4264,0.9421,247,100,147,0.003,2774-1490,2821-1443
+QB Elo (rebuild),538's QB Elo (published),2019-2022,1100,0.9818,20,10,10,1.0,703-397,703-397
+QB Elo (rebuild),538's QB Elo (published),2003-2022,5364,0.9502,267,110,157,0.005,3477-1887,3524-1840
+538's QB Elo (published),538's plain Elo (published),2003-2018,4264,0.9041,409,240,169,0.0005,2821-1443,2750-1514
+538's QB Elo (published),538's plain Elo (published),2019-2022,1100,0.8918,119,66,53,0.271,703-397,690-410
+538's QB Elo (published),538's plain Elo (published),2003-2022,5364,0.9016,528,306,222,0.0003,3524-1840,3440-1924

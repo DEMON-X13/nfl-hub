@@ -419,13 +419,14 @@
   },
   "CHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T15:43:43.998Z",
+   "built_at": "2026-10-13T20:36:47.863Z",
    "units": {
     "qb": [
      {
-      "id": "00-0038416",
-      "n": "Tyson Bagent",
-      "pos": "QB"
+      "id": "00-0039918",
+      "n": "Caleb Williams",
+      "pos": "QB",
+      "q": "questionable: hamstring"
      }
     ],
     "ol": [
@@ -486,15 +487,15 @@
     ],
     "front": [
      {
+      "id": "00-0039840",
+      "n": "Austin Booker",
+      "pos": "DE"
+     },
+     {
       "id": "00-0036480",
       "n": "Dayo Odeyingbo",
       "pos": "DE",
       "q": "questionable: quadriceps"
-     },
-     {
-      "id": "00-0035647",
-      "n": "Montez Sweat",
-      "pos": "DE"
      },
      {
       "id": "00-0035525",
@@ -523,7 +524,7 @@
   },
   "ATL": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T18:31:54.361Z",
    "units": {
     "qb": [
      {
@@ -596,9 +597,10 @@
       "pos": "DE"
      },
      {
-      "id": "00-0037815",
-      "n": "Cameron Thomas",
-      "pos": "DE"
+      "id": "00-0031576",
+      "n": "Za'Darius Smith",
+      "pos": "OLB",
+      "q": "questionable: concussion"
      },
      {
       "id": "00-0039070",
@@ -627,7 +629,7 @@
   },
   "BAL": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T18:31:54.361Z",
    "units": {
     "qb": [
      {
@@ -653,9 +655,10 @@
       "pos": "G"
      },
      {
-      "id": "00-0040068",
-      "n": "Emery Jones Jr.",
-      "pos": "G"
+      "id": "00-0038383",
+      "n": "Andrew Vorhees",
+      "pos": "G",
+      "q": "questionable: foot"
      },
      {
       "id": "00-0039233",
@@ -1150,7 +1153,7 @@
   },
   "NE": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T15:43:43.998Z",
+   "built_at": "2026-10-13T18:31:54.361Z",
    "units": {
     "qb": [
      {
@@ -1161,10 +1164,9 @@
     ],
     "ol": [
      {
-      "id": "00-0040699",
-      "n": "Will Campbell",
-      "pos": "T",
-      "q": "questionable: knee"
+      "id": "00-0041541",
+      "n": "Caleb Lomu",
+      "pos": "T"
      },
      {
       "id": "00-0036979",
@@ -1671,7 +1673,7 @@
   },
   "PIT": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T18:31:54.361Z",
    "units": {
     "qb": [
      {
@@ -1714,9 +1716,10 @@
       "pos": "RB"
      },
      {
-      "id": "00-0035594",
-      "n": "Travis Homer",
-      "pos": "RB"
+      "id": "00-0036139",
+      "n": "Rico Dowdle",
+      "pos": "RB",
+      "q": "questionable: toe"
      }
     ],
     "rec": [
@@ -2291,7 +2294,7 @@
   },
   "BUF": {
    "kick": "2026-10-18T20:25Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T18:31:54.361Z",
    "units": {
     "qb": [
      {
@@ -2352,9 +2355,10 @@
       "pos": "TE"
      },
      {
-      "id": "00-0039901",
-      "n": "Keon Coleman",
-      "pos": "WR"
+      "id": "00-0034827",
+      "n": "DJ Moore",
+      "pos": "WR",
+      "q": "questionable: shoulder - ac joint"
      }
     ],
     "front": [
@@ -2603,7 +2607,7 @@
   },
   "GB": {
    "kick": "2026-10-19T00:20Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-13T18:31:54.361Z",
    "units": {
     "qb": [
      {
@@ -2619,9 +2623,10 @@
       "pos": "G"
      },
      {
-      "id": "00-0032234",
-      "n": "Laken Tomlinson",
-      "pos": "G"
+      "id": "00-0036551",
+      "n": "Aaron Banks",
+      "pos": "G",
+      "q": "questionable: toe"
      },
      {
       "id": "00-0037076",

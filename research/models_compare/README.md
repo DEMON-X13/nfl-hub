@@ -172,7 +172,7 @@ decided game of 2013-2025, and Broly for all 4,897 of 2008-2025. The study run a
 Alpha, the Challenger and the Joker do not change: their files start in 2019 and their harness already
 read every club in today's code.
 
-- **Broly** picks the betting favourite in 98.8% of games with the fix (97.9% before). It gains 9 games
+- **Broly** picks the betting favourite in 98.7% of games with the fix (97.9% before). It gains 9 games
   and is now ahead of the Joker (149-99), the Challenger (119-89) and the ELO Model (141-109) on the
   games where they differ. With ten pairs compared, only the Joker gap is clear of chance; the other
   two would turn up about one time in three.
