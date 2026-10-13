@@ -399,7 +399,10 @@ python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offen
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play) or any past season's cannot be downloaded: it exits 1 and the
-last good files stay live. The season comes from games.csv alone (a new schedule becomes the season in
+last good files stay live. Every club is read in today's code (`TEAM_NOW`: games.csv, the depth charts
+and the injury reports write OAK, SD and STL for the seasons before those moves, the player stats LV, LAC
+and LA); until 13 October 2026 the 263 games those clubs played in 2012-2019 matched none of their
+players and were left out of the fit and the ratings. The season comes from games.csv alone (a new schedule becomes the season in
 play once its first game is 36 hours old; until then the finished season stays, and its week 1 is called
 in the fortnight before; the rankings switch once 16 clubs have a rated game); the playoffs are rated as
 they come and `phase` says regular, postseason, over or opening. `elo/check.py` holds the new files against
