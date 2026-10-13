@@ -1,0 +1,16 @@
+indicator,key,weight_per_sd,sd_of_gap,weight_per_unit,share_of_weight
+EPA per play,epa_play,0.099012,0.123378,0.802509,0.122609
+Dropback EPA per play,drop_epa,0.037497,0.180650,0.207565,0.046433
+ANY/A (adjusted net yards per attempt),anya,0.057916,1.627351,0.035589,0.071719
+"EPA per play, touchdown plays left out",epa_ntd,0.040298,0.094639,0.425808,0.049902
+Passer rating,rating,0.035365,15.618673,0.002264,0.043793
+Drive success rate (sets of downs that earn a first down or TD),dsr,0.091849,0.053904,1.703927,0.113739
+Net yards per pass attempt (sacks in),nya,0.044845,1.068166,0.041983,0.055533
+Early-down EPA per play (1st & 2nd),early_epa,0.089221,0.107237,0.831996,0.110484
+Dropback success rate,drop_succ,0.020141,0.055502,0.362879,0.024940
+Turnover margin,to_margin,0.084880,0.589349,0.144023,0.105109
+Yards per drive,yds_drive,0.039062,4.970852,0.007858,0.048372
+Yards per pass attempt,ypa,-0.018468,0.978470,-0.018874,0.022869
+First downs per snap,fd_play,0.035148,0.033694,1.043152,0.043525
+Yards per play,ypp,0.100353,0.658088,0.152492,0.124269
+Completion % over expected,cpoe,-0.013489,4.507892,-0.002992,0.016704

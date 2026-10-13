@@ -293,6 +293,9 @@ research/                        the homework toward the next game model (README
   elo_vs_site/                   study 2: the study's Elo against the site's own ratings (the
                                  app's Elo, Team Rankings via elo/build.py's power_ratings(), the
                                  ELO Model's published walk-forward) on the same games
+  equation15/                    study 3: an equation on the 15 indicators (equation.py: 50
+                                 variations scored with each season left out on 2004-2023, the
+                                 best frozen in results/equation.json and tested on 2024-2025)
 ```
 
 ## Bets and Stats: one page over both models
