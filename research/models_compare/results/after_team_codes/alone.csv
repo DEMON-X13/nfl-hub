@@ -1,0 +1,6 @@
+model,games_alone,right,wrong,pct
+Alpha,28,11,17,0.3929
+Challenger,19,8,11,0.4211
+Joker,122,40,82,0.3279
+Broly,23,12,11,0.5217
+ELO Model,95,37,58,0.3895

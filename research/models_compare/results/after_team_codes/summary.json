@@ -1,0 +1,25 @@
+{
+ "window": "2021-2025 regular season",
+ "regular_season_games": 1359,
+ "ties": 4,
+ "decided": 1355,
+ "decided_all_five_call": 1355,
+ "missing_by_model": {},
+ "checks": {
+  "elo_walk_forward_matches_model_json": true,
+  "elo_differences": {},
+  "broly_2018_2025_reg_and_post": {
+   "right": 1470,
+   "wrong": 749,
+   "pct": 0.6625
+  },
+  "broly_published": "fit.py: 65.8% on 2018-2025",
+  "alpha_2021_2025_reg_and_post": {
+   "right": 924,
+   "wrong": 496,
+   "pct": 0.6507
+  },
+  "alpha_published": "the app: 63.8% on 2021-2025 (1,420 picks)",
+  "joker_published": "model.json: 0.634 on 2021-2025 regular season"
+ }
+}
