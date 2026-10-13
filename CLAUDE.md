@@ -1010,7 +1010,8 @@ question, each with its scripts, its README and its committed `results/`. **No m
 there, or anywhere, until the owner gives the all clear**; a study may fit a small regression only
 to ask whether something carries signal. 2003-2025 are explored (1999-2002 read only to warm up a
 history); 2026 on is held out and never read (`research/common.py`'s `HOLDOUT_FROM`, whose loaders
-refuse it), so the model can be tested on seasons it has never seen.
+refuse it), so the model can be tested on seasons it has never seen. Answer the question the owner asks: the
+betting line is not the yardstick for a study unless he asks about it (his direction, 13 October 2026).
 
 ```
 python3 -I research/fetch.py                     # nflverse games.csv + play-by-play 1999-2025 into research/data/ (gitignored)
