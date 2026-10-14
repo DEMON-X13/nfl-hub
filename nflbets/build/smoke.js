@@ -1574,14 +1574,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
             'the player\'s stats are not open and highlighted in his game');
           chk(d.querySelectorAll('#gameView .pe-hl').length === 2, 'more than the one player is highlighted');
           /* the game page tags every player drawn there with a favourable mismatch this week (Solid
-             and up, graded as the card grades it) beside his name, once, and nobody else; a redraw
+             and up, graded as the card grades it) MISMATCH beside his name, its grade kept on the tag,
+             once, and nobody else; a redraw
              does not double it */
           const tagCheck = () => { const grade = x => x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : null;
             const btns = [...d.querySelectorAll('#gameView button.plrbtn[data-open]')], drawn = new Set(btns.map(b => b.dataset.open));
             const exp = {}; for (const r of w.eloMismatches()) { const g = grade(Math.round(r.score * 10) / 10);
-              if (r.game_id === rows[0].game_id && g && drawn.has(r.pid)) exp[r.pid] = g + ' mismatch'; }
+              if (r.game_id === rows[0].game_id && g && drawn.has(r.pid)) exp[r.pid] = 'Mismatch|' + g; }
             const got = {}; for (const b of btns) { const t = b.querySelectorAll('.pe-mmtag');
-              if (t.length) got[b.dataset.open] = t.length === 1 && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3 ? t[0].textContent : 'misplaced or twice'; }
+              if (t.length) got[b.dataset.open] = t.length === 1 && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3 ? t[0].textContent + '|' + t[0].dataset.peMmgrade : 'misplaced or twice'; }
             const k = o => JSON.stringify(Object.entries(o).sort());
             return Object.keys(exp).length > 0 && k(got) === k(exp) ? '' : `expected ${k(exp)}, drew ${k(got)}`; };
           { const bad = tagCheck(); chk(!bad, 'the game page does not tag the players with a favourable mismatch beside their names: ' + bad); }
