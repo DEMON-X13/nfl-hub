@@ -115,6 +115,8 @@ const RANK_QUOTE = [
   /\bthe power (?:ratings?|rankings?)\b|\bpower rank\b|\bElo rank\b/i,
   /\bDeep Dive\b/,
   /\bOverall (?:Offense|Defense)\b/,
+  /\bTotal (?:Offense|Defense)\b/,                       // the ELO tab's unit tables before they were renamed Overall
+  /\b(?:ELO Ratings|Team Rankings|Power Ratings) tab\b/i,   // the site's own tabs, however the rank is named
 ];
 /* the first such phrase in a string, with a little of the text around it, or null */
 function siteRankQuote(text) {

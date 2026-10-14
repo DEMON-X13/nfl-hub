@@ -89,7 +89,8 @@
                           older file under the same build stamp, or carried while the file is last season's,
                           fail the checks against the file.
      site-ranks           the narrative check catches the site's own ranks (the Overall Offense and Overall
-                          Defense among them) and lets third-party ones by. */
+                          Defense among them, under the old Total name too, and anything a site tab ranks)
+                          and lets third-party ones by. */
 'use strict';
 const { SEASON, seasonState, siteRankQuote } = require('./lib');
 const { lineups, schedule, notePractice, espnIndex } = require('./context');
@@ -601,9 +602,13 @@ function cases() {
   }
   { // site-ranks
     const site = ["the secondary ranks 26th in the site's units", 'ranks 1st in the tracker', 'Seahawks, 1st in the power ratings', 'It sits 25th in the power rankings', 'the Deep Dive has them Favorable', 'its power rank is 3rd',
-      "the ELO Ratings tab ranks Minnesota's Overall Offense 27th", "the Jets' Overall Defense is 7th"];
+      "the ELO Ratings tab ranks Minnesota's Overall Offense 27th", "the Jets' Overall Defense is 7th",
+      // Week 5 as written on October 7: the tab's tables under their old name (patch_week5_totals.py took them out)
+      "the site's ELO Ratings tab ranks Minnesota's Total Offense 27th", "the Jets' Total Defense 7th and Cleveland's Total Offense 19th",
+      'the Team Rankings tab has them 4th'];
     const other = ["PFF's unit grade of 72.4", 'ESPN FPI power ratings have them 3rd', 'a deep dive into the tape', "the NFL.com power rankings put them 5th", 'per TeamRankings, 3rd',
-      'the best overall defense in the division', 'Overall, defense has carried them'];
+      'the best overall defense in the division', 'Overall, defense has carried them',
+      'they rank 27th in total offense, per ESPN', 'per TeamRankings, 4th in yards a play'];
     const missed = site.filter(x => !siteRankQuote(x)), caught = other.filter(x => siteRankQuote(x));
     add('site-ranks', "the site's own ranks are caught, a third party's with its source are not", !missed.length && !caught.length, `missed: ${missed.join(' | ') || 'none'}; caught: ${caught.join(' | ') || 'none'}`);
   }
