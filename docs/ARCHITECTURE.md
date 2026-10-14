@@ -269,13 +269,17 @@ news/
   tools/context.js               the Deep Dive, units2026.js and units.json; required nflverse
                                  sources or nothing; keeps each week's lineups as kickoff found them
                                  and grades last week's against snap counts (tools/out/weekN-lineups*)
-  tools/notes.js                 the notes' rules: the shape and the ids fail, the wording warns;
-                                 --strict (the Wednesday routine) refuses both
+  tools/notes.js                 the notes' rules: the shape and the ids fail, the wording warns,
+                                 the bold among it (players in **...**, checked against the
+                                 site's player names, players()); --strict (the Wednesday
+                                 routine) refuses both
   tools/lineup-checks.js         the lineup rules on the source data, run by the smoke test
                                  ("filed" is the official game status, nothing else)
   tools/deepdive-checks.js       the Deep Dive's headline and weighted row tags stated on their
                                  own (own copy of the constants), run by the smoke and the cases on
-                                 what nflbets/build/deepdive.js draws (checkPossession, checkHead)
+                                 what nflbets/build/deepdive.js draws (checkPossession, checkHead;
+                                 each row's two sides the offense's then the defense's, each
+                                 headed by its own club)
   tools/cases.js                 fixed cases from real weeks the rules and checks must keep,
                                  each with the broken version the checks must fail; run by smoke
   tools/run-auto.js              works out where the season stands, then runs pull-week
@@ -402,7 +406,15 @@ The Pick'ems board is Vegas's call on nflverse's lines from `state.json`; it tak
 from `state.json`, reads each week's scoreboard in ESPN's numbering (weeks 19-22, named Wild Card
 to Super Bowl, are seasontype 3), says the regular season is over once every game is graded and
 the schedule has no playoff game, reads "vs" for a neutral site (nflverse's Neutral or a 9:30am
-Eastern kickoff). A game's row is a button (`role="button"`, `tabindex="0"`,
+Eastern kickoff). It is six columns on a wide screen (date, matchup, win probability, confidence,
+score prediction, final score) and one card a game at 900px and under; between them, 901 to
+1,140px (the owner's window is 914), a layout of its own narrows the columns and lets the
+win-probability bar take what is left, its team labels dropped since the matchup column names the
+teams, so the board never scrolls sideways (it did from 901 to about 1,100px, and its last column
+ran into the card's padding up to 1,140, until 14 October 2026). jsdom lays nothing out, so
+`smoke.js` sums each layout's least column widths, its gaps and the card's padding against the
+page's content at that layout's narrowest width (1,141px wide, 901 between) and wants exactly one
+layout between the phone card and a wide screen. A game's row is a button (`role="button"`, `tabindex="0"`,
 `aria-haspopup="dialog"`): a click, Enter or Space opens its **Game snapshot** straight away (the
 owner's call, 14 October 2026; until then a tap opened the row on two buttons, the snapshot and the
 game's props), wired once on the board (`wireRows()`), so a redraw of the board never opens a window.
@@ -419,19 +431,28 @@ keeps its title). The verdict (`#gsMatch`, always shown) leads, where the Props 
 (`pkBoard.canProps`: the prop model has its row and its week is open), with a 44px "Game bets and player
 props" button (`data-gs-props`), which closes the window and opens the game's own page on the Props tab
 (its week chosen on the slate, the tab opened, then the page, as a click on the game there opens it) with
-its Game bets card brought into view (`pkBoard.openOnProps`); then each team's record as Team Rankings
-counts it, the score or the kickoff in the viewer's time and the site, a played game's note ruled in
-gold under the score, the game's preview (`.gs-prev`, below), the headline -- the Vegas favourite's nickname and the spread it is favoured
+its Game bets card brought into view (`pkBoard.openOnProps`); then the head (`.gs-hero`), away team |
+middle (`.gs-mid`) | home team: each team labelled Away or Home ("Home (listed)" at a neutral site)
+over its name and its record alone (3-2, as Team Rankings counts it, with no words for which games it
+counts; the playoffs beside it once there are any; the Elo file's count, so titled, where it has a
+final the results have not), the middle the score once there is one, the kickoff in the viewer's time
+and the site (a neutral one named so), and the game's preview (`.gs-prev`, below); no "at" circle
+between the teams (the owner's call, 14 October 2026: the labels say it); on a phone (760px and
+under) the teams share a row and the middle goes under them. A played game's note, ruled in gold,
+follows the head; then the headline -- the Vegas favourite's nickname and the spread it is favoured
 by, its chance and the board's own confidence pill (`BET.tier`), or once played the winner with an
 Upset or Favourite won chip and the line it was favoured by under it -- over the board's own split
-bar, the spread, total and moneylines (one row on every phone, the moneylines one over the other)
-with one line naming the sources, and five answer lines (`.gs-glance`), each a button
+bar, the spread, total and moneylines (one row on every phone, the moneylines one over the other;
+the line naming their sources went on 14 October 2026, the owner's call), and five answer lines
+(`.gs-glance`), each a button
 (`data-gs-goto`) that opens its card and brings it under the header: the model picks with Vegas kept
 apart as the baseline (how many of the three models agree with it, the ones that do not named with
 their dots, the ones with no call yet, how many of the four calls were right once played), the Team
 Elo gap with both ratings and ranks, which side ranks higher on offense against defense each way with
 the four ranks, who is out by name and how many starters are questionable, and the top mismatch with
-its edge on a four-step meter. Under it seven cards, each a button (`[data-gs-fold]`, `aria-expanded`)
+its edge on a four-step meter. Under it six cards (`CARDS`, in this order; the Sources card, with
+each file's publish time and links to the full tabs, went on 14 October 2026, the owner's call, and
+the Stat breakdown moved up above Offense vs defense), each a button (`[data-gs-fold]`, `aria-expanded`)
 with its title, a badge where a count helps (Starters: the ranked players out; Mismatches: how many)
 and a one-line summary over a body that folds (Every call and Team strength open on a wide screen,
 every card folded on a phone, Open all and Close all; nothing saved, nothing redrawn): every call
@@ -441,30 +462,33 @@ Joker and the ELO Model -- graded once the game is played:
 `processed` once the job has graded it, else `atKickoff` and `joker` in `state.json` and
 `graded` or `next` in `elo/data/model.json`); Team strength (each team's Power Rating, rank, shield,
 change and chance against an average team, from `teams`, ranked as Team Rankings ranks them);
-Offense vs defense, Overall Offense against Overall Defense both ways ("When the Eagles have the
-ball": `units`, the overall rank and rating first, a unit with no game yet this season shown on its
-rating carried from last season and marked so, wearing the Deep Dive's headline tag on the gap read as
-points, then the Deep Dive's four position matchups for that possession, below, and folded under one
-button, `[data-gs-sub]`, the stats either rating weighs paired offense against defense, each rank over
-its value); Stat breakdown (`#gsStats`, below);
-the side of every comparison with the edge wears one mark, `gs-better`;
-Starters (the team's ranked players out first, each group's `sidelined`, the box red when someone
-is; then each team's expected starters, `lineups` in `matchups.json`, side by side under each
-position on Offense, Defense and Kicker tabs -- `role="tablist"`, the arrow keys, Home and End, the
-choice kept while the page is open -- each with his season Elo, rank and shield as on the ELO
-Ratings tab and a Q from the report, the higher Elo of each pair marked, and each defensive group's
-header carrying both teams' units as the matchup formula ranks them among the league's); the
+Stat breakdown (`#gsStats`, below); Offense vs defense, Overall Offense against Overall Defense both
+ways, one possession under the other ("When the Eagles have the ball", with the Deep Dive's headline
+tag and its points on the gap at the end of that line; the two overall ratings, `units`, in two boxes
+of one size and shape either side of "vs", `.gs-ubox`, the better rank's tinted and no separate edge
+chip, a unit with no game yet this season shown on its rating carried from last season and marked so;
+then the Deep Dive's four position matchups for that possession under "Position matchups", below,
+each row its two sides in two equal columns; and folded under one button, `[data-gs-sub]`, the stats
+either rating weighs paired offense against defense, each rank over its value; no note under the
+card: what the ratings rest on is the boxes' title, what the matchups rest on the label's);
+the side of every comparison with the edge wears one mark, `gs-better`; the
 Mismatches in the game (the Props tab's own rows, `window.eloMismatches`, ranked among the week's,
-each edge on the four-step meter with its legend); and when each file was published (the news
-job's too), with links that close the window and open Team Rankings, ELO Ratings, Props on this game and the Pick'em
-Record. One type scale (11, 13, 15, 18, 22 and 30px, custom properties on `#gsModal`; a phone takes
-the top two to 20 and 26) and every control at least 44px tall; red text on the red tint (the Upset
+each edge on the four-step meter with its legend); and Starters (the team's ranked players out
+first, each group's `sidelined`, the box red when someone is; then each team's expected starters,
+`lineups` in `matchups.json`, side by side under each position on Offense, Defense and Kicker tabs
+-- `role="tablist"`, the arrow keys, Home and End, the choice kept while the page is open -- each
+with his season Elo, rank and shield as on the ELO Ratings tab and a Q from the report, the higher
+Elo of each pair marked, and each defensive group's header carrying both teams' units as the
+matchup formula ranks them among the league's). One type scale (11, 13, 15, 18, 22 and 30px, custom
+properties on `#gsModal`; a phone takes the top two to 20 and 26) and every control at least 44px tall;
+red text on the red tint (the Upset
 chip, the out badge and heading) is a darker red, `--gs-miss-ink` (5.3:1 there, against the page's
 red at 4.4:1), and the Big mismatch grade's green a shade darker than the ELO tab's (4.9:1 on white,
 against 4:1); the preview's dark theme lifts the lean bars' team colours toward white, the mismatch
 grades' colours, the board's Medium pill, the window's muted text (to 5:1 on its panels) and its red
 (`--miss` and `--gs-miss-ink` to #FF8AA3, 5.3:1 on the panels and 4.7:1 on the tint) so they read
-there (and the Deep Dive's tags, the stat bars and the preview block with them): every text in the
+there (and the Deep Dive's tags, the stat bars, the preview block and its bold names, each side of a
+position matchup and the better rank's tinted box with them): every text in the
 window, every card open, is at least 4.5:1 on what it sits on in both looks. It computes nothing of its
 own beyond the vote's counts and the Elo gap, each
 marked `data-gs-n` and held by the smoke, and the stat breakdown's splits and point differential: the
@@ -482,7 +506,11 @@ card, among the starters and on the verdict's Team Elo and Offense vs defense an
 rating, the better rank of each offense and defense that meet, the side named with the edge), and the
 unit ranks in their headers; the bars, to the same numbers (each call's bar leaning toward its pick,
 `gs-toh` home and `gs-toa` away, as far as its chance and in that team's colour; the split bar under
-the headline each side's Vegas chance wide); the game bar; the answers' buttons, the folding,
+the headline each side's Vegas chance wide); the game bar; the head (away team, middle, home team,
+the middle's score, kickoff and preview in that order, no "at" circle, the Away and Home labels),
+each record the record alone, no line naming the line's sources, each meeting in Offense vs defense
+two boxes of one class with no note or edge chip, and no Sources card, publish time or link away;
+the answers' buttons, the folding,
 the tabs' keys and kept choice, the props button (exactly where `canProps` says, and doing its job),
 the Tab order and the 44px tap heights; and the board: a row's click, Enter and Space open the window,
 no row has a body, no redraw or score read opens one, the focus goes back to the row. The position table is `table-layout: fixed` (each team half
@@ -499,26 +527,34 @@ makes the gap), since a sticky header sticks inside its scroller's padding and t
 in a band above it once scrolled.
 What the Season Tracker said of each game is in its snapshot, from the news job's files (the
 owner's call, 14 October 2026; "News: the job and the game notes" below). The preview (`.gs-prev`,
-in the verdict under the records and kickoff) is the game's entry in
+in the head's middle under the kickoff) is the game's entry in
 `news/data/notes/<season>-w<week>.json`, a Preview line and a News note with its sources (labelled
 "Preview, written <day>, before kickoff" once the game has started)
-(`data-gs-note="written"`, plain text, escaped); until a game is written, and only for a game still
+(`data-gs-note="written"`, escaped, then each `**...**` pair of 1 to 60 characters drawn bold,
+`b.gs-pn`, an unpaired `**` left as typed); until a game is written, and only for a game still
 to come, an automatic line (`data-gs-note="auto"`: who visits whom with their records, the day and
-time, and as its news the starters out on `units.json` for both teams, at most six); a played game with
-no note has none. In Offense vs defense each possession's overall line wears `deepdive.headTag`'s tag
-and points, and under it `deepdive.possession`'s four rows (the quarterback against the pass defense,
-the line against the pass rush, the run game against the run defense, the receivers against the
-coverage, each tagged, with who plays, who is out and the numbers) where `units.json` is for the game's
-week (`deepdive.applies`), else one line saying why (a playoff game says the Deep Dive covers the
-regular season only); `nflbets/build/deepdive.js` is one module, inlined
+time, and as its news the starters out on `units.json` for both teams, each name bold, at most six);
+a played game with no note has none. In Offense vs defense each possession's title line ends with
+`deepdive.headTag`'s tag and points ("−0.9 pts"), and under its two boxes `deepdive.possession`'s four
+rows (the quarterback against the pass defense, the line against the pass rush, the run game against
+the run defense, the receivers against the coverage), each its unit and tag, the edge small beside
+it, over two equal columns, the offense's side and the defense's, each headed by its club, what it is
+rated as and its rank ("SEA pass protection · 15th" | "DEN pass rush · 2nd") with who plays, who is
+out and the numbers (the quarterback's and the run game's defense side the pass or run defense's rank
+alone), where `units.json` is for the game's week (`deepdive.applies`), else one line saying why (a
+playoff game says the Deep Dive covers the regular season only); `deepdive.basis` (and when the news
+job built the file) is the title of the "Position matchups" label over them, not a note under the
+card; `nflbets/build/deepdive.js` is one module, inlined
 before the snapshot as `window.gsDeepDive` and required by the news job's smoke and cases. Stat
-breakdown (`#gsStats`, folded everywhere) is the tracker's eleven stat bars from `stats.json`, each
+breakdown (`#gsStats`, folded everywhere, above Offense vs defense) is the tracker's eleven stat bars
+from `stats.json`, each
 split between the two teams in their colours (`statSplit`, the tracker's rule), the better number
 marked `gs-better`, a team missing from the file shown as dashes. The window fetches the three files
 itself at runtime (`../news/data/units.json`, `stats.json`, the opened game's week's notes;
 `cache: 'no-store'`, each once a page load, fetched as the page loads, the notes of the board's week once
 the board has its schedule and another week's when one of its games opens), never baked into the page; a
-file still being read says so (Sources: "still loading"), one that did not load or has the wrong shape is
+file still being read says so in its own part ("Loading the Deep Dive…", the Stat breakdown's
+"loading…"), one that did not load or has the wrong shape is
 said in its own part alone, and a late file or the prop model coming up redraws the window with the focus
 and the reader's place kept. `smoke.js` holds all of
 it on stand-in news files served by its fetch stub, never `news/data`'s own: the elo job runs it every
@@ -1183,7 +1219,8 @@ week file. **The game notes are written by a person**: each Wednesday a Claude r
 whenever the owner asks) writes `data/notes/<season>-w<N>.json` from the pack, checks it with
 `node tools/notes.js --strict` and the smoke, and merges it; the snapshot shows it on its next load,
 with no rebuild of `nflbets/`, and an automatic line for a game not yet written. Read
-`news/HANDOFF.md` before touching anything here. A note quotes no betting word, no typed record and
+`news/HANDOFF.md` before touching anything here. A note names every player in bold (`**Bo Nix**`,
+players only, the owner's call of 14 October 2026) and quotes no betting word, no typed record and
 none of the site's own ranks (they move under it); `notes.js` fails a note's shape and warns on its
 wording, and the job's smoke reports every note problem as a warning, so a note never holds back the
 week's scores, stats and Deep Dive; so do the Deep Dive's lineup checks, which warn. After week 18 the
