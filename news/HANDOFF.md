@@ -11,7 +11,8 @@ NFL Bets and Stats) with a hand-written narrative for every team each week. The 
 the tracker's per-game content now lives there:
 
 - a one-line **preview** and a short **news** note for each game, written by hand each Wednesday into
-  `data/notes/<season>-w<N>.json` (until a game has one, the snapshot shows an automatic line);
+  `data/notes/<season>-w<N>.json`, every player named in bold (`**Bo Nix**`); until a game has one, the
+  snapshot shows an automatic line;
 - the **Deep Dive** (the four position matchups each way, with who plays and who is out) inside its
   Offense vs defense card, from `data/units.json`, drawn by `../nflbets/build/deepdive.js`;
 - the **Stat breakdown** (the eleven stat bars), from `data/stats.json`.
@@ -57,8 +58,10 @@ a number like -3.5, -3½ or "Indianapolis -7"; no favourite, underdog, moneyline
 price or book: the snapshot shows the market apart); no record or score typed in the preview (the records
 are shown beside it, and a typed one goes stale); none of the site's own ranks (the Deep Dive beside the
 note moves with every run; `siteRankQuote()` in `tools/lib.js` lists the phrases); no em dashes or double
-dashes; plain text, no markup. Shape and game ids are failures; the wording rules are warnings, so the job
-never holds back the week's data over a note, but the routine runs `--strict`, which refuses both.
+dashes; plain text, no markup, but for every player named in bold, `**Pat Surtain II**` (players only,
+never a coach or an owner; the lengths count the text without the markers). Shape and game ids are
+failures; the wording rules are warnings, so the job never holds back the week's data over a note, but the
+routine runs `--strict`, which refuses both.
 
 ## Files
 
@@ -149,8 +152,8 @@ on its own.
 ## Hard constraints
 
 - No em dashes and no double dashes anywhere: notes, commit messages, chat.
-- The notes are plain text; the page escapes them. No betting language, no typed records in a preview,
-  no site ranks.
+- The notes are plain text but for a player's name in bold, `**Bo Nix**` (players only); the page escapes
+  them, then draws each pair bold. No betting language, no typed records in a preview, no site ranks.
 - Never edit a generated file by hand: `units2026.js`, `units.json`, `stats2026.js`, `stats.json`,
   `results.js` and `tools/out/` are the job's.
 

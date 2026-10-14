@@ -8,8 +8,10 @@
      - the Deep Dive's tag constants against their values, and every club's Overall Offense and Defense
        against ../elo/data/model.json, X NFL Bets' own file (tools/deepdive-checks.js);
      - every game of the units' week drawn both ways by deepdive.js possession(): the four rows in order,
-       each tag the weighted edge worked out on its own, the ranks and edge shown the file's; the note under
-       them, deepdive.js basis(), naming each side with its own count of this season's games; and the Overall
+       each tag the weighted edge worked out on its own, each row's two sides the offense's then the
+       defense's, each headed by its own club, the ranks and edge shown the file's; what the rows rest on,
+       deepdive.js basis() (the snapshot's "Position matchups" label's title), naming each side with its
+       own count of this season's games; and the Overall
        line's tag, deepdive.js headTag() on model.json's units, against the rule (tools/deepdive-checks.js);
      - who the drawn rows name: a starter out named, a quarterback in doubt with the next one named, nobody
        both listed and out (warnings);
@@ -136,8 +138,9 @@ async function run() {
       drawn[off + '-' + def] = r.html;
       bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)]));
     }
-    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, the ranks and edges the file\'s', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
-  /* the note under the rows (deepdive.js basis()): each side named with its own count of this season's games,
+    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, the ranks and edges the file\'s', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
+  /* what the rows rest on (deepdive.js basis(), the title of the snapshot's "Position matchups" label): each
+     side named with its own count of this season's games,
      the file's g26, worked out here, and a club with no count given none. On every game of the week, and on a
      made-up pair whose counts differ, so a count given to the other side fails in a week where they tie */
   { const rx = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -157,7 +160,7 @@ async function run() {
       X.units[DD.club(a)].g26 = 1; X.units[DD.club(h)].g26 = 7; hold(X, a, h, `made-up ${a} 1, ${h} 7`);
       X.units[DD.club(a)].g26 = null; hold(X, a, h, `made-up ${a} none, ${h} 7`);
     }
-    check("deep dive: the note under the rows gives each side its own count of this season's games (units.json's g26), on every game of the week and a made-up pair",
+    check("deep dive: what the rows rest on gives each side its own count of this season's games (units.json's g26), on every game of the week and a made-up pair",
       games.length > 0 && bad.length === 0, brief(bad) || `${games.length} games`); }
   if (!M || !M.units || !M.units.off || !M.units.def) skip("the Overall line's tag on every possession", 'no Overall ratings in ../elo/data/model.json');
   else {

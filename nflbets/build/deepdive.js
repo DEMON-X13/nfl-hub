@@ -23,6 +23,13 @@
    side, with the same weights, so they are drawn here as the right-hand side of the line's and the
    receivers' rows. The rows overlap and are never added up.
 
+   A row is drawn as the unit and its tag (the edge small beside it) on one line, then two equal
+   columns, the offense's side and the defense's, each headed by its own label and rank ("SEA pass
+   protection · 15th" | "DEN pass rush · 2nd") with its names, who is out and its numbers under it;
+   the quarterback's and the run game's defense side is the pass or run defense's rank alone (it is
+   rated as a defense, with no single unit's names). The owner's ask of 14 October 2026: the two
+   sides of a meeting the same size, side by side.
+
    The headline tag is the one the tracker put over its rows: this team's Overall Offense against the
    opponent's Overall Defense (elo/data/model.json `units`, which the card already shows), the gap read
    as points (meta.tags.headline: slope x (off.raw - def.raw)), Favorable from 0.9645, Easy from 2.8935. */
@@ -107,13 +114,13 @@
       const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key);
       rows.push({ key, tag: t.tag, cls: t.cls, edge: t.edge });
       const why = t.edge == null ? '' : ` title="Edge ${sd(t.edge)}: ${esc(off)}'s ${mine} rating minus ${esc(def)}'s ${theirs}, in league standard deviations. The tag weighs it by ${t.w} (${sd(t.w * t.edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
-      const vs = `<div class="ddvs">${esc(off)} ${mine} <b>${u && u.rank != null ? ord(u.rank) : '–'}</b> vs ${esc(def)} ${theirs} <b>${v && v.rank != null ? ord(v.rank) : '–'}</b>${t.edge == null ? '' : `<span class="ddedge">edge ${sd(t.edge)}</span>`}</div>`;
+      /* each side's heading: the club, what it is rated as and its rank */
+      const head = (club, words, x) => `<div class="ddsl"><span class="ddsn">${esc(club)} ${words}</span><span class="ddsep" aria-hidden="true"> · </span><b class="ddrk">${x && x.rank != null ? ord(x.rank) : '–'}</b></div>`;
       /* the defense's side has names and numbers of its own only where it is a unit (pass rush, coverage) */
       const theirSide = dk === 'front' || dk === 'db' ? side(O[dk], false) : '';
       return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}">
-        <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${t.cls}"${why}>${t.tag}</span></div>
-        ${vs}
-        <div class="ddsides"><div class="ddside ddoff"><span class="ddsl">${esc(off)}</span>${side(u, key === 'qb') || '<div class="ddnote">No names in the file.</div>'}</div>${theirSide ? `<div class="ddside dddef"><span class="ddsl">${esc(def)}</span>${theirSide}</div>` : ''}</div>
+        <div class="ddtop"><span class="ddunit">${label}</span><span class="ddtg">${t.edge == null ? '' : `<span class="ddedge">edge ${sd(t.edge)}</span>`}<span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>
+        <div class="ddsides"><div class="ddside ddoff">${head(off, mine, u)}${side(u, key === 'qb') || '<div class="ddnote">No names in the file.</div>'}</div><div class="ddside dddef">${head(def, theirs, v)}${theirSide}</div></div>
       </div>`;
     }).join('');
     return { html: `<div class="dd" data-dd-pos="${esc(off)}-${esc(def)}">${html}</div>`, rows };
@@ -125,11 +132,11 @@
     const H = meta && meta.tags && meta.tags.headline;
     if (!H || !offUnit || !defUnit || !isFinite(offUnit.raw) || !isFinite(defUnit.raw)) return null;
     const pts = H.slope * (offUnit.raw - defUnit.raw), [cls, tag] = tagOf(pts, H.fav, H.easy);
-    return { cls, tag, pts, text: `about ${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} pts`,
+    return { cls, tag, pts, text: `${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} pts`,
       title: `Overall Offense minus Overall Defense on the raw scale, about ${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} points a game to this offense at ${H.slope} points a unit (fitted on ${H.fit || '2012-2017'}): Favorable from about ${(+H.fav).toFixed(1)}, Easy from about ${(+H.easy).toFixed(1)}` };
   }
 
-  /* what the rows rest on, said once under them */
+  /* what the rows rest on: the title of the snapshot's "Position matchups" label (escaped text, no markup) */
   function basis(D, a, h) {
     if (!D) return '';
     const U = D.units || {}, g = n => `${n} game${n === 1 ? '' : 's'}`, ua = U[club(a)], uh = U[club(h)];
