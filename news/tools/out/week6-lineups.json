@@ -109,7 +109,7 @@
   },
   "DEN": {
    "kick": "2026-10-16T00:15Z",
-   "built_at": "2026-10-14T09:43:06.160Z",
+   "built_at": "2026-10-14T18:49:14.932Z",
    "units": {
     "qb": [
      {
@@ -198,16 +198,15 @@
       "pos": "FS"
      },
      {
-      "id": "00-0036564",
-      "n": "Talanoa Hufanga",
-      "pos": "SS",
-      "q": "questionable: ankle, not practising"
-     },
-     {
       "id": "00-0038552",
       "n": "Riley Moss",
       "pos": "CB",
       "q": "questionable: ribs"
+     },
+     {
+      "id": "00-0037384",
+      "n": "Ja'Quan McMillian",
+      "pos": "CB"
      }
     ]
    }
@@ -420,7 +419,7 @@
   },
   "CHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T20:36:47.863Z",
+   "built_at": "2026-10-14T18:49:14.932Z",
    "units": {
     "qb": [
      {
@@ -493,15 +492,14 @@
       "pos": "DE"
      },
      {
-      "id": "00-0036480",
-      "n": "Dayo Odeyingbo",
-      "pos": "DE",
-      "q": "questionable: quadriceps"
-     },
-     {
       "id": "00-0035525",
       "n": "Devin Bush",
       "pos": "MLB"
+     },
+     {
+      "id": "00-0034320",
+      "n": "Kentavius Street",
+      "pos": "DT"
      }
     ],
     "db": [
@@ -841,7 +839,7 @@
   },
   "TEN": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-14T18:49:14.932Z",
    "units": {
     "qb": [
      {
@@ -881,7 +879,8 @@
      {
       "id": "00-0035261",
       "n": "Tony Pollard",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: foot, not practising"
      },
      {
       "id": "00-0039032",
@@ -930,23 +929,22 @@
       "pos": "CB"
      },
      {
-      "id": "00-0040141",
-      "n": "Kevin Winston Jr.",
-      "pos": "SS",
-      "q": "questionable: quadriceps"
-     },
-     {
       "id": "00-0037758",
       "n": "Cordale Flott",
       "pos": "CB",
       "q": "questionable: chest"
+     },
+     {
+      "id": "00-0040201",
+      "n": "Marcus Harris",
+      "pos": "CB"
      }
     ]
    }
   },
   "IND": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-14T18:49:14.932Z",
    "units": {
     "qb": [
      {
@@ -1008,7 +1006,8 @@
      {
       "id": "00-0030279",
       "n": "Keenan Allen",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: groin, not practising"
      }
     ],
     "front": [
@@ -1049,7 +1048,7 @@
   },
   "NYJ": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-14T18:49:14.932Z",
    "units": {
     "qb": [
      {
@@ -1107,7 +1106,7 @@
       "id": "00-0041032",
       "n": "Kenyon Sadiq",
       "pos": "TE",
-      "q": "questionable: concussion"
+      "q": "questionable: concussion, not practising"
      },
      {
       "id": "00-0039451",
@@ -2190,7 +2189,7 @@
   },
   "KC": {
    "kick": "2026-10-18T20:25Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-14T18:49:14.932Z",
    "units": {
     "qb": [
      {
@@ -2253,7 +2252,7 @@
       "id": "00-0039067",
       "n": "Rashee Rice",
       "pos": "WR",
-      "q": "questionable: hamstring"
+      "q": "questionable: hamstring, not practising"
      }
     ],
     "front": [
