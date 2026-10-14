@@ -14,7 +14,7 @@ GitHub Pages serves the repo root:
 | `news/` | Season Tracker, the newsletter-style page, read as the Season Tracker tab of `nflbets/` (`nflbets/#tracker`), which frames it; `news/` itself leads there | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
 | `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
 | `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
-| `cfb/` | X College Football Bets, a test site: a rating model on every FBS game, moneylines and spreads | `cfb/index.html`, `cfb/tools/`; `.github/workflows/cfb.yml` |
+| `cfb/` | a redirect: X College Football Bets lives in its own repo, `DEMON-X13/cfb-hub` | `cfb-hub` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week and saves the picks as a JSON file to send to X; kept in that browser only, a game locks at kickoff, nothing is sent anywhere | `picks/index.html`, hand-written, no build; reads `betting/state.json` on every load and team names and colours from `news/data/teams.js` |
 | `nhl/` | a redirect: X NHL Bets moved to `DEMON-X13/nhl-hub` on 2026-10-13 | `nhl-hub` |
 
