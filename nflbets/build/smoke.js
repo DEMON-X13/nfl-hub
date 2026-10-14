@@ -1573,6 +1573,20 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
           chk(!!row && row.getAttribute('aria-expanded') === 'true' && row.classList.contains('pe-hl') && !!row.nextElementSibling && row.nextElementSibling.classList.contains('plrbody') && row.nextElementSibling.classList.contains('pe-hl'),
             'the player\'s stats are not open and highlighted in his game');
           chk(d.querySelectorAll('#gameView .pe-hl').length === 2, 'more than the one player is highlighted');
+          /* the game page tags every player drawn there with a favourable mismatch this week (Solid
+             and up, graded as the card grades it) beside his name, once, and nobody else; a redraw
+             does not double it */
+          const tagCheck = () => { const grade = x => x >= 3 ? 'Huge' : x >= 2 ? 'Big' : x >= 1 ? 'Solid' : null;
+            const btns = [...d.querySelectorAll('#gameView button.plrbtn[data-open]')], drawn = new Set(btns.map(b => b.dataset.open));
+            const exp = {}; for (const r of w.eloMismatches()) { const g = grade(Math.round(r.score * 10) / 10);
+              if (r.game_id === rows[0].game_id && g && drawn.has(r.pid)) exp[r.pid] = g + ' mismatch'; }
+            const got = {}; for (const b of btns) { const t = b.querySelectorAll('.pe-mmtag');
+              if (t.length) got[b.dataset.open] = t.length === 1 && t[0].parentNode.classList.contains('who') && t[0].previousSibling && t[0].previousSibling.nodeType === 3 ? t[0].textContent : 'misplaced or twice'; }
+            const k = o => JSON.stringify(Object.entries(o).sort());
+            return Object.keys(exp).length > 0 && k(got) === k(exp) ? '' : `expected ${k(exp)}, drew ${k(got)}`; };
+          { const bad = tagCheck(); chk(!bad, 'the game page does not tag the players with a favourable mismatch beside their names: ' + bad); }
+          w.eval('renderGame()'); await wait(40);
+          { const bad = tagCheck(); chk(!bad, 'a redrawn game page does not tag its mismatches once: ' + bad); }
           w.eval('closeGame()'); await wait(60); }
         /* a player the week's injury report has ruled out since the file was built is left off */
         { const S = w.eval('S'), top = rows[0].pid, was = S.inactive[top];

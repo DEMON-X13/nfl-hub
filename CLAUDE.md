@@ -603,7 +603,7 @@ player's Elo on the side of the bet (the rule and its fit are in `tab_elo.html`)
 beside the model's chance and graded against it, week by week, at the top of the prop
 model's Track Record (the Prop Record, now off the tab bar: its section stays in the page unshown), each week on the rating the player took into it (`s0` and `h` in `players.json`; a player out, who is kept out of the map so nothing prices him, keeps his in `past` beside it), never today's. It replaces nothing; a switch has to be earned there. The matchup formula (`matchups.json`, in the build's docstring) projects each expected
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
-shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield), each leg in the builder carries its Elo matchup chance, and the Elo picks
+shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield); on a game's page each player with a Solid, Big or Huge one wears it beside his name, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
 (their own section at the foot of the Parlay Builder's suggested parlays, `#pbElo`) are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
 they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
 game), built from `pricedLegs()` in the props parts and filtered by the panel's ticked games and player sides (`pbAllows`), each with Add to builder and Finish. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
@@ -821,8 +821,9 @@ box, app v100: four levels side by side just over 1100px leave it narrower than 
 builder's summary leads with it ("fair chance all 3 land", "model says" beside it) and its confidence
 tile rates it ("confidence all 3 land, on the fair chance"; the model's chance, said so, where there is
 none; app v100), each builder row gives its leg's ("fair 55%"), a game page's High/Medium/Low hand leads
-with it where every leg has a book price (the hands' floors, 35%, 20% and 10%, said to be by the model's
-chance), and the parlay card does too (below). A leg the model rates `FAR_OFF` (15 points) or more above its fair chance on its
+with it where every leg has a book price (the hands' floors, 35%, 20% and 10% by the model's chance, are
+no longer stated on the page: app v106 took the game page's explanations off at the owner's ask, and the
+audit holds the card to stating no floor), and the parlay card does too (below). A leg the model rates `FAR_OFF` (15 points) or more above its fair chance on its
 side (`legFarOff`; only where a fair chance exists) is left out of the panel's preferred and thin lists
 (`pbPool` counts it in `far`, and the panel's note says how many and why) and of a game page's hands
 (`gameLegPool`), and flagged "model 77% · market 55%: far off the market" (`farText`) on the game pages
