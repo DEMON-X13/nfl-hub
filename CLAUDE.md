@@ -21,14 +21,14 @@ without narrating the steps:
 
 ## The sites and their parts
 
-GitHub Pages serves the repo root. Two sites have pages: `nflbets/` and `cfb/`, plus the standalone `picks/` page (the
-root `index.html` links them, and X NHL Bets in its own repo). `news/` is the Season Tracker, a page of its own that
+GitHub Pages serves the repo root. One site has pages: `nflbets/`, plus the standalone `picks/` page (the
+root `index.html` links them, and X NHL Bets and X College Football Bets in their own repos). `news/` is the Season Tracker, a page of its own that
 `nflbets/` frames as its Season Tracker tab (`#tracker`); opened at its own web address it goes to that tab. `pickems/` and `live/` hold only
 redirects for old bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
 `parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
 with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
-by hand when a source changes, and reads the models' data on every load. `news/` and `cfb/`
-each have their own job too (`news.yml`, `cfb.yml`).
+by hand when a source changes, and reads the models' data on every load. `news/` has its own
+job too (`news.yml`).
 
 | Path | What | Source of truth |
 |---|---|---|
@@ -37,7 +37,7 @@ each have their own job too (`news.yml`, `cfb.yml`).
 | `news/` | Season Tracker: the Season Tracker tab of X NFL Bets and Stats (`nflbets/#tracker`), which frames `news/index.html` from its own address; that address on its own leads to the tab (`?standalone` keeps it there), and the file opened from disk is the whole tracker | `news/` directly; the narrative half is written by a person |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Season Tracker (`news/`, framed), the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `tab_tracker.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`) |
-| `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
+| `cfb/` | retired: X College Football Bets moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
 | `elo/` | Player Elo: every player rated by position since 2012, the roster model built on those ratings and the matchup formula; `elo/data/*.json` is what the Player Elo tab reads | `elo/build.py` (the formula is its docstring); `nflbets/build/tab_elo.html` is the tab |
@@ -49,7 +49,6 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
-- `cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` (and `cfb/data/history.json` gains the season just finished on the job's first run of a new one; otherwise it is source)
 - `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
 - `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: the suggested
@@ -625,79 +624,10 @@ chance on every matchup line, and the Elo picks' chance and price as the product
 prices, with no error thrown. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 
-## College: the loop
+## College
 
-```
-cd cfb/tools && npm ci
-node cfb/tools/simulate.js        # the job over fabricated weeks in a scratch folder; must end "0 failures"
-node cfb/tools/update.js          # ESPN -> rate, call, freeze, grade, simulate -> cfb/state.json; exit 1, nothing written, on a failed feed it cannot carry
-node cfb/tools/news.js            # the CFB News tab's file: the week's slate, written from the numbers -> cfb/news.json
-node cfb/tools/smoke.js           # must end "0 failures" (the job runs it with CFB_SMOKE_STRICT=1)
-```
-
-The page is `cfb/index.html`, hand-written, one file; it fetches `state.json` on every
-load, so a page change is just an edit (bump `APP_BUILD` in it) and a data change is the
-job's. The season is `cfb/tools/season.js` and nowhere else: August to January is that year's,
-February to July the finished one stays (`phase` 'over'); on the first run of a new season the
-job appends the season just finished to `cfb/data/history.json` from the same scoreboards (and
-refuses the new season if that pull fails, has a week with no finals between weeks with games, or
-comes back short of the finals the last publish of that season had), so a rollover needs no hand
-edit. `history.json` is otherwise twelve seasons pulled once by `tools/history.js` (which merges a
-range into the file); `tools/fit.js` chooses the model's parameters on it and writes
-`cfb/data/model.json`. Refit only for a deliberate model change, and commit the new numbers with it.
-
-What the page shows is held to reality, in the job, on the page and in the gate:
-- A game's call and line are taken at every run while it is to come and frozen from its kickoff,
-  by ESPN's status or by the clock (a game whose time is TBD from the start of its day), so a run
-  landing after kickoff cannot re-take them; the record grades that frozen call. A line is the one
-  ESPN carries at this run: a look-ahead number ESPN has dropped is not kept for a game to come,
-  except that a line read within the 24 hours before the game's kickoff is held (`line.held`) so
-  the game is graded on the last line before its kickoff; the page shows it dated, with no call
-  and no price, and CFB News cites it as the last one read. A postponed or cancelled game (ESPN's
-  'post' with `completed` false) offers nothing and is not graded; the line frozen before it is
-  kept aside (`heldLine`), so a game suspended and finished later is graded on it. A game that
-  kicked off with a frozen call and that ESPN then stops listing stays, call and line kept
-  (`gone`). An opponent ESPN lists as TBD is shown without a call and never counted as a win.
-- The page never offers a game that has kicked off by the visitor's clock, never offers a line
-  older than the job's last run, drops a started leg from the builder, reads live scores from
-  ESPN in the browser on load when a game of the week is under way (a score the job saw under way
-  is dated), shows a TBD kickoff as its Eastern day with "time TBA", and leads the record with
-  the calls made before kickoff beside DraftKings' favourite on the same games.
-- A week's scoreboard that does not download is carried from the last publish only when every
-  game in it is final or more than five days off; otherwise `update.js` exits 1 before the commit
-  and the last good state stays live. Polls that do not download are carried and dated, and so is
-  one poll the feed stops carrying in the season (the committee's ranking, which seeds the
-  bracket); either is said on the page (`notes`). The current week is the first regular-season week
-  with a game to play (Army-Navy holds its week against a bowl the same morning). The field is
-  decided (`bracket.final`) once the conference title games are over with nothing left before the
-  last of them, and from then the playoff odds play the bracket shown; they keep every played
-  playoff result (a team out has no title chance) and use the real bracket once ESPN has it.
-- CFB News keeps football headlines only, from after each team's last game, none naming an
-  opponent already played; marks a season leader the injury report or a headline has out; lists
-  real injury statuses; compares sacks a game; a feed that does not answer is named in the window
-  (a game summary that does not answer keeps the last run's preview, dated).
-- `smoke.js` holds the page to the clock (on the real week and on made-up games: kicked off, a
-  stale line, a held line, a TBD time, a score under way, a postponement, a game ESPN dropped),
-  the state to the schedule and the last commit (no frozen call or line re-taken or lost, no graded
-  game, week or poll lost), every call against the spread to its edge and every grade to its line,
-  the polls to the season, the expected wins to the real games left, the bracket's `final` to the
-  schedule and, once final, the odds to the bracket shown, the playoff odds to the playoff's
-  results, and the news to the injury report and schedule it was written from. On a checkout
-  whose files predate the schema-2 job it skips what only that job writes and says so; strict, as
-  the job runs it, those fail. `simulate.js` runs the job itself through a week (lines up,
-  kickoffs with ESPN lagging and dropping a game, a game called off and finished after all,
-  finals), a failed feed (refused, or carried), a postponement and a lost poll, a line left out
-  before kickoff, Army-Navy week, the title games over before the playoff is listed, the 2025
-  playoff from the history and the next season's first run (with a failed, an empty and a short
-  week of the last one), with the smoke after each; `CFB_SIM_TOOLS` runs a mutated copy of the job
-  through it, which must fail.
-
-`.github/workflows/cfb.yml` runs `simulate.js`, the job, the news and the strict smoke 17 times a
-week, set by when each run must land: GitHub starts this repo's scheduled runs 3 to 9 hours late,
-so a slot that must land before a kickoff is queued about ten hours ahead (daily 06:17 UTC for
-Saturday's noon games, Saturday 10:17 for the afternoon, daily 13:47 for any evening), and slots
-meant to land after the finals or the Sunday AP poll are queued at them. It commits
-`cfb/state.json`, `cfb/news.json`, `cfb/data/teams.json` and, at a rollover, `cfb/data/history.json`.
+X College Football Bets moved to its own repo, `DEMON-X13/cfb-hub`, on 2026-10-14, with its history and
+its own CLAUDE.md; `cfb/index.html` here only redirects to it.
 
 ## Hockey
 
