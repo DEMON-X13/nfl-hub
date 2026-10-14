@@ -44,7 +44,7 @@ Seattle Seahawks, injuries:
 Seattle Seahawks, ESPN headlines:
 
 Denver Broncos, injuries:
-- Talanoa Hufanga (S) Out, Ankle: Hufanga (ankle) is expected to miss multiple weeks due to the injury he sustained in Sunday's 23-17 win over the Chargers, Jeremy Fowler of ESPN.com reports.
+- Talanoa Hufanga (S) Out, Ankle: Hufanga (ankle) is expected to miss multiple weeks due to the injury he sustained in Sunday's 23-17 win over the Chargers, Jeremy Fowler and Jeff Legwold of ESPN.com report.
 - Evan Engram (TE) Active: Engram caught all four of his targets for 55 yards during the Broncos' 23-17 win over the Chargers on Sunday.
 - Sai'vion Jones (DE) Active
 - Pat Surtain II (CB) Doubtful, Ankle: doubtful
@@ -141,7 +141,7 @@ Jacksonville Jaguars, injuries:
 Jacksonville Jaguars, ESPN headlines:
 
 ### Chicago Bears at Atlanta Falcons
-Sun, Oct 18, 1:00 PM ET, Fox, Mercedes-Benz Stadium, Atlanta. Line: CHI -2.5, O/U 50.5
+Sun, Oct 18, 1:00 PM ET, Fox, Mercedes-Benz Stadium, Atlanta. Line: CHI -1.5, O/U 50.5
 
 Searches to run:
 - "Chicago Bears Atlanta Falcons preview week 6"
@@ -154,7 +154,7 @@ Chicago Bears, injuries:
 - Anthony Johnson Jr. (S) Out, Undisclosed: out
 - T.J. Edwards (LB) Doubtful, Hamstring: doubtful
 - Dayo Odeyingbo (DE) Out, Quadriceps: out
-- Caleb Williams (QB) Questionable, Hamstring: Bears head coach Ben Johnson said that Williams (hamstring) will listed as a full practice participant on Wednesday's estimated injury report, Sean Hammond of the Chicago Tribune reports.
+- Caleb Williams (QB) Questionable, Hamstring: Bears head coach Ben Johnson said that Williams (hamstring) will be listed as a full practice participant on Wednesday's estimated injury report, Sean Hammond of the Chicago Tribune reports.
 - Shemar Turner (DT) Active: The Bears activated Turner (knee) from their reserve/PUP list Tuesday.
 - Kalif Raymond (WR) Active: Raymond caught three of four passes for six yards and logged one carry for minus-two yards during the Bears' 31-7 loss to the Packers on Sunday. He also returned one punt for nine yards.
 - Montez Sweat (DE) Suspension, Suspension: The NFL announced Tuesday that Sweat has been suspended two games without pay for violating the league's performance-enhancing substances policy, Brad Biggs of the Chicago Tribune reports.
@@ -384,6 +384,7 @@ New York Jets, injuries:
 New York Jets, ESPN headlines:
 
 New England Patriots, injuries:
+- TreVeyon Henderson (RB) Doubtful, Ankle: Henderson (ankle) isn't participating in Wednesday's practice, Doug Kyed of the Boston Herald reports.
 - A.J. Brown (WR) Injured Reserve, Ankle: Head coach Mike Vrabel said Wednesday that the Patriots are designating Brown (ankle) for return from injured reserve, Mike Reiss of ESPN.com reports.
 - Eli Raridon (TE) Active: Raridon caught all five of his targets for 57 yards during the Patriots' 45-17 win over the Raiders on Sunday.
 - Will Campbell (OT) Doubtful, Knee - MCL: Campbell is expected to miss game action after spraining his right knee during Sunday's game versus the Raiders, Cameron Wolfe of NFL Network reports.
@@ -393,7 +394,6 @@ New England Patriots, injuries:
 - Christian Gonzalez (CB) Questionable, Shoulder: questionable
 - Channing Canada (CB) Questionable, Hamstring: questionable
 - Corey Kiner (RB) Active: Kiner is expected to move into the No. 2 spot on the depth chart behind lead back Rhamondre Stevenson in Sunday's game against the Jets with TreVeyon Henderson (ankle) expected to be sidelined for multiple weeks, Mike Reiss of ESPN.com reports.
-- TreVeyon Henderson (RB) Doubtful, Ankle: Henderson is expected to miss multiple weeks after he was diagnosed with a right high-ankle sprain following an MRI on Monday, Adam Schefter of ESPN reports.
 - Behren Morton (QB) Active
 - Dametrious Crownover (OT) Active
 - Andy Borregales (PK) Active: Borregales made his lone field-goal attempt and all six extra-point tries during Sunday's 45-17 win over Las Vegas.
@@ -520,12 +520,12 @@ Carolina Panthers, injuries:
 Carolina Panthers, ESPN headlines:
 
 Philadelphia Eagles, injuries:
+- DeVonta Smith (WR) Questionable, Hamstring: Smith (hamstring) was working on the JUGS machine during Wednesday's practice, Olivia Reiner of The Philadelphia Inquirer reports.
+- Saquon Barkley (RB) Questionable, Hamstring: Barkley (hamstring) wasn't spotted at the portion of Wednesday's practice open to the media, Jimmy Kempski of PhillyVoice.com reports.
 - Jalyx Hunt (LB) Doubtful, Ankle: Eagles defensive coordinator Vic Fangio said Tuesday it would take something "miraculous" for Hunt (ankle) to play Week 6 against the Panthers, Dave Zangaro of NBC Sports Philadelphia reports.
-- DeVonta Smith (WR) Questionable, Hamstring: questionable
 - Drew Kendall (C) Questionable, Knee: questionable
 - Marcus Epps (S) Questionable, Groin: questionable
 - Jonathan Greenard (LB) Questionable, Ankle: questionable
-- Saquon Barkley (RB) Questionable, Hamstring: questionable
 - Hollywood Brown (WR) Questionable, Ankle: questionable
 - Zach Ertz (TE) Active: Ertz reverted to the Eagles' practice squad Monday, per the NFL's transaction log.
 - Jalen Carter (DT) Active: Carter logged five tackles (three solo), including 2.0 sacks, one pass defense and two forced fumbles during the Eagles' 19-17 loss to the Jaguars on Sunday in London.
@@ -629,7 +629,7 @@ Searches to run:
 Arizona Cardinals, injuries:
 - Reggie Virgil (WR) Active: Virgil recorded two receptions for 29 yards on five targets in Sunday's 45-21 loss to the Lions.
 - Jalen Brooks (WR) Active: Brooks recorded two catches for 16 yards on seven targets in Sunday's 45-21 loss to the Lions.
-- James Conner (RB) Injured Reserve, Foot: Conner (foot) is "getting close" to practicing, but the Cardinals aren't expected to open his 21-day evaluation window this week, John Gambadoro of Arizona Sports 98.7 FM reports.
+- James Conner (RB) Injured Reserve, Foot: Conner (foot) is close to practicing, but the Cardinals aren't expected to open his 21-day evaluation window this week, John Gambadoro of Arizona Sports 98.7 FM reports.
 - Andrew Wingard (S) Questionable, Knee: questionable
 - Tyler Allgeier (RB) Active: Allgeier rushed three times for seven yards and caught both of his targets for nine yards during Sunday's 45-21 loss to the Lions.
 - Andrew Billings (DT) Active
@@ -792,6 +792,7 @@ Buffalo Bills, injuries:
 Buffalo Bills, ESPN headlines:
 
 Las Vegas Raiders, injuries:
+- Ashton Jeanty (RB) Active: Head coach Klint Kubiak said Wednesday that Jeanty is "starting to feel a lot better physically," and the Raiders have had no discussions of resting him, Sam Warren of The Athletic reports. "I'm excited about giving him even more reps in practice and more full-speed reps," Kubiak said.
 - Cody White (WR) Active: White caught two of four passes for 44 yards during Sunday's 45-17 loss to the Patriots.
 - Trey Zuhn III (C) Questionable, Knee: questionable
 - Jalen Nailor (WR) Questionable, Concussion: questionable
@@ -807,7 +808,6 @@ Las Vegas Raiders, injuries:
 - Dylan Laube (RB) Active: Laube rushed four times for nine yards and a touchdown while also reeling in all three of his targets for 16 yards during Sunday's 45-17 loss to New England.
 - Fernando Mendoza (QB) Active: Mendoza completed six of eight passes for 48 yards without a touchdown or turnover in Sunday's 45-17 loss to the Patriots. He added three yards on his only carry.
 - Kirk Cousins (QB) Active: Cousins completed 19 of 28 passes for 243 yards and a touchdown in Sunday's 45-17 loss to the Patriots.
-- Ashton Jeanty (RB) Active: Jeanty carried the ball 10 times for 27 yards and caught three of six targets for 50 yards in Sunday's 45-17 loss to New England.
 - Brock Bowers (TE) Active: Bowers caught eight of 10 targets for 110 yards and a touchdown in Sunday's 45-17 loss to the Patriots.
 - Patrick Johnson (DE) Questionable, Neck: Johnson (stinger/neck) is questionable to return to Sunday's game against the Patriots.
 - Dont'e Thornton Jr. (WR) Injured Reserve, Hamstring: Thornton (hamstring) has been ruled out ahead of Sunday's game against the Patriots, Paul Gutierrez of Raiders.com reports.
