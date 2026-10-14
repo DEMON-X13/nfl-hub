@@ -56,6 +56,16 @@ for (const gone of ['index.html', 'admin.html'])
   if (fs.existsSync(path.join(ROOT, 'betting', gone))) throw new Error('betting/' + gone + ' is back; the betting site has no pages, the app lives in nflbets/index.html');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let fails = 0; const check = (c, m) => { if (!c) { fails++; console.log('  FAIL', m); } };
+/* Warnings: a check of how the published state is shown, never of a number in it: the wording and the
+   stale flag of the absences card's source line, its "returning" and "A -> A" wording, the mark and the
+   note on a Team Rankings rating that predates a final, the absences card's heading and hiding, and
+   which week the Pick'em Record's picker opens on. Each runs on the week's own data, so a case it has
+   never seen can fail it; a warning prints WARN, never fails the smoke, and is written to
+   SMOKE_WARNINGS_FILE when set, which the betting job reads after its commit to go red. Everything
+   else stays a failure, which holds the state back: a season, a call, a grade, a record, a model's
+   input (5c's expected quarterback), a call frozen at kickoff, a retired model, the X Bet Log's money,
+   the app booting. A check on made-up data stays a failure too: only a change to the code can fail it */
+const warnings = []; const warn = (c, m) => { if (!c) { warnings.push(m); console.log('  WARN', m); } };
 
 function load(picks) {
   const errors = [];
@@ -134,12 +144,12 @@ async function reality() {
     const noRep = !hasRep && due.injuries;
     const depthOld = S.depth && S.depth.dt && pub - Date.parse(S.depth.dt) > 36 * 3600000;
     const repLine = hasRep ? /the injury report through week \d+/ : due.injuries ? /no injury report</ : /no injury report yet/;
-    check(repLine.test(asof) && /the depth chart of/.test(asof), '5b: the absences card does not say what it was built from: ' + asof.slice(0, 160));
-    check(/inj-stale/.test(asof) === !!(repLate || noRep || depthOld), `5b: the absences card ${repLate || noRep || depthOld ? 'does not flag' : 'flags'} a stale input (report ${hasRep ? 'through week ' + repWeek : 'none'}, week ${cur}, depth ${S.depth && S.depth.dt}): ` + asof.slice(0, 200));
+    warn(repLine.test(asof) && /the depth chart of/.test(asof), '5b: the absences card does not say what it was built from: ' + asof.slice(0, 160));
+    warn(/inj-stale/.test(asof) === !!(repLate || noRep || depthOld), `5b: the absences card ${repLate || noRep || depthOld ? 'does not flag' : 'flags'} a stale input (report ${hasRep ? 'through week ' + repWeek : 'none'}, week ${cur}, depth ${S.depth && S.depth.dt}): ` + asof.slice(0, 200));
     /* the card itself, while there is a coming game to list absences for: between playoff rounds it
        says it is waiting for the next one instead */
-    if (phase === 'on') check(!!d.querySelector('#injSuggest .inj-asof'), '5b: the absences card has no source line');
-    else check(/next round/.test(d.getElementById('injSuggest').textContent), '5b: with every posted game played the absences card does not say it waits for the next round');
+    if (phase === 'on') warn(!!d.querySelector('#injSuggest .inj-asof'), '5b: the absences card has no source line');
+    else warn(/next round/.test(d.getElementById('injSuggest').textContent), '5b: with every posted game played the absences card does not say it waits for the next round');
   }
 
   /* 5c. who starts at quarterback, on the real report: a quarterback who did not start his team's
@@ -165,12 +175,12 @@ async function reality() {
       qbCases++;
       const name = w.eval(`qbName(${J(q.id)})`);
       check(exp !== q.id, `5c: ${tm} expects ${name} at quarterback, who missed week ${lg[1].week} on the injury report and is not cleared this week`);
-      check(!cardRows.some(c => c[0] === tm && c[1] === name && /returning/.test(c[3] || '')), `5c: the absences card has ${tm} ${name} "returning" before the report clears him`);
+      warn(!cardRows.some(c => c[0] === tm && c[1] === name && /returning/.test(c[3] || '')), `5c: the absences card has ${tm} ${name} "returning" before the report clears him`);
     }
   }
   /* 5d. the absences card names the starter a change replaced: never "A -> A" */
   for (const c of cardRows) { const m = (c[4] || '').match(/^[+−-]?[\d.]+ pts\s*(.+?) -?[\d.]+ → (.+?) -?[\d.]+/);
-    if (m) check(m[1] !== m[2], `5d: the absences card reads ${c[0]} ${m[1]} -> ${m[2]}`); }
+    if (m) warn(m[1] !== m[2], `5d: the absences card reads ${c[0]} ${m[1]} -> ${m[2]}`); }
   /* 5e. the rule itself, on a made-up quarterback above the team's starter, every week a team has
      a graded game behind it and a game this week: missed last week on the report -> held; DNP
      this week -> held; Limited -> starts; a report his team filed without him -> starts; Questionable
@@ -309,8 +319,8 @@ async function reality() {
       const use = fs2.length >= rr[0] + rr[1] + rr[2] ? r : rr, want = use[0] + '-' + use[1] + (use[2] ? '-' + use[2] : '');
       check(t.querySelector('.rt-rec').textContent === want, `5i: Team Rankings has ${tm} at ${t.querySelector('.rt-rec').textContent}, the season has ${want}`);
       if (behind) lag++;
-      check(!!t.querySelector('.rt-lag') === behind, `5i: ${tm}'s rating ${behind ? 'predates a final and does not say so' : 'is marked behind but counts every final'}`); }
-    check(!lag || /Rated before their latest game/.test(d.getElementById('ratingsTable').textContent), '5i: teams rated before their latest game, with no note under the table');
+      warn(!!t.querySelector('.rt-lag') === behind, `5i: ${tm}'s rating ${behind ? 'predates a final and does not say so' : 'is marked behind but counts every final'}`); }
+    warn(!lag || /Rated before their latest game/.test(d.getElementById('ratingsTable').textContent), '5i: teams rated before their latest game, with no note under the table');
     console.log(`  5i: ${lag} team${lag === 1 ? '' : 's'} rated before their latest final`); }
 
   /* 5j. the season's phase: with every game played the absences card stops listing a coming week */
@@ -667,10 +677,10 @@ async function xbetLog() {
   const injText = da.getElementById('injSuggest').textContent.trim();
   const injFiles = !!((SA.roster || SA.injuries) && SA.depth);
   /* between playoff rounds and after the Super Bowl there is no coming week to head it (5j) */
-  check(!injFiles || a.window.eval('seasonPhase()') !== 'on' || /Impact absences, week \d+/.test(injText), 'admin: the state has the injury files but the absences block has no heading: ' + injText.slice(0, 80));
+  warn(!injFiles || a.window.eval('seasonPhase()') !== 'on' || /Impact absences, week \d+/.test(injText), 'admin: the state has the injury files but the absences block has no heading: ' + injText.slice(0, 80));
   check(!da.querySelector('#tab-upload #injSuggest'), 'admin: Impact absences is still on Data Upload too');
   check(!/Rank tags and the Elo change column/.test(da.getElementById('ratingsTable').textContent), 'admin: the rank-tag note is still under the ratings');
-  check(da.getElementById('injCard').hidden === !injText, 'admin: the absences card is not hidden exactly when it is empty');
+  warn(da.getElementById('injCard').hidden === !injText, 'admin: the absences card is not hidden exactly when it is empty');
   for (const [where, re] of [['modelChart', /Running season accuracy after each week/], ['modelChart', /Early weeks bounce around/], ['injSuggest', /Two absences carry a measured effect/]])
     check(!re.test(da.getElementById(where).textContent), `admin: the note is still under ${where}`);
   { const rt = da.getElementById('ratingsTable');
@@ -797,25 +807,25 @@ async function xbetLog() {
     const weeksAll = [...new Set(SE.schedule.map(g => +g.week))].sort((x, y) => x - y);
     const cur = weeksAll.find(w => SE.schedule.some(g => +g.week === w && g.result == null)) || weeksAll[weeksAll.length - 1];
     const sel = de.getElementById('picksWeek');
-    check(!!sel && +sel.value === cur && /this week/.test(sel.selectedOptions[0].textContent), 'embed: the pick grid does not open on this week: ' + (sel && sel.selectedOptions[0].textContent));
+    warn(!!sel && +sel.value === cur && /this week/.test(sel.selectedOptions[0].textContent), 'embed: the pick grid does not open on this week: ' + (sel && sel.selectedOptions[0].textContent));
     const opts = [...sel.options].map(o => +o.value), upTo = weeksAll.filter(x => x <= cur);
-    check(opts.slice().sort((x, y) => x - y).join() === upTo.join(), 'embed: the picker should offer weeks ' + upTo.join(',') + ' only: ' + opts.join(','));
+    warn(opts.slice().sort((x, y) => x - y).join() === upTo.join(), 'embed: the picker should offer weeks ' + upTo.join(',') + ' only: ' + opts.join(','));
     check(de.querySelectorAll('.pickgrid').length === 1, 'embed: more than one week of picks is drawn at once');
     const thisWeekGame = SE.schedule.find(g => +g.week === cur);
-    check(!!thisWeekGame && de.querySelector('.pickgrid').textContent.includes(thisWeekGame.away_team + ' at ' + thisWeekGame.home_team), 'embed: the grid shown is not this week\'s');
+    warn(!!thisWeekGame && de.querySelector('.pickgrid').textContent.includes(thisWeekGame.away_team + ' at ' + thisWeekGame.home_team), 'embed: the grid shown is not this week\'s');
     /* the week before this one, when there is one (week 1 has none) */
     const before = upTo.length > 1 ? upTo[upTo.length - 2] : null;
     if (before != null) {
       sel.value = String(before); sel.dispatchEvent(new e.window.Event('change', { bubbles: true })); await sleep(80);
       const prevGame = SE.schedule.find(g => +g.week === before);
-      check(+de.getElementById('picksWeek').value === before && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it'); }
+      warn(+de.getElementById('picksWeek').value === before && de.querySelector('.pickgrid').textContent.includes(prevGame.away_team + ' at ' + prevGame.home_team), 'embed: picking the week before did not show it'); }
     /* a week part played (Thursday's game graded, Sunday's to come) is still this week */
     { const g = SE.schedule.find(x => +x.week === cur);
       e.window.eval(`(()=>{ const g=S.schedule.find(x=>x.game_id===${JSON.stringify(g.game_id)}); g.result=7; g.home_score=24; g.away_score=17;
         S.processed[g.game_id]={week:${cur},home:g.home_team,away:g.away_team,pick:g.home_team,conf:0.6,margin:3,pHome:0.6,result:7,correct:true,h:null,news:[]};
         S.picksWeek=null; renderRecord(); })()`); await sleep(80);
       const s2 = de.getElementById('picksWeek');
-      check(!!s2 && +s2.value === cur && /this week/.test(s2.selectedOptions[0].textContent) && ![...s2.options].some(o => +o.value > cur),
+      warn(!!s2 && +s2.value === cur && /this week/.test(s2.selectedOptions[0].textContent) && ![...s2.options].some(o => +o.value > cur),
         'embed: one graded game moved the picker past this week: ' + (s2 && s2.selectedOptions[0].textContent)); } }
   /* clicking a tab inside the frame must not throw on the address it cannot write */
   { let threw = null; e.window.addEventListener('error', ev => { threw = ev.message; });
@@ -825,6 +835,9 @@ async function xbetLog() {
   await reality();
   const plain = a.window.document.documentElement;
   check(!plain.classList.contains('embed'), 'a page opened normally is not embedded');
-  console.log(fails ? `${fails} check(s) failed` : `betting app smoke test passed (${graded.length} graded games in the published state)`);
+  /* only on a run with no failure: a run that failed is not committed, so the job's last step, which
+     says the state was published, must not speak for it */
+  if (!fails && warnings.length && process.env.SMOKE_WARNINGS_FILE) fs.writeFileSync(process.env.SMOKE_WARNINGS_FILE, warnings.join('\n') + '\n');
+  console.log(fails ? `${fails} check(s) failed` : `betting app smoke test passed (${graded.length} graded games in the published state)${warnings.length ? `, with ${warnings.length} warning(s): presentation only, the state publishes` : ''}`);
   process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

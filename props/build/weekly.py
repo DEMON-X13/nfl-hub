@@ -49,16 +49,20 @@ What it does, in order:
      finished game, from the snap counts (who_played below): the payload's snaps, and a stat row
      of zeros for a player who played a snap in his role with no stat line, so a receiver never
      targeted is graded on zero, as DraftKings grades him, and his projection sees the game
-  5. assembles the page and runs the audit, which checks the payload against the raw files
+  5. assembles the page and runs the audit, which checks the payload against the raw files. Its
+     failures and runtime errors refuse the run (audit_verdict); its warnings, the checks audit.js
+     names as presentation only (who is shown starting, an ordering, which correctly priced parlay
+     a suggestion level picks, a note's wording, a rule the week left untested), never do: the run
+     publishes and the warnings are a problem, so the job goes red after its commit (audit_warnings)
   6. once the audit is clean, the suggestions record (suggest_ledger.js -> data/suggest_ledger.json):
      the Parlay Builder's suggested parlays on their default choices, taken from the published page
      on the payload just baked, frozen at each wave's kickoff and graded after by the app's own
      settleLeg, which reads who played from the payload's snaps. It never refuses the run or turns it
      red: a ledger it refuses is logged in the report and the last good one stays
   7. prints a REPORT block
-A run that is refused (a required download, the stats shrinking, the bake, the audit) exits 1
-before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
-Anything else wrong is a problem that fails the run after the commit. For the price rows that
+A run that is refused (a required download, the stats shrinking, the bake, the audit's failures)
+exits 1 before the workflow's commit step; the workflow then keeps any prices it bought, unpublished.
+Anything else wrong is a problem that fails the run after the commit: the audit's warnings among them. For the price rows that
 means only what needs a person (price_problems): a name that could be two players (names.py
 says when), two names on one player's price, or misses too many to be a signing or two the
 roster has not caught up with; a few rows no player takes are logged and listed in the payload's
@@ -85,18 +89,31 @@ report=[]; problems=[]
 def say(s): print(s,flush=True); report.append(s)
 def refuse(s): problems.append('BLOCKED: '+s)      # nothing from this run is published
 def blocked(): return any(p.startswith(('BLOCKED','AUDIT')) for p in problems)
-# the audit's last word, on a line of its own: "26980 checks, 0 failures, 0 runtime errors"
-AUDIT_LINE=re.compile(r'(\d+) checks, (\d+) failures, (\d+) runtime errors')
+# the audit's last word, on a line of its own: "26980 checks, 0 failures, 3 warnings, 0 runtime errors"
+# (an audit from before the warnings says "26980 checks, 0 failures, 0 runtime errors", read the same)
+AUDIT_LINE=re.compile(r'(\d+) checks, (\d+) failures, (?:(\d+) warnings, )?(\d+) runtime errors')
 def audit_verdict(out):
     """(clean, summary line) from the audit's output. Clean only when the summary line is there
     and, read as numbers, says 0 failures and 0 runtime errors over at least one check. The gate
     used to look for the text '0 failures', which '10 failures' contains, so an audit with ten
     failures would have published. The last summary line counts; none at all is not clean, and
-    neither is one in another shape (test_audit_gate.py holds this to its cases)."""
+    neither is one in another shape (test_audit_gate.py holds this to its cases). Warnings never
+    make it unclean: they are the audit's presentation checks (audit.js says which, and why each),
+    published and reported (audit_warnings), never refused."""
     found=[m for m in (AUDIT_LINE.fullmatch(l.strip()) for l in out.splitlines()) if m]
     if not found: return False,'audit produced no summary line'
-    m=found[-1]; checks,fails,errs=(int(x) for x in m.groups())
+    m=found[-1]; checks,fails,errs=int(m.group(1)),int(m.group(2)),int(m.group(4))
     return checks>0 and fails==0 and errs==0, m.group(0)
+def audit_warnings(out):
+    """(count, lines) of the audit's warnings, from its last summary line and the WARN lines under
+    it (each "  WARN: what [kind]", with a line saying what each kind is): the run publishes and
+    the problems file lists them, so the job goes red after its commit"""
+    lines=out.splitlines(); at=None
+    for i,l in enumerate(lines):
+        if AUDIT_LINE.fullmatch(l.strip()): at=i
+    if at is None: return 0,[]
+    m=AUDIT_LINE.fullmatch(lines[at].strip()); n=int(m.group(3) or 0)
+    return n,[l.strip() for l in lines[at+1:] if l.strip().startswith(('WARN:','(a '))]
 def run(args,cwd,label,soft=False,env=None):
     r=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,encoding='utf-8',errors='replace')
     out=(r.stdout or '')+(r.stderr or '')
@@ -481,13 +498,24 @@ def main():
     if blocked(): return finish(a)
     # 5. assemble + audit: the audit checks the payload against the raw files just downloaded
     rc,out=run([PY,'assemble.py'],HERE,'assemble')
+    audit_step(a)
+    return finish(a)
+
+def audit_step(a):
+    """5. the audit, and on a clean one the suggestions record. A failure or a runtime error refuses
+    the run (an AUDIT entry, which blocked() reads); warnings alone publish, listed as a problem the
+    job goes red on after its commit. test_audit_gate.py runs this and finish() on planted outputs"""
     rc,out=run(['node','audit.js'],HERE,'audit',env=dict(ENV,PROPS_AUDIT_RAW='1'))
     clean,audit=audit_verdict(out)
     say('  '+audit)
     if not clean:
         problems.append('AUDIT NOT CLEAN: '+audit+'\n'+'\n'.join(l for l in out.splitlines() if l.strip().startswith(('FAIL','ERROR')))[:3000])
-    else: suggestions_record(a.offline)
-    return finish(a)
+        return
+    # warnings publish: the payload is good, and something the page shows needs a look. The entry
+    # must not start BLOCKED or AUDIT (blocked() and props.yml's last step read those as a refusal)
+    nw,wl=audit_warnings(out)
+    if nw: problems.append(f"the audit's {nw} warning{'s' if nw>1 else ''} (presentation only, published): "+audit+'\n'+'\n'.join('  '+l for l in wl)[:3000])
+    suggestions_record(a.offline)
 
 def suggestions_record(offline=False):
     """The suggestions record (suggest_ledger.js, whose docstring has the rules): the panel's four
@@ -802,9 +830,18 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     # never graded, and a bake with fewer games than the published one was refused before the pull
     srows,stats,skipped_live=raw['srows'],raw['stats'],raw['skipped_live']
     pay['stats']=stats
+    # who the roster has inactive for his club's last game: status INA (a club whose latest rows
+    # are that game's week, as one on its bye) or an active player whose row carries nflverse's
+    # inactive code (I01, I02 for an emergency third quarterback). Caleb Williams, Questionable and
+    # inactive in week 5 of 2026, is ACT with I01 on week 6's roster: the page reads the two
+    # together with the report (ina below), as the Elo build's WHO PLAYS does
+    rrows=raw['rrows']
+    ina={r['gsis_id'] for r in rrows if r.get('gsis_id') and (r.get('position') or '').upper() in SKILL
+         and ((r.get('status') or '')=='INA' or (r.get('status_description_abbr') or '').startswith('I'))}
     # the injury report: this week's in full (every position: the Elo tab reads it too), and the
     # Outs and Doubtfuls of earlier weeks for the positions the page projects, so a past week is
-    # graded on its own report and a player out last week is known this week
+    # graded on its own report and a player out last week is known this week; and every earlier row
+    # of a player the roster has inactive, so the page can tell he was on his club's last report
     irows=raw['irows']
     inj=[]; cur=0
     for r in irows:
@@ -813,15 +850,18 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
         except ValueError: continue
         st=(r.get('report_status') or '').strip()
         if wk==week: cur+=1
-        elif not (wk<week and st in OUT_STATUS and (r.get('position') or '').upper() in SKILL): continue
+        elif not (wk<week and (r.get('position') or '').upper() in SKILL and (st in OUT_STATUS or r.get('gsis_id') in ina)): continue
         o={c:(r.get(c) or '').strip() for c in INJCOLS if c!='injury'}
         o['week']=str(wk); o['injury']=(r.get('report_primary_injury') or r.get('practice_primary_injury') or '').strip()
         inj.append(o)
     pay['injuries']=inj
+    # the inactive (ina): before his club files its statuses for this week, a player on its last
+    # report who was then inactive for its game stays out until he practises or the club files a
+    # report he is not on (ingestInjuries in part3.js, the Elo build's WHO PLAYS rule)
+    pay['ina']=sorted(ina)
     # every skill player's roster status and team, today's: the page takes players on a reserve
     # list or released off the board, practice-squad players off the starters, and puts a
     # player traded or signed elsewhere on his new team
-    rrows=raw['rrows']
     # [team, status, name, the week the row is for, then his football name with the surname where it
     # differs (null when only the next is there), then his legal form, his first name with the
     # surname, where that is neither (names.names_of)]: INA (a game-day inactive) holds for that week
@@ -931,7 +971,7 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     json.dump(pay,open(pp,'w',encoding='utf-8'),separators=(',',':'),ensure_ascii=False)
     if skipped_live: say(f"  not baked (no final score yet): {', '.join(sorted(skipped_live))}")
     say(f"  baked in: stats for weeks {', '.join(sorted(stats,key=int)) or 'none yet'} ({sum(len(v) for v in stats.values())} player-games), "
-        f"{cur} injury rows for week {week} (+{len(inj)-cur} earlier Outs), {len(pay['roster'])} roster statuses, "
+        f"{cur} injury rows for week {week} (+{len(inj)-cur} earlier Outs, or rows of the {len(ina)} the roster has inactive), {len(pay['roster'])} roster statuses, "
         f"{nl} main lines, prices for weeks {', '.join(sorted(prices,key=int)) or 'none'} ({npid} rows placed on a player)")
 
 # When the price rows no player takes are worth a person's attention. The book prices a touchdown

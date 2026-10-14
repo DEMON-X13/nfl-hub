@@ -25,9 +25,10 @@ def keep(r):
     if r.grp=='K': return r.fg_att>=0.3
     return False
 P=P[P.apply(keep,axis=1)].copy()
-# only carry players who are actually on a roster this season, and use this season's team
+# only carry players who are actually on a roster this season, and use this season's team. INA is a
+# player on the active roster made inactive for a game: still his club's, so still carried
 _r=pd.read_csv('../raw/'+ROSTER,low_memory=False)
-_r=_r[_r.position.isin(['QB','RB','WR','TE','K','FB','HB'])&_r.status.isin(['ACT','DEV'])]
+_r=_r[_r.position.isin(['QB','RB','WR','TE','K','FB','HB'])&_r.status.isin(['ACT','DEV','INA'])]
 _by={str(g):(t,('RB' if p in ('FB','HB') else p)) for g,t,p in zip(_r.gsis_id,_r.team,_r.position) if isinstance(g,str)}
 P=P[P.player_id.isin(_by)].copy()
 P['team']=P.player_id.map(lambda x:_by[x][0])
@@ -60,7 +61,6 @@ for _,r in P.iterrows():
     for s in ALL:
         o[s]=[round(float(r['e5_'+s]),3),round(float(r['e3_'+s]),3),round(float(r['car_'+s]),3),round(float(r[s]),3)]
     players.append(o)
-print('players',len(players))
 
 # ---- team offense volume baselines (end of BASE) ----
 tg=d[d.season==BASE].groupby(['week','team']).agg(
@@ -134,6 +134,31 @@ if _os.path.exists('../raw/'+DEPTH):
     print('depth',len(_depth),'players ranked as of',_depth_dt)
 else:
     print('depth: raw/'+DEPTH+' not found, carrying the previous table forward (depth_dt says how old it is)')
+# ---- the depth chart's players with no row last season: every player the chart lists at a position
+# the page projects, on a roster this season (ACT, DEV or INA, whatever position the roster gives
+# him), who is not in last season's table above (no row, or too few touches for keep()): a backup
+# quarterback who has not played since (Stidham DEN, Richardson IND, Kyle Allen BUF, Sam Howell DAL,
+# Uiagalelei LAC and Klubnik NYJ in October 2026), or a rookie. Without an entry the page could not
+# start the backup when the man above him is ruled out, and started nobody. He is carried with no
+# numbers at all (gp and cn 0, no stat arrays): the page gives him the empty history of a player
+# whose first game it has just read, so his games this season count as a rookie's always have; with
+# none, it shows him in his place marked thin history and puts no line, price or suggestion on him
+# until he has one (noHistory in part2.js). His group is the roster's, or the chart's where the
+# roster names a position the page does not project
+_rall=pd.read_csv('../raw/'+ROSTER,low_memory=False)
+_rall=_rall[_rall.status.isin(['ACT','DEV','INA'])&_rall.gsis_id.map(lambda v:isinstance(v,str))]
+_onr={g:(t,p,n) for g,t,p,n in zip(_rall.gsis_id,_rall.team,_rall.position,_rall.full_name)}
+_chart=_depth if _depth is not None else (_prev.get('depth') or {})
+_have={p['id'] for p in players}
+_add=0
+for _pid,(_t,_pos,_rk,_nm) in sorted(_chart.items()):
+    if _pid in _have or _pid not in _onr or _pos not in ('QB','RB','WR','TE','K'): continue
+    _team,_rpos,_full=_onr[_pid]
+    _grp={'FB':'RB','HB':'RB'}.get(_rpos,_rpos)
+    if _grp not in ('QB','RB','WR','TE','K'): _rpos=_grp=_pos
+    players.append({'id':_pid,'n':str(_full) if isinstance(_full,str) and _full else _nm,'p':_rpos,'g':_grp,'t':_team,'gp':0,'cn':0})
+    _have.add(_pid); _add+=1
+print('players',len(players),f'({_add} of them charted with no row last season)')
 out={'mkt':_prev.get('mkt',{}),'mkt_meta':_prev.get('mkt_meta',{}),'grid':json.load(open('../data/grid_model.json')),'pts':json.load(open('../data/pts_model.json')),'corr':json.load(open('../data/corr.json')),'players':players,'toff':toff,'tdef':tdef,'tdefg':tdefg,'norm':norm,'sched':sched,
      'model':FM['model'],'dist':FM['dist'],'qs':FM['qs'],'prior':FM['prior'],'k':FM['k']}
 # the fitted per-stat market scale and touchdown-per-touch rates: data/ is their source, as it

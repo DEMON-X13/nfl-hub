@@ -148,7 +148,11 @@ Out and Doubtful are out, Questionable is listed with a Q unless he did not prac
 last report, which counts him out. Before it files (Tuesday to Friday for a Sunday game), a
 player Out or Doubtful at the club's previous report, or inactive for its last game after
 being on that report, stays out until this week's report clears him: he practises (Full or
-Limited), or the club files a practice report he is not on. That window used to be read as
+Limited), or the club files a practice report he is not on. Inactive is the roster's word: status
+INA, or an active row carrying nflverse's inactive code (status_description_abbr I01, or I02 for an
+emergency third quarterback), which is how the roster wrote Caleb Williams after week 5 of 2026
+(ACT, I01): read as INA alone, he was expected to start week 6, while the props page, which reads
+both, held him out. That window used to be read as
 "nobody is out", and for four days a week the starters ruled out the week before were
 expected to start (Caleb Williams as Chicago's QB in week 5, eleven such starters in week 4,
 three of them quarterbacks). The page says how many clubs have filed.
@@ -1135,7 +1139,9 @@ def availability(roster, inj, next_week):
                 out[pid] = STATUS[st] if st in STANDING else 'a free agent'
             else:
                 out[pid] = STATUS.get(st, 'not on the active list')
-                if st == 'INA':
+                # inactive for the last game: INA, or an active row with the inactive code I01/I02
+                # (WHO PLAYS; the props payload's `ina` reads the same two)
+                if st == 'INA' or str(getattr(row, 'status_description_abbr', '') or '').startswith('I'):
                     inactive.add(pid)
     if inj is None or not len(inj):
         return out, team, q, report

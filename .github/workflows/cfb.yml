@@ -32,7 +32,8 @@ concurrency:
 
 jobs:
   cfb:
-    runs-on: ubuntu-latest
+    # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
+    runs-on: ubuntu-24.04
     steps:
       # the branch as it stands when the run starts, not the commit it was queued on: runs of one job wait
       # in line (concurrency), and one queued behind another would otherwise start from the state the other

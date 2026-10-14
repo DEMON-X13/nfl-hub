@@ -35,7 +35,14 @@
  *     columns ran past the card at 1280 px and the whole page scrolled), and the team column can
  *     stick in that box: nothing between them clips, as the page's own rule clips every table. The
  *     page's stylesheet (props/build/part1.html) goes round the tab for this. jsdom lays nothing
- *     out and reads only the rules a desktop screen gets, so this is the style, not a measured width.
+ *     out and reads only the rules a desktop screen gets, so this is the style, not a measured width;
+ *   - the money the files feed, on every rated player and every matchup line in them: market + form
+ *     (eloAltP, which decides whether a player leg qualifies for the Parlay Builder's suggestions),
+ *     the Elo matchup chance (eloMatchupP) and the Elo picks (eloPicks: each tier's chance the product
+ *     of its legs' and its price the product of theirs, one leg a game and a player), on made-up book
+ *     prices, with no error thrown or logged. Since October 2026 the whole page's smoke
+ *     (nflbets/build/smoke.js) runs after the Elo job's commit, so this is the gate on the files
+ *     reaching the code that touches a chance or a price.
  */
 'use strict';
 const fs = require('fs');
@@ -44,7 +51,7 @@ const ROOT = path.resolve(__dirname, '..');
 const arg = k => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const DATA = arg('--data') || path.join(ROOT, 'elo', 'data');
 const TAB = fs.readFileSync(arg('--tab') || path.join(ROOT, 'nflbets', 'build', 'tab_elo.html'), 'utf8');
-const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
+const { JSDOM, VirtualConsole } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const read = f => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
 const P = read('players.json'), M = read('model.json');
 const MU0 = fs.existsSync(path.join(DATA, 'matchups.json')) ? read('matchups.json') : null;
@@ -82,7 +89,9 @@ function page(MU, opts) {
   const week = MU && MU.week != null ? MU.week : 1;
   const dom = new JSDOM(`<!doctype html><html><head>${PAGE_CSS}${style}</head><body>
     <section id="tab-slate"><div id="slateView"><div class="bar"></div></div><select id="weekSel"><option value="${week}" selected>${week}</option></select></section>
-    ${section}</body></html>`, { runScripts: 'outside-only', pretendToBeVisual: true });
+    ${section}</body></html>`, Object.assign({ runScripts: 'outside-only', pretendToBeVisual: true }, opts && opts.errors ? { virtualConsole: (() => {
+      const vc = new VirtualConsole(); vc.on('jsdomError', e => opts.errors.push(String(e && (e.detail && e.detail.message || e.message) || e)));
+      vc.on('error', (...a) => opts.errors.push(a.map(String).join(' '))); return vc; })() } : {}));
   const w = dom.window;
   const games = [...new Set(Object.values((MU && MU.players) || {}).map(v => v.game_id))].sort();
   w.__clock = { now: 0 };
@@ -391,6 +400,41 @@ function page(MU, opts) {
         'an old-shaped model.json does not draw the old columns: ' + heads);
       chk(!!scroller(w3, card) && sticks(w3, card), 'the old columns\' table has no sideways scroller at a desktop width, or its team column cannot stick in it'); }
   }
+
+  /* ---- the money the files feed: market + form, the Elo matchup chance and the Elo picks, on every
+     rated player and every matchup line in the files, at made-up book prices (the props parts'
+     mlProb and mlToDec, stubbed here as the page has them) ---- */
+  { const errors = [], { w } = page(MU0, { errors }); await wait(60);
+    w.eval(`function mlProb(o){ o=+o; return o<0?-o/(-o+100):100/(o+100); }
+      function mlToDec(o){ o=+o; return o<0?1+100/(-o):1+o/100; }`);
+    const ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1;
+    let alt = 0; const badAlt = [];
+    for (const [pid, e] of Object.entries(P.players || {})) {
+      if (!e || !['QB', 'RB', 'WR', 'TE'].includes(e.group)) continue;
+      for (const side of ['over', 'under']) for (const price of [-110, 150]) {
+        let v; try { v = w.eloAltP(pid, side, price, 'real', e.group === 'QB' ? 'passing_yards' : 'receptions'); } catch (err) { v = 'threw ' + err.message; }
+        alt++; if (!ok01(v)) badAlt.push(`${e.name || pid} ${side} ${price}: ${v}`); } }
+    chk(alt > 0 && !badAlt.length, `market + form is not a chance on ${badAlt.length} of ${alt} player legs (${badAlt.slice(0, 4).join('; ')}): the Parlay Builder decides which player legs qualify on it`);
+    /* a leg for every matchup line in the file, over and under, at -110 and +150 */
+    const legs = [];
+    for (const [pid, pl] of Object.entries((MU0 && MU0.players) || {})) for (const st of Object.keys(pl.stats || {})) {
+      const proj = (pl.stats[st] || [])[1], k = isFinite(proj) ? Math.floor(proj) + 0.5 : 0.5;
+      for (const side of ['over', 'under']) for (const price of [-110, 150])
+        legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, k, side, price, src: 'real', name: pid, label: st }); }
+    let mu = 0; const badMu = [];
+    for (const l of legs) { let v; try { v = w.eloMatchupP(l, w.mlProb(l.price)); } catch (err) { v = 'threw ' + err.message; }
+      if (v === null) continue; mu++; if (!ok01(v)) badMu.push(`${l.pid} ${l.stat} ${l.side} ${l.price}: ${v}`); }
+    chk(!badMu.length, `the Elo matchup chance is not a chance on ${badMu.length} of ${mu} matchup lines (${badMu.slice(0, 4).join('; ')})`);
+    w.__legs = legs; w.eval('function pricedLegs(){ return window.__legs; }');
+    let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
+    chk(!!r && typeof r === 'object' && Array.isArray(r.tiers), `the Elo picks do not build on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
+    if (r && Array.isArray(r.tiers)) for (const t of r.tiers) {
+      const n = +String(t.id).replace('elo', ''), p = t.legs.reduce((a, l) => a * l.pe, 1), dec = t.legs.reduce((a, l) => a * w.mlToDec(l.price), 1);
+      chk(t.legs.length === n && ok01(t.p) && Math.abs(t.p - p) < 1e-12 && isFinite(t.dec) && t.dec > 1 && Math.abs(t.dec - dec) < 1e-9
+        && t.legs.every(l => ok01(l.pe)) && new Set(t.legs.map(l => l.gid)).size === n && new Set(t.legs.map(l => l.pid)).size === n,
+        `the ${t.id} Elo pick is not ${n} legs, one a game and a player, at the product of their chances and prices: ${t.p} at ${t.dec}`); }
+    chk(!errors.length, `the tab threw or logged an error on the files: ${errors.slice(0, 3).join('; ')}`);
+    notes.push(`money paths: market + form on ${alt} player legs, the Elo matchup chance on ${mu} of ${legs.length} lines, ${r && r.tiers ? r.tiers.length : 0} Elo pick tiers from ${r && r.candidates || 0} candidates`); }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);
   for (const n of notes) console.log('  note: ' + n);

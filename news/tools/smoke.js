@@ -53,6 +53,17 @@ const dom = new JSDOM(fs.readFileSync(indexPath, 'utf8'), {
 let failed = 0;
 const check = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'FAIL ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) failed++; };
 const skip = (label, why) => console.log('SKIP ' + label + '  (' + why + ')');
+/* Warnings: who the Deep Dive lists and what its notes say (the lineup rules against the injury report,
+   roster and ESPN's list, a starter out named, a quarterback in doubt with the next one named, nobody
+   both listed and out) and the hand-written narrative quoting a site rank. Each is presentation on the
+   week's own data: it prints WARN, never fails the smoke, and is written to SMOKE_WARNINGS_FILE when
+   set, which the job reads after its commit to go red, so a lineup case no rule has seen never holds
+   back the week's scores and stats. Everything else stays a failure: the scores, records, stat bars and
+   their game counts, the rank chip against Team Rankings, the unit ranks, the lineups being for the
+   schedule's week and checked on this run's own download, the page loading, and every fixed case in
+   tools/cases.js (made-up data: only a change to the code can fail one) */
+const warned = [];
+const warn = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'WARN ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) warned.push(label + (detail !== undefined ? ' (' + detail + ')' : '')); };
 const ord = v => v + ((x => ['th', 'st', 'nd', 'rd'][(x - 20) % 10] || ['th', 'st', 'nd', 'rd'][x] || 'th')(v % 100));
 
 /* the narrative never quotes the site's own ranks (tools/lib.js siteRankQuote says which phrases) */
@@ -96,7 +107,7 @@ async function run() {
 
   // the live week's narrative quotes no site ranks: the Deep Dive and rank chip show them, and move
   { const hits = narrativeStrings(WK).map(([k, v]) => [k, siteRankQuote(v)]).filter(([, q]) => q).map(([k, q]) => `${k}: "${q}"`);
-    check('the live week quotes no Deep Dive or rank chip ranks', hits.length === 0, hits.length ? `${hits.length}: ${hits.slice(0, 4).join(' | ')}` : 'none'); }
+    warn('the live week quotes no Deep Dive or rank chip ranks', hits.length === 0, hits.length ? `${hits.length}: ${hits.slice(0, 4).join(' | ')}` : 'none'); }
 
   click('.slot[data-game="' + gameKey(first) + '"]');
   const title = d.getElementById('ovtitle') ? d.getElementById('ovtitle').textContent : '';
@@ -198,21 +209,21 @@ async function run() {
       const teamsU = Object.keys(U);
       check('every unit ranks the whole league once', teamsU.length === 32 && UN.every(u => teamsU.map(t => U[t][u].rank).sort((a, b) => a - b).join() === Array.from({ length: 32 }, (_, i) => i + 1).join() && teamsU.every(t => isFinite(U[t][u].z))) && ['passD', 'runD'].every(k => teamsU.every(t => isFinite(U[t].vs[k].z))));
       // nobody listed to play is also listed as out, and every unit missing a starter says so on the page
-      check('no player is both listed and out', teamsU.every(t => UN.every(u => !(U[t][u].out || []).some(p => (U[t][u].who || []).some(x => x.n === p.n)))));
+      warn('no player is both listed and out', teamsU.every(t => UN.every(u => !(U[t][u].out || []).some(p => (U[t][u].who || []).some(x => x.n === p.n)))));
       const dd = g('deepDive');
       const slateMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a]).filter(([a, o]) => {
         const html = dd(a, o, 'r6'), rowsH = html.split('class="ddrow"').slice(1);
         return UN.some((u, i) => (U[a][u].out || []).length && !(rowsH[i] || '').includes('class="ddout"'))
           || ((U[a].qb.out || []).length && U[a].qb.who.length && !(rowsH[0] || '').includes(U[a].qb.who[0].n + ' starts;'));
       });
-      check('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
+      warn('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
       // a quarterback in doubt has the next one named beside him, on every game of the slate
       const NF = { chart: 'next on the chart: ', roster: 'next on the roster: ', usage: 'next by 2026 dropbacks: ' };
       const qbMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a] && (U[a].qb.next || U[a].qb.next_none)).filter(([a, o]) => {
         const row = dd(a, o, 'r6').split('class="ddrow"')[1], q = U[a].qb;
         return !(q.next ? row.includes((NF[q.next.from] || NF.chart) + q.next.n) : row.includes(q.next_none));
       });
-      check('a quarterback in doubt names the next one, on every game of the slate', qbMiss.length === 0, qbMiss.map(x => x[0]).join(',') || 'none');
+      warn('a quarterback in doubt names the next one, on every game of the slate', qbMiss.length === 0, qbMiss.map(x => x[0]).join(',') || 'none');
       // the quarterback row on made-up states: a backup from the roster says so, and no backup is said, not left blank
       { const keep = JSON.stringify(U[first.away].qb), q = U[first.away].qb;
         q.who = [{ n: 'Zed Quux', pos: 'QB', q: 'questionable: ankle' }];
@@ -310,7 +321,7 @@ async function run() {
       for (const [k, label] of Object.entries(RULES)) {
         if ((k === 'espn' || k === 'espn-q-dnp' || k === 'announced') && !S.espn) { skip('lineups: ' + label, 'no ESPN list in these sources'); continue; }
         const f = r.fails[k] || [];
-        check('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
+        (k === 'week' ? check : warn)('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
       }
     }
     // in the job the smoke runs straight after the build: the lineups must have been checked against this
@@ -320,6 +331,11 @@ async function run() {
       S ? `${S.from}${S.run_at ? ', written ' + S.run_at : ''}` : 'no sources');
   }
 
+  if (warned.length) {
+    console.log(`\n${warned.length} warning(s), presentation only: ${failed ? 'listed for a look; this run has failures too, so nothing is published' : 'the job publishes and goes red after its commit'}`);
+    /* only on a run with no failure: a failed run is not committed, so the job's last step, which says
+       the files were published, must not speak for it */
+    if (!failed && process.env.SMOKE_WARNINGS_FILE) fs.writeFileSync(process.env.SMOKE_WARNINGS_FILE, warned.join('\n') + '\n'); }
   console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');
   process.exit(failed ? 1 : 0);
 }

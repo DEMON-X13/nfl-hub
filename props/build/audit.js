@@ -16,6 +16,31 @@ const dom=new JSDOM(fs.readFileSync('../app/prop_model_2026.html','utf8'),
 const w=dom.window,d=w.document;
 const fails=[]; let checks=0;
 const chk=(ok,msg)=>{checks++; if(!ok) fails.push(msg);};
+/* BLOCKING AND WARNINGS. Every check is blocking (chk): a failure, like a runtime error, refuses the
+   publish (weekly.py's audit_verdict reads the summary line as numbers). A check named here as a
+   warning (W.<kind>) is counted beside the failures and never refuses: weekly.py publishes what it
+   built and the job goes red after its commit, the warnings listed, as it does for a few unmatched
+   price names. A check is a warning only when it is presentation on the week's own data and can be
+   argued so: who is shown starting or listed, an ordering, which correctly priced parlay a level
+   picks, the wording of a note, a rule went untested. Anything that could put a wrong number or
+   wrong money on the page stays blocking: a price, line or leg on the wrong player or game, a
+   chance, price, fair chance or payout that is not the builder's own sums, a leg under the book,
+   far off it or kicked off, settlement and grading, the payload against its sources, the page not
+   loading. A check run only on made-up data stays blocking too: only a change to the code can fail
+   it, and a change to the code is run through the audit by hand before it lands. Seven of the ten
+   NFL-job failures from 2 to 13 October 2026 were live data meeting a presentation case no check
+   had seen (a game hand's High pair, LA's QB2, a tie, a top 25 of 24), each holding back the
+   week's data until a fix landed. */
+const warns=[];
+const WARN={
+  starters:'who is shown starting or listed on a game page, and what his gap note says: each player\'s lines and prices are his own wherever he is shown, and V6 blocks a suggested leg on anyone the report, the roster or the inactive rule has out, worked out from the sources themselves',
+  order:'an ordering on the page, no number in it',
+  compose:'which correctly priced parlay a suggestion level or a game page hand picks, or what its card says about how it was chosen: every leg on it is still held, blocking, to a real price, never under the book or far off it, not kicked off, one line once, its chance, fair chance, price and payout to the builder\'s own sums, and any chance or payout floor its card states to its own numbers',
+  wording:'the wording of a note or a reason in the suggestions panel: no number in it',
+  coverage:'the week gave a made-up case nothing to stand on, so a rule went untested this run: nothing shown is wrong',
+  panel:'the credit-pull panel, the owner\'s note of what the odds API cost: no price, line or chance in it',
+};
+const W=Object.fromEntries(Object.keys(WARN).map(k=>[k,(ok,msg)=>{checks++; if(!ok) warns.push({m:msg,k});}]));
 /* what a tier pays on the amount bet, worked here rather than by the page's own helpers: the
    figure to the cent with its thousands marked, over "$25 pays" ("$12.50 pays", "$1,250 pays"),
    on the card's own decimal price */
@@ -93,7 +118,7 @@ setTimeout(async()=>{
       for(const gp in cnt) if(cnt[gp]>DEPTH[gp]) capViol++;
       gaps+=(r[team].gaps||[]).length; }
   }
-  chk(dupes===0,`duplicate players on a page: ${dupes}`); chk(wrongTeam===0,`players on wrong team: ${wrongTeam}`); chk(capViol===0,`depth cap violations: ${capViol}`);
+  chk(dupes===0,`duplicate players on a page: ${dupes}`); chk(wrongTeam===0,`players on wrong team: ${wrongTeam}`); W.starters(capViol===0,`depth cap violations: ${capViol}`);
   console.log(`B. rosters: ${nPl} player-slots across the season, ${dupes} dupes, ${wrongTeam} wrong-team, ${capViol} over cap, ${gaps} flagged gaps`);
 
   /* ---- B2. next man up: a ruled-out QB1 hands the slot to the chart's QB2, not to an
@@ -113,12 +138,81 @@ setTimeout(async()=>{
         S.inactive[one]=true;
         try{ const qb=rosterFor(g,false)[team].players.filter(x=>x.pl.grp==='QB');
           if(qb.length===1&&qb[0].pl.id===two) ok++;
-          else chk(false,`${team}: with QB1 out the quarterback shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not the chart's QB2 ${S.players[two].n}`);
+          else W.starters(false,`${team}: with QB1 out the quarterback shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not the chart's QB2 ${S.players[two].n}`);
         } finally { delete S.inactive[one]; }
         if(tried>=6) break;
       } }
-    chk(tried>0,'no team on the depth chart has a QB1 and a QB2 on its roster to test next man up with');
+    W.coverage(tried>0,'no team on the depth chart has a QB1 and a QB2 on its roster to test next man up with');
     console.log(`B2. next man up: ${ok} of ${tried} teams hand a ruled-out QB1's slot to the chart's QB2${thin?' (QB2s with under three games: last season is short)':''}`);
+  }
+
+  /* ---- B3. the chart's players with no history (payload.py carries them, app v104): every player
+     the chart lists at a position the page projects, on a roster, is on the page, every club's QB2
+     among them (Stidham and Richardson were missing, and a club whose QB1 was out started nobody).
+     One with no game at all has nothing to project from: no line, no price, no headline, no place in
+     a suggestion or a game hand, and, with the man above him ruled out, he starts, shown with thin
+     history and a line saying there is nothing to bet on; so does a charted player moved up whose
+     games give the model no workload (nothingToProject). The rule is held on a real club's QB2 made
+     history-less here, on a game still to come or, with none left (a Monday night, the season's end),
+     any game of the season, so it runs whatever the week holds. A payload baked before (it has no
+     ina, which came with them) is said and its data checks skipped ---- */
+  { const D=PAY.depth||{}, R=PAY.roster||{}, baked='ina' in PAY, POS=new Set(['QB','RB','WR','TE','K']), noH=F('noHistory');
+    const on=id=>!!R[id]&&['ACT','DEV','INA'].includes(R[id][1]);
+    const miss=Object.keys(D).filter(id=>POS.has(D[id][1])&&on(id)&&!S.players[id]).map(id=>`${D[id][3]} (${D[id][0]} ${D[id][1]}${D[id][2]})`);
+    const clubs=[...new Set(Object.values(D).map(d=>d[0]))];
+    const two=t=>Object.keys(D).find(id=>D[id][0]===t&&D[id][1]==='QB'&&D[id][2]===2);
+    const noQB2=clubs.filter(t=>two(t)&&on(two(t))&&!S.players[two(t)]).map(t=>`${t} ${D[two(t)][3]}`);
+    const nh=Object.values(S.players).filter(p=>noH(p));
+    if(baked){ W.starters(!miss.length,`${miss.length} players on the chart and a roster are not on the page: ${miss.slice(0,5).join(', ')}`);
+      W.starters(!noQB2.length,`clubs whose chart's QB2 is not on the page: ${noQB2.join(', ')}`);
+      chk(nh.every(p=>{ const e=(PAY.players||[]).find(q=>q.id===p.id); return e&&!e.gp&&!e.cn&&D[p.id]; }),'a player with no history on the page is not a charted player the payload carries with none'); }
+    /* every one with no game, in every game still to come: listed, never priced */
+    const cw=F('currentWeek')(), open=S.sched.filter(g=>+g.w===cw&&!F('gameStarted')(g)); let seen=0; const leak=[];
+    for(const g of open){ const r=rosterFor(g,true), ids=new Set();
+      for(const t in r) for(const x of r[t].players) if(F('nothingToProject')(x)){ seen++; ids.add(x.pl.id); if(statLines(x).length) leak.push(`${x.pl.n}: lines`); }
+      if(!ids.size) continue;
+      for(const l of [...F('pricedLegs')([g]),...F('gameLegPool')(g)]) if(ids.has(l.pid)) leak.push(`${l.name}: ${l.label}`);
+      for(const h of F('gameHeadline')(g)) if(ids.has(h.v.pl.id)) leak.push(`${h.v.pl.n}: a headline`); }
+    chk(!leak.length,`a player with nothing to project is projected or priced: ${leak.slice(0,4).join('; ')}`);
+    /* the rule, on a real club's QB2 made history-less, with his QB1 ruled out */
+    let ruled=null;
+    const both=t=>{ const o=Object.keys(D).find(id=>D[id][0]===t&&D[id][1]==='QB'&&D[id][2]===1); return o&&S.players[o]&&S.players[o].team===t&&two(t)&&S.players[two(t)]&&!S.inactive[two(t)]; };
+    const g=[...open,...S.sched].find(g=>[g.a,g.h].some(both));
+    if(g){ const T=[g.a,g.h].find(both);
+      const one=Object.keys(D).find(id=>D[id][0]===T&&D[id][1]==='QB'&&D[id][2]===1), P2=S.players[two(T)];
+      const keep=JSON.stringify({e5:P2.e5,e3:P2.e3,car:P2.car,py:P2.py,gp:P2.gp,base_gp:P2.base_gp,team:P2.team}), keepI=S.inactive[one], keepUi=JSON.stringify({game:S.ui.game,open:S.ui.open});
+      try{ P2.gp=0; P2.base_gp=0; P2.team=T; for(const s in P2.e5){ P2.e5[s]=[0,0]; P2.e3[s]=[0,0]; P2.car[s]=[0,0]; P2.py[s]=null; }
+        S.inactive[one]={week:cw,status:'Out',inj:'Thumb'}; w.eval('GAME_TIER_CACHE={}');
+        const r=rosterFor(g,false)[T], qb=r.players.filter(x=>x.pl.grp==='QB'&&x.starter), x=r.players.find(x=>x.pl.id===P2.id);
+        W.starters(qb.length===1&&qb[0].pl.id===P2.id,`${T}: QB1 ruled out and a QB2 with no history: the starter shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not ${P2.n}`);
+        W.starters(!r.gaps.some(gp=>gp.id===P2.id),`${T}: a QB2 with no history who starts is also in the gap note`);
+        chk(!!x&&!statLines(x).length,'a QB2 with no history has lines');
+        chk(![...F('pricedLegs')([g]),...F('gameLegPool')(g)].some(l=>l.pid===P2.id)&&!F('gameHeadline')(g).some(h=>h.v.pl.id===P2.id),'a QB2 with no history is priced, suggested or a headline');
+        S.ui.game=g.id; S.ui.open={}; F('renderGame')();
+        const row=d.querySelector(`#gameView [data-nohist="${P2.id}"]`);
+        ruled=!!row&&/thin history/.test(row.textContent)&&/No games the model counts, last season or this one/.test(row.textContent)&&row.textContent.includes(P2.n)&&!d.querySelector(`#gameView [data-open="${P2.id}"]`);
+        W.starters(ruled,`${T}: the game page does not show a QB2 with no history in his place, marked thin history, with no lines`);
+      } finally { Object.assign(P2,JSON.parse(keep)); if(keepI) S.inactive[one]=keepI; else delete S.inactive[one]; w.eval('GAME_TIER_CACHE={}');
+        const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; F('closeGameModal')(); }
+      /* and a QB1 with no history, not ruled out (a rookie named the starter before his first game):
+         he holds the slot with no lines, and his QB2 is not shown as the starter in his stead */
+      const P1=S.players[one], keep1=JSON.stringify({e5:P1.e5,e3:P1.e3,car:P1.car,py:P1.py,gp:P1.gp,base_gp:P1.base_gp});
+      if(!S.inactive[one]) try{ P1.gp=0; P1.base_gp=0; for(const s in P1.e5){ P1.e5[s]=[0,0]; P1.e3[s]=[0,0]; P1.car[s]=[0,0]; P1.py[s]=null; } w.eval('GAME_TIER_CACHE={}');
+        const r=rosterFor(g,false)[T], qb=r.players.filter(x=>x.pl.grp==='QB'&&x.starter);
+        chk(qb.every(x=>x.pl.id!==one||!statLines(x).length),`${T}: a QB1 with no history has lines`);
+        W.starters(qb.length===1&&qb[0].pl.id===one,`${T}: a QB1 with no history, not ruled out: the starter shown is ${qb.map(x=>x.pl.n+(statLines(x).length?' (with lines)':'')).join(', ')||'nobody'}, not ${P1.n} with no lines`);
+      } finally { Object.assign(P1,JSON.parse(keep1)); w.eval('GAME_TIER_CACHE={}'); }
+      /* and a QB1 with one game, not ruled out (a rookie after his first start): counted in the chart's
+         order he holds the slot, marked thin history; he was cut with his QB2 behind him and the club
+         showed no quarterback. Nothing suggests him under three games: no priced leg, no game hand */
+      const k1=JSON.stringify({gp:P1.gp,base_gp:P1.base_gp});
+      if(!S.inactive[one]) try{ P1.gp=1; P1.base_gp=0; w.eval('GAME_TIER_CACHE={}');
+        const r=rosterFor(g,false)[T], qb=r.players.filter(x=>x.pl.grp==='QB'&&x.starter);
+        W.starters(qb.length===1&&qb[0].pl.id===one,`${T}: a QB1 with one game, not ruled out: the starter shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, not ${P1.n}`);
+        chk(![...F('pricedLegs')([g]),...F('gameLegPool')(g)].some(l=>l.pid===one),`${T}: a QB1 with one game is priced or in a game hand's pool`);
+      } finally { Object.assign(P1,JSON.parse(k1)); w.eval('GAME_TIER_CACHE={}'); } }
+    W.coverage(!!g,'no game of the season has a club with a QB1 and a QB2 on the page to test a QB2 with no history on');
+    console.log(`B3. the chart's players with no history: ${baked?`${nh.length} on the page, ${miss.length} charted players missing, every club's QB2 there`:'a payload baked before them (no ina): not compared'}; ${seen} with nothing to project listed in this week's open games, none projected or priced; ${g?`${[g.a,g.h].join('/')}: a history-less QB2 starts when QB1 is ruled out, a history-less QB1 holds his slot, each with no lines, and a one-game QB1 holds his, suggested nowhere`:'no game to test the rule on'}`);
   }
 
   /* ---- C. projections & ladders: finite, monotone, in range ---- */
@@ -405,7 +499,9 @@ setTimeout(async()=>{
       const legs=pricedLegs(open);
       let nQ=0,nP=0,capped=0,mism=0,noLine=0,badLeg=0; const shown=[];
       for(const g of open){ const r=rosterFor(g,false);
-        for(const team in r) for(const x of r[team].players){ if(x.pl.grp!=='QB') continue; nQ++;
+        /* a quarterback the model has nothing to project for (no game last season or this, app v104)
+           has no lines at all, this one included: B3 holds that */
+        for(const team in r) for(const x of r[team].players){ if(x.pl.grp!=='QB'||F('nothingToProject')(x)) continue; nQ++;
           const l=statLines(x).find(s=>s.stat==='any_td'); if(!l){ noLine++; continue; }
           const p0=1/(1+Math.exp(-dot(M.coef,featVec(x.pl,'any_td',x.opp,x.ctx))));
           const mc=MM.carries?Math.max(dot(MM.carries.coef,featVec(x.pl,'carries',x.opp,x.ctx)),0):0, mr=MM.receptions?Math.max(dot(MM.receptions.coef,featVec(x.pl,'receptions',x.opp,x.ctx)),0):0;
@@ -440,7 +536,7 @@ setTimeout(async()=>{
             box(1).checked=false; box(1).dispatchEvent(new w.Event('change')); chk(!S.parlay[key],'unticking his touchdown left it on'); }
           else chk(false,'no 2+ box on a quarterback\'s touchdown');
           page=`${qx.pl.n}'s game page heads it as his own run or catch and its boxes put on "${q1}"`; }
-        else chk(false,'no quarterback row on a game to come');
+        else W.coverage(false,'no quarterback row on a game to come');
         d.getElementById('backBtn').click(); }
       console.log(`K2. quarterback touchdown: offered, worded, settled on his runs and catches only (a stats row and live), correlated; ${nQ} quarterbacks on games to come each with the leg, ${capped} held by his carries' cap, every chance the capped logit; ${nP} with a book price each a priced leg${planted?' (none on the open weeks\' prices, so one planted on '+planted+')':''}${shown.length?' ('+shown.join(', ')+')':''}; ${page}`); } }
 
@@ -509,8 +605,8 @@ setTimeout(async()=>{
       const kids=[...d.getElementById('gamesList').children].filter(n=>n.matches('.game,.slatesep'));
       const firstFinal=kids.findIndex(n=>n.matches('.game.final')), seps=kids.filter(n=>n.matches('.slatesep'));
       const lastTodo=kids.map(n=>n.matches('.game:not(.final)')).lastIndexOf(true);
-      chk(firstFinal<0||lastTodo<firstFinal,`week ${wk}: a game still to play sits below a final`);
-      chk(firstFinal<0?seps.length===0:(seps.length===1&&kids[firstFinal-1]===seps[0]),`week ${wk}: the Completed heading is missing, doubled or not right above the first final`);
+      W.order(firstFinal<0||lastTodo<firstFinal,`week ${wk}: a game still to play sits below a final`);
+      W.order(firstFinal<0?seps.length===0:(seps.length===1&&kids[firstFinal-1]===seps[0]),`week ${wk}: the Completed heading is missing, doubled or not right above the first final`);
       seen.push(`week ${wk} ${kids.filter(n=>n.matches('.game:not(.final)')).length} to play, ${kids.filter(n=>n.matches('.game.final')).length} final`); }
     ws.value=keep; F('renderSlate')();
     console.log(`G4. slate order: ${seen.join('; ')}`); }
@@ -632,8 +728,11 @@ setTimeout(async()=>{
        no paragraph but the thin-edge line, and no word of a floor outside the rule and the legs */
     const cardWords=(c,t,lab)=>{ const rule=c.querySelector('.pb-rule'), rest=c.cloneNode(true);
       rest.querySelectorAll('.pb-legs,.pb-thin,.pb-rule').forEach(x=>x.remove());
-      chk(!!rule&&rule.textContent===ruleFor(t),`${lab}: the ${t.id} card's rule reads "${rule?rule.textContent:''}", not "${ruleFor(t)}"`);
-      chk(![...c.querySelectorAll('p')].some(p=>!p.classList.contains('pb-thin'))&&!/floor|usual|below|short of|of the time|%\+(?!\d)/i.test(rest.textContent),
+      W.wording(!!rule&&rule.textContent===ruleFor(t),`${lab}: the ${t.id} card's rule reads "${rule?rule.textContent:''}", not "${ruleFor(t)}"`);
+      /* whatever the rule's wording, a chance it states is a number on the page: blocking */
+      { const m=rule&&/lands (\d+)%\+/.exec(rule.textContent);
+        chk(!m||t.corr>=m[1]/100-1e-12,`${lab}: the ${t.id} card says it lands ${m&&m[1]}%+ by the model, and its chance is ${(t.corr*100).toFixed(1)}%`); }
+      W.wording(![...c.querySelectorAll('p')].some(p=>!p.classList.contains('pb-thin'))&&!/floor|usual|below|short of|of the time|%\+(?!\d)/i.test(rest.textContent),
         `${lab}: the ${t.id} card carries a note beside its chance and price: "${rest.textContent.replace(/\s+/g,' ').trim().slice(0,160)}"`); };
     /* a card leads with its fair chance, labelled so (est. where it is), whose chance it was chosen on
        beside it ("model says 26%"); with no fair chance, that chance alone, saying why */
@@ -662,23 +761,23 @@ setTimeout(async()=>{
          is empty, said as such (and never "tick more" under Players only, where no tick helps) */
       const pooled=pool.plGames!=null, plOn=!!(u.k.over||u.k.under), tmOn=!!(u.k.ml||u.k.ats);
       const noPl=pooled&&plOn&&!F('pricedLegs')(games.filter(g=>!u.off.includes(g.id)),true).some(l=>!isG(l));
-      chk(!pooled||!!r.noPlayerPrices===noPl,`${lab}: the tiers say there are${r.noPlayerPrices?'':' not'} no player prices on file, and that is not so`);
+      W.wording(!pooled||!!r.noPlayerPrices===noPl,`${lab}: the tiers say there are${r.noPlayerPrices?'':' not'} no player prices on file, and that is not so`);
       for(const t of r.tiers){ const [,,n,floor]=SPEC.find(s=>s[0]===t.id);
         if(!t.legs){ said++;
-          chk(typeof t.why==='string'&&t.why.length>10,`${lab}: the ${t.id} tier is empty and does not say why`);
-          if(maxLegs<n) chk(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
+          W.wording(typeof t.why==='string'&&t.why.length>10,`${lab}: the ${t.id} tier is empty and does not say why`);
+          if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
           /* every level shows a parlay whenever the picks make that many legs: empty only when they do not */
-          chk(maxLegs<n,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
-          chk(!/of the time or more|lands \d+%/.test(t.why),`${lab}: the empty ${t.id} tier speaks of its floor, which every level now falls back from: ${t.why}`);
-          if(pooled) chk(/no player prices yet/i.test(t.why)===noPl&&(!noPl||tmOn||(t.why===NO_PL&&!/tick more/.test(t.why))),
+          W.compose(maxLegs<n,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
+          W.wording(!/of the time or more|lands \d+%/.test(t.why),`${lab}: the empty ${t.id} tier speaks of its floor, which every level now falls back from: ${t.why}`);
+          if(pooled) W.wording(/no player prices yet/i.test(t.why)===noPl&&(!noPl||tmOn||(t.why===NO_PL&&!/tick more/.test(t.why))),
             `${lab}: the empty ${t.id} tier ${noPl?'does not say plainly that no player prices are on file yet':'says no player prices are on file, and some are'}: ${t.why}`);
           continue; }
         built++; legsSeen+=t.legs.length;
-        chk(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
+        W.compose(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
         /* a total only as the last fill: every total a market leg, counted, and only where the same
            level built from the legs with an edge alone is empty */
         chk(t.legs.every(l=>(l.stat==='total')===!!l.market)&&(t.mkt||0)===t.legs.filter(l=>l.market).length,`${lab}: the ${t.id} tier has a total that is not a market leg, or miscounts them`);
-        if(t.mkt) chk(F('pbTier')(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:pool.thin,mkt:[]},new Map())===null,`${lab}: the ${t.id} tier took a game total where the legs with an edge make a parlay of its size`);
+        if(t.mkt) W.compose(F('pbTier')(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:pool.thin,mkt:[]},new Map())===null,`${lab}: the ${t.id} tier took a game total where the legs with an edge make a parlay of its size`);
         chk(maxLegs>=n,`${lab}: a ${n}-leg ${t.id} tier from picks that only make ${maxLegs}`);
         for(const l of t.legs){ const g=S.sched.find(x=>x.id===l.gid);
           chk(!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(x=>x.id===l.gid),`${lab}: ${l.name} ${l.label} is of a kind or a game not ticked, or its game is not on the list`);
@@ -703,47 +802,48 @@ setTimeout(async()=>{
           chk(fs.every(Boolean)?(!!t.fair&&t.fair.p===pp(t.legs.map((l,i)=>({...l,p:fs[i].p}))).corr&&t.fair.est===fs.some(f=>f.est)):(!!t.fair&&t.fair.p===null&&t.fair.miss===fs.filter(f=>!f).length),
             `${lab}: the ${t.id} tier's fair chance ${t.fair?t.fair.p:'(none)'} is not parlayProb on its legs at their fair chances`);
           chk(t.legs.every((l,i)=>!fs[i]||l.p-fs[i].p<FAR-1e-9),`${lab}: the ${t.id} tier has a leg the model rates ${FAR*100} points or more above its fair chance: ${t.legs.filter((l,i)=>fs[i]&&l.p-fs[i].p>=FAR-1e-9).map(l=>l.name+' '+l.label).join(', ')}`); }
-        if(floor&&!t.likeliest) chk(t.corr>=floor,`${lab}: the ${t.id} tier lands ${(t.corr*100).toFixed(1)}%, under its ${floor*100}% floor, and is not marked the likeliest of its size`);
-        chk(t.thin===t.legs.filter(l=>l.thin).length,`${lab}: the ${t.id} tier miscounts its thin legs`);
+        /* blocking: a level not marked the likeliest says on its card that it lands its floor by the model */
+        if(floor&&!t.likeliest) chk(t.corr>=floor,`${lab}: the ${t.id} tier lands ${(t.corr*100).toFixed(1)}%, under its ${floor*100}% floor, and is not marked the likeliest of its size, so its card says "lands ${Math.round(floor*100)}%+" of a parlay that does not`);
+        W.compose(t.thin===t.legs.filter(l=>l.thin).length,`${lab}: the ${t.id} tier miscounts its thin legs`);
         /* a level falls back to the likeliest parlay of its size only when no parlay of that size
            clears its floor at any count of thin legs (its best-return search finds none), never
            Safe; it prefers the fewest thin legs, as Safe does: as many as the preferred legs leave */
         /* a level with a total was built on every leg with an edge as its base and the totals as fill */
         const from=t.mkt?{pref:[...pool.pref,...pool.thin],thin:mkt}:{pref:pool.pref,thin:pool.thin}, fill=t.mkt?t.mkt:t.thin, kTop=t.mkt?Math.max(0,n-maxLegsOf(from.pref)):undefined;
         /* every level with totals takes exactly as many as the legs with an edge leave to fill */
-        if(t.mkt) chk(t.mkt===kTop,`${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave ${kTop} to fill`);
+        if(t.mkt) W.compose(t.mkt===kTop,`${lab}: the ${t.id} tier takes ${t.mkt} totals where the legs with an edge leave ${kTop} to fill`);
         if(t.likeliest){ likeliestSeen++;
-          chk(!!floor,`${lab}: Safe is marked as a fallback to the likeliest pair`);
-          chk(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop)===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
-          chk(fill===Math.max(0,n-maxLegsOf(from.pref)),`${lab}: the likeliest ${n} legs take ${fill} ${t.mkt?'totals':'thin legs'} where the ${t.mkt?'legs with an edge':'preferred legs'} leave ${Math.max(0,n-maxLegsOf(from.pref))} to fill`); }
+          W.compose(!!floor,`${lab}: Safe is marked as a fallback to the likeliest pair`);
+          W.compose(!!bestRet&&bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop)===null,`${lab}: the ${t.id} tier fell back to the likeliest ${n} legs though a ${n}-leg parlay clears its ${floor*100}% floor`);
+          W.compose(fill===Math.max(0,n-maxLegsOf(from.pref)),`${lab}: the likeliest ${n} legs take ${fill} ${t.mkt?'totals':'thin legs'} where the ${t.mkt?'legs with an edge':'preferred legs'} leave ${Math.max(0,n-maxLegsOf(from.pref))} to fill`); }
         /* the likeliest pair, and a level's likeliest of its size, worked out in full where every
            parlay is a plain product: no parlay of its size with as many thin legs lands likelier */
         if(t.likeliest||!floor){ const all=[...from.pref,...from.thin];
           if(noMovers(all)){ const b=likeliestOf(all,n,fill,!!t.mkt);
             if(b){ likeliestWorked++; combosWorked+=b.seen;
-              chk(t.corr>=b.best-1e-12,`${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% (${t.legs.map(l=>l.name+' '+l.label).join(', ')}) where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${n} worked)`); } } }
+              W.compose(t.corr>=b.best-1e-12,`${lab}: the ${t.id} tier, "${ruleFor(t)}", lands ${(t.corr*100).toFixed(2)}% (${t.legs.map(l=>l.name+' '+l.label).join(', ')}) where ${orderF(b.legs).map(l=>l.name+' '+l.label).join(', ')} land ${(b.best*100).toFixed(2)}% with as many thin legs (${b.seen} parlays of ${n} worked)`); } } }
         /* a level over its floor is the best-return search's own parlay, unchanged */
         else if(floor&&bestRet){ const b=bestRet(SPEC.find(s=>s[0]===t.id),from,new Map(),kTop);
-          chk(!!b&&b.legs.map(pbIdOf).join()===t.legs.map(pbIdOf).join(),`${lab}: the ${t.id} tier is not its best return over its floor`); }
+          W.compose(!!b&&b.legs.map(pbIdOf).join()===t.legs.map(pbIdOf).join(),`${lab}: the ${t.id} tier is not its best return over its floor`); }
         /* thin legs only fill what the preferred could not */
-        if(t.thin&&!t.likeliest) chk(!bestRet||bestRet(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:[]},new Map())===null,`${lab}: the ${t.id} tier took a thin leg the preferred legs did not need`);
+        if(t.thin&&!t.likeliest) W.compose(!bestRet||bestRet(SPEC.find(s=>s[0]===t.id),{pref:pool.pref,thin:[]},new Map())===null,`${lab}: the ${t.id} tier took a thin leg the preferred legs did not need`);
         if(!floor&&pool.pref.length>=2){ /* Safe is the likeliest pair: the two likeliest preferred legs that fit together do not beat it */
           const s=[...pool.pref].sort((a,b)=>b.p-a.p), a=s[0], b=s.slice(1).find(x=>F('pbFits')([a],x));
-          if(b&&!t.thin) chk(t.corr>=pp([a,b]).corr-0.01,`${lab}: Safe lands ${(t.corr*100).toFixed(1)}%, under the two likeliest legs together`); }
+          if(b&&!t.thin) W.compose(t.corr>=pp([a,b]).corr-0.01,`${lab}: Safe lands ${(t.corr*100).toFixed(1)}%, under the two likeliest legs together`); }
         /* the mixes: Teams only is game bets, Players only is players' lines */
         if(!u.k.over&&!u.k.under) chk(t.legs.every(isG),`${lab}: a player leg with neither player box ticked`);
         if(!u.k.ml&&!u.k.ats&&!u.k.total) chk(!t.legs.some(isG),`${lab}: a game bet with no team box ticked`); }
       /* the card on the page says the same, and with Game total ticked one line says what a total in a tier is */
       F('renderPb')();
       { const tx=d.getElementById('pbPanel').textContent.replace(/\s+/g,' '), nt=tx.includes('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
-        chk(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say a total has no edge and only fills':'Game total is not ticked and the panel still speaks of totals'}`);
-        if(u.k.total&&!u.k.ml&&!u.k.ats&&!u.k.over&&!u.k.under) chk(!/No line on your picks has a real sportsbook price/.test(tx),`${lab}: with only Game total ticked the panel says no line has a price the model rates at or above the book`); }
+        W.wording(nt===!!u.k.total,`${lab}: ${u.k.total?'Game total is ticked and the panel does not say a total has no edge and only fills':'Game total is not ticked and the panel still speaks of totals'}`);
+        if(u.k.total&&!u.k.ml&&!u.k.ats&&!u.k.over&&!u.k.under) W.wording(!/No line on your picks has a real sportsbook price/.test(tx),`${lab}: with only Game total ticked the panel says no line has a price the model rates at or above the book`); }
       for(const t of r.tiers){ const c=d.querySelector(`#pbPanel .pb-tier.${t.id}`); if(!c){ chk(false,`${lab}: no card for the ${t.id} tier`); continue; }
         const tx=c.textContent.replace(/\s+/g,' ');
         /* a total on a card is marked no edge, and one line says what that is; nothing else is */
         if(t.legs) chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&t.legs.every((l,i)=>/no edge/.test(c.querySelectorAll('.pb-legs li')[i].textContent)===!!l.market)
           &&/because your picks do not make a parlay of this size from legs with an edge/.test(tx)===!!t.mkt,`${lab}: the ${t.id} card does not mark its totals no edge, or its line about them is ${t.mkt?'missing':'there with no total'}`);
-        if(!t.legs) chk(tx.includes(t.why)&&!c.querySelector('[data-pb-add]'),`${lab}: the empty ${t.id} card does not give its reason, or offers Add to builder`);
+        if(!t.legs) W.wording(tx.includes(t.why)&&!c.querySelector('[data-pb-add]'),`${lab}: the empty ${t.id} card does not give its reason, or offers Add to builder`);
         else { const stake=w.eval("typeof pbStake==='function'?pbStake():NaN"), pay=c.querySelector('[data-pb-pay]');
           chk(c.querySelectorAll('.pb-legs li').length===t.legs.length&&tx.includes(`${(t.corr*100).toFixed(0)}%`)&&tx.includes(F('fmtML')(F('decToML')(t.dec)))
             &&!!c.querySelector(`[data-pb-add="${t.id}"]`),`${lab}: the ${t.id} card does not show its legs, chance and price`);
@@ -825,11 +925,11 @@ setTimeout(async()=>{
         const r1=hold(`made-up lines, one game (${g1.a} @ ${g1.h}), players only`);
         corrTiers=r1.tiers.filter(t=>t.legs&&pp(t.legs).pairs.length>0).length;
         /* a game with a dozen made-up lines on starters always has two that move together */
-        chk(plLegs(g1)<12||corrTiers>0,`one game's made-up player lines (${plLegs(g1)} of them) built no tier with legs that move together, so nothing holds a same-game tier to parlayProb`);
+        W.coverage(plLegs(g1)<12||corrTiers>0,`one game's made-up player lines (${plLegs(g1)} of them) built no tier with legs that move together, so nothing holds a same-game tier to parlayProb`);
         U().off=[]; }
       setKinds(KINDS);
       const rA=F('getPbTiers')();
-      chk(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
+      W.coverage(!games.length||rA.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with made-up lines on every starter no tier has a player leg');
       /* M6. lock a leg and ask for new legs, on the made-up lines: the locked leg stays on every
          turn, the rest are legs the card has not shown until it starts over, every turn keeps the
          level's rules, the card draws it and Add to builder takes it; Reset and a changed box put
@@ -841,7 +941,7 @@ setTimeout(async()=>{
           chk(x.legs.length===x.n&&new Set(x.legs.map(l=>l.key)).size===x.n&&new Set(sd.map(l=>l.gid)).size===sd.length&&new Set(tt.map(l=>l.gid)).size===tt.length&&new Set(pl.map(l=>l.pid)).size===pl.length,`${lab}: not ${x.n} different lines, one side and one total a game and one leg a player`);
           chk(x.legs.every(l=>!!u.k[kindOf(l)]&&!u.off.includes(l.gid)&&games.some(g=>g.id===l.gid)&&l.src==='real'&&l.p>=0.45&&l.p<0.97&&(l.market?l.stat==='total':l.p>=mlPx(l.price))),`${lab}: a leg of a kind or game not ticked, on no real price, out of 45-97%, or under the book`);
           chk(x.legs.map(l=>l.key).join()===ord&&pp(x.legs).corr===x.corr&&pd(x.legs.map(l=>({leg:l,ml:l.price})))===x.dec&&x.thin===x.legs.filter(l=>l.thin).length&&(x.mkt||0)===x.legs.filter(l=>l.market).length,`${lab}: its chance, price or counts are not the builder's own sums on its legs`); };
-        chk(!!T,'with made-up lines on every starter no level of three legs or more was built');
+        W.coverage(!!T,'with made-up lines on every starter no level of three legs or more was built');
         if(T){ const cardOf=()=>d.querySelector(`#pbPanel .pb-tier.${T.id}`), lid=idOf(T.legs[0]);
           chk(cardOf().querySelectorAll('[data-pb-lock]').length===T.legs.length&&!!cardOf().querySelector(`[data-pb-turn="${T.id}"]`)&&!cardOf().querySelector('[data-pb-reset]'),`the ${T.id} card has no lock on each leg or no New legs, or offers Reset before a turn`);
           chk(!d.querySelector('#pbElo [data-pb-lock], #pbElo [data-pb-turn]'),'the Elo picks carry locks or New legs');
@@ -1244,7 +1344,7 @@ setTimeout(async()=>{
         const pool=F('pbPool')(games), mlP=F('mlProb'), formOut=typeof w.eloLoaded==='function'&&!w.eloLoaded();
         const left=F('pricedLegs')(games).filter(c=>F('pbAllows')(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=0.45&&c.p<0.97&&c.p-mlP(c.price)>=0&&!(c.grp!=='TEAM'&&formOut)&&isFar(c));
         nFar=left.length; nNear=[...pool.pref,...pool.thin].filter(c=>!isG(c)).length;
-        chk(nFar>0&&nNear>0,`the made-up lines did not put both far-off legs (${nFar}) and player legs within ${FAR*100} points of the market (${nNear}) on the picks`);
+        W.coverage(nFar>0&&nNear>0,`the made-up lines did not put both far-off legs (${nFar}) and player legs within ${FAR*100} points of the market (${nNear}) on the picks`);
         chk([...pool.pref,...pool.thin].every(c=>!isFar(c))&&pool.far===nFar,`the panel's pool holds a leg far off the market, or counts ${pool.far} left out where ${nFar} are`);
         const r=F('getPbTiers')();
         chk(r.far===nFar&&r.tiers.every(t=>!t.legs||t.legs.every(l=>!isFar(l))),'a level holds a leg far off the market, or the tiers do not carry the count');
@@ -1300,7 +1400,7 @@ setTimeout(async()=>{
           chk(!!fT&&!!fR&&fT.est&&fR.est&&isFar(legTD)&&isFar(legR)&&notes.includes(wantT)&&notes.includes(wantR)&&view.querySelectorAll('tr.far').length===notes.length&&view.querySelectorAll('tr.far').length>=2,
             `a far-off touchdown or ladder rung on a book price is not flagged on its game page ("${wantT}", "${wantR}"): ${notes.join(' / ')||'no flag'}`);
           const ku=JSON.parse(keepUi); S.ui.game=ku.game; S.ui.open=ku.open||{}; S.ui.showRungs=ku.rungs; F('closeGameModal')(); }
-        else chk(false,'no starter of a game to come has a touchdown and a ladder rung to plant far-off prices on');
+        else W.coverage(false,'no starter of a game to come has a touchdown and a ladder rung to plant far-off prices on');
         { const g=gF; if(g.sp==null||!isFinite(g.sp)) g.sp=3.5;
           const side=kind=>[g.a,g.h].map(t=>({t,b:gameBet(g,t,kind)})).sort((a,b)=>b.b.p-a.b.p)[0];
           const mlS=side('ml'), atS=side('ats'), fM=Math.max(0.05,mlS.b.p-0.25), fA=Math.max(0.05,atS.b.p-0.25), hM=mlS.t===g.h, hA=atS.t===g.h;
@@ -1339,7 +1439,7 @@ setTimeout(async()=>{
             chk(T.high.fair&&T.high.fair.p!=null&&!T.high.fair.est&&(!T.med||(T.med.fair.p!=null&&T.med.fair.est))&&T.low.fair.p===null,'the made-up hands are not one with a fair chance, one estimated and one with none');
             const box=card(games[0],T);
             for(const id of ['high','med','low']) if(T[id]) chk(handOk(box,id,T[id]),`a made-up ${id} hand (${id==='high'?'book-priced main lines':id==='med'?'with a rung priced on one side':'with a leg on no book price'}) does not lead with its fair chance, or say it has none: `+nb(box.textContent).slice(0,300)); }
-          else chk(false,'the made-up lines gave no two book-priced main lines to build a hand of');
+          else W.coverage(false,'the made-up lines gave no two book-priced main lines to build a hand of');
           flagged+=`; ${shown} game hands and made-up ones drawn with their fair chance; a far-off touchdown, ladder rung, to win and to cover flagged`; }
         /* the builder: the far-off leg flagged in its row, the near one not; the summary leads with the fair chance */
         if(farL&&nearL){ const keepP=JSON.stringify(S.parlay||{}), keepB=S.bookPrice, put=l=>{ const {key,thin,...x}=l; S.parlay[key]=x; };
@@ -1633,29 +1733,33 @@ setTimeout(async()=>{
     w.eval('GAME_TIER_CACHE={}');
     const T=F('gameTiers')(g), MIN=w.eval('GAME_LEG_MIN'), spec=w.eval('GAME_TIERS');
     /* always there while the game has lines, the right size, and to the rules */
-    chk(T.pool>=4?spec.every(([id])=>!!T[id]):true,`a game with ${T.pool} lines left a tier empty`);
+    W.compose(T.pool>=4?spec.every(([id])=>!!T[id]):true,`a game with ${T.pool} lines left a tier empty`);
+    /* the card states the floors (every leg 40%+ and no shorter than GAME_LEG_MIN; High +100 and 35%,
+       Medium +250 and 20%, Low +500 and 10%, unless it says the lines cannot reach them): numbers on the
+       page, so those are blocking; which hand is chosen, and its size, are warnings */
     for(const [id,,n,floor,minP] of spec){ const t=T[id]; if(!t) continue;
       chk(t.relaxed||t.corr>=minP-0.03,`the ${id} tier lands ${(t.corr*100).toFixed(0)}%, under its ${minP*100}% floor, without saying so`);
       chk(t.legs.every(l=>l.p>=0.40),`the ${id} tier has a leg under a 40% chance`);
-      chk(t.legs.length===n,`the ${id} tier has ${t.legs.length} legs, not ${n}`);
+      W.compose(t.legs.length===n,`the ${id} tier has ${t.legs.length} legs, not ${n}`);
       chk(t.legs.every(l=>l.gid===g.id)&&t.legs.filter(l=>l.grp==='TEAM').length<=1&&t.legs.every(l=>t.legs.filter(x=>x.pid===l.pid).length<=2)&&new Set(t.legs.map(l=>l.key)).size===n,`the ${id} tier breaks the leg rules`);
-      chk(t.legs.every(l=>l.price>=MIN&&isFinite(l.price)),`the ${id} tier has a leg shorter than ${MIN}`);
+      chk(t.legs.every(l=>isFinite(l.price)&&l.price!==0),`the ${id} tier has a leg with no price`);
+      chk(t.legs.every(l=>l.price>=MIN),`the ${id} tier has a leg shorter than ${MIN}`);
       chk(t.corr>0&&t.corr<1&&t.dec>1,`the ${id} tier has a nonsense chance or price`);
       chk(t.relaxed||t.dec>=1+floor/100-0.02,`the ${id} tier pays ${t.dec.toFixed(2)}, under its +${floor} floor, without saying so`); }
     /* each tier grows the one before */
-    if(T.high&&T.med) chk(T.high.legs.every(l=>T.med.legs.some(x=>x.key===l.key&&x.k===l.k)),'Medium does not grow High');
-    if(T.med&&T.low) chk(T.med.legs.every(l=>T.low.legs.some(x=>x.key===l.key&&x.k===l.k)),'Low does not grow Medium');
+    if(T.high&&T.med) W.compose(T.high.legs.every(l=>T.med.legs.some(x=>x.key===l.key&&x.k===l.k)),'Medium does not grow High');
+    if(T.med&&T.low) W.compose(T.med.legs.every(l=>T.low.legs.some(x=>x.key===l.key&&x.k===l.k)),'Low does not grow Medium');
     /* the pool: book prices where they exist, the model's estimate on the rest, ladders included */
     { const pool=F('gameLegPool')(g);
       chk(pool.every(c=>c.gid===g.id&&c.price>=MIN&&(c.src==='real'||c.src==='est')),'the leg pool has a line from another game, too short a price or no source');
-      chk(pool.some(c=>!c.main&&c.grp!=='TEAM'&&c.stat!=='any_td'),'the leg pool has no threshold ladders'); }
+      W.compose(pool.some(c=>!c.main&&c.grp!=='TEAM'&&c.stat!=='any_td'),'the leg pool has no threshold ladders'); }
     /* the high pair is the best payout for its chance among its seeds, not a safe nothing */
     if(T.high){ const one=c=>c.p*F('mlToDec')(c.price), pool=F('gameLegPool')(g).sort((a,b)=>one(b)-one(a));
       const a=pool[0], b=pool.find(c=>c.key!==a.key&&!(c.grp==='TEAM'&&a.grp==='TEAM'));
       if(a&&b){ const pd=F('parlayDec')([{leg:a,ml:a.price},{leg:b,ml:b.price}]), pr=F('parlayProb')([a,b],20000).corr;
         const [,,,hf,hp]=spec[0];
         /* only a pair High could take: the tier's own payout and chance floors, with room for simulation noise */
-        chk(pd<1+hf/100||pr<hp+0.03||T.high.corr*T.high.dec>=pr*pd-0.06,'the High pair returns less than the two best single legs together'); } }
+        W.compose(pd<1+hf/100||pr<hp+0.03||T.high.corr*T.high.dec>=pr*pd-0.06,'the High pair returns less than the two best single legs together'); } }
     chk(F('gameTiers')(g)===T,'the tiers are not cached between renders');
     /* the card: three blocks, each with its chance, its legs and an Add all that works */
     d.querySelector('[data-game="'+g.id+'"]').click(); card=d.querySelector('.gsugg');
@@ -1689,12 +1793,12 @@ setTimeout(async()=>{
       chk(d.getElementById(id)!==null,`free download/upload control went missing: ${id}`);
     const keep=PAY.price_pull;
     /* what this build actually carries: a recorded pull, with a time */
-    chk(keep&&keep.at,'no credit pull recorded in the payload');
+    W.panel(keep&&keep.at,'no credit pull recorded in the payload');
     F('renderPricePull')();
-    chk(/Last credit pull/.test(box.textContent),'panel does not say when credits were last spent');
-    chk(/\d{1,2}:\d\d/.test(box.textContent),'panel shows no time of day for the pull');
+    W.panel(/Last credit pull/.test(box.textContent),'panel does not say when credits were last spent');
+    W.panel(/\d{1,2}:\d\d/.test(box.textContent),'panel shows no time of day for the pull');
     for(const wk of Object.keys(PAY.prices||{}))
-      chk(box.textContent.includes(`week ${wk}: ${PAY.prices[wk].length.toLocaleString()}`),`panel does not count week ${wk}'s prices`);
+      W.panel(box.textContent.includes(`week ${wk}: ${PAY.prices[wk].length.toLocaleString()}`),`panel does not count week ${wk}'s prices`);
     /* no record at all: falls back to the date the main lines were priced */
     const meta=PAY.mkt_meta||{}; const lastW=Object.keys(meta).sort((a,b)=>b-a)[0];
     PAY.price_pull=null; F('renderPricePull')();
@@ -2120,6 +2224,11 @@ setTimeout(async()=>{
       const rstat=pid=>{ const e=R&&R[pid]; if(e) return {st:e[1],wk:+e[3]}; const r=rawRo[pid]; return r?{st:r.status,wk:+r.week}:null; };
       const cw=F('currentWeek')(), openG=SV.sched.filter(g=>+g.w===cw&&!F('gameStarted')(g));
       const gOf=id=>SV.sched.find(g=>g.id===id), gamesInWeek=wk=>SV.sched.filter(g=>+g.w===+wk).map(g=>g.id);
+      /* who will not play by the sources' own word, worked out here from the roster and the report and
+         never from the page's reading of them: V1 adds the released and this week's inactive, V5 the
+         held out after their club's last report, and V6 holds every suggested leg and candidate to it,
+         blocking, while V1's, V4's and V5's checks of who the page lists are warnings */
+      const NOPLAY=new Map();
 
       /* V0. one season, one week: the payload is for the page's SEASON and the schedule's week */
       { chk(PAY.season==null?!NEED:+PAY.season===SEASON,`the payload is for season ${PAY.season}, the page for ${SEASON}`);
@@ -2161,8 +2270,16 @@ setTimeout(async()=>{
             if(s&&s.st!=='ACT'&&s.st!=='DEV'&&!(s.st==='INA'&&s.wk!==cw)) bad.push(`${g.id} ${x.pl.n} ${s.st}`);
             if(stale(x.pl.id)) bad.push(`${g.id} ${x.pl.n} released (roster row from week ${rawRo[x.pl.id].week})`);
             if(x.starter&&s&&s.st==='DEV'&&x.rank==null&&![cw-1,cw-2].some(k=>F('actualFor')(k,x.pl.id))) dev.push(`${g.id} ${x.pl.n}`); } }
-        chk(!bad.length,`players the roster has on a reserve list, released or inactive are on this week's pages: ${bad.length} (${bad.slice(0,5).join('; ')})`);
-        chk(!dev.length,`practice-squad players with no chart place and no recent game start: ${dev.slice(0,5).join('; ')}`);
+        W.starters(!bad.length,`players the roster has on a reserve list, released or inactive are on this week's pages: ${bad.length} (${bad.slice(0,5).join('; ')})`);
+        /* for V6: released (a row left at an older week, in the download or the payload's table, by a
+           club that has rows in the latest), inactive this week, and on no roster in a whole-league table */
+        for(const pid in rawRo) if(stale(pid)) NOPLAY.set(pid,`released (roster row from week ${rawRo[pid].week})`);
+        if(R){ const LWp=Math.max(0,...Object.values(R).map(e=>+(e&&e[3])||0)), filedP=new Set(Object.values(R).filter(e=>e&&+e[3]===LWp).map(e=>e[0]));
+          for(const [id,e] of Object.entries(R)){ if(!e) continue;
+            if((e[1]==='ACT'||e[1]==='DEV')&&LWp&&+e[3]<LWp&&filedP.has(e[0])) NOPLAY.set(id,`released (roster row from week ${e[3]})`);
+            if(e[1]==='INA'&&+e[3]===cw) NOPLAY.set(id,'inactive this week'); }
+          if(Object.keys(R).length>800) for(const id in SV.players) if(!R[id]) NOPLAY.set(id,'on no roster'); }
+        W.starters(!dev.length,`practice-squad players with no chart place and no recent game start: ${dev.slice(0,5).join('; ')}`);
         if(rRoster){ let diff=0, n=0;
           for(const r of rRoster){ if(!r.gsis_id||!SKILL.has(String(r.position).toUpperCase())) continue; n++; const e=R&&R[r.gsis_id]; if(!e||e[0]!==r.team||e[1]!==r.status) diff++; }
           chk(diff===0,`${diff} of ${n} skill players' team or status in the payload differ from the downloaded roster`);
@@ -2231,7 +2348,7 @@ setTimeout(async()=>{
           for(const t in r) for(const gp of r[t].gaps){ n++; const off=gp.id&&SV.inactive[gp.id];
             if(off&&!/^ruled out/.test(gp.why)) bad.push(`${gp.name} (${gp.slot}): ${gp.why}`);
             if(!off&&/^ruled out/.test(gp.why)) bad.push(`${gp.name} is not out but reads "${gp.why}"`); } }
-        chk(!bad.length,`gap notes that misstate why a player is not shown: ${bad.slice(0,4).join('; ')}`);
+        W.starters(!bad.length,`gap notes that misstate why a player is not shown: ${bad.slice(0,4).join('; ')}`);
         const D=PAY.depth||{}; let tried=0, ok=0, noHist=0;
         for(const team of new Set(Object.values(D).map(d=>d[0]))){
           const q=rk=>Object.keys(D).find(id=>D[id][0]===team&&D[id][1]==='QB'&&D[id][2]===rk&&SV.players[id]&&SV.players[id].team===team&&!SV.inactive[id]);
@@ -2240,16 +2357,16 @@ setTimeout(async()=>{
           tried++; const P2=SV.players[two], keep=[P2.gp,P2.base_gp]; P2.gp=1; P2.base_gp=0;
           SV.inactive[one]={week:cw,status:'Out',inj:'Thumb'};
           try{ const r=F('rosterFor')(g,false)[team], qb=r.players.filter(x=>x.pl.grp==='QB'&&x.starter), gap=r.gaps.find(x=>x.id===one);
-            /* a QB2 with no NFL rows at all (Stetson Bennett, LA, week 6 of 2026) has nothing to project
-               from, so he cannot be shown: the gap note names him as the man who steps in instead */
+            /* a QB2 whose games give the model no workload (Stetson Bennett, LA, week 6 of 2026: one
+               relief appearance) used to leave the slot to nobody; since app v104 he starts, with no
+               lines (nothingToProject) */
             const use2=F('usage')(P2,g.a===team?g.h:g.a,F('gameCtx')(g,team));
-            if(qb.length===1&&qb[0].pl.id===two&&gap&&gap.why==='ruled out, thumb') ok++;
-            else if(!(use2>0)&&!qb.length&&gap&&gap.why==='ruled out, thumb'&&r.gaps.some(x=>x.id===two&&/^steps in for him; /.test(x.why))){ ok++; noHist++; }
-            else chk(false,`${team}: QB1 ruled out and a one-game QB2: the starter shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, and QB1 reads "${gap?gap.why:'nothing'}"`);
+            if(qb.length===1&&qb[0].pl.id===two&&gap&&gap.why==='ruled out, thumb'&&(use2>0||!F('statLines')(qb[0]).length)){ ok++; if(!(use2>0)) noHist++; }
+            else W.starters(false,`${team}: QB1 ruled out and a one-game QB2: the starter shown is ${qb.map(x=>x.pl.n).join(', ')||'nobody'}, and QB1 reads "${gap?gap.why:'nothing'}"`);
           } finally { P2.gp=keep[0]; P2.base_gp=keep[1]; delete SV.inactive[one]; }
           if(tried>=4) break; }
-        chk(tried>0,'no team on the chart has a QB1 and a QB2 to test the next man up with');
-        console.log(`V4. ruled out: ${n} gap notes this week, each giving the real reason; ${ok} of ${tried} teams start a one-game QB2 when QB1 is ruled out${noHist?` (${noHist} of them a QB2 with no NFL history, named as the man who steps in)`:''}`); }
+        W.coverage(tried>0,'no team on the chart has a QB1 and a QB2 to test the next man up with');
+        console.log(`V4. ruled out: ${n} gap notes this week, each giving the real reason; ${ok} of ${tried} teams start a one-game QB2 when QB1 is ruled out${noHist?` (${noHist} of them a QB2 the model projects to no use, started with no lines)`:''}`); }
 
       /* V5. the injury report: the payload carries the downloaded one, its Outs leave the page, its
          Questionables wear a Q; and the rules, on a made-up report for a real team */
@@ -2257,9 +2374,15 @@ setTimeout(async()=>{
         if(rInj){ const isReg=r=>+r.season===SEASON&&String(r.game_type||r.season_type||'REG')==='REG';
           const cur=rInj.filter(r=>isReg(r)&&+r.week===+PAY.week), pc=(PAY.injuries||[]).filter(r=>+r.week===+PAY.week).length;
           chk(pc===cur.length,`the payload has ${pc} injury rows for week ${PAY.week}, the downloaded report ${cur.length}`);
-          const past=rInj.filter(r=>isReg(r)&&+r.week<+PAY.week&&['Out','Doubtful'].includes(r.report_status)&&SKILL.has(String(r.position).toUpperCase())).length;
+          /* who the roster has inactive for his club's last game (status INA, or an active row with
+             nflverse's inactive code I01 or I02): the payload's ina, and every earlier report row of
+             theirs is carried beside the earlier Outs, so the page can tell one was on the report */
+          const rIna=new Set((rRoster||[]).filter(r=>r.gsis_id&&SKILL.has(String(r.position).toUpperCase())&&(r.status==='INA'||String(r.status_description_abbr||'').startsWith('I'))).map(r=>r.gsis_id));
+          if(rRoster){ const pIna=new Set(PAY.ina||[]);
+            chk(pIna.size===rIna.size&&[...rIna].every(id=>pIna.has(id)),`the payload's ina (${pIna.size}) is not the downloaded roster's inactive (${rIna.size})`); }
+          const past=rInj.filter(r=>isReg(r)&&+r.week<+PAY.week&&SKILL.has(String(r.position).toUpperCase())&&(['Out','Doubtful'].includes(r.report_status)||rIna.has(r.gsis_id))).length;
           const ppast=(PAY.injuries||[]).filter(r=>+r.week<+PAY.week).length;
-          chk(ppast===past,`the payload has ${ppast} earlier Outs, the downloaded report ${past}`);
+          chk(ppast===past,`the payload has ${ppast} earlier Outs and rows of the inactive, the downloaded report ${past}`);
           const miss=[], listed=[];
           if(+PAY.week===cw){
             for(const r of cur){ const id=r.gsis_id, st=r.report_status; if(!SV.players[id]) continue;
@@ -2267,9 +2390,29 @@ setTimeout(async()=>{
               if(st==='Questionable'&&!SV.inactive[id]&&(F('injTag')(id)||{}).k!=='q') miss.push(`${r.full_name} Questionable without a Q`); }
             const out=new Set(cur.filter(r=>r.report_status==='Out'||r.report_status==='Doubtful').map(r=>r.gsis_id));
             for(const g of openG){ const ro=F('rosterFor')(g,true); for(const t in ro) for(const x of ro[t].players) if(out.has(x.pl.id)) listed.push(`${g.id} ${x.pl.n}`); } }
-          chk(!miss.length,`the report is not on the page: ${miss.slice(0,5).join('; ')}`);
-          chk(!listed.length,`players ruled out are on this week's pages: ${listed.slice(0,5).join('; ')}`);
-          msg=`${pc} rows for week ${PAY.week} and ${ppast} earlier Outs, as downloaded; every Out off the page, every Questionable tagged; `; }
+          W.starters(!miss.length,`the report is not on the page: ${miss.slice(0,5).join('; ')}`);
+          W.starters(!listed.length,`players ruled out are on this week's pages: ${listed.slice(0,5).join('; ')}`);
+          msg=`${pc} rows for week ${PAY.week} and ${ppast} earlier Outs and rows of the ${rIna.size} inactive, as downloaded; every Out off the page, every Questionable tagged; `; }
+        /* inactive after being on his club's last report (the Elo build's WHO PLAYS rule, app v104),
+           worked out here from the payload alone: on the report of his club's last game in any
+           status, with no stat line in it, and his club with no game status filed this week, he is
+           held out (pending) until he practises or the club files a report he is not on; and he is
+           on no page this week. Caleb Williams, Chicago, week 6 of 2026, was the case */
+        { const R=PAY.roster||{}, I=PAY.injuries||[], held=[], wrong=[];
+          const lastWk=t=>{ let p=null; for(const g of SV.sched) if((g.a===t||g.h===t)&&+g.w<cw&&(p==null||+g.w>p)) p=+g.w; return p; };
+          for(const id of (PAY.ina||[])){ const t=R[id]&&R[id][0]; if(!t||!SV.players[id]) continue; const pw=lastWk(t); if(pw==null) continue;
+            const was=I.find(r=>r.gsis_id===id&&+r.week===pw&&r.team===t), mine=I.filter(r=>+r.week===cw&&r.team===t), row=mine.find(r=>r.gsis_id===id);
+            if(!was||(SV.actuals[String(pw)]&&SV.actuals[String(pw)][id])) continue;
+            if(mine.some(r=>String(r.report_status||'').trim())) continue;             /* his club's statuses are filed: the report rules */
+            const out=!mine.length||(row&&/did not/i.test(String(row.practice_status||'')));
+            const rec=SV.inactive[id];
+            if(out){ held.push(id); NOPLAY.set(id,`inactive in week ${pw} after being on its report, not cleared`); if(!rec) wrong.push(`${SV.players[id].n} (${t}): inactive in week ${pw} after being on its report, and not held out`);
+              else if(rec.status==='Pending'&&!['Out','Doubtful'].includes(was.report_status)&&!/\(inactive last game, /.test(F('inactiveWhy')(rec))) wrong.push(`${SV.players[id].n} reads "${F('inactiveWhy')(rec)}"`); }
+            else if(rec&&rec.status==='Pending') wrong.push(`${SV.players[id].n} (${t}): cleared by this week's report, yet held out`); }
+          const shown=[]; for(const g of openG){ const ro=F('rosterFor')(g,true); for(const t in ro) for(const x of ro[t].players) if(held.includes(x.pl.id)) shown.push(`${g.id} ${x.pl.n}`); }
+          W.starters(!wrong.length,`the inactive rule: ${wrong.slice(0,4).join('; ')}`);
+          W.starters(!shown.length,`players held out as inactive after their club's last report are on this week's pages: ${shown.slice(0,4).join('; ')}`);
+          msg+=`${held.length} held out as inactive after their club's last report (${held.map(id=>SV.players[id].n).slice(0,4).join(', ')||'none this week'}); `; }
         /* the rules: out in his team's last game and no word yet is pending (treated as out); not on
            his team's report once it is filed, or with a final report that gives him no status, he is
            cleared; Questionable with no practice is out; Questionable wears a Q and, like a player who
@@ -2277,16 +2420,24 @@ setTimeout(async()=>{
         const g2=SV.sched.find(g=>+g.w>=2&&F('prevTeamWeek')(g.h,+g.w)!=null);
         if(g2){ const T=g2.h, W=+g2.w, PW=F('prevTeamWeek')(T,W), row=(id,wk,st,pr)=>({season:SEASON,week:wk,gsis_id:id,team:T,report_status:st||'',practice_status:pr||'',injury:'Knee'});
           const ii=F('ingestInjuries'), inact=()=>w.eval('S').inactive, tag=id=>(w.eval('INJ')[id]||{}).k||null, sug=F('suggestable');
-          const base=[row('V1',PW,'Out'),row('V2',PW,'Out'),row('V3',PW,'Out'),row('V8',PW,'Doubtful'),row('V10',PW,'Doubtful')];
-          const A=(SV.actuals[String(PW)]??={}); A.V8={team:T,receptions:2};   /* V8 was listed doubtful, and played */
-          try{ ii(base,W); }finally{ delete A.V8; }
+          /* V11-V15 the roster has inactive for the last game (ina): V11, V14 and V15 were on its report
+             (Questionable), V12 was not (a healthy scratch), V13 was and has a stat line in it */
+          const keepIna=PAY.ina; PAY.ina=[...(keepIna||[]),'V11','V12','V13','V14','V15'];
+          const base=[row('V1',PW,'Out'),row('V2',PW,'Out'),row('V3',PW,'Out'),row('V8',PW,'Doubtful'),row('V10',PW,'Doubtful'),
+            row('V11',PW,'Questionable','Limited Participation in Practice'),row('V13',PW,'Questionable'),row('V14',PW,'Questionable'),row('V15',PW,'Questionable')];
+          const A=(SV.actuals[String(PW)]??={}); A.V8={team:T,receptions:2}; A.V13={team:T,receptions:1};   /* V8 was listed doubtful, and played; V13 too */
+          try{ ii(base,W); }finally{ delete A.V8; delete A.V13; }
+          chk(['V11','V14','V15'].every(id=>inact()[id]&&inact()[id].status==='Pending'&&/^ruled out until his status is filed \(inactive last game, /.test(F('inactiveWhy')(inact()[id]))),'inactive last game after being on its report, with no report yet, is not pending, or does not say inactive');
+          chk(!inact().V12&&!inact().V13,'an inactive player the last report never named, or one with a stat line in that game, is held out');
           chk(['V1','V2','V3','V10'].every(id=>inact()[id]&&inact()[id].status==='Pending'),'out or doubtful last game with no report yet is not pending');
           chk(!inact().V8,'a player listed doubtful last game who has a stat line in it is held out as pending');
           chk(/^ruled out until his status is filed/.test(F('inactiveWhy')(inact().V1)),'a pending player does not read "ruled out until his status is filed"');
           /* filed, no game statuses yet (a Wednesday or Thursday report) */
           const filed=[...base,row('V2',W,'','Did Not Participate In Practice'),row('V3',W,'','Limited Participation in Practice'),
-            row('V7',W,'','Did Not Participate In Practice'),row('V9',W,'','Full Participation in Practice')];
+            row('V7',W,'','Did Not Participate In Practice'),row('V9',W,'','Full Participation in Practice'),
+            row('V11',W,'','Limited Participation in Practice'),row('V14',W,'','Did Not Participate In Practice')];
           ii(filed,W);
+          chk(!inact().V11&&!inact().V15&&inact().V14&&inact().V14.status==='Pending','inactive after the last report: practising, or off the filed report, does not clear him, or not practising does');
           chk(!inact().V1,'a player off his filed team report is still held out');
           chk(inact().V2&&inact().V2.status==='Pending','out last game and not practising is not pending');
           chk(!inact().V3&&tag('V3')==='lim'&&sug('V3'),'out last game and practising (limited) is held out, untagged or kept from the suggestions');
@@ -2297,23 +2448,39 @@ setTimeout(async()=>{
           chk(inact().V4&&inact().V6,'Questionable with no practice, or Out, is not ruled out');
           chk(!inact().V5&&tag('V5')==='q'&&!sug('V5'),'Questionable is not tagged Q, or is suggested');
           chk(!inact().V2&&!tag('V7')&&sug('V7'),'a final report that gives a player no status does not clear him');
+          chk(!inact().V14,'a final report that gives an inactive player no status does not clear him');
           ii([],W); chk(!Object.values(inact()).some(r=>r&&r.week!=='season'),'an empty report left someone ruled out for the week');
+          /* a reserve list, the PUP list, a suspension: out on the roster's word, whatever the report */
+          F('applyRoster')({...(PAY.roster||{}),V16:[T,'RES','V16',W],V17:[T,'PUP','V17',W],V18:[T,'SUS','V18',W]});
+          ii(fin,W); chk(['V16','V17','V18'].every(id=>inact()[id]&&inact()[id].week==='season'&&/^ruled out/.test(F('inactiveWhy')(inact()[id]))),'a player on a reserve list, the PUP list or suspended is not held out after the report is read');
+          PAY.ina=keepIna; if(keepIna===undefined) delete PAY.ina;
           ii(fin,W,true); chk(inact().V6&&!inact().V2&&!inact().V4,'a past week is not graded on its final report\'s game statuses alone');
           ii(PAY.injuries||[]); F('applyRoster')(PAY.roster); }
-        console.log(`V5. injury report: ${msg}pending, cleared, Q, no-practice and limited each behave on a made-up report for ${g2?g2.h:'no team'}`); }
+        console.log(`V5. injury report: ${msg}pending, cleared, Q, no-practice and limited, inactive after the last report and the roster's reserve, PUP and suspended lists each behave on a made-up report for ${g2?g2.h:'no team'}`); }
 
       /* V6. nobody out, pending, Questionable or missing practice is in a suggested parlay */
-      { const legs=[]; for(const t of F('getPbTiers')().tiers) if(t.legs) legs.push(...t.legs);
+      { const legs=[]; let msgV6=''; for(const t of F('getPbTiers')().tiers) if(t.legs) legs.push(...t.legs);
         for(const g of openG){ const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T[id]) legs.push(...T[id].legs); }
         const pool=[...F('pricedLegs')(undefined,true),...openG.flatMap(g=>F('gameLegPool')(g))];
         const bad=[...new Set([...legs,...pool].filter(l=>l.grp!=='TEAM'&&!F('suggestable')(l.pid)).map(l=>l.name))];
         chk(!bad.length,`suggested legs on players who may not play: ${bad.slice(0,5).join(', ')}`);
+        /* and on the sources' own word, not the page's reading of them: whatever the page shows
+           (V1, V4 and V5's listing checks are warnings), no suggested leg or candidate is on a player
+           this week's report has Out, Doubtful or Questionable, the roster has off its active list,
+           released, inactive this week or on no roster, or the inactive rule holds out (NOPLAY, from
+           V1 and V5's own working of the sources) */
+        { const off=new Map(NOPLAY);
+          for(const r of (PAY.injuries||[])) if(+r.week===cw&&['Out','Doubtful','Questionable'].includes(String(r.report_status||'').trim())) off.set(r.gsis_id,r.report_status);
+          for(const [id,e] of Object.entries(PAY.roster||{})) if(e&&e[1]&&!['ACT','DEV','INA'].includes(e[1])) off.set(id,e[1]);
+          const hit=[...new Set([...legs,...pool].filter(l=>l.grp!=='TEAM'&&off.has(l.pid)).map(l=>`${l.name} (${off.get(l.pid)})`))];
+          chk(!hit.length,`suggested legs on players the report or the roster has out: ${hit.slice(0,5).join(', ')}`);
+          msgV6=` and none on the ${off.size} the report, the roster or the inactive rule has out (${NOPLAY.size} of them released, inactive or held, worked out from the sources)`; }
         const g=openG.find(x=>F('gameLegPool')(x).some(l=>l.grp!=='TEAM'));
         if(g){ const pid=F('gameLegPool')(g).find(l=>l.grp!=='TEAM').pid, INJ=w.eval('INJ'), keep=INJ[pid];
           INJ[pid]={k:'q',t:'Q',title:'Questionable'}; w.eval('GAME_TIER_CACHE={}');
           chk(!F('gameLegPool')(g).some(l=>l.pid===pid)&&!F('pricedLegs')([g]).some(l=>l.pid===pid),'a Questionable player stayed in a game\'s suggestions');
           if(keep) INJ[pid]=keep; else delete INJ[pid]; w.eval('GAME_TIER_CACHE={}'); }
-        console.log(`V6. suggestions: ${legs.length} suggested legs and ${pool.length} candidates, none on a player who may not play; a Questionable tag takes a player out of the pool`); }
+        console.log(`V6. suggestions: ${legs.length} suggested legs and ${pool.length} candidates, none on a player who may not play${msgV6}; a Questionable tag takes a player out of the pool`); }
 
       /* V7. every player is on the team the roster says, whatever team his last game was for */
       { const tbl=R||(rRoster?Object.fromEntries(Object.entries(rawRo).map(([k,r])=>[k,[r.team,r.status]])):null);
@@ -2484,9 +2651,12 @@ setTimeout(async()=>{
       if(notPosted.length) console.log(`V. raw files not compared because nflverse has not posted them yet: ${notPosted.join(', ')}`);
     })(); }catch(e){ chk(false,'section V threw: '+(e&&e.stack||e)); }
 
-    console.log(`\n${checks} checks, ${fails.length} failures, ${errs.length} runtime errors`);
+    console.log(`\n${checks} checks, ${fails.length} failures, ${warns.length} warnings, ${errs.length} runtime errors`);
     fails.slice(0,15).forEach(f=>console.log('  FAIL:',f));
     errs.slice(0,5).forEach(e=>console.log('  ERROR:',e));
+    /* warnings never refuse the publish; weekly.py lists them and the job goes red after its commit */
+    warns.slice(0,15).forEach(x=>console.log(`  WARN: ${x.m} [${x.k}]`));
+    for(const k of [...new Set(warns.map(x=>x.k))]) console.log(`  (a ${k} warning: ${WARN[k]})`);
     /* the page's own timers (the suggested parlays look for a kickoff every half minute) end
        with its window, so node ends when the audit does */
     w.close();

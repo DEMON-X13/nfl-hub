@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v103 \u00b7 2026-10-13';
+const APP_BUILD='app v104 \u00b7 2026-10-13';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -81,6 +81,9 @@ function freshState(){
   for(const p of PAY.players){
     const o={id:p.id,n:p.n,pos:p.p,grp:p.g,team:p.t,gp:0,base_gp:p.gp,e5:{},e3:{},car:{},py:{}};
     for(const s of (GRP_STATS[p.g]||[])){
+      /* a charted player with no history (gp and cn 0): the empty sums of a player whose first
+         game has just been read, so his first game counts as a rookie's does */
+      if(!p.gp&&!p.cn){ o.e5[s]=[0,0]; o.e3[s]=[0,0]; o.car[s]=[0,0]; o.py[s]=null; continue; }
       const v=p[s]||[0,0,0,0];
       o.e5[s]=seedEwm(v[0],A5); o.e3[s]=seedEwm(v[1],A3);
       const cn=Math.max(p.cn||p.gp||1,1);
@@ -445,7 +448,7 @@ function inactiveWhy(r){
   const inj=r.inj?', '+String(r.inj).toLowerCase():'';
   if(r.status==='Out') return 'ruled out'+inj;
   if(r.status==='Doubtful') return 'ruled out (doubtful'+inj+')';
-  if(r.status==='Pending') return 'ruled out until his status is filed (out last game, '+(r.why||'no word yet')+')';
+  if(r.status==='Pending') return 'ruled out until his status is filed ('+(r.was||'out')+' last game, '+(r.why||'no word yet')+')';
   return 'ruled out ('+String(r.status||'').toLowerCase()+inj+')';
 }
 /* a practice-squad player plays only when he is elevated: he is a starter when his team's chart
@@ -461,13 +464,15 @@ function rosterFor(g,showAll){
   const D=(S.depth&&Object.keys(S.depth).length)?S.depth:PAY.depth;
   for(const [team,opp] of [[g.a,g.h],[g.h,g.a]]){
     const ctx=gameCtx(g,team);
+    /* where this team's ruled-out players stand on the chart */
+    const outAt={}; for(const id in (D||{})){ const d=D[id]; if(d[0]===team&&S.inactive[id]) (outAt[d[1]]??=[]).push(d[2]); }
+    /* a player projected to no use is left out, unless the chart moves him up: he then starts with
+       no lines (nothingToProject) rather than leave the slot to nobody */
     const list=playersFor(team).map(pl=>{
       const d=depthOf(pl);
       return {pl,team,opp,ctx,use:usage(pl,opp,ctx),gp:pl.gp+pl.base_gp,
         rank:(d&&d.team===team&&d.pos===pl.grp)?d.rank:null};
-    }).filter(x=>x.use>0);
-    /* where this team's ruled-out players stand on the chart */
-    const outAt={}; for(const id in (D||{})){ const d=D[id]; if(d[0]===team&&S.inactive[id]) (outAt[d[1]]??=[]).push(d[2]); }
+    }).filter(x=>x.use>0||(x.rank!=null&&(outAt[x.pl.grp]||[]).some(r=>r<x.rank)));
     const out=[];
     for(const grp of ['QB','RB','WR','TE','K']){
       const pool=list.filter(x=>x.pl.grp===grp).sort((a,b)=>{
@@ -481,9 +486,15 @@ function rosterFor(g,showAll){
          enough projected usage to walk in on his own */
       let place=0; for(const x of pool) x.eff=x.rank!=null?++place:null;
       /* a charted player moved up because someone above him is ruled out starts now, however few
-         games he has: the page shows him, marked thin history, rather than nobody at all */
+         games he has: the page shows him, marked thin history, rather than nobody at all. One the
+         model has nothing to project for holds his slot on the chart the same way, shown with no
+         lines (nothingToProject), so the next man down is never shown as the starter in his stead; and
+         so does one with a game or two: counted in the chart's order, he would otherwise be cut with
+         his backup behind him (a QB1 with one game left the club no quarterback). Under three games
+         he is marked thin history; pricedLegs takes nobody under three, and the game hands only one
+         the chart moved up (gameLegPool), so nothing new is suggested */
       for(const x of pool) x.up=x.rank!=null&&(outAt[grp]||[]).some(r=>r<x.rank);
-      const cut=pool.filter(x=>(x.gp>=3||x.up)&&devOk(x,+g.w)&&(x.eff!=null?x.eff<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
+      const cut=pool.filter(x=>(x.gp>=3||x.rank!=null)&&devOk(x,+g.w)&&(x.eff!=null?x.eff<=DEPTH[grp]:x.use>=USE_FLOOR[grp]))
                     .slice(0,DEPTH[grp]);
       for(const x of (showAll?pool:cut)) out.push({...x,starter:cut.includes(x)});
     }
@@ -497,17 +508,24 @@ function rosterFor(g,showAll){
       if(!lead||rank>lead||gaps.some(x=>x.id===id)) continue;
       const off=S.inactive[id];
       gaps.push({id,name:nm,slot:pos+rank,out:!!off,
-        why:off?inactiveWhy(off):(S.players[id]?'not enough games played':'no NFL history')});
+        why:off?inactiveWhy(off):(!S.players[id]?'no NFL history':(noHistory(S.players[id])?'no games the model counts, last season or this':'not enough games played'))});
       /* and the man who steps in, when the page cannot show him either */
       if(off){ const next=Object.keys(D).filter(j=>D[j][0]===team&&D[j][1]===pos&&D[j][2]>rank&&!S.inactive[j]).sort((a,b)=>D[a][2]-D[b][2])[0];
         if(next&&!shown.has(next)&&!gaps.some(x=>x.id===next)) gaps.push({id:next,name:D[next][3],slot:pos+D[next][2],out:false,
-          why:'steps in for him; '+(S.players[next]?'not enough games played to project':'no NFL history to project')}); }
+          why:'steps in for him; '+(!S.players[next]?'no NFL history to project':(noHistory(S.players[next])?'no games the model counts, last season or this, to project':'not enough games played to project'))}); }
     }
     byTeam[team]={opp,players:out,gaps};
   }
   return byTeam;
 }
+/* no game last season and none this season: a charted backup the payload carries so he can start,
+   with nothing to project from. He gets no lines, so nothing prices or suggests him */
+function noHistory(pl){ return !!pl&&!((pl.gp||0)+(pl.base_gp||0)); }
+/* a player on a game's roster the model has nothing to project for: no history, or a charted player
+   moved up whose games give no workload at all (use, rosterFor's, is 0) */
+function nothingToProject(x){ return noHistory(x.pl)||(x.use!=null&&!(x.use>0)); }
 function statLines(x){
+  if(nothingToProject(x)) return [];
   const out=[];
   for(const stat of (GRP_STATS[x.pl.grp]||[])){
     if(NO_BET.has(stat)) continue;
@@ -534,7 +552,7 @@ function gameHeadline(g){
   const pick=(grps,stat)=>{
     let best=null;
     for(const team in roster) for(const x of roster[team].players){
-      if(!grps.includes(x.pl.grp)) continue;
+      if(!grps.includes(x.pl.grp)||nothingToProject(x)) continue;
       const r=project(x.pl,stat,x.opp,x.ctx); if(!r||r.mu==null||!isFinite(r.mu)) continue;
       const mu=r.mu;
       if(!best||mu>best.mu) best={mu,pl:x.pl,team};
