@@ -11,9 +11,11 @@ NFL Bets and Stats) with a hand-written narrative for every team each week. The 
 the tracker's per-game content now lives there:
 
 - a one-line **preview** and a short **news** note for each game, written by hand each Wednesday into
-  `data/notes/<season>-w<N>.json`, every player named in bold (`**Bo Nix**`); until a game has one, the
-  snapshot shows an automatic line;
-- the **Deep Dive** (the four position matchups each way, with who plays and who is out) inside its
+  `data/notes/<season>-w<N>.json`, every player named in bold (`**Bo Nix**`); the snapshot shows the
+  preview alone (the owner's call, 14 October 2026: the news and its sources stay in the file, unshown, and
+  are still written); until a game has one, the snapshot shows an automatic line;
+- the **Deep Dive** (the four position matchups each way, a compact row each: the unit, the two clubs'
+  ranks and the tag; who plays and who is out stay in the file, unshown since 14 October 2026) inside its
   Offense vs defense card, from `data/units.json`, drawn by `../nflbets/build/deepdive.js`;
 - the **Stat breakdown** (the eleven stat bars), from `data/stats.json`.
 
@@ -115,12 +117,13 @@ There is no page to render: the smoke test holds the files the job writes to the
 Game snapshot draws from them. Blocking: the twins are exactly their `.js` consts; each team's stat line is
 its own game count in `results.js`; the tag constants are their values and every club's Overall ratings are
 `../elo/data/model.json`'s; every game of the units' week, drawn both ways by `deepdive.js`, has its four
-rows in order with each tag the weighted edge worked out on its own and the ranks and edges the file's, and
+rows in order with each tag the weighted edge worked out on its own and the ranks and edges the file's, each
+row its unit, the two clubs and ranks and its tag alone (no name, no one out, no number: the owner's call of
+14 October 2026), and
 its Overall line's tag the rule's on `model.json`'s units; the lineups are for the schedule's week (and, in
 the job, checked on that run's own download); `index.html` sends a visitor to `../nflbets/`; every fixed
 case in `tools/cases.js`. Warnings (WARN, the job publishes and goes red after its commit): the other
-lineup rules, a starter out named in his row, a quarterback in doubt with the next one named, nobody both
-listed and out, and every problem in a notes file, its shape included, so a bad note never holds back the
+lineup rules, a quarterback in doubt with the next one named in the file, nobody both listed and out, and every problem in a notes file, its shape included, so a bad note never holds back the
 week's data. The lineup checks read the build's own snapshot (`tools/.cache/`, not committed) when it
 matches `units2026.js`, else download the files: **run `node tools/context.js` first when the committed
 `units2026.js` is older than the report**. Offline with no snapshot, `NEWS_SMOKE_OFFLINE=1` skips them.

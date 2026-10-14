@@ -23,12 +23,12 @@
    side, with the same weights, so they are drawn here as the right-hand side of the line's and the
    receivers' rows. The rows overlap and are never added up.
 
-   A row is drawn as the unit and its tag (the edge small beside it) on one line, then two equal
-   columns, the offense's side and the defense's, each headed by its own label and rank ("SEA pass
-   protection · 15th" | "DEN pass rush · 2nd") with its names, who is out and its numbers under it;
-   the quarterback's and the run game's defense side is the pass or run defense's rank alone (it is
-   rated as a defense, with no single unit's names). The owner's ask of 14 October 2026: the two
-   sides of a meeting the same size, side by side.
+   A row is drawn compact and centred: the unit, the two sides' clubs and ranks ("SEA 13th · DEN
+   3rd", the offense's then the defense's; the quarterback's and the run game's defense side is the
+   pass or run defense's rank) and the tag, the edge in its title. Nothing else: no names, no one out,
+   no numbers (the owner's call, 14 October 2026: who plays is the Starters card's, the numbers the
+   Stat breakdown's). The file still carries the names, who is out and the numbers; the news job's
+   smoke holds them to their sources.
 
    The headline tag is the one the tracker put over its rows: this team's Overall Offense against the
    opponent's Overall Defense (elo/data/model.json `units`, which the card already shows), the gap read
@@ -82,29 +82,12 @@
     return { cls, tag, edge, w };
   }
 
-  /* who plays, who does not, a quarterback in doubt and the numbers, for one side of a row */
-  const NEXT_FROM = { chart: 'next on the chart', roster: 'next on the roster', usage: 'next by this season\'s dropbacks' };
-  function side(u, isQB) {
-    if (!u) return '';
-    const names = list => (list || []).map(p => `${esc(p.n)} (${esc(p.pos)}${p.q ? ', ' + esc(p.q) : ''})`).join(', ');
-    const out = u.out || [];
-    let bits = '';
-    if (u.who && u.who.length) bits += `<div class="ddwho">${names(u.who)}</div>`;
-    if (out.length) bits += isQB && u.who && u.who[0]
-      ? `<div class="ddout">${esc(u.who[0].n)} starts; ${out.map(p => `${esc(p.n)} is ${esc(p.why)}`).join(', ')}.</div>`
-      : `<div class="ddout">Not playing: ${out.map(p => `${esc(p.n)} (${esc(p.pos)}), ${esc(p.why)}`).join('; ')}.</div>`;
-    if (isQB && u.who && u.who[0]) {
-      if (u.next) bits += `<div class="ddout">${esc(u.who[0].n)} may not start (${esc(u.who[0].q || 'in doubt')}); ${NEXT_FROM[u.next.from] || 'next on the chart'}: ${esc(u.next.n)}${u.next.q ? ` (${esc(u.next.q)})` : ''}.</div>`;
-      else if (u.next_none) bits += `<div class="ddout">${esc(u.who[0].n)} may not start (${esc(u.who[0].q || 'in doubt')}); ${esc(u.next_none)}.</div>`;
-    }
-    const nums = (u.stats || []).map(([label, v, r, unit]) => v == null ? '' : `${esc(v)}${esc(unit || '')} ${esc(label)} (${ord(r)})`).filter(Boolean).join(' · ');
-    if (nums) bits += `<div class="ddnum">${nums}</div>`;
-    if (u.note) bits += `<div class="ddnote">${esc(u.note)}</div>`;
-    return bits;
-  }
-
   /* one possession: this offense's four rows against the defense. Returns { html, rows } where rows
-     are [{ key, tag, cls, edge }], or null when the file has no units for either club */
+     are [{ key, tag, cls, edge }], or null when the file has no units for either club. A row is
+     compact and centred: the unit, each side's club and rank ("SEA 13th · DEN 3rd", the offense's
+     then the defense's, each side titled with what it is rated as), and the tag, whose title gives the
+     edge; no names, no one out, no numbers (the owner's call, 14 October 2026: who plays is the
+     Starters card's, the numbers the Stat breakdown's) */
   function possession(D, off, def) {
     if (!D || !D.units) return null;
     const U = D.units[club(off)], O = D.units[club(def)];
@@ -114,14 +97,10 @@
       const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key);
       rows.push({ key, tag: t.tag, cls: t.cls, edge: t.edge });
       const why = t.edge == null ? '' : ` title="Edge ${sd(t.edge)}: ${esc(off)}'s ${mine} rating minus ${esc(def)}'s ${theirs}, in league standard deviations. The tag weighs it by ${t.w} (${sd(t.w * t.edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
-      /* each side's heading: the club, what it is rated as and its rank */
-      const head = (club, words, x) => `<div class="ddsl"><span class="ddsn">${esc(club)} ${words}</span><span class="ddsep" aria-hidden="true"> · </span><b class="ddrk">${x && x.rank != null ? ord(x.rank) : '–'}</b></div>`;
-      /* the defense's side has names and numbers of its own only where it is a unit (pass rush, coverage) */
-      const theirSide = dk === 'front' || dk === 'db' ? side(O[dk], false) : '';
-      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}">
-        <div class="ddtop"><span class="ddunit">${label}</span><span class="ddtg">${t.edge == null ? '' : `<span class="ddedge">edge ${sd(t.edge)}</span>`}<span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>
-        <div class="ddsides"><div class="ddside ddoff">${head(off, mine, u)}${side(u, key === 'qb') || '<div class="ddnote">No names in the file.</div>'}</div><div class="ddside dddef">${head(def, theirs, v)}${theirSide}</div></div>
-      </div>`;
+      /* one side: its club and its rank, titled with what it is rated as */
+      const one = (cls, c, words, x) => { const rk = x && x.rank != null ? ord(x.rank) : '–';
+        return `<span class="ddside ${cls}" title="${esc(c)} ${words}: ${rk}"><span class="ddsn">${esc(c)}</span> <b class="ddrk">${rk}</b></span>`; };
+      return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}"><span class="ddunit">${label}</span> <span class="ddrks">${one('ddoff', off, mine, u)}<span class="ddsep" aria-hidden="true"> · </span>${one('dddef', def, theirs, v)}</span> <span class="dtag ${t.cls}"${why}>${t.tag}</span></div>`;
     }).join('');
     return { html: `<div class="dd" data-dd-pos="${esc(off)}-${esc(def)}">${html}</div>`, rows };
   }

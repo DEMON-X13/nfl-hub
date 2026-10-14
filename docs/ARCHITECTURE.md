@@ -457,29 +457,33 @@ its edge on a four-step meter. Under it six cards (`CARDS`, in this order; the S
 each file's publish time and links to the full tabs, went on 14 October 2026, the owner's call, and
 the Stat breakdown moved up above Offense vs defense), each a button (`[data-gs-fold]`, `aria-expanded`)
 with its title, a badge where a count helps (Starters: the ranked players out; Mismatches: how many)
-and a one-line summary over a body that folds (Every call and Team strength open on a wide screen,
-every card folded on a phone, Open all and Close all; nothing saved, nothing redrawn): every call
-(`#gsCalls`, one lean chart: a row a call, its bar under its name and pick, leaning from 50/50 toward
+and, but for Model Picks, Team strength and Offense vs defense (the owner's call, 14 October 2026:
+no summary in their title and no note under them), a one-line summary over a body that folds (Model
+Picks and Team strength open on a wide screen, every card folded on a phone, Open all and Close all;
+nothing saved, nothing redrawn): Model Picks (`#gsCalls`, titled so since 14 October 2026, one lean chart: a row a call, its bar under its name and pick, leaning from 50/50 toward
 the side its call picks, as far as its chance, in that team's colour -- Vegas, Alpha Model, the
 Joker and the ELO Model -- graded once the game is played:
 `processed` once the job has graded it, else `atKickoff` and `joker` in `state.json` and
 `graded` or `next` in `elo/data/model.json`); Team strength (each team's Power Rating, rank, shield,
-change and chance against an average team, from `teams`, ranked as Team Rankings ranks them);
+change and chance against an average team, from `teams`, ranked as Team Rankings ranks them; no Tier row,
+and under it only the star's note, where a rating predates its team's latest final);
 Stat breakdown (`#gsStats`, below); Offense vs defense, Overall Offense against Overall Defense both
-ways, one possession under the other ("When the Eagles have the ball", with the Deep Dive's headline
-tag and its points on the gap at the end of that line; the two overall ratings, `units`, in two boxes
+ways, one possession under the other, laid out like the head, centred and limited (the owner's call,
+14 October 2026): "Seahawks Possession", the Deep Dive's headline tag and its points on the gap
+centred under it; the two overall ratings, `units`, in two boxes
 of one size and shape either side of "vs", `.gs-ubox`, the better rank's tinted and no separate edge
 chip, a unit with no game yet this season shown on its rating carried from last season and marked so;
 then the Deep Dive's four position matchups for that possession under "Position matchups", below,
-each row its two sides in two equal columns; and folded under one button, `[data-gs-sub]`, the stats
-either rating weighs paired offense against defense, each rank over its value; no note under the
-card: what the ratings rest on is the boxes' title, what the matchups rest on the label's);
+a compact centred row each, its unit, the two clubs and ranks and its tag; no stats fold (the stats
+are the Stat breakdown's) and no note under the card: what the ratings rest on is the boxes' title,
+what the matchups rest on the label's);
 the side of every comparison with the edge wears one mark, `gs-better`; the
 Mismatches in the game (the Props tab's own rows, `window.eloMismatches`, ranked among the week's,
 each edge on the four-step meter with its legend); and Starters (the team's ranked players out
 first, each group's `sidelined`, the box red when someone is; then each team's expected starters,
 `lineups` in `matchups.json`, side by side under each position on Offense, Defense and Kicker tabs
--- `role="tablist"`, the arrow keys, Home and End, the choice kept while the page is open -- each
+-- `role="tablist"`, the arrow keys, Home and End, the choice kept while the page is open; the two
+teams' header under the tabs, directly over the table, since 14 October 2026 -- each
 with his season Elo, rank and shield as on the ELO Ratings tab and a Q from the report, the higher
 Elo of each pair marked, and each defensive group's header carrying both teams' units as the
 matchup formula ranks them among the league's). One type scale (11, 13, 15, 18, 22 and 30px, custom
@@ -531,20 +535,21 @@ in a band above it once scrolled.
 What the Season Tracker said of each game is in its snapshot, from the news job's files (the
 owner's call, 14 October 2026; "News: the job and the game notes" below). The preview (`.gs-prev`,
 in the head's middle under the kickoff) is the game's entry in
-`news/data/notes/<season>-w<week>.json`, a Preview line and a News note with its sources (labelled
+`news/data/notes/<season>-w<week>.json`, its Preview line alone (the note's news and sources stay in
+the file, unshown since the owner's call of 14 October 2026; labelled
 "Preview, written <day>, before kickoff" once the game has started)
 (`data-gs-note="written"`, escaped, then each `**...**` pair of 1 to 60 characters drawn bold,
 `b.gs-pn`, an unpaired `**` left as typed); until a game is written, and only for a game still
 to come, an automatic line (`data-gs-note="auto"`: who visits whom with their records, the day and
-time, and as its news the starters out on `units.json` for both teams, each name bold, at most six);
-a played game with no note has none. In Offense vs defense each possession's title line ends with
-`deepdive.headTag`'s tag and points ("−0.9 pts"), and under its two boxes `deepdive.possession`'s four
+time, and no news);
+a played game with no note has none. In Offense vs defense each possession's title has
+`deepdive.headTag`'s tag and points ("−0.9 pts") centred under it, and under its two boxes `deepdive.possession`'s four
 rows (the quarterback against the pass defense, the line against the pass rush, the run game against
-the run defense, the receivers against the coverage), each its unit and tag, the edge small beside
-it, over two equal columns, the offense's side and the defense's, each headed by its club, what it is
-rated as and its rank ("SEA pass protection · 15th" | "DEN pass rush · 2nd") with who plays, who is
-out and the numbers (the quarterback's and the run game's defense side the pass or run defense's rank
-alone), where `units.json` is for the game's week (`deepdive.applies`), else one line saying why (a
+the run defense, the receivers against the coverage), each a compact centred row: its unit, the two
+sides' clubs and ranks ("SEA 13th · DEN 3rd", the offense's then the defense's, each titled with what it
+is rated as; the quarterback's and the run game's defense side the pass or run defense's rank) and its
+tag, the edge in the tag's title; no names, no one out and no numbers (the owner's call, 14 October 2026),
+where `units.json` is for the game's week (`deepdive.applies`), else one line saying why (a
 playoff game says the Deep Dive covers the regular season only); `deepdive.basis` (and when the news
 job built the file) is the title of the "Position matchups" label over them, not a note under the
 card; `nflbets/build/deepdive.js` is one module, inlined
