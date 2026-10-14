@@ -10,7 +10,9 @@ anything here that contradicts it is out of date.
 One repo, served straight from its root by GitHub Pages. No server, no framework, no
 bundler. Two sites have pages: `nflbets/` (X NFL Bets and Stats, built by
 `nflbets/build/build.js` from the prop model's parts, the betting app, the X Parlays
-section, the parlay card, the storage layer and the Player Elo tab) and `cfb/`. `news/`, the
+section, the parlay card, the storage layer, the Player Elo tab and the Season Tracker tab) and
+`cfb/`, plus the standalone Weekly Picks page, `picks/` (hand-written; it reads
+`betting/state.json` and keeps a visitor's picks in that browser). `news/`, the
 Season Tracker, is a page of its own that `nflbets/` frames as its Season Tracker tab
 (`#tracker`); opened at its own web address it goes to that tab. The pages carry no season
 data: each fetches what the scheduled jobs commit (`props/data/payload.json`,
@@ -31,6 +33,7 @@ betting/   X NFL Betting Model       no page: the app source, tools, job and sta
 elo/       Player Elo                no page: build.py, job and data/
 news/      Season Tracker            newsletter-style week-by-week page, framed as nflbets/#tracker
 cfb/       X College Football Bets   a test site: moneylines and spreads
+picks/     Weekly Picks              a standalone page: pick each game of the board's week, save the picks as a file
 nhl/       a redirect to DEMON-X13/nhl-hub, where X NHL Bets lives now
 ```
 

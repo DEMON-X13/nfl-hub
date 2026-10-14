@@ -184,11 +184,14 @@ html.embed body{background:transparent}
 html.embed .bar{position:static;background:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:0}
 html.embed .bar-in{padding:2px 0 0}
 html.embed .wrap{padding:0}
+/* the tiles meet the frame's edges, which would cut a ring drawn outside them: it is drawn inside */
+html.embed .slot:focus-visible{outline-offset:-3px}
 html.embed .brand{display:none}
 html.embed .barweek{margin-left:0;flex-wrap:wrap;row-gap:4px}
 html.embed .barweek span{display:inline;white-space:normal}
 html.embed .top{display:none}
-html.embed main{padding-bottom:4px}
-html.embed footer{margin-top:28px}
+/* room under the last line for that page's back-to-top button at the end of the page (inside this
+   page, so it counts in the frame's height) */
+html.embed footer{margin-top:28px;padding-bottom:40px}
 @media(pointer:coarse){.ovhd .x{width:44px;height:44px}}
 @media print{.bar,.top{display:none}.slot{break-inside:avoid;box-shadow:none}}

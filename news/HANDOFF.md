@@ -183,8 +183,11 @@ The owner reacted to each of these. Re-suggesting them wastes his time.
 - **The guard stays the first script in `index.html`'s head, and never becomes a meta refresh.**
   A meta refresh (or an unguarded `location.replace`) would fire inside X NFL Bets and Stats' frame
   too and load that whole site into its own tab, and under `file://` too. The tab relies on `#ov` and
-  its class `on`, `.slot[data-game]`, `ov.dataset.game`, Escape closing the window, and the
-  `html.embed` rules in `css/style.css`; the smoke test holds each, with the tab's own script mounted.
+  its class `on`, `.slot[data-game]` drawn in `#view` (it hooks the tracker as soon as one is there,
+  before the page's web font has loaded), `ov.dataset.game`, Escape closing the window, and the
+  `html.embed` rules in `css/style.css` (among them room under the footer for the framing page's
+  back-to-top button and a tile's focus ring drawn inside it, since the tiles meet the frame's edges);
+  the smoke test holds each, with the tab's own script mounted.
 - Bullets over paragraphs. He has said long prose is hard to read.
 
 ---
@@ -314,8 +317,10 @@ stat bars, Escape and X close it, and a synthetic later week takes over the page
 the window's focus (into the X on open, Tab kept inside, back to the game's tile on close), the
 guard (the web address, framed, `?standalone`, a file), the `html.embed` rules, and the Season
 Tracker tab's own script (`../nflbets/build/tab_tracker.html`) mounted on this page in a bare host:
-a game opened lays the frame over the screen, and Escape, the X, the backdrop and leaving the tab
-put the page back.
+the page hooked once it has drawn its week, before the frame's load event and only once, the frame
+as tall as the page (shrinking with it, held while a game is open), a game opened lays the frame
+over the screen, and Escape, the X, the backdrop and leaving the tab put the page back; a page with
+no `#ov` or no tiles fails it rather than skipping those checks.
 Run it before every commit. `node_modules` is ignored by git.
 
 Since October 9, 2026 it also holds the generated files to their sources, because until then it

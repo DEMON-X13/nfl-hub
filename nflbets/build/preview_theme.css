@@ -114,6 +114,16 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 /* the far-off flag (app v98): the light look's dark amber is too dim on these panels */
 .faroff{color:var(--hot-2)}
 
-/* the Season Tracker keeps its own light look (news/HANDOFF.md: no dark mode), so its frame is its own
-   canvas here rather than this look's dark one showing through */
-#tab-tracker .nt-frame,#tab-tracker .nt-frame.nt-lifted{background:#F6F5F2;color-scheme:light}
+/* the Season Tracker keeps its own light look (news/HANDOFF.md: no dark mode), so its tab has its light
+   canvas here rather than this look's dark one showing through. The canvas is on the tab's section,
+   which keeps its height while the frame is laid over the screen, so it stays under the slate and an
+   open game's backdrop dims this look around it as it stands, never a light screen over it. Framed, the
+   tracker has no gutters of its own: the margin, filled by the spread shadow (its corner 4 + 14, this
+   look's 18px), is the slab's, and leaves the section's box the frame's own, which the lift measures
+   (padding would shrink the section while a game is open). The frame is light as well, since this
+   root is dark and a frame of another scheme than the page it shows is given an opaque canvas */
+#tab-tracker{margin:14px;border-radius:4px;background:#F6F5F2;box-shadow:0 0 0 14px #F6F5F2}
+#tab-tracker .nt-frame{color-scheme:light}
+/* the tab's failure note is on that light canvas: the light look's own tint under its dark amber
+   (about 5:1), not this look's orange one over the dark (2.1:1) */
+#tab-tracker .nt-note{background:#FBEFD3}

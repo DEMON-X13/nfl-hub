@@ -280,8 +280,9 @@ async function run() {
     check('the guard is the one inline script, first in the head, and nothing is a meta refresh',
       inline.length === 1 && headFirst && !/http-equiv\s*=\s*["']?refresh/i.test(html), inline.length + ' inline script(s)'); }
   { const css = fs.readFileSync(path.join(ROOT, 'css', 'style.css'), 'utf8');
-    const miss = ['html.embed{scroll-behavior:auto}', 'html.embed body{background:transparent}', 'html.embed .bar{position:static', 'html.embed .wrap{padding:0}', 'html.embed .brand{display:none}', 'html.embed .barweek span{display:inline', 'html.embed .top{display:none}'].filter(x => !css.includes(x));
-    check('framed, the bar is the week\'s heading and the back-to-top button is the framing page\'s (css/style.css, html.embed)', miss.length === 0, miss.join(' | ') || 'all there'); }
+    const miss = ['html.embed{scroll-behavior:auto}', 'html.embed body{background:transparent}', 'html.embed .bar{position:static', 'html.embed .wrap{padding:0}', 'html.embed .brand{display:none}', 'html.embed .barweek span{display:inline', 'html.embed .top{display:none}',
+      'html.embed footer{margin-top:28px;padding-bottom:40px}', 'html.embed .slot:focus-visible{outline-offset:-3px}'].filter(x => !css.includes(x));
+    check('framed, the bar is the week\'s heading, the back-to-top button is the framing page\'s and clears the last line, and a tile\'s focus ring is inside the frame (css/style.css, html.embed)', miss.length === 0, miss.join(' | ') || 'all there'); }
 
   // positions, on made-up players: a name two rosters share at different positions takes the position of the team
   // named before it, else of the game's team that has him, else none
@@ -332,8 +333,21 @@ addEventListener('hashchange',()=>{const b=[...document.querySelectorAll('#tabs 
         .replace(/<link rel="stylesheet" href="([^"]+)">/g, (m, h) => '<style>' + fs.readFileSync(path.join(ROOT, h), 'utf8') + '</style>')
         .replace(/<script src="([^"]+)"><\/script>/g, (m, s) => '<script>' + fs.readFileSync(path.join(ROOT, s), 'utf8').replace(/<\/script/gi, '<\\/script') + '</script>');
       fw.addEventListener('error', e => ferrs.push(e.message)); fw.scrollTo = () => {};
+      // jsdom lays nothing out: the tracker's height is planted, and the tab's ResizeObserver is one this smoke fires
+      let docH = 2345; const ros = []; hw.ResizeObserver = class { constructor(cb) { ros.push(cb); } observe() {} disconnect() {} };
+      const resized = () => ros.forEach(cb => cb([]));
       fd.open(); fd.write(page); fd.close(); fw.scrollTo = () => {};
+      fd.documentElement.getBoundingClientRect = () => ({ top: 0, left: 0, right: 390, bottom: docH, width: 390, height: docH, x: 0, y: 0 });
+      // the tracker drawn and its load not yet come (a browser holds the load for its web font): the tab
+      // hooks it already, the frame its height, so it is never a 360px box scrolling by itself meanwhile
+      await tick(250);
+      const fov0 = fd.getElementById('ov');
+      check('the tab: the tracker drawn, it is hooked before its load event (the frame its height, scrolling with the page)',
+        fd.documentElement.style.overflowY === 'hidden' && !!fov0 && fov0.style.overscrollBehavior === 'contain' && f.style.height === '2345px',
+        `overflowY '${fd.documentElement.style.overflowY}', height '${f.style.height}'`);
       f.dispatchEvent(new hw.Event('load')); await tick();
+      check('the tab: its load event does not hook the tracker a second time', ros.length === 1, ros.length + ' hooks');
+      check("the tab: the frame takes the tracker's height and shrinks with it, so no part of the slate is cut off", f.style.height === '2345px' && (docH = 1200, resized(), f.style.height === '1200px'), f.style.height);
       const fov = fd.getElementById('ov'), tiles = [...fd.querySelectorAll('.slot[data-game]')];
       check('the tab: framed, the tracker draws its week with no errors and is html.embed', ferrs.length === 0 && herrs.length === 0 && tiles.length === WK.games.length && fd.documentElement.classList.contains('embed') && hd.getElementById('ntNote').hidden,
         [...ferrs, ...herrs].join(' | ') || tiles.length + ' tiles');
@@ -343,15 +357,17 @@ addEventListener('hashchange',()=>{const b=[...document.querySelectorAll('#tabs 
         open(); await tick();
         check('the tab: opening a game lays the frame over the screen, holds the page still and moves focus into the window',
           fov.classList.contains('on') && fov.dataset.game === key && f.classList.contains('nt-lifted') && hd.documentElement.style.overflow === 'hidden' && hd.querySelector('header').inert && fd.activeElement && fd.activeElement.id === 'ovx');
+        docH = 3000; resized(); const heldH = f.style.height;
         fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await tick();
         check("the tab: Escape closes the game, puts the frame back and focus on the game's tile", released() && fd.activeElement && fd.activeElement.dataset.game === key);
+        check("the tab: the frame keeps its height while the game is open and takes the tracker's again once it closes", heldH === '1200px' && f.style.height === '3000px', heldH + ' then ' + f.style.height);
         open(); await tick(); fov.dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await tick();
         check('the tab: a click on the backdrop closes the game and puts the frame back', released());
         open(); await tick(); fd.getElementById('ovx').dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await tick();
         check('the tab: the X closes the game and puts the frame back', released());
         open(); await tick(); hw.location.hash = '#pickems'; await tick(60);
         check('the tab: leaving it by the address with a game open closes the game and frees the page', released() && tsec.hidden);
-      }
+      } else check('the tab: the tracker has the game window (#ov) and the game tiles the tab hooks', false, (fov ? '' : 'no #ov') + (tiles.length ? '' : ' no .slot[data-game]'));
       check('the tab: no errors in the page or the tracker', ferrs.length === 0 && herrs.length === 0, [...ferrs, ...herrs].join(' | ') || 'none');
       H.window.close();
     } }
