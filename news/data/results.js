@@ -429,4 +429,4 @@ const LINES = {
  "wk7:KC-SEA": "SEA -2.5, O/U 44.5",
  "wk7:DAL-PHI": "PHI -1.5, O/U 47.5"
 };
-const LINES_ASOF = "2026-10-13";
+const LINES_ASOF = "2026-10-14";
