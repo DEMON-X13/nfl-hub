@@ -372,7 +372,17 @@ addEventListener('hashchange',()=>{const b=[...document.querySelectorAll('#tabs 
       check('the tab: the tracker drawn, it is hooked before its load event (the frame its height, scrolling with the page)',
         fd.documentElement.style.overflowY === 'hidden' && !!fov0 && fov0.style.overscrollBehavior === 'contain' && f.style.height === '2345px',
         `overflowY '${fd.documentElement.style.overflowY}', height '${f.style.height}'`);
+      // a game opened in that wait (a tap while the font loads) is laid over the screen, and the load event,
+      // when it comes, leaves it so: the window open, the page held
+      const t0 = fd.querySelector('.slot[data-game]');
+      if (t0 && fov0) { t0.dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await tick(); }
+      const held0 = () => !!fov0 && fov0.classList.contains('on') && f.classList.contains('nt-lifted') && hd.documentElement.style.overflow === 'hidden' && hd.querySelector('header').inert;
+      check('the tab: a game opened before the load event is laid over the screen, with the page held', held0(), `on ${!!fov0 && fov0.classList.contains('on')}, lifted ${f.classList.contains('nt-lifted')}`);
       f.dispatchEvent(new hw.Event('load')); await tick();
+      check('the tab: its load event leaves a game opened before it laid over the screen, with the page held', held0(),
+        `on ${!!fov0 && fov0.classList.contains('on')}, lifted ${f.classList.contains('nt-lifted')}, overflow '${hd.documentElement.style.overflow}'`);
+      fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await tick();
+      check('the tab: Escape then closes that game and frees the page', !!fov0 && !fov0.classList.contains('on') && !f.classList.contains('nt-lifted') && hd.documentElement.style.overflow === '' && !hd.querySelector('header').inert);
       check('the tab: its load event does not hook the tracker a second time', ros.length === 1, ros.length + ' hooks');
       check("the tab: the frame takes the tracker's height and shrinks with it, so no part of the slate is cut off", f.style.height === '2345px' && (docH = 1200, resized(), f.style.height === '1200px'), f.style.height);
       const fov = fd.getElementById('ov'), tiles = [...fd.querySelectorAll('.slot[data-game]')];

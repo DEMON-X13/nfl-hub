@@ -23,6 +23,9 @@
 /* this page's back-to-top button, standing in for the tracker's own, on this tab only */
 .nt-top{position:fixed;right:16px;bottom:16px;z-index:40;width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-2);box-shadow:var(--sh-md);font:inherit;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .nt-top:hover{color:var(--ink)}
+/* and gone with the tracker when the note says it did not load, leaving nothing to scroll (the note
+   comes before it in the section) */
+#tab-tracker .nt-note:not([hidden]) ~ .nt-top{display:none}
 @media print{.nt-top{display:none}}
 </style>
 <section id="tab-tracker" hidden>
@@ -114,6 +117,9 @@ function hook(w,d){
   const follow=()=>{ const s=sec.getBoundingClientRect(); d.body.style.width=s.width+'px'; d.body.style.marginLeft=s.left+'px'; };
   const unplace=()=>{ Object.assign(d.body.style,{width:'',marginLeft:'',paddingTop:'',paddingBottom:''}); };
   const lift=()=>{
+    /* a smooth scroll still running (a Tab onto a tile below the screen, then Enter at once) stops where
+       it is: overflow:hidden does not stop it, and the page would go on moving under the slate */
+    jump(scrollY);
     const r=f.getBoundingClientRect(), t=tileOf(ov.dataset.game);
     open={y:scrollY,vw:innerWidth,vh:innerHeight,key:ov.dataset.game,tileY:t?r.top+t.getBoundingClientRect().top:null};
     sec.style.minHeight=r.height+'px';          /* the page keeps its length while the frame is out of it */
@@ -126,13 +132,15 @@ function hook(w,d){
     const o=open; open=null; removeEventListener('resize',follow);
     unplace(); w.scrollTo(0,0); release(); fit();
     if(sec.hidden||!o) return;                   /* left by the address: nothing to put back */
-    /* back where the visitor was, at once (this page scrolls smoothly); if the screen changed size
-       while the window was open (a phone turned), with the game's tile where it stood, or as near as
-       the turned screen allows, wholly in view: as low as it can stand whole, and at the top if it is
-       taller than the screen */
+    /* back where the visitor was, at once (this page scrolls smoothly), with the game's tile, which the
+       focus goes back to, wholly in view: where it is not (opened by Enter while a Tab was still scrolling
+       to it), the page scrolled the least that shows it whole. If the screen changed size while the window
+       was open (a phone turned), with the tile where it stood, or as near as the turned screen allows,
+       wholly in view: as low as it can stand whole. A tile taller than the screen is put at its top */
     const t=tileOf(o.key); let y=o.y;
-    if((innerWidth!==o.vw||innerHeight!==o.vh)&&t&&o.tileY!=null){ const q=t.getBoundingClientRect(), want=Math.min(Math.max(0,o.tileY),Math.max(0,innerHeight-Math.min(q.height,innerHeight)));
-      y=scrollY+(f.getBoundingClientRect().top+q.top)-want; }
+    if(t){ const q=t.getBoundingClientRect(), at=scrollY+f.getBoundingClientRect().top+q.top, low=Math.max(0,innerHeight-Math.min(q.height,innerHeight));
+      if((innerWidth!==o.vw||innerHeight!==o.vh)&&o.tileY!=null) y=at-Math.min(Math.max(0,o.tileY),low);
+      else if(at-y<-1||at-y+q.height>innerHeight+1) y=at-(at-y<0?0:low); }
     jump(Math.max(0,y));
   };
   new MutationObserver(()=>{ const on=ov.classList.contains('on');

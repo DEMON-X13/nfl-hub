@@ -120,7 +120,8 @@ its game (`ov.dataset.game`), moves focus to its X, keeps Tab inside it and give
 tile on close; Escape with nothing open does nothing. The smoke holds all of that, runs the guard in `vm`
 (the web, framed, `?standalone`, a `top` that throws, a file), and mounts the tab's own script
 (`nflbets/build/tab_tracker.html`) in a bare page framing this tracker: the tracker hooked as soon as it
-has drawn its week, before the frame's load event and never again at it, the frame its height (shrinking
+has drawn its week, before the frame's load event and never again at it (a game opened before that load still
+laid over the screen after it), the frame its height (shrinking
 with it, held while a game is open, fitted again on close), a game opened lays the frame over the screen
 and holds the page, Escape, the X, the backdrop and leaving the tab by its address each put it back; a
 tracker with no `#ov` or no tiles fails them rather than skipping them. Those checks live here, in the
@@ -952,32 +953,41 @@ frames are, to its content, with no scroll of its own, so the page scrolls as on
 back-to-top button (`#ntTop`) stands in for the tracker's. The tracker's game window is fixed to its
 frame, so while one is open (the tracker's `#ov` has the class `on`) the frame is laid over the whole
 screen (`nt-lifted`), the slate under the backdrop drawn exactly where it was, the page held still
-(`overflow:hidden` on its root) and its header and back-to-top button inert; on close the page is put back
-at the same pixel, or, if the screen turned meanwhile, with the game's tile where it stood, or as near as
-the turned screen allows, wholly in view (at its top if the tile is taller than the screen). Leaving the
+(`overflow:hidden` on its root) and its header and back-to-top button inert, and a smooth scroll still
+running (Enter at once after a Tab onto a tile below the screen; `overflow:hidden` does not stop it) is
+stopped where it is, so the page never moves on under the slate; on close the page is put back at the same
+pixel, the game's tile, which takes the focus back, scrolled the least into view where it is not wholly in
+it there, or, if the screen turned meanwhile, with the tile where it stood, or as near as the turned screen
+allows, wholly in view (at its top if the tile is taller than the screen). Leaving the
 tab by its address closes the window the tracker's own way (an Escape into it). A throw while lifting or
 dropping puts the page back, never leaving it held. A frame that loads no tracker (no `.slot` in its
 `#view`: GitHub's 404, a tracker that threw), or on the web one this page cannot read once loaded (the
 browser's error page: offline, a dropped connection), is hidden and a note says so, linking the tracker's
-own page (`../news/index.html?standalone`); from disk (`file://`, its own origin in Chrome) the tracker
+own page (`../news/index.html?standalone`), with the back-to-top button gone too (nothing is left to
+scroll); from disk (`file://`, its own origin in Chrome) the tracker
 shows, unhooked. This page inside its own tracker frame, should the tracker's guard ever misfire, never
 frames it again. The lifted frame is transparent, so the tracker's backdrop dims this page as it stands.
 The preview gives the tab's section (which keeps its height while the frame is lifted) the tracker's light
 canvas, with a gutter of its own (a margin filled by a spread shadow, so the section's box stays the
-frame's), so an open game dims the page as it is; the note there keeps the light look's tint. `smoke.js`
+frame's), so an open game dims the page as it is; the note there keeps the light look's tint (opaque, so it
+reads at 4.5:1 on any canvas). `smoke.js`
 holds the tab on a stand-in tracker written into the frame (jsdom loads no `src`, and lays nothing out, so
 the tracker's height is planted and the tab's ResizeObserver is the smoke's): the frame unfilled until its
 tab opens, then on this site at `?t=`, filled with no click when the page is opened on `#tracker` and by
-the address on a page that never opened it, the 404 note and the error page's, a game already open when
-hooked, the frame's height (fitted, shrinking, held while lifted, fitted again), the lift, the hold (the
-header and `#ntTop` inert), focus, Escape, the page put back at the pixel it was at (planted) and, the
-screen turned, the tile where it stood or wholly in view, the backdrop, leaving by the address, a planted
-throw, `#ntTop`, and this page in its own tracker frame never framing it again; and that the page carries
-none of the tracker. The real tracker under this script is `news/tools/smoke.js`'s to hold (under "Season
+the address on a page that never opened it, the 404 note and the error page's (`#ntTop` gone with them), a
+game already open when hooked, a stand-in with tiles and no `#ov` fitted and hooked once, the frame's height
+(fitted, shrinking, held while lifted, fitted again), the lift (a smooth scroll stopped, the frame painting
+nothing of its own), the hold (the header and `#ntTop` inert), focus, Escape, the page put back at the pixel
+it was at (planted), a tile not wholly in view there scrolled the least into it and, the screen turned, the
+tile where it stood or wholly in view, the backdrop, leaving by the address, a planted throw, `#ntTop`, and
+this page in its own tracker frame never framing it again; that the page carries none of the tracker; and,
+from the styles of the page and the preview alike, the lifted frame transparent and the note on an opaque
+background of its own at 4.5:1. The real tracker under this script is `news/tools/smoke.js`'s to hold (under "Season
 Tracker: the loop"). jsdom lays nothing out, so a change to the lift is checked in a real browser at 390
 and 1280: a game opened low on the page, at its top and at its end, the backdrop over the whole screen,
-the page back where it was, and a phone turned with a game open from a tile low on the screen, the tile
-wholly in view once it closes.
+the page back where it was, a phone turned with a game open from a tile low on the screen, the tile
+wholly in view once it closes, and Enter pressed at once after a Tab onto a tile below the screen, the tile
+wholly in view once its game closes.
 
 **The Game snapshot.** An opened game on the Pick'ems board has a Game snapshot button at its head
 (`tab_pickems.html`), which opens a window over the page (`nflbets/build/snapshot.html`, `gs-`

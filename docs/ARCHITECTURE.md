@@ -379,7 +379,7 @@ this page shows. The Season Tracker tab (`tab_tracker.html`, `nt-` prefixed) is 
 filled by address: `news/index.html?t=<now>` when its tab is first opened, so nothing of the
 tracker is in this page and its job's commits never make it stale. It follows its content's height
 like the betting frames; while the tracker's game window is open the frame is laid over the whole
-screen and the page held still, then put back at the same pixel. Its checks on the real tracker
+screen and the page held still, then put back at the same pixel, with the game's tile in view. Its checks on the real tracker
 live in `news/tools/smoke.js`; this page's smoke holds the tab on a stand-in. Tabs are addresses:
 `#tracker`, `#slate`, `#parlay` (the Parlay Builder), `#xparlays`
 (X Parlays), `#record` and so on (`routeTabs()` in `tab_pickems.html`). On a phone the tab bar is
