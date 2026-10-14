@@ -401,7 +401,7 @@ const LINES = {
  "wk5:BUF-LAR": "LAR -3.5, O/U 55.5",
  "wk6:SEA-DEN": "SEA -2.5, O/U 40.5",
  "wk6:HOU-JAX": "JAX -2.5, O/U 42.5",
- "wk6:CHI-ATL": "CHI -1.5, O/U 50.5",
+ "wk6:CHI-ATL": "CHI -1.5, O/U 51.5",
  "wk6:BAL-CLE": "BAL -5.5, O/U 42.5",
  "wk6:TEN-IND": "IND -7, O/U 43.5",
  "wk6:NYJ-NE": "NE -7.5, O/U 43.5",
