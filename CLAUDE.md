@@ -21,8 +21,9 @@ without narrating the steps:
 
 ## The sites and their parts
 
-GitHub Pages serves the repo root. Three sites have pages: `nflbets/`, `news/` and `cfb/`, plus the standalone `picks/` page (the
-root `index.html` links them, and X NHL Bets in its own repo). `pickems/` and `live/` hold only
+GitHub Pages serves the repo root. Two sites have pages: `nflbets/` and `cfb/`, plus the standalone `picks/` page (the
+root `index.html` links them, and X NHL Bets in its own repo). `news/` is the Season Tracker, a page of its own that
+`nflbets/` frames as its Season Tracker tab (`#tracker`); opened at its own web address it goes to that tab. `pickems/` and `live/` hold only
 redirects for old bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
 `parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
 with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
@@ -33,8 +34,8 @@ each have their own job too (`news.yml`, `cfb.yml`).
 |---|---|---|
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what `nflbets/` reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
-| `news/` | Season Tracker | `news/` directly; the narrative half is written by a person |
-| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
+| `news/` | Season Tracker: the Season Tracker tab of X NFL Bets and Stats (`nflbets/#tracker`), which frames `news/index.html` from its own address; that address on its own leads to the tab (`?standalone` keeps it there), and the file opened from disk is the whole tracker | `news/` directly; the narrative half is written by a person |
+| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Season Tracker (`news/`, framed), the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `tab_tracker.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`) |
 | `cfb/` | X College Football Bets: a test site, moneylines and spreads only. Its own page, job and data; nothing shared with the NFL sites but the look | `cfb/index.html` (hand-written), `cfb/tools/` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -104,8 +105,28 @@ and never fail the smoke, so a lineup case no rule has seen publishes the week's
 and the job goes red on them after its commit (`SMOKE_WARNINGS_FILE`); every other check, the fixed
 cases among them, holds the run's files back. `.github/workflows/news.yml`
 runs about nineteen times a week, timed to the injury report and set early because GitHub starts
-this repo's scheduled runs 2.3 to 9.4 hours late, and on a push to the tools, the page or a week
-file; a run that finds nothing new commits nothing beyond the day's "as of" dates.
+this repo's scheduled runs 2.3 to 9.4 hours late, and on a push to the tools, the page, its styles, a week
+file or `nflbets/build/tab_tracker.html`; a run that finds nothing new commits nothing beyond the day's "as of" dates.
+
+On the web the tracker is the Season Tracker tab of X NFL Bets and Stats (under "Bets and Stats: the
+loop"), which frames `news/index.html` from its own address. The first script in `news/index.html`'s head
+is the guard: at the top of a browser window on http(s) it sends the visitor to `../nflbets/#tracker`
+(`location.replace`, so Back does not loop; `?standalone` stays), framed it marks the page `html.embed`
+(`css/style.css`: the bar is the week's heading in the flow, no brand, no back-to-top button of its own, a
+transparent canvas, room under the last line for the framing page's button, and a tile's focus ring drawn
+inside it, since the tiles meet the frame's edges), and opened from a file it does nothing, so the tracker
+works from disk as ever. Never a meta refresh: it would fire inside the frame too. The game window names
+its game (`ov.dataset.game`), moves focus to its X, keeps Tab inside it and gives focus back to the game's
+tile on close; Escape with nothing open does nothing. The smoke holds all of that, runs the guard in `vm`
+(the web, framed, `?standalone`, a `top` that throws, a file), and mounts the tab's own script
+(`nflbets/build/tab_tracker.html`) in a bare page framing this tracker: the tracker hooked as soon as it
+has drawn its week, before the frame's load event and never again at it (a game opened before that load still
+laid over the screen after it), the frame its height (shrinking
+with it, held while a game is open, fitted again on close), a game opened lays the frame over the screen
+and holds the page, Escape, the X, the backdrop and leaving the tab by its address each put it back; a
+tracker with no `#ov` or no tiles fails them rather than skipping them. Those checks live here, in the
+news job, so a tracker change that would break the tab fails this job and never the elo job's morning
+smoke.
 
 ## Props: the loop
 
@@ -682,10 +703,10 @@ X NHL Bets moved to its own repo, `DEMON-X13/nhl-hub`, on 2026-10-13, with its o
 
 ## Bets and Stats: the loop
 
-The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Props, Parlay Builder (the prop model's own Parlay Builder
-tab, `#parlay`), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
+The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Season Tracker (`#tracker`, the tracker framed: below),
+Props, Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
 Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
-there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`. On a phone the bar scrolls sideways,
+there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`, and `news/` to `#tracker`. On a phone the bar scrolls sideways,
 and the chosen tab's button is brought into it on load, on a new address and on a tap (the bar scrolls, never the page).
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
@@ -892,13 +913,14 @@ wider (the week-by-week grid and the pick grid on a phone), with one bar.
 Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
 `liveparlays/parlays.json`, `liveparlays/xbets.json` and `elo/data/*.json`, so it is rebuilt when a
 source changes, never when the data does. A props patch, a betting build change or an edit to the live section's source means
-rebuilding it too:
+rebuilding it too, and a change to `nflbets/build/tab_tracker.html` is held by the news smoke as well:
 
 ```
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"; the Parlay Builder's panel, X Parlays and the X Bet Log from their files
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
+(cd news && npm ci && node tools/smoke.js)   # after a change to tab_tracker.html: mounts the tab's script on the real tracker (the nflbets smoke only uses a stand-in); must end "all checks passed"
 ```
 
 The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
@@ -913,6 +935,59 @@ payload, to try a week the job has not baked. `--season-over` gives every game a
 to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
+
+**The Season Tracker tab.** `nflbets/build/tab_tracker.html` (`nt-` prefixed, its own closure, inlined by
+the build: the section beside the framed betting tabs, its styles and its script last) frames the tracker,
+`news/index.html`, from its own address, `../news/index.html?t=<now>`, the first time its tab is opened
+(`?t=` so a reload takes the tracker's page fresh: it lists the week files); opened on `#tracker`, where
+`news/` sends every visitor, only the script's own `load()` at its end fills it, since the board's
+`routeTabs` opens the tab before the script's click listeners exist. The tracker is hooked as soon as it
+has drawn its week (looked for every tenth of a second), not only at the frame's load event, which waits
+for its web font (Manrope, which this page does not load): until then the frame would be a 360px box
+scrolling by itself, with a game opened in it never laid over the screen. A document is hooked once, and a
+game already open when it is hooked is laid over the screen then. Unlike the betting frames nothing of it
+is in this page, and the build reads nothing from `news/`, so the news job's commits and a new week's
+script tag never make this page stale; its data scripts keep GitHub Pages' ten minutes, as they always
+had. Its frame is `nt-frame`, never `pk-frame`, so `frames()` leaves it alone. It is sized as the betting
+frames are, to its content, with no scroll of its own, so the page scrolls as one, and the page's own 44px
+back-to-top button (`#ntTop`) stands in for the tracker's. The tracker's game window is fixed to its
+frame, so while one is open (the tracker's `#ov` has the class `on`) the frame is laid over the whole
+screen (`nt-lifted`), the slate under the backdrop drawn exactly where it was, the page held still
+(`overflow:hidden` on its root) and its header and back-to-top button inert, and a smooth scroll still
+running (Enter at once after a Tab onto a tile below the screen; `overflow:hidden` does not stop it) is
+stopped where it is, so the page never moves on under the slate; on close the page is put back at the same
+pixel, the game's tile, which takes the focus back, scrolled the least into view where it is not wholly in
+it there, or, if the screen turned meanwhile, with the tile where it stood, or as near as the turned screen
+allows, wholly in view (at its top if the tile is taller than the screen). Leaving the
+tab by its address closes the window the tracker's own way (an Escape into it). A throw while lifting or
+dropping puts the page back, never leaving it held. A frame that loads no tracker (no `.slot` in its
+`#view`: GitHub's 404, a tracker that threw), or on the web one this page cannot read once loaded (the
+browser's error page: offline, a dropped connection), is hidden and a note says so, linking the tracker's
+own page (`../news/index.html?standalone`), with the back-to-top button gone too (nothing is left to
+scroll); from disk (`file://`, its own origin in Chrome) the tracker
+shows, unhooked. This page inside its own tracker frame, should the tracker's guard ever misfire, never
+frames it again. The lifted frame is transparent, so the tracker's backdrop dims this page as it stands.
+The preview gives the tab's section (which keeps its height while the frame is lifted) the tracker's light
+canvas, with a gutter of its own (a margin filled by a spread shadow, so the section's box stays the
+frame's), so an open game dims the page as it is; the note there keeps the light look's tint (opaque, so it
+reads at 4.5:1 on any canvas). `smoke.js`
+holds the tab on a stand-in tracker written into the frame (jsdom loads no `src`, and lays nothing out, so
+the tracker's height is planted and the tab's ResizeObserver is the smoke's): the frame unfilled until its
+tab opens, then on this site at `?t=`, filled with no click when the page is opened on `#tracker` and by
+the address on a page that never opened it, the 404 note and the error page's (`#ntTop` gone with them), a
+game already open when hooked, a stand-in with tiles and no `#ov` fitted and hooked once, the frame's height
+(fitted, shrinking, held while lifted, fitted again), the lift (a smooth scroll stopped, the frame painting
+nothing of its own), the hold (the header and `#ntTop` inert), focus, Escape, the page put back at the pixel
+it was at (planted), a tile not wholly in view there scrolled the least into it and, the screen turned, the
+tile where it stood or wholly in view, the backdrop, leaving by the address, a planted throw, `#ntTop`, and
+this page in its own tracker frame never framing it again; that the page carries none of the tracker; and,
+from the styles of the page and the preview alike, the lifted frame transparent and the note on an opaque
+background of its own at 4.5:1. The real tracker under this script is `news/tools/smoke.js`'s to hold (under "Season
+Tracker: the loop"). jsdom lays nothing out, so a change to the lift is checked in a real browser at 390
+and 1280: a game opened low on the page, at its top and at its end, the backdrop over the whole screen,
+the page back where it was, a phone turned with a game open from a tile low on the screen, the tile
+wholly in view once it closes, and Enter pressed at once after a Tab onto a tile below the screen, the tile
+wholly in view once its game closes.
 
 **The Game snapshot.** An opened game on the Pick'ems board has a Game snapshot button at its head
 (`tab_pickems.html`), which opens a window over the page (`nflbets/build/snapshot.html`, `gs-`
@@ -1074,7 +1149,10 @@ may quietly outrank what the job published:
   the X Bet Log, the betting app -- shows as a new tag. Without it a stale copy cannot be told from a current one.
 - **A frame's content is in the page.** The betting tabs are srcdoc frames filled from a
   string inside `nflbets/index.html`, so nothing is fetched or cached for them apart from
-  the page itself: a refresh of the page is a refresh of the frames.
+  the page itself: a refresh of the page is a refresh of the frames. The one exception is the
+  Season Tracker tab, which frames `news/index.html` by its address with `?t=` on every load,
+  so its page is always fresh and its data scripts keep GitHub Pages' ten minutes, as on `news/`
+  before.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **X's parlays and the X Bet Log are files, the same on every device, read only everywhere.**

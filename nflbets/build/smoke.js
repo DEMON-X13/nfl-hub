@@ -343,14 +343,36 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the preview is the same page with the NBA Hub theme laid over it, and the live page has none of it */
   { const PV = fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), LIVE = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
     chk(/id="previewTheme"/.test(PV) && /<script>window\.PREVIEW_FRAME_HEAD=/.test(PV) && /<em>Bets and Stats<\/em>/.test(PV), 'nflbets/preview.html is missing its theme');
-    chk(!/id="previewTheme"/.test(LIVE) && !/<script>window\.PREVIEW_FRAME_HEAD=/.test(LIVE), 'the preview theme leaked into the live page'); }
+    chk(!/id="previewTheme"/.test(LIVE) && !/<script>window\.PREVIEW_FRAME_HEAD=/.test(LIVE), 'the preview theme leaked into the live page');
+    /* the Season Tracker tab in both looks, from their styles (the preview is never booted here): the frame
+       laid over the screen paints nothing of its own, so an open game's backdrop dims the page as it stands,
+       never a light screen over the preview's dark one; and the note that the tracker did not load has an
+       opaque background of its own its text reads on at 4.5:1 (the preview's orange tint over its dark page
+       was 2.1:1). jsdom resolves no var() and does not split one into the longhands, so a var() is looked up
+       on the root and the shorthand is read */
+    { const clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)'].includes(String(v || '').trim());
+      const rgba = v => { v = String(v || '').trim(); let m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+        if (m) { const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1]; return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).concat(1); }
+        m = v.match(/^rgba?\(([^)]*)\)$/); if (!m) return null; const p = m[1].split(',').map(x => parseFloat(x)); return p.length >= 3 && p.every(x => !isNaN(x)) ? [p[0], p[1], p[2], p.length > 3 ? p[3] : 1] : null; };
+      const lum = c => { const f = x => (x /= 255) <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+      for (const [name, h] of [['the page', LIVE], ['the preview', PV]]) {
+        const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, fr = pd.querySelector('#tab-tracker iframe.nt-frame'), nt = pd.getElementById('ntNote');
+        if (!fr || !nt) { chk(false, `${name}: no Season Tracker frame or note to look at`); pw.close(); continue; }
+        pd.getElementById('tab-tracker').hidden = false; fr.classList.add('nt-lifted'); nt.hidden = false;
+        const fc = pw.getComputedStyle(fr), nc = pw.getComputedStyle(nt), rc = pw.getComputedStyle(pd.documentElement);
+        chk(clear(fc.background) && clear(fc.backgroundColor) && clear(fc.backgroundImage),
+          `${name}: the Season Tracker frame, laid over the screen, paints a background of its own: ` + [fc.background, fc.backgroundColor, fc.backgroundImage].join(' / '));
+        let bg = clear(nc.backgroundColor) ? nc.background : nc.backgroundColor; const vm = String(bg).trim().match(/^var\((--[\w-]+)\)$/); if (vm) bg = rc.getPropertyValue(vm[1]);
+        const b = rgba(bg), ink = rgba(nc.color), ratio = b && ink ? (Math.max(lum(b), lum(ink)) + 0.05) / (Math.min(lum(b), lum(ink)) + 0.05) : 0;
+        chk(!!b && b[3] === 1 && ratio >= 4.5, `${name}: the Season Tracker's note that it did not load is not on an opaque background of its own its text reads on at 4.5:1: ${String(bg).trim()} under ${nc.color} (${ratio.toFixed(2)}:1)`);
+        pw.close(); } } }
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
   chk(d.title === 'X NFL Bets and Stats' && /X NFL Bets and Stats/.test(txt(d.querySelector('h1'))), 'the page is not headed X NFL Bets and Stats');
 
   /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
      bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Season Tracker|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-xparlays', 'tab-track', 'tab-week', 'tab-backup'])
@@ -1043,8 +1065,154 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
   chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
 
+  /* ---- Season Tracker: the tracker (news/) framed from its own address, loaded when its tab is first
+     opened, never in the page. jsdom loads no src, so a stand-in tracker is written into the frame (an
+     #ov the tracker opens by its class on, naming the game in ov.dataset.game and focusing #ovx, closed
+     by Escape, the X and the backdrop) and the frame's load is played as a browser plays it. The real
+     tracker under this tab's script is news/tools/smoke.js's to hold, in the news job: this smoke runs
+     every morning in the elo job, so nothing the tracker publishes may fail it ---- */
+  { const sec = d.getElementById('tab-tracker'), f = sec && sec.querySelector('iframe.nt-frame'), note = d.getElementById('ntNote');
+    chk(!!f && f.title === 'Season Tracker' && f.dataset.src === '../news/index.html' && !f.getAttribute('src') && !f.hasAttribute('srcdoc') && !f.hasAttribute('sandbox') && !f.dataset.embed && !f.classList.contains('pk-frame'),
+      'the Season Tracker frame is missing, filled before its tab is opened, sandboxed or taken for a betting frame');
+    chk(d.querySelectorAll('iframe').length === d.querySelectorAll('iframe.pk-frame').length + 1 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is neither one of the three betting tabs nor the Season Tracker');
+    chk(!!d.getElementById('ntTop') && sec.contains(d.getElementById('ntTop')) && !!note && note.hidden && sec.contains(note) && !sec.querySelector('section'),
+      "the Season Tracker's back-to-top button or its note is not inside its tab, the note shows before anything loaded, or the tab holds a section of its own (the tab bar would hide it)");
+    chk(!/news\/data\/|RANKS26|UNITS26|\bWEEKS\b/.test(HTML), 'the page carries the tracker\'s data or code: a news job commit would leave it stale');
+    if (f) {
+      const scrolls = [], was = w.scrollTo; w.scrollTo = (...a) => { a.sb = d.documentElement.style.scrollBehavior; scrolls.push(a); };
+      const topShown = () => w.getComputedStyle(d.getElementById('ntTop')).display !== 'none';
+      [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'tracker').click();
+      await wait(60);
+      const src = f.getAttribute('src') || '', at = new URL(src, w.location.href);
+      chk(!sec.hidden && d.getElementById('tab-pickems').hidden && w.location.hash === '#tracker' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Season Tracker', 'the Season Tracker tab did not open, or did not become the address #tracker');
+      chk(/^\.\.\/news\/index\.html\?t=\d+$/.test(src) && at.origin === new URL(w.location.href).origin && /\/nfl-hub\/news\/index\.html$/.test(at.pathname), 'the Season Tracker frame does not load the tracker from this site, fresh: ' + src);
+      const fw = f.contentWindow, fd = f.contentDocument;
+      if (!fw || !fd) chk(false, 'the Season Tracker frame has no document to write a stand-in into');
+      else {
+        /* jsdom lays nothing out, so the tracker's height is planted (docH) and the tab's ResizeObserver is one the smoke fires */
+        let docH = 2345; const ros = [], RO = w.ResizeObserver; w.ResizeObserver = class { constructor(cb) { ros.push(cb); } observe() {} disconnect() {} };
+        const resized = () => ros.forEach(cb => cb([]));
+        const put = html => { fd.open(); fd.write(html); fd.close(); fw.scrollTo = () => {};
+          fd.documentElement.getBoundingClientRect = () => ({ top: 0, left: 0, right: 390, bottom: docH, width: 390, height: docH, x: 0, y: 0 });
+          f.dispatchEvent(new w.Event('load')); };
+        /* what loads is not the tracker (GitHub's 404 page, a tracker that threw before it drew): the tab says so, with its own page */
+        put('<!DOCTYPE html><html><body><h1>404</h1></body></html>'); await wait(20);
+        chk(!note.hidden && f.classList.contains('nt-failed') && /did not load/.test(txt(note)) && note.querySelector('a') && note.querySelector('a').getAttribute('href') === '../news/index.html?standalone',
+          'a frame that loaded no tracker is not said to have failed, with the tracker\'s own page linked');
+        chk(!topShown(), "the Season Tracker's back-to-top button still shows beside the note that it did not load, with nothing to scroll");
+        /* the stand-in, written with a game already open: one the visitor opened before the tab hooked the
+           tracker (a tap while the tracker waited on its web font) is laid over the screen as it is hooked */
+        put(`<!DOCTYPE html><html class="embed"><body><div id="view"><button class="slot" data-game="AAA-BBB">one</button><button class="slot" data-game="CCC-DDD">two</button></div>
+<div class="ov on" id="ov" data-game="AAA-BBB"><div id="ovbox"><button id="ovx">x</button></div></div>
+<script>const ov=document.getElementById('ov');
+document.getElementById('view').addEventListener('click',e=>{ const s=e.target.closest('.slot'); if(!s) return; ov.dataset.game=s.dataset.game; ov.classList.add('on'); setTimeout(()=>{ if(ov.classList.contains('on')) document.getElementById('ovx').focus(); },0); });
+function closeOv(){ if(!ov.classList.contains('on')) return; ov.classList.remove('on'); const t=[...document.querySelectorAll('.slot[data-game]')].find(s=>s.dataset.game===ov.dataset.game); if(t) t.focus(); }
+ov.addEventListener('click',e=>{ if(e.target===ov) closeOv(); }); document.getElementById('ovx').addEventListener('click',closeOv);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/script></body></html>`); await wait(30);
+        const ov = fd.getElementById('ov'), hdr = d.querySelector('header');
+        chk(f.classList.contains('nt-lifted') && d.documentElement.style.overflow === 'hidden' && hdr.inert && d.getElementById('ntTop').inert,
+          'a game open in the Season Tracker before the tab hooked it was not laid over the screen, with the page held');
+        fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+        chk(note.hidden && !f.classList.contains('nt-failed') && fd.documentElement.style.overflowY === 'hidden' && !!ov && ov.style.overscrollBehavior === 'contain' && !ov.classList.contains('on') && !f.classList.contains('nt-lifted'),
+          'the Season Tracker frame, once loaded, can scroll up and down by itself, hands its window\'s scroll to this page, or still says it failed');
+        chk(topShown(), "the Season Tracker's back-to-top button is hidden on a tracker that loaded");
+        chk(f.style.height === '2345px', "the Season Tracker frame does not take its content's height, so a slate taller than the frame is cut off: " + f.style.height);
+        docH = 1200; resized();
+        chk(f.style.height === '1200px', 'the Season Tracker frame does not shrink with its content (a phone turned back to portrait): ' + f.style.height);
+        const open = k => { fd.querySelector(`.slot[data-game="${k}"]`).dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); };
+        const freed = () => !ov.classList.contains('on') && !f.classList.contains('nt-lifted') && d.documentElement.style.overflow === '' && sec.style.minHeight === '' && !hdr.inert && !d.getElementById('ntTop').inert;
+        /* a page scrolled down to the game: jsdom's scrollY is always 0, so it is set, or a close that sent
+           the page to its top would pass */
+        w.scrollY = w.pageYOffset = 1234;
+        scrolls.length = 0; open('CCC-DDD'); await wait(20);
+        /* a smooth scroll still running as the game opens (a Tab onto a tile below the screen, then Enter at
+           once) goes on under overflow:hidden in Chrome: the page is scrolled where it is, at once, to stop it */
+        chk(scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === 1234 && scrolls[0].sb === 'auto',
+          'opening a game in the Season Tracker does not stop a smooth scroll still running, so the page goes on moving under the slate: ' + JSON.stringify(scrolls.map(a => [...a, a.sb])));
+        /* the lifted frame paints nothing of its own: the tracker's backdrop dims this page as it stands, never
+           a screen laid over it (jsdom does not split a var() into the longhands, so the shorthand is read too) */
+        { const cs = w.getComputedStyle(f), clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)'].includes(String(v || '').trim());
+          chk(f.classList.contains('nt-lifted') && clear(cs.background) && clear(cs.backgroundColor) && clear(cs.backgroundImage) && !f.style.background && !f.style.backgroundColor,
+            'the Season Tracker frame, laid over the screen, paints a background of its own over this page: ' + [cs.background, cs.backgroundColor, cs.backgroundImage, f.style.background].join(' / ')); }
+        chk(f.classList.contains('nt-lifted') && d.documentElement.style.overflow === 'hidden' && sec.style.minHeight !== '' && hdr.inert && d.getElementById('ntTop').inert && fd.activeElement && fd.activeElement.id === 'ovx',
+          "opening a game in the Season Tracker did not lay its frame over the screen, hold the page still and its header and back-to-top button out of reach, and move focus into the window");
+        docH = 3000; resized();
+        chk(f.style.height === '1200px', 'the Season Tracker frame was resized while laid over the screen: ' + f.style.height);
+        scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+        chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === 1234,
+          'Escape did not close the Season Tracker\'s game, put its frame back in the page and the page back where it was: ' + JSON.stringify(scrolls));
+        chk(fd.activeElement && fd.activeElement.dataset.game === 'CCC-DDD', "closing a game did not leave focus on its tile");
+        chk(f.style.height === '3000px', "the Season Tracker frame did not take its content's height again once its game closed: " + f.style.height);
+        /* a screen that changed size while the game was open (a phone turned): the game's tile where it stood,
+           or as near as the turned screen allows, wholly in view. Opened with the frame 800px above the screen,
+           closed with it 900px above and the tile 1300px down it: a tile 200px down the screen stays 200px
+           down (1234 + 400 - 200); one 600px down a screen turned to 390px tall lands as low as it can stand
+           whole (300px tall: 90px down) or, taller than the screen, at its top */
+        { const gbr = f.getBoundingClientRect, tile = fd.querySelector('.slot[data-game="CCC-DDD"]'), tbr = tile.getBoundingClientRect, iw = w.innerWidth, ih = w.innerHeight;
+          const at = (ft, tt, th) => { f.getBoundingClientRect = () => ({ top: ft, bottom: ft + 3000, left: 0, right: 390, width: 390, height: 3000 });
+            tile.getBoundingClientRect = () => ({ top: tt, bottom: tt + th, left: 0, right: 390, width: 390, height: th }); };
+          for (const [tt, th, vh, want] of [[1000, 80, ih, 1434], [1400, 300, 390, 1544], [1400, 500, 390, 1634]]) {
+            w.innerWidth = iw; w.innerHeight = ih; at(-800, tt, th); open('CCC-DDD'); await wait(20);
+            w.innerWidth = iw === 390 ? 844 : 390; w.innerHeight = vh; at(-900, 1300, th);
+            scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+            chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === want,
+              `closing a game after the screen turned did not put its tile (${tt + -800}px down, ${th}px tall) where it stood, or wholly in view on a screen ${vh}px tall: ` + JSON.stringify(scrolls) + ' for ' + want); }
+          /* the screen as it was: the page back at its pixel where the tile is wholly in view there, else
+             scrolled the least that shows it whole (a game opened by Enter while a Tab was still scrolling to
+             its tile, the scroll stopped as the window opened): on a screen 800px tall, with the frame 800px
+             above it, a tile 200px down stays; one cut off at the foot is brought up to stand on it; one above
+             the screen is brought down to its top; one taller than the screen is put at its top */
+          w.innerHeight = 800;
+          for (const [tt, th, want] of [[1000, 80, 1234], [1400, 300, 1334], [700, 300, 1134], [900, 1000, 1334]]) {
+            at(-800, tt, th); open('CCC-DDD'); await wait(20);
+            scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
+            chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === want,
+              `closing a game did not leave its tile (${tt - 800}px down an 800px screen, ${th}px tall) wholly in view, the page moved the least from where it was: ` + JSON.stringify(scrolls) + ' for ' + want); }
+          f.getBoundingClientRect = gbr; tile.getBoundingClientRect = tbr; w.innerWidth = iw; w.innerHeight = ih; }
+        w.scrollY = w.pageYOffset = 0;
+        open('AAA-BBB'); await wait(20); ov.dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await wait(20);
+        chk(freed(), 'a click on the backdrop did not close the Season Tracker\'s game and put its frame back');
+        open('AAA-BBB'); await wait(20); w.location.hash = '#pickems'; await wait(60);
+        chk(freed() && sec.hidden && !d.getElementById('tab-pickems').hidden, 'leaving the Season Tracker by the address with a game open left its window open or the page held');
+        /* a game whose window throws as it is lifted never leaves the page held */
+        w.location.hash = '#tracker'; await wait(60);
+        { const gbr = f.getBoundingClientRect; f.getBoundingClientRect = () => { throw new Error('planted'); };
+          open('AAA-BBB'); await wait(20); f.getBoundingClientRect = gbr;
+          chk(d.documentElement.style.overflow === '' && !f.classList.contains('nt-lifted') && !hdr.inert, 'a throw while the Season Tracker\'s window was being opened left this page held still');
+          fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20); }
+        scrolls.length = 0; d.getElementById('ntTop').click();
+        chk(scrolls.length === 1 && scrolls[0][0] && scrolls[0][0].top === 0, "the Season Tracker's back-to-top button does not take the page to its top");
+        /* this page inside its own tracker frame (the tracker's guard misfiring): the tab's own script, from
+           this page, in the frame with its tab open, never frames the tracker again */
+        { const js = (HTML.match(/<script>\s*(\(function\(\)\{\s*const sec=document\.getElementById\('tab-tracker'\)[\s\S]*?)<\/script>/) || [])[1],
+            inner = (HTML.match(/(<section id="tab-tracker" hidden>[\s\S]*?<\/section>)/) || [])[1];
+          if (!js || !inner) chk(false, "the Season Tracker tab's section or script is not in the page");
+          else { fd.open(); fd.write('<!DOCTYPE html><html><body>' + inner.replace(' hidden>', '>') + '<script>' + js + '<\/script></body></html>'); fd.close(); await wait(30);
+            const nf = fd.querySelector('iframe.nt-frame');
+            chk(fw.frameElement === f && !!nf && !nf.getAttribute('src') && !nf.dataset.loaded, 'this page inside its own Season Tracker frame framed the tracker again'); } }
+        /* a frame this page cannot read once loaded (on the web, the browser's error page: offline, a dropped
+           connection) is said as a 404 is, never left a bare error page in a 360px box */
+        Object.defineProperty(f, 'contentDocument', { configurable: true, get: () => null });
+        f.dispatchEvent(new w.Event('load')); await wait(20);
+        chk(!note.hidden && f.classList.contains('nt-failed'), 'a Season Tracker frame that loaded the browser\'s error page (unreadable) is not said to have failed');
+        chk(!topShown(), "the Season Tracker's back-to-top button still shows beside the note that the error page loaded");
+        delete f.contentDocument;
+        /* a tracker that draws its tiles with no game window (#ov) is fitted and counts as hooked: a later
+           load never hooks it again (its own ResizeObserver each time). Here, after the error page, since
+           jsdom writes every stand-in into the one document, and one hooked is never hooked again */
+        { const n0 = ros.length; docH = 900;
+          put('<!DOCTYPE html><html class="embed"><body><div id="view"><button class="slot" data-game="AAA-BBB">one</button></div></body></html>'); await wait(20);
+          f.dispatchEvent(new w.Event('load')); await wait(20);
+          chk(ros.length === n0 + 1 && f.style.height === '900px' && note.hidden && !f.classList.contains('nt-failed') && topShown(),
+            `a Season Tracker with tiles and no game window is not fitted once, or is hooked again at a later load: ${ros.length - n0} hooks, height ${f.style.height}`); }
+        w.ResizeObserver = RO;
+      }
+      w.scrollTo = was;
+      w.location.hash = '#pickems'; await wait(60);
+    } }
+
   /* the tabs keep their addresses: #parlay is the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
-  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
+  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log'], ['#tracker', 'tab-tracker', 'Season Tracker']]) {
     w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
     chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
   /* back to the board by address */
@@ -1108,6 +1276,21 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(s2.errs.length === 0, 'the page threw opening on #slate: ' + s2.errs.join('; '));
   chk(!s2.d.getElementById('tab-slate').hidden && s2.d.getElementById('tab-pickems').hidden, 'opening on #slate did not open the Props tab');
   chk(s2.d.querySelectorAll('#gamesList .game').length > 0, 'opened on #slate, the Props tab has no games');
+
+  /* opened on #tracker, where news/ and the old tracker's address send every visitor, the Season Tracker
+     tab is showing and its frame filled with no click (routeTabs opens the tab before the tab's own
+     script is there to hear it, so only that script's load at its end fills it); and on a page that has
+     never opened it, the address #tracker fills it too */
+  { const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#tracker'), f2 = t2.d.querySelector('#tab-tracker iframe.nt-frame');
+    chk(t2.errs.length === 0 && !t2.d.getElementById('tab-tracker').hidden && t2.d.getElementById('tab-pickems').hidden && !!f2 && /^\.\.\/news\/index\.html\?t=\d+$/.test(f2.getAttribute('src') || ''),
+      'opened on #tracker (where news/ sends every visitor), the Season Tracker tab is not showing or its frame is never filled: ' + (f2 && f2.getAttribute('src')));
+    t2.w.close();
+    const t3 = await run(state), f3 = t3.d.querySelector('#tab-tracker iframe.nt-frame');
+    t3.w.location.hash = '#tracker';
+    for (let i = 0; i < 40 && !(f3 && f3.getAttribute('src')); i++) await wait(50);
+    chk(!t3.d.getElementById('tab-tracker').hidden && !!f3 && /^\.\.\/news\/index\.html\?t=\d+$/.test(f3.getAttribute('src') || ''),
+      'on a page that never opened it, the address #tracker does not open the Season Tracker tab and fill its frame: ' + (f3 && f3.getAttribute('src')));
+    t3.w.close(); }
 
   /* the page with no scoreboard to read (checked below, once it has had time to try) */
   const b = await run(state);

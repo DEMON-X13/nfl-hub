@@ -32,10 +32,12 @@ on:
   push:
     # a change to the tracker's pull code runs it once, so a fix is proven straight away; so does a change
     # to the page or a week's narrative, so a narrative the smoke test refuses (it quotes the site's own
-    # ranks, say) fails on its own push, not on the next scheduled run hours later
+    # ranks, say) fails on its own push, not on the next scheduled run hours later. The smoke test also
+    # mounts X NFL Bets and Stats' Season Tracker tab (nflbets/build/tab_tracker.html) on the tracker, so a
+    # change to either side of that tab, or to the tracker's styles it relies on, runs it too
     branches: [main]
     paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "lib/netfetch.js", "news/tools/lineup-checks.js", "news/tools/deepdive-checks.js", "news/tools/cases.js",
-            "news/data/week*.js", "news/data/weeks.js", "news/js/app.js", "news/index.html"]
+            "news/data/week*.js", "news/data/weeks.js", "news/js/app.js", "news/index.html", "news/css/style.css", "nflbets/build/tab_tracker.html"]
 
 permissions:
   contents: write

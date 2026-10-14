@@ -1252,6 +1252,27 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 }
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
+<style>
+/* as tall as the slate, so the page scrolls as one (framed, the tracker is html.embed: its bar is the
+   week's heading in the flow and its own back-to-top button is gone, news/css/style.css) */
+#tab-tracker .nt-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
+#tab-tracker .nt-frame.nt-failed{display:none}
+/* while a game's window is open the frame is laid over the whole screen: the tracker's window is
+   fixed to its frame, so it is then fixed to the screen as on the tracker's own page, and the slate
+   under its backdrop is drawn exactly where it was (the body placed by the script). It stays
+   transparent, as the framed tracker's canvas is, so the backdrop dims this page as it stands */
+#tab-tracker .nt-frame.nt-lifted{position:fixed;inset:0;width:100%;height:100%!important;min-height:0;z-index:1000}
+#tab-tracker .nt-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
+#tab-tracker .nt-note[hidden]{display:none}
+#tab-tracker .nt-note a{color:inherit;font-weight:600}
+/* this page's back-to-top button, standing in for the tracker's own, on this tab only */
+.nt-top{position:fixed;right:16px;bottom:16px;z-index:40;width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--panel);color:var(--ink-2);box-shadow:var(--sh-md);font:inherit;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.nt-top:hover{color:var(--ink)}
+/* and gone with the tracker when the note says it did not load, leaving nothing to scroll (the note
+   comes before it in the section) */
+#tab-tracker .nt-note:not([hidden]) ~ .nt-top{display:none}
+@media print{.nt-top{display:none}}
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style id="previewTheme">
 /* The NBA Hub look, laid over the Bets and Stats page for nflbets/preview.html only.
@@ -1369,8 +1390,22 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 
 /* the far-off flag (app v98): the light look's dark amber is too dim on these panels */
 .faroff{color:var(--hot-2)}
+
+/* the Season Tracker keeps its own light look (news/HANDOFF.md: no dark mode), so its tab has its light
+   canvas here rather than this look's dark one showing through. The canvas is on the tab's section,
+   which keeps its height while the frame is laid over the screen, so it stays under the slate and an
+   open game's backdrop dims this look around it as it stands, never a light screen over it. Framed, the
+   tracker has no gutters of its own: the margin, filled by the spread shadow (its corner 4 + 14, this
+   look's 18px), is the slab's, and leaves the section's box the frame's own, which the lift measures
+   (padding would shrink the section while a game is open). The frame is light as well, since this
+   root is dark and a frame of another scheme than the page it shows is given an opaque canvas */
+#tab-tracker{margin:14px;border-radius:4px;background:#F6F5F2;box-shadow:0 0 0 14px #F6F5F2}
+#tab-tracker .nt-frame{color-scheme:light}
+/* the tab's failure note is on that light canvas: the light look's own tint under its dark amber
+   (about 5:1), not this look's orange one over the dark (2.1:1) */
+#tab-tracker .nt-note{background:#FBEFD3}
 </style>
-<script>window.PREVIEW_FRAME_HEAD="\u003clink href=\"https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">\u003cstyle>/* The NBA Hub look, laid over the Bets and Stats page for nflbets/preview.html only.\n   build.js appends this after every other style, so it wins by order; nothing here reaches\n   nflbets/index.html. Colours and type are the NBA Hub's own tokens (demon-x13/nba-hub). */\n:root{\n  --bg:#1E2230; --bg-2:#242938; --panel:#2A2F40; --panel-2:#313749; --panel-3:#3A4155;\n  --ink:#F6F7FB; --ink-2:#C5CAD8; --muted:#8F96AB; --line:#3C4358; --line-2:#4A5269;\n  --hot:#FF6A1F; --hot-2:#FF8C4A; --hot-soft:rgba(255,106,31,.14);\n  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);\n  --gold:#FF8C4A; --gold-soft:rgba(255,106,31,.16);\n  --miss:#FF3D6B; --miss-soft:rgba(255,61,107,.14);\n  --away:#5FD4FF; --home:#CDFF4F;\n  --r-lg:18px; --r-md:14px; --r-sm:11px;\n  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);\n  --ring:0 0 0 3px rgba(255,106,31,.35);\n  --display:\"Unbounded\",ui-sans-serif,system-ui,sans-serif;\n  --body:\"Manrope\",ui-sans-serif,system-ui,-apple-system,\"Segoe UI\",sans-serif;\n  color-scheme:dark;\n}\nbody{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,106,31,.18),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),\n  linear-gradient(180deg,#252A3B 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}\n::selection{background:var(--hot);color:#000}\na{color:#5FD4FF}\n\n/* header: no slab, the page's own glow behind a big two-tone wordmark and pill tabs */\nheader{background:transparent;padding:26px 22px 0;max-width:1240px;margin:0 auto}\nheader::after{display:none}\n.brand{align-items:flex-end}\n.brand h1{font-weight:900;font-size:clamp(28px,5vw,48px);letter-spacing:-.02em;line-height:.95;text-transform:uppercase}\n.brand h1 em{font-style:normal;color:var(--hot)}\n.brand h1::after{width:.42em;height:.42em;margin-left:.14em;vertical-align:.08em;background:radial-gradient(circle at 35% 30%,#FFB27A,var(--hot) 60%,#B33F00);box-shadow:0 0 22px rgba(255,106,31,.55)}\n.brand .sub{color:var(--muted);font-size:12px}\nnav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto}\nnav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}\nnav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}\nnav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}\nmain{max-width:1240px;padding:18px 22px 90px}\n\n/* surfaces */\n.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}\n.card::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--hot),transparent);pointer-events:none}\n.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}\ntable{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}\nth{background:var(--panel-2);color:var(--muted)}\ntbody tr:hover{background:rgba(255,255,255,.025)}\n.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}\n\n/* controls */\nselect,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}\nselect:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}\ninput[type=checkbox]{accent-color:var(--hot)}\n.btn{background:var(--hot);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--hot)}\n.btn:hover{background:var(--hot-2);box-shadow:none}\n.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}\n.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}\n.btn.go{background:#CDFF4F;border-color:#CDFF4F;color:#1E2230}\n.btn.danger{background:var(--miss);border-color:var(--miss);color:#1E2230}\n.bar .rec,.pill,.conf.low,.pays .box.tier.low,.side-res.push{background:var(--panel-3);color:var(--ink-2)}\n.bar .rec b{color:var(--ink)}\n.side-res.under{background:rgba(95,212,255,.14);color:#5FD4FF}\n.game.final .pill.ok{background:rgba(95,212,255,.14);color:#5FD4FF}\n.finchip.live{background:var(--hot-soft);color:var(--hot-2);border-color:rgba(255,106,31,.5)}\n.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}\n.rungs tr.on td{background:var(--hot-soft)}\n.rungs tr.hit td{background:var(--pick-soft)}\n.pays .box.tier.med{border-color:rgba(255,106,31,.5)}\n.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}\n.pk-game::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--hot),transparent)}\n.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}\n.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}\n.pk-tier{background:var(--panel-3);color:var(--ink-2)}\n.pk-tier.pk-high{background:var(--pick-soft);color:#CDFF4F} .pk-tier.pk-med{background:var(--hot-soft);color:var(--hot-2)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}\n.pk-sc{font-weight:900}\n.pk-matchup .pk-res{background:var(--panel)}\n.pe-pos button[aria-selected=\"true\"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n.pk-note{background:var(--hot-soft);color:var(--hot-2)}\n.pk-result .pk-mwin.pk-ok{color:#CDFF4F}\n/* the X Parlays section (X's card and Your parlays), the owner's mark, and the builder's heading button */\n#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}\n#lpCard .note{background:var(--hot-soft);color:var(--hot-2)}\n#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:#CDFF4F} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}\n.xp-own,.xp-mark{background:var(--hot-soft);color:var(--hot-2)}\n.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}\n/* inside the framed betting tabs (html.embed): the page's glow shows through */\nhtml.embed body{background:transparent}\n.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}\n.bk-in,.bres.won{background:var(--pick-soft);color:#CDFF4F}\n.prob{background:var(--panel-3);box-shadow:none}\n.tier{background:var(--panel-3);color:var(--ink-2)}\n.tier.high{background:var(--pick-soft);color:#CDFF4F} .tier.med{background:var(--hot-soft);color:var(--hot-2)}\n.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}\n.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}\n.vg.differs{background:var(--miss-soft)}\n/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */\npolyline[stroke=\"#0F1B2D\"]{stroke:#F6F7FB} circle[fill=\"#0F1B2D\"]{fill:#F6F7FB}\n[style*=\"background:#0F1B2D\"]{background:#F6F7FB!important}\nline[stroke=\"#E6EAEF\"]{stroke:#3C4358}\n/* the Game snapshot: its quiet text lifted a step, so a 13px note reads at 5:1 on the panels\n   (the page's muted is 4:1 on panel-2), and its red, which is 3.5:1 on the panels and 3.1:1 on\n   its own tint, lifted to 5.3:1 and 4.7:1 (the out names, a rating's fall, Miss, the Upset chip,\n   the out badge and heading) */\n#gsModal{--muted:#A3AABD;--miss:#FF8AA3;--gs-miss-ink:#FF8AA3}\n/* and the board's Medium pill, 4.3:1 on its tint over the panel, a step lighter (4.9:1) */\n#gsModal .pk-tier.pk-med{color:#FF9C61}\n/* the mismatch grades' brown and green are the light page's, too dark here */\n#gsModal .pe-g2{color:#F2B84B!important} #gsModal .pe-g3{color:#7BD88F!important}\n/* and a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */\n#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}\n/* the preview says what it is */\n.pv-flag{display:inline-block;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--hot-soft);color:var(--hot-2);vertical-align:middle}\n@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }\n\n/* the far-off flag (app v98): the light look's dark amber is too dim on these panels */\n.faroff{color:var(--hot-2)}\n\u003c/style>";</script>
+<script>window.PREVIEW_FRAME_HEAD="\u003clink href=\"https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">\u003cstyle>/* The NBA Hub look, laid over the Bets and Stats page for nflbets/preview.html only.\n   build.js appends this after every other style, so it wins by order; nothing here reaches\n   nflbets/index.html. Colours and type are the NBA Hub's own tokens (demon-x13/nba-hub). */\n:root{\n  --bg:#1E2230; --bg-2:#242938; --panel:#2A2F40; --panel-2:#313749; --panel-3:#3A4155;\n  --ink:#F6F7FB; --ink-2:#C5CAD8; --muted:#8F96AB; --line:#3C4358; --line-2:#4A5269;\n  --hot:#FF6A1F; --hot-2:#FF8C4A; --hot-soft:rgba(255,106,31,.14);\n  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);\n  --gold:#FF8C4A; --gold-soft:rgba(255,106,31,.16);\n  --miss:#FF3D6B; --miss-soft:rgba(255,61,107,.14);\n  --away:#5FD4FF; --home:#CDFF4F;\n  --r-lg:18px; --r-md:14px; --r-sm:11px;\n  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);\n  --ring:0 0 0 3px rgba(255,106,31,.35);\n  --display:\"Unbounded\",ui-sans-serif,system-ui,sans-serif;\n  --body:\"Manrope\",ui-sans-serif,system-ui,-apple-system,\"Segoe UI\",sans-serif;\n  color-scheme:dark;\n}\nbody{background:\n  radial-gradient(900px 520px at 12% -8%,rgba(255,106,31,.18),transparent 60%),\n  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),\n  linear-gradient(180deg,#252A3B 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}\n::selection{background:var(--hot);color:#000}\na{color:#5FD4FF}\n\n/* header: no slab, the page's own glow behind a big two-tone wordmark and pill tabs */\nheader{background:transparent;padding:26px 22px 0;max-width:1240px;margin:0 auto}\nheader::after{display:none}\n.brand{align-items:flex-end}\n.brand h1{font-weight:900;font-size:clamp(28px,5vw,48px);letter-spacing:-.02em;line-height:.95;text-transform:uppercase}\n.brand h1 em{font-style:normal;color:var(--hot)}\n.brand h1::after{width:.42em;height:.42em;margin-left:.14em;vertical-align:.08em;background:radial-gradient(circle at 35% 30%,#FFB27A,var(--hot) 60%,#B33F00);box-shadow:0 0 22px rgba(255,106,31,.55)}\n.brand .sub{color:var(--muted);font-size:12px}\nnav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto}\nnav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}\nnav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}\nnav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}\nmain{max-width:1240px;padding:18px 22px 90px}\n\n/* surfaces */\n.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}\n.card::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--hot),transparent);pointer-events:none}\n.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}\ntable{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}\nth{background:var(--panel-2);color:var(--muted)}\ntbody tr:hover{background:rgba(255,255,255,.025)}\n.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}\n\n/* controls */\nselect,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}\nselect:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}\ninput[type=checkbox]{accent-color:var(--hot)}\n.btn{background:var(--hot);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--hot)}\n.btn:hover{background:var(--hot-2);box-shadow:none}\n.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}\n.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}\n.btn.go{background:#CDFF4F;border-color:#CDFF4F;color:#1E2230}\n.btn.danger{background:var(--miss);border-color:var(--miss);color:#1E2230}\n.bar .rec,.pill,.conf.low,.pays .box.tier.low,.side-res.push{background:var(--panel-3);color:var(--ink-2)}\n.bar .rec b{color:var(--ink)}\n.side-res.under{background:rgba(95,212,255,.14);color:#5FD4FF}\n.game.final .pill.ok{background:rgba(95,212,255,.14);color:#5FD4FF}\n.finchip.live{background:var(--hot-soft);color:var(--hot-2);border-color:rgba(255,106,31,.5)}\n.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}\n.rungs tr.on td{background:var(--hot-soft)}\n.rungs tr.hit td{background:var(--pick-soft)}\n.pays .box.tier.med{border-color:rgba(255,106,31,.5)}\n.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}\n.pk-game::before{content:\"\";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--hot),transparent)}\n.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}\n.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}\n.pk-tier{background:var(--panel-3);color:var(--ink-2)}\n.pk-tier.pk-high{background:var(--pick-soft);color:#CDFF4F} .pk-tier.pk-med{background:var(--hot-soft);color:var(--hot-2)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}\n.pk-sc{font-weight:900}\n.pk-matchup .pk-res{background:var(--panel)}\n.pe-pos button[aria-selected=\"true\"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}\n.pk-note{background:var(--hot-soft);color:var(--hot-2)}\n.pk-result .pk-mwin.pk-ok{color:#CDFF4F}\n/* the X Parlays section (X's card and Your parlays), the owner's mark, and the builder's heading button */\n#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}\n#lpCard .note{background:var(--hot-soft);color:var(--hot-2)}\n#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:#CDFF4F} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}\n.xp-own,.xp-mark{background:var(--hot-soft);color:var(--hot-2)}\n.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}\n/* inside the framed betting tabs (html.embed): the page's glow shows through */\nhtml.embed body{background:transparent}\n.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}\n.bk-in,.bres.won{background:var(--pick-soft);color:#CDFF4F}\n.prob{background:var(--panel-3);box-shadow:none}\n.tier{background:var(--panel-3);color:var(--ink-2)}\n.tier.high{background:var(--pick-soft);color:#CDFF4F} .tier.med{background:var(--hot-soft);color:var(--hot-2)}\n.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}\n.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}\n.vg.differs{background:var(--miss-soft)}\n/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */\npolyline[stroke=\"#0F1B2D\"]{stroke:#F6F7FB} circle[fill=\"#0F1B2D\"]{fill:#F6F7FB}\n[style*=\"background:#0F1B2D\"]{background:#F6F7FB!important}\nline[stroke=\"#E6EAEF\"]{stroke:#3C4358}\n/* the Game snapshot: its quiet text lifted a step, so a 13px note reads at 5:1 on the panels\n   (the page's muted is 4:1 on panel-2), and its red, which is 3.5:1 on the panels and 3.1:1 on\n   its own tint, lifted to 5.3:1 and 4.7:1 (the out names, a rating's fall, Miss, the Upset chip,\n   the out badge and heading) */\n#gsModal{--muted:#A3AABD;--miss:#FF8AA3;--gs-miss-ink:#FF8AA3}\n/* and the board's Medium pill, 4.3:1 on its tint over the panel, a step lighter (4.9:1) */\n#gsModal .pk-tier.pk-med{color:#FF9C61}\n/* the mismatch grades' brown and green are the light page's, too dark here */\n#gsModal .pe-g2{color:#F2B84B!important} #gsModal .pe-g3{color:#7BD88F!important}\n/* and a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */\n#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}\n/* the preview says what it is */\n.pv-flag{display:inline-block;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--hot-soft);color:var(--hot-2);vertical-align:middle}\n@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }\n\n/* the far-off flag (app v98): the light look's dark amber is too dim on these panels */\n.faroff{color:var(--hot-2)}\n\n/* the Season Tracker keeps its own light look (news/HANDOFF.md: no dark mode), so its tab has its light\n   canvas here rather than this look's dark one showing through. The canvas is on the tab's section,\n   which keeps its height while the frame is laid over the screen, so it stays under the slate and an\n   open game's backdrop dims this look around it as it stands, never a light screen over it. Framed, the\n   tracker has no gutters of its own: the margin, filled by the spread shadow (its corner 4 + 14, this\n   look's 18px), is the slab's, and leaves the section's box the frame's own, which the lift measures\n   (padding would shrink the section while a game is open). The frame is light as well, since this\n   root is dark and a frame of another scheme than the page it shows is given an opaque canvas */\n#tab-tracker{margin:14px;border-radius:4px;background:#F6F5F2;box-shadow:0 0 0 14px #F6F5F2}\n#tab-tracker .nt-frame{color-scheme:light}\n/* the tab's failure note is on that light canvas: the light look's own tint under its dark amber\n   (about 5:1), not this look's orange one over the dark (2.1:1) */\n#tab-tracker .nt-note{background:#FBEFD3}\n\u003c/style>";</script>
 </head>
 <body>
 <header>
@@ -1381,6 +1416,7 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
   </div>
   <nav role="tablist" id="tabs">
     <button role="tab" data-tab="pickems" aria-selected="true">Pick'ems</button>
+    <button role="tab" data-tab="tracker">Season Tracker</button>
     <button role="tab" data-tab="slate">Props</button>
     <button role="tab" data-tab="parlay">Parlay Builder</button>
     <button role="tab" data-tab="xparlays">X Parlays</button>
@@ -1403,6 +1439,12 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
   </div>
   <div id="pkBoard"></div>
   <p class="pk-foot" id="pkFoot"></p>
+</section>
+
+<section id="tab-tracker" hidden>
+  <p class="nt-note" id="ntNote" hidden>The Season Tracker did not load here. <a href="../news/index.html?standalone">Open it on its own page</a>, or reload this page to try again.</p>
+  <iframe class="nt-frame" data-src="../news/index.html" title="Season Tracker"></iframe>
+  <button class="nt-top" id="ntTop" type="button" aria-label="Back to top">&uarr;</button>
 </section>
 
 <section id="tab-ratings" hidden><iframe class="pk-frame" data-embed="ratings" title="Team Rankings"></iframe></section>
@@ -5055,7 +5097,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='9cc2b9d';
+const PAGE_HASH='b637a85';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7918,6 +7960,126 @@ window.gameSnapshot=open;
 window.gameSnapshotClose=close;
 /* start waiting on the Elo files now, so a window opened later has them at once */
 eloFiles();
+})();
+</script>
+<script>
+(function(){
+const sec=document.getElementById('tab-tracker'), f=sec&&sec.querySelector('iframe.nt-frame');
+if(!f) return;
+/* this page inside its own tracker frame (a tracker whose guard sent its framed copy here): it never
+   frames the tracker again, so a misfire is one page deep, never a page inside a page inside a page */
+try{ const fe=window.frameElement; if(fe&&fe.classList&&fe.classList.contains('nt-frame')) return; }catch(e){}
+const root=document.documentElement, note=document.getElementById('ntNote'), top=document.getElementById('ntTop'), header=document.querySelector('header');
+/* a scroll at once on a page that scrolls smoothly (html{scroll-behavior:smooth}): Chrome reads the
+   behaviour before it restyles, so the inline 'auto' is read back before the scroll */
+const jump=y=>{ root.style.scrollBehavior='auto'; void getComputedStyle(root).scrollBehavior; scrollTo(0,y); root.style.scrollBehavior=''; };
+/* the page as if no game were open: the frame back in it, the page free to scroll, the header live.
+   Called on every new document and whenever lifting or dropping throws, so the page is never left
+   held still */
+const release=()=>{ f.classList.remove('nt-lifted'); sec.style.minHeight=''; root.style.overflow=''; if(header) header.inert=false; if(top) top.inert=false; };
+let cur=null, curDoc=null, poll=0;   /* the hooks on the tracker's current document, that document, and the look for it */
+/* loaded the first time its tab is shown, like the betting frames. ?t= so a reload of this page
+   takes the tracker's page fresh: it lists the week files, and an old copy of it beside a new
+   data/weeks.js would name a week it never loads (the data files keep GitHub Pages' ten minutes).
+   The tracker is hooked as soon as it has drawn its week (attach, below), so it is looked for every
+   tenth of a second from here */
+const load=()=>{ if(sec.hidden||f.dataset.loaded) return; f.dataset.loaded='1'; f.src=f.dataset.src+'?t='+Date.now(); poll=setInterval(()=>attach(false),100); };
+/* leaving the tab (by the address; the bar is under the lifted frame) closes the window the tracker's own way */
+const shut=()=>{ try{ if(cur) cur.shut(); }catch(e){ release(); } };
+document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{ shut(); setTimeout(load,0); }));
+addEventListener('hashchange',shut);
+if(top) top.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
+/* the tracker is hooked as soon as it has drawn its week, not only at its load event: that waits for
+   its web font (Manrope, which this page does not load), and until then the frame would be a 360px
+   box scrolling by itself, with a game opened in it never laid over the screen. At the load event
+   whatever is there is judged (a 404, an error page), and a document is never hooked twice: the one
+   hooked is kept only once the hook took, so a page written into the same document after a failed
+   one is still hooked */
+const attach=done=>{
+  let w,d; try{ w=f.contentWindow; d=f.contentDocument; }catch(e){ d=null; }
+  if(done) clearInterval(poll);
+  if(!d){
+    /* on the web the tracker is this site's own page: a frame this page cannot read once it has loaded
+       is the browser's error page (offline, a dropped connection) or a portal, said as a 404 is. From
+       disk (file://, its own origin in Chrome) the tracker shows, unhooked */
+    if(done&&/^https?:$/.test(location.protocol)){ release(); cur=null; curDoc=null; if(note) note.hidden=false; f.classList.add('nt-failed'); }
+    return;
+  }
+  if(!w||!d.body||d===curDoc) return;
+  if(!done&&(d.readyState==='loading'||!d.querySelector('#view .slot'))) return;
+  release(); cur=null; curDoc=null;
+  try{ cur=hook(w,d); }catch(e){ release(); }
+  if(cur){ curDoc=d; clearInterval(poll); }
+};
+f.addEventListener('load',()=>attach(true));
+/* the only load that fills the frame when the page is opened on #tracker, where news/ sends every
+   visitor: the Pick'ems tab's routeTabs opens the tab during its boot, before the click listeners
+   above exist */
+load();
+
+function hook(w,d){
+  const dr=d.documentElement;
+  /* the tracker drew its week, or what loaded is not the tracker (an error page, a tracker that
+     threw): then it says so, with the tracker's own page, in place of a blank box */
+  const ok=!!d.querySelector('#view .slot');
+  if(note) note.hidden=ok;
+  f.classList.toggle('nt-failed',!ok);
+  if(!ok) return null;
+  /* the frame takes its content's height and never scrolls up and down itself (frames() in
+     tab_pickems.html says why); measured by the document's own height, which shrinks as well as
+     grows (scrollHeight never drops below the frame's), so a phone turned back to portrait fits */
+  dr.style.overflowY='hidden';
+  const fit=()=>{ if(f.classList.contains('nt-lifted')) return;
+    const h=Math.ceil(dr.getBoundingClientRect().height); if(h>0&&Math.abs(h-(parseFloat(f.style.height)||0))>1) f.style.height=h+'px'; };
+  fit();
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(d.body); else setInterval(fit,800);
+  /* a tracker with no game window is still fitted, and counts as hooked, so it is never hooked again */
+  const ov=d.getElementById('ov'); if(!ov) return { shut(){} };
+  ov.style.overscrollBehavior='contain';
+  const tileOf=k=>[...d.querySelectorAll('.slot[data-game]')].find(s=>s.dataset.game===k)||null;
+  let open=null;
+  /* the body is placed where the frame was: same width and left edge, the frame's top as padding
+     (or the document scrolled up by it), and room below so it can scroll that far */
+  const place=r=>{ const vh=innerHeight;
+    Object.assign(d.body.style,{width:r.width+'px',marginLeft:r.left+'px',paddingTop:Math.max(0,r.top)+'px',paddingBottom:Math.max(0,vh-r.bottom)+'px'});
+    w.scrollTo(0,Math.max(0,-r.top)); };
+  const follow=()=>{ const s=sec.getBoundingClientRect(); d.body.style.width=s.width+'px'; d.body.style.marginLeft=s.left+'px'; };
+  const unplace=()=>{ Object.assign(d.body.style,{width:'',marginLeft:'',paddingTop:'',paddingBottom:''}); };
+  const lift=()=>{
+    /* a smooth scroll still running (a Tab onto a tile below the screen, then Enter at once) stops where
+       it is: overflow:hidden does not stop it, and the page would go on moving under the slate */
+    jump(scrollY);
+    const r=f.getBoundingClientRect(), t=tileOf(ov.dataset.game);
+    open={y:scrollY,vw:innerWidth,vh:innerHeight,key:ov.dataset.game,tileY:t?r.top+t.getBoundingClientRect().top:null};
+    sec.style.minHeight=r.height+'px';          /* the page keeps its length while the frame is out of it */
+    f.classList.add('nt-lifted'); root.style.overflow='hidden'; place(r);
+    /* the page behind the window is out of reach, to a screen reader too */
+    if(header) header.inert=true; if(top) top.inert=true;
+    addEventListener('resize',follow);
+  };
+  const drop=()=>{
+    const o=open; open=null; removeEventListener('resize',follow);
+    unplace(); w.scrollTo(0,0); release(); fit();
+    if(sec.hidden||!o) return;                   /* left by the address: nothing to put back */
+    /* back where the visitor was, at once (this page scrolls smoothly), with the game's tile, which the
+       focus goes back to, wholly in view: where it is not (opened by Enter while a Tab was still scrolling
+       to it), the page scrolled the least that shows it whole. If the screen changed size while the window
+       was open (a phone turned), with the tile where it stood, or as near as the turned screen allows,
+       wholly in view: as low as it can stand whole. A tile taller than the screen is put at its top */
+    const t=tileOf(o.key); let y=o.y;
+    if(t){ const q=t.getBoundingClientRect(), at=scrollY+f.getBoundingClientRect().top+q.top, low=Math.max(0,innerHeight-Math.min(q.height,innerHeight));
+      if((innerWidth!==o.vw||innerHeight!==o.vh)&&o.tileY!=null) y=at-Math.min(Math.max(0,o.tileY),low);
+      else if(at-y<-1||at-y+q.height>innerHeight+1) y=at-(at-y<0?0:low); }
+    jump(Math.max(0,y));
+  };
+  new MutationObserver(()=>{ const on=ov.classList.contains('on');
+    try{ if(on&&!open) lift(); else if(!on&&open) drop(); }catch(e){ open=null; try{ unplace(); }catch(_){} release(); } })
+    .observe(ov,{attributes:true,attributeFilter:['class']});
+  /* a game the visitor opened before the tracker was hooked is laid over the screen now: the observer
+     hears only a change of class */
+  if(ov.classList.contains('on')) try{ lift(); }catch(e){ open=null; try{ unplace(); }catch(_){} release(); }
+  return { shut(){ if(!open) return; d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true})); if(open) drop(); } };
+}
 })();
 </script>
 </body>
