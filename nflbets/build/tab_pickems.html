@@ -7,7 +7,7 @@
    grid gutters, the same row padding, the same 13px display-face matchup and tags, the same
    date block, the same 20px score */
 /* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
-.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
+.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(274px,358px) 138px 136px 136px;gap:14px;align-items:center;justify-content:space-between}
 .pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pk-sep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
 .pk-gamehead .pk-c{text-align:center}
@@ -62,9 +62,13 @@
 .pk-foot a{color:var(--ink-2)}
 /* between the phone card and a wide screen the six columns above need about 1,100px: narrower columns
    there, the split bar taking what is left, so the board never scrolls sideways (it did from 901 to
-   about 1,100px wide, and the last column ran into the card's padding up to 1,140) */
-@media(min-width:901px) and (max-width:1140px){
-  .pk-gamehead,.pk-game{grid-template-columns:96px 146px minmax(170px,1fr) 104px 112px 108px;gap:10px;justify-content:normal}
+   about 1,100px wide, and the last column ran into the card's padding up to 1,140). The result column
+   holds what the wide screen's does, a live "WAS leading 31–33" (about 134px at 15px), so it is 136px,
+   the split bar giving up the room (at 108px that line ran past the card's edge on game day); and the
+   layout runs to 1,160px, so a classic 15-17px scrollbar never leaves the wide layout short of its room
+   (from 1,141 to 1,156px on Windows its last column ran into the card's padding) */
+@media(min-width:901px) and (max-width:1160px){
+  .pk-gamehead,.pk-game{grid-template-columns:96px 146px minmax(150px,1fr) 104px 112px 136px;gap:10px;justify-content:normal}
   .pk-gamehead{padding:0 12px 8px}
   .pk-game{padding:13px 12px}
   .pk-probrow{padding:0 4px}

@@ -144,7 +144,7 @@
 #gsModal .gs-props{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 16px;font-size:var(--gs-t3);font-weight:600}
 /* the head: the away team, the middle, the home team (the owner's ask, 14 October 2026: no "at" circle,
    the AWAY and HOME labels say it). The middle holds the score once there is one, the kickoff and site,
-   and the preview; on a phone the two teams share the top row and the middle goes full width under them */
+   and the preview; under 900px the two teams share the top row and the middle goes full width under them */
 .gs-hero{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,2.5fr) minmax(180px,1fr);grid-template-areas:"away mid home";gap:16px 24px;align-items:start}
 .gs-team{min-width:0;display:flex;flex-direction:column;gap:8px}
 .gs-team.gs-away{grid-area:away}
@@ -447,6 +447,11 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 
 @media(max-width:899px){
   .gs-pair{display:block}
+  /* the head stacked: the two teams side by side on the top row, the middle (score, kickoff, preview)
+     full width under them. Three columns left the middle 231-369px wide from 761 to 899px (238 at an
+     iPad's 768, its preview a ribbon of sixteen lines); the phone's smaller sizes stay at 760px */
+  .gs-hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"away home" "mid mid"}
+  .gs-mid .gs-sc{margin-top:2px}
   .gs-gli{grid-template-columns:152px minmax(0,1fr) 18px;grid-template-areas:"lab gv go" "lab gc go"}
   .gs-gli>.gs-lab{align-self:start;padding-top:4px}
 }
@@ -456,13 +461,11 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-top{border-radius:0;padding:0 12px}
   .gs-body{padding:12px 12px 0}
   #gsModal .gs-verdict.card{padding:16px 14px 6px}
-  /* the two teams side by side on the top row, the middle (score, kickoff, preview) full width under them */
-  .gs-hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"away home" "mid mid";gap:14px 10px}
+  .gs-hero{gap:14px 10px}
   .gs-tname .pk-ttag{font-size:var(--gs-t3);padding:6px 9px}
   .gs-tname b{font-size:var(--gs-t3)}
   .gs-team{gap:4px}
   .gs-mid{gap:8px}
-  .gs-mid .gs-sc{margin-top:2px}
   .gs-fav{padding:14px 12px;margin-top:14px}
   .gs-favt{display:block;text-wrap:balance}
   .gs-favt .pk-ttag{margin-right:4px;vertical-align:3px}
@@ -802,7 +805,7 @@ function matchup(P,g,F){
     const res=win?(win===t?' gs-won':' gs-lost'):'';
     return `<div class="gs-team ${cls}${res}"><span class="gs-lab">${cls==='gs-away'?'Away':(neu?'Home (listed)':'Home')}</span>
       <div class="gs-tname">${tg(t)}<b>${esc(teamName(t))}</b></div>
-      <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?`<span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
+      <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?` <span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
   const score=o?`<div class="gs-sc"><span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small></div>`:'';
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
   const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups, units and stats are the files as they stand now, after the game.</p>`:'';
@@ -872,7 +875,8 @@ function matchup(P,g,F){
       else if(p1.edge==='off'&&p2.edge==='off') v='<span>Both offenses rank higher</span>';
       else if(p1.edge==='def'&&p2.edge==='def') v='<span>Both defenses rank higher</span>';
       else v='<span>Even</span>';
-      const mu=(o,d,p)=>`<span class="gs-mu">${esc(o)} offense ${V(N('urank:off:'+o,ordinal(p.vo.rank)),p.edge==='off')} vs ${esc(d)} defense ${V(N('urank:def:'+d,ordinal(p.vd.rank)),p.edge==='def')}</span>`;
+      /* each side's label and its rank pill kept together (at about 900-930px a pill was left alone on a line) */
+      const mu=(o,d,p)=>`<span class="gs-mu"><span class="gs-nw">${esc(o)} offense ${V(N('urank:off:'+o,ordinal(p.vo.rank)),p.edge==='off')}</span> vs <span class="gs-nw">${esc(d)} defense ${V(N('urank:def:'+d,ordinal(p.vd.rank)),p.edge==='def')}</span></span>`;
       return [v,mu(a,h,p1)+mu(h,a,p2)]; })}
     ${line('out','Who\'s out','gsPos',()=>{ if(!F) return loading; const Pl=F.players, mu=F.mu;
       if(!Pl||!Pl.groups) return ['<span class="gs-load">Not loaded</span>','The player ratings did not load.'];

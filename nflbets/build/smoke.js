@@ -1917,9 +1917,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
    The owner's clean-up of 14 October 2026 is held too: the head is the away team, the middle and
    the home team, the middle holding the score (once there is one), the kickoff line and the
-   preview, with no "at" circle, the played note after the head, and on a phone (the rules) the
+   preview, with no "at" circle, the played note after the head, and under 900px (the rules) the
    teams on one row and the middle under them; each record is the record alone ("3-2", the
-   playoffs beside it once there are any), never "this season"; no line names the sources of the
+   playoffs' "playoffs 1-0" beside it once there are any, held on a made-up graded wild-card
+   game), never "this season"; no line names the sources of the
    spread, total and moneylines; Offense vs defense has no note under it, what its ratings rest on
    being the duel boxes' title, its two boxes of a meeting one class and one shape (the better rank's
    tinted, no edge chip; the rules give them one size); the cards run Every call, Team strength,
@@ -1927,7 +1928,10 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    publish times and no links away from the window.
    ===================================================================================== */
 async function snapshotChecks() {
-  const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
+  /* st is the state the page was booted on: the published one, but for the made-up graded wild-card
+     game, held on its own copy */
+  let st = STATE;
+  const eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
   /* the verdict, then a folding card each */
   /* the Stat breakdown before Offense vs defense, and no Sources card (the owner's calls, 14 October 2026) */
   const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsStats', 'gsUnits', 'gsMism', 'gsPos'], SNAP_CARDS = SNAP_SECS.slice(1);
@@ -1945,6 +1949,10 @@ async function snapshotChecks() {
     for (const g of st.schedule) if (g.result != null && reg(g) && (g.home_team === t || g.away_team === t)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
     const f = (withFile && eloM.teams && eloM.teams[t] && eloM.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f;
     return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
+  /* the playoffs' record, from the schedule's playoff finals ('' before there are any) */
+  const poOf = t => { const r = [0, 0, 0];
+    for (const g of st.schedule) if (g.result != null && !reg(g) && (g.home_team === t || g.away_team === t)) { const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
+    return r[0] + r[1] + r[2] ? r[0] + '-' + r[1] + (r[2] ? '-' + r[2] : '') : ''; };
   const tRank = t => Object.entries(eloM.teams || {}).sort((a, b) => b[1].elo - a[1].elo).findIndex(([k]) => k === t) + 1;
   const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
   const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games || v.carried));
@@ -2007,13 +2015,17 @@ async function snapshotChecks() {
       `snapshot (${label}): a section is missing or failed: ${R.errs.join('; ')} ${(txt(md).match(/[^.]*could not be drawn[^.]*/) || [''])[0]}`);
     /* the matchup: records, the line, the score */
     for (const t of [a, h]) chk(txt(q(`[data-gs-rec="${t}"]`)) === recOf(t), `snapshot (${label}): ${t}'s record reads ${txt(q(`[data-gs-rec="${t}"]`))}, Team Rankings counts ${recOf(t)}`);
-    /* each record is the record alone (3-2), the playoffs' beside it once there are any: no words for
-       which games it counts; where the rating file's count is shown, its title says so */
+    /* each record is the record alone (3-2), the playoffs' beside it once there are any ("playoffs 1-0"):
+       no words for which games it counts; where the rating file's count is shown, its title says so.
+       The parts are held each on its own (the box's text joined them with no space, '4-1playoffs 0-1',
+       and a check of the joined text failed every team with a playoff record) */
     for (const t of [a, h]) { const b = q(`[data-gs-rec="${t}"]`), box = b && b.closest('.gs-rec'), po = q(`[data-gs-po="${t}"]`);
-      const fromFile = recOf(t) !== recOf(t, false);
-      chk(!!box && txt(box) === recOf(t) + (po ? ' ' + txt(po) : '') && (!po || /^playoffs \d+-\d+(-\d+)?$/.test(txt(po))) && !/season/i.test(txt(box)) && /^\d+-\d+(-\d+)?$/.test(txt(b))
-        && fromFile === !!b.getAttribute('title') && (!fromFile || /Elo file's count/.test(b.getAttribute('title'))),
-        `snapshot (${label}): ${t}'s record is not the record alone: '${txt(box)}'${b && b.getAttribute('title') ? ` (titled '${b.getAttribute('title')}')` : ''}`); }
+      const fromFile = recOf(t) !== recOf(t, false), pw = poOf(t);
+      const rest = box ? [...box.childNodes].filter(n => n !== b && n !== po).map(n => n.textContent).join('').trim() : '';
+      chk(!!box && txt(b) === recOf(t) && /^\d+-\d+(-\d+)?$/.test(txt(b)) && !rest
+        && (pw ? !!po && po.parentElement === box && /^playoffs \d+-\d+(-\d+)?$/.test(txt(po)) && txt(po) === 'playoffs ' + pw : !po)
+        && !/season/i.test(txt(box)) && fromFile === !!b.getAttribute('title') && (!fromFile || /Elo file's count/.test(b.getAttribute('title'))),
+        `snapshot (${label}): ${t}'s record is not the record alone${pw ? `, with the playoffs' ${pw} beside it` : ''}: '${txt(b)}' | '${txt(po)}'${rest ? ` and '${rest}'` : ''}${b && b.getAttribute('title') ? ` (titled '${b.getAttribute('title')}')` : ''}`); }
     /* the head: the away team, the middle, the home team; the middle the score where there is one, the
        kickoff line, then the preview where there is one; no "at" circle; each team labelled Away or Home
        (a neutral site's listed home team so, and its kickoff line naming the neutral site) */
@@ -2342,7 +2354,13 @@ async function snapshotChecks() {
     /* the Pick'ems board's six columns fit at every width they are laid out at (above the phone card at
        900px): their least widths, the gaps and the card's padding within the page's content at the
        narrowest width of each layout (it scrolled sideways from 901 to about 1,100px until 14 October
-       2026, the owner's window at 914). jsdom lays nothing out, so the rules themselves are summed */
+       2026, the owner's window at 914), the middle layout's from its min-width and the wide one's from
+       one past the middle one's max-width, less a classic scrollbar (Windows, 15-17px: from 1,141 to
+       1,156px the wide layout's last column ran into the card's padding there). And the result column is
+       never narrower than the wide layout's, since it holds the same text, and never under 136px (a live
+       "WAS leading 31–33", about 134px, ran past the card's edge in a 108px column and 2px into the
+       padding of the wide layout's 132px one). jsdom lays nothing out, so the rules
+       themselves are summed */
     { const px = v => { const m = /^(-?[\d.]+)px$/.exec(String(v).trim()); return m ? +m[1] : null; };
       const least = cols => { const out = []; let depth = 0, cur = '';
         for (const ch of String(cols)) { if (ch === '(') depth++; if (ch === ')') depth--; if (ch === ' ' && !depth) { if (cur) out.push(cur); cur = ''; } else cur += ch; }
@@ -2350,7 +2368,9 @@ async function snapshotChecks() {
         return out.map(t => { const mm = /^minmax\(\s*([^,]+),/.exec(t); return mm ? (px(mm[1]) || 0) : (px(t) || 0); }); };
       const ruleFor = (media, prop) => { const r = rules.filter(x => /(^|,\s*)\.pk-game(\s*,|$)/.test(x.sel) && x.media === media && x.st.getPropertyValue(prop)); return r.length ? r[r.length - 1].st.getPropertyValue(prop) : null; };
       const mids = [...new Set(rules.filter(x => /min-width:\s*901px/.test(x.media) && /\.pk-game/.test(x.sel)).map(x => x.media))];
-      const cases = [['', 1141], ...mids.map(m => [m, 901])], bad = [];
+      const maxOf = m => { const mm = /max-width:\s*(\d+)px/.exec(m || ''); return mm ? +mm[1] : null; }, SCROLLBAR = 17, LIVE_W = 136;
+      const cases = [['', mids.length && maxOf(mids[0]) ? maxOf(mids[0]) + 1 : 901], ...mids.map(m => [m, 901])], bad = [];
+      const wideLast = least(ruleFor('', 'grid-template-columns')).slice(-1)[0];
       for (const [media, w] of cases) {
         const cols = least(ruleFor(media, 'grid-template-columns') || ruleFor('', 'grid-template-columns'));
         const gap = px(ruleFor(media, 'column-gap') || ruleFor(media, 'gap') || ruleFor('', 'column-gap') || ruleFor('', 'gap')) || 0;
@@ -2359,9 +2379,11 @@ async function snapshotChecks() {
           if (!r.length) return null; const st = r[r.length - 1].st, t = (st.getPropertyValue('padding-right') || st.getPropertyValue('padding')).trim().split(/\s+/);
           return px(st.getPropertyValue('padding-right') ? t[0] : (t[1] || t[0])); };
         const pad = padOf(media) ?? padOf('') ?? 0;
-        const need = cols.reduce((a, x) => a + x, 0) + gap * (cols.length - 1) + 2 * pad + 2, room = w - 2 * 28;
-        if (cols.length !== 6 || need > room) bad.push(`${media || 'wide'}: ${cols.length} columns need ${need}px at ${w}px wide, the page has ${room}`); }
-      chk(mids.length === 1 && !bad.length, "the Pick'ems board's columns do not fit at every width they are laid out at, so the page scrolls sideways: " + (bad.join('; ') || 'no layout between the phone card and a wide screen')); }
+        const need = cols.reduce((a, x) => a + x, 0) + gap * (cols.length - 1) + 2 * pad + 2, room = w - SCROLLBAR - 2 * 28;
+        if (cols.length !== 6 || need > room) bad.push(`${media || 'wide'}: ${cols.length} columns need ${need}px at ${w}px wide, the page has ${room} beside a ${SCROLLBAR}px scrollbar`);
+        if (cols.length === 6 && !(cols[5] >= wideLast)) bad.push(`${media || 'wide'}: the result column is ${cols[5]}px, narrower than the wide layout's ${wideLast}px, which holds the same text`);
+        if (cols.length === 6 && !(cols[5] >= LIVE_W)) bad.push(`${media || 'wide'}: the result column is ${cols[5]}px, too narrow for a live "WAS leading 31–33" (about 134px at its 15px)`); }
+      chk(mids.length === 1 && !bad.length, "the Pick'ems board's columns do not fit at every width they are laid out at, so the page scrolls sideways, or its result column is narrower than the wide layout's: " + (bad.join('; ') || 'no layout between the phone card and a wide screen')); }
     /* the page's modal pads its top, and a sticky header sticks inside that padding: the window's
        content showed in a band above its header once scrolled, so its modal has none */
     chk(rules.some(r => r.sel === '#gsModal' && !r.media && /^0(px)?$/.test(r.st.getPropertyValue('padding-top'))),
@@ -2374,16 +2396,18 @@ async function snapshotChecks() {
       chk(short.length === 0, 'snapshot: a control in the window is under its tap height: ' + short.map(x => x[0]).join(', ')); }
     /* the owner's clean-up of 14 October 2026, in the rules (jsdom lays nothing out; the sizes were
        measured in Chromium at 1280, 914 and 390): the head three columns, the two teams the same width
-       either side of the middle, and on a phone the teams on one row and the middle under them; a
+       either side of the middle, and under 900px (the rule at 899px: three columns left the middle 231-369px
+       wide from 761 to 899, 238 at an iPad's 768) the teams on one row and the middle under them; a
        meeting's two boxes in two equal columns either side of "vs", stretched to one height, the better
        rank's tint changing no size; a position matchup's two sides two equal columns; no "at" circle,
        no sources line and no Sources card left in the styles */
-    { const get = (sel, phone, prop) => { const r = rules.filter(x => x.sel === sel && (phone ? /max-width:\s*760px/.test(x.media) : !x.media) && x.st.getPropertyValue(prop)); return r.length ? r[r.length - 1].st.getPropertyValue(prop).replace(/\s+/g, ' ').trim() : ''; };
-      const bad = [], want = (sel, phone, prop, v) => { const got = get(sel, phone, prop); if (got !== v) bad.push(`${sel}${phone ? ' (phone)' : ''} ${prop} is '${got}', not '${v}'`); };
+    { const get = (sel, media, prop) => { const r = rules.filter(x => x.sel === sel && (media ? media.test(x.media) : !x.media) && x.st.getPropertyValue(prop)); return r.length ? r[r.length - 1].st.getPropertyValue(prop).replace(/\s+/g, ' ').trim() : ''; };
+      const bad = [], want = (sel, media, prop, v) => { const got = get(sel, media, prop); if (got !== v) bad.push(`${sel}${media ? ` (${media.source})` : ''} ${prop} is '${got}', not '${v}'`); };
+      const STACKED = /max-width:\s*899px/;
       const cols = get('.gs-hero', false, 'grid-template-columns').split(' ');
       if (cols.length !== 3 || cols[0] !== cols[2] || !/fr\)$/.test(cols[0])) bad.push(`the head's columns are '${cols.join(' ')}': not the two teams the same width either side of the middle`);
       want('.gs-hero', false, 'grid-template-areas', '"away mid home"');
-      want('.gs-hero', true, 'grid-template-areas', '"away home" "mid mid"');
+      want('.gs-hero', STACKED, 'grid-template-areas', '"away home" "mid mid"'); want('.gs-hero', STACKED, 'grid-template-columns', 'minmax(0,1fr) minmax(0,1fr)');
       want('.gs-team.gs-away', false, 'grid-area', 'away'); want('.gs-team.gs-home', false, 'grid-area', 'home'); want('.gs-mid', false, 'grid-area', 'mid');
       want('.gs-duel', false, 'grid-template-columns', 'minmax(0,1fr) auto minmax(0,1fr)'); want('.gs-duel', false, 'align-items', 'stretch');
       want('#gsModal .ddsides', false, 'grid-template-columns', 'minmax(0,1fr) minmax(0,1fr)');
@@ -2620,6 +2644,21 @@ async function snapshotChecks() {
       /* a game the prop model has not got (this made-up wild-card game) cannot open on the Props tab: no button to it */
       chk(!!o.md && A.w.pkBoard.canProps(x.game_id) === false && !o.md.querySelector('[data-gs-props]'), 'snapshot: a game the Props tab cannot open offers a button to it');
       A.w.close(); } }
+  /* a graded wild-card game (made up in a copy of the state: the latest graded game played again in
+     week 19, its result, its line and every call and grade with it): both its teams have a playoff
+     record, and the window is held whole on that copy, the record check among it, so "4-1" with
+     "playoffs 1-0" beside it is held as the elo job's morning smoke meets it through the playoffs */
+  if (played && played.result) {
+    const alt = JSON.parse(JSON.stringify(STATE)), x = JSON.parse(JSON.stringify(played));
+    x.game_id = played.game_id.replace(/_\d+_/, '_19_'); x.week = 19; x.game_type = 'WC';
+    for (const k of ['processed', 'atKickoff', 'odds', 'joker']) if (alt[k] && alt[k][played.game_id]) alt[k][x.game_id] = JSON.parse(JSON.stringify(alt[k][played.game_id]));
+    alt.schedule.push(x);
+    const A = await run(alt, undefined, wk => scoreboard(alt, wk)); await wait(400);
+    const o = await open(A, x);
+    chk(!!o.btn && A.errs.length === 0 && [x.away_team, x.home_team].every(t => !!o.md.querySelector(`[data-gs-po="${t}"]`)),
+      'snapshot: a graded wild-card game\'s window does not open, or does not show both teams\' playoff records: ' + A.errs.join('; '));
+    if (o.btn) { st = alt; try { hold(A, x, 'a graded wild-card game', x.result > 0 ? x.home_team : x.away_team); } finally { st = STATE; } }
+    A.w.close(); }
 }
 
 /* =====================================================================================

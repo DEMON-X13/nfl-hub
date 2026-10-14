@@ -59,7 +59,8 @@ price or book: the snapshot shows the market apart); no record or score typed in
 are shown beside it, and a typed one goes stale); none of the site's own ranks (the Deep Dive beside the
 note moves with every run; `siteRankQuote()` in `tools/lib.js` lists the phrases); no em dashes or double
 dashes; plain text, no markup, but for every player named in bold, `**Pat Surtain II**` (players only,
-never a coach or an owner; the lengths count the text without the markers). Shape and game ids are
+never a coach, an owner or a team, and a name straight after a role such as "owner" or "coach" stays
+plain; the lengths count the text without the markers). Shape and game ids are
 failures; the wording rules are warnings, so the job never holds back the week's data over a note, but the
 routine runs `--strict`, which refuses both.
 

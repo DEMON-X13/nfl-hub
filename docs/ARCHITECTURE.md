@@ -408,13 +408,15 @@ to Super Bowl, are seasontype 3), says the regular season is over once every gam
 the schedule has no playoff game, reads "vs" for a neutral site (nflverse's Neutral or a 9:30am
 Eastern kickoff). It is six columns on a wide screen (date, matchup, win probability, confidence,
 score prediction, final score) and one card a game at 900px and under; between them, 901 to
-1,140px (the owner's window is 914), a layout of its own narrows the columns and lets the
+1,160px (the owner's window is 914), a layout of its own narrows the columns and lets the
 win-probability bar take what is left, its team labels dropped since the matchup column names the
-teams, so the board never scrolls sideways (it did from 901 to about 1,100px, and its last column
-ran into the card's padding up to 1,140, until 14 October 2026). jsdom lays nothing out, so
-`smoke.js` sums each layout's least column widths, its gaps and the card's padding against the
-page's content at that layout's narrowest width (1,141px wide, 901 between) and wants exactly one
-layout between the phone card and a wide screen. A game's row is a button (`role="button"`, `tabindex="0"`,
+teams, and the final-score column keeps 136px in every layout for a live "WAS leading 31–33", so the
+board never scrolls sideways (it did from 901 to about 1,100px, its last column ran into the card's
+padding up to 1,140, and with a classic scrollbar up to 1,156, until 14 October 2026). jsdom lays
+nothing out, so `smoke.js` sums each layout's least column widths, its gaps and the card's padding
+against the page's content, less a 17px classic scrollbar, at that layout's narrowest width (one past
+the middle layout's max-width, 1,161px, wide; 901 between), and wants exactly one layout between the
+phone card and a wide screen and no final-score column under 136px or narrower than the wide one's. A game's row is a button (`role="button"`, `tabindex="0"`,
 `aria-haspopup="dialog"`): a click, Enter or Space opens its **Game snapshot** straight away (the
 owner's call, 14 October 2026; until then a tap opened the row on two buttons, the snapshot and the
 game's props), wired once on the board (`wireRows()`), so a redraw of the board never opens a window.
@@ -437,8 +439,9 @@ over its name and its record alone (3-2, as Team Rankings counts it, with no wor
 counts; the playoffs beside it once there are any; the Elo file's count, so titled, where it has a
 final the results have not), the middle the score once there is one, the kickoff in the viewer's time
 and the site (a neutral one named so), and the game's preview (`.gs-prev`, below); no "at" circle
-between the teams (the owner's call, 14 October 2026: the labels say it); on a phone (760px and
-under) the teams share a row and the middle goes under them. A played game's note, ruled in gold,
+between the teams (the owner's call, 14 October 2026: the labels say it); under 900px (an iPad's 768
+among them) the teams share a row and the middle goes full width under them, the phone's smaller
+sizes from 760px. A played game's note, ruled in gold,
 follows the head; then the headline -- the Vegas favourite's nickname and the spread it is favoured
 by, its chance and the board's own confidence pill (`BET.tier`), or once played the winner with an
 Upset or Favourite won chip and the line it was favoured by under it -- over the board's own split

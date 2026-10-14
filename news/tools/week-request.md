@@ -35,9 +35,12 @@ Broncos (4-1) ..." and who is out), so a file may cover some games and gain the 
 
 The rules, which `tools/notes.js` holds (the wording ones warn, the shape ones fail; `--strict` refuses both):
 
-- Every player named is in bold, a surname alone too, and only players, never a coach or an owner:
+- Every player named is in bold, a surname alone too, and only players, never a coach, an owner or a team:
   "Falcons coach Kevin Stefanski said `**Penix**` will start", "`**Marvin Harrison Jr.**` reunites with
-  `**C.J. Stroud**`". Otherwise plain text: no HTML, no other markdown, no stray `*`, no bold in `sources`.
+  `**C.J. Stroud**`". A name straight after a role (owner, coach, coordinator, GM, general manager,
+  president, executive, chairman, assistant, team doctor) is that person and stays plain, even where a
+  player has the same name ("Bengals owner Mike Brown"). Otherwise plain text: no HTML, no other markdown,
+  no stray `*`, no bold in `sources`.
 - No betting language at all: no spread, favourite or favored, underdog, moneyline, odds, over/under or O/U,
   "the total" or point total, cover or covering, ATS, Vegas (Las Vegas the city is fine), sportsbook,
   DraftKings, FanDuel, bet, betting, wager, parlay, "the line" ("on the line" and "the line of scrimmage"

@@ -489,7 +489,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
    grid gutters, the same row padding, the same 13px display-face matchup and tags, the same
    date block, the same 20px score */
 /* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
-.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
+.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(274px,358px) 138px 136px 136px;gap:14px;align-items:center;justify-content:space-between}
 .pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pk-sep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
 .pk-gamehead .pk-c{text-align:center}
@@ -544,9 +544,13 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pk-foot a{color:var(--ink-2)}
 /* between the phone card and a wide screen the six columns above need about 1,100px: narrower columns
    there, the split bar taking what is left, so the board never scrolls sideways (it did from 901 to
-   about 1,100px wide, and the last column ran into the card's padding up to 1,140) */
-@media(min-width:901px) and (max-width:1140px){
-  .pk-gamehead,.pk-game{grid-template-columns:96px 146px minmax(170px,1fr) 104px 112px 108px;gap:10px;justify-content:normal}
+   about 1,100px wide, and the last column ran into the card's padding up to 1,140). The result column
+   holds what the wide screen's does, a live "WAS leading 31–33" (about 134px at 15px), so it is 136px,
+   the split bar giving up the room (at 108px that line ran past the card's edge on game day); and the
+   layout runs to 1,160px, so a classic 15-17px scrollbar never leaves the wide layout short of its room
+   (from 1,141 to 1,156px on Windows its last column ran into the card's padding) */
+@media(min-width:901px) and (max-width:1160px){
+  .pk-gamehead,.pk-game{grid-template-columns:96px 146px minmax(150px,1fr) 104px 112px 136px;gap:10px;justify-content:normal}
   .pk-gamehead{padding:0 12px 8px}
   .pk-game{padding:13px 12px}
   .pk-probrow{padding:0 4px}
@@ -927,7 +931,7 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 #gsModal .gs-props{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 16px;font-size:var(--gs-t3);font-weight:600}
 /* the head: the away team, the middle, the home team (the owner's ask, 14 October 2026: no "at" circle,
    the AWAY and HOME labels say it). The middle holds the score once there is one, the kickoff and site,
-   and the preview; on a phone the two teams share the top row and the middle goes full width under them */
+   and the preview; under 900px the two teams share the top row and the middle goes full width under them */
 .gs-hero{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,2.5fr) minmax(180px,1fr);grid-template-areas:"away mid home";gap:16px 24px;align-items:start}
 .gs-team{min-width:0;display:flex;flex-direction:column;gap:8px}
 .gs-team.gs-away{grid-area:away}
@@ -1230,6 +1234,11 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 
 @media(max-width:899px){
   .gs-pair{display:block}
+  /* the head stacked: the two teams side by side on the top row, the middle (score, kickoff, preview)
+     full width under them. Three columns left the middle 231-369px wide from 761 to 899px (238 at an
+     iPad's 768, its preview a ribbon of sixteen lines); the phone's smaller sizes stay at 760px */
+  .gs-hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"away home" "mid mid"}
+  .gs-mid .gs-sc{margin-top:2px}
   .gs-gli{grid-template-columns:152px minmax(0,1fr) 18px;grid-template-areas:"lab gv go" "lab gc go"}
   .gs-gli>.gs-lab{align-self:start;padding-top:4px}
 }
@@ -1239,13 +1248,11 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-top{border-radius:0;padding:0 12px}
   .gs-body{padding:12px 12px 0}
   #gsModal .gs-verdict.card{padding:16px 14px 6px}
-  /* the two teams side by side on the top row, the middle (score, kickoff, preview) full width under them */
-  .gs-hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"away home" "mid mid";gap:14px 10px}
+  .gs-hero{gap:14px 10px}
   .gs-tname .pk-ttag{font-size:var(--gs-t3);padding:6px 9px}
   .gs-tname b{font-size:var(--gs-t3)}
   .gs-team{gap:4px}
   .gs-mid{gap:8px}
-  .gs-mid .gs-sc{margin-top:2px}
   .gs-fav{padding:14px 12px;margin-top:14px}
   .gs-favt{display:block;text-wrap:balance}
   .gs-favt .pk-ttag{margin-right:4px;vertical-align:3px}
@@ -5002,7 +5009,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='e03c04d';
+const PAGE_HASH='480dcf0';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7668,7 +7675,7 @@ function matchup(P,g,F){
     const res=win?(win===t?' gs-won':' gs-lost'):'';
     return `<div class="gs-team ${cls}${res}"><span class="gs-lab">${cls==='gs-away'?'Away':(neu?'Home (listed)':'Home')}</span>
       <div class="gs-tname">${tg(t)}<b>${esc(teamName(t))}</b></div>
-      <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?`<span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
+      <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?` <span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
   const score=o?`<div class="gs-sc"><span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small></div>`:'';
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
   const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups, units and stats are the files as they stand now, after the game.</p>`:'';
@@ -7738,7 +7745,8 @@ function matchup(P,g,F){
       else if(p1.edge==='off'&&p2.edge==='off') v='<span>Both offenses rank higher</span>';
       else if(p1.edge==='def'&&p2.edge==='def') v='<span>Both defenses rank higher</span>';
       else v='<span>Even</span>';
-      const mu=(o,d,p)=>`<span class="gs-mu">${esc(o)} offense ${V(N('urank:off:'+o,ordinal(p.vo.rank)),p.edge==='off')} vs ${esc(d)} defense ${V(N('urank:def:'+d,ordinal(p.vd.rank)),p.edge==='def')}</span>`;
+      /* each side's label and its rank pill kept together (at about 900-930px a pill was left alone on a line) */
+      const mu=(o,d,p)=>`<span class="gs-mu"><span class="gs-nw">${esc(o)} offense ${V(N('urank:off:'+o,ordinal(p.vo.rank)),p.edge==='off')}</span> vs <span class="gs-nw">${esc(d)} defense ${V(N('urank:def:'+d,ordinal(p.vd.rank)),p.edge==='def')}</span></span>`;
       return [v,mu(a,h,p1)+mu(h,a,p2)]; })}
     ${line('out','Who\'s out','gsPos',()=>{ if(!F) return loading; const Pl=F.players, mu=F.mu;
       if(!Pl||!Pl.groups) return ['<span class="gs-load">Not loaded</span>','The player ratings did not load.'];

@@ -118,7 +118,18 @@
                           the markers over the limit; 38 and 302 warn), and every other rule reads it so
                           too: a sentence after a bold name, a record or a book's name split by markers, a
                           preview ending in a bold "Jr.". The validator before it read an unpaired ** as
-                          plain text and counted the markers in the lengths. */
+                          plain text and counted the markers in the lengths. A name is not always the
+                          player's: a plain one straight after a role word ("Bengals owner Mike Brown said",
+                          and coach, coordinator, GM, general manager, president, executive, chairman,
+                          assistant, team doctor) does not warn, where the rule before it asked the writer to
+                          bold the owner, and the same name elsewhere warns that the site knows it as a
+                          player's ("if this is the player"). A pair that is no player's warns without the
+                          schedule's coaches, which a week can find stale: one straight after a role word,
+                          and a team's city, nickname or code ("**Broncos**", "**DEN**", "**the Denver
+                          Broncos**"), where nothing warned before; a bold name the players list lacks
+                          (Anton Harrison, Micah Parsons), after a position ("Jets WR") or a coach's "said",
+                          does not. The players list reads every group's sidelined in players.json (Tyquan
+                          Thornton, Edgerrin Cooper on injured reserve), which the reader before it missed. */
 'use strict';
 const { SEASON, seasonState, siteRankQuote } = require('./lib');
 const { lineups, schedule, notePractice, espnIndex } = require('./context');
@@ -721,7 +732,7 @@ function cases() {
     bolded.games[id].news = 'Denver beat the Jets 27-24 on Sunday; **Kenneth Walker III** (ankle) did not practise Tuesday.';
     bolded.games[BUF].preview = '**Josh Allen** brings the Bills to Las Vegas with the division lead on the line against **Maxx Crosby Jr.** and a rested pass rush.';
     const okB = runB(bolded), plainB = runB(good), want = P.slice(0, 6);
-    const named = want.filter(n => plainB.warns.some(m => /a player named but not in bold/.test(m) && m.includes(`"${n}"`)));
+    const named = want.filter(n => plainB.warns.some(m => /the site knows as (?:a player|players), not in bold/.test(m) && m.includes(`"${n}"`)));
     add('notes-rules', 'a note with every player in bold passes clean; the same note with its players plain warns for each, named, and never fails',
       !okB.fails.length && !okB.warns.length && !plainB.fails.length && plainB.warns.length === 3 && named.length === want.length,
       `bold: ${[...okB.fails, ...okB.warns].join(' | ') || 'clean'}; plain: ${plainB.warns.length} warning(s), ${named.length} of ${want.length} named`);
@@ -729,7 +740,7 @@ function cases() {
     const bendB = (fn, opts) => { const o = clone(bolded); fn(o, o.games[id]); return runB(o, opts); };
     const coachSched = { ...sched, games: sched.games.map(g => ({ ...g, home_coach: 'Sean Payton', away_coach: 'Mike Macdonald' })) };
     const BOLDS = [
-      ['a player left plain', /a player named but not in bold \("Drew Lock"/, (o, g) => { g.preview = g.preview.replace('**Drew Lock**', 'Drew Lock'); }],
+      ['a player left plain', /a name the site knows as a player, not in bold \("Drew Lock": if this is the player, write \*\*Drew Lock\*\*\)/, (o, g) => { g.preview = g.preview.replace('**Drew Lock**', 'Drew Lock'); }],
       ['a player only partly in a pair', /a player only partly in bold \("Kenneth Walker III"/, (o, g) => { g.news = g.news.replace('**Kenneth Walker III**', '**Kenneth Walker** III'); }],
       ['an unpaired **', /an unpaired \*\* or a single \*/, (o, g) => { g.preview = '**Drew Lock goes back to Denver on a short week with a rested Seattle defense waiting.'; }],
       ['a single *', /an unpaired \*\* or a single \*/, (o, g) => { g.news = g.news.replace('Sunday;', 'Sunday*;'); }],
@@ -742,6 +753,52 @@ function cases() {
     ].map(([what, rx, fn, opts]) => { const r = bendB(fn, opts); return !r.fails.length && r.warns.some(m => rx.test(m)) ? null : `${what} (${r.fails.length} failure(s); ${r.warns.join(' | ') || 'no warning'})`; }).filter(Boolean);
     add('notes-rules', 'bold that breaks a rule warns and never fails: a player plain or partly bold, an unpaired ** or a single *, a pair over 60 or with a space inside, other markdown, a coach in bold (given or on the schedule), bold sources',
       !BOLDS.length, BOLDS.join(' | ') || 'all ten warn');
+    /* a name is not always the player's: "Bengals owner Mike Brown said" names the owner, though a Mike Brown
+       plays for New England. A plain name straight after a role word is not asked to be bold, the same name
+       elsewhere still is, and the warning says only that the site knows the name as a player's. The rule
+       before it warned on the owner, so --strict refused a correct note or had the writer bold an owner */
+    const PM = { players: [...P, 'Mike Brown'] };
+    const ROLES = ['Bengals owner', 'Bengals head coach', 'Bengals defensive coordinator', 'Bengals GM', 'Bengals general manager', 'team president',
+      'executive', 'chairman', 'senior defensive assistant', 'team doctor', 'co-owner'];
+    const RW = ROLES.map(w => { const r = bendB((o, g) => { g.news = `${w} Mike Brown said the club will not make a trade this week.`; }, PM); return r.fails.length || r.warns.length ? `${w}: ${[...r.fails, ...r.warns].join('; ')}` : null; }).filter(Boolean);
+    const MB = bendB((o, g) => { g.news = 'Mike Brown (ankle) did not practise Wednesday, and Bengals owner Mike Brown said nothing.'; }, PM);
+    const mbOk = !MB.fails.length && MB.warns.length === 1 && /a name the site knows as a player, not in bold \("Mike Brown": if this is the player, write \*\*Mike Brown\*\*\)/.test(MB.warns[0]);
+    add('notes-rules', 'a plain name straight after a role word (owner, coach, coordinator, GM, general manager, president, executive, chairman, assistant, team doctor) is that person, not the player: no warning; the same name elsewhere warns that the site knows it as a player\'s',
+      !RW.length && mbOk, `${RW.length ? `warned: ${RW.join(' | ')}; ` : `${ROLES.length} clean; `}elsewhere: ${[...MB.fails, ...MB.warns].join(' | ') || 'no warning'}`);
+    /* a pair that is no player's, worked out without the schedule's coaches, which a week can find stale: one
+       straight after a role word, and a team (its city, nickname or code, or a run of them). A name the players
+       list lacks is never one by that alone: the list is incomplete (Anton Harrison, Micah Parsons), and a
+       position before a name ("Jets WR", "edge rusher") is not a role */
+    const NONP = [
+      ['an owner in bold', /a coach or other non-player in bold \("Mike Brown", straight after "owner"/, 'Bengals owner **Mike Brown** said the club will not make a trade this week.'],
+      ['a coordinator in bold', /a coach or other non-player in bold \("Vic Fangio", straight after "coordinator"/, 'Eagles defensive coordinator **Vic Fangio** said **Drew Lock** would see pressure.'],
+      ['a general manager in bold', /a coach or other non-player in bold \("John Schneider", straight after "general manager"/, 'Seattle general manager **John Schneider** signed a cornerback on Tuesday.'],
+      ['a nickname in bold', /a team in bold \("Broncos"/, 'The **Broncos** signed a cornerback off the practice squad on Tuesday.'],
+      ['a city in bold', /a team in bold \("Kansas City"/, '**Kansas City** signed a cornerback off the practice squad on Tuesday.'],
+      ['a code in bold', /a team in bold \("DEN"/, '**DEN** signed a cornerback off the practice squad on Tuesday.'],
+      ['a full team name in bold', /a team in bold \("the Denver Broncos"/, '**the Denver Broncos** signed a cornerback off the practice squad on Tuesday.'],
+    ].map(([what, rx, t]) => { const r = bendB((o, g) => { g.news = t; }, PM); return !r.fails.length && r.warns.some(m => rx.test(m)) ? null : `${what} (${r.fails.length} failure(s); ${r.warns.join(' | ') || 'no warning'})`; }).filter(Boolean);
+    const KNOWN = ['Jaguars left tackle **Anton Harrison** went on injured reserve and **Micah Parsons** has not been cleared.', 'Jets WR **Adonai Mitchell** had a procedure, and Bears edge rusher **Montez Sweat** is suspended.',
+      'Falcons coach Kevin Stefanski said **Drew Lock** will start if he has no setbacks.']
+      .map(t => { const r = bendB((o, g) => { g.news = t; }, PM); return r.fails.length || r.warns.length ? `"${t}": ${[...r.fails, ...r.warns].join('; ')}` : null; }).filter(Boolean);
+    add('notes-rules', 'a pair that is no player\'s warns, without the schedule\'s coaches: one straight after a role word, and a team\'s city, nickname or code; a name the players list lacks, after a position or a coach\'s "said", does not',
+      !NONP.length && !KNOWN.length, [NONP.length ? `not warned: ${NONP.join(' | ')}` : 'all seven warn', KNOWN.length ? `warned: ${KNOWN.join(' | ')}` : 'three clean'].join('; '));
+    /* the players list: every group's sidelined in elo/data/players.json, a ranked player out of the rankings
+       (Tyquan Thornton and Edgerrin Cooper on injured reserve) who is kept out of players, as the build keeps him;
+       the reader before it read past[].name, which never carries a name, and missed them. Read from a made-up file */
+    const pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'notes-case-'));
+    let PL = [], PT = null;
+    try {
+      const pf = path.join(pdir, 'players.json');
+      fs.writeFileSync(pf, JSON.stringify({ players: { '00-1': { name: 'Drew Lock', group: 'QB', team: 'SEA' } }, past: { '00-0038575': { s0: 1520, h: [[3, 1520]] } },
+        groups: { WR: { top: [{ id: '00-1', name: 'Drew Lock' }], sidelined: [{ id: '00-0038575', name: 'Tyquan Thornton', team: 'KC', would_rank: 30, why: 'on injured reserve' }] },
+          LB: { sidelined: [{ id: '00-0039850', name: 'Edgerrin Cooper', team: 'GB', would_rank: 7, why: 'on injured reserve' }] }, TE: { sidelined: [] } } }));
+      PL = NOTES.players([pf]);
+      PT = bendB((o, g) => { g.news = '**Drew Lock** said Tyquan Thornton (ankle) went on injured reserve.'; }, { players: PL });
+    } finally { fs.rmSync(pdir, { recursive: true, force: true }); }
+    const side = ['Tyquan Thornton', 'Edgerrin Cooper', 'Drew Lock'].filter(n => !PL.includes(n));
+    add('notes-rules', "the players list reads every group's sidelined in players.json (a ranked player on injured reserve is kept out of players), and a sidelined player left plain warns",
+      !side.length && PT && !PT.fails.length && PT.warns.some(m => /not in bold \("Tyquan Thornton"/.test(m)), `list: ${PL.join(', ') || 'empty'}${side.length ? `; missing ${side.join(', ')}` : ''}; plain: ${PT ? PT.warns.join(' | ') || 'no warning' : 'not run'}`);
     /* names whole and longest first: "Marvin Harrison Jr." claims its place, so "Marvin Harrison" is not read in it,
        while a second, plain "Marvin Harrison" is; a hyphen is part of a name */
     const H = bendB((o, g) => { g.news = 'Marvin Harrison Jr. reunites with **C.J. Stroud**, and Marvin Harrison watched.'; }).warns.find(m => /not in bold/.test(m)) || '';

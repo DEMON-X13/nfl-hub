@@ -28,10 +28,14 @@
                move under a note that does not), no em dash or double dash; the bold: no markup but the
                pairs (an unpaired ** or a single *, a pair over 60 characters, a space just inside one,
                HTML, any other markdown), a name the site's files know as a player (players(): the
-               Elo ratings' players and the Deep Dive's lineups) written outside a pair or only partly in
-               one (the whole name, case-sensitive, longest first, so "Marvin Harrison Jr." is read
-               before "Marvin Harrison"), and a head coach on the schedule (its away_coach and
-               home_coach) in bold; sources short names, plain, no bold.
+               Elo ratings' players, ranked or sidelined, and the Deep Dive's lineups) written outside a
+               pair or only partly in one (the whole name, case-sensitive, longest first, so "Marvin
+               Harrison Jr." is read before "Marvin Harrison"; a plain one straight after a role word
+               (ROLE: owner, coach, coordinator, GM, general manager, president, executive, chairman,
+               assistant, team doctor) is that person, not the player: "Bengals owner Mike Brown"), and
+               a pair that is no player's: a head coach on the schedule (its away_coach and home_coach),
+               a pair straight after a role word, and a team's city, nickname or code (TEAM_WORDS);
+               sources short names, plain, no bold.
    The wording rules are warnings so the job never holds back the week's results, stats and Deep Dive over a
    note: the news smoke (tools/smoke.js) reports every note problem, failures included, as a warning. The
    Wednesday routine runs this --strict before it commits, so a note that breaks any rule is not committed.
@@ -113,10 +117,17 @@ function unmark(raw, bold = true) {
 const MARKDOWN = /`|\[[^\]]*\]\([^)]*\)|__|~~|(?:^|\s)_[^_\s][^_]*_(?=$|[\s.,;:!?])|^\s*(?:#{1,6}|>)\s/;
 /* a name stops at a letter, a digit or a hyphen: "Jaxon Smith" is not read inside "Jaxon Smith-Njigba" */
 const NAME_EDGE = /[\p{L}\p{N}-]/u;
+/* a role no player holds, read on the text just before a name: the name straight after it is that person's
+   ("Bengals owner Mike Brown said", though a Mike Brown plays for New England), so it is never asked to be
+   bold, and a pair there is a coach or another non-player in bold. "coach" takes "head coach" in */
+const ROLE = /\b(?:owner|coach|coordinator|GM|general manager|president|executive|chairman|assistant|team doctor)\s+$/i;
+/* a pair that is a team: a city, a nickname or a code, or a run of them ("Denver Broncos"), "the" before */
+const TEAM_PAIR = new RegExp(`^(?:[Tt]he\\s+)?(?:${TEAM_WORDS.join('|')})(?:\\s+(?:${TEAM_WORDS.join('|')}))*$`);
 
 /* the players named in u.text who are not wholly in a pair, in the text's order: [{ name, at, part }], part
    when some of the name is. names are matched whole and case-sensitive, longest first, and a name read once
-   claims its place, so "Marvin Harrison Jr." is never read again as "Marvin Harrison" */
+   claims its place, so "Marvin Harrison Jr." is never read again as "Marvin Harrison". A name wholly plain
+   straight after a role word (ROLE) is that person's and not listed */
 function unbolded(u, names) {
   const t = u.text, claimed = [], out = [];
   for (const n of names) {
@@ -125,7 +136,10 @@ function unbolded(u, names) {
       if (NAME_EDGE.test(t[i - 1] || '') || NAME_EDGE.test(t[j] || '')) continue;
       if (claimed.some(([a, b]) => i < b && j > a)) continue;
       claimed.push([i, j]);
-      if (!u.bold.some(([a, b]) => a <= i && j <= b)) out.push({ name: n, at: i, part: u.bold.some(([a, b]) => i < b && j > a) });
+      if (u.bold.some(([a, b]) => a <= i && j <= b)) continue;
+      const part = u.bold.some(([a, b]) => i < b && j > a);
+      if (!part && ROLE.test(t.slice(0, i))) continue;
+      out.push({ name: n, at: i, part });
     }
   }
   return out.sort((x, y) => x.at - y.at);
@@ -147,10 +161,18 @@ function wording(raw, u, at, warn, { names = null, coaches = null, bold = true }
       : `${at}: an unpaired ** or a single * (a player's name in bold is **Bo Nix**, two asterisks each side)`);
   }
   const sp = u.pairs.find(p => p !== p.trim()); if (sp != null) warn(`${at}: a space just inside a bold pair ("**${sp}**")`);
-  if (coaches && coaches.size) { const c = u.pairs.find(p => coaches.has(p.trim())); if (c != null) warn(`${at}: a coach in bold ("${c.trim()}"; bold players only)`); }
+  let c = null;
+  if (coaches && coaches.size) { c = u.pairs.find(p => coaches.has(p.trim())); if (c != null) warn(`${at}: a coach in bold ("${c.trim()}"; bold players only)`); }
+  /* a pair that is no player's, read without the schedule's coaches (a week can find them stale): one straight
+     after a role word, unless the schedule's coaches have already named it, and a team */
+  const rk = u.pairs.findIndex((p, k) => p !== c && ROLE.test(t.slice(0, u.bold[k][0])));
+  if (rk >= 0) warn(`${at}: a coach or other non-player in bold ("${u.pairs[rk].trim()}", straight after "${ROLE.exec(t.slice(0, u.bold[rk][0]))[0].trim()}"; bold players only)`);
+  const tm = u.pairs.find(p => TEAM_PAIR.test(p.trim()));
+  if (tm != null) warn(`${at}: a team in bold ("${tm.trim()}"; bold players only)`);
   if (names && names.length) {
     const miss = unbolded(u, names), whole = [...new Set(miss.filter(x => !x.part).map(x => x.name))], part = [...new Set(miss.filter(x => x.part).map(x => x.name))];
-    if (whole.length) warn(`${at}: a player named but not in bold (${whole.map(n => `"${n}"`).join(', ')}: write **${whole[0]}**)`);
+    /* only the name matched: the same name can be an owner's or a coach's, so the warning says so */
+    if (whole.length) warn(`${at}: ${whole.length > 1 ? 'names the site knows as players' : 'a name the site knows as a player'}, not in bold (${whole.map(n => `"${n}"`).join(', ')}: if ${whole.length > 1 ? 'these are the players' : 'this is the player'}, write **${whole[0]}**)`);
     if (part.length) warn(`${at}: a player only partly in bold (${part.map(n => `"${n}"`).join(', ')}: the whole name goes inside the pair)`);
   }
   if (raw !== raw.trim()) warn(`${at}: space at an end`);
@@ -219,9 +241,10 @@ function nameList(names) {
   return out.sort((a, b) => b.length - a.length || (a < b ? -1 : a > b ? 1 : 0));
 }
 
-/* the names the site's files know as players: ../elo/data/players.json (players[].name, and past[].name where
-   one has it) and data/units.json's lineups (every who, out and next name the Deep Dive lists). Each file read
-   on its own; [] when neither reads */
+/* the names the site's files know as players: ../elo/data/players.json (players[].name, and every group's
+   sidelined[].name: a ranked player out of the rankings, on injured reserve or out this week, is kept out of
+   players, and past carries no name) and data/units.json's lineups (every who, out and next name the Deep Dive
+   lists). Each file read on its own; [] when neither reads */
 function players(files = [path.join(ROOT, '..', 'elo', 'data', 'players.json'), path.join(ROOT, 'data', 'units.json')]) {
   const names = new Set(), vals = x => (Array.isArray(x) ? x : x && typeof x === 'object' ? Object.values(x) : []);
   const walk = x => {
@@ -233,7 +256,8 @@ function players(files = [path.join(ROOT, '..', 'elo', 'data', 'players.json'), 
   for (const file of files) {
     let o; try { o = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { continue; }
     if (!o || typeof o !== 'object') continue;
-    if (o.players || o.past) for (const p of [...vals(o.players), ...vals(o.past)]) { if (p && typeof p.name === 'string') names.add(p.name); }
+    for (const p of vals(o.players)) { if (p && typeof p.name === 'string') names.add(p.name); }
+    for (const g of vals(o.groups)) for (const s of vals(g && g.sidelined)) { if (s && typeof s.name === 'string') names.add(s.name); }
     if (o.units) walk(o.units);
   }
   return nameList(names);

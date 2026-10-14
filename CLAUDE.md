@@ -95,12 +95,15 @@ the wording is a warning: a preview of one sentence, 40 to 200 characters, with 
 records are shown beside it, and a typed one goes stale), news of at most 300 characters, and in either no betting
 words at all (no spread, favourite, moneyline, odds, total, line, cover or book: the snapshot shows the market
 apart), none of the site's own ranks (`siteRankQuote` in `tools/lib.js`), no em dash, plain text but for every
-player named in bold, `**Pat Surtain II**` (the owner's call, 14 October 2026: players only, never a coach or an
-owner; the lengths and every other rule read the text without the markers, as `unmark` does). A name the site's
-files know as a player (`players()`: `elo/data/players.json` and `units.json`'s lineups, read whole, case-sensitive
-and longest first) left plain or only partly bold, an unpaired `**` or a stray `*`, a pair over 60 characters or with
-a space just inside it, other markup, a coach in bold (a head coach on the schedule) and bold in the sources each
-warn. `--strict` refuses both, so the routine commits no note that breaks a rule; the smoke reports every note
+player named in bold, `**Pat Surtain II**` (the owner's call, 14 October 2026: players only, never a coach, an
+owner or a team; the lengths and every other rule read the text without the markers, as `unmark` does). A name the
+site's files know as a player (`players()`: `elo/data/players.json`'s players and each group's sidelined, and
+`units.json`'s lineups, read whole, case-sensitive and longest first) left plain or only partly bold (but not a plain
+name straight after a role word, `ROLE`: owner, coach, coordinator, GM, general manager, president, executive,
+chairman, assistant, team doctor, as in "Bengals owner Mike Brown"; the warning says only that the site knows the
+name as a player's), an unpaired `**` or a stray `*`, a pair over 60 characters or with a space just inside it, other
+markup, a coach or other non-player in bold (a head coach on the schedule, or a pair straight after a role word), a
+team in bold (a city, nickname or code) and bold in the sources each warn. `--strict` refuses both, so the routine commits no note that breaks a rule; the smoke reports every note
 problem, its shape too, as a warning, so a note never holds back the week's results, stats and Deep Dive.
 
 The season is `SEASON` in `news/tools/lib.js`, nowhere else; after week 18 the job stays on week 18 and says the
@@ -679,12 +682,15 @@ below): an old `#tracker` address lands on Pick'ems, written over as `#pickems` 
 `history.replaceState`), and the build stops if `nflbets/build/tab_tracker.html` comes back. On a phone the bar scrolls sideways,
 and the chosen tab's button is brought into it on load, on a new address and on a tap (the bar scrolls, never the page).
 The Pick'ems board (`tab_pickems.html`) is six columns on a wide screen (date, matchup, win probability, confidence,
-score prediction, final score) and one card a game at 900px and under; from 901 to 1,140px (the owner's window is
+score prediction, final score) and one card a game at 900px and under; from 901 to 1,160px (the owner's window is
 914) the columns are narrower and the win-probability bar takes what is left, its team labels dropped (the matchup
-column names the teams), so the board never scrolls sideways, as it did from 901 to about 1,100px until 14 October
-2026. jsdom lays nothing out, so `smoke.js` sums each layout's least column widths, its gaps and the card's padding
-against the page's content at that layout's narrowest width (1,141px for the wide one, 901 for the one between), and
-fails unless there is exactly one layout between the phone card and a wide screen.
+column names the teams), and the final-score column keeps 136px in every layout for a live "WAS leading 31–33", so
+the board never scrolls sideways, as it did from 901 to about 1,100px until 14 October 2026, and nothing runs past a
+card's edge. jsdom lays nothing out, so `smoke.js` sums each layout's least column widths, its gaps and the card's
+padding against the page's content, less a 17px classic scrollbar, at that layout's narrowest width (one past the
+middle layout's max-width, 1,161px, for the wide one; 901 for the one between), fails unless there is exactly one
+layout between the phone card and a wide screen, and fails a final-score column under 136px or narrower than the
+wide layout's.
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
 front of it as its own `pk-` prefixed section, and the X Parlays section lifted out of
@@ -942,7 +948,8 @@ the head (`.gs-hero`): the away team, the middle (`.gs-mid`) and the home team, 
 counts; the playoffs beside it once there are any; where the Elo file has counted a final the results have not,
 the file's count, its title saying so), and no "at" circle between them (the owner's call, 14 October 2026: the
 labels say it). The middle holds the score once there is one, the kickoff and site (a neutral one named so), and
-the preview (below); on a phone (760px and under) the teams share a row and the middle goes under them. A played
+the preview (below); under 900px (an iPad's 768 among them) the teams share a row and the middle goes full width
+under them, the phone's smaller sizes from 760px. A played
 game's note follows the head; then the
 headline ("Jaguars favoured by 7.5", its chance and the board's own confidence pill; once played,
 "Buccaneers won" with an Upset chip and the line it was favoured by under it) over the board's split
