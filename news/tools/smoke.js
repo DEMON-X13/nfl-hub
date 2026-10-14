@@ -5,6 +5,9 @@
        built from (tools/lineup-checks.js; the build's own snapshot in tools/.cache when it matches,
        a fresh download otherwise), and to the week the schedule says is current;
      - the rank chip against the X NFL Bets Team Rankings tab's own file, ../elo/data/model.json;
+     - the Deep Dive's headline (Overall Offense against the opponent's Overall Defense) against the same
+       file, its tag and every row's weighted tag against the rules worked out on their own
+       (tools/deepdive-checks.js), on every game of the slate, and the tag constants to their values;
      - each team's stat bars against its own game count in results.js;
      - the live week's narrative: it never quotes the Deep Dive's or the rank chip's ranks, which
        move with every run while the narrative stays as written (on 2026-10-09, 146 of the 192 unit
@@ -19,6 +22,7 @@ const fs = require('fs'), path = require('path');
 const { JSDOM, requestInterceptor, VirtualConsole } = require('jsdom');
 const { SEASON, siteRankQuote } = require('./lib');
 const LC = require('./lineup-checks');
+const DC = require('./deepdive-checks');
 
 const ROOT = path.resolve(__dirname, '..');
 const OFFLINE = process.env.NEWS_SMOKE_OFFLINE === '1';
@@ -49,6 +53,17 @@ const dom = new JSDOM(fs.readFileSync(indexPath, 'utf8'), {
 let failed = 0;
 const check = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'FAIL ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) failed++; };
 const skip = (label, why) => console.log('SKIP ' + label + '  (' + why + ')');
+/* Warnings: who the Deep Dive lists and what its notes say (the lineup rules against the injury report,
+   roster and ESPN's list, a starter out named, a quarterback in doubt with the next one named, nobody
+   both listed and out) and the hand-written narrative quoting a site rank. Each is presentation on the
+   week's own data: it prints WARN, never fails the smoke, and is written to SMOKE_WARNINGS_FILE when
+   set, which the job reads after its commit to go red, so a lineup case no rule has seen never holds
+   back the week's scores and stats. Everything else stays a failure: the scores, records, stat bars and
+   their game counts, the rank chip against Team Rankings, the unit ranks, the lineups being for the
+   schedule's week and checked on this run's own download, the page loading, and every fixed case in
+   tools/cases.js (made-up data: only a change to the code can fail one) */
+const warned = [];
+const warn = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'WARN ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) warned.push(label + (detail !== undefined ? ' (' + detail + ')' : '')); };
 const ord = v => v + ((x => ['th', 'st', 'nd', 'rd'][(x - 20) % 10] || ['th', 'st', 'nd', 'rd'][x] || 'th')(v % 100));
 
 /* the narrative never quotes the site's own ranks (tools/lib.js siteRankQuote says which phrases) */
@@ -92,7 +107,7 @@ async function run() {
 
   // the live week's narrative quotes no site ranks: the Deep Dive and rank chip show them, and move
   { const hits = narrativeStrings(WK).map(([k, v]) => [k, siteRankQuote(v)]).filter(([, q]) => q).map(([k, q]) => `${k}: "${q}"`);
-    check('the live week quotes no Deep Dive or rank chip ranks', hits.length === 0, hits.length ? `${hits.length}: ${hits.slice(0, 4).join(' | ')}` : 'none'); }
+    warn('the live week quotes no Deep Dive or rank chip ranks', hits.length === 0, hits.length ? `${hits.length}: ${hits.slice(0, 4).join(' | ')}` : 'none'); }
 
   click('.slot[data-game="' + gameKey(first) + '"]');
   const title = d.getElementById('ovtitle') ? d.getElementById('ovtitle').textContent : '';
@@ -168,13 +183,25 @@ async function run() {
       if (U[first.away].g26 != null) { const b = dds[0].querySelector('.ddbasis').textContent;
         check("deep dive basis is the team's own 2026 game count", b.includes(`${first.away}'s ${U[first.away].g26} game`), b.slice(0, 120)); }
       else skip("deep dive basis is the team's own 2026 game count", 'units2026.js predates per-team game counts: rebuild with node tools/context.js');
-      // each row's tag is the edge between the two ratings it shows, and the mirrored rows agree
-      const LV = ['Very tough', 'Tough', 'Even', 'Favorable', 'Easy'];
-      const tagOf = e => e >= 1.5 ? 'Easy' : e >= 0.5 ? 'Favorable' : e > -0.5 ? 'Even' : e > -1.5 ? 'Tough' : 'Very tough';
-      const pairs = (A, O) => [[A.qb, O.vs.passD], [A.ol, O.front], [A.rb, O.vs.runD], [A.rec, O.db], [A.front, O.ol], [A.db, O.rec]].map(([u, v]) => tagOf(u.z - v.z));
-      const shown = i => [...dds[i].querySelectorAll('.dtag')].map(e => e.textContent);
-      const want = [pairs(U[first.away], U[first.home]), pairs(U[first.home], U[first.away])];
-      check('deep dive tags are the edge between the ratings shown', shown(0).join('|') === want[0].join('|') && shown(1).join('|') === want[1].join('|'), shown(0).join(',') + ' / ' + want[0].join(','));
+      // each row's tag is the edge between the two ratings it shows, weighted by what that matchup alone has
+      // predicted (tools/deepdive-checks.js, its own constants), and the mirrored rows agree, on the same weights
+      const LV = DC.LV;
+      const shown = i => [...dds[i].querySelectorAll('.ddrow .dtag')].map(e => e.textContent);
+      const want = [DC.rowTags(U[first.away], U[first.home]), DC.rowTags(U[first.home], U[first.away])];
+      check('deep dive tags are the weighted edge between the ratings shown', shown(0).join('|') === want[0].join('|') && shown(1).join('|') === want[1].join('|'), shown(0).join(',') + ' / ' + want[0].join(','));
+      { const f = DC.checkMeta(META);
+        check('deep dive tag constants are their own values (row weights, 0.5 and 1.5; headline 11.9126 points a unit, 0.9645 and 2.8935)', f.length === 0, f.join('; ') || JSON.stringify(META.tags)); }
+      // the headline: this team's Overall Offense against the opponent's Overall Defense, from model.json, above the rows
+      { let M = null; try { M = JSON.parse(fs.readFileSync(path.resolve(ROOT, '..', 'elo', 'data', 'model.json'), 'utf8')); } catch (e) { /* no hub file */ }
+        const r = DC.checkOverall(U, META, M, SEASON);
+        check(`deep dive Overall Offense and Defense are model.json's (${r.mode})`, r.fails.length === 0, r.fails.length ? `${r.fails.length}: ${r.fails.slice(0, 4).join(' | ')}` : `built ${META.overall && (META.overall.built_at || META.overall.missing)}`);
+        const heads = dds.map(x => x.querySelector('.ddhead')), H = DC.headlineWant(U[first.away], U[first.home], META);
+        if (H) check('deep dive headline at the top of each team, before the basis and the rows', heads.every(h => h && !h.closest('.ddrow') && h.nextElementSibling && h.nextElementSibling.classList.contains('ddbasis') && /ELO Ratings tab/.test(h.textContent)),
+          heads.map(h => h ? h.textContent.replace(/\s+/g, ' ').trim().slice(0, 140) : 'none').join(' / '));
+        else check('no deep dive headline without Overall ratings of the season', heads.every(h => !h), META.overall && META.overall.missing); }
+      { const dd = g('deepDive'), bad = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a, o]) => U[a] && U[o])
+          .flatMap(([a, o]) => DC.checkDive(dd(a, o, 'r6'), a, o, U[a], U[o], META));
+        check('deep dive headline and weighted tags hold on every game of the slate', bad.length === 0, bad.length ? `${bad.length}: ${bad.slice(0, 4).join(' | ')}` : `${WK.games.length * 2} team pages`); }
       const mirror = t => LV[4 - LV.indexOf(t)];
       check('mirrored rows agree: pass rush against pass protection, coverage against receivers', shown(0)[4] === mirror(shown(1)[1]) && shown(1)[4] === mirror(shown(0)[1]) && shown(0)[5] === mirror(shown(1)[3]) && shown(1)[5] === mirror(shown(0)[3]), shown(0).join(',') + ' / ' + shown(1).join(','));
       // every team's ratings: a full league of ranks per unit, a finite rating each
@@ -182,21 +209,21 @@ async function run() {
       const teamsU = Object.keys(U);
       check('every unit ranks the whole league once', teamsU.length === 32 && UN.every(u => teamsU.map(t => U[t][u].rank).sort((a, b) => a - b).join() === Array.from({ length: 32 }, (_, i) => i + 1).join() && teamsU.every(t => isFinite(U[t][u].z))) && ['passD', 'runD'].every(k => teamsU.every(t => isFinite(U[t].vs[k].z))));
       // nobody listed to play is also listed as out, and every unit missing a starter says so on the page
-      check('no player is both listed and out', teamsU.every(t => UN.every(u => !(U[t][u].out || []).some(p => (U[t][u].who || []).some(x => x.n === p.n)))));
+      warn('no player is both listed and out', teamsU.every(t => UN.every(u => !(U[t][u].out || []).some(p => (U[t][u].who || []).some(x => x.n === p.n)))));
       const dd = g('deepDive');
       const slateMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a]).filter(([a, o]) => {
         const html = dd(a, o, 'r6'), rowsH = html.split('class="ddrow"').slice(1);
         return UN.some((u, i) => (U[a][u].out || []).length && !(rowsH[i] || '').includes('class="ddout"'))
           || ((U[a].qb.out || []).length && U[a].qb.who.length && !(rowsH[0] || '').includes(U[a].qb.who[0].n + ' starts;'));
       });
-      check('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
+      warn('a starter who is out is named on the page, on every game of the slate', slateMiss.length === 0, slateMiss.map(x => x[0]).join(',') || 'none');
       // a quarterback in doubt has the next one named beside him, on every game of the slate
       const NF = { chart: 'next on the chart: ', roster: 'next on the roster: ', usage: 'next by 2026 dropbacks: ' };
       const qbMiss = WK.games.flatMap(x => [[x.away, x.home], [x.home, x.away]]).filter(([a]) => U[a] && (U[a].qb.next || U[a].qb.next_none)).filter(([a, o]) => {
         const row = dd(a, o, 'r6').split('class="ddrow"')[1], q = U[a].qb;
         return !(q.next ? row.includes((NF[q.next.from] || NF.chart) + q.next.n) : row.includes(q.next_none));
       });
-      check('a quarterback in doubt names the next one, on every game of the slate', qbMiss.length === 0, qbMiss.map(x => x[0]).join(',') || 'none');
+      warn('a quarterback in doubt names the next one, on every game of the slate', qbMiss.length === 0, qbMiss.map(x => x[0]).join(',') || 'none');
       // the quarterback row on made-up states: a backup from the roster says so, and no backup is said, not left blank
       { const keep = JSON.stringify(U[first.away].qb), q = U[first.away].qb;
         q.who = [{ n: 'Zed Quux', pos: 'QB', q: 'questionable: ankle' }];
@@ -394,7 +421,7 @@ addEventListener('hashchange',()=>{const b=[...document.querySelectorAll('#tabs 
       for (const [k, label] of Object.entries(RULES)) {
         if ((k === 'espn' || k === 'espn-q-dnp' || k === 'announced') && !S.espn) { skip('lineups: ' + label, 'no ESPN list in these sources'); continue; }
         const f = r.fails[k] || [];
-        check('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
+        (k === 'week' ? check : warn)('lineups: ' + label, f.length === 0, f.length ? `${f.length}: ${f.slice(0, 6).join('; ')}${S.from !== 'the build\'s own snapshot' && !/rebuild with/.test(f[0]) ? ' (rebuild with node tools/context.js)' : ''}` : undefined);
       }
     }
     // in the job the smoke runs straight after the build: the lineups must have been checked against this
@@ -404,6 +431,11 @@ addEventListener('hashchange',()=>{const b=[...document.querySelectorAll('#tabs 
       S ? `${S.from}${S.run_at ? ', written ' + S.run_at : ''}` : 'no sources');
   }
 
+  if (warned.length) {
+    console.log(`\n${warned.length} warning(s), presentation only: ${failed ? 'listed for a look; this run has failures too, so nothing is published' : 'the job publishes and goes red after its commit'}`);
+    /* only on a run with no failure: a failed run is not committed, so the job's last step, which says
+       the files were published, must not speak for it */
+    if (!failed && process.env.SMOKE_WARNINGS_FILE) fs.writeFileSync(process.env.SMOKE_WARNINGS_FILE, warned.join('\n') + '\n'); }
   console.log(failed ? `\n${failed} check(s) failed` : '\nall checks passed');
   process.exit(failed ? 1 : 0);
 }

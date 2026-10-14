@@ -148,7 +148,11 @@ Out and Doubtful are out, Questionable is listed with a Q unless he did not prac
 last report, which counts him out. Before it files (Tuesday to Friday for a Sunday game), a
 player Out or Doubtful at the club's previous report, or inactive for its last game after
 being on that report, stays out until this week's report clears him: he practises (Full or
-Limited), or the club files a practice report he is not on. That window used to be read as
+Limited), or the club files a practice report he is not on. Inactive is the roster's word: status
+INA, or an active row carrying nflverse's inactive code (status_description_abbr I01, or I02 for an
+emergency third quarterback), which is how the roster wrote Caleb Williams after week 5 of 2026
+(ACT, I01): read as INA alone, he was expected to start week 6, while the props page, which reads
+both, held him out. That window used to be read as
 "nobody is out", and for four days a week the starters ruled out the week before were
 expected to start (Caleb Williams as Chicago's QB in week 5, eleven such starters in week 4,
 three of them quarterbacks). The page says how many clubs have filed.
@@ -231,8 +235,9 @@ can move in a week it did not play, and any final moves every team. The Bets and
 Team Rankings tab is drawn from it.
 
 OVERALL OFFENSE AND OVERALL DEFENSE (two pills in the ELO Ratings tab's position row). Each
-team's offense and defense rated on this season's games alone, as an Elo (the format the power
-ratings had until October 2026), on nine key stats from nflverse's play-by-play, scrimmage plays
+team's offense and defense rated on this season's games, starting from a share of where it
+finished last season (THE CARRY, below), as an Elo (the format the power ratings had until
+October 2026), on nine key stats from nflverse's play-by-play, scrimmage plays
 only (passes, sacks, scrambles and runs that have an EPA; kneels, spikes and two-point tries
 left out):
 
@@ -250,7 +255,8 @@ left out):
 A defense is rated on the same nine allowed: its takeaways and sacks are its opponents' giveaways
 and sacks. Each stat of each team-game is put in standard deviations of a 2012-2017 team-game and
 signed so that more is better for the offense (z), and each stat has its own Elo, offense against
-defense: every unit starts the season at 0 and after each final
+defense: every unit starts the season at UNIT_CARRY (0.42) of its final rating last season, that
+season rated from 0 (THE CARRY), and after each final
 
     e = O[off] - D[def] + H * home                 home +1, away -1, 0 at a neutral site
     O[off] += K * (z - e),  D[def] -= K * (z - e)
@@ -266,13 +272,47 @@ same as one Elo on the weighted game score:
 The other stats (third down, red zone and yards a play; on offense big plays, on defense EPA and
 success rate allowed) are shown with their league ranks and weigh nothing: once the weighted ones
 are known, they told nothing more about the next game's points. Shown as 1500 + 100 * z across
-the teams that have played, so 1500 is the average unit and 100 points a standard deviation, as
-the player rankings are; a defense's number is higher the better it is. `before` is the unit's
-rating going into its last game put on today's curve, so `change` is its own movement and not the
-league's.
+every team with a rating (from the first day of a season all 32, since each starts carried), so
+1500 is the average unit and 100 points a standard deviation, as the player rankings are; a
+defense's number is higher the better it is. A team with no rated game yet this season is ranked
+and shown on its carried rating, marked `carried`, never hidden. `before` is the unit's rating
+going into its last game put on today's curve (for its first game, its carried start), so `change`
+is its own movement and not the league's.
 
-Why these weights. elo/tools/units_fit.py rates every team-game of 2012-2025 this way (on this
-script's own functions) and asks how well the two ratings going into a game predict the offense's
+THE CARRY (13 October 2026; the owner asked whether the Season Tracker's Deep Dive or the Game
+snapshot was the more accurate, and the snapshot's units, rated on this season alone with every
+unit at 0, knew nothing in week 1 and little in weeks 2-4, where the Deep Dive, which blends in
+four games of last season, beat them: 9.403 against 9.597). Each club's offense and defense on
+every one of the nine stats now starts a season at UNIT_CARRY times its final rating the season
+before (after its last game, playoffs in), instead of 0. It is the one-step form: last season
+rated from 0 on its own games (unit_carry, through unit_elo, the same function), so a build needs
+only last season's play-by-play, not the chain through every season before; the clubs are in
+today's codes (OAK, SD and STL carry into LV, LAC and LA). UNIT_W, UNIT_K and the stats' home field
+are held as they were, not refitted. UNIT_CARRY was chosen by elo/tools/units_fit.py, leaving one
+season of 2013-2017 out at a time (the regular season's weeks 2 on, the points mapping fitted on
+the other seasons of 2012-2017; 2012 has no season before it in the files): 0 to 1 by 0.1, then
+0.32 to 0.48 by 0.02, 19 tries; 0.42 the lowest, 9.5307 against 9.5794 with no carry (the basin
+is flat: 0.36 to 0.48 within 0.001). Tested once on 2018-2025, on elo/tools/deepdive_vs_units.py's
+rows (the regular season's weeks 2 on, 3,998 team-games), the RMSE of an offense's points in its
+next game: 9.424 with the carry against 9.501 without it (the league average 9.992, the Deep
+Dive 9.599); weeks 2-4 9.325 against 9.597 (the Deep Dive 9.403); weeks 5-9 9.303 against 9.355;
+weeks 10 on 9.525 against 9.545; week 1 9.492 against 9.848 (the Deep Dive still better there,
+9.293); better in all 8 seasons; paired against no carry -1.461 a team-game (standard error
+0.305, by game) overall and -5.150 (1.072) in weeks 2-4, and against the Deep Dive in weeks 2-4
+-1.469 (0.964), ahead but not by two standard errors. Those are the one-step form's numbers; the
+first test, with the full chain (each season's final itself carried from the one before), gave
+9.422, 9.316 and 9.475 in week 1: a start's weight decays to about a quarter over a season, so
+the two differ little. On units_fit.py's own rows (the playoffs in, UNIT_WF's footing) 9.431
+against 9.508. Every player's rating already carried 0.75 of its distance from 1500 (CARRY); the
+units carry their own share, set on their own test. The units feed no call: the game model, the
+matchups and Team Rankings never read them, so the carry moves only these two tables and the
+Game snapshot's Offense vs defense.
+
+Why these weights (fitted before the carry, on every unit starting each season at 0, and held
+since: the numbers in this paragraph are units_fit.py's as it ran before the carry, at git d3a5d2a;
+it now prints the same comparisons on the carried ratings and, of the scores with nothing carried,
+only the build's weights', 9.508, the `no_carry` below). elo/tools/units_fit.py rated every team-game
+of 2012-2025 this way (on this script's own functions) and asked how well the two ratings going into a game predict the offense's
 points in it, every parameter fitted on 2012-2017 and the error (RMSE) scored on 2018-2025, weeks
 2 on: the league average with home field 9.979; each stat alone, points 9.543, EPA 9.564, yards a
 play 9.596, success rate 9.682, third down 9.754, big plays 9.775, sack rate 9.840, red zone
@@ -289,17 +329,26 @@ measure is not kept as an input: points and EPA are in already, and it would cou
 (The research before the fit gave 9.504 for the same weights; its team-game table gave the
 relocated clubs' home games of 2012-2019, OAK, SD and STL in games.csv against LV, LAC and LA in
 the play-by-play, the away score and the away side. The fit reads the side off the play-by-play.)
+With the carry the same weights score 9.431 there and the old measure, carried the same way, 9.441
+(better in 5 of 8 seasons, by less than a standard error): UNIT_WF is that record, `no_carry` in it
+the 9.508. The non-negative shares on the carried ratings move a little (offense points 39%,
+success rate 26%, giveaways 21%, sacks 7%, EPA 7%; defense points 55%, big plays 26%, takeaways
+16%, sacks 3%) and units_fit.py prints them as information only.
 
 A final is rated only when the play-by-play has both offenses and its highest running score is
 games.csv's final score; any other final (the play-by-play lags the score by a night, or has half
 a game) is `pending`, also `sources.team_stats_pending`, counted nowhere and moving nobody until a
 later run has it whole. `units` in model.json carries `stats` (each stat's key, label, side,
-better and weight), `weights` (percent, by side), `params`, `walk_forward`, `start` (a raw 0 on
-today's curve, where every unit began), `pending`, and for every team in `off` and `def` its
-rating, `before`, `change`, `raw`, `rank`, `games`, `record` (the regular season's, W-L-T),
-`line` (week and rating on today's curve after each game) and `stats`: for each stat `v` (the
-season's value; giveaways and takeaways a game), `rank` (the league rank on that value, ties
-sharing), `adj` (the rank of the stat's own rating, the opponents counted), `r` (that rating) and,
+better and weight), `weights` (percent, by side), `params` (`carry`, UNIT_CARRY, and `carry_from`,
+the season carried in, none for the first season in the files), `walk_forward`, `pending`, and for
+every team in `off` and `def` its rating, `before`, `change`, `raw`, `rank`, `games`, `record` (the
+regular season's, W-L-T), `start` (its carried rating on today's curve, where it began the season:
+a line's first point; until October 2026 one `start` a side, a raw 0), `carried` (no rated game
+yet, shown on that start), `line` (week and rating on today's curve after each game) and `stats`:
+for each stat `v` (the season's value, none before a game; giveaways and takeaways a game), `rank`
+(the league rank on that value among the teams that have played, ties sharing), `adj` (the rank of
+the stat's own rating, the opponents counted, last season's carried share in it, among every team
+with a rating), `r` (that rating) and,
 for a weighted stat, `adds` (what it adds to the rating, in rating points). `ppg`, `ypg` and
 `epa_play` stay for a page built before October 2026.
 
@@ -426,8 +475,11 @@ as they come (WC, DIV, CON, SB after week 18); `phase` in the files is regular, 
 over or opening.
 
 THE SOURCES. Every file a season under way needs -- its player stats, depth charts, injury
-report, roster and play-by-play, and every past season's stats, charts and reports -- is
-required: a download that fails (after lib/netfetch.py's five tries; a 404 is not retried) stops the build
+report, roster and play-by-play, every past season's stats, charts and reports, and the
+play-by-play of the season before it and, while the rankings are still on the finished season
+(before the new one is under way, and until RANK_TEAMS clubs have a rated game in it), of the
+season before that (the units carry the one before theirs, THE CARRY; once the rankings move, the
+season before last is not read) -- is required: a download that fails (after lib/netfetch.py's five tries; a 404 is not retried) stops the build
 before anything is written, so the job commits nothing and the last good files stay live. A
 failed injury or roster download used to publish IR and Out players as ranked starters, and a
 failed team-stats download every offense and defense at 1500, on a green run. A download is
@@ -635,13 +687,15 @@ def load(offline, now):
             past.append(os.path.basename(dest))
         return d
 
-    frames, charts, injuries = [], {}, {}
+    frames, charts, injuries, sched_stats = [], {}, {}, None
     for y in range(FIRST, sched + 1):
         # a past season's files are all required; the newest schedule's only once it is under way
         req = y < sched or live
         d = read('stats_player_week', STATS_URL, y, req, y == sched)
         if d is not None:
             frames.append(d)
+            if y == sched:
+                sched_stats = d
         # who was expected to play: every season's depth charts and injury reports
         for name, url, store in (('depth_charts', DC_URL, charts), ('injuries', INJ_URL, injuries)):
             d = read(name, url, y, req, y == sched)
@@ -657,6 +711,13 @@ def load(offline, now):
     pbp = {sched - 1: read('play_by_play', PBP_URL, sched - 1, True, not live, 'csv.gz', PBP_COLS)}
     if live:
         pbp[sched] = read('play_by_play', PBP_URL, sched, True, True, 'csv.gz', PBP_COLS)
+    # and the season before that, finished, which they carry into the rankings' season whenever
+    # that is the finished one (before the new season is under way, and until RANK_TEAMS clubs
+    # have a rated game in it, by main()'s own rule, ranked_clubs): required then, and not read
+    # at all once the rankings are on the season in play, which carries from sched - 1 alone;
+    # none before FIRST, whose season starts from 0
+    if sched - 2 >= FIRST and (not live or sched_stats is None or ranked_clubs(sched_stats) < RANK_TEAMS):
+        pbp[sched - 2] = read('play_by_play', PBP_URL, sched - 2, True, False, 'csv.gz', PBP_COLS)
     if missing:
         raise SystemExit('elo: required sources could not be had, so nothing is written and the published '
                          'files stay:\n  ' + '\n  '.join(missing))
@@ -722,8 +783,13 @@ UNIT_STATS = {
 UNIT_W = {'off': {'pts': 35, 'sr': 25, 'epa': 15, 'tor': 15, 'skr': 10},
           'def': {'pts': 50, 'xr': 30, 'tor': 10, 'skr': 10}}
 UNIT_K = 0.08          # the step per final, in standard deviations of the stat
-# the walk-forward record (units_fit.py): RMSE of the offense's points in its next game, 2018-2025 weeks 2 on
-UNIT_WF = {'rmse': 9.508, 'previous': 9.52, 'league': 9.979, 'se': 0.252, 'seasons_better': 7, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025'}
+# the share of last season's final rating (each stat, each side, playoffs in) every club starts a
+# season with: last season rated from 0 on its own games, times this (units_fit.py chose it by
+# leaving one season out at a time on 2013-2017; tested once on 2018-2025)
+UNIT_CARRY = 0.42
+# the walk-forward record (units_fit.py): RMSE of the offense's points in its next game, 2018-2025 weeks 2 on,
+# with the carry (rmse; the old measure carried the same way, previous) and without it (no_carry)
+UNIT_WF = {'rmse': 9.431, 'previous': 9.441, 'league': 9.979, 'se': 0.249, 'seasons_better': 5, 'seasons': 8, 'fit': '2012-2017', 'test': '2018-2025', 'carry': 0.42, 'no_carry': 9.508}
 # the sums a team-game's stats are made of (pts, from games.csv, joins them in unit_ratings)
 UNIT_SUMS = ['plays', 'epa', 'succ', 'yds', 'expl', 'to', 'sacks', 'db', 'third_c', 'third_n', 'drives', 'rz_trips', 'rz_td']
 UNIT_ROUND = {'f1': 1, 'f2': 2, 'epa': 3, 'pct': 3}
@@ -781,19 +847,25 @@ def unit_value(st, sums, pts=None):
     return float(x) / d if d else None
 
 
-def unit_ratings(season_games, tg, score):
-    """Overall Offense and Overall Defense for one season (see OVERALL OFFENSE AND OVERALL
-    DEFENSE): season_games is games.csv cut to the season, tg and score the season's
-    play-by-play through pbp_team_games. A final is rated only when the play-by-play has both
-    offenses and ends on games.csv's score; any other final is `pending`, counted nowhere and
-    moving nobody, until a later run has the whole game."""
+def unit_elo(season_games, tg, score, start=None):
+    """The Elo behind Overall Offense and Overall Defense for one season, unrounded: season_games
+    is games.csv cut to the season, tg and score the season's play-by-play through
+    pbp_team_games, start each club's ratings going into the season ({team: {'off': {stat: r},
+    'def': {stat: r}}}, from unit_carry; a club without one, and every club when start is None,
+    starts at 0). A final is rated only when the play-by-play has both offenses and ends on
+    games.csv's score; any other final is `pending`, counted nowhere and moving nobody, until a
+    later run has the whole game. Returns the ratings after the last rated final R[side][stat][team],
+    the starts S (the same shape), the season's sums, each club's (week, overall) after each game,
+    the regular-season records, the pending finals and the clubs."""
     g = season_games[season_games.game_type.isin(['REG', 'WC', 'DIV', 'CON', 'SB'])].copy()
     g['kick'] = g.gameday.astype(str) + ' ' + g.gametime.fillna('00:00').astype(str)
     g = g.sort_values(['kick', 'game_id'], kind='mergesort')
     teams = sorted(set(g.home_team) | set(g.away_team))
     keys = list(UNIT_STATS)
     rows = {(r['game_id'], r['side']): r for r in tg.to_dict('records')} if tg is not None and len(tg) else {}
-    R = {side: {k: {t: 0.0 for t in teams} for k in keys} for side in ('off', 'def')}
+    start = start or {}
+    S = {side: {k: {t: float(((start.get(t) or {}).get(side) or {}).get(k, 0.0)) for t in teams} for k in keys} for side in ('off', 'def')}
+    R = {side: {k: dict(S[side][k]) for k in keys} for side in ('off', 'def')}
     acc = {side: {t: dict.fromkeys(UNIT_SUMS + ['pts', 'g'], 0.0) for t in teams} for side in ('off', 'def')}
     hist = {side: {t: [] for t in teams} for side in ('off', 'def')}       # (week, overall raw) after each game
     record = {t: [0, 0, 0] for t in teams}
@@ -829,23 +901,51 @@ def unit_ratings(season_games, tg, score):
         for t in (r.home_team, r.away_team):
             for side in ('off', 'def'):
                 hist[side][t].append((int(r.week), overall(side, t)))
+    return R, S, acc, hist, record, pending, teams
+
+
+def unit_carry(last_games, tg, score, c=UNIT_CARRY):
+    """Each club's start for the season after last_games (see OVERALL OFFENSE AND OVERALL DEFENSE):
+    last season rated from 0 on its own games (unit_elo with no start, so only that season's
+    play-by-play is read), and c times every club's final rating on every stat, each side, the
+    playoffs in: {team: {'off': {stat: r}, 'def': {stat: r}}}, for the clubs with a rated final in
+    it. The clubs are games.csv's as given, which load() has put in today's codes."""
+    R, _, acc, _, _, _, teams = unit_elo(last_games, tg, score)
+    return {t: {side: {k: c * R[side][k][t] for k in UNIT_STATS} for side in ('off', 'def')}
+            for t in teams if acc['off'][t]['g']}
+
+
+def unit_ratings(season_games, tg, score, start=None):
+    """Overall Offense and Overall Defense for one season (see OVERALL OFFENSE AND OVERALL
+    DEFENSE), as model.json carries them: unit_elo's ratings on the bell curve, ranked, with
+    each stat's value and ranks. start is unit_carry's (None: every club from 0, as before the
+    carry, which a season with no season before it in the files keeps)."""
+    R, S, acc, hist, record, pending, teams = unit_elo(season_games, tg, score, start)
+    keys = list(UNIT_STATS)
+    start = start or {}
+    overall = lambda side, t, X=R: sum(w / 100 * X[side][k][t] for k, w in UNIT_W[side].items())
     played = [t for t in teams if acc['off'][t]['g']]
+    # every club with a rating is on the curve and ranked: the ones that have played and, carried
+    # from last season, the ones that have not yet (`carried`), so week 1 is not one flat 1500
+    rated = [t for t in teams if acc['off'][t]['g'] or t in start]
 
     def side_out(side):
         raw = {t: overall(side, t) for t in teams}
-        v = np.array([raw[t] for t in played]) if played else np.zeros(1)
+        v = np.array([raw[t] for t in rated]) if rated else np.zeros(1)
         mu, sd = float(v.mean()), float(v.std())
         show = lambda x: round(1500 + 100 * (x - mu) / sd) if sd > 1e-9 else 1500
-        order = sorted(played, key=lambda t: (-raw[t], t)) + sorted(t for t in teams if t not in played)
-        means = {k: (float(np.mean([R[side][k][t] for t in played])) if played else 0.0) for k in keys}
+        order = sorted(rated, key=lambda t: (-raw[t], t)) + sorted(t for t in teams if t not in rated)
+        means = {k: (float(np.mean([R[side][k][t] for t in rated])) if rated else 0.0) for k in keys}
         out = {}
         for t in teams:
             h = hist[side][t]
+            s0 = overall(side, t, S)
             now = show(raw[t])
-            then = show(h[-2][1] if len(h) > 1 else 0.0) if h else None
+            then = show(h[-2][1] if len(h) > 1 else s0) if h else None
             a = acc[side][t]
             out[t] = {'elo': now, 'before': then, 'change': None if then is None else now - then,
                       'raw': round(raw[t], 6), 'rank': order.index(t) + 1, 'games': int(a['g']), 'record': record[t],
+                      'start': show(s0), 'carried': bool(t in start and not a['g']),
                       'line': [[wk, show(x)] for wk, x in h], 'stats': {}}
             for k in keys:
                 x = unit_value(UNIT_STATS[k]['season'], a, a['pts']) if a['g'] else None
@@ -857,17 +957,17 @@ def unit_ratings(season_games, tg, score):
             k = max(a['g'], 1)
             out[t].update(ppg=round(a['pts'] / k, 1), ypg=round(a['yds'] / k, 1),
                           epa_play=round(a['epa'] / a['plays'], 3) if a['plays'] else None)
-        # each stat's league rank on the value shown (ties share), and on its own rating, the
-        # opponents counted (adj); better is higher for an offense's stat where more helps it,
-        # and the other way for a defense's
+        # each stat's league rank on the value shown (ties share), among the clubs that have played,
+        # and on its own rating, the opponents counted (adj), among every club with a rating; better
+        # is higher for an offense's stat where more helps it, and the other way for a defense's
         for k in keys:
             better = 'high' if (UNIT_STATS[k]['sign'] > 0) == (side == 'off') else 'low'
             vals = {t: out[t]['stats'][k]['v'] for t in played if out[t]['stats'][k]['v'] is not None}
             for t in teams:
                 e, x = out[t]['stats'][k], vals.get(t)
                 e['rank'] = None if x is None else 1 + sum(1 for y in vals.values() if (y > x if better == 'high' else y < x))
-                e['adj'] = (1 + sum(1 for u in played if R[side][k][u] > R[side][k][t])) if t in played else None
-        return out, show(0.0)
+                e['adj'] = (1 + sum(1 for u in rated if R[side][k][u] > R[side][k][t])) if t in rated else None
+        return out
 
     stats = []
     for side in ('off', 'def'):
@@ -875,13 +975,15 @@ def unit_ratings(season_games, tg, score):
             st = UNIT_STATS[k]
             stats.append({'key': k, 'side': side, 'label': st[side], 'short': st[side + '_short'], 'fmt': st['fmt'],
                           'better': 'high' if (st['sign'] > 0) == (side == 'off') else 'low', 'weight': UNIT_W[side].get(k, 0)})
-    (off, off0), (dfn, def0) = side_out('off'), side_out('def')
-    # `start` is where every unit began the season (a raw 0) on today's curve: a line's first point
-    return {'off': off, 'def': dfn, 'start': {'off': off0, 'def': def0}, 'pending': pending, 'stats': stats,
+    # each club's `start` is where it began the season on today's curve (its line's first point):
+    # its carried rating, or a raw 0 for a club with nothing carried
+    return {'off': side_out('off'), 'def': side_out('def'), 'pending': pending, 'stats': stats,
             'weights': {side: dict(w) for side, w in UNIT_W.items()},
             'measure': 'an Elo on each key stat, offense against defense; each side a weighted sum of them (weights in percent)',
             'params': {'K': UNIT_K, 'stats': {k: [UNIT_STATS[k]['mu'], UNIT_STATS[k]['sd'], UNIT_STATS[k]['home']] for k in keys},
-                       'shown': '1500 + 100 * z across the teams that have played'},
+                       'carry': UNIT_CARRY, 'carry_from': None,
+                       'shown': '1500 + 100 * z across every team with a rating: the ones that have played, and the ones '
+                                'carried from last season that have not yet'},
             'walk_forward': dict(UNIT_WF)}
 
 
@@ -1037,7 +1139,9 @@ def availability(roster, inj, next_week):
                 out[pid] = STATUS[st] if st in STANDING else 'a free agent'
             else:
                 out[pid] = STATUS.get(st, 'not on the active list')
-                if st == 'INA':
+                # inactive for the last game: INA, or an active row with the inactive code I01/I02
+                # (WHO PLAYS; the props payload's `ina` reads the same two)
+                if st == 'INA' or str(getattr(row, 'status_description_abbr', '') or '').startswith('I'):
                     inactive.add(pid)
     if inj is None or not len(inj):
         return out, team, q, report
@@ -1084,6 +1188,15 @@ def availability(roster, inj, next_week):
                 out[pid] = why
             team.setdefault(pid, t)
     return out, team, q, report
+
+
+def ranked_clubs(d):
+    """the clubs with a rated game in one season's player stats, by main()'s filter (a rated
+    position, a game id, something on the sheet): the rankings move to a season once RANK_TEAMS
+    clubs have one, and load() reads the play-by-play of the season before last only until then"""
+    d = d[d.position.isin(GROUP) & d.game_id.notna()].copy()
+    d['group'] = d.position.map(GROUP)
+    return int(d[(scores(d)[1] > 0).values].team.nunique())
 
 
 def scores(d):
@@ -1328,7 +1441,7 @@ def main():
     # kickers and defenders with nothing on the sheet did not really play
     stats = stats[stats.vol > 0].copy()
     seasons = sorted(stats.season.unique())
-    rank_season = last if stats[stats.season == last].team.nunique() >= RANK_TEAMS else last - 1
+    rank_season = last if ranked_clubs(stats[stats.season == last]) >= RANK_TEAMS else last - 1
     # the games still to come: no score, and kickoff far enough off that a call made now is
     # published before it (a game under way is not called again: its call is the one frozen)
     lead = now + datetime.timedelta(minutes=CALL_LEAD)
@@ -1681,8 +1794,16 @@ def main():
     # the rankings' season (the finished one until most clubs have played the new one's week 1)
     season_pbp = pbp.get(rank_season)
     tg, final_score = pbp_team_games(season_pbp) if season_pbp is not None else (None, {})
-    units = unit_ratings(games[games.season == rank_season], tg, final_score)
+    # each club starts the season carried from the one before (UNIT_CARRY of its final rating),
+    # rated from 0 on that season's own play-by-play; the first season in the files has none
+    prev_pbp = pbp.get(rank_season - 1) if rank_season - 1 >= FIRST else None
+    if rank_season - 1 >= FIRST and prev_pbp is None:
+        raise SystemExit(f'elo: the {rank_season - 1} play-by-play, which Overall Offense and Overall Defense carry into '
+                         f'{rank_season}, was not read; nothing written, the published files stay')
+    carry = unit_carry(games[games.season == rank_season - 1], *pbp_team_games(prev_pbp)) if prev_pbp is not None else None
+    units = unit_ratings(games[games.season == rank_season], tg, final_score, carry)
     units['season'] = rank_season
+    units['params']['carry_from'] = rank_season - 1 if carry is not None else None
     # what each source gave: the page says when one is behind, and elo/check.py reads it
     final_ids = set(games[(games.season == last) & games.home_score.notna()].game_id)
     rated_ids = {r['game_id'] for r in game_feat if r['season'] == last and r['result'] is not None}

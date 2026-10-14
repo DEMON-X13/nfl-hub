@@ -68,7 +68,7 @@ source, shipped in from `nfl-model-lab`, not generated here.
 cd news && npm ci
 node tools/run-auto.js           # the job: the schedule's current week -> pull-week.js (results, stats, pack) -> context.js
 node tools/context.js            # the rank chip, positions and the Deep Dive alone (nflverse only; no ESPN list)
-node tools/smoke.js              # must end "all checks passed" (runs tools/cases.js too)
+node tools/smoke.js              # must end "all checks passed" (runs tools/cases.js too); WARN lines above it publish
 ```
 
 The narrative half is a person's (`news/HANDOFF.md` first, always). The season is `SEASON` in
@@ -78,14 +78,32 @@ day after week 18). The Deep Dive's lineups follow the nflverse injury report an
 (`context.js` says the rule; a team has filed only when its game statuses are on the report, never
 on a practice report), and every nflverse file but the snap counts is required: one that does not
 download fails the run before the commit, so the last good files stay live (before the season's
-first game a 404 on a current-season file is "no games yet"). The smoke test checks the lineups
+first game a 404 on a current-season file is "no games yet"). Each Deep Dive opens on a headline, the
+team's Overall Offense against the opponent's Overall Defense as the ELO Ratings tab shows them
+(`units` in `elo/data/model.json`, read by `context.js` only when it is of the season, LA as LAR, with the
+build it came from in `UNITS26_META.overall`; without it the rows publish and the page says so), tagged by
+the gap read as points (11.9126 a raw unit, Favorable from 0.9645, Easy from 2.8935): from week 2 on it
+predicted an offense's points better than the rows on 2018-2025 (9.44 against 9.60; `elo/tools/deepdive_vs_units.py`
+prints it and every tag constant, and says whether `context.js` carries them: run it again after a refit of the units). Each of the six rows
+is tagged on its edge weighted by what that matchup alone has predicted (2012-2017: quarterback 1,
+receivers and coverage 0.8925, line and pass rush 0.5956, run game 0.3792) at 0.5 and 1.5; the rows overlap
+and are never added up. The constants are in `UNITS26_META.tags`, which the page reads and the smoke holds
+to `tools/deepdive-checks.js`'s own copy. The smoke test checks the lineups
 against the report, roster and schedule they were built from (`lineup-checks.js`, which never
 shares the build's shortcuts, only its reading of a source: which ESPN entry is which player and what
-day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab),
+day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab), the
+Deep Dive's headline against the same file (exact on the same build, the board's order a run behind) and
+its tags against the rules on every game of the slate,
 the stat bars against `results.js`, that the live week's narrative quotes none of the site's own
 ranks, and the fixed cases in `tools/cases.js` (each with the broken version a review caught, which
 the checks must fail); on a checkout whose `units2026.js` is older than the report it fails until
-`node tools/context.js` runs. A change to a rule comes with a case there. `.github/workflows/news.yml`
+`node tools/context.js` runs. A change to a rule comes with a case there. The lineup rules (all but
+the week they are for), a starter out named, a quarterback in doubt with the next one named, nobody
+both listed and out, and the narrative quoting a rank are warnings (`warn` in `smoke.js`): who the
+Deep Dive lists and what a note says, never the scores, records, stat bars or ranks. They print WARN
+and never fail the smoke, so a lineup case no rule has seen publishes the week's results and stats,
+and the job goes red on them after its commit (`SMOKE_WARNINGS_FILE`); every other check, the fixed
+cases among them, holds the run's files back. `.github/workflows/news.yml`
 runs about nineteen times a week, timed to the injury report and set early because GitHub starts
 this repo's scheduled runs 2.3 to 9.4 hours late, and on a push to the tools, the page, its styles, a week
 file or `nflbets/build/tab_tracker.html`; a run that finds nothing new commits nothing beyond the day's "as of" dates.
@@ -115,18 +133,35 @@ Edit the parts, then from `props/build/`:
 
 ```
 python3 assemble.py        # part1 + part2 + part3 -> ../app/prop_model_2026.html (gitignored; payload.json is fetched at boot, only checked here)
-node audit.js              # the gate: must end "0 failures, 0 runtime errors"
+node audit.js              # the gate: its summary line must say "0 failures" and "0 runtime errors"; warnings publish
 node ../../nflbets/build/build.js   # the parts are the Bets and Stats page's source: rebuild it (see below)
 ```
 
 `node_modules` for the audit lives in `props/build/` (`npm ci`).
 
 The audit is a real gate: `weekly.py` refuses to commit when it is not clean, so
-a broken audit means the site silently stops updating and the run is marked
+a broken audit means the site stops updating and the run is marked
 failed. "Clean" is read from the audit's summary line as numbers (`audit_verdict`: 0
 failures and 0 runtime errors over at least one check; no summary line is not clean), never
-as the text "0 failures", which "10 failures" contains; `python3 test_audit_gate.py` holds
-it to its cases. Write audit checks against the app's invariants, never against whatever
+as the text "0 failures", which "10 failures" contains. The line also counts warnings
+("28944 checks, 0 failures, 2 warnings, 0 runtime errors"), which never make it unclean: a
+warning is a check `audit.js` names as presentation only (`W.<kind>`, each kind with its reason in
+`WARN` there: who is shown starting or listed, an ordering, which correctly priced parlay a
+suggestion level or game hand picks, a note's wording in the panel, a rule the week's data left
+untested, the credit panel), and a run with only warnings publishes and goes red after its commit
+with them listed in `props-build-problems.txt` (`audit_warnings`; the entry never starts BLOCKED or
+AUDIT, which read as a refusal). Everything else is blocking, and a new check is blocking unless it
+is argued presentation-only there: a price, line or leg on the wrong player or game, a chance, fair
+chance, price or payout that is not the builder's own sums, a leg under the book, far off it or
+kicked off, settlement and grading, the payload against its sources, a runtime error, and a chance or
+payout floor a card states (a level "lands 25%+ by the model", a game hand's 40% legs, its -250 and its
+High, Medium and Low floors) against its own numbers. V6 blocks a suggested leg or candidate on anyone
+this week's report has Out, Doubtful or Questionable, or the roster has off its active list, released,
+inactive this week or on no roster, or the inactive rule holds out, each worked out by the audit from
+the sources (`NOPLAY`, from V1 and V5) and never from the page's reading of them, whatever the page lists.
+A check run only on made-up data stays blocking (only a code change can fail it). `python3
+test_audit_gate.py` holds the verdict to its cases, warnings among them, and runs `audit_step` and
+`finish` on a planted warning and a planted failure through props.yml's last step. Write audit checks against the app's invariants, never against whatever
 the week's data happens to offer -- a lean week must not fail the build. Its section V
 checks the page a browser builds against the raw nflverse files (roster status, the
 injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;
@@ -341,6 +376,38 @@ test_who_played.py` holds the bake to its cases (PFR id, name, special teams onl
 traded since, a name no player takes, the carry and the overdue rule, `weekly.bake` end to end). Never
 tune the model on the 2026 results these rows add.
 
+**Who starts** (app v104, `patch_who_starts.py`, after the job failures of 13 October 2026). The payload
+carries every player the depth chart lists at a position the page projects who is on a roster (ACT,
+DEV or INA), not only those with a row last season (`payload.py`): a backup who has not played since
+(Stidham DEN, Richardson IND, Kyle Allen BUF, Sam Howell DAL, Uiagalelei LAC, Klubnik NYJ), a veteran
+who did not play last season or whose few snaps fell under `keep()`'s bar (Stidham's one game,
+Richardson's two), a rookie, each with `gp` and `cn` 0 and no numbers, so his games this season
+count as a rookie's always have; and a player last season's table has whom the roster lists INA is
+carried too. Every club's QB2 is on the page; before, seven clubs started nobody with QB1 out. A
+player with no game the model counts last season or this (`noHistory`; the page says it so, never "no
+games"), or one the chart moves up whose games give the
+model no workload (`nothingToProject`: Stetson Bennett, LA, one relief appearance), has nothing to
+project from: no lines, so no price, headline, game hand, suggested parlay or Elo pick; he is shown in
+his place (a starter's slot on the chart, or one the chart moves him up to), marked thin history, with a
+line saying there is nothing to bet on, and the next man down is never shown as the starter in his
+stead. So does a charted starter with a game or two (a rookie QB1 after his first start: counted in the
+chart's order, he was cut with his QB2 behind him and the club showed no quarterback), marked thin
+history; `pricedLegs` takes nobody under three games and a game page's hands only one the chart moved
+up (`gameLegPool`), so nothing new is suggested. Before a club files its
+statuses, a player the roster has inactive for its last game (the payload's `ina`: status INA, or an
+ACT row with nflverse's inactive code I01 or I02, as Caleb Williams's week 6 row reads) who was on that
+game's report in any status is held out until this week's report clears him (he practises, or the club
+files a report he is not on), as an Out is: the Elo build's WHO PLAYS rule (Caleb Williams, Questionable
+and then inactive in week 5, started for Chicago from Tuesday; Bagent now does). One the report never
+named, or with a stat line in that game, is not held; a reserve list, the PUP list or a suspension is
+out on the roster's word as before. The audit's B3 holds the first (every charted player on a roster on
+the page, every club's QB2, a real QB2 made history-less starting with no lines with QB1 out, priced
+nowhere, a real QB1 made history-less holding his slot, and one given a single game holding it,
+suggested nowhere, on a game to come or any game of the season), V4 the moved-up player with no workload, and V5 the second
+(the payload's `ina` against the downloaded roster, every inactive player on his club's last report
+held or cleared as the rule says, and made-up cases for each branch, the reserve, PUP and suspended
+lists among them).
+
 ## Betting: the loop
 
 ```
@@ -363,7 +430,13 @@ scoreboard finals counted for every model on the frozen call, Team Rankings' rec
 disclosure of a model that could not run, the Joker's calls on 2026 weeks 1-2 its history file's
 (5n), those weeks drawn like any other, and the retired models (Joker Jr, the Challenger, the Broly
 Model) gone from a state the run wrote, drawn nowhere from one that still carries them, and the
-Challenger never made by the app (5m).
+Challenger never made by the app (5m). A few of its checks are warnings (`warn` in `smoke.js`, which
+says why): the absences card's source line, its stale flag and its "returning" and "A -> A" wording, the
+behind mark and note on a Team Rankings rating, the absences card's heading and hiding, and the week the
+Pick'em Record's picker opens on. They print WARN, the state publishes, and the job's last step goes red
+on `SMOKE_WARNINGS_FILE` after its commit; every other check holds the state back. The file is written
+only by a smoke with no failure, and the last step runs only after one, worded by the commit's outcome:
+a failed smoke holds the commit back, and nothing then says the state was published.
 The files it holds the state to are the ones `update.js` refuses without (`patches.filesDue`: the roster and depth chart from a week before the opener, the injury report
 from its first kickoff, the stats once a final is a day and a half old), and it passes in every
 phase of a season: the week before the opener, week 1, between playoff rounds and after the Super
@@ -426,16 +499,17 @@ python3 elo/build.py             # downloads nflverse player stats 2012-now into
 python3 elo/check.py             # the gate: the files against the roster, injury report, schedule and published calls; "0 failures"
 node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom from props/build); "0 failures"
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
-python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017
+python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
 ```
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
 charts, injury report, roster, play-by-play) or any past season's cannot be downloaded (after `lib/netfetch.py`'s
 tries, under Conventions): it exits 1 and the last good files stay live. The finished seasons' files (2012 to
-last season's stats, depth charts and injury reports, and last season's play-by-play once this one is under
-way: 43 of the 49 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
+last season's stats, depth charts and injury reports, last season's play-by-play once this one is under way,
+and the season before last's while the rankings are still on the finished season, which the units carry in
+and which is not read once the rankings move: in season 43 of the 49 a run reads) never change, so `elo.yml` keeps them between runs with `actions/cache`: the
 build writes `elo/cache/past.lst`, the files it read as a finished season's, once every source was had, and
-the job saves exactly those under a key on their names (a new entry only when a season finishes; bump `v1`
+the job saves exactly those under a key on their names (a new entry only when that set changes: a season finishing, the rankings moving to it; bump `v1`
 in it to throw them away), so a run asks nflverse for the season in play, games.csv and the roster alone,
 which it always downloads fresh. A kept copy that will not read is fetched again. A correction nflverse
 makes to a finished season's file later is not read until `v1` is bumped (and `elo/check.py` reads the same
@@ -482,7 +556,9 @@ They are of players who can play, the rest listed under the table where they wou
 current roster is its rows at that club's own latest week (a club on its bye has none for the bye week, and reading
 only the league's latest week once called every Chief and Panther a free agent); for each club's next game the
 injury report's Out and Doubtful are out, Questionable stays listed with a Q unless he did not practise at the last
-report, and before a club files its statuses a player out at its previous report (or inactive after being on it) stays
+report, and before a club files its statuses a player out at its previous report (or inactive after being on it: the roster's
+INA, or an active row with nflverse's inactive code I01 or I02, as the props page's `ina` reads it; Caleb Williams's week 6 row
+is ACT and I01, and the build read INA alone until 13 October 2026) stays
 out until he practises or the club files a report he is not on (WHO PLAYS in the build). The game model scores every
 game, past and coming, on the lineup known before kickoff: that week's depth chart (weekly files through 2024, the
 last daily snapshot before the game from 2025) minus the week's Outs and Doubtfuls (and, for the coming games, whoever
@@ -502,8 +578,17 @@ matchup this week); at the end of its position row, two pills, Overall Offense a
 each of nine key stats from nflverse's play-by-play, opponents and home field counted, each side a fixed weighted sum
 (offense points 35, success rate 25, EPA a play 15, giveaways 15, sack rate 10; defense points allowed 50, big plays
 allowed 30, takeaways 10, sacks 10), fitted on 2012-2017 by `elo/tools/units_fit.py` and no less accurate walk-forward
-on 2018-2025 than the old points-and-EPA measure (9.508 against 9.520, not a real gain); third down, red zone, yards a
-play and the rest are shown with their league ranks and weigh nothing. The table scrolls sideways inside its card at
+on 2018-2025 than the old points-and-EPA measure (9.508 against 9.520, both rated from 0 before the carry, not a real
+gain; with the carry 9.431 against the old measure carried the same way, 9.441, `UNIT_WF`); third down, red zone, yards a
+play and the rest are shown with their league ranks and weigh nothing. Every club starts a season at `UNIT_CARRY` (0.42)
+of its final rating the season before on every stat (THE CARRY in the build, 13 October 2026: last season rated from 0
+on its own play-by-play, so the build reads the play-by-play of the season before the units' too; the weights, K and
+home field held), chosen on 2013-2017 by leaving one season out at a time and tested once on 2018-2025, regular-season
+weeks 2 on: 9.424 against 9.501 with nothing carried, weeks 2-4 9.325 against 9.597, where the Season Tracker's Deep
+Dive had 9.403 (`elo/tools/deepdive_vs_units.py`; week 1 9.492, the Deep Dive still better there at 9.293). So every
+club is rated, ranked and on the curve from the season's first day: one yet to play is shown on its carried rating and
+marked "carried from" last season (`carried`, its `start` its line's first point) on the tab, in its window and in the
+Game snapshot, never hidden; `elo/check.py` replays last season with its own copy of the share. The table scrolls sideways inside its card at
 every width, the team column held, the columns sort, and a click on a team opens
 its window (its rating game by game, every stat ranked raw and with opponents counted, its coming opponent). The page
 reads the weights and the stats from the file and still draws an older file's three columns. A final the
@@ -526,8 +611,14 @@ in its published-mode hook (graded calls onto `processed[gid].elo`, the coming w
 to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings (the Team Rankings tab) rate each team on this season's results alone, every game re-scored at each build (every team 1500 at the start; a weighted ridge of all the season's finals solved together, each worth its margin capped at 17, home field out, plus the opponent's rating now, so a game counts for what the opponent has turned out to be, not what it was rated when they met; recent weeks weigh a little more, a 16-week half-life, and every team is pulled toward average as if it had also played 16 average games; blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; every constant chosen on 2012-2017 and tested once on 2018-2025, where it predicts the next game as well as the margin Elo it replaced in October 2026 (0.6447 against 0.6454 blended), which judged each game once, on the opponent's rating that week (the owner's Falcons-over-Packers and Chargers cases); THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred, and the note says the whole table predates it, since a final moves every team), the tier shields, the change since its last game (`before` is the same solve on the finals before that game, so the change includes the league's results since and a team moves in a week it does not play) and the chance against an average team; the margin Elo had replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Joker and the ELO Model (the Elo game model), Vegas the baseline (the Challenger and the Broly Model are off the site: the Betting loop); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only on every device (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
 for Sunday's calls on Friday's final report (GitHub starts this repo's scheduled runs 4-9 hours late, so a slot is queued
 early enough to land before the London and 1pm kickoffs; Tuesday's run takes in Monday night; the rest move only who is
-expected to play), runs `elo/check.py`, `elo/check_tab.js` and the nflbets smoke (skipped between the Super Bowl and the
-fortnight before week 1, when there is no game to call and the smoke's Elo-picks checks have nothing to read), and commits `elo/data`. The walk-forward record in `model.json` is the honest number: each season called by
+expected to play), runs `elo/check.py` and `elo/check_tab.js`, the gate on the Elo data, commits `elo/data`, and then
+runs the nflbets smoke (skipped between the Super Bowl and the fortnight before week 1, when there is no game to call and
+the smoke's Elo-picks checks have nothing to read): a page check, after the commit, so a page case the smoke has never
+seen (a tied final, a top 25 of 24 quarterbacks, in October 2026) turns the run red without holding back the ratings.
+What the files feed that touches a chance or a price is held before the commit by `check_tab.js`: market + form
+(`eloAltP`, which decides whether a player leg qualifies for the suggestions) on every rated player, the Elo matchup
+chance on every matchup line, and the Elo picks' chance and price as the products of their legs', on made-up book
+prices, with no error thrown. The walk-forward record in `model.json` is the honest number: each season called by
 a model fitted on the seasons before it. Do not tune the formula on the season in progress.
 
 ## College: the loop
@@ -974,7 +1065,7 @@ Under to the payload's own ids (skipped, and said, on a payload baked before `dk
 Firebase store or its sign-in services, or anything but a read, fails them.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
 `nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the
-rebuild fails the gate, and the elo job, which runs this smoke every morning, stops on it. It
+rebuild fails the gate, and the elo job, which runs this smoke every morning after its commit, goes red on it. It
 also runs the betting job's `reference_models.json` gate on the copy of the betting app inside the
 page (`BET_APP`). The prop model's storage key is read from part2's `SEASON`/`KEY` line at build
 time and written into the storage layer, and the betting app's season (`betting/tools/build.js`
@@ -1087,6 +1178,29 @@ may quietly outrank what the job published:
   may delete it, or lock its rules to `false`).
 
 ## Conventions
+
+- **Checks block or warn.** Every NFL job's gate splits its checks in two. Blocking is anything that
+  could put a wrong number or wrong money on the page: a price, line or leg on the wrong player or
+  game, a chance, price or parlay sum that is wrong, settlement and grading, the data against its
+  sources, the page not loading, a runtime error; it refuses the publish and the last good data stays
+  live. A warning is presentation on the week's own data (who is shown starting, a note's wording, an
+  ordering, a count on a card, which correctly priced parlay a suggestion picks, a rule the week left
+  untested): the run publishes and goes red after its commit, the warnings listed. Every check is
+  blocking unless it is named a warning with its reason in the code: the props audit (`W.<kind>` and
+  `WARN` in `audit.js`; the summary line counts them; `weekly.py`'s verdict reads failures and runtime
+  errors alone), the betting and Season Tracker smokes (`warn`, written to `SMOKE_WARNINGS_FILE` only
+  by a smoke with no failure, for the job's last step, which runs only after one). A number a page
+  states stays blocking even where the choice behind it warns (a suggestion's stated floor), and a
+  check of who the page lists may warn only where a blocking one still keeps every suggestion off a
+  player who will not play, worked out from the sources (the audit's V6). The Elo job runs the Bets and
+  Stats page smoke after its commit (a page check; `elo/check.py` and `elo/check_tab.js`, which runs
+  the files through market + form and the Elo picks, gate the data). Seven of the ten NFL-job failures from 2 to 13
+  October 2026 were live data meeting a presentation case no check had seen, each holding the week's
+  data back until a fix landed. A check run only on made-up data stays blocking: only a code change
+  can fail it, and a code change is run through its gate by hand.
+- **Runners are pinned.** Every workflow runs on `ubuntu-24.04`, not `ubuntu-latest`, which moves to
+  Ubuntu 26.04 on 19 October 2026: try `ubuntu-26.04` on purpose, in a dispatched run on a branch,
+  before moving the pin.
 
 - **Patch scripts.** A change to the props parts is applied by a
   `props/build/patch_<name>.py` that is committed with it. Each opens with a

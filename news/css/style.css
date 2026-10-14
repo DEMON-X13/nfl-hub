@@ -103,6 +103,13 @@ a{color:inherit}
 .ddhint{font-size:11px;color:var(--ink-3);font-weight:600}
 .ddbasis{font-size:11.5px;line-height:1.45;color:var(--ink-3);margin:0 12px 8px}
 .ddrow{padding:9px 12px 10px;border-top:1px solid var(--line)}
+.ddhead{margin:0 12px 8px;padding:9px 11px 10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s)}
+.ddhtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ddhlbl{font-family:"Space Grotesk","Manrope",sans-serif;font-weight:700;font-size:14px;letter-spacing:-.01em}
+.ddhvs{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.ddhvs strong{font-family:"Space Grotesk","Manrope",sans-serif;color:var(--ink);font-weight:700}
+.ddhvs strong sup{font-size:8px}
+.ddhsrc{font-size:11.5px;line-height:1.45;color:var(--ink-3);margin-top:3px}
 .ddtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ddunit{font-family:"Space Grotesk","Manrope",sans-serif;font-weight:700;font-size:13.5px;letter-spacing:-.01em}
 .dtag{font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:999px;white-space:nowrap}

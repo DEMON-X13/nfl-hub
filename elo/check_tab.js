@@ -25,12 +25,24 @@
  *     stats that weigh nothing; a column sorts best first and back, # keeping the overall rank; a
  *     team's window lists every stat, its line, and its coming opponent when the file calls one;
  *     Close and Escape shut it; and a model.json from before the stats still draws the old columns;
+ *   - each club's line starts at its own start from the file; a club with no game yet this season
+ *     (a copy of the file with one made so) is ranked and shown on its carried rating, marked
+ *     "carried from" the season the file names, on the curve, with its window saying so, and the
+ *     text gives the carried share; a file from before the carry (one start a side, no carry)
+ *     still draws, its lines from that start, with no carried mark and no carry in the text;
  *   - the team table scrolls sideways inside its card at a desktop width, not only on a phone: it, or
  *     a box between it and the card, has overflow-x auto by a rule outside any media query (fifteen
  *     columns ran past the card at 1280 px and the whole page scrolled), and the team column can
  *     stick in that box: nothing between them clips, as the page's own rule clips every table. The
  *     page's stylesheet (props/build/part1.html) goes round the tab for this. jsdom lays nothing
- *     out and reads only the rules a desktop screen gets, so this is the style, not a measured width.
+ *     out and reads only the rules a desktop screen gets, so this is the style, not a measured width;
+ *   - the money the files feed, on every rated player and every matchup line in them: market + form
+ *     (eloAltP, which decides whether a player leg qualifies for the Parlay Builder's suggestions),
+ *     the Elo matchup chance (eloMatchupP) and the Elo picks (eloPicks: each tier's chance the product
+ *     of its legs' and its price the product of theirs, one leg a game and a player), on made-up book
+ *     prices, with no error thrown or logged. Since October 2026 the whole page's smoke
+ *     (nflbets/build/smoke.js) runs after the Elo job's commit, so this is the gate on the files
+ *     reaching the code that touches a chance or a price.
  */
 'use strict';
 const fs = require('fs');
@@ -39,7 +51,7 @@ const ROOT = path.resolve(__dirname, '..');
 const arg = k => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const DATA = arg('--data') || path.join(ROOT, 'elo', 'data');
 const TAB = fs.readFileSync(arg('--tab') || path.join(ROOT, 'nflbets', 'build', 'tab_elo.html'), 'utf8');
-const { JSDOM } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
+const { JSDOM, VirtualConsole } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const read = f => JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8'));
 const P = read('players.json'), M = read('model.json');
 const MU0 = fs.existsSync(path.join(DATA, 'matchups.json')) ? read('matchups.json') : null;
@@ -77,7 +89,9 @@ function page(MU, opts) {
   const week = MU && MU.week != null ? MU.week : 1;
   const dom = new JSDOM(`<!doctype html><html><head>${PAGE_CSS}${style}</head><body>
     <section id="tab-slate"><div id="slateView"><div class="bar"></div></div><select id="weekSel"><option value="${week}" selected>${week}</option></select></section>
-    ${section}</body></html>`, { runScripts: 'outside-only', pretendToBeVisual: true });
+    ${section}</body></html>`, Object.assign({ runScripts: 'outside-only', pretendToBeVisual: true }, opts && opts.errors ? { virtualConsole: (() => {
+      const vc = new VirtualConsole(); vc.on('jsdomError', e => opts.errors.push(String(e && (e.detail && e.detail.message || e.message) || e)));
+      vc.on('error', (...a) => opts.errors.push(a.map(String).join(' '))); return vc; })() } : {}));
   const w = dom.window;
   const games = [...new Set(Object.values((MU && MU.players) || {}).map(v => v.game_id))].sort();
   w.__clock = { now: 0 };
@@ -219,7 +233,7 @@ function page(MU, opts) {
 
   /* ---- Overall Offense and Overall Defense: the two pills, the table, the sort, the window ---- */
   const U0 = M.units;
-  if (!U0 || !U0.off || !Object.values(U0.off).some(v => v.games)) notes.push('no team has a rated game: the Overall Offense checks are skipped');
+  if (!U0 || !U0.off || !Object.values(U0.off).some(v => v.games || v.carried)) notes.push('no team has a rating: the Overall Offense checks are skipped');
   else if (!U0.stats) chk(false, 'model.json\'s units carry no stats: an old build wrote them');
   else {
     /* the gate's own printing of a value and a rank, so the page's cannot vouch for itself */
@@ -245,7 +259,7 @@ function page(MU, opts) {
       chk(R.length === teams.length && R.length === 32, `${name} has ${R.length} rows for ${teams.length} teams`);
       chk(R.every((tr, i) => T[tr.dataset.team] && T[tr.dataset.team].rank === i + 1 && txt(tr.querySelector('.pe-rank')) === String(i + 1)),
         `${name} is not in the file's rank order`);
-      const elos = R.filter(tr => T[tr.dataset.team].games).map(tr => +txt(tr.querySelector('.pe-elo')));
+      const elos = R.filter(tr => T[tr.dataset.team].games || T[tr.dataset.team].carried).map(tr => +txt(tr.querySelector('.pe-elo')));
       chk(elos.every((e, i) => !i || e <= elos[i - 1]), `${name}'s ratings rise down the table`);
       chk(R.every(tr => +txt(tr.querySelector('.pe-elo')) === T[tr.dataset.team].elo && tr.querySelector('.pe-shield svg.tierbadge')),
         `a ${name} rating is not the file's, or has no shield`);
@@ -268,6 +282,10 @@ function page(MU, opts) {
         && shares.reduce((a, b) => a + b, 0) === 100, `${name}'s text does not give the file's weights summing to 100: ${shares.join(', ')}`);
       const zero = stats.filter(s => !s.weight), zt = txt(card.querySelector('#peTeamsZero'));
       chk(!zero.length || (zero.every(s => zt.includes(s.label)) && /weigh nothing/.test(zt)), `${name} does not say which stats weigh nothing, and why`);
+      /* the old measure's walk-forward on the carried file is the old measure carried the same way,
+         which the site never ran: the text says so */
+      chk(!zero.length || (U0.walk_forward || {}).no_carry == null || /old rating on points and EPA alone, carried the same way, by/.test(zt),
+        `${name}'s walk-forward note gives the old rating's carried score as if it were the old rating's own: ${zt.slice(0, 260)}`);
       /* a stat's header sorts by it, best first, then the other way; # keeps the overall rank */
       const k = stats[1].key, th = () => card.ownerDocument.querySelector(`#peUnits thead th[data-sort="${k}"]`);
       th().click(); await wait(20);
@@ -287,6 +305,8 @@ function page(MU, opts) {
       chk(!!m && !m.hidden && txt(view).includes(String(T[t].elo)) && view.querySelectorAll('.pe-pl-tiles div').length === 4, `a click on ${t} does not open its window`);
       chk([...view.querySelectorAll('tbody tr[data-stat]')].map(r => r.dataset.stat).join() === stats.map(s => s.key).join(), `${t}'s window does not list every stat`);
       chk(view.querySelector('.pe-tline svg') && view.querySelectorAll('.pe-tline circle').length === T[t].line.length + 1, `${t}'s window has no line game by game`);
+      { const want = T[t].start != null ? T[t].start : (U0.start || {})[side];
+        chk(txt(view.querySelector('.pe-tline circle title')) === `Season start: ${want}`, `${t}'s line does not start at its own start from the file (${want}): ${txt(view.querySelector('.pe-tline circle title'))}`); }
       const N = M.next || {}, g = +N.season === +U0.season ? (N.games || []).find(x => { const p = String(x.game_id).split('_'); return p[2] === t || p[3] === t; }) : null;
       if (g) { const p = g.game_id.split('_'), opp = p[3] === t ? p[2] : p[3], other = U0[side === 'off' ? 'def' : 'off'][opp];
         chk(!!d.getElementById('peTmNext') && txt(d.getElementById('peTmNext')).includes(opp) && txt(d.getElementById('peTmNext')).includes(nth(other.rank)),
@@ -303,6 +323,65 @@ function page(MU, opts) {
     chk(!d.getElementById('peUnits') && d.querySelectorAll('#peBody tr.pe-plrow').length > 0 && d.querySelectorAll('#peBody .card').length === 1,
       'a position pill does not bring the player table back, alone (the teams are a pill away, not a card under it)');
 
+    /* the carry: a club with no game yet this season (made so in this copy) is ranked and shown on
+       its carried rating, marked, on the curve, and its window says so; the text names the share */
+    { const C = (U0.params || {}).carry, from = (U0.params || {}).carry_from;
+      chk(C === 0.42 && from === +U0.season - 1, `the file does not name the carry and the season carried in: ${C}, ${from}`);
+      const M5 = JSON.parse(JSON.stringify(M)), t5 = Object.keys(M5.units.off).sort()[0];
+      for (const side of ['off', 'def']) { const v = M5.units[side][t5];
+        Object.assign(v, { games: 0, line: [], before: null, change: null, carried: true, record: [0, 0, 0], start: v.elo });
+        for (const e of Object.values(v.stats)) { e.v = null; e.rank = null; } }
+      const { d: d5 } = page(MU0, { M: M5 }); await wait(60);
+      for (const side of ['off', 'def']) {
+        const card = await open(d5, side), v = M5.units[side][t5];
+        const tr = card && [...card.querySelectorAll('tbody tr.pe-tmrow')].find(x => x.dataset.team === t5);
+        chk(!!tr && txt(tr.querySelector('.pe-elo')) === String(v.elo) && txt(tr.querySelector('.pe-rank')) === String(v.rank) && !tr.classList.contains('pe-np')
+          && txt(tr.querySelector('.pe-carry')) === `carried from ${from}`, `${t5}, yet to play, is not shown on its carried rating with its rank and marked carried from ${from}: ${tr ? txt(tr) : 'no row'}`);
+        chk(/ranked/.test(txt(card.querySelector('.pe-curve'))) && txt(card.querySelector('.pe-curve')).includes(`${Object.values(M5.units[side]).filter(x => x.games || x.carried).length} ranked`),
+          `the ${side} curve does not count the club carried from last season`);
+        const why = txt(card.querySelector('#peTeamsWhy'));
+        chk(why.includes(`each starting from ${C} of its final rating in ${from}`) && why.includes(`marked carried from ${from}`) && !/everyone started at 1500/.test(why),
+          `the ${side} text does not say each team starts from ${C} of ${from}: ${why.slice(0, 220)}`);
+        /* the player rankings carry nothing in: the text never likens the carry to them */
+        chk(!/the way the player rankings are/.test(why) && /As in the player rankings, after each game/.test(why),
+          `the ${side} text likens the carried start to the player rankings, which start every season at 1500: ${why.slice(0, 220)}`);
+        if (tr) { tr.click(); await wait(20);
+          const view = d5.getElementById('peTmView');
+          chk(/No game yet this season/.test(txt(d5.getElementById('peTmCarried'))) && txt(d5.getElementById('peTmCarried')).includes(`carried from ${from}`)
+            && txt(view.querySelector('.pe-pl-tiles')).includes(`carried from ${from}`), `${t5}'s window does not say its rating is carried from ${from}`);
+          d5.getElementById('peTmClose').click(); await wait(10); }
+      }
+      /* the real file: a club with a game has no carried mark */
+      { const card = await open(d5, 'off'), marked = [...card.querySelectorAll('tbody tr.pe-tmrow')].filter(x => x.querySelector('.pe-carry')).map(x => x.dataset.team);
+        chk(marked.join() === Object.keys(M5.units.off).filter(k => M5.units.off[k].carried).sort((a, b) => M5.units.off[a].rank - M5.units.off[b].rank).join(),
+          `the clubs marked carried are not the file's: ${marked.join()}`); } }
+    /* the day the carry is for: every club carried and none played yet (made so in this copy): both
+       pills still open their tables, all 32 clubs ranked on their carried ratings, marked, on the
+       curve. (A pill shown only once a club has a rated game would drop the teams on that day.) */
+    { const C = (U0.params || {}).carry, from = (U0.params || {}).carry_from;
+      const M6 = JSON.parse(JSON.stringify(M));
+      for (const side of ['off', 'def']) for (const v of Object.values(M6.units[side])) {
+        Object.assign(v, { games: 0, line: [], before: null, change: null, carried: true, record: [0, 0, 0], start: v.elo });
+        for (const e of Object.values(v.stats)) { e.v = null; e.rank = null; } }
+      const { d: d6 } = page(MU0, { M: M6 }); await wait(60);
+      chk(!!pill(d6, 'off') && !!pill(d6, 'def'), 'with every club carried and none played, the Overall Offense and Overall Defense pills are gone');
+      for (const side of ['off', 'def']) {
+        const card = await open(d6, side), R6 = card ? [...card.querySelectorAll('tbody tr.pe-tmrow')] : [];
+        chk(R6.length === 32 && R6.every(tr => txt(tr.querySelector('.pe-carry')) === `carried from ${from}`
+          && txt(tr.querySelector('.pe-elo')) === String(M6.units[side][tr.dataset.team].elo)),
+          `with every club carried, the ${side} table does not draw all 32 on their carried ratings, marked carried from ${from}: ${R6.length} rows`);
+        chk(!!card && txt(card.querySelector('.pe-curve')).includes('32 ranked'), `with every club carried, the ${side} curve does not count all 32`);
+      } }
+    /* a file from before the carry: one start a side, no carry: still draws, its lines from that start */
+    { const M4 = JSON.parse(JSON.stringify(M));
+      delete M4.units.params.carry; delete M4.units.params.carry_from; M4.units.start = { off: 1487, def: 1509 };
+      for (const side of ['off', 'def']) for (const v of Object.values(M4.units[side])) { delete v.start; delete v.carried; }
+      const { d: d4 } = page(MU0, { M: M4 }); await wait(60);
+      const card = await open(d4, 'def'), why = txt(card && card.querySelector('#peTeamsWhy'));
+      chk(!!card && /the way the player rankings are: everyone started at 1500/.test(why) && !card.querySelector('.pe-carry'), 'a file from before the carry does not draw as one: ' + why.slice(0, 160));
+      const tr = card && card.querySelector('tbody tr.pe-tmrow');
+      if (tr) { tr.click(); await wait(20);
+        chk(txt(d4.querySelector('#peTmView .pe-tline circle title')) === 'Season start: 1509', 'a file from before the carry does not start a line at its side\'s start'); } }
     /* the weights are the file's, not the page's: a copy with other weights shows those */
     { const M2 = JSON.parse(JSON.stringify(M)), wts = [40, 30, 20, 5, 5];
       const ws = M2.units.stats.filter(s => s.side === 'off' && s.weight);
@@ -321,6 +400,41 @@ function page(MU, opts) {
         'an old-shaped model.json does not draw the old columns: ' + heads);
       chk(!!scroller(w3, card) && sticks(w3, card), 'the old columns\' table has no sideways scroller at a desktop width, or its team column cannot stick in it'); }
   }
+
+  /* ---- the money the files feed: market + form, the Elo matchup chance and the Elo picks, on every
+     rated player and every matchup line in the files, at made-up book prices (the props parts'
+     mlProb and mlToDec, stubbed here as the page has them) ---- */
+  { const errors = [], { w } = page(MU0, { errors }); await wait(60);
+    w.eval(`function mlProb(o){ o=+o; return o<0?-o/(-o+100):100/(o+100); }
+      function mlToDec(o){ o=+o; return o<0?1+100/(-o):1+o/100; }`);
+    const ok01 = v => typeof v === 'number' && isFinite(v) && v > 0 && v < 1;
+    let alt = 0; const badAlt = [];
+    for (const [pid, e] of Object.entries(P.players || {})) {
+      if (!e || !['QB', 'RB', 'WR', 'TE'].includes(e.group)) continue;
+      for (const side of ['over', 'under']) for (const price of [-110, 150]) {
+        let v; try { v = w.eloAltP(pid, side, price, 'real', e.group === 'QB' ? 'passing_yards' : 'receptions'); } catch (err) { v = 'threw ' + err.message; }
+        alt++; if (!ok01(v)) badAlt.push(`${e.name || pid} ${side} ${price}: ${v}`); } }
+    chk(alt > 0 && !badAlt.length, `market + form is not a chance on ${badAlt.length} of ${alt} player legs (${badAlt.slice(0, 4).join('; ')}): the Parlay Builder decides which player legs qualify on it`);
+    /* a leg for every matchup line in the file, over and under, at -110 and +150 */
+    const legs = [];
+    for (const [pid, pl] of Object.entries((MU0 && MU0.players) || {})) for (const st of Object.keys(pl.stats || {})) {
+      const proj = (pl.stats[st] || [])[1], k = isFinite(proj) ? Math.floor(proj) + 0.5 : 0.5;
+      for (const side of ['over', 'under']) for (const price of [-110, 150])
+        legs.push({ key: `${pl.game_id}|${pid}|${st}`, gid: pl.game_id, pid, stat: st, grp: pl.group, k, side, price, src: 'real', name: pid, label: st }); }
+    let mu = 0; const badMu = [];
+    for (const l of legs) { let v; try { v = w.eloMatchupP(l, w.mlProb(l.price)); } catch (err) { v = 'threw ' + err.message; }
+      if (v === null) continue; mu++; if (!ok01(v)) badMu.push(`${l.pid} ${l.stat} ${l.side} ${l.price}: ${v}`); }
+    chk(!badMu.length, `the Elo matchup chance is not a chance on ${badMu.length} of ${mu} matchup lines (${badMu.slice(0, 4).join('; ')})`);
+    w.__legs = legs; w.eval('function pricedLegs(){ return window.__legs; }');
+    let r; try { r = w.eloPicks(); } catch (err) { r = 'threw ' + err.message; }
+    chk(!!r && typeof r === 'object' && Array.isArray(r.tiers), `the Elo picks do not build on the files: ${typeof r === 'string' ? r : JSON.stringify(r)}`);
+    if (r && Array.isArray(r.tiers)) for (const t of r.tiers) {
+      const n = +String(t.id).replace('elo', ''), p = t.legs.reduce((a, l) => a * l.pe, 1), dec = t.legs.reduce((a, l) => a * w.mlToDec(l.price), 1);
+      chk(t.legs.length === n && ok01(t.p) && Math.abs(t.p - p) < 1e-12 && isFinite(t.dec) && t.dec > 1 && Math.abs(t.dec - dec) < 1e-9
+        && t.legs.every(l => ok01(l.pe)) && new Set(t.legs.map(l => l.gid)).size === n && new Set(t.legs.map(l => l.pid)).size === n,
+        `the ${t.id} Elo pick is not ${n} legs, one a game and a player, at the product of their chances and prices: ${t.p} at ${t.dec}`); }
+    chk(!errors.length, `the tab threw or logged an error on the files: ${errors.slice(0, 3).join('; ')}`);
+    notes.push(`money paths: market + form on ${alt} player legs, the Elo matchup chance on ${mu} of ${legs.length} lines, ${r && r.tiers ? r.tiers.length : 0} Elo pick tiers from ${r && r.candidates || 0} candidates`); }
 
   console.log(`elo tab check: ${checks} checks, ${fails.length} failures`);
   for (const n of notes) console.log('  note: ' + n);

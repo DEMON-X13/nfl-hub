@@ -17,7 +17,10 @@ name: elo
 #     the London kickoffs (13:30 UTC in October) and the 1pm Eastern games (17:00 or 18:00 UTC).
 #     The daily Saturday run gives a third chance. A call is frozen at kickoff, so a run that
 #     lands after one changes nothing about that game's pick.
-# A run that fails its gate commits nothing: the last good files stay live.
+# A run that fails its gate (the build, elo/check.py, elo/check_tab.js) commits nothing: the last good
+# files stay live. The Bets and Stats page smoke runs after the commit: it checks the page, not the Elo
+# data, so a failure there turns the run red without holding back the ratings (it held them back on a
+# tied final and on a top 25 with 24 quarterbacks, in October 2026, until each fix landed).
 on:
   schedule:
     - cron: "40 12 * * *"    # daily, queued 12:40 UTC (08:40 EDT / 07:40 EST); lands 4-9h later
@@ -34,7 +37,8 @@ concurrency:
 
 jobs:
   rate:
-    runs-on: ubuntu-latest
+    # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
+    runs-on: ubuntu-24.04
     # a normal run takes about five minutes; a stalled download fails the run here, not at GitHub's six hours
     timeout-minutes: 40
     steps:
@@ -49,8 +53,10 @@ jobs:
           python-version: "3.12"
       - run: pip install -r elo/requirements.txt
       # The finished seasons' nflverse files (2012 to last season's player stats, depth charts and injury
-      # reports, and last season's play-by-play once this one is under way: about 230 MB, 43 of the 49
-      # files a run reads) never change, so they are kept between runs instead of asked for again five
+      # reports, last season's play-by-play once this one is under way, and the season before last's,
+      # which Overall Offense and Overall Defense carry in until the rankings move to the new season
+      # and which is not read after: in season about 230 MB, 43 of the 49 files a run reads) never
+      # change, so they are kept between runs instead of asked for again five
       # times a day: one failed request among them refused the run of 13 October 2026. The season in
       # play, games.csv and the roster are never kept: build.py deletes and downloads them every run.
       # build.py writes elo/cache/past.lst, the finished seasons' files it read, once every source was
@@ -81,12 +87,9 @@ jobs:
       - name: Is there a week to call
         id: season
         # between the Super Bowl and the fortnight before a new week 1 there is no game to call
-        # and no matchup to project, and the page smoke's Elo picks checks need one: then the
-        # two checks above are the gate, and the files still publish
+        # and no matchup to project, and the page smoke's Elo picks checks need one: then it is
+        # skipped (the two checks above are the gate either way)
         run: echo "calls=$(python -c "import json; print(len(json.load(open('elo/data/model.json'))['next']['games']))")" >> "$GITHUB_OUTPUT"
-      - name: Check the page still reads what was written
-        if: steps.season.outputs.calls != '0'
-        run: node nflbets/build/smoke.js
       - name: Commit if anything changed
         run: |
           git config user.name "nfl-hub bot"
@@ -102,6 +105,15 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      - name: Check the page still reads what was written (after the commit; a red here never holds back the ratings)
+        # a page check, not a check of the Elo data (check.py and check_tab.js gate that, above;
+        # check_tab.js runs the files through market + form, the Elo matchup chance and the Elo
+        # picks, the code that touches a chance or a price): the whole Bets and Stats page booted on
+        # the files just committed. It runs once the commit has
+        # landed, so a page case the smoke has never seen turns the run red with the ratings already
+        # live, and is fixed in the page or the smoke
+        if: steps.season.outputs.calls != '0'
+        run: node nflbets/build/smoke.js
       - name: Stage the finished seasons' files to keep
         id: past
         if: always()

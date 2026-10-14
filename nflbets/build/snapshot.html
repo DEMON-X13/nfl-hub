@@ -32,7 +32,9 @@
          team strength each team's Power Rating (elo/data/model.json `teams`): rating, shield,
                        rank, change since its last game, chance against an average team
          offense vs    Overall Offense against Overall Defense, both ways (`units`), and folded
-         defense       under them the stats the ratings weigh, paired, the better rank marked
+         defense       under them the stats the ratings weigh, paired, the better rank marked; a
+                       unit with no game yet this season on its rating carried from last season,
+                       marked so
          mismatches    the Props tab's Mismatches (window.eloMismatches) in this game, each with
                        its edge on a four-step meter
          starters      the ranked players out first, then each team's expected starters
@@ -567,11 +569,13 @@ function teamsOf(F,g){
   const order=Object.entries(T).map(([t,v])=>({t,...v})).sort((x,y)=>y.elo-x.elo);
   return {M,T,order,rank:t=>order.findIndex(x=>x.t===t)+1};
 }
-/* Overall Offense and Overall Defense, as the ELO Ratings tab has them */
+/* Overall Offense and Overall Defense, as the ELO Ratings tab has them: on once a team has a
+   rating (a rated game, or its start carried from last season); C the carry the file names */
 function unitsOf(F){
   const U=F&&F.model&&F.model.units;
   if(!U||!U.off||!U.def) return null;
-  return {U,on:Object.values(U.off).some(v=>v.games)};
+  const p=U.params||{};
+  return {U,on:Object.values(U.off).some(v=>v.games||v.carried),C:p.carry&&p.carry_from!=null?{c:+p.carry,from:p.carry_from}:null};
 }
 /* which side of one possession ranks higher: the offense or the defense (1st the best on each) */
 const possession=(U,o,d)=>{ const vo=U.off[o], vd=U.def[d]; if(!vo||!vd) return null;
@@ -799,7 +803,7 @@ function unitsSec(P,g,F){
   const X=unitsOf(F);
   if(!X) return fold('gsUnits',T0,'did not load',`<p class="gs-msg">The unit ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
   if(!X.on) return fold('gsUnits',T0,'not yet','<p class="gs-msg">Overall Offense and Overall Defense start once a team has a rated game this season.</p>');
-  const U=X.U, all=U.stats||[], a=g.away_team, h=g.home_team;
+  const U=X.U, all=U.stats||[], a=g.away_team, h=g.home_team, C=X.C;
   /* the stats either rating weighs, in the offense's order, then the defense's */
   const keys=[...new Set(all.filter(s=>s.weight&&s.side==='off').map(s=>s.key).concat(all.filter(s=>s.weight&&s.side==='def').map(s=>s.key)))];
   const meta=(side,k)=>all.find(s=>s.side===side&&s.key===k)||null;
@@ -807,7 +811,7 @@ function unitsSec(P,g,F){
   const ov=(t,s,b)=>{ const v=U[s]&&U[s][t], lab=`<span class="gs-lab">${esc(t)} ${s==='off'?'offense':'defense'}</span>`;
     if(!v) return `<div class="gs-uside${s==='def'?' gs-ud':''}">${lab}<span class="gs-msg">no rating for ${esc(t)}</span></div>`;
     return `<div class="gs-uside${s==='def'?' gs-ud':''}" data-gs-unit="${s}:${esc(t)}">${lab}<span class="gs-uov gs-v${b?' gs-better':''}"><span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n(s)}</small></span>
-      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':'<span class="gs-tiern">no game yet</span>'}</span></div>`; };
+      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':v.carried&&C?`<span class="gs-tiern" data-gs-carried title="No game yet this season: ${esc(C.c)} of its final rating in ${esc(C.from)}">carried from ${esc(C.from)}</span>`:'<span class="gs-tiern">no game yet</span>'}</span></div>`; };
   const pair=(o,d,id)=>{ const p=possession(U,o,d), vo=U.off[o], vd=U.def[d];
     const edge=!p?'':p.team?`<span class="gs-uedge">edge ${V(`${tg(p.team,true)} ${p.edge==='off'?'offense':'defense'}`,true)}</span>`:'<span class="gs-uedge">even</span>';
     const rows=keys.map(k=>{ const mo=meta('off',k), md=meta('def',k), so=vo&&vo.stats&&vo.stats[k]||{}, sd=vd&&vd.stats&&vd.stats[k]||{};
@@ -824,7 +828,7 @@ function unitsSec(P,g,F){
   const so=!!OPEN.gsUStats;
   return fold('gsUnits',T0,sum,`<div class="gs-units">${pair(a,h,'gsUStatsA')}${pair(h,a,'gsUStatsH')}</div>
     <button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>
-    <p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.</p>`);
+    <p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted${C?`, each team starting the season from ${esc(C.c)} of its final rating in ${esc(C.from)} (one with no game yet is shown on that, marked carried)`:''}; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.</p>`);
 }
 
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */

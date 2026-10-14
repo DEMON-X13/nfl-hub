@@ -297,6 +297,10 @@ function renderGame(){
     if(!t.players.length){ html+='<div class="empty">Nobody here has enough NFL history to project. Rosters and depth charts are refreshed twice a week.</div>'; continue; }
     for(const x of t.players){
       const lines=statLines(x);
+      /* a charted player the model has nothing to project for: shown in his place, nothing to bet on */
+      if(!lines.length&&nothingToProject(x)) html+=`<div class="plrbtn" data-nohist="${x.pl.id}" style="cursor:default">
+        <div class="who">${esc(x.pl.n)}${(!locked&&+g.w===currentWeek())?injChip(x.pl.id):''}<span>${depthLabel(x.pl)||x.pl.pos}${x.starter?'':' \u00b7 backup'}${x.gp<3?' \u00b7 thin history':''}</span></div>
+        <div class="sum"><span class="muted">${noHistory(x.pl)?'No games the model counts, last season or this one, so nothing to project: no lines until he plays this season':'Too little in his games so far to project a starter\u2019s workload: no lines'}</span></div><div></div></div>`;
       if(!lines.length) continue;
       const open=!!S.ui.open[x.pl.id], stOpen=!!(S.ui.stats&&S.ui.stats[x.pl.id]);
       html+=`<button class="plrbtn" data-open="${x.pl.id}" aria-expanded="${open}">
@@ -622,12 +626,15 @@ function ingestInjuries(rows,week,replay){
   for(const id of Object.keys(S.inactive)){ const r=S.inactive[id]; if(!r||r.week!=='season') delete S.inactive[id]; }
   if(!replay) INJ={};
   const cur={}, filed={}, final={}, before={};
+  /* who the roster has inactive for his club's last game (the payload's ina): on that game's report
+     in any status, he is held out below as an Out is (the Elo build's WHO PLAYS rule) */
+  const INA=new Set(replay?[]:((PAY&&PAY.ina)||[]));
   for(const r of rows){
     if(+r.season!==SEASON) continue;
     const id=r.gsis_id||r.player_id; if(!id) continue;
     const wk=+r.week, st=String(r.report_status||r.game_status||'').trim(), tm=r.team||'';
     if(wk===w){ cur[id]=r; if(tm){ filed[tm]=true; if(st) final[tm]=true; } }
-    else if(wk<w&&(st==='Out'||st==='Doubtful')){ const b=(before[id]??={team:tm,weeks:{},last:0}); b.weeks[wk]=st; if(wk>b.last){ b.last=wk; b.team=tm; } }
+    else if(wk<w&&(st==='Out'||st==='Doubtful'||INA.has(id))){ const b=(before[id]??={team:tm,weeks:{},last:0}); b.weeks[wk]=(st==='Out'||st==='Doubtful')?st:(b.weeks[wk]||'Inactive'); if(wk>b.last){ b.last=wk; b.team=tm; } }
   }
   const rule=(id,status,extra)=>{ S.inactive[id]={week:w,status,...extra}; out++; };
   for(const id in cur){
@@ -640,15 +647,17 @@ function ingestInjuries(rows,week,replay){
     if(pr==='DNP') INJ[id]={k:'dnp',t:'DNP',title:'Did not practise'+(inj?' ('+inj.toLowerCase()+')':'')+'; no game status yet'};
     else if(pr==='Limited') INJ[id]={k:'lim',t:'LP',title:'Limited in practice'+(inj?' ('+inj.toLowerCase()+')':'')+'; no game status yet'};
   }
-  /* out in his team's last game and no status yet this week: treated as out until one clears him */
+  /* out in his team's last game, or inactive for it after being on its report, and no status yet
+     this week: treated as out until one clears him */
   if(!replay) for(const id in before){
     const b=before[id], tm=(cur[id]&&cur[id].team)||b.team, pw=prevTeamWeek(tm,w);
     if(pw==null||!b.weeks[pw]||S.inactive[id]) continue;
     if(actualFor(pw,id)) continue;                  /* listed, but his stat line says he played */
     const r=cur[id], st=r?String(r.report_status||r.game_status||'').trim():'';
     if(st||final[tm]) continue;
-    if(!filed[tm]) rule(id,'Pending',{why:'no report yet this week'});
-    else if(r&&practiceOf(r.practice_status)==='DNP') rule(id,'Pending',{why:'not practising',inj:String(r.injury||'').trim()});
+    const was=b.weeks[pw]==='Inactive'?'inactive':'out';
+    if(!filed[tm]) rule(id,'Pending',{why:'no report yet this week',was});
+    else if(r&&practiceOf(r.practice_status)==='DNP') rule(id,'Pending',{why:'not practising',was,inj:String(r.injury||'').trim()});
   }
   return {out,week:w};
 }
@@ -1627,7 +1636,9 @@ function gameLegPool(g){
   const have=new Set(out.map(l=>l.key+'@'+l.k+l.side+(l.main?'m':'')));
   const roster=rosterFor(g,false);
   for(const team in roster) for(const x of roster[team].players){
-    if(!suggestable(x.pl.id)) continue;
+    /* a charted starter under three games is shown (thin history), but suggested on his estimate
+       only where the chart moved him up, as before app v104 */
+    if(!suggestable(x.pl.id)||(x.gp<3&&!x.up)) continue;
     for(const l of statLines(x)){
       if(GAME_NOT_OFFERED.has(l.stat)) continue;
       const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'est'};

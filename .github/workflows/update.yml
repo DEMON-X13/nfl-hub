@@ -61,7 +61,8 @@ concurrency:
 
 jobs:
   betting:
-    runs-on: ubuntu-latest
+    # pinned: ubuntu-latest moves to Ubuntu 26.04 on 19 October 2026; try ubuntu-26.04 on purpose, in a dispatched run on a branch, before moving this line
+    runs-on: ubuntu-24.04
     # a normal run takes a few minutes; a stalled download (lib/netfetch.py and .js give each try a
     # timeout and the run ten minutes of retry waits) fails the run here, not at GitHub's six hours
     timeout-minutes: 40
@@ -120,12 +121,18 @@ jobs:
           exit 1
       # the built app on the new state, and the state against what it was built from: this run's
       # files, the quarterbacks, neutral sites, a call from every model, no call moved after its
-      # kickoff (against the last commit; a rebuild is exempt), the record's disclosures
+      # kickoff (against the last commit; a rebuild is exempt), the record's disclosures. Its failures
+      # hold the state back; its warnings (a few presentation checks: the absences card's wording,
+      # the picker's week, a rating's "behind" mark; smoke.js names them) publish, and the last step
+      # goes red on them after the commit
       - name: Viewer smoke test
+        id: smoke
         env:
           BETTING_REBUILD: ${{ inputs.rebuild && '1' || '' }}
+          SMOKE_WARNINGS_FILE: ${{ runner.temp }}/betting-smoke-warnings.txt
         run: node betting/tools/smoke.js
       - name: Commit if anything changed
+        id: commit
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
@@ -152,3 +159,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run elo.yml --ref "${{ github.ref_name }}" || echo "::warning::could not start the Elo job"
+      - name: Fail the run if the smoke test warned (the state is already published)
+        # only after a smoke with no failure (a failed smoke holds the commit back and says so itself;
+        # smoke.js writes the file only then too), and worded from the commit's own outcome
+        if: always() && steps.smoke.outcome == 'success'
+        env:
+          COMMIT: ${{ steps.commit.outcome }}
+        run: |
+          f="${{ runner.temp }}/betting-smoke-warnings.txt"
+          if [ -s "$f" ]; then
+            if [ "$COMMIT" = success ]; then
+              echo "::error::the viewer smoke test warned: the state was published, and these presentation checks need a look"
+            else
+              echo "::error::the viewer smoke test passed its blocking checks and warned, but the commit step did not succeed ($COMMIT), so the state was not published; these presentation checks need a look too"
+            fi
+            sed 's/^/  - /' "$f"
+            exit 1
+          fi
+          echo "the smoke test reported no warnings"

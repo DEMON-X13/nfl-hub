@@ -1,0 +1,60 @@
+diff --git a/elo/build.py b/elo/build.py
+index 8d8b4ed..8a4c1d7 100644
+--- a/elo/build.py
++++ b/elo/build.py
+@@ -505,6 +505,12 @@ STANDING = {'RES', 'PUP', 'RET', 'SUS', 'EXE', 'NON'}
+ # the injury report's game statuses that keep a player out of the expected lineup (Doubtful players
+ # rarely play: the page has always read them as out, and the lineups now do too)
+ OUT_STATUS = ('Out', 'Doubtful')
++# TEST ONLY (the quarterback rule's walk-forward): ELO_QB_Q_OUT, a comma list of practice_status
++# substrings ('Limited', 'Did Not'): a Questionable quarterback whose last practice matches one is
++# counted out of that week's past-game lineups too. ELO_WF_DUMP, a path prefix: the walk-forward's
++# per-game probabilities and the quarterback-weeks the switch added are written beside it.
++QB_Q_OUT = tuple(s.strip() for s in os.environ.get('ELO_QB_Q_OUT', '').split(',') if s.strip())
++WF_DUMP = os.environ.get('ELO_WF_DUMP', '')
+ GAMES_URL = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'
+ 
+ GROUP = {'QB': 'QB', 'RB': 'RB', 'FB': 'RB', 'WR': 'WR', 'TE': 'TE', 'K': 'K',
+@@ -978,10 +984,23 @@ def build_lineups(charts, injuries):
+                     latest = sg[sg.dt == sg.dt.max()]
+                     lst.append((day, _ranked(zip(latest.group, latest.gsis_id, zip(latest.fb, latest.depth)))))
+                 lst.sort(key=lambda dc: dc[0])
++    added = []
+     for y, d in injuries.items():
+-        d = d[d.gsis_id.notna() & d.week.notna() & d.report_status.isin(OUT_STATUS)]
++        d = d[d.gsis_id.notna() & d.week.notna()]
++        hit = d.report_status.isin(OUT_STATUS)
++        if QB_Q_OUT:
++            ps = d.practice_status.map(lambda s: s if isinstance(s, str) else '')
++            qq = (d.position == 'QB') & (d.report_status == 'Questionable') & ps.map(lambda s: any(k in s for k in QB_Q_OUT))
++            added += [(int(y), int(r.week), r.team, r.gsis_id, r.full_name, r.practice_status)
++                      for r in d[qq & ~hit].itertuples(index=False)]
++            hit = hit | qq
++        d = d[hit]
+         for wk, pid in zip(d.week, d.gsis_id):
+             outs.setdefault((int(y), int(wk)), set()).add(pid)
++    if QB_Q_OUT:
++        print(f'  ELO_QB_Q_OUT {QB_Q_OUT}: {len(added)} questionable quarterback-weeks added to the outs')
++        if WF_DUMP:
++            pd.DataFrame(added, columns=['season', 'week', 'team', 'gsis_id', 'name', 'practice_status']).to_csv(WF_DUMP + '_qb_outs.csv', index=False)
+     return weekly, daily, outs
+ 
+ 
+@@ -1527,8 +1546,17 @@ def main():
+             acc = float(((p > 0.5) == (y > 0.5)).mean())
+             ll = float(-np.mean(y * np.log(np.clip(p, 1e-9, 1)) + (1 - y) * np.log(np.clip(1 - p, 1e-9, 1))))
+             walk[int(s)] = {'games': len(test), 'accuracy': round(acc, 4), 'logloss': round(ll, 4)}
++            if WF_DUMP and key == 'x':
++                qb = lambda gid, t: next((p for p, g in mu_lineups.get((gid, t), []) if g == 'QB'), '')
++                dump.extend({'season': int(s), 'game_id': r['game_id'], 'week': r['week'], 'home': r['home'], 'away': r['away'],
++                             'p_home': float(pv), 'home_won': int(yv), 'qb_home': qb(r['game_id'], r['home']),
++                             'qb_away': qb(r['game_id'], r['away'])} for r, pv, yv in zip(test, p, y))
+         return walk
++    dump = []
+     walk = walk_forward('x')
++    if WF_DUMP:
++        pd.DataFrame(dump).to_csv(WF_DUMP + '_games.csv', index=False, float_format='%.10f')
++        print(f'  ELO_WF_DUMP: {len(dump)} walk-forward games written to {WF_DUMP}_games.csv')
+     walk_played = walk_forward('x_played')
+     fits = {}
+     def fit_before(s):
