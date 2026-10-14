@@ -1,6 +1,6 @@
 # nfl-hub
 
-One repo, five scheduled jobs (one per model or site, in `.github/workflows/`) and
+One repo, four scheduled jobs (one per model or site, in `.github/workflows/`) and
 two sites with pages, plus the standalone Weekly Picks page. Each job downloads its
 sources, runs its model without anyone clicking anything, and commits the data; the
 pages fetch it on load.
@@ -85,7 +85,7 @@ runs `tools/pull-week.js`, which refreshes `data/results.js` (scores, records)
 and `data/stats2026.js` with its twin `data/stats.json` (the stat bars) from
 ESPN and TeamRankings, rebuilds the Deep Dive (`data/units2026.js` and its twin
 `data/units.json`) with `tools/context.js`, and writes the reading pack to
-`tools/out/`. The snapshot fetches the JSON twins when a window first opens. Each game's one-line
+`tools/out/`. The snapshot fetches the JSON twins as the page loads. Each game's one-line
 preview and short news note is written each Wednesday by Claude into
 `data/notes/<season>-w<N>.json` from the pack (see `HANDOFF.md`) and checked
 with `tools/notes.js`; until a game has one the snapshot shows an automatic

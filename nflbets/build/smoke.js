@@ -304,8 +304,10 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
    liveparlays/parlays.json; xbets: the X Bet Log's file in place of liveparlays/xbets.json (404:
    it does not answer); news: the news job's files, stand-ins by name ({ units, stats, notes: {
    '2026-w6': ... } }, each an object, a string that is not JSON, or missing for a 404; none at all
-   by default). Every request is in `calls` with its method and cache mode. */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null } = {}) {
+   by default). gate: promises by name ({ units, stats, notes, payload }) that hold back that file's
+   answer until each resolves, and early: resolve once the board has drawn, not at the prop model's
+   app-ready (which a held payload holds back). Every request is in `calls` with its method and cache mode. */
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
@@ -316,20 +318,21 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         shiftClock(w);
         w.addEventListener('error', e => errs.push(e.message));
         if (seed) seed(w);
+        const held = (k, p) => gate && gate[k] ? gate[k].then(() => p) : p;
         w.fetch = (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase();
           fetched.push(s.replace(/\?.*$/, '')); urls.push(s); calls.push({ url: s, method: m, cache: o && o.cache || null }); ALL_CALLS.push(m + ' ' + s);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); return Promise.reject(new TypeError('Failed to fetch')); }
           /* the news job's files: the run's stand-ins, or a 404 (never the real ones) */
           if (/\/news\/data\//.test(s)) { const nm = s.replace(/\?.*$/, '').match(/news\/data\/(?:notes\/(\d{4}-w\d+)|(units|stats))\.json$/) || [];
             const f = !news ? undefined : nm[1] ? (news.notes || {})[nm[1]] : nm[2] ? news[nm[2]] : undefined;
-            return Promise.resolve(f === undefined || f === 404 ? { ok: false, status: 404 } : { ok: true, status: 200,
-              json: async () => { if (typeof f === 'string') return JSON.parse(f); return JSON.parse(JSON.stringify(f)); } }); }
+            return held(nm[1] ? 'notes' : nm[2], Promise.resolve(f === undefined || f === 404 ? { ok: false, status: 404 } : { ok: true, status: 200,
+              json: async () => { if (typeof f === 'string') return JSON.parse(f); return JSON.parse(JSON.stringify(f)); } })); }
           if (s.includes('suggest_ledger.json')) { const t = ledger === 404 ? null : ledger ? JSON.stringify(ledger) : LEDGER_REAL;
             return Promise.resolve(t == null ? { ok: false, status: 404 } : { ok: true, status: 200, json: async () => JSON.parse(t) }); }
           if (s.includes('state.json')) return noState
             ? Promise.resolve({ ok: false, status: 404 })
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
-          if (s.includes('payload.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) });
+          if (s.includes('payload.json')) return held('payload', Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) }));
           if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => file ? JSON.parse(JSON.stringify(file)) : JSON.parse(PARLAYS) });
           if (s.includes('xbets.json')) return Promise.resolve(xbets === 404 ? { ok: false, status: 404 } : { ok: true, status: 200, json: async () => xbets ? JSON.parse(JSON.stringify(xbets)) : JSON.parse(XBETS_REAL) });
           if (s.includes('elo/data/players.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_P) });
@@ -338,6 +341,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           if (espn && s.includes('/scoreboard')) { const wk = +(s.match(/week=(\d+)/) || [])[1]; return Promise.resolve({ ok: true, status: 200, json: async () => espn(wk) }); }
           return Promise.resolve({ ok: false, status: 404 }); };
         w.document.addEventListener('app-ready', () => setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls, calls }), 300));
+        if (early) { const iv = setInterval(() => { if (w.document.querySelector('.pk-game[data-game]')) { clearInterval(iv); setTimeout(() => resolve({ w, d: w.document, errs, fetched, urls, calls }), 300); } }, 50); }
       } });
     setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs, fetched, urls, calls, timedOut: true }), 20000);
   });
@@ -520,6 +524,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!!pbtn === pkCanOpen(first.dataset.game) && w.pkBoard.canProps(first.dataset.game) === pkCanOpen(first.dataset.game)
     && (!pbtn || (pbtn.dataset.gsProps === pkRow(first.dataset.game).id && /^Game bets and player props/.test(txt(pbtn)) && d.getElementById('gsMatch').firstElementChild.contains(pbtn))),
     `the Game snapshot ${pkCanOpen(first.dataset.game) ? 'has no button, first in it, to the game\'s page on the Props tab' : 'offers a page the Props tab cannot open'}`);
+  /* the button stands alone, with no caption beside it (the owner wants less text): its name, which starts
+     with the words it shows, and its title say it opens the game on the Props tab */
+  chk(!pbtn || (pbtn.parentElement.childElementCount === 1 && !txt(pbtn.parentElement).replace(txt(pbtn), '') && !gsm().querySelector('.gs-propswhat')
+      && /^Game bets and player props\b.*\bProps tab\b/.test(pbtn.getAttribute('aria-label') || '') && /\bon the Props tab\b/.test(pbtn.getAttribute('title') || '')),
+    'the props button has a caption beside it, or its name and title do not say it opens the game on the Props tab: ' + (pbtn ? txt(pbtn.parentElement) + ' | ' + pbtn.getAttribute('aria-label') : ''));
 
   /* the button closes the snapshot and opens the game's page on the Props tab, on its week, with the
      Game bets card brought into view (it follows the game's suggested parlays) */
@@ -1136,7 +1145,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
 
   /* ---- the Season Tracker tab is gone (14 October 2026): its games are in each Game snapshot. Every
      frame in the page is one of the three betting tabs, and the page carries none of the news job's
-     data or code: the snapshot fetches its three files when it first opens, no-store, and a news job
+     data or code: the snapshot fetches its three files as the page loads, no-store, and a news job
      commit never leaves this page stale ---- */
   chk(!d.getElementById('tab-tracker') && !d.querySelector('#tabs button[data-tab="tracker"], iframe.nt-frame, #ntTop, #ntNote'), 'the Season Tracker tab is still in the page');
   chk(d.querySelectorAll('iframe').length === 3 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is not one of the three betting tabs');
@@ -1146,7 +1155,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   { const nc = calls.filter(c => /\/news\/data\//.test(c.url)), n = f => nc.filter(c => c.url.replace(/\?.*$/, '').endsWith(f)).length;
     chk(nc.length > 0 && nc.every(c => c.method === 'GET' && c.cache === 'no-store') && n('news/data/units.json') === 1 && n('news/data/stats.json') === 1
       && new Set(nc.map(c => c.url)).size === nc.length,
-      'the Game snapshot does not read the news job\'s files once each, no-store, when a window opens: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
+      'the Game snapshot does not read the news job\'s files once each, no-store, as the page loads: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
 
   /* the tabs keep their addresses: #parlay is the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
   for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
@@ -2518,9 +2527,18 @@ async function snapshotChecks() {
    defense's, weighed by its matchup's weight: Easy from 1.5, Favorable from 0.5, the same the other
    way), the overall tag on the gap read as points, the starters out, the records, and the stat bars'
    numbers, marks, split widths and colours; the Deep Dive's rows must be deepdive.js's own html for
-   the stand-in, set in whole. A game with no note to come draws the automatic line (on a 404 and on a
-   notes file that is not JSON too), a played one with none draws nothing, and a written one is
-   escaped; a file that does not load says so in its own part and nothing throws.
+   the stand-in, set in whole, and the basis under them counts each club's games as the file does. A
+   game with no note to come draws the automatic line (on a 404 and on a notes file that is not JSON
+   too), a played one with none draws nothing, and a written one is escaped and, once the game has
+   started, dated as written before kickoff; a file that does not load says so in its own part (the
+   Sources card too: still loading while it is read, did not load once it has failed) and nothing
+   throws: a units file lacking a club, one that is not JSON, a stat file of another season. The Rams
+   are LA on the board and LAR in the news job's files: a game of theirs draws its stats, its starters
+   out and its Deep Dive from the LAR entries. A playoff game (the news job stops at week 18) says
+   the Deep Dive is the regular season's only. And the window keeps the visitor's place while the
+   files come in late: with the news files and the prop model held back, each redraw puts the focus
+   back on the same control (Close where it has gone) and keeps the card scrolled to where it was on
+   the screen as blocks are drawn in above it (jsdom lays nothing out: the layout is planted).
    ===================================================================================== */
 async function newsChecks() {
   const c0 = checks, f0 = fails.length;
@@ -2537,7 +2555,8 @@ async function newsChecks() {
      with no note), another game of G's week with a note, and a game of a later week */
   const played = st.schedule.filter(g => g.result != null && +g.week !== wk && ![a, h].includes(g.home_team) && ![a, h].includes(g.away_team)).sort((x, y) => +y.week - +x.week);
   const P1 = played[0] || null, P2 = P1 && st.schedule.find(g => g !== P1 && g.result != null && +g.week === +P1.week) || null;
-  const G2 = st.schedule.find(g => +g.week === wk && g !== G) || null, LATER = st.schedule.find(g => +g.week > wk) || null;
+  const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18;
+  const G2 = st.schedule.find(g => +g.week === wk && g !== G) || null, LATER = st.schedule.find(g => +g.week > wk && reg(g)) || null;
   /* the stand-in units.json: the two clubs of G, each unit's rating against the league (z), so each of
      the eight rows takes the tag worked out below; names with markup in them, and eight starters out */
   const META = { season, week: wk, built_at: '2026-10-14T09:43:06.160Z',
@@ -2546,7 +2565,7 @@ async function newsChecks() {
   const pl = (T, k, n, pos, q) => Object.assign({ id: `${T}-${k}`, n, pos }, q ? { q } : {});
   const out = (T, k, n, pos, why) => ({ id: `${T}-${k}`, n, pos, why });
   const unit = (rank, z, who, more) => Object.assign({ rank, z, who, stats: [['EPA per play', 0.05, rank], ['success rate', 44.1, rank, '%']] }, more || {});
-  const clubOf = (T, z, outs, more) => ({ g26: 5,
+  const clubOf = (T, z, outs, more, g26) => ({ g26,
     qb: unit(4, z.qb, [pl(T, 'qb1', `${T} Passer <One>`, 'QB', more.q)], Object.assign(outs.qb ? { out: outs.qb } : {}, more.next ? { next: more.next } : {})),
     ol: unit(10, z.ol, [pl(T, 't1', `${T} Tackle`, 'T'), pl(T, 'c1', `${T} Center`, 'C')], outs.ol ? { out: outs.ol } : {}),
     rb: unit(15, z.rb, [pl(T, 'rb1', `${T} Runner`, 'RB')], {}),
@@ -2554,20 +2573,28 @@ async function newsChecks() {
     front: unit(12, z.front, [pl(T, 'de1', `${T} Edge`, 'DE')], outs.front ? { out: outs.front } : {}),
     db: unit(8, z.db, [pl(T, 'cb1', `${T} Corner`, 'CB')], outs.db ? { out: outs.db } : {}),
     vs: { passD: { rank: 7, z: z.passD }, runD: { rank: 20, z: z.runD } } });
-  const UNITS = { season, week: wk, built_at: META.built_at, meta: META, basis: '2025 season counted as 4 games (a stand-in)', lineups: 'Lineups from a stand-in depth chart',
-    units: {
-      [A]: clubOf(A, { qb: 1.2, ol: 0.3, rb: 0, rec: -1.0, front: -0.2, db: 0.6, passD: 0.4, runD: -0.9 },
-        { qb: [out(A, 'qbx', `${A} Starter <Hurt>`, 'QB', 'out (knee)')], rec: [out(A, 'wrx', `${A} Receiver & Son`, 'WR', 'out (ankle)'), out(A, 'tex', `${A} Blocker`, 'TE', 'doubtful')] }, {}),
-      [H]: clubOf(H, { qb: -0.4, ol: -0.5, rb: 1.1, rec: 0.9, front: -0.6, db: 0.9, passD: -0.6, runD: 0.2 },
-        { ol: [out(H, 'gx', `${H} Guard`, 'G', 'out'), out(H, 'tx', `${H} Tackle Two`, 'T', 'out'), out(H, 'cx', `${H} Center Two`, 'C', 'out')], front: [out(H, 'dtx', `${H} Nose`, 'DT', 'out')], db: [out(H, 'sx', `${H} Safety`, 'S', 'out (concussion)')] },
-        { q: 'Questionable', next: { n: `${H} Backup`, pos: 'QB', from: 'chart' } }) } };
+  /* a game's two clubs, keyed as the news job keys them (deepdive.js's club codes: the Rams are LAR),
+     the away side's 5 games this season and the home side's 4 */
+  const unitsOf = (a, h) => { const A = DDM.club(a), H = DDM.club(h);
+    return { season, week: wk, built_at: META.built_at, meta: META, basis: '2025 season counted as 4 games (a stand-in)', lineups: 'Lineups from a stand-in depth chart',
+      units: {
+        [A]: clubOf(A, { qb: 1.2, ol: 0.3, rb: 0, rec: -1.0, front: -0.2, db: 0.6, passD: 0.4, runD: -0.9 },
+          { qb: [out(A, 'qbx', `${A} Starter <Hurt>`, 'QB', 'out (knee)')], rec: [out(A, 'wrx', `${A} Receiver & Son`, 'WR', 'out (ankle)'), out(A, 'tex', `${A} Blocker`, 'TE', 'doubtful')] }, {}, 5),
+        [H]: clubOf(H, { qb: -0.4, ol: -0.5, rb: 1.1, rec: 0.9, front: -0.6, db: 0.9, passD: -0.6, runD: 0.2 },
+          { ol: [out(H, 'gx', `${H} Guard`, 'G', 'out'), out(H, 'tx', `${H} Tackle Two`, 'T', 'out'), out(H, 'cx', `${H} Center Two`, 'C', 'out')], front: [out(H, 'dtx', `${H} Nose`, 'DT', 'out')], db: [out(H, 'sx', `${H} Safety`, 'S', 'out (concussion)')] },
+          { q: 'Questionable', next: { n: `${H} Backup`, pos: 'QB', from: 'chart' } }, 4) } }; };
+  const UNITS = unitsOf(a, h);
   /* each row's tag by the rule, worked here on its own */
   const tagOf = (x, fav, easy) => x >= easy ? 'Easy' : x >= fav ? 'Favorable' : x > -fav ? 'Even' : x > -easy ? 'Tough' : 'Very tough';
   const RW = META.tags.rows.weights;
   const rowsWant = (O, D) => [['qb', D.vs.passD], ['ol', D.front], ['rb', D.vs.runD], ['rec', D.db]].map(([k, v]) => `${k}:${tagOf(RW[k] * (O[k].z - v.z), 0.5, 1.5)}`).join();
-  /* the starters out, both teams, as the automatic news names them: away then home, unit by unit */
-  const outsWant = [[a, A], [h, H]].flatMap(([t, T]) => ['qb', 'ol', 'rb', 'rec', 'front', 'db'].flatMap(k => (UNITS.units[T][k].out || []).map(x => `${x.n} (${t} ${x.pos})`)));
-  const newsWant = `Out: ${outsWant.slice(0, 6).join(', ')}${outsWant.length > 6 ? ` and ${outsWant.length - 6} more` : ''}.`;
+  /* the starters out, both teams, as the automatic news names them: away then home, unit by unit, each
+     with his team's board code; a club the file lacks names nobody */
+  const newsOf = (U, a, h) => { const xs = [a, h].flatMap(t => { const u = U.units[DDM.club(t)]; return u ? ['qb', 'ol', 'rb', 'rec', 'front', 'db'].flatMap(k => (u[k].out || []).map(x => `${x.n} (${t} ${x.pos})`)) : []; });
+    return xs.length ? `Out: ${xs.slice(0, 6).join(', ')}${xs.length > 6 ? ` and ${xs.length - 6} more` : ''}.` : ''; };
+  const newsWant = newsOf(UNITS, a, h);
+  /* the Deep Dive's basis counts each club's games as the file has them: "SEA 5 games, DEN 4 games" */
+  const gamesWant = (U, a, h) => [a, h].map(t => { const n = U.units[DDM.club(t)].g26; return `${t} ${n} game${n === 1 ? '' : 's'}`; }).join(', ');
   /* the stand-in stats.json: G's two clubs and P1's visitors; P1's home side left out. A tie (sacks), a
      pair at 0 (red zone), a missing number (explosive plays), a negative (turnovers) */
   const S1 = { ppg: 24.6, pa: 19.2, ypp: 5.9, yppa: 5.1, to: -0.6, sk: 2.4, ska: 2.4, third: 41.5, rz: 0, expl: 3.8, g: 5 };
@@ -2590,6 +2617,30 @@ async function newsChecks() {
     card.click(); await wait(200); const md = R.d.getElementById('gsModal'); return md && !md.hidden ? md : null; };
   const closeG = async R => { R.w.gameSnapshotClose(false); await wait(10); };
   const htmlTxt = (R, html) => { const t = R.d.createElement('template'); t.innerHTML = html; return txt(t.content); };
+  /* the Stat breakdown of a game against the stand-in's two lines (SA the away side's, SH the home's): each
+     of the eleven rows' numbers, the better one marked, the bar split and coloured, the summary's counts */
+  const SR = [['pd', s => s.ppg == null || s.pa == null ? null : Math.round((s.ppg - s.pa) * 10) / 10, false, true, false], ['ppg', s => s.ppg, false], ['pa', s => s.pa, true],
+    ['ypp', s => s.ypp, false], ['yppa', s => s.yppa, true], ['to', s => s.to, false, true], ['sk', s => s.sk, false], ['ska', s => s.ska, true],
+    ['third', s => s.third, false, false, true], ['rz', s => s.rz, false, false, true], ['expl', s => s.expl, false]];
+  const split = (x, y, lo) => { if (x == null || y == null || (x === 0 && y === 0)) return [0, 0]; let pa;
+    if (lo) { const ix = 1 / Math.max(x, 0.01), iy = 1 / Math.max(y, 0.01); pa = ix / (ix + iy) * 100; } else { const m = Math.min(x, y, 0); pa = (x - m) + (y - m) === 0 ? 50 : (x - m) / ((x - m) + (y - m)) * 100; }
+    pa = Math.round(pa * 10) / 10; return [pa, Math.round((100 - pa) * 10) / 10]; };
+  const fmt = (v, sign, pct) => v == null ? '–' : (v < 0 ? '−' + Math.abs(v) : (sign && v > 0 ? '+' : '') + v) + (pct ? '%' : '');
+  const statsBad = (R, md, a, h, SA, SH) => {
+    const bad = [], q = sel => md.querySelector(sel); let na = 0, nh = 0;
+    const rows = md.querySelectorAll('#gsStats [data-gs-srow]');
+    if ([...rows].map(r => r.dataset.gsSrow).join() !== SR.map(r => r[0]).join()) bad.push('the rows are ' + [...rows].map(r => r.dataset.gsSrow).join());
+    for (const [k, f, lo, sign, pct] of SR) { const r = q(`#gsStats [data-gs-srow="${k}"]`); if (!r) continue;
+      const x = f(SA), y = f(SH), [pa, ph] = split(x, y, lo), ba = x != null && y != null && x !== y && (lo ? x < y : x > y), bh = x != null && y != null && x !== y && !ba;
+      if (ba) na++; if (bh) nh++;
+      const va = r.querySelector(`[data-gs-sval="${a}"]`), vh = r.querySelector(`[data-gs-sval="${h}"]`), [ia, ih] = [...r.querySelectorAll('.gs-shalf i')];
+      if (txt(va) !== fmt(x, sign, pct) || txt(vh) !== fmt(y, sign, pct)) bad.push(`${k} reads ${txt(va)} and ${txt(vh)}, the file ${fmt(x, sign, pct)} and ${fmt(y, sign, pct)}`);
+      if (!!(va && va.closest('.gs-better')) !== ba || !!(vh && vh.closest('.gs-better')) !== bh || r.querySelectorAll('.gs-better').length !== (ba || bh ? 1 : 0)) bad.push(`${k}: the mark is on the wrong side`);
+      if (!ia || !ih || ia.style.width !== pa + '%' || ih.style.width !== ph + '%') bad.push(`${k}'s bar is ${ia && ia.style.width} and ${ih && ih.style.width}, the numbers split it ${pa}% and ${ph}%`);
+      if (ia && ih && (ia.style.getPropertyValue('--gs-tc') !== R.w.pkTagColor(a) || ih.style.getPropertyValue('--gs-tc') !== R.w.pkTagColor(h))) bad.push(`${k}'s bar is not in the teams' colours`); }
+    if (txt(q(`#gsStats [data-gs-sb="${a}"]`)) !== String(na) || txt(q(`#gsStats [data-gs-sb="${h}"]`)) !== String(nh)) bad.push(`the summary counts ${txt(q(`#gsStats [data-gs-sb="${a}"]`))} and ${txt(q(`#gsStats [data-gs-sb="${h}"]`))}, the marks ${na} and ${nh}`);
+    if (/Not in the file yet/.test(txt(q('#gsStats')))) bad.push('it says a team is not in the file: ' + (txt(q('#gsStats')).match(/Not in the file yet[^;.]*/) || [''])[0]);
+    return bad; };
 
   /* ---- the files as the job writes them ---- */
   const N1 = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes } }); await wait(400);
@@ -2624,6 +2675,7 @@ async function newsChecks() {
       if (md.querySelectorAll('#gsUnits [data-gs-ddwhy]').length) bad.push('a possession says why it has no rows: ' + txt(q('#gsUnits [data-gs-ddwhy]')));
       const basis = htmlTxt(N1, DDM.basis(UNITS, a, h));
       if (!txt(q('#gsUnits')).includes(basis)) bad.push('the card does not carry the Deep Dive\'s basis');
+      if (!txt(q('#gsUnits')).includes(`, plus this season's ${gamesWant(UNITS, a, h)}.`)) bad.push(`the basis does not count the file's games, '${gamesWant(UNITS, a, h)}': ${(txt(q('#gsUnits')).match(/plus this season's[^.]*\./) || ['none'])[0]}`);
       chk(bad.length === 0, `news: the Deep Dive in Offense vs defense is not the file's: ${bad.join('; ')}`); }
     /* the Overall line's tag: the gap read as points, as the Deep Dive's headline read it */
     if (eloM.units && eloM.units.off && eloM.units.def) { const bad = [];
@@ -2635,25 +2687,7 @@ async function newsChecks() {
           bad.push(`${o}-${dd} reads '${el ? txt(el) : 'nothing'}', the rule '${tag} ${text}'`); }
       chk(bad.length === 0, `news: the Overall line's tag is not the gap read as points: ${bad.join('; ')}`); }
     /* the Stat breakdown: each of the eleven rows' numbers, the better one marked, the bar split and coloured */
-    { const bad = [], SR = [['pd', s => s.ppg == null || s.pa == null ? null : Math.round((s.ppg - s.pa) * 10) / 10, false, true, false], ['ppg', s => s.ppg, false], ['pa', s => s.pa, true],
-        ['ypp', s => s.ypp, false], ['yppa', s => s.yppa, true], ['to', s => s.to, false, true], ['sk', s => s.sk, false], ['ska', s => s.ska, true],
-        ['third', s => s.third, false, false, true], ['rz', s => s.rz, false, false, true], ['expl', s => s.expl, false]];
-      const split = (x, y, lo) => { if (x == null || y == null || (x === 0 && y === 0)) return [0, 0]; let pa;
-        if (lo) { const ix = 1 / Math.max(x, 0.01), iy = 1 / Math.max(y, 0.01); pa = ix / (ix + iy) * 100; } else { const m = Math.min(x, y, 0); pa = (x - m) + (y - m) === 0 ? 50 : (x - m) / ((x - m) + (y - m)) * 100; }
-        pa = Math.round(pa * 10) / 10; return [pa, Math.round((100 - pa) * 10) / 10]; };
-      const fmt = (v, sign, pct) => v == null ? '–' : (v < 0 ? '−' + Math.abs(v) : (sign && v > 0 ? '+' : '') + v) + (pct ? '%' : '');
-      let na = 0, nh = 0;
-      const rows = md.querySelectorAll('#gsStats [data-gs-srow]');
-      if ([...rows].map(r => r.dataset.gsSrow).join() !== SR.map(r => r[0]).join()) bad.push('the rows are ' + [...rows].map(r => r.dataset.gsSrow).join());
-      for (const [k, f, lo, sign, pct] of SR) { const r = q(`#gsStats [data-gs-srow="${k}"]`); if (!r) continue;
-        const x = f(S1), y = f(S2), [pa, ph] = split(x, y, lo), ba = x != null && y != null && x !== y && (lo ? x < y : x > y), bh = x != null && y != null && x !== y && !ba;
-        if (ba) na++; if (bh) nh++;
-        const va = r.querySelector(`[data-gs-sval="${a}"]`), vh = r.querySelector(`[data-gs-sval="${h}"]`), [ia, ih] = [...r.querySelectorAll('.gs-shalf i')];
-        if (txt(va) !== fmt(x, sign, pct) || txt(vh) !== fmt(y, sign, pct)) bad.push(`${k} reads ${txt(va)} and ${txt(vh)}, the file ${fmt(x, sign, pct)} and ${fmt(y, sign, pct)}`);
-        if (!!(va && va.closest('.gs-better')) !== ba || !!(vh && vh.closest('.gs-better')) !== bh || r.querySelectorAll('.gs-better').length !== (ba || bh ? 1 : 0)) bad.push(`${k}: the mark is on the wrong side`);
-        if (!ia || !ih || ia.style.width !== pa + '%' || ih.style.width !== ph + '%') bad.push(`${k}'s bar is ${ia && ia.style.width} and ${ih && ih.style.width}, the numbers split it ${pa}% and ${ph}%`);
-        if (ia && ih && (ia.style.getPropertyValue('--gs-tc') !== N1.w.pkTagColor(a) || ih.style.getPropertyValue('--gs-tc') !== N1.w.pkTagColor(h))) bad.push(`${k}'s bar is not in the teams' colours`); }
-      if (txt(q(`#gsStats [data-gs-sb="${a}"]`)) !== String(na) || txt(q(`#gsStats [data-gs-sb="${h}"]`)) !== String(nh)) bad.push(`the summary counts ${txt(q(`#gsStats [data-gs-sb="${a}"]`))} and ${txt(q(`#gsStats [data-gs-sb="${h}"]`))}, the marks ${na} and ${nh}`);
+    { const bad = statsBad(N1, md, a, h, S1, S2);
       if (!txt(q('#gsStats [data-gs-sbasis]')).startsWith(`${season} season through Oct 12: ${a} 5 games, ${h} 4 games.`)) bad.push(`the basis reads '${txt(q('#gsStats [data-gs-sbasis]'))}'`);
       chk(bad.length === 0, `news: the Stat breakdown is not the file's: ${bad.slice(0, 6).join('; ')}`); }
     /* when the news job's files were written, beside the others */
@@ -2661,10 +2695,16 @@ async function newsChecks() {
       'news: the Sources card does not say when the Deep Dive, the stat breakdown and the week\'s notes were written, or where they come from');
     await closeG(N1);
   }
-  /* a note written for a game: its sentence and news as text, never markup, its outlets after it */
-  if (G2) { const m2 = await openG(N1, G2), b = m2 && m2.querySelector('.gs-prev');
-    chk(!!b && b.dataset.gsNote === 'written' && txt(b.querySelector('[data-gs-preview]')) === NOTE_G2.preview && !b.querySelector('[data-gs-news]') && !b.querySelector('[data-gs-sources]') && !b.querySelector('.gs-pauto'),
-      `news: a game with a note and no news does not show its sentence alone: ${b ? txt(b) : 'no preview'}`);
+  /* a note written for a game: its sentence and news as text, never markup, its outlets after it; labelled
+     Preview while the game is to come, and once it has started dated as written before kickoff (its words
+     on the teams' form were true then; the records above it are as they stand now) */
+  const dayWant = s => /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T12:00:00Z').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
+    : new Date(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const labWant = (g, file) => g.result != null || kick(g) <= now ? `Preview, written ${dayWant(file.written)}, before kickoff` : 'Preview';
+  if (G2) { const m2 = await openG(N1, G2), b = m2 && m2.querySelector('.gs-prev'), lab = labWant(G2, notes[`${season}-w${wk}`]);
+    chk(!!b && b.dataset.gsNote === 'written' && txt(b.querySelector('[data-gs-preview]')) === NOTE_G2.preview && !b.querySelector('[data-gs-news]') && !b.querySelector('[data-gs-sources]') && !b.querySelector('.gs-pauto')
+      && txt(b.querySelector('.gs-pv .gs-lab')) === lab,
+      `news: a game with a note and no news does not show its sentence alone, labelled '${lab}': ${b ? txt(b) : 'no preview'}`);
     await closeG(N1); }
   if (P1) { const m3 = await openG(N1, P1), q3 = sel => m3 && m3.querySelector(sel), b = q3('.gs-prev'), bad = [];
     if (!b || b.dataset.gsNote !== 'written') bad.push('no written preview');
@@ -2673,7 +2713,9 @@ async function newsChecks() {
       if (!pv || pv.textContent !== NOTE_P.preview || pv.children.length) bad.push(`the preview reads '${pv && pv.innerHTML}'`);
       if (!nw || nw.textContent !== NOTE_P.news || nw.children.length) bad.push(`the news reads '${nw && nw.innerHTML}'`);
       if (!so || so.textContent !== NOTE_P.sources.join(' · ') || so.children.length || so.previousElementSibling !== nw) bad.push(`the sources read '${so && so.innerHTML}', not after the news`);
-      if (b.previousElementSibling !== q3('#gsPast')) bad.push('a played game\'s note is not under its played note'); }
+      if (b.previousElementSibling !== q3('#gsPast')) bad.push('a played game\'s note is not under its played note');
+      const lab = `Preview, written ${dayWant(notes[`${season}-w${+P1.week}`].written)}, before kickoff`;
+      if (txt(b.querySelector('.gs-pv .gs-lab')) !== lab) bad.push(`its label reads '${txt(b.querySelector('.gs-pv .gs-lab'))}', not '${lab}'`); }
     /* a game of another week: the Deep Dive says whose week it is for, both ways, and draws no rows */
     const why = [...(m3 ? m3.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
     if (why.length !== 2 || why.some(x => !new RegExp(`are for week ${wk}: this game's ${+P1.week < wk ? 'week has gone' : 'come with its week'}`).test(x)) || q3('#gsUnits .dd')) bad.push(`its Deep Dive reads '${why.join(' / ')}'`);
@@ -2687,7 +2729,7 @@ async function newsChecks() {
     chk(!!m4 && !m4.querySelector('.gs-prev'), `news: a played game with no note (${P2.game_id}) draws a preview`); await closeG(N1); }
   if (LATER) { const m5 = await openG(N1, LATER), why = [...(m5 ? m5.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
     chk(why.length === 2 && why.every(x => new RegExp(`are for week ${wk}: this game's come with its week`).test(x)) && !m5.querySelector('#gsUnits .dd'),
-      `news: a game of a later week does not say its Deep Dive comes with its week: '${why.join(' / ')}'`); await closeG(N1); }
+      `news: a game of a later regular-season week does not say its Deep Dive comes with its week: '${why.join(' / ')}'`); await closeG(N1); }
   /* each file read once a page load (the notes once a week), no-store, however often the window opened */
   await openG(N1, G); await closeG(N1);
   { const nc = N1.calls.filter(c => /\/news\/data\//.test(c.url)), urls = nc.map(c => c.url.replace(/\?.*$/, ''));
@@ -2701,7 +2743,8 @@ async function newsChecks() {
     const m = await openG(N2, G), b = m && m.querySelector('.gs-prev');
     chk(!!m && N2.errs.length === 0 && !/could not be drawn/.test(txt(m)) && !!b && b.dataset.gsNote === 'auto' && !b.querySelector('[data-gs-news]')
       && [...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].length === 2 && [...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].every(x => /Deep Dive did not load/.test(txt(x)))
-      && !m.querySelector('[data-gs-head]') && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && txt(m.querySelector('#gsStats .gs-sum')) === 'did not load',
+      && !m.querySelector('[data-gs-head]') && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && txt(m.querySelector('#gsStats .gs-sum')) === 'did not load'
+      && txt(m.querySelector('#gsFiles [data-gs-news-state]')) === 'the Deep Dive and the stat breakdown did not load',
       'news: with every news file missing the window does not draw the automatic line and say each part did not load: ' + N2.errs.join('; ') + ' ' + (m ? txt(m.querySelector('#gsStats')).slice(0, 80) : 'no window'));
     N2.w.close(); }
   /* ---- a notes file that is not JSON and a stat file of the wrong shape: the automatic line (its news from the units), the stats said not loaded ---- */
@@ -2710,5 +2753,108 @@ async function newsChecks() {
     chk(!!m && N3.errs.length === 0 && !!b && b.dataset.gsNote === 'auto' && txt(b.querySelector('[data-gs-news]')) === newsWant && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && !!m.querySelector('#gsUnits .dd'),
       'news: a notes file that is not JSON does not draw the automatic line, or a stat file of the wrong shape is drawn: ' + N3.errs.join('; ') + ' ' + (b ? txt(b) : 'no preview'));
     N3.w.close(); }
+  /* ---- a units file lacking one of the game's clubs: each possession says which, no rows, nothing thrown; the
+     automatic news names the other club's starters out alone ---- */
+  { const U4 = Object.assign({}, UNITS, { units: { [A]: UNITS.units[A] } });
+    const N4 = await run(st, undefined, null, false, { news: { units: U4, stats: STATS, notes } }); await wait(400);
+    const m = await openG(N4, G), why = [...(m ? m.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt), b = m && m.querySelector('.gs-prev');
+    chk(!!m && N4.errs.length === 0 && !/could not be drawn/.test(txt(m)) && why.length === 2 && why.every(x => x === `The Deep Dive has no matchups for ${h}.`) && !m.querySelector('#gsUnits .dd')
+      && !!b && txt(b.querySelector('[data-gs-news]')) === newsOf(U4, a, h),
+      `news: a units file lacking ${h} does not say it has no matchups for it, or its news is not ${a}'s outs alone: ${N4.errs.join('; ')} '${why.join(' / ')}' ${b ? txt(b.querySelector('[data-gs-news]')) : 'no preview'}`);
+    N4.w.close(); }
+  /* ---- a units file that is not JSON, and a stat file of another season: each says so in its own card and in
+     Sources, nothing thrown ---- */
+  { const N5 = await run(st, undefined, null, false, { news: { units: 'not { json', stats: Object.assign({}, STATS, { season: season - 1 }), notes } }); await wait(400);
+    const m = await openG(N5, G), why = [...(m ? m.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
+    chk(!!m && N5.errs.length === 0 && !/could not be drawn/.test(txt(m)) && why.length === 2 && why.every(x => /^The Deep Dive did not load\b/.test(x)) && !m.querySelector('#gsUnits .dd')
+      && txt(m.querySelector('#gsStats .gs-msg')) === `The stat breakdown is ${season - 1}'s season; this game is ${season}'s.` && txt(m.querySelector('#gsStats .gs-sum')) === `${season - 1}'s numbers` && !m.querySelector('#gsStats [data-gs-srow]')
+      && txt(m.querySelector('#gsFiles [data-gs-news-state]')) === 'the Deep Dive did not load',
+      `news: a units file that is not JSON or a stat file of another season is not said so: ${N5.errs.join('; ')} '${why.join(' / ')}' '${m ? txt(m.querySelector('#gsStats .gs-secbody')) : 'no window'}' '${m ? txt(m.querySelector('#gsFiles [data-gs-news-state]')) : ''}'`);
+    N5.w.close(); }
+
+  /* ---- the Rams: LA on the board, LAR in the news job's files. A copy of G with LA at home (unless a side
+     already is), the stand-ins keyed by deepdive.js's club codes as the job keys them: the Stat breakdown,
+     the automatic news and the Deep Dive all read LA's entries from LAR. And a made-up wild-card game
+     (week 19): the news job stops at week 18, so the Deep Dive says it is the regular season's only ---- */
+  { const lst = JSON.parse(JSON.stringify(st)), LG = lst.schedule.find(x => x.game_id === G.game_id);
+    if (![LG.away_team, LG.home_team].includes('LA')) { LG.home_team = 'LA'; LG.game_id = LG.game_id.replace(/_[A-Z]+$/, '_LA'); }
+    const la = LG.away_team, lh = LG.home_team, UL = unitsOf(la, lh);
+    const SL = { season, through: 'Oct 12', asof: '2026-10-14', stats: { [DDM.club(la)]: S1, [DDM.club(lh)]: S2 } };
+    const src = lst.schedule.filter(x => +x.week === 18 && reg(x))[0], WC = src ? JSON.parse(JSON.stringify(src)) : null;
+    if (WC) { WC.game_id = WC.game_id.replace(/_18_/, '_19_'); WC.week = 19; WC.game_type = 'WC'; for (const k of ['result', 'home_score', 'away_score']) delete WC[k]; lst.schedule.push(WC); }
+    const NL = await run(lst, undefined, null, false, { news: { units: UL, stats: SL, notes } }); await wait(400);
+    const m = await openG(NL, LG), bad = [];
+    if (!m) bad.push('the game opens no window');
+    else {
+      const q = sel => m.querySelector(sel);
+      if (!Object.keys(UL.units).includes('LAR') || Object.keys(UL.units).includes('LA') || !Object.keys(SL.stats).includes('LAR')) bad.push('the stand-ins are not keyed LAR');
+      bad.push(...statsBad(NL, m, la, lh, S1, S2).map(x => 'the Stat breakdown: ' + x));
+      const nw = txt(q('.gs-prev[data-gs-note="auto"] [data-gs-news]')), nwant = newsOf(UL, la, lh);
+      if (nw !== nwant || !/\(LA [A-Z]+\)/.test(nw)) bad.push(`the automatic news reads '${nw}', not LA's starters out from LAR: '${nwant}'`);
+      for (const [o, dd] of [[la, lh], [lh, la]]) { const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UL, o, dd);
+        const tpl = NL.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
+        if (!el || !tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the Deep Dive is not deepdive.js's rows from LAR's entry: ${el ? 'other rows' : txt(q(`#gsUnits [data-gs-poss="${o}-${dd}"] [data-gs-ddwhy]`)) || 'none'}`); }
+      if (!txt(q('#gsUnits')).includes(`, plus this season's ${gamesWant(UL, la, lh)}.`)) bad.push(`the Deep Dive's basis does not count LA's games from LAR's entry`); }
+    chk(bad.length === 0 && NL.errs.length === 0, `news: a Rams game (${la} at ${lh}) does not read LA's entries from the files' LAR: ${NL.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
+    await closeG(NL);
+    if (WC) { const mw = await openG(NL, WC), why = [...(mw ? mw.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt), b = mw && mw.querySelector('.gs-prev');
+      chk(!!mw && NL.errs.length === 0 && why.length === 2 && why.every(x => x === 'The Deep Dive covers the regular season only; its matchups end with week 18.') && !mw.querySelector('#gsUnits .dd')
+        && !/The Deep Dive: /.test(txt(mw.querySelector('#gsUnits'))) && (!b || !b.querySelector('[data-gs-news]')),
+        `news: a wild-card game does not say the Deep Dive covers the regular season only: '${why.join(' / ')}' ${NL.errs.join('; ')}`);
+      await closeG(NL); }
+    NL.w.close(); }
+
+  /* ---- the files coming in late: the news files and the prop model held back, released one by one. Each
+     redraw keeps the focus on the same control (found again, a new element) or puts it on Close where that
+     control has gone, never on the page's body; and the card scrolled to stays where it was on the screen as
+     the preview, the Deep Dive's rows and the props button are drawn in above it. jsdom lays nothing out, so
+     the layout is planted: every element in the window 40px tall in the page's order, the header 64px, the
+     Stat breakdown 120px from the top of the screen; the arithmetic is then held. Sources says each file is
+     still loading while it is read, and nothing once it is in ---- */
+  { const gate = () => { let go; const p = new Promise(r => { go = r; }); return { p, go }; }, gU = gate(), gS = gate(), gP = gate();
+    const NH = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes }, gate: { units: gU.p, notes: gU.p, stats: gS.p, payload: gP.p }, early: true });
+    const m = await openG(NH, G), bad = [];
+    if (!m) bad.push('the game opens no window while the files are held');
+    else {
+      const q = sel => m.querySelector(sel), view = NH.d.getElementById('gsView'), PX = 40, tgt = () => NH.d.getElementById('gsStats');
+      const nst = () => txt(q('#gsFiles [data-gs-news-state]'));
+      if (NH.timedOut || NH.w.pkBoard.canProps(G.game_id) || q('[data-gs-props]')) bad.push('the prop model was up before its payload was let through');
+      if (nst() !== 'the Deep Dive and the stat breakdown are still loading') bad.push(`Sources reads '${nst()}' while both files are read`);
+      if ([...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].map(txt).join('|') !== 'Loading the Deep Dive…|Loading the Deep Dive…' || txt(q('#gsStats .gs-sum')) !== 'loading…') bad.push('the Deep Dive or the Stat breakdown does not say it is loading');
+      const idx = el => [...view.querySelectorAll('*')].indexOf(el);
+      NH.w.Element.prototype.getBoundingClientRect = function () { const r = (t, hh) => ({ top: t, bottom: t + hh, height: hh, left: 0, right: 320, width: 320, x: 0, y: t });
+        if (this.id === 'gsTop') return r(0, 64); if (this.id === 'gsModal') return r(0, 800);
+        return this === tgt() ? r(64 + PX * idx(this) - m.scrollTop, PX) : r(-1e6, PX); };
+      const top = () => tgt().getBoundingClientRect().top;
+      /* each step: the control focused, the file let through, then the focus and the card's place held */
+      const step = async (what, focus, release, settle) => {
+        const f = focus(), i0 = idx(tgt()), y0 = m.scrollTop; f.focus();
+        if (NH.d.activeElement !== f) { bad.push(`${what}: the control could not be focused`); return; }
+        release(); await settle();
+        const at = NH.d.activeElement, i1 = idx(tgt());
+        return { f, at, i0, i1, y0 }; };
+      m.scrollTop = 64 + PX * idx(tgt()) - 120;
+      const keep = (what, r, key, val) => { if (!r) return;
+        if (r.at === r.f || !r.at || !m.contains(r.at) || r.at.dataset[key] !== val) bad.push(`${what}: the focus is on ${r.at === r.f ? 'the old, removed control' : r.at && r.at.id ? '#' + r.at.id : r.at ? r.at.tagName : 'nothing'}, not ${key} ${val} drawn again`);
+        if (top() !== 120 || m.scrollTop !== r.y0 + PX * (r.i1 - r.i0)) bad.push(`${what}: the Stat breakdown moved to ${top()}px from 120 (scrolled ${m.scrollTop}, ${r.i1 - r.i0} blocks drawn in above it)`); };
+      /* the units and the week's notes: the Deep Dive's rows and the automatic preview drawn in above */
+      const r1 = await step('the units and the notes coming in', () => q('[data-gs-fold="gsStats"]'), () => gU.go(), () => wait(150));
+      keep('the units and the notes coming in', r1, 'gsFold', 'gsStats');
+      if (r1 && !(r1.i1 > r1.i0)) bad.push('nothing was drawn in above the Stat breakdown as the units and the notes came in');
+      if (!q('#gsUnits .dd') || !q('.gs-prev')) bad.push('the Deep Dive or the preview was not drawn once its file came in');
+      if (nst() !== 'the stat breakdown is still loading') bad.push(`Sources reads '${nst()}' once the units are in`);
+      /* a control that is not drawn again: the focus goes to Close */
+      const gone = NH.d.createElement('button'); gone.type = 'button'; gone.dataset.gsGo = 'gone'; view.appendChild(gone);
+      const r2 = await step('the stats coming in', () => gone, () => gS.go(), () => wait(150));
+      if (r2 && r2.at !== NH.d.getElementById('gsClose')) bad.push(`the stats coming in: a control not drawn again leaves the focus on ${r2.at ? r2.at.tagName : 'nothing'}, not Close`);
+      if (r2 && top() !== 120) bad.push(`the stats coming in: the Stat breakdown moved to ${top()}px`);
+      if (nst() || !q('#gsStats [data-gs-srow]')) bad.push(`Sources still reads '${nst()}' with every file in, or the Stat breakdown is not drawn`);
+      /* the prop model coming up: the props button drawn in first in the window */
+      const r3 = await step('the prop model coming up', () => q('[data-gs-goto="gsUnits"]'), () => gP.go(), async () => { for (let i = 0; i < 200 && !NH.w.eval("typeof S==='object'&&!!S&&Array.isArray(S.sched)"); i++) await wait(50); await wait(400); });
+      keep('the prop model coming up', r3, 'gsGoto', 'gsUnits');
+      if (!!q('[data-gs-props]') !== NH.w.pkBoard.canProps(G.game_id)) bad.push('the props button is not drawn in once the prop model is up');
+      if (r3 && q('[data-gs-props]') && !(r3.i1 > r3.i0)) bad.push('the props button was not drawn in above the Stat breakdown'); }
+    chk(bad.length === 0 && NH.errs.length === 0, `news: the window does not keep the visitor's place as the files come in late: ${NH.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
+    NH.w.close(); }
   console.log(`the Season Tracker's games in the Game snapshot: ${checks - c0} checks on stand-in news files (${G.game_id} to come${P1 ? ', ' + P1.game_id + ' played' : ''}), ${fails.length - f0} failures`);
 }

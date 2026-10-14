@@ -63,11 +63,14 @@
      the numbers shown beneath them, and smoke.js holds each to the files (every element marked
      data-gs-n). The Elo files are the ones the ELO Ratings tab read on load (window.eloFiles):
      nothing is fetched a second time. The news job's files (news/data/units.json, stats.json and
-     the week's notes) are fetched here, the first time a window opens, with no-store: each once a
-     page load, the notes once a week, never baked into the page, so a news job publish is on the
-     next load. A file that did not load, or has nothing for the game, says so in its card and its
-     summary; the rest draws. Opening and closing a card or a fold, or picking a Starters tab, never
-     redraws the window, and nothing of it is saved. -->
+     the week's notes) are fetched here with no-store as the page loads (the notes of the board's
+     week once the board has its schedule, another week's the first time one of its games opens):
+     each once a page load, the notes once a week, never baked into the page, so a news job publish
+     is on the next load. A file that did not load, or has nothing for the game, says so in its card
+     and its summary; one still loading says that; the rest draws. A file answering, or the prop model
+     coming up, draws the window again with the visitor's place kept: the focus on the same control
+     and what was being read where it was on the screen. Opening and closing a card or a fold, or
+     picking a Starters tab, never redraws the window, and nothing of it is saved. -->
 <style>
 /* the page's modal pads its top by 28px, and a sticky header sticks inside that padding, so the
    window's content showed in a band above it once scrolled: the gap is the panel's margin instead */
@@ -131,7 +134,6 @@
 /* first in it, the game's own page on the Props tab */
 #gsModal .gs-propsrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:0 0 18px}
 #gsModal .gs-props{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 16px;font-size:var(--gs-t3);font-weight:600}
-#gsModal .gs-propswhat{font-size:var(--gs-t2);color:var(--ink-2);line-height:1.4}
 /* the preview: the week's note on the game (or the automatic line), under the kickoff, before the line */
 #gsModal .gs-prev{margin:16px auto 0;max-width:720px;padding:12px 16px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md)}
 #gsModal .gs-pv{margin:0;font-size:var(--gs-t3);color:var(--ink);line-height:1.55}
@@ -538,6 +540,9 @@ const stampShort=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+
 /* a day the news job writes as a date alone (2026-10-14), or a time as stamp() reads one */
 const day0=s=>{ if(!s) return ''; if(/^\d{4}-\d{2}-\d{2}$/.test(String(s))){ const d=new Date(s+'T12:00:00Z');
   return isNaN(d)?'':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}); } return stamp(s); };
+/* the day alone ("Wed, Oct 14"), from a date or a time */
+const dayOnly=s=>{ if(!s) return ''; const x=/^\d{4}-\d{2}-\d{2}$/.test(String(s)), d=new Date(x?s+'T12:00:00Z':String(s).length<=16?s+'Z':s);
+  return isNaN(d)?'':d.toLocaleDateString(undefined,Object.assign({weekday:'short',month:'short',day:'numeric'},x?{timeZone:'UTC'}:{})); };
 const signed=d=>d>0?'+'+d:d<0?'−'+Math.abs(d):'0';
 const wl=r=>r[0]+'-'+r[1]+(r[2]?'-'+r[2]:'');
 const and=xs=>xs.length<2?xs.join(''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1];
@@ -560,10 +565,11 @@ function eloFiles(){
   return FILES;
 }
 /* the news job's files (news/data/): the Deep Dive's units and the stat breakdown, each read once a
-   page load, and a week's notes once for that week, the first time a window wants them; never baked
-   into the page, always no-store, so a news job publish is on the next load. Each that does not load
-   -- a 404, a body that is not JSON, the wrong shape -- is "did not load" for its own part alone,
-   never a throw; the window draws again when each answers, as it does for the Elo files */
+   page load as it loads, and a week's notes once for that week (the board's as the board draws,
+   another's the first time a window wants them); never baked into the page, always no-store, so a
+   news job publish is on the next load. Each that does not load -- a 404, a body that is not JSON,
+   the wrong shape -- is "did not load" for its own part alone, never a throw; the window draws again
+   when each answers, as it does for the Elo files */
 const NEWS={};
 function newsFile(key,url,shape){
   if(NEWS[key]) return NEWS[key];
@@ -592,6 +598,10 @@ function noteOf(P,g){
     sources:Array.isArray(e.sources)?e.sources.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):[],written:rec.data.written||null};
 }
 const DD=()=>window.gsDeepDive||null;
+/* the news job stays on week 18 once the regular season is over: it never covers the playoffs */
+const playoff=g=>g.game_type?g.game_type!=='REG':+g.week>18;
+/* the Deep Dive's file where it is this game's: loaded, of its season and week, a regular-season game */
+const ddFor=(P,g)=>{ const dd=DD(), D=NEWS.units&&NEWS.units.data; return dd&&D&&!playoff(g)&&dd.applies(D,seasonOf(P,g),+g.week)?D:null; };
 
 let cur=null, opener=null;
 /* which cards and folds are open, and which Starters tab is chosen, as the visitor leaves them
@@ -725,8 +735,8 @@ const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs
 /* the starters out on the Deep Dive's file, both teams, each once ("Name (SEA QB)"), where the file is
    for this game's week; null where it is not, or has not answered */
 function startersOut(P,g){
-  const dd=DD(), rec=NEWS.units, D=rec&&rec.data;
-  if(!dd||!D||!dd.applies(D,seasonOf(P,g),+g.week)) return null;
+  const dd=DD(), D=ddFor(P,g);
+  if(!D) return null;
   const out=[];
   for(const t of [g.away_team,g.home_team]){ const u=D.units[dd.club(t)], seen=new Set(); if(!u) continue;
     for(const k of ['qb','ol','rb','rec','front','db']) for(const x of (isObj(u[k])&&Array.isArray(u[k].out)?u[k].out:[])){
@@ -737,7 +747,10 @@ function preview(P,g,F,st){
   const n=noteOf(P,g);
   if(n){
     const src=n.sources.length?` <small class="gs-psrc" data-gs-sources>${esc(n.sources.join(' · '))}</small>`:'';
-    return `<div class="gs-prev" data-gs-note="written"><p class="gs-pv"><span class="gs-lab">Preview</span><span data-gs-preview>${esc(n.preview)}</span>${n.news?'':src}</p>${n.news?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>${esc(n.news)}</span>${src}</p>`:''}</div>`;
+    /* once the game has started, the note is dated as written before kickoff: its words on the teams'
+       form were true then, and the records above are as they stand now */
+    const lab=st.started?`Preview, written ${dayOnly(n.written)?dayOnly(n.written)+', ':''}before kickoff`:'Preview';
+    return `<div class="gs-prev" data-gs-note="written"><p class="gs-pv"><span class="gs-lab">${esc(lab)}</span><span data-gs-preview>${esc(n.preview)}</span>${n.news?'':src}</p>${n.news?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>${esc(n.news)}</span>${src}</p>`:''}</div>`;
   }
   /* no note: an automatic line, once the week's file has answered, and only for a game still to come
      (a played game says what happened above, and an automatic preview of it would read wrong) */
@@ -771,7 +784,7 @@ function matchup(P,g,F){
   /* first in the window, the game's own page on the Props tab, where its game bets and every player
      line are, where the Props tab can open it */
   const props=typeof P.canProps==='function'&&P.canProps(g.game_id)
-    ?`<div class="gs-propsrow"><button type="button" class="btn quiet gs-props" data-gs-props="${esc(g.game_id)}">Game bets and player props<span aria-hidden="true"> \u203a</span></button><span class="gs-propswhat">To win, to cover, the total and every player line, on the Props tab</span></div>`:'';
+    ?`<div class="gs-propsrow"><button type="button" class="btn quiet gs-props" data-gs-props="${esc(g.game_id)}" aria-label="Game bets and player props, on the Props tab" title="Opens this game on the Props tab: to win, to cover, the total and every player line">Game bets and player props<span aria-hidden="true"> \u203a</span></button></div>`:'';
   const L=lineOf(P,g), c=L.c;
   /* the headline: who is favoured and by how much, its chance and the board's confidence; once
      played, who won and whether it was an upset, the line it was favoured by under it */
@@ -951,6 +964,7 @@ function deepDive(P,g,o,d){
   const dd=DD(), rec=NEWS.units;
   const why=t=>`<p class="gs-ddwhy" data-gs-ddwhy>${t}</p>`;
   if(!dd) return why('The Deep Dive is not on this page.');
+  if(playoff(g)) return why('The Deep Dive covers the regular season only; its matchups end with week 18.');
   if(!rec||!rec.done) return why('Loading the Deep Dive…');
   const D=rec.data;
   if(!D) return why(`The Deep Dive did not load${rec.err?' ('+esc(rec.err)+')':''}.`);
@@ -999,7 +1013,7 @@ function unitsSec(P,g,F){
     :p1&&p2?`<span class="gs-nw">${esc(a)} O ${N('urank:off:'+a,ordinal(p1.vo.rank))} v ${esc(h)} D ${N('urank:def:'+h,ordinal(p1.vd.rank))}</span> · <span class="gs-nw">${esc(h)} O ${N('urank:off:'+h,ordinal(p2.vo.rank))} v ${esc(a)} D ${N('urank:def:'+a,ordinal(p2.vd.rank))}</span>`:'a unit has no rating';
   const so=!!OPEN.gsUStats;
   /* the Deep Dive's basis, under the rows, where they are drawn */
-  const ddOn=!!(dd&&D&&dd.applies(D,seasonOf(P,g),+g.week));
+  const ddOn=!!ddFor(P,g);
   return fold('gsUnits',T0,sum,`${eloWhy?`<p class="gs-msg" style="margin:0 0 12px">${eloWhy}</p>`:''}<div class="gs-units">${pair(a,h,'gsUStatsA')}${pair(h,a,'gsUStatsH')}</div>
     ${U?`<button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>`:''}
     ${U?`<p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted${C?`, each team starting the season from ${esc(C.c)} of its final rating in ${esc(C.from)} (one with no game yet is shown on that, marked carried)`:''}; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.${D&&dd?' The tag beside each meeting is the Deep Dive\'s: the gap read as points a game to that offense.':''}</p>`:''}
@@ -1164,10 +1178,14 @@ function filesSec(P,g,F){
   if(ub) bits.push(`<span data-gs-news-at="units">Deep Dive <b>${esc(day0(ub))}</b></span>`);
   if(S0&&S0.asof) bits.push(`<span data-gs-news-at="stats">Stat breakdown <b>${esc(day0(S0.asof))}</b></span>`);
   if(N0&&N0.written) bits.push(`<span data-gs-news-at="notes">Week ${esc(+g.week)} preview and news <b>${esc(day0(N0.written))}</b></span>`);
+  /* a file still being read is said to be loading; only one read with nothing to show did not load */
+  const nst=[['the Deep Dive',NEWS.units],['the stat breakdown',NEWS.stats]].map(([n,r])=>[n,!r||!r.done?'loading':r.data?'':'failed']);
+  const said=k=>{ const xs=nst.filter(x=>x[1]===k).map(x=>x[0]); return xs.length?`${and(xs)} ${k==='failed'?'did not load':(xs.length>1?'are':'is')+' still loading'}`:''; };
+  const notIn=[said('failed'),said('loading')].filter(Boolean).join('; ');
   const row=typeof S==='object'&&S&&Array.isArray(S.sched)?S.sched.find(x=>x.id===g.game_id):null;
   return fold('gsFiles','Sources',short.length?'Published '+short.join(' · '):'when each file was published',
     `<div class="gs-files" id="gsStamps">${bits.length?bits.map(b=>`<span>${b}</span>`).join(''):'<span>The files have no publish times.</span>'}</div>
-    <p class="gs-note">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups, and the news job's <code>news/data/</code> for the preview and news (written each week), the Deep Dive and the stat breakdown${[U0,S0].some(x=>!x)?` (${[!U0?'the Deep Dive':'',!S0?'the stat breakdown':''].filter(Boolean).join(' and ')} did not load)`:''}. The full tables:</p>
+    <p class="gs-note">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups, and the news job's <code>news/data/</code> for the preview and news (written each week), the Deep Dive and the stat breakdown${notIn?` (<span data-gs-news-state>${notIn}</span>)`:''}. The full tables:</p>
     <div class="gs-links"><button type="button" class="btn quiet" data-gs-go="ratings">Team Rankings</button><button type="button" class="btn quiet" data-gs-go="elo">ELO Ratings</button><button type="button" class="btn quiet" data-gs-go="slate">${row?'Props for this game':'Props'}</button><button type="button" class="btn quiet" data-gs-go="record">Pick'em Record</button></div>`);
 }
 
@@ -1188,7 +1206,40 @@ function draw(gid){
   if(!$('peDefs')&&window.pkTierDefs){ const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box); }
   stuck();
 }
-function redraw(){ const md=$('gsModal'); if(cur&&md&&!md.hidden){ const y=md.scrollTop; draw(cur); md.scrollTop=y; stuck(); } }
+/* a redraw (a file answering, the prop model coming up) keeps the visitor's place. The focused control
+   is found again by its key and focused, Close where it has gone (the focus is never left on the page's
+   body); and the first block at or below the header stays where it was on the screen, so a block drawn
+   in above it (the props button, the preview, the Deep Dive's rows) does not move what is being read */
+const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab','gsGo'];
+const ANCHORS='#gsView>section,#gsView>.gs-dbar,#gsView .gs-pair>section,#gsMatch>*,#gsView .gs-gl,#gsView .gs-secbody>*,#gsView .gs-unit,#gsView .gs-unit>*';
+/* the blocks the place is kept by, in the page's order, each under a key that names it again after a
+   redraw: its id, its first data-gs- or data-dd- attribute, else its class in the block around it; then
+   its count among those of the same key */
+function anchors(){
+  const m=new Map(), n={};
+  for(const el of document.querySelectorAll(ANCHORS)){ if(el.closest('[hidden]')) continue;
+    let k=el.id?'#'+el.id:'';
+    if(!k) for(const at of el.attributes) if(/^data-(gs|dd)-/.test(at.name)){ k=at.name+'='+at.value; break; }
+    if(!k){ const sc=el.parentElement&&el.parentElement.closest('[id],[data-gs-poss]'); k=(sc?sc.id||sc.dataset.gsPoss:'')+'>'+(el.classList[0]||el.tagName); }
+    n[k]=(n[k]||0)+1; m.set(k+'#'+n[k],el); }
+  return m;
+}
+function redraw(){
+  const md=$('gsModal'), view=$('gsView'), top=$('gsTop'); if(!cur||!md||md.hidden) return;
+  const y=md.scrollTop, at=document.activeElement, inView=!!(view&&at&&view.contains(at));
+  const fk=inView?FOCUS_KEYS.find(k=>at.dataset&&at.dataset[k]!=null):null, fv=fk?at.dataset[fk]:inView?at.id:'';
+  let ak=null, ay=0;
+  try{ const hb=top?top.getBoundingClientRect().bottom:0;
+    for(const [k,el] of anchors()){ const r=el.getBoundingClientRect(); if(r.height>0&&r.top>=hb){ ak=k; ay=r.top; break; } } }catch(e){}
+  draw(cur);
+  md.scrollTop=y;
+  const el=ak&&anchors().get(ak);
+  if(el) try{ md.scrollTop=y+el.getBoundingClientRect().top-ay; }catch(e){}
+  if(inView){
+    const nx=fk?[...view.querySelectorAll(`[data-${fk.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`)].find(x=>fk==='gsAll'||x.dataset[fk]===fv):fv?$(fv):null;
+    try{ (nx&&view.contains(nx)?nx:$('gsClose')).focus({preventScroll:true}); }catch(e){} }
+  stuck();
+}
 /* the header turns into the game's one line once the verdict's line has gone under it */
 function stuck(){
   const md=$('gsModal'), top=$('gsTop'), fav=md&&md.querySelector('#gsMatch .gs-fav'); if(!top) return;
@@ -1303,8 +1354,18 @@ function goTo(tab){
 }
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;
-/* start waiting on the Elo files now, so a window opened later has them at once */
-eloFiles();
+/* start waiting on the Elo files and the news job's files now, so a window opened later has them at
+   once rather than drawing again under the visitor as each answers; and the notes of the board's week
+   as soon as the board has its schedule (it opens on the first week with a game still to play, else
+   the last) */
+eloFiles(); unitsFile(); statsFile();
+function boardNotes(){
+  const P=B(), s=P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched:null; if(!s||!s.length) return false;
+  const to=s.filter(g=>g.result==null), ws=(to.length?to:s).map(g=>+g.week), w=to.length?Math.min(...ws):Math.max(...ws);
+  notesFile(seasonOf(P,s.find(g=>+g.week===w)),w); return true;
+}
+if(!boardNotes()){ const bd=$('pkBoard');
+  if(bd&&window.MutationObserver){ const mo=new MutationObserver(()=>{ if(boardNotes()) mo.disconnect(); }); mo.observe(bd,{childList:true}); } }
 /* a window opened before the prop model was up draws again once it is: the button to the game's page
    on the Props tab needs the prop model's schedule */
 document.addEventListener('app-ready',()=>{ if(cur) redraw(); });

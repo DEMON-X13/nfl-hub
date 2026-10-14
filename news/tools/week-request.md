@@ -39,7 +39,9 @@ The rules, which `tools/notes.js` holds (the wording ones warn, the shape ones f
 - No betting language at all: no spread, favourite or favored, underdog, moneyline, odds, over/under or O/U,
   "the total" or point total, cover or covering, ATS, Vegas (Las Vegas the city is fine), sportsbook,
   DraftKings, FanDuel, bet, betting, wager, parlay, "the line" ("on the line" and "the line of scrimmage"
-  are fine), juice, vig, prices like +150 or -110, spreads like -3.5.
+  are fine), juice, vig, prices like +150 or -110, spreads like -3.5 or -3½, and a whole-number spread where one
+  is written ("Indianapolis -7", "IND -7", "(-7)", "Line: IND -7", "at -3"; a stat such as "a -5 turnover margin"
+  or "(-2 yards)" is fine).
 - No record or score typed in the preview (`3-2`, `27-24`): the records are shown beside it, and a typed one
   goes stale by the next game. A scheme like 3-4 reads as one too: write "three-four".
 - None of the site's own ranks: not the Deep Dive's, the Team Rankings or ELO Ratings tabs', "Overall

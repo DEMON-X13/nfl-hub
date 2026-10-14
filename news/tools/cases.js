@@ -98,7 +98,13 @@
                           another week, a file named for another week, no preview, news that is not text, a
                           written date that is not one) a failure, the wording (a spread, a favourite, the
                           line, a price, a record typed, two sentences, a site rank, an em dash, markup, too
-                          long or short) a warning. */
+                          long or short) a warning. A spread is caught however it is written (-3.5, -3½, and a
+                          whole number after a team, in brackets, after "Line:" or "at", where the rule took
+                          only -3.5 and "Indianapolis -7 at home" passed), and a stat or a score with a minus
+                          in it is not ("a -5 turnover margin", "won 24-17", "Stroud (-2 yards)", "(-0.07
+                          EPA)"). A season or week that is not a number ("2026(", "*2026", "6(") fails, every
+                          game with it, and throws nothing: the id's pattern was built from the season as
+                          typed, and a "2026(" threw out of the news smoke and held back the week's data. */
 'use strict';
 const { SEASON, seasonState, siteRankQuote } = require('./lib');
 const { lineups, schedule, notePractice, espnIndex } = require('./context');
@@ -669,6 +675,23 @@ function cases() {
     const longNews = bend((o, g) => { g.news = 'Seattle lost two starters in the secondary on Sunday and signed a cornerback off the practice squad. '.repeat(4); });
     add('notes-rules', "a note's wording that breaks a rule warns and never fails: betting words, a record typed, two sentences, a site rank, an em dash, markup, the length",
       !WORDS.length && !longNews.fails.length && longNews.warns.some(x => /news: \d+ characters/.test(x)), WORDS.length ? `not a warning alone: ${WORDS.join(', ')}` : 'all fifteen warn');
+    /* a spread however it is written: a half point as -3.5 or -3½, a whole number after a team's name or code, in
+       brackets, after "Line:" or "at"; and a stat or a score with a minus in it is none (each as the news, which
+       takes a score) */
+    const SPREADS = ['Indianapolis -7 at home.', 'Indianapolis (-7) hosts Tennessee.', 'Line: IND -7.', 'The Colts at -3½ on Sunday.', 'Jaguars -3 in London.', 'Tennessee come to Indianapolis at -3 again.']
+      .filter(t => !bend((o, g) => { g.news = t; }).warns.some(x => /a spread like/.test(x)));
+    const STATS = ['Houston bring a -5 turnover margin to London.', 'Denver won 24-17 at home on Sunday.', 'C.J. Stroud (-2 yards) was sacked five times.', 'Seattle allowed the fewest points a play in the league (-0.07 EPA).']
+      .map(t => { const r = bend((o, g) => { g.news = t; }); return r.fails.length || r.warns.length ? `"${t}": ${[...r.fails, ...r.warns].join('; ')}` : null; }).filter(Boolean);
+    add('notes-rules', 'a spread is betting language however it is written (-3.5, -3½, Indianapolis -7, (-7), Line: IND -7, at -3), and a stat or score with a minus is not',
+      !SPREADS.length && !STATS.length, [SPREADS.length ? `not flagged: ${SPREADS.join(' | ')}` : '', STATS.length ? `flagged: ${STATS.join(' | ')}` : ''].filter(Boolean).join('; ') || 'six flagged, four clean');
+    /* a season or week that is not a number fails, every game with it, and throws nothing: the id's pattern was
+       built from the season as typed, and "2026(" threw out of the news smoke and held back the week's data */
+    const BAD = [['season', '2026('], ['season', '*2026'], ['week', '6(']].map(([k, v]) => {
+      let r; try { r = bend(o => { o[k] = v; }); } catch (e) { return `${k} ${JSON.stringify(v)}: threw ${e.message}`; }
+      const keys = Object.keys(good.games).filter(gid => !r.fails.some(m => m.startsWith(gid + ':')));
+      return r.fails.some(m => m.startsWith(`${k} ${JSON.stringify(v)} is not`)) && !keys.length ? null : `${k} ${JSON.stringify(v)}: ${keys.length ? `${keys.join(', ')} not failed` : 'not failed as a ' + k}`;
+    }).filter(Boolean);
+    add('notes-rules', 'a season or week that is not a number ("2026(", "*2026", "6(") fails, every game with it, and nothing throws', !BAD.length, BAD.join(' | ') || 'all three fail');
   }
   return out;
 }

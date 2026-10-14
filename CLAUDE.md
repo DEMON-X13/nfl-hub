@@ -869,7 +869,7 @@ taller than the height measured with it. Sideways, a box scrolls only where its 
 wider (the week-by-week grid and the pick grid on a phone), with one bar.
 Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
 `liveparlays/parlays.json`, `liveparlays/xbets.json` and `elo/data/*.json`, and the news job's
-`news/data/units.json`, `stats.json` and the week's notes when a Game snapshot first opens, so it is
+`news/data/units.json` and `stats.json` as the page loads and a week's notes when the board or a window first wants them, so it is
 rebuilt when a source changes, never when the data does. A props patch, a betting build change or an edit to the live section's source means
 rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the news smoke as well:
 
@@ -967,7 +967,9 @@ checked in a real browser at 390 and 360 over every game, such as NYG at WAS and
 **What the snapshot carries from the news job** (the owner's call, 14 October 2026, when the Season Tracker tab
 went; the job and the notes are under "News: the job and the weekly game notes"). In the verdict, under the
 records and kickoff, `div.gs-prev`: a **Preview** line and a **News** note with its sources small after it, the
-game's entry in `news/data/notes/<season>-w<week>.json` (`data-gs-note="written"`, plain text, escaped); until a
+game's entry in `news/data/notes/<season>-w<week>.json` (`data-gs-note="written"`, plain text, escaped; once the game
+has started its label reads "Preview, written <day>, before kickoff", so its words on form are not read as current
+beside the records); until a
 game is written, and only for a game still to come, an automatic line (`data-gs-note="auto"`): "The Seahawks
 (3-2) visit the Broncos (4-1)" (play ... at the stadium on a neutral site) with the day and time, from the
 window's own records and kickoff, and as its news the starters out on `units.json` for both teams where it is
@@ -975,7 +977,8 @@ for the game's week ("Out: ...", at most six, then "and N more"); a played game 
 In Offense vs defense, each side with the ball wears the Deep Dive's headline tag on its overall line
 (`deepdive.headTag`, its points beside it) and has the four position matchups under it
 (`deepdive.possession`) where `units.json` is for the game's week (`deepdive.applies`), else one quiet line
-saying why, with `deepdive.basis` in the card's note. **Stat breakdown** (`#gsStats`, folded on every screen)
+saying why (on a playoff game, "The Deep Dive covers the regular season only; its matchups end with week 18.",
+since the news job stops at week 18, and its automatic news names nobody out), with `deepdive.basis` in the card's note. **Stat breakdown** (`#gsStats`, folded on every screen)
 is the tracker's eleven stat bars from `stats.json` (point differential, points per game, points allowed, yards
 per play and allowed, turnover margin, sacks and sacks allowed, third down rate, red zone TD rate, explosive
 plays), each bar split between the two teams in their colours as the tracker split it (`statSplit`), the better
@@ -983,14 +986,23 @@ number of each pair marked, "through <day>: SEA 5 games, DEN 5 games" said once,
 shown as dashes. Sources says when the news job wrote each file (the Deep Dive's `built_at`, the stats' `asof`,
 the notes' `written`) and that they are its `news/data/`. The window fetches them at runtime,
 `../news/data/units.json`, `../news/data/stats.json` and the opened game's week's notes, `cache: 'no-store'`,
-each once a page load (the notes once a week) the first time a window wants them, and never bakes them in, so
-a news job publish is on the next load with no rebuild; a file that does not load, is not JSON or has the wrong
-shape is "did not load" for its own part alone, never a throw. The nflbets smoke holds all of it on stand-in
+each once a page load, the two files as the page loads and a week's notes once (the board's week once the board
+has its schedule, another week's the first time one of its games opens), and never bakes them in, so a news job
+publish is on the next load with no rebuild; a file still being read says so (Sources: "still loading"), and one
+that does not load, is not JSON or has the wrong shape is "did not load" for its own part alone, never a throw.
+A file answering, or the prop model coming up, redraws the window with the visitor's place kept: the focused
+control is found again by its `data-gs-` key and focused (Close if it is gone), and the first block at or below
+the header stays where it was on the screen, so a props button, preview or Deep Dive drawn in above it does not
+move what is being read. The nflbets smoke holds all of it on stand-in
 news files of its own, served by its fetch stub, never the real ones (the elo job runs it every morning, and a
 news publish must never turn it red): the written preview escaped with its sources, the automatic line with
 its records and out list, none on a played game with no note, a 404 and a notes file that is not JSON each
 drawing the automatic line, the Deep Dive's rows `possession()`'s own html set in whole and the headline tag
-`headTag()`'s, the not-this-week line, the stat bars' numbers, marks and split widths worked out on their own,
+`headTag()`'s, the not-this-week line, the playoff line on a made-up wild-card game, a Rams game read from
+the files' LAR entries, a units file lacking a club or not JSON, a stat file of another season, the Sources card's
+still-loading and did-not-load wording, a started game's written-before-kickoff label, the basis's game counts
+worked out from the file, the focus and place kept through late redraws with the files and the prop model held
+back, the stat bars' numbers, marks and split widths worked out on their own,
 the Sources card's times, each file read once and no-store, every new control 44px, nothing thrown with every
 news file missing, and a page that bakes in none of the news job's data and carries none of the old tab; the
 real files are `news/tools/smoke.js`'s.
@@ -1100,7 +1112,8 @@ may quietly outrank what the job published:
   the page itself: a refresh of the page is a refresh of the frames. No frame is filled by address
   any more (the Season Tracker tab, which framed `news/index.html`, went on 14 October 2026); the
   Game snapshot fetches the news job's files itself, `../news/data/units.json`, `stats.json` and
-  the week's notes, `cache: 'no-store'`, at runtime when a window first opens, and the page bakes
+  the week's notes, `cache: 'no-store'`, at runtime as the page loads (a week's notes when the board or a window
+  first wants them), and the page bakes
   none of them in, so a news job publish is on the next load.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.

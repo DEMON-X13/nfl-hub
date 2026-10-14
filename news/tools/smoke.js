@@ -8,7 +8,8 @@
      - the Deep Dive's tag constants against their values, and every club's Overall Offense and Defense
        against ../elo/data/model.json, X NFL Bets' own file (tools/deepdive-checks.js);
      - every game of the units' week drawn both ways by deepdive.js possession(): the four rows in order,
-       each tag the weighted edge worked out on its own, the ranks and edge shown the file's; and the Overall
+       each tag the weighted edge worked out on its own, the ranks and edge shown the file's; the note under
+       them, deepdive.js basis(), naming each side with its own count of this season's games; and the Overall
        line's tag, deepdive.js headTag() on model.json's units, against the rule (tools/deepdive-checks.js);
      - who the drawn rows name: a starter out named, a quarterback in doubt with the next one named, nobody
        both listed and out (warnings);
@@ -44,9 +45,9 @@ const skip = (label, why) => console.log('SKIP ' + label + '  (' + why + ')');
    SMOKE_WARNINGS_FILE when set, which the job reads after its commit to go red, so a lineup case no rule
    has seen, or a note that breaks a rule, never holds back the week's scores, stats and Deep Dive.
    Everything else stays a failure: the twins, the stat lines and their game counts, the unit ranks, the
-   tags and the Overall line's tag the snapshot draws, the Overall ratings against model.json, the
-   lineups being for the schedule's week and checked on this run's own download, the old address, and
-   every fixed case in tools/cases.js (made-up data: only a change to the code can fail one) */
+   tags, the note's game counts and the Overall line's tag the snapshot draws, the Overall ratings against
+   model.json, the lineups being for the schedule's week and checked on this run's own download, the old
+   address, and every fixed case in tools/cases.js (made-up data: only a change to the code can fail one) */
 const warned = [];
 const warn = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'WARN ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) warned.push(label + (detail !== undefined ? ' (' + detail + ')' : '')); };
 const brief = (list, n = 4) => list.length ? `${list.length}: ${list.slice(0, n).join(' | ')}` : undefined;
@@ -136,6 +137,28 @@ async function run() {
       bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)]));
     }
     check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, the ranks and edges the file\'s', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
+  /* the note under the rows (deepdive.js basis()): each side named with its own count of this season's games,
+     the file's g26, worked out here, and a club with no count given none. On every game of the week, and on a
+     made-up pair whose counts differ, so a count given to the other side fails in a week where they tie */
+  { const rx = t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const said = (txt, t, n) => new RegExp(`(?<![A-Z])${rx(t)} ${n} game${n === 1 ? '' : 's'}(?![a-z])`).test(txt);
+    const counted = (txt, t) => new RegExp(`(?<![A-Z])${rx(t)} \\d+ games?(?![a-z])`).test(txt);
+    const bad = [];
+    const hold = (DX, a, h, at) => {
+      let txt; try { txt = DD.basis(DX, a, h); } catch (e) { bad.push(`${at}: threw ${e.message}`); return; }
+      for (const t of [a, h]) {
+        const u = (DX.units || {})[DD.club(t)], n = u ? u.g26 : null;
+        if (n != null ? !said(txt, t, n) : counted(txt, t)) bad.push(`${at}: ${n != null ? `no "${t} ${n} game${n === 1 ? '' : 's'}"` : `${t} given a count the file does not have`}`);
+      }
+    };
+    for (const [a, h] of games) hold(D, a, h, `${a} at ${h}`);
+    if (games.length && D.units && D.units[DD.club(games[0][0])] && D.units[DD.club(games[0][1])]) {
+      const [a, h] = games[0], X = JSON.parse(JSON.stringify(D));
+      X.units[DD.club(a)].g26 = 1; X.units[DD.club(h)].g26 = 7; hold(X, a, h, `made-up ${a} 1, ${h} 7`);
+      X.units[DD.club(a)].g26 = null; hold(X, a, h, `made-up ${a} none, ${h} 7`);
+    }
+    check("deep dive: the note under the rows gives each side its own count of this season's games (units.json's g26), on every game of the week and a made-up pair",
+      games.length > 0 && bad.length === 0, brief(bad) || `${games.length} games`); }
   if (!M || !M.units || !M.units.off || !M.units.def) skip("the Overall line's tag on every possession", 'no Overall ratings in ../elo/data/model.json');
   else {
     const bad = sides.flatMap(([off, def]) => {
@@ -188,11 +211,14 @@ async function run() {
 
   /* ---- the game notes (tools/notes.js). Every problem is a warning here, its shape too: a note is a person's
      writing beside the job's data, and a bad one must never hold back the week's results, stats and Deep Dive.
-     The Wednesday routine runs node tools/notes.js --strict before it commits, which refuses them all ---- */
-  { const R2 = NOTES.checkFiles(null);
+     The Wednesday routine runs node tools/notes.js --strict before it commits, which refuses them all. A file
+     the validator throws on is a warning too, never a crash: it would hold the week's data back the same way ---- */
+  try {
+    const R2 = NOTES.checkFiles(null);
     if (!R2.length) skip('the game notes keep their rules', 'no file in data/notes/ yet');
     for (const r of R2) warn(`notes ${path.basename(r.file)}: the shape and the writing rules (tools/notes.js)`, !r.fails.length && !r.warns.length,
-      r.fails.length || r.warns.length ? brief([...r.fails.map(m => 'failure: ' + m), ...r.warns], 6) : `${r.games}${r.of != null ? ` of ${r.of}` : ''} games`); }
+      r.fails.length || r.warns.length ? brief([...r.fails.map(m => 'failure: ' + m), ...r.warns], 6) : `${r.games}${r.of != null ? ` of ${r.of}` : ''} games`);
+  } catch (e) { warn('the game notes keep their rules (tools/notes.js)', false, `the validator threw: ${e && e.message || e}`); }
 
   /* ---- the Deep Dive's lineups against the report, roster and schedule they were built from ---- */
   if (!S && OFFLINE) skip('lineups against the injury report, roster and schedule', 'NEWS_SMOKE_OFFLINE=1 and no build snapshot: ' + why);

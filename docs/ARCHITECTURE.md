@@ -18,7 +18,7 @@ owner's call), and `news/` holds the news job that writes what the snapshot read
 week's game notes, written by hand; its `index.html` only sends a visitor to `nflbets/`.
 The pages carry no season data: each fetches what the scheduled jobs commit (`props/data/payload.json`,
 `betting/state.json`, `elo/data/*.json`, and the news job's `news/data/units.json`,
-`stats.json` and the week's notes when a Game snapshot first opens)
+`stats.json` and the week's notes, which the Game snapshot fetches as the page loads)
 and what Claude commits from what the owner sends (`liveparlays/parlays.json`,
 `liveparlays/xbets.json`) on every load. Five scheduled GitHub Actions jobs, one per model
 or site, rebuild the data from their sources and commit it.
@@ -500,7 +500,8 @@ in a band above it once scrolled.
 What the Season Tracker said of each game is in its snapshot, from the news job's files (the
 owner's call, 14 October 2026; "News: the job and the game notes" below). The preview (`.gs-prev`,
 in the verdict under the records and kickoff) is the game's entry in
-`news/data/notes/<season>-w<week>.json`, a Preview line and a News note with its sources
+`news/data/notes/<season>-w<week>.json`, a Preview line and a News note with its sources (labelled
+"Preview, written <day>, before kickoff" once the game has started)
 (`data-gs-note="written"`, plain text, escaped); until a game is written, and only for a game still
 to come, an automatic line (`data-gs-note="auto"`: who visits whom with their records, the day and
 time, and as its news the starters out on `units.json` for both teams, at most six); a played game with
@@ -508,14 +509,18 @@ no note has none. In Offense vs defense each possession's overall line wears `de
 and points, and under it `deepdive.possession`'s four rows (the quarterback against the pass defense,
 the line against the pass rush, the run game against the run defense, the receivers against the
 coverage, each tagged, with who plays, who is out and the numbers) where `units.json` is for the game's
-week (`deepdive.applies`), else one line saying why; `nflbets/build/deepdive.js` is one module, inlined
+week (`deepdive.applies`), else one line saying why (a playoff game says the Deep Dive covers the
+regular season only); `nflbets/build/deepdive.js` is one module, inlined
 before the snapshot as `window.gsDeepDive` and required by the news job's smoke and cases. Stat
 breakdown (`#gsStats`, folded everywhere) is the tracker's eleven stat bars from `stats.json`, each
 split between the two teams in their colours (`statSplit`, the tracker's rule), the better number
 marked `gs-better`, a team missing from the file shown as dashes. The window fetches the three files
 itself at runtime (`../news/data/units.json`, `stats.json`, the opened game's week's notes;
-`cache: 'no-store'`, each once a page load, the notes once a week), never baked into the page, and a
-file that does not load or has the wrong shape is said in its own part alone. `smoke.js` holds all of
+`cache: 'no-store'`, each once a page load, fetched as the page loads, the notes of the board's week once
+the board has its schedule and another week's when one of its games opens), never baked into the page; a
+file still being read says so (Sources: "still loading"), one that did not load or has the wrong shape is
+said in its own part alone, and a late file or the prop model coming up redraws the window with the focus
+and the reader's place kept. `smoke.js` holds all of
 it on stand-in news files served by its fetch stub, never `news/data`'s own: the elo job runs it every
 morning, and a news job publish must never turn it red (the real files are `news/tools/smoke.js`'s).
 The Player Elo tab (`nflbets/build/tab_elo.html`, `pe-` prefixed, its own closure) reads

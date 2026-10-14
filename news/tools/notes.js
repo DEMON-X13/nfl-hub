@@ -7,17 +7,19 @@
        "games": { "2026_06_SEA_DEN": { "preview": "...", "news": "...", "sources": ["ESPN", "Denver Post"] } } }
 
    The rules, each a failure or a warning (CLAUDE.md, "Checks block or warn"):
-     failures  the shape: JSON that parses, season and week the file name's, written an ISO date or
-               datetime, games an object keyed by the week's own nflverse game ids (betting/state.json's
-               schedule, LA for the Rams), each with a preview string, news a string where given, sources
-               an array of names where given.
+     failures  the shape: JSON that parses, season and week whole numbers and the file name's, written
+               an ISO date or datetime, games an object keyed by the week's own nflverse game ids
+               (betting/state.json's schedule, LA for the Rams), each with a preview string, news a string
+               where given, sources an array of names where given.
      warnings  the wording: a preview one sentence of 40 to 200 characters ending in . ! or ?, with no
                record or score typed (the records are shown beside it, and a typed one goes stale); news
-               at most 300 characters; in either, no betting words (a spread, a favourite or underdog,
-               the line, odds or a price like +150, a total, covering, a book's name, a bet or parlay:
-               the notes are the games' story, the snapshot shows the market apart), none of the site's
-               own ranks (tools/lib.js siteRankQuote: they move under a note that does not), no em dash or
-               double dash, no markup (plain text: the page shows it as typed); sources short names.
+               at most 300 characters; in either, no betting words (a spread, in words or as a number:
+               -3.5, -3½, or a whole one where a spread is written, "Indianapolis -7", "(-7)", "Line: IND
+               -7", "at -3"; a favourite or underdog, the line, odds or a price like +150, a total,
+               covering, a book's name, a bet or parlay: the notes are the games' story, the snapshot
+               shows the market apart), none of the site's own ranks (tools/lib.js siteRankQuote: they
+               move under a note that does not), no em dash or double dash, no markup (plain text: the
+               page shows it as typed); sources short names.
    The wording rules are warnings so the job never holds back the week's results, stats and Deep Dive over a
    note: the news smoke (tools/smoke.js) reports every note problem, failures included, as a warning. The
    Wednesday routine runs this --strict before it commits, so a note that breaks any rule is not committed.
@@ -34,6 +36,21 @@ const { siteRankQuote } = require('./lib');
 const ROOT = path.resolve(__dirname, '..');
 const DIR = path.join(ROOT, 'data', 'notes');
 
+/* a spread written as a whole number: only where a spread is written, after a team's name or code
+   ("Indianapolis -7", "IND -7", "Jaguars -3"), "Line:" or "at" ("Colts at -3"), or alone in brackets
+   ("Indianapolis (-7) hosts"), never a stat ("a -5 turnover margin", "Stroud (-2 yards)", "(-0.07 EPA)") or a
+   score ("won 24-17"). A half point (-3.5, -3½) is one wherever it stands */
+const TEAM_WORDS = ['Arizona', 'Atlanta', 'Baltimore', 'Buffalo', 'Carolina', 'Chicago', 'Cincinnati', 'Cleveland', 'Dallas', 'Denver',
+  'Detroit', 'Green Bay', 'Houston', 'Indianapolis', 'Jacksonville', 'Kansas City', 'Las Vegas', 'Los Angeles', 'Miami', 'Minnesota',
+  'New England', 'New Orleans', 'New York', 'Philadelphia', 'Philly', 'Pittsburgh', 'San Francisco', 'Seattle', 'Tampa Bay', 'Tennessee',
+  'Washington', 'Cardinals', 'Falcons', 'Ravens', 'Bills', 'Panthers', 'Bears', 'Bengals', 'Browns', 'Cowboys', 'Broncos', 'Lions',
+  'Packers', 'Texans', 'Colts', 'Jaguars', 'Jags', 'Chiefs', 'Raiders', 'Chargers', 'Rams', 'Dolphins', 'Vikings', 'Patriots', 'Pats',
+  'Saints', 'Giants', 'Jets', 'Eagles', 'Steelers', '49ers', 'Niners', 'Seahawks', 'Buccaneers', 'Bucs', 'Titans', 'Commanders',
+  'ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'JAC', 'KC', 'LA', 'LAR',
+  'LAC', 'LV', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WAS', 'WSH'];
+const STAT = '(?:%|(?:percent|yards?|yds|points?|pts|turnovers?|takeaways?|giveaways?|margin|differential|EPA|sacks?|plays?|a game|per game|in (?:the )?(?:turnover|point))\\b)';
+const SPREAD_WHOLE = new RegExp(`(?:\\b(?:${TEAM_WORDS.join('|')})|\\b[Ll]ine:|\\b[Aa]t)\\s+[+−-]\\d{1,2}(?![\\d½]|[.,]\\d|\\s*${STAT})|\\(\\s*[+−-]\\d{1,2}\\s*\\)`);
+
 /* the betting words: a note is the game's story, never its market. "Las Vegas" is a city, "on the line" and
    "the line of scrimmage" are football, and coverage is not covering */
 const BETTING = [
@@ -43,7 +60,8 @@ const BETTING = [
   [/(?<!\bLas )\bVegas\b/i, 'Vegas'], [/\bsports ?books?\b/i, 'sportsbook'], [/\bDraft ?Kings\b/i, 'DraftKings'], [/\bFan ?Duel\b/i, 'FanDuel'],
   [/\bbet(?:s|ting|tor|tors)?\b/i, 'bet'], [/\bwager(?:s|ed|ing)?\b/i, 'wager'], [/\bparlays?\b/i, 'parlay'],
   [/(?<!\bon )\bthe line\b(?! of scrimmage)/i, 'the line'], [/\bjuice\b/i, 'juice'], [/\bvig(?:orish)?\b/i, 'vig'],
-  [/(?:^|[\s(])[+−-]\d{3,4}\b/, 'a price like +150'], [/(?:^|[\s(])[+−-]\d{1,2}\.5\b/, 'a spread like -3.5'],
+  [/(?:^|[\s(])[+−-]\d{3,4}\b/, 'a price like +150'], [/(?:^|[\s(])[+−-]\d{1,2}(?:\.5\b|½)/, 'a spread like -3.5'],
+  [SPREAD_WHOLE, 'a spread like Indianapolis -7'],
 ];
 const RECORD = /\b\d{1,2}[-–]\d{1,2}(?:[-–]\d{1,2})?\b/;
 const NAME = /^(\d{4})-w(\d{1,2})\.json$/;
@@ -85,11 +103,15 @@ function check(obj, opts = {}) {
   const G = obj.games;
   if (!G || typeof G !== 'object' || Array.isArray(G)) { fail('games is not an object keyed by game id'); return { fails, warns }; }
   /* the week's games: betting/state.json's schedule when it is of this season, else the id's own form */
-  const S = opts.schedule, ww = String(week).padStart(2, '0');
+  const S = opts.schedule;
   const ids = S && +S.season === season && Array.isArray(S.games) ? new Set(S.games.filter(g => +g.week === week).map(g => g.game_id)) : null;
   if (ids && !ids.size) fail(`betting/state.json's schedule has no week ${week} game`);
+  /* the id's own form, made only from a season and a week that are whole numbers: they are the writer's own
+     text, and one like "2026(" makes no pattern. Without them no key can be a game of the week */
+  const form = Number.isInteger(season) && Number.isInteger(week) ? new RegExp(`^${season}_${String(week).padStart(2, '0')}_[A-Z]{2,3}_[A-Z]{2,3}$`) : null;
   for (const [id, g] of Object.entries(G)) {
-    if (ids ? !ids.has(id) : !new RegExp(`^${season}_${ww}_[A-Z]{2,3}_[A-Z]{2,3}$`).test(id)) fail(`${id}: not a game of ${season} week ${week}${ids ? " in betting/state.json's schedule" : ''}`);
+    if (ids ? !ids.has(id) : !form) fail(`${id}: not a game of ${JSON.stringify(season)} week ${JSON.stringify(week)}${ids ? " in betting/state.json's schedule" : ' (the season and week are not numbers)'}`);
+    else if (!ids && !form.test(id)) fail(`${id}: not a game of ${season} week ${week}`);
     if (!g || typeof g !== 'object' || Array.isArray(g)) { fail(`${id}: not an object`); continue; }
     for (const k of Object.keys(g)) if (!GAME_FIELDS.has(k)) warn(`${id}: an unknown field "${k}" (the page reads preview, news and sources)`);
     if (typeof g.preview !== 'string' || !g.preview.trim()) fail(`${id}: no preview`);

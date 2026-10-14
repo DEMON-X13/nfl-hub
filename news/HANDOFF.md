@@ -52,13 +52,13 @@ Each Wednesday (a Claude Code routine runs it; also whenever the owner asks), fr
    `all checks passed`.
 4. Work on a branch, commit, push, open the PR and merge it, as `CLAUDE.md` says.
 
-The rules `tools/notes.js` holds a file to, in short: no betting language at all (no spread, favourite,
-underdog, moneyline, odds, total, line, cover, price or book: the snapshot shows the market apart); no
-record or score typed in the preview (the records are shown beside it, and a typed one goes stale); none
-of the site's own ranks (the Deep Dive beside the note moves with every run; `siteRankQuote()` in
-`tools/lib.js` lists the phrases); no em dashes or double dashes; plain text, no markup. Shape and game ids
-are failures; the wording rules are warnings, so the job never holds back the week's data over a note, but
-the routine runs `--strict`, which refuses both.
+The rules `tools/notes.js` holds a file to, in short: no betting language at all (no spread, in words or as
+a number like -3.5, -3½ or "Indianapolis -7"; no favourite, underdog, moneyline, odds, total, line, cover,
+price or book: the snapshot shows the market apart); no record or score typed in the preview (the records
+are shown beside it, and a typed one goes stale); none of the site's own ranks (the Deep Dive beside the
+note moves with every run; `siteRankQuote()` in `tools/lib.js` lists the phrases); no em dashes or double
+dashes; plain text, no markup. Shape and game ids are failures; the wording rules are warnings, so the job
+never holds back the week's data over a note, but the routine runs `--strict`, which refuses both.
 
 ## Files
 
