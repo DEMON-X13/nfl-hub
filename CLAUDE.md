@@ -201,7 +201,10 @@ the same surname.
 
 A game total is a leg like a team's win or cover (`total` beside `ml` and `ats`: `totalBet`,
 `totalLeg`, `settleGameLeg`, `isGameLeg` in `part2.js`), offered over and under on the Game bets card
-under each Pick'ems game, and added by hand only: it never makes a suggested parlay. Its line is the
+on each game's page on the Props tab (app v105, `patch_gamebets_props.py`, the owner's call of 14 October
+2026: after the game's suggested parlays; until then it opened under each Pick'ems game, where an opened
+game now has, beside its Game snapshot, a button that opens the game's page on the Props tab with the
+card brought into view), and added by hand only: it never makes a suggested parlay. Its line is the
 schedule's `g.tot`, its price the over and under odds beside it, `g.tov`/`g.tou`, which `payload.py`
 carries from games.csv's `over_odds`/`under_odds` (free) and `weekly.py`'s bake replaces with
 DraftKings' own where a fresh DraftKings total is used (`oddsfetch.py` now keeps the totals market's

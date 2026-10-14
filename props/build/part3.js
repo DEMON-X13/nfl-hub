@@ -191,7 +191,8 @@ function actualSummary(x,lines,week,src,g){
     bits.push(`<b>${num(a[s],0)}</b> ${l.m.short||s} <span class="muted">(proj ${num(l.mu,l.mu<10?1:0)})</span>`); if(bits.length>=3) break; }
   return bits.join(' &nbsp;\u00b7&nbsp; ');
 }
-/* the Game bets card at the top of a game: both teams, to win and to cover, and the game total */
+/* the Game bets card on a game's page, after its suggested parlays: both teams, to win and to cover,
+   and the game total (the owner's call, 14 October 2026: game bets live on the Props tab) */
 function gameBetsCard(g,locked){
   const mark=r=>r==null?'<span class="res">–</span>':(r==='win'?'<span class="res win">✓</span>':(r==='loss'?'<span class="res loss">✗</span>':'<span class="res">push</span>'));
   const rows=[g.a,g.h].map(team=>{
@@ -288,6 +289,7 @@ function renderGame(){
     <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t. A line the model rates '+Math.round(FAR_OFF*100)+' points or more above the book\u2019s fair chance (its prices with the margin taken out) is marked far off the market and left out of the suggested parlays.'}</p>
   </div>`;
   html+=gameSuggestCard(g,locked);
+  html+=gameBetsCard(g,locked);
   if(!showRungs()&&Object.values(S.parlay||{}).some(l=>l.gid===g.id&&!l.main&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='any_td'))
     html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">A threshold leg on your parlay is shown below even though the ladders are hidden, so nothing counts out of sight.</p>`;
   for(const team of [g.a,g.h]){

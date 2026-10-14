@@ -533,17 +533,11 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pk-result .pk-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
 .pk-result .pk-mwin.pk-ok{color:var(--pick)} .pk-result .pk-mwin.pk-bad{color:var(--miss)} .pk-result .pk-mwin.pk-tie{color:var(--ink-2)}
 .pk-result .pk-muted{display:block;font-size:11px;color:var(--ink-2);line-height:1.3}
-/* the prop model's Game bets card, opened inside the same row. Its classes are the prop
-   model's, so it is styled by the prop model's stylesheet; only the card chrome comes off */
+/* an opened game, inside the same row: the Game snapshot's button and the one to the game's page
+   on the Props tab, where its game bets and player lines are */
 .pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
-.pk-gbody .gbets{background:none;border:0;border-radius:0;padding:0;margin:0;box-shadow:none}
-.pk-gbody .gbets h2{font-size:16px;margin:0 0 6px}
 .livestamp.bad{color:var(--miss)}
-.pk-tolegs{margin:10px 0 0;font-size:12px;color:var(--muted)}
-.pk-tolegs a{color:var(--ink-2)}
 .pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
-/* the two lines a game is read on, when they differ: the board's and the prop model's */
-.pk-lines{margin:0 0 8px;font-size:12px;color:#8A5E05}
 /* a game at a neutral site: "vs", not "at" */
 .pk-matchup .pk-at.pk-neutral{color:var(--ink-2);font-weight:600}
 /* a framed betting tab: full width, no border, as tall as the tab it shows */
@@ -552,7 +546,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pk-foot a{color:var(--ink-2)}
 /* the Game snapshot's button, at the head of an opened game (the window is snapshot.html's) */
 .pk-snaprow{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin:0 0 12px}
-.pk-snapbtn{display:inline-flex;align-items:center;gap:8px;font-weight:600}
+.pk-snapbtn,.pk-propsbtn{display:inline-flex;align-items:center;gap:8px;font-weight:600}
 .pk-snapbtn svg{flex:none}
 .pk-snapwhat{font-size:12px;color:var(--muted);line-height:1.4}
 @media(max-width:900px){
@@ -570,7 +564,6 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
   .pk-pred .pk-plab{display:inline;font-size:11px;color:var(--muted);margin-right:6px}
   .pk-pred .pk-muted{display:none}
   .pk-game .pk-gbody{grid-row:5}
-  .pk-gbody table.rungs{display:block;overflow-x:auto;white-space:nowrap}
 }
 </style>
 <style>
@@ -1718,7 +1711,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v104 \u00b7 2026-10-13';
+const APP_BUILD='app v105 \u00b7 2026-10-14';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2826,7 +2819,8 @@ function actualSummary(x,lines,week,src,g){
     bits.push(`<b>${num(a[s],0)}</b> ${l.m.short||s} <span class="muted">(proj ${num(l.mu,l.mu<10?1:0)})</span>`); if(bits.length>=3) break; }
   return bits.join(' &nbsp;\u00b7&nbsp; ');
 }
-/* the Game bets card at the top of a game: both teams, to win and to cover, and the game total */
+/* the Game bets card on a game's page, after its suggested parlays: both teams, to win and to cover,
+   and the game total (the owner's call, 14 October 2026: game bets live on the Props tab) */
 function gameBetsCard(g,locked){
   const mark=r=>r==null?'<span class="res">–</span>':(r==='win'?'<span class="res win">✓</span>':(r==='loss'?'<span class="res loss">✗</span>':'<span class="res">push</span>'));
   const rows=[g.a,g.h].map(team=>{
@@ -2923,6 +2917,7 @@ function renderGame(){
     <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t. A line the model rates '+Math.round(FAR_OFF*100)+' points or more above the book\u2019s fair chance (its prices with the margin taken out) is marked far off the market and left out of the suggested parlays.'}</p>
   </div>`;
   html+=gameSuggestCard(g,locked);
+  html+=gameBetsCard(g,locked);
   if(!showRungs()&&Object.values(S.parlay||{}).some(l=>l.gid===g.id&&!l.main&&l.stat!=='ml'&&l.stat!=='ats'&&l.stat!=='any_td'))
     html+=`<p class="muted" style="margin:-4px 0 12px;font-size:12px">A threshold leg on your parlay is shown below even though the ladders are hidden, so nothing counts out of sight.</p>`;
   for(const team of [g.a,g.h]){
@@ -4964,7 +4959,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='b637a85';
+const PAGE_HASH='9c7f6fb';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6090,9 +6085,9 @@ const BET_APP="<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<script>window.EMBED
    wins from the closing moneylines nflverse publishes (state.json's odds, the book's margin
    taken out), the spread when a game has no moneyline, and the spread and total for the
    score it expects. The models (Alpha Model, the Joker and the ELO Model) are measured
-   against it on the Pick'em Record. Open a game and the prop model's Game Bets sit underneath: the chance each
-   side wins and covers, off its own team ratings, against what a book is charging. The prop
-   model is the rest of this page, so its prices are its own functions on its own state.
+   against it on the Pick'em Record. Open a game and its Game snapshot is a button away, and so is
+   the game's own page on the Props tab, where its game bets (to win, to cover and the total, the
+   owner's call of 14 October 2026; they opened here until then) and every player line are.
 
    Nothing is stored and nothing is picked here yet. */
 (function(){
@@ -6218,43 +6213,31 @@ function call(g){
 /* the Game snapshot's button heads every opened game, priced or not: the window it opens
    (nflbets/build/snapshot.html) draws everything the site has on the game */
 const snapBtn=g=>`<div class="pk-snaprow"><button type="button" class="btn quiet pk-snapbtn" data-snap="${esc(g.game_id)}" aria-haspopup="dialog"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h5v5H2zM9 2.5h5v5H9zM2 9.5h5v4H2zM9 9.5h5v4H9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Game snapshot</button><span class="pk-snapwhat">Records, team and player Elo, the matchups and every model's call, in one window</span></div>`;
-/* the prop model's Game bets card for this game, exactly as the game's own page draws it:
-   both teams, to win and to cover, and the game total over or under, a box on each line while
-   the game can still be bet and a tick or a cross on each once it has a score. The card is the prop model's own function
-   on its own schedule row, so this is the same card and not a copy of one. */
+/* the button to the game's own page on the Props tab, where its game bets (to win and to cover for
+   both sides, and the total) and every player line are. Offered where the prop model can open that
+   page: it has the game, and the game's week is open there (weekOpen, as its slate keeps a game) */
+const propsBtn=row=>`<div class="pk-snaprow"><button type="button" class="btn quiet pk-propsbtn" data-props-game="${esc(row.id)}">Game bets and player props<span aria-hidden="true">\u203a</span></button><span class="pk-snapwhat">To win, to cover, the total and every player line, on the Props tab</span></div>`;
 function gameBody(g){
   if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
-  const row=mkt(g.game_id);
-  if(!row||!gameBet(row,row.h,'ml')) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model has no line for this game, so there is nothing to price it against.</span></div>`;
-  const locked=gameStarted(row);
-  let card=gameBetsCard(row,locked);
-  if(card.split('class="card gbets"').length!==2) throw new Error("the Game bets card is not the shape this tab expects");
-  card=card.replace('class="card gbets"','class="gbets"');
-  /* the board's call and score are on nflverse's line; these prices are on the prop model's,
-     which can be a different pull. Where the two spreads differ, say so, so a by-3 above and a
-     +3.5 below read as two lines rather than a mistake. */
-  const vs=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null, ps=row.sp!=null&&isFinite(row.sp)?+row.sp:null;
-  if(vs!=null&&ps!=null&&vs!==ps){
-    const fav=x=>x>0?`${g.home_team} \u2212${x}`:(x<0?`${g.away_team} \u2212${-x}`:'a pick\'em');
-    const meta=(typeof PAY==='object'&&PAY&&PAY.mkt_meta&&PAY.mkt_meta[String(row.w)])||null;
-    card=`<p class="pk-lines">The call and the score above are on nflverse's line, ${esc(fav(vs))}; these prices are on the prop model's, ${esc(fav(ps))}${meta&&meta.src?` (${esc(meta.src)}${meta.asof?', as of '+esc(meta.asof):''})`:''}.</p>`+card;
-  }
-  const onHere=Object.keys(S.parlay||{}).filter(k=>k.startsWith(g.game_id+'|team:')||k.startsWith(g.game_id+'|game|')).length;
-  const note=locked?''
-    :`<p class="pk-tolegs">Ticked lines go to your <a href="#parlay">Parlay Builder</a>.${onHere?` ${onHere} from this game ${onHere===1?'is':'are'} on the parlay.`:''}</p>`;
-  return `<div class="pk-gbody">${snapBtn(g)}${card}${note}</div>`;
+  const row=mkt(g.game_id), can=!!row&&(typeof weekOpen!=='function'||weekOpen(+row.w));
+  return `<div class="pk-gbody">${snapBtn(g)}${can?propsBtn(row):''}</div>`;
 }
-/* a tick goes through the prop model's own toggleLeg, then the game's prices are redrawn
-   so the row shows what is on the parlay now */
+/* the game's page on the Props tab: its week chosen on the slate, the tab opened, then the page,
+   as a click on the game there opens it (the prop model's own S.ui.game and renderSlate) */
+function openOnProps(id){
+  const row=mkt(id); if(!row||typeof renderSlate!=='function') return;
+  const ws=document.getElementById('weekSel');
+  if(ws&&[...ws.options].some(o=>+o.value===+row.w)) ws.value=String(row.w);
+  const tab=document.querySelector('#tabs button[data-tab="slate"]'); if(tab) tab.click();
+  S.ui.game=row.id; S.ui.open={}; save(); renderSlate();
+  /* the page opens at its head; this button was for the game bets, so they are brought into view
+     (they follow the game's suggested parlays, which a phone shows a screen of first) */
+  const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
+}
 function wireLegs(){
-  el('pkBoard').addEventListener('change',e=>{
-    const box=e.target; if(!box.matches||!box.matches('input[data-leg]')) return;
-    const card=box.closest('.pk-game'), g=card&&ST.sched.find(x=>x.game_id===card.dataset.game); if(!g) return;
-    toggleLeg(box.dataset.leg,+box.dataset.k,mkt(g.game_id),box.dataset.side||'over',box.dataset.main==='1');
-    const body=card.querySelector('.pk-gbody'); if(body) body.outerHTML=gameBody(g);
-  });
-  /* the Game snapshot's button opens its window over the page */
+  /* the Game snapshot's button opens its window over the page; the other, the game on the Props tab */
   el('pkBoard').addEventListener('click',e=>{
+    const p=e.target.closest&&e.target.closest('button[data-props-game]'); if(p){ openOnProps(p.dataset.propsGame); return; }
     const b=e.target.closest&&e.target.closest('button[data-snap]'); if(!b) return;
     if(typeof window.gameSnapshot==='function') window.gameSnapshot(b.dataset.snap,b);
   });
@@ -6345,7 +6328,7 @@ function render(){
   const todo=games.filter(g=>!fin(g)), done=games.filter(fin);
   el('pkBoard').innerHTML=over+HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
   el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
-    if(e.target.closest('.pk-gbody')) return;          /* the prices are not a toggle */
+    if(e.target.closest('.pk-gbody')) return;          /* the opened game's buttons are not a toggle */
     const open=card.classList.toggle('pk-open');
     card.setAttribute('aria-expanded',open?'true':'false');
     const had=card.querySelector('.pk-gbody');

@@ -487,111 +487,135 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* nothing is open until a game is clicked */
   chk(!d.querySelector('.pk-gbody'), 'a game was open before anything was clicked');
 
-  /* open one and the prop model prices both sides, off its own state */
+  /* open one: its Game snapshot, and a button to the game's own page on the Props tab, where its
+     game bets are (app v105, the owner's call of 14 October 2026); none of them here */
   const first = cards[0];
   first.click();
   await wait(60);
   const body = first.querySelector('.pk-gbody');
   chk(!!body, 'clicking a game opened nothing');
-  chk(!!body && !!body.querySelector('.gbets') && /Game bets/.test(txt(body.querySelector('.gbets h2'))), 'the opened game is not the prop model\'s Game bets card');
-  chk(!body || !body.querySelector('.card'), 'the card chrome should come off inside the row');
-  const rows = body ? [...body.querySelectorAll('tr')] : [];
-  /* to win for both sides, and to cover for both where the prop model has a spread (a game
-     whose spread is not posted yet offers the money line alone, and says so), and the game
-     total over and under where a total is posted */
-  const teamLines = id => { const r = w.eval('S').sched.find(x => x.id === id); return r && w.gameBet(r, r.h, 'ats') ? 4 : 2; };
+  chk(first.classList.contains('pk-open'), 'the card did not mark itself open');
+  chk(!!body && !body.querySelector('.gbets, input[data-leg], table, .pk-lines, .pk-tolegs'), 'the opened game on the board still carries the Game bets card');
+  chk(!d.querySelector('#pkBoard input[data-leg]'), 'the board offers a line to tick');
+  const pkRow = id => w.eval('S').sched.find(x => x.id === id);
+  const pkCanOpen = id => { const r = pkRow(id); return !!r && w.eval('weekOpen')(+r.w); };
+  const pbtn = body && body.querySelector('button[data-props-game]');
+  chk(!!pbtn === pkCanOpen(first.dataset.game) && (!pbtn || (pbtn.dataset.propsGame === pkRow(first.dataset.game).id && /Game bets and player props/.test(txt(pbtn)))),
+    `the opened game ${pkCanOpen(first.dataset.game) ? 'has no button to its page on the Props tab' : 'offers a page the Props tab cannot open'}`);
+
+  /* the button opens the game's page on the Props tab, on its week, with the Game bets card on it */
+  const gbView = () => d.getElementById('gameView'), gbCard = () => gbView().querySelector('.gbets');
+  const gbPage = async id => { w.eval(`S.ui.game=${JSON.stringify(id)};S.ui.open={};renderGame()`); await wait(60); };
+  if (pbtn) {
+    pbtn.click();
+    await wait(100);
+    chk(!d.getElementById('tab-slate').hidden && d.getElementById('tab-pickems').hidden && w.location.hash === '#slate', 'the button did not open the Props tab: ' + w.location.hash);
+    chk(!d.getElementById('gameModal').hidden && w.eval('S').ui.game === first.dataset.game && +d.getElementById('weekSel').value === +pkRow(first.dataset.game).w,
+      'the button did not open the game\'s own page on its week');
+    chk(!!gbCard() && /Game bets/.test(txt(gbCard().querySelector('h2'))), 'the game\'s page on the Props tab has no Game bets card');
+  }
+  /* the card on the game's page: both sides priced by the prop model, off its own state */
+  const gbRows = () => (gbCard() ? [...gbCard().querySelectorAll('tr')] : []);
+  const teamLines = id => { const r = pkRow(id); return r && w.gameBet(r, r.h, 'ats') ? 4 : 2; };
   const hasTot = w.eval('typeof totalBet') === 'function' && w.eval('typeof totalBook') === 'function';
   chk(hasTot, 'the prop model prices no game total (no totalBet or totalBook)');
-  const totLines = id => { const r = w.eval('S').sched.find(x => x.id === id); return hasTot && r && w.eval('totalBet')(r, 'over') ? 2 : 0; };
+  const totLines = id => { const r = pkRow(id); return hasTot && r && w.eval('totalBet')(r, 'over') ? 2 : 0; };
   const nLines = id => teamLines(id) + totLines(id);
-  const firstLines = teamLines(first.dataset.game);
-  chk(rows.length === nLines(first.dataset.game), `expected ${firstLines === 4 ? 'to win and to cover' : 'to win'} for both sides${totLines(first.dataset.game) ? ' and the total' : ''}, got ${rows.length} row(s): ${txt(body)}`);
-  chk(rows.filter(r => /To win/.test(txt(r))).length === 2, 'both sides should have a to-win price');
-  chk(rows.filter(r => /To cover/.test(txt(r))).length === firstLines - 2, 'both sides should have a to-cover price where there is a spread, and none where there is not');
-  chk(firstLines === 4 || /No spread posted yet/.test(txt(body)), 'a game with no spread does not say why it offers the money line alone');
-  const pcts = rows.filter(r => /To win/.test(txt(r))).map(r => parseInt(txt(r.querySelector('.pct')), 10));
-  chk(Math.abs(pcts[0] + pcts[1] - 100) <= 1, `the two win chances do not add up: ${pcts.join(' + ')}`);
-  chk(rows.filter(r => /To win|To cover/.test(txt(r))).every(r => /[-+]\d+est\./.test(txt(r).replace(/\s/g, ''))), 'a row is missing our own price');
-  /* the total: over and under on the posted number, the chances summing to one, a price on each
-     (the book's where the payload has one, -110 est. where it has none, and saying so) */
-  { const tr = rows.filter(r => /^(Over|Under) [\d.]+/.test(txt(r.querySelector('.thr')))), row = w.eval('S').sched.find(x => x.id === first.dataset.game);
-    if (totLines(first.dataset.game)) {
-      const tp = tr.map(r => parseInt(txt(r.querySelector('.pct')), 10)), real = w.eval('totalBook')(row, 'over') != null;
-      chk(tr.length === 2 && Math.abs(tp[0] + tp[1] - 100) <= 1 && tr.every(r => txt(r.querySelector('.thr')).endsWith(String(row.tot))), 'the game total is not offered over and under on the posted total: ' + tr.map(txt).join(' / '));
-      chk(real ? tr.every(r => /^[-+]\d+$/.test(txt(r.querySelector('.book')))) : (tr.every(r => /^-110est\.$/.test(txt(r.querySelector('.est')).replace(/\s/g, ''))) && /the -110 is an estimate/.test(txt(body))),
-        'the game total does not carry the book\'s price, or -110 marked est. with a note when there is none: ' + tr.map(txt).join(' / '));
-      /* its chance is the market's own (props/research/totals/): the over and under prices with the
-         margin out, 50% without both; the model's points are a display beside the line, not the chance */
-      const imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), has = v => v != null && isFinite(v) && v !== 0;
-      const nv = has(row.tov) && has(row.tou) ? imp(row.tov) / (imp(row.tov) + imp(row.tou)) : 0.5;
-      const head = txt([...body.querySelectorAll('.statblk h4')].find(h => /^Game total/.test(txt(h))) || { textContent: '' });
-      chk(tp[0] === Math.round(nv * 100) && tp[1] === Math.round((1 - nv) * 100) && head.includes(`model's points ${w.eval('modelTotal')(row).toFixed(1)}`) && head.includes(`book line ${row.tot}`)
-        && /The total's chance is the book's own/.test(txt(body)),
-        `the game total is not at the market's chance (${Math.round(nv * 100)}%) with the model's points shown as a display: ${head} / ${tp.join('% ')}%`); }
-    else chk(!tr.length, 'a game with no total posted offers one'); }
-  /* the same game priced by the prop model's own gameBet, on the same row */
-  const gid = first.dataset.game, row = w.eval('S').sched.find(x => x.id === gid);
-  const own = w.gameBet(row, row.a, 'ml');
-  chk(own && Math.round(own.p * 100) === pcts[0], `the board's away win chance ${pcts[0]} is not the prop model's ${own && Math.round(own.p * 100)}`);
-  chk(first.classList.contains('pk-open'), 'the card did not mark itself open');
-  /* the two lines: said where the board's spread and the prop model's differ, and only there */
-  { const g = state.schedule.find(x => x.game_id === gid), differ = g.spread_line != null && row.sp != null && +g.spread_line !== +row.sp;
-    chk(!!body.querySelector('.pk-lines') === differ, `the opened game ${differ ? 'does not say' : 'says'} its prices are on a different line from the board's`); }
+  const started = gid => w.eval('gameStarted')(pkRow(gid));
+  const gid = first.dataset.game, row = pkRow(gid);
+  if (row) {
+    await gbPage(gid);
+    const rows = gbRows(), gb = gbCard();
+    chk(!!gb && d.querySelectorAll('#gameView .gbets').length === 1, 'the game\'s page does not carry the Game bets card once');
+    /* to win for both sides, and to cover for both where the prop model has a spread (a game whose
+       spread is not posted yet offers the money line alone, and says so), and the game total over
+       and under where a total is posted */
+    const firstLines = teamLines(gid);
+    chk(rows.length === nLines(gid), `expected ${firstLines === 4 ? 'to win and to cover' : 'to win'} for both sides${totLines(gid) ? ' and the total' : ''}, got ${rows.length} row(s): ${gb ? txt(gb) : ''}`);
+    chk(rows.filter(r => /To win/.test(txt(r))).length === 2, 'both sides should have a to-win price');
+    chk(rows.filter(r => /To cover/.test(txt(r))).length === firstLines - 2, 'both sides should have a to-cover price where there is a spread, and none where there is not');
+    chk(firstLines === 4 || /No spread posted yet/.test(txt(gb)), 'a game with no spread does not say why it offers the money line alone');
+    const pcts = rows.filter(r => /To win/.test(txt(r))).map(r => parseInt(txt(r.querySelector('.pct')), 10));
+    chk(Math.abs(pcts[0] + pcts[1] - 100) <= 1, `the two win chances do not add up: ${pcts.join(' + ')}`);
+    chk(rows.filter(r => /To win|To cover/.test(txt(r))).every(r => /[-+]\d+est\./.test(txt(r).replace(/\s/g, ''))), 'a row is missing our own price');
+    /* the total: over and under on the posted number, the chances summing to one, a price on each
+       (the book's where the payload has one, -110 est. where it has none, and saying so) */
+    { const tr = rows.filter(r => /^(Over|Under) [\d.]+/.test(txt(r.querySelector('.thr'))));
+      if (totLines(gid)) {
+        const tp = tr.map(r => parseInt(txt(r.querySelector('.pct')), 10)), real = w.eval('totalBook')(row, 'over') != null;
+        chk(tr.length === 2 && Math.abs(tp[0] + tp[1] - 100) <= 1 && tr.every(r => txt(r.querySelector('.thr')).endsWith(String(row.tot))), 'the game total is not offered over and under on the posted total: ' + tr.map(txt).join(' / '));
+        chk(real ? tr.every(r => /^[-+]\d+$/.test(txt(r.querySelector('.book')))) : (tr.every(r => /^-110est\.$/.test(txt(r.querySelector('.est')).replace(/\s/g, ''))) && /the -110 is an estimate/.test(txt(gb))),
+          'the game total does not carry the book\'s price, or -110 marked est. with a note when there is none: ' + tr.map(txt).join(' / '));
+        /* its chance is the market's own (props/research/totals/): the over and under prices with the
+           margin out, 50% without both; the model's points are a display beside the line, not the chance */
+        const imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), has = v => v != null && isFinite(v) && v !== 0;
+        const nv = has(row.tov) && has(row.tou) ? imp(row.tov) / (imp(row.tov) + imp(row.tou)) : 0.5;
+        const head = txt([...gb.querySelectorAll('.statblk h4')].find(h => /^Game total/.test(txt(h))) || { textContent: '' });
+        chk(tp[0] === Math.round(nv * 100) && tp[1] === Math.round((1 - nv) * 100) && head.includes(`model's points ${w.eval('modelTotal')(row).toFixed(1)}`) && head.includes(`book line ${row.tot}`)
+          && /The total's chance is the book's own/.test(txt(gb)),
+          `the game total is not at the market's chance (${Math.round(nv * 100)}%) with the model's points shown as a display: ${head} / ${tp.join('% ')}%`); }
+      else chk(!tr.length, 'a game with no total posted offers one'); }
+    /* the same game priced by the prop model's own gameBet, on the same row */
+    const own = w.gameBet(row, row.a, 'ml');
+    chk(own && Math.round(own.p * 100) === pcts[0], `the card's away win chance ${pcts[0]} is not the prop model's ${own && Math.round(own.p * 100)}`);
+  }
 
-  /* a line on a game that has not kicked off can be ticked onto the prop model's parlay */
-  const started = gid => w.eval('gameStarted')(w.eval('S').sched.find(x => x.id === gid));
-  chk(cards.every(c => started(c.dataset.game) === !c.querySelector('input[data-leg]') || !c.querySelector('.pk-gbody')), 'boxes and kickoffs disagree');
-  const openCard = cards.find(c => !started(c.dataset.game));
-  if (openCard) {
-    if (openCard !== first) { first.click(); await wait(30); openCard.click(); await wait(60); }
-    const boxes = [...openCard.querySelectorAll('input[data-leg]')];
-    chk(boxes.length === nLines(openCard.dataset.game) && boxes.every(b => !b.checked), `a game not yet kicked off should offer ${nLines(openCard.dataset.game)} unticked lines, got ${boxes.length}`);
-    chk(/Tick one and it joins the parlay/.test(txt(openCard.querySelector('.gbets'))) && /Parlay Builder/.test(txt(openCard.querySelector('.pk-tolegs a[href="#parlay"]'))), 'no note pointing at the Parlay Builder');
+  /* a line on a game that has not kicked off can be ticked onto the prop model's parlay from its page */
+  const openId = cards.map(c => c.dataset.game).find(id => pkRow(id) && !started(id));
+  if (openId) {
+    await gbPage(openId);
+    const boxes = [...gbCard().querySelectorAll('input[data-leg]')];
+    chk(boxes.length === nLines(openId) && boxes.every(b => !b.checked), `a game not yet kicked off should offer ${nLines(openId)} unticked lines, got ${boxes.length}`);
+    chk(/Tick one and it joins the parlay/.test(txt(gbCard())), 'the card does not say a tick joins the parlay');
     const key = boxes[0].dataset.leg;
     boxes[0].click();
     await wait(60);
     const leg = w.eval('S').parlay[key];
     chk(!!leg && leg.grp === 'TEAM' && leg.stat === 'ml' && leg.label === 'To win', 'ticking To win did not put a team leg on the parlay: ' + JSON.stringify(leg));
-    const box2 = openCard.querySelector(`input[data-leg="${key}"]`);
+    const box2 = gbCard().querySelector(`input[data-leg="${key}"]`);
     chk(box2 && box2.checked && box2.closest('tr').classList.contains('on'), 'the ticked row does not show as on');
-    chk(/1 from this game is on the parlay/.test(txt(openCard.querySelector('.pk-tolegs'))), 'the note does not count the leg');
     chk(/1-leg parlay/.test(txt(d.getElementById('parlayBody'))) && txt(d.getElementById('parlayBody')).includes(leg.name), 'the Parlay Builder does not show the leg in the builder');
-    /* the total ticks the same way, one side at a time, and counts as this game's */
-    { const ov = openCard.querySelector('input[data-leg$="|game|total"][data-side="over"]');
-      if (ov) { ov.click(); await wait(60);
-        const un = openCard.querySelector('input[data-leg$="|game|total"][data-side="under"]'); un.click(); await wait(60);
-        const tl = w.eval('S').parlay[ov.dataset.leg];
-        chk(!!tl && tl.stat === 'total' && tl.side === 'under' && /2 from this game are on the parlay/.test(txt(openCard.querySelector('.pk-tolegs'))) && /Under [\d.]+ points/.test(txt(d.getElementById('parlayBody'))),
-          'ticking the total\'s under did not take the over\'s place, or is not counted and shown: ' + txt(openCard.querySelector('.pk-tolegs')));
-        openCard.querySelector('input[data-leg$="|game|total"][data-side="under"]').click(); await wait(60);
-        chk(!w.eval('S').parlay[ov.dataset.leg], 'unticking the total did not take it off the parlay'); } }
-    /* the card was drawn again by each tick: the row is found afresh */
-    openCard.querySelector(`input[data-leg="${key}"]`).click();
+    /* the total ticks the same way, one side at a time: the other side comes off */
+    { const ov = gbCard().querySelector('input[data-leg$="|game|total"][data-side="over"]');
+      if (ov) { const tk = ov.dataset.leg; ov.click(); await wait(60);
+        gbCard().querySelector('input[data-leg$="|game|total"][data-side="under"]').click(); await wait(60);
+        const tl = w.eval('S').parlay[tk];
+        chk(!!tl && tl.stat === 'total' && tl.side === 'under' && !gbCard().querySelector('input[data-leg$="|game|total"][data-side="over"]').checked
+          && gbCard().querySelector('input[data-leg$="|game|total"][data-side="under"]').checked && /Under [\d.]+ points/.test(txt(d.getElementById('parlayBody'))),
+          'ticking the total\'s under did not take the over\'s place, or is not shown');
+        gbCard().querySelector('input[data-leg$="|game|total"][data-side="under"]').click(); await wait(60);
+        chk(!w.eval('S').parlay[tk], 'unticking the total did not take it off the parlay'); } }
+    /* the page was drawn again by each tick: the row is found afresh */
+    gbCard().querySelector(`input[data-leg="${key}"]`).click();
     await wait(60);
     chk(!w.eval('S').parlay[key], 'unticking did not take the leg off the parlay');
     chk(/Parlay Builder/.test(txt(d.getElementById('parlayBody'))), 'the builder still shows a parlay after unticking');
-    /* a team line far off the market is flagged on the board's card as on the game's own page: the
-       model's side to win priced so the book's fair chance on it is 25 points under the model's */
-    { const r = w.eval('S').sched.find(x => x.id === openCard.dataset.game), keep = [r.mla, r.mlh], toML = w.eval('probToAmerican');
+    /* a team line far off the market is flagged on the card: the model's side to win priced so the
+       book's fair chance on it is 25 points under the model's */
+    { const r = pkRow(openId), keep = [r.mla, r.mlh], toML = w.eval('probToAmerican');
       const bet = t => w.gameBet(r, t, 'ml'), fav = bet(r.h).p >= bet(r.a).p ? r.h : r.a, p = bet(fav).p, f = Math.max(0.05, p - 0.25);
       const own = toML(f * 1.03), oth = toML((1 - f) * 1.03), imp = a => a > 0 ? 100 / (a + 100) : -a / (-a + 100), fair = imp(own) / (imp(own) + imp(oth));
       if (fav === r.h) { r.mlh = own; r.mla = oth; } else { r.mla = own; r.mlh = oth; }
-      openCard.click(); await wait(30); openCard.click(); await wait(60);
-      const notes = [...openCard.querySelectorAll('.gbets p.faroff[data-far]')].map(txt), want = `To win model ${Math.round(p * 100)}% · market ${Math.round(fair * 100)}%: far off the market`;
-      chk(notes.includes(want) && openCard.querySelectorAll('.gbets tr.far').length === notes.length, `the board's Game bets card does not flag a far-off to win as "${want}": ${notes.join(' / ') || 'no flag'}`);
-      r.mla = keep[0]; r.mlh = keep[1]; openCard.click(); await wait(30); openCard.click(); await wait(60); }
-    if (openCard !== first) { openCard.click(); await wait(30); first.click(); await wait(60); }
-  } else chk(cards.every(c => started(c.dataset.game)), 'no game offered lines although one has not kicked off');
-  const lockedCard = cards.find(c => started(c.dataset.game));
-  if (lockedCard) { const wasOpen = lockedCard === first; if (!wasOpen) { lockedCard.click(); await wait(60); }
-    chk(!lockedCard.querySelector('input[data-leg]') && !lockedCard.querySelector('.pk-tolegs') && /How each side did/.test(txt(lockedCard.querySelector('.gbets'))), 'a game that kicked off still offers lines');
-    /* resolved the way the game's own page resolves it: a tick or a cross on every line once the score is in */
-    const scored = w.eval('hasScore')(w.eval('S').sched.find(x => x.id === lockedCard.dataset.game));
-    const marks = [...lockedCard.querySelectorAll('td.pick .res')];
-    chk(marks.length === nLines(lockedCard.dataset.game), `a kicked-off game should mark ${nLines(lockedCard.dataset.game)} lines, got ${marks.length}`);
-    if (scored) chk(marks.every(m => /win|loss/.test(m.className) || /push/.test(txt(m))) && lockedCard.querySelectorAll('tr.hit, tr.miss').length >= 2, 'a game with a score is not marked won or lost line by line');
+      await gbPage(openId);
+      const notes = [...gbCard().querySelectorAll('p.faroff[data-far]')].map(txt), want = `To win model ${Math.round(p * 100)}% · market ${Math.round(fair * 100)}%: far off the market`;
+      chk(notes.includes(want) && gbCard().querySelectorAll('tr.far').length === notes.length, `the Game bets card does not flag a far-off to win as "${want}": ${notes.join(' / ') || 'no flag'}`);
+      r.mla = keep[0]; r.mlh = keep[1]; await gbPage(openId); }
+  } else chk(cards.every(c => !pkRow(c.dataset.game) || started(c.dataset.game)), 'no game offered lines although one has not kicked off');
+  /* a game that kicked off: no boxes, a tick or a cross on every line once the score is in */
+  const lockedId = cards.map(c => c.dataset.game).find(id => pkRow(id) && started(id));
+  if (lockedId) {
+    await gbPage(lockedId);
+    chk(!gbCard().querySelector('input[data-leg]') && /How each side did/.test(txt(gbCard())), 'a game that kicked off still offers lines');
+    const scored = w.eval('hasScore')(pkRow(lockedId));
+    const marks = [...gbCard().querySelectorAll('td.pick .res')];
+    chk(marks.length === nLines(lockedId), `a kicked-off game should mark ${nLines(lockedId)} lines, got ${marks.length}`);
+    if (scored) chk(marks.every(m => /win|loss/.test(m.className) || /push/.test(txt(m))) && gbCard().querySelectorAll('tr.hit, tr.miss').length >= 2, 'a game with a score is not marked won or lost line by line');
     else chk(marks.every(m => txt(m) === '–'), 'a game without a score should show dashes, not results');
-    if (!wasOpen) { lockedCard.click(); await wait(30); } }
+  }
+  /* back to the board as it was */
+  w.closeGame(); await wait(40);
+  [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click();
+  await wait(60);
 
   /* clicking inside the prices does not toggle; clicking the row does */
   first.querySelector('.pk-gbody').click();
@@ -627,8 +651,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const modal = d.getElementById('gameModal');
   chk(modal && !modal.hidden, 'clicking a game on the Props tab did not open the game');
   chk(txt(d.getElementById('gameView')).length > 200, 'the game modal is empty');
-  /* a game here is its players: the Game bets card is the Pick'ems tab's job now */
-  chk(!d.querySelector('#gameView .gbets') && !/Game bets/.test(txt(d.getElementById('gameView'))), 'the game view still carries the Game bets card');
+  /* a game's page carries its Game bets card (app v105), once */
+  chk(d.querySelectorAll('#gameView .gbets').length === 1, 'the game view does not carry the Game bets card once');
   chk(d.querySelectorAll('#gameView .plrbtn').length > 0, 'the game view shows no players');
   chk(typeof w.closeGame === 'function', 'the prop model\'s closeGame is not on the page');
   w.closeGame();
@@ -1253,8 +1277,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
     if (moved) {
       if (+moved.week !== +A.d.getElementById('pkWeek').value) { A.d.getElementById('pkWeek').value = String(moved.week); A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change')); await wait(40); }
       await open1(card(moved.game_id));
-      chk(/nflverse's line/.test(txt(card(moved.game_id).querySelector('.pk-lines'))), 'a game whose board and prop-model spreads differ does not say so when opened');
-      if (kept) { await open1(card(kept.game_id)); chk(!card(kept.game_id).querySelector('.pk-lines'), 'a game on one line says it is on two'); } }
+      /* the board's line and the prop model's differ: the prices, and the note that said so, are on the Props tab now */
+      chk(!card(moved.game_id).querySelector('.pk-lines, .gbets'), 'an opened game on the board still carries game bets or a note on two lines'); }
     const opt = [...A.d.getElementById('pkWeek').options].find(o => +o.value === 19);
     chk(!!opt && txt(opt) === 'Wild Card', 'the first playoff week is not named Wild Card: ' + (opt ? txt(opt) : 'no option'));
     A.d.getElementById('pkWeek').value = '19'; A.d.getElementById('pkWeek').dispatchEvent(new A.w.Event('change'));
