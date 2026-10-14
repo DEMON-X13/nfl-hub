@@ -79,7 +79,8 @@
                           and the receivers' +1.6 Favorable), the Rams' board code LA reads the file's LAR,
                           every name is escaped, and the checks pass both ways; the old unweighted rule
                           (what possession() draws from a file without tags) fails them, and so do ranks or
-                          an edge that are not the file's and a file whose constants were changed.
+                          an edge that are not the file's, a row's two sides drawn the other way round or
+                          headed by the wrong club, and a file whose constants were changed.
      deepdive-headline    the Overall line's tag is this team's Overall Offense against the opponent's
                           Overall Defense from a made-up model.json, tagged by the gap read as points (+3.1
                           Easy one way, -1.8 Tough the other) by the snapshot's own headTag(); a tag from the
@@ -104,7 +105,31 @@
                           in it is not ("a -5 turnover margin", "won 24-17", "Stroud (-2 yards)", "(-0.07
                           EPA)"). A season or week that is not a number ("2026(", "*2026", "6(") fails, every
                           game with it, and throws nothing: the id's pattern was built from the season as
-                          typed, and a "2026(" threw out of the news smoke and held back the week's data. */
+                          typed, and a "2026(" threw out of the news smoke and held back the week's data.
+                          Players in bold (the owner, 14 October 2026): a note with every player written
+                          **Name** passes clean on a made-up players list, and the same note with them
+                          plain warns for each, named; each broken version warns and never fails: a player
+                          left plain or only partly in a pair, an unpaired ** or a single *, a pair over 60
+                          characters or with a space just inside, other markdown, a coach in bold (given,
+                          or a head coach on the schedule), bold in the sources. Names are whole and
+                          longest first ("Marvin Harrison Jr." is never read again as "Marvin Harrison",
+                          and "Jaxon Smith" is not read inside "Jaxon Smith-Njigba"). The lengths count the
+                          text without the markers (a preview of 196 characters and news of 298 pass with
+                          the markers over the limit; 38 and 302 warn), and every other rule reads it so
+                          too: a sentence after a bold name, a record or a book's name split by markers, a
+                          preview ending in a bold "Jr.". The validator before it read an unpaired ** as
+                          plain text and counted the markers in the lengths. A name is not always the
+                          player's: a plain one straight after a role word ("Bengals owner Mike Brown said",
+                          and coach, coordinator, GM, general manager, president, executive, chairman,
+                          assistant, team doctor) does not warn, where the rule before it asked the writer to
+                          bold the owner, and the same name elsewhere warns that the site knows it as a
+                          player's ("if this is the player"). A pair that is no player's warns without the
+                          schedule's coaches, which a week can find stale: one straight after a role word,
+                          and a team's city, nickname or code ("**Broncos**", "**DEN**", "**the Denver
+                          Broncos**"), where nothing warned before; a bold name the players list lacks
+                          (Anton Harrison, Micah Parsons), after a position ("Jets WR") or a coach's "said",
+                          does not. The players list reads every group's sidelined in players.json (Tyquan
+                          Thornton, Edgerrin Cooper on injured reserve), which the reader before it missed. */
 'use strict';
 const { SEASON, seasonState, siteRankQuote } = require('./lib');
 const { lineups, schedule, notePractice, espnIndex } = require('./context');
@@ -564,12 +589,17 @@ function cases() {
       oldRows.join('|') === DC.unweightedTags(A, O).slice(0, 4).join('|') && oldRows.join('|') !== HAND.join('|') && fo.some(x => /rows:/.test(x)), `${oldRows.join(',')}; ${fo.join(' | ') || 'passed'}`);
     /* a row showing a rank or an edge that is not the file's */
     const bent = mine ? [
-      ["a rank that is not the file's", h => h.replace('<b>16th</b>', '<b>15th</b>'), /ranks/],
+      ["a rank that is not the file's", h => h.replace('<b class="ddrk">16th</b>', '<b class="ddrk">15th</b>'), /ranks/],
       ['an edge that is not the gap between the ratings', h => h.replace('edge +0.7', 'edge +0.8'), /"edge/],
       ['a row left out', h => h.replace(/<div class="ddrow" data-dd="rb"[\s\S]*?(?=<div class="ddrow" data-dd="rec")/, ''), /rows qb,ol,rec/],
       ['two tags in one row', h => h.replace('<span class="ddunit">Receivers</span>', '<span class="ddunit">Receivers</span><span class="dtag easy">Easy</span>'), /other than one tag/],
+      /* the two sides of a meeting: the offense's left, the defense's right, each headed by its own club
+         (every rank here is 16th, so only the sides themselves tell) */
+      ["a row's two sides drawn the other way round", h => h.replace('class="ddside ddoff"', 'class="ddside SWAP"').replace('class="ddside dddef"', 'class="ddside ddoff"').replace('class="ddside SWAP"', 'class="ddside dddef"'), /sides ddd?[a-z]+,dd/],
+      ['a side headed by the other club', h => h.replace('<span class="ddsn">MIN passing offense', '<span class="ddsn">NO passing offense'), /sides headed/],
+      ['a rank given to one side twice', h => h.replace(/(<div class="ddsl"><span class="ddsn">MIN passing offense<\/span><span class="ddsep" aria-hidden="true"> · <\/span><b class="ddrk">16th<\/b>)/, '$1<b class="ddrk">16th</b>'), /2 ranks/],
     ].map(([what, bend, rx]) => { const b = bend(mine.html); return b !== mine.html && DC.checkPossession(b, 'MIN', 'NO', A, O).some(x => rx.test(x)) ? null : what; }).filter(Boolean) : ['no possession'];
-    add('deepdive-weighted', "a rank or an edge that is not the file's, a row left out or a second tag fails the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all four fail');
+    add('deepdive-weighted', "a rank or an edge that is not the file's, a row left out, a second tag, or a row's sides the other way round, headed by the wrong club or ranked twice fails the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all seven fail');
     const changed = clone(DD_META); changed.tags.rows.weights.rb = 1; changed.tags.headline.slope = 12.787;
     const fb = DC.checkMeta(changed);
     add('deepdive-weighted', "a file whose constants were changed (the run game weighted 1, the headline's first slope 12.787) fails the checks",
@@ -582,7 +612,7 @@ function cases() {
     try { DD = pageDeepDive(); h1 = DD.headTag(DD_META, off.MIN, def.NO); h2 = DD.headTag(DD_META, off.NO, def.MIN); } catch (e) { err = err || e.message; }
     /* by hand: MIN's offense 0.21 against NO's defense -0.05: 11.9126 x 0.26 = +3.10, Easy; NO's offense -0.10 against MIN's defense 0.05: -1.79, Tough */
     add('deepdive-headline', "the Overall line's tag is this team's Overall Offense against the opponent's Overall Defense: MIN +3.1 points Easy, NO -1.8 Tough",
-      !err && h1 && h1.tag === 'Easy' && h1.text === 'about +3.1 pts' && h2 && h2.tag === 'Tough' && h2.text === 'about −1.8 pts', err || `${JSON.stringify(h1)} / ${JSON.stringify(h2)}`);
+      !err && h1 && h1.tag === 'Easy' && h1.text === '+3.1 pts' && h2 && h2.tag === 'Tough' && h2.text === '−1.8 pts', err || `${JSON.stringify(h1)} / ${JSON.stringify(h2)}`);
     add('deepdive-headline', "context.js's overall() reads model.json's LA as LAR, carried and all", !!OV && OV.off.LAR && !OV.off.LA && OV.off.LAR.carried === true, err || Object.keys((OV && OV.off) || {}).join(','));
     const f = h1 && h2 ? [...DC.checkHead(h1, off.MIN, def.NO, DD_META, 'MIN'), ...DC.checkHead(h2, off.NO, def.MIN, DD_META, 'NO')] : ['no tags'];
     add('deepdive-headline', 'the checks pass on both', !f.length, f.join(' | ') || 'none');
@@ -692,6 +722,111 @@ function cases() {
       return r.fails.some(m => m.startsWith(`${k} ${JSON.stringify(v)} is not`)) && !keys.length ? null : `${k} ${JSON.stringify(v)}: ${keys.length ? `${keys.join(', ')} not failed` : 'not failed as a ' + k}`;
     }).filter(Boolean);
     add('notes-rules', 'a season or week that is not a number ("2026(", "*2026", "6(") fails, every game with it, and nothing throws', !BAD.length, BAD.join(' | ') || 'all three fail');
+    /* players in bold (the owner, 14 October 2026): every player named is **Name**, a pair the page draws in
+       bold. The bold rule runs only on a players list, given here made up so the case never moves with the
+       real files; a coach comes from the list given or the schedule's head coaches */
+    const P = ['Drew Lock', 'C.J. Stroud', "Ja'Marr Chase", 'Kenneth Walker III', 'Josh Allen', 'Maxx Crosby Jr.', 'Marvin Harrison', 'Marvin Harrison Jr.', 'Jaxon Smith'];
+    const runB = (o, opts = {}) => NOTES.check(o, { file: `${SEASON}-w6.json`, schedule: sched, players: P, coaches: ['Sean Payton'], ...opts });
+    const bolded = clone(good), BUF = `${SEASON}_06_BUF_LV`;
+    bolded.games[id].preview = "**Drew Lock** goes back to Denver on a short week, with **C.J. Stroud** watching from home and **Ja'Marr Chase** in town.";
+    bolded.games[id].news = 'Denver beat the Jets 27-24 on Sunday; **Kenneth Walker III** (ankle) did not practise Tuesday.';
+    bolded.games[BUF].preview = '**Josh Allen** brings the Bills to Las Vegas with the division lead on the line against **Maxx Crosby Jr.** and a rested pass rush.';
+    const okB = runB(bolded), plainB = runB(good), want = P.slice(0, 6);
+    const named = want.filter(n => plainB.warns.some(m => /the site knows as (?:a player|players), not in bold/.test(m) && m.includes(`"${n}"`)));
+    add('notes-rules', 'a note with every player in bold passes clean; the same note with its players plain warns for each, named, and never fails',
+      !okB.fails.length && !okB.warns.length && !plainB.fails.length && plainB.warns.length === 3 && named.length === want.length,
+      `bold: ${[...okB.fails, ...okB.warns].join(' | ') || 'clean'}; plain: ${plainB.warns.length} warning(s), ${named.length} of ${want.length} named`);
+    /* each broken version: a warning (its own message), never a failure */
+    const bendB = (fn, opts) => { const o = clone(bolded); fn(o, o.games[id]); return runB(o, opts); };
+    const coachSched = { ...sched, games: sched.games.map(g => ({ ...g, home_coach: 'Sean Payton', away_coach: 'Mike Macdonald' })) };
+    const BOLDS = [
+      ['a player left plain', /a name the site knows as a player, not in bold \("Drew Lock": if this is the player, write \*\*Drew Lock\*\*\)/, (o, g) => { g.preview = g.preview.replace('**Drew Lock**', 'Drew Lock'); }],
+      ['a player only partly in a pair', /a player only partly in bold \("Kenneth Walker III"/, (o, g) => { g.news = g.news.replace('**Kenneth Walker III**', '**Kenneth Walker** III'); }],
+      ['an unpaired **', /an unpaired \*\* or a single \*/, (o, g) => { g.preview = '**Drew Lock goes back to Denver on a short week with a rested Seattle defense waiting.'; }],
+      ['a single *', /an unpaired \*\* or a single \*/, (o, g) => { g.news = g.news.replace('Sunday;', 'Sunday*;'); }],
+      ['a pair over 60 characters', /a bold pair over 60 characters/, (o, g) => { g.news = '**Kenneth Walker III and the rest of the Seattle backfield all sat out on Tuesday** again.'; }],
+      ['a space just inside a pair', /a space just inside a bold pair/, (o, g) => { g.news = g.news.replace('**Kenneth Walker III**', '** Kenneth Walker III**'); }],
+      ['other markdown', /markup/, (o, g) => { g.news = g.news.replace('Sunday;', 'Sunday, per `ESPN`;'); }],
+      ['a coach in bold', /a coach in bold \("Sean Payton"/, (o, g) => { g.preview = '**Drew Lock** goes back to Denver on a short week, where **Sean Payton** calls the plays against **C.J. Stroud**.'; }],
+      ['a head coach on the schedule in bold', /a coach in bold \("Mike Macdonald"/, (o, g) => { g.preview = '**Drew Lock** goes back to Denver on a short week, where **Mike Macdonald** waits with **C.J. Stroud**.'; }, { schedule: coachSched, coaches: undefined }],
+      ['bold in the sources', /a source is a plain name/, (o, g) => { g.sources = ['**ESPN**', 'Denver Post']; }],
+    ].map(([what, rx, fn, opts]) => { const r = bendB(fn, opts); return !r.fails.length && r.warns.some(m => rx.test(m)) ? null : `${what} (${r.fails.length} failure(s); ${r.warns.join(' | ') || 'no warning'})`; }).filter(Boolean);
+    add('notes-rules', 'bold that breaks a rule warns and never fails: a player plain or partly bold, an unpaired ** or a single *, a pair over 60 or with a space inside, other markdown, a coach in bold (given or on the schedule), bold sources',
+      !BOLDS.length, BOLDS.join(' | ') || 'all ten warn');
+    /* a name is not always the player's: "Bengals owner Mike Brown said" names the owner, though a Mike Brown
+       plays for New England. A plain name straight after a role word is not asked to be bold, the same name
+       elsewhere still is, and the warning says only that the site knows the name as a player's. The rule
+       before it warned on the owner, so --strict refused a correct note or had the writer bold an owner */
+    const PM = { players: [...P, 'Mike Brown'] };
+    const ROLES = ['Bengals owner', 'Bengals head coach', 'Bengals defensive coordinator', 'Bengals GM', 'Bengals general manager', 'team president',
+      'executive', 'chairman', 'senior defensive assistant', 'team doctor', 'co-owner'];
+    const RW = ROLES.map(w => { const r = bendB((o, g) => { g.news = `${w} Mike Brown said the club will not make a trade this week.`; }, PM); return r.fails.length || r.warns.length ? `${w}: ${[...r.fails, ...r.warns].join('; ')}` : null; }).filter(Boolean);
+    const MB = bendB((o, g) => { g.news = 'Mike Brown (ankle) did not practise Wednesday, and Bengals owner Mike Brown said nothing.'; }, PM);
+    const mbOk = !MB.fails.length && MB.warns.length === 1 && /a name the site knows as a player, not in bold \("Mike Brown": if this is the player, write \*\*Mike Brown\*\*\)/.test(MB.warns[0]);
+    add('notes-rules', 'a plain name straight after a role word (owner, coach, coordinator, GM, general manager, president, executive, chairman, assistant, team doctor) is that person, not the player: no warning; the same name elsewhere warns that the site knows it as a player\'s',
+      !RW.length && mbOk, `${RW.length ? `warned: ${RW.join(' | ')}; ` : `${ROLES.length} clean; `}elsewhere: ${[...MB.fails, ...MB.warns].join(' | ') || 'no warning'}`);
+    /* a pair that is no player's, worked out without the schedule's coaches, which a week can find stale: one
+       straight after a role word, and a team (its city, nickname or code, or a run of them). A name the players
+       list lacks is never one by that alone: the list is incomplete (Anton Harrison, Micah Parsons), and a
+       position before a name ("Jets WR", "edge rusher") is not a role */
+    const NONP = [
+      ['an owner in bold', /a coach or other non-player in bold \("Mike Brown", straight after "owner"/, 'Bengals owner **Mike Brown** said the club will not make a trade this week.'],
+      ['a coordinator in bold', /a coach or other non-player in bold \("Vic Fangio", straight after "coordinator"/, 'Eagles defensive coordinator **Vic Fangio** said **Drew Lock** would see pressure.'],
+      ['a general manager in bold', /a coach or other non-player in bold \("John Schneider", straight after "general manager"/, 'Seattle general manager **John Schneider** signed a cornerback on Tuesday.'],
+      ['a nickname in bold', /a team in bold \("Broncos"/, 'The **Broncos** signed a cornerback off the practice squad on Tuesday.'],
+      ['a city in bold', /a team in bold \("Kansas City"/, '**Kansas City** signed a cornerback off the practice squad on Tuesday.'],
+      ['a code in bold', /a team in bold \("DEN"/, '**DEN** signed a cornerback off the practice squad on Tuesday.'],
+      ['a full team name in bold', /a team in bold \("the Denver Broncos"/, '**the Denver Broncos** signed a cornerback off the practice squad on Tuesday.'],
+    ].map(([what, rx, t]) => { const r = bendB((o, g) => { g.news = t; }, PM); return !r.fails.length && r.warns.some(m => rx.test(m)) ? null : `${what} (${r.fails.length} failure(s); ${r.warns.join(' | ') || 'no warning'})`; }).filter(Boolean);
+    const KNOWN = ['Jaguars left tackle **Anton Harrison** went on injured reserve and **Micah Parsons** has not been cleared.', 'Jets WR **Adonai Mitchell** had a procedure, and Bears edge rusher **Montez Sweat** is suspended.',
+      'Falcons coach Kevin Stefanski said **Drew Lock** will start if he has no setbacks.']
+      .map(t => { const r = bendB((o, g) => { g.news = t; }, PM); return r.fails.length || r.warns.length ? `"${t}": ${[...r.fails, ...r.warns].join('; ')}` : null; }).filter(Boolean);
+    add('notes-rules', 'a pair that is no player\'s warns, without the schedule\'s coaches: one straight after a role word, and a team\'s city, nickname or code; a name the players list lacks, after a position or a coach\'s "said", does not',
+      !NONP.length && !KNOWN.length, [NONP.length ? `not warned: ${NONP.join(' | ')}` : 'all seven warn', KNOWN.length ? `warned: ${KNOWN.join(' | ')}` : 'three clean'].join('; '));
+    /* the players list: every group's sidelined in elo/data/players.json, a ranked player out of the rankings
+       (Tyquan Thornton and Edgerrin Cooper on injured reserve) who is kept out of players, as the build keeps him;
+       the reader before it read past[].name, which never carries a name, and missed them. Read from a made-up file */
+    const pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'notes-case-'));
+    let PL = [], PT = null;
+    try {
+      const pf = path.join(pdir, 'players.json');
+      fs.writeFileSync(pf, JSON.stringify({ players: { '00-1': { name: 'Drew Lock', group: 'QB', team: 'SEA' } }, past: { '00-0038575': { s0: 1520, h: [[3, 1520]] } },
+        groups: { WR: { top: [{ id: '00-1', name: 'Drew Lock' }], sidelined: [{ id: '00-0038575', name: 'Tyquan Thornton', team: 'KC', would_rank: 30, why: 'on injured reserve' }] },
+          LB: { sidelined: [{ id: '00-0039850', name: 'Edgerrin Cooper', team: 'GB', would_rank: 7, why: 'on injured reserve' }] }, TE: { sidelined: [] } } }));
+      PL = NOTES.players([pf]);
+      PT = bendB((o, g) => { g.news = '**Drew Lock** said Tyquan Thornton (ankle) went on injured reserve.'; }, { players: PL });
+    } finally { fs.rmSync(pdir, { recursive: true, force: true }); }
+    const side = ['Tyquan Thornton', 'Edgerrin Cooper', 'Drew Lock'].filter(n => !PL.includes(n));
+    add('notes-rules', "the players list reads every group's sidelined in players.json (a ranked player on injured reserve is kept out of players), and a sidelined player left plain warns",
+      !side.length && PT && !PT.fails.length && PT.warns.some(m => /not in bold \("Tyquan Thornton"/.test(m)), `list: ${PL.join(', ') || 'empty'}${side.length ? `; missing ${side.join(', ')}` : ''}; plain: ${PT ? PT.warns.join(' | ') || 'no warning' : 'not run'}`);
+    /* names whole and longest first: "Marvin Harrison Jr." claims its place, so "Marvin Harrison" is not read in it,
+       while a second, plain "Marvin Harrison" is; a hyphen is part of a name */
+    const H = bendB((o, g) => { g.news = 'Marvin Harrison Jr. reunites with **C.J. Stroud**, and Marvin Harrison watched.'; }).warns.find(m => /not in bold/.test(m)) || '';
+    const HB = bendB((o, g) => { g.news = '**Marvin Harrison Jr.** reunites with **C.J. Stroud** in Houston.'; });
+    const HY = bendB((o, g) => { g.news = '**Jaxon Smith-Njigba** was limited on Wednesday.'; });
+    add('notes-rules', 'a name is read whole and longest first: "Marvin Harrison Jr." bold is clean, plain is named once beside a plain "Marvin Harrison", and "Jaxon Smith" is not read in "Jaxon Smith-Njigba"',
+      H.includes('("Marvin Harrison Jr.", "Marvin Harrison":') && !HB.warns.length && !HY.warns.length, `plain: ${H || 'no warning'}; bold: ${HB.warns.join(' | ') || 'clean'}; hyphen: ${HY.warns.join(' | ') || 'clean'}`);
+    /* the lengths count the text without the markers: 196 and 298 pass with the raw text over the limit, 38 and
+       302 warn and say so; filled with one long word so nothing else is read. The markers are counted out here
+       on their own, as the page reads a pair */
+    const fill = (head, n, tail) => head + 'x'.repeat(n - (head + tail).replace(/\*\*([^*]{1,60})\*\*/g, '$1').length) + tail;
+    const LEN = [['preview', 196, false], ['preview', 38, true], ['news', 298, false], ['news', 302, true]].map(([k, n, bad]) => {
+      const t = fill(k === 'preview' ? '**Drew Lock** and **C.J. Stroud** meet ' : '**Kenneth Walker III** and **Josh Allen** ', n, '.');
+      const r = bendB((o, g) => { g[k] = t; }), hit = r.warns.filter(m => / characters \(/.test(m));
+      const ok = !r.fails.length && (bad ? hit.length === 1 && hit[0].includes(`${n} characters`) : !hit.length) && (bad || t.length > (k === 'preview' ? 200 : 300));
+      return ok ? null : `${k} of ${n} (${t.length} with the markers): ${hit.join(' | ') || 'no length warning'}`;
+    }).filter(Boolean);
+    add('notes-rules', 'the lengths count the text without the markers: a preview of 196 and news of 298 pass over the limit with them, 38 and 302 warn',
+      !LEN.length, LEN.join(' | ') || 'all four as they should');
+    /* every other rule reads the text without the markers too */
+    const READ = [
+      ['a sentence after a bold name is a second one', 'preview', 'Seattle come to Denver on a short week. **Drew Lock** has won two straight at home.', /2 sentences/],
+      ['a record split by markers', 'preview', '**Drew Lock** brings a **3**-2 team to Denver after two straight wins over division rivals.', /a record or score typed \("3-2"/],
+      ["a book's name split by markers", 'news', 'Draft**Kings** has Denver at home again on Sunday.', /betting language \(DraftKings/],
+    ].map(([what, k, t, rx]) => { const r = bendB((o, g) => { g[k] = t; }); return !r.fails.length && r.warns.some(m => rx.test(m)) ? null : `${what}: ${r.warns.join(' | ') || 'no warning'}`; }).filter(Boolean);
+    const JR = bendB(o => { o.games[BUF].preview = 'The Bills go to Las Vegas to face a rested pass rush led by **Maxx Crosby Jr.**'; });
+    add('notes-rules', 'every other rule reads the text without the markers: a sentence after a bold name, a record or a book split by markers, and a preview ending in a bold "Jr." ends',
+      !READ.length && !JR.fails.length && !JR.warns.length, [...READ, ...JR.warns].join(' | ') || 'all four');
   }
   return out;
 }

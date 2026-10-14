@@ -489,7 +489,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
    grid gutters, the same row padding, the same 13px display-face matchup and tags, the same
    date block, the same 20px score */
 /* the split bar is back at the betting board's width; the free space goes between the columns, evenly */
-.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(278px,358px) 138px 136px 132px;gap:14px;align-items:center;justify-content:space-between}
+.pk-gamehead,.pk-game{display:grid;grid-template-columns:120px 175px minmax(274px,358px) 138px 136px 136px;gap:14px;align-items:center;justify-content:space-between}
 .pk-gamehead{padding:0 16px 8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .pk-sep{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:22px 4px 10px;padding-top:12px;border-top:1px solid var(--line)}
 .pk-gamehead .pk-c{text-align:center}
@@ -542,6 +542,21 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
 .pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
 .pk-foot a{color:var(--ink-2)}
+/* between the phone card and a wide screen the six columns above need about 1,100px: narrower columns
+   there, the split bar taking what is left, so the board never scrolls sideways (it did from 901 to
+   about 1,100px wide, and the last column ran into the card's padding up to 1,140). The result column
+   holds what the wide screen's does, a live "WAS leading 31–33" (about 134px at 15px), so it is 136px,
+   the split bar giving up the room (at 108px that line ran past the card's edge on game day); and the
+   layout runs to 1,160px, so a classic 15-17px scrollbar never leaves the wide layout short of its room
+   (from 1,141 to 1,156px on Windows its last column ran into the card's padding) */
+@media(min-width:901px) and (max-width:1160px){
+  .pk-gamehead,.pk-game{grid-template-columns:96px 146px minmax(150px,1fr) 104px 112px 136px;gap:10px;justify-content:normal}
+  .pk-gamehead{padding:0 12px 8px}
+  .pk-game{padding:13px 12px}
+  .pk-probrow{padding:0 4px}
+  /* the matchup column names the teams already: the bar takes their labels' room */
+  .pk-probrow .pk-tlab{display:none}
+}
 @media(max-width:900px){
   .pk-gamehead{display:none}
   /* one card per game, laid out the way the Props tab lays its out */
@@ -914,32 +929,40 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 /* first in it, the game's own page on the Props tab */
 #gsModal .gs-propsrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:0 0 18px}
 #gsModal .gs-props{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 16px;font-size:var(--gs-t3);font-weight:600}
-/* the preview: the week's note on the game (or the automatic line), under the kickoff, before the line */
-#gsModal .gs-prev{margin:16px auto 0;max-width:720px;padding:12px 16px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md)}
-#gsModal .gs-pv{margin:0;font-size:var(--gs-t3);color:var(--ink);line-height:1.55}
-#gsModal .gs-pv+.gs-pv{margin-top:8px}
-#gsModal .gs-pv .gs-lab{display:inline;margin-right:8px;color:var(--ink-2)}
-#gsModal .gs-psrc{margin-left:4px;font-size:var(--gs-t2);font-weight:600;color:var(--ink-2)}
-#gsModal .gs-pauto{margin:6px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
-.gs-hero{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:center}
+/* the head: the away team, the middle, the home team (the owner's ask, 14 October 2026: no "at" circle,
+   the AWAY and HOME labels say it). The middle holds the score once there is one, the kickoff and site,
+   and the preview; under 900px the two teams share the top row and the middle goes full width under them */
+.gs-hero{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,2.5fr) minmax(180px,1fr);grid-template-areas:"away mid home";gap:16px 24px;align-items:start}
 .gs-team{min-width:0;display:flex;flex-direction:column;gap:8px}
-.gs-team.gs-home{align-items:flex-end;text-align:right}
-.gs-tname{display:flex;align-items:center;gap:10px;min-width:0}
-.gs-home .gs-tname{flex-direction:row-reverse}
+.gs-team.gs-away{grid-area:away}
+.gs-team.gs-home{grid-area:home;align-items:flex-end;text-align:right}
+.gs-tname{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+/* the tag over the name on every screen: the longest names (Commanders, Buccaneers) did not fit beside it
+   in a 914px window, and one team stacked while the other did not */
+.gs-home .gs-tname{align-items:flex-end}
 .gs-tname .pk-ttag{font-size:var(--gs-t4);padding:7px 10px;border-radius:9px}
-.gs-tname b{font-family:var(--display);font-size:var(--gs-t4);font-weight:600;color:var(--ink);min-width:0;overflow-wrap:anywhere;line-height:1.15}
+.gs-tname b{font-family:var(--display);font-size:var(--gs-t4);font-weight:600;color:var(--ink);min-width:0;overflow-wrap:break-word;line-height:1.15}
 .gs-rec{display:flex;align-items:baseline;gap:4px 8px;flex-wrap:wrap;font-size:var(--gs-t2);color:var(--ink-2)}
 .gs-home .gs-rec{justify-content:flex-end}
 .gs-rec b{font-family:var(--display);font-size:var(--gs-t5);font-weight:700;color:var(--ink)}
 .gs-lost .gs-tname b,.gs-lost .gs-rec b{color:var(--muted)}
-.gs-mid{text-align:center;min-width:64px}
+.gs-mid{grid-area:mid;min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .gs-mid .gs-score{display:block;font-family:var(--display);font-size:var(--gs-t6);font-weight:700;letter-spacing:-.5px;color:var(--ink);white-space:nowrap;line-height:1}
-.gs-mid .gs-at{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);font-family:var(--display);font-size:var(--gs-t2);font-weight:600;color:var(--muted)}
-.gs-mid small{display:block;font-size:var(--gs-t1);font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:6px;white-space:nowrap}
-.gs-when{margin:16px 0 0;font-size:var(--gs-t2);color:var(--ink-2);text-align:center;line-height:1.5}
+.gs-mid .gs-sc{margin-top:26px}
+.gs-mid .gs-sc small{display:block;font-size:var(--gs-t1);font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:6px;white-space:nowrap}
+.gs-when{margin:0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5;text-wrap:balance}
 .gs-when b{color:var(--ink);font-weight:600}
-/* a played game: a slim note under the score, ruled in gold */
-.gs-past{margin:14px auto 0;max-width:640px;padding:4px 0 4px 12px;border-left:3px solid var(--gold);font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
+/* the preview: the week's note on the game (or the automatic line), in the middle under the kickoff */
+#gsModal .gs-prev{align-self:stretch;margin:2px 0 0;padding:12px 16px;text-align:left;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md)}
+#gsModal .gs-pv{margin:0;font-size:var(--gs-t3);color:var(--ink);line-height:1.55}
+#gsModal .gs-pv+.gs-pv{margin-top:8px}
+#gsModal .gs-pv .gs-lab{display:inline;margin-right:8px;color:var(--ink-2)}
+/* a player the note names, bold (the notes mark him **so**; the automatic line bolds each name it lists) */
+#gsModal .gs-prev b.gs-pn{font-weight:700;color:var(--ink)}
+#gsModal .gs-psrc{margin-left:4px;font-size:var(--gs-t2);font-weight:600;color:var(--ink-2)}
+#gsModal .gs-pauto{margin:6px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
+/* a played game: a slim note under the head, ruled in gold */
+.gs-past{margin:18px auto 0;max-width:640px;padding:4px 0 4px 12px;border-left:3px solid var(--gold);font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
 .gs-past b{color:var(--ink)}
 /* the headline: who is favoured and by how much, or who won; the chance and the board's
    confidence beside it, the board's own split bar under it */
@@ -960,7 +983,6 @@ table.pe-tt th.pe-tm{background:var(--panel-2)}
 .gs-tiles>div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;min-width:0}
 .gs-tiles b{display:flex;flex-wrap:wrap;column-gap:6px;font-family:var(--display);font-size:var(--gs-t4);font-weight:700;color:var(--ink);margin:4px 0 0;line-height:1.3}
 .gs-tiles b>span,[data-gs-spread]{white-space:nowrap}
-.gs-src{margin:10px 0 0;font-size:var(--gs-t2);color:var(--muted);line-height:1.5}
 /* at a glance: one line per question, each a button that opens its card */
 .gs-glance{margin:16px -12px 0}
 .gs-gl{display:block;width:100%;min-height:48px;margin:0;padding:0 12px;background:none;border:0;border-radius:var(--r-md);color:inherit;font:inherit;text-align:left;cursor:pointer}
@@ -1049,25 +1071,29 @@ table.gs-vs th.gs-h .gs-thn{flex-direction:row-reverse}
 table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 .gs-lag{color:var(--gold);font-weight:700;margin-left:2px}
 
-/* Overall Offense against Overall Defense, both ways: the overall ratings first, the stats folded */
-.gs-units{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.gs-unit{border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;min-width:0}
-.gs-unit h4{margin:0 0 14px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;font-family:var(--display);font-size:var(--gs-t3);font-weight:600;color:var(--ink)}
-.gs-unit h4 .gs-uedge{font-family:var(--body);font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
-.gs-duel{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center}
-.gs-uside{display:flex;flex-direction:column;gap:6px;min-width:0}
-.gs-uside.gs-ud{align-items:flex-end;text-align:right}
-.gs-vsx{font-size:var(--gs-t1);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.gs-uov.gs-v{flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px;max-width:100%}
-.gs-ud .gs-uov.gs-v{align-items:flex-end}
+/* Overall Offense against Overall Defense, both ways, one possession under the other: its title with the
+   Deep Dive's headline tag at its end, the two ratings in two boxes of one size (the side with the edge
+   tinted, its shape the same), the position matchups under them, the stats behind the ratings folded */
+.gs-units{display:grid;grid-template-columns:minmax(0,1fr);gap:32px}
+.gs-unit{min-width:0}
+.gs-uhd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid var(--line)}
+.gs-uhd h4{margin:0;min-width:0;font-family:var(--display);font-size:var(--gs-t4);font-weight:600;color:var(--ink);line-height:1.25}
+.gs-uhtag{display:inline-flex;align-items:center;gap:8px;font-size:var(--gs-t2);color:var(--ink-2);white-space:nowrap}
+.gs-duel{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:stretch}
+.gs-vsx{align-self:center;font-size:var(--gs-t1);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.gs-ubox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;box-sizing:border-box;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel);text-align:center}
+.gs-ubox.gs-better{background:var(--pick-soft);border-color:transparent}
+/* the label a step darker than the window's other labels: the muted grey is under 4.5:1 on the tint */
+.gs-ubox .gs-lab{color:var(--ink-2)}
 .gs-urank{font-family:var(--display);font-size:var(--gs-t5);font-weight:700;color:var(--ink);line-height:1.1;white-space:nowrap}
-.gs-urank small{font-family:var(--body);font-size:var(--gs-t2);font-weight:600;color:var(--muted)}
-.gs-ush{display:flex;align-items:center;flex-wrap:wrap;gap:2px 5px;font-size:var(--gs-t2);color:var(--ink-2)}
-.gs-ud .gs-ush{justify-content:flex-end}
+.gs-urank small{font-family:var(--body);font-size:var(--gs-t2);font-weight:600;color:var(--ink-2)}
+#gsModal .gs-ubox.gs-better .gs-urank,#gsModal .gs-ubox.gs-better .gs-urank small{color:var(--pick)}
+.gs-ush{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 6px;font-size:var(--gs-t2);color:var(--ink-2)}
 .gs-ush .tierbadge{width:15px;height:17px;flex:none}
 .gs-ush b{font-family:var(--display);font-weight:700;color:var(--ink)}
-.gs-utier{white-space:nowrap}
-.gs-subbody{margin:14px 0 0}
+#gsModal .gs-ubox.gs-better .gs-ush b{color:var(--ink)}
+.gs-utier{white-space:nowrap;color:var(--ink-2)}
+.gs-subbody{margin:16px 0 0}
 #gsModal table.gs-ut{width:100%;table-layout:fixed;background:none;box-shadow:none;border-radius:0;border:0}
 #gsModal table.gs-ut th{background:none;padding:0 4px 8px;border-bottom:1px solid var(--line);font-size:var(--gs-t1)}
 #gsModal table.gs-ut td{padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:var(--gs-t2);color:var(--ink-2)}
@@ -1088,22 +1114,25 @@ table.gs-ut th.gs-uc,table.gs-ut td.gs-uc{text-align:right}
 #gsModal .dtag.even{background:#E9EEF4;color:#4F607A}
 #gsModal .dtag.tough{background:#FBEFD3;color:#7A5205}
 #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}
-#gsModal .gs-uhead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:12px 0 0;font-size:var(--gs-t2);color:var(--ink-2)}
 #gsModal .gs-hpts{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-/* the Deep Dive: four rows a possession, each the offense's unit against the defense's it plays */
-#gsModal .gs-dd{display:block;margin:16px 0 0}
-#gsModal .gs-dd>.gs-lab{margin:0 0 8px}
-#gsModal .gs-dd .dd{border:1px solid var(--line);border-radius:var(--r-md)}
-#gsModal .ddrow{padding:11px 12px;border-top:1px solid var(--line)}
-#gsModal .ddrow:first-child{border-top:0}
-#gsModal .ddtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* the Deep Dive: four rows a possession, each the offense's unit against the defense's it plays: the unit
+   and its tag on one line, then the two sides in two columns of one width, each its own box, headed by
+   its label and rank (on the narrowest screens one over the other, the boxes the same) */
+#gsModal .gs-dd{display:block;margin:22px 0 0}
+#gsModal .gs-dd>.gs-lab{margin:0 0 2px;cursor:help}
+#gsModal .ddrow{padding:14px 0 16px;border-top:1px solid var(--line)}
+#gsModal .ddrow:first-child{border-top:0;padding-top:8px}
+#gsModal .ddtop{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px}
 #gsModal .ddunit{font-family:var(--display);font-size:var(--gs-t3);font-weight:600;color:var(--ink)}
-#gsModal .ddvs{margin-top:4px;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
-#gsModal .ddvs b{font-family:var(--display);font-weight:700;color:var(--ink)}
-#gsModal .ddedge{margin-left:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
-#gsModal .ddsides{display:grid;gap:6px;margin-top:6px}
-#gsModal .ddside{min-width:0}
-#gsModal .ddsl{display:block;font-size:var(--gs-t1);font-weight:700;letter-spacing:.07em;color:var(--ink-2)}
+#gsModal .ddtg{display:inline-flex;align-items:center;gap:10px}
+#gsModal .ddedge{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+#gsModal .ddsides{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:10px;align-items:stretch}
+#gsModal .ddside{min-width:0;box-sizing:border-box;padding:10px 14px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--panel-2)}
+#gsModal .ddsl{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 4px;margin:0 0 4px;font-size:var(--gs-t2);font-weight:600;color:var(--ink);line-height:1.5}
+#gsModal .ddsl:last-child{margin-bottom:0}
+#gsModal .ddsn{color:var(--ink)}
+#gsModal .ddsep{color:var(--ink-2)}
+#gsModal .ddrk{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 #gsModal .ddwho{font-size:var(--gs-t2);color:var(--ink);line-height:1.5;overflow-wrap:anywhere}
 #gsModal .ddout{position:relative;margin-top:2px;padding-left:12px;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
 #gsModal .ddout::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--miss)}
@@ -1203,15 +1232,13 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 .gs-scale{display:flex;flex-wrap:wrap;gap:6px 16px;margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2)}
 .gs-scale>span{display:inline-flex;align-items:center;gap:6px}
 
-/* the files and the full tabs */
-.gs-files{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:var(--gs-t2);color:var(--ink-2);margin:0 0 4px}
-.gs-files b{color:var(--ink);font-weight:600}
-.gs-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.gs-links .btn{min-height:44px}
-
 @media(max-width:899px){
   .gs-pair{display:block}
-  .gs-units{grid-template-columns:1fr}
+  /* the head stacked: the two teams side by side on the top row, the middle (score, kickoff, preview)
+     full width under them. Three columns left the middle 231-369px wide from 761 to 899px (238 at an
+     iPad's 768, its preview a ribbon of sixteen lines); the phone's smaller sizes stay at 760px */
+  .gs-hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"away home" "mid mid"}
+  .gs-mid .gs-sc{margin-top:2px}
   .gs-gli{grid-template-columns:152px minmax(0,1fr) 18px;grid-template-areas:"lab gv go" "lab gc go"}
   .gs-gli>.gs-lab{align-self:start;padding-top:4px}
 }
@@ -1221,15 +1248,11 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-top{border-radius:0;padding:0 12px}
   .gs-body{padding:12px 12px 0}
   #gsModal .gs-verdict.card{padding:16px 14px 6px}
-  .gs-hero{gap:8px}
-  .gs-tname{flex-direction:column;align-items:flex-start;gap:6px}
-  .gs-home .gs-tname{flex-direction:column;align-items:flex-end}
+  .gs-hero{gap:14px 10px}
   .gs-tname .pk-ttag{font-size:var(--gs-t3);padding:6px 9px}
   .gs-tname b{font-size:var(--gs-t3)}
   .gs-team{gap:4px}
-  .gs-mid{min-width:0}
-  .gs-mid .gs-at{width:34px;height:34px}
-  .gs-when{margin-top:12px}
+  .gs-mid{gap:8px}
   .gs-fav{padding:14px 12px;margin-top:14px}
   .gs-favt{display:block;text-wrap:balance}
   .gs-favt .pk-ttag{margin-right:4px;vertical-align:3px}
@@ -1258,12 +1281,13 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   #gsModal table.gs-vs .gs-mlab{width:32%;letter-spacing:.03em}
   table.gs-vs th .gs-thn{font-size:var(--gs-t2)}
   table.gs-vs th .gs-tnm{display:none}
-  .gs-unit{padding:12px 10px}
+  .gs-units{gap:28px}
+  .gs-uhd h4{font-size:var(--gs-t3)}
   #gsModal .gs-sbar{grid-template-columns:58px minmax(0,1fr) 58px;gap:8px}
   #gsModal .gs-steams .gs-tnm{display:none}
   #gsModal .gs-prev{padding:10px 12px}
-  .gs-duel{gap:6px}
-  .gs-uov.gs-v{padding:6px 8px}
+  .gs-duel{gap:8px}
+  .gs-ubox{padding:12px 8px}
   #gsModal table.gs-ut td,#gsModal table.gs-ut th{padding-left:2px;padding-right:2px}
   /* a phone: each stat's rank over its value, so the stat's name keeps its line */
   .gs-sv.gs-v{flex-direction:column;align-items:flex-end;gap:0;padding:3px 7px;line-height:1.25}
@@ -1287,7 +1311,6 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
 /* the narrowest phones: 'Commanders', the longest name, whole at 360px */
 @media(max-width:400px){
   .gs-tname b{font-size:var(--gs-t2)}
-  .gs-uov.gs-v{padding:5px 6px}
   .gs-urank{font-size:var(--gs-t4)}
   .gs-mini .gs-mline,.gs-mini .gs-msep{display:none}
   .gs-ptabs button{padding:0 4px}
@@ -1295,6 +1318,11 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-tiles{grid-template-columns:minmax(0,1.12fr) minmax(0,.76fr) minmax(0,1.12fr)}
   .gs-tiles>div{padding:8px 7px}
   .gs-tiles .gs-lab{letter-spacing:.04em}
+}
+/* a matchup's two sides one over the other where two columns would leave each too narrow for its names */
+@media(max-width:560px){
+  #gsModal .ddsides{grid-template-columns:minmax(0,1fr);gap:8px}
+  #gsModal .ddside{padding:10px 12px}
 }
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
@@ -5111,7 +5139,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='9fd48ce';
+const PAGE_HASH='480dcf0';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -7383,6 +7411,13 @@ boot();
    side, with the same weights, so they are drawn here as the right-hand side of the line's and the
    receivers' rows. The rows overlap and are never added up.
 
+   A row is drawn as the unit and its tag (the edge small beside it) on one line, then two equal
+   columns, the offense's side and the defense's, each headed by its own label and rank ("SEA pass
+   protection · 15th" | "DEN pass rush · 2nd") with its names, who is out and its numbers under it;
+   the quarterback's and the run game's defense side is the pass or run defense's rank alone (it is
+   rated as a defense, with no single unit's names). The owner's ask of 14 October 2026: the two
+   sides of a meeting the same size, side by side.
+
    The headline tag is the one the tracker put over its rows: this team's Overall Offense against the
    opponent's Overall Defense (elo/data/model.json `units`, which the card already shows), the gap read
    as points (meta.tags.headline: slope x (off.raw - def.raw)), Favorable from 0.9645, Easy from 2.8935. */
@@ -7467,13 +7502,13 @@ boot();
       const u = U[key], v = faced(O, dk), t = rowTag(D, off, def, key);
       rows.push({ key, tag: t.tag, cls: t.cls, edge: t.edge });
       const why = t.edge == null ? '' : ` title="Edge ${sd(t.edge)}: ${esc(off)}'s ${mine} rating minus ${esc(def)}'s ${theirs}, in league standard deviations. The tag weighs it by ${t.w} (${sd(t.w * t.edge)}), by how much this matchup alone has predicted points; the rows overlap, so they are not to be added up"`;
-      const vs = `<div class="ddvs">${esc(off)} ${mine} <b>${u && u.rank != null ? ord(u.rank) : '–'}</b> vs ${esc(def)} ${theirs} <b>${v && v.rank != null ? ord(v.rank) : '–'}</b>${t.edge == null ? '' : `<span class="ddedge">edge ${sd(t.edge)}</span>`}</div>`;
+      /* each side's heading: the club, what it is rated as and its rank */
+      const head = (club, words, x) => `<div class="ddsl"><span class="ddsn">${esc(club)} ${words}</span><span class="ddsep" aria-hidden="true"> · </span><b class="ddrk">${x && x.rank != null ? ord(x.rank) : '–'}</b></div>`;
       /* the defense's side has names and numbers of its own only where it is a unit (pass rush, coverage) */
       const theirSide = dk === 'front' || dk === 'db' ? side(O[dk], false) : '';
       return `<div class="ddrow" data-dd="${key}" data-dd-off="${esc(off)}" data-dd-def="${esc(def)}">
-        <div class="ddtop"><span class="ddunit">${label}</span><span class="dtag ${t.cls}"${why}>${t.tag}</span></div>
-        ${vs}
-        <div class="ddsides"><div class="ddside ddoff"><span class="ddsl">${esc(off)}</span>${side(u, key === 'qb') || '<div class="ddnote">No names in the file.</div>'}</div>${theirSide ? `<div class="ddside dddef"><span class="ddsl">${esc(def)}</span>${theirSide}</div>` : ''}</div>
+        <div class="ddtop"><span class="ddunit">${label}</span><span class="ddtg">${t.edge == null ? '' : `<span class="ddedge">edge ${sd(t.edge)}</span>`}<span class="dtag ${t.cls}"${why}>${t.tag}</span></span></div>
+        <div class="ddsides"><div class="ddside ddoff">${head(off, mine, u)}${side(u, key === 'qb') || '<div class="ddnote">No names in the file.</div>'}</div><div class="ddside dddef">${head(def, theirs, v)}${theirSide}</div></div>
       </div>`;
     }).join('');
     return { html: `<div class="dd" data-dd-pos="${esc(off)}-${esc(def)}">${html}</div>`, rows };
@@ -7485,11 +7520,11 @@ boot();
     const H = meta && meta.tags && meta.tags.headline;
     if (!H || !offUnit || !defUnit || !isFinite(offUnit.raw) || !isFinite(defUnit.raw)) return null;
     const pts = H.slope * (offUnit.raw - defUnit.raw), [cls, tag] = tagOf(pts, H.fav, H.easy);
-    return { cls, tag, pts, text: `about ${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} pts`,
+    return { cls, tag, pts, text: `${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} pts`,
       title: `Overall Offense minus Overall Defense on the raw scale, about ${(pts >= 0 ? '+' : '−') + Math.abs(pts).toFixed(1)} points a game to this offense at ${H.slope} points a unit (fitted on ${H.fit || '2012-2017'}): Favorable from about ${(+H.fav).toFixed(1)}, Easy from about ${(+H.easy).toFixed(1)}` };
   }
 
-  /* what the rows rest on, said once under them */
+  /* what the rows rest on: the title of the snapshot's "Position matchups" label (escaped text, no markup) */
   function basis(D, a, h) {
     if (!D) return '';
     const U = D.units || {}, g = n => `${n} game${n === 1 ? '' : 's'}`, ua = U[club(a)], uh = U[club(h)];
@@ -7521,8 +7556,6 @@ const tierName=e=>{ const t=e!=null&&window.pkEloTier?window.pkEloTier(e):null; 
 const teamName=t=>(typeof TEAM_NAMES==='object'&&TEAM_NAMES&&TEAM_NAMES[t])||t;
 const stamp=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s);
   return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); };
-const stampShort=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s);
-  return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
 /* a day the news job writes as a date alone (2026-10-14), or a time as stamp() reads one */
 const day0=s=>{ if(!s) return ''; if(/^\d{4}-\d{2}-\d{2}$/.test(String(s))){ const d=new Date(s+'T12:00:00Z');
   return isNaN(d)?'':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}); } return stamp(s); };
@@ -7593,7 +7626,7 @@ let cur=null, opener=null;
 /* which cards and folds are open, and which Starters tab is chosen, as the visitor leaves them
    while the window is open; nothing of it is saved. On a wide screen Every call and Team strength
    open, the rest folded; on a phone every card folded (the verdict is always shown) */
-const CARDS=['gsCalls','gsTeams','gsUnits','gsStats','gsMism','gsPos','gsFiles'], WIDE_OPEN=['gsCalls','gsTeams'];
+const CARDS=['gsCalls','gsTeams','gsStats','gsUnits','gsMism','gsPos'], WIDE_OPEN=['gsCalls','gsTeams'];
 let OPEN={}, PTAB='off';
 const phone=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:760px)').matches); }catch(e){ return false; } };
 const gameOf=gid=>{ const P=B(); return P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched.find(x=>x.game_id===gid)||null:null; };
@@ -7628,12 +7661,12 @@ function recordOf(P,M,t){
 function lineOf(P,g){
   const c=P.call(g), odds=(P.ST.odds||{})[g.game_id]||null, a=g.away_team, h=g.home_team;
   const sp=g.spread_line!=null&&isFinite(g.spread_line)?+g.spread_line:null;
-  let tot=g.total_line!=null&&isFinite(g.total_line)?+g.total_line:null, totSrc='nflverse';
-  if(tot==null&&typeof S==='object'&&S&&Array.isArray(S.sched)){ const row=S.sched.find(x=>x.id===g.game_id); if(row&&row.tot!=null&&isFinite(row.tot)){ tot=+row.tot; totSrc='the prop model\'s book pull'; } }
+  let tot=g.total_line!=null&&isFinite(g.total_line)?+g.total_line:null;
+  if(tot==null&&typeof S==='object'&&S&&Array.isArray(S.sched)){ const row=S.sched.find(x=>x.id===g.game_id); if(row&&row.tot!=null&&isFinite(row.tot)) tot=+row.tot; }
   const spTxt=sp==null?null:sp>0?`${h} −${sp}`:sp<0?`${a} −${-sp}`:'Pick\'em';
   const spSide=sp==null||sp===0?null:sp>0?h:a;
   const mlA=odds?ml(odds.away):null, mlH=odds?ml(odds.home):null;
-  return {c,sp,spTxt,spSide,tot,totSrc,mlA,mlH};
+  return {c,sp,spTxt,spSide,tot,mlA,mlH};
 }
 /* every model's call: the graded call once the job has graded the game (as the Pick'em Record
    grades it), the call frozen at kickoff once it has started, the latest published one before */
@@ -7718,15 +7751,23 @@ const UNIT_NAME={DL:'Pass rush and run front',LB:'Linebackers',DB:'Secondary'};
 const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; const order=Object.keys(defs).sort((x,y)=>defs[y][u]-defs[x][u]); return order.indexOf(t)+1; };
 
 /* ---- the preview: the week's note on the game, or an automatic line until it is written ---- */
-/* the starters out on the Deep Dive's file, both teams, each once ("Name (SEA QB)"), where the file is
-   for this game's week; null where it is not, or has not answered */
+/* a note's text as the page shows it: escaped first, then each player it marks, **Pat Surtain II** (one
+   to sixty characters, no * inside), in bold; an unpaired ** stays as text */
+const PN=/\*\*([^*]{1,60})\*\*/g;
+function noteHtml(s){
+  let out='', i=0, m; PN.lastIndex=0;
+  while((m=PN.exec(s))){ out+=esc(s.slice(i,m.index))+`<b class="gs-pn">${esc(m[1])}</b>`; i=m.index+m[0].length; }
+  return out+esc(s.slice(i));
+}
+/* the starters out on the Deep Dive's file, both teams, each once ("Name (SEA QB)", the name bold), where
+   the file is for this game's week; null where it is not, or has not answered */
 function startersOut(P,g){
   const dd=DD(), D=ddFor(P,g);
   if(!D) return null;
   const out=[];
   for(const t of [g.away_team,g.home_team]){ const u=D.units[dd.club(t)], seen=new Set(); if(!u) continue;
     for(const k of ['qb','ol','rb','rec','front','db']) for(const x of (isObj(u[k])&&Array.isArray(u[k].out)?u[k].out:[])){
-      if(!x||!x.n) continue; const id=x.id||x.n; if(seen.has(id)) continue; seen.add(id); out.push(`${x.n} (${t}${x.pos?' '+x.pos:''})`); } }
+      if(!x||!x.n) continue; const id=x.id||x.n; if(seen.has(id)) continue; seen.add(id); out.push(`<b class="gs-pn">${esc(x.n)}</b> (${esc(t)}${x.pos?' '+esc(x.pos):''})`); } }
   return out;
 }
 function preview(P,g,F,st){
@@ -7736,7 +7777,7 @@ function preview(P,g,F,st){
     /* once the game has started, the note is dated as written before kickoff: its words on the teams'
        form were true then, and the records above are as they stand now */
     const lab=st.started?`Preview, written ${dayOnly(n.written)?dayOnly(n.written)+', ':''}before kickoff`:'Preview';
-    return `<div class="gs-prev" data-gs-note="written"><p class="gs-pv"><span class="gs-lab">${esc(lab)}</span><span data-gs-preview>${esc(n.preview)}</span>${n.news?'':src}</p>${n.news?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>${esc(n.news)}</span>${src}</p>`:''}</div>`;
+    return `<div class="gs-prev" data-gs-note="written"><p class="gs-pv"><span class="gs-lab">${esc(lab)}</span><span data-gs-preview>${noteHtml(n.preview)}</span>${n.news?'':src}</p>${n.news?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>${noteHtml(n.news)}</span>${src}</p>`:''}</div>`;
   }
   /* no note: an automatic line, once the week's file has answered, and only for a game still to come
      (a played game says what happened above, and an automatic preview of it would read wrong) */
@@ -7749,7 +7790,7 @@ function preview(P,g,F,st){
     ? `${cap(who(a))} (<span data-gs-prec="${esc(a)}">${r(a)}</span>) play ${who(h)} (<span data-gs-prec="${esc(h)}">${r(h)}</span>)${g.stadium?' at '+esc(g.stadium):''}${when}.`
     : `${cap(who(a))} (<span data-gs-prec="${esc(a)}">${r(a)}</span>) visit ${who(h)} (<span data-gs-prec="${esc(h)}">${r(h)}</span>)${when}.`;
   const outs=startersOut(P,g);
-  const news=outs&&outs.length?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>Out: ${esc(outs.slice(0,6).join(', '))}${outs.length>6?` and ${outs.length-6} more`:''}.</span></p>`:'';
+  const news=outs&&outs.length?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>Out: ${outs.slice(0,6).join(', ')}${outs.length>6?` and ${outs.length-6} more`:''}.</span></p>`:'';
   return `<div class="gs-prev" data-gs-note="auto"><p class="gs-pv"><span class="gs-lab">Preview</span><span data-gs-preview>${line}</span></p>${news}<p class="gs-pauto">An automatic line until this game's preview is written.</p></div>`;
 }
 
@@ -7757,14 +7798,15 @@ function preview(P,g,F,st){
 function matchup(P,g,F){
   const st=standing(P,g), M=F&&F.model, [day,time]=P.fmtDate(g), neu=P.neutral(g), a=g.away_team, h=g.home_team;
   const o=st.o, win=st.fin?o.winner:null;
+  /* each team: its label, name and record, the regular season's alone (3-2), the playoffs' beside it
+     once there are any; where the Elo file has counted a final the results have not, the record is the
+     file's, and its title says so */
   const team=(t,cls)=>{ const r=recordOf(P,M,t), po=r.po[0]+r.po[1]+r.po[2];
     const res=win?(win===t?' gs-won':' gs-lost'):'';
     return `<div class="gs-team ${cls}${res}"><span class="gs-lab">${cls==='gs-away'?'Away':(neu?'Home (listed)':'Home')}</span>
       <div class="gs-tname">${tg(t)}<b>${esc(teamName(t))}</b></div>
-      <div class="gs-rec"><b data-gs-rec="${esc(t)}">${wl(r.reg)}</b><span>${+g.week>18?'regular season':'this season'}${r.fromFile?' (the Elo file\'s count)':''}</span>${po?`<span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
-  const mid=o
-    ? `<span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small>`
-    : `<span class="gs-at">${neu?'vs':'at'}</span>`;
+      <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?` <span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
+  const score=o?`<div class="gs-sc"><span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small></div>`:'';
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
   const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups, units and stats are the files as they stand now, after the game.</p>`:'';
   /* first in the window, the game's own page on the Props tab, where its game bets and every player
@@ -7797,11 +7839,6 @@ function matchup(P,g,F){
     ${tile('Spread',L.spTxt?esc(L.spTxt):null,' data-gs-spread')}
     ${tile('Total',L.tot!=null?String(L.tot):null,' data-gs-total')}
     ${tile('Moneyline',L.mlA&&L.mlH?`<span>${esc(a)} ${L.mlA}</span><span class="gs-mdot"> · </span><span>${esc(h)} ${L.mlH}</span>`:null,' data-gs-ml')}</div>`;
-  /* the sources of the line and the chance, said once under the tiles */
-  const src=[L.spTxt&&L.tot!=null&&L.totSrc==='nflverse'?'Spread and total: nflverse'
-      :[L.spTxt?'Spread: nflverse':'No spread posted',L.tot!=null?(L.totSrc==='nflverse'?'Total: nflverse':'Total: '+esc(L.totSrc)):'no total posted'].join(' · '),
-    L.mlA&&L.mlH?'Moneylines: closing':'no moneylines posted',
-    c?`Chance: ${L.mlA&&L.mlH?'the moneylines, the book\'s margin out':'from the spread, no moneyline posted'}`:''].filter(Boolean).join(' · ');
   /* the answers at a glance; each line stands alone, so one that fails says so and the rest draw.
      Each is a button that opens its card and brings it into view */
   const line=(key,lab,to,f)=>{ let v,cx; try{ [v,cx]=f(); }catch(e){ v='<span class="gs-load">could not be drawn</span>'; cx=esc(e&&e.message||e); }
@@ -7838,7 +7875,8 @@ function matchup(P,g,F){
       else if(p1.edge==='off'&&p2.edge==='off') v='<span>Both offenses rank higher</span>';
       else if(p1.edge==='def'&&p2.edge==='def') v='<span>Both defenses rank higher</span>';
       else v='<span>Even</span>';
-      const mu=(o,d,p)=>`<span class="gs-mu">${esc(o)} offense ${V(N('urank:off:'+o,ordinal(p.vo.rank)),p.edge==='off')} vs ${esc(d)} defense ${V(N('urank:def:'+d,ordinal(p.vd.rank)),p.edge==='def')}</span>`;
+      /* each side's label and its rank pill kept together (at about 900-930px a pill was left alone on a line) */
+      const mu=(o,d,p)=>`<span class="gs-mu"><span class="gs-nw">${esc(o)} offense ${V(N('urank:off:'+o,ordinal(p.vo.rank)),p.edge==='off')}</span> vs <span class="gs-nw">${esc(d)} defense ${V(N('urank:def:'+d,ordinal(p.vd.rank)),p.edge==='def')}</span></span>`;
       return [v,mu(a,h,p1)+mu(h,a,p2)]; })}
     ${line('out','Who\'s out','gsPos',()=>{ if(!F) return loading; const Pl=F.players, mu=F.mu;
       if(!Pl||!Pl.groups) return ['<span class="gs-load">Not loaded</span>','The player ratings did not load.'];
@@ -7858,9 +7896,8 @@ function matchup(P,g,F){
       return [v,cx]; })}
   </div>`;
   let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
-  return `<section class="card gs-sec gs-verdict" id="gsMatch">${props}<div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${mid}</div>${team(h,'gs-home')}</div>
-    <p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>${past}${prev}
-    <div class="gs-fav">${fav}${tiles}<p class="gs-src">${src}</p></div>${glance}</section>`;
+  return `<section class="card gs-sec gs-verdict" id="gsMatch">${props}<div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${score}<p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>${prev}</div>${team(h,'gs-home')}</div>${past}
+    <div class="gs-fav">${fav}${tiles}</div>${glance}</section>`;
 }
 /* the game in one line, for the header once the verdict's line has scrolled away (the verdict
    says it all, so this is hidden from a screen reader) */
@@ -7961,7 +7998,10 @@ function deepDive(P,g,o,d){
     return why(`The Deep Dive's matchups are for ${of}: ${later?'this game\'s come with its week':'this game\'s week has gone, and its matchups with it'}.`); }
   const x=dd.possession(D,o,d);
   if(!x) return why(`The Deep Dive has no matchups for ${esc(!D.units[dd.club(o)]?o:d)}.`);
-  return `<div class="gs-dd"><span class="gs-lab">Deep Dive: position by position</span>${x.html}</div>`;
+  /* what the rows rest on (deepdive.js basis: escaped text, no markup) and when the news job built them,
+     said on hover over the label rather than under the rows */
+  const built=stamp(D.built_at||(D.meta&&D.meta.built_at));
+  return `<div class="gs-dd"><span class="gs-lab" data-gs-basis title="${dd.basis(D,g.away_team,g.home_team)}${built?` Built ${esc(built)} by the news job.`:''}">Position matchups</span>${x.html}</div>`;
 }
 function unitsSec(P,g,F){
   const T0='Offense vs defense', a=g.away_team, h=g.home_team;
@@ -7973,19 +8013,23 @@ function unitsSec(P,g,F){
   const keys=[...new Set(all.filter(s=>s.weight&&s.side==='off').map(s=>s.key).concat(all.filter(s=>s.weight&&s.side==='def').map(s=>s.key)))];
   const meta=(side,k)=>all.find(s=>s.side===side&&s.key===k)||null;
   const n=s=>Object.keys(U[s]||{}).length;
+  /* what a box's rating is, said on hover (the note that sat under the card until 14 October 2026) */
+  const why=s=>`Overall ${s==='off'?'Offense':'Defense'}, ranked among the league's ${n(s)}: this season's key stats, opponents and home field counted${C?`, each team starting the season from ${C.c} of its final rating in ${C.from} (one with no game yet is shown on that, marked carried)`:''}. 1st is the best on that side of the ball, and the better rank of the two has the edge.`;
+  /* the two boxes of one meeting, one size and one shape: the label, the rank, the shield, Elo and tier,
+     and carried where so; the better rank's box tinted */
   const ov=(t,s,b)=>{ const v=U[s]&&U[s][t], lab=`<span class="gs-lab">${esc(t)} ${s==='off'?'offense':'defense'}</span>`;
-    if(!v) return `<div class="gs-uside${s==='def'?' gs-ud':''}">${lab}<span class="gs-msg">no rating for ${esc(t)}</span></div>`;
-    return `<div class="gs-uside${s==='def'?' gs-ud':''}" data-gs-unit="${s}:${esc(t)}">${lab}<span class="gs-uov gs-v${b?' gs-better':''}"><span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n(s)}</small></span>
-      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':v.carried&&C?`<span class="gs-tiern" data-gs-carried title="No game yet this season: ${esc(C.c)} of its final rating in ${esc(C.from)}">carried from ${esc(C.from)}</span>`:'<span class="gs-tiern">no game yet</span>'}</span></div>`; };
+    if(!v) return `<div class="gs-ubox">${lab}<span class="gs-msg">no rating for ${esc(t)}</span></div>`;
+    return `<div class="gs-ubox${b?' gs-better':''}" data-gs-unit="${s}:${esc(t)}" title="${esc(why(s))}">${lab}<span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n(s)}</small></span>
+      <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':v.carried&&C?`<span class="gs-tiern" data-gs-carried title="No game yet this season: ${esc(C.c)} of its final rating in ${esc(C.from)}">carried from ${esc(C.from)}</span>`:'<span class="gs-tiern">no game yet</span>'}</div>`; };
   const pair=(o,d,id)=>{
-    let edge='', duel='', head='', stats='';
+    let duel='', head='', stats='';
     if(U){ const p=possession(U,o,d), vo=U.off[o], vd=U.def[d];
-      edge=!p?'':p.team?`<span class="gs-uedge">edge ${V(`${tg(p.team,true)} ${p.edge==='off'?'offense':'defense'}`,true)}</span>`:'<span class="gs-uedge">even</span>';
       duel=`<div class="gs-duel">${ov(o,'off',p&&p.edge==='off')}<span class="gs-vsx" aria-hidden="true">vs</span>${ov(d,'def',p&&p.edge==='def')}</div>`;
       /* the Deep Dive's headline tag on the gap between the two, read as points (deepdive.js headTag,
-         on the constants news/data/units.json carries) */
+         on the constants news/data/units.json carries), at the end of the possession's title line; its
+         title says what it is */
       const ht=dd&&D&&vo&&vd?dd.headTag(D.meta,vo,vd):null;
-      if(ht) head=`<div class="gs-uhead" data-gs-head="${esc(o)}-${esc(d)}"><span class="dtag ${esc(ht.cls)}" title="${esc(ht.title)}">${esc(ht.tag)}</span><span class="gs-hpts">${esc(ht.text)}</span></div>`;
+      if(ht) head=`<span class="gs-uhtag" data-gs-head="${esc(o)}-${esc(d)}"><span class="dtag ${esc(ht.cls)}" title="${esc(ht.title)}">${esc(ht.tag)}</span><span class="gs-hpts">${esc(ht.text)}</span></span>`;
       const rows=keys.map(k=>{ const mo=meta('off',k), md=meta('def',k), so=vo&&vo.stats&&vo.stats[k]||{}, sd=vd&&vd.stats&&vd.stats[k]||{};
         const b=so.rank!=null&&sd.rank!=null&&so.rank!==sd.rank?(so.rank<sd.rank?'off':'def'):null;
         const sv=(side,t,m,e)=>`<td class="gs-uc"><span class="gs-sv gs-v${b===side?' gs-better':''}" data-gs-stat="${side}:${esc(t)}:${esc(k)}"${m?` title="${esc(m.label)}"`:''}><b data-gs-sr>${e.rank!=null?ordinal(e.rank):''}</b><small data-gs-sv>${m?fmtStat(e.v,m.fmt):'–'}</small></span></td>`;
@@ -7993,17 +8037,15 @@ function unitsSec(P,g,F){
         return `<tr><td class="gs-ulab">${esc(lab)}${sub?`<small>${esc(sub)}</small>`:''}</td>${sv('off',o,mo,so)}${sv('def',d,md,sd)}</tr>`; }).join('');
       stats=`<div class="gs-subbody" id="${id}"${OPEN.gsUStats?'':' hidden'}><table class="gs-ut" aria-label="${esc(o)} offense against ${esc(d)} defense, the stats"><thead><tr><th class="gs-ulab"><span class="gs-sr">Stat</span></th><th class="gs-uc">${esc(o)} offense</th><th class="gs-uc">${esc(d)} defense</th></tr></thead>
       <tbody>${rows}</tbody></table></div>`; }
-    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><h4>${hasBall(o)} ${edge}</h4>${duel}${head}${deepDive(P,g,o,d)}${stats}</div>`; };
+    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${hasBall(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d)}${stats}</div>`; };
   const p1=U?possession(U,a,h):null, p2=U?possession(U,h,a):null;
   const sum=!U?(!F?'loading…':!X?'did not load':'not yet')
     :p1&&p2?`<span class="gs-nw">${esc(a)} O ${N('urank:off:'+a,ordinal(p1.vo.rank))} v ${esc(h)} D ${N('urank:def:'+h,ordinal(p1.vd.rank))}</span> · <span class="gs-nw">${esc(h)} O ${N('urank:off:'+h,ordinal(p2.vo.rank))} v ${esc(a)} D ${N('urank:def:'+a,ordinal(p2.vd.rank))}</span>`:'a unit has no rating';
   const so=!!OPEN.gsUStats;
-  /* the Deep Dive's basis, under the rows, where they are drawn */
-  const ddOn=!!ddFor(P,g);
+  /* no note under the card (the owner's call, 14 October 2026): what the ratings and the rows rest on is
+     the boxes' title and the matchups' label's; the stats' own row labels say which side of each it is */
   return fold('gsUnits',T0,sum,`${eloWhy?`<p class="gs-msg" style="margin:0 0 12px">${eloWhy}</p>`:''}<div class="gs-units">${pair(a,h,'gsUStatsA')}${pair(h,a,'gsUStatsH')}</div>
-    ${U?`<button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>`:''}
-    ${U?`<p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted${C?`, each team starting the season from ${esc(C.c)} of its final rating in ${esc(C.from)} (one with no game yet is shown on that, marked carried)`:''}; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.${D&&dd?' The tag beside each meeting is the Deep Dive\'s: the gap read as points a game to that offense.':''}</p>`:''}
-    ${ddOn?`<p class="gs-note">The Deep Dive: ${dd.basis(D,a,h)} Built ${esc(stamp(D.built_at||(D.meta&&D.meta.built_at)))} by the news job.</p>`:''}`);
+    ${U?`<button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH" title="The stats the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>`:''}`);
 }
 
 /* ---- the stat breakdown: the season's eleven team stats side by side (news/data/stats.json) ---- */
@@ -8152,29 +8194,6 @@ function mismatchSec(P,g,F){
     `<span class="gs-badge" data-gs-badge="mism">${R.mine.length} in this game</span>`);
 }
 
-/* ---- the files, and the full tabs ---- */
-function filesSec(P,g,F){
-  const st=P.ST.state||{}, bits=[], short=[];
-  if(st.published){ bits.push(`Results and calls <b>${esc(stamp(st.published))}</b>`); short.push(`<span class="gs-nw">results ${esc(stampShort(st.published))}</span>`); }
-  if(F&&F.model&&F.model.built_at){ bits.push(`Elo ratings <b>${esc(stamp(F.model.built_at))}</b>`); short.push(`<span class="gs-nw">Elo ${esc(stampShort(F.model.built_at))}</span>`); }
-  if(F&&F.mu&&F.mu.built_at) bits.push(`Lineups and matchups <b>${esc(stamp(F.mu.built_at))}</b>`);
-  /* the news job's files, as this window read them */
-  const U0=NEWS.units&&NEWS.units.data, S0=NEWS.stats&&NEWS.stats.data, nrec=NEWS[`notes:${seasonOf(P,g)}-${+g.week}`], N0=nrec&&nrec.data;
-  const ub=U0&&(U0.built_at||(U0.meta&&U0.meta.built_at));
-  if(ub) bits.push(`<span data-gs-news-at="units">Deep Dive <b>${esc(day0(ub))}</b></span>`);
-  if(S0&&S0.asof) bits.push(`<span data-gs-news-at="stats">Stat breakdown <b>${esc(day0(S0.asof))}</b></span>`);
-  if(N0&&N0.written) bits.push(`<span data-gs-news-at="notes">Week ${esc(+g.week)} preview and news <b>${esc(day0(N0.written))}</b></span>`);
-  /* a file still being read is said to be loading; only one read with nothing to show did not load */
-  const nst=[['the Deep Dive',NEWS.units],['the stat breakdown',NEWS.stats]].map(([n,r])=>[n,!r||!r.done?'loading':r.data?'':'failed']);
-  const said=k=>{ const xs=nst.filter(x=>x[1]===k).map(x=>x[0]); return xs.length?`${and(xs)} ${k==='failed'?'did not load':(xs.length>1?'are':'is')+' still loading'}`:''; };
-  const notIn=[said('failed'),said('loading')].filter(Boolean).join('; ');
-  const row=typeof S==='object'&&S&&Array.isArray(S.sched)?S.sched.find(x=>x.id===g.game_id):null;
-  return fold('gsFiles','Sources',short.length?'Published '+short.join(' · '):'when each file was published',
-    `<div class="gs-files" id="gsStamps">${bits.length?bits.map(b=>`<span>${b}</span>`).join(''):'<span>The files have no publish times.</span>'}</div>
-    <p class="gs-note">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups, and the news job's <code>news/data/</code> for the preview and news (written each week), the Deep Dive and the stat breakdown${notIn?` (<span data-gs-news-state>${notIn}</span>)`:''}. The full tables:</p>
-    <div class="gs-links"><button type="button" class="btn quiet" data-gs-go="ratings">Team Rankings</button><button type="button" class="btn quiet" data-gs-go="elo">ELO Ratings</button><button type="button" class="btn quiet" data-gs-go="slate">${row?'Props for this game':'Props'}</button><button type="button" class="btn quiet" data-gs-go="record">Pick'em Record</button></div>`);
-}
-
 function draw(gid){
   const P=B(), g=gameOf(gid), F=LOADED, view=$('gsView'); if(!P||!g||!view) return;
   $('gsTitle').innerHTML=`<span class="gs-tm">${tg(g.away_team,true)}<span>${P.neutral(g)?'vs':'at'}</span>${tg(g.home_team,true)}</span><span class="gs-tsub">Game snapshot · ${esc(P.weekName(+g.week))}</span>`;
@@ -8187,8 +8206,8 @@ function draw(gid){
   view.innerHTML=part(matchup,'gsMatch','The matchup')
     +`<div class="gs-dbar"><span class="gs-lab">The details</span><button type="button" class="btn quiet" data-gs-all="${allOpen?'close':'open'}">${allOpen?'Close all':'Open all'}</button></div>`
     +`<div class="gs-pair">${part(callsSec,'gsCalls','Every call')}${part(teamElo,'gsTeams','Team strength')}</div>`
-    +part(unitsSec,'gsUnits','Offense vs defense')+part(statsSec,'gsStats','Stat breakdown')+part(mismatchSec,'gsMism','Mismatches')
-    +part(positions,'gsPos','Starters')+part(filesSec,'gsFiles','Sources');
+    +part(statsSec,'gsStats','Stat breakdown')+part(unitsSec,'gsUnits','Offense vs defense')+part(mismatchSec,'gsMism','Mismatches')
+    +part(positions,'gsPos','Starters');
   if(!$('peDefs')&&window.pkTierDefs){ const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box); }
   stuck();
 }
@@ -8196,7 +8215,7 @@ function draw(gid){
    is found again by its key and focused, Close where it has gone (the focus is never left on the page's
    body); and the first block at or below the header stays where it was on the screen, so a block drawn
    in above it (the props button, the preview, the Deep Dive's rows) does not move what is being read */
-const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab','gsGo'];
+const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab'];
 const ANCHORS='#gsView>section,#gsView>.gs-dbar,#gsView .gs-pair>section,#gsMatch>*,#gsView .gs-gl,#gsView .gs-secbody>*,#gsView .gs-unit,#gsView .gs-unit>*';
 /* the blocks the place is kept by, in the page's order, each under a key that names it again after a
    redraw: its id, its first data-gs- or data-dd- attribute, else its class in the block around it; then
@@ -8277,7 +8296,6 @@ function wire(){
     const sb=t.closest('[data-gs-sub]'); if(sb){ setSub(sb,sb.getAttribute('aria-expanded')!=='true'); return; }
     const tb=t.closest('[data-gs-tab]'); if(tb){ pickTab(tb.dataset.gsTab,false); return; }
     const gl=t.closest('[data-gs-goto]'); if(gl){ goCard(gl.dataset.gsGoto); return; }
-    const go=t.closest('[data-gs-go]'); if(go){ goTo(go.dataset.gsGo); return; }
     /* the game's own page on the Props tab: the window closes and the board opens it (pkBoard) */
     const pp=t.closest('[data-gs-props]'); if(pp){ const id=pp.dataset.gsProps, P=B(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(id); }
   });
@@ -8324,19 +8342,6 @@ function close(restore=true){
   const back=opener&&opener.isConnected?opener:[...document.querySelectorAll('.pk-game[data-game]')].find(b=>b.dataset.game===gid);
   opener=null;
   try{ if(back) back.focus(); }catch(e){}
-}
-/* a link to a full tab: the window closes and the tab opens (Props on this game, where the prop
-   model has it and its week is open) */
-function goTo(tab){
-  const gid=cur; close(false);
-  const btn=[...document.querySelectorAll('#tabs button')].find(b=>b.dataset.tab===tab); if(btn) btn.click();
-  if(tab==='slate'&&typeof S==='object'&&S&&Array.isArray(S.sched)&&S.ui&&typeof renderGame==='function'){
-    const row=S.sched.find(x=>x.id===gid);
-    if(row&&(typeof weekOpen!=='function'||weekOpen(+row.w))){
-      const sel=$('weekSel'); if(sel&&[...sel.options].some(o=>+o.value===+row.w)&&+sel.value!==+row.w){ sel.value=String(row.w); sel.dispatchEvent(new Event('change')); }
-      S.ui.game=row.id; S.ui.open={}; if(typeof save==='function') save(); renderGame(); }
-  }
-  try{ window.scrollTo(0,0); }catch(e){}
 }
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;

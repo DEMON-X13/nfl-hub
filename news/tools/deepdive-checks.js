@@ -14,7 +14,8 @@
      headline  the Overall line's tag: this team's Overall Offense against the opponent's Overall Defense
                (elo/data/model.json `units`, as the ELO Ratings tab and the snapshot show them), tagged by
                points = 11.9126 x (off.raw - def.raw) at 0.9645 and 2.8935 points, those points shown
-               beside it and in the tag's title, signed, to a tenth; none when either side has no rating.
+               beside it ("-0.9 pts") and in the tag's title ("about -0.9 points"), signed, to a tenth;
+               none when either side has no rating.
    The constants are elo/tools/deepdive_vs_units.py's (it prints them and says whether context.js
    carries them).                                                                                    */
 'use strict';
@@ -47,17 +48,23 @@ function headlineWant(off, def) {
 }
 
 /* one possession's html as deepdive.js possession() writes it: the block's teams (data-dd-pos) and each
-   row's key, its tags, the two ranks its .ddvs line shows and the edge beside them */
+   row's key, its tags, the edge in its top line, and its two sides in the order drawn (ddoff, dddef), each
+   with the label and the rank its heading shows; ranks are the two sides' ranks in that order */
 function parse(html) {
   const parts = String(html || '').split('class="ddrow"'), pre = parts[0];
   const pos = /data-dd-pos="([^"]*)"/.exec(pre);
   const rows = parts.slice(1).map(seg => {
     const key = /^\s*data-dd="([^"]*)"/.exec(seg), tags = [...seg.matchAll(/class="dtag [a-z]+"[^>]*>([^<]*)</g)].map(m => m[1]);
-    const vs = /class="ddvs">([\s\S]*?)<\/div>/.exec(seg), edge = vs && /class="ddedge">([^<]*)</.exec(vs[1]);
-    return { key: key ? key[1] : null, tags, tag: tags.length ? tags[0] : null,
-      ranks: vs ? [...vs[1].matchAll(/<b>([^<]*)<\/b>/g)].map(m => m[1]) : [], edge: edge ? edge[1].trim() : null };
+    const top = /class="ddtop">([\s\S]*?)<div class="ddsides">/.exec(seg), edge = top && /class="ddedge">([^<]*)</.exec(top[1]);
+    const sides = seg.split('class="ddside ').slice(1).map(x => {
+      const lab = /^[a-z]+"><div class="ddsl"><span class="ddsn">([^<]*)<\/span>/.exec(x), rk = [...x.matchAll(/<b class="ddrk">([^<]*)<\/b>/g)];
+      return { side: (/^([a-z]+)"/.exec(x) || [])[1] || null, label: lab ? lab[1] : null, ranks: rk.map(m => m[1]) };
+    });
+    return { key: key ? key[1] : null, tags, tag: tags.length ? tags[0] : null, sides,
+      ranks: sides.map(x => x.ranks.length === 1 ? x.ranks[0] : `${x.ranks.length} ranks`), edge: edge ? edge[1].trim() : null,
+      edges: (seg.match(/class="ddedge"/g) || []).length };
   });
-  return { pos: pos ? pos[1] : null, rows, tags: rows.map(r => r.tag), preHasVsB: /class="ddvs"[\s\S]*?<b>/.test(pre) };
+  return { pos: pos ? pos[1] : null, rows, tags: rows.map(r => r.tag), preHasRank: /class="ddrk"|class="ddedge"/.test(pre) };
 }
 
 /* the tag constants the file carries, against this file's own */
@@ -72,12 +79,14 @@ function checkMeta(META) {
 }
 
 /* one possession as drawn (off with the ball against def; A and O their units) against the rules, from the
-   data it was drawn from: its four rows in order, each with one tag, the weighted edge's, and the ranks
-   and edge it shows the file's */
+   data it was drawn from: its four rows in order, each with one tag, the weighted edge's, its two sides
+   the offense's then the defense's, each headed by its own club and its rank the file's, and the edge in
+   the row's top line the file's */
+const ESC = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function checkPossession(html, off, def, A, O) {
   const P = parse(html), f = [], at = `${off} v ${def}`;
   if (P.pos !== `${off}-${def}`) f.push(`${at}: the block is for ${P.pos} (want ${off}-${def})`);
-  if (P.preHasVsB) f.push(`${at}: a .ddvs rank before the first row`);
+  if (P.preHasRank) f.push(`${at}: a rank or an edge before the first row`);
   if (P.rows.map(r => r.key).join('|') !== KEYS.join('|')) return [...f, `${at}: rows ${P.rows.map(r => r.key).join(',') || 'none'} (want ${KEYS.join(',')})`];
   const multi = P.rows.filter(r => r.tags.length !== 1).map(r => `${r.key} ${r.tags.length}`);
   if (multi.length) f.push(`${at}: rows with other than one tag: ${multi.join(', ')}`);
@@ -86,9 +95,11 @@ function checkPossession(html, off, def, A, O) {
   KEYS.forEach((u, i) => {
     const mine = A[u], theirs = faced(O, ROWS[i][1]), r = P.rows[i];
     const ranks = [mine, theirs].map(x => x && x.rank != null ? ord(x.rank) : '–');
+    if (r.sides.map(x => x.side).join('|') !== 'ddoff|dddef') f.push(`${at} ${u}: sides ${r.sides.map(x => x.side).join(',') || 'none'} (want the offense's, then the defense's)`);
+    else if (!r.sides.every((x, j) => x.label && x.label.startsWith(ESC([off, def][j]) + ' '))) f.push(`${at} ${u}: sides headed '${r.sides.map(x => x.label).join("' | '")}' (want ${off}'s, then ${def}'s)`);
     if (r.ranks.join('|') !== ranks.join('|')) f.push(`${at} ${u}: ranks ${r.ranks.join(' vs ')} (want ${ranks.join(' vs ')})`);
     const edge = mine && theirs && isFinite(mine.z) && isFinite(theirs.z) ? `edge ${signed(mine.z - theirs.z)}` : null;
-    if (r.edge !== edge) f.push(`${at} ${u}: "${r.edge}" (want ${edge ? `"${edge}"` : 'no edge'})`);
+    if (r.edge !== edge || r.edges > (edge ? 1 : 0)) f.push(`${at} ${u}: "${r.edge}"${r.edges > 1 ? ` and ${r.edges - 1} more` : ''} (want ${edge ? `"${edge}"` : 'no edge'})`);
   });
   return f;
 }
@@ -103,7 +114,7 @@ function checkHead(tag, offUnit, defUnit, META, at = 'headline') {
   if (tag.tag !== W.tag) f.push(`${at} tag ${tag.tag} (want ${W.tag}, ${W.pts.toFixed(2)} points)`);
   if (!isFinite(tag.pts) || Math.abs(tag.pts - W.pts) > 1e-6) f.push(`${at} points ${tag.pts} (want ${W.pts})`);
   /* the points shown beside it and in the tag's title: the gap read as points, to a tenth, signed */
-  if (tag.text !== `about ${sp} pts`) f.push(`${at} points shown "${tag.text}" (want "about ${sp} pts")`);
+  if (tag.text !== `${sp} pts`) f.push(`${at} points shown "${tag.text}" (want "${sp} pts")`);
   if (!tag.title || !tag.title.includes(`about ${sp} points`)) f.push(`${at} tag's title "${tag.title}" does not give about ${sp} points`);
   return f;
 }
