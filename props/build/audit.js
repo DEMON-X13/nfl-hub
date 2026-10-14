@@ -1774,8 +1774,9 @@ setTimeout(async()=>{
       d.querySelector('[data-game="'+g.id+'"]').click();
       chk([...d.querySelectorAll('.gsugg-tier')][1].querySelectorAll('input[data-leg]:checked').length===3,'the Medium legs on the parlay are not ticked');
       S.parlay=keepP; F('save')(); d.querySelector('[data-game="'+g.id+'"]').click(); }
-    /* the game bets open under each game on the Pick'ems tab; a game page here is its players */
-    chk(!!d.querySelector('#gameView .gsugg')&&!d.querySelector('#gameView .gbets'),'the game page still carries the Game bets card');
+    /* the game bets are on the game's page (app v105), after its suggested parlays */
+    { const gs=d.querySelector('#gameView .gsugg'), gb=d.querySelector('#gameView .gbets');
+      chk(!!gs&&!!gb&&d.querySelectorAll('#gameView .gbets').length===1&&!!(gs.compareDocumentPosition(gb)&4),'the game page does not carry the Game bets card once, after its suggested parlays'); }
     /* the parlay card prints a leg's fields as text: markup planted in the shared store never becomes an element */
     if(T.med&&T.med.legs.length){ const keepP=JSON.parse(JSON.stringify(S.parlay||{})), keepB=S.bookPrice, bad='<img src=x data-planted=1>';
       const l0=T.med.legs[0]; S.parlay={}; S.parlay[l0.key]=Object.assign({},l0,{pos:bad,team:bad,opp:bad,week:bad});
