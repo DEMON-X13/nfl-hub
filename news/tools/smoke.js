@@ -9,12 +9,12 @@
        against ../elo/data/model.json, X NFL Bets' own file (tools/deepdive-checks.js);
      - every game of the units' week drawn both ways by deepdive.js possession(): the four rows in order,
        each tag the weighted edge worked out on its own, each row's two sides the offense's then the
-       defense's, each headed by its own club, the ranks and edge shown the file's; what the rows rest on,
+       defense's, each its own club, the ranks and edge shown the file's, and no name, no one out and no
+       number in a row (the owner's call, 14 October 2026: a row is its unit, the clubs and ranks and its
+       tag; who plays is the snapshot's Starters card's); what the rows rest on,
        deepdive.js basis() (the snapshot's "Position matchups" label's title), naming each side with its
        own count of this season's games; and the Overall
        line's tag, deepdive.js headTag() on model.json's units, against the rule (tools/deepdive-checks.js);
-     - who the drawn rows name: a starter out named, a quarterback in doubt with the next one named, nobody
-       both listed and out (warnings);
      - the Deep Dive's lineups against the nflverse injury report, roster and schedule they were built from
        (tools/lineup-checks.js; the build's own snapshot in tools/.cache when it matches, a fresh download
        otherwise), and to the week the schedule says is current;
@@ -40,9 +40,9 @@ const OFFLINE = process.env.NEWS_SMOKE_OFFLINE === '1';
 let failed = 0;
 const check = (label, ok, detail) => { console.log((ok ? 'ok   ' : 'FAIL ') + label + (detail !== undefined ? '  (' + detail + ')' : '')); if (!ok) failed++; };
 const skip = (label, why) => console.log('SKIP ' + label + '  (' + why + ')');
-/* Warnings: who the Deep Dive lists and what its notes say (the lineup rules against the injury report,
-   roster and ESPN's list, a starter out named, a quarterback in doubt with the next one named, nobody
-   both listed and out) and the hand-written game notes, every problem in them, their shape included.
+/* Warnings: who the Deep Dive's file lists (the lineup rules against the injury report, roster and
+   ESPN's list, nobody both listed and out) and the hand-written game notes, every problem in them, their
+   shape included.
    Each is presentation on the week's own data: it prints WARN, never fails the smoke, and is written to
    SMOKE_WARNINGS_FILE when set, which the job reads after its commit to go red, so a lineup case no rule
    has seen, or a note that breaks a rule, never holds back the week's scores, stats and Deep Dive.
@@ -130,15 +130,13 @@ async function run() {
   /* every game of the week as the Game snapshot draws it, both ways: the four rows, their tags, ranks and
      edges, and the Overall line's tag on model.json's units */
   const sides = games.flatMap(([a, h]) => [[a, h], [h, a]]);
-  const drawn = {};
   { const bad = [];
     for (const [off, def] of sides) {
       let r = null; try { r = DD.possession(D, off, def); } catch (e) { bad.push(`${off} v ${def}: threw ${e.message}`); continue; }
       if (!r) { bad.push(`${off} v ${def}: no units for one side`); continue; }
-      drawn[off + '-' + def] = r.html;
       bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)]));
     }
-    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, the ranks and edges the file\'s', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
+    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, the ranks and edges the file\'s, no name or number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions`); }
   /* what the rows rest on (deepdive.js basis(), the title of the snapshot's "Position matchups" label): each
      side named with its own count of this season's games,
      the file's g26, worked out here, and a club with no count given none. On every game of the week, and on a
@@ -170,34 +168,6 @@ async function run() {
     });
     check(`the Overall line's tag on every possession is the rule's, on model.json's units (built ${M.built_at}, ${M.units.season})`, bad.length === 0, brief(bad) || `${sides.length} possessions`);
   }
-
-  /* who the drawn rows name: every unit missing a starter says so (the defense's pass rush and coverage on its
-     side of the line's and the receivers' rows), the quarterback row names who starts, and one in doubt has
-     the next one named (this file's own words for where he comes from) */
-  { const NF = { chart: 'next on the chart', roster: 'next on the roster', usage: "next by this season's dropbacks" };
-    const sideOf = (html, key) => { const seg = (html.split(`class="ddrow" data-dd="${key}"`)[1] || '').split('class="ddrow"')[0]; const [o, d] = seg.split('class="ddside dddef"'); return { off: o || '', def: d || '' }; };
-    const miss = [], qbMiss = []; let outs = 0, doubt = 0;
-    for (const [off, def] of sides) {
-      const html = drawn[off + '-' + def]; if (!html) continue;
-      const A = U[DD.club(off)], O = U[DD.club(def)];
-      /* [the unit, the row it is drawn in, which side of that row] */
-      for (const [unit, key, part, who] of [[A.qb, 'qb', 'off', off], [A.ol, 'ol', 'off', off], [A.rb, 'rb', 'off', off], [A.rec, 'rec', 'off', off], [O.front, 'ol', 'def', def], [O.db, 'rec', 'def', def]])
-        if ((unit.out || []).length && ++outs && !sideOf(html, key)[part].includes('class="ddout"')) miss.push(`${who} ${part === 'def' ? (key === 'ol' ? 'front' : 'db') : key}`);
-      const q = A.qb;
-      if ((q.out || []).length && (q.who || []).length && !sideOf(html, 'qb').off.includes(DD.esc(q.who[0].n) + ' starts;')) miss.push(`${off} qb starter`);
-      if ((q.who || []).length && (q.next || q.next_none) && ++doubt && !sideOf(html, 'qb').off.includes(q.next ? `${NF[q.next.from] || NF.chart}: ${DD.esc(q.next.n)}` : DD.esc(q.next_none))) qbMiss.push(off);
-    }
-    warn('a starter who is out is named in his row, on every game of the week', miss.length === 0, miss.join(', ') || `${outs} unit(s) with someone out, each named`);
-    warn('a quarterback in doubt names the next one, on every game of the week', qbMiss.length === 0, qbMiss.join(',') || `${doubt} quarterback(s) in doubt, each with the next one`); }
-  /* the quarterback row on made-up states: a backup from the roster says so, and no backup is said, not left blank */
-  { const [off, def] = sides[0] || ['ARI', 'LA'], X = JSON.parse(JSON.stringify(D)), q = X.units[DD.club(off)].qb;
-    q.who = [{ n: 'Zed Quux', pos: 'QB', q: 'questionable: ankle' }]; q.next = { n: 'Quin Zorb', pos: 'QB', from: 'roster' }; delete q.next_none; delete q.out;
-    const a = DD.possession(X, off, def).html.split('class="ddrow"')[1];
-    q.next = null; q.next_none = 'no other quarterback on the roster can play (Quin Zorb is out (knee))';
-    const b = DD.possession(X, off, def).html.split('class="ddrow"')[1];
-    check('the quarterback row says where the next one comes from, or that none can play',
-      a.includes('Zed Quux may not start (questionable: ankle); next on the roster: Quin Zorb.') && b.includes('Zed Quux may not start (questionable: ankle); no other quarterback on the roster can play (Quin Zorb is out (knee)).'),
-      a.match(/may not start[^<]*/) + ' | ' + b.match(/may not start[^<]*/)); }
 
   /* ---- the retired page's address: on the web and from disk alike it sends the visitor to X NFL Bets and
      Stats (location.replace, so Back does not loop), with a link for a browser without scripts, never a

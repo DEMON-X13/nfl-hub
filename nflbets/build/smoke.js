@@ -374,7 +374,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, box = pd.createElement('div');
         box.id = 'gsModal'; box.innerHTML = '<div class="gs-prev"><p class="gs-pv"><span class="gs-lab">Preview</span><span>x <b class="gs-pn">Name</b></span></p><p class="gs-pauto">x</p></div>'
           + ['easy', 'fav', 'even', 'tough', 'vtough'].map(c => `<span class="dtag ${c}">x</span>`).join('')
-          + '<div class="ddside ddoff"><div class="ddsl"><span class="ddsn">SEA pass protection</span><span class="ddsep"> · </span><b class="ddrk">15th</b></div><div class="ddwho">x</div><div class="ddout">x</div><div class="ddnum">x</div></div>'
+          + '<div class="dd"><div class="ddrow"><span class="ddunit">Offensive line</span><span class="ddrks"><span class="ddside ddoff"><span class="ddsn">SEA</span> <b class="ddrk">15th</b></span><span class="ddsep"> · </span><span class="ddside dddef"><span class="ddsn">DEN</span> <b class="ddrk">2nd</b></span></span><span class="dtag even">Even</span></div></div>'
           + '<div class="gs-ubox gs-better"><span class="gs-lab">SEA offense</span><span class="gs-urank"><span>13th</span> <small>of 32</small></span><span class="gs-ush"><b>1521</b><span class="gs-utier">Gold</span></span></div>';
         pd.body.appendChild(box);
         const clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)', 'initial'].includes(String(v || '').trim());
@@ -390,9 +390,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const pv = box.querySelector('.gs-prev'), pbg = val(pv, 'background-color');
         for (const el of [box.querySelector('.gs-pv'), box.querySelector('.gs-pv .gs-lab'), box.querySelector('.gs-pv b.gs-pn'), box.querySelector('.gs-pauto')]) { const r = ratio(pbg, val(el, 'color'));
           if (!(r >= 4.5)) bad.push(`the preview's ${el.className || el.tagName} reads ${r.toFixed(2)}:1 (${pbg} under ${val(el, 'color')})`); }
-        { const sd = box.querySelector('.ddside'), sbg = val(sd, 'background-color');
-          for (const el of [sd.querySelector('.ddsn'), sd.querySelector('.ddsep'), sd.querySelector('.ddrk'), sd.querySelector('.ddwho'), sd.querySelector('.ddout'), sd.querySelector('.ddnum')]) { const r = ratio(sbg, val(el, 'color'));
-            if (!(r >= 4.5)) bad.push(`a matchup side's ${el.className} reads ${r.toFixed(2)}:1 (${sbg} under ${val(el, 'color')})`); } }
+        /* a position matchup's row has no box of its own since 14 October 2026: its words on the card, both
+           of the colours a card runs between (the preview's cards are a gradient of the two) */
+        { const rw = box.querySelector('.ddrow'), card = ['--panel', '--panel-2'].map(k => String(pw.getComputedStyle(pd.documentElement).getPropertyValue(k) || '').trim());
+          for (const cbg of card) for (const el of [rw.querySelector('.ddunit'), rw.querySelector('.ddsn'), rw.querySelector('.ddsep'), rw.querySelector('.ddrk')]) { const r = ratio(cbg, val(el, 'color'));
+            if (!(r >= 4.5)) bad.push(`a matchup row's ${el.className} reads ${r.toFixed(2)}:1 (${cbg} under ${val(el, 'color')})`); } }
         { const ub = box.querySelector('.gs-ubox.gs-better'), card = String(pw.getComputedStyle(pd.documentElement).getPropertyValue('--panel-2') || '').trim(), ubg = over(val(ub, 'background-color'), card);
           for (const el of [ub.querySelector('.gs-lab'), ub.querySelector('.gs-urank'), ub.querySelector('.gs-urank small'), ub.querySelector('.gs-ush b'), ub.querySelector('.gs-utier')]) { const r = ratio(ubg, val(el, 'color'));
             if (!(r >= 4.5)) bad.push(`the better rank's box: its ${el.className || el.tagName} reads ${r.toFixed(2)}:1 (${ubg} under ${val(el, 'color')})`); } }
@@ -1901,11 +1903,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    The verdict is held as a visitor reads it: the headline (the Vegas favourite's nickname and the
    spread it is favoured by, or once played the winner and whether it was an upset, the line under
    it) and the confidence pill, which must be the board's own for that game; the model vote, Vegas
-   kept apart (how many of the three models agree with it, the dissenters named, the same count in
-   Every call's summary); the played-game note under the score; the header's one-line game bar;
-   each answer line a button that opens its card. The cards fold (Every call and Team strength
+   kept apart (how many of the three models agree with it, the dissenters named); the played-game
+   note under the score; the header's one-line game bar;
+   each answer line a button that opens its card. The cards fold (Model Picks and Team strength
    open on a wide screen, every card folded on a phone) and every number in a folded card, a folded
-   fold (the stats behind the units) or a Starters tab not shown is still the file's; the Starters
+   or a Starters tab not shown is still the file's; the Starters
    tabs (Offense, Defense, Kicker) hold every group in its tab, move on the arrow keys and keep the
    choice; the edge mark sits on the higher season Elo of each pair of starters and the better unit
    rank in each defensive group's header, nowhere else, and on the verdict's Team Elo and Offense vs
@@ -1923,9 +1925,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    game), never "this season"; no line names the sources of the
    spread, total and moneylines; Offense vs defense has no note under it, what its ratings rest on
    being the duel boxes' title, its two boxes of a meeting one class and one shape (the better rank's
-   tinted, no edge chip; the rules give them one size); the cards run Every call, Team strength,
+   tinted, no edge chip; the rules give them one size); the cards run Model Picks, Team strength,
    Stat breakdown, Offense vs defense, Mismatches, Starters; and there is no Sources card, no
-   publish times and no links away from the window.
+   publish times and no links away from the window. And the owner's trim of the same day: the
+   first card is titled Model Picks; it, Team strength and Offense vs defense carry no summary in
+   their title and no note under them (Team strength's star note alone, where a rating predates a
+   final), Team strength has no Tier row; each possession is titled "<Nickname> Possession", centred
+   (the rules), with no stats fold under it; and the Starters card's two teams sit under its tabs,
+   directly over the table.
    ===================================================================================== */
 async function snapshotChecks() {
   /* st is the state the page was booted on: the published one, but for the made-up graded wild-card
@@ -1956,8 +1963,6 @@ async function snapshotChecks() {
   const tRank = t => Object.entries(eloM.teams || {}).sort((a, b) => b[1].elo - a[1].elo).findIndex(([k]) => k === t) + 1;
   const im = x => x < 0 ? -x / (-x + 100) : 100 / (x + 100);
   const unitsOn = !!(eloM.units && eloM.units.off && Object.values(eloM.units.off).some(v => v.games || v.carried));
-  /* a stat as the ELO Ratings tab prints it */
-  const fmtStat = (v, f) => v == null ? '–' : f === 'pct' ? (v * 100).toFixed(1) + '%' : f === 'epa' ? (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(3) : f === 'f2' ? v.toFixed(2) : v.toFixed(1);
   /* every model's call on a game, from the files: the graded one, else the one published */
   const callsOf = g => { const pr = st.processed[g.game_id], ak = (st.atKickoff || {})[g.game_id];
     const one = x => x && x.pick ? { pick: x.pick, p: x.pHome == null ? null : (x.pick === g.home_team ? +x.pHome : 1 - x.pHome), correct: x.correct } : null;
@@ -2144,10 +2149,10 @@ async function snapshotChecks() {
       const put = (k, v, must = true) => { want[k] = v; if (must) need.add(k); };
       if (mods.length) put('vote', base ? `${mods.length - dis.length} of ${mods.length}` : `${nA}–${nH}`);
       if (win !== undefined && calls.length) put('votehit', `${calls.filter(x => (x.correct === true || x.correct === false ? x.correct : (win ? x.pick === win : null)) === true).length} of ${calls.length}`);
-      /* the models that do not agree, by name, and the vote shown twice (the verdict and Every call's summary) */
+      /* the models that do not agree, by name, and the vote in the verdict (Model Picks has no summary) */
       { const got = [...md.querySelectorAll('#gsMatch [data-gs-dissent]')].map(x => x.dataset.gsDissent).join();
         if (base && mods.length && got !== dis.join()) bad.push(`the dissenters read '${got}', the files '${dis.join()}'`);
-        if (mods.length && md.querySelectorAll('[data-gs-n="vote"]').length < 2) bad.push('the vote is not in both the verdict and Every call\'s summary'); }
+        if (mods.length && !md.querySelector('#gsMatch [data-gs-n="vote"]')) bad.push('the vote is not in the verdict'); }
       if (C.vegas && C.vegas.p != null) { const pH = C.vegas.pick === h ? C.vegas.p : 1 - C.vegas.p, pa = Math.round((1 - pH) * 100);
         put('vconf', pc(C.vegas.p)); put('vaway', pa + '%', pa >= 14); put('vhome', (100 - pa) + '%', 100 - pa >= 14); }
       if (eloM.teams && eloM.teams[a] && eloM.teams[h]) { const ea = eloM.teams[a].elo, eh = eloM.teams[h].elo, hi = eh > ea ? h : ea > eh ? a : null;
@@ -2179,21 +2184,34 @@ async function snapshotChecks() {
         const T = eloM.teams, rows = { elo: t => T[t].elo, rank: t => -tRank(t), avg: t => T[t].p_avg };
         for (const [key, f] of Object.entries(rows)) { const va = f(a), vh = f(h), best = va == null || vh == null || va === vh ? null : va > vh ? a : h;
           for (const [t, cls] of [[a, 'gs-a'], [h, 'gs-h']]) if (mark(q(`tr[data-gs-row="${key}"] td.${cls}`)) !== (best === t)) bad.push(`Team strength ${key}: ${t} is${best === t ? ' not' : ''} marked`); }
-        for (const key of ['tier', 'chg']) if (mark(q(`tr[data-gs-row="${key}"]`))) bad.push(`Team strength ${key} is marked`); }
-      if (unitsOn) { const U = eloM.units, all = U.stats || [];
-        const keys = [...new Set(all.filter(s => s.weight && s.side === 'off').map(s => s.key).concat(all.filter(s => s.weight && s.side === 'def').map(s => s.key)))];
-        for (const [o, d] of [[a, h], [h, a]]) {
+        if (mark(q('tr[data-gs-row="chg"]'))) bad.push('Team strength chg is marked');
+        if (q('tr[data-gs-row="tier"]') || [...md.querySelectorAll('#gsTeams .gs-mlab')].some(x => /^Tier$/i.test(txt(x)))) bad.push('Team strength still has a Tier row'); }
+      if (unitsOn) { const U = eloM.units;
+        for (const [o, d] of [[a, h], [h, a]])
           if (U.off[o] && U.def[d]) { const ro = U.off[o].rank, rd = U.def[d].rank, best = ro === rd ? null : ro < rd ? 'off' : 'def';
-            for (const [s, t] of [['off', o], ['def', d]]) if (mark(q(`[data-gs-unit="${s}:${t}"]`)) !== (best === s)) bad.push(`${s}:${t} overall is${best === s ? ' not' : ''} marked`); }
-          for (const k of keys) {
-            const cells = [['off', o], ['def', d]].map(([s, t]) => ({ s, t, el: q(`[data-gs-stat="${s}:${t}:${k}"]`), m: all.find(x => x.side === s && x.key === k), e: ((U[s][t] || {}).stats || {})[k] || {} }));
-            for (const c of cells) {
-              if (!c.el) { bad.push(`${c.s}:${c.t}:${k} is not shown`); continue; }
-              const v = c.m ? fmtStat(c.e.v, c.m.fmt) : '–', r = c.e.rank != null ? ordinal(c.e.rank) : '';
-              if (txt(c.el.querySelector('[data-gs-sv]')) !== v || txt(c.el.querySelector('[data-gs-sr]')) !== r) bad.push(`${c.s}:${c.t}:${k} reads ${txt(c.el)}, the file ${v} ${r}`); }
-            const [co, cd] = cells, best = co.e.rank != null && cd.e.rank != null && co.e.rank !== cd.e.rank ? (co.e.rank < cd.e.rank ? co : cd) : null;
-            for (const c of cells) if (c.el && mark(c.el) !== (c === best)) bad.push(`${c.s}:${c.t}:${k} is${c === best ? ' not' : ''} marked`); } } }
-      chk(bad.length === 0, `snapshot (${label}): an edge mark or a stat of Offense vs defense is not the files': ${bad.slice(0, 5).join('; ')}`); }
+            for (const [s, t] of [['off', o], ['def', d]]) if (mark(q(`[data-gs-unit="${s}:${t}"]`)) !== (best === s)) bad.push(`${s}:${t} overall is${best === s ? ' not' : ''} marked`); } }
+      /* the stats behind the ratings are the Stat breakdown's now (the owner's call, 14 October 2026): no
+         stats table and no fold for one under the possessions */
+      if (q('#gsUnits [data-gs-stat]') || q('#gsUnits [data-gs-sub]') || q('#gsUnits .gs-more') || q('#gsUnits table')) bad.push('Offense vs defense still draws the stats behind the ratings, or a fold for them');
+      chk(bad.length === 0, `snapshot (${label}): an edge mark of Offense vs defense or Team strength is not the files', or a stat is still drawn under the units: ${bad.slice(0, 5).join('; ')}`); }
+
+    /* the owner's trim of 14 October 2026: Model Picks so titled; it, Team strength and Offense vs defense
+       with no summary in their title and no note under them (Team strength's star note alone, where a
+       rating predates its team's latest final); each possession "<Nickname> Possession", its headline tag
+       under the title; the Starters card's two teams directly under its tabs, over the first table */
+    { const bad = [], NAMES = R.w.eval('TEAM_NAMES'), nick = t => NAMES[t] || t;
+      if (txt(q('#gsCalls .gs-ttl')) !== 'Model Picks') bad.push(`the first card is titled '${txt(q('#gsCalls .gs-ttl'))}'`);
+      for (const id of ['gsCalls', 'gsTeams', 'gsUnits']) if (q(`#${id} .gs-sum`)) bad.push(`${id} still has a summary: '${txt(q(`#${id} .gs-sum`))}'`);
+      if (q('#gsCalls .gs-note') || /frozen at kickoff|Each bar leans|Vegas is the board's baseline/.test(txt(q('#gsCalls')))) bad.push('Model Picks still has its note');
+      const tn = [...md.querySelectorAll('#gsTeams .gs-note')];
+      if (tn.some(x => !/^\* Rated before its latest game/.test(txt(x))) || /Power Ratings are this season's results alone|Ratings built/.test(txt(q('#gsTeams')))) bad.push('Team strength still has its note');
+      if (q('#gsUnits .gs-note')) bad.push('Offense vs defense has a note');
+      const h4 = [...md.querySelectorAll('#gsUnits .gs-unit > .gs-uhd > h4')].map(txt).join('|'), hw = [a, h].map(t => `${nick(t)} Possession`).join('|');
+      if (h4 !== hw) bad.push(`the possessions are titled '${h4}', not '${hw}'`);
+      if (/have the ball|has the ball/.test(txt(q('#gsUnits')))) bad.push('a possession is still titled "When ... have the ball"');
+      const tl = q('#gsPos [role="tablist"]'), pt = q('#gsPos .gs-pteams');
+      if (tl && (!pt || pt.previousElementSibling !== tl || !pt.nextElementSibling || pt.nextElementSibling.getAttribute('role') !== 'tabpanel')) bad.push('the Starters card\'s two teams are not directly under its tabs, over the table');
+      chk(bad.length === 0, `snapshot (${label}): the trim of 14 October 2026 does not hold: ${bad.join('; ')}`); }
 
     /* the at-a-glance visuals, held like the numbers, since a visitor reads the edge off them before
        any number: each call's bar in Every call leans from 50/50 toward the side it picks (gs-toh to
@@ -2328,12 +2346,9 @@ async function snapshotChecks() {
         if (!b || !body || !sec.contains(body)) { bad.push(id + ' has no fold'); continue; }
         if ((b.getAttribute('aria-expanded') === 'true') === body.hidden) bad.push(`${id}: aria-expanded ${b.getAttribute('aria-expanded')} with its body ${body.hidden ? 'hidden' : 'shown'}`);
         if (body.hidden === WIDE.includes(id)) bad.push(`${id} is ${body.hidden ? 'folded' : 'open'} on opening`);
-        if (!txt(b.querySelector('.gs-sum'))) bad.push(id + ' has no summary'); }
-      const sub = q('#gsUnits [data-gs-sub]');
-      if (unitsOn && eloM.units.off[a] && eloM.units.def[h]) {
-        const ids = sub ? (sub.getAttribute('aria-controls') || '').split(/\s+/) : [];
-        if (!sub || sub.getAttribute('aria-expanded') !== 'false' || ids.length !== 2 || ids.some(id => !R.d.getElementById(id) || !R.d.getElementById(id).hidden || !R.d.getElementById(id).querySelector('[data-gs-stat]')))
-          bad.push('the stats behind the units are not folded under one button that names both tables'); }
+        /* Model Picks, Team strength and Offense vs defense with no summary (the owner's call, 14 October 2026) */
+        const bare = ['gsCalls', 'gsTeams', 'gsUnits'].includes(id);
+        if (bare ? !!b.querySelector('.gs-sum') : !txt(b.querySelector('.gs-sum'))) bad.push(`${id} ${bare ? 'has a summary' : 'has no summary'}`); }
       chk(bad.length === 0 && !q('#gsMatch [data-gs-fold]'), `snapshot (${label}): a card does not fold to its summary, or the verdict folds: ${bad.join('; ')}`); }
   };
 
@@ -2390,7 +2405,7 @@ async function snapshotChecks() {
       'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled');
     /* every control a thumb can hit is at least 44px tall at every width (48 for the verdict's
        answers), set by its own rule and never lowered by a narrower screen's */
-    { const tall = [['#gsClose', 44], ['#gsModal .gs-props', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-more', 44], ['.gs-ptabs button', 44]];
+    { const tall = [['#gsClose', 44], ['#gsModal .gs-props', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-ptabs button', 44]];
       const short = tall.filter(([sel, px]) => { const set = rules.filter(r => r.sel === sel && r.st.getPropertyValue('min-height'));
         return !set.some(r => !r.media) || set.some(r => !(parseFloat(r.st.getPropertyValue('min-height')) >= px)); });
       chk(short.length === 0, 'snapshot: a control in the window is under its tap height: ' + short.map(x => x[0]).join(', ')); }
@@ -2399,7 +2414,8 @@ async function snapshotChecks() {
        either side of the middle, and under 900px (the rule at 899px: three columns left the middle 231-369px
        wide from 761 to 899, 238 at an iPad's 768) the teams on one row and the middle under them; a
        meeting's two boxes in two equal columns either side of "vs", stretched to one height, the better
-       rank's tint changing no size; a position matchup's two sides two equal columns; no "at" circle,
+       rank's tint changing no size; a position matchup's row three columns about the middle, its clubs and
+   ranks there (the owner's call, 14 October 2026), and each possession's head centred; no "at" circle,
        no sources line and no Sources card left in the styles */
     { const get = (sel, media, prop) => { const r = rules.filter(x => x.sel === sel && (media ? media.test(x.media) : !x.media) && x.st.getPropertyValue(prop)); return r.length ? r[r.length - 1].st.getPropertyValue(prop).replace(/\s+/g, ' ').trim() : ''; };
       const bad = [], want = (sel, media, prop, v) => { const got = get(sel, media, prop); if (got !== v) bad.push(`${sel}${media ? ` (${media.source})` : ''} ${prop} is '${got}', not '${v}'`); };
@@ -2410,7 +2426,10 @@ async function snapshotChecks() {
       want('.gs-hero', STACKED, 'grid-template-areas', '"away home" "mid mid"'); want('.gs-hero', STACKED, 'grid-template-columns', 'minmax(0,1fr) minmax(0,1fr)');
       want('.gs-team.gs-away', false, 'grid-area', 'away'); want('.gs-team.gs-home', false, 'grid-area', 'home'); want('.gs-mid', false, 'grid-area', 'mid');
       want('.gs-duel', false, 'grid-template-columns', 'minmax(0,1fr) auto minmax(0,1fr)'); want('.gs-duel', false, 'align-items', 'stretch');
-      want('#gsModal .ddsides', false, 'grid-template-columns', 'minmax(0,1fr) minmax(0,1fr)');
+      want('#gsModal .ddrow', false, 'grid-template-columns', 'minmax(0,1fr) auto minmax(0,1fr)');
+      want('#gsModal .ddunit', false, 'justify-self', 'end'); want('#gsModal .ddrow .dtag', false, 'justify-self', 'start');
+      want('.gs-uhd', false, 'flex-direction', 'column'); want('.gs-uhd', false, 'align-items', 'center'); want('#gsModal .gs-dd', false, 'text-align', 'center');
+      if (rules.some(x => /\.gs-more\b|table\.gs-ut\b|\.ddsides\b|\.ddwho\b|\.ddout\b|\.ddnum\b|\.gs-psrc\b/.test(x.sel))) bad.push('a rule for the stats fold, a matchup\'s old side boxes or the note\'s sources is still in the styles');
       for (const r of rules.filter(x => /\.gs-better/.test(x.sel) && /gs-ubox/.test(x.sel)))
         for (const prop of ['padding', 'padding-top', 'padding-bottom', 'padding-left', 'padding-right', 'border-width', 'border', 'width', 'height', 'min-height', 'font-size'])
           if (r.st.getPropertyValue(prop)) bad.push(`${r.sel} sets ${prop}, so the better rank's box is not its twin's size`);
@@ -2492,10 +2511,6 @@ async function snapshotChecks() {
         for (const [gl, id] of [['out', 'gsPos'], ['vote', 'gsCalls'], ['mism', 'gsMism']]) {
           md.querySelector(`[data-gs-gl="${gl}"]`).click(); await wait(10);
           if (!shown(id) || md.querySelector(`#${id} [data-gs-fold]`).getAttribute('aria-expanded') !== 'true' || R.d.activeElement !== md.querySelector(`#${id} [data-gs-fold]`)) bad.push(`${gl} does not open ${id} and focus its title`); }
-        const sub = md.querySelector('[data-gs-sub]');
-        if (sub && unitsOn) { const bodies = () => sub.getAttribute('aria-controls').split(/\s+/).map(id => R.d.getElementById(id));
-          sub.click(); if (sub.getAttribute('aria-expanded') !== 'true' || bodies().some(x => x.hidden) || !/^Hide/.test(txt(sub))) bad.push('the stats behind the units do not open');
-          sub.click(); if (sub.getAttribute('aria-expanded') !== 'false' || bodies().some(x => !x.hidden) || !/^Show/.test(txt(sub))) bad.push('the stats behind the units do not close'); }
         const tabs = () => [...md.querySelectorAll('#gsPos [role="tab"]')], sel = () => tabs().find(t => t.getAttribute('aria-selected') === 'true');
         const panelOk = () => { const t = sel(); return !!t && [...md.querySelectorAll('#gsPos [role="tabpanel"]')].every(p => p.hidden === (p.id !== t.getAttribute('aria-controls'))); };
         if (tabs().length > 1) {
@@ -2509,7 +2524,7 @@ async function snapshotChecks() {
           if (sel().dataset.gsTab !== chosen || !panelOk()) bad.push('the tab chosen is not kept when the window opens again'); }
         else if (!keep.isConnected) bad.push('a toggle drew the window again');
         R.d.getElementById('gsClose').click(); await wait(20);
-        chk(bad.length === 0 && R.d.activeElement === o.btn, `snapshot: the verdict's answers, the stats fold or the Starters tabs do not work: ${bad.join('; ')}`); }
+        chk(bad.length === 0 && R.d.activeElement === o.btn, `snapshot: the verdict's answers or the Starters tabs do not work: ${bad.join('; ')}`); }
       /* Open all opens the cards in their order on the page, the Stat breakdown before Offense vs defense
          (the owner's call, 14 October 2026), and closes them all again */
       { const md = o.md; o.btn.click(); await wait(60);
@@ -2518,7 +2533,7 @@ async function snapshotChecks() {
         all.click(); const shut = SNAP_CARDS.every(id => R.d.getElementById(id + 'B').hidden);
         const st = R.d.getElementById('gsStats'), un = R.d.getElementById('gsUnits');
         chk(secs.join() === SNAP_CARDS.join() && opened && shut && !!st && !!un && !!(st.compareDocumentPosition(un) & R.w.Node.DOCUMENT_POSITION_FOLLOWING),
-          `snapshot: the cards are not Every call, Team strength, Stat breakdown, Offense vs defense, Mismatches and Starters, in that order, under Open all: ${secs.join()}`);
+          `snapshot: the cards are not Model Picks, Team strength, Stat breakdown, Offense vs defense, Mismatches and Starters, in that order, under Open all: ${secs.join()}`);
         R.d.getElementById('gsClose').click(); await wait(20); }
     }
   }
@@ -2662,25 +2677,28 @@ async function snapshotChecks() {
 }
 
 /* =====================================================================================
-   THE SEASON TRACKER'S GAMES IN THE GAME SNAPSHOT (14 October 2026): the preview and the news in the
-   verdict, the Deep Dive inside Offense vs defense, and the Stat breakdown, from the news job's
+   THE SEASON TRACKER'S GAMES IN THE GAME SNAPSHOT (14 October 2026): the preview in the verdict (its
+   sentence alone: a note's news and sources, and the automatic line's starters out, are not shown, the
+   owner's call of the same day), the Deep Dive inside Offense vs defense, and the Stat breakdown, from the news job's
    files. Every file here is a stand-in written below, never news/data's own: the elo job runs this
    smoke every morning, and a news job publish must never turn it red (news/tools/smoke.js holds the
    real files to their sources and to deepdive.js). Each number is worked out here on its own: the
    four tags of each possession by the rule (each row's edge, the offense unit's rating less the
    defense's, weighed by its matchup's weight: Easy from 1.5, Favorable from 0.5, the same the other
-   way), the overall tag on the gap read as points, the starters out, the records, and the stat bars'
+   way), the overall tag on the gap read as points, the records, and the stat bars'
    numbers, marks, split widths and colours; the Deep Dive's rows must be deepdive.js's own html for
-   the stand-in, set in whole (two equal sides a row), and the basis, the "Position matchups" label's
-   title, counts each club's games as the file does. A game with no note to come draws the automatic
-   line in the head's middle, its starters out each bold (on a 404 and on a notes file that is not
-   JSON too), a played one with none draws nothing, and a written one is escaped, the players it marks
-   **so** bold and nothing else markup (a marked "<b>x</b>" is its text, an unpaired "**a*b**" stays
-   as typed), and once the game has started dated as written before kickoff; a file that does not
+   the stand-in, set in whole (a compact row each: the unit, the two clubs and ranks, the tag, and no
+   name, no one out and no number from the file anywhere in the window), and the basis, the "Position
+   matchups" label's title, counts each club's games as the file does. A game with no note to come
+   draws the automatic line in the head's middle with no news (on a 404 and on a notes file that is not
+   JSON too), a played one with none draws nothing, and a written one is its preview alone, escaped,
+   the players it marks **so** bold and nothing else markup (a marked "<b>x</b>" is its text, an
+   unpaired ** stays as typed), its news and sources not shown, and once the game has started dated as
+   written before kickoff; a file that does not
    load says so in its own part and nothing throws: a units file lacking a club, one that is not JSON,
    a stat file of another season. The Rams
-   are LA on the board and LAR in the news job's files: a game of theirs draws its stats, its starters
-   out and its Deep Dive from the LAR entries. A playoff game (the news job stops at week 18) says
+   are LA on the board and LAR in the news job's files: a game of theirs draws its stats and its Deep
+   Dive from the LAR entries. A playoff game (the news job stops at week 18) says
    the Deep Dive is the regular season's only. And the window keeps the visitor's place while the
    files come in late: with the news files and the prop model held back, each redraw puts the focus
    back on the same control (Close where it has gone) and keeps the card scrolled to where it was on
@@ -2734,13 +2752,11 @@ async function newsChecks() {
   const tagOf = (x, fav, easy) => x >= easy ? 'Easy' : x >= fav ? 'Favorable' : x > -fav ? 'Even' : x > -easy ? 'Tough' : 'Very tough';
   const RW = META.tags.rows.weights;
   const rowsWant = (O, D) => [['qb', D.vs.passD], ['ol', D.front], ['rb', D.vs.runD], ['rec', D.db]].map(([k, v]) => `${k}:${tagOf(RW[k] * (O[k].z - v.z), 0.5, 1.5)}`).join();
-  /* the starters out, both teams, as the automatic news names them: away then home, unit by unit, each
-     with his team's board code; a club the file lacks names nobody */
-  const newsOf = (U, a, h) => { const xs = [a, h].flatMap(t => { const u = U.units[DDM.club(t)]; return u ? ['qb', 'ol', 'rb', 'rec', 'front', 'db'].flatMap(k => (u[k].out || []).map(x => `${x.n} (${t} ${x.pos})`)) : []; });
-    return xs.length ? `Out: ${xs.slice(0, 6).join(', ')}${xs.length > 6 ? ` and ${xs.length - 6} more` : ''}.` : ''; };
-  const newsWant = newsOf(UNITS, a, h);
-  /* the names the automatic news lists, each to be bold */
-  const newsNames = (U, a, h) => [a, h].flatMap(t => { const u = U.units[DDM.club(t)]; return u ? ['qb', 'ol', 'rb', 'rec', 'front', 'db'].flatMap(k => (u[k].out || []).map(x => x.n)) : []; }).slice(0, 6);
+  /* every name the stand-in units file carries (who plays, who is out, the next quarterback): none is shown
+     anywhere in the window (the owner's call, 14 October 2026: the automatic line has no news, and the
+     Deep Dive's rows name nobody) */
+  const unitNames = U => Object.values(U.units).flatMap(u => ['qb', 'ol', 'rb', 'rec', 'front', 'db'].flatMap(k => [...(u[k].who || []), ...(u[k].out || []), ...(u[k].next ? [u[k].next] : [])].map(x => x.n)));
+  const namesShown = (md, U) => { const t = txt(md); return [...new Set(unitNames(U))].filter(n => t.includes(n)); };
   /* the Deep Dive's basis counts each club's games as the file has them: "SEA 5 games, DEN 4 games" */
   const gamesWant = (U, a, h) => [a, h].map(t => { const n = U.units[DDM.club(t)].g26; return `${t} ${n} game${n === 1 ? '' : 's'}`; }).join(', ');
   /* the stand-in stats.json: G's two clubs and P1's visitors; P1's home side left out. A tie (sacks), a
@@ -2808,10 +2824,8 @@ async function newsChecks() {
       else {
         if (txt(box.querySelector(`[data-gs-prec="${a}"]`)) !== recOf(a) || txt(box.querySelector(`[data-gs-prec="${h}"]`)) !== recOf(h)) bad.push(`the records read ${txt(box.querySelector(`[data-gs-prec="${a}"]`))} and ${txt(box.querySelector(`[data-gs-prec="${h}"]`))}, Team Rankings counts ${recOf(a)} and ${recOf(h)}`);
         if (!line.startsWith(`The ${nick(a)} (${recOf(a)}) ${word} the ${nick(h)} (${recOf(h)})`) || !line.endsWith('.')) bad.push(`it reads '${line}'`);
-        if (txt(box.querySelector('[data-gs-news]')) !== newsWant) bad.push(`its news reads '${txt(box.querySelector('[data-gs-news]'))}', the file's starters out make it '${newsWant}'`);
-        /* each starter out it names is bold, and nothing else in it is markup */
-        { const nw = box.querySelector('[data-gs-news]'), b = nw ? [...nw.children] : [], want = newsNames(UNITS, a, h);
-          if (b.some(x => x.tagName !== 'B' || !x.classList.contains('gs-pn') || x.children.length) || b.map(txt).join('|') !== want.join('|')) bad.push(`its bold names are '${b.map(x => x.tagName + ':' + txt(x)).join('|')}', the file's starters out '${want.join('|')}'`); }
+        /* the Preview line alone: no news (the starters out it once listed), no sources */
+        if (box.querySelector('[data-gs-news]') || /\bNews\b|Out:/.test(txt(box)) || box.querySelectorAll('.gs-pv').length !== 1) bad.push(`it still has a news line: '${txt(box)}'`);
         if (!box.querySelector('.gs-pauto') || box.querySelector('[data-gs-sources]')) bad.push('it does not say it is automatic, or names sources');
         /* in the head's middle, under the kickoff line; the Vegas headline after the head */
         if (box.parentElement !== q('#gsMatch .gs-hero > .gs-mid') || box.previousElementSibling !== q('#gsMatch .gs-mid > .gs-when') || box.nextElementSibling || q('#gsMatch .gs-hero').nextElementSibling !== q('#gsMatch .gs-fav')) bad.push('it is not in the head\'s middle under the kickoff line, with the Vegas headline after the head'); }
@@ -2828,11 +2842,15 @@ async function newsChecks() {
         const got = [...el.querySelectorAll('.ddrow')].map(r => `${r.dataset.dd}:${r.querySelectorAll('.dtag').length === 1 ? txt(r.querySelector('.dtag')) : 'tags ' + r.querySelectorAll('.dtag').length}`).join();
         if (got !== rowsWant(O, D)) bad.push(`${o} against ${dd}: the tags read ${got}, the rule makes them ${rowsWant(O, D)}`); }
       if (md.querySelectorAll('#gsUnits [data-gs-ddwhy]').length) bad.push('a possession says why it has no rows: ' + txt(q('#gsUnits [data-gs-ddwhy]')));
-      /* each row the unit and its tag on one line, then two sides of one class, the offense's then the
-         defense's, each headed by its club and its rank */
-      for (const r of md.querySelectorAll('#gsUnits .ddrow')) { const sd = r.querySelector('.ddsides'), k = sd ? [...sd.children] : [];
-        if (!r.querySelector('.ddtop .ddunit') || !r.querySelector('.ddtop .dtag') || k.length !== 2 || !k[0].matches('.ddside.ddoff') || !k[1].matches('.ddside.dddef') || k.some(x => !x.firstElementChild || !x.firstElementChild.matches('.ddsl') || x.firstElementChild.querySelectorAll('.ddrk').length !== 1)
-          || !txt(k[0].querySelector('.ddsn')).startsWith(r.dataset.ddOff + ' ') || !txt(k[1].querySelector('.ddsn')).startsWith(r.dataset.ddDef + ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit and tag over two sides, each headed by its club and rank`); break; } }
+      /* each row compact (the owner's call, 14 October 2026): the unit, the two sides (the offense's then the
+         defense's, each its club and one rank) and the tag, in that order, and its words those alone */
+      for (const r of md.querySelectorAll('#gsUnits .ddrow')) { const k = [...r.children], sd = k[1] ? [...k[1].querySelectorAll('.ddside')] : [];
+        const words = `${txt(k[0])} ${r.dataset.ddOff} ${sd[0] ? txt(sd[0].querySelector('.ddrk')) : ''} · ${r.dataset.ddDef} ${sd[1] ? txt(sd[1].querySelector('.ddrk')) : ''} ${txt(k[2])}`;
+        if (k.length !== 3 || !k[0].matches('.ddunit') || !k[1].matches('.ddrks') || !k[2].matches('.dtag') || sd.length !== 2 || !sd[0].matches('.ddoff') || !sd[1].matches('.dddef')
+          || sd.some(x => x.querySelectorAll('.ddrk').length !== 1) || txt(sd[0].querySelector('.ddsn')) !== r.dataset.ddOff || txt(sd[1].querySelector('.ddsn')) !== r.dataset.ddDef
+          || txt(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and ranks and its tag alone: '${txt(r)}'`); break; } }
+      const shown = namesShown(md, UNITS);
+      if (shown.length) bad.push(`the window shows names from the units file: ${shown.join(', ')}`);
       /* what the rows rest on: the "Position matchups" label's title, never text under the card */
       const basis = htmlTxt(N1, DDM.basis(UNITS, a, h)), labs = [...md.querySelectorAll('#gsUnits [data-gs-basis]')];
       if (labs.length !== 2 || labs.some(l => txt(l) !== 'Position matchups' || !(l.getAttribute('title') || '').startsWith(basis) || !/ Built .+ by the news job\.$/.test(l.getAttribute('title') || ''))) bad.push(`the matchups' labels are not titled with the Deep Dive's basis and when it was built: ${labs.map(l => `'${txt(l)}' '${l.getAttribute('title')}'`).join(', ')}`);
@@ -2846,7 +2864,8 @@ async function newsChecks() {
         const pts = META.tags.headline.slope * (vo.raw - vd.raw), tag = tagOf(pts, META.tags.headline.fav, META.tags.headline.easy), text = `${pts >= 0 ? '+' : '−'}${Math.abs(pts).toFixed(1)} pts`;
         const ht = DDM.headTag(META, vo, vd), pill = el && el.querySelector('.dtag');
         /* at the end of the possession's title line, its points beside it, its explanation its title */
-        if (!pill || txt(pill) !== tag || txt(el.querySelector('.gs-hpts')) !== text || pill.getAttribute('title') !== ht.title || !el.closest('.gs-unit') || !el.parentElement.matches('.gs-uhd') || !el.previousElementSibling || el.previousElementSibling.tagName !== 'H4' || el.nextElementSibling)
+        if (!pill || txt(pill) !== tag || txt(el.querySelector('.gs-hpts')) !== text || pill.getAttribute('title') !== ht.title || !el.closest('.gs-unit') || !el.parentElement.matches('.gs-uhd') || !el.previousElementSibling || el.previousElementSibling.tagName !== 'H4' || el.nextElementSibling
+          || txt(el.previousElementSibling) !== `${nick(o)} Possession`)
           bad.push(`${o}-${dd} reads '${el ? txt(el) : 'nothing'}', the rule '${tag} ${text}'`); }
       chk(bad.length === 0, `news: the Overall line's tag is not the gap read as points: ${bad.join('; ')}`); }
     /* the Stat breakdown: each of the eleven rows' numbers, the better one marked, the bar split and coloured */
@@ -2858,7 +2877,7 @@ async function newsChecks() {
       'news: the Stat breakdown is not before Offense vs defense, or the Sources card is still drawn');
     await closeG(N1);
   }
-  /* a note written for a game: its sentence and news as text, never markup, its outlets after it; labelled
+  /* a note written for a game: its sentence as text, never markup, its news and outlets not shown; labelled
      Preview while the game is to come, and once it has started dated as written before kickoff (its words
      on the teams' form were true then; the records above it are as they stand now) */
   const dayWant = s => /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T12:00:00Z').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' })
@@ -2872,15 +2891,16 @@ async function newsChecks() {
   if (P1) { const m3 = await openG(N1, P1), q3 = sel => m3 && m3.querySelector(sel), b = q3('.gs-prev'), bad = [];
     if (!b || b.dataset.gsNote !== 'written') bad.push('no written preview');
     else {
-      const pv = b.querySelector('[data-gs-preview]'), nw = b.querySelector('[data-gs-news]'), so = b.querySelector('[data-gs-sources]');
+      const pv = b.querySelector('[data-gs-preview]');
       /* the text as written less its markers, each marked name in a b.gs-pn of its own text alone, nothing
          else markup: "<b>x</b>" marked is that text in bold, "**a*b**" and a lone "**" stay as typed */
       const held = (el, raw, what) => { const W = shownOf(raw), k = el ? [...el.children] : [];
         if (!el || el.textContent !== W.text || k.some(x => x.tagName !== 'B' || !x.classList.contains('gs-pn') || x.children.length) || k.map(x => x.textContent).join('|') !== W.names.join('|'))
           bad.push(`the ${what} reads '${el && el.innerHTML}', not '${W.text}' with ${W.names.join(', ')} bold`); };
-      held(pv, NOTE_P.preview, 'preview'); held(nw, NOTE_P.news, 'news');
-      if (shownOf(NOTE_P.news).names.join('|') !== 'J.J. "Smith" Jr.|<b>x</b>' || !shownOf(NOTE_P.news).text.includes('**a*b** stays') || shownOf(NOTE_P.preview).names.join('|') !== 'Pat <Surtain> & Co' || !shownOf(NOTE_P.preview).text.includes('a lone ** left')) bad.push('the smoke\'s own reading of the markers is off');
-      if (!so || so.textContent !== NOTE_P.sources.join(' · ') || so.children.length || so.previousElementSibling !== nw) bad.push(`the sources read '${so && so.innerHTML}', not after the news`);
+      held(pv, NOTE_P.preview, 'preview');
+      if (shownOf(NOTE_P.preview).names.join('|') !== 'Pat <Surtain> & Co' || !shownOf(NOTE_P.preview).text.includes('a lone ** left')) bad.push('the smoke\'s own reading of the markers is off');
+      /* the note's news and its sources are in the file and not on the page (the owner's call, 14 October 2026) */
+      if (b.querySelector('[data-gs-news]') || b.querySelector('[data-gs-sources]') || b.querySelectorAll('.gs-pv').length !== 1 || /practising in full|Denver <Post>|ESPN/.test(txt(b))) bad.push(`its news or sources are still shown: '${txt(b)}'`);
       /* in the head's middle, under the score and the kickoff line; the played note after the head */
       if (b.parentElement !== q3('#gsMatch .gs-hero > .gs-mid') || b.previousElementSibling !== q3('#gsMatch .gs-mid > .gs-when') || q3('#gsMatch .gs-hero').nextElementSibling !== q3('#gsPast')) bad.push('a played game\'s note is not in the head\'s middle, with its played note after the head');
       const lab = `Preview, written ${dayWant(notes[`${season}-w${+P1.week}`].written)}, before kickoff`;
@@ -2919,17 +2939,16 @@ async function newsChecks() {
   /* ---- a notes file that is not JSON and a stat file of the wrong shape: the automatic line (its news from the units), the stats said not loaded ---- */
   { const N3 = await run(st, undefined, null, false, { news: { units: UNITS, stats: { season, stats: [1, 2] }, notes: { [`${season}-w${wk}`]: 'this is not { json' } } }); await wait(400);
     const m = await openG(N3, G), b = m && m.querySelector('.gs-prev');
-    chk(!!m && N3.errs.length === 0 && !!b && b.dataset.gsNote === 'auto' && txt(b.querySelector('[data-gs-news]')) === newsWant && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && !!m.querySelector('#gsUnits .dd'),
+    chk(!!m && N3.errs.length === 0 && !!b && b.dataset.gsNote === 'auto' && !b.querySelector('[data-gs-news]') && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && !!m.querySelector('#gsUnits .dd'),
       'news: a notes file that is not JSON does not draw the automatic line, or a stat file of the wrong shape is drawn: ' + N3.errs.join('; ') + ' ' + (b ? txt(b) : 'no preview'));
     N3.w.close(); }
-  /* ---- a units file lacking one of the game's clubs: each possession says which, no rows, nothing thrown; the
-     automatic news names the other club's starters out alone ---- */
+  /* ---- a units file lacking one of the game's clubs: each possession says which, no rows, nothing thrown ---- */
   { const U4 = Object.assign({}, UNITS, { units: { [A]: UNITS.units[A] } });
     const N4 = await run(st, undefined, null, false, { news: { units: U4, stats: STATS, notes } }); await wait(400);
     const m = await openG(N4, G), why = [...(m ? m.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt), b = m && m.querySelector('.gs-prev');
     chk(!!m && N4.errs.length === 0 && !/could not be drawn/.test(txt(m)) && why.length === 2 && why.every(x => x === `The Deep Dive has no matchups for ${h}.`) && !m.querySelector('#gsUnits .dd')
-      && !!b && txt(b.querySelector('[data-gs-news]')) === newsOf(U4, a, h),
-      `news: a units file lacking ${h} does not say it has no matchups for it, or its news is not ${a}'s outs alone: ${N4.errs.join('; ')} '${why.join(' / ')}' ${b ? txt(b.querySelector('[data-gs-news]')) : 'no preview'}`);
+      && !!b && !b.querySelector('[data-gs-news]') && !namesShown(m, U4).length,
+      `news: a units file lacking ${h} does not say it has no matchups for it, or names a player from the file: ${N4.errs.join('; ')} '${why.join(' / ')}' ${b ? txt(b) : 'no preview'}`);
     N4.w.close(); }
   /* ---- a units file that is not JSON, and a stat file of another season: each says so in its own card and in
      Sources, nothing thrown ---- */
@@ -2941,8 +2960,8 @@ async function newsChecks() {
     N5.w.close(); }
 
   /* ---- the Rams: LA on the board, LAR in the news job's files. A copy of G with LA at home (unless a side
-     already is), the stand-ins keyed by deepdive.js's club codes as the job keys them: the Stat breakdown,
-     the automatic news and the Deep Dive all read LA's entries from LAR. And a made-up wild-card game
+     already is), the stand-ins keyed by deepdive.js's club codes as the job keys them: the Stat breakdown
+     and the Deep Dive read LA's entries from LAR. And a made-up wild-card game
      (week 19): the news job stops at week 18, so the Deep Dive says it is the regular season's only ---- */
   { const lst = JSON.parse(JSON.stringify(st)), LG = lst.schedule.find(x => x.game_id === G.game_id);
     if (![LG.away_team, LG.home_team].includes('LA')) { LG.home_team = 'LA'; LG.game_id = LG.game_id.replace(/_[A-Z]+$/, '_LA'); }
@@ -2957,8 +2976,6 @@ async function newsChecks() {
       const q = sel => m.querySelector(sel);
       if (!Object.keys(UL.units).includes('LAR') || Object.keys(UL.units).includes('LA') || !Object.keys(SL.stats).includes('LAR')) bad.push('the stand-ins are not keyed LAR');
       bad.push(...statsBad(NL, m, la, lh, S1, S2).map(x => 'the Stat breakdown: ' + x));
-      const nw = txt(q('.gs-prev[data-gs-note="auto"] [data-gs-news]')), nwant = newsOf(UL, la, lh);
-      if (nw !== nwant || !/\(LA [A-Z]+\)/.test(nw)) bad.push(`the automatic news reads '${nw}', not LA's starters out from LAR: '${nwant}'`);
       for (const [o, dd] of [[la, lh], [lh, la]]) { const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UL, o, dd);
         const tpl = NL.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
         if (!el || !tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the Deep Dive is not deepdive.js's rows from LAR's entry: ${el ? 'other rows' : txt(q(`#gsUnits [data-gs-poss="${o}-${dd}"] [data-gs-ddwhy]`)) || 'none'}`); }

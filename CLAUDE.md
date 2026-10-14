@@ -86,7 +86,8 @@ written with it and whenever it is missing or differs, and the twins are what th
 The game notes are the hand-written half (`news/HANDOFF.md` first, always): each Wednesday a Claude routine, and Claude
 whenever the owner asks, writes `news/data/notes/<season>-w<N>.json` from the week's pack and the panel in
 `tools/sources.md`: for each game a one-sentence `preview`, a short `news` note (the one or two things a fan should
-know this week, or `""`) and its `sources`, every player named in bold (`**Bo Nix**`), keyed by the nflverse game id
+know this week, or `""`) and its `sources` (the snapshot shows the preview alone since the owner's call of 14 October
+2026; the news and sources stay in the file, unshown), every player named in bold (`**Bo Nix**`), keyed by the nflverse game id
 as `betting/state.json`'s schedule writes it (LA for the Rams; `tools/week-request.md` is the format); then
 `node tools/notes.js --strict` and the smoke, and
 the branch, commit, PR and merge. The job never writes a note, and a game left out shows an automatic line in the
@@ -128,12 +129,12 @@ the gap read as points beside it ("−0.9 pts"; `headTag`: 11.9126 a raw unit, F
 run defense, the receivers against the coverage, the pass rush and the coverage drawn as the defense's side of the
 line's and the receivers' rows), each tagged on its edge weighted by what that matchup alone has predicted
 (2012-2017: quarterback 1, receivers and coverage 0.8925, line and pass rush 0.5956, run game 0.3792) at 0.5 and
-1.5, with who plays, who is out, a quarterback in doubt with the next one named, and the numbers; the rows overlap
-and are never added up. Each row is its unit and its tag (the edge small beside it) on one line over two equal
-columns, the offense's side and the defense's, each headed by its own club, what it is rated as and its rank ("SEA
-pass protection · 15th" | "DEN pass rush · 2nd") with its names, who is out and its numbers under it; the
-quarterback's and the run game's defense side is the pass or run defense's rank alone, a defense with no single
-unit's names (the owner's call, 14 October 2026: the two sides of a meeting the same size). They are drawn only for
+1.5; the rows overlap and are never added up. Each row is compact and centred, its unit, the two sides' clubs and
+ranks ("SEA 13th · DEN 3rd", the offense's then the defense's, each side titled with what it is rated as, the
+quarterback's and the run game's defense side the pass or run defense's rank) and its tag, whose title gives the
+edge; no names, no one out, no quarterback next and no numbers (the owner's call, 14 October 2026: limited, like the
+head; who plays is the Starters card's, the numbers the Stat breakdown's; `units.json` still carries them, and the
+lineup checks still hold them). They are drawn only for
 the units' own week (`applies`); another week's game says why.
 The constants are in `UNITS26_META.tags` (`units.json`'s `meta`), which `deepdive.js` reads and the smoke holds
 to `tools/deepdive-checks.js`'s own copy.
@@ -151,9 +152,10 @@ lineups for the schedule's week (and, in the job, checked on that run's own down
 `vm`, sending a visitor to `../nflbets/`; and the fixed cases in `tools/cases.js` (each with the broken version a
 review caught, which the checks must fail; the Deep Dive's run on `deepdive.js` itself). On a checkout whose
 `units2026.js` is older than the report it fails until `node tools/context.js` runs. A change to a rule comes
-with a case there. The lineup rules (all but the week they are for), a starter out named in his row, a
-quarterback in doubt with the next one named, nobody both listed and out, and every problem in a notes file are
-warnings (`warn` in `smoke.js`): who the Deep Dive lists and what a note says, never the scores, records, stat
+with a case there. Each drawn row is its unit, the two clubs and ranks and its tag and nothing else
+(`checkPossession`: no name, no one out, no number; blocking, a code property). The lineup rules (all but the week
+they are for), a quarterback in doubt with the next one named in the file, nobody both listed and out, and every
+problem in a notes file are warnings (`warn` in `smoke.js`): who the Deep Dive lists and what a note says, never the scores, records, stat
 bars, ranks or tags. They print WARN and never fail the smoke, so a lineup case no rule has seen publishes the
 week's results and stats, and the job goes red on them after its commit (`SMOKE_WARNINGS_FILE`); every other
 check, the fixed cases among them, holds the run's files back. The real news files are this smoke's alone: the
@@ -959,25 +961,30 @@ a button that opens its card (the model picks, Vegas kept apart as the baseline:
 models agree with it, the ones that do not named, once played how many of the four calls were right;
 the Team Elo gap; which side ranks higher on offense against defense each way; who is out by name and
 how many starters are questionable; the top mismatch on its four-step meter) -- then a card each
-(Every call, Team strength, Stat breakdown, Offense vs defense, Mismatches, Starters: `CARDS` in `snapshot.html`,
-the Stat breakdown moved up and the Sources card gone on 14 October 2026, the owner's call) that folds to a
-one-line summary, Starters and Mismatches with a count badge: Every call and Team strength open on a
-wide screen, every card folded on a phone, Open all and Close all. Every call is one lean chart (each
+(Model Picks, Team strength, Stat breakdown, Offense vs defense, Mismatches, Starters: `CARDS` in `snapshot.html`,
+the Stat breakdown moved up and the Sources card gone on 14 October 2026, the owner's call) that folds, Stat
+breakdown, Mismatches and Starters to a one-line summary, Starters and Mismatches with a count badge; Model Picks,
+Team strength and Offense vs defense carry no summary and no note under them (the owner's call, 14 October 2026:
+the verdict says it; Team strength keeps only its star note, where a rating predates a final, and has no Tier row):
+Model Picks and Team strength open on a
+wide screen, every card folded on a phone, Open all and Close all. Model Picks is one lean chart (each
 bar leans from 50/50 toward the side its call picks, in that team's colour); Offense vs defense shows one
-possession under the other: its title ("When the Eagles have the ball") with the Deep Dive's headline tag and its
-points at the line's end, the two overall ratings in two boxes of one size and shape (`.gs-ubox`, either side of
+possession under the other, laid out like the head, centred and limited (the owner's call, 14 October 2026): its
+title ("Seahawks Possession", the nickname from `TEAM_NAMES`), the Deep Dive's headline tag and its points centred
+under it, the two overall ratings in two boxes of one size and shape (`.gs-ubox`, either side of
 "vs", the better rank's tinted, with no separate edge chip), then the Deep Dive's four position matchups under
-"Position matchups" (below), each row its unit and tag over two equal columns, with the stats behind the ratings
-folded; no note under the card (the owner's call, 14 October 2026: what the ratings rest on is the boxes' title,
-what the matchups rest on the label's);
+"Position matchups" (below), a compact centred row each (unit, the two clubs and ranks, the tag; on a phone the
+unit on a line of its own over the rest), and no stats fold (the stats are the Stat breakdown's); what the ratings
+rest on is the boxes' title, what the matchups rest on the label's;
 Starters puts the ranked players out first, then Offense, Defense and Kicker tabs (the choice kept
-while the page is open), each defensive unit's league rank at either end of its group's header. The
+while the page is open) with the two teams' header under them, directly over the table (the owner's call, 14
+October 2026), each defensive unit's league rank at either end of its group's header. The
 side of every comparison with the edge wears one mark (`gs-better`): the higher rating, Elo and
 chance, the better rank, the higher season Elo of each pair of starters, the better stat of each pair. One type scale (11, 13, 15,
 18, 22, 30px; a phone takes the top two to 20 and 26), every control at least 44px tall, and every
 text at least 4.5:1 on its own background in both looks (red on the red tint is a darker red,
 `--gs-miss-ink`; the preview lifts the window's red and quiet text, and the Deep Dive's tags, the stat bars,
-the preview block and the names it bolds, each side of a position matchup on its box and the better rank's tinted
+the preview block and the names it bolds, a position matchup row's words on the card and the better rank's tinted
 box). Opening a card, a fold or a tab never redraws
 the window, and nothing of it is saved.
 It computes nothing of its own beyond the vote's counts, the Elo gap and the stat breakdown's splits and
@@ -996,9 +1003,11 @@ headline to the files and its confidence pill to the board's own, the header's g
 team, the middle and the home team; in the middle the score, the kickoff and the preview, in that order; no "at"
 circle; the Away and Home labels and a neutral site named; the played note right after it), each record the record
 alone, no line naming the line's sources, each meeting in Offense vs defense two boxes of one class either side
-of "vs" with no note or edge chip, and no Sources card, publish time or link away from the window, on a game
+of "vs" with no note or edge chip, no Sources card, publish time or link away from the window, and the trim of
+14 October 2026 (Model Picks so titled, no summary on it, Team strength or Offense vs defense, no Tier row, no notes
+but the star's, "<Nickname> Possession", no stats under the units, the Starters teams under the tabs), on a game
 to come, a final on the scoreboard, a graded game and a playoff game, with a file missing; every
-number is read with the cards, the stats fold and the Starters tabs as they open (folded or not
+number is read with the cards and the Starters tabs as they open (folded or not
 shown), and the folding, the answers' buttons, the props button (there exactly where `canProps` says, and
 doing its job), the tabs' arrow keys, the Tab order and the 44px
 tap heights are held too, on a wide screen and a phone; a row's click, Enter and Space open the window, no row has a
@@ -1011,20 +1020,19 @@ checked in a real browser at 390 and 360 over every game, such as NYG at WAS and
 
 **What the snapshot carries from the news job** (the owner's call, 14 October 2026, when the Season Tracker tab
 went; the job and the notes are under "News: the job and the weekly game notes"). In the head's middle, under the
-kickoff, `div.gs-prev`: a **Preview** line and a **News** note with its sources small after it, the
-game's entry in `news/data/notes/<season>-w<week>.json` (`data-gs-note="written"`, escaped, each `**...**` pair of
+kickoff, `div.gs-prev`: a **Preview** line alone (its news note and sources went on 14 October 2026, the owner's
+call), the game's entry in `news/data/notes/<season>-w<week>.json` (`data-gs-note="written"`, escaped, each `**...**` pair of
 1 to 60 characters with no `*` inside then drawn bold as `b.gs-pn`, an unpaired `**` left as typed; once the game
 has started its label reads "Preview, written <day>, before kickoff", so its words on form are not read as current
 beside the records); until a
 game is written, and only for a game still to come, an automatic line (`data-gs-note="auto"`): "The Seahawks
 (3-2) visit the Broncos (4-1)" (play ... at the stadium on a neutral site) with the day and time, from the
-window's own records and kickoff, and as its news the starters out on `units.json` for both teams where it is
-for the game's week ("Out: ...", each name bold, at most six, then "and N more"); a played game with no note shows
-no preview. In Offense vs defense, each side with the ball wears the Deep Dive's headline tag at the end of its
-title line (`deepdive.headTag`, its points beside it, "−0.9 pts") and has the four position matchups under it
+window's own records and kickoff, with no news (the starters out it listed went with the News line); a played game
+with no note shows no preview. In Offense vs defense, each side with the ball wears the Deep Dive's headline tag
+centred under its title (`deepdive.headTag`, its points beside it, "−0.9 pts") and has the four position matchups under it
 (`deepdive.possession`) where `units.json` is for the game's week (`deepdive.applies`), else one quiet line
 saying why (on a playoff game, "The Deep Dive covers the regular season only; its matchups end with week 18.",
-since the news job stops at week 18, and its automatic news names nobody out), with `deepdive.basis` (and when the
+since the news job stops at week 18), with `deepdive.basis` (and when the
 news job built the file) as the title of its "Position matchups" label. **Stat breakdown** (`#gsStats`, folded on
 every screen, above Offense vs defense)
 is the tracker's eleven stat bars from `stats.json` (point differential, points per game, points allowed, yards
@@ -1043,11 +1051,12 @@ control is found again by its `data-gs-` key and focused (Close if it is gone), 
 the header stays where it was on the screen, so a props button, preview or Deep Dive drawn in above it does not
 move what is being read. The nflbets smoke holds all of it on stand-in
 news files of its own, served by its fetch stub, never the real ones (the elo job runs it every morning, and a
-news publish must never turn it red): the written preview escaped with its sources, the names it marks bold and
-nothing else markup (a marked "<b>x</b>" shown as its text, an unpaired "**a*b**" as typed), the automatic line in
-the head's middle with its records and out list, each name bold, none on a played game with no note, a 404 and a
+news publish must never turn it red): the written preview escaped, its news and sources not shown, the names it
+marks bold and nothing else markup (a marked "<b>x</b>" shown as its text, an unpaired "**" as typed), the automatic
+line in the head's middle with its records and no news, none on a played game with no note, a 404 and a
 notes file that is not JSON each drawing the automatic line, the Deep Dive's rows
-`possession()`'s own html set in whole and the headline tag
+`possession()`'s own html set in whole, each its unit, two clubs and ranks and tag alone, no name from the units
+file anywhere in the window, and the headline tag
 `headTag()`'s, the not-this-week line, the playoff line on a made-up wild-card game, a Rams game read from
 the files' LAR entries, a units file lacking a club or not JSON, a stat file of another season, each part's
 still-loading and did-not-load wording, a started game's written-before-kickoff label, the basis's game counts

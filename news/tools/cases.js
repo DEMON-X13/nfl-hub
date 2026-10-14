@@ -77,10 +77,12 @@
                           snapshot's own possession() (nflbets/build/deepdive.js, run here on the fixture)
                           tags each row on its weighted edge (the line's +0.7 is Even, the run game's +1.7
                           and the receivers' +1.6 Favorable), the Rams' board code LA reads the file's LAR,
-                          every name is escaped, and the checks pass both ways; the old unweighted rule
-                          (what possession() draws from a file without tags) fails them, and so do ranks or
-                          an edge that are not the file's, a row's two sides drawn the other way round or
-                          headed by the wrong club, and a file whose constants were changed.
+                          no name, reason or note in the file is drawn (a row is its unit, the two clubs and
+                          ranks and its tag, the owner's call of 14 October 2026), and the checks pass both
+                          ways; the old unweighted rule (what possession() draws from a file without tags)
+                          fails them, and so do ranks or an edge that are not the file's, a row's two sides
+                          drawn the other way round or headed by the wrong club, a name or a number drawn in
+                          a row, and a file whose constants were changed.
      deepdive-headline    the Overall line's tag is this team's Overall Offense against the opponent's
                           Overall Defense from a made-up model.json, tagged by the gap read as points (+3.1
                           Easy one way, -1.8 Tough the other) by the snapshot's own headTag(); a tag from the
@@ -576,11 +578,14 @@ function cases() {
     let la = null; try { la = DD && DD.possession(ddFile({ LAR: A, NO: O }, DD_META), 'LA', 'NO'); } catch (e) { err = e.message; }
     const fl = la ? DC.checkPossession(la.html, 'LA', 'NO', A, O) : ['no possession for LA'];
     add('deepdive-weighted', "the board's LA reads the file's LAR", !fl.length, fl.join(' | ') || 'LA-NO drawn');
-    /* every word from the file is escaped: a name, a reason and a note */
-    const X = clone(A); X.qb.who = [{ n: '<img src=x onerror=alert(1)>', pos: 'QB', q: 'questionable: "ankle"' }]; X.qb.out = [{ n: 'Zed & Quux', pos: 'QB', why: 'out (<b>knee</b>)' }]; X.rb.note = '</div><script>x()</script>';
-    let xh = ''; try { xh = DD.possession(ddFile({ MIN: X, NO: O }, DD_META), 'MIN', 'NO').html; } catch (e) { xh = 'threw ' + e.message; }
-    add('deepdive-weighted', 'a name, a reason and a note from the file are shown as text, never markup',
-      xh.includes('&lt;img src=x onerror=alert(1)&gt;') && xh.includes('Zed &amp; Quux') && xh.includes('out (&lt;b&gt;knee&lt;/b&gt;)') && xh.includes('&lt;/div&gt;&lt;script&gt;') && !/<img|<script|<b>knee/.test(xh), xh.slice(0, 120));
+    /* a row names nobody and shows no number (the owner's call, 14 October 2026: who plays is the Starters
+       card's, the numbers the Stat breakdown's): a name, a reason, a quarterback next, a note and the stats
+       in the file, markup among them, are not drawn at all, and the checks still pass */
+    const X = clone(A); X.qb.who = [{ n: '<img src=x onerror=alert(1)>', pos: 'QB', q: 'questionable: "ankle"' }]; X.qb.out = [{ n: 'Zed & Quux', pos: 'QB', why: 'out (<b>knee</b>)' }];
+    X.qb.next = { n: 'Quin Zorb', pos: 'QB', from: 'roster' }; X.rb.note = '</div><script>x()</script>'; X.rec.stats = [['yards a target', 8.7, 3]];
+    let xh = '', fx = []; try { xh = DD.possession(ddFile({ MIN: X, NO: O }, DD_META), 'MIN', 'NO').html; fx = DC.checkPossession(xh, 'MIN', 'NO', X, O); } catch (e) { xh = 'threw ' + e.message; }
+    add('deepdive-weighted', "a name, a reason, the next quarterback, a note and a stat in the file are not drawn in any row, and the checks pass",
+      !/img|Zed|Quux|knee|ankle|Zorb|script|yards a target|8\.7/.test(xh) && !/^threw/.test(xh) && !fx.length, fx.join(' | ') || xh.slice(0, 160));
     /* the review's version: the old rule, the raw edge at 0.5 and 1.5 (what possession() draws from a file without tags) */
     const oldMeta = clone(DD_META); delete oldMeta.tags;
     let fo = [], oldRows = [];
@@ -590,16 +595,19 @@ function cases() {
     /* a row showing a rank or an edge that is not the file's */
     const bent = mine ? [
       ["a rank that is not the file's", h => h.replace('<b class="ddrk">16th</b>', '<b class="ddrk">15th</b>'), /ranks/],
-      ['an edge that is not the gap between the ratings', h => h.replace('edge +0.7', 'edge +0.8'), /"edge/],
+      ['an edge that is not the gap between the ratings', h => h.replace('Edge +0.7', 'Edge +0.8'), /"edge/],
       ['a row left out', h => h.replace(/<div class="ddrow" data-dd="rb"[\s\S]*?(?=<div class="ddrow" data-dd="rec")/, ''), /rows qb,ol,rec/],
       ['two tags in one row', h => h.replace('<span class="ddunit">Receivers</span>', '<span class="ddunit">Receivers</span><span class="dtag easy">Easy</span>'), /other than one tag/],
       /* the two sides of a meeting: the offense's left, the defense's right, each headed by its own club
          (every rank here is 16th, so only the sides themselves tell) */
       ["a row's two sides drawn the other way round", h => h.replace('class="ddside ddoff"', 'class="ddside SWAP"').replace('class="ddside dddef"', 'class="ddside ddoff"').replace('class="ddside SWAP"', 'class="ddside dddef"'), /sides ddd?[a-z]+,dd/],
-      ['a side headed by the other club', h => h.replace('<span class="ddsn">MIN passing offense', '<span class="ddsn">NO passing offense'), /sides headed/],
-      ['a rank given to one side twice', h => h.replace(/(<div class="ddsl"><span class="ddsn">MIN passing offense<\/span><span class="ddsep" aria-hidden="true"> · <\/span><b class="ddrk">16th<\/b>)/, '$1<b class="ddrk">16th</b>'), /2 ranks/],
+      ['a side headed by the other club', h => h.replace('<span class="ddsn">MIN</span>', '<span class="ddsn">NO</span>'), /sides headed/],
+      ['a rank given to one side twice', h => h.replace(/(<span class="ddsn">MIN<\/span> <b class="ddrk">16th<\/b>)/, '$1<b class="ddrk">16th</b>'), /2 ranks/],
+      /* the rows as they were drawn until 14 October 2026: who plays, who is out and the numbers under each side */
+      ['a name drawn in a row', h => h.replace('<span class="ddsn">MIN</span> <b class="ddrk">16th</b>', '<span class="ddsn">MIN</span> <b class="ddrk">16th</b><span class="ddwho">Sam Darnold (QB)</span>'), /the row reads/],
+      ['a number drawn in a row', h => h.replace(/(<span class="ddunit">Running backs<\/span>)/, '$1<span class="ddnum">4.6 yards a carry (9th)</span>'), /the row reads/],
     ].map(([what, bend, rx]) => { const b = bend(mine.html); return b !== mine.html && DC.checkPossession(b, 'MIN', 'NO', A, O).some(x => rx.test(x)) ? null : what; }).filter(Boolean) : ['no possession'];
-    add('deepdive-weighted', "a rank or an edge that is not the file's, a row left out, a second tag, or a row's sides the other way round, headed by the wrong club or ranked twice fails the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all seven fail');
+    add('deepdive-weighted', "a rank or an edge that is not the file's, a row left out, a second tag, a row's sides the other way round, headed by the wrong club or ranked twice, or a name or a number in a row fails the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all nine fail');
     const changed = clone(DD_META); changed.tags.rows.weights.rb = 1; changed.tags.headline.slope = 12.787;
     const fb = DC.checkMeta(changed);
     add('deepdive-weighted', "a file whose constants were changed (the run game weighted 1, the headline's first slope 12.787) fails the checks",
