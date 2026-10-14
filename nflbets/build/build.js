@@ -5,8 +5,8 @@
  *                                      nowhere: the smoke compares it with the published page
  *
  *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it, its Parlay
- *                        Builder tab, X Parlays on a tab of its own, and the Season Tracker
- *                        (news/) framed from its own address on its tab.
+ *                        Builder tab, X Parlays on a tab of its own, and the Game snapshot a tap on a
+ *                        game opens, which reads the Season Tracker's games from the news job's files.
  *
  * The page is the prop model assembled the way props/build/assemble.py assembles it -- part1,
  * the payload fetch, part2, part3 -- because the tabs it is growing are the prop model's own
@@ -21,8 +21,9 @@
  * its own TEAM_COLORS and tag().
  *
  * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json,
- * liveparlays/parlays.json, liveparlays/xbets.json and elo/data/*.json when it opens, so it is
- * rebuilt when a source changes, never when the data does. Neither site is touched. This page
+ * liveparlays/parlays.json, liveparlays/xbets.json and elo/data/*.json when it opens, and the news
+ * job's news/data/units.json, stats.json and the week's notes when a Game snapshot first opens, so it
+ * is rebuilt when a source changes, never when the data does. Neither site is touched. This page
  * reads what they publish, and writes nothing anywhere but the visitor's own browser storage.
  */
 'use strict';
@@ -112,20 +113,11 @@ for (const need of ["'../elo/data/players.json'", "'../elo/data/model.json'", 'w
 for (const f of ['players.json', 'model.json']) if (!fs.existsSync(path.join(ROOT, 'elo', 'data', f)))
   throw new Error('elo/data/' + f + ' is missing: run python3 elo/build.py first');
 if (/(^|\n)(body|header|main|:root|\.card|\.bar|table)\{/.test(ELO_CSS)) throw new Error('a page-level rule in the Elo tab styles');
-/* the Season Tracker tab (tab_tracker.html, every name nt-): the tracker, news/, framed from its own
-   address when its tab is first opened. Nothing is read from news/ here and nothing of it goes into
-   the page, so the news job's commits and a new week's script tag never make this page stale; what
-   the tab relies on in the tracker is held by news/tools/smoke.js, which mounts this script on it */
-const trkTab = rd('nflbets', 'build', 'tab_tracker.html');
-const tpiece = (re, what) => { const m = trkTab.match(re); if (!m) throw new Error(`tab_tracker.html has no ${what}`); return m[1]; };
-const TRK_CSS = tpiece(/<style>([\s\S]*?)<\/style>/, '<style> block');
-const TRK_HTML = tpiece(/(<section id="tab-tracker" hidden>[\s\S]*?<\/section>)/, 'section');
-const TRK_JS = tpiece(/<script>([\s\S]*?)<\/script>/, '<script> block');
-if (/(^|\n)(body|header|main|:root|html|\.card|\.btn|\.modal|\.bar|table|th|td)\{/.test(TRK_CSS)) throw new Error('a page-level rule in the Season Tracker tab styles');
-if ((TRK_HTML.match(/<section/g) || []).length !== 1 || /pk-frame|data-embed|srcdoc|sandbox/.test(TRK_HTML) || !TRK_HTML.includes('<iframe class="nt-frame" data-src="../news/index.html" title="Season Tracker"></iframe>'))
-  throw new Error("the Season Tracker tab's section is not one section framing ../news/index.html by its own class (part3 hides every main section but the open tab's, and frames() fills every pk-frame with the betting app)");
-for (const need of ["f.dataset.src+'?t='+Date.now()", "classList.contains('nt-frame')", 'release()'])
-  if (!TRK_JS.includes(need)) throw new Error('tab_tracker.html no longer has ' + need);
+/* the Season Tracker tab is gone (14 October 2026, the owner's call): its games are in each Game
+   snapshot (snapshot.html, below), read from the news job's files, and its old address, #tracker,
+   lands on the Pick'ems board (tab_pickems.html's routeTabs) */
+if (fs.existsSync(path.join(ROOT, 'nflbets', 'build', 'tab_tracker.html')))
+  throw new Error('nflbets/build/tab_tracker.html is back: the Season Tracker tab is retired, its games are in the Game snapshot');
 
 /* the betting app's colour table, tag() and the contrast maths behind it, and its confidence
    bands: cut where its walk-forward record changes, so a second copy here would drift off them */
@@ -295,7 +287,6 @@ const BET_INLINE = JSON.stringify(BET_APP).replace(/<\/script/gi, '<\\/script').
    unshown, since the prop model draws into it on every render */
 const TABS = [
   ['pickems', "Pick'ems"],
-  ['tracker', 'Season Tracker'],
   ['slate', 'Props'],
   ['parlay', 'Parlay Builder'],
   ['xparlays', 'X Parlays'],
@@ -313,7 +304,7 @@ if (navFrom < 0 || navTo < 0) throw new Error('the tab bar is not where nflbets/
 html = html.slice(0, navFrom) + NAV + html.slice(navTo + '</nav>'.length);
 for (const [t] of TABS) if (t !== 'pickems' && t !== 'elo' && !t.match(/^(slate|parlay)$/) && html.includes(`id="tab-${t}"`))
   throw new Error(`the prop model already has a tab-${t} section; a framed tab cannot use that name`);
-html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + TRK_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
+html = sub1(html, '<section id="tab-slate">', TAB_HTML + '\n\n' + FRAMES + '\n\n' + ELO_HTML + '\n\n<section id="tab-slate" hidden>', 'the Games section');
 /* the Parlay Builder keeps the prop model's own section and its address, #parlay: the suggested
    parlays panel over the builder. X Parlays is a section of its own after it, #xparlays. The
    parlay card's window sits at the end of the page, outside every tab, over everything. */
@@ -353,26 +344,38 @@ let out = html + APP + '\n</script>\n' + NOTE + '\n' + LIVE_SCRIPT + '\n<script>
 for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash', 'NFLSYNC', 'LIVE_IO', 'sync.json', 'sign out of owner', 'Not synced', 'ownerMark', 'syncStamp', 'xpSignIn'])
   if (out.includes(gone)) throw new Error('the built page still has ' + gone + ': the shared store and the owner are retired');
 
-/* the Game snapshot (snapshot.html, every name gs-): the window an opened Pick'ems game opens, with
+/* the Game snapshot (snapshot.html, every name gs-): the window a tap on a Pick'ems game opens, with
    everything the site has on that game. Its styles go in after the others and its script runs
    last, after the Player Elo tab's, whose files (window.eloFiles) and Mismatches it reads; the
-   board hands it the season and its own calls (window.pkBoard) */
+   board hands it the season, its own calls and the way to the game on the Props tab
+   (window.pkBoard). The Deep Dive's rows and tags are deepdive.js's, a module of its own the news
+   job requires too (news/tools/smoke.js holds them to the data there), set in as its own script just
+   before the snapshot's: window.gsDeepDive. The news files it draws them from are fetched by the
+   window, never read here */
 { const snap = rd('nflbets', 'build', 'snapshot.html');
   const SNAP_CSS = (snap.match(/<style>([\s\S]*?)<\/style>/) || [])[1], SNAP_JS = (snap.match(/<script>([\s\S]*?)<\/script>/) || [])[1];
   if (!SNAP_CSS || !SNAP_JS) throw new Error('nflbets/build/snapshot.html has no <style> or <script> block');
   if (/(^|\n)(body|header|main|:root|\.card|\.btn|\.modal|\.modal-panel|table|th|td)\{/.test(SNAP_CSS)) throw new Error('a page-level rule in the snapshot styles');
-  for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'"])
+  /* the Deep Dive's classes (dd, dtag) are not prefixed gs-: their rules stay inside the window */
+  for (const rule of SNAP_CSS.replace(/\/\*[\s\S]*?\*\//g, '').match(/[^{}]+\{/g) || [])
+    if (/(^|[\s,>+~])\.(dd|dtag)/.test(rule) && rule.split(',').some(sel => /\.(dd|dtag)/.test(sel) && !/#gsModal\b/.test(sel)))
+      throw new Error('a Deep Dive rule in the snapshot styles is not scoped to #gsModal: ' + rule.trim());
+  for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'", 'window.gsDeepDive',
+    "'../news/data/units.json'", "'../news/data/stats.json'", '`../news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
     if (!SNAP_JS.includes(need)) throw new Error('nflbets/build/snapshot.html no longer has ' + need);
-  for (const need of ['data-snap="${esc(g.game_id)}"', 'window.gameSnapshot(b.dataset.snap,b)', 'window.pkBoard={', 'ST.state=st;'])
-    if (!js.includes(need)) throw new Error("the Pick'ems tab no longer opens the Game snapshot (" + need + ')');
+  for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#pickems')"])
+    if (!js.includes(need)) throw new Error("the Pick'ems tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker on the board (" + need + ')');
+  for (const gone of ['data-snap=', 'pk-gbody', 'aria-expanded'])
+    if (js.includes(gone)) throw new Error("the Pick'ems tab still opens a game's row on buttons (" + gone + '): a tap on a game opens its Game snapshot');
   if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
+  const DD_JS = rd('nflbets', 'build', 'deepdive.js');
+  for (const need of ['root.gsDeepDive = API', 'function possession(', 'function headTag(', 'function applies(', 'function basis(', 'module.exports = API'])
+    if (!DD_JS.includes(need)) throw new Error('nflbets/build/deepdive.js no longer has ' + need);
+  if (/<\/script|<!--/i.test(DD_JS)) throw new Error('nflbets/build/deepdive.js has a closing script tag or a comment opener, which would end its script in the page');
   out = sub1(out, '</style>\n</head>', '</style>\n<style>' + SNAP_CSS + '</style>\n</head>', "the snapshot's styles");
-  out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>' + SNAP_JS + '</script>\n</body>\n</html>\n', "the snapshot's script"); }
-/* the Season Tracker tab's styles and its script, last: the script finds the tab already opened when
-   the page is opened on #tracker (routeTabs ran in the Pick'ems tab's boot), and loads the frame */
-out = sub1(out, '</style>\n</head>', '</style>\n<style>' + TRK_CSS + '</style>\n</head>', "the Season Tracker tab's styles");
-out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>' + TRK_JS + '</script>\n</body>\n</html>\n', "the Season Tracker tab's script");
-if (out.split('id="tab-tracker"').length !== 2) throw new Error('the Season Tracker tab is not in the page exactly once');
+  out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>\n' + DD_JS + '</script>\n<script>' + SNAP_JS + '</script>\n</body>\n</html>\n', "the Deep Dive's and the snapshot's scripts");
+  if (out.split('root.gsDeepDive = API').length !== 2) throw new Error('the Deep Dive is not in the page exactly once'); }
+if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out)) throw new Error('the page still carries the Season Tracker tab');
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);

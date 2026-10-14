@@ -72,7 +72,7 @@ function check(U, meta, S) {
   /* week: built for the current week of this season */
   if (!meta) add('week', 'units2026.js carries no UNITS26_META (built before 2026-10-09): rebuild with node tools/context.js');
   else {
-    if (meta.season !== SEASON) add('week', `built for season ${meta.season}, the tracker's is ${SEASON}`);
+    if (meta.season !== SEASON) add('week', `built for season ${meta.season}, the job's is ${SEASON}`);
     if (meta.week !== st.week) add('week', `built for week ${meta.week}, the schedule's current week is ${st.week}`);
   }
   const week = st.week;

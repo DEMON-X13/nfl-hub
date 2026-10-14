@@ -1,19 +1,9 @@
-/* Season context the page reads beside each week file. Rebuilt on every pull.
+/* The Deep Dive's data, the matchups X NFL Bets and Stats' Game snapshot draws in its Offense vs defense
+   card (nflbets/build/deepdive.js). Rebuilt on every pull.
 
      node tools/context.js            (from news/)   or   require('./context').build()
 
-   Writes three plain script data files (the page stays file:// friendly, no fetch):
-     data/ranks2026.js     RANKS26: every team's rank and Elo on X NFL Bets' Team Rankings tab, read
-                           from ../elo/data/model.json (`teams`, the power ratings of this season's
-                           results, every final solved together and re-scored against what its
-                           opponent has turned out to be, with the lineups at two tenths) in the
-                           order that tab draws it. RANKS26_ASOF is the last game the ratings
-                           have taken in. Until 2026-10-09 it was the Alpha Model's team Elo from
-                           ../betting/state.json, which no page shows as a ranking any more; the two
-                           disagreed by 6.4 places a team (Seattle 1st on the chip, 9th on the tab).
-     data/players2026.js   PLAYERS26: team -> { name: position } from the nflverse roster,
-                           keyed by full name, football name and first name, so the page
-                           can write "(QB)" after a player's name.
+   Writes:
      data/units2026.js     UNITS26: the Deep Dive. Six units per team, each with a rating in league
                            standard deviations (z), its rank, the numbers behind it, who is playing
                            there and who is not. Every row sets a unit against the unit it really
@@ -23,13 +13,13 @@
                              rb     vs runD    EPA and yards per carry, QB runs, scrambles and
                                                kneel-downs taken out, made / allowed
                              rec    vs db      EPA and yards per target, made / allowed
-                           The page tags a row by the gap between the two ratings, weighted by how much
+                           A row is tagged by the gap between the two ratings, weighted by how much
                            that matchup alone has predicted an offense's points (META.tags.rows, below).
                            Each team also carries `overall`: its Overall Offense and Overall Defense on
                            X NFL Bets' ELO Ratings tab (shown Elo, rank, raw, games and, where the file
                            has it, carried), read from ../elo/data/model.json `units` only when that block
                            is of SEASON (overall() below; META.overall says which build, or why it is
-                           missing). The Deep Dive's headline sets this team's Overall Offense against the
+                           missing). The Overall line's tag sets this team's Overall Offense against the
                            opponent's Overall Defense: tested on 2018-2025 from week 2 on it predicted an
                            offense's points better than the six rows did (RMSE 9.44 against 9.60; weeks 2-4
                            9.34 against 9.40), though not in week 1 (9.48 against 9.29), as tagged (one
@@ -46,7 +36,13 @@
                            stats, sacks were counted twice in pressure, and the who-lists were
                            season usage with no injury check (TB's QB row named an injured
                            Baker Mayfield). See lineups() for how the names are chosen now.
-   Also writes, beside them:
+     data/units.json       its twin, what the Game snapshot fetches: { season, week, built_at, meta, basis,
+                           lineups, units }, exactly units2026.js's consts (tools/lib.js writeTwin), written
+                           with it and whenever it is missing or differs from it.
+   Until 14 October 2026 it also wrote data/ranks2026.js (the old tracker page's rank chip, each team's place
+   on the Team Rankings tab) and data/players2026.js (the page's "(QB)" after a player's name); nothing read
+   either once the page was retired, so neither is written.
+   Also writes, beside it:
      tools/out/weekN-lineups.json   the lineups as each team's kickoff found them (a team's entry stops
                            changing at its kickoff), so a later run can grade them against who played
      tools/out/weekN-lineups-grade.md   that grade, once nflverse has the week's snap counts
@@ -61,10 +57,10 @@
    its commit and the last good files stay live. (Until 2026-10-09 a missing injury report quietly
    published lineups with no injury check, and a missing stats file kept the whole Deep Dive,
    lineups included, on a green run.) The snap counts only order the lists and ESPN's list only adds
-   to the check: without either the build goes on, logs a warning and says so on the page.        */
+   to the check: without either the build goes on, logs a warning and says so in UNITS26_LINEUPS.  */
 'use strict';
 const fs = require('fs'), path = require('path');
-const { SEASON, GAMES_URL, parseCSV, fetchText, ab, seasonState, etToISO, unplayed } = require('./lib');
+const { SEASON, GAMES_URL, parseCSV, fetchText, ab, seasonState, etToISO, unplayed, writeTwin, UNITS_CONSTS, unitsTwin } = require('./lib');
 
 const PRIOR = SEASON - 1, PRIOR_GAMES = 4;
 const REL = 'https://github.com/nflverse/nflverse-data/releases/download';
@@ -94,25 +90,7 @@ async function getCSV(name, opts) {
 const num = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
 const dataFile = (name, obj, extra = '') => `/* Generated by tools/context.js. Do not edit by hand. */\nconst ${name} = ${JSON.stringify(obj)};\n${extra}`;
 
-/* ---------------- the rank chip: X NFL Bets' Team Rankings ---------------- */
-/* Ordered as betting/tools/ratings_viz.js orders the tab: Elo, highest first, ties in the file's order
-   (Array.prototype.sort is stable). As of the last final whose kickoff came before model.json was built. */
-function ranks(root, games) {
-  const file = path.resolve(root, '..', 'elo', 'data', 'model.json');
-  if (!fs.existsSync(file)) throw new Error('../elo/data/model.json not found');
-  const m = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const teams = Object.entries(m.teams || {}).map(([t, v]) => [ab(t), v && v.elo]).filter(([, e]) => isFinite(e));
-  if (teams.length < 32) throw new Error(`only ${teams.length} teams on Team Rankings`);
-  teams.sort((a, b) => b[1] - a[1]);
-  const R = {}; teams.forEach(([t, e], i) => { R[t] = { rank: i + 1, elo: Math.round(e) }; });
-  const built = Date.parse(String(m.built_at || '').replace(/\+00:00$/, 'Z'));
-  const asof = games.filter(r => r.season === String(SEASON) && String(r.home_score || '').trim())
-    .map(r => ({ day: r.gameday, kick: etToISO(r.gameday, r.gametime) }))
-    .filter(x => !isFinite(built) || Date.parse(x.kick) < built).map(x => x.day).sort().pop() || '';
-  return { R, asof, built: m.built_at || '' };
-}
-
-/* ---------------- the Deep Dive's headline and its tags ---------------- */
+/* ---------------- the Overall line's tag and the rows' ---------------- */
 /* The tag constants, carried in UNITS26_META.tags so the page reads them from the file and the smoke test
    holds them to its own copy. All fitted on 2012-2017 regular-season weeks 2 on (never on 2026), by
    elo/tools/deepdive_vs_units.py, which prints them and says whether this file carries them (run it
@@ -136,7 +114,7 @@ const DD_TAGS = {
 };
 /* Overall Offense and Overall Defense per club from ../elo/data/model.json `units`, the ELO Ratings tab's
    pills (elo/build.py unit_ratings), only when they are of this season: the block follows the rankings'
-   season, the finished one until 16 clubs have played. LA is LAR, as ranks() maps it. */
+   season, the finished one until 16 clubs have played. LA is LAR, as tools/lib.js ab() maps it. */
 function overall(root) {
   const file = path.resolve(root, '..', 'elo', 'data', 'model.json');
   if (!fs.existsSync(file)) throw new Error('../elo/data/model.json not found');
@@ -153,32 +131,6 @@ function overall(root) {
     return O;
   };
   return { off: side('off'), def: side('def'), built: m.built_at || '', season: +u.season };
-}
-
-/* ---------------- positions from the roster ---------------- */
-/* writers use either form of a first name; the roster keeps one */
-const NICK = {};
-for (const [a, b] of [['Josh', 'Joshua'], ['Mike', 'Michael'], ['Matt', 'Matthew'], ['Chris', 'Christopher'], ['Nick', 'Nicholas'],
-  ['Jon', 'Jonathan'], ['Rob', 'Robert'], ['Bob', 'Robert'], ['Will', 'William'], ['Dan', 'Daniel'], ['Tony', 'Anthony'], ['Alex', 'Alexander'],
-  ['Ben', 'Benjamin'], ['Zach', 'Zachary'], ['Tom', 'Thomas'], ['Jake', 'Jacob'], ['Joe', 'Joseph'], ['Sam', 'Samuel'], ['Andy', 'Andrew'],
-  ['Drew', 'Andrew'], ['Jim', 'James'], ['Jimmy', 'James'], ['Dave', 'David'], ['Ed', 'Edward'], ['Greg', 'Gregory'], ['Jeff', 'Jeffrey'],
-  ['Pat', 'Patrick'], ['Steve', 'Steven'], ['Tim', 'Timothy'], ['Cam', 'Cameron'], ['Trey', 'Treyvon'], ['Kenny', 'Kenneth'], ['Ken', 'Kenneth']]) {
-  (NICK[a] ??= []).push(b); (NICK[b] ??= []).push(a);
-}
-function players(roster) {
-  const P = {};
-  for (const r of roster) {
-    if (['CUT', 'RET'].includes(r.status)) continue;
-    const team = ab(r.team), pos = r.depth_chart_position || r.position; if (!team || !pos) continue;
-    const t = (P[team] ??= {});
-    const firsts = new Set([r.football_name, r.first_name].filter(Boolean));
-    for (const f of [...firsts]) for (const alt of (NICK[f] || [])) firsts.add(alt);
-    for (const n of new Set([r.full_name, ...[...firsts].map(f => `${f} ${r.last_name}`)])) {
-      if (n && n.trim().split(' ').length >= 2 && !n.includes('undefined') && !t[n]) t[n] = pos;
-    }
-  }
-  if (Object.keys(P).length < 32) throw new Error(`the roster covered ${Object.keys(P).length} teams`);
-  return P;
 }
 
 /* ---------------- Deep Dive: the ratings ---------------- */
@@ -993,13 +945,13 @@ async function build(opts = {}) {
   /* an empty list is as good as none (pull-week.js passes [] when ESPN answered with nothing usable): warn either way */
   if (!espn || !espn.length) warn(`ESPN injury list ${espn ? 'empty' : 'not available'}: the lineups rest on the nflverse report alone`);
 
-  /* the chip is the hub's own file, not a download: if it is missing or short, keep the chip as it was and say so */
-  let RK = null;
-  try { RK = ranks(root, D.games); } catch (e) { warn(`ranks2026.js kept: ${e.message}`); }
-  /* the Deep Dive's headline is the same file's Overall Offense and Defense: without them the rows still publish */
+  /* the Overall line's ratings are the hub's own file, ../elo/data/model.json: without them the rows still publish */
   let OV = null, ovWhy = '';
   try { OV = overall(root); } catch (e) { ovWhy = e.message; warn(`Deep Dive headline left out: ${e.message}`); }
-  const P = players(D.roster26);
+  /* a roster short of a league would leave clubs with no names: nothing is written (until 2026-10-14 the
+     player positions file, written from the same roster, made this check) */
+  const rosterTeams = new Set(D.roster26.filter(r => !['CUT', 'RET'].includes(r.status)).map(r => ab(r.team)).filter(Boolean));
+  if (rosterTeams.size < 32) throw new Error(`required source short, nothing written: the roster covered ${rosterTeams.size} teams`);
   const { U, LU } = units({ team25: D.team25, team26: D.team26, player25: D.player25, player26: D.player26, snaps26: D.snaps26,
     roster: D.roster26, injuries: D.injuries26, chart, espn, week, kicks, lastGame: S.lastGame, opps: S.opps, now, reportModified: LAST_MODIFIED.injuries26 });
   if (OV) for (const t of Object.keys(U)) {
@@ -1019,17 +971,10 @@ async function build(opts = {}) {
     overall: OV ? { file: 'elo/data/model.json', built_at: OV.built, season: OV.season } : { file: 'elo/data/model.json', missing: ovWhy },
     tags: DD_TAGS };
 
-  /* everything arrived: write */
-  if (RK) {
-    fs.writeFileSync(path.join(out, 'ranks2026.js'), dataFile('RANKS26', RK.R, `const RANKS26_ASOF = ${JSON.stringify(RK.asof)};\nconst RANKS26_SRC = ${JSON.stringify({ file: 'elo/data/model.json', built_at: RK.built })};\n`));
-    console.log(`ranks2026.js: Team Rankings order, #1 ${Object.keys(RK.R).find(t => RK.R[t].rank === 1)}, through ${RK.asof} (model.json built ${RK.built})`);
-  }
-  fs.writeFileSync(path.join(out, 'players2026.js'), dataFile('PLAYERS26', P));
-  console.log(`players2026.js: ${Object.values(P).reduce((a, t) => a + Object.keys(t).length, 0)} names across ${Object.keys(P).length} teams`);
-  /* units2026.js is rewritten only when something in it besides its build time changed: built_at says
-     when the Deep Dive last changed, and a run that changes nothing commits nothing (until 2026-10-09
-     the stamp moved on every run, so all nineteen runs a week committed). The smoke test proves the
-     run itself from the snapshot below (run_at), not from this stamp. */
+  /* everything arrived: write. units2026.js is rewritten only when something in it besides its build
+     time changed: built_at says when the Deep Dive last changed, and a run that changes nothing commits
+     nothing (until 2026-10-09 the stamp moved on every run, so all nineteen runs a week committed). The
+     smoke test proves the run itself from the snapshot below (run_at), not from this stamp. */
   const unitsFile = path.join(out, 'units2026.js');
   const unitsBody = m => dataFile('UNITS26', U,
     `const UNITS26_BASIS = ${JSON.stringify(`${PRIOR} season counted as ${PRIOR_GAMES} games`)};\n` +
@@ -1041,6 +986,8 @@ async function build(opts = {}) {
     META.built_at = oldBuilt;
     console.log(`units2026.js: unchanged since ${oldBuilt}, not rewritten`);
   } else fs.writeFileSync(unitsFile, unitsBody(META));
+  /* its twin, what the Game snapshot fetches, from the file's consts as they now stand */
+  console.log(`units.json: ${writeTwin(unitsFile, path.join(out, 'units.json'), UNITS_CONSTS, unitsTwin)}`);
   console.log(OV ? `units2026.js: headline from model.json built ${OV.built} (Overall Offense #1 ${Object.keys(OV.off).find(t => OV.off[t].rank === 1)}, Overall Defense #1 ${Object.keys(OV.def).find(t => OV.def[t].rank === 1)})` : `units2026.js: no headline (${ovWhy})`);
   console.log(`units2026.js: ${Object.keys(U).length} teams, week ${week} (${S.phase}), 2026 games ${Math.min(...Object.values(U).map(u => u.g26))} to ${Math.max(...Object.values(U).map(u => u.g26))}; lineups from ${lineSrc.join(', ')}; ${LU.repaired} chart id(s) repaired by name; filed: ${META.report.filed.join(' ') || 'none'}`);
   for (const l of LU.passedLog) console.log('  passed over: ' + l);
@@ -1053,7 +1000,7 @@ async function build(opts = {}) {
     injuries: keepInj, roster: D.roster26.map(r => ({ gsis_id: r.gsis_id, team: r.team, status: r.status, full_name: r.full_name, football_name: r.football_name, first_name: r.first_name, last_name: r.last_name, position: r.position })),
     chart_names: LU.chartNames, kicks,
     games: D.games.filter(r => r.season === String(SEASON)).map(r => ({ game_id: r.game_id, season: r.season, game_type: r.game_type, week: r.week, gameday: r.gameday, gametime: r.gametime, away_team: r.away_team, home_team: r.home_team, away_score: r.away_score, home_score: r.home_score })),
-    espn: espn || null, model_built_at: RK ? RK.built : null }));
+    espn: espn || null }));
 
   if (S.phase === 'regular') {
     fs.mkdirSync(toolsOut, { recursive: true });

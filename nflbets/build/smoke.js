@@ -10,7 +10,8 @@
  * Pick'ems board is run both ways.
  *
  * Boots the real page against a stubbed state.json and payload.json: the Pick'ems board, the
- * call on each game, the prop model's prices that open underneath one, and the Props tab,
+ * call on each game, the Game snapshot a tap on one opens (and its button to the game's page on the
+ * Props tab, with the game bets), and the Props tab,
  * which is the prop model's Games tab running in this page; the Parlay Builder, its suggested
  * parlays panel over the builder (bet types, games, four tiers, the Elo picks, Add to builder,
  * Finish), and X Parlays on a tab of its own. X Parlays and the X Bet Log are the
@@ -18,6 +19,10 @@
  * no owner and no shared store, every request a page makes is recorded, and one to the retired
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
  * carries what the retired layers left shows exactly the files and loses none of its own data.
+ * The news job's files the Game snapshot reads (news/data/units.json, stats.json, the week's notes)
+ * are never the real ones here: every run answers them with a 404 unless it is handed stand-ins of
+ * the smoke's own, since the elo job runs this smoke every morning and a news job publish must never
+ * turn it red (the real files are news/tools/smoke.js's to hold, in the news job).
  * jsdom and PapaParse are borrowed from props/build, so this needs no install of its own.
  *
  *   SMOKE_PAYLOAD=<file> node nflbets/build/smoke.js   boots the page on that payload instead of
@@ -297,8 +302,10 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
 
 /* seed: what the browser holds before the page opens; file: the parlay file it reads in place of
    liveparlays/parlays.json; xbets: the X Bet Log's file in place of liveparlays/xbets.json (404:
-   it does not answer). Every request is in `calls` with its method and cache mode. */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null } = {}) {
+   it does not answer); news: the news job's files, stand-ins by name ({ units, stats, notes: {
+   '2026-w6': ... } }, each an object, a string that is not JSON, or missing for a 404; none at all
+   by default). Every request is in `calls` with its method and cache mode. */
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
@@ -312,6 +319,11 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         w.fetch = (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase();
           fetched.push(s.replace(/\?.*$/, '')); urls.push(s); calls.push({ url: s, method: m, cache: o && o.cache || null }); ALL_CALLS.push(m + ' ' + s);
           if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); return Promise.reject(new TypeError('Failed to fetch')); }
+          /* the news job's files: the run's stand-ins, or a 404 (never the real ones) */
+          if (/\/news\/data\//.test(s)) { const nm = s.replace(/\?.*$/, '').match(/news\/data\/(?:notes\/(\d{4}-w\d+)|(units|stats))\.json$/) || [];
+            const f = !news ? undefined : nm[1] ? (news.notes || {})[nm[1]] : nm[2] ? news[nm[2]] : undefined;
+            return Promise.resolve(f === undefined || f === 404 ? { ok: false, status: 404 } : { ok: true, status: 200,
+              json: async () => { if (typeof f === 'string') return JSON.parse(f); return JSON.parse(JSON.stringify(f)); } }); }
           if (s.includes('suggest_ledger.json')) { const t = ledger === 404 ? null : ledger ? JSON.stringify(ledger) : LEDGER_REAL;
             return Promise.resolve(t == null ? { ok: false, status: 404 } : { ok: true, status: 200, json: async () => JSON.parse(t) }); }
           if (s.includes('state.json')) return noState
@@ -344,27 +356,30 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   { const PV = fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), LIVE = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
     chk(/id="previewTheme"/.test(PV) && /<script>window\.PREVIEW_FRAME_HEAD=/.test(PV) && /<em>Bets and Stats<\/em>/.test(PV), 'nflbets/preview.html is missing its theme');
     chk(!/id="previewTheme"/.test(LIVE) && !/<script>window\.PREVIEW_FRAME_HEAD=/.test(LIVE), 'the preview theme leaked into the live page');
-    /* the Season Tracker tab in both looks, from their styles (the preview is never booted here): the frame
-       laid over the screen paints nothing of its own, so an open game's backdrop dims the page as it stands,
-       never a light screen over the preview's dark one; and the note that the tracker did not load has an
-       opaque background of its own its text reads on at 4.5:1 (the preview's orange tint over its dark page
-       was 2.1:1). jsdom resolves no var() and does not split one into the longhands, so a var() is looked up
-       on the root and the shorthand is read */
-    { const clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)'].includes(String(v || '').trim());
-      const rgba = v => { v = String(v || '').trim(); let m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    /* the Game snapshot's Deep Dive tags and its preview block in both looks, from their styles (the
+       preview is never booted here): each tag's text on its own opaque tint, and the preview's text on its
+       block, at 4.5:1 or more. jsdom resolves no var(), so one is looked up on the window, then the root */
+    { const rgba = v => { v = String(v || '').trim(); let m = v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
         if (m) { const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1]; return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).concat(1); }
         m = v.match(/^rgba?\(([^)]*)\)$/); if (!m) return null; const p = m[1].split(',').map(x => parseFloat(x)); return p.length >= 3 && p.every(x => !isNaN(x)) ? [p[0], p[1], p[2], p.length > 3 ? p[3] : 1] : null; };
       const lum = c => { const f = x => (x /= 255) <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
       for (const [name, h] of [['the page', LIVE], ['the preview', PV]]) {
-        const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, fr = pd.querySelector('#tab-tracker iframe.nt-frame'), nt = pd.getElementById('ntNote');
-        if (!fr || !nt) { chk(false, `${name}: no Season Tracker frame or note to look at`); pw.close(); continue; }
-        pd.getElementById('tab-tracker').hidden = false; fr.classList.add('nt-lifted'); nt.hidden = false;
-        const fc = pw.getComputedStyle(fr), nc = pw.getComputedStyle(nt), rc = pw.getComputedStyle(pd.documentElement);
-        chk(clear(fc.background) && clear(fc.backgroundColor) && clear(fc.backgroundImage),
-          `${name}: the Season Tracker frame, laid over the screen, paints a background of its own: ` + [fc.background, fc.backgroundColor, fc.backgroundImage].join(' / '));
-        let bg = clear(nc.backgroundColor) ? nc.background : nc.backgroundColor; const vm = String(bg).trim().match(/^var\((--[\w-]+)\)$/); if (vm) bg = rc.getPropertyValue(vm[1]);
-        const b = rgba(bg), ink = rgba(nc.color), ratio = b && ink ? (Math.max(lum(b), lum(ink)) + 0.05) / (Math.min(lum(b), lum(ink)) + 0.05) : 0;
-        chk(!!b && b[3] === 1 && ratio >= 4.5, `${name}: the Season Tracker's note that it did not load is not on an opaque background of its own its text reads on at 4.5:1: ${String(bg).trim()} under ${nc.color} (${ratio.toFixed(2)}:1)`);
+        const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, box = pd.createElement('div');
+        box.id = 'gsModal'; box.innerHTML = '<div class="gs-prev"><p class="gs-pv"><span class="gs-lab">Preview</span><span>x</span></p><p class="gs-pauto">x</p></div>'
+          + ['easy', 'fav', 'even', 'tough', 'vtough'].map(c => `<span class="dtag ${c}">x</span>`).join('');
+        pd.body.appendChild(box);
+        const clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)', 'initial'].includes(String(v || '').trim());
+        const val = (el, prop) => { let v = String(pw.getComputedStyle(el).getPropertyValue(prop) || '').trim(); if (prop === 'background-color' && clear(v)) v = String(pw.getComputedStyle(el).getPropertyValue('background') || '').trim();
+          const m = v.match(/^var\((--[\w-]+)\)$/);
+          if (m) v = String(pw.getComputedStyle(box).getPropertyValue(m[1]) || '').trim() || String(pw.getComputedStyle(pd.documentElement).getPropertyValue(m[1]) || '').trim(); return v; };
+        const ratio = (bg, ink) => { const b = rgba(bg), k = rgba(ink); return b && k && b[3] === 1 ? (Math.max(lum(b), lum(k)) + 0.05) / (Math.min(lum(b), lum(k)) + 0.05) : 0; };
+        const bad = [];
+        for (const el of box.querySelectorAll('.dtag')) { const bg = val(el, 'background-color'), r = ratio(bg, val(el, 'color'));
+          if (!(r >= 4.5)) bad.push(`the ${el.className} tag reads ${r.toFixed(2)}:1 (${bg} under ${val(el, 'color')})`); }
+        const pv = box.querySelector('.gs-prev'), pbg = val(pv, 'background-color');
+        for (const el of [box.querySelector('.gs-pv'), box.querySelector('.gs-pv .gs-lab'), box.querySelector('.gs-pauto')]) { const r = ratio(pbg, val(el, 'color'));
+          if (!(r >= 4.5)) bad.push(`the preview's ${el.className} reads ${r.toFixed(2)}:1 (${pbg} under ${val(el, 'color')})`); }
+        chk(bad.length === 0, `${name}: a Game snapshot tag or the preview's text is under 4.5:1 on its own background: ${bad.join('; ')}`);
         pw.close(); } } }
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
   chk(d.title === 'X NFL Bets and Stats' && /X NFL Bets and Stats/.test(txt(d.querySelector('h1'))), 'the page is not headed X NFL Bets and Stats');
@@ -372,7 +387,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
      bar */
   const tabs = [...d.querySelectorAll('#tabs button')].map(b => b.textContent.trim());
-  chk(tabs.join('|') === "Pick'ems|Season Tracker|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
+  chk(tabs.join('|') === "Pick'ems|Props|Parlay Builder|X Parlays|Team Rankings|ELO Ratings|Pick'em Record|X Bet Log", 'tabs are ' + tabs.join('|'));
   chk(!d.querySelector('header a'), 'the header carries a link');
   chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-slate').hidden, 'Pick\'ems is not the open tab');
   for (const id of ['tab-slate', 'tab-parlay', 'tab-xparlays', 'tab-track', 'tab-week', 'tab-backup'])
@@ -484,36 +499,45 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   if (graded) chk(!!graded.querySelector('.pk-matchup .pk-res') && /Pick (hit|missed)/.test(txt(graded.querySelector('.pk-result'))),
     'a graded game shows no tick or cross and no Pick hit/missed');
 
-  /* nothing is open until a game is clicked */
-  chk(!d.querySelector('.pk-gbody'), 'a game was open before anything was clicked');
+  /* a game's row is a button to its Game snapshot (since 14 October 2026; it opened in place on two
+     buttons before): Tab reaches it, it says it opens a window, and nothing is open until one is tapped */
+  chk(cards.length > 0 && cards.every(c => c.getAttribute('role') === 'button' && c.getAttribute('tabindex') === '0' && c.getAttribute('aria-haspopup') === 'dialog' && !c.hasAttribute('aria-expanded')),
+    'a game\'s row is not a button to a window that Tab reaches (role button, tabindex 0, aria-haspopup dialog, no aria-expanded)');
+  chk(!d.querySelector('.pk-gbody, #pkBoard button[data-snap], #pkBoard button[data-props-game]') && (!d.getElementById('gsModal') || d.getElementById('gsModal').hidden),
+    'a game was open before anything was tapped, or a row still opens in place on buttons');
 
-  /* open one: its Game snapshot, and a button to the game's own page on the Props tab, where its
-     game bets are (app v105, the owner's call of 14 October 2026); none of them here */
+  /* tap one: its Game snapshot, whose first button is the game's own page on the Props tab, where its
+     game bets are (app v105, the owner's call of 14 October 2026), where the Props tab can open it */
   const first = cards[0];
   first.click();
-  await wait(60);
-  const body = first.querySelector('.pk-gbody');
-  chk(!!body, 'clicking a game opened nothing');
-  chk(first.classList.contains('pk-open'), 'the card did not mark itself open');
-  chk(!!body && !body.querySelector('.gbets, input[data-leg], table, .pk-lines, .pk-tolegs'), 'the opened game on the board still carries the Game bets card');
-  chk(!d.querySelector('#pkBoard input[data-leg]'), 'the board offers a line to tick');
+  await wait(120);
+  const gsm = () => d.getElementById('gsModal');
+  chk(!!gsm() && !gsm().hidden && new RegExp(`${gameOf(first).away_team}.*${gameOf(first).home_team}`).test(txt(d.getElementById('gsTitle'))), 'tapping a game did not open its Game snapshot');
+  chk(!first.querySelector('.pk-gbody, .gbets, input[data-leg], table, .pk-lines, .pk-tolegs') && !d.querySelector('#pkBoard input[data-leg]'), 'the tapped game opened in place on the board, or the board offers a line to tick');
   const pkRow = id => w.eval('S').sched.find(x => x.id === id);
   const pkCanOpen = id => { const r = pkRow(id); return !!r && w.eval('weekOpen')(+r.w); };
-  const pbtn = body && body.querySelector('button[data-props-game]');
-  chk(!!pbtn === pkCanOpen(first.dataset.game) && (!pbtn || (pbtn.dataset.propsGame === pkRow(first.dataset.game).id && /Game bets and player props/.test(txt(pbtn)))),
-    `the opened game ${pkCanOpen(first.dataset.game) ? 'has no button to its page on the Props tab' : 'offers a page the Props tab cannot open'}`);
+  const pbtn = gsm() && gsm().querySelector('#gsMatch button[data-gs-props]');
+  chk(!!pbtn === pkCanOpen(first.dataset.game) && w.pkBoard.canProps(first.dataset.game) === pkCanOpen(first.dataset.game)
+    && (!pbtn || (pbtn.dataset.gsProps === pkRow(first.dataset.game).id && /^Game bets and player props/.test(txt(pbtn)) && d.getElementById('gsMatch').firstElementChild.contains(pbtn))),
+    `the Game snapshot ${pkCanOpen(first.dataset.game) ? 'has no button, first in it, to the game\'s page on the Props tab' : 'offers a page the Props tab cannot open'}`);
 
-  /* the button opens the game's page on the Props tab, on its week, with the Game bets card on it */
+  /* the button closes the snapshot and opens the game's page on the Props tab, on its week, with the
+     Game bets card brought into view (it follows the game's suggested parlays) */
   const gbView = () => d.getElementById('gameView'), gbCard = () => gbView().querySelector('.gbets');
   const gbPage = async id => { w.eval(`S.ui.game=${JSON.stringify(id)};S.ui.open={};renderGame()`); await wait(60); };
   if (pbtn) {
+    const into = [], siv = w.Element.prototype.scrollIntoView;
+    w.Element.prototype.scrollIntoView = function (o) { into.push(this); if (siv) try { siv.call(this, o); } catch (e) { /* jsdom */ } };
     pbtn.click();
-    await wait(100);
+    await wait(120);
+    w.Element.prototype.scrollIntoView = siv;
+    chk(gsm().hidden, 'the Game snapshot\'s props button did not close the window');
     chk(!d.getElementById('tab-slate').hidden && d.getElementById('tab-pickems').hidden && w.location.hash === '#slate', 'the button did not open the Props tab: ' + w.location.hash);
     chk(!d.getElementById('gameModal').hidden && w.eval('S').ui.game === first.dataset.game && +d.getElementById('weekSel').value === +pkRow(first.dataset.game).w,
       'the button did not open the game\'s own page on its week');
     chk(!!gbCard() && /Game bets/.test(txt(gbCard().querySelector('h2'))), 'the game\'s page on the Props tab has no Game bets card');
-  }
+    chk(into.some(el => el === gbCard()), 'the button did not bring the game\'s Game bets card into view');
+  } else if (gsm() && !gsm().hidden) w.gameSnapshotClose(false);
   /* the card on the game's page: both sides priced by the prop model, off its own state */
   const gbRows = () => (gbCard() ? [...gbCard().querySelectorAll('tr')] : []);
   const teamLines = id => { const r = pkRow(id); return r && w.gameBet(r, r.h, 'ats') ? 4 : 2; };
@@ -617,13 +641,34 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'pickems').click();
   await wait(60);
 
-  /* clicking inside the prices does not toggle; clicking the row does */
-  first.querySelector('.pk-gbody').click();
-  await wait(60);
-  chk(!!first.querySelector('.pk-gbody'), 'clicking inside the prices closed them');
-  first.click();
-  await wait(60);
-  chk(!first.querySelector('.pk-gbody'), 'clicking again did not close the game');
+  /* Enter and Space on a focused row open its snapshot too, and Escape hands the focus back to the row;
+     a redraw of the board (a scoreboard read, a new week) never opens a window, and a window open
+     across one hands the focus to the same game's new row */
+  { const row0 = () => d.querySelector(`.pk-game[data-game="${first.dataset.game}"]`), bad = [];
+    const key = (el, k) => el.dispatchEvent(new w.KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+    const esc = async () => { key(d.activeElement || d.body, 'Escape'); await wait(30); };
+    const keyup = (el, k) => el.dispatchEvent(new w.KeyboardEvent('keyup', { key: k, bubbles: true, cancelable: true }));
+    for (const k of ['Enter', ' ']) {
+      /* Space opens as it comes up, as a button's does: not on its way down */
+      row0().focus(); key(row0(), k);
+      if (k === ' ') { await wait(40); if (gsm() && !gsm().hidden) bad.push('Space opened the window on its way down, so its way up would click Close'); keyup(row0(), k); }
+      await wait(80);
+      if (!gsm() || gsm().hidden) bad.push(`${k === ' ' ? 'Space' : k} on a focused row did not open its snapshot`);
+      await esc();
+      if (!gsm().hidden || d.activeElement !== row0()) bad.push(`Escape after ${k === ' ' ? 'Space' : k} did not close the window and hand the focus back to the row`); }
+    d.getElementById('pkNow').click(); await wait(250);
+    if (!gsm().hidden) bad.push('a scoreboard read opened a window');
+    { const sel = d.getElementById('pkWeek'), was = sel.value, other = [...sel.options].find(o => o.value !== was);
+      if (other) { sel.value = other.value; sel.dispatchEvent(new w.Event('change')); await wait(40); sel.value = was; sel.dispatchEvent(new w.Event('change')); await wait(40); }
+      if (!gsm().hidden) bad.push('a new week on the board opened a window'); }
+    row0().focus(); row0().click(); await wait(80);
+    const before = row0();
+    d.getElementById('pkNow').click(); await wait(250);
+    if (gsm().hidden) bad.push('a scoreboard read closed the open window');
+    d.getElementById('gsClose').click(); await wait(30);
+    if (!row0() || row0() === before || d.activeElement !== row0()) bad.push('closed after the board was redrawn, the window did not hand the focus to the game\'s new row');
+    chk(bad.length === 0, 'the board\'s rows do not open the Game snapshot as buttons do: ' + bad.join('; ')); }
+  cards = [...d.querySelectorAll('.pk-game')];
 
   /* ---- Props: the prop model's Games tab, as it is on its own site ---- */
   const propsBtn = [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'slate');
@@ -1089,156 +1134,28 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => /^(record|ratings|bets)$/.test(f.dataset.embed) && !f.dataset.src && !f.getAttribute('src')), 'a framed tab is not one of the betting app\'s tabs, or points outside the page');
   chk((HTML.match(/const BET_APP=/g) || []).length === 1, 'the betting app should be in the page exactly once');
 
-  /* ---- Season Tracker: the tracker (news/) framed from its own address, loaded when its tab is first
-     opened, never in the page. jsdom loads no src, so a stand-in tracker is written into the frame (an
-     #ov the tracker opens by its class on, naming the game in ov.dataset.game and focusing #ovx, closed
-     by Escape, the X and the backdrop) and the frame's load is played as a browser plays it. The real
-     tracker under this tab's script is news/tools/smoke.js's to hold, in the news job: this smoke runs
-     every morning in the elo job, so nothing the tracker publishes may fail it ---- */
-  { const sec = d.getElementById('tab-tracker'), f = sec && sec.querySelector('iframe.nt-frame'), note = d.getElementById('ntNote');
-    chk(!!f && f.title === 'Season Tracker' && f.dataset.src === '../news/index.html' && !f.getAttribute('src') && !f.hasAttribute('srcdoc') && !f.hasAttribute('sandbox') && !f.dataset.embed && !f.classList.contains('pk-frame'),
-      'the Season Tracker frame is missing, filled before its tab is opened, sandboxed or taken for a betting frame');
-    chk(d.querySelectorAll('iframe').length === d.querySelectorAll('iframe.pk-frame').length + 1 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is neither one of the three betting tabs nor the Season Tracker');
-    chk(!!d.getElementById('ntTop') && sec.contains(d.getElementById('ntTop')) && !!note && note.hidden && sec.contains(note) && !sec.querySelector('section'),
-      "the Season Tracker's back-to-top button or its note is not inside its tab, the note shows before anything loaded, or the tab holds a section of its own (the tab bar would hide it)");
-    chk(!/news\/data\/|RANKS26|UNITS26|\bWEEKS\b/.test(HTML), 'the page carries the tracker\'s data or code: a news job commit would leave it stale');
-    if (f) {
-      const scrolls = [], was = w.scrollTo; w.scrollTo = (...a) => { a.sb = d.documentElement.style.scrollBehavior; scrolls.push(a); };
-      const topShown = () => w.getComputedStyle(d.getElementById('ntTop')).display !== 'none';
-      [...d.querySelectorAll('#tabs button')].find(b => b.dataset.tab === 'tracker').click();
-      await wait(60);
-      const src = f.getAttribute('src') || '', at = new URL(src, w.location.href);
-      chk(!sec.hidden && d.getElementById('tab-pickems').hidden && w.location.hash === '#tracker' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === 'Season Tracker', 'the Season Tracker tab did not open, or did not become the address #tracker');
-      chk(/^\.\.\/news\/index\.html\?t=\d+$/.test(src) && at.origin === new URL(w.location.href).origin && /\/nfl-hub\/news\/index\.html$/.test(at.pathname), 'the Season Tracker frame does not load the tracker from this site, fresh: ' + src);
-      const fw = f.contentWindow, fd = f.contentDocument;
-      if (!fw || !fd) chk(false, 'the Season Tracker frame has no document to write a stand-in into');
-      else {
-        /* jsdom lays nothing out, so the tracker's height is planted (docH) and the tab's ResizeObserver is one the smoke fires */
-        let docH = 2345; const ros = [], RO = w.ResizeObserver; w.ResizeObserver = class { constructor(cb) { ros.push(cb); } observe() {} disconnect() {} };
-        const resized = () => ros.forEach(cb => cb([]));
-        const put = html => { fd.open(); fd.write(html); fd.close(); fw.scrollTo = () => {};
-          fd.documentElement.getBoundingClientRect = () => ({ top: 0, left: 0, right: 390, bottom: docH, width: 390, height: docH, x: 0, y: 0 });
-          f.dispatchEvent(new w.Event('load')); };
-        /* what loads is not the tracker (GitHub's 404 page, a tracker that threw before it drew): the tab says so, with its own page */
-        put('<!DOCTYPE html><html><body><h1>404</h1></body></html>'); await wait(20);
-        chk(!note.hidden && f.classList.contains('nt-failed') && /did not load/.test(txt(note)) && note.querySelector('a') && note.querySelector('a').getAttribute('href') === '../news/index.html?standalone',
-          'a frame that loaded no tracker is not said to have failed, with the tracker\'s own page linked');
-        chk(!topShown(), "the Season Tracker's back-to-top button still shows beside the note that it did not load, with nothing to scroll");
-        /* the stand-in, written with a game already open: one the visitor opened before the tab hooked the
-           tracker (a tap while the tracker waited on its web font) is laid over the screen as it is hooked */
-        put(`<!DOCTYPE html><html class="embed"><body><div id="view"><button class="slot" data-game="AAA-BBB">one</button><button class="slot" data-game="CCC-DDD">two</button></div>
-<div class="ov on" id="ov" data-game="AAA-BBB"><div id="ovbox"><button id="ovx">x</button></div></div>
-<script>const ov=document.getElementById('ov');
-document.getElementById('view').addEventListener('click',e=>{ const s=e.target.closest('.slot'); if(!s) return; ov.dataset.game=s.dataset.game; ov.classList.add('on'); setTimeout(()=>{ if(ov.classList.contains('on')) document.getElementById('ovx').focus(); },0); });
-function closeOv(){ if(!ov.classList.contains('on')) return; ov.classList.remove('on'); const t=[...document.querySelectorAll('.slot[data-game]')].find(s=>s.dataset.game===ov.dataset.game); if(t) t.focus(); }
-ov.addEventListener('click',e=>{ if(e.target===ov) closeOv(); }); document.getElementById('ovx').addEventListener('click',closeOv);
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/script></body></html>`); await wait(30);
-        const ov = fd.getElementById('ov'), hdr = d.querySelector('header');
-        chk(f.classList.contains('nt-lifted') && d.documentElement.style.overflow === 'hidden' && hdr.inert && d.getElementById('ntTop').inert,
-          'a game open in the Season Tracker before the tab hooked it was not laid over the screen, with the page held');
-        fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
-        chk(note.hidden && !f.classList.contains('nt-failed') && fd.documentElement.style.overflowY === 'hidden' && !!ov && ov.style.overscrollBehavior === 'contain' && !ov.classList.contains('on') && !f.classList.contains('nt-lifted'),
-          'the Season Tracker frame, once loaded, can scroll up and down by itself, hands its window\'s scroll to this page, or still says it failed');
-        chk(topShown(), "the Season Tracker's back-to-top button is hidden on a tracker that loaded");
-        chk(f.style.height === '2345px', "the Season Tracker frame does not take its content's height, so a slate taller than the frame is cut off: " + f.style.height);
-        docH = 1200; resized();
-        chk(f.style.height === '1200px', 'the Season Tracker frame does not shrink with its content (a phone turned back to portrait): ' + f.style.height);
-        const open = k => { fd.querySelector(`.slot[data-game="${k}"]`).dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); };
-        const freed = () => !ov.classList.contains('on') && !f.classList.contains('nt-lifted') && d.documentElement.style.overflow === '' && sec.style.minHeight === '' && !hdr.inert && !d.getElementById('ntTop').inert;
-        /* a page scrolled down to the game: jsdom's scrollY is always 0, so it is set, or a close that sent
-           the page to its top would pass */
-        w.scrollY = w.pageYOffset = 1234;
-        scrolls.length = 0; open('CCC-DDD'); await wait(20);
-        /* a smooth scroll still running as the game opens (a Tab onto a tile below the screen, then Enter at
-           once) goes on under overflow:hidden in Chrome: the page is scrolled where it is, at once, to stop it */
-        chk(scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === 1234 && scrolls[0].sb === 'auto',
-          'opening a game in the Season Tracker does not stop a smooth scroll still running, so the page goes on moving under the slate: ' + JSON.stringify(scrolls.map(a => [...a, a.sb])));
-        /* the lifted frame paints nothing of its own: the tracker's backdrop dims this page as it stands, never
-           a screen laid over it (jsdom does not split a var() into the longhands, so the shorthand is read too) */
-        { const cs = w.getComputedStyle(f), clear = v => ['', 'transparent', 'none', 'rgba(0, 0, 0, 0)'].includes(String(v || '').trim());
-          chk(f.classList.contains('nt-lifted') && clear(cs.background) && clear(cs.backgroundColor) && clear(cs.backgroundImage) && !f.style.background && !f.style.backgroundColor,
-            'the Season Tracker frame, laid over the screen, paints a background of its own over this page: ' + [cs.background, cs.backgroundColor, cs.backgroundImage, f.style.background].join(' / ')); }
-        chk(f.classList.contains('nt-lifted') && d.documentElement.style.overflow === 'hidden' && sec.style.minHeight !== '' && hdr.inert && d.getElementById('ntTop').inert && fd.activeElement && fd.activeElement.id === 'ovx',
-          "opening a game in the Season Tracker did not lay its frame over the screen, hold the page still and its header and back-to-top button out of reach, and move focus into the window");
-        docH = 3000; resized();
-        chk(f.style.height === '1200px', 'the Season Tracker frame was resized while laid over the screen: ' + f.style.height);
-        scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
-        chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === 1234,
-          'Escape did not close the Season Tracker\'s game, put its frame back in the page and the page back where it was: ' + JSON.stringify(scrolls));
-        chk(fd.activeElement && fd.activeElement.dataset.game === 'CCC-DDD', "closing a game did not leave focus on its tile");
-        chk(f.style.height === '3000px', "the Season Tracker frame did not take its content's height again once its game closed: " + f.style.height);
-        /* a screen that changed size while the game was open (a phone turned): the game's tile where it stood,
-           or as near as the turned screen allows, wholly in view. Opened with the frame 800px above the screen,
-           closed with it 900px above and the tile 1300px down it: a tile 200px down the screen stays 200px
-           down (1234 + 400 - 200); one 600px down a screen turned to 390px tall lands as low as it can stand
-           whole (300px tall: 90px down) or, taller than the screen, at its top */
-        { const gbr = f.getBoundingClientRect, tile = fd.querySelector('.slot[data-game="CCC-DDD"]'), tbr = tile.getBoundingClientRect, iw = w.innerWidth, ih = w.innerHeight;
-          const at = (ft, tt, th) => { f.getBoundingClientRect = () => ({ top: ft, bottom: ft + 3000, left: 0, right: 390, width: 390, height: 3000 });
-            tile.getBoundingClientRect = () => ({ top: tt, bottom: tt + th, left: 0, right: 390, width: 390, height: th }); };
-          for (const [tt, th, vh, want] of [[1000, 80, ih, 1434], [1400, 300, 390, 1544], [1400, 500, 390, 1634]]) {
-            w.innerWidth = iw; w.innerHeight = ih; at(-800, tt, th); open('CCC-DDD'); await wait(20);
-            w.innerWidth = iw === 390 ? 844 : 390; w.innerHeight = vh; at(-900, 1300, th);
-            scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
-            chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === want,
-              `closing a game after the screen turned did not put its tile (${tt + -800}px down, ${th}px tall) where it stood, or wholly in view on a screen ${vh}px tall: ` + JSON.stringify(scrolls) + ' for ' + want); }
-          /* the screen as it was: the page back at its pixel where the tile is wholly in view there, else
-             scrolled the least that shows it whole (a game opened by Enter while a Tab was still scrolling to
-             its tile, the scroll stopped as the window opened): on a screen 800px tall, with the frame 800px
-             above it, a tile 200px down stays; one cut off at the foot is brought up to stand on it; one above
-             the screen is brought down to its top; one taller than the screen is put at its top */
-          w.innerHeight = 800;
-          for (const [tt, th, want] of [[1000, 80, 1234], [1400, 300, 1334], [700, 300, 1134], [900, 1000, 1334]]) {
-            at(-800, tt, th); open('CCC-DDD'); await wait(20);
-            scrolls.length = 0; fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
-            chk(freed() && scrolls.length === 1 && scrolls[0][0] === 0 && scrolls[0][1] === want,
-              `closing a game did not leave its tile (${tt - 800}px down an 800px screen, ${th}px tall) wholly in view, the page moved the least from where it was: ` + JSON.stringify(scrolls) + ' for ' + want); }
-          f.getBoundingClientRect = gbr; tile.getBoundingClientRect = tbr; w.innerWidth = iw; w.innerHeight = ih; }
-        w.scrollY = w.pageYOffset = 0;
-        open('AAA-BBB'); await wait(20); ov.dispatchEvent(new fw.MouseEvent('click', { bubbles: true })); await wait(20);
-        chk(freed(), 'a click on the backdrop did not close the Season Tracker\'s game and put its frame back');
-        open('AAA-BBB'); await wait(20); w.location.hash = '#pickems'; await wait(60);
-        chk(freed() && sec.hidden && !d.getElementById('tab-pickems').hidden, 'leaving the Season Tracker by the address with a game open left its window open or the page held');
-        /* a game whose window throws as it is lifted never leaves the page held */
-        w.location.hash = '#tracker'; await wait(60);
-        { const gbr = f.getBoundingClientRect; f.getBoundingClientRect = () => { throw new Error('planted'); };
-          open('AAA-BBB'); await wait(20); f.getBoundingClientRect = gbr;
-          chk(d.documentElement.style.overflow === '' && !f.classList.contains('nt-lifted') && !hdr.inert, 'a throw while the Season Tracker\'s window was being opened left this page held still');
-          fd.dispatchEvent(new fw.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20); }
-        scrolls.length = 0; d.getElementById('ntTop').click();
-        chk(scrolls.length === 1 && scrolls[0][0] && scrolls[0][0].top === 0, "the Season Tracker's back-to-top button does not take the page to its top");
-        /* this page inside its own tracker frame (the tracker's guard misfiring): the tab's own script, from
-           this page, in the frame with its tab open, never frames the tracker again */
-        { const js = (HTML.match(/<script>\s*(\(function\(\)\{\s*const sec=document\.getElementById\('tab-tracker'\)[\s\S]*?)<\/script>/) || [])[1],
-            inner = (HTML.match(/(<section id="tab-tracker" hidden>[\s\S]*?<\/section>)/) || [])[1];
-          if (!js || !inner) chk(false, "the Season Tracker tab's section or script is not in the page");
-          else { fd.open(); fd.write('<!DOCTYPE html><html><body>' + inner.replace(' hidden>', '>') + '<script>' + js + '<\/script></body></html>'); fd.close(); await wait(30);
-            const nf = fd.querySelector('iframe.nt-frame');
-            chk(fw.frameElement === f && !!nf && !nf.getAttribute('src') && !nf.dataset.loaded, 'this page inside its own Season Tracker frame framed the tracker again'); } }
-        /* a frame this page cannot read once loaded (on the web, the browser's error page: offline, a dropped
-           connection) is said as a 404 is, never left a bare error page in a 360px box */
-        Object.defineProperty(f, 'contentDocument', { configurable: true, get: () => null });
-        f.dispatchEvent(new w.Event('load')); await wait(20);
-        chk(!note.hidden && f.classList.contains('nt-failed'), 'a Season Tracker frame that loaded the browser\'s error page (unreadable) is not said to have failed');
-        chk(!topShown(), "the Season Tracker's back-to-top button still shows beside the note that the error page loaded");
-        delete f.contentDocument;
-        /* a tracker that draws its tiles with no game window (#ov) is fitted and counts as hooked: a later
-           load never hooks it again (its own ResizeObserver each time). Here, after the error page, since
-           jsdom writes every stand-in into the one document, and one hooked is never hooked again */
-        { const n0 = ros.length; docH = 900;
-          put('<!DOCTYPE html><html class="embed"><body><div id="view"><button class="slot" data-game="AAA-BBB">one</button></div></body></html>'); await wait(20);
-          f.dispatchEvent(new w.Event('load')); await wait(20);
-          chk(ros.length === n0 + 1 && f.style.height === '900px' && note.hidden && !f.classList.contains('nt-failed') && topShown(),
-            `a Season Tracker with tiles and no game window is not fitted once, or is hooked again at a later load: ${ros.length - n0} hooks, height ${f.style.height}`); }
-        w.ResizeObserver = RO;
-      }
-      w.scrollTo = was;
-      w.location.hash = '#pickems'; await wait(60);
-    } }
+  /* ---- the Season Tracker tab is gone (14 October 2026): its games are in each Game snapshot. Every
+     frame in the page is one of the three betting tabs, and the page carries none of the news job's
+     data or code: the snapshot fetches its three files when it first opens, no-store, and a news job
+     commit never leaves this page stale ---- */
+  chk(!d.getElementById('tab-tracker') && !d.querySelector('#tabs button[data-tab="tracker"], iframe.nt-frame, #ntTop, #ntNote'), 'the Season Tracker tab is still in the page');
+  chk(d.querySelectorAll('iframe').length === 3 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is not one of the three betting tabs');
+  { const baked = HTML.match(/const (UNITS26|STATS26|WEEKS|RANKS26|PLAYERS26|RESULTS)\b|\b(UNITS26_META|STATS26_THROUGH|UNITS26_LINEUPS)\s*=|<script[^>]+src=[^>]*news\//), refs = [...new Set(HTML.match(/(['"`])\.\.\/news\/[^'"`]*\1/g) || [])].map(x => x.slice(1, -1)).sort();
+    chk(!baked && refs.join() === ['../news/data/notes/${season}-w${week}.json', '../news/data/stats.json', '../news/data/units.json'].join(),
+      'the page bakes in the news job\'s data or reads a news file other than units.json, stats.json and the week\'s notes: ' + (baked ? baked[0] : refs.join(', '))); }
+  { const nc = calls.filter(c => /\/news\/data\//.test(c.url)), n = f => nc.filter(c => c.url.replace(/\?.*$/, '').endsWith(f)).length;
+    chk(nc.length > 0 && nc.every(c => c.method === 'GET' && c.cache === 'no-store') && n('news/data/units.json') === 1 && n('news/data/stats.json') === 1
+      && new Set(nc.map(c => c.url)).size === nc.length,
+      'the Game snapshot does not read the news job\'s files once each, no-store, when a window opens: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
 
   /* the tabs keep their addresses: #parlay is the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
-  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log'], ['#tracker', 'tab-tracker', 'Season Tracker']]) {
+  for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
     w.location.hash = '#pickems'; await wait(30); w.location.hash = hash; await wait(60);
     chk(!d.getElementById(id).hidden && d.getElementById('tab-pickems').hidden && txt(d.querySelector(`#tabs button[aria-selected="true"]`)) === label, `the old address ${hash} does not open ${label}`); }
+  /* the Season Tracker's old address, where news/ sent every visitor, lands on Pick'ems, written over as #pickems */
+  w.location.hash = '#xparlays'; await wait(40); w.location.hash = '#tracker'; await wait(60);
+  chk(!d.getElementById('tab-pickems').hidden && d.getElementById('tab-xparlays').hidden && w.location.hash === '#pickems' && txt(d.querySelector('#tabs button[aria-selected="true"]')) === "Pick'ems",
+    'the old address #tracker does not land on Pick\'ems as #pickems: ' + w.location.hash);
   /* back to the board by address */
   w.location.hash = '#pickems';
   await wait(60);
@@ -1301,20 +1218,12 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
   chk(!s2.d.getElementById('tab-slate').hidden && s2.d.getElementById('tab-pickems').hidden, 'opening on #slate did not open the Props tab');
   chk(s2.d.querySelectorAll('#gamesList .game').length > 0, 'opened on #slate, the Props tab has no games');
 
-  /* opened on #tracker, where news/ and the old tracker's address send every visitor, the Season Tracker
-     tab is showing and its frame filled with no click (routeTabs opens the tab before the tab's own
-     script is there to hear it, so only that script's load at its end fills it); and on a page that has
-     never opened it, the address #tracker fills it too */
-  { const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#tracker'), f2 = t2.d.querySelector('#tab-tracker iframe.nt-frame');
-    chk(t2.errs.length === 0 && !t2.d.getElementById('tab-tracker').hidden && t2.d.getElementById('tab-pickems').hidden && !!f2 && /^\.\.\/news\/index\.html\?t=\d+$/.test(f2.getAttribute('src') || ''),
-      'opened on #tracker (where news/ sends every visitor), the Season Tracker tab is not showing or its frame is never filled: ' + (f2 && f2.getAttribute('src')));
-    t2.w.close();
-    const t3 = await run(state), f3 = t3.d.querySelector('#tab-tracker iframe.nt-frame');
-    t3.w.location.hash = '#tracker';
-    for (let i = 0; i < 40 && !(f3 && f3.getAttribute('src')); i++) await wait(50);
-    chk(!t3.d.getElementById('tab-tracker').hidden && !!f3 && /^\.\.\/news\/index\.html\?t=\d+$/.test(f3.getAttribute('src') || ''),
-      'on a page that never opened it, the address #tracker does not open the Season Tracker tab and fill its frame: ' + (f3 && f3.getAttribute('src')));
-    t3.w.close(); }
+  /* opened on #tracker, where old links to the Season Tracker go (news/ sends its visitors to the board
+     itself now), the board is showing and the address is #pickems */
+  { const t2 = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#tracker');
+    chk(t2.errs.length === 0 && !t2.d.getElementById('tab-pickems').hidden && t2.w.location.hash === '#pickems' && txt(t2.d.querySelector('#tabs button[aria-selected="true"]')) === "Pick'ems",
+      'opened on #tracker, the page does not land on Pick\'ems as #pickems: ' + t2.w.location.hash + ' ' + t2.errs.join('; '));
+    t2.w.close(); }
 
   /* the page with no scoreboard to read (checked below, once it has had time to try) */
   const b = await run(state);
@@ -1930,8 +1839,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
       FO.w.close(); }
     O.w.close(); }
 
-  /* ---- the Game snapshot: its own section, at the end of this file ---- */
+  /* ---- the Game snapshot: its own section, at the end of this file, then the Season Tracker's games
+     in it, on stand-in news files ---- */
   await snapshotChecks();
+  await newsChecks();
 
   /* ---- no page asked the retired store or its sign-in services anything, and nothing any page
      or frame sent was a write ---- */
@@ -1942,9 +1853,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
 })().catch(e => finish('the smoke threw: ' + (e && e.stack || e)));
 
 /* =====================================================================================
-   THE GAME SNAPSHOT (nflbets/build/snapshot.html): the window an opened Pick'ems game opens
-   from its Game snapshot button. The body above runs this last but one, so the request rule
-   after it covers these runs too.
+   THE GAME SNAPSHOT (nflbets/build/snapshot.html): the window a tap on a Pick'ems game opens
+   (its row is the button). The body above runs this last but one, so the request rule after it
+   covers these runs too. The news job's files it reads are 404s here, as on every run but those of
+   THE SEASON TRACKER'S GAMES below, which hand it stand-ins.
 
    Every number the window shows is held to the file it comes from, worked out here on its own:
    each team's record as Team Rankings counts it (betting/state.json's regular-season finals,
@@ -1957,7 +1869,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
    moneylines), the line, and the Mismatches, which must be the Props tab's own
    (window.eloMismatches, and the bubbles on the Props tab). It opens on a game to come, on a
    game final on the scoreboard and on a graded one; closes on Escape, Close and a click
-   outside; keeps Tab inside, in its order, and hands the focus back; links to the full tabs; reads
+   outside; keeps Tab inside, in its order, and hands the focus back to the row; links to the full tabs; reads
    no Elo file a second time; says so in each section when matchups.json, or the ratings, did not
    load while the rest draws; draws a playoff game; lays the position table out fixed, names
    wrapping, and puts every questionable starter's Q inside his own name's box in his team's column
@@ -1984,7 +1896,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeOv(); });<\/s
 async function snapshotChecks() {
   const st = STATE, eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
   /* the verdict, then a folding card each */
-  const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos', 'gsFiles'], SNAP_CARDS = SNAP_SECS.slice(1);
+  const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsStats', 'gsMism', 'gsPos', 'gsFiles'], SNAP_CARDS = SNAP_SECS.slice(1);
   /* Every call's rows, in order: Vegas the baseline, then the three models on the site (the Challenger
      Model and the Broly Model came off it in October 2026, the owner's call) */
   const SNAP_MODELS = ['vegas', 'alpha', 'joker', 'elo'];
@@ -2015,15 +1927,15 @@ async function snapshotChecks() {
     const en = !eg && eloM.next && +eloM.next.season === +st.season ? (eloM.next.games || []).find(x => x.game_id === g.game_id) : null, e = eg || en;
     return { vegas, alpha: pr ? one(pr) : one(ak), joker: one(pr && pr.joker) || one((st.joker || {})[g.game_id]),
       elo: e ? { pick: e.pick, p: e.pick === g.home_team ? e.p_home : 1 - e.p_home, correct: eg ? eg.correct : undefined } : null }; };
-  /* open a game on the board (its week picked first), then its snapshot from its button */
+  /* open a game's snapshot from the board (its week picked first): a tap on its row, which is the
+     button (btn: the row, which the focus goes back to) */
   const open = async (R, g) => {
     const sel = R.d.getElementById('pkWeek');
     if (+sel.value !== +g.week) { sel.value = String(g.week); sel.dispatchEvent(new R.w.Event('change')); await wait(40); }
     const card = R.d.querySelector(`.pk-game[data-game="${g.game_id}"]`); if (!card) return { card: null, btn: null };
-    if (!card.classList.contains('pk-open')) { card.click(); await wait(60); }
-    const btn = card.querySelector('.pk-gbody button[data-snap]'); if (!btn) return { card, btn: null };
-    btn.focus(); btn.click(); await wait(150);
-    return { card, btn, md: R.d.getElementById('gsModal') };
+    card.focus(); card.click(); await wait(150);
+    const md = R.d.getElementById('gsModal');
+    return md && !md.hidden ? { card, btn: card, md } : { card, btn: null };
   };
   /* each Q in its own player's name box, after the name, in his team's column. Set beside the
      name box as a flex item of its own, a Q was pushed, when the name wrapped on a phone, to the
@@ -2361,23 +2273,27 @@ async function snapshotChecks() {
       'snapshot: the window\'s modal pads its top, so its content shows above the sticky header once scrolled');
     /* every control a thumb can hit is at least 44px tall at every width (48 for the verdict's
        answers), set by its own rule and never lowered by a narrower screen's */
-    { const tall = [['#gsClose', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-more', 44], ['.gs-ptabs button', 44], ['.gs-links .btn', 44]];
+    { const tall = [['#gsClose', 44], ['#gsModal .gs-props', 44], ['.gs-gl', 48], ['.gs-dbar .btn', 44], ['.gs-tog', 44], ['.gs-more', 44], ['.gs-ptabs button', 44], ['.gs-links .btn', 44]];
       const short = tall.filter(([sel, px]) => { const set = rules.filter(r => r.sel === sel && r.st.getPropertyValue('min-height'));
         return !set.some(r => !r.media) || set.some(r => !(parseFloat(r.st.getPropertyValue('min-height')) >= px)); });
       chk(short.length === 0, 'snapshot: a control in the window is under its tap height: ' + short.map(x => x[0]).join(', ')); } }
-  /* every opened game carries the button, priced by the prop model or not */
-  { const cards = [...R.d.querySelectorAll('.pk-game')].slice(0, 4);
-    for (const c of cards) { c.click(); await wait(40); }
-    chk(cards.length > 0 && cards.every(c => c.querySelector('.pk-gbody button[data-snap]') && c.querySelector('.pk-gbody button[data-snap]').dataset.snap === c.dataset.game),
-      'snapshot: an opened Pick\'ems game has no Game snapshot button');
-    for (const c of cards) { c.click(); await wait(20); } }
+  /* every game's row opens its own game's window, priced by the prop model or not, the props button in
+     it exactly where the Props tab can open the game */
+  { const cards = [...R.d.querySelectorAll('.pk-game')].slice(0, 4), bad = [];
+    for (const c of cards) { c.click(); await wait(60);
+      const md = R.d.getElementById('gsModal'), g = st.schedule.find(x => x.game_id === c.dataset.game), r = R.w.eval('S').sched.find(x => x.id === c.dataset.game);
+      const can = !!r && R.w.eval('weekOpen')(+r.w), pb = md && md.querySelector('#gsMatch [data-gs-props]');
+      if (!md || md.hidden || !g || !new RegExp(`${g.away_team}.*${g.home_team}`).test(txt(R.d.getElementById('gsTitle')))) bad.push(c.dataset.game + ' opens no window of its own');
+      else if (!!pb !== can || (pb && pb.dataset.gsProps !== c.dataset.game)) bad.push(`${c.dataset.game} ${can ? 'has no props button' : 'offers a page the Props tab cannot open'}`);
+      R.w.gameSnapshotClose(false); await wait(10); }
+    chk(cards.length > 0 && bad.length === 0, 'snapshot: a Pick\'ems row does not open its own game\'s window: ' + bad.join('; ')); }
   /* a game to come: the open week's first the scoreboard does not mark over or on, else a later week's */
   const ung = st.schedule.filter(g => +g.week === week && g.result == null);
   const toCome = ung.slice(2).concat(st.schedule.filter(g => +g.week > week && g.result == null))[0] || null;
   let opened = 0;
   if (toCome) {
     const o = await open(R, toCome); opened++;
-    chk(!!o.btn, `snapshot: the game to come (${toCome.game_id}) has no Game snapshot button`);
+    chk(!!o.btn, `snapshot: the game to come (${toCome.game_id}) opens no Game snapshot from its row`);
     if (o.btn) {
       hold(R, toCome, 'a game to come', undefined);
       /* Tab stays inside, both ways, and goes in the order a visitor reads: Close, the verdict's five
@@ -2388,13 +2304,14 @@ async function snapshotChecks() {
         const wrapped = R.d.activeElement === f[0];
         f[0].dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }));
         chk(f.length > 3 && wrapped && R.d.activeElement === f[f.length - 1], 'snapshot: Tab does not stay inside the window');
-        const key = x => x.id === 'gsClose' ? 'close' : x.dataset.gsGl ? 'gl:' + x.dataset.gsGl : x.dataset.gsAll ? 'all' : x.dataset.gsFold ? 'card:' + x.dataset.gsFold : null;
-        const order = f.map(key).filter(Boolean).join(), want = ['close', 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
-        chk(order === want && !f.some(x => x.getAttribute('role') === 'tab' && x.getAttribute('aria-selected') !== 'true'), `snapshot: the Tab order is not Close, the verdict, Open all and the cards: ${order}`); }
+        const key = x => x.id === 'gsClose' ? 'close' : x.dataset.gsProps ? 'props' : x.dataset.gsGl ? 'gl:' + x.dataset.gsGl : x.dataset.gsAll ? 'all' : x.dataset.gsFold ? 'card:' + x.dataset.gsFold : null;
+        const props = R.w.pkBoard.canProps(toCome.game_id) ? ['props'] : [];
+        const order = f.map(key).filter(Boolean).join(), want = ['close', ...props, 'gl:vote', 'gl:elo', 'gl:units', 'gl:out', 'gl:mism', 'all', ...SNAP_CARDS.map(id => 'card:' + id)].join();
+        chk(order === want && !f.some(x => x.getAttribute('role') === 'tab' && x.getAttribute('aria-selected') !== 'true'), `snapshot: the Tab order is not Close, the props button, the verdict, Open all and the cards: ${order}`); }
       /* Escape closes it, and the focus goes back to the button */
       R.d.getElementById('gsClose').focus();
       R.d.activeElement.dispatchEvent(new R.w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(20);
-      chk(o.md.hidden && R.d.activeElement === o.btn && !R.d.body.classList.contains('modal-open'), 'snapshot: Escape does not close the window and hand the focus back to its button');
+      chk(o.md.hidden && R.d.activeElement === o.btn && !R.d.body.classList.contains('modal-open'), 'snapshot: Escape does not close the window and hand the focus back to its game\'s row');
       /* a click outside the window closes it; a click inside does not */
       o.btn.click(); await wait(60);
       R.d.getElementById('gsView').click(); await wait(20);
@@ -2475,7 +2392,7 @@ async function snapshotChecks() {
     if (o.btn) { hold(R, sbFinal, 'a final on the scoreboard', sbFinal.home_team);
       chk(txt(o.md.querySelector('[data-gs-score]')) === '20–27', 'snapshot: a final on the scoreboard does not show the scoreboard\'s score');
       R.d.getElementById('gsClose').click(); await wait(20); chk(o.md.hidden && R.d.activeElement === o.btn, 'snapshot: Close does not close the window and hand the focus back'); }
-    else chk(false, 'snapshot: a game final on the scoreboard has no Game snapshot button');
+    else chk(false, 'snapshot: a game final on the scoreboard opens no Game snapshot from its row');
   }
   /* a graded game, the latest */
   const played = st.schedule.filter(g => g.result != null && st.processed[g.game_id]).sort((x, y) => +y.week - +x.week)[0] || null;
@@ -2484,7 +2401,7 @@ async function snapshotChecks() {
     if (o.btn) { hold(R, played, 'a graded game', played.result > 0 ? played.home_team : played.result < 0 ? played.away_team : null);
       chk(txt(o.md.querySelector('[data-gs-score]')) === `${played.away_score}–${played.home_score}`, 'snapshot: a graded game does not show its final score');
       R.d.getElementById('gsClose').click(); await wait(20); }
-    else chk(false, 'snapshot: a graded game has no Game snapshot button');
+    else chk(false, 'snapshot: a graded game opens no Game snapshot from its row');
   }
   chk(opened > 0, 'snapshot: no game to open the window on');
   /* every questionable starter's Q, in the game his lineup is for (each game drawn once): with his
@@ -2535,7 +2452,7 @@ async function snapshotChecks() {
     M1.w.close();
     const M2 = await run(st, undefined, wk => scoreboard(st, wk), false, { seed: without(/elo\/data\/(model|players)\.json/) }); await wait(400);
     const o2 = await open(M2, any);
-    chk(!!o2.btn && !o2.md.hidden && M2.errs.length === 0 && /did not load/.test(txt(o2.md.querySelector('#gsTeams'))) && /did not load/.test(txt(o2.md.querySelector('#gsUnits')))
+    chk(!!o2.btn && !o2.md.hidden && M2.errs.length === 0 && /did not load/.test(txt(o2.md.querySelector('#gsTeams'))) && /unit ratings did not load/.test(txt(o2.md.querySelector('#gsUnits')))
       && /did not load/.test(txt(o2.md.querySelector('#gsPos'))) && /did not load/.test(txt(o2.md.querySelector('#gsCalls [data-gs-model="elo"]')))
       && txt(o2.md.querySelector(`[data-gs-rec="${any.home_team}"]`)) === recOf(any.home_team, false) && !!o2.md.querySelector('#gsCalls [data-gs-model="alpha"][data-pick]'),
       'snapshot: with the ratings missing the window does not say so in each section and draw the matchup: ' + M2.errs.join('; '));
@@ -2586,5 +2503,212 @@ async function snapshotChecks() {
       chk(!!o.btn && !o.md.hidden && A.errs.length === 0 && SNAP_SECS.every(id => o.md.querySelector('#' + id)) && !/could not be drawn/.test(txt(o.md))
         && /Wild Card/.test(txt(A.d.getElementById('gsTitle'))) && (+eloMu.week === 19 || /The matchups are for/.test(txt(o.md.querySelector('#gsMism')))),
         'snapshot: a playoff game\'s window does not draw, or does not say what the files have for it: ' + A.errs.join('; ') + ' ' + (o.md ? txt(o.md.querySelector('#gsMism')).slice(0, 120) : ''));
+      /* a game the prop model has not got (this made-up wild-card game) cannot open on the Props tab: no button to it */
+      chk(!!o.md && A.w.pkBoard.canProps(x.game_id) === false && !o.md.querySelector('[data-gs-props]'), 'snapshot: a game the Props tab cannot open offers a button to it');
       A.w.close(); } }
+}
+
+/* =====================================================================================
+   THE SEASON TRACKER'S GAMES IN THE GAME SNAPSHOT (14 October 2026): the preview and the news in the
+   verdict, the Deep Dive inside Offense vs defense, and the Stat breakdown, from the news job's
+   files. Every file here is a stand-in written below, never news/data's own: the elo job runs this
+   smoke every morning, and a news job publish must never turn it red (news/tools/smoke.js holds the
+   real files to their sources and to deepdive.js). Each number is worked out here on its own: the
+   four tags of each possession by the rule (each row's edge, the offense unit's rating less the
+   defense's, weighed by its matchup's weight: Easy from 1.5, Favorable from 0.5, the same the other
+   way), the overall tag on the gap read as points, the starters out, the records, and the stat bars'
+   numbers, marks, split widths and colours; the Deep Dive's rows must be deepdive.js's own html for
+   the stand-in, set in whole. A game with no note to come draws the automatic line (on a 404 and on a
+   notes file that is not JSON too), a played one with none draws nothing, and a written one is
+   escaped; a file that does not load says so in its own part and nothing throws.
+   ===================================================================================== */
+async function newsChecks() {
+  const c0 = checks, f0 = fails.length;
+  const DDM = require('./deepdive.js'), eloM = JSON.parse(ELO_M), now = Date.now() - PAGE_SHIFT_MS, kick = g => etKick({ d: g.gameday, t: g.gametime });
+  /* a game to come, over a day off by the page's clock: the schedule's first, or one made so in a copy
+     (with every game played, --season-over) */
+  let st = STATE, G = STATE.schedule.find(g => g.result == null && kick(g) > now + 86400e3);
+  if (!G) { st = JSON.parse(JSON.stringify(STATE)); G = st.schedule[st.schedule.length - 1];
+    for (const k of ['result', 'home_score', 'away_score']) delete G[k];
+    if (st.processed) delete st.processed[G.game_id];
+    G.gameday = new Date(now + 7 * 86400e3).toISOString().slice(0, 10); }
+  const season = +String(G.game_id).slice(0, 4), wk = +G.week, a = G.away_team, h = G.home_team, A = DDM.club(a), H = DDM.club(h);
+  /* a played game of another week whose home side is not in the stat file (and a second of that week
+     with no note), another game of G's week with a note, and a game of a later week */
+  const played = st.schedule.filter(g => g.result != null && +g.week !== wk && ![a, h].includes(g.home_team) && ![a, h].includes(g.away_team)).sort((x, y) => +y.week - +x.week);
+  const P1 = played[0] || null, P2 = P1 && st.schedule.find(g => g !== P1 && g.result != null && +g.week === +P1.week) || null;
+  const G2 = st.schedule.find(g => +g.week === wk && g !== G) || null, LATER = st.schedule.find(g => +g.week > wk) || null;
+  /* the stand-in units.json: the two clubs of G, each unit's rating against the league (z), so each of
+     the eight rows takes the tag worked out below; names with markup in them, and eight starters out */
+  const META = { season, week: wk, built_at: '2026-10-14T09:43:06.160Z',
+    tags: { rows: { weights: { qb: 1, ol: 0.5956, rb: 0.3792, rec: 0.8925, front: 0.5956, db: 0.8925 }, fav: 0.5, easy: 1.5, fit: '2012-2017' },
+      headline: { slope: 11.9126, fav: 0.9645, easy: 2.8935, fit: '2012-2017' } } };
+  const pl = (T, k, n, pos, q) => Object.assign({ id: `${T}-${k}`, n, pos }, q ? { q } : {});
+  const out = (T, k, n, pos, why) => ({ id: `${T}-${k}`, n, pos, why });
+  const unit = (rank, z, who, more) => Object.assign({ rank, z, who, stats: [['EPA per play', 0.05, rank], ['success rate', 44.1, rank, '%']] }, more || {});
+  const clubOf = (T, z, outs, more) => ({ g26: 5,
+    qb: unit(4, z.qb, [pl(T, 'qb1', `${T} Passer <One>`, 'QB', more.q)], Object.assign(outs.qb ? { out: outs.qb } : {}, more.next ? { next: more.next } : {})),
+    ol: unit(10, z.ol, [pl(T, 't1', `${T} Tackle`, 'T'), pl(T, 'c1', `${T} Center`, 'C')], outs.ol ? { out: outs.ol } : {}),
+    rb: unit(15, z.rb, [pl(T, 'rb1', `${T} Runner`, 'RB')], {}),
+    rec: unit(20, z.rec, [pl(T, 'wr1', `${T} Wideout & Co`, 'WR'), pl(T, 'te1', `${T} Tight End`, 'TE')], outs.rec ? { out: outs.rec } : {}),
+    front: unit(12, z.front, [pl(T, 'de1', `${T} Edge`, 'DE')], outs.front ? { out: outs.front } : {}),
+    db: unit(8, z.db, [pl(T, 'cb1', `${T} Corner`, 'CB')], outs.db ? { out: outs.db } : {}),
+    vs: { passD: { rank: 7, z: z.passD }, runD: { rank: 20, z: z.runD } } });
+  const UNITS = { season, week: wk, built_at: META.built_at, meta: META, basis: '2025 season counted as 4 games (a stand-in)', lineups: 'Lineups from a stand-in depth chart',
+    units: {
+      [A]: clubOf(A, { qb: 1.2, ol: 0.3, rb: 0, rec: -1.0, front: -0.2, db: 0.6, passD: 0.4, runD: -0.9 },
+        { qb: [out(A, 'qbx', `${A} Starter <Hurt>`, 'QB', 'out (knee)')], rec: [out(A, 'wrx', `${A} Receiver & Son`, 'WR', 'out (ankle)'), out(A, 'tex', `${A} Blocker`, 'TE', 'doubtful')] }, {}),
+      [H]: clubOf(H, { qb: -0.4, ol: -0.5, rb: 1.1, rec: 0.9, front: -0.6, db: 0.9, passD: -0.6, runD: 0.2 },
+        { ol: [out(H, 'gx', `${H} Guard`, 'G', 'out'), out(H, 'tx', `${H} Tackle Two`, 'T', 'out'), out(H, 'cx', `${H} Center Two`, 'C', 'out')], front: [out(H, 'dtx', `${H} Nose`, 'DT', 'out')], db: [out(H, 'sx', `${H} Safety`, 'S', 'out (concussion)')] },
+        { q: 'Questionable', next: { n: `${H} Backup`, pos: 'QB', from: 'chart' } }) } };
+  /* each row's tag by the rule, worked here on its own */
+  const tagOf = (x, fav, easy) => x >= easy ? 'Easy' : x >= fav ? 'Favorable' : x > -fav ? 'Even' : x > -easy ? 'Tough' : 'Very tough';
+  const RW = META.tags.rows.weights;
+  const rowsWant = (O, D) => [['qb', D.vs.passD], ['ol', D.front], ['rb', D.vs.runD], ['rec', D.db]].map(([k, v]) => `${k}:${tagOf(RW[k] * (O[k].z - v.z), 0.5, 1.5)}`).join();
+  /* the starters out, both teams, as the automatic news names them: away then home, unit by unit */
+  const outsWant = [[a, A], [h, H]].flatMap(([t, T]) => ['qb', 'ol', 'rb', 'rec', 'front', 'db'].flatMap(k => (UNITS.units[T][k].out || []).map(x => `${x.n} (${t} ${x.pos})`)));
+  const newsWant = `Out: ${outsWant.slice(0, 6).join(', ')}${outsWant.length > 6 ? ` and ${outsWant.length - 6} more` : ''}.`;
+  /* the stand-in stats.json: G's two clubs and P1's visitors; P1's home side left out. A tie (sacks), a
+     pair at 0 (red zone), a missing number (explosive plays), a negative (turnovers) */
+  const S1 = { ppg: 24.6, pa: 19.2, ypp: 5.9, yppa: 5.1, to: -0.6, sk: 2.4, ska: 2.4, third: 41.5, rz: 0, expl: 3.8, g: 5 };
+  const S2 = { ppg: 21.3, pa: 25, ypp: 5.2, yppa: 5.6, to: 0.8, sk: 2.4, ska: 1.6, third: 38, rz: 0, expl: null, g: 4 };
+  const STATS = { season, through: 'Oct 12', asof: '2026-10-14', stats: { [A]: S1, [H]: S2 } };
+  if (P1) STATS.stats[DDM.club(P1.away_team)] = S1;
+  /* the notes: G's week with a note for G2 and none for G, and P1's week with one for P1 and none for P2 */
+  const NOTE_P = { preview: 'A <i>tight</i> one & a "rematch" with history behind it.', news: 'The <b>starter</b> is back & practising in full.', sources: ['ESPN', 'Denver <Post>'] };
+  const NOTE_G2 = { preview: 'The other game of the week, in a sentence of its own here.', news: '', sources: [] };
+  const notes = { [`${season}-w${wk}`]: { season, week: wk, written: '2026-10-14', games: G2 ? { [G2.game_id]: NOTE_G2 } : {} } };
+  if (P1) notes[`${season}-w${+P1.week}`] = { season, week: +P1.week, written: '2026-10-07T18:00:00Z', games: { [P1.game_id]: NOTE_P } };
+
+  const recOf = t => { const reg = g => g.game_type ? g.game_type === 'REG' : +g.week <= 18, r = [0, 0, 0]; let n = 0;
+    for (const g of st.schedule) if (g.result != null && reg(g) && (g.home_team === t || g.away_team === t)) { n++; const m = g.home_team === t ? g.result : -g.result; r[m > 0 ? 0 : m < 0 ? 1 : 2]++; }
+    const f = (eloM.teams && eloM.teams[t] && eloM.teams[t].record) || [0, 0, 0], x = n >= f[0] + f[1] + f[2] ? r : f;
+    return x[0] + '-' + x[1] + (x[2] ? '-' + x[2] : ''); };
+  const openG = async (R, g) => { const sel = R.d.getElementById('pkWeek');
+    if (+sel.value !== +g.week) { sel.value = String(g.week); sel.dispatchEvent(new R.w.Event('change')); await wait(40); }
+    const card = R.d.querySelector(`.pk-game[data-game="${g.game_id}"]`); if (!card) return null;
+    card.click(); await wait(200); const md = R.d.getElementById('gsModal'); return md && !md.hidden ? md : null; };
+  const closeG = async R => { R.w.gameSnapshotClose(false); await wait(10); };
+  const htmlTxt = (R, html) => { const t = R.d.createElement('template'); t.innerHTML = html; return txt(t.content); };
+
+  /* ---- the files as the job writes them ---- */
+  const N1 = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes } }); await wait(400);
+  chk(!N1.timedOut && N1.errs.length === 0, 'news: the page did not boot with the news files: ' + N1.errs.join('; '));
+  const md = await openG(N1, G);
+  if (!md) chk(false, `news: the game to come (${G.game_id}) opens no Game snapshot`);
+  else {
+    const q = sel => md.querySelector(sel), NAMES = N1.w.eval('TEAM_NAMES'), nick = t => NAMES[t] || t;
+    chk(!/could not be drawn/.test(txt(md)) && N1.errs.length === 0, 'news: a part of the window failed with the news files in: ' + N1.errs.join('; ') + (txt(md).match(/[^.]*could not be drawn[^.]*/) || [''])[0]);
+    /* the automatic line: no note for this game, still to come */
+    { const pv = md.querySelectorAll('.gs-prev'), box = pv[0], bad = [];
+      const line = box && txt(box.querySelector('[data-gs-preview]')), word = N1.w.pkBoard.neutral(G) ? 'play' : 'visit';
+      if (pv.length !== 1 || box.dataset.gsNote !== 'auto') bad.push(`${pv.length} preview blocks, ${box ? box.dataset.gsNote : 'none'}`);
+      else {
+        if (txt(box.querySelector(`[data-gs-prec="${a}"]`)) !== recOf(a) || txt(box.querySelector(`[data-gs-prec="${h}"]`)) !== recOf(h)) bad.push(`the records read ${txt(box.querySelector(`[data-gs-prec="${a}"]`))} and ${txt(box.querySelector(`[data-gs-prec="${h}"]`))}, Team Rankings counts ${recOf(a)} and ${recOf(h)}`);
+        if (!line.startsWith(`The ${nick(a)} (${recOf(a)}) ${word} the ${nick(h)} (${recOf(h)})`) || !line.endsWith('.')) bad.push(`it reads '${line}'`);
+        if (txt(box.querySelector('[data-gs-news]')) !== newsWant) bad.push(`its news reads '${txt(box.querySelector('[data-gs-news]'))}', the file's starters out make it '${newsWant}'`);
+        if (!box.querySelector('.gs-pauto') || box.querySelector('[data-gs-sources]')) bad.push('it does not say it is automatic, or names sources');
+        if (box.previousElementSibling !== q('#gsMatch .gs-when') || box.nextElementSibling !== q('#gsMatch .gs-fav')) bad.push('it is not under the kickoff line and before the Vegas headline'); }
+      chk(bad.length === 0, `news: the automatic preview of a game to come with no note is not the files': ${bad.join('; ')}`); }
+    /* the props button is still first in the verdict, ahead of the preview */
+    chk(!!q('#gsMatch [data-gs-props]') === N1.w.pkBoard.canProps(G.game_id), 'news: the props button is not in the window exactly where the Props tab can open the game');
+    /* the Deep Dive: each possession deepdive.js's own rows for the stand-in, set in whole, its four tags the rule's */
+    { const bad = [];
+      for (const [o, dd, O, D] of [[a, h, UNITS.units[A], UNITS.units[H]], [h, a, UNITS.units[H], UNITS.units[A]]]) {
+        const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd);
+        const tpl = N1.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
+        if (!el) { bad.push(`${o} against ${dd} has no Deep Dive rows`); continue; }
+        if (!tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the rows are not deepdive.js's for the file`);
+        const got = [...el.querySelectorAll('.ddrow')].map(r => `${r.dataset.dd}:${r.querySelectorAll('.dtag').length === 1 ? txt(r.querySelector('.dtag')) : 'tags ' + r.querySelectorAll('.dtag').length}`).join();
+        if (got !== rowsWant(O, D)) bad.push(`${o} against ${dd}: the tags read ${got}, the rule makes them ${rowsWant(O, D)}`); }
+      if (md.querySelectorAll('#gsUnits [data-gs-ddwhy]').length) bad.push('a possession says why it has no rows: ' + txt(q('#gsUnits [data-gs-ddwhy]')));
+      const basis = htmlTxt(N1, DDM.basis(UNITS, a, h));
+      if (!txt(q('#gsUnits')).includes(basis)) bad.push('the card does not carry the Deep Dive\'s basis');
+      chk(bad.length === 0, `news: the Deep Dive in Offense vs defense is not the file's: ${bad.join('; ')}`); }
+    /* the Overall line's tag: the gap read as points, as the Deep Dive's headline read it */
+    if (eloM.units && eloM.units.off && eloM.units.def) { const bad = [];
+      for (const [o, dd] of [[a, h], [h, a]]) { const vo = eloM.units.off[o], vd = eloM.units.def[dd], el = q(`[data-gs-head="${o}-${dd}"]`);
+        if (!vo || !vd || !isFinite(vo.raw) || !isFinite(vd.raw)) { if (el) bad.push(`${o}-${dd} wears a tag with no rating to read`); continue; }
+        const pts = META.tags.headline.slope * (vo.raw - vd.raw), tag = tagOf(pts, META.tags.headline.fav, META.tags.headline.easy), text = `about ${pts >= 0 ? '+' : '−'}${Math.abs(pts).toFixed(1)} pts`;
+        const ht = DDM.headTag(META, vo, vd), pill = el && el.querySelector('.dtag');
+        if (!pill || txt(pill) !== tag || txt(el.querySelector('.gs-hpts')) !== text || pill.getAttribute('title') !== ht.title || !el.closest('.gs-unit') || el.previousElementSibling !== el.closest('.gs-unit').querySelector('.gs-duel'))
+          bad.push(`${o}-${dd} reads '${el ? txt(el) : 'nothing'}', the rule '${tag} ${text}'`); }
+      chk(bad.length === 0, `news: the Overall line's tag is not the gap read as points: ${bad.join('; ')}`); }
+    /* the Stat breakdown: each of the eleven rows' numbers, the better one marked, the bar split and coloured */
+    { const bad = [], SR = [['pd', s => s.ppg == null || s.pa == null ? null : Math.round((s.ppg - s.pa) * 10) / 10, false, true, false], ['ppg', s => s.ppg, false], ['pa', s => s.pa, true],
+        ['ypp', s => s.ypp, false], ['yppa', s => s.yppa, true], ['to', s => s.to, false, true], ['sk', s => s.sk, false], ['ska', s => s.ska, true],
+        ['third', s => s.third, false, false, true], ['rz', s => s.rz, false, false, true], ['expl', s => s.expl, false]];
+      const split = (x, y, lo) => { if (x == null || y == null || (x === 0 && y === 0)) return [0, 0]; let pa;
+        if (lo) { const ix = 1 / Math.max(x, 0.01), iy = 1 / Math.max(y, 0.01); pa = ix / (ix + iy) * 100; } else { const m = Math.min(x, y, 0); pa = (x - m) + (y - m) === 0 ? 50 : (x - m) / ((x - m) + (y - m)) * 100; }
+        pa = Math.round(pa * 10) / 10; return [pa, Math.round((100 - pa) * 10) / 10]; };
+      const fmt = (v, sign, pct) => v == null ? '–' : (v < 0 ? '−' + Math.abs(v) : (sign && v > 0 ? '+' : '') + v) + (pct ? '%' : '');
+      let na = 0, nh = 0;
+      const rows = md.querySelectorAll('#gsStats [data-gs-srow]');
+      if ([...rows].map(r => r.dataset.gsSrow).join() !== SR.map(r => r[0]).join()) bad.push('the rows are ' + [...rows].map(r => r.dataset.gsSrow).join());
+      for (const [k, f, lo, sign, pct] of SR) { const r = q(`#gsStats [data-gs-srow="${k}"]`); if (!r) continue;
+        const x = f(S1), y = f(S2), [pa, ph] = split(x, y, lo), ba = x != null && y != null && x !== y && (lo ? x < y : x > y), bh = x != null && y != null && x !== y && !ba;
+        if (ba) na++; if (bh) nh++;
+        const va = r.querySelector(`[data-gs-sval="${a}"]`), vh = r.querySelector(`[data-gs-sval="${h}"]`), [ia, ih] = [...r.querySelectorAll('.gs-shalf i')];
+        if (txt(va) !== fmt(x, sign, pct) || txt(vh) !== fmt(y, sign, pct)) bad.push(`${k} reads ${txt(va)} and ${txt(vh)}, the file ${fmt(x, sign, pct)} and ${fmt(y, sign, pct)}`);
+        if (!!(va && va.closest('.gs-better')) !== ba || !!(vh && vh.closest('.gs-better')) !== bh || r.querySelectorAll('.gs-better').length !== (ba || bh ? 1 : 0)) bad.push(`${k}: the mark is on the wrong side`);
+        if (!ia || !ih || ia.style.width !== pa + '%' || ih.style.width !== ph + '%') bad.push(`${k}'s bar is ${ia && ia.style.width} and ${ih && ih.style.width}, the numbers split it ${pa}% and ${ph}%`);
+        if (ia && ih && (ia.style.getPropertyValue('--gs-tc') !== N1.w.pkTagColor(a) || ih.style.getPropertyValue('--gs-tc') !== N1.w.pkTagColor(h))) bad.push(`${k}'s bar is not in the teams' colours`); }
+      if (txt(q(`#gsStats [data-gs-sb="${a}"]`)) !== String(na) || txt(q(`#gsStats [data-gs-sb="${h}"]`)) !== String(nh)) bad.push(`the summary counts ${txt(q(`#gsStats [data-gs-sb="${a}"]`))} and ${txt(q(`#gsStats [data-gs-sb="${h}"]`))}, the marks ${na} and ${nh}`);
+      if (!txt(q('#gsStats [data-gs-sbasis]')).startsWith(`${season} season through Oct 12: ${a} 5 games, ${h} 4 games.`)) bad.push(`the basis reads '${txt(q('#gsStats [data-gs-sbasis]'))}'`);
+      chk(bad.length === 0, `news: the Stat breakdown is not the file's: ${bad.slice(0, 6).join('; ')}`); }
+    /* when the news job's files were written, beside the others */
+    chk(['units', 'stats', 'notes'].every(k => q(`#gsStamps [data-gs-news-at="${k}"]`)) && /news\/data\//.test(txt(q('#gsFiles'))),
+      'news: the Sources card does not say when the Deep Dive, the stat breakdown and the week\'s notes were written, or where they come from');
+    await closeG(N1);
+  }
+  /* a note written for a game: its sentence and news as text, never markup, its outlets after it */
+  if (G2) { const m2 = await openG(N1, G2), b = m2 && m2.querySelector('.gs-prev');
+    chk(!!b && b.dataset.gsNote === 'written' && txt(b.querySelector('[data-gs-preview]')) === NOTE_G2.preview && !b.querySelector('[data-gs-news]') && !b.querySelector('[data-gs-sources]') && !b.querySelector('.gs-pauto'),
+      `news: a game with a note and no news does not show its sentence alone: ${b ? txt(b) : 'no preview'}`);
+    await closeG(N1); }
+  if (P1) { const m3 = await openG(N1, P1), q3 = sel => m3 && m3.querySelector(sel), b = q3('.gs-prev'), bad = [];
+    if (!b || b.dataset.gsNote !== 'written') bad.push('no written preview');
+    else {
+      const pv = b.querySelector('[data-gs-preview]'), nw = b.querySelector('[data-gs-news]'), so = b.querySelector('[data-gs-sources]');
+      if (!pv || pv.textContent !== NOTE_P.preview || pv.children.length) bad.push(`the preview reads '${pv && pv.innerHTML}'`);
+      if (!nw || nw.textContent !== NOTE_P.news || nw.children.length) bad.push(`the news reads '${nw && nw.innerHTML}'`);
+      if (!so || so.textContent !== NOTE_P.sources.join(' · ') || so.children.length || so.previousElementSibling !== nw) bad.push(`the sources read '${so && so.innerHTML}', not after the news`);
+      if (b.previousElementSibling !== q3('#gsPast')) bad.push('a played game\'s note is not under its played note'); }
+    /* a game of another week: the Deep Dive says whose week it is for, both ways, and draws no rows */
+    const why = [...(m3 ? m3.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
+    if (why.length !== 2 || why.some(x => !new RegExp(`are for week ${wk}: this game's ${+P1.week < wk ? 'week has gone' : 'come with its week'}`).test(x)) || q3('#gsUnits .dd')) bad.push(`its Deep Dive reads '${why.join(' / ')}'`);
+    /* a team missing from the stat file: dashes, no mark, no bar, and said */
+    const hv = [...(m3 ? m3.querySelectorAll(`#gsStats [data-gs-sval="${P1.home_team}"]`) : [])];
+    if (hv.length !== 11 || hv.some(x => txt(x) !== '–') || q3('#gsStats .gs-better') || [...(m3 ? m3.querySelectorAll('#gsStats .gs-shalf i') : [])].some(i => i.style.width !== '0%') || !new RegExp(`Not in the file yet: ${P1.home_team}`).test(txt(q3('#gsStats'))))
+      bad.push(`the stat breakdown of a team the file lacks reads ${hv.map(txt).join(' ')}`);
+    chk(bad.length === 0, `news: a played game with a note (${P1.game_id}) is not drawn as the files have it: ${bad.join('; ')}`);
+    await closeG(N1); }
+  if (P2) { const m4 = await openG(N1, P2);
+    chk(!!m4 && !m4.querySelector('.gs-prev'), `news: a played game with no note (${P2.game_id}) draws a preview`); await closeG(N1); }
+  if (LATER) { const m5 = await openG(N1, LATER), why = [...(m5 ? m5.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
+    chk(why.length === 2 && why.every(x => new RegExp(`are for week ${wk}: this game's come with its week`).test(x)) && !m5.querySelector('#gsUnits .dd'),
+      `news: a game of a later week does not say its Deep Dive comes with its week: '${why.join(' / ')}'`); await closeG(N1); }
+  /* each file read once a page load (the notes once a week), no-store, however often the window opened */
+  await openG(N1, G); await closeG(N1);
+  { const nc = N1.calls.filter(c => /\/news\/data\//.test(c.url)), urls = nc.map(c => c.url.replace(/\?.*$/, ''));
+    chk(nc.every(c => c.cache === 'no-store' && c.method === 'GET') && new Set(urls).size === urls.length && urls.some(u => u.endsWith('news/data/units.json')) && urls.some(u => u.endsWith('news/data/stats.json'))
+      && urls.some(u => u.endsWith(`news/data/notes/${season}-w${wk}.json`)) && (!P1 || urls.some(u => u.endsWith(`news/data/notes/${season}-w${+P1.week}.json`))),
+      'news: the news files are not each read once, no-store, at their addresses: ' + urls.join(', ')); }
+  N1.w.close();
+
+  /* ---- every news file missing: the automatic line with no news, each part saying it did not load, nothing thrown ---- */
+  { const N2 = await run(st, undefined, null, false, { news: {} }); await wait(400);
+    const m = await openG(N2, G), b = m && m.querySelector('.gs-prev');
+    chk(!!m && N2.errs.length === 0 && !/could not be drawn/.test(txt(m)) && !!b && b.dataset.gsNote === 'auto' && !b.querySelector('[data-gs-news]')
+      && [...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].length === 2 && [...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].every(x => /Deep Dive did not load/.test(txt(x)))
+      && !m.querySelector('[data-gs-head]') && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && txt(m.querySelector('#gsStats .gs-sum')) === 'did not load',
+      'news: with every news file missing the window does not draw the automatic line and say each part did not load: ' + N2.errs.join('; ') + ' ' + (m ? txt(m.querySelector('#gsStats')).slice(0, 80) : 'no window'));
+    N2.w.close(); }
+  /* ---- a notes file that is not JSON and a stat file of the wrong shape: the automatic line (its news from the units), the stats said not loaded ---- */
+  { const N3 = await run(st, undefined, null, false, { news: { units: UNITS, stats: { season, stats: [1, 2] }, notes: { [`${season}-w${wk}`]: 'this is not { json' } } }); await wait(400);
+    const m = await openG(N3, G), b = m && m.querySelector('.gs-prev');
+    chk(!!m && N3.errs.length === 0 && !!b && b.dataset.gsNote === 'auto' && txt(b.querySelector('[data-gs-news]')) === newsWant && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && !!m.querySelector('#gsUnits .dd'),
+      'news: a notes file that is not JSON does not draw the automatic line, or a stat file of the wrong shape is drawn: ' + N3.errs.join('; ') + ' ' + (b ? txt(b) : 'no preview'));
+    N3.w.close(); }
+  console.log(`the Season Tracker's games in the Game snapshot: ${checks - c0} checks on stand-in news files (${G.game_id} to come${P1 ? ', ' + P1.game_id + ' played' : ''}), ${fails.length - f0} failures`);
 }

@@ -1,6 +1,6 @@
 {
   "name": "nfl-hub-news",
   "private": true,
-  "description": "Season tracker: weekly pull (ESPN, TeamRankings) and smoke test",
+  "description": "The news job: results, stats and the Deep Dive for X NFL Bets and Stats' Game snapshot, the game notes validator and the smoke test",
   "dependencies": { "jsdom": "^30.0.1" }
 }

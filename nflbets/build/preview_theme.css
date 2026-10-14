@@ -107,23 +107,20 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 #gsModal .pe-g2{color:#F2B84B!important} #gsModal .pe-g3{color:#7BD88F!important}
 /* and a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
 #gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
+/* the stat breakdown's bars the same way, on the same track */
+#gsModal .gs-shalf{background:var(--panel-3)} #gsModal .gs-shalf i{background:color-mix(in srgb,var(--gs-tc) 62%,#fff)}
+/* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own
+   with its text at 6:1 or more */
+#gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}
+#gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}
+#gsModal .dtag.even{background:#3A4155;color:#DDE1EA}
+#gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}
+#gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}
+/* the preview block a step off the card, its text the look's own ink */
+#gsModal .gs-prev{background:var(--panel-3);border-color:var(--line-2)}
 /* the preview says what it is */
 .pv-flag{display:inline-block;font-family:var(--body);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--hot-soft);color:var(--hot-2);vertical-align:middle}
 @media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
 
 /* the far-off flag (app v98): the light look's dark amber is too dim on these panels */
 .faroff{color:var(--hot-2)}
-
-/* the Season Tracker keeps its own light look (news/HANDOFF.md: no dark mode), so its tab has its light
-   canvas here rather than this look's dark one showing through. The canvas is on the tab's section,
-   which keeps its height while the frame is laid over the screen, so it stays under the slate and an
-   open game's backdrop dims this look around it as it stands, never a light screen over it. Framed, the
-   tracker has no gutters of its own: the margin, filled by the spread shadow (its corner 4 + 14, this
-   look's 18px), is the slab's, and leaves the section's box the frame's own, which the lift measures
-   (padding would shrink the section while a game is open). The frame is light as well, since this
-   root is dark and a frame of another scheme than the page it shows is given an opaque canvas */
-#tab-tracker{margin:14px;border-radius:4px;background:#F6F5F2;box-shadow:0 0 0 14px #F6F5F2}
-#tab-tracker .nt-frame{color-scheme:light}
-/* the tab's failure note is on that light canvas: the light look's own tint under its dark amber
-   (about 5:1), not this look's orange one over the dark (2.1:1) */
-#tab-tracker .nt-note{background:#FBEFD3}

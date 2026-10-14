@@ -1,5 +1,6 @@
-/* The 32 teams: abbreviation, name, colour, and the preseason power rank the page falls back to
-   before data/ranks2026.js has one. news/tools/pull-week.js reads the names from this file. */
+/* The 32 teams: abbreviation, name, colour, and the preseason power rank (the old tracker page's rank chip
+   fell back to it; nothing reads it now). ../picks/ reads the names and colours, and
+   news/tools/pull-week.js the names. */
 const TEAMS = [
 /* AFC East */
 { ab:"NE", name:"New England Patriots", color:"#002244", rank:10 },
