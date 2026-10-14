@@ -109,7 +109,7 @@
   },
   "DEN": {
    "kick": "2026-10-16T00:15Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-14T09:43:06.160Z",
    "units": {
     "qb": [
      {
@@ -204,9 +204,10 @@
       "q": "questionable: ankle, not practising"
      },
      {
-      "id": "00-0037384",
-      "n": "Ja'Quan McMillian",
-      "pos": "CB"
+      "id": "00-0038552",
+      "n": "Riley Moss",
+      "pos": "CB",
+      "q": "questionable: ribs"
      }
     ]
    }

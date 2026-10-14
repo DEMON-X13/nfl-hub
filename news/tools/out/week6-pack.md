@@ -151,7 +151,7 @@ Searches to run:
 - "NFL week 6 picks CHI ATL"
 
 Chicago Bears, injuries:
-- Anthony Johnson Jr. (S) Out, Undisclosed: out
+- Anthony Johnson Jr. (S) Injured Reserve, Undisclosed: ir
 - Shemar Turner (DT) Active: The Bears activated Turner (knee) from their reserve/PUP list Tuesday.
 - Kalif Raymond (WR) Active: Raymond caught three of four passes for six yards and logged one carry for minus-two yards during the Bears' 31-7 loss to the Packers on Sunday. He also returned one punt for nine yards.
 - Montez Sweat (DE) Suspension, Suspension: The NFL announced Tuesday that Sweat has been suspended two games without pay for violating the league's performance-enhancing substances policy, Brad Biggs of the Chicago Tribune reports.
