@@ -8,10 +8,10 @@ GitHub Pages serves the repo root:
 
 | Path | What | Source |
 |---|---|---|
-| `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the Player Elo tab and the Season Tracker tab (`news/` framed); rebuilt by hand when a source changes, never by a job |
+| `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page, and a Game snapshot of every game on the Pick'ems board | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the Player Elo tab and the Game snapshot (with `nflbets/build/deepdive.js`); rebuilt by hand when a source changes, never by a job |
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
-| `news/` | Season Tracker, the newsletter-style page, read as the Season Tracker tab of `nflbets/` (`nflbets/#tracker`), which frames it; `news/` itself leads there | moved from `DEMON-X13/nfl-news-tracker`; its `tools/pull-week.js` does the scripted half |
+| `news/` | the news job: no page since 14 October 2026 (`news/` sends a visitor to `nflbets/`); the Deep Dive, the stat bars and each game's preview and news, which the Game snapshot reads | moved from `DEMON-X13/nfl-news-tracker`; `tools/run-auto.js` does the scripted half, and the game notes in `data/notes/` are written each Wednesday by Claude |
 | `elo/` | Player Elo: every player rated by position since 2012, the game model and matchup formula built on those ratings, and each team's Overall Offense and Overall Defense on this season's key stats from the play-by-play | `elo/build.py`; `.github/workflows/elo.yml` re-rates every morning |
 | `liveparlays/` | the X Parlays section's source, X's placed parlays and the X Bet Log, which every device sees, read only; its `index.html`, like `live/` and `pickems/`, only redirects old bookmarks to `nflbets/` | `liveparlays/build/page.html`, `liveparlays/parlays.json` and `liveparlays/xbets.json` (kept by Claude from what the owner sends) |
 | `cfb/` | a redirect: X College Football Bets lives in its own repo, `DEMON-X13/cfb-hub` | `cfb-hub` |
@@ -74,21 +74,24 @@ Its workflow, `.github/workflows/props.yml`, runs four price pulls a week
 day's injury report, which spend credits only on a game a dropped pull left unpriced. It runs `weekly.py --no-commit` and
 commits `props/data` itself. The betting job never touches the key.
 
-## Season tracker
+## The news job
 
-`news/` is the tracker as it was, read since October 13, 2026 as the Season Tracker tab of
-X NFL Bets and Stats (`nflbets/#tracker`), which frames `news/index.html` from its own address;
-`news/` on its own leads to that tab (`news/?standalone` stays). `tools/run-auto.js` works out the current
-week from the nflverse schedule and runs `tools/pull-week.js`, which refreshes
-`data/results.js` (scores, records) and `data/stats2026.js` (the stat bars)
-from ESPN and TeamRankings, rebuilds the context files (`data/ranks2026.js`,
-`players2026.js`, `units2026.js`) with `tools/context.js`, drafts
-`data/weekN.js` if it does not exist, and writes the reading pack to
-`tools/out/`. The narrative half of a week is still written by a person: the
-draft is not shown until it is added to `data/weeks.js` and `index.html` (see
-`HANDOFF.md`). Free sources, no credits. Workflow `.github/workflows/news.yml`:
-Friday, Monday and Tuesday at 8am Eastern, five post-game runs, and once on a
-push to the pull code.
+`news/` was the Season Tracker, a newsletter-style page and then a tab of X NFL
+Bets and Stats; since October 14, 2026 (the owner's call) what it said of each
+game is in that game's Game snapshot, the window a tap on a game on the Pick'ems
+board opens, and `news/` on its own sends a visitor to `nflbets/`.
+`tools/run-auto.js` works out the current week from the nflverse schedule and
+runs `tools/pull-week.js`, which refreshes `data/results.js` (scores, records)
+and `data/stats2026.js` with its twin `data/stats.json` (the stat bars) from
+ESPN and TeamRankings, rebuilds the Deep Dive (`data/units2026.js` and its twin
+`data/units.json`) with `tools/context.js`, and writes the reading pack to
+`tools/out/`. The snapshot fetches the JSON twins when a window first opens. Each game's one-line
+preview and short news note is written each Wednesday by Claude into
+`data/notes/<season>-w<N>.json` from the pack (see `HANDOFF.md`) and checked
+with `tools/notes.js`; until a game has one the snapshot shows an automatic
+line. Free sources, no credits. Workflow `.github/workflows/news.yml`: about
+nineteen runs a week, post-game and timed to the injury report, and once on a
+push to the job's code or the notes.
 
 ## X Parlays and the X Bet Log
 

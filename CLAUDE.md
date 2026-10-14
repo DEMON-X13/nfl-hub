@@ -22,20 +22,21 @@ without narrating the steps:
 ## The sites and their parts
 
 GitHub Pages serves the repo root. One site has pages: `nflbets/`, plus the standalone `picks/` page (the
-root `index.html` links them, and X NHL Bets and X College Football Bets in their own repos). `news/` is the Season Tracker, a page of its own that
-`nflbets/` frames as its Season Tracker tab (`#tracker`); opened at its own web address it goes to that tab. `pickems/` and `live/` hold only
+root `index.html` links them, and X NHL Bets and X College Football Bets in their own repos). `news/` is no
+longer a page (the owner's call, 14 October 2026: the Season Tracker went into each game's Game snapshot on the
+Pick'ems board): it holds the news job (`news.yml`), which writes the data the snapshot reads at runtime, and the
+week's game notes, written by hand; `news/index.html` only sends a visitor to `nflbets/`. `pickems/` and `live/` hold only
 redirects for old bookmarks; `liveparlays/` holds a redirect beside the X Parlays section's source and its
 `parlays.json`. `props/`, `betting/` and `elo/` are models with no page of their own, each
 with its own job (`props.yml`, `update.yml`, `elo.yml`); `nflbets/` has no job: it is rebuilt
-by hand when a source changes, and reads the models' data on every load. `news/` has its own
-job too (`news.yml`).
+by hand when a source changes, and reads the models' data on every load.
 
 | Path | What | Source of truth |
 |---|---|---|
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what `nflbets/` reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
-| `news/` | Season Tracker: the Season Tracker tab of X NFL Bets and Stats (`nflbets/#tracker`), which frames `news/index.html` from its own address; that address on its own leads to the tab (`?standalone` keeps it there), and the file opened from disk is the whole tracker | `news/` directly; the narrative half is written by a person |
-| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Season Tracker (`news/`, framed), the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs | `nflbets/build/tab_pickems.html` + `tab_tracker.html` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
+| `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to `nflbets/`): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
+| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Pick'ems board (with the news job's preview, news, Deep Dive and stat breakdown) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`) |
 | `cfb/` | retired: X College Football Bets moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -54,78 +55,97 @@ at the next refresh:
 - `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: the suggested
   parlays frozen at each wave's kickoff and graded after, so a hand edit there rewrites the record and
   the script's guard refuses it)
-- `news/data/results.js`, `news/data/stats2026.js`, `news/data/ranks2026.js`, `news/data/players2026.js`, `news/data/units2026.js`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (a drafted `news/data/weekN.js` is finished by hand; `news/tools/.cache/` is gitignored)
+- `news/data/results.js`, `news/data/stats2026.js` and its twin `news/data/stats.json`, `news/data/units2026.js` and its twin `news/data/units.json`, `news/tools/out/week*-pack.md`, `news/tools/out/week*-lineups.json` and `week*-lineups-grade.md` (`news/tools/.cache/` is gitignored; the game notes, `news/data/notes/`, are source, written by hand)
 - `props/research/totals/shadow/ledger.json` (by `shadow.py` in the betting job: the game-totals shadow's calls, frozen at kickoff, and its pre-registered bar, so a hand edit there rewrites the record and `shadow_check.py` fails it)
 - `elo/data/players.json`, `elo/data/model.json`, `elo/data/matchups.json`, `elo/data/calls.json` (by `elo/build.py`; `calls.json` is the ledger of calls frozen at kickoff, carried from run to run, so a hand edit there rewrites the record; `elo/cache/` is gitignored; `elo/history/` is source)
 
 `betting/app/x_nfl_betting_model.html` is the exception: it is the betting app's
 source, shipped in from `nfl-model-lab`, not generated here.
 
-## Season Tracker: the loop
+## News: the job and the weekly game notes
 
 ```
 cd news && npm ci
-node tools/run-auto.js           # the job: the schedule's current week -> pull-week.js (results, stats, pack) -> context.js
-node tools/context.js            # the rank chip, positions and the Deep Dive alone (nflverse only; no ESPN list)
+node tools/run-auto.js           # the job: the schedule's current week -> pull-week.js (results, stats and stats.json, pack) -> context.js
+node tools/context.js            # the Deep Dive alone, units2026.js and units.json (nflverse only; no ESPN list)
+node tools/notes.js --strict     # the week's game notes against their rules, as the Wednesday routine runs it before it commits
 node tools/smoke.js              # must end "all checks passed" (runs tools/cases.js too); WARN lines above it publish
 ```
 
-The narrative half is a person's (`news/HANDOFF.md` first, always). The season is `SEASON` in
-`news/tools/lib.js`, nowhere else; after week 18 the tracker stays on week 18 and says the regular
-season is complete (it does not cover the playoffs; the stat tables are then asked for as of the
+The Season Tracker's page and its tab on X NFL Bets and Stats are gone (the owner's call, 14 October 2026): what
+it said of each game is in that game's Game snapshot (under "Bets and Stats: the loop"), and `news/` is the job
+that feeds it. `news/index.html` only sends a visitor, and every old bookmark, to `../nflbets/`, the Pick'ems board
+(`location.replace`, so Back does not loop, on the web and from disk alike, with a link for a browser without
+scripts; never a meta refresh). The tracker's page, its week files, the team matchup, positives, negatives and keys
+paragraphs, the rank chip and the player positions are in git history before that day. The job writes
+`data/results.js`, `data/stats2026.js` and its twin `data/stats.json` (`pull-week.js`), `data/units2026.js` and its
+twin `data/units.json` (`context.js`), and the reading pack and the lineups as kickoff found them in `tools/out/`;
+it drafts no week file any more. Each twin is exactly its `.js` file's consts (`writeTwin` in `tools/lib.js`),
+written with it and whenever it is missing or differs, and the twins are what the snapshot fetches.
+
+The game notes are the hand-written half (`news/HANDOFF.md` first, always): each Wednesday a Claude routine, and Claude
+whenever the owner asks, writes `news/data/notes/<season>-w<N>.json` from the week's pack and the panel in
+`tools/sources.md`: for each game a one-sentence `preview`, a short `news` note (the one or two things a fan should
+know this week, or `""`) and its `sources`, keyed by the nflverse game id as `betting/state.json`'s schedule writes
+it (LA for the Rams; `tools/week-request.md` is the format); then `node tools/notes.js --strict` and the smoke, and
+the branch, commit, PR and merge. The job never writes a note, and a game left out shows an automatic line in the
+snapshot until it is written. `tools/notes.js` holds a file to its rules: the shape and the game ids are failures;
+the wording is a warning: a preview of one sentence, 40 to 200 characters, with no record or score typed (the
+records are shown beside it, and a typed one goes stale), news of at most 300 characters, and in either no betting
+words at all (no spread, favourite, moneyline, odds, total, line, cover or book: the snapshot shows the market
+apart), none of the site's own ranks (`siteRankQuote` in `tools/lib.js`), no em dash, plain text. `--strict`
+refuses both, so the routine commits no note that breaks a rule; the smoke reports every note problem, its shape
+too, as a warning, so a note never holds back the week's results, stats and Deep Dive.
+
+The season is `SEASON` in `news/tools/lib.js`, nowhere else; after week 18 the job stays on week 18 and says the
+regular season is complete (it does not cover the playoffs; the stat tables are then asked for as of the
 day after week 18). The Deep Dive's lineups follow the nflverse injury report and ESPN's list
 (`context.js` says the rule; a team has filed only when its game statuses are on the report, never
 on a practice report), and every nflverse file but the snap counts is required: one that does not
 download fails the run before the commit, so the last good files stay live (before the season's
-first game a 404 on a current-season file is "no games yet"). Each Deep Dive opens on a headline, the
-team's Overall Offense against the opponent's Overall Defense as the ELO Ratings tab shows them
-(`units` in `elo/data/model.json`, read by `context.js` only when it is of the season, LA as LAR, with the
-build it came from in `UNITS26_META.overall`; without it the rows publish and the page says so), tagged by
-the gap read as points (11.9126 a raw unit, Favorable from 0.9645, Easy from 2.8935): from week 2 on it
-predicted an offense's points better than the rows on 2018-2025 (9.44 against 9.60; `elo/tools/deepdive_vs_units.py`
-prints it and every tag constant, and says whether `context.js` carries them: run it again after a refit of the units). Each of the six rows
-is tagged on its edge weighted by what that matchup alone has predicted (2012-2017: quarterback 1,
-receivers and coverage 0.8925, line and pass rush 0.5956, run game 0.3792) at 0.5 and 1.5; the rows overlap
-and are never added up. The constants are in `UNITS26_META.tags`, which the page reads and the smoke holds
-to `tools/deepdive-checks.js`'s own copy. The smoke test checks the lineups
-against the report, roster and schedule they were built from (`lineup-checks.js`, which never
-shares the build's shortcuts, only its reading of a source: which ESPN entry is which player and what
-day a note's practice was), the rank chip against `elo/data/model.json` (the Team Rankings tab), the
-Deep Dive's headline against the same file (exact on the same build, the board's order a run behind) and
-its tags against the rules on every game of the slate,
-the stat bars against `results.js`, that the live week's narrative quotes none of the site's own
-ranks, and the fixed cases in `tools/cases.js` (each with the broken version a review caught, which
-the checks must fail); on a checkout whose `units2026.js` is older than the report it fails until
-`node tools/context.js` runs. A change to a rule comes with a case there. The lineup rules (all but
-the week they are for), a starter out named, a quarterback in doubt with the next one named, nobody
-both listed and out, and the narrative quoting a rank are warnings (`warn` in `smoke.js`): who the
-Deep Dive lists and what a note says, never the scores, records, stat bars or ranks. They print WARN
-and never fail the smoke, so a lineup case no rule has seen publishes the week's results and stats,
-and the job goes red on them after its commit (`SMOKE_WARNINGS_FILE`); every other check, the fixed
-cases among them, holds the run's files back. `.github/workflows/news.yml`
-runs about nineteen times a week, timed to the injury report and set early because GitHub starts
-this repo's scheduled runs 2.3 to 9.4 hours late, and on a push to the tools, the page, its styles, a week
-file or `nflbets/build/tab_tracker.html`; a run that finds nothing new commits nothing beyond the day's "as of" dates.
+first game a 404 on a current-season file is "no games yet").
 
-On the web the tracker is the Season Tracker tab of X NFL Bets and Stats (under "Bets and Stats: the
-loop"), which frames `news/index.html` from its own address. The first script in `news/index.html`'s head
-is the guard: at the top of a browser window on http(s) it sends the visitor to `../nflbets/#tracker`
-(`location.replace`, so Back does not loop; `?standalone` stays), framed it marks the page `html.embed`
-(`css/style.css`: the bar is the week's heading in the flow, no brand, no back-to-top button of its own, a
-transparent canvas, room under the last line for the framing page's button, and a tile's focus ring drawn
-inside it, since the tiles meet the frame's edges), and opened from a file it does nothing, so the tracker
-works from disk as ever. Never a meta refresh: it would fire inside the frame too. The game window names
-its game (`ov.dataset.game`), moves focus to its X, keeps Tab inside it and gives focus back to the game's
-tile on close; Escape with nothing open does nothing. The smoke holds all of that, runs the guard in `vm`
-(the web, framed, `?standalone`, a `top` that throws, a file), and mounts the tab's own script
-(`nflbets/build/tab_tracker.html`) in a bare page framing this tracker: the tracker hooked as soon as it
-has drawn its week, before the frame's load event and never again at it (a game opened before that load still
-laid over the screen after it), the frame its height (shrinking
-with it, held while a game is open, fitted again on close), a game opened lays the frame over the screen
-and holds the page, Escape, the X, the backdrop and leaving the tab by its address each put it back; a
-tracker with no `#ov` or no tiles fails them rather than skipping them. Those checks live here, in the
-news job, so a tracker change that would break the tab fails this job and never the elo job's morning
-smoke.
+The Deep Dive is drawn by `nflbets/build/deepdive.js`, one module the page inlines (`window.gsDeepDive`) and the
+news job requires (its smoke and cases), from `units.json`, inside the snapshot's Offense vs defense card. Each side
+with the ball has its overall line, the team's Overall Offense against the opponent's Overall Defense as the ELO
+Ratings tab shows them (`units` in `elo/data/model.json`, which the card reads itself; `context.js` carries each
+club's pair too, read only when it is of the season, LA as LAR, with the build it came from in
+`UNITS26_META.overall`, and the rows publish without it), wearing the headline tag, the gap read as points
+(`headTag`: 11.9126 a raw unit, Favorable from 0.9645, Easy from 2.8935): from week 2 on it predicted an offense's points better than the rows on 2018-2025
+(9.44 against 9.60; `elo/tools/deepdive_vs_units.py` prints it and every tag constant, and says whether
+`context.js` carries them: run it again after a refit of the units). Under it are the four position matchups
+(`possession`: the quarterback against the pass defense, the line against the pass rush, the run game against the
+run defense, the receivers against the coverage, the pass rush and the coverage drawn as the defense's side of the
+line's and the receivers' rows), each tagged on its edge weighted by what that matchup alone has predicted
+(2012-2017: quarterback 1, receivers and coverage 0.8925, line and pass rush 0.5956, run game 0.3792) at 0.5 and
+1.5, with who plays, who is out, a quarterback in doubt with the next one named, and the numbers; the rows overlap
+and are never added up. They are drawn only for the units' own week (`applies`); another week's game says why.
+The constants are in `UNITS26_META.tags` (`units.json`'s `meta`), which `deepdive.js` reads and the smoke holds
+to `tools/deepdive-checks.js`'s own copy.
+
+There is no page to render: the smoke loads the files directly and holds them to their sources and to what the
+snapshot draws from them. Blocking: the twins exactly their `.js` consts; each team's stat line against its own
+game count in `results.js`; the tag constants their values and every club's Overall pair `elo/data/model.json`'s
+(`checkOverall`: exact on the same build, the board's order a run behind); every game of the units' week (from the
+schedule the lineups were checked on, else `betting/state.json`'s) drawn both ways by `possession()`, four rows in
+order with every tag the weighted edge worked out on its own and the ranks and edges the file's
+(`checkPossession`), and each overall line's tag, `headTag()` on model.json's units, the rule's (`checkHead`); the
+lineups for the schedule's week (and, in the job, checked on that run's own download); `news/index.html`, run in
+`vm`, sending a visitor to `../nflbets/`; and the fixed cases in `tools/cases.js` (each with the broken version a
+review caught, which the checks must fail; the Deep Dive's run on `deepdive.js` itself). On a checkout whose
+`units2026.js` is older than the report it fails until `node tools/context.js` runs. A change to a rule comes
+with a case there. The lineup rules (all but the week they are for), a starter out named in his row, a
+quarterback in doubt with the next one named, nobody both listed and out, and every problem in a notes file are
+warnings (`warn` in `smoke.js`): who the Deep Dive lists and what a note says, never the scores, records, stat
+bars, ranks or tags. They print WARN and never fail the smoke, so a lineup case no rule has seen publishes the
+week's results and stats, and the job goes red on them after its commit (`SMOKE_WARNINGS_FILE`); every other
+check, the fixed cases among them, holds the run's files back. The real news files are this smoke's alone: the
+nflbets smoke tests the snapshot on stand-ins of its own, since the elo job runs it every morning and a news
+publish must never turn it red. `.github/workflows/news.yml` runs about nineteen times a week, timed to the
+injury report and set early because GitHub starts this repo's scheduled runs 2.3 to 9.4 hours late, and on a
+push to the tools, the notes (so a note a rule refuses shows on its own push), `news/index.html` or
+`nflbets/build/deepdive.js`; it commits `results.js`, `stats2026.js`, `stats.json`, `units2026.js`,
+`units.json` and `tools/out`, and a run that finds nothing new commits nothing beyond the day's "as of" dates.
 
 ## Props: the loop
 
@@ -201,9 +221,9 @@ the same surname.
 A game total is a leg like a team's win or cover (`total` beside `ml` and `ats`: `totalBet`,
 `totalLeg`, `settleGameLeg`, `isGameLeg` in `part2.js`), offered over and under on the Game bets card
 on each game's page on the Props tab (app v105, `patch_gamebets_props.py`, the owner's call of 14 October
-2026: after the game's suggested parlays; until then it opened under each Pick'ems game, where an opened
-game now has, beside its Game snapshot, a button that opens the game's page on the Props tab with the
-card brought into view), and added by hand only: it never makes a suggested parlay. Its line is the
+2026: after the game's suggested parlays; until then it opened under each Pick'ems game, whose Game
+snapshot now leads with a button that opens the game's page on the Props tab with the card brought into
+view), and added by hand only: it never makes a suggested parlay. Its line is the
 schedule's `g.tot`, its price the over and under odds beside it, `g.tov`/`g.tou`, which `payload.py`
 carries from games.csv's `over_odds`/`under_odds` (free) and `weekly.py`'s bake replaces with
 DraftKings' own where a fresh DraftKings total is used (`oddsfetch.py` now keeps the totals market's
@@ -587,7 +607,7 @@ play and the rest are shown with their league ranks and weigh nothing. Every clu
 of its final rating the season before on every stat (THE CARRY in the build, 13 October 2026: last season rated from 0
 on its own play-by-play, so the build reads the play-by-play of the season before the units' too; the weights, K and
 home field held), chosen on 2013-2017 by leaving one season out at a time and tested once on 2018-2025, regular-season
-weeks 2 on: 9.424 against 9.501 with nothing carried, weeks 2-4 9.325 against 9.597, where the Season Tracker's Deep
+weeks 2 on: 9.424 against 9.501 with nothing carried, weeks 2-4 9.325 against 9.597, where the Deep
 Dive had 9.403 (`elo/tools/deepdive_vs_units.py`; week 1 9.492, the Deep Dive still better there at 9.293). So every
 club is rated, ranked and on the curve from the season's first day: one yet to play is shown on its carried rating and
 marked "carried from" last season (`carried`, its `start` its line's first point) on the tab, in its window and in the
@@ -636,10 +656,13 @@ X NHL Bets moved to its own repo, `DEMON-X13/nhl-hub`, on 2026-10-13, with its o
 
 ## Bets and Stats: the loop
 
-The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems, Season Tracker (`#tracker`, the tracker framed: below),
+The tab bar (`TABS` in `nflbets/build/build.js`) is Pick'ems,
 Props, Parlay Builder (the prop model's own Parlay Builder tab, `#parlay`), X Parlays (`#xparlays`, X's card alone), Team Rankings (the Power Ratings frame, renamed), ELO Ratings (the
 Player Elo tab, renamed), Pick'em Record, X Bet Log (the Bet Log frame, still `#bets`); a prop model section with no button
-there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`, and `news/` to `#tracker`. On a phone the bar scrolls sideways,
+there stays in the page, unshown. `liveparlays/` and `live/` redirect to `#xparlays`, and `news/` to the page, which opens on
+the Pick'ems board. The Season Tracker tab is gone (the owner's call, 14 October 2026: its games are in the Game snapshot,
+below): an old `#tracker` address lands on Pick'ems, written over as `#pickems` (`routeTabs` in `tab_pickems.html`, by
+`history.replaceState`), and the build stops if `nflbets/build/tab_tracker.html` comes back. On a phone the bar scrolls sideways,
 and the chosen tab's button is brought into it on load, on a new address and on a tap (the bar scrolls, never the page).
 `nflbets/index.html` is the prop model's page (part1 + part2 + part3, assembled by
 `nflbets/build/build.js` the way `assemble.py` assembles it) with the Pick'ems board set in
@@ -845,16 +868,17 @@ Pick'em Record with nothing to scroll, since its charts drawn without the bar ca
 taller than the height measured with it. Sideways, a box scrolls only where its content is really
 wider (the week-by-week grid and the pick grid on a phone), with one bar.
 Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
-`liveparlays/parlays.json`, `liveparlays/xbets.json` and `elo/data/*.json`, so it is rebuilt when a
-source changes, never when the data does. A props patch, a betting build change or an edit to the live section's source means
-rebuilding it too, and a change to `nflbets/build/tab_tracker.html` is held by the news smoke as well:
+`liveparlays/parlays.json`, `liveparlays/xbets.json` and `elo/data/*.json`, and the news job's
+`news/data/units.json`, `stats.json` and the week's notes when a Game snapshot first opens, so it is
+rebuilt when a source changes, never when the data does. A props patch, a betting build change or an edit to the live section's source means
+rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the news smoke as well:
 
 ```
 node nflbets/build/build.js
 node nflbets/build/smoke.js       # must end "0 failures"; the Parlay Builder's panel, X Parlays and the X Bet Log from their files
 node nflbets/build/smoke.js --season-over   # the same with every game played (the playoffs, the off-season)
 node nflbets/build/smoke_live.js  # the X Parlays section from its file on its own tab (each card's X and Clear this parlay? too), on a plain browser and one the retired owner layer marked, and the parlay card (the builder's and a suggested tier's); must end "0 failures"
-(cd news && npm ci && node tools/smoke.js)   # after a change to tab_tracker.html: mounts the tab's script on the real tracker (the nflbets smoke only uses a stand-in); must end "all checks passed"
+(cd news && npm ci && node tools/smoke.js)   # after a change to deepdive.js: the Deep Dive drawn on the real news files (the nflbets smoke only uses stand-ins); must end "all checks passed"
 ```
 
 The elo job runs `smoke.js` every morning of the year, so it has to hold in any week: it takes the
@@ -870,75 +894,29 @@ to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's co
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.
 
-**The Season Tracker tab.** `nflbets/build/tab_tracker.html` (`nt-` prefixed, its own closure, inlined by
-the build: the section beside the framed betting tabs, its styles and its script last) frames the tracker,
-`news/index.html`, from its own address, `../news/index.html?t=<now>`, the first time its tab is opened
-(`?t=` so a reload takes the tracker's page fresh: it lists the week files); opened on `#tracker`, where
-`news/` sends every visitor, only the script's own `load()` at its end fills it, since the board's
-`routeTabs` opens the tab before the script's click listeners exist. The tracker is hooked as soon as it
-has drawn its week (looked for every tenth of a second), not only at the frame's load event, which waits
-for its web font (Manrope, which this page does not load): until then the frame would be a 360px box
-scrolling by itself, with a game opened in it never laid over the screen. A document is hooked once, and a
-game already open when it is hooked is laid over the screen then. Unlike the betting frames nothing of it
-is in this page, and the build reads nothing from `news/`, so the news job's commits and a new week's
-script tag never make this page stale; its data scripts keep GitHub Pages' ten minutes, as they always
-had. Its frame is `nt-frame`, never `pk-frame`, so `frames()` leaves it alone. It is sized as the betting
-frames are, to its content, with no scroll of its own, so the page scrolls as one, and the page's own 44px
-back-to-top button (`#ntTop`) stands in for the tracker's. The tracker's game window is fixed to its
-frame, so while one is open (the tracker's `#ov` has the class `on`) the frame is laid over the whole
-screen (`nt-lifted`), the slate under the backdrop drawn exactly where it was, the page held still
-(`overflow:hidden` on its root) and its header and back-to-top button inert, and a smooth scroll still
-running (Enter at once after a Tab onto a tile below the screen; `overflow:hidden` does not stop it) is
-stopped where it is, so the page never moves on under the slate; on close the page is put back at the same
-pixel, the game's tile, which takes the focus back, scrolled the least into view where it is not wholly in
-it there, or, if the screen turned meanwhile, with the tile where it stood, or as near as the turned screen
-allows, wholly in view (at its top if the tile is taller than the screen). Leaving the
-tab by its address closes the window the tracker's own way (an Escape into it). A throw while lifting or
-dropping puts the page back, never leaving it held. A frame that loads no tracker (no `.slot` in its
-`#view`: GitHub's 404, a tracker that threw), or on the web one this page cannot read once loaded (the
-browser's error page: offline, a dropped connection), is hidden and a note says so, linking the tracker's
-own page (`../news/index.html?standalone`), with the back-to-top button gone too (nothing is left to
-scroll); from disk (`file://`, its own origin in Chrome) the tracker
-shows, unhooked. This page inside its own tracker frame, should the tracker's guard ever misfire, never
-frames it again. The lifted frame is transparent, so the tracker's backdrop dims this page as it stands.
-The preview gives the tab's section (which keeps its height while the frame is lifted) the tracker's light
-canvas, with a gutter of its own (a margin filled by a spread shadow, so the section's box stays the
-frame's), so an open game dims the page as it is; the note there keeps the light look's tint (opaque, so it
-reads at 4.5:1 on any canvas). `smoke.js`
-holds the tab on a stand-in tracker written into the frame (jsdom loads no `src`, and lays nothing out, so
-the tracker's height is planted and the tab's ResizeObserver is the smoke's): the frame unfilled until its
-tab opens, then on this site at `?t=`, filled with no click when the page is opened on `#tracker` and by
-the address on a page that never opened it, the 404 note and the error page's (`#ntTop` gone with them), a
-game already open when hooked, a stand-in with tiles and no `#ov` fitted and hooked once, the frame's height
-(fitted, shrinking, held while lifted, fitted again), the lift (a smooth scroll stopped, the frame painting
-nothing of its own), the hold (the header and `#ntTop` inert), focus, Escape, the page put back at the pixel
-it was at (planted), a tile not wholly in view there scrolled the least into it and, the screen turned, the
-tile where it stood or wholly in view, the backdrop, leaving by the address, a planted throw, `#ntTop`, and
-this page in its own tracker frame never framing it again; that the page carries none of the tracker; and,
-from the styles of the page and the preview alike, the lifted frame transparent and the note on an opaque
-background of its own at 4.5:1. The real tracker under this script is `news/tools/smoke.js`'s to hold (under "Season
-Tracker: the loop"). jsdom lays nothing out, so a change to the lift is checked in a real browser at 390
-and 1280: a game opened low on the page, at its top and at its end, the backdrop over the whole screen,
-the page back where it was, a phone turned with a game open from a tile low on the screen, the tile
-wholly in view once it closes, and Enter pressed at once after a Tab onto a tile below the screen, the tile
-wholly in view once its game closes.
-
-**The Game snapshot.** An opened game on the Pick'ems board has a Game snapshot button at its head
-(`tab_pickems.html`), which opens a window over the page (`nflbets/build/snapshot.html`, `gs-`
-prefixed, its own closure, inlined by the build after the ELO tab's script, so a change to it is a
-rebuild too; the
-page's modal, Escape, Close and a click outside close it, Tab stays inside, the focus goes back to the
-button) with everything the site has on that game: each team's record as Team Rankings counts it,
-the kickoff and site, the Vegas line as the board reads it, every model's pick, chance and grade
+**The Game snapshot.** A tap on a game on the Pick'ems board opens its Game snapshot straight away (the owner's
+call, 14 October 2026: the row is the button, `role="button"`, `tabindex="0"`, `aria-haspopup="dialog"`, opened by a
+click, Enter or Space, and wired once on the board in `wireRows()`, so a redraw never opens a window; until then a
+tap opened the row on two buttons, the snapshot and the game's props). It is a window over the page
+(`nflbets/build/snapshot.html`, `gs-` prefixed, its own closure, inlined by the build after the ELO tab's script,
+with `nflbets/build/deepdive.js` set in as its own script just before it, so a change to either is a rebuild too;
+the page's modal, Escape, Close and a click outside close it, Tab stays inside, the focus goes back to the
+game's row) with everything the site has on that game: each team's record as Team Rankings counts it,
+the kickoff and site, the game's preview and news, the Vegas line as the board reads it, every model's pick, chance and grade
 (Vegas, Alpha Model, the Joker and the ELO Model, from
 `state.json`'s `processed`, `atKickoff` and `joker` and `model.json`'s `graded` and `next`),
-each team's Power Rating, Overall Offense against Overall Defense both ways, each team's expected
+each team's Power Rating, Overall Offense against Overall Defense both ways with the Deep Dive's position
+matchups, the season's team stats side by side, each team's expected
 starters position by position with their season Elo, rank, shield and Q as on the ELO Ratings tab
 (`lineups` in `matchups.json`) and its ranked players out, the Props tab's Mismatches in the game,
 when each file was published, and links to the full tabs. It reads at a glance first (the owner's
 ask, October 2026: easy to read, nothing smooshed): a pinned header that turns into the game in one
 line (records and spread, or the score) once the verdict scrolls away, then a verdict card always
-shown -- the two teams and records, the score or kickoff, a played game's note under the score, the
+shown -- first, where the Props tab can open the game (`pkBoard.canProps`: the prop model has its row and
+its week is open), a 44px **Game bets and player props** button, which closes the window and opens the
+game's own page on the Props tab with its Game bets card brought into view (`pkBoard.openOnProps`); then
+the two teams and records, the score or kickoff, a played game's note under the score, the preview
+(below), the
 headline ("Jaguars favoured by 7.5", its chance and the board's own confidence pill; once played,
 "Buccaneers won" with an Upset chip and the line it was favoured by under it) over the board's split
 bar, the spread, total and moneylines with one line naming their sources, and five answer lines, each
@@ -946,23 +924,26 @@ a button that opens its card (the model picks, Vegas kept apart as the baseline:
 models agree with it, the ones that do not named, once played how many of the four calls were right;
 the Team Elo gap; which side ranks higher on offense against defense each way; who is out by name and
 how many starters are questionable; the top mismatch on its four-step meter) -- then a card each
-(Every call, Team strength, Offense vs defense, Mismatches, Starters, Sources) that folds to a
+(Every call, Team strength, Offense vs defense, Stat breakdown, Mismatches, Starters, Sources) that folds to a
 one-line summary, Starters and Mismatches with a count badge: Every call and Team strength open on a
 wide screen, every card folded on a phone, Open all and Close all. Every call is one lean chart (each
 bar leans from 50/50 toward the side its call picks, in that team's colour); Offense vs defense shows
-the overall ratings first ("When the Eagles have the ball") with the stats behind them folded;
+the overall ratings first ("When the Eagles have the ball"), the Deep Dive's headline tag on them and its four
+position matchups under them (below), with the stats behind the ratings folded;
 Starters puts the ranked players out first, then Offense, Defense and Kicker tabs (the choice kept
 while the page is open), each defensive unit's league rank at either end of its group's header. The
 side of every comparison with the edge wears one mark (`gs-better`): the higher rating, Elo and
-chance, the better rank, the higher season Elo of each pair of starters. One type scale (11, 13, 15,
+chance, the better rank, the higher season Elo of each pair of starters, the better stat of each pair. One type scale (11, 13, 15,
 18, 22, 30px; a phone takes the top two to 20 and 26), every control at least 44px tall, and every
 text at least 4.5:1 on its own background in both looks (red on the red tint is a darker red,
-`--gs-miss-ink`; the preview lifts the window's red and quiet text). Opening a card, a fold or a tab never redraws
+`--gs-miss-ink`; the preview lifts the window's red and quiet text, and the Deep Dive's tags, the stat bars
+and the preview block). Opening a card, a fold or a tab never redraws
 the window, and nothing of it is saved.
-It computes nothing of its own beyond the vote's counts and the Elo gap: the board
-hands it the season and its own Vegas call (`window.pkBoard`) and the ELO tab its one read of
+It computes nothing of its own beyond the vote's counts, the Elo gap and the stat breakdown's splits and
+point differential (points scored less allowed): the board
+hands it the season, its own Vegas call and the way to the Props tab (`window.pkBoard`) and the ELO tab its one read of
 `elo/data/` (`window.eloFiles`) and its Mismatches (`window.eloMismatches`). A played game says the
-ratings and lineups are the files as they stand now, and a file that did not load, a game outside the
+ratings, lineups, units and stats are the files as they stand now, and a file that did not load, a game outside the
 matchups' week or a team whose lineup is for another game is said in its card while the rest draws.
 `smoke.js`'s last section (THE GAME SNAPSHOT) holds every number shown to its file (each number the
 verdict and the summaries add is marked `data-gs-n` and worked out there on its own, as are the edge
@@ -973,13 +954,46 @@ chance and in that team's colour, and the Vegas split bar each side's chance wid
 headline to the files and its confidence pill to the board's own, the header's game bar, on a game
 to come, a final on the scoreboard, a graded game and a playoff game, with a file missing; every
 number is read with the cards, the stats fold and the Starters tabs as they open (folded or not
-shown), and the folding, the answers' buttons, the tabs' arrow keys, the Tab order and the 44px
-tap heights are held too, on a wide screen and a phone. The position
+shown), and the folding, the answers' buttons, the props button (there exactly where `canProps` says, and
+doing its job), the tabs' arrow keys, the Tab order and the 44px
+tap heights are held too, on a wide screen and a phone; a row's click, Enter and Space open the window, no row has a
+body, no redraw or score read opens one, and the focus goes back to the row on close. The position
 table is laid out fixed, each team half the card, and a long name wraps on a phone rather than push
 the home side off the screen; a player's Q is inside his name's own box, inline after the name, so a
 wrapping name never leaves it beside the other team's player (the smoke holds those rules and that
 structure on every questionable starter's game; jsdom lays nothing out, so a layout change there is
 checked in a real browser at 390 and 360 over every game, such as NYG at WAS and CLE at NYJ).
+
+**What the snapshot carries from the news job** (the owner's call, 14 October 2026, when the Season Tracker tab
+went; the job and the notes are under "News: the job and the weekly game notes"). In the verdict, under the
+records and kickoff, `div.gs-prev`: a **Preview** line and a **News** note with its sources small after it, the
+game's entry in `news/data/notes/<season>-w<week>.json` (`data-gs-note="written"`, plain text, escaped); until a
+game is written, and only for a game still to come, an automatic line (`data-gs-note="auto"`): "The Seahawks
+(3-2) visit the Broncos (4-1)" (play ... at the stadium on a neutral site) with the day and time, from the
+window's own records and kickoff, and as its news the starters out on `units.json` for both teams where it is
+for the game's week ("Out: ...", at most six, then "and N more"); a played game with no note shows no preview.
+In Offense vs defense, each side with the ball wears the Deep Dive's headline tag on its overall line
+(`deepdive.headTag`, its points beside it) and has the four position matchups under it
+(`deepdive.possession`) where `units.json` is for the game's week (`deepdive.applies`), else one quiet line
+saying why, with `deepdive.basis` in the card's note. **Stat breakdown** (`#gsStats`, folded on every screen)
+is the tracker's eleven stat bars from `stats.json` (point differential, points per game, points allowed, yards
+per play and allowed, turnover margin, sacks and sacks allowed, third down rate, red zone TD rate, explosive
+plays), each bar split between the two teams in their colours as the tracker split it (`statSplit`), the better
+number of each pair marked, "through <day>: SEA 5 games, DEN 5 games" said once, a team missing from the file
+shown as dashes. Sources says when the news job wrote each file (the Deep Dive's `built_at`, the stats' `asof`,
+the notes' `written`) and that they are its `news/data/`. The window fetches them at runtime,
+`../news/data/units.json`, `../news/data/stats.json` and the opened game's week's notes, `cache: 'no-store'`,
+each once a page load (the notes once a week) the first time a window wants them, and never bakes them in, so
+a news job publish is on the next load with no rebuild; a file that does not load, is not JSON or has the wrong
+shape is "did not load" for its own part alone, never a throw. The nflbets smoke holds all of it on stand-in
+news files of its own, served by its fetch stub, never the real ones (the elo job runs it every morning, and a
+news publish must never turn it red): the written preview escaped with its sources, the automatic line with
+its records and out list, none on a played game with no note, a 404 and a notes file that is not JSON each
+drawing the automatic line, the Deep Dive's rows `possession()`'s own html set in whole and the headline tag
+`headTag()`'s, the not-this-week line, the stat bars' numbers, marks and split widths worked out on their own,
+the Sources card's times, each file read once and no-store, every new control 44px, nothing thrown with every
+news file missing, and a page that bakes in none of the news job's data and carries none of the old tab; the
+real files are `news/tools/smoke.js`'s.
 
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
 adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
@@ -1083,10 +1097,11 @@ may quietly outrank what the job published:
   the X Bet Log, the betting app -- shows as a new tag. Without it a stale copy cannot be told from a current one.
 - **A frame's content is in the page.** The betting tabs are srcdoc frames filled from a
   string inside `nflbets/index.html`, so nothing is fetched or cached for them apart from
-  the page itself: a refresh of the page is a refresh of the frames. The one exception is the
-  Season Tracker tab, which frames `news/index.html` by its address with `?t=` on every load,
-  so its page is always fresh and its data scripts keep GitHub Pages' ten minutes, as on `news/`
-  before.
+  the page itself: a refresh of the page is a refresh of the frames. No frame is filled by address
+  any more (the Season Tracker tab, which framed `news/index.html`, went on 14 October 2026); the
+  Game snapshot fetches the news job's files itself, `../news/data/units.json`, `stats.json` and
+  the week's notes, `cache: 'no-store'`, at runtime when a window first opens, and the page bakes
+  none of them in, so a news job publish is on the next load.
 - **Data fetches are `cache: 'no-store'`.** The HTML is served by GitHub Pages with its own
   ten-minute cache, which a reload clears; nothing else may hold data longer than that.
 - **X's parlays and the X Bet Log are files, the same on every device, read only everywhere.**
@@ -1132,7 +1147,7 @@ may quietly outrank what the job published:
   untested): the run publishes and goes red after its commit, the warnings listed. Every check is
   blocking unless it is named a warning with its reason in the code: the props audit (`W.<kind>` and
   `WARN` in `audit.js`; the summary line counts them; `weekly.py`'s verdict reads failures and runtime
-  errors alone), the betting and Season Tracker smokes (`warn`, written to `SMOKE_WARNINGS_FILE` only
+  errors alone), the betting and news smokes (`warn`, written to `SMOKE_WARNINGS_FILE` only
   by a smoke with no failure, for the job's last step, which runs only after one). A number a page
   states stays blocking even where the choice behind it warns (a suggestion's stated floor), and a
   check of who the page lists may warn only where a blocking one still keeps every suggestion off a
@@ -1176,7 +1191,7 @@ may quietly outrank what the job published:
   it is never serialised.
 - **Downloads go through `lib/netfetch.py` (Python) or `lib/netfetch.js` (Node)**, one rule for every
   NFL job (`elo/build.py`, `weekly.py`, `update.js`, the Joker through `betting/jobkit.py`'s
-  `download`, the Season Tracker's `lib.js` and `pull-week.js`), after a burst of 500s on one nflverse
+  `download`, the news job's `lib.js` and `pull-week.js`), after a burst of 500s on one nflverse
   file refused the Elo job on 13 October 2026 (three tries over 15 seconds; a re-run passed): a 5xx,
   408, 425 or 429, a timeout, a reset, a transfer cut short or an empty or HTML body is tried again on
   waits of 5, 15, 30 and 60 seconds (five tries), every wait out of one ten-minute budget a process; a
