@@ -453,6 +453,7 @@ New Orleans Saints, ESPN headlines:
 
 New York Giants, injuries:
 - Jermaine Eluemunor (OT) Questionable, Calf: questionable
+- Tyler Nubin (S) Questionable, Neck: Nubin (neck) did not practice Wednesday, Dan Salomone of the Giants' official site reports.
 - Abdul Carter (LB) Questionable, Calf: Carter (calf) was listed as a DNP on Wednesday's injury report, Dan Salomone of the Giants' official site reports.
 - Theo Johnson (TE) Questionable, Neck: Johnson (neck) was listed as a limited practice participant on Wednesday's injury report, Dan Salomone of the Giants' official site reports.
 - Darnell Mooney (WR) Questionable, Neck: Mooney (neck) was a limited participant during Wednesday's practice, Dan Salomone of the Giants' official site reports.
@@ -464,7 +465,6 @@ New York Giants, injuries:
 - Dru Phillips (CB) Active: Phillips had five total tackles (five solo) and 2.0 sacks in Sunday's 27-27 tie with the Commanders.
 - Jason Pinnock (S) Questionable, Concussion: questionable
 - Colton Hood (CB) Questionable, Concussion: Hood (concussion) is considered day-to-day ahead of the Giants' matchup with the Saints in Week 6, Pat Leonard of the New York Daily News reports.
-- Tyler Nubin (S) Questionable, Neck: Nubin (neck) is considered day-to-day ahead of the team's Week 6 matchup with the Saints, Pat Leonard of the New York Daily News reports.
 - Nikko Reed (CB) Active
 - Jake Haener (QB) Active
 - J.C. Davis (OT) Active
@@ -705,7 +705,6 @@ Los Angeles Chargers, injuries:
 - Tre' Harris (WR) Doubtful, Hamstring: Harris (hamstring) was listed as a non-participant on Wednesday's injury report.
 - Quentin Johnston (WR) Questionable, Chest: Johnston (chest) was listed as a limited participant on Wednesday's injury report.
 - Ladd McConkey (WR) Questionable, Foot: McConkey (foot) was listed as a limited participant on Wednesday's injury report.
-- Evan Svoboda (TE) Out, Undisclosed: out
 - KeAndre Lambert-Smith (WR) Injured Reserve, Hamstring: The Chargers designated Lambert-Smith (hamstring) for return from injured reserve Tuesday.
 - Brenen Thompson (WR) Questionable, Quadriceps: questionable
 - Rodney Shelley (CB) Questionable, Hamstring: questionable
@@ -720,6 +719,7 @@ Los Angeles Chargers, injuries:
 - Justin Herbert (QB) Active: Herbert completed 14 of 24 passes for 121 yards, one touchdown and one interception, reeled off 54 yards on six carries and fumbled twice (one lost) during Sunday's 23-17 loss to the Broncos.
 - Omarion Hampton (RB) Active: Hampton turned 14 carries into 33 yards and one target into a six-yard catch during Sunday's 23-17 loss to the Broncos.
 - Bud Dupree (LB) Questionable, Neck: Dupree (neck) has been ruled out for the remainder of Sunday's game against the Broncos.
+- Branson Taylor (G) Active: Taylor (shoulder) is available for Sunday's game against Denver, Eric Smith of the team's official site reports.
 
 Los Angeles Chargers, ESPN headlines:
 
@@ -792,6 +792,9 @@ Buffalo Bills, injuries:
 Buffalo Bills, ESPN headlines:
 
 Las Vegas Raiders, injuries:
+- Patrick Johnson (DE) Active
+- Folorunso Fatukasi (DT) Questionable, Shoulder: questionable
+- Brock Bowers (TE) Questionable, Knee: Bowers (knee) was listed as a limited participant on Wednesday's practice report, Anthony Galaviz of The Fresno Bee reports.
 - Carter Runyon (TE) Injured Reserve, Lower Body: The Raiders designated Runyon (lower body) for return to practice from their injured reserve list Wednesday.
 - Jalen Nailor (WR) Questionable, Concussion: Nailor (concussion) isn't participating in Wednesday's practice, Sam Warren of The Athletic reports.
 - Ashton Jeanty (RB) Active: Head coach Klint Kubiak said Wednesday that Jeanty is "starting to feel a lot better physically," and the Raiders have had no discussions of resting him, Sam Warren of The Athletic reports. "I'm excited about giving him even more reps in practice and more full-speed reps," Kubiak said.
@@ -809,12 +812,9 @@ Las Vegas Raiders, injuries:
 - Dylan Laube (RB) Active: Laube rushed four times for nine yards and a touchdown while also reeling in all three of his targets for 16 yards during Sunday's 45-17 loss to New England.
 - Fernando Mendoza (QB) Active: Mendoza completed six of eight passes for 48 yards without a touchdown or turnover in Sunday's 45-17 loss to the Patriots. He added three yards on his only carry.
 - Kirk Cousins (QB) Active: Cousins completed 19 of 28 passes for 243 yards and a touchdown in Sunday's 45-17 loss to the Patriots.
-- Brock Bowers (TE) Active, Knee: Bowers caught eight of 10 targets for 110 yards and a touchdown in Sunday's 45-17 loss to the Patriots.
-- Patrick Johnson (DE) Questionable, Neck: Johnson (stinger/neck) is questionable to return to Sunday's game against the Patriots.
 - Dont'e Thornton Jr. (WR) Injured Reserve, Hamstring: Thornton (hamstring) has been ruled out ahead of Sunday's game against the Patriots, Paul Gutierrez of Raiders.com reports.
 - Spencer Burford (G) Active
 - Jackson Powers-Johnson (G) Active: Powers-Johnson (groin) was a full participant in practice Thursday.
-- Folorunso Fatukasi (DT) Active
 - Quay Walker (LB) Active: Walker registered six tackles (four solo), including 1.0 sacks, during the Raiders' 30-27 loss to the Chiefs on Sunday.
 - Darrell Luter Jr. (CB) Active
 
