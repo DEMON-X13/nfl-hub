@@ -105,7 +105,6 @@ line[stroke="#E6EAEF"]{stroke:#3C4358}
 #gsModal .pk-tier.pk-med{color:#FF9C61}
 /* the mismatch grades' brown and green are the light page's, too dark here */
 #gsModal .pe-g2{color:#F2B84B!important} #gsModal .pe-g3{color:#7BD88F!important}
-.plrbtn .who .pe-mmtag.pe-g2{color:#F2B84B!important} .plrbtn .who .pe-mmtag.pe-g3{color:#7BD88F!important}
 /* and a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
 #gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
 /* the preview says what it is */

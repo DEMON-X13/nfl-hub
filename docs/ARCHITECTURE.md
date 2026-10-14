@@ -495,7 +495,7 @@ that season in the table and its window. The weights and the stats are read from
 from before them draws the old three columns, and one from before the carry (one start a side)
 draws its lines from that start, with no mark.
 The same script puts the Mismatches card on the Props tab (games still to kick off only) and, on a game's page,
-a tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
+a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a
 real book price (graded in the Prop Record, the `tab-track` section, which has no button),
 and the Elo picks at the foot of the Parlay Builder's suggested parlays (`#pbElo`, drawn with the
