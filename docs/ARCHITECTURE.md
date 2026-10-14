@@ -393,9 +393,13 @@ The Pick'ems board is Vegas's call on nflverse's lines from `state.json`; it tak
 from `state.json`, reads each week's scoreboard in ESPN's numbering (weeks 19-22, named Wild Card
 to Super Bowl, are seasontype 3), says the regular season is over once every game is graded and
 the schedule has no playoff game, reads "vs" for a neutral site (nflverse's Neutral or a 9:30am
-Eastern kickoff), and says, under an opened game, when the prop model's Game bets are priced on a
-different spread from the board's.
-An opened game has a **Game snapshot** button at its head, over the prices. It opens
+Eastern kickoff). An opened game holds two buttons: the Game snapshot, and "Game bets and player
+props", which opens the game's own page on the Props tab (its week chosen on the slate, the tab
+opened, then the page, as a click on the game there opens it) with its Game bets card brought into
+view; offered where the prop model can open that page (it has the game and the week is open). The
+game bets (to win, to cover, the total) opened under the board's games until 14 October 2026 and are
+on the game's page since (app v105, after its suggested parlays), with the note on two spreads gone.
+An opened game has a **Game snapshot** button at its head. It opens
 `nflbets/build/snapshot.html`'s window (`#gsModal`, every name `gs-`, its script one closure that
 the build sets in last, after the Player Elo tab's; the page's modal style, Escape, Close or a
 click outside closes it, Tab stays inside, the focus goes back to the button, full screen and

@@ -198,6 +198,9 @@ function openOnProps(id){
   if(ws&&[...ws.options].some(o=>+o.value===+row.w)) ws.value=String(row.w);
   const tab=document.querySelector('#tabs button[data-tab="slate"]'); if(tab) tab.click();
   S.ui.game=row.id; S.ui.open={}; save(); renderSlate();
+  /* the page opens at its head; this button was for the game bets, so they are brought into view
+     (they follow the game's suggested parlays, which a phone shows a screen of first) */
+  const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
 }
 function wireLegs(){
   /* the Game snapshot's button opens its window over the page; the other, the game on the Props tab */
