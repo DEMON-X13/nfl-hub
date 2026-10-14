@@ -1429,7 +1429,8 @@ setTimeout(async()=>{
           let shown=0;
           for(const g of games.slice(0,3)){ const T=F('gameTiers')(g), box=card(g,null);
             for(const id of ['high','med','low']) if(T[id]){ shown++; chk(handOk(box,id,T[id]),`the ${id} hand of ${g.id} does not lead with its fair chance, or say it has none: `+nb((([...box.querySelectorAll('.gsugg-tier')].find(b=>b.querySelector('.conf.'+id))||{}).textContent)||'')); } }
-          chk(/lands at least 35% of the time by the model's chance/.test(nb(card(games[0],null).textContent)),'a game page\'s suggested parlays do not say their floors are on the model\'s chance');
+          /* the card states no floor (app v106: its explanation is gone); one stated again comes back with its check */
+          chk(!/lands at least|pays at least/.test(nb(card(games[0],null).textContent)),'a game page\'s suggested parlays state a floor no check holds');
           const mains=[...pool.pref,...pool.thin].filter(l=>l.main&&!isG(l)&&l.src==='real'&&fairOf(l)&&!fairOf(l).est).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)));
           const two=mains.length?[mains[0],mains.find(l=>l.gid!==mains[0].gid)||mains.find(l=>l.pid!==mains[0].pid)].filter(Boolean):[];
           if(two.length===2){ const hand=legs=>({legs,corr:pp(legs).corr,dec:3,fair:PF(legs)});

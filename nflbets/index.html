@@ -602,6 +602,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 /* the same shield on a player's row in the Props game view and the Pick'ems game bodies */
 .plrbtn .who .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 .plrbtn .who .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* a favourable mismatch this week, beside the name on the game's page */
+.plrbtn .who .pe-mmtag{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid color-mix(in srgb,currentColor 40%,transparent);border-radius:999px;background:color-mix(in srgb,currentColor 11%,transparent);font-family:var(--body);font-size:10.5px;font-weight:700;letter-spacing:.2px;line-height:1.35;vertical-align:2px;white-space:nowrap}
 /* the second price on a player leg: the book's chance nudged by the player's form */
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
@@ -1711,7 +1713,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v105 \u00b7 2026-10-14';
+const APP_BUILD='app v106 \u00b7 2026-10-14';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -2912,9 +2914,7 @@ function renderGame(){
         :'Player stats come out some hours after the final whistle and appear with the next update. Press Refresh stats to read them live from the scoreboard in the meantime.')}${hasScore(g)||lg?'':' The final score appears after the next refresh.'}</span></div>`;
   html+=`
   <div class="card">
-    <h2 style="display:flex;align-items:center;gap:10px">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
-    <p class="muted" style="margin:0">${d.day} ${d.t}${g.sp!=null?` \u00b7 ${g.sp>0?g.h+' favoured by '+g.sp:g.a+' favoured by '+Math.abs(g.sp)}`:` \u00b7 ${modelMargin(g)>0?g.h:g.a} favoured by ${Math.abs(modelMargin(g)).toFixed(1)} on our numbers`}${lineSource(g)?` \u00b7 lines: ${esc(lineSource(g))}`:''}${gameCtx(g,g.h).src==='market'?` \u00b7 ${g.tot} points expected between them`:` \u00b7 no betting line posted yet, so the game is built from our own team ratings (${(gameCtx(g,g.a).implied+gameCtx(g,g.h).implied).toFixed(0)} points expected)`}</p>
-    <p class="muted" style="margin:8px 0 0">${locked?'Click any player to compare the projection with the result.':'Click any player. Each stat shows the chance of clearing each number, an estimate of what a sportsbook would charge, and the real line where one is posted. An arrow next to a real price means the model disagrees with it by 3 points or more: \u2191 the model likes that side, \u2193 it doesn\u2019t. A line the model rates '+Math.round(FAR_OFF*100)+' points or more above the book\u2019s fair chance (its prices with the margin taken out) is marked far off the market and left out of the suggested parlays.'}</p>
+    <h2 style="display:flex;align-items:center;gap:10px;margin:0">${tag(g.a)}${winMark(g,g.a)} <span class="muted" style="font-family:var(--body);font-size:15px;font-weight:400">at</span> ${tag(g.h)}${winMark(g,g.h)}</h2>
   </div>`;
   html+=gameSuggestCard(g,locked);
   html+=gameBetsCard(g,locked);
@@ -4342,7 +4342,6 @@ function gameSuggestCard(g,locked){
         return `<li><label class="gsugg-pick${on?' on':''}"><input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Take':'Put'} ${esc(l.name)}, ${esc(l.label)}, ${on?'off':'on'} the parlay">
           <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='real'?'':'<i class="est"> est.</i>'}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`; }).join('')}</ul></div>`; };
   return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlays</h2></div>${side}
-    <p class="muted" style="margin:0 0 10px;font-size:12.5px">The best payout for the chance in this game, at 2, 3 and 4 legs: main lines and threshold ladders, with the book's price where it has one and an estimate (est.) where it does not. Every leg at least a 40% chance and no shorter than ${fmtML(GAME_LEG_MIN)}; High pays at least +100 and lands at least 35% of the time by the model's chance, Medium +250 and 20%, Low +500 and 10%. Chances allow for how the legs move together, and the price is what a book pays for them together. Each hand leads with the book's fair chance (its prices with the margin taken out) where every leg has a book price, the model's own beside it, and leaves out a line the model rates ${Math.round(FAR_OFF*100)} points or more above the book's fair chance.</p>
     <div class="gsugg-tiers g3">${GAME_TIERS.map(block).join('')}</div></div>`;
 }
 /* ---------- the panel, over the builder ---------- */
@@ -4959,7 +4958,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='9c7f6fb';
+const PAGE_HASH='137b9d5';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6834,7 +6833,25 @@ function decorate(){
     const b=tr.querySelector('button[data-drop]'), td=tr.querySelector('td.plr'); if(!b||!td) return;
     const pid=String(b.dataset.drop).split('|')[1]; const html=badge(pid); if(html) td.insertAdjacentHTML('afterbegin',html);
   });
+  mmTags();
   decorateAlt();
+}
+/* on a game's page, a player with a favourable mismatch this week (Solid and up, as the Mismatches
+   card grades it: his game still to kick off, not ruled out) wears it beside his name (the owner,
+   14 October 2026). A row is looked at once a draw; the game page redraws it whole. */
+function mmTags(){
+  const view=document.getElementById('gameView'); if(!view||!D.mu||typeof S!=='object'||!S||!S.ui) return;
+  const rows=[...view.querySelectorAll('button.plrbtn[data-open]')].filter(b=>!b.dataset.peMm); if(!rows.length) return;
+  const gid=String(S.ui.game), by={};
+  for(const v of mismatches()) if(String(v.game_id)===gid&&mmGrade(v.score)[0]!=='Slight') by[v.pid]=v;
+  for(const btn of rows){ btn.dataset.peMm='1';
+    const v=by[btn.dataset.open], who=btn.querySelector('.who'); if(!v||!who) continue;
+    const name=[...who.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()); if(!name) continue;
+    const [g,c]=mmGrade(v.score), t=document.createElement('span');
+    t.className='pe-mmtag '+c; t.dataset.peMmtag=v.score.toFixed(1);
+    t.title=`${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ordinal(v.defRank)} of ${v.defN}`;
+    t.textContent=g+' mismatch'; name.after(t);
+  }
 }
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
 /* a player's rating as it stood before week w of this season: after his last game before

@@ -38,6 +38,8 @@ table.pe-t .pe-name small{display:block;font-weight:500;color:var(--muted);font-
 /* the same shield on a player's row in the Props game view and the Pick'ems game bodies */
 .plrbtn .who .pe-badge{display:inline-flex;align-items:center;gap:3px;margin-right:6px;vertical-align:middle;font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 .plrbtn .who .pe-badge .tierbadge{width:16px;height:18px;flex:none}
+/* a favourable mismatch this week, beside the name on the game's page */
+.plrbtn .who .pe-mmtag{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid color-mix(in srgb,currentColor 40%,transparent);border-radius:999px;background:color-mix(in srgb,currentColor 11%,transparent);font-family:var(--body);font-size:10.5px;font-weight:700;letter-spacing:.2px;line-height:1.35;vertical-align:2px;white-space:nowrap}
 /* the second price on a player leg: the book's chance nudged by the player's form */
 .pe-alt{display:block;font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap;margin-top:3px}
 .pe-alt b{color:var(--ink-2);font-weight:600}
@@ -516,7 +518,25 @@ function decorate(){
     const b=tr.querySelector('button[data-drop]'), td=tr.querySelector('td.plr'); if(!b||!td) return;
     const pid=String(b.dataset.drop).split('|')[1]; const html=badge(pid); if(html) td.insertAdjacentHTML('afterbegin',html);
   });
+  mmTags();
   decorateAlt();
+}
+/* on a game's page, a player with a favourable mismatch this week (Solid and up, as the Mismatches
+   card grades it: his game still to kick off, not ruled out) wears it beside his name (the owner,
+   14 October 2026). A row is looked at once a draw; the game page redraws it whole. */
+function mmTags(){
+  const view=document.getElementById('gameView'); if(!view||!D.mu||typeof S!=='object'||!S||!S.ui) return;
+  const rows=[...view.querySelectorAll('button.plrbtn[data-open]')].filter(b=>!b.dataset.peMm); if(!rows.length) return;
+  const gid=String(S.ui.game), by={};
+  for(const v of mismatches()) if(String(v.game_id)===gid&&mmGrade(v.score)[0]!=='Slight') by[v.pid]=v;
+  for(const btn of rows){ btn.dataset.peMm='1';
+    const v=by[btn.dataset.open], who=btn.querySelector('.who'); if(!v||!who) continue;
+    const name=[...who.childNodes].find(n=>n.nodeType===3&&n.textContent.trim()); if(!name) continue;
+    const [g,c]=mmGrade(v.score), t=document.createElement('span');
+    t.className='pe-mmtag '+c; t.dataset.peMmtag=v.score.toFixed(1);
+    t.title=`${g} mismatch this week: edge ${v.score.toFixed(1)}, ${v.group} vs a ${v.unitName} ranked ${ordinal(v.defRank)} of ${v.defN}`;
+    t.textContent=g+' mismatch'; name.after(t);
+  }
 }
 window.eloOf=pid=>(D.players&&D.players.players&&D.players.players[pid])||null;
 /* a player's rating as it stood before week w of this season: after his last game before
