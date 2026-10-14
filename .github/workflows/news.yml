@@ -1,4 +1,7 @@
 name: Update season tracker
+# the news job: results, the stat bars (stats2026.js and stats.json), the Deep Dive (units2026.js and
+# units.json) and the reading pack, which X NFL Bets and Stats' Game snapshot reads at runtime; the
+# tracker's own page was retired on 14 October 2026 (its games are in the snapshot), the job was not
 
 on:
   schedule:
@@ -7,8 +10,8 @@ on:
     # So a run that has to land before a kickoff is set early enough to make it 9.4 hours late, and
     # has a twin. Times are UTC. Free sources only (ESPN feeds, TeamRankings tables, nflverse): no credits.
     #
-    # post-game: results, records and team stats. The narrative is untouched; run-auto only
-    # refreshes the self-updating parts and drafts a week it cannot show.
+    # post-game: results, records and team stats. The game notes (news/data/notes/) are written by hand
+    # each Wednesday and never touched here.
     - cron: "27 6 * * 5"    # Fri, after Thursday night
     - cron: "27 23 * * 0"   # Sun, after the early games
     - cron: "27 2 * * 1"    # Mon, after the late games
@@ -30,14 +33,14 @@ on:
     - cron: "7 7 * * 0"     # Sun: lands by 16:30 UTC, before the 1pm ET games
   workflow_dispatch:
   push:
-    # a change to the tracker's pull code runs it once, so a fix is proven straight away; so does a change
-    # to the page or a week's narrative, so a narrative the smoke test refuses (it quotes the site's own
-    # ranks, say) fails on its own push, not on the next scheduled run hours later. The smoke test also
-    # mounts X NFL Bets and Stats' Season Tracker tab (nflbets/build/tab_tracker.html) on the tracker, so a
-    # change to either side of that tab, or to the tracker's styles it relies on, runs it too
+    # a change to the job's code runs it once, so a fix is proven straight away; so does a week's game notes,
+    # so a note the rules refuse (it quotes a spread or the site's own ranks, say) shows on its own push (the
+    # smoke warns, after the commit), not on the next scheduled run hours later. The smoke test draws every
+    # game with the Deep Dive module the Game snapshot inlines (nflbets/build/deepdive.js), so a
+    # change to it runs this job too, and the retired page's address (news/index.html) is held here
     branches: [main]
     paths: ["news/tools/pull-week.js", "news/tools/run-auto.js", "news/tools/smoke.js", "news/tools/context.js", "news/tools/lib.js", "lib/netfetch.js", "news/tools/lineup-checks.js", "news/tools/deepdive-checks.js", "news/tools/cases.js",
-            "news/data/week*.js", "news/data/weeks.js", "news/js/app.js", "news/index.html", "news/css/style.css", "nflbets/build/tab_tracker.html"]
+            "news/tools/notes.js", "news/data/notes/**", "news/index.html", "nflbets/build/deepdive.js"]
 
 permissions:
   contents: write
@@ -72,10 +75,11 @@ jobs:
       - name: Pull scores, stats and the week's reading pack
         working-directory: news
         run: node tools/run-auto.js
-      # the page, and the lineups against the injury report, roster and schedule they were built from
-      # Its failures hold the run's files back; its warnings (who the Deep Dive lists and its notes,
-      # the narrative quoting a rank: smoke.js names them) publish, and the last step goes red on them
-      - name: Smoke test the page
+      # the data the Game snapshot reads, and the lineups against the injury report, roster and schedule
+      # they were built from. Its failures hold the run's files back; its warnings (who the Deep Dive lists
+      # and its notes, and anything wrong in a game note: smoke.js names them) publish, and the last step
+      # goes red on them
+      - name: Smoke test the data
         id: smoke
         working-directory: news
         env:
@@ -86,7 +90,7 @@ jobs:
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"
-          git add news/data/results.js news/data/stats2026.js news/data/ranks2026.js news/data/players2026.js news/data/units2026.js news/data/week*.js news/tools/out
+          git add news/data/results.js news/data/stats2026.js news/data/stats.json news/data/units2026.js news/data/units.json news/tools/out
           if git diff --cached --quiet; then echo "nothing changed"; else
             git commit -m "news: refresh $(date -u +'%Y-%m-%d %H:%M UTC')"
             # each job has its own concurrency group now, so two can finish together:
@@ -109,9 +113,9 @@ jobs:
           f="${{ runner.temp }}/news-smoke-warnings.txt"
           if [ -s "$f" ]; then
             if [ "$COMMIT" = success ]; then
-              echo "::error::the tracker's smoke test warned: the files were published, and these presentation checks need a look"
+              echo "::error::the news smoke test warned: the files were published, and these presentation checks need a look"
             else
-              echo "::error::the tracker's smoke test passed its blocking checks and warned, but the commit step did not succeed ($COMMIT), so the files were not published; these presentation checks need a look too"
+              echo "::error::the news smoke test passed its blocking checks and warned, but the commit step did not succeed ($COMMIT), so the files were not published; these presentation checks need a look too"
             fi
             sed 's/^/  - /' "$f"
             exit 1

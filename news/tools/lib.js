@@ -1,7 +1,8 @@
-/* What the tracker's tools share: the season, the CSV reader, a patient fetch and the schedule's state.
+/* What the news job's tools share: the season, the CSV reader, a patient fetch, the schedule's state and
+   the JSON twins of the data files.
 
-   SEASON is the one place the tracker's season is set. run-auto.js, pull-week.js, context.js and the
-   smoke test all read it from here; nothing else names a year. The page's data files keep their 2026
+   SEASON is the one place the job's season is set. run-auto.js, pull-week.js, context.js, notes.js and
+   the smoke test all read it from here; nothing else names a year. The data files keep their 2026
    names (stats2026.js, units2026.js ...) until a person sets up a new season (HANDOFF.md, "A new
    season"). When nflverse posts the next season's schedule, run-auto.js says so on every run and
    keeps working on this one, so a spring schedule release never flips the job to an empty season.   */
@@ -48,7 +49,7 @@ async function fetchText(url, opts = {}) {
   }
 }
 
-/* The tracker's teams use LAR for the Rams; nflverse uses LA (and a few old codes) */
+/* The news files use LAR for the Rams; nflverse uses LA (and a few old codes) */
 const AB = { LA: 'LAR', STL: 'LAR', OAK: 'LV', SD: 'LAC', WSH: 'WAS', JAC: 'JAX' };
 const ab = t => AB[t] || t;
 
@@ -59,7 +60,7 @@ const unplayed = r => !String(r.home_score ?? '').trim() || !String(r.away_score
      postseason   the regular season is final and the Super Bowl is not yet played (between rounds,
                   before the next round is listed, included)
      over         the Super Bowl has been played
-   Outside the regular season, week is the last regular season week: the tracker stays on it and
+   Outside the regular season, week is the last regular season week: the job stays on it and
    says the regular season is complete. It does not cover the playoffs. `newer` lists any later
    season the schedule already holds. */
 function seasonState(rows, season = SEASON) {
@@ -96,14 +97,15 @@ function lineText(r) {
   return [fav, isNaN(tot) ? '' : 'O/U ' + tot].filter(Boolean).join(', ');
 }
 
-/* ESPN abbreviations inside a line string ("WSH -3") written the tracker's way ("WAS -3") */
+/* ESPN abbreviations inside a line string ("WSH -3") written the news files' way ("WAS -3") */
 const ESPN_LINE_AB = { WSH: 'WAS', LA: 'LAR', JAC: 'JAX' };
 const fixLineAbbr = s => String(s || '').replace(/\b(WSH|LA|JAC)\b(?= [-+]|\s*$)/g, m => ESPN_LINE_AB[m] || m);
 
-/* The narrative never quotes the site's own ranks: the Deep Dive and the rank chip beside it move with
-   every run, the narrative does not (on 2026-10-09, 146 of the 192 unit ranks the Week 5 file quoted
-   had moved). The phrases are the ones the site's own voice uses: "in the tracker", "the site's units",
-   "the power ratings" (the chip's old name), "power rank", "Elo rank", "the Deep Dive", and the
+/* A written note never quotes the site's own ranks: the Deep Dive beside it in the Game snapshot moves
+   with every run, the note does not (on 2026-10-09, 146 of the 192 unit ranks the old tracker's Week 5
+   narrative quoted had moved). tools/notes.js warns on one. The phrases are the ones the site's own voice
+   uses: "in the tracker", "the site's units", "the power ratings" (the old rank chip's name), "power
+   rank", "Elo rank", "the Deep Dive", and the
    Deep Dive's headline, the ELO Ratings tab's "Overall Offense" and "Overall Defense" (capitalised as the
    site names them: "the best overall defense" is a writer's own words). A third party's
    numbers with their source are the writer's to quote, so "PFF's unit grade", "ESPN's FPI power
@@ -126,4 +128,34 @@ function siteRankQuote(text) {
   return best ? t.slice(Math.max(0, best.index - 40), best.index + best[0].length + 20) : null;
 }
 
-module.exports = { SEASON, GAMES_URL, UA, parseCSV, fetchText, ab, unplayed, seasonState, etToISO, lineText, fixLineAbbr, RANK_QUOTE, siteRankQuote };
+/* The JSON twins. X NFL Bets and Stats' Game snapshot fetches the Deep Dive and the stat bars at runtime
+   (no-store), as data/units.json and data/stats.json; the job and its checks keep units2026.js and
+   stats2026.js, which the lineup checks and the stat counts read as they always have. Each twin is built from the .js file's own consts as they stand on disk, so
+   the two never say different things: context.js and pull-week.js write the twin whenever they write the .js
+   file, and whenever the twin is missing or differs from it (a run that leaves units2026.js alone still
+   writes a missing units.json). The smoke test holds each twin to its consts on its own. */
+const vm = require('vm'), fs = require('fs'), path = require('path');
+/* the named top-level consts of a data file (classic-script consts live in the script's scope, not on a global) */
+function consts(file, names) {
+  const src = fs.readFileSync(file, 'utf8');
+  return vm.runInNewContext(`${src}\n;({ ${names.map(n => `${n}: typeof ${n} === 'undefined' ? undefined : ${n}`).join(', ')} })`, {}, { filename: file });
+}
+const UNITS_CONSTS = ['UNITS26', 'UNITS26_META', 'UNITS26_BASIS', 'UNITS26_LINEUPS'];
+const STATS_CONSTS = ['STATS26', 'STATS26_THROUGH', 'STATS26_ASOF'];
+function unitsTwin(C) {
+  const m = C.UNITS26_META || {};
+  return { season: m.season, week: m.week, built_at: m.built_at, meta: C.UNITS26_META, basis: C.UNITS26_BASIS, lineups: C.UNITS26_LINEUPS, units: C.UNITS26 };
+}
+const statsTwin = C => ({ season: SEASON, through: C.STATS26_THROUGH, asof: C.STATS26_ASOF, stats: C.STATS26 });
+/* write the twin of a .js data file beside it when it is missing or says something else; returns what was done */
+function writeTwin(jsFile, jsonFile, names, twin) {
+  if (!fs.existsSync(jsFile)) return 'no ' + path.basename(jsFile);
+  const body = JSON.stringify(twin(consts(jsFile, names))) + '\n';
+  let had = null; try { had = fs.readFileSync(jsonFile, 'utf8'); } catch (e) { /* none yet */ }
+  if (had === body) return 'unchanged';
+  fs.writeFileSync(jsonFile, body);
+  return had == null ? 'written' : 'rewritten';
+}
+
+module.exports = { SEASON, GAMES_URL, UA, parseCSV, fetchText, ab, unplayed, seasonState, etToISO, lineText, fixLineAbbr, RANK_QUOTE, siteRankQuote,
+  consts, UNITS_CONSTS, STATS_CONSTS, unitsTwin, statsTwin, writeTwin };

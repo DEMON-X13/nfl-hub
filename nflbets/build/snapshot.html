@@ -2,17 +2,23 @@
      styles in beside the tabs' and runs its script last, after the Player Elo tab's; every class
      and id is prefixed gs- and the script is one closure.
 
-     An opened game on the Pick'ems board has a Game snapshot button at its head (tab_pickems.html).
-     It opens this window over the page -- the page's own modal, closed by Escape, Close or a click
-     outside it, Tab kept inside, the focus back on the button after. It reads at a glance first,
-     the details after:
+     A tap on a game on the Pick'ems board (its row is a button: a click, Enter or Space;
+     tab_pickems.html) opens this window over the page -- the page's own modal, closed by Escape,
+     Close or a click outside it, Tab kept inside, the focus back on the row after. It reads at a
+     glance first, the details after:
 
        the header      (pinned) the two teams and the week; once the verdict's line has scrolled
                        away, the game in one line instead (each team's record and the spread, or
                        the score), so the matchup stays in view over the folded cards
-       the verdict     (always shown) each team and its record (the season's regular-season
+       the verdict     (always shown) first the button to the game's own page on the Props tab
+                       (Game bets and player props, where the Props tab can open it:
+                       pkBoard.canProps); each team and its record (the season's regular-season
                        results from betting/state.json, as Team Rankings counts them), the score
                        or the kickoff in the viewer's time and the site, and a played game's note;
+                       the preview: the week's note on the game, a sentence and the news, written
+                       by Claude each Wednesday into news/data/notes/<season>-w<week>.json, or until
+                       it is written an automatic line for a game still to come (who visits whom,
+                       their records, when, and the starters out on news/data/units.json);
                        the headline -- "Jaguars favoured by 7.5", its chance and the board's
                        confidence, or once played who won and whether it was an upset, with the
                        line it was favoured by under it -- on the board's own split bar; the
@@ -31,10 +37,16 @@
                        colour), graded once played
          team strength each team's Power Rating (elo/data/model.json `teams`): rating, shield,
                        rank, change since its last game, chance against an average team
-         offense vs    Overall Offense against Overall Defense, both ways (`units`), and folded
-         defense       under them the stats the ratings weigh, paired, the better rank marked; a
-                       unit with no game yet this season on its rating carried from last season,
-                       marked so
+         offense vs    Overall Offense against Overall Defense, both ways (`units`), with the
+         defense       Deep Dive's tag on the gap read as points (deepdive.js headTag), then the Deep
+                       Dive itself: that offense's four position matchups against that defense,
+                       each tagged, with who plays, who is out and the numbers (deepdive.js
+                       possession, on news/data/units.json, where it is for this game's week); and
+                       folded under them the stats the ratings weigh, paired, the better rank
+                       marked; a unit with no game yet this season on its rating carried from last
+                       season, marked so
+         stat          the season's eleven team stats side by side (news/data/stats.json), each a
+         breakdown     bar split between the two teams in their colours, the better number marked
          mismatches    the Props tab's Mismatches (window.eloMismatches) in this game, each with
                        its edge on a four-step meter
          starters      the ranked players out first, then each team's expected starters
@@ -42,7 +54,7 @@
                        his season Elo, rank and shield as the ELO Ratings tab shows them and a Q
                        where the report has him questionable, the higher Elo of each pair marked
                        and each defensive unit's league rank at either end of its group's header
-         sources       when each file was published, and links to the full tabs
+         sources       when each file was published (the news job's too), and links to the full tabs
 
      The side of a comparison with the edge wears one mark everywhere (gs-better): the higher
      rating, Elo and chance, the better rank. Nothing here is computed afresh: every number is a
@@ -50,9 +62,15 @@
      window.eloMismatches); the verdict's tallies and the Elo gap are counts and a difference of
      the numbers shown beneath them, and smoke.js holds each to the files (every element marked
      data-gs-n). The Elo files are the ones the ELO Ratings tab read on load (window.eloFiles):
-     nothing is fetched a second time. A file that did not load, or has nothing for the game,
-     says so in its card and its summary; the rest draws. Opening and closing a card or a fold,
-     or picking a Starters tab, never redraws the window, and nothing of it is saved. -->
+     nothing is fetched a second time. The news job's files (news/data/units.json, stats.json and
+     the week's notes) are fetched here with no-store as the page loads (the notes of the board's
+     week once the board has its schedule, another week's the first time one of its games opens):
+     each once a page load, the notes once a week, never baked into the page, so a news job publish
+     is on the next load. A file that did not load, or has nothing for the game, says so in its card
+     and its summary; one still loading says that; the rest draws. A file answering, or the prop model
+     coming up, draws the window again with the visitor's place kept: the focus on the same control
+     and what was being read where it was on the screen. Opening and closing a card or a fold, or
+     picking a Starters tab, never redraws the window, and nothing of it is saved. -->
 <style>
 /* the page's modal pads its top by 28px, and a sticky header sticks inside that padding, so the
    window's content showed in a band above it once scrolled: the gap is the panel's margin instead */
@@ -113,6 +131,16 @@
 
 /* ---- the verdict ---- */
 #gsModal .gs-verdict.card{padding:24px 24px 8px}
+/* first in it, the game's own page on the Props tab */
+#gsModal .gs-propsrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin:0 0 18px}
+#gsModal .gs-props{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:8px 16px;font-size:var(--gs-t3);font-weight:600}
+/* the preview: the week's note on the game (or the automatic line), under the kickoff, before the line */
+#gsModal .gs-prev{margin:16px auto 0;max-width:720px;padding:12px 16px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-md)}
+#gsModal .gs-pv{margin:0;font-size:var(--gs-t3);color:var(--ink);line-height:1.55}
+#gsModal .gs-pv+.gs-pv{margin-top:8px}
+#gsModal .gs-pv .gs-lab{display:inline;margin-right:8px;color:var(--ink-2)}
+#gsModal .gs-psrc{margin-left:4px;font-size:var(--gs-t2);font-weight:600;color:var(--ink-2)}
+#gsModal .gs-pauto{margin:6px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
 .gs-hero{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:center}
 .gs-team{min-width:0;display:flex;flex-direction:column;gap:8px}
 .gs-team.gs-home{align-items:flex-end;text-align:right}
@@ -272,6 +300,51 @@ table.gs-ut th.gs-uc,table.gs-ut td.gs-uc{text-align:right}
 .gs-sv b{font-family:var(--display);font-weight:700;color:var(--ink);font-size:var(--gs-t2)}
 .gs-sv small{font-size:var(--gs-t1);font-weight:600;color:var(--muted)}
 
+/* the Deep Dive's tags, on each possession's overall meeting and each of its four rows: five steps from
+   Easy to Very tough, each its own tint with its text at 4.5:1 or more (the preview's look sets its own) */
+#gsModal .dtag{display:inline-flex;align-items:center;font-size:var(--gs-t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:999px;white-space:nowrap;line-height:1.2}
+#gsModal .dtag.easy{background:#DDF3E6;color:#17603D}
+#gsModal .dtag.fav{background:#EEF8F2;color:#1B6E47}
+#gsModal .dtag.even{background:#E9EEF4;color:#4F607A}
+#gsModal .dtag.tough{background:#FBEFD3;color:#7A5205}
+#gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}
+#gsModal .gs-uhead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin:12px 0 0;font-size:var(--gs-t2);color:var(--ink-2)}
+#gsModal .gs-hpts{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+/* the Deep Dive: four rows a possession, each the offense's unit against the defense's it plays */
+#gsModal .gs-dd{display:block;margin:16px 0 0}
+#gsModal .gs-dd>.gs-lab{margin:0 0 8px}
+#gsModal .gs-dd .dd{border:1px solid var(--line);border-radius:var(--r-md)}
+#gsModal .ddrow{padding:11px 12px;border-top:1px solid var(--line)}
+#gsModal .ddrow:first-child{border-top:0}
+#gsModal .ddtop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#gsModal .ddunit{font-family:var(--display);font-size:var(--gs-t3);font-weight:600;color:var(--ink)}
+#gsModal .ddvs{margin-top:4px;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
+#gsModal .ddvs b{font-family:var(--display);font-weight:700;color:var(--ink)}
+#gsModal .ddedge{margin-left:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#gsModal .ddsides{display:grid;gap:6px;margin-top:6px}
+#gsModal .ddside{min-width:0}
+#gsModal .ddsl{display:block;font-size:var(--gs-t1);font-weight:700;letter-spacing:.07em;color:var(--ink-2)}
+#gsModal .ddwho{font-size:var(--gs-t2);color:var(--ink);line-height:1.5;overflow-wrap:anywhere}
+#gsModal .ddout{position:relative;margin-top:2px;padding-left:12px;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
+#gsModal .ddout::before{content:"";position:absolute;left:0;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--miss)}
+#gsModal .ddnum,#gsModal .ddnote{margin-top:2px;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5;font-variant-numeric:tabular-nums}
+#gsModal .gs-ddwhy{margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
+
+/* the stat breakdown: a row a stat, each team's number at its side, the bar split between them */
+#gsModal .gs-steams{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 10px}
+#gsModal .gs-steams .gs-thn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:var(--gs-t3);font-weight:600;color:var(--ink);min-width:0}
+#gsModal .gs-sbar{display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+#gsModal .gs-sbar:last-child{border-bottom:0}
+#gsModal .gs-sva{justify-self:start} #gsModal .gs-svh{justify-self:end}
+#gsModal .gs-sbar .gs-v b{font-family:var(--display);font-size:var(--gs-t3);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+#gsModal .gs-smid{min-width:0;text-align:center}
+#gsModal .gs-slb{display:block;margin:0 0 6px;font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
+#gsModal .gs-slb small{margin-left:6px;font-size:var(--gs-t1);font-weight:600;color:var(--ink-2)}
+#gsModal .gs-strack{display:flex;gap:8px}
+#gsModal .gs-shalf{display:flex;flex:1 1 0;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+#gsModal .gs-shl{justify-content:flex-end}
+#gsModal .gs-shalf i{display:block;height:100%;border-radius:4px;background:var(--gs-tc,var(--ink-2))}
+
 /* position by position */
 .gs-outs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px}
 .gs-outs>div{font-size:var(--gs-t2);color:var(--ink-2);line-height:1.55;min-width:0;padding:10px 12px;border-radius:var(--r-md);background:var(--panel-2);border:1px solid var(--line)}
@@ -406,6 +479,9 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   table.gs-vs th .gs-thn{font-size:var(--gs-t2)}
   table.gs-vs th .gs-tnm{display:none}
   .gs-unit{padding:12px 10px}
+  #gsModal .gs-sbar{grid-template-columns:58px minmax(0,1fr) 58px;gap:8px}
+  #gsModal .gs-steams .gs-tnm{display:none}
+  #gsModal .gs-prev{padding:10px 12px}
   .gs-duel{gap:6px}
   .gs-uov.gs-v{padding:6px 8px}
   #gsModal table.gs-ut td,#gsModal table.gs-ut th{padding-left:2px;padding-right:2px}
@@ -461,6 +537,12 @@ const stamp=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s
   return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); };
 const stampShort=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s);
   return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}); };
+/* a day the news job writes as a date alone (2026-10-14), or a time as stamp() reads one */
+const day0=s=>{ if(!s) return ''; if(/^\d{4}-\d{2}-\d{2}$/.test(String(s))){ const d=new Date(s+'T12:00:00Z');
+  return isNaN(d)?'':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}); } return stamp(s); };
+/* the day alone ("Wed, Oct 14"), from a date or a time */
+const dayOnly=s=>{ if(!s) return ''; const x=/^\d{4}-\d{2}-\d{2}$/.test(String(s)), d=new Date(x?s+'T12:00:00Z':String(s).length<=16?s+'Z':s);
+  return isNaN(d)?'':d.toLocaleDateString(undefined,Object.assign({weekday:'short',month:'short',day:'numeric'},x?{timeZone:'UTC'}:{})); };
 const signed=d=>d>0?'+'+d:d<0?'−'+Math.abs(d):'0';
 const wl=r=>r[0]+'-'+r[1]+(r[2]?'-'+r[2]:'');
 const and=xs=>xs.length<2?xs.join(''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1];
@@ -482,12 +564,50 @@ function eloFiles(){
   }
   return FILES;
 }
+/* the news job's files (news/data/): the Deep Dive's units and the stat breakdown, each read once a
+   page load as it loads, and a week's notes once for that week (the board's as the board draws,
+   another's the first time a window wants them); never baked into the page, always no-store, so a
+   news job publish is on the next load. Each that does not load -- a 404, a body that is not JSON,
+   the wrong shape -- is "did not load" for its own part alone, never a throw; the window draws again
+   when each answers, as it does for the Elo files */
+const NEWS={};
+function newsFile(key,url,shape){
+  if(NEWS[key]) return NEWS[key];
+  const rec=NEWS[key]={data:null,err:null,done:false};
+  let p;
+  try{ p=fetch(url,{cache:'no-store'}); }catch(e){ p=Promise.reject(e); }
+  Promise.resolve(p).then(r=>{ if(!r||!r.ok) throw new Error(r&&r.status?'HTTP '+r.status:'no answer'); return r.json(); })
+    .then(j=>{ const bad=shape(j); if(bad) throw new Error(bad); rec.data=j; })
+    .catch(e=>{ rec.err=String(e&&e.message||e)||'no answer'; })
+    .then(()=>{ rec.done=true; if(cur) redraw(); });
+  return rec;
+}
+const isObj=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
+const unitsFile=()=>newsFile('units','../news/data/units.json',j=>isObj(j)&&isObj(j.units)&&isObj(j.meta)?null:'not the Deep Dive\'s file');
+const statsFile=()=>newsFile('stats','../news/data/stats.json',j=>isObj(j)&&isObj(j.stats)?null:'not the stat file');
+/* a game's season: its id's, as the notes and the news files name it */
+const seasonOf=(P,g)=>+String(g.game_id).slice(0,4)||+P.ST.season||null;
+const notesFile=(season,week)=>newsFile(`notes:${season}-${week}`,`../news/data/notes/${season}-w${week}.json`,
+  j=>isObj(j)&&isObj(j.games)&&+j.season===+season&&+j.week===+week?null:`not the notes of ${season} week ${week}`);
+/* the game's note, where its week's file has one in the shape the rules write: a preview sentence,
+   the news (may be empty) and the outlets */
+function noteOf(P,g){
+  const rec=NEWS[`notes:${seasonOf(P,g)}-${+g.week}`], e=rec&&rec.data&&rec.data.games[g.game_id];
+  if(!isObj(e)||typeof e.preview!=='string'||!e.preview.trim()) return null;
+  return {preview:e.preview.trim(),news:typeof e.news==='string'?e.news.trim():'',
+    sources:Array.isArray(e.sources)?e.sources.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()):[],written:rec.data.written||null};
+}
+const DD=()=>window.gsDeepDive||null;
+/* the news job stays on week 18 once the regular season is over: it never covers the playoffs */
+const playoff=g=>g.game_type?g.game_type!=='REG':+g.week>18;
+/* the Deep Dive's file where it is this game's: loaded, of its season and week, a regular-season game */
+const ddFor=(P,g)=>{ const dd=DD(), D=NEWS.units&&NEWS.units.data; return dd&&D&&!playoff(g)&&dd.applies(D,seasonOf(P,g),+g.week)?D:null; };
 
 let cur=null, opener=null;
 /* which cards and folds are open, and which Starters tab is chosen, as the visitor leaves them
    while the window is open; nothing of it is saved. On a wide screen Every call and Team strength
    open, the rest folded; on a phone every card folded (the verdict is always shown) */
-const CARDS=['gsCalls','gsTeams','gsUnits','gsMism','gsPos','gsFiles'], WIDE_OPEN=['gsCalls','gsTeams'];
+const CARDS=['gsCalls','gsTeams','gsUnits','gsStats','gsMism','gsPos','gsFiles'], WIDE_OPEN=['gsCalls','gsTeams'];
 let OPEN={}, PTAB='off';
 const phone=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:760px)').matches); }catch(e){ return false; } };
 const gameOf=gid=>{ const P=B(); return P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched.find(x=>x.game_id===gid)||null:null; };
@@ -611,6 +731,42 @@ const plSe=(F,pid)=>{ const e=F.players&&F.players.players&&F.players.players[pi
 const UNIT_NAME={DL:'Pass rush and run front',LB:'Linebackers',DB:'Secondary'};
 const defRank=(mu,t,u)=>{ const defs=mu&&mu.league&&mu.league.defs||{}; if(!defs[t]) return null; const order=Object.keys(defs).sort((x,y)=>defs[y][u]-defs[x][u]); return order.indexOf(t)+1; };
 
+/* ---- the preview: the week's note on the game, or an automatic line until it is written ---- */
+/* the starters out on the Deep Dive's file, both teams, each once ("Name (SEA QB)"), where the file is
+   for this game's week; null where it is not, or has not answered */
+function startersOut(P,g){
+  const dd=DD(), D=ddFor(P,g);
+  if(!D) return null;
+  const out=[];
+  for(const t of [g.away_team,g.home_team]){ const u=D.units[dd.club(t)], seen=new Set(); if(!u) continue;
+    for(const k of ['qb','ol','rb','rec','front','db']) for(const x of (isObj(u[k])&&Array.isArray(u[k].out)?u[k].out:[])){
+      if(!x||!x.n) continue; const id=x.id||x.n; if(seen.has(id)) continue; seen.add(id); out.push(`${x.n} (${t}${x.pos?' '+x.pos:''})`); } }
+  return out;
+}
+function preview(P,g,F,st){
+  const n=noteOf(P,g);
+  if(n){
+    const src=n.sources.length?` <small class="gs-psrc" data-gs-sources>${esc(n.sources.join(' · '))}</small>`:'';
+    /* once the game has started, the note is dated as written before kickoff: its words on the teams'
+       form were true then, and the records above are as they stand now */
+    const lab=st.started?`Preview, written ${dayOnly(n.written)?dayOnly(n.written)+', ':''}before kickoff`:'Preview';
+    return `<div class="gs-prev" data-gs-note="written"><p class="gs-pv"><span class="gs-lab">${esc(lab)}</span><span data-gs-preview>${esc(n.preview)}</span>${n.news?'':src}</p>${n.news?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>${esc(n.news)}</span>${src}</p>`:''}</div>`;
+  }
+  /* no note: an automatic line, once the week's file has answered, and only for a game still to come
+     (a played game says what happened above, and an automatic preview of it would read wrong) */
+  const rec=NEWS[`notes:${seasonOf(P,g)}-${+g.week}`];
+  if(st.started||!rec||!rec.done) return '';
+  const M=F&&F.model, a=g.away_team, h=g.home_team, r=t=>wl(recordOf(P,M,t).reg);
+  const who=t=>{ const nm=teamName(t); return nm===t?esc(t):'the '+esc(nm); }, cap=x=>x.charAt(0).toUpperCase()+x.slice(1);
+  const [day,time]=P.fmtDate(g), when=day?` on ${esc(day)}${time?', '+esc(time):''}`:'';
+  const line=P.neutral(g)
+    ? `${cap(who(a))} (<span data-gs-prec="${esc(a)}">${r(a)}</span>) play ${who(h)} (<span data-gs-prec="${esc(h)}">${r(h)}</span>)${g.stadium?' at '+esc(g.stadium):''}${when}.`
+    : `${cap(who(a))} (<span data-gs-prec="${esc(a)}">${r(a)}</span>) visit ${who(h)} (<span data-gs-prec="${esc(h)}">${r(h)}</span>)${when}.`;
+  const outs=startersOut(P,g);
+  const news=outs&&outs.length?`<p class="gs-pv"><span class="gs-lab">News</span><span data-gs-news>Out: ${esc(outs.slice(0,6).join(', '))}${outs.length>6?` and ${outs.length-6} more`:''}.</span></p>`:'';
+  return `<div class="gs-prev" data-gs-note="auto"><p class="gs-pv"><span class="gs-lab">Preview</span><span data-gs-preview>${line}</span></p>${news}<p class="gs-pauto">An automatic line until this game's preview is written.</p></div>`;
+}
+
 /* ---- the verdict: the matchup, the headline, the line, and the answers at a glance ---- */
 function matchup(P,g,F){
   const st=standing(P,g), M=F&&F.model, [day,time]=P.fmtDate(g), neu=P.neutral(g), a=g.away_team, h=g.home_team;
@@ -624,7 +780,11 @@ function matchup(P,g,F){
     ? `<span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small>`
     : `<span class="gs-at">${neu?'vs':'at'}</span>`;
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
-  const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups and units are the files as they stand now, after the game.</p>`:'';
+  const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups, units and stats are the files as they stand now, after the game.</p>`:'';
+  /* first in the window, the game's own page on the Props tab, where its game bets and every player
+     line are, where the Props tab can open it */
+  const props=typeof P.canProps==='function'&&P.canProps(g.game_id)
+    ?`<div class="gs-propsrow"><button type="button" class="btn quiet gs-props" data-gs-props="${esc(g.game_id)}" aria-label="Game bets and player props, on the Props tab" title="Opens this game on the Props tab: to win, to cover, the total and every player line">Game bets and player props<span aria-hidden="true"> \u203a</span></button></div>`:'';
   const L=lineOf(P,g), c=L.c;
   /* the headline: who is favoured and by how much, its chance and the board's confidence; once
      played, who won and whether it was an upset, the line it was favoured by under it */
@@ -711,8 +871,9 @@ function matchup(P,g,F){
       const cx=`${meter(lv,gc)}${N('mm1score',v0.score.toFixed(1))} ${gw} edge, against a ${esc(v0.unitName)} ranked ${ordinal(v0.defRank)}${R.mine.length>1?` · all ${R.mine.length} in Mismatches`:''}`;
       return [v,cx]; })}
   </div>`;
-  return `<section class="card gs-sec gs-verdict" id="gsMatch"><div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${mid}</div>${team(h,'gs-home')}</div>
-    <p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>${past}
+  let prev=''; try{ prev=preview(P,g,F,st); }catch(e){ prev=''; }
+  return `<section class="card gs-sec gs-verdict" id="gsMatch">${props}<div class="gs-hero">${team(a,'gs-away')}<div class="gs-mid">${mid}</div>${team(h,'gs-home')}</div>
+    <p class="gs-when"><b>${esc(day)}</b>${time?' · '+esc(time):''}${where?' · '+where:''}</p>${past}${prev}
     <div class="gs-fav">${fav}${tiles}<p class="gs-src">${src}</p></div>${glance}</section>`;
 }
 /* the game in one line, for the header once the verdict's line has scrolled away (the verdict
@@ -797,13 +958,31 @@ const fmtStat=(v,f)=>v==null?'–':f==='pct'?(v*100).toFixed(1)+'%':f==='epa'?(v
 const PAIR={pts:['Points a game','scored · allowed'],sr:['Success rate','for · allowed'],epa:['EPA a play','for · allowed'],tor:['Turnovers a game','given away · taken away'],skr:['Sack rate','taken · made'],xr:['Big-play rate','made · allowed'],third:['Third-down rate','for · allowed'],rz:['Red-zone TD rate','for · allowed'],ypp:['Yards a play','for · allowed']};
 /* "When the Eagles have the ball" */
 const hasBall=t=>{ const n=teamName(t); return n===t?`When ${esc(t)} has the ball`:`When the ${esc(n)} have the ball`; };
+/* the Deep Dive for one possession (deepdive.js on news/data/units.json): the four rows where the file
+   is for this game's week, else one quiet line saying why */
+function deepDive(P,g,o,d){
+  const dd=DD(), rec=NEWS.units;
+  const why=t=>`<p class="gs-ddwhy" data-gs-ddwhy>${t}</p>`;
+  if(!dd) return why('The Deep Dive is not on this page.');
+  if(playoff(g)) return why('The Deep Dive covers the regular season only; its matchups end with week 18.');
+  if(!rec||!rec.done) return why('Loading the Deep Dive…');
+  const D=rec.data;
+  if(!D) return why(`The Deep Dive did not load${rec.err?' ('+esc(rec.err)+')':''}.`);
+  const season=seasonOf(P,g), wk=+g.week, m=D.meta||{};
+  if(!dd.applies(D,season,wk)){
+    const fs=+m.season, fw=+m.week, later=season>fs||(season===fs&&wk>fw);
+    const of=`week ${isFinite(fw)?fw:'?'}${fs!==season&&isFinite(fs)?' of '+fs:''}`;
+    return why(`The Deep Dive's matchups are for ${of}: ${later?'this game\'s come with its week':'this game\'s week has gone, and its matchups with it'}.`); }
+  const x=dd.possession(D,o,d);
+  if(!x) return why(`The Deep Dive has no matchups for ${esc(!D.units[dd.club(o)]?o:d)}.`);
+  return `<div class="gs-dd"><span class="gs-lab">Deep Dive: position by position</span>${x.html}</div>`;
+}
 function unitsSec(P,g,F){
-  const T0='Offense vs defense';
-  if(!F) return fold('gsUnits',T0,'loading…','<p class="gs-msg">Loading the ratings…</p>');
-  const X=unitsOf(F);
-  if(!X) return fold('gsUnits',T0,'did not load',`<p class="gs-msg">The unit ratings did not load${F.err?': '+esc(F.err):''}.</p>`);
-  if(!X.on) return fold('gsUnits',T0,'not yet','<p class="gs-msg">Overall Offense and Overall Defense start once a team has a rated game this season.</p>');
-  const U=X.U, all=U.stats||[], a=g.away_team, h=g.home_team, C=X.C;
+  const T0='Offense vs defense', a=g.away_team, h=g.home_team;
+  const X=F?unitsOf(F):null, U=X&&X.on?X.U:null, C=X&&X.C, dd=DD(), D=NEWS.units&&NEWS.units.data;
+  /* why the Overall ratings are not drawn, said once over the two possessions; the Deep Dive draws either way */
+  const eloWhy=!F?'Loading the ratings…':!X?`The unit ratings did not load${F.err?': '+esc(F.err):''}.`:!X.on?'Overall Offense and Overall Defense start once a team has a rated game this season.':'';
+  const all=U&&U.stats||[];
   /* the stats either rating weighs, in the offense's order, then the defense's */
   const keys=[...new Set(all.filter(s=>s.weight&&s.side==='off').map(s=>s.key).concat(all.filter(s=>s.weight&&s.side==='def').map(s=>s.key)))];
   const meta=(side,k)=>all.find(s=>s.side===side&&s.key===k)||null;
@@ -812,25 +991,88 @@ function unitsSec(P,g,F){
     if(!v) return `<div class="gs-uside${s==='def'?' gs-ud':''}">${lab}<span class="gs-msg">no rating for ${esc(t)}</span></div>`;
     return `<div class="gs-uside${s==='def'?' gs-ud':''}" data-gs-unit="${s}:${esc(t)}">${lab}<span class="gs-uov gs-v${b?' gs-better':''}"><span class="gs-urank"><span data-gs-urank>${ordinal(v.rank)}</span> <small>of ${n(s)}</small></span>
       <span class="gs-ush">${shield(v.elo)}<b data-gs-uelo>${v.elo}</b><span class="gs-utier">${esc(tierName(v.elo))}</span></span>${v.games?'':v.carried&&C?`<span class="gs-tiern" data-gs-carried title="No game yet this season: ${esc(C.c)} of its final rating in ${esc(C.from)}">carried from ${esc(C.from)}</span>`:'<span class="gs-tiern">no game yet</span>'}</span></div>`; };
-  const pair=(o,d,id)=>{ const p=possession(U,o,d), vo=U.off[o], vd=U.def[d];
-    const edge=!p?'':p.team?`<span class="gs-uedge">edge ${V(`${tg(p.team,true)} ${p.edge==='off'?'offense':'defense'}`,true)}</span>`:'<span class="gs-uedge">even</span>';
-    const rows=keys.map(k=>{ const mo=meta('off',k), md=meta('def',k), so=vo&&vo.stats&&vo.stats[k]||{}, sd=vd&&vd.stats&&vd.stats[k]||{};
-      const b=so.rank!=null&&sd.rank!=null&&so.rank!==sd.rank?(so.rank<sd.rank?'off':'def'):null;
-      const sv=(side,t,m,e)=>`<td class="gs-uc"><span class="gs-sv gs-v${b===side?' gs-better':''}" data-gs-stat="${side}:${esc(t)}:${esc(k)}"${m?` title="${esc(m.label)}"`:''}><b data-gs-sr>${e.rank!=null?ordinal(e.rank):''}</b><small data-gs-sv>${m?fmtStat(e.v,m.fmt):'–'}</small></span></td>`;
-      const [lab,sub]=PAIR[k]||[(mo||md).short,''];
-      return `<tr><td class="gs-ulab">${esc(lab)}${sub?`<small>${esc(sub)}</small>`:''}</td>${sv('off',o,mo,so)}${sv('def',d,md,sd)}</tr>`; }).join('');
-    return `<div class="gs-unit"><h4>${hasBall(o)} ${edge}</h4>
-      <div class="gs-duel">${ov(o,'off',p&&p.edge==='off')}<span class="gs-vsx" aria-hidden="true">vs</span>${ov(d,'def',p&&p.edge==='def')}</div>
-      <div class="gs-subbody" id="${id}"${OPEN.gsUStats?'':' hidden'}><table class="gs-ut" aria-label="${esc(o)} offense against ${esc(d)} defense, the stats"><thead><tr><th class="gs-ulab"><span class="gs-sr">Stat</span></th><th class="gs-uc">${esc(o)} offense</th><th class="gs-uc">${esc(d)} defense</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div>`; };
-  const p1=possession(U,a,h), p2=possession(U,h,a);
-  const sum=p1&&p2?`<span class="gs-nw">${esc(a)} O ${N('urank:off:'+a,ordinal(p1.vo.rank))} v ${esc(h)} D ${N('urank:def:'+h,ordinal(p1.vd.rank))}</span> · <span class="gs-nw">${esc(h)} O ${N('urank:off:'+h,ordinal(p2.vo.rank))} v ${esc(a)} D ${N('urank:def:'+a,ordinal(p2.vd.rank))}</span>`:'a unit has no rating';
+  const pair=(o,d,id)=>{
+    let edge='', duel='', head='', stats='';
+    if(U){ const p=possession(U,o,d), vo=U.off[o], vd=U.def[d];
+      edge=!p?'':p.team?`<span class="gs-uedge">edge ${V(`${tg(p.team,true)} ${p.edge==='off'?'offense':'defense'}`,true)}</span>`:'<span class="gs-uedge">even</span>';
+      duel=`<div class="gs-duel">${ov(o,'off',p&&p.edge==='off')}<span class="gs-vsx" aria-hidden="true">vs</span>${ov(d,'def',p&&p.edge==='def')}</div>`;
+      /* the Deep Dive's headline tag on the gap between the two, read as points (deepdive.js headTag,
+         on the constants news/data/units.json carries) */
+      const ht=dd&&D&&vo&&vd?dd.headTag(D.meta,vo,vd):null;
+      if(ht) head=`<div class="gs-uhead" data-gs-head="${esc(o)}-${esc(d)}"><span class="dtag ${esc(ht.cls)}" title="${esc(ht.title)}">${esc(ht.tag)}</span><span class="gs-hpts">${esc(ht.text)}</span></div>`;
+      const rows=keys.map(k=>{ const mo=meta('off',k), md=meta('def',k), so=vo&&vo.stats&&vo.stats[k]||{}, sd=vd&&vd.stats&&vd.stats[k]||{};
+        const b=so.rank!=null&&sd.rank!=null&&so.rank!==sd.rank?(so.rank<sd.rank?'off':'def'):null;
+        const sv=(side,t,m,e)=>`<td class="gs-uc"><span class="gs-sv gs-v${b===side?' gs-better':''}" data-gs-stat="${side}:${esc(t)}:${esc(k)}"${m?` title="${esc(m.label)}"`:''}><b data-gs-sr>${e.rank!=null?ordinal(e.rank):''}</b><small data-gs-sv>${m?fmtStat(e.v,m.fmt):'–'}</small></span></td>`;
+        const [lab,sub]=PAIR[k]||[(mo||md).short,''];
+        return `<tr><td class="gs-ulab">${esc(lab)}${sub?`<small>${esc(sub)}</small>`:''}</td>${sv('off',o,mo,so)}${sv('def',d,md,sd)}</tr>`; }).join('');
+      stats=`<div class="gs-subbody" id="${id}"${OPEN.gsUStats?'':' hidden'}><table class="gs-ut" aria-label="${esc(o)} offense against ${esc(d)} defense, the stats"><thead><tr><th class="gs-ulab"><span class="gs-sr">Stat</span></th><th class="gs-uc">${esc(o)} offense</th><th class="gs-uc">${esc(d)} defense</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`; }
+    return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><h4>${hasBall(o)} ${edge}</h4>${duel}${head}${deepDive(P,g,o,d)}${stats}</div>`; };
+  const p1=U?possession(U,a,h):null, p2=U?possession(U,h,a):null;
+  const sum=!U?(!F?'loading…':!X?'did not load':'not yet')
+    :p1&&p2?`<span class="gs-nw">${esc(a)} O ${N('urank:off:'+a,ordinal(p1.vo.rank))} v ${esc(h)} D ${N('urank:def:'+h,ordinal(p1.vd.rank))}</span> · <span class="gs-nw">${esc(h)} O ${N('urank:off:'+h,ordinal(p2.vo.rank))} v ${esc(a)} D ${N('urank:def:'+a,ordinal(p2.vd.rank))}</span>`:'a unit has no rating';
   const so=!!OPEN.gsUStats;
-  return fold('gsUnits',T0,sum,`<div class="gs-units">${pair(a,h,'gsUStatsA')}${pair(h,a,'gsUStatsH')}</div>
-    <button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>
-    <p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted${C?`, each team starting the season from ${esc(C.c)} of its final rating in ${esc(C.from)} (one with no game yet is shown on that, marked carried)`:''}; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.</p>`);
+  /* the Deep Dive's basis, under the rows, where they are drawn */
+  const ddOn=!!ddFor(P,g);
+  return fold('gsUnits',T0,sum,`${eloWhy?`<p class="gs-msg" style="margin:0 0 12px">${eloWhy}</p>`:''}<div class="gs-units">${pair(a,h,'gsUStatsA')}${pair(h,a,'gsUStatsH')}</div>
+    ${U?`<button type="button" class="gs-more" data-gs-sub="gsUStats" aria-expanded="${so}" aria-controls="gsUStatsA gsUStatsH"><span>${so?'Hide':'Show'} the stats behind them</span>${CHEV}</button>`:''}
+    ${U?`<p class="gs-note">Overall Offense and Overall Defense rate each side on this season's key stats, opponents and home field counted${C?`, each team starting the season from ${esc(C.c)} of its final rating in ${esc(C.from)} (one with no game yet is shown on that, marked carried)`:''}; 1st is the best on that side of the ball, so the better rank of each pair has the edge. The stats are the ones the ratings weigh, ranked: what the offense does against what the defense allows or takes (turnovers: the offense's giveaways, the defense's takeaways; sacks: the offense's taken, the defense's made), each with its value this season.${D&&dd?' The tag beside each meeting is the Deep Dive\'s: the gap read as points a game to that offense.':''}</p>`:''}
+    ${ddOn?`<p class="gs-note">The Deep Dive: ${dd.basis(D,a,h)} Built ${esc(stamp(D.built_at||(D.meta&&D.meta.built_at)))} by the news job.</p>`:''}`);
 }
 
+/* ---- the stat breakdown: the season's eleven team stats side by side (news/data/stats.json) ---- */
+/* [key, label, note, value, lower is better, signed, a percentage]; per game, as the file has them */
+const SROWS=[
+  ['pd','Point differential','per game',s=>s.ppg==null||s.pa==null?null:Math.round((s.ppg-s.pa)*10)/10,false,true,false],
+  ['ppg','Points per game','',s=>s.ppg,false,false,false],
+  ['pa','Points allowed','',s=>s.pa,true,false,false],
+  ['ypp','Yards per play','',s=>s.ypp,false,false,false],
+  ['yppa','Yards per play allowed','',s=>s.yppa,true,false,false],
+  ['to','Turnover margin','per game',s=>s.to,false,true,false],
+  ['sk','Sacks','',s=>s.sk,false,false,false],
+  ['ska','Sacks allowed','',s=>s.ska,true,false,false],
+  ['third','Third down rate','',s=>s.third,false,false,true],
+  ['rz','Red zone TD rate','',s=>s.rz,false,false,true],
+  ['expl','Explosive plays','20+ yards',s=>s.expl,false,false,false]];
+/* the bar's split, as the Season Tracker drew it: where lower is better each side by the inverse of
+   its number, else both shifted up by the lower of the two (and 0) so a negative still splits;
+   nothing drawn where either is missing or both are 0. Tenths of a percent */
+function statSplit(x,y,lo){
+  if(x==null||y==null||(x===0&&y===0)) return [0,0];
+  let pa;
+  if(lo){ const ix=1/Math.max(x,.01), iy=1/Math.max(y,.01); pa=ix/(ix+iy)*100; }
+  else{ const m=Math.min(x,y,0), sx=x-m, sy=y-m; pa=(sx+sy)===0?50:sx/(sx+sy)*100; }
+  pa=Math.round(pa*10)/10; return [pa,Math.round((100-pa)*10)/10];
+}
+const statNum=v=>v==null||v===''||!isFinite(+v)?null:+v;
+function statsSec(P,g,F){
+  const T0='Stat breakdown', rec=NEWS.stats, a=g.away_team, h=g.home_team, dd=DD(), club=t=>dd?dd.club(t):t;
+  if(!rec||!rec.done) return fold('gsStats',T0,'loading…','<p class="gs-msg">Loading the stat breakdown…</p>');
+  const J=rec.data;
+  if(!J) return fold('gsStats',T0,'did not load',`<p class="gs-msg">The stat breakdown did not load${rec.err?' ('+esc(rec.err)+')':''}.</p>`);
+  const season=seasonOf(P,g);
+  if(J.season!=null&&+J.season!==season) return fold('gsStats',T0,`${esc(J.season)}'s numbers`,`<p class="gs-msg">The stat breakdown is ${esc(J.season)}'s season; this game is ${esc(season)}'s.</p>`);
+  const sOf=t=>isObj(J.stats[club(t)])?J.stats[club(t)]:null, SA=sOf(a), SH=sOf(h), none={};
+  const fmt=(v,sign,pc)=>v==null?'–':(v<0?'−'+Math.abs(v):(sign&&v>0?'+':'')+v)+(pc?'%':'');
+  let na=0, nh=0;
+  const rows=SROWS.map(([k,lab,note,f,lo,sign,pc])=>{
+    const x=statNum(f(SA||none)), y=statNum(f(SH||none)), [pa,ph]=statSplit(x,y,lo);
+    const ba=x!=null&&y!=null&&x!==y&&(lo?x<y:x>y), bh=x!=null&&y!=null&&x!==y&&!ba;
+    if(ba) na++; if(bh) nh++;
+    return `<div class="gs-sbar" data-gs-srow="${k}"><span class="gs-sva">${V(`<b data-gs-sval="${esc(a)}">${fmt(x,sign,pc)}</b>`,ba)}</span>
+      <div class="gs-smid"><span class="gs-slb">${lab}${note?`<small>${note}</small>`:''}</span><span class="gs-strack" aria-hidden="true"><span class="gs-shalf gs-shl"><i style="width:${pa}%;--gs-tc:${tcol(a)}"></i></span><span class="gs-shalf gs-shr"><i style="width:${ph}%;--gs-tc:${tcol(h)}"></i></span></span></div>
+      <span class="gs-svh">${V(`<b data-gs-sval="${esc(h)}">${fmt(y,sign,pc)}</b>`,bh)}</span></div>`; }).join('');
+  const g1=n=>`${n} game${n===1?'':'s'}`;
+  const counts=[[a,SA],[h,SH]].filter(([,x])=>x&&statNum(x.g)!=null).map(([t,x])=>`${esc(t)} ${g1(+x.g)}`).join(', ');
+  const missing=[[a,SA],[h,SH]].filter(([,x])=>!x).map(([t])=>esc(t));
+  const basis=`${esc(J.season||season)} season${J.through?' through '+esc(J.through):''}${counts?': '+counts:''}`;
+  const sum=missing.length===2?'neither team in the file yet'
+    :`<span class="gs-nw">${esc(a)} better on <b data-gs-sb="${esc(a)}">${na}</b></span>, <span class="gs-nw">${esc(h)} on <b data-gs-sb="${esc(h)}">${nh}</b></span>`;
+  return fold('gsStats',T0,sum,`<div class="gs-steams" aria-hidden="true"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span><span class="gs-thn"><span class="gs-tnm">${esc(teamName(h))}</span>${tg(h,true)}</span></div>
+    <div class="gs-sbars">${rows}</div>
+    ${missing.length?`<p class="gs-note">Not in the file yet: ${missing.join(' and ')}; ${missing.length===1?'its':'their'} numbers show as dashes.</p>`:''}
+    <p class="gs-note" data-gs-sbasis>${basis}. Each bar splits the pair between the two teams, in their colours, and the better number of each pair is marked; per game, from TeamRankings' season tables as the news job pulls them${J.asof?`, as of ${esc(day0(J.asof))}`:''}, so a game played shows the numbers as they stand now.</p>`);
+}
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */
 const PTABS=[['off','Offense'],['def','Defense'],['k','Kicker']];
 const ptabOf=grp=>grp==='K'?'k':UNIT_NAME[grp]?'def':'off';
@@ -930,10 +1172,20 @@ function filesSec(P,g,F){
   if(st.published){ bits.push(`Results and calls <b>${esc(stamp(st.published))}</b>`); short.push(`<span class="gs-nw">results ${esc(stampShort(st.published))}</span>`); }
   if(F&&F.model&&F.model.built_at){ bits.push(`Elo ratings <b>${esc(stamp(F.model.built_at))}</b>`); short.push(`<span class="gs-nw">Elo ${esc(stampShort(F.model.built_at))}</span>`); }
   if(F&&F.mu&&F.mu.built_at) bits.push(`Lineups and matchups <b>${esc(stamp(F.mu.built_at))}</b>`);
+  /* the news job's files, as this window read them */
+  const U0=NEWS.units&&NEWS.units.data, S0=NEWS.stats&&NEWS.stats.data, nrec=NEWS[`notes:${seasonOf(P,g)}-${+g.week}`], N0=nrec&&nrec.data;
+  const ub=U0&&(U0.built_at||(U0.meta&&U0.meta.built_at));
+  if(ub) bits.push(`<span data-gs-news-at="units">Deep Dive <b>${esc(day0(ub))}</b></span>`);
+  if(S0&&S0.asof) bits.push(`<span data-gs-news-at="stats">Stat breakdown <b>${esc(day0(S0.asof))}</b></span>`);
+  if(N0&&N0.written) bits.push(`<span data-gs-news-at="notes">Week ${esc(+g.week)} preview and news <b>${esc(day0(N0.written))}</b></span>`);
+  /* a file still being read is said to be loading; only one read with nothing to show did not load */
+  const nst=[['the Deep Dive',NEWS.units],['the stat breakdown',NEWS.stats]].map(([n,r])=>[n,!r||!r.done?'loading':r.data?'':'failed']);
+  const said=k=>{ const xs=nst.filter(x=>x[1]===k).map(x=>x[0]); return xs.length?`${and(xs)} ${k==='failed'?'did not load':(xs.length>1?'are':'is')+' still loading'}`:''; };
+  const notIn=[said('failed'),said('loading')].filter(Boolean).join('; ');
   const row=typeof S==='object'&&S&&Array.isArray(S.sched)?S.sched.find(x=>x.id===g.game_id):null;
   return fold('gsFiles','Sources',short.length?'Published '+short.join(' · '):'when each file was published',
     `<div class="gs-files" id="gsStamps">${bits.length?bits.map(b=>`<span>${b}</span>`).join(''):'<span>The files have no publish times.</span>'}</div>
-    <p class="gs-note">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups. The full tables:</p>
+    <p class="gs-note">Every number here is one the site publishes: <code>betting/state.json</code> for the results, the line and the betting models' calls, <code>elo/data/</code> for the ratings, the lineups and the matchups, and the news job's <code>news/data/</code> for the preview and news (written each week), the Deep Dive and the stat breakdown${notIn?` (<span data-gs-news-state>${notIn}</span>)`:''}. The full tables:</p>
     <div class="gs-links"><button type="button" class="btn quiet" data-gs-go="ratings">Team Rankings</button><button type="button" class="btn quiet" data-gs-go="elo">ELO Ratings</button><button type="button" class="btn quiet" data-gs-go="slate">${row?'Props for this game':'Props'}</button><button type="button" class="btn quiet" data-gs-go="record">Pick'em Record</button></div>`);
 }
 
@@ -949,12 +1201,45 @@ function draw(gid){
   view.innerHTML=part(matchup,'gsMatch','The matchup')
     +`<div class="gs-dbar"><span class="gs-lab">The details</span><button type="button" class="btn quiet" data-gs-all="${allOpen?'close':'open'}">${allOpen?'Close all':'Open all'}</button></div>`
     +`<div class="gs-pair">${part(callsSec,'gsCalls','Every call')}${part(teamElo,'gsTeams','Team strength')}</div>`
-    +part(unitsSec,'gsUnits','Offense vs defense')+part(mismatchSec,'gsMism','Mismatches')
+    +part(unitsSec,'gsUnits','Offense vs defense')+part(statsSec,'gsStats','Stat breakdown')+part(mismatchSec,'gsMism','Mismatches')
     +part(positions,'gsPos','Starters')+part(filesSec,'gsFiles','Sources');
   if(!$('peDefs')&&window.pkTierDefs){ const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box); }
   stuck();
 }
-function redraw(){ const md=$('gsModal'); if(cur&&md&&!md.hidden){ const y=md.scrollTop; draw(cur); md.scrollTop=y; stuck(); } }
+/* a redraw (a file answering, the prop model coming up) keeps the visitor's place. The focused control
+   is found again by its key and focused, Close where it has gone (the focus is never left on the page's
+   body); and the first block at or below the header stays where it was on the screen, so a block drawn
+   in above it (the props button, the preview, the Deep Dive's rows) does not move what is being read */
+const FOCUS_KEYS=['gsProps','gsFold','gsGoto','gsAll','gsSub','gsTab','gsGo'];
+const ANCHORS='#gsView>section,#gsView>.gs-dbar,#gsView .gs-pair>section,#gsMatch>*,#gsView .gs-gl,#gsView .gs-secbody>*,#gsView .gs-unit,#gsView .gs-unit>*';
+/* the blocks the place is kept by, in the page's order, each under a key that names it again after a
+   redraw: its id, its first data-gs- or data-dd- attribute, else its class in the block around it; then
+   its count among those of the same key */
+function anchors(){
+  const m=new Map(), n={};
+  for(const el of document.querySelectorAll(ANCHORS)){ if(el.closest('[hidden]')) continue;
+    let k=el.id?'#'+el.id:'';
+    if(!k) for(const at of el.attributes) if(/^data-(gs|dd)-/.test(at.name)){ k=at.name+'='+at.value; break; }
+    if(!k){ const sc=el.parentElement&&el.parentElement.closest('[id],[data-gs-poss]'); k=(sc?sc.id||sc.dataset.gsPoss:'')+'>'+(el.classList[0]||el.tagName); }
+    n[k]=(n[k]||0)+1; m.set(k+'#'+n[k],el); }
+  return m;
+}
+function redraw(){
+  const md=$('gsModal'), view=$('gsView'), top=$('gsTop'); if(!cur||!md||md.hidden) return;
+  const y=md.scrollTop, at=document.activeElement, inView=!!(view&&at&&view.contains(at));
+  const fk=inView?FOCUS_KEYS.find(k=>at.dataset&&at.dataset[k]!=null):null, fv=fk?at.dataset[fk]:inView?at.id:'';
+  let ak=null, ay=0;
+  try{ const hb=top?top.getBoundingClientRect().bottom:0;
+    for(const [k,el] of anchors()){ const r=el.getBoundingClientRect(); if(r.height>0&&r.top>=hb){ ak=k; ay=r.top; break; } } }catch(e){}
+  draw(cur);
+  md.scrollTop=y;
+  const el=ak&&anchors().get(ak);
+  if(el) try{ md.scrollTop=y+el.getBoundingClientRect().top-ay; }catch(e){}
+  if(inView){
+    const nx=fk?[...view.querySelectorAll(`[data-${fk.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`)].find(x=>fk==='gsAll'||x.dataset[fk]===fv):fv?$(fv):null;
+    try{ (nx&&view.contains(nx)?nx:$('gsClose')).focus({preventScroll:true}); }catch(e){} }
+  stuck();
+}
 /* the header turns into the game's one line once the verdict's line has gone under it */
 function stuck(){
   const md=$('gsModal'), top=$('gsTop'), fav=md&&md.querySelector('#gsMatch .gs-fav'); if(!top) return;
@@ -1006,7 +1291,9 @@ function wire(){
     const sb=t.closest('[data-gs-sub]'); if(sb){ setSub(sb,sb.getAttribute('aria-expanded')!=='true'); return; }
     const tb=t.closest('[data-gs-tab]'); if(tb){ pickTab(tb.dataset.gsTab,false); return; }
     const gl=t.closest('[data-gs-goto]'); if(gl){ goCard(gl.dataset.gsGoto); return; }
-    const go=t.closest('[data-gs-go]'); if(go) goTo(go.dataset.gsGo);
+    const go=t.closest('[data-gs-go]'); if(go){ goTo(go.dataset.gsGo); return; }
+    /* the game's own page on the Props tab: the window closes and the board opens it (pkBoard) */
+    const pp=t.closest('[data-gs-props]'); if(pp){ const id=pp.dataset.gsProps, P=B(); close(false); if(P&&typeof P.openOnProps==='function') P.openOnProps(id); }
   });
   /* Escape closes this window alone (ahead of the windows beneath it), Tab stays inside it, and
      the arrow keys, Home and End move along the Starters tabs */
@@ -1033,7 +1320,7 @@ function open(gid,from){
   cur=gid; opener=from||document.activeElement||null;
   /* on a wide screen Every call and Team strength open; on a phone the verdict alone, every card folded */
   const wide=!phone(); OPEN={}; for(const id of CARDS) OPEN[id]=wide&&WIDE_OPEN.includes(id);
-  eloFiles();
+  eloFiles(); unitsFile(); statsFile(); notesFile(seasonOf(P,g),+g.week);
   md.hidden=false; document.body.classList.add('modal-open');
   draw(gid);
   md.scrollTop=0;
@@ -1046,9 +1333,9 @@ function close(restore=true){
   md.hidden=true; const gid=cur; cur=null;
   if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
   if(!restore){ opener=null; return; }
-  /* the focus goes back to the button that opened it, or to the same game's button if the board
+  /* the focus goes back to the game's row that opened it, or to the same game's row if the board
      has been redrawn since */
-  const back=opener&&opener.isConnected?opener:[...document.querySelectorAll('button[data-snap]')].find(b=>b.dataset.snap===gid);
+  const back=opener&&opener.isConnected?opener:[...document.querySelectorAll('.pk-game[data-game]')].find(b=>b.dataset.game===gid);
   opener=null;
   try{ if(back) back.focus(); }catch(e){}
 }
@@ -1067,7 +1354,20 @@ function goTo(tab){
 }
 window.gameSnapshot=open;
 window.gameSnapshotClose=close;
-/* start waiting on the Elo files now, so a window opened later has them at once */
-eloFiles();
+/* start waiting on the Elo files and the news job's files now, so a window opened later has them at
+   once rather than drawing again under the visitor as each answers; and the notes of the board's week
+   as soon as the board has its schedule (it opens on the first week with a game still to play, else
+   the last) */
+eloFiles(); unitsFile(); statsFile();
+function boardNotes(){
+  const P=B(), s=P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched:null; if(!s||!s.length) return false;
+  const to=s.filter(g=>g.result==null), ws=(to.length?to:s).map(g=>+g.week), w=to.length?Math.min(...ws):Math.max(...ws);
+  notesFile(seasonOf(P,s.find(g=>+g.week===w)),w); return true;
+}
+if(!boardNotes()){ const bd=$('pkBoard');
+  if(bd&&window.MutationObserver){ const mo=new MutationObserver(()=>{ if(boardNotes()) mo.disconnect(); }); mo.observe(bd,{childList:true}); } }
+/* a window opened before the prop model was up draws again once it is: the button to the game's page
+   on the Props tab needs the prop model's schedule */
+document.addEventListener('app-ready',()=>{ if(cur) redraw(); });
 })();
 </script>

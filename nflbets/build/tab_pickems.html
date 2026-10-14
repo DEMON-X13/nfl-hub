@@ -13,7 +13,8 @@
 .pk-gamehead .pk-c{text-align:center}
 .pk-game{background:var(--panel);border:1px solid transparent;border-radius:var(--r-lg);padding:13px 16px;margin-bottom:10px;cursor:pointer;text-align:left;width:100%;box-shadow:var(--sh-sm);transition:box-shadow .2s var(--ease),transform .2s var(--ease),border-color .2s var(--ease)}
 .pk-game:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
-.pk-game.pk-open{border-color:var(--line-2)}
+/* a row is a button to its Game snapshot: Tab reaches it, Enter and Space open it */
+.pk-game:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .pk-game .pk-when{color:var(--ink-2);font-size:12px;line-height:1.35}
 .pk-game .pk-when b{color:var(--ink);font-weight:600;display:block;font-size:13px;margin-bottom:5px}
 .pk-matchup{font-family:var(--display);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;line-height:1;white-space:nowrap;min-width:0}
@@ -51,9 +52,6 @@
 .pk-result .pk-mwin{display:block;font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:-.3px;font-variant-numeric:tabular-nums;margin-bottom:3px}
 .pk-result .pk-mwin.pk-ok{color:var(--pick)} .pk-result .pk-mwin.pk-bad{color:var(--miss)} .pk-result .pk-mwin.pk-tie{color:var(--ink-2)}
 .pk-result .pk-muted{display:block;font-size:11px;color:var(--ink-2);line-height:1.3}
-/* an opened game, inside the same row: the Game snapshot's button and the one to the game's page
-   on the Props tab, where its game bets and player lines are */
-.pk-gbody{grid-column:1/-1;border-top:1px solid var(--line);padding:12px 2px 2px;cursor:default}
 .livestamp.bad{color:var(--miss)}
 .pk-note{margin:0 0 14px;padding:12px 16px;background:var(--gold-soft);border-radius:var(--r-md);color:#8A5E05;line-height:1.55}
 /* a game at a neutral site: "vs", not "at" */
@@ -62,11 +60,6 @@
 .pk-frame{display:block;width:100%;border:0;min-height:360px;background:transparent}
 .pk-foot{margin:24px 0 0;color:var(--muted);font-size:12px;line-height:1.7}
 .pk-foot a{color:var(--ink-2)}
-/* the Game snapshot's button, at the head of an opened game (the window is snapshot.html's) */
-.pk-snaprow{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin:0 0 12px}
-.pk-snapbtn,.pk-propsbtn{display:inline-flex;align-items:center;gap:8px;font-weight:600}
-.pk-snapbtn svg{flex:none}
-.pk-snapwhat{font-size:12px;color:var(--muted);line-height:1.4}
 @media(max-width:900px){
   .pk-gamehead{display:none}
   /* one card per game, laid out the way the Props tab lays its out */
@@ -81,7 +74,6 @@
   .pk-pred .pk-psc{display:inline;font-size:15px;margin:0}
   .pk-pred .pk-plab{display:inline;font-size:11px;color:var(--muted);margin-right:6px}
   .pk-pred .pk-muted{display:none}
-  .pk-game .pk-gbody{grid-row:5}
 }
 </style>
 <section id="tab-pickems">
@@ -102,9 +94,10 @@
    wins from the closing moneylines nflverse publishes (state.json's odds, the book's margin
    taken out), the spread when a game has no moneyline, and the spread and total for the
    score it expects. The models (Alpha Model, the Joker and the ELO Model) are measured
-   against it on the Pick'em Record. Open a game and its Game snapshot is a button away, and so is
-   the game's own page on the Props tab, where its game bets (to win, to cover and the total, the
-   owner's call of 14 October 2026; they opened here until then) and every player line are.
+   against it on the Pick'em Record. A tap on a game opens its Game snapshot (snapshot.html), with
+   everything the site has on it; the snapshot's first button is the game's own page on the Props
+   tab, where its game bets (to win, to cover and the total, the owner's call of 14 October 2026)
+   and every player line are. Until that day a tap opened the row on those two buttons.
 
    Nothing is stored and nothing is picked here yet. */
 (function(){
@@ -178,20 +171,16 @@ function call(g){
   return {pick,conf,pHome,margin,graded,correct:graded&&+g.result!==0?pick===winnerOf(g):null};
 }
 
-/* the Game snapshot's button heads every opened game, priced or not: the window it opens
-   (nflbets/build/snapshot.html) draws everything the site has on the game */
-const snapBtn=g=>`<div class="pk-snaprow"><button type="button" class="btn quiet pk-snapbtn" data-snap="${esc(g.game_id)}" aria-haspopup="dialog"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2.5h5v5H2zM9 2.5h5v5H9zM2 9.5h5v4H2zM9 9.5h5v4H9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Game snapshot</button><span class="pk-snapwhat">Records, team and player Elo, the matchups and every model's call, in one window</span></div>`;
-/* the button to the game's own page on the Props tab, where its game bets (to win and to cover for
-   both sides, and the total) and every player line are. Offered where the prop model can open that
-   page: it has the game, and the game's week is open there (weekOpen, as its slate keeps a game) */
-const propsBtn=row=>`<div class="pk-snaprow"><button type="button" class="btn quiet pk-propsbtn" data-props-game="${esc(row.id)}">Game bets and player props<span aria-hidden="true">\u203a</span></button><span class="pk-snapwhat">To win, to cover, the total and every player line, on the Props tab</span></div>`;
-function gameBody(g){
-  if(typeof S!=='object'||!S||!S.sched) return `<div class="pk-gbody">${snapBtn(g)}<span class="muted">The prop model is still loading. Close and open the game again in a moment.</span></div>`;
-  const row=mkt(g.game_id), can=!!row&&(typeof weekOpen!=='function'||weekOpen(+row.w));
-  return `<div class="pk-gbody">${snapBtn(g)}${can?propsBtn(row):''}</div>`;
+/* the game's own page on the Props tab, where its game bets (to win and to cover for both sides,
+   and the total) and every player line are. The Game snapshot offers it where the prop model can
+   open that page: it has the game, and the game's week is open there (weekOpen, as its slate keeps a
+   game) */
+function canProps(id){
+  if(typeof S!=='object'||!S||!Array.isArray(S.sched)) return false;
+  const row=mkt(id); return !!row&&(typeof weekOpen!=='function'||weekOpen(+row.w));
 }
-/* the game's page on the Props tab: its week chosen on the slate, the tab opened, then the page,
-   as a click on the game there opens it (the prop model's own S.ui.game and renderSlate) */
+/* the page opened: its week chosen on the slate, the tab opened, then the page, as a click on the
+   game there opens it (the prop model's own S.ui.game and renderSlate) */
 function openOnProps(id){
   const row=mkt(id); if(!row||typeof renderSlate!=='function') return;
   const ws=document.getElementById('weekSel');
@@ -202,12 +191,25 @@ function openOnProps(id){
      (they follow the game's suggested parlays, which a phone shows a screen of first) */
   const gb=document.querySelector('#gameView .gbets'); try{ if(gb&&gb.scrollIntoView) gb.scrollIntoView({block:'start'}); }catch(e){}
 }
-function wireLegs(){
-  /* the Game snapshot's button opens its window over the page; the other, the game on the Props tab */
-  el('pkBoard').addEventListener('click',e=>{
-    const p=e.target.closest&&e.target.closest('button[data-props-game]'); if(p){ openOnProps(p.dataset.propsGame); return; }
-    const b=e.target.closest&&e.target.closest('button[data-snap]'); if(!b) return;
-    if(typeof window.gameSnapshot==='function') window.gameSnapshot(b.dataset.snap,b);
+/* a game's row is a button to its Game snapshot: a click, or Enter or Space with the row focused, as
+   a button takes them: Enter as it goes down, Space as it comes up (opened on its way down, the focus
+   already on the window's Close as it came up would click that). Wired once, on the board, so a
+   redraw (a new week, a scoreboard read) never opens a window */
+function wireRows(){
+  const open=card=>{ if(card&&typeof window.gameSnapshot==='function') window.gameSnapshot(card.dataset.game,card); };
+  const row=e=>{ const card=e.target&&e.target.closest&&e.target.closest('.pk-game[data-game]'); return card&&card===e.target?card:null; };
+  const space=k=>k===' '||k==='Spacebar';
+  let down=null;
+  el('pkBoard').addEventListener('click',e=>{ open(e.target.closest&&e.target.closest('.pk-game[data-game]')); });
+  el('pkBoard').addEventListener('keydown',e=>{
+    const card=row(e); if(!card) return;
+    if(e.key==='Enter'){ e.preventDefault(); open(card); }
+    else if(space(e.key)){ e.preventDefault(); down=card; }
+  });
+  el('pkBoard').addEventListener('keyup',e=>{
+    if(!space(e.key)) return;
+    const card=row(e), was=down; down=null;
+    if(card&&card===was){ e.preventDefault(); open(card); }
   });
 }
 
@@ -265,7 +267,6 @@ function render(){
   const over=ST.sched.length&&ST.sched.every(g=>g.result!=null)&&!ST.sched.some(g=>+g.week>18)
     ?`<div class="pk-note" id="pkOver"><b>The ${esc(String(ST.season||''))} regular season is over.</b> The playoffs are not on this board: the betting job's schedule is the regular season. Every week stays here to look back on.</div>`:'';
   const HEAD='<div class="pk-gamehead"><div>Date</div><div>Matchup</div><div class="pk-c">Win probability</div><div class="pk-c">Confidence</div><div class="pk-c">Score prediction</div><div class="pk-c">Final score</div></div>';
-  const wasOpen=new Set([...el('pkBoard').querySelectorAll('.pk-game.pk-open')].map(x=>x.dataset.game));
   const row=g=>{
     const c=call(g), [day,time]=fmtDate(g), o=outcome(g), win=o&&o.final?o.winner:null;
     const pick=c?c.pick:null;
@@ -277,7 +278,7 @@ function render(){
     if(win&&hit!==null){
       const mk=`<span class="pk-res ${hit?'pk-ok':'pk-bad'}" title="${hit?'Pick hit':'Pick missed'}">${hit?'✓':'✗'}</span>`;
       if(win===g.away_team) markA=mk; else markH=mk; }
-    return `<div class="pk-game${o&&o.final?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" aria-expanded="false">
+    return `<div class="pk-game${o&&o.final?' pk-played':''}" data-game="${esc(g.game_id)}" role="button" tabindex="0" aria-haspopup="dialog">
       <div class="pk-when"><b>${esc(day)}</b>${esc(time)}</div>
       <div class="pk-matchup"><span class="pk-tw pk-away">${tag(g.away_team,BET.tagColor(g.away_team),pick===g.away_team,'mini')}${markA}</span>${neutral(g)?`<span class="pk-at pk-neutral" title="${esc('Neutral site'+(g.stadium?': '+g.stadium:''))}">vs</span>`:'<span class="pk-at">at</span>'}<span class="pk-tw pk-home">${tag(g.home_team,BET.tagColor(g.home_team),pick===g.home_team,'mini')}${markH}</span></div>
       <div class="pk-probrow" aria-label="${esc(g.away_team)} ${pa}%, ${esc(g.home_team)} ${ph}%">
@@ -295,15 +296,6 @@ function render(){
   const fin=g=>{ const o=outcome(g); return !!(o&&o.final); };
   const todo=games.filter(g=>!fin(g)), done=games.filter(fin);
   el('pkBoard').innerHTML=over+HEAD+todo.map(row).join('')+(done.length?'<div class="pk-sep">Completed</div>'+done.map(row).join(''):'');
-  el('pkBoard').querySelectorAll('.pk-game').forEach(card=>card.addEventListener('click',e=>{
-    if(e.target.closest('.pk-gbody')) return;          /* the opened game's buttons are not a toggle */
-    const open=card.classList.toggle('pk-open');
-    card.setAttribute('aria-expanded',open?'true':'false');
-    const had=card.querySelector('.pk-gbody');
-    if(open&&!had){ const g=ST.sched.find(x=>x.game_id===card.dataset.game); card.insertAdjacentHTML('beforeend',gameBody(g)); }
-    else if(!open&&had) had.remove();
-  }));
-  for(const gid of wasOpen){ const card=[...el('pkBoard').querySelectorAll('.pk-game')].find(x=>x.dataset.game===gid); if(card) card.click(); }
 }
 
 /* the scoreboard, read from ESPN in this browser: free, no odds-API credits, no job. One
@@ -351,24 +343,28 @@ function records(w){
 }
 
 function foot(){
-  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Joker and the ELO Model are measured against it on the Pick'em Record. Open a game and the numbers underneath are the prop model's: the chance each side wins and covers, from its team ratings, with what a book would charge beside what one is charging; its Game snapshot button opens everything else the site has on the game.`;
+  el('pkFoot').innerHTML=`Vegas is the baseline: each call is the Vegas favourite, its chance from the closing moneylines with the book's margin taken out, and its score from the spread and total. Alpha Model, the Joker and the ELO Model are measured against it on the Pick'em Record. Tap a game for its Game snapshot: everything the site has on it, the week's preview and news, the matchups position by position and the stat breakdown, and a button to its game bets and player props on the Props tab.`;
 }
 
 /* the Game snapshot (nflbets/build/snapshot.html) reads the board through this: the season as
-   loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site */
-window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET};
+   loaded (ST.state is state.json whole), the Vegas call, where a game stands, its kickoff and site,
+   and whether the Props tab can open the game's page, and the opening of it */
+window.pkBoard={ST,call,outcome,fmtDate,kickAt,neutral,weekName,winnerOf,tag,BET,canProps,openOnProps};
 
 /* tabs as addresses: #props opens the Props tab, and a reload stays where it was. On a phone the
    bar is wider than the screen and scrolls sideways, so the chosen tab is brought into it, on load,
    on a new address and on a tap: landing on #xparlays (where the old Live Parlays links go) left
-   its button off the bar's right edge. Only the bar scrolls, never the page */
+   its button off the bar's right edge. Only the bar scrolls, never the page. The Season Tracker tab
+   is gone (14 October 2026: its games are in each Game snapshot), so its old address, #tracker, where
+   news/ sent every visitor, lands here on Pick'ems, the address written over as #pickems */
 function routeTabs(){
   const nav=document.getElementById('tabs'), btns=[...document.querySelectorAll('#tabs button')];
   const reveal=b=>{ try{ if(!nav||!b) return; const n=nav.getBoundingClientRect(), r=b.getBoundingClientRect();
     if(r.left>=n.left&&r.right<=n.right) return;
     nav.scrollLeft+=(r.left+r.width/2)-(n.left+n.width/2); }catch(e){} };
   const chosen=()=>btns.find(x=>x.getAttribute('aria-selected')==='true');
-  const go=()=>{ const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
+  const go=()=>{ if(location.hash==='#tracker') history.replaceState(null,'','#pickems');
+    const b=btns.find(x=>'#'+x.dataset.tab===location.hash); if(b&&b.getAttribute('aria-selected')!=='true') b.click(); reveal(b||chosen()); };
   btns.forEach(b=>b.addEventListener('click',()=>{ if(location.hash!=='#'+b.dataset.tab) history.replaceState(null,'','#'+b.dataset.tab); reveal(b); }));
   window.addEventListener('hashchange',go); go();
   /* the web fonts can widen the buttons after the first layout: once more when they are in */
@@ -412,7 +408,7 @@ function frames(){
 }
 
 async function boot(){
-  routeTabs(); wireLegs();
+  routeTabs(); wireRows();
   let failed=false;
   try{
     const r=await fetch(STATE_URL+'?t='+Date.now(),{cache:'no-store'});

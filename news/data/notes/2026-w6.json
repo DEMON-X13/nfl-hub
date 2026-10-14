@@ -1,0 +1,77 @@
+{
+  "season": 2026,
+  "week": 6,
+  "written": "2026-10-14",
+  "games": {
+    "2026_06_SEA_DEN": {
+      "preview": "The defending champion Seahawks bring the league's most takeaways to Denver on a short week, with Sean Payton now calling the plays to get Bo Nix going.",
+      "news": "Denver cornerback Pat Surtain II and safety Talanoa Hufanga (both ankle) did not practice early in the week and are in line to miss the game. Seattle's Jaxon Smith-Njigba (ankle) was limited on the estimated reports.",
+      "sources": ["ESPN", "AP", "Denver Gazette", "Fox 13 Seattle", "Seahawks.com"]
+    },
+    "2026_06_HOU_JAX": {
+      "preview": "Jacksonville spends a second straight week in London to face a Houston team fresh off its first win of the season and a trade for Marvin Harrison Jr.",
+      "news": "Marvin Harrison Jr. reunites with C.J. Stroud, his Ohio State teammate, while David Montgomery (groin) is week-to-week and Woody Marks is set to lead the backfield. Jaguars left tackle Anton Harrison went on injured reserve and needs knee surgery.",
+      "sources": ["ESPN", "AP", "Houston Chronicle", "KPRC 2"]
+    },
+    "2026_06_CHI_ATL": {
+      "preview": "Caleb Williams is nearing a return for a Bears offense that turned it over five times at Green Bay, while Atlanta hopes Michael Penix Jr. can play through a rib injury.",
+      "news": "Williams (hamstring), out the last three games, was listed as a full participant on Wednesday's estimated report, and Falcons coach Kevin Stefanski said Penix will start if he has no setbacks. Bears edge rusher Montez Sweat is suspended two games.",
+      "sources": ["ESPN", "Chicago Tribune", "CBS Sports"]
+    },
+    "2026_06_BAL_CLE": {
+      "preview": "AFC North-leading Baltimore may get Lamar Jackson back for its trip to Cleveland, where the Browns are trying to restart a stalled run game.",
+      "news": "Jackson (ankle) has a realistic chance to return after Tyler Huntley led the overtime win in Atlanta. Browns RB Quinshon Judkins and LB Carson Schwesinger are day-to-day with ankle injuries, and RB Dylan Sampson was designated to return from injured reserve.",
+      "sources": ["ESPN", "AP", "NFL Network", "Cleveland Plain Dealer"]
+    },
+    "2026_06_TEN_IND": {
+      "preview": "Winless Tennessee, last in the league in points and yards, visits an Indianapolis team under pressure to steady its season after a loss in Pittsburgh.",
+      "news": "Robert Saleh says Cam Ward stays the Titans' starter. Safety Amani Hooker missed the Houston game in the concussion protocol and safety Kevin Winston Jr. (quadriceps) needed an MRI. The Colts put defensive end Arden Key on injured reserve.",
+      "sources": ["ESPN", "AP", "TitanInsider"]
+    },
+    "2026_06_NYJ_NE": {
+      "preview": "Drake Maye, coming off a five-touchdown day, leads New England into a division game against a Jets team that leaned on its defense and Braelon Allen to beat Cleveland.",
+      "news": "New England lost RB TreVeyon Henderson to a high ankle sprain for multiple weeks, and LT Will Campbell (MCL sprain) is expected to miss time. Jets WR Adonai Mitchell had a small procedure on his hand and is week-to-week.",
+      "sources": ["ESPN", "AP", "NFL Network", "The Athletic"]
+    },
+    "2026_06_NO_NYG": {
+      "preview": "The NFC East-leading Giants and Jameis Winston host a Saints offense that has sputtered through three straight losses.",
+      "news": "Saints owner Gayle Benson said the team's start is \"not acceptable\" and that fans \"deserve better.\" Giants kicker Dominic Zvada missed three field goals in the tie at Washington.",
+      "sources": ["ESPN", "AP"]
+    },
+    "2026_06_CAR_PHI": {
+      "preview": "Carolina comes off its bye to face an Eagles team that has lost three straight and hopes to get Saquon Barkley and DeVonta Smith back from hamstring injuries.",
+      "news": "Eagles defensive coordinator Vic Fangio said it would be \"pretty miraculous\" for edge rusher Jalyx Hunt (ankle, knee) to play, and RB Will Shipley has a partial plantar fascia tear. Panthers RT Taylor Moton is back at practice after blood clots kept him out since June.",
+      "sources": ["ESPN", "NBC Sports Philadelphia", "Panthers.com"]
+    },
+    "2026_06_PIT_TB": {
+      "preview": "Undrafted rookie Jalon Daniels is set to start again for Tampa Bay against Aaron Rodgers and a Steelers offense riding Jaylen Warren.",
+      "news": "Baker Mayfield (thumb) did not practice Wednesday. Pittsburgh is thin at receiver: Roman Wilson (finger) and Ben Skowronek (calf) are out, and Michael Pittman Jr. (foot) is on injured reserve.",
+      "sources": ["ESPN", "AP", "Fox Sports", "PennLive"]
+    },
+    "2026_06_ARI_LA": {
+      "preview": "The Rams, stung by their kicking game in an overtime loss to Buffalo, host a Cardinals team that has lost four straight and just traded Marvin Harrison Jr.",
+      "news": "Rams left tackle Alaric Jackson was suspended two games for punching a Bills player after Monday's game, and the Rams released kicker Harrison Mevis and signed Blake Grupe. Edge rusher Myles Garrett (knee) will not play.",
+      "sources": ["ESPN", "AP", "NFL Network", "USA Today"]
+    },
+    "2026_06_LAC_KC": {
+      "preview": "The winless Chargers bring a patched-up offensive line to Arrowhead to face an unbeaten Kansas City team rested from its bye and running behind Kenneth Walker III.",
+      "news": "Chargers left tackle Rashawn Slater is on injured reserve after ankle surgery, and receiver Tre' Harris (hamstring) is week-to-week, Jim Harbaugh said. The Chiefs put receiver Tyquan Thornton (ankle) on injured reserve.",
+      "sources": ["ESPN", "AP", "BoltBeat"]
+    },
+    "2026_06_BUF_LV": {
+      "preview": "Josh Allen's Bills follow an overtime thriller with the Rams by visiting Kirk Cousins and a Raiders team trying to recover from a lopsided loss in New England.",
+      "news": "Bills coach Joe Brady warned James Cook that more fumbles could cost him carries. Raiders RB Ashton Jeanty is playing through ankle and foot injuries, and DT Tonka Hemingway is in the concussion protocol.",
+      "sources": ["ESPN", "AP", "The Athletic"]
+    },
+    "2026_06_DAL_GB": {
+      "preview": "Micah Parsons will not face his old team yet, but Jordan Love and the Packers' deep passing game get a Cowboys defense that has struggled all season.",
+      "news": "Green Bay lost DT Javon Hargrave for the season to a torn Achilles, and Parsons (knee) has not been cleared to practice. Dallas added Mike Pettine as a senior defensive assistant to help coordinator Christian Parker.",
+      "sources": ["ESPN", "Fox 4 Dallas"]
+    },
+    "2026_06_WAS_SF": {
+      "preview": "The unbeaten 49ers host Jayden Daniels and a Commanders team still stung by the overtime clock blunder that cost it a shot at beating the Giants.",
+      "news": "San Francisco is without WR Deebo Samuel (hamstring) for at least the next couple of games and LB Dre Greenlaw, whose one-game suspension was upheld. Washington plans no coaching changes after the overtime gaffe, a team source told ESPN.",
+      "sources": ["ESPN", "AP", "SF Standard"]
+    }
+  }
+}

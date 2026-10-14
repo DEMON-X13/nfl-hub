@@ -1,456 +1,162 @@
-# 2026 NFL Season Tracker: handoff brief
+# The news job and the game notes: handoff brief
 
-## Read this first: how to work out which week to build
+All paths here are relative to `news/`.
 
-**N is the first 2026 regular season week in the nflverse schedule that still has an unplayed
-game.** That is what `tools/run-auto.js` computes and prints as `current week N`. Work it out
-that way, or just run the pull and read the number it prints.
+## What this is now
 
-**Do not use "the last entry in `data/weeks.js`, plus one."** The routine prompt still says that,
-and it is wrong. It builds a week early whenever a session runs before the published week has
-been played. If `data/weekN.js` exists and `WEEKN` is already listed in `data/weeks.js`, the
-upcoming week is already published: **stop and report that, and do not build N+1 to have
-something to do.** Publishing next week's slate while this week's games are still to come
-replaces the live week on the page with a preview written without this week's results.
+Until 14 October 2026 this folder was the Season Tracker, a page of its own (and then a framed tab of X
+NFL Bets and Stats) with a hand-written narrative for every team each week. The owner folded it into the
+**Game snapshot**: tapping a game on X NFL Bets and Stats' Pick'ems board
+(**https://demon-x13.github.io/nfl-hub/nflbets/**) opens a window with everything the site has on it, and
+the tracker's per-game content now lives there:
 
-Caught September 15, 2026, when Week 2 was published on a Tuesday and the Wednesday run would
-have built Week 3 before Week 2 had kicked off. Dormant until then only because `data/weeks.js`
-had a single entry, which made the two rules agree.
+- a one-line **preview** and a short **news** note for each game, written by hand each Wednesday into
+  `data/notes/<season>-w<N>.json` (until a game has one, the snapshot shows an automatic line);
+- the **Deep Dive** (the four position matchups each way, with who plays and who is out) inside its
+  Offense vs defense card, from `data/units.json`, drawn by `../nflbets/build/deepdive.js`;
+- the **Stat breakdown** (the eleven stat bars), from `data/stats.json`.
 
-**After week 18 there is no week to build.** The tracker does not cover the playoffs. Once every
-regular season game is final, `run-auto.js` prints `the 2026 regular season is complete` and keeps
-refreshing week 18's finals; the page's footer says the regular season is complete. A session that
-sees that line stops and reports it. Covering the playoffs would be a new piece of work (an owner
-decision), not a week file.
+The page reads all three at runtime (`cache: 'no-store'`), so nothing here ever needs X NFL Bets and Stats
+rebuilt. The tracker's page, its week files, the matchup, positives, negatives and keys paragraphs, the
+rank chip and the player positions were dropped; they are in git history before that day. `index.html` is
+now a tiny page that sends a visitor (and any old bookmark) to `../nflbets/`.
 
-**Never quote the Deep Dive's ranks or the rank chip in the narrative.** No "26th in the site's
-units", "ranks 1st in the tracker", "9th in the power ratings", "Overall Offense 27th": both sit beside the text and
-move with every run (on October 9, 146 of the 192 unit ranks the Week 5 file quoted had moved, and
-the chip changed source). Quote outside numbers with their source (per nflverse, per TeamRankings,
-per Sharp). The smoke test fails a live week that quotes them (`siteRankQuote()` in `tools/lib.js`
-lists the phrases; a third party's "unit grade", "power rankings" or "deep dive into the tape" with
-its source passes), and a push of a week file runs the job at once, so a refusal shows on that push,
-not hours later on a scheduled run; `tools/week-request.md` says the same.
+The **news job** (`.github/workflows/news.yml`) keeps running: it produces the Deep Dive and the stats and
+holds them to their sources.
 
----
+## Read this first: which week to write
 
-## What this is
+**N is the first regular season week in the nflverse schedule that still has an unplayed game.**
+`node tools/run-auto.js` prints it as `current week N`; the week of `data/units.json` is the same week.
 
-A single-file static site that tracks all 32 NFL teams week to week. Built for a small
-group of friends to read like a newsletter. Since October 13, 2026 it is read as the Season Tracker tab
-of X NFL Bets and Stats, **https://demon-x13.github.io/nfl-hub/nflbets/#tracker**, which frames this
-page from its own address, `news/index.html` in repo `DEMON-X13/nfl-hub`, published with GitHub Pages
-from `main`. Opened at **https://demon-x13.github.io/nfl-hub/news/** it goes to that tab
-(`news/?standalone` stays here, to check the page on its own); opened from disk it is the whole tracker. (Moved from `DEMON-X13/nfl-news-tracker` on September 14, 2026;
-that repo's page now redirects here. The hub also holds `betting/` and `props/`; never touch them from here.)
+- Write the notes for week N, never N+1 while week N still has games to play.
+- If `data/notes/<season>-wN.json` already has every game of the week, stop and report that: there is
+  nothing to write. Rewrite a note only when its news has changed (a quarterback ruled out, a trade).
+- After week 18 there is no week to write: the job does not cover the playoffs (`run-auto.js` says the
+  regular season is complete). Covering them would be an owner decision.
 
-Deployed from `news/`: `index.html`, `css/`, `js/`, and `data/`. All paths in this file are relative to `news/`.
+## The weekly job: the Wednesday notes
 
----
+Each Wednesday (a Claude Code routine runs it; also whenever the owner asks), from `news/`:
 
-## Current state
+1. `git pull`, `npm ci`, and read `tools/out/weekN-pack.md`: the games, ESPN's injury report and each team's
+   headlines, dated, which the job commits on every run. Prefer the committed pack: the routine's sandbox
+   reaches less of the web than GitHub's runners (below), so a pack it pulls itself can be thinner. Then
+   read the panel in `tools/sources.md` for each game.
+2. Write `data/notes/<season>-wN.json`, the format and rules in `tools/week-request.md`: for each game a
+   one-sentence `preview` (the game's story: form, a key player, a storyline), a short `news` note (the one
+   or two things a fan should know this week: a starter out or back, a quarterback change, a trade, a
+   coaching change; `""` when nothing is notable) and the `sources` it came from. Every fact is in the pack
+   or a source read this week, two sources for anything not on an injury report.
+3. `node tools/notes.js --strict` must end `all notes pass (strict)`, and `node tools/smoke.js` must end
+   `all checks passed`.
+4. Work on a branch, commit, push, open the PR and merge it, as `CLAUDE.md` says.
 
-The monolith was split on September 13, 2026. Loaded in this order from `index.html`:
-stylesheet, `data/teams.js`, `data/stats2026.js`, `data/results.js`, `data/ranks2026.js`,
-`data/players2026.js`, `data/units2026.js`, one `data/weekN.js` per published week, `data/weeks.js`,
-`js/app.js`. All scripts are classic scripts, so top-level `const` declarations are shared across
-files. A new data file must be added as a `<script>` tag before `js/app.js`; a new week's tag goes
-above `data/weeks.js`, as `data/weeks.js` itself says.
+The rules `tools/notes.js` holds a file to, in short: no betting language at all (no spread, in words or as
+a number like -3.5, -3½ or "Indianapolis -7"; no favourite, underdog, moneyline, odds, total, line, cover,
+price or book: the snapshot shows the market apart); no record or score typed in the preview (the records
+are shown beside it, and a typed one goes stale); none of the site's own ranks (the Deep Dive beside the
+note moves with every run; `siteRankQuote()` in `tools/lib.js` lists the phrases); no em dashes or double
+dashes; plain text, no markup. Shape and game ids are failures; the wording rules are warnings, so the job
+never holds back the week's data over a note, but the routine runs `--strict`, which refuses both.
 
-### Files
+## Files
 
 | File | What it holds |
 |---|---|
-| `index.html` | Markup only: head (its first script is the guard: the web address goes to `nflbets/#tracker`, a framed copy is `html.embed`), app bar with `#barweek`, `#view`, overlay shell, one stylesheet link, one script tag per data file and one for `js/app.js` |
-| `css/style.css` | The entire design system. One `:root` block of CSS variables at the top. |
-| `data/teams.js` | `const TEAMS`, 32 objects: abbreviation, name, colour and the preseason power rank (the rank chip's fallback). The summer write-ups that were in it went on 2026-10-03. |
-| `data/weekN.js` | `const WEEKN`, one file per published week: the games and each team's narrative in `WEEKN.teams`. `tools/patch_week5_ranks.py` took the Deep Dive and rank chip ranks out of Week 5's narrative on October 9, 2026 (they had moved under it). `tools/patch_week5_totals.py` took out the last three on October 14: ranks from X NFL Bets' ELO Ratings tab under the tables' old name, "Total Offense/Defense", which the check did not know (it now knows the old name and the site's tab names too). `week1.js` still builds its teams with its own `TM` helper and `const MU` (matchup bullets merged onto `WEEK1.teams`), and carries a `WEEK1.next` the page no longer reads. |
-| `js/app.js` | helpers, `powerRank()` (the rank chip) and `deepDive()` (the Deep Dive), `render()` and `renderWeek()` (the slate), `openGame()` (the overlay), `FOOTER`, boot |
-| `data/results.js` | `const RESULTS`, final scores keyed `wk<n>:AWAY-HOME`, regenerated by the pull. Merged into week games at load. Also `LINES` (same keys): every game's line from the nflverse schedule as of `LINES_ASOF`, the closing line once played. The overlay header shows it with its date, and the week file's own line beside it when the two differ ("line when the week was posted"). Until October 9, 2026 the header showed the draft-day line bare, up to 2 points off by kickoff. |
-| `data/ranks2026.js` | `const RANKS26`, each team's rank and Elo on X NFL Bets' Team Rankings tab (`teams` in `../elo/data/model.json`, the power ratings of this season's results, every final re-scored against what its opponent has turned out to be, ordered as that tab orders it), `RANKS26_ASOF` the last game day the ratings include and `RANKS26_SRC` the model.json build it came from. The rank chip ("Elo rank") reads it. Regenerated by `tools/context.js`. Until October 9, 2026 it was the Alpha Model's own team Elo from `../betting/state.json`, called "power rank", which no page shows as a ranking: the two disagreed by 6.4 places a team (Seattle 1st on the chip, 9th on the tab). The smoke test holds the chip to the tab's order. |
-| `data/players2026.js` | `const PLAYERS26`, team to name to position from the nflverse roster, with first-name variants. The page writes "(QB)" after names. Regenerated by `tools/context.js`. |
-| `data/units2026.js` | `const UNITS26`, the Deep Dive: six units per team (passing offense, pass protection, run game, receivers, pass rush, coverage), each a rating in league standard deviations with its rank, the numbers behind it, who is playing and who is not, from nflverse team and player stats with 2025 counted as 4 games plus the team's own 2026 games (`g26`, printed on its Deep Dive). Each row sets a unit against the unit it plays on the same numbers from both sides, and the tag is the gap between the two ratings weighted by how much that matchup alone has predicted an offense's points (fitted on 2012-2017: the quarterback 1, the receivers and coverage 0.8925, the line and pass rush 0.5956, the run game 0.3792), then Easy 1.5 or more, Favorable 0.5, Even within 0.5, so a tag means about the same points on every row (until October 13, 2026 the raw gap was tagged, and an Easy line meant 2.6 points where an Easy quarterback meant 4.4). Each row is that matchup alone; the rows overlap (the quarterback and the receivers are one passing game) and are never added up. Above the rows, the headline: this team's Overall Offense against the opponent's Overall Defense, as X NFL Bets' ELO Ratings tab shows them (`overall` per team, read from `../elo/data/model.json` `units` only when it is of this season; `UNITS26_META.overall` names the build, or says why it is missing and the page shows no headline), tagged by the gap read as points, 11.9126 a raw unit, Favorable from 0.9645 and Easy from 2.8935. Tested on 2018-2025 from week 2 on it predicted an offense's points better than the six rows (RMSE 9.44 against 9.60; weeks 2-4 9.34 against 9.40), though not in week 1 (9.48 against 9.29). The constants are in `UNITS26_META.tags`, which the page reads and the smoke test holds to their values; `elo/tools/deepdive_vs_units.py` works them out (each row's points per SD of edge alone over the quarterback row's, the headline's one slope on the gap and its thresholds), prints those numbers and says whether `tools/context.js` carries them: run it again after any refit of the units. The names are the coming game's lineup: the latest depth chart before kickoff, passing over anyone off the roster, ruled Out or Doubtful (or Questionable without practising) once the team files its game statuses, out per ESPN before then, or out in the team's last game and not practising since; a Questionable or not-practising player stays listed with the tag, and a quarterback in doubt has the next one named beside him (the next on the chart the rules let play, else another active quarterback from the roster, else the row says none can play and why). A team has filed only when its rows on the week's report carry a game status: a practice report never counts, however close to kickoff (for a Thursday game, Tuesday's practice report arrives Wednesday with no statuses, and counting it would have listed Mayfield and Winfield on the Wednesday before TB at DAL). ESPN's mid-week "Questionable" clears no one: it is a placeholder (on October 7 it kept Hendrickson, Gonzalez, Elliss, Banks and DeVonta Smith, all out in week 4 and not practising, listed as playing); with an ESPN note of no practice on the last practice day it rules him out. ESPN's notes are dated by the weekday that goes with the practice, never the game's ("a non-participant for Friday's practice and questionable for Sunday's game" is Friday; until October 9 it read as the Sunday before), and ESPN's names are matched to players through the roster's and the chart's names alike ("Olu Fashanu", "Kiko Mauigoa"). A quarterback ESPN's current notes name plainly as this week's starter starts, when the rules above let him play, and anyone the chart had ahead of him is passed over, "not starting: Tyson Bagent named the starter, per ESPN" (his tag kept); see "The Deep Dive's announced starter" below. The formula and the lineup rule are in `tools/context.js`. `UNITS26_LINEUPS` says which sources the lineups came from, and says so when ESPN's list or the snap counts could not be read; `UNITS26_META` says which week and season they are for, when they were built and from which report. Until October 8, 2026 the names were season usage with no injury check and the receivers were rated on a style stat, which is how Baker Mayfield was shown starting for Tampa Bay while out. |
-| `data/stats2026.js` | `const STATS26`, 2026 season to date stats, regenerated by the pull, each team with `g`, the games its numbers cover (the count whose points per game and allowed match the table), and `STATS26_THROUGH`, the last game day included. The bars use only this; a team not listed shows zeros. The header says each team's count: on a Friday the Thursday teams have one more than the rest (until October 9 it said "through Week 4" over Tampa Bay's five games). A team whose table matches no count of its finals keeps its last verified line (the run warns), or with none is published without a count, which the page then does not claim. After week 18 the tables are asked for as of the day after the last regular-season game, because TeamRankings' season column takes in the playoffs and the tracker is the regular season only. |
-| `data/weeks.js` | `const WEEKS = [WEEK1, ..., WEEKN]`. The page shows the last entry. Append each new week here. |
-| `tools/smoke.js` | jsdom smoke test, week agnostic since September 15, 2026, and since October 9 also a check of the generated files against their sources (below). Not part of the site. |
-| `tools/sources.md` | The model: source map, fixed reading panel, consensus rule, Wednesday run. |
-| `tools/pull-week.js` | The scripted half of the week: schedule, lines, scores, stats, injuries, headlines, draft week file. Runs `tools/context.js` at the end, and exits non-zero when it cannot build. |
-| `tools/context.js` | Rebuilds `data/ranks2026.js`, `data/players2026.js` and `data/units2026.js`, keeps each week's lineups as kickoff found them (`tools/out/weekN-lineups.json`) and grades last week's against nflverse's snap counts (`tools/out/weekN-lineups-grade.md`; the run warns above 5% or for any quarterback). Every nflverse file it reads but the snap counts is required: one that does not download after five tries (`lib/netfetch.js`, waits of 5, 15, 30 and 60 seconds) means nothing is written and the run fails, so the job commits nothing and the last good files stay live. |
-| `tools/lineup-checks.js` | The lineup rules stated on the source data, which the smoke test runs: nobody listed whom the report rules out, who is Questionable without practising, who was out last game and has not practised, who is off the roster, whom ESPN rules out, or whom ESPN has Questionable with a note of no practice on the last practice day; the lineups are for the current week; a quarterback in doubt has a next one named whenever one can play, and the one named can; the quarterback ESPN's current notes name as this week's starter is the one listed whenever the rules let him play. "Filed" here is the official game status alone, never the build's own reading of the report. It shares the build's reading of a source (which ESPN entry is which player, what day a note's practice was, which quarterback a note names as the starter: `espnIndex`, `weekPractice`, `notePractice` and `announcedStarter` in `context.js`), never a rule, so the two cannot disagree about what a note says. |
-| `tools/deepdive-checks.js` | The Deep Dive's headline and tags stated on their own, which the smoke test and `tools/cases.js` run: every row's tag is its weighted edge (this file's own copy of the weights and thresholds, which `UNITS26_META.tags` must equal), the headline is this team's Overall Offense against the opponent's Overall Defense with its tag from the raw gap, and the Overall ratings are `../elo/data/model.json`'s. Nothing in it is shared with `context.js` or `app.js`. |
-| `tools/cases.js` | Fixed cases the rules and their checks must keep, each cut from a week the real files produced: the Wednesday before a Thursday game, a filed report over ESPN, ESPN's placeholder Questionable, a quarterback with no healthy backup (and one with a backup off the chart, and one whose backup ESPN rules out), ESPN's Friday line (Questionable and no practice Friday is out; back in full Friday is listed), a Sunday team with no report rows yet, ESPN's chart names, the postseason's stat tables, the season's phase between playoff rounds, ESPN's practice notes (the practice's weekday, not the game's), the announced starter (CHI's Bagent from his note or Keenum's; hedged, dated, Out and other-team notes that must change nothing; the newest of two disagreeing notes; CLE's two Sanders), the Deep Dive's weighted tags (the old unweighted page fails) and headline (one from the wrong side or club, or ratings kept from a stale or last-season model.json, fails) and the site-rank phrases (the Overall Offense and Defense among them). Where a review caught a broken version, the case also feeds the checks what it produced and requires them to fail. The smoke test runs them all; `node tools/cases.js` runs them alone. |
-| `tools/lib.js` | `SEASON` (the one place the year is set), the CSV reader, the patient fetch, `seasonState()` (regular, week N; postseason; over once the Super Bowl is final, not between rounds) from the nflverse schedule, and `siteRankQuote()`, the phrases the narrative may not use. |
-| `tools/run-auto.js` | Works out where the season stands and runs the pull for the current week (week 18 once the regular season is over); what the Actions job runs. |
-| `tools/week-request.md` | The output schema for a week. |
+| `data/units2026.js` | `const UNITS26`, the Deep Dive: six units per team (passing offense, pass protection, run game, receivers, pass rush, coverage), each a rating in league standard deviations with its rank, the numbers behind it, who plays and who is out, from nflverse team and player stats with 2025 counted as 4 games plus the team's own 2026 games (`g26`), and each team's Overall Offense and Defense from `../elo/data/model.json`. `UNITS26_META` says which week, season and report the lineups are for and carries the tag constants; `UNITS26_BASIS` and `UNITS26_LINEUPS` the lines under the rows. Written by `tools/context.js`, which says how. |
+| `data/units.json` | Its twin, what the Game snapshot fetches: `{ season, week, built_at, meta, basis, lineups, units }`, exactly the consts of `units2026.js` (`writeTwin` in `tools/lib.js`), written with it and whenever it is missing or differs. |
+| `data/stats2026.js` | `const STATS26`, season to date team stats for the stat bars (TeamRankings and ESPN), each team with `g`, the games its numbers cover (verified against `results.js`), `STATS26_THROUGH` the last game day included and `STATS26_ASOF` the pull's day. After week 18 the tables are asked for as of the day after the last regular-season game. Written by `tools/pull-week.js`. |
+| `data/stats.json` | Its twin: `{ season, through, asof, stats }`, exactly the consts of `stats2026.js`. |
+| `data/results.js` | `const RESULTS`, final scores keyed `wk<n>:AWAY-HOME`, which the smoke test holds each stat line to; `LINES` beside it is each game's line from the nflverse schedule, kept for reference (no page reads it). |
+| `data/teams.js` | `const TEAMS`, the 32 teams' names and colours. `../picks/` reads it, so it stays. |
+| `data/notes/<season>-w<N>.json` | The game notes, written by hand (above). Never written by the job. |
+| `tools/run-auto.js` | Works out the current week and runs the pull for it; what the job runs. |
+| `tools/pull-week.js` | Results, stats and their twin, the reading pack (`tools/out/weekN-pack.md`), then `context.js`. Exits non-zero when the Deep Dive cannot build. |
+| `tools/context.js` | The Deep Dive: `units2026.js` and `units.json`, each week's lineups as kickoff found them (`tools/out/weekN-lineups.json`) and last week's graded against the snap counts (`tools/out/weekN-lineups-grade.md`). Every nflverse file but the snap counts is required: one that does not download (after `../lib/netfetch.js`'s tries) means nothing is written and the run fails, so the last good files stay live. |
+| `tools/lineup-checks.js` | The lineup rules stated on the source data (nobody listed whom the report or ESPN rules out, a quarterback in doubt has the next one named, the announced starter starts ...), which the smoke test runs. It shares the build's reading of a source, never a rule. |
+| `tools/deepdive-checks.js` | The tags stated on their own: each row's tag is its weighted edge, the Overall line's tag the gap read as points, the constants this file's own copy; `checkPossession` holds what `deepdive.js` draws to them, `checkHead` its Overall tag. |
+| `tools/notes.js` | The notes validator: `node tools/notes.js [--strict] [file...]`. |
+| `tools/cases.js` | Fixed cases the rules and their checks must keep, each from a week the real files produced, with the broken version a review caught fed to the checks, which must fail it. `node tools/cases.js` runs them alone. |
+| `tools/lib.js` | `SEASON` (the one place the year is set), the CSV reader, the patient fetch, `seasonState()`, `siteRankQuote()` and the twins. |
+| `tools/sources.md` | The source map, the fixed reading panel and the consensus rule. |
+| `tools/week-request.md` | The notes file's format and its rules, with an example. |
 
-### Layout (current as of September 13, 2026, late evening)
+## The job
 
-One page, one week. No week tabs, no Season guide, no search, no conference filter, no
-team cards. The page shows the newest week listed in `data/weeks.js`, and the app bar shows its
-label and dates.
+`.github/workflows/news.yml` runs about nineteen times a week and on a push to the tools, the notes, the
+address page or `../nflbets/build/deepdive.js`: five post-game runs and a mid-day refresh Monday, Tuesday
+and Friday for the results and stats, and eleven for the Deep Dive's lineups, timed to the injury report
+(nflverse files a day's report about 14:30 UTC the next morning; ESPN shows the game statuses the evening
+they are filed). **GitHub starts this repo's scheduled runs 2.3 to 9.4 hours late**, and now and then not at
+all, so each slot that must land before a kickoff is early enough to make it 9.4 hours late, and has a twin;
+the cron comments say which kickoff each is for. A run in which a required nflverse file does not download
+fails before its commit. A run that finds nothing new commits nothing beyond the day's "as of" dates:
+`units2026.js` is rewritten only when the Deep Dive changed (its `built_at` says when it last did).
 
-```
-App bar: brand, week label, dates
-The slate: one tile per game (16, fewer on a bye week), each a <button class="slot">
-    (no page head and no section heading since September 23, 2026: the owner asked for the
-    dates line, the week headline and intro, and "The slate" heading and its kickoff note to
-    go. The week file still carries headline and intro; the page does not show them.)
-    kickoff in viewer local time (or Final), AWAY at HOME, score if played,
-    TV and venue, the game note, "Full breakdown"
-Footer
-```
-
-Clicking a tile opens the **game overlay** (`openGame()` in `js/app.js`), a 1000px layer:
-
-```
-Header: AWAY at HOME, Final or kickoff, TV, venue, line (the schedule's, dated; the posted one beside it if it moved)
-Game note
-Two team blocks side by side  (stack under 720px), each:
-    badge, name, headline, rank chip, 2026 record chip
-    Matchup preview (neutral), Positives (green), Negatives (red),
-    Keys to victory (light blue, per team, from the team keys field),
-    Deep Dive (collapsed: the Overall Offense vs Overall Defense headline, then six unit
-               matchups from data/units2026.js; the two open together)
-Full stat breakdown           eleven divided bars: point differential, points per game,
-                              points allowed, yards per play, yards per play allowed,
-                              turnover margin, sacks, sacks allowed, third down rate,
-                              red zone TD rate, explosive plays (20+ yard plays), plus
-                              any game rows. Each bar fills from the center outward.
-```
-
-The two team blocks share one CSS grid (rows r1 to r6), so matching sections sit on the same
-row at equal height. A missing section leaves an empty cell. Headlines clamp to one line.
-Escape, the X, or the backdrop closes it. Game level keys and team last are no longer shown.
-
-`js/app.js` is now about 280 lines: helpers, the rank chip, the Deep Dive, `render()`, `renderWeek()`,
-`openGame()`, `FOOTER`, boot. The Data tools panel and the `weeks.json` loader are gone;
-the spec lives in `tools/week-request.md`. The old
-guide, board, search, tab, and card code is gone. `git log` has every earlier layout if
-one is ever wanted back.
-
-Iterations the owner went through today, in order, so they are not re-proposed:
-1. Two team cards per game, each a 2x2 of Matchup, Strengths, Weaknesses, Rankings plus
-   Next game. The original. Owner: combine the teams, drop win total, home/away, kickoff,
-   Next game.
-2. One combined card, rankings only, overlay for the text. Owner: too wide, too much
-   white space.
-3. Two games per row, tighter padding. Owner: still too much white space.
-4. Compact two-column rankings, chevron instead of footer. Owner: go back to showing
-   positives and negatives on the card, rankings off, rank into the title.
-5. Snapshot cards (first sentence of each bullet), then color coded bubbles, then tinted
-   sections, then two games per row with stacked sections. Owner: simplify. Delete the
-   cards, make the slate tiles the entry point, one week only. This is the current layout.
-
----
-
-## Design system
-
-Rebuilt from scratch at the end of the session. The governing rule: **one neutral
-surface, meaning carried by small accents, never by filled blocks.**
-
-- Canvas `#F6F5F2`, cards white, hairline borders `#E9E6E0`, minimal shadow
-- Panels have **no background fill**. They are divided by hairlines in a quadrant grid
-- Each overlay section label gets a 6px colored dot: grey Matchup preview, green Positives,
-  red Negatives, light blue Keys to victory
-- Team color appears only as a 3px bar on the card edge and in the badge
-- Space Grotesk for headings and all numbers, Manrope for body
-- Numbers use `font-variant-numeric: tabular-nums` so ranks align in columns
-- Uppercase micro-labels at 10.5px with `.1em` letterspacing
-
-### Rejected directions, do not re-propose
-
-The owner reacted to each of these. Re-suggesting them wastes his time.
-
-- **Cool gray / slate palette** with a dark mode toggle. Tried, rejected outright.
-- **Dark mode** of any kind. Rejected.
-- **Purple** for the Next game panel. Rejected.
-- **Multiple tinted panel backgrounds** (cream, green, rust, blue, sand at once).
-  This was the thing that made the site feel dated. It is why panels are flat now.
-- **A shared full-width matchup band** between the two team cards. Built, rejected as
-  visually bad. Matchup content lives inside each team card instead.
-- **A Momentum row** showing win/loss streak. Built, then removed.
-- **A Last game panel.** Removed. Results fold into the matchup preview instead.
-- **Black anywhere.** He objected twice. Darkest value in use is `#26241F`.
-
----
-
-## Hard constraints
-
-- **No em dashes and no double dashes** anywhere in output. This is a standing
-  preference and it applies to site copy, commit messages, and chat replies.
-- **No `localStorage` or `sessionStorage`.** The file must work opened directly from
-  disk and hosted, with no storage.
-- **Must still work via `file://`.** Everything is plain script tags, no fetch. Keep it that way.
-- **`index.html` is the required filename.** Anything else and GitHub Pages 404s.
-- **The guard stays the first script in `index.html`'s head, and never becomes a meta refresh.**
-  A meta refresh (or an unguarded `location.replace`) would fire inside X NFL Bets and Stats' frame
-  too and load that whole site into its own tab, and under `file://` too. The tab relies on `#ov` and
-  its class `on`, `.slot[data-game]` drawn in `#view` (it hooks the tracker as soon as one is there,
-  before the page's web font has loaded), `ov.dataset.game`, Escape closing the window, and the
-  `html.embed` rules in `css/style.css` (among them room under the footer for the framing page's
-  back-to-top button and a tile's focus ring drawn inside it, since the tiles meet the frame's edges);
-  the smoke test holds each, with the tab's own script mounted.
-- Bullets over paragraphs. He has said long prose is hard to read.
-
----
-
-## Weekly workflow (the model)
-
-The sources are fixed, the reading is weekly. `tools/sources.md` is the source map, the fixed
-reading panel, the consensus rule, and the run procedure. `tools/pull-week.js` does the
-scripted half. `tools/week-request.md` is the output schema.
-
-A week is the **upcoming** slate, published Wednesday. Each team's previous result is folded
-into its matchup preview. So the Week 2 file covers Week 2 games, written with Week 1 results
-as context.
-
-Wednesday, in Claude Code, say "build Week N". The session then:
-
-1. Runs the pull. It drafts `data/weekN.js` with all 16 games (kickoff, TV, venue, line),
-   regenerates `data/results.js` (every final score so far, so the 2026 record chips and Final
-   labels update themselves) and `data/stats2026.js` (2026 season to date stats for the bars; a
-   team with no complete line yet shows zeros), and writes `tools/out/weekN-pack.md`
-   with injuries, headlines, and the searches to run per game.
-
-```bash
-npm install --no-save jsdom
-```
-
-```bash
-node tools/pull-week.js N
-```
-
-2. Reads the pack and the fixed panel in `tools/sources.md` for each game, applies the
-   consensus rule (two sources or it does not go on the card), and fills the narrative fields
-   in `data/weekN.js`: headline, intro, each game note, and every team's headline, matchup,
-   strengths, weaknesses, keys. Sets `updated` to the publish date.
-3. Adds `<script src="data/weekN.js"></script>` to `index.html` above `data/weeks.js` and
-   appends `WEEKN` in `data/weeks.js`. The page shows the last entry. The Season Tracker tab picks it
-   up on its next load with no rebuild of X NFL Bets and Stats.
-4. Runs the smoke test, commits, pushes. Pages redeploys within a minute or two.
-
-```bash
-node tools/smoke.js
-```
-
-```bash
-git -c user.name=DEMON-X13 -c user.email=44211869+DEMON-X13@users.noreply.github.com commit -am "Week N" && git push origin main
-```
-
-**Also automatic, in GitHub Actions** (`.github/workflows/news.yml`): about nineteen times a week,
-and on a push to the pull code, the page or a week file, the hub runs the pull alone, refreshing `data/results.js`,
-`data/stats2026.js`, the three context files, the draft `data/weekN.js` and the reading pack. It
-never writes narrative or adds a week to `data/weeks.js`; that stays with the routine below. The
-slots: five post-game runs and a mid-day refresh Monday, Tuesday and Friday for the results and
-stats, and eleven for the Deep Dive's lineups, timed to the injury report (nflverse files a day's
-report about 14:30 UTC the next morning; ESPN shows the game statuses the evening they are filed):
-Tuesday and Wednesday afternoons, Wednesday evening and early Thursday for the Thursday games
-(Thanksgiving's included), Thursday afternoon for Thursday night, Friday evening, and Saturday
-afternoon through early Sunday four times for Sunday. **GitHub starts this repo's scheduled runs
-2.3 to 9.4 hours late** (median about 6.5, measured September 17 to October 9, 2026, on every
-workflow here), and now and then not at all, so each slot that must land before a kickoff is early
-enough to make it 9.4 hours late, and has a twin; the cron comments say which kickoff each one is
-for. A run in which a required nflverse file does not download fails before its commit step. A run
-that finds nothing new commits nothing beyond the day's "as of" dates (`LINES_ASOF`, `STATS26_ASOF`,
-the pack's date, the report's Last-Modified), so the second run of a day usually commits nothing:
-`units2026.js` is rewritten only when the Deep Dive changed (its `built_at` says when it last did),
-and a team's frozen lineup only when its names did. Until October 9, 2026 the build stamp moved on
-every run, so every run committed.
-
-**Automatic, set up September 13, 2026.** A Claude Code cloud routine named "NFL tracker: build and
-publish the week" (id `trig_017MSjEeFD8c5atgAEzBbWiF`, model Claude Opus 5, environment Default,
-repository `DEMON-X13/nfl-hub`, working in `news/`) runs every Wednesday at 13:00 UTC (6 AM Pacific in September, 5 AM after the November clock change)
-and does steps 1 to 4 unattended, pushing to main. Its prompt is the procedure above. Manage it at
-https://claude.ai/code/routines (on October 3, 2026 this id was not found from the account the
-repo's coding sessions run under; it may live under another account, so check it there before
-relying on it). If a run goes wrong, revert the commit with `git revert` and push;
-the previous week comes back. Repointed from the old repo to nfl-hub on September 15, 2026.
-If that run fails before a session starts, the usual cause is repository access: connect the repo
-to Claude Code's GitHub integration.
-
-Verified September 13, 2026 against live feeds: the pull drafted Week 2 with 16 games and
-lines, captured 15 Week 1 finals (Monday night pending), built season to date stats for 27
-teams, and produced a reading pack with injuries and headlines for all 32 teams.
-
-### The routine runs in a sandbox with a narrower network than Actions
-
-Learned publishing Week 2 on September 15, 2026. The Wednesday routine runs in a Claude Code
-remote environment whose egress policy blocked, from inside that container:
-
-- the ESPN scoreboard, injuries and news feeds, and all nine TeamRankings tables, so
-  `pull-week.js` fell back to nflverse for the schedule and scores, kept the existing
-  `stats2026.js`, and wrote a reading pack with no injuries and no headlines (358 lines
-  against the 1094 line pack the Actions job had committed an hour earlier);
-- direct reads of nfl.com, espn.com, cbssports.com and si.com, so the fixed panel in
-  `tools/sources.md` could not be read at all. Web search still worked and reaches the same
-  outlets, one synthesized layer removed, which is what Week 2 was written from.
-
-**The GitHub Actions job is not affected.** It runs on GitHub's runners with open internet.
-The run triggered by the Week 2 commit logged `stats2026.js: 31 teams complete` and rewrote
-the full pack, with no 403s anywhere. So the structured half of the week keeps arriving on
-schedule whatever the sandbox can reach.
-
-Two consequences for a Wednesday session:
-
-1. **Prefer the committed pack over a freshly pulled one.** If the pull reports feeds
-   unavailable, run `git restore tools/out/weekN-pack.md` and write from the version Actions
-   already committed. Do not stage a gutted pack or a thinner `stats2026.js` over a fuller one.
-2. **`week2.js exists, not overwriting`.** The pull never clobbers a week that already has
-   narrative in it, so a filled week file is safe from the Friday, Monday and Tuesday jobs.
-
----
+**The routine runs in a sandbox with a narrower network than Actions.** Learned on 15 September 2026: from
+the routine's container the ESPN feeds, TeamRankings and direct reads of nfl.com, espn.com, cbssports.com
+and si.com were blocked, while web search still worked. GitHub's runners are not affected, so the pack and
+the stats keep arriving on schedule. If a pull in the sandbox reports feeds unavailable, write from the pack
+the job committed (`git restore tools/out/weekN-pack.md`) and never commit a thinner pack or stats file.
 
 ## Verifying a change
 
-There is no way to see the page from the terminal, so use jsdom. From `news/`:
-
 ```bash
 npm ci
+node tools/smoke.js        # must end "all checks passed"; WARN lines above it publish
 ```
 
-```bash
-node tools/smoke.js
-```
+There is no page to render: the smoke test holds the files the job writes to their sources and to what the
+Game snapshot draws from them. Blocking: the twins are exactly their `.js` consts; each team's stat line is
+its own game count in `results.js`; the tag constants are their values and every club's Overall ratings are
+`../elo/data/model.json`'s; every game of the units' week, drawn both ways by `deepdive.js`, has its four
+rows in order with each tag the weighted edge worked out on its own and the ranks and edges the file's, and
+its Overall line's tag the rule's on `model.json`'s units; the lineups are for the schedule's week (and, in
+the job, checked on that run's own download); `index.html` sends a visitor to `../nflbets/`; every fixed
+case in `tools/cases.js`. Warnings (WARN, the job publishes and goes red after its commit): the other
+lineup rules, a starter out named in his row, a quarterback in doubt with the next one named, nobody both
+listed and out, and every problem in a notes file, its shape included, so a bad note never holds back the
+week's data. The lineup checks read the build's own snapshot (`tools/.cache/`, not committed) when it
+matches `units2026.js`, else download the files: **run `node tools/context.js` first when the committed
+`units2026.js` is older than the report**. Offline with no snapshot, `NEWS_SMOKE_OFFLINE=1` skips them.
 
-It renders `index.html` with the split files, then asserts: no script errors, the last week in
-`data/weeks.js` shown in the bar, a tile for every game on the slate (15 on Week 5's bye week), one score per game that has a final, no tabs
-or search or cards, the game overlay opens with both team blocks, keys sections and eleven
-stat bars, Escape and X close it, and a synthetic later week takes over the page. It also holds
-the window's focus (into the X on open, Tab kept inside, back to the game's tile on close), the
-guard (the web address, framed, `?standalone`, a file), the `html.embed` rules, and the Season
-Tracker tab's own script (`../nflbets/build/tab_tracker.html`) mounted on this page in a bare host:
-the page hooked once it has drawn its week, before the frame's load event and only once, the frame
-as tall as the page (shrinking with it, held while a game is open), a game opened lays the frame
-over the screen, and Escape, the X, the backdrop and leaving the tab put the page back; a page with
-no `#ov` or no tiles fails it rather than skipping those checks.
-Run it before every commit. `node_modules` is ignored by git.
+## The Deep Dive's lineups
 
-Since October 9, 2026 it also holds the generated files to their sources, because until then it
-only checked them against themselves and passed while the Deep Dive named injured players:
-
-- the lineups against the nflverse injury report, roster and schedule they were built from
-  (`tools/lineup-checks.js`): nobody ruled Out or Doubtful, Questionable without practising, out last
-  game and not practising since, off the roster, ruled out by ESPN, or Questionable on ESPN with no
-  practice on the last practice day is listed; the lineups are for
-  the schedule's current week; a quarterback in doubt has the next one named whenever one can play;
-  the quarterback ESPN's current notes name as this week's starter is listed when the rules let him play.
-  A team counts as filed only when its game statuses are on the report. It reads the build's
-  own snapshot (`tools/.cache/`, not committed) when that matches `units2026.js`, else downloads the
-  three files. **So run `node tools/context.js` first when the committed `units2026.js` is older than
-  the report**: the smoke test failing on stale lineups is it working. Offline, with no snapshot,
-  `NEWS_SMOKE_OFFLINE=1` skips these checks (and says so);
-- the rank chip against the Team Rankings tab's file, `../elo/data/model.json`;
-- the Deep Dive's headline against the same file (exact on the build `UNITS26_META.overall` names,
-  in the board's order a run behind, none when the file's Overall ratings are not of this season),
-  its tag and every row's weighted tag against the rules worked out on their own
-  (`tools/deepdive-checks.js`) on every game of the slate, and `UNITS26_META.tags` to its values;
-- each team's stat bars against its own game count in `results.js`;
-- the live week's narrative: no Deep Dive or rank chip ranks quoted (see "Read this first");
-- the overlay's line is dated, the position tags take a named team's position, and after week 18
-  the footer says the regular season is complete;
-- the fixed cases in `tools/cases.js` (the Wednesday before a Thursday game, a quarterback with no
-  healthy backup, the postseason's stat tables and the rest): each a week the real files produced,
-  with the broken version a review caught fed to the checks, which must fail it;
-- in the job, that the lineups were built and checked on that run's own download.
-
-It was pinned to Week 1 until September 15, 2026: it clicked the `NE-SEA` and `DEN-KC` tiles by
-name and expected a `0-1 1-0` record chip and at least two scores. That crashes on any week
-whose slate does not contain those two games, so it would have failed on Week 2 and on every
-week after. It now takes the first and last game of whatever week is active, works the expected
-records out of `results.js`, and counts the scores it should see. Keep it week agnostic.
-
-The split itself was verified by rendering the old monolith and the split build side by
-side in jsdom and comparing the full body markup after 14 interaction steps. Every
-snapshot matched, the CSS file is byte-identical to the old style block, and the three
-script files are identical to the old script block ignoring comments and whitespace.
-
----
-
-## The Deep Dive's announced starter
-
-Added October 10, 2026. On the live run of 02:43 UTC that day the Deep Dive listed Caleb Williams
-(Questionable, limited Friday) as Chicago's quarterback with Tyson Bagent next, while ESPN's notes said
-plainly that Ben Johnson had named Bagent the Week 5 starter, in Bagent's own note and in Keenum's, and the
-Week 5 narrative said Chicago starts Bagent. Every check passed, because nothing read those notes.
-
-Rule 7 of the lineups (`tools/context.js`): the quarterback ESPN's current notes name plainly as this week's
-starter starts, when rules 1 to 5 let him play, and each quarterback the chart had ahead of him is passed
-over, "not starting (questionable: hamstring): Tyson Bagent named the starter, per ESPN". An official Out or
-Doubtful, or any other rule, still rules the named one out, and then the chart decides as before. The page
-then reads "Tyson Bagent starts; Caleb Williams is not starting (...)".
-
-The reading is `announcedStarter()` in `tools/context.js`, which `tools/lineup-checks.js` calls too (its
-`announced` check fails a lineup that lists anyone else while the named one can play):
-
-- **Which notes.** The team's own ESPN entries, dated after its last game (Eastern days, the practice
-  reader's rule) and before this week's kickoff. A quarterback is named by his full name (the roster's, the
-  chart's, football or first name with the last), or in his own note by his last name alone; so another
-  team's quarterback never counts, and a running back's "Sanders will start" never names Cleveland's
-  quarterback Sanders.
-- **Accepted, when the sentence is plain:** will start, will make the start (his first start), will get or
-  draw the start, will be the starter (the team's starting quarterback), will be under center, will return to
-  the starting lineup; is expected, set, slated, scheduled or going to start; has cleared ... and will start;
-  is starting; has been (was) named the starter; named X the starter (the Week 5 starter); will start X.
-- **Refused:** any hedge or condition in the sentence (if, unless, should, could, would, may, might, whether,
-  likely, probably, in line to, figures to, projected to, on track to, pending, barring, assuming, in case,
-  game-time decision, plans to, hopes to, leaning, trending ...); "X or Y will start"; a note that leaves it
-  open anywhere ("has not yet confirmed", "hasn't decided", "declined to name", unclear, undecided); another
-  week ("in Week 6", next week, the week after, after the bye, last week), a game weekday not this game's,
-  a team other than these two after against, at, in, vs, facing, hosting or visiting; "will not start", and
-  "start" meaning begin ("will start throwing").
-- **Several notes.** The newest wins; two as new that name different quarterbacks name none.
-
-Read on all 6,694 ESPN notes in the committed packs (weeks 1 to 5) as if each were current, it takes 11, each
-a real announcement for that week's game (Bagent three times: his note and two versions of Keenum's; Jayden
-Daniels, Huntley, Mariota twice, Kyler Murray twice, Penix, Lock), and refuses ESPN's October 3 "Bagent is
-expected to start ... coach Ben Johnson has not yet confirmed the plan". On the live run's nflverse files,
-with ESPN's Friday list rebuilt from the committed week 5 pack (every note dated Friday evening, ESPN's own
-dates not being in the pack), the only unit in the league that changes is Chicago's quarterback row, and the
-new check fails the lineup the old build made. `tools/cases.js` holds it (announced-*); removing the rule
-from the build or the check, loosening the hedge filter, or dropping any date, week, weekday, team or
-own-note guard fails a case (24 such mutants, each killed).
-
----
-
-## Known state of the data
-
-See `data/weeks.js` for the published weeks and `STATS26_THROUGH` in `data/stats2026.js` for how
-far the stats run; this file no longer tracks either.
-
-- Injury notes in a week file are dated to the Monday and Tuesday reports. The first official
-  reports of a game week land Wednesday afternoon Eastern, which is after the routine's 13:00
-  UTC run, so a Wednesday session never sees them. Re-check anything injury dependent before
-  reusing it. The Deep Dive's lineups do follow the reports through the week, so the narrative
-  should say "as of Tuesday" where it names who is out.
+The names in each row are the coming game's lineup: the latest depth chart before kickoff, passing over
+anyone off the roster, ruled Out or Doubtful (or Questionable without practising) once the team files its
+game statuses, out per ESPN before then, or out in the team's last game and not practising since; a
+Questionable or not-practising player stays listed with the tag, and a quarterback in doubt has the next one
+named beside him. A team has filed only when its rows on the week's report carry a game status: a practice
+report never counts (for a Thursday game, counting Tuesday's would have listed Mayfield and Winfield on the
+Wednesday before TB at DAL). ESPN's mid-week "Questionable" clears no one; ESPN's notes are dated by the
+practice's weekday, never the game's; and a quarterback ESPN's current notes name plainly as this week's
+starter starts when the rules let him play (added 10 October 2026, when the Deep Dive listed Caleb Williams
+while ESPN's notes said Ben Johnson had named Tyson Bagent the Week 5 starter): `announcedStarter()` in
+`tools/context.js` says which notes count and which hedges refuse one, and `tools/cases.js` holds it.
 
 ## A new season
 
-The year is set once, `SEASON` in `tools/lib.js`; every tool reads it from there, and nflverse's
-file names follow it. When nflverse posts the next season's schedule (about May), `run-auto.js`
-says so on every run and keeps working on the current season. To move on: set `SEASON`, rename the
-data files that carry the year (`stats2026.js`, `ranks2026.js`, `players2026.js`, `units2026.js`)
-and their constants in `tools/` and `js/app.js` and `index.html`, empty `data/weeks.js` down to the
-new Week 1, run `node tools/context.js`, then the smoke test (its week check fails on last season's
-`units2026.js` until the build has run). That is a deliberate setup, not something a job should do
-on its own. Move it once the new schedule is out, any time before Week 1: until the season's first
-game nflverse has no current-season stats, snap counts or injury report, and `context.js` reads
-their 404 as "no games yet" (the Deep Dive is then last season's numbers and the chart's names; any
-other failure, or a 404 once a game has been played, still stops the run). Times are worked out
-with the New York time zone everywhere (no clock-change dates).
+The year is set once, `SEASON` in `tools/lib.js`. When nflverse posts the next season's schedule (about
+May), `run-auto.js` says so on every run and keeps working on the current season. To move on: set
+`SEASON`, rename `stats2026.js` and `units2026.js` and their constants in `tools/` (`lib.js`'s
+`UNITS_CONSTS` and `STATS_CONSTS`, `context.js`, `pull-week.js`, `smoke.js`, `cases.js`), run
+`node tools/context.js` and the smoke test; the twins keep their names, and the notes carry the season in
+theirs. Until the season's first game nflverse has no current-season stats, snap counts or injury report,
+and `context.js` reads their 404 as "no games yet". That is a deliberate setup, not something the job does
+on its own.
 
-### Sources used so far
+## Hard constraints
 
-Pro Football Reference (records, PF/PA, SRS), FootballDB (turnover differential),
-Sharp Football Analysis (preseason rank order), NFL.com (per-game picks, spreads,
-consensus analysis), ESPN, NBC Sports (injury reports), Wikipedia (draft record).
+- No em dashes and no double dashes anywhere: notes, commit messages, chat.
+- The notes are plain text; the page escapes them. No betting language, no typed records in a preview,
+  no site ranks.
+- Never edit a generated file by hand: `units2026.js`, `units.json`, `stats2026.js`, `stats.json`,
+  `results.js` and `tools/out/` are the job's.
 
----
+## Backlog
 
-## Backlog and open questions
-
-- The routine prompt pins the commit author to `DEMON-X13`, but the stop hook requires
-  `noreply@anthropic.com` or GitHub marks the commit Unverified. Week 2 went out authored as
-  Claude. Settle one of the two or this repeats every Wednesday.
-- He runs a separate NFL prediction model in Claude Code. Since October 13, 2026 this site is
-  a tab of X NFL Bets and Stats (framed, so nothing of either page's code meets the other's);
-  the two could still share a data layer later.
+- The Wednesday routine that wrote the old week files ("NFL tracker: build and publish the week", id
+  `trig_017MSjEeFD8c5atgAEzBbWiF`, possibly under another account) must not run any more: its prompt
+  builds `data/weekN.js`, which nothing reads. The notes routine replaces it; its prompt is "The weekly
+  job" above.
