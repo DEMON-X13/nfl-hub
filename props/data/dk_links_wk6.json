@@ -1,0 +1,850 @@
+{
+"2026_06_ARI_LA|event": {
+"sid": "34118080",
+"link": "https://sportsbook.draftkings.com/event/34118080"
+},
+"2026_06_ARI_LA|game|ml|away|": {
+"sid": "0ML84695513_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695513_3"
+},
+"2026_06_ARI_LA|game|ml|home|": {
+"sid": "0ML84695513_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695513_1"
+},
+"2026_06_ARI_LA|game|spread|away|12.5": {
+"sid": "0HC84695513P1250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695513P1250_3"
+},
+"2026_06_ARI_LA|game|spread|home|-12.5": {
+"sid": "0HC84695513N1250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695513N1250_1"
+},
+"2026_06_ARI_LA|game|total|Over|51.5": {
+"sid": "0OU84695513O5150_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695513O5150_1"
+},
+"2026_06_ARI_LA|game|total|Under|51.5": {
+"sid": "0OU84695513U5150_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695513U5150_3"
+},
+"2026_06_BAL_CLE|event": {
+"sid": "34118086",
+"link": "https://sportsbook.draftkings.com/event/34118086"
+},
+"2026_06_BAL_CLE|game|ml|away|": {
+"sid": "0ML84695519_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695519_3"
+},
+"2026_06_BAL_CLE|game|ml|home|": {
+"sid": "0ML84695519_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695519_1"
+},
+"2026_06_BAL_CLE|game|spread|away|-5.5": {
+"sid": "0HC84695519N550_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695519N550_3"
+},
+"2026_06_BAL_CLE|game|spread|home|5.5": {
+"sid": "0HC84695519P550_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695519P550_1"
+},
+"2026_06_BAL_CLE|game|total|Over|42.5": {
+"sid": "0OU84695519O4250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695519O4250_1"
+},
+"2026_06_BAL_CLE|game|total|Under|42.5": {
+"sid": "0OU84695519U4250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695519U4250_3"
+},
+"2026_06_BUF_LV|event": {
+"sid": "34118242",
+"link": "https://sportsbook.draftkings.com/event/34118242"
+},
+"2026_06_BUF_LV|game|ml|away|": {
+"sid": "0ML84695685_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695685_3"
+},
+"2026_06_BUF_LV|game|ml|home|": {
+"sid": "0ML84695685_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695685_1"
+},
+"2026_06_BUF_LV|game|spread|away|-5.5": {
+"sid": "0HC84695685N550_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695685N550_3"
+},
+"2026_06_BUF_LV|game|spread|home|5.5": {
+"sid": "0HC84695685P550_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695685P550_1"
+},
+"2026_06_BUF_LV|game|total|Over|53.5": {
+"sid": "0OU84695685O5350_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695685O5350_1"
+},
+"2026_06_BUF_LV|game|total|Under|53.5": {
+"sid": "0OU84695685U5350_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695685U5350_3"
+},
+"2026_06_CAR_PHI|event": {
+"sid": "34118081",
+"link": "https://sportsbook.draftkings.com/event/34118081"
+},
+"2026_06_CAR_PHI|game|ml|away|": {
+"sid": "0ML84695514_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695514_3"
+},
+"2026_06_CAR_PHI|game|ml|home|": {
+"sid": "0ML84695514_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695514_1"
+},
+"2026_06_CAR_PHI|game|spread|away|-1.5": {
+"sid": "0HC84695514N150_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695514N150_3"
+},
+"2026_06_CAR_PHI|game|spread|home|1.5": {
+"sid": "0HC84695514P150_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695514P150_1"
+},
+"2026_06_CAR_PHI|game|total|Over|40.5": {
+"sid": "0OU84695514O4050_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695514O4050_1"
+},
+"2026_06_CAR_PHI|game|total|Under|40.5": {
+"sid": "0OU84695514U4050_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695514U4050_3"
+},
+"2026_06_CHI_ATL|event": {
+"sid": "34118076",
+"link": "https://sportsbook.draftkings.com/event/34118076"
+},
+"2026_06_CHI_ATL|game|ml|away|": {
+"sid": "0ML84695509_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695509_3"
+},
+"2026_06_CHI_ATL|game|ml|home|": {
+"sid": "0ML84695509_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695509_1"
+},
+"2026_06_CHI_ATL|game|spread|away|-1.5": {
+"sid": "0HC84695509N150_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695509N150_3"
+},
+"2026_06_CHI_ATL|game|spread|home|1.5": {
+"sid": "0HC84695509P150_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695509P150_1"
+},
+"2026_06_CHI_ATL|game|total|Over|51.5": {
+"sid": "0OU84695509O5150_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695509O5150_1"
+},
+"2026_06_CHI_ATL|game|total|Under|51.5": {
+"sid": "0OU84695509U5150_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695509U5150_3"
+},
+"2026_06_DAL_GB|event": {
+"sid": "34118185",
+"link": "https://sportsbook.draftkings.com/event/34118185"
+},
+"2026_06_DAL_GB|game|ml|away|": {
+"sid": "0ML84695618_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695618_3"
+},
+"2026_06_DAL_GB|game|ml|home|": {
+"sid": "0ML84695618_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695618_1"
+},
+"2026_06_DAL_GB|game|spread|away|1.5": {
+"sid": "0HC84695618P150_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695618P150_3"
+},
+"2026_06_DAL_GB|game|spread|home|-1.5": {
+"sid": "0HC84695618N150_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695618N150_1"
+},
+"2026_06_DAL_GB|game|total|Over|53.5": {
+"sid": "0OU84695618O5350_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695618O5350_1"
+},
+"2026_06_DAL_GB|game|total|Under|53.5": {
+"sid": "0OU84695618U5350_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695618U5350_3"
+},
+"2026_06_HOU_JAX|event": {
+"sid": "34118244",
+"link": "https://sportsbook.draftkings.com/event/34118244"
+},
+"2026_06_HOU_JAX|game|ml|away|": {
+"sid": "0ML84695687_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695687_3"
+},
+"2026_06_HOU_JAX|game|ml|home|": {
+"sid": "0ML84695687_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695687_1"
+},
+"2026_06_HOU_JAX|game|spread|away|2.5": {
+"sid": "0HC84695687P250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695687P250_3"
+},
+"2026_06_HOU_JAX|game|spread|home|-2.5": {
+"sid": "0HC84695687N250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695687N250_1"
+},
+"2026_06_HOU_JAX|game|total|Over|42.5": {
+"sid": "0OU84695687O4250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695687O4250_1"
+},
+"2026_06_HOU_JAX|game|total|Under|42.5": {
+"sid": "0OU84695687U4250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695687U4250_3"
+},
+"2026_06_LAC_KC|event": {
+"sid": "34118253",
+"link": "https://sportsbook.draftkings.com/event/34118253"
+},
+"2026_06_LAC_KC|game|ml|away|": {
+"sid": "0ML84695696_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695696_3"
+},
+"2026_06_LAC_KC|game|ml|home|": {
+"sid": "0ML84695696_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695696_1"
+},
+"2026_06_LAC_KC|game|spread|away|8.5": {
+"sid": "0HC84695696P850_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695696P850_3"
+},
+"2026_06_LAC_KC|game|spread|home|-8.5": {
+"sid": "0HC84695696N850_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695696N850_1"
+},
+"2026_06_LAC_KC|game|total|Over|42.5": {
+"sid": "0OU84695696O4250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695696O4250_1"
+},
+"2026_06_LAC_KC|game|total|Under|42.5": {
+"sid": "0OU84695696U4250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695696U4250_3"
+},
+"2026_06_NO_NYG|event": {
+"sid": "34118108",
+"link": "https://sportsbook.draftkings.com/event/34118108"
+},
+"2026_06_NO_NYG|game|ml|away|": {
+"sid": "0ML84695541_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695541_3"
+},
+"2026_06_NO_NYG|game|ml|home|": {
+"sid": "0ML84695541_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695541_1"
+},
+"2026_06_NO_NYG|game|spread|away|-1.5": {
+"sid": "0HC84695541N150_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695541N150_3"
+},
+"2026_06_NO_NYG|game|spread|home|1.5": {
+"sid": "0HC84695541P150_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695541P150_1"
+},
+"2026_06_NO_NYG|game|total|Over|45.5": {
+"sid": "0OU84695541O4550_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695541O4550_1"
+},
+"2026_06_NO_NYG|game|total|Under|45.5": {
+"sid": "0OU84695541U4550_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695541U4550_3"
+},
+"2026_06_NYJ_NE|event": {
+"sid": "34118215",
+"link": "https://sportsbook.draftkings.com/event/34118215"
+},
+"2026_06_NYJ_NE|game|ml|away|": {
+"sid": "0ML84695648_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695648_3"
+},
+"2026_06_NYJ_NE|game|ml|home|": {
+"sid": "0ML84695648_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695648_1"
+},
+"2026_06_NYJ_NE|game|spread|away|7.5": {
+"sid": "0HC84695648P750_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695648P750_3"
+},
+"2026_06_NYJ_NE|game|spread|home|-7.5": {
+"sid": "0HC84695648N750_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695648N750_1"
+},
+"2026_06_NYJ_NE|game|total|Over|43.5": {
+"sid": "0OU84695648O4350_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695648O4350_1"
+},
+"2026_06_NYJ_NE|game|total|Under|43.5": {
+"sid": "0OU84695648U4350_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695648U4350_3"
+},
+"2026_06_PIT_TB|event": {
+"sid": "34118154",
+"link": "https://sportsbook.draftkings.com/event/34118154"
+},
+"2026_06_PIT_TB|game|ml|away|": {
+"sid": "0ML84695587_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695587_3"
+},
+"2026_06_PIT_TB|game|ml|home|": {
+"sid": "0ML84695587_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695587_1"
+},
+"2026_06_PIT_TB|game|spread|away|-2.5": {
+"sid": "0HC84695587N250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695587N250_3"
+},
+"2026_06_PIT_TB|game|spread|home|2.5": {
+"sid": "0HC84695587P250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695587P250_1"
+},
+"2026_06_PIT_TB|game|total|Over|39.5": {
+"sid": "0OU84695587O3950_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695587O3950_1"
+},
+"2026_06_PIT_TB|game|total|Under|39.5": {
+"sid": "0OU84695587U3950_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695587U3950_3"
+},
+"2026_06_SEA_DEN|AJ Barner|any_td|Yes|": {
+"sid": "0QA378203985#2317707854_13L88808Q1-37446320Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707854_13L88808Q1-37446320Q20"
+},
+"2026_06_SEA_DEN|AJ Barner|receiving_yards|Over|24.5": {
+"sid": "0QA378203085#2317840943_13L88808Q1549052833Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203085%232317840943_13L88808Q1549052833Q20"
+},
+"2026_06_SEA_DEN|AJ Barner|receiving_yards|Under|24.5": {
+"sid": "0QA378203085#2317840944_13L88808Q1-1227783981Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203085%232317840944_13L88808Q1-1227783981Q20"
+},
+"2026_06_SEA_DEN|AJ Barner|receptions|Over|2.5": {
+"sid": "0QA378203320#2317703859_13L88808Q1-2107084182Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203320%232317703859_13L88808Q1-2107084182Q20"
+},
+"2026_06_SEA_DEN|AJ Barner|receptions|Under|2.5": {
+"sid": "0QA378203320#2317703875_13L88808Q11045072483Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203320%232317703875_13L88808Q11045072483Q20"
+},
+"2026_06_SEA_DEN|Adam Prentice|any_td|Yes|": {
+"sid": "0QA378203985#2317830974_13L88808Q1528824945Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317830974_13L88808Q1528824945Q20"
+},
+"2026_06_SEA_DEN|Adam Trautman|any_td|Yes|": {
+"sid": "0QA378203985#2317707846_13L88808Q1-1398413387Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707846_13L88808Q1-1398413387Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|any_td|Yes|": {
+"sid": "0QA378203985#2317707843_13L88808Q1-1003727875Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707843_13L88808Q1-1003727875Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|passing_tds|Over|1.5": {
+"sid": "0QA378202637#2317701467_13L88808Q1-23661583Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202637%232317701467_13L88808Q1-23661583Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|passing_tds|Under|1.5": {
+"sid": "0QA378202637#2317701512_13L88808Q1-1720642580Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202637%232317701512_13L88808Q1-1720642580Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|passing_yards|Over|199.5": {
+"sid": "0QA378203354#2319832713_13L88808Q1-386463572Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203354%232319832713_13L88808Q1-386463572Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|passing_yards|Under|199.5": {
+"sid": "0QA378203354#2319832714_13L88808Q1-1695677028Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203354%232319832714_13L88808Q1-1695677028Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|rushing_yards|Over|14.5": {
+"sid": "0QA378203569#2317858877_13L88808Q1831307524Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203569%232317858877_13L88808Q1831307524Q20"
+},
+"2026_06_SEA_DEN|Bo Nix|rushing_yards|Under|14.5": {
+"sid": "0QA378203569#2317858878_13L88808Q11128589181Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203569%232317858878_13L88808Q11128589181Q20"
+},
+"2026_06_SEA_DEN|Brady Russell|any_td|Yes|": {
+"sid": "0QA378203985#2317707861_13L88808Q1-494459906Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707861_13L88808Q1-494459906Q20"
+},
+"2026_06_SEA_DEN|Cooper Kupp|any_td|Yes|": {
+"sid": "0QA378203985#2317707857_13L88808Q1-1216598181Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707857_13L88808Q1-1216598181Q20"
+},
+"2026_06_SEA_DEN|Cooper Kupp|receiving_yards|Over|21.5": {
+"sid": "0QA378203169#2318344949_13L88808Q1-549717439Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203169%232318344949_13L88808Q1-549717439Q20"
+},
+"2026_06_SEA_DEN|Cooper Kupp|receiving_yards|Under|21.5": {
+"sid": "0QA378203169#2318344950_13L88808Q1-1931868121Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203169%232318344950_13L88808Q1-1931868121Q20"
+},
+"2026_06_SEA_DEN|Cooper Kupp|receptions|Over|2.5": {
+"sid": "0QA378202866#2317737618_13L88808Q1-2107084182Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202866%232317737618_13L88808Q1-2107084182Q20"
+},
+"2026_06_SEA_DEN|Cooper Kupp|receptions|Under|2.5": {
+"sid": "0QA378202866#2317737619_13L88808Q11045072483Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202866%232317737619_13L88808Q11045072483Q20"
+},
+"2026_06_SEA_DEN|Courtland Sutton|any_td|Yes|": {
+"sid": "0QA378203985#2317707842_13L88808Q11208752225Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707842_13L88808Q11208752225Q20"
+},
+"2026_06_SEA_DEN|Courtland Sutton|receiving_yards|Over|30.5": {
+"sid": "0QA378203371#2319383992_13L88808Q1-1282184665Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203371%232319383992_13L88808Q1-1282184665Q20"
+},
+"2026_06_SEA_DEN|Courtland Sutton|receiving_yards|Under|30.5": {
+"sid": "0QA378203371#2319383993_13L88808Q1-239547418Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203371%232319383993_13L88808Q1-239547418Q20"
+},
+"2026_06_SEA_DEN|Courtland Sutton|receptions|Over|3.5": {
+"sid": "0QA378203449#2317702709_13L88808Q1730991375Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203449%232317702709_13L88808Q1730991375Q20"
+},
+"2026_06_SEA_DEN|Courtland Sutton|receptions|Under|3.5": {
+"sid": "0QA378203449#2317702807_13L88808Q1-616481466Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203449%232317702807_13L88808Q1-616481466Q20"
+},
+"2026_06_SEA_DEN|Dallen Bentley|any_td|Yes|": {
+"sid": "0QA378203985#2317830975_13L88808Q1-1857585573Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317830975_13L88808Q1-1857585573Q20"
+},
+"2026_06_SEA_DEN|Denver Broncos D/ST|any_td|Yes|": {
+"sid": "0QA378203985#2317707735_13L88808Q1-1160664480Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707735_13L88808Q1-1160664480Q20"
+},
+"2026_06_SEA_DEN|Elijah Arroyo|any_td|Yes|": {
+"sid": "0QA378203985#2317707860_13L88808Q1-341328697Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707860_13L88808Q1-341328697Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|any_td|Yes|": {
+"sid": "0QA378203985#2317707852_13L88808Q11707072676Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707852_13L88808Q11707072676Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|receiving_yards|Over|9.5": {
+"sid": "0QA378203314#2317737520_13L88808Q1-111707543Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203314%232317737520_13L88808Q1-111707543Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|receiving_yards|Under|9.5": {
+"sid": "0QA378203314#2317737521_13L88808Q1-693409088Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203314%232317737521_13L88808Q1-693409088Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|receptions|Over|1.5": {
+"sid": "0QA378203477#2317703739_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203477%232317703739_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|receptions|Under|1.5": {
+"sid": "0QA378203477#2317703828_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203477%232317703828_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|rushing_yards|Over|66.5": {
+"sid": "0QA378202654#2317877816_13L88808Q1-1329528237Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202654%232317877816_13L88808Q1-1329528237Q20"
+},
+"2026_06_SEA_DEN|Emanuel Wilson|rushing_yards|Under|66.5": {
+"sid": "0QA378202654#2317877817_13L88808Q1-698452276Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202654%232317877817_13L88808Q1-698452276Q20"
+},
+"2026_06_SEA_DEN|Eric Saubert|any_td|Yes|": {
+"sid": "0QA378203985#2317707862_13L88808Q1-644359754Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707862_13L88808Q1-644359754Q20"
+},
+"2026_06_SEA_DEN|Evan Engram|any_td|Yes|": {
+"sid": "0QA378203985#2317707844_13L88808Q1-1888318124Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707844_13L88808Q1-1888318124Q20"
+},
+"2026_06_SEA_DEN|Evan Engram|receiving_yards|Over|21.5": {
+"sid": "0QA378203315#2317715565_13L88808Q1-549717439Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203315%232317715565_13L88808Q1-549717439Q20"
+},
+"2026_06_SEA_DEN|Evan Engram|receiving_yards|Under|21.5": {
+"sid": "0QA378203315#2317715566_13L88808Q1-1931868121Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203315%232317715566_13L88808Q1-1931868121Q20"
+},
+"2026_06_SEA_DEN|Evan Engram|receptions|Over|2.5": {
+"sid": "0QA378202635#2317701439_13L88808Q1-2107084182Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202635%232317701439_13L88808Q1-2107084182Q20"
+},
+"2026_06_SEA_DEN|Evan Engram|receptions|Under|2.5": {
+"sid": "0QA378202635#2317701481_13L88808Q11045072483Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202635%232317701481_13L88808Q11045072483Q20"
+},
+"2026_06_SEA_DEN|George Holani|any_td|Yes|": {
+"sid": "0QA378203985#2317707853_13L88808Q12121391530Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707853_13L88808Q12121391530Q20"
+},
+"2026_06_SEA_DEN|George Holani|receiving_yards|Over|9.5": {
+"sid": "0QA378203285#2317737637_13L88808Q1-111707543Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203285%232317737637_13L88808Q1-111707543Q20"
+},
+"2026_06_SEA_DEN|George Holani|receiving_yards|Under|9.5": {
+"sid": "0QA378203285#2317737638_13L88808Q1-693409088Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203285%232317737638_13L88808Q1-693409088Q20"
+},
+"2026_06_SEA_DEN|George Holani|receptions|Over|1.5": {
+"sid": "0QA378203426#2317703972_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203426%232317703972_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|George Holani|receptions|Under|1.5": {
+"sid": "0QA378203426#2317703984_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203426%232317703984_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|George Holani|rushing_yards|Over|14.5": {
+"sid": "0QA378203536#2317859786_13L88808Q1831307524Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203536%232317859786_13L88808Q1831307524Q20"
+},
+"2026_06_SEA_DEN|George Holani|rushing_yards|Under|14.5": {
+"sid": "0QA378203536#2317859787_13L88808Q11128589181Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203536%232317859787_13L88808Q11128589181Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|any_td|Yes|": {
+"sid": "0QA378203985#2317707839_13L88808Q11696076099Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707839_13L88808Q11696076099Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|receiving_yards|Over|4.5": {
+"sid": "0QA378203155#2321491599_13L88808Q11070302869Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203155%232321491599_13L88808Q11070302869Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|receiving_yards|Under|4.5": {
+"sid": "0QA378203155#2321491600_13L88808Q11617281224Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203155%232321491600_13L88808Q11617281224Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|receptions|Over|1.5": {
+"sid": "0QA378202725#2317718690_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202725%232317718690_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|receptions|Under|1.5": {
+"sid": "0QA378202725#2317718691_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202725%232317718691_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|rushing_yards|Over|47.5": {
+"sid": "0QA378203341#2317724119_13L88808Q1-1725240182Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203341%232317724119_13L88808Q1-1725240182Q20"
+},
+"2026_06_SEA_DEN|J.K. Dobbins|rushing_yards|Under|47.5": {
+"sid": "0QA378203341#2317724120_13L88808Q1-1634179136Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203341%232317724120_13L88808Q1-1634179136Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|any_td|Yes|": {
+"sid": "0QA378203985#2317707851_13L88808Q11896367839Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707851_13L88808Q11896367839Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|receiving_yards|Over|93.5": {
+"sid": "0QA378203207#2320240163_13L88808Q1-856258278Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203207%232320240163_13L88808Q1-856258278Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|receiving_yards|Under|93.5": {
+"sid": "0QA378203207#2320240164_13L88808Q1-717576262Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203207%232320240164_13L88808Q1-717576262Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|receptions|Over|6.5": {
+"sid": "0QA378203506#2317704446_13L88808Q1-122753611Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203506%232317704446_13L88808Q1-122753611Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|receptions|Under|6.5": {
+"sid": "0QA378203506#2317704511_13L88808Q1-1523053588Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203506%232317704511_13L88808Q1-1523053588Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|rushing_yards|Over|0.5": {
+"sid": "0QA378202718#2317702374_13L88808Q1346216354Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202718%232317702374_13L88808Q1346216354Q20"
+},
+"2026_06_SEA_DEN|Jaxon Smith-Njigba|rushing_yards|Under|0.5": {
+"sid": "0QA378202718#2317702453_13L88808Q1-495610809Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202718%232317702453_13L88808Q1-495610809Q20"
+},
+"2026_06_SEA_DEN|Jaylen Waddle|any_td|Yes|": {
+"sid": "0QA378203985#2317707841_13L88808Q1-400886175Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707841_13L88808Q1-400886175Q20"
+},
+"2026_06_SEA_DEN|Jaylen Waddle|receiving_yards|Over|48.5": {
+"sid": "0QA378203370#2317859213_13L88808Q1-364955777Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203370%232317859213_13L88808Q1-364955777Q20"
+},
+"2026_06_SEA_DEN|Jaylen Waddle|receiving_yards|Under|48.5": {
+"sid": "0QA378203370#2317859214_13L88808Q132825230Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203370%232317859214_13L88808Q132825230Q20"
+},
+"2026_06_SEA_DEN|Jaylen Waddle|receptions|Over|4.5": {
+"sid": "0QA378202772#2317701941_13L88808Q11445674842Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202772%232317701941_13L88808Q11445674842Q20"
+},
+"2026_06_SEA_DEN|Jaylen Waddle|receptions|Under|4.5": {
+"sid": "0QA378202772#2317701969_13L88808Q1-2138696Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202772%232317701969_13L88808Q1-2138696Q20"
+},
+"2026_06_SEA_DEN|Lil'Jordan Humphrey|any_td|Yes|": {
+"sid": "0QA378203985#2317707848_13L88808Q1-1746281328Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707848_13L88808Q1-1746281328Q20"
+},
+"2026_06_SEA_DEN|Lil'Jordan Humphrey|receiving_yards|Over|6.5": {
+"sid": "0QA378203080#2317703301_13L88808Q1-291429181Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203080%232317703301_13L88808Q1-291429181Q20"
+},
+"2026_06_SEA_DEN|Lil'Jordan Humphrey|receiving_yards|Under|6.5": {
+"sid": "0QA378203080#2317703376_13L88808Q1-1263895043Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203080%232317703376_13L88808Q1-1263895043Q20"
+},
+"2026_06_SEA_DEN|Lil'Jordan Humphrey|receptions|Over|1.5": {
+"sid": "0QA378203050#2321984701_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203050%232321984701_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|Lil'Jordan Humphrey|receptions|Under|1.5": {
+"sid": "0QA378203050#2321984702_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203050%232321984702_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|Marvin Mims Jr.|any_td|Yes|": {
+"sid": "0QA378203985#2317707845_13L88808Q11999707531Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707845_13L88808Q11999707531Q20"
+},
+"2026_06_SEA_DEN|Marvin Mims Jr.|receiving_yards|Over|10.5": {
+"sid": "0QA378203379#2317736214_13L88808Q1-356466789Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203379%232317736214_13L88808Q1-356466789Q20"
+},
+"2026_06_SEA_DEN|Marvin Mims Jr.|receiving_yards|Under|10.5": {
+"sid": "0QA378203379#2317736215_13L88808Q1-1000884680Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203379%232317736215_13L88808Q1-1000884680Q20"
+},
+"2026_06_SEA_DEN|Marvin Mims Jr.|receptions|Over|1.5": {
+"sid": "0QA378202667#2317733002_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202667%232317733002_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|Marvin Mims Jr.|receptions|Under|1.5": {
+"sid": "0QA378202667#2317733003_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202667%232317733003_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|Montorie Foster Jr.|any_td|Yes|": {
+"sid": "0QA378203985#2317829792_13L88808Q11053575810Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317829792_13L88808Q11053575810Q20"
+},
+"2026_06_SEA_DEN|Nate Adkins|any_td|Yes|": {
+"sid": "0QA378203985#2317707850_13L88808Q1-577361648Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707850_13L88808Q1-577361648Q20"
+},
+"2026_06_SEA_DEN|Nick Kallerup|any_td|Yes|": {
+"sid": "0QA378203985#2317829791_13L88808Q1-604389720Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317829791_13L88808Q1-604389720Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|any_td|Yes|": {
+"sid": "0QA378203985#2317707840_13L88808Q1-188546455Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707840_13L88808Q1-188546455Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|receiving_yards|Over|20.5": {
+"sid": "0QA378202886#2317841585_13L88808Q1222461434Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202886%232317841585_13L88808Q1222461434Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|receiving_yards|Under|20.5": {
+"sid": "0QA378202886#2317841586_13L88808Q1-1389246071Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202886%232317841586_13L88808Q1-1389246071Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|receptions|Over|3.5": {
+"sid": "0QA378202724#2317731081_13L88808Q1730991375Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202724%232317731081_13L88808Q1730991375Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|receptions|Under|3.5": {
+"sid": "0QA378202724#2317731082_13L88808Q1-616481466Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202724%232317731082_13L88808Q1-616481466Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|rushing_yards|Over|14.5": {
+"sid": "0QA378203567#2317731838_13L88808Q1831307524Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203567%232317731838_13L88808Q1831307524Q20"
+},
+"2026_06_SEA_DEN|RJ Harvey|rushing_yards|Under|14.5": {
+"sid": "0QA378203567#2317731839_13L88808Q11128589181Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203567%232317731839_13L88808Q11128589181Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|any_td|Yes|": {
+"sid": "0QA378203985#2317707856_13L88808Q1-1094222466Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707856_13L88808Q1-1094222466Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|receiving_yards|Over|21.5": {
+"sid": "0QA378202612#2317880194_13L88808Q1-549717439Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202612%232317880194_13L88808Q1-549717439Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|receiving_yards|Under|21.5": {
+"sid": "0QA378202612#2317880195_13L88808Q1-1931868121Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202612%232317880195_13L88808Q1-1931868121Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|receptions|Over|1.5": {
+"sid": "0QA378202970#2317701896_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202970%232317701896_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|receptions|Under|1.5": {
+"sid": "0QA378202970#2317701914_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202970%232317701914_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|rushing_yards|Over|1.5": {
+"sid": "0QA378202890#2321574387_13L88808Q1-2010014365Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202890%232321574387_13L88808Q1-2010014365Q20"
+},
+"2026_06_SEA_DEN|Rashid Shaheed|rushing_yards|Under|1.5": {
+"sid": "0QA378202890#2321574388_13L88808Q1-796087914Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202890%232321574388_13L88808Q1-796087914Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|any_td|Yes|": {
+"sid": "0QA378203985#2317707858_13L88808Q11771646792Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707858_13L88808Q11771646792Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|passing_tds|Over|1.5": {
+"sid": "0QA378202877#2317702090_13L88808Q1-23661583Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202877%232317702090_13L88808Q1-23661583Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|passing_tds|Under|1.5": {
+"sid": "0QA378202877#2317702122_13L88808Q1-1720642580Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202877%232317702122_13L88808Q1-1720642580Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|passing_yards|Over|221.5": {
+"sid": "0QA378202742#2317831134_13L88808Q1-1943477089Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202742%232317831134_13L88808Q1-1943477089Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|passing_yards|Under|221.5": {
+"sid": "0QA378202742#2317831135_13L88808Q1-704273721Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202742%232317831135_13L88808Q1-704273721Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|rushing_yards|Over|4.5": {
+"sid": "0QA378203360#2317878998_13L88808Q1-1033395550Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203360%232317878998_13L88808Q1-1033395550Q20"
+},
+"2026_06_SEA_DEN|Sam Darnold|rushing_yards|Under|4.5": {
+"sid": "0QA378203360#2317878999_13L88808Q1-997123795Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203360%232317878999_13L88808Q1-997123795Q20"
+},
+"2026_06_SEA_DEN|Seattle Seahawks D/ST|any_td|Yes|": {
+"sid": "0QA378203985#2317707736_14L88808Q1-402909152Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707736_14L88808Q1-402909152Q20"
+},
+"2026_06_SEA_DEN|Tory Horton|any_td|Yes|": {
+"sid": "0QA378203985#2317707859_13L88808Q1-2108815135Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707859_13L88808Q1-2108815135Q20"
+},
+"2026_06_SEA_DEN|Tory Horton|receiving_yards|Over|3.5": {
+"sid": "0QA378203521#2317849411_13L88808Q11853835131Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203521%232317849411_13L88808Q11853835131Q20"
+},
+"2026_06_SEA_DEN|Tory Horton|receiving_yards|Under|3.5": {
+"sid": "0QA378203521#2317849412_13L88808Q12039972176Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203521%232317849412_13L88808Q12039972176Q20"
+},
+"2026_06_SEA_DEN|Tory Horton|receptions|Over|0.5": {
+"sid": "0QA378203140#2317703865_13L88808Q11748027846Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203140%232317703865_13L88808Q11748027846Q20"
+},
+"2026_06_SEA_DEN|Tory Horton|receptions|Under|0.5": {
+"sid": "0QA378203140#2317703890_13L88808Q11828871616Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203140%232317703890_13L88808Q11828871616Q20"
+},
+"2026_06_SEA_DEN|Troy Franklin|any_td|Yes|": {
+"sid": "0QA378203985#2317707847_13L88808Q1-1283460656Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707847_13L88808Q1-1283460656Q20"
+},
+"2026_06_SEA_DEN|Troy Franklin|receiving_yards|Over|17.5": {
+"sid": "0QA378203468#2317734076_13L88808Q1-1870021895Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203468%232317734076_13L88808Q1-1870021895Q20"
+},
+"2026_06_SEA_DEN|Troy Franklin|receiving_yards|Under|17.5": {
+"sid": "0QA378203468#2317734077_13L88808Q1392644849Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203468%232317734077_13L88808Q1392644849Q20"
+},
+"2026_06_SEA_DEN|Troy Franklin|receptions|Over|1.5": {
+"sid": "0QA378202870#2317703069_13L88808Q1-1669482518Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202870%232317703069_13L88808Q1-1669482518Q20"
+},
+"2026_06_SEA_DEN|Troy Franklin|receptions|Under|1.5": {
+"sid": "0QA378202870#2317703187_13L88808Q1-847255388Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378202870%232317703187_13L88808Q1-847255388Q20"
+},
+"2026_06_SEA_DEN|Tyler Badie|any_td|Yes|": {
+"sid": "0QA378203985#2317707849_13L88808Q12126173430Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317707849_13L88808Q12126173430Q20"
+},
+"2026_06_SEA_DEN|Velus Jones Jr.|any_td|Yes|": {
+"sid": "0QA378203985#2317828941_13L88808Q1-249957921Q20",
+"link": "https://sportsbook.draftkings.com/?outcomes=0QA378203985%232317828941_13L88808Q1-249957921Q20"
+},
+"2026_06_SEA_DEN|event": {
+"sid": "34118277",
+"link": "https://sportsbook.draftkings.com/event/34118277"
+},
+"2026_06_SEA_DEN|game|ml|away|": {
+"sid": "0ML84695720_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695720_3"
+},
+"2026_06_SEA_DEN|game|ml|home|": {
+"sid": "0ML84695720_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695720_1"
+},
+"2026_06_SEA_DEN|game|spread|away|-2.5": {
+"sid": "0HC84695720N250_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695720N250_3"
+},
+"2026_06_SEA_DEN|game|spread|home|2.5": {
+"sid": "0HC84695720P250_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695720P250_1"
+},
+"2026_06_SEA_DEN|game|total|Over|40.5": {
+"sid": "0OU84695720O4050_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695720O4050_1"
+},
+"2026_06_SEA_DEN|game|total|Under|40.5": {
+"sid": "0OU84695720U4050_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695720U4050_3"
+},
+"2026_06_TEN_IND|event": {
+"sid": "34118265",
+"link": "https://sportsbook.draftkings.com/event/34118265"
+},
+"2026_06_TEN_IND|game|ml|away|": {
+"sid": "0ML84695708_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695708_3"
+},
+"2026_06_TEN_IND|game|ml|home|": {
+"sid": "0ML84695708_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695708_1"
+},
+"2026_06_TEN_IND|game|spread|away|7.0": {
+"sid": "0HC84695708P700_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695708P700_3"
+},
+"2026_06_TEN_IND|game|spread|home|-7.0": {
+"sid": "0HC84695708N700_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695708N700_1"
+},
+"2026_06_TEN_IND|game|total|Over|44.5": {
+"sid": "0OU84695708O4450_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695708O4450_1"
+},
+"2026_06_TEN_IND|game|total|Under|44.5": {
+"sid": "0OU84695708U4450_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695708U4450_3"
+},
+"2026_06_WAS_SF|event": {
+"sid": "34118064",
+"link": "https://sportsbook.draftkings.com/event/34118064"
+},
+"2026_06_WAS_SF|game|ml|away|": {
+"sid": "0ML84695497_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695497_3"
+},
+"2026_06_WAS_SF|game|ml|home|": {
+"sid": "0ML84695497_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0ML84695497_1"
+},
+"2026_06_WAS_SF|game|spread|away|7.5": {
+"sid": "0HC84695497P750_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695497P750_3"
+},
+"2026_06_WAS_SF|game|spread|home|-7.5": {
+"sid": "0HC84695497N750_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0HC84695497N750_1"
+},
+"2026_06_WAS_SF|game|total|Over|50.5": {
+"sid": "0OU84695497O5050_1",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695497O5050_1"
+},
+"2026_06_WAS_SF|game|total|Under|50.5": {
+"sid": "0OU84695497U5050_3",
+"link": "https://sportsbook.draftkings.com/?outcomes=0OU84695497U5050_3"
+}
+}

@@ -1,1 +1,43 @@
 game_id,stat,player,line,over,under
+2026_06_SEA_DEN,passing_tds,Sam Darnold,1.5,118,-151
+2026_06_SEA_DEN,passing_tds,Bo Nix,1.5,169,-218
+2026_06_SEA_DEN,passing_yards,Sam Darnold,221.5,-112,-112
+2026_06_SEA_DEN,passing_yards,Bo Nix,199.5,-112,-112
+2026_06_SEA_DEN,receiving_yards,Jaxon Smith-Njigba,93.5,-110,-114
+2026_06_SEA_DEN,receiving_yards,Jaylen Waddle,48.5,-110,-114
+2026_06_SEA_DEN,receiving_yards,Courtland Sutton,30.5,-115,-109
+2026_06_SEA_DEN,receiving_yards,AJ Barner,24.5,-109,-115
+2026_06_SEA_DEN,receiving_yards,Rashid Shaheed,21.5,-111,-113
+2026_06_SEA_DEN,receiving_yards,Evan Engram,21.5,-110,-114
+2026_06_SEA_DEN,receiving_yards,Cooper Kupp,21.5,-108,-116
+2026_06_SEA_DEN,receiving_yards,RJ Harvey,20.5,-108,-116
+2026_06_SEA_DEN,receiving_yards,Troy Franklin,17.5,-116,-108
+2026_06_SEA_DEN,receiving_yards,Marvin Mims Jr.,10.5,-111,-113
+2026_06_SEA_DEN,receiving_yards,Emanuel Wilson,9.5,-112,-112
+2026_06_SEA_DEN,receiving_yards,George Holani,9.5,-111,-113
+2026_06_SEA_DEN,receiving_yards,Lil'Jordan Humphrey,6.5,-108,-116
+2026_06_SEA_DEN,receiving_yards,J.K. Dobbins,4.5,-106,-118
+2026_06_SEA_DEN,receiving_yards,Tory Horton,3.5,-111,-113
+2026_06_SEA_DEN,receptions,Jaxon Smith-Njigba,6.5,-136,107
+2026_06_SEA_DEN,receptions,Jaylen Waddle,4.5,115,-147
+2026_06_SEA_DEN,receptions,RJ Harvey,3.5,-111,-115
+2026_06_SEA_DEN,receptions,Courtland Sutton,3.5,132,-169
+2026_06_SEA_DEN,receptions,Evan Engram,2.5,-149,117
+2026_06_SEA_DEN,receptions,AJ Barner,2.5,-135,106
+2026_06_SEA_DEN,receptions,Cooper Kupp,2.5,112,-143
+2026_06_SEA_DEN,receptions,Rashid Shaheed,1.5,-192,149
+2026_06_SEA_DEN,receptions,Troy Franklin,1.5,-145,114
+2026_06_SEA_DEN,receptions,Emanuel Wilson,1.5,-120,-106
+2026_06_SEA_DEN,receptions,George Holani,1.5,-120,-106
+2026_06_SEA_DEN,receptions,Marvin Mims Jr.,1.5,143,-184
+2026_06_SEA_DEN,receptions,J.K. Dobbins,1.5,159,-205
+2026_06_SEA_DEN,receptions,Lil'Jordan Humphrey,1.5,187,-242
+2026_06_SEA_DEN,receptions,Tory Horton,0.5,-143,112
+2026_06_SEA_DEN,rushing_yards,Emanuel Wilson,66.5,-110,-114
+2026_06_SEA_DEN,rushing_yards,J.K. Dobbins,47.5,-109,-115
+2026_06_SEA_DEN,rushing_yards,Bo Nix,14.5,-118,-106
+2026_06_SEA_DEN,rushing_yards,RJ Harvey,14.5,-115,-109
+2026_06_SEA_DEN,rushing_yards,George Holani,14.5,-110,-114
+2026_06_SEA_DEN,rushing_yards,Sam Darnold,4.5,-117,-107
+2026_06_SEA_DEN,rushing_yards,Rashid Shaheed,1.5,-114,-110
+2026_06_SEA_DEN,rushing_yards,Jaxon Smith-Njigba,0.5,310,-409
