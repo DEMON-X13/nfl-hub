@@ -201,7 +201,16 @@ the sources (`NOPLAY`, from V1 and V5) and never from the page's reading of them
 A check run only on made-up data stays blocking (only a code change can fail it). `python3
 test_audit_gate.py` holds the verdict to its cases, warnings among them, and runs `audit_step` and
 `finish` on a planted warning and a planted failure through props.yml's last step. Write audit checks against the app's invariants, never against whatever
-the week's data happens to offer -- a lean week must not fail the build. Its section V
+the week's data happens to offer -- a lean week must not fail the build, nor the hour it runs (the
+rules each check keeps are in audit.js's BLOCKING AND WARNINGS note: the page's clock, a row or player
+the check can stand on, planted data on its own fixture, the page's fallbacks, the off-season).
+`PROPS_AUDIT_NOW=<ISO time>` runs the audit as if it were then (Node's clock and the page's moved
+together, `clock_now.js`), and `python3 test_audit_phases.py` (about nine minutes, four at a time;
+`--quick` three cases) replays it on past payloads at their own moment, each beside its own commit's
+`props/data` (a Saturday before the pull, a Sunday priced, mid-slate, 3pm and night, a Monday before
+and during its game, a week with no player prices, paid ids to come, the season played out with and
+without late lines), and the page smoke on two with `SMOKE_NOW`: a change to the audit, the smoke or
+the props parts comes with a run of it. Its section V
 checks the page a browser builds against the raw nflverse files (roster status, the
 injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;
 by hand those comparisons are skipped and the rest run. Run by hand against a payload
@@ -1002,7 +1011,8 @@ kickoff or past it: Monday night under way before the props job rebakes after it
 dispatched by the betting job on a final, lands in; and the season's end), boots the page two days before
 that week's last kickoff so the panel, the Elo picks and the builder checks still have a game to stand on;
 a missing section there is a failed check, never a crash. `SMOKE_PAYLOAD=<file>` boots it on another
-payload, to try a week the job has not baked. `--season-over` gives every game a result first; run it after a change to the smoke or
+payload, to try a week the job has not baked, and `SMOKE_NOW=<ISO time>` runs it as if it were then
+(Node's clock and every page's, the shift above laid over it; `props/build/test_audit_phases.py` uses both). `--season-over` gives every game a result first; run it after a change to the smoke or
 to the Pick'ems board. Both smokes end on their own: a mistake in the smoke's code exits 1 at once
 with its stack, a run still going after ten minutes stops and fails, and one left waiting on
 nothing (no window open, its body not done) fails instead of ending Node with a silent exit 0.

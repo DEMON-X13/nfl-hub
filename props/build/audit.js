@@ -1,4 +1,6 @@
-const {JSDOM}=require('jsdom'); const fs=require('fs'); const Papa=require('papaparse');
+/* PROPS_AUDIT_NOW=<ISO time>: the audit run as if it were then, Node's clock and the page's moved together
+   (clock_now.js); unset, the real clock */
+const JSDOM=require('./clock_now.js').jsdomAt('PROPS_AUDIT_NOW',require('jsdom').JSDOM); const fs=require('fs'); const Papa=require('papaparse');
 const errs=[]; let mem=null; const calls=[];
 /* the payload the page boots on: the published one, or (PROPS_AUDIT_PAYLOAD) a copy baked elsewhere,
    to try a change to the model's data before the job has baked it */
@@ -30,7 +32,24 @@ const chk=(ok,msg)=>{checks++; if(!ok) fails.push(msg);};
    it, and a change to the code is run through the audit by hand before it lands. Seven of the ten
    NFL-job failures from 2 to 13 October 2026 were live data meeting a presentation case no check
    had seen (a game hand's High pair, LA's QB2, a tie, a top 25 of 24), each holding back the
-   week's data until a fix landed. */
+   week's data until a fix landed.
+   That premise holds only if a check never turns on the week it meets or the hour it runs, and on 15
+   October 2026 two checks did (#270, #271: made-up ids merged into the payload's real ones). So every
+   check, and above all a made-up one, keeps five rules, and test_audit_phases.py replays the audit on
+   past payloads at their own moment (PROPS_AUDIT_NOW) and on a season played out to hold them:
+   (a) Read only the page's clock (w.Date.now()). A move of the clock the rest of the run stands on
+       (the set-back to before the week's last kickoff, below) moves Node's with it.
+   (b) Pick a row or a player only from those the check can stand on: a player row with lines
+       ('.plrbtn[data-open]'; a starter with nothing to project is drawn with none), a quarterback
+       with something to project. A pick that finds none is W.coverage, never a blocking chk, and
+       never a crash. Never assume a box's state: tick one ':not(:checked)', or empty the builder first.
+   (c) Planted data goes on a fixture of its own: replace the structure wholesale (the press's id
+       table), clear the real keys it would collide with first (M3's prices), or work the expectation
+       out from the state as it stood before the plant (#271's paid ids). Never expect planted values
+       to sit over a live structure.
+   (d) The audit's own copy of a page rule carries the page's fallbacks (V[kind]||V.all).
+   (e) A branch for no game to come must hold in the off-season too, where every game has a score
+       and the set-back still leaves one "not started". */
 const warns=[];
 const WARN={
   starters:'who is shown starting or listed on a game page, and what his gap note says: each player\'s lines and prices are his own wherever he is shown, and V6 blocks a suggested leg on anyone the report, the roster or the inactive rule has out, worked out from the sources themselves',
@@ -68,7 +87,9 @@ setTimeout(async()=>{
      an hour before that kickoff rather than the audit depending on the hour it runs */
   if(!S.sched.some(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w))){
     const wk=F('currentWeek')(), ks=S.sched.filter(x=>+x.w===wk).map(x=>F('kickoff')(x)).filter(Boolean).map(k=>k.getTime());
-    if(ks.length){ const off=Math.max(...ks)-3600e3-Date.now(), now0=w.Date.now.bind(w.Date); w.Date.now=()=>now0()+off; F('renderAll')();
+    /* Node's clock goes back with the page's: the checks date what they plant by it and hold the page's
+       dates to it (M8), and the two an hour apart refused every run in that window */
+    if(ks.length){ const off=Math.max(...ks)-3600e3-w.Date.now(), now0=w.Date.now.bind(w.Date), nodeNow0=Date.now; w.Date.now=()=>now0()+off; Date.now=()=>nodeNow0()+off; F('renderAll')();
       console.log(`clock: no game left to start, set back ${(-off/3600e3).toFixed(1)}h to before week ${wk}'s last kickoff`); } }
   /* open the first game that has not kicked off, in any open week (the audit must not depend on the date) */
   const openUpcoming=()=>{ const g=S.sched.filter(x=>!F('gameStarted')(x)&&F('weekOpen')(+x.w)).sort((a,b)=>(a.w-b.w)||((a.d+a.t).localeCompare(b.d+b.t)))[0];
@@ -435,8 +456,11 @@ setTimeout(async()=>{
       chk(settleLeg({week:+wk,pid,stat:'any_td',k:2})==='win'&&settleLeg({week:+wk,pid,stat:'any_td',k:3})==='loss'&&settleLeg({week:+wk,pid,stat:'any_td',k:1})==='win','2+ touchdown settlement wrong');
       delete a.tds; chk(settleLeg({week:+wk,pid,stat:'any_td',k:2})===null,'2+ on a yes/no-only stat line should stay pending'); Object.assign(a,keep); }
     const gk=openUpcoming();
-    const rb=[...d.querySelectorAll('.plrbtn')].find(b=>/RB1|WR1/.test(b.textContent)); rb.click();
-    const c2=d.querySelector('.plrbody [data-leg$="|any_td"][data-k="2"]'); chk(!!c2,'no 2+ touchdown checkbox');
+    /* a starter with lines: one with nothing to project is drawn with none (no data-open), so no box */
+    const rb=[...d.querySelectorAll('.plrbtn[data-open]')].find(b=>/RB1|WR1/.test(b.textContent));
+    W.coverage(!!rb,`${gk.id} has no RB1 or WR1 with lines, so the 2+ touchdown box went untested`);
+    if(rb) rb.click();
+    const c2=rb&&d.querySelector('.plrbody [data-leg$="|any_td"][data-k="2"]'); if(rb) chk(!!c2,'no 2+ touchdown checkbox');
     if(c2){ c2.checked=true; c2.dispatchEvent(new w.Event('change')); const L=Object.values(S.parlay).find(l=>l.stat==='any_td'); chk(!!L&&L.k===2&&/2\+ touchdowns/.test(L.label)&&L.p<0.5,'2+ leg did not land');
       const c1=d.querySelector('.plrbody [data-leg$="|any_td"][data-k="1"]'); c1.checked=true; c1.dispatchEvent(new w.Event('change')); const L1=Object.values(S.parlay).filter(l=>l.stat==='any_td'); chk(L1.length===1&&L1[0].k===1,'ticking 1+ should replace 2+, not add');
       c1.checked=false; c1.dispatchEvent(new w.Event('change')); }
@@ -532,7 +556,7 @@ setTimeout(async()=>{
       /* his game page: the block, its wording, its boxes */
       let page='no game to come';
       if(open.length){ const gq=openUpcoming(), roster=rosterFor(gq,false);
-        const qx=Object.values(roster).flatMap(t=>t.players).find(x=>x.pl.grp==='QB');
+        const qx=Object.values(roster).flatMap(t=>t.players).find(x=>x.pl.grp==='QB'&&!F('nothingToProject')(x));
         const btn=qx&&d.querySelector(`.plrbtn[data-open="${qx.pl.id}"]`);
         if(btn){ btn.click();
           const key=gq.id+'|'+qx.pl.id+'|any_td', box=k=>d.querySelector(`.plrbody [data-leg="${key}"][data-k="${k}"]`);
@@ -554,7 +578,7 @@ setTimeout(async()=>{
   const g0=openUpcoming();
   chk(!d.getElementById('gameModal').hidden&&!d.getElementById('slateView').hidden,'game overlay did not open over the list');
   chk(d.body.classList.contains('modal-open'),'page scroll not locked behind the overlay');
-  [...d.querySelectorAll('.plrbtn')][0].click();
+  { const p0=d.querySelector('.plrbtn[data-open]'); W.coverage(!!p0,`${g0.id} has no player with lines to open`); if(p0) p0.click(); }
   const cb=d.querySelector('[data-leg]'); cb.checked=true; cb.dispatchEvent(new w.Event('change'));
   const legsBefore=Object.keys(S.parlay).length;
   /* the fixture is a week 1 of real rows; it takes the page's season, so a rollover (SEASON bumped
@@ -1101,7 +1125,7 @@ setTimeout(async()=>{
         chk(/In the builder/.test(d.querySelector(`#pbPanel [data-pb-add="${t.id}"]`).textContent),'the tier does not say it is in the builder');
         S.parlay=JSON.parse(keepP); S.bookPrice=keepB; S.stake=keepS; F('save')(); F('renderParlay')(); }
       /* a game that kicks off leaves the list and every tier */
-      if(games.length>1){ const g0=games[0], k0=F('kickoff')(g0).getTime(), off=k0+60e3-Date.now(), now0=w.Date.now;
+      if(games.length>1){ const g0=games[0], k0=F('kickoff')(g0).getTime(), off=k0+60e3-w.Date.now(), now0=w.Date.now;
         w.Date.now=()=>now0.call(w.Date)+off; F('renderParlay')();
         chk(!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`)&&F('getPbTiers')().tiers.every(x=>!x.legs||x.legs.every(l=>l.gid!==g0.id)),'a game that has kicked off is still on the list or in a tier');
         w.Date.now=now0; F('renderParlay')();
@@ -1320,7 +1344,7 @@ setTimeout(async()=>{
       one('the total\'s over, both priced',{...base,key:g0.id+'|game|total',pid:'game',stat:'total',k:44.5,side:'over',main:true,price:-120,grp:'TEAM'},{p:nv(-120,100),est:false});
       one('the total\'s under, both priced',{...base,key:g0.id+'|game|total',pid:'game',stat:'total',k:44.5,side:'under',main:true,price:100,grp:'TEAM'},{p:nv(100,-120),est:false});
       one('a team bet on an estimated price',tm(g0.a,{stat:'ml',k:0,price:150,src:'est'}),null);
-      g0.mlh=null; one('the away side to win, its other side unpriced',tm(g0.a,{stat:'ml',k:0,price:150}),{p:imp(150)/vig(cw).ml,est:true}); g0.mlh=-170;
+      g0.mlh=null; one('the away side to win, its other side unpriced',tm(g0.a,{stat:'ml',k:0,price:150}),{p:imp(150)/(vig(cw).ml||vig(cw).all),est:true}); g0.mlh=-170;
       /* no two-sided player line that week: the week's every two-sided line; none at all: no fair chance */
       { const keep=PAY.mkt[String(cw)]; delete PAY.mkt[String(cw)]; const Va=vig(cw);
         one('a rung in a week with no player main line',pl({k:6,main:false,side:'over',price:150}),Va.all>0?{p:imp(150)/Va.all,est:true}:null);
@@ -1734,6 +1758,14 @@ setTimeout(async()=>{
           const Dx=xs.map(x=>({x,l:F('statLines')(x).find(l=>!l.prob&&l.stat==='receptions'&&l.rungs.length>1)})).find(o=>o.l&&lineOf(o.x.pl.id,'receptions')!=null&&![A,B,C].some(z=>z&&z.x===o.x)&&(!byName||byName.x!==o.x));
           if(Dx) (M[Dx.x.pl.id]??={}).receptions={line:lineOf(Dx.x.pl.id,'receptions'),over:-140,under:115,n:Dx.x.pl.n,g:g0.id};
           const paidKey=`team:${g0.a}|ml`, D0=((P().dk??={})[wk]??={}); (D0[g0.id]??={})[paidKey]='PAIDID';
+          /* and two more paid-pull shapes, whatever the week's pulls hold: one paid id the read finds as the
+             pull had it (g0's home money line: kept, and dated by the read), and one game the read covers
+             with no paid ids at all (its event and glat are the press's). Any game but g0 and the one
+             kicked off will do; a week with one game left (a Monday) has none, and g0 itself is held to
+             that shape after the press, below, on its own copy of the read */
+          const homeKey=`team:${g0.h}|ml`, foundId=ESPN.oddsOf(evs[0],g0).ids[homeKey]; if(foundId) D0[g0.id][homeKey]=foundId;
+          const gB=games.find(g=>g!==g0&&g!==gK)||null; if(gB) delete D0[gB.id];
+          W.coverage(!!foundId,`the press's made-up read of ${g0.id} has no home money-line id, so a paid id the read finds as the pull had it went untested`);
           /* a starter the read prices, made Questionable here: no leg from the read may be built on him (V6) */
           const Q=xs.find(x=>x.gp>=3&&F('suggestable')(x.pl.id)&&![A,B,C].some(o=>o&&o.x===x)&&(!byName||byName.x!==x)&&lineOf(x.pl.id,(F('statLines')(x).find(l=>!l.prob&&ESPN.TESTED.main.includes(l.stat))||{}).stat)!=null);
           if(Q){ injPlant.push([Q.pl.id,F('INJ')[Q.pl.id]]); F('INJ')[Q.pl.id]={k:'q',t:'Q',title:'Questionable (made up by the audit)'}; }
@@ -1766,11 +1798,25 @@ setTimeout(async()=>{
           /* the levels and hands the page has right after the press, before any cache of the checks' own is
              dropped: what a build from nothing gives on the read, never what stood before it (the press
              drops PB_CACHE and GAME_TIER_CACHE, and ESPN_SEQ is in pbDataSig and gameSuggestSig) */
-          { const rNow=F('getPbTiers')(), drawn=d.querySelectorAll('#pbPanel .pb-tier .pb-legs li .pr i.est').length, hNow=F('gameTiers')(g0);
+          /* the levels' own est. marks: the Elo picks (#pbElo, at the panel's foot, drawn by the ELO tab with
+             the same cards) may take a leg priced from the read, and theirs are never a level's */
+          const estAll=()=>[...d.querySelectorAll('#pbPanel .pb-tier .pb-legs li .pr i.est')], estLv=()=>estAll().filter(e=>!e.closest('#pbElo')).length;
+          { const rNow=F('getPbTiers')(), drawn=estLv(), hNow=F('gameTiers')(g0);
             w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}');
             const rNew=F('getPbTiers')(), hNew=F('gameTiers')(g0);
             const nDk=rNew.tiers.reduce((a,t)=>a+(t.legs?t.legs.filter(l=>l.src==='dkline').length:0),0);
             chk(lvSig(rNow)===lvSig(rNew)&&drawn===nDk,`right after the press, the Parlay Builder's levels are not what a build on the read gives (stale from before it), or the panel drawn shows ${drawn} legs marked est. where the read gives ${nDk}: ${lvSig(rNow).slice(0,160)} against ${lvSig(rNew).slice(0,160)}`);
+            /* planted, so it holds whatever the week's Elo picks take: an Elo pick of the page's own card
+               with a leg priced from the read, in #pbElo; its est. mark is drawn and the levels' count is not
+               moved by it (the audit loads no Elo files, so its #pbElo is otherwise empty) */
+            { const el=d.getElementById('pbElo'), keepE=el?el.innerHTML:null;
+              if(!el) W.coverage(false,'the panel has no Elo picks section to plant an Elo pick in');
+              else try{ const leg={key:g0.id+'|00-AUDIT-ELO|receptions',gid:g0.id,week:+wk,pid:'00-AUDIT-ELO',name:'Planted Elopick',label:'Over 3.5 receptions',stat:'receptions',k:3.5,side:'over',main:true,
+                    p:0.5,price:120,src:'dkline',grp:'WR',pos:'WR',team:g0.h,opp:g0.a,espn:{at:new w.Date(w.Date.now()).toISOString(),fair:0.45,tested:true,listed:true}};
+                  const n0=estAll().length;
+                  el.innerHTML=`<div class="pb-tiers">${F('pbTierCard')({id:'elo2',label:'Elo 2-leg',legs:[leg],p:0.5,dec:2.2,fair:null},{chance:0.5,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:'data-pb-elo-add="elo2"',legP:l=>l.p})}</div>`;
+                  chk(estAll().length===n0+1&&estLv()===drawn,`an Elo pick's leg priced from the read is counted with the levels' est. marks, or not drawn est.: ${estLv()} of ${estAll().length} against the levels' ${drawn}`); }
+                finally{ el.innerHTML=keepE; } }
             chk(hdSig(hNow)===hdSig(hNew),`right after the press, ${g0.id}'s hands (its lines unmoved by the read) are not what a build on the read gives, but the published ones: ${hdSig(hNow).slice(0,160)} against ${hdSig(hNew).slice(0,160)}`);
             W.coverage(lvSig(rNew)!==levels0&&hdSig(hNew)!==hands0&&['high','med','low'].some(id=>hNew[id]&&hNew[id].legs.some(l=>l.src==='dkline')),`the press left the levels or ${g0.id}'s hands as they were before it, or no hand took a leg from the read: whether either goes stale went untested`); }
           chk(sbN===1&&urls.some(u=>/\/scoreboard\?dates=\d{4}&seasontype=[23]&week=\d+&_=\d+$/.test(u)),`a press asked for the scoreboard ${sbN} times (a second press while one runs must do nothing), or not in ESPN's numbering of the week: ${urls.filter(u=>/scoreboard/.test(u)).join(' ')}`);
@@ -1792,14 +1838,23 @@ setTimeout(async()=>{
                the checks plant): a press never replaces one, so each key keeps it and takes the read's only
                where the pull had none. Until 15 October 2026 this held only the planted id, and the first
                real ids the job baked for a game to come (SEA at DEN's) refused two props runs */
-            const kd=(((keep.dk||{})[wk]||{})[g.id]||{}), paidAt=k=>g===g0&&k===paidKey?'PAIDID':kd[k];
-            chk(!!o&&D.event===(kd.event||o.event)&&Object.entries(o.ids).every(([k,v])=>D[k]===(paidAt(k)!=null?paidAt(k):v))&&!!D.glat,`${g.id}'s DraftKings ids from the press are not beside the paid pull's (none of which it may replace): ${JSON.stringify(D)}`);
+            const kd0=(((keep.dk||{})[wk]||{})[g.id]||{}), kd=g===gB?{}:g===g0?{...kd0,[paidKey]:'PAIDID',...(foundId?{[homeKey]:foundId}:{})}:kd0, paidAt=k=>kd[k];
+            chk(!!o&&D.event===(kd.event||o.event)&&Object.entries(o.ids).every(([k,v])=>D[k]===(paidAt(k)!=null?paidAt(k):v))&&Object.entries(kd).every(([k,v])=>k==='glat'||same(D[k],v))&&!!D.glat,
+              `${g.id}'s DraftKings ids from the press are not beside the paid pull's (every one kept as it was, none replaced): ${JSON.stringify(D)}`);
             /* each id the read gave is dated by the read (espnIdAt, which the parlay card reads), the paid
                pull's glat left as it was (it dates the ids the read did not see), and a paid id at a key the
                read gave another id is the pull's, undated by the read (one the read found as it was is dated) */
             { const at=k=>F('espnIdAt')(g.id,k);
               chk((kd.glat?D.glat===kd.glat:!!D.glat)&&Object.keys(o.ids).every(k=>paidAt(k)!=null&&paidAt(k)!==o.ids[k]?at(k)==null:Math.abs(at(k)-t0)<60e3),
                 `${g.id}'s DraftKings ids are not each dated by the read that saw them (the pull's glat ${kd.glat||'none'} now ${D.glat}; ${Object.keys(o.ids).map(k=>k+' '+at(k)).join(', ')})`); } }
+          /* one game to come: the no-paid-ids shape on g0 itself, its paid entry taken out and the press's own
+             espnApplyGame run on its read a second later; everything it touches is put back */
+          if(!gB){ const D1=P().dk[wk], IA=F('ESPN_IDAT'), GL=F('ESPN_GL'), keepE=D1[g0.id], keepIA=clone(IA[g0.id]), keepGL=clone(GL[g0.id]), keepL={lat:g0.lat,ls:g0.ls};
+            try{ delete D1[g0.id]; delete IA[g0.id]; const T=w.Date.now()+1000, o=ESPN.oddsOf(evOfG(g0),g0);
+              F('espnApplyGame')(g0,F('espnOdds')(evOfG(g0),g0),T); const E=D1[g0.id]||{};
+              chk(!!o&&E.event===o.event&&Object.entries(o.ids).every(([k,v])=>E[k]===v&&F('espnIdAt')(g0.id,k)===T)&&Date.parse(E.glat)===T,
+                `${g0.id} with no paid DraftKings ids: the press did not give it the read's event, ids and glat, each dated by the read: ${JSON.stringify(E)}`); }
+            finally{ D1[g0.id]=keepE; if(keepIA===undefined) delete IA[g0.id]; else IA[g0.id]=keepIA; if(keepGL===undefined) delete GL[g0.id]; else GL[g0.id]=keepGL; Object.assign(g0,keepL); } }
           { const tl=F('pricedLegs')(games).filter(l=>l.grp==='TEAM'&&l.gid===g0.id), o=ESPN.oddsOf(evOfG(g0),g0).lines;
             chk(tl.length>0&&tl.every(l=>l.src==='real'&&l.price===(l.stat==='ml'?(l.team===g0.h?o.mlh:o.mla):(l.team===g0.h?o.sph:o.spa))),`${g0.id}'s team bets are not at the press's DraftKings prices: ${tl.map(l=>l.label+' '+l.price+' '+l.src).join(', ')}`); }
           /* never saved: what save() writes is the published game lines and no read */
@@ -2112,8 +2167,10 @@ setTimeout(async()=>{
       w.eval('getPbTiers=window.__pbKeepP'); delete w.__pbKeepP; delete w.__pbFix;
       S.parlay={}; S.stake=20; F('renderParlay')(); }
     /* the builder's one-tap amounts set the same amount, with a leg in the builder so What it pays is drawn */
-    { openUpcoming();
-      const tick=d.querySelector('#gameView input[data-leg]');
+    /* from an empty builder, so the box ticked is a new leg: one an earlier section left on would be
+       unticked by the click and leave no builder (the off-season, where no Bet amount block ran) */
+    { S.parlay={}; F('renderParlay')(); openUpcoming();
+      const tick=d.querySelector('#gameView input[data-leg]:not(:checked)');
       chk(!!tick,'no leg to tick on the coming game');
       if(tick){ tick.click(); d.querySelector('#tabs button[data-tab="parlay"]').click();
         const chip5=d.querySelector('#parlayBody [data-stake-chip="5"]');
@@ -2124,8 +2181,9 @@ setTimeout(async()=>{
           chk(d.querySelector('#parlayBody [data-stake-chip="5"]').classList.contains('on')&&d.querySelectorAll('#parlayBody [data-stake-chip].on').length===1,'the builder does not show $5 pressed, and only $5');
           chk(/\$\d+\.\d\d/.test(d.querySelector('#parlayBody .payout').textContent)&&+d.querySelector('#parlayBody .payout').textContent.replace(/[^\d.]/g,'')>5,'the builder payout did not redraw from the $5 stake'); }
         /* a typed amount that is none of them presses none */
-        const pS=d.getElementById('pStake'); pS.value='7'; pS.dispatchEvent(new w.Event('change'));
-        chk(S.stake===7&&!d.querySelector('#parlayBody [data-stake-chip].on'),'a typed $7 left a chip pressed'); } }
+        const pS=d.getElementById('pStake'); chk(!!pS,'no stake box in the builder with a leg in it');
+        if(pS){ pS.value='7'; pS.dispatchEvent(new w.Event('change'));
+          chk(S.stake===7&&!d.querySelector('#parlayBody [data-stake-chip].on'),'a typed $7 left a chip pressed'); } } }
     S.parlay=JSON.parse(keepPar); S.bookPrice=keepBP; S.stake=was; F('save')(); F('renderParlay')();
     chk(S.stake===was,'the stake did not go back after the amount checks');
     console.log(`P. the amount bet: one Bet amount box over the suggested parlays and the builder's stake, ${F('pbGames')().length?'every tier paying it times its price as typed and settled, carried by Add to builder, bad entries and saved amounts cleaned':'no game to come, so no box'}; the builder's one-tap amounts set it`); }
@@ -2188,8 +2246,11 @@ setTimeout(async()=>{
   /* ---- S. the threshold ladder toggle ---- */
   /* from an empty parlay: a threshold leg left on it by an earlier section (the game card's
      ladder legs tick like any other) would keep the hidden-ladder note up on its own */
-  { const keepS=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; openUpcoming();
-    [...d.querySelectorAll('.plrbtn')][0].click();        /* rungs only render for an open player */
+  { const keepS=JSON.parse(JSON.stringify(S.parlay||{})); S.parlay={}; const gS=openUpcoming();
+    /* rungs only render for an open player, and only one with lines has any */
+    const pr0=d.querySelector('.plrbtn[data-open]');
+    if(!pr0){ W.coverage(false,`${gS.id} has no player with lines, so the threshold ladder toggle went untested`); S.parlay=keepS; }
+    else { pr0.click();
     const box=d.getElementById('rungCb');
     chk(!!box&&box.checked===false,'no threshold ladder toggle, or it does not default to hidden');
     const rows=()=>d.querySelectorAll('#gameView tr.rung').length;
@@ -2215,10 +2276,10 @@ setTimeout(async()=>{
     for(const tm in roster) for(const x of roster[tm].players) for(const l of statLines(x)) built+=(l.rungs||[]).length;
     chk(built>0,'statLines stopped building rungs when they were hidden');
     t=d.getElementById('rungCb'); t.checked=true; t.dispatchEvent(new w.Event('change'));
-    [...d.querySelectorAll('.plrbtn')][0].click();   /* openUpcoming above collapsed every player */
+    { const pr2=d.querySelector('.plrbtn[data-open]'); if(pr2) pr2.click(); }   /* openUpcoming above collapsed every player */
     chk(rows()===shown,`turning the ladders back on restored ${rows()} of ${shown} rows`);
     t=d.getElementById('rungCb'); t.checked=false; t.dispatchEvent(new w.Event('change'));
-    console.log(`S. ladder toggle: hidden by default, ${shown} rows when turned on, ${built} rungs built either way`); }
+    console.log(`S. ladder toggle: hidden by default, ${shown} rows when turned on, ${built} rungs built either way`); } }
 
   /* ---- R. baked prices follow the build, and the tiers price like a book ---- */
   { const s={tiers:F('getPbTiers')().tiers.filter(t=>t.legs)};
