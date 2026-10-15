@@ -1,15 +1,19 @@
 /* A price from DraftKings' line read on ESPN, worked here on its own, apart from the page (app v107).
 
-   The page (props/build/part2.js, DK_EST and estPrice; part3.js, espnPrice) prices a player leg the paid
-   pull has no price for from DraftKings' line as ESPN's free feed carries it (PAY.espn), and marks it
-   est. This file is the checks' own working of the same thing, for props/build/audit.js and
-   nflbets/build/smoke.js to hold every such price the page offers to: its own copy of the formula's
-   constants (formula/synth/est_price.js, as fitted on DraftKings' own prices, 2026 weeks 2-3 and the
-   DET at BUF ladders of week 2) and its own reading of the payload's ESPN entry (which line, which
-   rungs DraftKings lists, who it offers a touchdown, whether a club's lines are complete, whether the
-   read came before kickoff). Only the inputs the spec names as the page's own are read from the page:
-   the model's raw projections (project), the game's implied points (gameCtx) and the depth chart
-   (depthOf). A real DraftKings price from the paid pull (PAY.mkt, the page's S.odds) always wins.
+   The page's Refresh odds button (props/build/part3.js, espnRefresh) reads DraftKings' lines from ESPN's
+   free feed in the browser, on a press, into ESPN_LIVE[week][gid] = {at, lines, rungs, td}, and prices a
+   player leg from its line (part2.js, DK_EST and estPrice; part3.js, espnPrice), marked est. This file
+   is the checks' own working of the same thing, for props/build/audit.js and nflbets/build/smoke.js to
+   hold the reader and every such price the page offers to: its own reading of ESPN's answers (TYPES,
+   parse, oddsOf: which item is which market, the twins, the milestones, the touchdown list, the game
+   lines by club), its own copy of the formula's constants (the research's est_price.js, fitted on
+   DraftKings' own prices, 2026 weeks 2-3 and the DET at BUF ladders of week 2) and its own reading of a
+   game's read (which line, which rungs DraftKings lists, who it offers a touchdown, whether a club's
+   lines are complete, whether the read came before kickoff). Only the inputs the spec names as the
+   page's own are read from the page: the read itself (ESPN_LIVE, held to parse by the audit), the
+   model's raw projections (project), the game's implied points (gameCtx) and the depth chart (depthOf).
+   A real DraftKings price from the paid pull (PAY.mkt, the page's S.odds) wins while its line is still
+   DraftKings' line: a main line the read has at another number is the read's (moved, paidStands).
 
    Which kinds the page may take into a suggestion is also said here, on its own (TESTED): a main line
    on passing, rushing or receiving yards, receptions or passing touchdowns, the anytime touchdown, and
@@ -37,6 +41,70 @@ const K = {
 const YARDS = ['passing_yards', 'rushing_yards', 'receiving_yards', 'scrim_yards'];
 const TESTED = { main: ['passing_yards', 'rushing_yards', 'receiving_yards', 'receptions', 'passing_tds'], rung: ['passing_yards', 'rushing_yards', 'receiving_yards'] };
 const finite = v => v != null && isFinite(v);
+/* ESPN's type ids, the checks' own copy: main lines, milestones (k means k+), the anytime touchdown */
+const TYPES = {
+  main: { 8: 'passing_yards', 9: 'completions', 10: 'passing_tds', 11: 'carries', 12: 'rushing_yards', 13: 'receiving_yards', 14: 'receptions',
+    15: 'passing_interceptions', 16: 'attempts', 20: 'scrim_yards', 22: 'kick_pts', 24: 'fg_made' },
+  mile: { 194: 'passing_yards', 207: 'completions', 198: 'passing_tds', 201: 'carries', 196: 'rushing_yards', 195: 'receiving_yards', 202: 'receptions',
+    199: 'passing_interceptions', 200: 'attempts', 197: 'scrim_yards', 203: 'kick_pts', 205: 'fg_made' },
+  td: '31',
+};
+const AB = { WSH: 'WAS', LAR: 'LA', JAC: 'JAX' };
+const club = a => { const u = String(a || '').toUpperCase(); return AB[u] || u; };
+/* one event's items, read on their own: {aid: {lines: {stat: L}, rungs: {stat: [k...] ascending}, td}};
+   a main line's twins (its Over and Under) are one line, two different lines for one player and stat
+   are no line, an item of any other market, or with no athlete, is not read */
+function parse(items) {
+  const per = {}, bad = new Set();
+  for (const it of items || []) {
+    const tid = String(((it || {}).type || {}).id || ''), m = /\/athletes\/(\d+)/.exec(String(((it || {}).athlete || {}).$ref || ''));
+    const kind = TYPES.main[tid] ? 'main' : TYPES.mile[tid] ? 'rung' : tid === TYPES.td ? 'td' : null;
+    if (!kind || !m) continue;
+    const a = per[m[1]] || (per[m[1]] = { lines: {}, rungs: {}, td: false });
+    if (kind === 'td') { a.td = true; continue; }
+    const v = Number(((it.current || {}).target || {}).value);
+    if (!(v > 0)) continue;
+    if (kind === 'rung') { const st = TYPES.mile[tid]; a.rungs[st] = [...new Set([...(a.rungs[st] || []), v])].sort((x, y) => x - y); continue; }
+    const st = TYPES.main[tid];
+    if (st in a.lines && a.lines[st] !== v) bad.add(m[1] + '|' + st);
+    a.lines[st] = v;
+  }
+  for (const k of bad) { const [aid, st] = k.split('|'); delete per[aid].lines[st]; }
+  return per;
+}
+/* the read a game's page keeps, from parse and the ids placed on players ({aid: pid}): the first ESPN
+   id (by number) a player has */
+function block(per, placed) {
+  const b = { lines: {}, rungs: {}, td: [] }, seen = new Set();
+  for (const aid of Object.keys(placed).sort((x, y) => x - y)) { const pid = placed[aid], a = per[aid]; if (!a || seen.has(pid)) continue; seen.add(pid);
+    if (Object.keys(a.lines).length) b.lines[pid] = { ...a.lines };
+    if (Object.keys(a.rungs).length) b.rungs[pid] = JSON.parse(JSON.stringify(a.rungs));
+    if (a.td) b.td.push(pid); }
+  b.td.sort(); return b;
+}
+/* DraftKings' game lines on a scoreboard event, read on their own, for the game {a, h} by club (never by
+   home and away): the moneylines, sp as the schedule writes it (positive when its home club is
+   favoured), the prices, the total, and the outcome ids keyed as the payload's dk is; null with no
+   DraftKings odds or other clubs */
+function oddsOf(ev, g) {
+  let c, o;
+  try { c = ev.competitions[0]; o = (c.odds || []).find(x => String(((x || {}).provider || {}).id) === '100'); } catch (e) { return null; }
+  if (!o) return null;
+  const side = {}; for (const x of c.competitors || []) side[x.homeAway] = club(((x || {}).team || {}).abbreviation);
+  if ([side.home, side.away].sort().join() !== [g.a, g.h].sort().join()) return null;
+  const am = s => { const t = String(s == null ? '' : s).trim().toUpperCase(); return t === 'EVEN' ? 100 : (/^[+-]?\d+$/.test(t) && Math.abs(+t) >= 100 ? +t : null); };
+  const ln = s => { const t = String(s == null ? '' : s).trim().toLowerCase().replace(/^[ou]/, ''); return t === 'pk' ? 0 : (/^[+-]?\d+(\.\d+)?$/.test(t) ? +t : null); };
+  const id = cl => { try { const u = new URL(String(cl.link.href)), v = new URL(u.searchParams.get('preurl') || u.href); return { oc: v.searchParams.get('outcomes') || null, ev: (/\/event\/(\d+)/.exec(v.pathname) || [])[1] || null }; } catch (e) { return {}; } };
+  const lines = {}, ids = {}, evs = new Set(), take = cl => { const r = id(cl); if (r.ev) evs.add(r.ev); return r.oc; };
+  for (const s of ['home', 'away']) { const team = side[s], away = team === g.a, ml = ((o.moneyline || {})[s] || {}).close || {}, sp = ((o.pointSpread || {})[s] || {}).close || {};
+    if (am(ml.odds) != null) { lines[away ? 'mla' : 'mlh'] = am(ml.odds); const k = take(ml); if (k) ids[`team:${team}|ml`] = k; }
+    if (ln(sp.line) != null) { const L = ln(sp.line); lines.sp = away ? L : (L === 0 ? 0 : -L); if (am(sp.odds) != null) lines[away ? 'spa' : 'sph'] = am(sp.odds);
+      const k = take(sp); if (k) ids[`team:${team}|ats|${String(L)}`] = k; } }
+  for (const s of ['over', 'under']) { const t = ((o.total || {})[s] || {}).close || {}, L = ln(t.line);
+    if (L != null) { lines.tot = L; if (am(t.odds) != null) lines[s === 'over' ? 'tov' : 'tou'] = am(t.odds); const k = take(t); if (k) ids[`game|total|${s}|${String(L)}`] = k; } }
+  take(o);
+  return { lines, ids, event: evs.size === 1 ? [...evs][0] : null };
+}
 const logistic = z => 1 / (1 + Math.exp(-z));
 const logit = p => Math.log(p / (1 - p));
 const american = q => q >= 0.5 ? -Math.round(100 * q / (1 - q)) : Math.round(100 * (1 - q) / q);
@@ -107,11 +175,11 @@ function tdPrice(o) {
 /* the rule on a page booted in a window: w is that window (its globals the page's) */
 function make(w) {
   const F = n => w.eval(n);
-  const PAY = () => F('PAY'), S = () => F('S');
+  const PAY = () => F('PAY'), S = () => F('S'), LIVE = () => F('ESPN_LIVE');
   const game = gid => (S().sched || []).find(g => g.id === gid) || null;
-  /* a game's read: null with none, a shape the job does not write, or a read at or after kickoff */
+  /* a game's read: null with none, a shape the reader does not write, or a read at or after kickoff */
   function entry(gid, week) {
-    const W = PAY().espn && PAY().espn[String(week)], e = W && W[gid], g = game(gid);
+    const W = LIVE()[String(week)], e = W && W[gid], g = game(gid);
     if (!e || typeof e !== 'object' || !e.lines || typeof e.lines !== 'object' || Array.isArray(e.lines) || !g) return null;
     const k = F('kickoff')(g), at = Date.parse(e.at);
     return k && isFinite(at) && at < k.getTime() ? e : null;
@@ -127,9 +195,15 @@ function make(w) {
   function playerVig(week) { const M = (PAY().mkt || {})[String(week)] || {}, a = [];
     for (const pid in M) for (const st in M[pid]) { const L = M[pid][st]; if (L && finite(L.over) && L.over !== 0 && finite(L.under) && L.under !== 0) a.push(implied(L.over) + implied(L.under)); }
     if (!a.length) return K.tdVig; a.sort((x, y) => x - y); const h = a.length >> 1; return a.length % 2 ? a[h] : (a[h - 1] + a[h]) / 2; }
-  /* the paid pull's own price for a leg, where there is one */
+  /* the read's main line for a leg's player and stat, or null */
+  const readLine = l => line(entry(l.gid, l.week), l.pid, l.stat);
+  /* a main line of the paid pull's still DraftKings' line: the read has the same number, or none for him */
+  function paidStands(l) { const L = (((PAY().mkt || {})[String(l.week)] || {})[l.pid] || {})[l.stat], E = readLine(l);
+    return !!L && (E == null || E === +L.line); }
+  /* the paid pull's own price for a leg on its own line (a main line at l.k), where there is one */
   function real(l) {
-    if (l.main) { const L = (((PAY().mkt || {})[String(l.week)] || {})[l.pid] || {})[l.stat]; return L ? { line: +L.line, price: l.side === 'under' ? L.under : L.over } : null; }
+    if (l.main) { const L = (((PAY().mkt || {})[String(l.week)] || {})[l.pid] || {})[l.stat];
+      return L && (l.k == null || +L.line === +l.k) ? { line: +L.line, price: l.side === 'under' ? L.under : L.over } : null; }
     const v = ((((S().odds || {})[l.gid] || {})[l.pid] || {})[l.stat] || {})[String(l.stat === 'any_td' ? (+l.k || 1) : l.k)];
     return v != null && isFinite(v) ? { price: v } : null;
   }
@@ -165,6 +239,6 @@ function make(w) {
   }
   /* a leg the page may take into a suggestion when it is priced from ESPN's read */
   const takeable = d => !!d && d.tested && d.listed && !d.mainOver;
-  return { entry, line, real, price, takeable, complete, starter, playerVig };
+  return { entry, line, readLine, paidStands, real, price, takeable, complete, starter, playerVig };
 }
-module.exports = { K, TESTED, make, mainFair, sidePrice, rungFair, rungPrice, tdPrice, implied, american };
+module.exports = { K, TESTED, TYPES, parse, block, oddsOf, make, mainFair, sidePrice, rungFair, rungPrice, tdPrice, implied, american };

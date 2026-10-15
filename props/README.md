@@ -188,19 +188,6 @@ base markets are pulled for the main lines. `--full` adds the alternate ladders 
 attempts, completions, interceptions and carries, 18 markets a game in all, and needs a paid tier. Verified
 live on one game: 574 rung prices and the main lines came through correctly.
 
-**DraftKings' lines for free (`build/espn_lines.py`, run by `weekly.py` on every run).** ESPN's free
-feed carries DraftKings' player lines with no price (main lines, ladder rungs, who is offered an anytime
-touchdown) and DraftKings' moneylines, spreads and totals with their prices. Every run of the job, priced
-or not and with `--no-odds` too, reads the current week's games still to come into
-`data/espn_wk{W}.json` (no key, no credit, about 16-30 requests through `lib/netfetch.py`), each game
-read only before its kickoff and frozen after it; the bake puts the current week's player lines in the
-payload's `espn` (and what the read last did in `espn_meta`), sets ESPN's game lines beside the pull's
-(the fresher wins, each under a day old) and gives a game the pull never bought DraftKings' event and
-game-line ids. The page prices a leg the pull has no price for from its line and marks it est.; a real
-price from the pull always wins. The read never refuses a run: a game it cannot read keeps its last read,
-a feed that looks changed is a problem, and so is no good read for a day with a game within two days.
-`build/test_espn.py` holds it to its cases on recorded answers (`build/fixtures/espn/`).
-
 **Optimism lean — tested 2026-09-13, left alone.** `research/calfix.py` fits a
 calibration curve on earlier seasons and applies it to each holdout. It fits a=-0.01,
 b=1.00 every year: nothing to correct on the training folds, so the 1-2 point lean in
@@ -259,8 +246,8 @@ and writes its KEY into `nflbets/build/storage.js`, so neither needs an edit; a 
 coefficients (`fit4.py`, not in this repo) is a separate research step the job does not need.
 Kickoffs are turned into instants by the US daylight-time rule for each game's own year.
 The data/ week files are named by week alone, so at a rollover `weekly.py` moves last
-season's (`wk*_lines.csv`, `prices_wk*.csv`, `gamelines_wk*.csv`, `dk_links_wk*.json`,
-`espn_wk*.json`, every game id another season's) to `data/archive/<season>/` before the new season's first pull, bakes only rows of
+season's (`wk*_lines.csv`, `prices_wk*.csv`, `gamelines_wk*.csv`, every game id another
+season's) to `data/archive/<season>/` before the new season's first pull, bakes only rows of
 this season's games wherever they are, and carries none of a last-season payload's lines
 forward; the page drops a price row that names a game its week does not have.
 Once every regular-season game is final the page says the season is over and the job stops

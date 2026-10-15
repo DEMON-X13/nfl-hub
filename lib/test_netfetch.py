@@ -119,13 +119,6 @@ check(e is not None and e.code == 500 and n == 1 and slept == [], 'with the budg
 e, got, slept, part, n = run('/k.csv', [500, 500, 200], waits=(0, 0))
 check(e is None and got and n == 3, 'waits of 0 (tests) still try every time')
 
-plan['/l.csv'] = [503, 200]
-N._budget['left'] = N.BUDGET_S
-said = {}
-N.download(BASE + '/l.csv', os.path.join(TMP, 'l.csv'), sleep=lambda s: None, log=lambda m: None, timeout=5, info=said)
-check(said.get('tries') == 2 and str(said.get('date') or '').endswith(' GMT'),
-      f"info, when given, is filled with the answer's Date header and the tries it took (the ESPN read dates itself by it): {said}")
-
 print(f'{len(fails)} failures')
 srv.shutdown()
 sys.exit(1 if fails else 0)

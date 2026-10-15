@@ -63,7 +63,9 @@ let S=null, saveTimer=null;
    each player (ACT; DEV the practice squad; RES a reserve list; CUT released ...) and this week's
    injury report beyond the ruled out (Questionable, not practising, limited) */
 let RSTAT={}, INJ={};
-function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(S);
+/* (app v107) a Refresh odds press puts DraftKings' game lines into S.sched in memory: espnSavable (part3.js)
+   writes the published ones in their place, so nothing a press read is ever saved */
+function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(typeof espnSavable==='function'?espnSavable(S):S);
   $('saveState').textContent = r==='saved'?'Autosaved':'Not saved: export a backup'; },300); }
 
 /* ---------- ewma accumulator (matches pandas adjust=True) ----------
@@ -641,10 +643,11 @@ function rungView(pl,stat,mu,k,week){
 /* ---------- DraftKings' line read on ESPN, priced by a best guess (app v107) ----------
    The owner, 15 October 2026: "if we can get free odd pulls without the prices and have you come up
    with a formula that gives the closest of what your best guess would be of that money price, that
-   would be fine." Every run of the props job reads DraftKings' player lines from ESPN's free feed
-   (props/build/espn_lines.py: the line, never a price) and the bake carries them as PAY.espn; a player
-   leg the paid pull has no price for is priced from DraftKings' own line by these formulas and marked
-   est. A real DraftKings price always wins. Nothing in the model changes, and the formulas were fitted
+   would be fine." A Refresh odds press reads DraftKings' player lines from ESPN's free feed in the
+   visitor's browser (part3.js espnRefresh: the line, never a price); a player leg the paid pull has no
+   price for, or whose line DraftKings has moved since the pull, is priced from DraftKings' line by these
+   formulas and marked est. A real DraftKings price on DraftKings' current line always wins. Nothing in
+   the model changes, and the formulas were fitted
    on DraftKings' own prices alone (2026 weeks 2-3, and its DET at BUF ladders of week 2), never on a
    game's result.
 
@@ -655,8 +658,8 @@ function rungView(pl,stat,mu,k,week){
    receptions and passing-TD rungs have no DraftKings price on file to test against: priced by reasoning
    alone, shown est. on the game pages, and never suggested (ESPN_TESTED in part3.js).
 
-   DK_EST and the functions below are formula/synth/est_price.js, assembled from the three research
-   parts, with three changes: a rung also returns its fair chance (before the hold, for legFair); a
+   DK_EST and the functions below are the research's est_price.js (October 2026, on DraftKings' own
+   prices: the held-out table is in props/README.md, "Refresh odds"), with three changes: a rung also returns its fair chance (before the hold, for legFair); a
    ladder of any count (not receptions and passing touchdowns alone) is the Poisson set by the main
    line, where the yards curve would price a carries ladder far too flat; and a ladder is priced only
    on a market whose main line the formula prices. All three touch untested ladders only. The audit
@@ -688,7 +691,7 @@ const DK_EST={
   tdVig:1.0566,
   /* a club's lines are complete once the read is within 36 hours of kickoff with 4 receiving lines for it */
   complete:{hours:36,rec:4},
-  /* a read older than this many hours is said to be */
+  /* a leg in the builder priced from a read older than this many hours says so */
   staleHours:24
 };
 const DK_YARDS=new Set(['passing_yards','rushing_yards','receiving_yards','scrim_yards']);

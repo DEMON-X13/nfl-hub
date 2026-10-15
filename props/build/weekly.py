@@ -8,8 +8,7 @@ test_pull_schedule.py drives the pulls and catch-ups over the season's schedule,
     python weekly.py --catch-up      price only games up to the next pull with no prices yet, not yet started
     python weekly.py --hours 36      override the price-pull window
     python weekly.py --local         allow the price pull off GitHub (it spends credits)
-    python weekly.py --offline       use the files already in raw/ instead of downloading, and bake the
-                                     ESPN lines on disk without reading them (testing)
+    python weekly.py --offline       use the files already in raw/ instead of downloading (testing)
 
 Credits are spent only by the props workflow: off GitHub Actions the price pull is skipped
 unless --local says otherwise. Nothing commits here: the workflow commits props/data itself,
@@ -40,25 +39,18 @@ What it does, in order:
   3. on GitHub Actions (or with --local), if ODDS_API_KEY is set, pulls prices for the games kicking
      off before the next scheduled pull is likely to land (pull_window, hours_to_next_pull) with
      data/oddsfetch.py (choose() picks the games) and merges them into that week's files
-  3c. on every run, priced or not, reads DraftKings' lines for the week from ESPN's free feed
-     (espn_lines.py, which says how): the player lines, which carry no price (the page prices each leg
-     the paid pull has none for from its line, marked est.), and the game lines with their prices,
-     into data/espn_wk{W}.json. Free and soft: it never refuses the run, and a game it cannot read keeps
-     its last read; a feed that looks changed is a problem (red after the commit), and so is no good read
-     for a day with a game within two days to come
   4. bakes into the payload every week's player
      stats, the injury report (this week's in full, earlier weeks' Outs), every player's roster
      status, every week's main lines matched onto the players of their own game (mktbuild.py),
      and every price file with the player each row belongs to: this season's games only, and
      nothing of a payload of another season carried forward; and DraftKings' own id for every
      outcome the pulls read on a game still to come (dk_links_wk{W}.json -> dk, dk_ids below),
-     which the parlay card turns into an Open in DraftKings link (ESPN's DraftKings event and game-line
-     ids fill in for a game still to come the pull has none for); ESPN's reads (PAY.espn, the current
-     week's player lines by game and player, and PAY.espn_meta, what the read last did), and its game
-     lines beside the pull's (the fresher row wins, each under a day old); and who took part in each
+     which the parlay card turns into an Open in DraftKings link; and who took part in each
      finished game, from the snap counts (who_played below): the payload's snaps, and a stat row
      of zeros for a player who played a snap in his role with no stat line, so a receiver never
-     targeted is graded on zero, as DraftKings grades him, and his projection sees the game
+     targeted is graded on zero, as DraftKings grades him, and his projection sees the game; and
+     each player's ESPN athlete id (espn_ids below, from the roster already downloaded), by which
+     the page's Refresh odds button places DraftKings' lines it reads from ESPN in the browser
   5. assembles the page and runs the audit, which checks the payload against the raw files. Its
      failures and runtime errors refuse the run (audit_verdict); its warnings, the checks audit.js
      names as presentation only (who is shown starting, an ordering, which correctly priced parlay
@@ -84,7 +76,7 @@ HERE=os.path.dirname(os.path.abspath(__file__)); PKG=os.path.dirname(HERE)
 RAW=os.path.join(PKG,'raw'); DATA=os.path.join(PKG,'data'); RES=os.path.join(PKG,'research'); ROOT=os.path.dirname(PKG)
 sys.path.insert(0,DATA)
 from season import SEASON, BASE, FIRST, REL, RAW_FILES, GAMES, STATS, ROSTER, INJURIES, DEPTH, SKILL
-import names, mktbuild, espn_lines
+import names, mktbuild
 sys.path.insert(0,os.path.join(ROOT,'lib'))
 import netfetch                  # lib/netfetch.py: the download rule the NFL jobs share
 PY=sys.executable; ENV=dict(os.environ,PYTHONUTF8='1',PYTHONIOENCODING='utf-8')
@@ -124,13 +116,8 @@ def audit_warnings(out):
     if at is None: return 0,[]
     m=AUDIT_LINE.fullmatch(lines[at].strip()); n=int(m.group(3) or 0)
     return n,[l.strip() for l in lines[at+1:] if l.strip().startswith(('WARN:','(a '))]
-def run(args,cwd,label,soft=False,env=None,timeout=None):
-    try: r=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=timeout)
-    except subprocess.TimeoutExpired as e:
-        part=lambda b:(b.decode('utf-8','replace') if isinstance(b,bytes) else (b or ''))
-        out=part(e.stdout)+part(e.stderr)+f"\n{label} was stopped after {timeout:.0f}s"
-        if not soft: problems.append(f"{label} failed (stopped after {timeout:.0f}s): {out.strip()[-600:]}")
-        return -9,out
+def run(args,cwd,label,soft=False,env=None):
+    r=subprocess.run(args,cwd=cwd,env=env or ENV,capture_output=True,text=True,encoding='utf-8',errors='replace')
     out=(r.stdout or '')+(r.stderr or '')
     if r.returncode!=0 and not soft: problems.append(f"{label} failed (exit {r.returncode}): {out.strip()[-600:]}")
     return r.returncode,out
@@ -335,26 +322,22 @@ def published(prev,name):
     if name==STATS: return any((prev.get('stats') or {}).values())
     return any(str(r.get('season'))==str(SEASON) for r in prev.get('injuries') or [])
 
-WEEK_FILE=re.compile(r'(?:wk(\d+)_lines|prices_wk(\d+)|gamelines_wk(\d+))\.csv$|dk_links_wk(\d+)\.json$|espn_wk(\d+)\.json$')
+WEEK_FILE=re.compile(r'(?:wk(\d+)_lines|prices_wk(\d+)|gamelines_wk(\d+))\.csv$|dk_links_wk(\d+)\.json$')
 
 def week_file_games(path):
-    """the game ids a week file names: a CSV's game_id column, the keys of dk_links_wk{W}.json
-    (game|player|stat|side|point), or the games of espn_wk{W}.json (one with none names its season)"""
+    """the game ids a week file names: a CSV's game_id column, or the keys of dk_links_wk{W}.json
+    (game|player|stat|side|point)"""
     if path.endswith('.json'):
-        try:
-            d=json.load(open(path,encoding='utf-8'))
-            if os.path.basename(path).startswith('espn_wk'):
-                return set(d.get('games') or {}) or {f"{d.get('season')}_"}
-            return {str(k).split('|')[0].strip() for k in d}
+        try: return {str(k).split('|')[0].strip() for k in json.load(open(path,encoding='utf-8'))}
         except Exception: return set()
     return {(r.get('game_id') or '').strip() for r in names.read_csv(path)}
 
 def archive_other_seasons():
     """At a rollover, last season's price files leave data/ for data/archive/<season>/.
 
-    The files are named by week only (wk5_lines.csv, prices_wk5.csv, gamelines_wk5.csv, DraftKings'
-    ids, dk_links_wk5.json, and ESPN's reads, espn_wk5.json), so without this the new season's first
-    pull would merge into last season's week-1 files. A
+    The files are named by week only (wk5_lines.csv, prices_wk5.csv, gamelines_wk5.csv and
+    DraftKings' ids, dk_links_wk5.json), so without this the new season's first pull would merge
+    into last season's week-1 files. A
     week's files move together, and only when every game id in them is another season's; a lines
     file from before the lines carried their game goes with its prices file. The bake drops
     another season's rows wherever they are, so this keeps data/ tidy rather than correct."""
@@ -509,8 +492,6 @@ def main():
     # 3b. the odds-API balance. /v4/sports does not count against the quota.
     rc,out=run([PY,'credits.py'],DATA,'credits',soft=True)
     say('  '+(out.strip().splitlines()[-1] if out.strip() else 'balance not checked'))
-    # 3c. DraftKings' lines from ESPN's free feed: no key, no credit, never a refusal
-    espn_step(a,week,season_over,gs,now)
     # 4. bake
     try: bake(pp,prev,gs,week,season_over,now,raw,not_posted)
     except Exception as e:
@@ -521,28 +502,6 @@ def main():
     rc,out=run([PY,'assemble.py'],HERE,'assemble')
     audit_step(a)
     return finish(a)
-
-ESPN_TIMEOUT=900   # seconds: espn_lines.py stops itself after DEADLINE (8 minutes); this is the backstop
-
-def espn_step(a,week,season_over,gs=(),now=None):
-    """3c. espn_lines.py for the week (its docstring has the rules), in a process of its own so it has its
-    own retry budget and nothing it does can stop this run. Its report lines (ESPN: ...) go in the report,
-    its problems (ESPN PROBLEM: ..., a feed that looks changed) in the problems the job goes red on after
-    its commit; an error or a stop in it is a problem too, and the last read's lines are baked. A single
-    run that cannot reach ESPN is logged only; no good read for a day with a game of the week within two
-    days to come is a problem (espn_lines.stale_problem, on games.csv's schedule gs)"""
-    if season_over: say("  ESPN: not read, the regular season is over"); return
-    if a.offline: say("  ESPN: not read (--offline); the lines on disk are baked"); return
-    rc,out=run([PY,'espn_lines.py','--week',str(week)],HERE,'the ESPN read',soft=True,timeout=ESPN_TIMEOUT)
-    for line in out.splitlines():
-        s=line.strip()
-        if s.startswith('ESPN PROBLEM:'): problems.append('ESPN: '+s[len('ESPN PROBLEM:'):].strip())
-        elif s.startswith('ESPN:'): say('  '+s)
-    if rc!=0:
-        problems.append(f"the ESPN read stopped with an error (exit {rc}); the last read's lines are baked: {out.strip()[-500:]}")
-    sched=[{'w':int(float(r['week'])),'d':r.get('gameday'),'t':r.get('gametime')} for r in gs if (r.get('week') or '').strip()]
-    sp=espn_lines.stale_problem(espn_lines.load_all(DATA,SEASON),week,sched,now or datetime.datetime.now(datetime.timezone.utc),kickoff)
-    if sp: problems.append('ESPN: '+sp)
 
 def audit_step(a):
     """5. the audit, and on a clean one the suggestions record. A failure or a runtime error refuses
@@ -641,6 +600,24 @@ def dk_key(parts,g,match):
     except (ValueError,TypeError): return None
     pid,_how=match(who,int(g['w']),gid)
     return f"{pid}|{tail}" if pid else None
+
+def espn_ids(rrows,pids):
+    """({ESPN athlete id: the payload's player id}, the ids left out) for the players the payload carries
+    (pids), from nflverse's roster: its espn_id beside its gsis_id, which is the payload's pid. No request:
+    the roster is the file this run already downloaded. The page reads it as PAY.espn_ids when a visitor
+    presses Refresh odds (part3.js espnRefresh: the job itself never reads ESPN), to place each athlete of
+    DraftKings' player lines ESPN carries on his player; one it cannot place by id it places by name within
+    the game's two clubs, as it does every athlete on a payload baked before this. An id the roster gives
+    two players is left out rather than guessed. test_espn_ids.py holds it to its cases."""
+    out,amb={},set()
+    for r in rrows:
+        e=str(r.get('espn_id') or '').strip(); g=(r.get('gsis_id') or '').strip()
+        if e.endswith('.0'): e=e[:-2]
+        if not (e.isdigit() and g and g in pids): continue
+        if out.get(e,g)!=g: amb.add(e)
+        out[e]=g
+    for e in amb: out.pop(e,None)
+    return dict(sorted(out.items(),key=lambda kv:int(kv[0]))),sorted(amb)
 
 def dk_ids(data,byid,to_come,match):
     """(dk, how many ids, the keys dropped because two book names gave them two ids) from every
@@ -829,41 +806,26 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     # DraftKings' moneylines, spreads and totals over nflverse's, but only while fresh: a snapshot
     # more than a day older than the game's kickoff (or than now, for a game still to come) gives
     # way to nflverse's line, which is the Pick'ems board's and moves every day. The game carries
-    # where its lines came from (ls, lat), and the page says so. DraftKings' rows are the paid pull's
-    # (gamelines_wk{W}.csv) and ESPN's free read of the same lines (espn_wk{W}.json, every week of the
-    # season, so a week already played keeps the line it was graded on): a game's rows are taken oldest
-    # first, so the fresher read wins wherever it has a number, and each must be under a day old
+    # where its lines came from (ls, lat), and the page says so.
     pull=json.load(open(os.path.join(DATA,'pricepull.json'),encoding='utf-8')) if os.path.exists(os.path.join(DATA,'pricepull.json')) else {}
-    espn=espn_lines.load_all(DATA,SEASON)
-    cand={}
+    hit=stale=0
     for fn in sorted(os.listdir(DATA)):
         m=re.match(r'gamelines_wk(\d+)\.csv$',fn)
         if not m: continue
         for r in names.read_csv(os.path.join(DATA,fn)):
-            if not byid.get(r['game_id']): continue
+            g=byid.get(r['game_id'])
+            if not g: continue
             at=(r.get('pulled_at') or '').strip()
             if not at and pull.get('week')==int(m.group(1)) and pull.get('at'): at=pull['at']+'Z'
-            cand.setdefault(r['game_id'],[]).append((at,r))
-    for r in espn_lines.game_rows(espn):
-        if byid.get(r['game_id']): cand.setdefault(r['game_id'],[]).append((r['pulled_at'],r))
-    def when(at):
-        try: t=datetime.datetime.fromisoformat(at.replace('Z','+00:00')) if at else None
-        except ValueError: t=None
-        if t is not None and t.tzinfo is None: t=t.replace(tzinfo=datetime.timezone.utc)
-        return t
-    hit=stale=via_espn=0
-    for gid,rows in cand.items():
-        g=byid[gid]; ko=kickoff(g) or now
-        nv={f:g.get(f) for f in ('tot','tov','tou')}
-        rows=sorted(((when(at),r) for at,r in rows),key=lambda x:(x[0] is not None,x[0] or now))
-        src=None
-        for t,r in rows:
+            ko=kickoff(g) or now
+            try: t=datetime.datetime.fromisoformat(at.replace('Z','+00:00')) if at else None
+            except ValueError: t=None
+            if t is not None and t.tzinfo is None: t=t.replace(tzinfo=datetime.timezone.utc)
             # a played game's row from before the rows carried their time keeps the book's line,
             # so the grading of a week already played does not move under it
             fresh=(t is not None and (min(now,ko)-t).total_seconds()<=24*3600) or (t is None and ko<=now)
-            if not fresh:
-                if src is None: g['ls']='nflverse'
-                continue
+            if not fresh: stale+=1; g['ls']='nflverse'; continue
+            nv_tot=g.get('tot')
             for fld,col in (('mla','away_moneyline'),('mlh','home_moneyline'),('spa','away_spread_odds'),('sph','home_spread_odds'),('sp','spread_line'),('tot','total_line')):
                 v=(r.get(col) or '').strip()
                 if v:
@@ -871,20 +833,16 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
                     except ValueError: pass
             # a total's over and under prices go with its number: DraftKings' own where its row has
             # them; a DraftKings total without them, on a number nflverse did not price, has no price
-            # on file, so the page shows it as an estimate and no suggestion is built on it (on
-            # nflverse's own number, nflverse's prices)
+            # on file, so the page shows it as an estimate and no suggestion is built on it
             if (r.get('total_line') or '').strip():
                 ou=[(r.get(c) or '').strip() for c in ('over_odds','under_odds')]
                 try: g['tov'],g['tou']=float(ou[0]),float(ou[1])
                 except ValueError:
-                    if g.get('tot')!=nv['tot'] or nv['tov'] is None or nv['tou'] is None: g.pop('tov',None); g.pop('tou',None)
-                    else: g['tov'],g['tou']=nv['tov'],nv['tou']
+                    if g.get('tot')!=nv_tot: g.pop('tov',None); g.pop('tou',None)
             g['ls']='dk'
             if t is not None: g['lat']=t.strftime('%Y-%m-%dT%H:%MZ')
-            src=r.get('src') or 'pull'
-        if src: hit+=1; via_espn+=src=='espn'
-        else: stale+=1
-    say(f"  game lines: DraftKings on {hit} game(s)"+(f" (the latest read ESPN's on {via_espn})" if via_espn else '')+f", nflverse on {stale} where DraftKings' were more than a day old")
+            hit+=1
+    say(f"  game lines: DraftKings on {hit} game(s), nflverse on {stale} where DraftKings' were more than a day old")
     for k,fn in (('price_pull','pricepull.json'),('credits','credits.json')):
         try: pay[k]=json.load(open(os.path.join(DATA,fn),encoding='utf-8'))
         except Exception: pass
@@ -1023,19 +981,12 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     pay['prices']=prices; pay['unmatched']=unmatched
     # DraftKings' ids for the games still to come, for the parlay card's Open in DraftKings
     dk,ndk,clash=dk_ids(DATA,byid,set(byid)-started,pool.match)
-    # ESPN's DraftKings event and game-line ids, for a game still to come the pull has none of (the
-    # same ids: the card opens the game, or its team lines, on DraftKings)
-    ngdk=sum(len(v) for v in dk.values())
-    nesp=espn_lines.dk_fill(dk,espn,byid,set(byid)-started)
     pay['dk']=dk
-    say(f"  DraftKings ids: {ndk} on {ngdk} game(s) still to come"+(f", and {nesp} from ESPN's read on {sum(len(v) for v in dk.values())} game(s)" if nesp else '')+(f"; left out, two book names giving one key two ids: {'; '.join(g+' '+k for g,k in clash)}" if clash else ''))
-    # DraftKings' player lines from ESPN (espn_lines.py): the current week's games, to come and played
-    # (frozen at kickoff), which the page prices from when the pull has no price (est.), and what the
-    # read last did; always written, so a payload never carries an older run's
-    pay['espn'],pay['espn_meta']=espn_lines.payload_block(espn,week,byid,now,kickoff)
-    ew=pay['espn'].get(str(week)) or {}
-    say(f"  ESPN lines: {len(ew)} game(s) of week {week} in the payload ({sum(1 for e in ew.values() if e['frozen'])} frozen at kickoff), "
-        f"{sum(len(e['lines']) for e in ew.values())} players with a main line, the last good read {pay['espn_meta']['at'] or 'never'}")
+    say(f"  DraftKings ids: {ndk} on {sum(len(v) for v in dk.values())} game(s) still to come"+(f"; left out, two book names giving one key two ids: {'; '.join(g+' '+k for g,k in clash)}" if clash else ''))
+    # each player's ESPN id, for the page's Refresh odds button (it reads ESPN in the browser, on a press)
+    shown={p.get('id') for p in pay.get('players') or [] if p.get('id')}
+    pay['espn_ids'],amb=espn_ids(rrows,shown)
+    say(f"  ESPN ids: {len(pay['espn_ids'])} of the payload's {len(shown)} players"+(f"; left out, an id the roster gives two players: {', '.join(amb)}" if amb else ''))
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over
     # the files nflverse has not posted yet: the audit expects none of them in the payload, and the
     # page says so rather than show an empty report as a quiet week
