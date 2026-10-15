@@ -515,11 +515,27 @@ its kickoff and throws away a read its kickoff passes during; and leaves a game 
 (DraftKings has posted no player lines yet), a junk body or a failure. A read is dated by the browser's
 clock (Date is not a CORS-safelisted header), and ESPN's `lastUpdated` is never read.
 
-What a press reads is held in memory only, outside `S` (`ESPN_LIVE`, `ESPN_GL`, `ESPN_OUT`,
-`ESPN_IDAT`): `save()` writes the published game lines (`espnSavable`), and a reload returns to the
-published data, the builder's legs with it (`espnLegBack`: a leg a press priced goes back to DraftKings'
-own price on its line, else the model's estimate; any other builder leg keeps the price it was added at,
-as before). The game lines are DraftKings' real prices and replace the published ones where newer
+What a press reads is held in memory outside `S` (`ESPN_LIVE`, `ESPN_GL`, `ESPN_OUT`, `ESPN_IDAT`):
+`save()` writes the published game lines (`espnSavable`). Since app v108 (`patch_press_keep.py`, the
+owner's call of 15 October 2026: "anytime i load the site all the odds disappear and i have to click the
+button to grab them again. is there any way to make sure it stays on the site when i pulled them and let
+me refresh as needed after") each press also writes its read to the browser's own storage under a key of
+its own, `props_press_v1` (`espnKeepWrite`: per game its scoreboard odds, its player lines' block and
+what the read found, the season inside the value; never `S`), and a load puts it back before the page is
+first drawn, with no request (`espnRestore`), game by game and each half on its own rule: the game lines
+while the game lines the page publishes are the ones they were read over (`espnGlSig`), the player lines
+while the game's published player prices are (`espnPlSig`: the paid pull's time for the game, `PAY.dk`'s
+`at`, and its main lines), neither once the game has kicked off or has a score, nor for a game not on the
+schedule in that week, nor from a value of another season or not the page's shape (the key is then
+emptied); `baked_at` is never compared, since the job rebakes with the same prices. So a newer publish
+always wins, and a game whose player prices are never bought (Sunday's early games) keeps its read to
+kickoff. What gave way is said on the status line for that load ("your earlier Refresh odds read gave way
+to prices published since"). Writes merge with what the browser holds game by game, the later read
+winning (two tabs), never bringing back what a load set aside; a save of `S` that fails for room empties
+the key and tries again (`espnKeepDrop`), so a kept read never costs a visitor their builder. Where a read
+gives way, the builder's legs go back with it (`espnLegBack`: a leg a press priced goes back to
+DraftKings' own price on its line, else the model's estimate; any other builder leg keeps the price it was
+added at, as before). The game lines are DraftKings' real prices and replace the published ones where newer
 (`g.ls` 'dk', the Game bets card saying "read from ESPN by Refresh odds" and when, in ET); DraftKings'
 event and game-line ids from ESPN's bet links go into `PAY.dk` beside the paid pull's, never replacing
 one, each dated by the read that saw it (`espnIdAt`, which the parlay card reads; `glat` stays the
@@ -563,10 +579,14 @@ shapes on the payload's own games, so it holds in any week; with no game to come
 `props/build/espn_rule.js`, the checks' own copy of the formula's constants: the parse, the paging, the
 placement (a name never on a player an id names), the kickoff guards, every price, the precedence, what
 the page chooses and on what rules, the levels and hands fresh right after a press, each id dated by its
-read, a reload back on the published prices, nothing saved and no request to ESPN without a press; its
-status and card words are warnings. The nflbets smoke holds the buttons, a press and its status line,
-market + form and the far-off guard on the read's legs, the card and a reload on stand-in answers of its
-own, and `elo/check_tab.js` market + form on a `dkline` price.
+read, a read that gave way back on the published prices, nothing of it in `S` and no request to ESPN
+without a press, and the kept read (the key's content after a press, a reload putting back exactly what
+the press gave with no request, each rule that sets a half aside, a value from another season or junk
+emptied, an empty schedule leaving the key alone, bad ids, keys and lines dropped, the merge and the save
+that gives way for room); its status and card words are warnings. The nflbets smoke holds the buttons, a
+press and its status line, market + form and the far-off guard on the read's legs, the card, a read that
+gave way, and a real reload of the page (a second boot on the browser's kept read, with no request) on
+stand-in answers of its own, and `elo/check_tab.js` market + form on a `dkline` price.
 
 ## Betting: the loop
 
@@ -1021,7 +1041,8 @@ Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
 `liveparlays/parlays.json`, `liveparlays/xbets.json`, `picks/friends.json` and `elo/data/*.json`, and the news job's
 `news/data/units.json` and `stats.json` as the page loads and a week's notes when the board or a window first wants them, so it is
 rebuilt when a source changes, never when the data does; and ESPN's feed only when a visitor presses Refresh odds
-(under Props, "Refresh odds"), held in memory and never saved. A props patch, a betting build change or an edit to the live section's source means
+(under Props, "Refresh odds"), held in memory and kept in the visitor's browser until it gives way (never in
+`S`, never sent anywhere). A props patch, a betting build change or an edit to the live section's source means
 rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the news smoke as well:
 
 ```
@@ -1326,17 +1347,20 @@ may quietly outrank what the job published:
 
 - **Published data wins over anything a browser kept.** Local storage holds only what the
   visitor made -- their own builder, saved slips, picks, bankroll, settings, the parlays they
-  cleared from X Parlays on that device -- and nothing of X's. That cleared list only hides; it
+  cleared from X Parlays on that device, the Refresh odds reads they pressed for -- and nothing of X's. That cleared list only hides; it
   never changes or outranks the file, and it is pruned to the file on every load.
   Schedule, scores, stats, prices, ratings and projections are read from
   `props/data/payload.json` and `betting/state.json` on every load, and X's parlays and the X
   Bet Log from `liveparlays/`, and friends' picks from `picks/friends.json`. The prop model keys its
   saved season on `PAY.baked_at`, which moves on every run of the job, so a run always
   rebuilds; the betting app already merges only the visitor's keys over the published state.
-- **A Refresh odds press is the visitor's, in memory.** The lines a press reads from ESPN (DraftKings'
-  game lines and player lines, under Props, "Refresh odds") live in the page's memory only, outside the
-  saved state: nothing of them is written to the browser's storage or anywhere else, and a reload returns
-  to the published data, the builder's legs with it. Nothing is read from ESPN on load or on a timer.
+- **A Refresh odds press is the visitor's, kept in their browser until a publish outranks it.** The lines a
+  press reads from ESPN (DraftKings' game lines and player lines, under Props, "Refresh odds") live in the
+  page's memory outside the saved state `S`, and in that browser's own storage under `props_press_v1`
+  alone (app v108, the owner's call of 15 October 2026), never sent anywhere. A load puts a game's read
+  back only while the prices the job publishes for it are the ones it was read over and the game has not
+  kicked off: a newer publish wins and the read gives way, the builder's legs with it. Nothing is read
+  from ESPN on load or on a timer.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
   roster change is worth a banner.
 - **Every page says which build it is.** `buildTag` on the Bets and Stats header: `APP_BUILD`

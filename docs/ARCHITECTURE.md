@@ -22,7 +22,8 @@ The pages carry no season data: each fetches what the scheduled jobs commit (`pr
 and what Claude commits from what the owner sends (`liveparlays/parlays.json`,
 `liveparlays/xbets.json`, `picks/friends.json`) on every load. The one thing a page reads from elsewhere is
 ESPN's free feed of DraftKings' lines, and only when a visitor presses Refresh odds (app v107, below), held in
-that page's memory and never saved. Five scheduled GitHub Actions jobs, one per model
+that page's memory and (app v108) in that browser's own storage until a newer publish or its game's kickoff
+sets it aside, never sent anywhere. Five scheduled GitHub Actions jobs, one per model
 or site, rebuild the data from their sources and commit it.
 
 `index.html` at the root is a static landing page linking the sites, and X NHL Bets in
@@ -156,6 +157,9 @@ props/
   build/patch_espn_prices.py     app v107: Refresh odds, the browser's on-demand read of
                                  DraftKings' lines from ESPN, the best-guess price and its
                                  precedence (its docstring is the design)
+  build/patch_press_keep.py      app v108: a Refresh odds read kept in the browser across a
+                                 reload until its game kicks off or the job publishes newer
+                                 prices for it (its docstring is the design)
   build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
                                  answers (audit M8, the nflbets smoke)
   build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
@@ -983,7 +987,7 @@ smoke holds the real file to the tool's rules as a warning.
 
 ```
 nflverse CSVs + the-odds-api  ->  weekly.py  ->  data/payload.json
-ESPN's feed (site + core api)  ->  the visitor's browser, on a press of Refresh odds  ->  memory only (never a file)
+ESPN's feed (site + core api)  ->  the visitor's browser, on a press of Refresh odds  ->  memory, and that browser's props_press_v1 (never a file)
 part1.html + part2.js + part3.js  ->  assemble.py  ->  app/prop_model_2026.html (gitignored)
   (payload.json only checked)                     ->  audit.js  (must be clean, or no commit)
 part1.html + part2.js + part3.js  ->  nflbets/build/build.js  ->  nflbets/index.html
@@ -1054,7 +1058,16 @@ in `PAY.dk`, `espnIdAt`, which the parlay card dates it by) and `ESPN_SEQ` (in `
 a player leg's price is the paid pull's while its line stands, else the read's line at the formula's price
 (`DK_EST`, `estPrice` in `part2.js`; `espnPrice`, `mainOf`, `plEst` in `part3.js`; src `dkline`, est.),
 else the model's estimate. A builder leg a press priced goes back to the page's own price once the press
-no longer stands (`espnLegBack`, in `legPrice`: a reload, or a later read that moved its line). Where legs
+no longer stands (`espnLegBack`, in `legPrice`: a reload that set its read aside, or a later read that moved
+its line). Since app v108 each press also writes its read to the browser's own storage, `props_press_v1`
+(`espnKeepPut`, `espnKeepWrite`: `{v:1, season, saved, games:{gid:{w, gl:{at, lines, ids, event, sig}, pl,
+plsig, out}}}`, the scoreboard's odds, the `ESPN_LIVE` block and what the read found), and `boot()` puts it
+back before the first draw with no request (`espnRestore`): a game's game lines while `espnGlSig` (the
+published `ESPN_GL_KEYS` fields) is the one they were read over, its player lines while `espnPlSig` (its
+`PAY.dk` `at` and `PAY.mkt` rows) is, neither once it has kicked off or has a score; junk or another
+season's value empties the key; what gave way is in `ESPN_ASIDE` for the status line; a write merges game
+by game with the browser's copy, the later read winning, never what this load set aside
+(`ESPN_KEEP_GONE`); a failed save of `S` empties the key and retries (`espnKeepDrop`). Where legs
 are chosen (`pricedLegs`, `pbPool`, `gameLegPool`, the Elo picks) a `dkline` leg counts as a book price on
 a tested kind only (`ESPN_TESTED`).
 
