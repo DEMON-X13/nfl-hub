@@ -265,6 +265,8 @@ function renderGame(){
     <label class="muted"><input type="checkbox" id="rungCb" ${showRungs()?'checked':''}> Threshold ladders</label>
   </div>`;
   if(meta&&!locked) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px">Book lines for this week are ${meta.src}, as of ${meta.asof}. Lines move; check the number before you bet.</p>`;
+  { const eg=!locked&&espnGame(g.id,g.w);
+    if(eg) html+=`<p class="muted espn-read" style="margin:-6px 0 12px;font-size:12px" data-espn-read>${esc(espnReadLine(eg.at))} A price marked est. beside DraftKings’ line is our estimate of DraftKings’ own; a real DraftKings price replaces it once the price pull reads one.</p>`; }
   { const dd=PAY.depth_dt?Date.parse(PAY.depth_dt+'T12:00:00Z'):NaN, bk=PAY.baked_at?Date.parse(PAY.baked_at):NaN;
     if(!locked&&isFinite(dd)&&isFinite(bk)&&bk-dd>3*864e5) html+=`<p class="muted" style="margin:-6px 0 12px;font-size:12px;color:#8A5E05">Depth charts as of ${esc(PAY.depth_dt)}: the latest ones could not be downloaded, so who starts may be out of date.</p>`; }
   /* a live score and stats, when the scoreboard has been read for this game */
@@ -353,7 +355,9 @@ function renderGame(){
           const tk=legKey(g.id,x.pl.id,'any_td'), tcur=S.parlay[tk]; const ton=!!tcur&&(tcur.k||1)<2, ton2=!!tcur&&tcur.k===2;
           const tod=oddsFor(g.id,x.pl.id,'any_td',1);
           const p2=tdPlus(l.p,2), [c2,lbl2]=confTier(p2);
-          const tf=tod!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:tod,src:'real',week:g.w}):null;
+          const te=plEst(x,g,l,'td',1);
+          const tf=tod!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:tod,src:'real',week:g.w})
+            :(te.src==='dkline'?legFarOff({gid:g.id,pid:x.pl.id,stat:'any_td',k:1,side:'over',main:false,p:l.p,price:te.price,src:'dkline',espn:espnOf(te),week:g.w}):null);
           const qb=x.pl.grp==='QB', what=qb?'a rushing or receiving touchdown':'a touchdown', whats=qb?'two or more rushing or receiving touchdowns':'two or more touchdowns';
           html+=`<div class="statblk"><h4>${qb?'Rushing or receiving TD <em data-qbtd>his own run or catch; a TD pass does not count</em>':'Touchdown'}</h4>
             <table class="rungs"><tr class="${ton?'on':''}${tf?' far':''}">
@@ -361,7 +365,7 @@ function renderGame(){
             <td class="thr">Scores one</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${(l.p*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(l.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
-            <td class="num est">${fmtML(bookPrice(l.p))}<em>est.</em></td>
+            <td class="num est"${estAttr(te)}>${fmtML(te.price)}<em>est.</em></td>
             <td class="num book real">${tod!=null?fmtML(tod):''}</td></tr>
             <tr class="${ton2?'on':''}">
             <td class="pick"><input type="checkbox" ${ton2?'checked':''} data-leg="${tk}" data-k="2" data-side="over" aria-label="Add ${esc(x.pl.n)} to score ${whats}"></td>
@@ -374,7 +378,9 @@ function renderGame(){
         }
         const lk=legKey(g.id,x.pl.id,l.stat), cur=S.parlay[lk], far=[];
         const L=marketLine(g.w,x.pl.id,l.stat);
-        html+=`<div class="statblk"><h4>${l.m.lbl} <em>projected ${num(l.mu,l.mu<10?1:0)}</em>${L?`<em class="mline">book line ${L.line}</em>`:''}</h4><table class="rungs">`;
+        /* no real main line: DraftKings' line from ESPN, both sides at the formula's price */
+        const dO=L?null:espnPrice(x,g,l.stat,'main',null,'over'), dU=dO?espnPrice(x,g,l.stat,'main',null,'under'):null;
+        html+=`<div class="statblk"><h4>${l.m.lbl} <em>projected ${num(l.mu,l.mu<10?1:0)}</em>${L?`<em class="mline">book line ${L.line}</em>`:(dO&&dU?`<em class="mline"${estAttr(dO)}>DraftKings line ${dO.line}</em>`:'')}</h4><table class="rungs">`;
         if(L){
           /* the real, bettable line, both sides */
           const pO=pOver(x.pl.grp,l.stat,l.mu,L.line), tO=devigOver(L.over,L.under);
@@ -398,14 +404,31 @@ function renderGame(){
             <td class="pct">${((1-pO)*100).toFixed(0)}%</td><td><span class="conf ${confTier(1-pO)[0]}">${confTier(1-pO)[1]}</span></td>
             <td class="num est"><span class="mkt">book ${((1-tO)*100).toFixed(0)}%</span></td>
             <td class="num book real">${fmtML(L.under)}<em>${gapU>=3?'\u2191':(gapU<=-3?'\u2193':'')}</em></td></tr>`;
+        } else if(dO&&dU){
+          const E=dO.line, pO=pOver(x.pl.grp,l.stat,l.mu,E);
+          const onO=cur&&cur.main&&cur.side==='over', onU=cur&&cur.main&&cur.side==='under';
+          const mf=(side,d)=>legFarOff({gid:g.id,pid:x.pl.id,stat:l.stat,k:E,side,main:true,p:side==='under'?1-pO:pO,price:d.price,src:'dkline',espn:espnOf(d),week:g.w});
+          /* flagged far off DraftKings' line only on a market the estimate has been checked on */
+          const fO=dO.tested?mf('over',dO):null, fU=dU.tested?mf('under',dU):null;
+          if(fO) far.push(`<p class="faroff" data-far><b>Over ${E}</b> ${farText(pO,fO)}</p>`);
+          if(fU) far.push(`<p class="faroff" data-far><b>Under ${E}</b> ${farText(1-pO,fU)}</p>`);
+          const row=(side,d,p,on,f)=>`<tr class="mainline est-line ${on?'on':''}${f?' far':''}">
+            <td class="pick"><input type="checkbox" ${on?'checked':''} data-leg="${lk}" data-k="${E}" data-side="${side}" data-main="1" aria-label="Add ${side} ${E}"></td>
+            <td class="thr">${side==='under'?'Under':'Over'} ${E}</td>
+            <td class="barcell"><div class="bar-track"><div class="bar-fill ${confTier(p)[0]}" style="width:${Math.max(2,p*100).toFixed(0)}%"></div></div></td>
+            <td class="pct">${(p*100).toFixed(0)}%</td><td><span class="conf ${confTier(p)[0]}">${confTier(p)[1]}</span></td>
+            <td class="num est"${estAttr(d)}>${fmtML(d.price)}<em>est.</em></td>
+            <td class="num book real"></td></tr>`;
+          html+=row('over',dO,pO,onO,fO)+row('under',dU,1-pO,onU,fU);
         }
         for(const r of l.rungs){
           const [c,lbl]=confTier(r.p);
           const on=cur&&!cur.main&&cur.k===r.k;
           if(!showRungs()&&!on) continue;
           const od=oddsFor(g.id,x.pl.id,l.stat,r.k);
-          const v=rungView(x.pl,l.stat,l.mu,r.k,g.w);
-          const rf=od!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:l.stat,k:r.k,side:'over',main:false,p:r.p,price:od,src:'real',week:g.w}):null;
+          const v=plEst(x,g,l,'rung',r.k);
+          const rf=od!=null?legFarOff({gid:g.id,pid:x.pl.id,stat:l.stat,k:r.k,side:'over',main:false,p:r.p,price:od,src:'real',week:g.w})
+            :(v.src==='dkline'&&v.listed&&v.tested?legFarOff({gid:g.id,pid:x.pl.id,stat:l.stat,k:r.k,side:'over',main:false,p:r.p,price:v.price,src:'dkline',espn:espnOf(v),week:g.w}):null);
           if(rf) far.push(`<p class="faroff" data-far><b>${r.k}+</b> ${farText(r.p,rf)}</p>`);
           html+=`<tr class="rung ${on?'on':''}${rf?' far':''}">
             <td class="pick"><input type="checkbox" ${on?'checked':''} data-leg="${lk}" data-k="${r.k}" data-side="over"
@@ -413,7 +436,7 @@ function renderGame(){
             <td class="thr">${r.k}+</td>
             <td class="barcell"><div class="bar-track"><div class="bar-fill ${c}" style="width:${Math.max(2,r.p*100).toFixed(0)}%"></div></div></td>
             <td class="pct">${(r.p*100).toFixed(0)}%</td><td><span class="conf ${c}">${lbl}</span></td>
-            <td class="num est">${fmtML(v.est)}<em>est.</em></td>
+            <td class="num est"${estAttr(v)}>${fmtML(v.price)}<em>est.</em></td>
             <td class="num book real">${od!=null?fmtML(od):''}</td></tr>`;
         }
         html+='</table>'+far.join('')+'</div>';
@@ -1005,21 +1028,30 @@ function toggleLeg(key,k,g,side,main){
   const ctx=gameCtx(game,team);
   const pr=project(pl,stat,opp,ctx); if(!pr) return;
   const m=MKT[stat];
-  let p,label,price=null,src='est';
-  if(m.prob){ const kk=k>=2?k:1; p=kk>=2?tdPlus(pr.p,kk):pr.p; label=tdLabel(pl.grp,kk); price=bookPrice(p); k=kk; }
+  /* each leg's price by the page's order: DraftKings' own, else its line from ESPN priced by the
+     formula (dkline), else the model's estimate; a dkline leg carries its fair chance and read time */
+  const x={pl,team,opp,ctx};
+  let p,label,price=null,src='est',dk=null;
+  if(m.prob){ const kk=k>=2?k:1; p=kk>=2?tdPlus(pr.p,kk):pr.p; label=tdLabel(pl.grp,kk); price=bookPrice(p); k=kk;
+    if(kk===1){ const d=espnPrice(x,game,'any_td','td',1); if(d){ price=d.price; src='dkline'; dk=d; } } }
   else if(main){
-    const L=marketLine(game.w,pid,stat); if(!L) return;
-    const pO=pOver(pl.grp,stat,pr.mu,L.line);
-    p=side==='under'?1-pO:pO; label=`${side==='under'?'Under':'Over'} ${L.line} ${m.lbl.toLowerCase()}`;
-    price=side==='under'?L.under:L.over; src='real';
+    const L=marketLine(game.w,pid,stat);
+    if(L){ const pO=pOver(pl.grp,stat,pr.mu,L.line);
+      p=side==='under'?1-pO:pO; label=`${side==='under'?'Under':'Over'} ${L.line} ${m.lbl.toLowerCase()}`;
+      price=side==='under'?L.under:L.over; src='real'; }
+    else { const d=espnPrice(x,game,stat,'main',null,side==='under'?'under':'over'); if(!d) return;
+      const pO=pOver(pl.grp,stat,pr.mu,d.line); k=d.line;
+      p=side==='under'?1-pO:pO; label=`${side==='under'?'Under':'Over'} ${d.line} ${m.lbl.toLowerCase()}`;
+      price=d.price; src='dkline'; dk=d; }
   } else {
     p=pOver(pl.grp,stat,pr.mu,k-0.5); label=`${k}+ ${m.lbl.toLowerCase()}`;
     const real=oddsFor(gid,pid,stat,k);
-    if(real!=null){ price=real; src='real'; } else price=rungView(pl,stat,pr.mu,k,game.w).est;
+    if(real!=null){ price=real; src='real'; }
+    else { const v=plEst(x,game,{stat,mu:pr.mu,p:pr.p},'rung',k); price=v.price; src=v.src; if(v.src==='dkline') dk=v; }
   }
   /* one pick per player and stat: writing to the same key replaces whatever was there */
   S.parlay[key]={gid,pid,stat,k,side,main:!!main,p,price,src,mu:m.prob?null:pr.mu,name:pl.n,pos:pl.pos,grp:pl.grp,
-    team,opp,week:game.w,label};
+    team,opp,week:game.w,label,...(dk?{espn:espnOf(dk)}:{})};
   save(); renderGame(); renderParlay();
 }
 function legPrice(l){
@@ -1059,9 +1091,131 @@ function parlayDec(priced,sims){
 const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1;
   return Object.values(g).some(n=>n>1); };
 
+/* ---------- DraftKings' lines read on ESPN (app v107) ----------
+   PAY.espn[week][gid] is what the props job read from ESPN's free feed before the game's kickoff:
+   {at (when), frozen, lines:{pid:{stat:line}}, rungs:{pid:{stat:[k,...]}} (the k+ milestones DraftKings
+   lists), td:[pid] (the players DraftKings offers an anytime touchdown)}. A player leg's price, in
+   order: a real DraftKings price from the paid pull (src 'real', unchanged); DraftKings' line from ESPN
+   priced by the formula in part2.js (src 'dkline', est.); else the model's own estimate as before (src
+   'est', est.). A read at or after its game's kickoff is never used (the feed carries in-play values
+   from then), and a game that has kicked off offers nothing anyway.
+
+   Where the page chooses legs (the Parlay Builder's levels, a game page's hands, the Elo picks) a dkline
+   leg of a tested kind counts as a book price does, by the same rules (the owner's call, 15 October
+   2026): a main line, over or under, on passing, rushing or receiving yards, receptions or passing
+   touchdowns; the anytime touchdown; and a yards ladder rung DraftKings lists, anchored on its line.
+   Every other dkline leg (completions, attempts, carries, rush + rec yards, interceptions, field goals,
+   kicking points, the receptions and passing-TD ladders, and a rung DraftKings does not list) is priced
+   and shown, est., on the game pages and never suggested; a model-only est. leg stays where it was, in
+   a game page's hands alone. A dkline leg's fair chance is the formula's own (legFair), est. */
+const ESPN_TESTED={main:new Set(['passing_yards','rushing_yards','receiving_yards','receptions','passing_tds']),rung:new Set(['passing_yards','rushing_yards','receiving_yards'])};
+/* any ESPN read for a week's games */
+function espnOn(week){ try{ const W=PAY&&PAY.espn&&PAY.espn[String(week==null?currentWeek():week)]; return !!W&&typeof W==='object'&&Object.keys(W).length>0; }catch(e){ return false; } }
+/* a game's read, or null: none, not the shape the job writes, or read at or after its kickoff */
+function espnGame(gid,week){
+  try{
+    const W=PAY&&PAY.espn&&PAY.espn[String(week)], e=W&&W[gid];
+    if(!e||typeof e!=='object'||!e.lines||typeof e.lines!=='object'||Array.isArray(e.lines)) return null;
+    const g=((S&&S.sched)||[]).find(x=>x.id===gid), k=g&&kickoff(g), at=Date.parse(e.at);
+    if(!k||!isFinite(at)||at>=k.getTime()) return null;
+    return e;
+  }catch(err){ return null; }
+}
+const espnLineOf=(e,pid,stat)=>{ const v=e&&e.lines&&e.lines[pid]&&e.lines[pid][stat]; return typeof v==='number'&&isFinite(v)&&v>0?v:null; };
+const espnListed=(e,pid,stat,k)=>{ const r=e&&e.rungs&&e.rungs[pid]&&e.rungs[pid][stat]; return Array.isArray(r)&&r.some(v=>+v===+k); };
+const espnOffersTd=(e,pid)=>!!e&&Array.isArray(e.td)&&e.td.includes(pid);
+function espnTeamOf(pid){ const p=S.players&&S.players[pid]; if(p&&p.team) return p.team; const r=PAY.roster&&PAY.roster[pid]; return (r&&r[0])||null; }
+/* a club's lines are complete: the read within 36 hours of kickoff, with 4 receiving lines for the club
+   (on a Wednesday night ESPN had about 60% of the receivers it carries by kickoff, and "no line" read
+   as "a backup" then would price a WR3 at +1000 where DraftKings has him at +400) */
+function espnComplete(e,g,team){
+  const k=kickoff(g), at=Date.parse(e.at);
+  if(!k||!isFinite(at)||k.getTime()-at>DK_EST.complete.hours*3600e3) return false;
+  let n=0; for(const pid in e.lines) if(espnTeamOf(pid)===team&&espnLineOf(e,pid,'receiving_yards')!=null) n++;
+  return n>=DK_EST.complete.rec;
+}
+/* a charted starter (QB1, RB1, WR1-2, TE1): with no yards line he is a line not posted, not a backup */
+function espnStarter(pl,team){ const d=depthOf(pl), top={QB:1,RB:1,WR:2,TE:1}[pl.grp]; return !!(d&&top&&d.team===team&&d.pos===pl.grp&&d.rank<=top); }
+/* the formula's price for one leg of a player (x: rosterFor's {pl, team, opp, ctx}) in game g from
+   DraftKings' line read on ESPN: {price, fair, src:'dkline', tested, listed, line, at, how, mainOver},
+   or null where ESPN has no line for it. kind 'main' (side over or under), 'rung' (k+), 'td'. Its
+   inputs are the page's own: the model's raw projections (never marketMu or the market's scale), the
+   game's implied points (gameCtx) and the depth chart */
+function espnPrice(x,g,stat,kind,k,side){
+  if(!x||!x.pl||!g) return null;
+  const e=espnGame(g.id,g.w); if(!e) return null;
+  const pid=x.pl.id, grp=x.pl.grp, T=x.ctx&&isFinite(x.ctx.implied)?x.ctx.implied:null;
+  const mu=s=>{ try{ const r=project(x.pl,s,x.opp,x.ctx); return r&&r.mu!=null&&isFinite(r.mu)?r.mu:null; }catch(err){ return null; } };
+  if(kind==='td'){
+    if(stat!=='any_td'||(+k||1)!==1||!espnOffersTd(e,pid)) return null;
+    let p=null; try{ const r=project(x.pl,'any_td',x.opp,x.ctx); p=r?r.p:null; }catch(err){}
+    const r=estPrice({kind:'td',p,grp,rushLine:espnLineOf(e,pid,'rushing_yards'),recLine:espnLineOf(e,pid,'receiving_yards'),teamImplied:T,gameLined:espnComplete(e,g,x.team),starter:espnStarter(x.pl,x.team)});
+    if(!r||!fairPx(r.price)) return null;
+    const ov=fairVig(g.w).player||DK_EST.tdVig;
+    return {price:r.price,fair:Math.max(0.001,Math.min(0.999,mlProb(r.price)/ov)),src:'dkline',tested:true,listed:true,line:null,at:e.at,how:r.how,mainOver:false};
+  }
+  const L=espnLineOf(e,pid,stat); if(L==null) return null;
+  const leg={kind,stat,line:L,k,side,grp,recYdsLine:espnLineOf(e,pid,'receiving_yards'),passYdsLine:espnLineOf(e,pid,'passing_yards'),teamImplied:T};
+  if(stat==='receptions'){ leg.muRec=mu('receptions'); leg.muRecYds=mu('receiving_yards'); }
+  if(stat==='passing_interceptions'||stat==='fg_made') leg.mu=mu(stat);
+  if(kind==='rung'){ const M=marketLine(g.w,pid,stat); if(M&&+M.line===L&&fairPx(M.over)&&fairPx(M.under)) leg.mainFair=devigOver(M.over,M.under); }
+  const r=estPrice(leg); if(!r||!fairPx(r.price)) return null;
+  const mainOver=kind==='rung'&&Math.abs(+k-0.5-L)<1e-9;
+  return {price:r.price,fair:r.fair,src:'dkline',tested:(kind==='main'||mainOver?ESPN_TESTED.main:ESPN_TESTED.rung).has(stat),
+    listed:kind==='main'||mainOver||espnListed(e,pid,stat,k),line:L,at:e.at,how:r.how,mainOver};
+}
+/* what a dkline leg carries with it: its fair chance (legFair), when its line was read, and whether
+   it is of a tested kind and DraftKings lists it */
+const espnOf=d=>({fair:d.fair,at:d.at,tested:!!d.tested,listed:!!d.listed,line:d.line});
+/* a player leg's est. price where DraftKings' own is not on file: its line from ESPN priced by the
+   formula (src 'dkline'), else the model's estimate as before (src 'est': a rung at rungView's, the
+   anytime touchdown at bookPrice on the model's chance). l: statLines' line; kind 'rung' or 'td' */
+function plEst(x,g,l,kind,k){
+  const d=espnPrice(x,g,l.stat,kind,k,'over'); if(d) return d;
+  if(kind==='td') return {price:bookPrice(+k>=2?tdPlus(l.p,+k):l.p),src:'est'};
+  return {price:rungView(x.pl,l.stat,l.mu,k,g.w).est,src:'est'};
+}
+/* when an ESPN read was, as the page says it: "Thu 11:08 PM ET" */
+function espnWhen(at){ const t=Date.parse(at); if(!isFinite(t)) return 'at a time not recorded';
+  return new Date(t).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'2-digit'})+' ET'; }
+const ESPN_ERR='typically within 0.5 points on yards, 2-3 on receptions, passing TDs, touchdowns and rungs';
+/* the title an est. price carries: what it is priced from */
+function estTitle(o){
+  if(!o) return '';
+  if(o.src==='dkline'){
+    if(!o.listed) return `Not on DraftKings: it lists no such rung. Priced from DraftKings’ line from ESPN, read ${espnWhen(o.at)}; the price is our estimate`;
+    return `DraftKings’ line from ESPN, read ${espnWhen(o.at)}; the price is our estimate (${o.tested?ESPN_ERR:'untested on this market: no DraftKings price on file to check it against'})`; }
+  return 'no DraftKings line yet: the model’s estimate';
+}
+/* an est. price's cell or mark says its basis once the job reads ESPN at all (a payload baked before
+   carries no espn, and the page is as it was) */
+const estAttr=o=>o&&(o.src==='dkline'||(PAY&&PAY.espn))?` title="${esc(estTitle(o))}" data-est="${o.src}"`:'';
+/* one line wherever est. prices from ESPN are shown: when DraftKings' lines were read (a game's own
+   read, else the run's last good one), whether that is a day old, and whether the latest read failed */
+function espnReadLine(at){
+  const M=PAY&&PAY.espn_meta, a=at||(M&&M.at), t=Date.parse(a);
+  if(!isFinite(t)) return '';
+  const h=(Date.now()-t)/3600e3;
+  return `DraftKings’ lines as read ${espnWhen(a)}; prices estimated`+(h>DK_EST.staleHours?` (last read ${Math.round(h)}h ago)`:'')+(M&&M.ok===false?': the latest read did not work, so these are from the last one that did':'')+'.';
+}
+/* the payload's own evidence that the paid pull read DraftKings' player prices for a game: a main line
+   in PAY.mkt with its game, a price row, or its DraftKings ids read (PAY.dk's at, or a player's id;
+   ESPN's read adds only the game's own ids) */
+function plPricedGame(gid,week){
+  try{
+    const w=String(week), M=PAY&&PAY.mkt&&PAY.mkt[w], R=PAY&&PAY.prices&&PAY.prices[w], D=PAY&&PAY.dk&&PAY.dk[w]&&PAY.dk[w][gid];
+    if(M&&typeof M==='object'&&Object.values(M).some(s=>s&&typeof s==='object'&&Object.values(s).some(x=>x&&x.g===gid))) return true;
+    if(Array.isArray(R)&&R.some(r=>r&&r.game_id===gid)) return true;
+    return !!D&&typeof D==='object'&&(!!D.at||Object.keys(D).some(k=>!/^(team:|game\|)/.test(k)&&!['event','at','glat'].includes(k)));
+  }catch(e){ return false; }
+}
+window.plPricedGame=plPricedGame;
+
 /* ---------- the lines the suggestions are built from ---------- */
-/* every line this week with a real sportsbook price, team bets and players, unjudged. A game total
-   is not among them: priced at the book's own chance (totalBet), it has no edge for a suggestion
+/* every line this week with a real sportsbook price, team bets and players, unjudged, and (app v107)
+   every player leg of a tested kind priced from DraftKings' line read on ESPN where the pull has no
+   price for it (src 'dkline': a main line on passing, rushing or receiving yards, receptions or passing
+   touchdowns, the anytime touchdown, a yards rung DraftKings lists). A game total is not among them: priced at the book's own chance (totalBet), it has no edge for a suggestion
    to find. The suggested parlays panel adds the totals itself, as its last fill (pbPool's market
    legs); the game pages' hands and the Elo picks never take one */
 function pricedLegs(games){
@@ -1086,13 +1240,22 @@ function pricedLegs(games){
         const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'real'};
         if(l.prob){ const od=oddsFor(g.id,x.pl.id,'any_td',1);
           if(od!=null) out.push({...base,key:legKey(g.id,x.pl.id,'any_td'),k:1,side:'over',main:false,p:l.p,price:od,mu:null,label:tdLabel(x.pl.grp,1)});
+          else { const d=espnPrice(x,g,'any_td','td',1);
+            if(d&&d.tested) out.push({...base,src:'dkline',espn:espnOf(d),key:legKey(g.id,x.pl.id,'any_td'),k:1,side:'over',main:false,p:l.p,price:d.price,mu:null,label:tdLabel(x.pl.grp,1)}); }
           continue; }
         const L=marketLine(g.w,x.pl.id,l.stat);
         if(L){ const pO=pOver(x.pl.grp,l.stat,l.mu,L.line), lbl=l.m.lbl.toLowerCase();
           if(L.over!=null) out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:L.line,side:'over',main:true,p:pO,price:L.over,mu:l.mu,label:`Over ${L.line} ${lbl}`});
           if(L.under!=null) out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:L.line,side:'under',main:true,p:1-pO,price:L.under,mu:l.mu,label:`Under ${L.line} ${lbl}`}); }
-        for(const r of l.rungs){ const od=oddsFor(g.id,x.pl.id,l.stat,r.k); if(od==null) continue;
-          out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:r.k,side:'over',main:false,p:r.p,price:od,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }
+        else if(ESPN_TESTED.main.has(l.stat)){ const dO=espnPrice(x,g,l.stat,'main',null,'over'), dU=dO&&espnPrice(x,g,l.stat,'main',null,'under');
+          if(dO&&dU){ const pO=pOver(x.pl.grp,l.stat,l.mu,dO.line), lbl=l.m.lbl.toLowerCase();
+            out.push({...base,src:'dkline',espn:espnOf(dO),key:legKey(g.id,x.pl.id,l.stat),k:dO.line,side:'over',main:true,p:pO,price:dO.price,mu:l.mu,label:`Over ${dO.line} ${lbl}`});
+            out.push({...base,src:'dkline',espn:espnOf(dU),key:legKey(g.id,x.pl.id,l.stat),k:dU.line,side:'under',main:true,p:1-pO,price:dU.price,mu:l.mu,label:`Under ${dU.line} ${lbl}`}); } }
+        for(const r of l.rungs){ const od=oddsFor(g.id,x.pl.id,l.stat,r.k);
+          if(od!=null){ out.push({...base,key:legKey(g.id,x.pl.id,l.stat),k:r.k,side:'over',main:false,p:r.p,price:od,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); continue; }
+          /* the rung at the main line's own number is that line's over, offered as the main line */
+          const d=ESPN_TESTED.rung.has(l.stat)?espnPrice(x,g,l.stat,'rung',r.k,'over'):null;
+          if(d&&d.tested&&d.listed&&!d.mainOver) out.push({...base,src:'dkline',espn:espnOf(d),key:legKey(g.id,x.pl.id,l.stat),k:r.k,side:'over',main:false,p:r.p,price:d.price,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }
       }
     }
   }
@@ -1158,7 +1321,15 @@ function fairVig(week){
    for one pass, so each week's overround is worked once */
 function legFair(l,memo){
   if(!l) return null;
-  const pr=legPrice(l); if(!pr||pr.src!=='real'||!fairPx(pr.ml)) return null;
+  const pr=legPrice(l);
+  /* priced from DraftKings' line read on ESPN (app v107): the formula's own fair chance, est. (a main
+     line's side its fair chance, a rung's before the hold; the anytime touchdown's its price over the
+     week's typical player overround, or 1.0566 with none) */
+  if(pr&&pr.src==='dkline'&&fairPx(pr.ml)){
+    if(l.stat==='any_td'){ const m=memo||{}, wk=String(l.week), V=m[wk]||(m[wk]=fairVig(l.week)), ov=V.player||DK_EST.tdVig;
+      return {p:Math.max(0.001,Math.min(0.999,mlProb(pr.ml)/ov)),est:true}; }
+    const f=l.espn&&l.espn.fair; return f>0&&f<1?{p:f,est:true}:null; }
+  if(!pr||pr.src!=='real'||!fairPx(pr.ml)) return null;
   const under=l.side==='under', g=((S&&S.sched)||[]).find(x=>x.id===l.gid)||null;
   const nv=(own,other)=>mlProb(own)/(mlProb(own)+mlProb(other));
   if(l.stat==='total'){
@@ -1284,7 +1455,7 @@ function pbPool(games){
   const pref=[], thin=[], plGames=new Set(), fm={}; let far=0;
   for(const c of pricedLegs(games)){
     if(!isGameLeg(c)) plGames.add(c.gid);
-    if(!pbAllows(c)||c.src!=='real'||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
+    if(!pbAllows(c)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
     if(c.grp!=='TEAM'&&formOut) continue;
     /* the model FAR_OFF or more above the book's fair chance: left out, and counted for the panel */
@@ -1452,10 +1623,15 @@ function pbTier(t,pool,memo,base){ return pbWithFair(pbTierOf(t,pool,memo,base))
    ticked and none of the ticked games priced yet, that is the reason, and the tier says so rather
    than ask for more ticks (under Players only no tick would help). c: which of the two kinds are ticked */
 const PB_NO_PL='no player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
+/* once the job reads DraftKings' lines from ESPN (app v107), a game with none has no player leg because
+   DraftKings had posted none at the last read: lines read on ESPN are priced here by estimate, so the
+   reason is the lines, not the price pull */
+function pbNoPl(){ const M=PAY&&PAY.espn_meta; if(!M||!M.at) return PB_NO_PL;
+  return `no player lines yet: DraftKings had posted none for these games when its lines were last read from ESPN (${espnWhen(M.at)}), and they are read again on every run of the job; DraftKings’ own prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`; }
 function pbWhy(n,pool,c){
   const m=pbMaxLegs([...pool.pref,...pool.thin,...(pool.mkt||[])]);
   const what=m<n?`${m?`Only ${m} leg${m===1?'':'s'}`:'No legs'} on your picks`:`No ${n}-leg parlay on your picks`;
-  if(c&&c.players&&!pool.plGames) return c.teams?`${what}, and ${PB_NO_PL}`:PB_NO_PL[0].toUpperCase()+PB_NO_PL.slice(1);
+  if(c&&c.players&&!pool.plGames){ const np=pbNoPl(); return c.teams?`${what}, and ${np}`:np[0].toUpperCase()+np.slice(1); }
   return `${what}: tick more games or bet types.`;
 }
 function pbBuild(){
@@ -1605,7 +1781,7 @@ function pbRecHtml(){
   if(push) notes.push(`${push} push${push===1?'':'es'} (every leg a push or a void, the stake back) ${push===1?'is':'are'} counted apart.`);
   if(noFair) notes.push('* Not every parlay graded had a fair chance (a leg with no book price): those are left out of that sum.');
   return `<div id="pbRec" class="pb-rec"><h3>Suggestions record</h3>
-    <p class="muted">It starts on 12 October 2026, Monday night’s Bills at Rams the first: each entry is this panel on its default choices (All, every game still to come, ${pbAmt(STAKE_DEFAULT)}) as the job last saw it before a wave of kickoffs, frozen at kickoff and graded as a book settles it (a push drops out, and so does a player who did not play; one who played with no stat line is graded on zero). A parlay the panel kept across waves counts once. Expected is the sum of the chances shown, by the book’s fair chance and by the model’s; units are on $1 a parlay.</p>
+    <p class="muted">It starts on 12 October 2026, Monday night’s Bills at Rams the first: each entry is this panel on its default choices (All, every game still to come, ${pbAmt(STAKE_DEFAULT)}) as the job last saw it before a wave of kickoffs, frozen at kickoff and graded as a book settles it (a push drops out, and so does a player who did not play; one who played with no stat line is graded on zero). From 15 October 2026 a leg priced from DraftKings’ line read on ESPN carries an estimated price, and is graded on the price shown. A parlay the panel kept across waves counts once. Expected is the sum of the chances shown, by the book’s fair chance and by the model’s; units are on $1 a parlay.</p>
     ${any?`<div class="pb-rec-wrap"><table><thead><tr><th scope="col">Level</th><th scope="col" class="num">Graded</th><th scope="col" class="num">Won</th><th scope="col" class="num">Expected, fair chance</th><th scope="col" class="num">Expected, model</th><th scope="col" class="num">Units on $1</th></tr></thead><tbody>${rows}</tbody></table></div>`
       :`<p class="pb-rec-none">No suggested parlay has been graded yet.</p>`}
     ${notes.map(t=>`<p class="muted pb-rec-note">${t}</p>`).join('')}</div>`;
@@ -1642,11 +1818,18 @@ function gameLegPool(g){
     for(const l of statLines(x)){
       if(GAME_NOT_OFFERED.has(l.stat)) continue;
       const base={gid:g.id,pid:x.pl.id,stat:l.stat,name:x.pl.n,pos:x.pl.pos,grp:x.pl.grp,team,opp:x.opp,week:g.w,src:'est'};
+      /* a leg with no real price: DraftKings' line from ESPN where there is one (a tested kind DraftKings
+         lists counts as a book price; any other is shown on the page and never suggested), else the
+         model's estimate as before */
       if(l.prob){ const key=legKey(g.id,x.pl.id,'any_td');
-        if(!have.has(key+'@1over')) out.push({...base,stat:'any_td',key,k:1,side:'over',main:false,p:l.p,price:bookPrice(l.p),mu:null,label:tdLabel(x.pl.grp,1)});
+        if(!have.has(key+'@1over')){ const d=oddsFor(g.id,x.pl.id,'any_td',1)==null?espnPrice(x,g,'any_td','td',1):null;
+          if(d){ if(d.tested&&d.listed) out.push({...base,src:'dkline',espn:espnOf(d),stat:'any_td',key,k:1,side:'over',main:false,p:l.p,price:d.price,mu:null,label:tdLabel(x.pl.grp,1)}); }
+          else out.push({...base,stat:'any_td',key,k:1,side:'over',main:false,p:l.p,price:bookPrice(l.p),mu:null,label:tdLabel(x.pl.grp,1)}); }
         continue; }
       const key=legKey(g.id,x.pl.id,l.stat);
       for(const r of l.rungs){ if(have.has(key+'@'+r.k+'over')) continue;
+        const d=oddsFor(g.id,x.pl.id,l.stat,r.k)==null?espnPrice(x,g,l.stat,'rung',r.k,'over'):null;
+        if(d){ if(d.tested&&d.listed&&!d.mainOver) out.push({...base,src:'dkline',espn:espnOf(d),key,k:r.k,side:'over',main:false,p:r.p,price:d.price,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); continue; }
         out.push({...base,key,k:r.k,side:'over',main:false,p:r.p,price:rungView(x.pl,l.stat,l.mu,r.k,g.w).est,mu:l.mu,label:`${r.k}+ ${l.m.lbl.toLowerCase()}`}); }
     }
   }
@@ -1706,11 +1889,11 @@ function gameSuggestCard(g,locked){
     if(!t) return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span></div><p class="muted" style="margin:6px 0 0;font-size:12px">This game does not have ${n} lines to build from yet.</p></div>`;
     return `<div class="gsugg-tier"><div class="gsugg-tier-hd"><span class="conf ${id}">${label}</span><span class="muted">${n} legs</span><span class="grow"></span><button class="btn quiet gsugg-all" data-gtier-add="${id}">Add all</button></div>
       <div class="gsugg-nums">${t.fair&&t.fair.p!=null?`<b data-gsugg-fair="${t.fair.p}">${(t.fair.p*100).toFixed(0)}%</b> fair chance${t.fair.est?' (est.)':''} <span class="muted">·</span> model says <b>${(t.corr*100).toFixed(0)}%</b> to land`
-        :`<b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">(the model’s chance: no fair chance without every leg’s book price)</span>`} <span class="muted">·</span> <b>${fmtML(decToML(t.dec))}</b>${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''}</div>
+        :`<b>${(t.corr*100).toFixed(0)}%</b> to land <span class="muted">(the model’s chance: no fair chance without every leg’s book price)</span>`} <span class="muted">·</span> <b>${fmtML(decToML(t.dec))}</b>${t.legs.some(l=>l.src==='dkline')?' <span class="muted" data-gsugg-est>estimated price</span>':''}${stake?` <span class="muted">pays $${(stake*t.dec).toFixed(2)}</span>`:''}</div>
       ${t.relaxed?`<p class="muted" style="margin:4px 0 0;font-size:11.5px">This game's lines cannot reach +${floor} at this chance yet; this is the best they allow.</p>`:''}
       <ul class="gsugg-legs">${t.legs.map(l=>{ const on=suggestLegOn(l);
         return `<li><label class="gsugg-pick${on?' on':''}"><input type="checkbox" ${on?'checked':''} data-leg="${l.key}" data-k="${l.k}" data-side="${l.side}"${l.main?' data-main="1"':''} aria-label="${on?'Take':'Put'} ${esc(l.name)}, ${esc(l.label)}, ${on?'off':'on'} the parlay">
-          <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='real'?'':'<i class="est"> est.</i>'}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`; }).join('')}</ul></div>`; };
+          <span class="nm">${esc(l.name)}<small>${esc(l.label)}</small></span><span class="pr">${fmtML(l.price)}${l.src==='real'?'':`<i class="est"${l.src==='dkline'?estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true}):''}> est.</i>`}<em>${(l.p*100).toFixed(0)}%</em></span></label></li>`; }).join('')}</ul></div>`; };
   return `<div class="card gsugg"><div class="gsugg-hd"><h2>Suggested parlays</h2></div>${side}
     <div class="gsugg-tiers g3">${GAME_TIERS.map(block).join('')}</div></div>`;
 }
@@ -1737,6 +1920,11 @@ const pbInBuilder=legs=>Object.keys(S.parlay||{}).length===legs.length&&legs.eve
 function pbMktLine(legs,why){
   const n=legs.filter(l=>l.market).length, one=n===1;
   return `${one?'The game total is':n+' game totals are'} at the book’s own chance with its margin out, so ${one?'it has':'they have'} no edge: ${one?'it is':'they are'} here because ${why||'your picks do not make a parlay of this size from legs with an edge'}.`;
+}
+/* what a leg priced from DraftKings' line read on ESPN is, on a level's card or an Elo pick's */
+function pbEspnLine(legs){
+  const e=legs.filter(l=>l.src==='dkline'), n=e.length, at=e.map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0];
+  return `${n===1?'One leg is':n+' legs are'} priced from DraftKings’ line read on ESPN${at?' ('+espnWhen(at)+')':''}: the line is DraftKings’ own, the price our estimate of DraftKings’, so the price and payout are estimates. Check ${n===1?'it':'them'} on DraftKings before you bet.`;
 }
 /* a turned level (v, the visitor's view of it) is chosen from the legs the card has not shown
    (left, until it starts over) beside the visitor's locks, so it says so: in its rule, and in why
@@ -1779,14 +1967,14 @@ function pbTierCard(t,o){
   const v=o.ctl?PB_VIEW.t[t.id]:null, allL=!!(v&&t.legs&&t.legs.every(l=>pbLocked(t.id,l)));
   const turn=o.ctl?`<span class="pb-turnbar"><button type="button" class="btn quiet small pb-turn" data-pb-turn="${t.id}" ${allL?'disabled title="Every leg is locked: unlock one for new legs"':'title="New legs for this level, keeping the ones you locked"'}>\u21bb New legs</button>${t.turned?`<button type="button" class="btn quiet small" data-pb-reset="${t.id}" title="Back to the panel's own ${esc(t.label)} parlay">Reset</button>`:''}</span>`:'';
   if(t.why) return `<div class="pb-tier ${t.id} none"><div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.n} legs</span>${t.turned?turn:''}</div><p class="pb-why">${esc(t.why)}</p></div>`;
-  const form=formSig()!=='', wrapped=o.ctl&&t.turned&&PB_VIEW.t[t.id]&&PB_VIEW.t[t.id].wrapped, fm={};
+  const form=formSig()!=='', wrapped=o.ctl&&t.turned&&PB_VIEW.t[t.id]&&PB_VIEW.t[t.id].wrapped, fm={}, nE=t.legs.filter(l=>l.src==='dkline').length;
   const lock=l=>{ if(!o.ctl) return ''; const on=pbLocked(t.id,l);
     return `<button type="button" class="pb-lock${on?' on':''}" data-pb-lock="${t.id}|${esc(pbId(l))}" aria-pressed="${on}" aria-label="${on?'Unlock':'Lock'} ${esc(l.name)}, ${esc(l.label)}" title="${on?'Locked: kept when you ask for new legs':'Lock to keep this leg when you ask for new legs'}">${on?'\ud83d\udd12':'\ud83d\udd13'}</button>`; };
   return `<div class="pb-tier ${t.id}" data-pb-tier="${t.id}">
     <div class="pb-th"><span class="pb-tn">${esc(t.label)}</span><span class="pill">${t.legs.length} legs</span>${turn}${o.rule||(t.floor!=null?`<span class="pb-rule">${pbRuleOf(t,v)}</span>`:'')}</div>
-    <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>price</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
-    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li>${lock(l)}<span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`; }).join('')}</ul>
-    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs,pbMktWhy(t,v))}</p>`:''}${wrapped?`<p class="pb-thin pb-wrap">Every other leg on your picks has had its turn here: back to the first.</p>`:''}
+    <div class="pb-nums">${pbChanceHtml(t.fair,chance,o)}<div><b>${fmtML(decToML(t.dec))}</b><span>${nE?'price, est.':'price'}</span></div><div class="pb-pay" data-pb-pay="${t.dec}">${pbPayHtml(t.dec)}</div></div>
+    <ul class="pb-legs">${t.legs.map(l=>{ const ff=legFarOff(l,fm); return `<li>${lock(l)}<span class="nm">${o.badge?o.badge(l):''}${esc(l.name)}<small>${esc(l.label)}${l.market?' <i class="pb-thinmark">no edge</i>':(l.thin?' <i class="pb-thinmark">thin edge</i>':'')}</small>${ff?`<small class="faroff" data-pb-far>${farText(l.p,ff)}</small>`:''}</span><span class="pr">${fmtML(l.price)}${l.src==='dkline'?`<i class="est"${estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true})}> est.</i>`:''}<em>${((o.legP?o.legP(l):l.p)*100).toFixed(0)}%</em></span></li>`; }).join('')}</ul>
+    ${t.thin?`<p class="pb-thin">${pbThinLine(t.legs,form)}</p>`:''}${t.mkt?`<p class="pb-thin">${pbMktLine(t.legs,pbMktWhy(t,v))}</p>`:''}${nE?`<p class="pb-thin pb-espnline">${pbEspnLine(t.legs)}</p>`:''}${wrapped?`<p class="pb-thin pb-wrap">Every other leg on your picks has had its turn here: back to the first.</p>`:''}
     <div class="pb-acts"><button type="button" class="btn ${card?'quiet':'go'}" ${o.add||`data-pb-add="${t.id}"`}>${pbInBuilder(t.legs)?'In the builder':'Add to builder'}</button>${card?`<button type="button" class="btn go" data-pc-finish="${o.kind||'pb'}|${t.id}">Finish</button>`:''}</div></div>`;
 }
 window.pbTierCard=pbTierCard;
@@ -1800,14 +1988,18 @@ function pbPanel(){
   const chips=PB_KINDS.map(([k,l,s])=>`<label class="pb-chip${u.k[k]?' on':''}"><input type="checkbox" data-pb-kind="${k}" ${u.k[k]?'checked':''}><span>${l}${s?` <small>${s}</small>`:''}</span></label>`).join('');
   const glist=games.map(g=>{ const on=!u.off.includes(g.id), d=fmtDate(g);
     return `<label class="pb-g${on?' on':''}"><input type="checkbox" data-pb-game="${g.id}" ${on?'checked':''} aria-label="${esc(g.a)} at ${esc(g.h)}, ${esc(d.day)} ${esc(d.t)}"><span><b>${esc(g.a)} @ ${esc(g.h)}</b><small>${esc(d.day)}${d.t?' · '+esc(d.t):''}</small></span></label>`; }).join('');
+  /* the levels as their cards show them (a level the visitor turned, else the panel's own) */
+  const shown=r.tiers.map(t=>t.why?t:pbShownTier(t.id)), dkOn=shown.some(t=>t&&t.legs&&t.legs.some(l=>l.src==='dkline')), espnW=espnOn(w);
   const notes=[];
   if(formSig()==='noform') notes.push('The Elo ratings are still loading: player legs join once they are in.');
+  if(dkOn) notes.push(`A player leg marked est. is priced from DraftKings’ line read on ESPN, where DraftKings’ own price is not on file: ${esc(espnReadLine())} The line is DraftKings’, the price our estimate of DraftKings’ (${ESPN_ERR} on weeks it was not fitted on), and it counts here as a book price does.`);
   if(u.k.total) notes.push('Game totals have no edge: each is priced at the book’s own chance, so a level takes one only where the legs with an edge on your picks cannot make a parlay of its size, and marks it no edge.');
   /* player bets ticked, none of their prices in, and a level built all the same (from team bets
      or totals): the levels say nothing of the missing player legs, so the panel does */
-  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push('Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
+  if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push(PAY&&PAY.espn_meta&&PAY.espn_meta.at?`No player lines are in yet for your picks, so the tiers below are built without player legs: ${pbNoPl().replace(/^no player lines yet: /,'')}`:'Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
   if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
-  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`);
+  if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(espnW?`No line on your picks has a price the model rates at or above the book yet, DraftKings’ lines read on ESPN included. DraftKings’ own prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`
+    :`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`);
   return `<div class="card pb" id="pbCard">${head}
     <p class="muted pb-lead">Choose what to build from: every tier below uses only the bet types and games ticked here.</p>
     <div class="pb-ctl">
@@ -1819,8 +2011,8 @@ function pbPanel(){
         <div class="pb-glist">${glist}</div></details>
     </div>
     ${notes.map(t=>`<p class="pb-note">${t}</p>`).join('')}
-    <div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t.why?t:pbShownTier(t.id),{ctl:!t.why})).join('')}</div>
-    <p class="muted pb-foot">Every leg has a real sportsbook price and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that the model says land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. Each level leads with the book’s fair chance, DraftKings’ prices with the margin taken out (est. where a leg is priced on one side only), with the model’s own beside it: the levels are chosen on the model’s chances, the floors included, and those have run higher than the book’s this season, so a leg the model rates ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance is left out.</p>
+    <div class="pb-tiers">${r.tiers.map((t,i)=>pbTierCard(shown[i],{ctl:!t.why})).join('')}</div>
+    <p class="muted pb-foot">Every leg has a real sportsbook price${espnW?' (or, marked est., DraftKings’ line read on ESPN at our estimate of its price, on main lines, touchdowns and yards ladders, the markets the estimate has been checked on)':''} and a model chance between 45% and 97%, at least 3 points above the chance that price implies${form?'; a player leg also needs market + form, the book’s chance moved by his Elo, 3 points above it':''}. Safe is the likeliest pair; Medium, Aggressive and Extreme are the 3-, 4- and 5-leg parlays with the best expected return that the model says land at least ${PB_TIERS.slice(1).map(t=>Math.round(t[3]*100)+'%').join(', ').replace(/, ([^,]*)$/,' and $1')} of the time, or, where none of that size gets there, the likeliest of that size. One leg a player; a game gives one side, to win or to cover, and its total; legs in one game are priced together, as a book prices them. A game total has no edge, being the book’s own chance, and fills a level only where those legs cannot. Each level leads with the book’s fair chance, DraftKings’ prices with the margin taken out (est. where a leg is priced on one side only), with the model’s own beside it: the levels are chosen on the model’s chances, the floors included, and those have run higher than the book’s this season, so a leg the model rates ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance is left out.</p>
     <div id="pbElo" class="pb-elo"></div>${pbRecHtml()}</div>`;
 }
 function renderPb(){
@@ -1941,12 +2133,13 @@ function renderParlay(o){
       <td><b>${esc(l.label)}</b>${far?`<small class="faroff" data-far>${farText(l.p,f)}</small>`:''}</td>
       <td class="num">${l.mu==null?'\u2013':num(l.mu,l.mu<10?1:0)}</td>
       <td class="num">${(l.p*100).toFixed(0)}% <span class="conf ${c}" style="margin-left:6px">${lbl}</span>${f?`<small class="legfair" data-legfair="${f.p}" title="The book's fair chance on this leg: its price with the margin taken out${f.est?', estimated with the week\u2019s typical margin since only this side is priced':''}">fair ${(f.p*100).toFixed(0)}%${f.est?' est.':''}</small>`:''}</td>
-      <td class="num">${fmtML(prices[i].ml)} <span class="muted" style="font-size:11px">${prices[i].src==='real'?'real':(prices[i].src==='est'?'est.':'fair')}</span></td>
+      <td class="num">${fmtML(prices[i].ml)} <span class="muted" style="font-size:11px"${prices[i].src==='dkline'?estAttr({src:'dkline',...(l.espn||{}),listed:true,tested:true}):''}>${prices[i].src==='real'?'real':(prices[i].src==='est'||prices[i].src==='dkline'?'est.':'fair')}</span></td>
       <td><button class="btn quiet" data-drop="${l.key}">Remove</button></td></tr>`;
   });
   html+=`</tbody></table>`;
   { const out=legs.filter(l=>l.grp!=='TEAM'&&S.inactive&&S.inactive[l.pid]);
     if(out.length) html+=`<p class="delta down" style="margin:10px 0 0">${out.map(l=>esc(l.name)).join(', ')} ${out.length===1?'is':'are'} not expected to play (${out.map(l=>inactiveWhy(S.inactive[l.pid])).join('; ')}). A book voids a leg on a player who does not play and pays the rest at their own prices; take ${out.length===1?'it':'them'} off to see what the rest pay.</p>`; }
+  if(prices.some(p=>p.src==='dkline')) html+=`<p class="muted espn-read" style="margin:10px 0 0;font-size:12px" data-espn-read>${esc(espnReadLine())} A leg marked est. is priced from DraftKings’ line read on ESPN: the line is DraftKings’, the price and its fair chance our estimate.</p>`;
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks (${wks.join(', ')}). A parlay has to settle together, so a sportsbook won't take this as one ticket.</p>`;
   /* what it pays, inside the same card, then the two actions as buttons only */
   html+=`<div class="pays"><h3>What it pays</h3>

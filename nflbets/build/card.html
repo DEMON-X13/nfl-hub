@@ -162,11 +162,14 @@ window.PARLAY_CARD=(function(){
      very slip it named. An id comes only with a price
      the job bought, so a game whose prices (or whose player prices) have not been pulled yet has none
      to open: then the button and Share link take the visitor to the game's DraftKings page, or to
-     DraftKings' NFL page, to add the legs by hand, and each leg says why. */
+     DraftKings' NFL page, to add the legs by hand, and each leg says why. A player's leg priced from
+     DraftKings' line read on ESPN (src 'dkline', app v107) is DraftKings' own line, but ESPN carries no
+     outcome id for it, so it is always one to add by hand, and says so (DKLINE_WHY). */
   const DKS='https://sportsbook.draftkings.com/', DKNFL=DKS+'leagues/football/nfl';
   /* when the pull reads a game's prices, as the Parlay Builder panel says it (PB_NO_PL in part3.js) */
   const PULLED='they are pulled on game day or the day before, Sunday\u2019s afternoon and night games on Saturday morning, and never for Sunday\u2019s early games (before 4pm ET)';
   const dkUrl=ids=>DKS+'?outcomes='+ids.map(encodeURIComponent).join('+');
+  const DKLINE_WHY='price estimated from DraftKings\u2019 line; its id was not read';
   const pt=x=>String(+x), signed=x=>(+x>0?'+':'')+pt(x);
   function dkGame(l){ try{ const D=typeof PAY==='object'&&PAY&&PAY.dk, W=D&&D[String(l.week)]; return (W&&W[l.gid])||null; }catch(e){ return null; } }
   /* a payload baked with ids at all (dk), as against one baked before them */
@@ -195,6 +198,8 @@ window.PARLAY_CARD=(function(){
   function dkLeg(l){
     if(kickedOff(l)) return {why:'its game has kicked off',brief:'its game has kicked off'};
     const D=dkGame(l), team=l.stat==='ml'||l.stat==='ats', player=!team&&l.stat!=='total', at=dkRead(l,D);
+    /* priced from DraftKings' line read on ESPN: no outcome id came with it */
+    if(player&&l.src==='dkline'&&!dkBooked(l)) return {why:DKLINE_WHY,brief:'price estimated from DraftKings\u2019 line, id not read'};
     /* a payload baked before ids says only that */
     if(!D&&!dkBaked()) return {why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'};
     /* a market the pull does not read: where no id turns up for it, that is why, and no pull will
@@ -285,7 +290,9 @@ window.PARLAY_CARD=(function(){
       if(t&&!Array.isArray(t.legs)) t=null; }catch(e){ t=null; }
     if(!t||!Array.isArray(t.legs)||!t.legs.length) return null;
     const legs=t.legs.map(l=>Object.assign({},l,{card:leg(l,l.price,l.src||'real')}));
-    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:'book price',
+    /* a tier with a leg priced from DraftKings' line read on ESPN is priced on that estimate, and says
+       so as the builder does */
+    return card({source:kind,kicker:kind==='elo'?'Elo pick':t.label+' parlay',legs,dec:t.dec,priceNote:t.legs.some(l=>l.src&&l.src!=='real')?'estimated price':'book price',
       chance:kind==='elo'?t.p:t.corr,chanceBy:kind==='elo'?'Elo':'Model',fair:t.fair,stake:pbStake()});
   }
 

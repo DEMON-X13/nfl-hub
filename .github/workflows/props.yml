@@ -113,7 +113,9 @@ jobs:
         # next run finds it ready. A refused run never commits it. props/data carries the
         # suggestions record too, props/data/suggest_ledger.json (props/build/suggest_ledger.js, run
         # by weekly.py after a clean audit): the suggested parlays frozen at each wave's kickoff and
-        # graded after; a run whose record the script refused leaves the last good one in place.
+        # graded after; a run whose record the script refused leaves the last good one in place. It
+        # carries ESPN's free read of DraftKings' lines too, props/data/espn_wk{W}.json (espn_lines.py,
+        # run by weekly.py on every run: about 30 requests, inside netfetch's budget and this job's timeout).
         run: |
           git config user.name "nfl-hub bot"
           git config user.email "bot@users.noreply.github.com"

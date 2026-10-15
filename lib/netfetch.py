@@ -1,5 +1,6 @@
-"""The one download rule the NFL jobs' Python steps share (elo/build.py, props/build/weekly.py, the
-Joker and the Broly Model through betting/jobkit.py); lib/netfetch.js is the same rule for Node.
+"""The one download rule the NFL jobs' Python steps share (elo/build.py, props/build/weekly.py and its
+read of ESPN's free DraftKings lines, props/build/espn_lines.py, the Joker and the Broly Model through
+betting/jobkit.py); lib/netfetch.js is the same rule for Node.
 
 nflverse's release host (github.com/.../releases/download, redirected to GitHub's asset CDN) answers
 the odd request with a 500 and works again a little later: on 13 October 2026 it gave three 500s in a
@@ -54,8 +55,10 @@ def _log(msg):
     print(msg, flush=True)
 
 
-def download(url, dest, *, timeout=120, min_bytes=1, headers=None, waits=None, sleep=time.sleep, log=_log):
-    """url -> dest (returned), by the rule above"""
+def download(url, dest, *, timeout=120, min_bytes=1, headers=None, waits=None, sleep=time.sleep, log=_log, info=None):
+    """url -> dest (returned), by the rule above. `info`, a dict when given, is filled on success with
+    the answer's `date` (its Date header, or None) and `tries`: props/build/espn_lines.py dates a read by
+    the server's clock, never by a time the body claims"""
     waits = WAITS if waits is None else waits
     name = os.path.basename(dest)
     tmp = dest + '.part'
@@ -70,6 +73,7 @@ def download(url, dest, *, timeout=120, min_bytes=1, headers=None, waits=None, s
             with urllib.request.urlopen(req, timeout=timeout) as r, open(tmp, 'wb') as f:
                 shutil.copyfileobj(r, f)
                 want = r.headers.get('Content-Length')
+                said = r.headers.get('Date')
             size = os.path.getsize(tmp)
             if want and want.isdigit() and size != int(want):    # urllib reads a cut-off transfer as a short one
                 raise http.client.IncompleteRead(b'', int(want) - size)
@@ -79,6 +83,8 @@ def download(url, dest, *, timeout=120, min_bytes=1, headers=None, waits=None, s
                 raise IOError(f'an empty or short answer ({size} bytes)' if not head.startswith(b'<')
                               else 'an HTML page, not the file')
             os.replace(tmp, dest)
+            if info is not None:
+                info.update(date=said, tries=i + 1)
             if i:
                 log(f'  {name}: had on try {i + 1}')
             return dest

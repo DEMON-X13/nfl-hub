@@ -34,6 +34,8 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const { JSDOM, VirtualConsole } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
+/* a price from DraftKings' line read on ESPN, worked on its own (the props audit's rule, apart from the page) */
+const ESPN_RULE = require(path.join(ROOT, 'props', 'build', 'espn_rule.js'));
 const HTML = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
 const STATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'betting', 'state.json'), 'utf8'));
 const SEASON_OVER = process.argv.includes('--season-over');
@@ -211,7 +213,13 @@ function fairRule(w) {
       if (g.sp != null && isFinite(g.sp) && px(g.spa) && px(g.sph)) by.ats.push(imp(g.spa) + imp(g.sph));
       if (g.tot != null && isFinite(g.tot) && px(g.tov) && px(g.tou)) by.total.push(imp(g.tov) + imp(g.tou)); }
     const o = { all: med([...by.player, ...by.ml, ...by.ats, ...by.total]) }; for (const k in by) o[k] = med(by[k]); return o; };
-  return l => { const lp = legPrice(l); if (!lp || lp.src !== 'real' || !px(lp.ml)) return null;
+  const ESR = ESPN_RULE.make(w);
+  return l => { const lp = legPrice(l);
+    /* priced from DraftKings' line read on ESPN (app v107): the formula's own fair chance, est. (a
+       touchdown's its price over the week's typical player overround), by espn_rule.js */
+    if (lp && lp.src === 'dkline' && px(lp.ml)) { const x = ESR.price(l); if (!x) return null;
+      return x.kind === 'td' ? { p: Math.max(0.001, Math.min(0.999, imp(lp.ml) / ESR.playerVig(l.week))), est: true } : { p: x.fair, est: true }; }
+    if (!lp || lp.src !== 'real' || !px(lp.ml)) return null;
     const g = S.sched.find(x => x.id === l.gid), u = l.side === 'under';
     if (l.stat === 'total') { if (g && g.tot != null && +l.k === +g.tot && px(g.tov) && px(g.tou)) return { p: u ? nv(g.tou, g.tov) : nv(g.tov, g.tou), est: false }; }
     else if (l.stat === 'ml' || l.stat === 'ats') { if (g && (l.team === g.h || l.team === g.a)) { const h = l.team === g.h;
@@ -219,6 +227,13 @@ function fairRule(w) {
       if ((l.stat === 'ml' || (g.sp != null && +l.k === (h ? -g.sp : +g.sp))) && px(own) && px(oth)) return { p: nv(own, oth), est: false }; } }
     else if (l.main) { const x = (((PAY.mkt || {})[String(l.week)] || {})[l.pid] || {})[l.stat]; if (x && +x.line === +l.k && px(x.over) && px(x.under)) return { p: u ? nv(x.under, x.over) : nv(x.over, x.under), est: false }; }
     const V = vig(l.week), ov = V[isG(l) ? l.stat : 'player'] || V.all; return ov > 0 ? { p: Math.max(0.001, Math.min(0.999, imp(lp.ml) / ov)), est: true } : null; };
+}
+/* a leg the panel, a game page's hands or the Elo picks may take: a real price, or one from DraftKings'
+   line read on ESPN on a kind the estimate has been checked on, at the rule's own price, with no real
+   price on file for it */
+function takenRule(w) {
+  const ESR = ESPN_RULE.make(w), isG = w.eval('isGameLeg');
+  return l => l.src === 'real' || (l.src === 'dkline' && !isG(l) && (() => { const x = ESR.price(l); return ESR.takeable(x) && x.price === l.price && !ESR.real(l); })());
 }
 /* a chance as the parlay card prints it */
 const pct1 = p => p > 0 && p < 0.0005 ? '<0.1%' : (p * 100).toFixed(1) + '%';
@@ -785,7 +800,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(t.legs.length === t.n && new Set(t.legs.map(l => l.key)).size === t.n, `${lab}: the ${t.id} tier is not ${t.n} different lines`);
         chk(t.legs.every(l => u.k[kindOf(l)] && !u.off.includes(l.gid) && games.some(g => g.id === l.gid) && !started(Sx.sched.find(g => g.id === l.gid))),
           `${lab}: the ${t.id} tier has a leg of a kind or a game not ticked, or one that has kicked off`);
-        chk(t.legs.every(l => l.src === 'real' && (l.market || l.p >= mlProb(l.price)) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price or rated below the book`);
+        chk(t.legs.every(l => takenRule(w)(l) && (l.market || l.p >= mlProb(l.price)) && l.p >= 0.45 && l.p < 0.97), `${lab}: the ${t.id} tier has a leg with no real price (nor the rule's own from DraftKings' line on ESPN, on a kind it may take) or rated below the book`);
         /* a total only as a market leg, marked no edge, and only where the legs with an edge cannot make the level */
         chk(t.legs.every(l => (l.stat === 'total') === !!l.market) && (t.mkt || 0) === t.legs.filter(l => l.market).length
           && (!t.mkt || w.eval('pbTier')(w.eval('PB_TIERS').find(s => s[0] === t.id), { pref: pool.pref, thin: pool.thin, mkt: [] }, new Map()) === null),
@@ -878,7 +893,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
          the pool and every level, the panel says how many and why, and one is flagged on its game page */
       { const fo = fairRule(w), FAR = w.eval('FAR_OFF'), isFar = l => { const f = fo(l); return !!f && l.p - f.p >= FAR - 1e-9; };
         const on = w.eval('pbGames()'), pool = w.eval('pbPool')(on), mlP = w.eval('mlProb');
-        const left = w.eval('pricedLegs')(on).filter(c => w.eval('pbAllows')(c) && c.src === 'real' && c.p >= 0.45 && c.p < 0.97 && c.p - mlP(c.price) >= 0 && isFar(c));
+        const left = w.eval('pricedLegs')(on).filter(c => w.eval('pbAllows')(c) && takenRule(w)(c) && c.p >= 0.45 && c.p < 0.97 && c.p - mlP(c.price) >= 0 && isFar(c));
         chk(left.length > 0 && pool.far === left.length && [...pool.pref, ...pool.thin].every(c => !isFar(c)) && [...pool.pref, ...pool.thin].some(c => !isG(c)),
           `the made-up lines left ${left.length} legs far off the market where the pool counts ${pool.far}, or one is in the pool, or no player leg is left in it`);
         chk(txt(panel).includes(`${left.length} leg${left.length === 1 ? ' is' : 's are'} left out: the model rates ${left.length === 1 ? 'it' : 'each'} 15 points or more above the book’s fair chance`) && /still on the game pages, flagged far off the market/.test(txt(panel)),
@@ -980,12 +995,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           `Finish on the ${t.label} tier does not open its card with its legs, price and chance: ` + txt(view).slice(0, 200));
         chk(cash === [money(AMT), money(AMT * t.dec), '+' + money(AMT * t.dec - AMT)].join(' | '),
           `Finish on the ${t.label} tier does not open its card on the Bet amount: ${cash} for ${amtTxt(AMT)} at ${t.dec}`);
-        /* Open in DraftKings: every leg with a key (all but a 2+ touchdown rung) opens, on its own made-up
-           id, in the card's order, joined by + with each '#' as %23, no decoy among them; the rest named
-           under the buttons, and the note dated, saying what it opens as DraftKings had it then and
-           promising no leg */
-        { const DK = w.eval('PAY').dk || {}, ids = t.legs.map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(dkKey).length;
-          chk(n > 0 && ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
+        /* Open in DraftKings: every leg with a key (all but a 2+ touchdown rung, and a player's leg priced
+           from DraftKings' line read on ESPN, which carries no id and goes on by hand) opens, on its own
+           made-up id, in the card's order, joined by + with each '#' as %23, no decoy among them; the rest
+           named under the buttons, a leg from ESPN's read saying its price is estimated and its id not
+           read, and the note dated, saying what it opens as DraftKings had it then and promising no leg */
+        { const DK = w.eval('PAY').dk || {}, onSlip = l => !!dkKey(l) && !(l.src === 'dkline' && !w.eval('isGameLeg')(l)), ids = t.legs.filter(onSlip).map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(onSlip).length;
+          const espnMiss = t.legs.map((l, i) => ({ l, i })).filter(({ l }) => l.src === 'dkline' && !w.eval('isGameLeg')(l));
+          chk(espnMiss.every(({ l, i }) => { const li = d.querySelector(`#pcDkNote [data-pc-dkmiss="${i + 1}"]`); return !!li && txt(li).endsWith(': price estimated from DraftKings’ line; its id was not read'); }),
+            `Open in DraftKings on the ${t.label} tier does not name each leg priced from DraftKings' line read on ESPN to add by hand, its price estimated and its id not read: ` + [...d.querySelectorAll('#pcDkNote [data-pc-dkmiss]')].map(txt).join(' / '));
+          if (!n) console.log(`  (every leg of the ${t.label} tier is priced from DraftKings' line read on ESPN: none goes on the slip, and each is named to add by hand)`);
+          else chk(ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
             && d.querySelectorAll('#pcDkNote [data-pc-dkmiss]').length === t.legs.length - n && !d.getElementById('pcLink').hidden
             && /^DraftKings’ lines as read .* ET: Open in DraftKings opens /.test(txt(d.getElementById('pcDkNote'))) && txt(d.getElementById('pcDkNote')).includes(`opens ${n < t.legs.length ? n + ' of the ' + t.legs.length + ' legs' : 'the ' + t.n + ' legs'} as DraftKings had ${n === 1 ? 'it' : 'them'} then; a leg whose line DraftKings has moved or pulled since will not be on the slip`)
             && !/\bputs all\b|\ball \d+ legs on\b/.test(txt(d.getElementById('pcDkNote')) + ' ' + a.getAttribute('title')),
@@ -1406,6 +1426,17 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(t3 && new Set(t3.legs.map(l => l.gid)).size === 3 && new Set(t3.legs.map(l => l.pid)).size === 3, 'Elo picks took two legs from one game or one player');
         chk(t3 && t3.legs.every(l => !['long', 'under', 'weak'].includes(l.key)), 'Elo picks took a line they should have passed on: ' + JSON.stringify(t3 && t3.legs.map(l => l.key)));
         chk(t2 && Math.abs(t2.dec - t2.legs.reduce((a, l) => a * w.eval('mlToDec')(l.price), 1)) < 1e-9, 'an Elo parlay is not priced as its legs multiplied');
+        /* a price worked from DraftKings' line read on ESPN (app v107) counts as a book price here and in
+           market + form, which pricedLegs offers only on the kinds the estimate has been checked on; a
+           model-only estimate never does */
+        { w.__legs2 = legs.map((l, i) => Object.assign({}, l, i === 0 ? { src: 'dkline', espn: { fair: 0.45, at: '2026-10-15T03:08Z', tested: true, listed: true } } : i === 2 ? { src: 'est' } : {}));
+          const keepPL = w.eval('pricedLegs'); w.eval('pricedLegs=function(){ return window.__legs2.map(l=>Object.assign({},l)); }');
+          const r2 = w.eval('eloPicks()'), all2 = r2.tiers.flatMap(t => t.legs);
+          chk(all2.some(l => l.key === legs[0].key && l.src === 'dkline') && !all2.some(l => l.key === legs[2].key),
+            'the Elo picks do not take a leg priced from DraftKings\' line read on ESPN as a book price, or take a model-only estimate: ' + JSON.stringify(r2.tiers.map(t => t.legs.map(l => l.key + ' ' + l.src))));
+          chk(w.eloAltP(legs[0].pid, 'over', -112, 'dkline', legs[0].stat) != null && w.eloAltP(legs[0].pid, 'over', -112, 'est', legs[0].stat) === null,
+            'market + form does not read a price from DraftKings\' line read on ESPN as the book\'s, or reads a model-only estimate');
+          w.__keepPL = keepPL; w.eval('pricedLegs=window.__keepPL'); w.eval('pricedLegs=function(){ return window.__legs.map(l=>Object.assign({},l)); }'); }
         /* the chance: the book's with its margin out, moved by the nudge in the stat's typical miss */
         { const l = t3.legs[0], a = MU.players[l.pid].stats[l.stat], sd = MU.fit[MU.players[l.pid].group + '|' + l.stat].sd;
           const fair = w.eval(`mlProb(${l.price})`) / 1.045, want = w.eloMatchupP(l, w.eval(`mlProb(${l.price})`));
@@ -1641,6 +1672,107 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         `Open in DraftKings on the payload's own ids for ${g.id} (its money line${under ? ' and ' + under.L.n + '\'s Under ' + under.L.line : ''}) is not those ids in the card's order: ` + (a ? a.getAttribute('href') + ' hidden ' + a.hidden : 'no link') + ' / ' + txt(d.getElementById('pcDkNote')).slice(0, 200));
       w.eval('PARLAY_CARD.close()');
       S.parlay = JSON.parse(keep); w.eval('save(); renderParlay();'); await wait(40); } }
+
+  /* ---- DraftKings' lines read on ESPN (app v107), on a stand-in read of the smoke's own. The page
+     prices a player leg the paid pull has no price for from DraftKings' line by a formula, marks it
+     est. with a title saying what it is priced from and when the line was read, says when the lines
+     were read, counts a tested kind as a book price in the suggested parlays (never an untested one),
+     and the parlay card names such a leg to add by hand, its price estimated and its id not read. The
+     stand-in replaces the read of the season's last game still to come and that game's own player
+     prices, whatever the payload holds, so it holds on any payload: one baked before the reads, the
+     week's own, a lean week. Every price is held to espn_rule.js, the props audit's own working ---- */
+  { const S = w.eval('S'), g = laterGame(w, S), ESR = ESPN_RULE.make(w), has = w.eval('typeof espnPrice') === 'function' && w.eval('typeof espnWhen') === 'function';
+    chk(has, 'the page prices nothing from DraftKings\' line read on ESPN (espnPrice, espnWhen)');
+    if (!g || !hasPb || !has) console.log('  (no game left to kick off: the stand-in read of DraftKings\' lines is not drawn)');
+    else { const P = w.eval('PAY'), wk = String(g.w), clone = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v)), fmt = w.eval('fmtML'), when = w.eval('espnWhen');
+      const keep = { e: clone(P.espn), m: clone(P.espn_meta), mk: clone(P.mkt[wk]), o: clone(S.odds[g.id]), pb: clone(S.ui.pb), parlay: clone(S.parlay), dk: clone(P.dk),
+        ui: clone({ game: S.ui.game, open: S.ui.open, rungs: S.ui.showRungs, all: S.ui.showAll }) };
+      let nEst = 0, nLev = 0;
+      try {
+        /* the game's own player prices out: every player leg is priced from the read or by the model */
+        delete S.odds[g.id];
+        for (const pid of Object.keys(P.mkt[wk] || {})) for (const st of Object.keys(P.mkt[wk][pid])) if (P.mkt[wk][pid][st] && P.mkt[wk][pid][st].g === g.id) delete P.mkt[wk][pid][st];
+        if (P.dk && P.dk[wk]) delete P.dk[wk][g.id];
+        /* the read: each starter's yards and receptions lines set where the model makes the over about 60%
+           (an edge, not far off the market), completions and carries the same (untested: never suggested),
+           ladders DraftKings lists (all but each ladder's last rung), touchdowns offered */
+        const ro = w.eval('rosterFor')(g, false), pOver = w.eval('pOver'), lines = {}, rungs = {}, td = [], WANT = ['passing_yards', 'rushing_yards', 'receiving_yards', 'receptions', 'completions', 'carries'];
+        const lineFor = (x, l) => { let b = null; for (let L = 0.5; L < Math.max(4, l.mu * 3); L += 1) { const p = pOver(x.pl.grp, l.stat, l.mu, L); if (!b || Math.abs(p - 0.6) < Math.abs(b.p - 0.6)) b = { L, p }; } return b.L; };
+        for (const tm in ro) for (const x of ro[tm].players) { if (!x.starter) continue;
+          for (const l of w.eval('statLines')(x)) { if (l.prob) { td.push(x.pl.id); continue; }
+            if (!WANT.includes(l.stat)) continue;
+            (lines[x.pl.id] ??= {})[l.stat] = lineFor(x, l);
+            (rungs[x.pl.id] ??= {})[l.stat] = l.rungs.map(r => r.k).slice(0, -1); } }
+        const at = new Date(Math.min(w.eval('Date.now()'), w.eval('kickoff')(g).getTime()) - 2 * 3600e3).toISOString().slice(0, 16) + 'Z';
+        P.espn = Object.assign({}, P.espn || {}, { [wk]: Object.assign({}, (P.espn || {})[wk] || {}, { [g.id]: { at, frozen: false, lines, rungs, td } }) });
+        P.espn_meta = { at, ok: true, games_read: 1, games_carried: 0, note: 'the smoke\'s stand-in' };
+        w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}');
+        /* the game's page: the read line, each est. price the rule's, marked est. with what it is priced from */
+        S.ui.showRungs = true; S.ui.showAll = false; S.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S.ui.open[x.pl.id] = true; S.ui.game = g.id;
+        w.eval('renderGame()'); await wait(30);
+        const view = d.getElementById('gameView'), rl = view.querySelector('[data-espn-read]');
+        chk(!!rl && txt(rl).startsWith(`DraftKings’ lines as read ${when(at)}; prices estimated.`), 'the game page does not say when DraftKings\' lines were read: ' + txt(rl));
+        const row = sel => [...view.querySelectorAll(sel)].map(i => i.closest('tr')).find(tr => tr && !tr.closest('.gsugg')) || null;
+        let mainSeen = false, untSeen = false, unlSeen = false, tdSeen = false;
+        for (const tm in ro) for (const x of ro[tm].players) { if (!x.starter) continue;
+          const base = { gid: g.id, week: g.w, pid: x.pl.id, team: tm, opp: x.opp };
+          for (const l of w.eval('statLines')(x)) {
+            if (l.prob) { const own = ESR.price({ ...base, stat: 'any_td', k: 1, side: 'over', main: false }), tr = row(`input[data-leg="${g.id}|${x.pl.id}|any_td"][data-k="1"]`), c = tr && tr.querySelector('td.num.est');
+              if (!own) continue; nEst++; tdSeen = true;
+              chk(!!c && txt(c) === fmt(own.price) + 'est.' && c.dataset.est === 'dkline' && c.title.startsWith(`DraftKings’ line from ESPN, read ${when(at)}; the price is our estimate (typically within`),
+                `${x.pl.n}'s anytime touchdown from DraftKings' line is not ${fmt(own.price)} est. with its title: "${txt(c)}" "${c ? c.title : ''}"`); continue; }
+            if (!(lines[x.pl.id] || {})[l.stat]) continue;
+            const L = lines[x.pl.id][l.stat], tested = ['passing_yards', 'rushing_yards', 'receiving_yards', 'receptions'].includes(l.stat);
+            for (const side of ['over', 'under']) { const own = ESR.price({ ...base, stat: l.stat, k: L, side, main: true }), tr = row(`input[data-leg="${g.id}|${x.pl.id}|${l.stat}"][data-main="1"][data-side="${side}"]`), c = tr && tr.querySelector('td.num.est'); nEst++;
+              chk(!!own && !!tr && tr.classList.contains('est-line') && txt(tr.querySelector('.thr')) === `${side === 'under' ? 'Under' : 'Over'} ${L}` && txt(c) === fmt(own.price) + 'est.' && c.dataset.est === 'dkline'
+                && c.title.startsWith(`DraftKings’ line from ESPN, read ${when(at)}; the price is our estimate (`) && c.title.includes(tested ? 'typically within 0.5 points on yards' : 'untested on this market'),
+                `${x.pl.n}'s ${l.stat} ${side} ${L} from DraftKings' line is not drawn as its main line at ${own ? fmt(own.price) : '?'} est., titled ${tested ? 'with how close it has been' : 'untested'}: "${txt(tr)}" "${c ? c.title : ''}"`);
+              if (tested) mainSeen = true; else untSeen = true; }
+            const h4 = tr0 => tr0 && tr0.closest('.statblk') && tr0.closest('.statblk').querySelector('h4 em.mline');
+            chk(txt(h4(row(`input[data-leg="${g.id}|${x.pl.id}|${l.stat}"][data-main="1"]`))) === `DraftKings line ${L}`, `${x.pl.n}'s ${l.stat} block does not name DraftKings' line ${L}`);
+            for (const r of l.rungs) { const own = ESR.price({ ...base, stat: l.stat, k: r.k, side: 'over', main: false }), tr = row(`input[data-leg="${g.id}|${x.pl.id}|${l.stat}"][data-k="${r.k}"]:not([data-main])`), c = tr && tr.querySelector('td.num.est');
+              if (!own || !tr) continue; nEst++;
+              chk(txt(c) === fmt(own.price) + 'est.' && c.dataset.est === 'dkline' && (own.listed ? !c.title.startsWith('Not on DraftKings') : c.title.startsWith('Not on DraftKings')),
+                `${x.pl.n}'s ${r.k}+ ${l.stat} from DraftKings' line is not ${fmt(own.price)} est.${own.listed ? '' : ', marked not on DraftKings'}: "${txt(c)}" "${c ? c.title : ''}"`);
+              if (!own.listed) unlSeen = true; } } }
+        chk(mainSeen && untSeen && unlSeen && tdSeen, `the stand-in read drew no ${[!mainSeen && 'tested main line', !untSeen && 'untested main line', !unlSeen && 'rung DraftKings does not list', !tdSeen && 'touchdown'].filter(Boolean).join(', ')} from DraftKings' line`);
+        S.ui.game = null; w.eval('closeGameModal()');
+        /* the suggested parlays on that game alone, players only: a tested leg from the read counts as a
+           book price (here a level holds one), an untested one never, each marked est. on its card */
+        const games = w.eval('pbGames()'); S.ui.pb.off = games.filter(x => x.id !== g.id).map(x => x.id); for (const k of ['ml', 'ats', 'total']) S.ui.pb.k[k] = false; S.ui.pb.k.over = true; S.ui.pb.k.under = true;
+        w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,t:{}}; renderParlay()'); await wait(40);
+        const r = w.eval('getPbTiers()'), taken = takenRule(w), legsAll = r.tiers.filter(t => t.legs).flatMap(t => t.legs), UNTESTED = l => ['completions', 'carries'].includes(l.stat) || (!l.main && l.stat === 'receptions');
+        nLev = legsAll.filter(l => l.src === 'dkline').length;
+        chk(nLev > 0, 'with DraftKings\' lines read on ESPN and no price of its own, no level on the game holds a leg priced from them: ' + r.tiers.map(t => t.why || t.legs.map(l => l.label + ' ' + l.src).join('+')).join(' / '));
+        chk(legsAll.every(taken) && !legsAll.some(UNTESTED), 'a level holds a leg priced from DraftKings\' line that is not the rule\'s, or of a kind never suggested (completions, carries, a receptions rung): ' + legsAll.filter(l => !taken(l) || UNTESTED(l)).map(l => l.name + ' ' + l.label + ' ' + l.src).join(', '));
+        chk(!w.eval('pricedLegs')([g]).some(l => l.src === 'dkline' && (UNTESTED(l) || !taken(l))) && !w.eval('gameLegPool')(g).some(l => l.src === 'dkline' && (UNTESTED(l) || !taken(l))),
+          'the lines a suggestion or a game hand is built from hold an untested leg from DraftKings\' line, or one not the rule\'s');
+        const pnl = d.getElementById('pbPanel');
+        for (const t of r.tiers.filter(t => t.legs)) { const c = pnl.querySelector(`.pb-tier.${t.id}`), li = c ? [...c.querySelectorAll('.pb-legs li')] : [], nd = t.legs.filter(l => l.src === 'dkline').length;
+          chk(li.length === t.legs.length && t.legs.every((l, i) => { const m = li[i].querySelector('.pr i.est'); return l.src === 'dkline' ? !!m && m.title.startsWith('DraftKings’ line from ESPN, read ') : !m; })
+            && txt(c.querySelector('.pb-nums').children[1].querySelector('span')) === (nd ? 'price, est.' : 'price') && !!c.querySelector('.pb-espnline') === nd > 0,
+            `the ${t.id} card does not mark est. exactly its legs priced from DraftKings' line, with their title, its price est. and its line on them`); }
+        chk(txt(pnl).includes('A player leg marked est. is priced from DraftKings’ line read on ESPN, where DraftKings’ own price is not on file: DraftKings’ lines as read ' + when(at) + '; prices estimated.'),
+          'the panel does not say what a leg marked est. is and when DraftKings\' lines were read');
+        /* Finish on a level with one: the card prices it as estimated and names it to add by hand */
+        const tE = r.tiers.find(t => t.legs && t.legs.some(l => l.src === 'dkline'));
+        if (tE) { const m = w.PARLAY_CARD.fromTier('pb', tE.id), s1 = w.PARLAY_CARD.linkText(m);
+          const miss = m.dk.miss.filter(x => tE.legs[x.n - 1].src === 'dkline');
+          chk(m.priceNote === 'estimated price' && m.legs.every((x, i) => x.tag === (tE.legs[i].src === 'real' ? 'book' : 'est.')) && miss.length === tE.legs.filter(l => l.src === 'dkline').length
+            && miss.every(x => x.why === 'price estimated from DraftKings’ line; its id was not read') && / \(estimated price\)$/.test(s1.title)
+            && miss.every(x => s1.text.includes(`${x.n}. ${x.who} ${x.what} (price estimated from DraftKings’ line, id not read)`)),
+            `the parlay card on the ${tE.label} level does not price it as estimated, mark its legs from DraftKings' line est., or name each to add by hand, its id not read: ${m.priceNote} / ${m.dk.miss.map(x => x.n + ' ' + x.why).join(' / ')} / ${s1.title}`);
+          /* and in the builder: the leg marked est., its fair chance est., and when the lines were read */
+          const dl = tE.legs.find(l => l.src === 'dkline'), { key, thin, ...one } = dl; S.parlay = { [key]: one }; w.eval('save(); renderParlay()'); await wait(30);
+          const row1 = d.querySelector('#parlayBody tr.legrow'), cell = row1 && row1.querySelectorAll('td')[4], lf = row1 && row1.querySelector('.legfair'), f = fairRule(w)(dl);
+          chk(!!cell && txt(cell) === `${fmt(dl.price)} est.` && !!lf && !!f && txt(lf) === `fair ${(f.p * 100).toFixed(0)}% est.` && txt(d.querySelector('#parlayBody [data-espn-read]')).startsWith('DraftKings’ lines as read '),
+            `the builder does not mark ${dl.name} ${dl.label} est. with its estimated fair chance, or say when the lines were read: "${txt(cell)}" "${txt(lf)}"`); }
+      } finally {
+        const put = (o, k, v) => { if (v === undefined) delete o[k]; else o[k] = v; };
+        put(P, 'espn', keep.e); put(P, 'espn_meta', keep.m); put(P.mkt, wk, keep.mk); put(S.odds, g.id, keep.o); put(P, 'dk', keep.dk);
+        S.ui.pb = keep.pb; S.parlay = keep.parlay; Object.assign(S.ui, { game: keep.ui.game, open: keep.ui.open, showRungs: keep.ui.rungs, showAll: keep.ui.all });
+        w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,t:{}}; save(); renderParlay(); closeGameModal()'); await wait(30); }
+      console.log(`DraftKings' lines on ESPN, on a stand-in read of ${g.id}: ${nEst} est. prices on its page the rule's, ${nLev} legs from them on its levels, the card and the builder`); } }
 
   /* ---- X Parlays is the file: three parlays of a fixture's, one of them cleared ---- */
   { const F = await run(state, 'https://demon-x13.github.io/nfl-hub/nflbets/#xparlays', null, false, { file: FIXFILE });
