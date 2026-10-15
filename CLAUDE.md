@@ -215,20 +215,25 @@ together, `clock_now.js`), and `python3 test_audit_phases.py` (about nine minute
 `--quick` three cases) replays it on past payloads at their own moment, each beside its own commit's
 `props/data` (a Saturday before the pull, a Sunday priced, mid-slate, 3pm and night, a Monday before
 and during its game, a week with no player prices, paid ids to come, the season played out with and
-without late lines), and the page smoke on two with `SMOKE_NOW`: a change to the audit, the smoke or
+without late lines), and the page smoke on three with `SMOKE_NOW` (a Monday night under way among them, when
+the smoke sets the page's clock back): a change to the audit, the smoke or
 the props parts comes with a run of it. **The props gate** (`.github/workflows/props-gate.yml`, its
 logic in `.github/scripts/props_gate.py`) runs both on every PR, on a push to main that touches what it
 covers, and by dispatch, and spends nothing (`weekly.py --no-odds`, no secret mapped, nothing
 committed). Its first job sorts the changed paths into AUDIT (what the props job runs: `props/build/`,
 the `props/data` scripts and model files but not the job's outputs, the research files `weekly.py`
-runs, `lib/`, `props.yml`, the gate) and PAGE (`nflbets/`, the betting app and `betting/tools`' build
-parts, the props parts, `liveparlays/build/`); with neither it passes at once, and a push or a dispatch
-runs everything. Job A runs `weekly.py --no-odds` on the PR's code and today's nflverse files, then the
-page smoke on the payload it baked; job B runs each case of `test_audit_phases.py` on a runner of its
+runs, `lib/`, `props.yml`, the gate) and PAGE (`nflbets/`, the betting app, `betting/neutral_sites.json`
+and `betting/tools`' build parts, the props parts, `liveparlays/build/`), a renamed file by its old path
+too; with neither it passes at once, and a push or a dispatch runs everything. Job A runs `weekly.py
+--no-odds` on the PR's code and today's nflverse files, then the page smoke on the payload it baked (the
+published one when weekly.py refused); job B runs each case of `test_audit_phases.py` on a runner of its
 own (the smoke cases alone when only PAGE changed). Each is differential: a failure is run again on
-the base's code in a second checkout (`weekly.py --offline` over the same downloads), and fails the
-gate only when the base passes; a failure on both is a warning, a download refusal named as
-infrastructure, to re-run. `python3 .github/scripts/props_gate.py dry-run 30` shows which of the last
+the base's code in a second checkout (`weekly.py --offline` over the same downloads, unless this run
+refused at a download or read a file as not posted yet, when the base downloads its own), and fails the
+gate when the base passes or has nothing to compare with (no such case, or a base refused at a download
+where the change was not); a failure on both is a warning, a download refusal named as infrastructure, to
+re-run. `python3 .github/scripts/test_props_gate.py` holds that judgement and the path sorting to their
+cases, in the gate's first job. `python3 .github/scripts/props_gate.py dry-run 30` shows which of the last
 30 PRs would have run which job, and `files <paths>` how paths are sorted. The audit's section V
 checks the page a browser builds against the raw nflverse files (roster status, the
 injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;

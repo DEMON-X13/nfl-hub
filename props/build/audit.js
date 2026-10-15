@@ -1671,7 +1671,7 @@ setTimeout(async()=>{
             const r=ROS0.find(x=>x.espn_id===m[1]); if(r) return {code:200,body:{id:m[1],fullName:r.full_name}}; } return recorded(u); };
           for(const [how,map] of [['with the map',ids],['with no ESPN ids',null]]){
             if(map) P().espn_ids=map; else delete P().espn_ids; reset(); net.route=named;
-            const pl5=await F('espnPlace')(per5,gn,ny), b5=F('espnBlock')(per5,pl5,Date.now());
+            const pl5=await F('espnPlace')(per5,gn,ny), b5=F('espnBlock')(per5,pl5,w.Date.now());
             chk(S.players[gw].team!=='NYJ'||(!(fake in pl5)&&pl5['4569618']===gw&&same(sortObj(b5.lines[gw]),sortObj(own.lines))&&same(b5.rungs[gw],own.rungs)),
               `${how}, an athlete of surname and initial alike ("Gary Wilson", ${fake}) is placed on Garrett Wilson, whom ${map?'the map names by his own id':'his own name places'}, or takes his lines: ${JSON.stringify({placed:pl5[fake]||null,lines:b5.lines[gw]||null})}`); }
           P().espn_ids=ids; }
@@ -1686,14 +1686,14 @@ setTimeout(async()=>{
         /* one game's read whole: the block the page keeps is the checks' own, dated by the answer's Date
            where the browser can read it, else by the clock; a kickoff before or during it drops it */
         P().espn_ids=ids; reset(); net.route=recorded;
-        const ko=Date.now()+3*3600e3, gs={id:'audit-sea-den',a:'SEA',h:'DEN',w:cw}, T0=Math.floor((Date.now()-60e3)/1000)*1000;
+        const ko=w.Date.now()+3*3600e3, gs={id:'audit-sea-den',a:'SEA',h:'DEN',w:cw}, T0=Math.floor((w.Date.now()-60e3)/1000)*1000;
         net.date=T0; const r1=await F('espnReadGame')({g:gs,ev,ko,eid:'401872995'}); net.date=null;
         const placed={}; for(const aid of Object.keys(ESPN.parse(IT0['401872995']))) if(ids[aid]) placed[aid]=ids[aid];
         chk(r1.st==='ok'&&same(normBlock(r1.block),normBlock(ESPN.block(ESPN.parse(IT0['401872995']),placed,ids)))&&r1.block.at===new Date(T0).toISOString(),
           `the recorded SEA at DEN read is not kept as the checks read it, dated by its answer: ${r1.st} ${JSON.stringify(normBlock(r1.block)).slice(0,200)} at ${r1.block&&r1.block.at}`);
-        const t1=Date.now(), r2=await F('espnReadGame')({g:gs,ev,ko,eid:'401872995'});
-        chk(r2.st==='ok'&&Date.parse(r2.block.at)>=t1-5&&Date.parse(r2.block.at)<=Date.now()+5,'a read with no Date the page can read is not dated by the browser\'s clock');
-        chk((await F('espnReadGame')({g:gs,ev,ko:Date.now()-1,eid:'401872995'})).st==='kicked','a game whose kickoff has passed is read');
+        const t1=w.Date.now(), r2=await F('espnReadGame')({g:gs,ev,ko,eid:'401872995'});
+        chk(r2.st==='ok'&&Date.parse(r2.block.at)>=t1-5&&Date.parse(r2.block.at)<=w.Date.now()+5,'a read with no Date the page can read is not dated by the browser\'s clock');
+        chk((await F('espnReadGame')({g:gs,ev,ko:w.Date.now()-1,eid:'401872995'})).st==='kicked','a game whose kickoff has passed is read');
         net.route=u=>({...recorded(u),before:()=>setClock(ko+60e3)});
         const r3=await F('espnReadGame')({g:gs,ev,ko,eid:'401872995'}); setClock(clock0.call(w.Date)); w.Date.now=clock0;
         chk(r3.st==='kicked','a read its game\'s kickoff passed during is kept');
@@ -1717,7 +1717,7 @@ setTimeout(async()=>{
             const mlA=-131-i, mlH=111+i, spA=-(1.5+(i%3)), tot=40.5+i;
             const cmp=swap?[{homeAway:'home',team:{abbreviation:away,id:'2'+i}},{homeAway:'away',team:{abbreviation:home,id:'1'+i}}]:[{homeAway:'home',team:{abbreviation:home,id:'1'+i}},{homeAway:'away',team:{abbreviation:away,id:'2'+i}}];
             const hs=swap?{ml:mlA,sp:spA}:{ml:mlH,sp:-spA}, as=swap?{ml:mlH,sp:-spA}:{ml:mlA,sp:spA};
-            return {id:String(9100+i),date:(g===gK?new Date(Date.now()-60e3):F('kickoff')(g)).toISOString(),competitions:[{competitors:cmp,odds:[{provider:{id:'100',name:'DraftKings'},
+            return {id:String(9100+i),date:(g===gK?new Date(w.Date.now()-60e3):F('kickoff')(g)).toISOString(),competitions:[{competitors:cmp,odds:[{provider:{id:'100',name:'DraftKings'},
               moneyline:{home:{close:{odds:fA(hs.ml),link:lk('MH')}},away:{close:{odds:fA(as.ml),link:lk('MA')}}},
               pointSpread:{home:{close:{line:fL(hs.sp),odds:'-103',link:lk('SH')}},away:{close:{line:fL(as.sp),odds:'-117',link:lk('SA')}}},
               total:{over:{close:{line:'o'+tot,odds:'-105',link:lk('TO')}},under:{close:{line:'u'+tot,odds:'-115',link:lk('TU')}}}}]}]}; };
@@ -1791,7 +1791,7 @@ setTimeout(async()=>{
           const busyTxt=txt(d.querySelector('#pbPanel [data-espn-status="week"]'));
           W.wording(/^Reading DraftKings’ lines from ESPN… \d+ of \d+ games?$/.test(busyTxt),'the status line does not say a read is under way: '+busyTxt);
           d.querySelector('#pbPanel [data-espn-refresh="week"]').click(); await sleep(10);
-          const t0=Date.now(); net.gate=null; release();
+          const t0=w.Date.now(); net.gate=null; release();
           for(let i=0;i<200&&w.eval('ESPN_RUN.busy');i++) await sleep(25);
           const urls=net.log.map(x=>x.url), sbN=urls.filter(u=>/\/scoreboard\?/.test(u)).length, OUT=F('ESPN_OUT'), LV=F('ESPN_LIVE');
           nReq=urls.length;
@@ -1801,22 +1801,24 @@ setTimeout(async()=>{
           /* the levels' own est. marks: the Elo picks (#pbElo, at the panel's foot, drawn by the ELO tab with
              the same cards) may take a leg priced from the read, and theirs are never a level's */
           const estAll=()=>[...d.querySelectorAll('#pbPanel .pb-tier .pb-legs li .pr i.est')], estLv=()=>estAll().filter(e=>!e.closest('#pbElo')).length;
-          { const rNow=F('getPbTiers')(), drawn=estLv(), hNow=F('gameTiers')(g0);
-            w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}');
-            const rNew=F('getPbTiers')(), hNew=F('gameTiers')(g0);
-            const nDk=rNew.tiers.reduce((a,t)=>a+(t.legs?t.legs.filter(l=>l.src==='dkline').length:0),0);
-            chk(lvSig(rNow)===lvSig(rNew)&&drawn===nDk,`right after the press, the Parlay Builder's levels are not what a build on the read gives (stale from before it), or the panel drawn shows ${drawn} legs marked est. where the read gives ${nDk}: ${lvSig(rNow).slice(0,160)} against ${lvSig(rNew).slice(0,160)}`);
-            /* planted, so it holds whatever the week's Elo picks take: an Elo pick of the page's own card
-               with a leg priced from the read, in #pbElo; its est. mark is drawn and the levels' count is not
-               moved by it (the audit loads no Elo files, so its #pbElo is otherwise empty) */
-            { const el=d.getElementById('pbElo'), keepE=el?el.innerHTML:null;
-              if(!el) W.coverage(false,'the panel has no Elo picks section to plant an Elo pick in');
-              else try{ const leg={key:g0.id+'|00-AUDIT-ELO|receptions',gid:g0.id,week:+wk,pid:'00-AUDIT-ELO',name:'Planted Elopick',label:'Over 3.5 receptions',stat:'receptions',k:3.5,side:'over',main:true,
+          /* planted before the count and kept through the main check, so the count is held whatever the
+             week's Elo picks take: an Elo pick of the page's own card with a leg priced from the read, in
+             #pbElo; its est. mark is drawn and the levels' count does not take it in (the audit loads no Elo
+             files, so its #pbElo is otherwise empty, and a count that took the Elo picks in would pass) */
+          { const el=d.getElementById('pbElo'), keepE=el?el.innerHTML:null, nAll0=estAll().length, nLv0=estLv();
+            let rNow, drawn, hNow, rNew, hNew;
+            if(!el) W.coverage(false,'the panel has no Elo picks section to plant an Elo pick in');
+            try{
+              if(el){ const leg={key:g0.id+'|00-AUDIT-ELO|receptions',gid:g0.id,week:+wk,pid:'00-AUDIT-ELO',name:'Planted Elopick',label:'Over 3.5 receptions',stat:'receptions',k:3.5,side:'over',main:true,
                     p:0.5,price:120,src:'dkline',grp:'WR',pos:'WR',team:g0.h,opp:g0.a,espn:{at:new w.Date(w.Date.now()).toISOString(),fair:0.45,tested:true,listed:true}};
-                  const n0=estAll().length;
-                  el.innerHTML=`<div class="pb-tiers">${F('pbTierCard')({id:'elo2',label:'Elo 2-leg',legs:[leg],p:0.5,dec:2.2,fair:null},{chance:0.5,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:'data-pb-elo-add="elo2"',legP:l=>l.p})}</div>`;
-                  chk(estAll().length===n0+1&&estLv()===drawn,`an Elo pick's leg priced from the read is counted with the levels' est. marks, or not drawn est.: ${estLv()} of ${estAll().length} against the levels' ${drawn}`); }
-                finally{ el.innerHTML=keepE; } }
+                el.innerHTML=`<div class="pb-tiers">${F('pbTierCard')({id:'elo2',label:'Elo 2-leg',legs:[leg],p:0.5,dec:2.2,fair:null},{chance:0.5,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:'data-pb-elo-add="elo2"',legP:l=>l.p})}</div>`;
+                chk(estAll().length===nAll0+1&&estLv()===nLv0,`an Elo pick's leg priced from the read is counted with the levels' est. marks, or not drawn est.: ${estLv()} of ${estAll().length} against the levels' ${nLv0}`); }
+              rNow=F('getPbTiers')(); drawn=estLv(); hNow=F('gameTiers')(g0);
+              w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}');
+              rNew=F('getPbTiers')(); hNew=F('gameTiers')(g0);
+              const nDk=rNew.tiers.reduce((a,t)=>a+(t.legs?t.legs.filter(l=>l.src==='dkline').length:0),0);
+              chk(lvSig(rNow)===lvSig(rNew)&&drawn===nDk,`right after the press, the Parlay Builder's levels are not what a build on the read gives (stale from before it), or the panel drawn shows ${drawn} legs marked est. where the read gives ${nDk}: ${lvSig(rNow).slice(0,160)} against ${lvSig(rNew).slice(0,160)}`); }
+            finally{ if(el) el.innerHTML=keepE; }
             chk(hdSig(hNow)===hdSig(hNew),`right after the press, ${g0.id}'s hands (its lines unmoved by the read) are not what a build on the read gives, but the published ones: ${hdSig(hNow).slice(0,160)} against ${hdSig(hNew).slice(0,160)}`);
             W.coverage(lvSig(rNew)!==levels0&&hdSig(hNew)!==hands0&&['high','med','low'].some(id=>hNew[id]&&hNew[id].legs.some(l=>l.src==='dkline')),`the press left the levels or ${g0.id}'s hands as they were before it, or no hand took a leg from the read: whether either goes stale went untested`); }
           chk(sbN===1&&urls.some(u=>/\/scoreboard\?dates=\d{4}&seasontype=[23]&week=\d+&_=\d+$/.test(u)),`a press asked for the scoreboard ${sbN} times (a second press while one runs must do nothing), or not in ESPN's numbering of the week: ${urls.filter(u=>/scoreboard/.test(u)).join(' ')}`);
@@ -3180,7 +3182,7 @@ setTimeout(async()=>{
 
       /* V12. a game's lines are DraftKings' only while the pull is under a day old, and say so */
       { let dk=0, nv=0; const stale=[], bad=[]; const bk=Date.parse(PAY.baked_at||'');
-        for(const g of PAY.sched){ if(g.ls==='dk'){ dk++; if(g.lat){ const k=F('kickoff')(g), ref=Math.min(isFinite(bk)?bk:Date.now(),k?k.getTime():Infinity);
+        for(const g of PAY.sched){ if(g.ls==='dk'){ dk++; if(g.lat){ const k=F('kickoff')(g), ref=Math.min(isFinite(bk)?bk:w.Date.now(),k?k.getTime():Infinity);
             if(ref-Date.parse(g.lat)>24*3600e3+60e3) stale.push(g.id); } }
           else if(g.ls==='nflverse') nv++;
           if(g.ls&&!F('lineSource')(g)) bad.push(g.id); }

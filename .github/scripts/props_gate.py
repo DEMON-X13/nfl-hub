@@ -10,8 +10,8 @@ before a scheduled run did. This runs it, and spends nothing: weekly.py with --n
   classify   which parts a change touches: AUDIT (what the props job runs: props/build, the props/data
              scripts and the model files weekly.py reads (not the job's own outputs), the research files
              it runs, lib/, props.yml, this gate) and PAGE (what the Bets and Stats page is built from and
-             its smoke runs on: nflbets/, the betting app and the build's parts of betting/tools, the props
-             parts, liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
+             its smoke runs on: nflbets/, the betting app, betting/neutral_sites.json and the build's parts
+             of betting/tools, the props parts, liveparlays/build/). Neither: nothing the props job or the page runs changed, and the
              gate passes at once. On a push to main or a dispatch, everything runs.
   bake       job A: `weekly.py --no-odds` on this code (today's nflverse files, main's price files, the
              audit with PROPS_AUDIT_RAW as weekly.py sets it), judged on its exit code; then the page smoke
@@ -23,7 +23,10 @@ Each is differential. A failure is run again on the base's code (a second checko
 failing here and passing there fails the gate, since it is the change's; failing on both is reported
 (::warning::) and passes, since it is main's or the data's and must not hold back every unrelated PR. A
 refusal at a download is named as infrastructure, to re-run. The base's weekly.py reads the same nflverse
-files this run downloaded (--offline over a copy of them), so the two runs see the same data.
+files this run downloaded (--offline over a copy of them), so the two runs see the same data, unless this
+run refused at a download or read a file as not posted yet (a 404, which leaves no copy: --offline would
+read it as missing and refuse at the download, where this run went on); then the base downloads its own.
+A base that refused at a download where this run did not has nothing to compare with, and the change fails.
 
     python3 .github/scripts/props_gate.py classify --event pull_request     (in the workflow)
     python3 .github/scripts/props_gate.py dry-run 30   which of the last 30 PRs on main would run which job
@@ -32,7 +35,8 @@ files this run downloaded (--offline over a copy of them), so the two runs see t
 import argparse, ast, fnmatch, json, os, re, shutil, subprocess, sys, tempfile, time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-GATE = ['.github/workflows/props-gate.yml', '.github/scripts/props_gate.py', 'props/build/test_audit_phases.py']
+GATE = ['.github/workflows/props-gate.yml', '.github/scripts/props_gate.py', '.github/scripts/test_props_gate.py',
+        'props/build/test_audit_phases.py']
 # '/**' is everything under a folder; otherwise a glob within one folder ('*' never crosses a '/')
 AUDIT = ['props/build/**', 'props/data/*.py', 'props/data/*.json', 'props/research/features.py',
          'props/research/qb_td.py', 'props/raw/feat.pkl', 'props/raw/fake_wk1.csv', 'props/requirements.txt',
@@ -43,9 +47,11 @@ AUDIT_OUTPUTS = ['props/data/payload.json', 'props/data/priced_at.json', 'props/
 PAGE = ['nflbets/**', 'betting/app/**', 'betting/tools/build.js', 'betting/tools/patches.js',
         'betting/tools/tiers.js', 'betting/tools/*_viz.js', 'betting/tools/reference_models.json',
         'props/build/part1.html', 'props/build/part*.js', 'props/build/espn_rule.js', 'props/build/clock_now.js',
+        'betting/neutral_sites.json',  # patches.js inlines it into the app the page carries
         'props/build/package.json', 'props/build/package-lock.json', 'liveparlays/build/**'] + GATE
 SMOKE_LINE = re.compile(r'(\d+) checks, (\d+) failures')
 DOWNLOAD = re.compile(r'^BLOCKED: (download |schedule \()', re.M)
+NOT_POSTED = re.compile(r'^\s*\S+: not posted yet \(', re.M)   # weekly.py's line for a 404 it goes on without
 
 
 def match(pat, path):
@@ -72,6 +78,12 @@ def cases(root=ROOT):
 
 def git(*a, cwd=ROOT):
     return subprocess.check_output(['git', '-C', cwd, *a], text=True).strip()
+
+
+def changed_paths(a, b, cwd=ROOT):
+    """the paths changed from a to b; --no-renames, so a file moved out of a covered folder counts by its
+    old path too (with renames on, git names only the new one)"""
+    return [l for l in git('diff', '--name-only', '--no-renames', a, b, cwd=cwd).splitlines() if l]
 
 
 def ok_sha(s):
@@ -108,7 +120,7 @@ def classify(args):
         base = git('rev-parse', 'HEAD^1')          # the merge ref's first parent: the base branch as merged
     else:
         base = args.before if ok_sha(args.before) else git('rev-parse', 'HEAD^1')
-    changed = [l for l in git('diff', '--name-only', base, 'HEAD').splitlines() if l]
+    changed = changed_paths(base, 'HEAD')
     everything = ev != 'pull_request'
     a, p, labels, audit, page = plan(changed, everything)
     print(f'{ev}: {len(changed)} changed path(s) against {base[:7]}')
@@ -133,7 +145,7 @@ def dry_run(args):
     for l in prs:
         sha, subj = l.split(' ', 1)
         num = re.search(r'#(\d+)', subj).group(1)
-        changed = [x for x in git('diff', '--name-only', sha + '^1', sha).splitlines() if x]
+        changed = changed_paths(sha + '^1', sha)
         a, p, labels, audit, page = plan(changed)
         what = 'both' if a and p else 'audit' if a else 'page' if p else 'none'
         rows[what] += 1
@@ -196,14 +208,29 @@ def base_tree(sha):
 
 
 def weekly(root, label, offline=False):
-    """weekly.py --no-odds in this tree: (exit code, the problems file)"""
+    """weekly.py --no-odds in this tree: (exit code, the problems file, the output)"""
     t = tmp('weekly-' + label)
     pf = os.path.join(t, 'props-build-problems.txt')
     if os.path.exists(pf): os.remove(pf)
-    rc, _ = stream([sys.executable, 'weekly.py', '--no-odds'] + (['--offline'] if offline else []),
+    rc, o = stream([sys.executable, 'weekly.py', '--no-odds'] + (['--offline'] if offline else []),
                    os.path.join(root, 'props', 'build'), clean_env(RUNNER_TEMP=t), f'weekly.py --no-odds{" --offline" if offline else ""} on {label}')
     probs = open(pf, encoding='utf-8').read() if os.path.exists(pf) else ''
-    return rc, probs
+    return rc, probs, o
+
+
+def base_online(here_out, here_probs):
+    """whether the base downloads its own nflverse files rather than read this run's copies: when this run
+    refused at a download, or read a file as not posted yet (a 404 leaves no copy, and the base's --offline
+    would read it as missing and refuse at the download where this run went on: every preseason and rollover)"""
+    return bool(DOWNLOAD.search(here_probs) or NOT_POSTED.search(here_out))
+
+
+def base_result(here_probs, brc, bprobs):
+    """(base_ok, infra) for the verdict on the base's weekly.py: a base refused at a download where this run
+    was not has nothing to compare with (None, so the change fails), never 'fails on the base too'"""
+    here_dl, base_dl = bool(DOWNLOAD.search(here_probs)), bool(DOWNLOAD.search(bprobs))
+    if brc != 0 and base_dl and not here_dl: return None, True
+    return brc == 0, here_dl or base_dl
 
 
 def copy_downloads(dst_root):
@@ -227,7 +254,9 @@ def verdict(what, here_ok, base_ok, here_line, base_line, infra=False):
     if here_ok:
         print(f'{what}: passes ({here_line})'); return 0
     if base_ok is None:
-        print(f'::error::{what} fails on this change ({here_line}) and the base has nothing to compare it with: the change\'s to fix')
+        why = (f'the base refused at a download ({base_line}) where this change did not, so it has nothing to compare it with: re-run the gate'
+               if infra else 'the base has nothing to compare it with: the change\'s to fix')
+        print(f'::error::{what} fails on this change ({here_line}) and {why}')
         summary(f'- FAIL {what}: {here_line} (no base run to compare)'); return 1
     if base_ok:
         msg = (f'{what} fails on this change ({here_line}) and passes on the base ({base_line})'
@@ -241,22 +270,23 @@ def verdict(what, here_ok, base_ok, here_line, base_line, infra=False):
 
 def bake(args):
     bad = 0
-    rc, probs = weekly(ROOT, 'this change')
+    rc, probs, here_out = weekly(ROOT, 'this change')
     if probs: print('the problems file:\n' + probs)
     pay = os.path.join(ROOT, 'props', 'data', 'payload.json')
     base_pay = None
     if rc == 0:
         bad |= verdict('the props job (weekly.py --no-odds)', True, None, 'exit 0' + (', with problems that publish' if probs else ''), '')
     else:
-        infra = bool(DOWNLOAD.search(probs))
+        online = base_online(here_out, probs)
         first = (probs.splitlines() or [f'exit {rc}, no problems file'])[0][:200]
         broot = base_tree(args.base)
-        if not infra: copy_downloads(broot)
-        brc, bprobs = weekly(broot, f'the base ({args.base[:7]})', offline=not infra)
+        if not online: copy_downloads(broot)
+        brc, bprobs, _ = weekly(broot, f'the base ({args.base[:7]})', offline=not online)
         if bprobs: print('the base\'s problems file:\n' + bprobs)
         base_pay = os.path.join(broot, 'props', 'data', 'payload.json')
         bfirst = 'exit 0' if brc == 0 else (bprobs.splitlines() or [f'exit {brc}'])[0][:200]
-        bad |= verdict('the props job (weekly.py --no-odds)', False, brc == 0, first, bfirst, infra or bool(DOWNLOAD.search(bprobs)))
+        base_ok, infra = base_result(probs, brc, bprobs)
+        bad |= verdict('the props job (weekly.py --no-odds)', False, base_ok, first, bfirst, infra)
         print('(refused, so the payload is the published one again: the page smoke runs on that)')
     if args.page != 'true' and args.audit != 'true':
         return bad
@@ -264,9 +294,10 @@ def bake(args):
     bgood, bline = None, ''
     if not good:
         broot = base_tree(args.base)
-        if base_pay is None:   # the base bakes its own payload from the same downloads
-            copy_downloads(broot)
-            weekly(broot, f'the base ({args.base[:7]})', offline=True)
+        if base_pay is None:   # the base bakes its own payload from the same downloads (its own, as above)
+            online = base_online(here_out, probs)
+            if not online: copy_downloads(broot)
+            weekly(broot, f'the base ({args.base[:7]})', offline=not online)
             base_pay = os.path.join(broot, 'props', 'data', 'payload.json')
         bgood, bline, _ = smoke(broot, base_pay, f'the base ({args.base[:7]})')
     bad |= verdict('the page smoke on the fresh payload', good, bgood, line, bline)

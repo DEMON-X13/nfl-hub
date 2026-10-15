@@ -313,8 +313,9 @@ A refused run opens an issue labelled `props-refused` (or comments on the open o
 each kickoff in ET and the hours left, and what to do (merge a fix, then dispatch props.yml with
 `no_odds`); the next clean publish closes it. Before a change lands, the props gate
 (`.github/workflows/props-gate.yml`) runs `weekly.py --no-odds` on its code and today's data, the page
-smoke on that payload, and every case of `build/test_audit_phases.py` (the audit replayed on past
-payloads at their own moment, `PROPS_AUDIT_NOW`), each failure run again on main's code so only the
+smoke on that payload, and every case of `build/test_audit_phases.py` (the smoke cases alone when only
+the page changed; the audit replayed on past payloads at their own moment, `PROPS_AUDIT_NOW`), each
+failure run again on the base's code (the PR's base, or on a push the commit before it) so only the
 change's own fail it.
 
 ## Refresh odds (app v107, 15 October 2026)

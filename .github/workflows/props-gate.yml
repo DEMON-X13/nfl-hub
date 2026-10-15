@@ -31,6 +31,7 @@ on:
       - ".github/workflows/props.yml"
       - ".github/workflows/props-gate.yml"
       - ".github/scripts/props_gate.py"
+      - ".github/scripts/test_props_gate.py"
       - "nflbets/**"
       - "betting/app/**"
       - "betting/tools/build.js"
@@ -38,6 +39,7 @@ on:
       - "betting/tools/tiers.js"
       - "betting/tools/*_viz.js"
       - "betting/tools/reference_models.json"
+      - "betting/neutral_sites.json"
       - "liveparlays/build/**"
   workflow_dispatch:
 
@@ -64,6 +66,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+      - name: the gate's own cases (test_props_gate.py)
+        run: python3 .github/scripts/test_props_gate.py
       - id: classify
         # AUDIT: what the props job runs; PAGE: what the Bets and Stats page is built from. Neither: the
         # gate passes here. A push to main or a dispatch runs everything, on the commit before it as base
