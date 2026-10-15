@@ -1788,12 +1788,17 @@ setTimeout(async()=>{
             if(g===gK){ chk(F('ESPN_GL_KEYS').every(k=>same(g[k],pre[k])),`${g.id}, kicked off before it was read, had its game lines changed`); continue; }
             chk(!!o&&Object.entries(o.lines).every(([k,v])=>g[k]===v)&&g.ls==='dk'&&Math.abs(Date.parse(g.lat)-t0)<60e3,`${g.id}'s game lines are not DraftKings' as the press read them: ${JSON.stringify(F('ESPN_GL_KEYS').map(k=>g[k]))} against ${JSON.stringify(o&&o.lines)}`);
             const D=((P().dk||{})[wk]||{})[g.id]||{};
-            chk(!!o&&D.event===o.event&&Object.entries(o.ids).every(([k,v])=>D[k]===(g===g0&&k===paidKey?'PAIDID':v))&&!!D.glat,`${g.id}'s DraftKings ids from the press are not beside the paid pull's (one of which it must not replace): ${JSON.stringify(D)}`);
+            /* what the paid pull had before the press (the week's real ids, which the job bakes, and the one
+               the checks plant): a press never replaces one, so each key keeps it and takes the read's only
+               where the pull had none. Until 15 October 2026 this held only the planted id, and the first
+               real ids the job baked for a game to come (SEA at DEN's) refused two props runs */
+            const kd=(((keep.dk||{})[wk]||{})[g.id]||{}), paidAt=k=>g===g0&&k===paidKey?'PAIDID':kd[k];
+            chk(!!o&&D.event===(kd.event||o.event)&&Object.entries(o.ids).every(([k,v])=>D[k]===(paidAt(k)!=null?paidAt(k):v))&&!!D.glat,`${g.id}'s DraftKings ids from the press are not beside the paid pull's (none of which it may replace): ${JSON.stringify(D)}`);
             /* each id the read gave is dated by the read (espnIdAt, which the parlay card reads), the paid
                pull's glat left as it was (it dates the ids the read did not see), and a paid id at a key the
-               read gave another id is the pull's, undated by the read */
-            { const kd=(((keep.dk||{})[wk]||{})[g.id]||{}), at=k=>F('espnIdAt')(g.id,k);
-              chk((kd.glat?D.glat===kd.glat:!!D.glat)&&Object.keys(o.ids).every(k=>g===g0&&k===paidKey?at(k)==null:Math.abs(at(k)-t0)<60e3),
+               read gave another id is the pull's, undated by the read (one the read found as it was is dated) */
+            { const at=k=>F('espnIdAt')(g.id,k);
+              chk((kd.glat?D.glat===kd.glat:!!D.glat)&&Object.keys(o.ids).every(k=>paidAt(k)!=null&&paidAt(k)!==o.ids[k]?at(k)==null:Math.abs(at(k)-t0)<60e3),
                 `${g.id}'s DraftKings ids are not each dated by the read that saw them (the pull's glat ${kd.glat||'none'} now ${D.glat}; ${Object.keys(o.ids).map(k=>k+' '+at(k)).join(', ')})`); } }
           { const tl=F('pricedLegs')(games).filter(l=>l.grp==='TEAM'&&l.gid===g0.id), o=ESPN.oddsOf(evOfG(g0),g0).lines;
             chk(tl.length>0&&tl.every(l=>l.src==='real'&&l.price===(l.stat==='ml'?(l.team===g0.h?o.mlh:o.mla):(l.team===g0.h?o.sph:o.spa))),`${g0.id}'s team bets are not at the press's DraftKings prices: ${tl.map(l=>l.label+' '+l.price+' '+l.src).join(', ')}`); }
