@@ -182,6 +182,17 @@ const LIVE = `<style>
      by its min-width) put a second bar inside the first */
   #tab-record .pickgrid table{display:table;overflow:visible;max-width:none}
 }
+/* the pick grid's columns evenly spaced (the owner, 15 October 2026: "can you space the columns more
+   evenly"): laid out by its content, each pick column took its heading's width, Alpha Model's wide and a
+   friend's "D" narrow. Fixed, the game column keeps its width and the pick columns share the rest
+   equally; the table's min-width (set inline by pickGrid and again when the You column is stripped,
+   176px for the game column, its phone width, and 76px a pick column) keeps them wide enough to read, the box scrolling sideways below it. */
+.pickgrid table{table-layout:fixed;width:100%}
+.pickgrid th:first-child{width:228px}
+@media(max-width:560px){.pickgrid th:first-child{width:176px}}
+.pickgrid th.c{white-space:normal;overflow-wrap:anywhere;vertical-align:bottom}
+/* a played game's line ("Sun, Oct 11 1:00 PM ET · TB won 24–21") wraps inside its column rather than run under the picks */
+.pickgrid td.gm small{white-space:normal}
 /* embedded: one tab of this page shown inside another page (the X NFL Bets and Stats page frames the
    Records, Power Ratings and Bet Log tabs), which has a header and a tab bar of its own */
 #ratingsTable table{width:100%}
@@ -314,7 +325,10 @@ function stripMine(){
     if(typeof window.renderMyRecords==='function') window.renderMyRecords=function(){};
   }
   document.querySelectorAll('.pickgrid table, #tab-record table').forEach(t=>stripCol(t,'You'));
+  document.querySelectorAll('.pickgrid table').forEach(pgWidth);
 }
+/* the pick grid's least width for its pick columns as they now stand (see .pickgrid in the styles) */
+function pgWidth(t){ const n=t.querySelectorAll('thead th.c').length; t.style.minWidth=(176+76*n)+'px'; }
 /* two paragraphs of method under Records and Power Ratings that nobody reads twice: the
    small-samples note under the record chart and the paragraph that explains the absences
    table. The app redraws them; this drops them. (The chart's own intro is rewritten by
@@ -491,6 +505,8 @@ patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null;
     const picks=[pr?pr.pick:null,...(showAll?[jk?jk.pick:null,ek?ek.pick:null,vg]:[]),...fr.map(f=>{ const x=f.weeks[w].find(p=>p.gid===g.game_id); return x?x.pick:null; }),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
+patch(`  let html='<div class="pickgrid"><table><thead><tr><th>Game</th>'`,
+`  let html='<div class="pickgrid"><table style="min-width:'+(176+76*cols.length)+'px"><thead><tr><th>Game</th>'`, 'the pick grid\'s even columns');
 patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   renderBets();`,
 `  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
