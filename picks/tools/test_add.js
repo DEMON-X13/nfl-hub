@@ -109,6 +109,26 @@ const read = () => JSON.parse(fs.readFileSync(fFile, 'utf8'));
   fs.writeFileSync(fFile, JSON.stringify(Object.assign(JSON.parse(good), { season: 2029 })));
   const r = run(put('d8.json', sent({ week: 7, saved_at: '2030-10-22T09:00:00.000Z', picks: [{ game_id: '2030_07_SF_SEA', pick: 'SEA' }] })));
   ok(r.code === 1 && /does not pass its rules/.test(r.out), 'a file already broken is not added to'); }
+/* a rename: the old name kept in aka, a later file under it lands on the renamed friend and keeps the new name */
+{ const F = T.empty(2030);
+  T.merge(F, T.readSent(sent(), st), st);
+  T.merge(F, T.readSent(sent({ name: 'Gonz' }), st), st);
+  ok(T.rename(F, 'd MONEY fresh', 'D') === 'D money fresh', 'rename: found without regard to case, says the old name');
+  ok(F.friends[0].name === 'D' && JSON.stringify(F.friends[0].aka) === '["D money fresh"]' && Object.keys(F.friends[0]).join() === 'name,aka,weeks', 'rename: the new name, the old in aka, the weeks kept');
+  ok(T.check(F, st).length === 0, 'rename: the file passes its rules: ' + T.check(F, st).join('; '));
+  const said = T.merge(F, T.readSent(sent({ name: 'D Money Fresh', week: 7, saved_at: '2030-10-22T09:00:00.000Z', picks: [{ game_id: '2030_07_SF_SEA', pick: 'SF' }] }), st), st);
+  ok(F.friends.length === 2 && F.friends[0].name === 'D' && F.friends[0].weeks.w7 && F.friends[0].weeks.w6, 'rename: a file under the old name lands on the renamed friend, keeping the new name');
+  ok(/^D \(sent as D Money Fresh\), week 7/.test(said) && !/new friend/.test(said), 'rename: the merge says whom it landed on: ' + said);
+  const G = JSON.parse(JSON.stringify(F));
+  throws(() => T.rename(G, 'Gonz', 'd'), /already another friend's name/, 'rename: onto another friend\'s name is refused');
+  throws(() => T.rename(G, 'Gonz', 'd money fresh'), /already another friend's name/, 'rename: onto another friend\'s old name is refused');
+  throws(() => T.rename(G, 'Nobody', 'Z'), /no friend is named/, 'rename: a name no friend has is refused');
+  throws(() => T.rename(G, 'Gonz', '<b>G</b>'), /not plain text/, 'rename: a name that is not plain text is refused');
+  T.rename(G, 'D', 'D money fresh');
+  ok(G.friends[0].name === 'D money fresh' && JSON.stringify(G.friends[0].aka) === '["D"]', 'rename back: the name back, D in aka, never the name itself');
+  const H = JSON.parse(JSON.stringify(F)); H.friends[1].aka = ['D money fresh'];
+  ok(T.check(H, st).some(x => /listed twice/.test(x)), 'check: an aka that is another friend\'s too');
+  H.friends[1].aka = 'D'; ok(T.check(H, st).some(x => /aka is not a list/.test(x)), 'check: an aka that is not a list'); }
 fs.rmSync(dir, { recursive: true, force: true });
 
 /* the real file, against the real schedule */

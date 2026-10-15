@@ -943,7 +943,9 @@ and `betting/state.json`'s schedule; `test_add.js` is its test). The tool refuse
 wrong kind, version, season, week, name or game id; a pick saved at or after its game's kickoff (the
 schedule's, never the file's) is left out and named; a week sent again replaces that friend's week but
 keeps the earlier pick on a game that had kicked off when the new file was saved. The file is written
-only by the tool, indented one space, a pick a line.
+only by the tool, indented one space, a pick a line. `--rename <old> <new>` shows a friend under
+another name (D money fresh became D on 15 October 2026), keeping the old one in `aka` so a later
+file saved under it lands on the same friend and keeps the new name.
 
 `nflbets/build/friends.js` fetches it no-store on every load, cleans it (a junk entry dropped; a
 missing, non-JSON, other-season or listless file draws no friend) and hands it to the betting frames as
