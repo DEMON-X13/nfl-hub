@@ -120,6 +120,12 @@ const HOOK = `<script>
         }
       }
       if(!XB.on) document.documentElement.classList.remove('xbets-ro');
+      /* friends' picks (window.FRIENDS, the file picks/friends.json, nflbets/build/friends.js):
+         record_viz.js reads them as it draws; a file that arrives late redraws the record */
+      if(window.FRIENDS&&typeof window.FRIENDS.ready==='function'){
+        try{ await window.FRIENDS.ready(); }catch(e){}
+        try{ window.FRIENDS.onChange(()=>{ try{ if(typeof S==='object'&&S&&typeof renderRecord==='function') renderRecord(); }catch(e){} }); }catch(e){}
+      }
       return {value:JSON.stringify(S)};
     },
     async set(key,v){ try{ const S=JSON.parse(v);
@@ -428,6 +434,13 @@ table.rv-grid td.rv-c b{display:block;font-family:var(--display);font-size:14px}
 table.rv-grid td.rv-c small{display:block;font-size:11px;color:var(--ink-2)}
 table.rv-grid td.rv-none{color:var(--muted)}
 table.rv-grid .rv-season{border-left:2px solid var(--line-2)}
+table.rv-grid tr.rv-sep th.rv-m{padding:12px 10px 2px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+table.rv-grid tr.rv-sep td{padding:0}
+table.rv-grid tr.rv-friend th.rv-m{font-weight:500;color:var(--ink-2)}
+table.rv-grid td.rv-pend b{color:var(--muted)}
+#modelChart .lgdrow:has(+ .rv-flg){margin-bottom:6px}
+.lgdrow .rv-fp{margin-left:4px}
+.lgdrow .rv-flab{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .rt-lag{margin-left:3px;color:var(--muted);font-weight:700;cursor:help}
 .rt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table.rt-v{width:100%}
@@ -450,7 +463,9 @@ if (!html.includes(anchor)) throw new Error('could not find the main script star
    processed[gid].joker or S.joker; the same lines are widened here, at build time, to draw
    the Elo model from processed[gid].elo or S.elo, which the hook above fills from
    elo/data/model.json. (The record's chart and week-by-week table are record_viz.js's, which
-   draws the Elo model itself.) Each edit must land exactly once, so a change to the app that
+   draws the Elo model itself.) The same two lines add a column for each friend with picks that
+   week (record_viz.js's rvFriends(), from window.FRIENDS: the owner's call of 15 October 2026),
+   after Vegas, each the friend's pick where it counts. Each edit must land exactly once, so a change to the app that
    moves these lines stops the build rather than dropping the Elo model from the grid. The
    app file itself is not touched: it is the source shipped from nfl-model-lab. */
 const patch = (from, to, what) => {
@@ -471,10 +486,11 @@ patch(`      \${S.picksOpen?\`<label class="muted">Week <select id="picksWeek">\
   'the pick grid, this week by default, earlier weeks by the picker');
 patch(`  const cols=[['Main Model','#1F6F4A'],...(showAll?[['Challenger','#3B6FB6'],['The Joker','#C0392B'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`,
 `  const elo=S.elo||{};
-  const cols=[['Alpha Model','#1F6F4A'],...(showAll?[['The Joker','#C0392B'],['ELO Model','#E8730A'],['Vegas','#0F1B2D']]:[]),['You','#C98B0F']];`, 'the pick grid columns');
+  const fr=(typeof rvFriends==='function'?rvFriends():[]).filter(f=>f.weeks[w]);
+  const cols=[['Alpha Model','#1F6F4A'],...(showAll?[['The Joker','#C0392B'],['ELO Model','#E8730A'],['Vegas','#0F1B2D']]:[]),...fr.map(f=>[String(f.name).replace(/[<>&"]/g,''),f.color]),['You','#C98B0F']];`, 'the pick grid columns');
 patch(`    const picks=[pr?pr.pick:null,...(showAll?[prH?prH.pick:null,jk?jk.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`,
 `    const ek=(done&&done.elo)||elo[g.game_id]||null;
-    const picks=[pr?pr.pick:null,...(showAll?[jk?jk.pick:null,ek?ek.pick:null,vg]:[]),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
+    const picks=[pr?pr.pick:null,...(showAll?[jk?jk.pick:null,ek?ek.pick:null,vg]:[]),...fr.map(f=>{ const x=f.weeks[w].find(p=>p.gid===g.game_id); return x?x.pick:null; }),S.myPicks[g.game_id]||null];`, 'the pick grid picks');
 patch(`  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';
   renderBets();`,
 `  el.innerHTML='<div class="card"><h2>Week by week</h2>'+html+'</tbody></table></div>';

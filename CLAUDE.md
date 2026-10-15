@@ -37,7 +37,7 @@ by hand when a source changes, and reads the models' data on every load.
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to `nflbets/`): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
 | `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Pick'ems board (with the news job's preview, news, Deep Dive and stat breakdown) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
-| `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`) |
+| `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: X College Football Bets moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
 | `liveparlays/` | retired as a page: `index.html` redirects to `nflbets/#xparlays`; `parlays.json` is X's placed parlays and `xbets.json` the X Bet Log, the two files Claude edits from what the owner sends, and `build/page.html` is the X Parlays section's source | `liveparlays/build/page.html`, `liveparlays/parlays.json`, `liveparlays/xbets.json` |
@@ -650,7 +650,7 @@ rebuild of the page. The Elo model also stands on the Pick'em Record chart, tabl
 grid as a third model, beside Alpha Model and the Joker: `betting/tools/build.js` reads `elo/data/model.json` beside the season
 in its published-mode hook (graded calls onto `processed[gid].elo`, the coming week's onto
 `S.elo`, each graded there as soon as the season has its score, so a Sunday counts before Tuesday's re-rating; a game under way or awaiting its stats stays in `next` with its frozen call); `record_viz.js` (below) draws it on the chart and the table, and the build widens the app's own Joker lines in the pick grid to draw it there, each edit asserted
-to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings (the Team Rankings tab) rate each team on this season's results alone, every game re-scored at each build (every team 1500 at the start; a weighted ridge of all the season's finals solved together, each worth its margin capped at 17, home field out, plus the opponent's rating now, so a game counts for what the opponent has turned out to be, not what it was rated when they met; recent weeks weigh a little more, a 16-week half-life, and every team is pulled toward average as if it had also played 16 average games; blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; every constant chosen on 2012-2017 and tested once on 2018-2025, where it predicts the next game as well as the margin Elo it replaced in October 2026 (0.6447 against 0.6454 blended), which judged each game once, on the opponent's rating that week (the owner's Falcons-over-Packers and Chargers cases); THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred, and the note says the whole table predates it, since a final moves every team), the tier shields, the change since its last game (`before` is the same solve on the finals before that game, so the change includes the league's results since and a team moves in a week it does not play) and the chance against an average team; the margin Elo had replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Joker and the ELO Model (the Elo game model), Vegas the baseline (the Challenger and the Broly Model are off the site: the Betting loop); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only on every device (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
+to land once. Vegas is the site's baseline: the Pick'ems board's calls, win chances, confidence, score predictions and records are the Vegas favourite's (nflverse's closing moneylines in `state.odds`, margin out, and the spread and total), the Pick'em Record's headline tiles are Vegas's record, Power Ratings (the Team Rankings tab) rate each team on this season's results alone, every game re-scored at each build (every team 1500 at the start; a weighted ridge of all the season's finals solved together, each worth its margin capped at 17, home field out, plus the opponent's rating now, so a game counts for what the opponent has turned out to be, not what it was rated when they met; recent weeks weigh a little more, a 16-week half-life, and every team is pulled toward average as if it had also played 16 average games; blended 0.8 to 0.2 with each team's expected lineup on this season's player Elo, which walk-forward helped a little; every constant chosen on 2012-2017 and tested once on 2018-2025, where it predicts the next game as well as the margin Elo it replaced in October 2026 (0.6447 against 0.6454 blended), which judged each game once, on the opponent's rating that week (the owner's Falcons-over-Packers and Chargers cases); THE POWER RATINGS in `elo/build.py`, `teams` in `elo/data/model.json`, drawn by `betting/tools/ratings_viz.js` with each team's record (the season's results from `betting/state.json`, so it is current before the Elo file is; a rating that predates a final is starred, and the note says the whole table predates it, since a final moves every team), the tier shields, the change since its last game (`before` is the same solve on the finals before that game, so the change includes the league's results since and a team moves in a week it does not play) and the chance against an average team; the margin Elo had replaced the lineup-on-player-Elo table, which walk-forward on 2018-2025 predicted the next game worse, in weeks 2-6 no better than picking the home team), and the Props list's pick column is the Vegas pick (the market's spread and total wherever a line is posted). The models are named on the page as Alpha Model (the main model), the Joker and the ELO Model (the Elo game model), Vegas the baseline (the Challenger and the Broly Model are off the site: the Betting loop); `betting/tools/build.js` renames the main model in the built app (`RENAME`), and `record_viz.js` and the pick-grid patch write the other names wherever the build draws them, never in the app's source. The Pick'em Record's chart and week-by-week table are drawn over the app's own by `betting/tools/record_viz.js` (wins against Vegas: each model's wins minus the Vegas favourite's on the same games, cumulative, Vegas the zero line; and a models-by-weeks grid shaded by record, every model's every week drawn alike), which the build puts in front of the app's script and `renderRecord()` calls last. Friends stand beside the models there (see "Friends' picks" below).  The X Bet Log is a bankroll, the same way: `betting/tools/bets_viz.js` (`renderBets()` is wrapped to call `betsViz()` after the app's own) draws its own chart with a switch, Balance (the account week by week from the deposit, a labelled reference line, green above and red below) or Weekly P&L (a labelled column a week from $0, a week off marked), leads the figures with the balance, and adds the balance after each week beside the table's running total; the weeks and the deposit are X's, from `liveparlays/xbets.json` (see "X's parlays and the X Bet Log" below), read only on every device (with no deposit in the file it is X's profit against break even, no balance), and the chosen view is each viewer's, kept in `S.bank` in the browser. The app source is never touched. `.github/workflows/elo.yml` re-rates daily, queued at 12:40 UTC, plus Saturday 20:40 and Sunday 03:40 UTC
 for Sunday's calls on Friday's final report (GitHub starts this repo's scheduled runs 4-9 hours late, so a slot is queued
 early enough to land before the London and 1pm kickoffs; Tuesday's run takes in Monday night; the rest move only who is
 expected to play), runs `elo/check.py` and `elo/check_tab.js`, the gate on the Elo data, commits `elo/data`, and then
@@ -897,7 +897,7 @@ Pick'em Record with nothing to scroll, since its charts drawn without the bar ca
 taller than the height measured with it. Sideways, a box scrolls only where its content is really
 wider (the week-by-week grid and the pick grid on a phone), with one bar.
 Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
-`liveparlays/parlays.json`, `liveparlays/xbets.json` and `elo/data/*.json`, and the news job's
+`liveparlays/parlays.json`, `liveparlays/xbets.json`, `picks/friends.json` and `elo/data/*.json`, and the news job's
 `news/data/units.json` and `stats.json` as the page loads and a week's notes when the board or a window first wants them, so it is
 rebuilt when a source changes, never when the data does. A props patch, a betting build change or an edit to the live section's source means
 rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the news smoke as well:
@@ -1068,7 +1068,7 @@ of the news job's data and carries none of the old tab; the
 real files are `news/tools/smoke.js`'s.
 
 `nflbets/build/storage.js` (the browser's own storage), `nflbets/build/xbets.js` (the X Bet Log's
-adapter) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
+adapter), `nflbets/build/friends.js` (friends' picks, `window.FRIENDS`) and `nflbets/build/card.html` (the parlay card) are inlined by the build, so a change to any
 is a rebuild too. `smoke_live.js` section J holds the card to all of the above: Finish, every leg and
 the price in the window, the image (a recorder canvas, since jsdom draws nothing), the share sheet,
 Open in DraftKings on made-up ids (every leg, part with a moved line, none over two games with
@@ -1114,6 +1114,54 @@ A parlay X placed at the book goes in `liveparlays/parlays.json`, and a week of 
 `liveparlays/xbets.json`, by Claude from what the owner sends, as each file's `how` field
 describes: every device shows it on its next load.
 
+## Friends' picks on the Pick'em Record
+
+The owner tracks some friends' picks over the season (his call, 15 October 2026: "can you add these picks
+to the pick'em record? going to track some friends picks over the course of the season"). A friend picks a
+week on `picks/` and sends the owner its Save file (kind `nfl-hub-weekly-picks`, version 1: name, season,
+week, saved_at, tiebreaker, picks of `{game_id, pick, kickoff, ...}`); the owner sends it to Claude, and
+Claude adds it:
+
+```
+node picks/tools/add.js <sent file>...   # merge each into picks/friends.json, then rebuild nothing: the page reads it
+node picks/tools/add.js --check          # the file against its rules and betting/state.json's schedule
+node picks/tools/test_add.js             # the tool's test, and the real file held to its rules
+```
+
+then the branch, commit, PR and merge, as with any file the owner sends. `picks/friends.json` is
+`{how, season, updated, friends:[{name, weeks:{w6:{saved_at, tiebreaker, picks:{<game_id>:{pick, saved_at}}}}}]}`,
+its `how` saying the same; written only by the tool (never by hand, never by a job), indented one space, a
+pick a line. The tool refuses a file whole for a kind, version or season that is not the file's
+(`betting/state.json`'s season), a week outside 1-22, a name that is not plain text of 1-40 characters, a
+saved_at that is not a time, or a game id not of that week on the schedule, picked twice or for neither
+team; a pick saved at or after its game's kickoff (the schedule's kickoff, US Eastern, as `picks/` reads
+it, never the file's own) is left out and named, and a file with no pick left is refused. A friend is one
+name, without regard to case or spaces; a week sent again replaces that friend's week, except a game that
+had kicked off when the new file was saved, which keeps the pick the earlier file made before kickoff.
+Each pick keeps the saved_at of the file it came from.
+
+The page reads it like the X Bet Log: `nflbets/build/friends.js` (`window.FRIENDS`, inlined after
+`xbets.js`) fetches `../picks/friends.json` no-store on every load, cleans it (a junk name or entry is
+dropped; a file missing, not JSON, of another season or with no list draws no friend and throws nothing)
+and hands it to the betting frames as `parent.FRIENDS`; nothing is baked in, and a file that answers late
+redraws the record. `record_viz.js`'s `rvFriends()` grades them in the frame on its own state: a pick counts
+only if saved before its game's kickoff, is graded on the finals the models are graded on (a game in
+`processed` with a result; a tie counts for nobody) and is pending until then; a friend's week counts only
+the games they picked. They are drawn apart from the models: on the chart a dashed line with hollow dots
+each, in a muted palette (`RV_FRIEND_COLORS`), from zero at the week before their first, against Vegas on
+the games they picked (a friend with no game decided has no line), with a second legend row headed Friends
+(each record against Vegas and what is pending); in the week-by-week grid their own rows under a Friends
+heading after Vegas, a week with picks still to play a column of its own ("to play"), a cell with games
+decided shaded as a model's and "· 3 pending" beside it, one with none decided "14 pending", the
+tiebreaker in the cell's title; and in the pick grid a column each after Vegas (the pick-grid patch in
+`betting/tools/build.js`). The nflbets smoke holds it all on stand-ins (FRIENDS' PICKS at its end: the
+read, the rows and cells, the lines and legend, the tooltip, the pick grid, a pick saved at kickoff not
+counted, a junk name, and a missing, non-JSON, other-season and listless file each drawing nothing); the
+betting smoke holds the real file to the tool's rules as a warning (a friend's pick is no model's call or
+price, and a game moved earlier than a pick was saved must never hold back the state; the record leaves
+such a pick uncounted). A friend's picks are what they chose to send X, kept by name in the repo; nothing
+on any page writes them.
+
 ## Research: the homework toward the next model
 
 `research/` (README.md first) is the owner's study series toward a new game model, one folder a
@@ -1158,7 +1206,7 @@ may quietly outrank what the job published:
   never changes or outranks the file, and it is pruned to the file on every load.
   Schedule, scores, stats, prices, ratings and projections are read from
   `props/data/payload.json` and `betting/state.json` on every load, and X's parlays and the X
-  Bet Log from `liveparlays/`. The prop model keys its
+  Bet Log from `liveparlays/`, and friends' picks from `picks/friends.json`. The prop model keys its
   saved season on `PAY.baked_at`, which moves on every run of the job, so a run always
   rebuilds; the betting app already merges only the visitor's keys over the published state.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
