@@ -27,12 +27,18 @@
  *
  *   SMOKE_PAYLOAD=<file> node nflbets/build/smoke.js   boots the page on that payload instead of
  *                                                       props/data/payload.json (to try a week the job has not baked)
+ *   SMOKE_NOW=<ISO time> node nflbets/build/smoke.js   runs it as if it were then: Node's clock and every
+ *                                                       page's moved by one offset (props/build/clock_now.js),
+ *                                                       the smoke's own shift below laid over it
  */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
-const { JSDOM, VirtualConsole } = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom'));
+const JSDOM_MOD = require(path.join(ROOT, 'props', 'build', 'node_modules', 'jsdom')), { VirtualConsole } = JSDOM_MOD;
+/* SMOKE_NOW=<ISO time>: the smoke run as if it were then, Node's clock and every page's moved together
+   (props/build/clock_now.js), before anything below reads the clock; unset, the real clock */
+const JSDOM = require(path.join(ROOT, 'props', 'build', 'clock_now.js')).jsdomAt('SMOKE_NOW', JSDOM_MOD.JSDOM);
 const Papa = require(path.join(ROOT, 'props', 'build', 'node_modules', 'papaparse'));
 /* a price from DraftKings' line read on ESPN by Refresh odds, worked on its own (the props audit's rule, apart from the page) */
 const ESPN_RULE = require(path.join(ROOT, 'props', 'build', 'espn_rule.js'));
@@ -1686,7 +1692,13 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      suggested parlays and never an untested one, and the parlay card names such a leg to add by hand. A
      failing ESPN and a 404 are worded as the status line says them, and a game's page reads that game
      alone. The stand-in takes the game's own player prices out whatever the payload holds, so it holds
-     on any payload: the week's own, a lean week, one baked before PAY.espn_ids ---- */
+     on any payload: the week's own, a lean week, one baked before PAY.espn_ids.
+     The rules every check here keeps, as the props audit's do (its BLOCKING AND WARNINGS note): read the
+     page's clock (w.Date.now(); the smoke's own shift, PAGE_SHIFT_MS, moves the page's alone, so a time
+     built from Node's lands up to two days in the page's future); pick a game, a row or a player only from those the check can
+     stand on; planted data on a fixture of its own (the stand-in id table replaces the payload's, never
+     merged into it, and a planted Elo pick holds the levels' count of est. marks), never planted
+     expectations over live structures; and hold with no game to come, the off-season included ---- */
   { const S = w.eval('S'), ko0 = x => w.eval('kickoff')(x).getTime(), g = hasPb ? (w.eval('pbGames()').slice().sort((a, b) => ko0(b) - ko0(a))[0] || null) : null, ESR = ESPN_RULE.make(w), has = w.eval('typeof espnRefresh') === 'function' && w.eval('typeof espnWhen') === 'function';
     chk(has, 'the page has no Refresh odds reader (espnRefresh, espnWhen)');
     chk(!calls.some(c => /sports\.core\.api\.espn\.com|propBets/.test(c.url)), 'the page asked ESPN\'s core host for something on load, with no press: ' + calls.filter(c => /sports\.core|propBets/.test(c.url)).map(c => c.url).slice(0, 3).join(' '));
@@ -1738,7 +1750,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             const L = lineFor(x, l); (lines[x.pl.id] ??= {})[l.stat] = L;
             items.push({ type: { id: mainT[l.stat] }, athlete: ath, current: { target: { value: L } } }, { type: { id: mainT[l.stat] }, athlete: ath, current: { target: { value: L } } });
             for (const r of l.rungs.slice(0, -1)) items.push({ type: { id: mileT[l.stat] }, athlete: ath, current: { target: { value: r.k } } }); } }
-        P.espn_ids = Object.assign({}, keep.ids || {}, ids);
+        /* the stand-in's own id table alone: merged into the payload's real one (the job bakes it), a check
+           would turn on which players the week's ids already name (the props audit's #270) */
+        P.espn_ids = { ...ids };
         /* the week's scoreboard: DraftKings' game lines on every game, g's moved from the published */
         const toE = { WAS: 'WSH', LA: 'LAR' }, eab = t => toE[t] || t, fa = v => (v > 0 ? '+' : '') + v;
         const evOf = (x, i) => { const lk = oc => ({ href: `https://sportsbook.draftkings.com/gateway?preurl=${encodeURIComponent(`https://sportsbook.draftkings.com/event/${80000 + i}?outcomes=0SM${i}${oc}`)}` });
@@ -1767,9 +1781,26 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* the levels the page shows right after the press, before any cache of the smoke's own is dropped:
            what a build from nothing gives on the read (the press drops the caches the levels stand on) */
         { const sig = r => JSON.stringify(r.tiers.map(t => t.why || t.legs.map(l => [l.key, l.side, l.k, l.price, l.src])));
-          const rNow = w.eval('getPbTiers()'), drawn = d.querySelectorAll('#pbPanel .pb-tiers .pb-tier .pb-legs li .pr i.est').length;
-          w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}'); const rNew = w.eval('getPbTiers()'), nDk = rNew.tiers.reduce((a, t) => a + (t.legs ? t.legs.filter(l => l.src === 'dkline').length : 0), 0);
-          chk(sig(rNow) === sig(rNew) && drawn === nDk, `right after the press the Parlay Builder shows levels from before it (${drawn} legs marked est. drawn where a build on the read gives ${nDk}): ${sig(rNow).slice(0, 160)}`);
+          /* the levels' own est. marks: the Elo picks (#pbElo, drawn with the same cards inside the panel) may
+             take a leg priced from the read, and theirs are never a level's (counted with them, the smoke
+             failed on the 15 October 2026 payload, when an Elo pick took Jayden Daniels' read line) */
+          const estAll = () => [...d.querySelectorAll('#pbPanel .pb-tiers .pb-tier .pb-legs li .pr i.est')], estLv = () => estAll().filter(e => !e.closest('#pbElo')).length;
+          /* planted before the count and kept through the main check, so the count is held whatever the
+             week's Elo picks take: an Elo pick of the page's own card carrying a leg priced from the read,
+             laid into #pbElo; its est. mark is drawn there and the levels' count does not take it in (the
+             Elo section is drawn afresh by renderParlay below) */
+          const el = d.getElementById('pbElo'), nAll0 = estAll().length, nLv0 = estLv(); let html = '', pl = null;
+          chk(!!el, 'the suggested parlays panel has no Elo picks section (#pbElo) after the press');
+          if (el) { const leg = { key: g.id + '|00-SMOKE-ELO|receptions', gid: g.id, week: g.w, pid: '00-SMOKE-ELO', name: 'Planted Elopick', label: 'Over 3.5 receptions', stat: 'receptions', k: 3.5, side: 'over', main: true,
+              p: 0.5, price: 120, src: 'dkline', grp: 'WR', pos: 'WR', team: g.h, opp: g.a, espn: { at: new w.Date(w.Date.now()).toISOString(), fair: 0.45, tested: true, listed: true } };
+            try { html = w.eval('pbTierCard')({ id: 'elo2', label: 'Elo 2-leg', legs: [leg], p: 0.5, dec: 2.2, fair: null }, { chance: 0.5, chanceBy: 'Elo chance', by: 'Elo', kind: 'elo', add: 'data-pb-elo-add="elo2"', legP: l => l.p }); } catch (e) { html = ''; }
+            el.insertAdjacentHTML('beforeend', `<div class="pb-tiers" data-smoke-plant>${html}</div>`); pl = el.querySelector('[data-smoke-plant]');
+            chk(!!html && estAll().length === nAll0 + 1 && estLv() === nLv0, `an Elo pick's leg priced from the read is counted with the levels' est. marks, or not drawn est.: ${estLv()} of ${estAll().length} against the levels' ${nLv0}`); }
+          try {
+            const rNow = w.eval('getPbTiers()'), drawn = estLv();
+            w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}'); const rNew = w.eval('getPbTiers()'), nDk = rNew.tiers.reduce((a, t) => a + (t.legs ? t.legs.filter(l => l.src === 'dkline').length : 0), 0);
+            chk(sig(rNow) === sig(rNew) && drawn === nDk, `right after the press the Parlay Builder shows levels from before it (${drawn} legs marked est. drawn where a build on the read gives ${nDk}): ${sig(rNow).slice(0, 160)}`);
+          } finally { if (pl) pl.remove(); }
           w.eval('renderParlay()'); await wait(20); }
         /* DraftKings' game lines, real, from the press */
         { const o = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g), tl = w.eval('pricedLegs')([g]).filter(l => l.grp === 'TEAM');
@@ -1859,7 +1890,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
            since moved off keeps the pull's date on the card, the read's own ids the read's; and a reload
            (the press's lines put back, its read dropped) sends a leg it priced in the builder back to the
            model's estimate, no longer one to add by hand from ESPN */
-        { reset(); const sp0 = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines.sp, kH = -sp0, OLD = new Date(Math.floor((Date.now() - 30 * 3600e3) / 60e3) * 60e3).toISOString();
+        { reset(); const sp0 = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines.sp, kH = -sp0, OLD = new Date(Math.floor((w.Date.now() - 30 * 3600e3) / 60e3) * 60e3).toISOString();
           ((P.dk ??= {})[wk] ??= {})[g.id] = { glat: OLD, [`team:${g.h}|ats|${kH + 1}`]: 'SMKPAID' };
           S.ui.game = g.id; w.eval('renderGame()'); await wait(20);
           await press(d.querySelector(`#gameView [data-espn-refresh="${g.id}"]`)); S.ui.game = null; w.eval('closeGameModal()'); w.eval('renderParlay()'); await wait(20);

@@ -1,0 +1,147 @@
+name: Props gate
+
+# The props job and the Bets and Stats page run on a change's code before it is merged, against today's
+# data and the shapes the job has published (.github/scripts/props_gate.py says how). It spends nothing:
+# weekly.py runs with --no-odds and no secret is mapped here, so it could never buy a price. Nothing is
+# committed. Every PR gets the check, so it always reports: a PR that touches nothing the props job or
+# the page runs passes in seconds. A PR the gate covers is merged once its props-gate check is green
+# (`gh pr checks <n> --watch`); a failure that also fails on the base is reported and does not hold it.
+on:
+  pull_request:
+  push:
+    branches: [main]
+    # a push runs everything, so only the pushes that can change what the props job or the page runs
+    # (the bots' commits are made with the job's token and start no workflow anyway)
+    paths:
+      - "props/build/**"
+      - "props/data/*.py"
+      - "props/data/*.json"
+      - "!props/data/payload.json"
+      - "!props/data/priced_at.json"
+      - "!props/data/pricepull.json"
+      - "!props/data/credits.json"
+      - "!props/data/suggest_ledger.json"
+      - "!props/data/dk_links_wk*.json"
+      - "props/research/features.py"
+      - "props/research/qb_td.py"
+      - "props/raw/feat.pkl"
+      - "props/raw/fake_wk1.csv"
+      - "props/requirements.txt"
+      - "lib/**"
+      - ".github/workflows/props.yml"
+      - ".github/workflows/props-gate.yml"
+      - ".github/scripts/props_gate.py"
+      - ".github/scripts/test_props_gate.py"
+      - "nflbets/**"
+      - "betting/app/**"
+      - "betting/tools/build.js"
+      - "betting/tools/patches.js"
+      - "betting/tools/tiers.js"
+      - "betting/tools/*_viz.js"
+      - "betting/tools/reference_models.json"
+      - "betting/neutral_sites.json"
+      - "liveparlays/build/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # one run a PR, a newer push to it cancelling the older run; a push to main or a dispatch is never
+  # grouped with anything (its own run id), so none is ever cancelled
+  group: props-gate-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  paths:
+    name: what changed
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      audit: ${{ steps.classify.outputs.audit }}
+      page: ${{ steps.classify.outputs.page }}
+      base: ${{ steps.classify.outputs.base }}
+      cases: ${{ steps.classify.outputs.cases }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: the gate's own cases (test_props_gate.py)
+        run: python3 .github/scripts/test_props_gate.py
+      - id: classify
+        # AUDIT: what the props job runs; PAGE: what the Bets and Stats page is built from. Neither: the
+        # gate passes here. A push to main or a dispatch runs everything, on the commit before it as base
+        run: python3 .github/scripts/props_gate.py classify --event "${{ github.event_name }}" --before "${{ github.event.before }}"
+
+  bake:
+    # job A: the props job on this code and today's nflverse files (no prices bought), then the page
+    # smoke on the payload it baked; a failure is run again on the base's code (the same downloads)
+    name: props job and page smoke (fresh bake)
+    needs: paths
+    if: needs.paths.outputs.audit == 'true' || needs.paths.outputs.page == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install -r props/requirements.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: props/build
+      - name: weekly.py --no-odds, then the page smoke on its payload (each against the base on a failure)
+        env:
+          ODDS_API_KEY: ""
+          PYTHONUTF8: "1"
+        run: python3 .github/scripts/props_gate.py bake --base "${{ needs.paths.outputs.base }}" --audit "${{ needs.paths.outputs.audit }}" --page "${{ needs.paths.outputs.page }}"
+
+  phase:
+    # job B: props/build/test_audit_phases.py, a case a runner: the audit (or the page smoke) replayed on
+    # a past payload at its own moment, beside that commit's own data; a failure is run on the base too
+    name: phase replay ${{ matrix.case }}
+    needs: paths
+    if: needs.paths.outputs.cases != '[]' && needs.paths.outputs.cases != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        case: ${{ fromJSON(needs.paths.outputs.cases) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: props/build
+      - name: replay ${{ matrix.case }} (against the base on a failure)
+        env:
+          PYTHONUTF8: "1"
+        run: python3 .github/scripts/props_gate.py phase --base "${{ needs.paths.outputs.base }}" --case "${{ matrix.case }}"
+
+  verdict:
+    # the one check to wait for: green when every job that ran passed (a job skipped because nothing it
+    # covers changed counts as passed), red otherwise
+    name: props-gate
+    needs: [paths, bake, phase]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: every part that ran passed
+        run: |
+          echo "what changed: ${{ needs.paths.result }}; fresh bake: ${{ needs.bake.result }}; phase replays: ${{ needs.phase.result }}"
+          for r in "${{ needs.paths.result }}" "${{ needs.bake.result }}" "${{ needs.phase.result }}"; do
+            case "$r" in success|skipped) ;; *) echo "::error::the props gate did not pass ($r): see the job above"; exit 1 ;; esac
+          done
+          echo "the props gate passed"
