@@ -1784,17 +1784,27 @@ setTimeout(async()=>{
             `the press did not keep ${g0.id}'s read as the checks read it (placed by id, one by name, one left out), dated before kickoff: ${JSON.stringify(normBlock(blk)).slice(0,240)}`);
           chk(Object.keys(LV[wk]||{}).every(id=>id===g0.id||(OUT[id]&&OUT[id].st==='ok')),'a game no lines were read for has a read kept');
           /* the game lines and DraftKings' ids: the read's where newer, by club, real; a kicked-off game's left alone */
+          const idFill={read:0,kept:0};
           for(const g of games){ const o=ESPN.oddsOf(evOfG(g),g), pre=before[g.id];
             if(g===gK){ chk(F('ESPN_GL_KEYS').every(k=>same(g[k],pre[k])),`${g.id}, kicked off before it was read, had its game lines changed`); continue; }
             chk(!!o&&Object.entries(o.lines).every(([k,v])=>g[k]===v)&&g.ls==='dk'&&Math.abs(Date.parse(g.lat)-t0)<60e3,`${g.id}'s game lines are not DraftKings' as the press read them: ${JSON.stringify(F('ESPN_GL_KEYS').map(k=>g[k]))} against ${JSON.stringify(o&&o.lines)}`);
             const D=((P().dk||{})[wk]||{})[g.id]||{};
-            chk(!!o&&D.event===o.event&&Object.entries(o.ids).every(([k,v])=>D[k]===(g===g0&&k===paidKey?'PAIDID':v))&&!!D.glat,`${g.id}'s DraftKings ids from the press are not beside the paid pull's (one of which it must not replace): ${JSON.stringify(D)}`);
-            /* each id the read gave is dated by the read (espnIdAt, which the parlay card reads), the paid
-               pull's glat left as it was (it dates the ids the read did not see), and a paid id at a key the
-               read gave another id is the pull's, undated by the read */
-            { const kd=(((keep.dk||{})[wk]||{})[g.id]||{}), at=k=>F('espnIdAt')(g.id,k);
-              chk((kd.glat?D.glat===kd.glat:!!D.glat)&&Object.keys(o.ids).every(k=>g===g0&&k===paidKey?at(k)==null:Math.abs(at(k)-t0)<60e3),
-                `${g.id}'s DraftKings ids are not each dated by the read that saw them (the pull's glat ${kd.glat||'none'} now ${D.glat}; ${Object.keys(o.ids).map(k=>k+' '+at(k)).join(', ')})`); } }
+            /* what the paid pull had for the game before the press: the payload's own ids (the job bakes
+               them from the week's pulls, so a game priced already has its event, money lines, spread and
+               total), with the planted PAIDID over g0's away money line. The press only fills a key the
+               pull lacks and never replaces one, so each key's id is worked out from that, never assumed
+               empty: assumed so, the check turned on the week's data and refused the props runs of 15
+               October 2026 once Thursday's pull had priced every game */
+            const paid={...((((keep.dk||{})[wk]||{})[g.id])||{}),...(g===g0?{[paidKey]:'PAIDID'}:{})}, want=k=>paid[k]!=null?paid[k]:o.ids[k];
+            if(o) idFill.read+=Object.keys(o.ids).filter(k=>paid[k]==null).length, idFill.kept+=Object.keys(o.ids).filter(k=>paid[k]!=null).length;
+            chk(!!o&&D.event===(paid.event||o.event)&&Object.keys(o.ids).every(k=>D[k]===want(k))&&!!D.glat,`${g.id}'s DraftKings ids from the press are not beside the paid pull's (which it must not replace): ${JSON.stringify(D)} where the pull had ${JSON.stringify(paid)}`);
+            /* each id the read gave and the page holds is dated by the read (espnIdAt, which the parlay card
+               reads), the paid pull's glat left as it was (it dates the ids the read did not see), and a paid
+               id at a key the read gave another id is the pull's, undated by the read */
+            { const at=k=>F('espnIdAt')(g.id,k);
+              chk((isFinite(Date.parse(paid.glat))?D.glat===paid.glat:!!D.glat)&&Object.keys(o.ids).every(k=>want(k)!==o.ids[k]?at(k)==null:Math.abs(at(k)-t0)<60e3),
+                `${g.id}'s DraftKings ids are not each dated by the read that saw them (the pull's glat ${paid.glat||'none'} now ${D.glat}; ${Object.keys(o.ids).map(k=>k+' '+at(k)).join(', ')})`); } }
+          W.coverage(idFill.read>0&&idFill.kept>0,`the press's ids filled ${idFill.read} keys the pull lacked and met ${idFill.kept} it had: one branch of the ids' merge went untested`);
           { const tl=F('pricedLegs')(games).filter(l=>l.grp==='TEAM'&&l.gid===g0.id), o=ESPN.oddsOf(evOfG(g0),g0).lines;
             chk(tl.length>0&&tl.every(l=>l.src==='real'&&l.price===(l.stat==='ml'?(l.team===g0.h?o.mlh:o.mla):(l.team===g0.h?o.sph:o.spa))),`${g0.id}'s team bets are not at the press's DraftKings prices: ${tl.map(l=>l.label+' '+l.price+' '+l.src).join(', ')}`); }
           /* never saved: what save() writes is the published game lines and no read */
