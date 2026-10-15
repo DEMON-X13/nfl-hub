@@ -1125,6 +1125,7 @@ Claude adds it:
 ```
 node picks/tools/add.js <sent file>...   # merge each into picks/friends.json, then rebuild nothing: the page reads it
 node picks/tools/add.js --check          # the file against its rules and betting/state.json's schedule
+node picks/tools/add.js --rename <old> <new>   # show a friend under another name; the old one goes in `aka`, so a later file under it lands on them
 node picks/tools/test_add.js             # the tool's test, and the real file held to its rules
 ```
 

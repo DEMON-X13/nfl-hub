@@ -5,6 +5,8 @@
  *
  *   node picks/tools/add.js <file>...   merge each sent file into picks/friends.json
  *   node picks/tools/add.js --check     hold picks/friends.json to its rules; exit 1 on a problem
+ *   node picks/tools/add.js --rename <old> <new>   show a friend under another name (the owner's
+ *                                       call, 15 October 2026: "make D money fresh just D")
  *
  * A sent file is what picks/index.html's Save file writes (kind 'nfl-hub-weekly-picks', version 1:
  * name, season, week, saved_at, tiebreaker, picks[{game_id, pick, kickoff, ...}]). It is refused
@@ -21,6 +23,10 @@
  * game at kickoff, so its pick in a later file is the old one, or none). Each pick keeps the
  * saved_at of the file it came from, so the page and --check can hold it to its kickoff.
  *
+ * A rename keeps the names the friend went by before in `aka`, so a later file still saved under
+ * the old name lands on the same friend and keeps the name the owner chose; no two friends share a
+ * name or an aka.
+ *
  * The file is written by this tool alone, by hand, never by a job, and every page only reads it.
  * Nothing is downloaded: the schedule is betting/state.json as it stands in the checkout.
  */
@@ -31,7 +37,7 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const FILE = process.env.FRIENDS_FILE || path.join(ROOT, 'picks', 'friends.json');
 const STATE = process.env.FRIENDS_STATE || path.join(ROOT, 'betting', 'state.json');
 
-const HOW = "Friends' picks on the Pick'em Record: each friend's Weekly Picks (picks/), week by week, which the Pick'em Record shows beside the models on every device, read only. Claude keeps this file from the files the owner sends, with node picks/tools/add.js <file> (never by hand, never by a job); node picks/tools/add.js --check holds it to its rules. season is the NFL season (a file for another season than the betting app's shows nothing). friends is a list, in the order they were first added: name is the friend's name as their file gives it, and weeks holds a week for each file sent, keyed w1 to w22 (w19 to w22 are the playoffs). A week is saved_at, when the last file for it was saved, tiebreaker ({game_id, total_points} or null), and picks, keyed by the nflverse game id as betting/state.json's schedule writes it, each the team picked and when the file that picked it was saved. A pick counts only if it was saved before its game's kickoff; it is graded on the finals the models are graded on (state.json's processed), a tie counting for nobody. A week sent again replaces the friend's week, but a game already kicked off keeps the pick made before it. updated is when this file last changed.";
+const HOW = "Friends' picks on the Pick'em Record: each friend's Weekly Picks (picks/), week by week, which the Pick'em Record shows beside the models on every device, read only. Claude keeps this file from the files the owner sends, with node picks/tools/add.js <file> (never by hand, never by a job); node picks/tools/add.js --check holds it to its rules. season is the NFL season (a file for another season than the betting app's shows nothing). friends is a list, in the order they were first added: name is the friend's name as their file gives it (or as the owner renamed them, with node picks/tools/add.js --rename <old> <new>; aka then lists the names they went by, and a file sent under one of them lands on the same friend), and weeks holds a week for each file sent, keyed w1 to w22 (w19 to w22 are the playoffs). A week is saved_at, when the last file for it was saved, tiebreaker ({game_id, total_points} or null), and picks, keyed by the nflverse game id as betting/state.json's schedule writes it, each the team picked and when the file that picked it was saved. A pick counts only if it was saved before its game's kickoff; it is graded on the finals the models are graded on (state.json's processed), a tie counting for nobody. A week sent again replaces the friend's week, but a game already kicked off keeps the pick made before it. updated is when this file last changed.";
 
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const GID = /^(\d{4})_(\d{2})_([A-Z]{2,3})_([A-Z]{2,3})$/;
@@ -102,6 +108,8 @@ function empty(season) { return { how: HOW, season, updated: null, friends: [] }
 /* merge one sent file (read by readSent) into the friends file, in place; says what it did */
 function merge(F, s, st, now = new Date()) {
   let f = F.friends.find(x => key(x.name) === key(s.name));
+  const byName = !!f;
+  if (!f) f = F.friends.find(x => Array.isArray(x.aka) && x.aka.some(a => key(a) === key(s.name)));
   const isNew = !f;
   if (!f) { f = { name: s.name, weeks: {} }; F.friends.push(f); }
   const wk = 'w' + s.week, old = f.weeks[wk];
@@ -119,11 +127,27 @@ function merge(F, s, st, now = new Date()) {
   if (!tiebreaker && old && old.tiebreaker) { const g = st.games.get(old.tiebreaker.game_id); if (g && s.saved >= g.kick) tiebreaker = old.tiebreaker; }
   f.weeks[wk] = { saved_at: s.saved_at, tiebreaker, picks: sorted };
   f.weeks = Object.fromEntries(Object.entries(f.weeks).sort((a, b) => +a[0].slice(1) - +b[0].slice(1)));
-  if (s.name !== f.name) f.name = s.name;
+  if (byName && s.name !== f.name) f.name = s.name;
   F.updated = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
-  return `${s.name}, week ${s.week}: ${Object.keys(s.picks).length} pick(s) added${old ? ' (the week sent before replaced' + (kept ? `; ${kept} pick(s) made before kickoff kept from it` : '') + ')' : ''}${isNew ? ', a new friend' : ''}`
+  return `${f.name}${f.name !== s.name ? ` (sent as ${s.name})` : ''}, week ${s.week}: ${Object.keys(s.picks).length} pick(s) added${old ? ' (the week sent before replaced' + (kept ? `; ${kept} pick(s) made before kickoff kept from it` : '') + ')' : ''}${isNew ? ', a new friend' : ''}`
     + (s.late.length ? `; ${s.late.length} pick(s) saved after kickoff not counted: ${s.late.join(', ')}` : '')
     + (s.tiebreaker ? `; tiebreaker ${s.tiebreaker.total_points} points on ${s.tiebreaker.game_id}` : '');
+}
+
+/* show a friend under another name, the old one kept in aka so a later file under it still finds them; says what it did */
+function rename(F, from, to, now = new Date()) {
+  const f = F.friends.find(x => key(x.name) === key(from));
+  if (!f) throw new Error(`no friend is named ${JSON.stringify(from)}`);
+  const name = cleanName(to);
+  if (!okName(name)) throw new Error(`the name ${JSON.stringify(to)} is empty, over ${NAME_MAX} characters or not plain text`);
+  if (F.friends.some(x => x !== f && (key(x.name) === key(name) || (x.aka || []).some(a => key(a) === key(name)))))
+    throw new Error(`${name} is already another friend's name`);
+  const old = f.name, weeks = f.weeks;
+  const aka = [...new Map([...(f.aka || []), old].filter(x => key(x) !== key(name)).map(x => [key(x), x])).values()];
+  for (const k of Object.keys(f)) delete f[k];
+  Object.assign(f, { name }, aka.length ? { aka } : {}, { weeks });
+  F.updated = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  return old;
 }
 
 /* the friends file against its rules and the schedule: a list of problems, none when it is good */
@@ -137,8 +161,10 @@ function check(F, st) {
   const names = new Set();
   for (const f of F.friends) {
     if (!isObj(f) || !okName(f.name) || cleanName(f.name) !== f.name) { bad.push(`a friend's name ${JSON.stringify(f && f.name)} is not plain text of 1-${NAME_MAX} characters`); continue; }
-    if (names.has(key(f.name))) bad.push(`${f.name} is listed twice`);
-    names.add(key(f.name));
+    for (const n of [f.name, ...(f.aka || [])]) {
+      if (names.has(key(n))) bad.push(`${n} is listed twice`);
+      names.add(key(n)); }
+    if (f.aka != null && (!Array.isArray(f.aka) || f.aka.some(a => !okName(a) || cleanName(a) !== a))) bad.push(`${f.name}: aka is not a list of plain names`);
     if (!isObj(f.weeks)) { bad.push(`${f.name}: weeks is not an object`); continue; }
     for (const [wk, W] of Object.entries(f.weeks)) {
       const w = /^w(\d{1,2})$/.test(wk) ? +wk.slice(1) : NaN, at = `${f.name}, ${wk}`;
@@ -164,6 +190,7 @@ function check(F, st) {
 
 /* the file as written: JSON indented one space (as liveparlays/ writes its files), each pick on one line, so a week added is a small diff */
 function write(F, file = FILE) {
+  F.how = HOW;
   const text = JSON.stringify(F, null, 1).replace(/\{\n\s+"pick": ("[A-Z]+"),\n\s+"saved_at": ("[^"]+")\n\s+\}/g, '{"pick": $1, "saved_at": $2}');
   JSON.parse(text);
   fs.writeFileSync(file, text + '\n');
@@ -183,10 +210,15 @@ function main(argv) {
     console.log(bad.length ? `${path.relative(ROOT, FILE)}: ${bad.length} problem(s)` : `${path.relative(ROOT, FILE)}: ${(F.friends || []).length} friend(s), ${n} pick(s), all on the schedule and saved before kickoff`);
     return bad.length ? 1 : 0;
   }
-  if (!argv.length) { console.error('usage: node picks/tools/add.js <sent file>... | --check'); return 2; }
+  if (!argv.length || (argv[0] === '--rename' && argv.length !== 3)) { console.error('usage: node picks/tools/add.js <sent file>... | --check | --rename <old name> <new name>'); return 2; }
   const F = load(FILE, st.season);
   const before = check(F, st);
-  if (before.length) { console.error(`${path.relative(ROOT, FILE)} does not pass its rules as it stands; nothing added:\n  ` + before.join('\n  ')); return 1; }
+  if (before.length) { console.error(`${path.relative(ROOT, FILE)} does not pass its rules as it stands; nothing ${argv[0] === '--rename' ? 'renamed' : 'added'}:\n  ` + before.join('\n  ')); return 1; }
+  if (argv[0] === '--rename') {
+    try { const old = rename(F, argv[1], argv[2]); const bad = check(F, st); if (bad.length) throw new Error('the renamed file breaks its rules: ' + bad.join('; '));
+      write(F); console.log(`${path.relative(ROOT, FILE)}: ${old} is now ${F.friends.find(x => (x.aka || []).includes(old)).name} (a file sent as ${old} still lands on them)`); return 0; }
+    catch (e) { console.error('  REFUSED: ' + e.message); return 1; }
+  }
   let refused = 0;
   for (const a of argv) {
     try {
@@ -202,5 +234,5 @@ function main(argv) {
   return refused ? 1 : 0;
 }
 
-module.exports = { kickAt, readState, readSent, merge, check, write, empty, HOW };
+module.exports = { kickAt, readState, readSent, merge, rename, check, write, empty, HOW };
 if (require.main === module) process.exit(main(process.argv.slice(2)));
