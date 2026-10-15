@@ -180,6 +180,10 @@ window.PARLAY_CARD=(function(){
   /* when the ids a leg is looked up in were read: a team's line and the total with the game lines
      (glat), a player's with his game's prices (at); null where the payload does not say */
   function dkRead(l,D){ const s=D&&(['ml','ats','total'].includes(l.stat)?D.glat:D.at), t=s?Date.parse(s):NaN; return isFinite(t)?new Date(t):null; }
+  /* a team's line or the total that a Refresh odds press read (app v107) is dated by that press
+     (espnIdAt in part3.js keeps the time of each id it gave or found as the pull had it); any other id
+     by its pull, so a paid id at a number the press shows DraftKings has moved off keeps its own date */
+  function dkIdAt(l,key,at){ try{ const t=typeof espnIdAt==='function'?espnIdAt(l.gid,key):null; return t&&(!at||t>+at)?new Date(t):at; }catch(e){ return at; } }
   /* the player markets the price pull reads (oddsfetch.py's DEFAULT: DraftKings' main line on each,
      and the anytime touchdown); --full, which reads the rest and the alternate ladders, is never run */
   const DK_READ=['passing_yards','passing_tds','rushing_yards','receiving_yards','receptions','any_td'];
@@ -231,15 +235,15 @@ window.PARLAY_CARD=(function(){
          line the price file read it from, as oddsfetch's threshold() does) */
       for(const p of [+l.k-0.5,+l.k-1]){ const id=D[[l.pid,l.stat,'over',pt(p)].join('|')]; if(id) return {id,at}; }
       return unread||{why:'DraftKings’ alternate lines are not read here',brief:'alternate lines are not read here'}; }
-    if(D[key]) return {id:D[key],at};
+    if(D[key]) return {id:D[key],at:dkIdAt(l,key,at)};
     if(near){
       const pts=Object.keys(D).filter(k=>k.startsWith(near)).map(k=>k.slice(near.length)).filter(x=>x!==''&&isFinite(+x)).map(Number);
       if(pts.length){
         /* the main line the page has for him where DraftKings has it, else DraftKings' nearest */
         let M=null; try{ M=(!team&&l.stat!=='total'&&typeof marketLine==='function')?marketLine(l.week,l.pid,l.stat):null; }catch(e){}
-        const p=(M&&pts.includes(+M.line))?+M.line:pts.sort((a,b)=>Math.abs(a-l.k)-Math.abs(b-l.k))[0];
+        const p=(M&&pts.includes(+M.line))?+M.line:pts.sort((a,b)=>Math.abs(a-l.k)-Math.abs(b-l.k))[0], pa=dkIdAt(l,near+pt(p),at);
         /* DraftKings' line as the pull last read it, never "now": the read can be a day or more old */
-        return {why:`DraftKings had it at ${show(p)} when its lines were last read`+(at?` (${readOf(at)})`:''),brief:`DraftKings had it at ${show(p)}`,now:p}; } }
+        return {why:`DraftKings had it at ${show(p)} when its lines were last read`+(pa?` (${readOf(pa)})`:''),brief:`DraftKings had it at ${show(p)}`,now:p}; } }
     /* a player's leg on no book price, on a game whose player prices were read: DraftKings did not
        offer it then (a leg the card prices from the book has an id unless it was dropped: neutral) */
     if(unread) return unread;
@@ -278,7 +282,9 @@ window.PARLAY_CARD=(function(){
   /* from the builder: the legs as they stand, priced as the builder prices them */
   function fromBuilder(){
     const q=quote(); if(!q) return null;
-    const legs=q.legs.map((l,i)=>Object.assign({},l,{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
+    /* a leg a Refresh odds press priced, priced now as the builder prices it (back on the published
+       price once the press no longer stands: part3.js espnLegBack), is what the builder says it is */
+    const legs=q.legs.map((l,i)=>Object.assign({},l,l.src==='dkline'&&q.prices[i].src!=='dkline'?{src:q.prices[i].src}:{},{card:leg(l,q.prices[i].ml,q.prices[i].src)}));
     return card({source:'builder',kicker:'Your parlay',legs,dec:q.useDec,
       priceNote:q.override!=null?'your book’s price':(q.allBook?'book price':(q.estPrice?'estimated price':'fair price')),
       chance:q.pr.corr,chanceBy:'Model',fair:q.fair,stake:q.stake});

@@ -20,7 +20,9 @@ The pages carry no season data: each fetches what the scheduled jobs commit (`pr
 `betting/state.json`, `elo/data/*.json`, and the news job's `news/data/units.json`,
 `stats.json` and the week's notes, which the Game snapshot fetches as the page loads)
 and what Claude commits from what the owner sends (`liveparlays/parlays.json`,
-`liveparlays/xbets.json`, `picks/friends.json`) on every load. Five scheduled GitHub Actions jobs, one per model
+`liveparlays/xbets.json`, `picks/friends.json`) on every load. The one thing a page reads from elsewhere is
+ESPN's free feed of DraftKings' lines, and only when a visitor presses Refresh odds (app v107, below), held in
+that page's memory and never saved. Five scheduled GitHub Actions jobs, one per model
 or site, rebuild the data from their sources and commit it.
 
 `index.html` at the root is a static landing page linking the sites, and X NHL Bets in
@@ -142,6 +144,16 @@ props/
                                  dk_links_wk{W}.json is DraftKings' own id for every
                                  outcome it read, which the bake turns into the payload's dk
   build/test_dk_links.py         the payload's dk against the real week-5 file and its cases
+  build/test_espn_ids.py         the payload's espn_ids (weekly.py espn_ids): every player the
+                                 page can project, by the roster's espn_id, and nothing of ESPN's
+  build/patch_espn_prices.py     app v107: Refresh odds, the browser's on-demand read of
+                                 DraftKings' lines from ESPN, the best-guess price and its
+                                 precedence (its docstring is the design)
+  build/espn_rule.js             the checks' own working of a price from a read and of ESPN's
+                                 answers (audit M8, the nflbets smoke)
+  build/fixtures/espn/           ESPN's recorded answers for week 6 of 2026 (the scoreboard, two
+                                 games' player lines, athletes, the roster's ESPN ids): the
+                                 audit's fetch stub serves them, so M8 never touches the network
   build/patch_*.py               one committed script per past change, each with a
                                  prose docstring saying why
   data/payload.json              generated. everything the page fetches at boot
@@ -633,7 +645,10 @@ shown here is still live", not that none of X's is. Show them again empties the 
 build holds the section's storage to that one key and its requests to reads.
 
 The Parlay Builder is the prop model's own tab (`#parlay`, `tab-parlay`): the suggested parlays
-(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). Its first control is
+(`#pbPanel`, `renderPb()` in `part3.js`) over the builder (`#parlayBody`). Its controls lead with
+**Refresh odds** (app v107: `espnCtl`, a 44px button and its aria-live status line, which reads
+DraftKings' lines for every game of the week still to come from ESPN on a press; the same button is over
+the Props tab's game list, `#slateOdds`, and on a game's page for that game alone), then
 the **Bet amount** box (`#pbStake`, a number box with `inputmode="decimal"`, min $1, max $100,000,
 step $1), which is the builder's own stake, `S.stake`: one amount, $20 to start, saved with the prop
 model's state, set from either box or the builder's one-tap amounts. Every tier card (`pbTierCard`,
@@ -674,7 +689,8 @@ together, so that every parlay is a plain product, every parlay of its size with
 worked with `parlayProb` and none may land likelier, on the week's own picks (Spread alone, Moneyline
 alone, and in the audit Teams only on four games) and on ten made-up games whose covers are priced so
 that the likeliest ones (-115) and the best-paying ones (+140) differ, so a fallback chosen by return
-fails. A leg qualifies from `pricedLegs()` (a real book price, the model's chance 45-97% and 3
+fails. A leg qualifies from `pricedLegs()` (a real book price, or after a Refresh odds press a `dkline`
+one, DraftKings' line read on ESPN at the formula's price, on a tested kind; the model's chance 45-97% and 3
 points over the chance that price implies, `mlProb(price)`, the book's margin left in, which is
 stricter than its margin-out chance; market + form agreeing on a player leg); where those cannot
 fill a tier, the fewest legs the model still rates at or over the book fill it, each marked thin,
@@ -960,6 +976,7 @@ smoke holds the real file to the tool's rules as a warning.
 
 ```
 nflverse CSVs + the-odds-api  ->  weekly.py  ->  data/payload.json
+ESPN's feed (site + core api)  ->  the visitor's browser, on a press of Refresh odds  ->  memory only (never a file)
 part1.html + part2.js + part3.js  ->  assemble.py  ->  app/prop_model_2026.html (gitignored)
   (payload.json only checked)                     ->  audit.js  (must be clean, or no commit)
 part1.html + part2.js + part3.js  ->  nflbets/build/build.js  ->  nflbets/index.html
@@ -1002,7 +1019,10 @@ without its game, then its side and DraftKings' point: `<pid>|<stat>|over|79.5`,
 `team:BAL|ml`, `team:ATL|ats|-3`, `game|total|under|43.5`, and `event`, DraftKings' event id, with `at`
 and `glat`, when the game's player prices and its game lines were read; `dk_ids`
 in `weekly.py` builds it from `data/dk_links_wk{W}.json`, a player placed by the rule his prices are;
-the parlay card's Open in DraftKings and Share link read it), `season`, `week` and
+the parlay card's Open in DraftKings and Share link read it), `espn_ids` (app v107: `{ESPN athlete id:
+pid}` for every player the page can project, from the roster's `espn_id`; `espn_ids` in `weekly.py`, an id
+the roster gives two players left out; Refresh odds places each athlete of DraftKings' lines by it, and by
+name within his game where it lacks him; the payload carries no ESPN line), `season`, `week` and
 `season_over`, `not_posted` (`stats` and/or `injuries` when nflverse has not posted this
 season's file yet: the slate says so, and the audit expects none of it), `build` (the data
 build) and `baked_at`. Only this season's games are baked: a price or line row of another
@@ -1011,6 +1031,25 @@ carries `ls` (`dk` or `nflverse`: whose moneyline, spread and total it has) and 
 DraftKings' were pulled); DraftKings' are used only while under a day old. Its total `tot` comes
 with the over and under prices `tov`/`tou` (nflverse's `over_odds`/`under_odds`, or DraftKings'
 own where its total is used), absent on a payload baked before them.
+
+**Refresh odds** (app v107, `patch_espn_prices.py`; CLAUDE.md's Props loop has the design and the held-out
+table). A visitor's press reads ESPN's free feed in the browser: the week's scoreboard
+(`site.api.espn.com/.../scoreboard`, DraftKings' moneylines, spread and total with their prices, and its bet
+links' event and outcome ids) and each game's player lines (`sports.core.api.espn.com/.../odds/100/propBets`,
+a line and no price), every game of the week still to come from the Parlay Builder or the Props tab, one
+game from its page. The reader (`espnRefresh`, `espnOdds`, `espnParseItems`, `espnProps`, `espnPlace`,
+`espnBlock`, `espnReadGame` in `part3.js`) keeps what it read outside `S`: `ESPN_LIVE[week][gid] = {at,
+lines:{pid:{stat:L}}, rungs:{pid:{stat:[k...]}}, td:[pid]}`, `ESPN_GL[gid]` (the published game lines a
+press replaced, which `save()` writes in their place, `espnSavable`), `ESPN_OUT[gid]` (how each game's read
+ended, for the status lines), `ESPN_IDAT[gid][key]` (when the read gave or found each DraftKings id it put
+in `PAY.dk`, `espnIdAt`, which the parlay card dates it by) and `ESPN_SEQ` (in `pbDataSig` and
+`gameSuggestSig`). The game lines replace `g.mla` ... `g.tou` where newer (`ls` 'dk', `lat`, real prices);
+a player leg's price is the paid pull's while its line stands, else the read's line at the formula's price
+(`DK_EST`, `estPrice` in `part2.js`; `espnPrice`, `mainOf`, `plEst` in `part3.js`; src `dkline`, est.),
+else the model's estimate. A builder leg a press priced goes back to the page's own price once the press
+no longer stands (`espnLegBack`, in `legPrice`: a reload, or a later read that moved its line). Where legs
+are chosen (`pricedLegs`, `pbPool`, `gameLegPool`, the Elo picks) a `dkline` leg counts as a book price on
+a tested kind only (`ESPN_TESTED`).
 
 Who is playing is decided on every load from the payload, outside `S`: `RSTAT` (the roster
 status by player) and `INJ` (this week's tags: Q, did not practise, limited), with the ruled

@@ -324,7 +324,8 @@ prices and has not kicked off, once a pull's slot is ten hours gone, and spends 
 pull ran; a dropped Saturday pull is made up by the 16:07 run on Saturday (Pacific), and the 23:07
 one is the last chance before London. DraftKings' moneylines, spreads and totals are used only
 while under a day old, so a Sunday game's give way to nflverse's on Sunday morning; the player
-prices are DraftKings' Saturday ones to kickoff. `python3 test_pull_schedule.py` (about a minute,
+prices are DraftKings' Saturday ones to kickoff. A visitor's Refresh odds press (below) puts
+DraftKings' current game lines and player lines, read from ESPN, over them in that browser alone. `python3 test_pull_schedule.py` (about a minute,
 no credits) replays the season's schedule through `weekly.py`'s windows and `oddsfetch.py`'s
 `choose()` at every lateness up to 9.4 hours and with pulls dropped, and holds the crons to
 `PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`.
@@ -449,6 +450,85 @@ suggested nowhere, on a game to come or any game of the season), V4 the moved-up
 (the payload's `ina` against the downloaded roster, every inactive player on his club's last report
 held or cleared as the rule says, and made-up cases for each branch, the reserve, PUP and suspended
 lists among them).
+
+**Refresh odds: DraftKings' lines from ESPN, on demand** (app v107, the owner's calls of 15 October
+2026: "if we can get free odd pulls without the prices and have you come up with a formula that gives
+the closest of what your best guess would be of that money price, that would be fine", and then "i think
+it would be nice somewhere to have a refresh odds button that will pull the live lines on demand. would
+rather it be on demand rather than like a constant job"). ESPN's free feed carries DraftKings' player
+lines (the number, never a price) and DraftKings' game lines with their prices. The page reads it in the
+visitor's browser only when **Refresh odds** is pressed, never on load, on a timer or in a job: a 44px
+button with an aria-live status line beside it in the Parlay Builder's controls and over the Props tab's
+game list (every game of the week still to come) and on a game's page (that game alone: its week's
+scoreboard and its player lines, two or three requests). Both ESPN hosts answer a plain GET with
+`access-control-allow-origin: *`; the page sends no header of its own (no preflight), `cache:
+'no-store'`, four requests at a time, each with a timeout. The props job's only part is `PAY.espn_ids`,
+the ESPN athlete id of every player the page can project (this season's stat rows, the payload's players
+and the depth chart), from the nflverse roster it already downloads (`espn_ids` in `weekly.py`, `python3
+test_espn_ids.py`); the payload carries no ESPN line. The reader (`espnRefresh` and its helpers in
+`part3.js`, applied by `patch_espn_prices.py`, whose docstring is the design) matches each scoreboard
+event to a game by the unordered pair of its clubs (ESPN's WSH, LAR and JAC as WAS, LA and JAX), never
+by home and away; reads every page of a game's player lines to its pageCount at limit 1000 with a
+cache-buster; keeps a main line's twin items once (two different lines for one player and stat are both
+dropped), a milestone as k+ and the anytime-touchdown list; places an athlete by `PAY.espn_ids`, else by
+name within the game's two clubs on a player no ESPN id names and no other athlete claims (ARI's Mack
+Wilson Sr. shares surname and initial with Michael Wilson), else leaves him out; reads a game only before
+its kickoff and throws away a read its kickoff passes during; and leaves a game as it was on a 404
+(DraftKings has posted no player lines yet), a junk body or a failure. A read is dated by the browser's
+clock (Date is not a CORS-safelisted header), and ESPN's `lastUpdated` is never read.
+
+What a press reads is held in memory only, outside `S` (`ESPN_LIVE`, `ESPN_GL`, `ESPN_OUT`,
+`ESPN_IDAT`): `save()` writes the published game lines (`espnSavable`), and a reload returns to the
+published data, the builder's legs with it (`espnLegBack`: a leg a press priced goes back to DraftKings'
+own price on its line, else the model's estimate; any other builder leg keeps the price it was added at,
+as before). The game lines are DraftKings' real prices and replace the published ones where newer
+(`g.ls` 'dk', the Game bets card saying "read from ESPN by Refresh odds" and when, in ET); DraftKings'
+event and game-line ids from ESPN's bet links go into `PAY.dk` beside the paid pull's, never replacing
+one, each dated by the read that saw it (`espnIdAt`, which the parlay card reads; `glat` stays the
+pull's), so Open in DraftKings opens team legs and the game. Each player leg's price after a press: the
+paid pull's real price while its line is still DraftKings' line (the read has the same number, or none
+for him); the read's line where DraftKings has moved it since, or where the pull has no price, priced by
+the formula (`DK_EST` and `estPrice` in `part2.js`) and marked est. (src `dkline`); the model's estimate
+where there is no line. A rung or touchdown the pull priced keeps its real price. The formula was fitted
+on DraftKings' own prices only (2026 weeks 2-3, and its DET at BUF ladders of week 2), never on a result,
+and tested once on weeks 4-5 (`props/README.md`, "Refresh odds", has the full table): the median gap, in
+implied-chance points, between the price shown and DraftKings' real one,
+
+| Bet type | Held out | The model alone | DraftKings' line + formula |
+|---|---|---|---|
+| Passing, rushing, receiving yards, main line | 605 lines, 1,210 sides | 7.8 | 0.4 |
+| Receptions, main line | 360 lines | 7.4 | 2.8 |
+| Passing TDs, main line | 62 lines | 5.4 | 1.6 |
+| Anytime TD | 804 prices | 6.7 | 2.0 |
+| Yards ladder rungs (k+) | 248 rungs | 3.4 | 1.5 |
+
+A `dkline` leg of those tested kinds (a main line over or under on passing, rushing or receiving yards,
+receptions or passing touchdowns; the anytime touchdown; a yards rung DraftKings lists) counts as a book
+price in the Parlay Builder's levels, a game page's hands and the Elo picks, under the same rules: the
+45-97% band, the 3-point edge, market + form (`eloAltP` reads a `dkline` price as a book price), the
+far-off guard on its estimated fair chance (the formula's own, `legFair`) and V6. Every other kind
+(completions, attempts, carries, rush + rec yards, interceptions, field goals, kicking points, the
+receptions and passing-TD ladders, a rung DraftKings does not list) has no DraftKings price on file to
+test against: priced, shown est. on the game pages, never suggested. Every `dkline` price is marked est.
+with a title saying what it is priced from and when; a level, a hand or the builder with one says its
+price is estimated; the parlay card lists a `dkline` player leg to add by hand (ESPN carries no outcome
+id for a player's line). A press drops every cache a price stands on (`PB_CACHE`, `GAME_TIER_CACHE`,
+`PB_VIEW`; `ESPN_SEQ` is in `pbDataSig` and `gameSuggestSig`) and redraws, the focus kept on the button.
+The status line says the published prices before a press, the read's progress during one ("3 of 14
+games"), and after it when DraftKings' lines were read (for how many of the week's games, after a game
+page's press), how many games have no player lines posted yet, how many had their game lines read and
+their player lines not ("their published player prices stand"), and how many ESPN's scoreboard did not
+answer for. The suggestions record is the job's, on the published prices: the job never presses the
+button, and `suggest_ledger.js` is untouched. The audit's M8 holds it, blocking, on the reader itself fed
+ESPN's recorded answers in `props/build/fixtures/espn/` through a fetch stub (and a feed made from their
+shapes on the payload's own games, so it holds in any week; with no game to come those are skipped), against
+`props/build/espn_rule.js`, the checks' own copy of the formula's constants: the parse, the paging, the
+placement (a name never on a player an id names), the kickoff guards, every price, the precedence, what
+the page chooses and on what rules, the levels and hands fresh right after a press, each id dated by its
+read, a reload back on the published prices, nothing saved and no request to ESPN without a press; its
+status and card words are warnings. The nflbets smoke holds the buttons, a press and its status line,
+market + form and the far-off guard on the read's legs, the card and a reload on stand-in answers of its
+own, and `elo/check_tab.js` market + form on a `dkline` price.
 
 ## Betting: the loop
 
@@ -643,7 +723,7 @@ model's Track Record (the Prop Record, now off the tab bar: its section stays in
 starter's stats from his recent form, his Elo and the Elo of the defenders he faces; a player's window on the tab
 shows it, the Props tab opens on its Mismatches (the five biggest gaps between a starter's Elo and the unit he faces, in standard deviations, the top thirty behind Show more; a game that has kicked off leaves them, and each bubble wears the player's season shield); on a game's page each player with a Solid, Big or Huge one wears MISMATCH beside his name in the Diamond shield's blue, `pe-mmtag`, each leg in the builder carries its Elo matchup chance, and the Elo picks
 (their own section at the foot of the Parlay Builder's suggested parlays, `#pbElo`) are built on it: 2-, 3- and 4-leg parlays of ranked players whose matchup says
-they beat the book's price with its margin out, on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
+they beat the book's price with its margin out (a real price, or after a Refresh odds press one from DraftKings' line on a tested kind, est.), on the stats where the matchup has held up (plus money first, -200 to +300, one leg a
 game), built from `pricedLegs()` in the props parts and filtered by the panel's ticked games and player sides (`pbAllows`), each with Add to builder and Finish. A change to the formula is a change to `elo/build.py` (its docstring is the formula: say what
 moved and why there) and a rebuild of the data; a change to the tab is `tab_elo.html` and a
 rebuild of the page. The Elo model also stands on the Pick'em Record chart, table and pick
@@ -748,11 +828,14 @@ is: the fewest thin legs, then the highest chance by the builder's own sums), ma
 ruled "the likeliest 3 legs" (4, 5) on its card, with its chance and price and no note about the floor
 (the owner's call, October 2026: every level shows a parlay; the audit and the smoke work each such tier
 out in full against every parlay of its size wherever its legs are a plain product). Under All nothing forces or caps a kind. A leg
-qualifies as the old Suggested parlays window's did (a real price, the model's chance 45-97% and 3
-points above the chance that price implies, the book's margin left in, market + form agreeing on a
-player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still rates at
-or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet has
-no market + form); never a leg below the book. A game total has no edge (it is the book's own
+qualifies as the old Suggested parlays window's did (a real price, or after a Refresh odds press one from
+DraftKings' line on a tested kind at the formula's price, est.: under Props, "Refresh odds"; the model's
+chance 45-97% and 3 points above the chance that price implies, the book's margin left in, market + form
+agreeing on a player leg: `formAgrees`); where those cannot fill a tier, the fewest legs the model still
+rates at or above the book fill it, marked thin edge with a line saying what each kind lacked (a team bet
+has no market + form); never a leg below the book (a `dkline` leg's book is its estimated price). The
+panel's controls lead with Refresh odds (Odds, its status line beside it), and a level with a leg from
+the read marks it est., says its price is estimated and why. A game total has no edge (it is the book's own
 chance), so it is never preferred or thin: with Game total ticked the week's totals are a third list,
 the market legs (`pool.mkt`), taken only where the legs with an edge cannot make a level of its size,
 those legs then the base and the totals the only fill, the fewest first (`pbTier`); each is marked no
@@ -899,7 +982,8 @@ wider (the week-by-week grid and the pick grid on a phone), with one bar.
 Nothing is baked in: it fetches `props/data/payload.json`, `betting/state.json`,
 `liveparlays/parlays.json`, `liveparlays/xbets.json`, `picks/friends.json` and `elo/data/*.json`, and the news job's
 `news/data/units.json` and `stats.json` as the page loads and a week's notes when the board or a window first wants them, so it is
-rebuilt when a source changes, never when the data does. A props patch, a betting build change or an edit to the live section's source means
+rebuilt when a source changes, never when the data does; and ESPN's feed only when a visitor presses Refresh odds
+(under Props, "Refresh odds"), held in memory and never saved. A props patch, a betting build change or an edit to the live section's source means
 rebuilding it too, and a change to `nflbets/build/deepdive.js` is held by the news smoke as well:
 
 ```
@@ -1210,6 +1294,10 @@ may quietly outrank what the job published:
   Bet Log from `liveparlays/`, and friends' picks from `picks/friends.json`. The prop model keys its
   saved season on `PAY.baked_at`, which moves on every run of the job, so a run always
   rebuilds; the betting app already merges only the visitor's keys over the published state.
+- **A Refresh odds press is the visitor's, in memory.** The lines a press reads from ESPN (DraftKings'
+  game lines and player lines, under Props, "Refresh odds") live in the page's memory only, outside the
+  saved state: nothing of them is written to the browser's storage or anywhere else, and a reload returns
+  to the published data, the builder's legs with it. Nothing is read from ESPN on load or on a timer.
 - **A routine rebuild is silent.** The job publishes several times a week. Only a model or
   roster change is worth a banner.
 - **Every page says which build it is.** `buildTag` on the Bets and Stats header: `APP_BUILD`

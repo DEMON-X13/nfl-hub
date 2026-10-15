@@ -72,11 +72,11 @@ function parse(items) {
   for (const k of bad) { const [aid, st] = k.split('|'); delete per[aid].lines[st]; }
   return per;
 }
-/* the read a game's page keeps, from parse and the ids placed on players ({aid: pid}): the first ESPN
-   id (by number) a player has */
-function block(per, placed) {
-  const b = { lines: {}, rungs: {}, td: [] }, seen = new Set();
-  for (const aid of Object.keys(placed).sort((x, y) => x - y)) { const pid = placed[aid], a = per[aid]; if (!a || seen.has(pid)) continue; seen.add(pid);
+/* the read a game's page keeps, from parse and the ids placed on players ({aid: pid}): one ESPN athlete
+   a player, the one the payload's espn_ids (ids) names him by, else the first by number */
+function block(per, placed, ids) {
+  const b = { lines: {}, rungs: {}, td: [] }, seen = new Set(), byId = aid => (ids && ids[aid] === placed[aid] ? 0 : 1);
+  for (const aid of Object.keys(placed).sort((x, y) => byId(x) - byId(y) || x - y)) { const pid = placed[aid], a = per[aid]; if (!a || seen.has(pid)) continue; seen.add(pid);
     if (Object.keys(a.lines).length) b.lines[pid] = { ...a.lines };
     if (Object.keys(a.rungs).length) b.rungs[pid] = JSON.parse(JSON.stringify(a.rungs));
     if (a.td) b.td.push(pid); }

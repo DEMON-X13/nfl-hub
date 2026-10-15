@@ -1013,7 +1013,7 @@ function toggleLeg(key,k,g,side,main){
   const game=g||S.sched.find(x=>x.id===gid);
   if(stat==='total'){
     if(!game) return; const l=totalLeg(game,side==='under'?'under':'over'); if(!l) return;
-    const {key:_k,...leg}=l; S.parlay[key]=leg;
+    const {key:_k,...leg}=l; S.parlay[key]=espnGlTag(leg);
     save(); renderGame(); renderParlay(); return;
   }
   if(stat==='ml'||stat==='ats'){
@@ -1023,6 +1023,7 @@ function toggleLeg(key,k,g,side,main){
     const label=stat==='ml'?'To win':`To cover ${b.line>0?'+':''}${b.line}`;
     S.parlay[key]={gid,pid,stat,k:b.line==null?0:b.line,side:'over',main:false,p:b.p,price:(book!=null&&isFinite(book))?book:bookPrice(b.p),src:(book!=null&&isFinite(book))?'real':'est',
       mu:null,name:TEAM_NAMES[team]||team,pos:'Game',grp:'TEAM',team,opp,week:game.w,label};
+    espnGlTag(S.parlay[key]);
     save(); renderGame(); renderParlay(); return;
   }
   const pl=S.players[pid]; if(!pl||!game) return;
@@ -1057,9 +1058,12 @@ function toggleLeg(key,k,g,side,main){
   save(); renderGame(); renderParlay();
 }
 function legPrice(l){
-  if(isGameLeg(l)) return l.price!=null?{ml:l.price,src:l.src||'est'}:{ml:probToAmerican(l.p),src:'fair'};
+  /* (app v107) a leg a Refresh odds press priced goes back to the page's own price once that press no
+     longer stands (espnLegBack): after a reload the builder is on the published prices too */
+  if(isGameLeg(l)){ const b=espnLegBack(l); if(b) return b; return l.price!=null?{ml:l.price,src:l.src||'est'}:{ml:probToAmerican(l.p),src:'fair'}; }
   const book=l.main?null:oddsFor(l.gid,l.pid,l.stat,l.k);
   if(book!=null) return {ml:book,src:'real'};
+  { const b=espnLegBack(l); if(b) return b; }
   if(l.price!=null) return {ml:l.price,src:l.src||'est'};
   return {ml:probToAmerican(l.p),src:'fair'};
 }
@@ -1118,7 +1122,8 @@ const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1
      DraftKings having posted no player lines for the game yet ("No propBets found");
    - an athlete is placed by PAY.espn_ids, else by name within the game's two clubs (his ESPN athlete
      record, or each club's roster where a game has more than ESPN_NAME_EACH to place; the page's own name
-     rule, normName then nameKey, one match only), else left out. A player the page does not project is
+     rule, every exact name then the looser key, one match only, on a player no ESPN id in PAY.espn_ids
+     names and no other athlete of the read claims), else left out. A player the page does not project is
      carried and inert.
    ESPN_POOL requests at a time, each given ESPN_TIMEOUT_MS. A game is read only while its kickoff (the
    earlier of the schedule's and ESPN's) is to come, and a read that ends at or after it is thrown away: the
@@ -1128,12 +1133,14 @@ const sameGame=legs=>{ const g={}; for(const l of legs) g[l.gid]=(g[l.gid]||0)+1
    exposes only content-length and location, so in a browser it is the clock. ESPN's lastUpdated is never
    read: it is labelled Z but has run three hours ahead of UTC.
 
-   What a press changes is held in memory only, outside S, so a reload returns to the published data:
+   What a press changes is held in memory only, outside S, so a reload returns to the published data (a
+   leg it priced in the builder too, espnLegBack):
    ESPN_LIVE[week][gid] = {at, lines:{pid:{stat:L}}, rungs:{pid:{stat:[k,...]}}, td:[pid]}, priced by the
    formula (part2.js estPrice) and marked est.; the game's lines (g.mla, mlh, sp, spa, sph, tot, tov, tou,
    ls 'dk', lat) where the read is newer than the published ones, with the published ones kept in ESPN_GL
    for save() (espnSavable); DraftKings' event and game-line ids into PAY.dk for the game beside any the
-   paid pull has, never replacing one; and each game's outcome (ESPN_OUT) for the status lines. Then every
+   paid pull has, never replacing one, each dated by this read (ESPN_IDAT, espnIdAt: the parlay card reads
+   it; glat stays the pull's); and each game's outcome (ESPN_OUT) for the status lines. Then every
    cache a price stands on is dropped (PB_CACHE, GAME_TIER_CACHE, PB_VIEW; ESPN_SEQ is in pbDataSig and
    gameSuggestSig) and the page is drawn again.
 
@@ -1161,7 +1168,7 @@ const ESPN_ANY_TD='31';
 const ESPN_GL_KEYS=['mla','mlh','sp','spa','sph','tot','tov','tou','ls','lat'];
 const ESPN_TESTED={main:new Set(['passing_yards','rushing_yards','receiving_yards','receptions','passing_tds']),rung:new Set(['passing_yards','rushing_yards','receiving_yards'])};
 /* the press's state: never in S, never saved */
-let ESPN_LIVE={}, ESPN_GL={}, ESPN_OUT={}, ESPN_NAMES={}, ESPN_SEQ=0;
+let ESPN_LIVE={}, ESPN_GL={}, ESPN_OUT={}, ESPN_NAMES={}, ESPN_IDAT={}, ESPN_SEQ=0;
 let ESPN_RUN={busy:false,gid:null,week:null,total:0,done:0,requests:0,clock:false};
 const espnWeekQ=w=>+w<=18?`seasontype=2&week=${+w}`:`seasontype=3&week=${+w>=22?5:+w-18}`;
 const espnIso=t=>new Date(t).toISOString();
@@ -1237,11 +1244,17 @@ function espnApplyGame(g,odds,at){
   if(odds.event||Object.keys(odds.ids).length){
     const D=PAY.dk&&typeof PAY.dk==='object'?PAY.dk:(PAY.dk={}), W=D[String(g.w)]||(D[String(g.w)]={}), E=W[g.id]||(W[g.id]={});
     if(odds.event&&!E.event){ E.event=odds.event; ch=true; }
-    let seen=false; for(const k in odds.ids){ if(E[k]==null){ E[k]=odds.ids[k]; seen=true; ch=true; } else if(E[k]===odds.ids[k]) seen=true; }
-    if(seen&&!(Date.parse(E.glat)>=at)){ E.glat=espnIso(at); ch=true; }
+    /* each id the read gave, or found as the pull had it, is dated by this read (ESPN_IDAT, which the
+       parlay card reads); glat stays the paid pull's, dating the ids the read did not see (a spread at
+       a number DraftKings has since moved off), and is set only where the game has none */
+    const T=ESPN_IDAT[g.id]||(ESPN_IDAT[g.id]={});
+    for(const k in odds.ids){ if(E[k]==null){ E[k]=odds.ids[k]; ch=true; } if(E[k]===odds.ids[k]) T[k]=at; }
+    if(Object.keys(T).length&&!isFinite(Date.parse(E.glat))){ E.glat=espnIso(at); ch=true; }
   }
   return ch;
 }
+/* when a press last read a game's DraftKings id (a team's line or the total), or null */
+function espnIdAt(gid,key){ const t=ESPN_IDAT[gid]&&ESPN_IDAT[gid][key]; return isFinite(t)&&t>0?t:null; }
 /* one event's items: {per:{aid:{lines:{stat:L}, rungs:{stat:[k...]}, td}}, counts} */
 function espnParseItems(items){
   const per={}, c={items:0,main:0,rungs:0,td:0,ignored:0,clash:0}, clash=new Set();
@@ -1280,16 +1293,13 @@ async function espnProps(eid){
   }
   return {st:'ok',items,at};
 }
-/* a name on a player of the game's two clubs, by the page's own name rule: one match, or none */
-function espnByName(nm,pool){
-  const n=normName(nm); let hit=pool.filter(p=>normName(p.n)===n);
-  if(hit.length) return hit.length===1?hit[0].id:null;
-  const k=nameKey(nm); hit=pool.filter(p=>nameKey(p.n)===k);
-  return hit.length===1?hit[0].id:null;
-}
 function espnRosterNames(body){ try{ for(const grp of (body&&body.athletes)||[]) for(const a of (grp&&grp.items)||[grp])
   if(a&&a.id&&(a.fullName||a.displayName)) ESPN_NAMES[String(a.id)]=String(a.fullName||a.displayName).trim(); }catch(e){} }
-/* each athlete of a game's read on a player: by PAY.espn_ids, else by name within the game's two clubs */
+/* each athlete of a game's read on a player: by PAY.espn_ids, else by name within the game's two clubs.
+   A name lands only on a player no ESPN id names (neither one in this read nor any other the map has:
+   ARI's Mack Wilson Sr. shares surname and initial with Michael Wilson, whose own id the map holds) and
+   no other athlete of the read claims: every exact name first (normName), then the looser one (nameKey),
+   a player two athletes claim going to neither */
 async function espnPlace(per,g,ev){
   const ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{}, placed={}, left=[];
   for(const aid of Object.keys(per)){ const pid=ids[aid]; if(typeof pid==='string'&&pid) placed[aid]=pid; else left.push(aid); }
@@ -1299,14 +1309,25 @@ async function espnPlace(per,g,ev){
     for(const s of ['away','home']) if(cl&&(cl[s].id||cl[s].esp)){ const r=await espnFetch(`${ESPN_TEAM}${encodeURIComponent(cl[s].id||cl[s].esp)}/roster`); if(r.status===200) espnRosterNames(r.body); } }
   else for(const aid of need){ const r=await espnFetch(`${ESPN_CORE}/seasons/${SEASON}/athletes/${aid}?lang=en&region=us`);
     if(r.status===200&&r.body){ const n=String(r.body.fullName||r.body.displayName||'').trim(); if(n) ESPN_NAMES[aid]=n; } }
-  const pool=Object.values(S.players||{}).filter(p=>p&&(p.team===g.a||p.team===g.h));
-  for(const aid of left){ const nm=ESPN_NAMES[aid]; if(!nm) continue; const pid=espnByName(nm,pool); if(pid) placed[aid]=pid; }
+  const taken=new Set([...Object.values(ids).filter(v=>typeof v==='string'&&v),...Object.values(placed)]);
+  const pool=Object.values(S.players||{}).filter(p=>p&&(p.team===g.a||p.team===g.h)&&!taken.has(p.id));
+  const gone=new Set();
+  for(const rule of [normName,nameKey]){ const claims={};
+    for(const aid of left){ const nm=ESPN_NAMES[aid]; if(!nm||placed[aid]||gone.has(aid)) continue;
+      const k=rule(nm); if(!k) continue; const hit=pool.filter(p=>!taken.has(p.id)&&rule(p.n)===k);
+      /* one match only: a name two players share places no one */
+      if(hit.length===1) (claims[hit[0].id]||(claims[hit[0].id]=[])).push(aid);
+      else if(hit.length>1) gone.add(aid); }
+    /* a player two athletes claim goes to neither, and to no one after */
+    for(const pid in claims){ taken.add(pid); if(claims[pid].length===1) placed[claims[pid][0]]=pid; else for(const aid of claims[pid]) gone.add(aid); } }
   return placed;
 }
-/* the read of one game as the page keeps it: {at, lines, rungs, td}, one ESPN id a player (the first) */
+/* the read of one game as the page keeps it: {at, lines, rungs, td}, one ESPN athlete a player: the one
+   PAY.espn_ids names him by, else the first by number */
 function espnBlock(per,placed,at){
-  const b={at:espnIso(at),lines:{},rungs:{},td:[]}, seen=new Set();
-  for(const aid of Object.keys(placed).sort((x,y)=>x-y)){ const pid=placed[aid], a=per[aid]; if(seen.has(pid)||!a) continue; seen.add(pid);
+  const b={at:espnIso(at),lines:{},rungs:{},td:[]}, seen=new Set(), ids=PAY&&PAY.espn_ids&&typeof PAY.espn_ids==='object'?PAY.espn_ids:{};
+  const byId=aid=>ids[aid]===placed[aid]?0:1;
+  for(const aid of Object.keys(placed).sort((x,y)=>byId(x)-byId(y)||x-y)){ const pid=placed[aid], a=per[aid]; if(seen.has(pid)||!a) continue; seen.add(pid);
     if(Object.keys(a.lines).length) b.lines[pid]={...a.lines};
     if(Object.keys(a.rungs).length) b.rungs[pid]=JSON.parse(JSON.stringify(a.rungs));
     if(a.td) b.td.push(pid); }
@@ -1335,7 +1356,7 @@ async function espnRefresh(gid){
   try{
     const sb=await espnFetch(`${ESPN_SB}?dates=${SEASON}&${espnWeekQ(w)}&_=${Date.now()}`);
     const evs=sb.status===200&&sb.body&&Array.isArray(sb.body.events)?sb.body.events:null;
-    if(!evs){ for(const g of games) out[g.id]={st:'failed',why:sb.why||'a scoreboard with no events'}; }
+    if(!evs){ for(const g of games) out[g.id]={st:'failed',sb:true,why:sb.why||'a scoreboard with no events'}; }
     else {
       const sbAt=sb.at!=null?sb.at:Date.now(); if(sb.at==null) ESPN_RUN.clock=true;
       const byPair={}; for(const g of games) byPair[[g.a,g.h].sort().join('|')]=g;
@@ -1346,7 +1367,7 @@ async function espnRefresh(gid){
         if(Math.max(sbAt,Date.now())>=ko){ out[g.id]={st:'kicked',why:'kicked off before it was read'}; continue; }
         if(espnApplyGame(g,espnOdds(ev,g),sbAt)) changed=true;
         reads.push({g,ev,ko,eid:String(ev.id||'')}); }
-      for(const g of games) if(!out[g.id]&&!reads.some(r=>r.g===g)) out[g.id]={st:'failed',why:'not on ESPN’s scoreboard'};
+      for(const g of games) if(!out[g.id]&&!reads.some(r=>r.g===g)) out[g.id]={st:'failed',sb:true,why:'not on ESPN’s scoreboard'};
       ESPN_RUN.done=games.length-reads.length; espnPaint();
       await espnPool(reads.map(r=>async()=>{
         let res; try{ res=/^\d+$/.test(r.eid)?await espnReadGame(r):{st:'failed',why:'no ESPN event id'}; }catch(e){ res={st:'failed',why:String(e&&e.message||e)}; }
@@ -1354,7 +1375,7 @@ async function espnRefresh(gid){
         if(res.st==='ok'){ (ESPN_LIVE[String(w)]||(ESPN_LIVE[String(w)]={}))[r.g.id]=res.block; changed=true; }
         ESPN_RUN.done++; espnPaint(); }),ESPN_POOL);
     }
-  }catch(e){ console.error(e); for(const g of games) if(!out[g.id]) out[g.id]={st:'failed',why:String(e&&e.message||e)}; }
+  }catch(e){ console.error(e); for(const g of games) if(!out[g.id]) out[g.id]={st:'failed',sb:!ESPN_GL[g.id],why:String(e&&e.message||e)}; }
   finally{
     const now=Date.now(); for(const id in out) ESPN_OUT[id]={...out[id],block:undefined,when:now};
     ESPN_RUN={...ESPN_RUN,busy:false,done:ESPN_RUN.total};
@@ -1395,15 +1416,25 @@ function espnStatus(gid){
   if(R.busy) return `Reading DraftKings’ lines from ESPN… ${R.done} of ${R.total} game${R.total===1?'':'s'}`;
   const g1=gid&&S&&S.sched?S.sched.find(x=>x.id===gid):null, w=String(g1?g1.w:currentWeek()), ids=gid?[gid]:pbGames().map(g=>g.id);
   const live=ESPN_LIVE[w]||{}, read=ids.filter(id=>live[id]), lined=ids.filter(id=>ESPN_GL[id]);
-  const pub=`Prices as published${PAY&&PAY.baked_at?' '+espnWhen(PAY.baked_at):''}`;
+  const when=PAY&&PAY.baked_at?' '+espnWhen(PAY.baked_at):'', pub=`Prices as published${when}`;
   if(!ids.some(id=>ESPN_OUT[id])&&!read.length&&!lined.length) return pub+'.';
   const t=Math.max(0,...read.map(id=>Date.parse(live[id].at)),...lined.map(id=>ESPN_GL[id].at));
-  const parts=[read.length?`DraftKings’ lines from ESPN, read ${espnClock(t)}: player prices estimated from the line`:(lined.length?`DraftKings’ game lines from ESPN, read ${espnClock(t)}`:pub)];
-  const none=ids.filter(id=>!live[id]&&ESPN_OUT[id]&&ESPN_OUT[id].st==='none').length, fail=ids.filter(id=>ESPN_OUT[id]&&ESPN_OUT[id].st==='failed');
-  if(none) parts.push(gid?'DraftKings has posted no player lines for it yet':`${none} game${none===1?' has':'s have'} no lines posted yet`);
-  if(fail.length){ const n=fail.length, old=fail.filter(id=>live[id]).length;
+  /* games of the week no press has asked about (a game's page reads that game alone) */
+  const asked=ids.filter(id=>ESPN_OUT[id]||live[id]||ESPN_GL[id]), nm=id=>{ const g=S.sched.find(x=>x.id===id); return g?`${g.a} at ${g.h}`:id; };
+  const of=!gid&&asked.length<ids.length?` for ${asked.length} of ${ids.length} games${asked.length<=3?' ('+asked.map(nm).join(', ')+')':''}`:'';
+  const parts=[read.length?`DraftKings’ lines from ESPN${of}, read ${espnClock(t)}: player prices estimated from the line`
+    :(lined.length?`DraftKings’ game lines from ESPN${of}, read ${espnClock(t)}`:pub)];
+  /* a game whose scoreboard answered had its game lines read: what failed after was its player lines */
+  const out=id=>ESPN_OUT[id]||{}, none=ids.filter(id=>!live[id]&&out(id).st==='none').length;
+  const failP=ids.filter(id=>out(id).st==='failed'&&!out(id).sb), failS=ids.filter(id=>out(id).st==='failed'&&out(id).sb);
+  if(none) parts.push(gid?'DraftKings has posted no player lines for it yet':`${none} game${none===1?' has':'s have'} no player lines posted yet`);
+  if(failP.length){ const n=failP.length, old=failP.filter(id=>live[id]).length;
+    parts.push(gid?`couldn’t read DraftKings’ player lines: ${old?'the player lines read before stand':'the published player prices stand'}`
+      :`couldn’t read DraftKings’ player lines for ${n} game${n===1?'':'s'}: ${n===1?'its':'their'} ${old===n?'player lines read before stand':(old?'player lines read before or published player prices stand':'published player prices stand')}`); }
+  if(failS.length){ const n=failS.length, old=failS.filter(id=>live[id]||ESPN_GL[id]).length;
     parts.push(gid?`couldn’t reach ESPN: ${old?'the lines read before stand':'the published prices stand'}`
-      :`couldn’t reach ESPN for ${n} game${n===1?'':'s'}: ${n===1?'its':'their'} ${old===n?'last read stands':(old?'last read or published prices stand':'published prices stand')}`); }
+      :`couldn’t reach ESPN for ${n} game${n===1?'':'s'}: ${n===1?'its':'their'} ${old===n?'lines read before stand':(old?'lines read before or published prices stand':'published prices stand')}`); }
+  if(of&&(read.length||lined.length)) parts.push('press Refresh odds here for the rest');
   const s=parts.join('; ')+'.'; return s[0].toUpperCase()+s.slice(1);
 }
 /* the status lines and buttons on the screen, in place (a read in progress redraws nothing else) */
@@ -1492,6 +1523,37 @@ function plEst(x,g,l,kind,k){
   const d=espnPrice(x,g,l.stat,kind,k,'over'); if(d) return d;
   if(kind==='td') return {price:bookPrice(+k>=2?tdPlus(l.p,+k):l.p),src:'est'};
   return {price:rungView(x.pl,l.stat,l.mu,k,g.w).est,src:'est'};
+}
+/* a game leg put in the builder while a press's lines are on its game carries that read's time (gl) */
+function espnGlTag(leg){ if(!leg) return leg; const o=ESPN_GL[leg.gid]; if(o) leg.gl=o.at; else delete leg.gl; return leg; }
+/* a builder leg a press priced, once that press no longer stands, is priced as the page prices it
+   without the press: null while the press stands (the price it was added at, as every leg keeps).
+   A game leg (gl) whose game no press has read since the page loaded (a reload) goes to the game's line
+   as published at its own number, else the model's estimate; a player's leg priced from a read (dkline)
+   whose read is gone, or no longer has its line, to DraftKings' own price on that line where the pull
+   has one, else the model's estimate. So a reload returns the builder to the published prices too */
+function espnLegBack(l){
+  if(!l) return null;
+  const ok=v=>v!=null&&isFinite(v)&&v!==0;
+  if(isGameLeg(l)){
+    if(!l.gl||ESPN_GL[l.gid]) return null;
+    const g=((S&&S.sched)||[]).find(x=>x.id===l.gid); if(!g) return null;
+    let px=null;
+    if(l.stat==='ml') px=l.team===g.h?g.mlh:g.mla;
+    else if(l.stat==='ats'){ if((l.team===g.h?-g.sp:g.sp)===+l.k) px=l.team===g.h?g.sph:g.spa; }
+    else if(g.tot===+l.k) px=l.side==='under'?g.tou:g.tov;
+    if(ok(px)) return {ml:px,src:'real'};
+    return {ml:l.stat==='total'?TOTAL_EST:bookPrice(l.p),src:'est'};
+  }
+  if(l.src!=='dkline') return null;
+  const e=espnGame(l.gid,l.week);
+  if(e&&(l.stat==='any_td'?espnOffersTd(e,l.pid):espnLineOf(e,l.pid,l.stat)===+(l.main?l.k:(l.espn&&l.espn.line)))) return null;
+  if(l.main){ const M=marketLine(l.week,l.pid,l.stat); if(M&&+M.line===+l.k){ const px=l.side==='under'?M.under:M.over; if(ok(px)) return {ml:px,src:'real'}; } }
+  else { const od=oddsFor(l.gid,l.pid,l.stat,l.stat==='any_td'?1:l.k); if(ok(od)) return {ml:od,src:'real'}; }
+  if(l.stat==='any_td') return {ml:bookPrice(l.p),src:'est'};
+  const pl=S.players&&S.players[l.pid];
+  if(pl&&typeof l.mu==='number'&&isFinite(l.mu)){ const v=rungView(pl,l.stat,l.mu,l.main?+l.k+0.5:+l.k,l.week); return {ml:l.main&&l.side==='under'?bookPrice(1-v.pMkt):v.est,src:'est'}; }
+  return {ml:probToAmerican(l.p),src:'fair'};
 }
 const ESPN_ERR='typically within 0.5 points on yards, 2-3 on receptions, passing TDs, touchdowns and rungs';
 /* the title an est. price carries: what it is priced from */
@@ -1659,7 +1721,7 @@ function parlayFair(legs,memo,sims){
   const m=memo||{}, f=legs.map(l=>legFair(l,m)), miss=f.filter(x=>!x).length;
   if(miss) return {p:null,est:false,miss};
   const pr=parlayProb(legs.map((l,i)=>({...l,side:l.side||'over',p:f[i].p})),sims);
-  return {p:pr.corr,est:f.some(x=>x.est),miss:0,dk:legs.some(l=>l&&l.src==='dkline')};
+  return {p:pr.corr,est:f.some(x=>x.est),miss:0,dk:legs.some(l=>l&&l.src==='dkline'&&legPrice(l).src==='dkline')};
 }
 /* the side switch on a game page's suggested parlays: Any, or player overs only, or player
    unders only. A touchdown leg is an over; a game bet has no side and drops out. */
@@ -1754,14 +1816,14 @@ function pbCap(list){
 /* the legs on the reader's picks: preferred (the full bar) and thin (at or above the book, no more) */
 function pbPool(games){
   const edge=c=>c.p-mlProb(c.price), formOut=typeof window.eloLoaded==='function'&&!window.eloLoaded();
-  const pref=[], thin=[], plGames=new Set(), fm={}; let far=0;
+  const pref=[], thin=[], plGames=new Set(), fm={}; let far=0, farDk=0;
   for(const c of pricedLegs(games)){
     if(!isGameLeg(c)) plGames.add(c.gid);
     if(!pbAllows(c)||!(c.src==='real'||c.src==='dkline')||!isFinite(c.price)||c.price===0||!(c.p>=PB_PMIN&&c.p<PB_PMAX)||edge(c)<0) continue;
     /* until the Elo files are in, no player leg qualifies at all, as before */
     if(c.grp!=='TEAM'&&formOut) continue;
     /* the model FAR_OFF or more above the book's fair chance: left out, and counted for the panel */
-    if(legFarOff(c,fm)){ far++; continue; }
+    if(legFarOff(c,fm)){ far++; if(c.src==='dkline') farDk++; continue; }
     if(edge(c)>=PB_EDGE&&formAgrees(c)) pref.push({...c,thin:false}); else thin.push({...c,thin:true});
   }
   /* the totals, with Game total ticked: both sides of each ticked game's posted total on a real
@@ -1771,7 +1833,7 @@ function pbPool(games){
   if(pbUi().k.total) for(const g of games) for(const side of ['over','under']){
     const c=totalLeg(g,side);
     if(c&&pbAllows(c)&&c.src==='real'&&isFinite(c.price)&&c.price!==0&&c.p>=PB_PMIN&&c.p<PB_PMAX) mkt.push({...c,thin:false,market:true}); }
-  return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size,far};
+  return {pref:pbCap(pref),thin:pbCap(thin),mkt:pbCap(mkt),plGames:plGames.size,far,farDk};
 }
 /* a leg that can join: not a line already on it, not a second side (to win or to cover) on one
    game, and not a second leg on one player (two lines on one man, his catches and his yards, are
@@ -1945,7 +2007,7 @@ function pbBuild(){
   const pool=pbPool(games), memo=new Map(), c={players:!!(u.k.over||u.k.under),teams:!!(u.k.ml||u.k.ats),
     espn:games.some(g=>ESPN_OUT[g.id]&&(ESPN_OUT[g.id].st==='ok'||ESPN_OUT[g.id].st==='none'))};
   out.espnRead=c.espn;
-  out.pref=pool.pref.length; out.thin=pool.thin.length; out.mkt=pool.mkt.length; out.far=pool.far; out.noPlayerPrices=c.players&&!pool.plGames;
+  out.pref=pool.pref.length; out.thin=pool.thin.length; out.mkt=pool.mkt.length; out.far=pool.far; out.farDk=pool.farDk||0; out.noPlayerPrices=c.players&&!pool.plGames;
   out.tiers=PB_TIERS.map(t=>{ const [id,label,n,floor]=t, r=pbTier(t,pool,memo); return r?{id,label,n,floor,...r}:{id,label,n,floor,why:pbWhy(n,pool,c)}; });
   return out;
 }
@@ -2300,7 +2362,7 @@ function pbPanel(){
   /* player bets ticked, none of their prices in, and a level built all the same (from team bets
      or totals): the levels say nothing of the missing player legs, so the panel does */
   if(r.noPlayerPrices&&r.tiers.some(t=>t.legs)) notes.push(r.espnRead?`No player lines are in yet for your picks, so the tiers below are built without player legs: ${pbNoPl().replace(/^no player lines yet: /,'')}`:'Player prices are not in yet for your picks, so the tiers below are built without player legs: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).');
-  if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
+  if(r.far) notes.push(`${r.far} leg${r.far===1?' is':'s are'} left out: the model rates ${r.far===1?'it':'each'} ${Math.round(FAR_OFF*100)} points or more above the book’s fair chance (DraftKings’ prices with the margin taken out${r.farDk?`, or for ${r.farDk===r.far?(r.far===1?'it, priced':'each, priced'):(r.farDk===1?'the one':'the '+r.farDk)} from DraftKings’ line read by Refresh odds and marked est., our estimate of it`:''}), and its edges that large have not held up this season. ${r.far===1?'It is':'They are'} still on the game pages, flagged far off the market.`);
   if(r.kinds&&r.ticked&&!r.pref&&!r.thin&&!r.far&&!r.noPlayerPrices&&(u.k.ml||u.k.ats||u.k.over||u.k.under)) notes.push(espnW?`No line on your picks has a price the model rates at or above the book yet, DraftKings’ lines read by Refresh odds included. DraftKings’ own prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`
     :`No line on your picks has a real sportsbook price the model rates at or above the book yet. Player prices are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).`);
   return `<div class="card pb" id="pbCard">${head}
@@ -2330,7 +2392,7 @@ function pbPut(legs,what){
   if(!(have.length===L.length&&L.every(l=>suggestLegOn(l)))){
     if(have.length&&!confirm(`Replace the ${have.length} leg${have.length===1?'':'s'} in the builder with ${what}?`)) return false;
     S.parlay={};
-    for(const l of L){ const {key,thin,pe,ev,imp,...x}=l; S.parlay[key||legKey(l.gid,l.pid,l.stat)]=x; }
+    for(const l of L){ const {key,thin,pe,ev,imp,...x}=l; S.parlay[key||legKey(l.gid,l.pid,l.stat)]=isGameLeg(x)?espnGlTag(x):x; }
     S.bookPrice=null; save(); renderParlay(); if(S.ui.game) renderGame();
   }
   const b=$('parlayBody'); try{ if(b&&typeof b.scrollIntoView==='function') b.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}

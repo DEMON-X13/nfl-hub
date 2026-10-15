@@ -1089,7 +1089,10 @@ function seasonOver(){ return !!(S&&S.sched&&S.sched.length)&&S.sched.every(g=>g
    posted line (the Pick'ems board's) after that. null for a payload that does not say. */
 function lineSource(g){
   if(!g||!g.ls) return null;
-  if(g.ls==='dk'){ const t=g.lat?new Date(g.lat):null;
+  /* (app v107) DraftKings' lines a Refresh odds press read on ESPN, dated as the press's status line dates them */
+  if(g.ls==='dk'){ let gl=null; try{ gl=typeof ESPN_GL==='object'&&ESPN_GL?ESPN_GL[g.id]:null; }catch(e){}
+    if(gl&&gl.at) return 'DraftKings’, read from ESPN by Refresh odds '+espnWhen(gl.at);
+    const t=g.lat?new Date(g.lat):null;
     return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
   return "nflverse's posted line, as on the Pick'ems board";
 }

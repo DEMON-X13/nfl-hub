@@ -315,10 +315,14 @@ refresh odds button that will pull the live lines on demand ... rather than like
 page reads DraftKings' lines from ESPN's free feed in the visitor's browser, only when **Refresh odds** is
 pressed (the Parlay Builder's controls and the Props tab's game list read every game of the week still
 to come; a game's page reads that game alone), and nothing reads ESPN on a schedule: the props job's only
-part is `PAY.espn_ids`, each player's ESPN athlete id from the nflverse roster it already downloads
-(`weekly.py` `espn_ids`, held by `build/test_espn_ids.py`). The reader, the formula and the precedence
-are in `build/patch_espn_prices.py` (its docstring says how); a press is held in memory only, so a reload
-returns to the published data, and the suggestions record (`build/suggest_ledger.js`) never presses it.
+part is `PAY.espn_ids`, the ESPN athlete id of every player the page can project (this season's stat rows,
+the payload's players and the depth chart) from the nflverse roster it already downloads (`weekly.py`
+`espn_ids`, held by `build/test_espn_ids.py`); an athlete it lacks is placed by name within his game, on
+a player no ESPN id names. The reader, the formula and the precedence are in
+`build/patch_espn_prices.py` (its docstring says how). A press is held in memory only, so a reload
+returns to the published data, the builder's legs too (a leg a press priced goes back to DraftKings' own
+price on its line, else the model's estimate), and the suggestions record (`build/suggest_ledger.js`)
+never presses it.
 
 A player leg's price after a press: the paid pull's real price while its line is still DraftKings' line;
 the read's line where DraftKings has moved it since, or where the pull has no price, priced by the formula

@@ -11,12 +11,14 @@ of 2026, as nflverse had them on 15 October):
   A. every row with an ESPN id places on its gsis id: Sam Darnold (3912547), Jaylen Waddle (4372016) and
      Geno Smith (15864); a rookie the roster has no ESPN id for (Malik McClain) is not there, and the page
      places him by name within his game;
-  B. only the players the payload carries: a defender or a player off the payload's list is left out;
+  B. only the players the page can project: a defender or a player it cannot project is left out;
   C. an id the roster gives two players is left out (and named), never guessed; an id written as a float
      ("15864.0") reads as its integer; a blank or a word is no id;
-  D. weekly.bake end to end: the payload carries espn_ids for its own players and no ESPN line, game line
-     or read of any kind (no espn, espn_meta); a bake on a roster without a player drops his id, so the
-     map is always this run's.
+  D. weekly.bake end to end: the payload carries espn_ids for every player the page can project, the
+     payload's players and also one with only a stat row this season (Jaylen Waddle, off the players
+     list) and one on the depth chart alone (Geno Smith), and none for a skill player it cannot project
+     (Sam Darnold, on none of the three); and no ESPN line, game line or read of any kind (no espn,
+     espn_meta); a bake on a roster without a player drops his id, so the map is always this run's.
 
     python3 props/build/test_espn_ids.py        must end "0 failures"
 """
@@ -52,8 +54,8 @@ case('A', a)
 
 def b():
     ids, _ = weekly.espn_ids(ROSTER, {DARNOLD, WADDLE})
-    chk(ids == {'3912547': DARNOLD, '4372016': WADDLE}, f'B: only the players the payload carries: {ids}')
-    chk(SINGLETON not in weekly.espn_ids(ROSTER, SKILL)[0].values(), 'B: a linebacker the payload does not carry is left out')
+    chk(ids == {'3912547': DARNOLD, '4372016': WADDLE}, f'B: only the players asked for: {ids}')
+    chk(SINGLETON not in weekly.espn_ids(ROSTER, SKILL)[0].values(), 'B: a linebacker the page does not project is left out')
 case('B', b)
 
 def c():
@@ -74,20 +76,28 @@ def d():
     try:
         data = os.path.join(tmp, 'data'); os.makedirs(data)
         pp = os.path.join(tmp, 'payload.json')
-        players = [{'id': g} for g in sorted(SKILL)]
+        # the payload's players list lacks three: Waddle (a stat row this season), Geno Smith (the depth
+        # chart) and Darnold (neither: the page cannot project him)
+        players = [{'id': g} for g in sorted(SKILL - {WADDLE, GENO, DARNOLD})]
+        srows = [{'player_id': WADDLE, 'player_display_name': 'Jaylen Waddle', 'position': 'WR', 'season': str(S), 'season_type': 'REG',
+                  'week': '5', 'game_id': f'{S}_05_MIA_CAR', 'team': 'MIA', 'opponent_team': 'CAR'}]
         def bake(rrows):
-            json.dump({'season': S, 'sched': [], 'mkt': {}, 'players': players, 'depth': {}}, open(pp, 'w', encoding='utf-8'))
-            raw = {'srows': [], 'stats': {}, 'skipped_live': set(), 'irows': [], 'rrows': rrows, 'snap_rows': []}
+            json.dump({'season': S, 'sched': [], 'mkt': {}, 'players': players, 'depth': {GENO: {'team': 'NYJ', 'pos': 'QB', 'rank': 1}}}, open(pp, 'w', encoding='utf-8'))
+            raw = {'srows': srows, 'stats': {}, 'skipped_live': set(), 'irows': [], 'rrows': rrows, 'snap_rows': []}
             weekly.DATA = data; weekly.problems.clear(); weekly.report.clear()
             with contextlib.redirect_stdout(io.StringIO()):
                 weekly.bake(pp, {'season': S}, [], 6, False, weekly.datetime.datetime(S, 10, 15, 3, tzinfo=weekly.datetime.timezone.utc), raw)
             return json.load(open(pp, encoding='utf-8'))
         pay = bake(ROSTER)
-        chk(pay.get('espn_ids') == weekly.espn_ids(ROSTER, SKILL)[0] and pay['espn_ids'].get('3912547') == DARNOLD,
-            f"D: the payload carries espn_ids for its own players ({len(pay.get('espn_ids') or {})})")
+        can = (SKILL - {DARNOLD})
+        chk(pay.get('espn_ids') == weekly.espn_ids(ROSTER, can)[0],
+            f"D: the payload carries espn_ids for every player the page can project ({len(pay.get('espn_ids') or {})} of {len(weekly.espn_ids(ROSTER, can)[0])})")
+        chk(pay['espn_ids'].get('4372016') == WADDLE, 'D: a player with a stat row this season and off the payload\'s players list (Waddle) is in the map')
+        chk(pay['espn_ids'].get('15864') == GENO, 'D: a player on the depth chart alone (Geno Smith) is in the map')
+        chk('3912547' not in pay['espn_ids'], 'D: a skill player the page cannot project (Darnold, on no list) is not in the map')
         chk(not ({'espn', 'espn_meta'} & set(pay)), f"D: the payload carries no ESPN read: {sorted({'espn', 'espn_meta'} & set(pay))}")
         pay2 = bake([r for r in ROSTER if r['gsis_id'] != WADDLE])
-        chk('4372016' not in pay2['espn_ids'] and pay2['espn_ids'].get('3912547') == DARNOLD, 'D: a rebake on a roster without a player drops his id')
+        chk('4372016' not in pay2['espn_ids'] and pay2['espn_ids'].get('15864') == GENO, 'D: a rebake on a roster without a player drops his id')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 case('D', d)

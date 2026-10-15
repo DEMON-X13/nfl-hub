@@ -1003,7 +1003,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
            read, and the note dated, saying what it opens as DraftKings had it then and promising no leg */
         { const DK = w.eval('PAY').dk || {}, onSlip = l => !!dkKey(l) && !(l.src === 'dkline' && !w.eval('isGameLeg')(l)), ids = t.legs.filter(onSlip).map(l => dkIdOf(DK, l)).filter(Boolean), a = d.getElementById('pcDk'), n = t.legs.filter(onSlip).length;
           const espnMiss = t.legs.map((l, i) => ({ l, i })).filter(({ l }) => l.src === 'dkline' && !w.eval('isGameLeg')(l));
-          chk(espnMiss.every(({ l, i }) => { const li = d.querySelector(`#pcDkNote [data-pc-dkmiss="${i + 1}"]`); return !!li && txt(li).endsWith(': price estimated from DraftKings’ line; its id was not read'); }),
+          chk(espnMiss.every(({ l, i }) => { const li = d.querySelector(`#pcDkNote [data-pc-dkmiss="${i + 1}"]`); return !!li && txt(li).endsWith(': price estimated from DraftKings’ line read on ESPN; its DraftKings id is not read'); }),
             `Open in DraftKings on the ${t.label} tier does not name each leg priced from DraftKings' line read on ESPN to add by hand, its price estimated and its id not read: ` + [...d.querySelectorAll('#pcDkNote [data-pc-dkmiss]')].map(txt).join(' / '));
           if (!n) console.log(`  (every leg of the ${t.label} tier is priced from DraftKings' line read on ESPN: none goes on the slip, and each is named to add by hand)`);
           else chk(ids.length === n && ids.every(x => /^SMK\d/.test(x)) && !!a && !a.hidden && a.getAttribute('href') === 'https://sportsbook.draftkings.com/?outcomes=' + ids.map(encodeURIComponent).join('+')
@@ -1761,9 +1761,16 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const LV = w.eval('ESPN_LIVE'), blk = (LV[wk] || {})[g.id];
         chk(!!blk && net.log.filter(x => /\/scoreboard\?/.test(x.url)).length === 1 && net.log.every(x => x.cache === 'no-store' && !x.headers),
           `the press did not read ${g.id}'s stand-in lines on one scoreboard and plain no-store requests: ${net.log.map(x => x.url.replace(/https:\/\/[^/]+/, '')).slice(0, 4).join(' ')}`);
-        { const st = txt(d.querySelector('#pbPanel [data-espn-status="week"]')), exp = `DraftKings’ lines from ESPN, read ${clk(Date.parse(blk && blk.at))}: player prices estimated from the line` + (gN ? '; 1 game has no lines posted yet' : '') + (gF ? '; couldn’t reach ESPN for 1 game: its published prices stand' : '') + '.';
+        { const st = txt(d.querySelector('#pbPanel [data-espn-status="week"]')), exp = `DraftKings’ lines from ESPN, read ${clk(Date.parse(blk && blk.at))}: player prices estimated from the line` + (gN ? '; 1 game has no player lines posted yet' : '') + (gF ? '; couldn’t read DraftKings’ player lines for 1 game: its published player prices stand' : '') + '.';
           chk(st === exp, `the status line after the press reads "${st}", not "${exp}"`);
           chk(d.activeElement && d.activeElement.dataset && d.activeElement.dataset.espnRefresh === 'week', 'the focus did not stay on the Refresh odds button through the redraw'); }
+        /* the levels the page shows right after the press, before any cache of the smoke's own is dropped:
+           what a build from nothing gives on the read (the press drops the caches the levels stand on) */
+        { const sig = r => JSON.stringify(r.tiers.map(t => t.why || t.legs.map(l => [l.key, l.side, l.k, l.price, l.src])));
+          const rNow = w.eval('getPbTiers()'), drawn = d.querySelectorAll('#pbPanel .pb-tiers .pb-tier .pb-legs li .pr i.est').length;
+          w.eval('PB_CACHE=new Map(); PB_VIEW={sig:null,key:null,t:{}}'); const rNew = w.eval('getPbTiers()'), nDk = rNew.tiers.reduce((a, t) => a + (t.legs ? t.legs.filter(l => l.src === 'dkline').length : 0), 0);
+          chk(sig(rNow) === sig(rNew) && drawn === nDk, `right after the press the Parlay Builder shows levels from before it (${drawn} legs marked est. drawn where a build on the read gives ${nDk}): ${sig(rNow).slice(0, 160)}`);
+          w.eval('renderParlay()'); await wait(20); }
         /* DraftKings' game lines, real, from the press */
         { const o = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g), tl = w.eval('pricedLegs')([g]).filter(l => l.grp === 'TEAM');
           chk(Object.entries(o.lines).every(([k, v]) => g[k] === v) && g.ls === 'dk' && tl.length > 0 && tl.every(l => l.src === 'real' && l.price === (l.stat === 'ml' ? (l.team === g.h ? o.lines.mlh : o.lines.mla) : (l.team === g.h ? o.lines.sph : o.lines.spa))),
@@ -1808,6 +1815,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(legsAll.every(taken) && !legsAll.some(UNTESTED), 'a level holds a leg priced from DraftKings\' line that is not the rule\'s, or of a kind never suggested (completions, carries, a receptions rung): ' + legsAll.filter(l => !taken(l) || UNTESTED(l)).map(l => l.name + ' ' + l.label + ' ' + l.src).join(', '));
         chk(!w.eval('pricedLegs')([g]).some(l => l.src === 'dkline' && (UNTESTED(l) || !taken(l))) && !w.eval('gameLegPool')(g).some(l => l.src === 'dkline' && (UNTESTED(l) || !taken(l))),
           'the lines a suggestion or a game hand is built from hold an untested leg from DraftKings\' line, or one not the rule\'s');
+        /* market + form on a leg from the read, worked here as for a real price (eloAltP on src 'real', which
+           elo/check_tab.js holds equal to its 'dkline'), and the far-off rule on its estimated fair chance (the
+           rule's own, fairRule): the panel's preferred legs and every level's thin mark follow them, and a game
+           page's hands keep off a far one */
+        { const fair = fairRule(w), FAR = w.eval('FAR_OFF'), mlP = w.eval('mlProb'), alt = typeof w.eloAltP === 'function' ? w.eloAltP : null;
+          const form = l => { if (!alt) return true; const a = alt(l.pid, l.side, l.price, 'real', l.stat); return a != null && a - mlP(l.price) >= 0.03; };
+          const pool = w.eval('pbPool')(w.eval('pbGames()').filter(x => !S.ui.pb.off.includes(x.id))), farOf = l => { const f = fair(l); return !f || l.p - f.p >= FAR - 1e-9; };
+          const badPref = pool.pref.filter(l => l.src === 'dkline' && (!(l.p - mlP(l.price) >= 0.03) || !form(l) || farOf(l)));
+          const badThin = legsAll.filter(l => l.src === 'dkline' && l.thin !== !(l.p - mlP(l.price) >= 0.03 && form(l)));
+          const badHand = w.eval('gameLegPool')(g).filter(l => l.src === 'dkline' && farOf(l));
+          chk(!!alt && !badPref.length && !badThin.length && !badHand.length && pool.pref.concat(pool.thin).every(l => l.src !== 'dkline' || !farOf(l)),
+            `a leg priced from DraftKings' line is preferred or not thin without market + form or a 3-point edge, or far off its estimated fair chance in the panel or a game page's hands: ${[...badPref, ...badThin, ...badHand].slice(0, 4).map(l => l.name + ' ' + l.label + ' ' + l.price + (l.thin ? ' thin' : '')).join(', ')}`); }
         const pnl = d.getElementById('pbPanel');
         for (const t of r.tiers.filter(t => t.legs)) { const c = pnl.querySelector(`.pb-tier.${t.id}`), li = c ? [...c.querySelectorAll('.pb-legs li')] : [], nd = t.legs.filter(l => l.src === 'dkline').length;
           chk(li.length === t.legs.length && t.legs.every((l, i) => { const m = li[i].querySelector('.pr i.est'); return l.src === 'dkline' ? !!m && m.title.startsWith('DraftKings’ line from ESPN, read ') : !m; })
@@ -1835,6 +1854,31 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(us.filter(u => /\/scoreboard\?/.test(u)).length === 1 && pb.length === 1 && props(pb[0]).eid === evId(g) && us.length === 2,
             `${g.id}'s page's Refresh odds read more than its game: ${us.map(u => u.replace(/https:\/\/[^/]+/, '')).join(' ')}`); }
         S.ui.game = null; w.eval('closeGameModal()');
+        /* that press alone, on a page that has read nothing else: the week's status line says it read that
+           game alone, and to press there for the rest; a spread id the pull had at a number DraftKings has
+           since moved off keeps the pull's date on the card, the read's own ids the read's; and a reload
+           (the press's lines put back, its read dropped) sends a leg it priced in the builder back to the
+           model's estimate, no longer one to add by hand from ESPN */
+        { reset(); const sp0 = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines.sp, kH = -sp0, OLD = new Date(Math.floor((Date.now() - 30 * 3600e3) / 60e3) * 60e3).toISOString();
+          ((P.dk ??= {})[wk] ??= {})[g.id] = { glat: OLD, [`team:${g.h}|ats|${kH + 1}`]: 'SMKPAID' };
+          S.ui.game = g.id; w.eval('renderGame()'); await wait(20);
+          await press(d.querySelector(`#gameView [data-espn-refresh="${g.id}"]`)); S.ui.game = null; w.eval('closeGameModal()'); w.eval('renderParlay()'); await wait(20);
+          const n0 = w.eval('pbGames()').length, e = (w.eval('ESPN_LIVE')[wk] || {})[g.id], t = Math.max(Date.parse(e && e.at) || 0, (w.eval('ESPN_GL')[g.id] || {}).at || 0), st = txt(d.querySelector('#pbPanel [data-espn-status="week"]'));
+          const exp = n0 > 1 ? `DraftKings’ lines from ESPN for 1 of ${n0} games (${g.a} at ${g.h}), read ${clk(t)}: player prices estimated from the line; press Refresh odds here for the rest.` : null;
+          chk(!exp || st === exp, `after a press on ${g.id}'s page alone, the Parlay Builder's status line reads "${st}", not "${exp}"`);
+          const L0 = k => ({ gid: g.id, week: +g.w, pid: 'team:' + g.h, stat: 'ats', k, side: 'over', main: false, grp: 'TEAM', src: 'real', name: TEAM(g.h), label: 'To cover' });
+          const onRead = w.PARLAY_CARD.dkPlan([L0(kH)]), onPaid = w.PARLAY_CARD.dkPlan([L0(kH + 1)]), atRead = w.eval('espnIdAt')(g.id, `team:${g.h}|ats|${kH}`);
+          chk(P.dk[wk][g.id].glat === OLD && !!atRead && onRead.ok.length === 1 && +onRead.read === atRead && onPaid.ok.length === 1 && onPaid.ok[0].id === 'SMKPAID' && onPaid.read.toISOString() === OLD,
+            `the card does not date the read's spread id by the press and the pull's at a moved number by the pull: ${JSON.stringify({ glat: P.dk[wk][g.id].glat, onRead: onRead.read, atRead, onPaid: onPaid.read })}`);
+          const x1 = Object.values(ro).flatMap(t2 => t2.players).find(x => (lines[x.pl.id] || {}).receiving_yards != null);
+          if (x1) { const L = lines[x1.pl.id].receiving_yards, key = `${g.id}|${x1.pl.id}|receiving_yards`; S.parlay = {}; w.eval('toggleLeg')(key, L, g, 'over', true); w.eval('renderParlay()'); await wait(20);
+            const leg1 = S.parlay[key], during = w.eval('legPrice')(leg1), cardDuring = w.PARLAY_CARD.fromBuilder();
+            reset(); w.eval('renderParlay()'); await wait(20);
+            const after = w.eval('legPrice')(leg1), cardAfter = w.PARLAY_CARD.fromBuilder(), est = w.eval('rungView')(S.players[x1.pl.id], 'receiving_yards', leg1.mu, L + 0.5, g.w).est;
+            const why = c => (c && c.dk.miss.find(m => m.n === 1) || {}).why || '';
+            chk(!!leg1 && leg1.src === 'dkline' && during.src === 'dkline' && why(cardDuring) === 'price estimated from DraftKings’ line read on ESPN; its DraftKings id is not read'
+              && after.src === 'est' && after.ml === est && !d.querySelector('#parlayBody [data-espn-read]') && why(cardAfter) !== why(cardDuring) && !cardAfter.fairDk,
+              `after a reload, ${x1.pl.n}'s over ${L} receiving yards, priced from the read, is not back on the model's estimate (${after.ml} ${after.src}, want ${est}) or the card still names it to add by hand from ESPN: "${why(cardAfter)}"`); } }
         /* ESPN not answering at all, and a week with no player lines posted, as the status line words them */
         reset(); net.route = () => ({ reject: true }); w.eval('renderParlay()'); await wait(20);
         await press(d.querySelector('#pbPanel [data-espn-refresh="week"]'));
@@ -1844,7 +1888,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         reset(); net.route = u => /\/scoreboard\?/.test(u) ? { code: 200, body: { events: evs } } : { code: 404, body: { error: { message: 'No propBets found', code: 404 } } }; w.eval('renderParlay()'); await wait(20);
         await press(d.querySelector('#pbPanel [data-espn-refresh="week"]'));
         { const ids0 = w.eval('pbGames()').map(x => x.id), n0 = ids0.filter(id => evs.some((e, i) => games[i].id === id)).length, rest = ids0.length - n0, st = txt(d.querySelector('#pbPanel [data-espn-status="week"]'));
-          const exp = `DraftKings’ game lines from ESPN, read ${clk(w.eval('ESPN_GL')[g.id].at)}; ${n0} game${n0 === 1 ? ' has' : 's have'} no lines posted yet` + (rest ? `; couldn’t reach ESPN for ${rest} game${rest === 1 ? '' : 's'}: ${rest === 1 ? 'its' : 'their'} published prices stand` : '') + '.';
+          const exp = `DraftKings’ game lines from ESPN, read ${clk(w.eval('ESPN_GL')[g.id].at)}; ${n0} game${n0 === 1 ? ' has' : 's have'} no player lines posted yet` + (rest ? `; couldn’t reach ESPN for ${rest} game${rest === 1 ? '' : 's'}: ${rest === 1 ? 'its' : 'their'} published prices stand` : '') + '.';
           chk(st === exp, `with no player lines posted, the status line reads "${st}", not "${exp}"`); }
       } finally {
         w.fetch = f0; reset(); w.__plStub = plStub; w.eval('pricedLegs=window.__plStub'); delete w.__plStub;
