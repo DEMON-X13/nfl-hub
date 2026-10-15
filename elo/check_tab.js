@@ -415,6 +415,16 @@ function page(MU, opts) {
         let v; try { v = w.eloAltP(pid, side, price, 'real', e.group === 'QB' ? 'passing_yards' : 'receptions'); } catch (err) { v = 'threw ' + err.message; }
         alt++; if (!ok01(v)) badAlt.push(`${e.name || pid} ${side} ${price}: ${v}`); } }
     chk(alt > 0 && !badAlt.length, `market + form is not a chance on ${badAlt.length} of ${alt} player legs (${badAlt.slice(0, 4).join('; ')}): the Parlay Builder decides which player legs qualify on it`);
+    /* a price the prop model works from DraftKings' line read on ESPN by Refresh odds (src 'dkline', app
+       v107) is read as a book price: the same chance as a real one at that price, and none on the model's
+       own estimate (the nflbets smoke holds the panel to market + form worked on src 'real') */
+    { const badDk = []; let nDk = 0;
+      for (const [pid, e] of Object.entries(P.players || {})) {
+        if (!e || !['RB', 'WR', 'TE'].includes(e.group)) continue;
+        for (const side of ['over', 'under']) { const r = w.eloAltP(pid, side, -115, 'real', 'receptions'), k = w.eloAltP(pid, side, -115, 'dkline', 'receptions'), x = w.eloAltP(pid, side, -115, 'est', 'receptions');
+          nDk++; if (r !== k || x !== null) badDk.push(`${e.name || pid} ${side}: real ${r}, dkline ${k}, est ${x}`); }
+        if (nDk >= 400) break; }
+      chk(nDk > 0 && !badDk.length, `market + form does not read a price from DraftKings' line as a book price (or reads the model's estimate) on ${badDk.length} of ${nDk} legs: ${badDk.slice(0, 3).join('; ')}`); }
     /* a leg for every matchup line in the file, over and under, at -110 and +150 */
     const legs = [];
     for (const [pid, pl] of Object.entries((MU0 && MU0.players) || {})) for (const st of Object.keys(pl.stats || {})) {

@@ -48,7 +48,9 @@ What it does, in order:
      which the parlay card turns into an Open in DraftKings link; and who took part in each
      finished game, from the snap counts (who_played below): the payload's snaps, and a stat row
      of zeros for a player who played a snap in his role with no stat line, so a receiver never
-     targeted is graded on zero, as DraftKings grades him, and his projection sees the game
+     targeted is graded on zero, as DraftKings grades him, and his projection sees the game; and
+     each player's ESPN athlete id (espn_ids below, from the roster already downloaded), by which
+     the page's Refresh odds button places DraftKings' lines it reads from ESPN in the browser
   5. assembles the page and runs the audit, which checks the payload against the raw files. Its
      failures and runtime errors refuse the run (audit_verdict); its warnings, the checks audit.js
      names as presentation only (who is shown starting, an ordering, which correctly priced parlay
@@ -599,6 +601,25 @@ def dk_key(parts,g,match):
     pid,_how=match(who,int(g['w']),gid)
     return f"{pid}|{tail}" if pid else None
 
+def espn_ids(rrows,pids):
+    """({ESPN athlete id: the payload's player id}, the ids left out) for every player the page can
+    project (pids: this season's skill-position stat rows, the payload's players and the depth chart),
+    from nflverse's roster: its espn_id beside its gsis_id, which is the payload's pid. No request:
+    the roster is the file this run already downloaded. The page reads it as PAY.espn_ids when a visitor
+    presses Refresh odds (part3.js espnRefresh: the job itself never reads ESPN), to place each athlete of
+    DraftKings' player lines ESPN carries on his player; one it cannot place by id it places by name within
+    the game's two clubs, as it does every athlete on a payload baked before this. An id the roster gives
+    two players is left out rather than guessed. test_espn_ids.py holds it to its cases."""
+    out,amb={},set()
+    for r in rrows:
+        e=str(r.get('espn_id') or '').strip(); g=(r.get('gsis_id') or '').strip()
+        if e.endswith('.0'): e=e[:-2]
+        if not (e.isdigit() and g and g in pids): continue
+        if out.get(e,g)!=g: amb.add(e)
+        out[e]=g
+    for e in amb: out.pop(e,None)
+    return dict(sorted(out.items(),key=lambda kv:int(kv[0]))),sorted(amb)
+
 def dk_ids(data,byid,to_come,match):
     """(dk, how many ids, the keys dropped because two book names gave them two ids) from every
     dk_links_wk{W}.json in data: the ids of the games in to_come, keyed by dk_key. match is
@@ -963,6 +984,13 @@ def bake(pp,prev,gs,week,season_over,now,raw,not_posted=()):
     dk,ndk,clash=dk_ids(DATA,byid,set(byid)-started,pool.match)
     pay['dk']=dk
     say(f"  DraftKings ids: {ndk} on {sum(len(v) for v in dk.values())} game(s) still to come"+(f"; left out, two book names giving one key two ids: {'; '.join(g+' '+k for g,k in clash)}" if clash else ''))
+    # each player's ESPN id, for the page's Refresh odds button (it reads ESPN in the browser, on a press):
+    # every player the page can project (shown above: this season's skill-position stat rows, the
+    # payload's players and the depth chart), since the page builds its players from this season's stat
+    # rows as well as the players list, and a player left out costs a press a look-up by name
+    projectable={x for x in shown if x}
+    pay['espn_ids'],amb=espn_ids(rrows,projectable)
+    say(f"  ESPN ids: {len(pay['espn_ids'])} of the {len(projectable)} players the page can project"+(f"; left out, an id the roster gives two players: {', '.join(amb)}" if amb else ''))
     pay['season']=SEASON; pay['week']=week; pay['season_over']=season_over
     # the files nflverse has not posted yet: the audit expects none of them in the payload, and the
     # page says so rather than show an empty report as a quiet week

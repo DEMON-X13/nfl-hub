@@ -602,8 +602,11 @@ function groupOf(r){
   const p=typeof S==='object'&&S&&S.players&&S.players[r.pid];
   return p&&p.grp||null;
 }
+/* src 'dkline' (app v107): a price the prop model works from DraftKings' line read on ESPN by Refresh
+   odds, which the panel takes as a book price on the kinds it has been checked on, so market + form reads
+   it as one */
 function altP(pid,side,price,src,stat){
-  if(!pid||String(pid).startsWith('team:')||pid==='game'||src!=='real'||price==null||!isFinite(price)||typeof mlProb!=='function') return null;
+  if(!pid||String(pid).startsWith('team:')||pid==='game'||!(src==='real'||src==='dkline')||price==null||!isFinite(price)||typeof mlProb!=='function') return null;
   if(stat==='any_td'&&groupOf({pid})==='QB') return null;
   const imp=mlProb(price); if(!(imp>0&&imp<1)) return null;
   const e=window.eloOf(pid), z=e?altZ(e.elo,e.group):0, s=side==='under'?-1:1;
@@ -682,7 +685,9 @@ function eloPicks(){
   let legs; try{ legs=pricedLegs(); }catch(e){ return null; }
   const c=[];
   for(const l of legs){
-    if(l.grp==='TEAM'||l.src!=='real'||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
+    /* a real price, or (app v107) one worked from DraftKings' line read on ESPN by Refresh odds, which
+       pricedLegs offers only on the kinds the estimate has been checked on */
+    if(l.grp==='TEAM'||!(l.src==='real'||l.src==='dkline')||!isFinite(l.price)||l.price<EP.lo||l.price>EP.hi) continue;
     if(typeof pbAllows==='function'&&!pbAllows(l)) continue;   /* the Parlay Builder's ticked games and player sides */
     const e=window.eloOf(l.pid); if(!e) continue;
     const imp=mlProb(l.price); if(!(imp>0&&imp<1)) continue;
@@ -715,7 +720,7 @@ function eloSuggest(){
   let body;
   if(!sides) body=`<p class="pb-why">Tick Player overs or Player unders above for the Elo picks: every leg is a player's line.</p>`;
   else if(!r.tiers.length) body=`<p class="pb-why">No Elo picks on your picks for week ${w} yet: ${!r.candidates?'no ranked player beats a book price on the games and sides ticked'
-    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning.</p>`;
+    :`${r.candidates} ranked player${r.candidates===1?' beats':'s beat'} a book price, but ${r.games===1?'all in one game':`in only ${r.games} games`}, and a pick takes one leg a game`}. Player prices are pulled on game day or the day before, Sunday’s games on Saturday morning${typeof espnOn==='function'&&espnOn()?'; DraftKings’ lines read by Refresh odds count too, at our estimate of its price':''}.</p>`;
   else body=`<div class="pb-tiers">${r.tiers.map(t=>pbTierCard(t,{chance:t.p,chanceBy:'Elo chance',by:'Elo',kind:'elo',add:`data-pb-elo-add="${t.id}"`,
       rule:'<span class="pb-rule">plus money first, one leg a game</span>',badge:l=>badge(l.pid),legP:l=>l.pe})).join('')}</div>`;
   v.innerHTML=`<h3>Elo picks <span class="pill">week ${w}</span></h3>

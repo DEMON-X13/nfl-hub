@@ -308,6 +308,48 @@ pulls' windows offline. Off GitHub Actions `weekly.py` skips the price pull unle
 before the workflow (Thursday and Saturday 8:00 local) spends nothing and changes nothing
 if it still fires; it can be deleted in the desktop app.
 
+## Refresh odds (app v107, 15 October 2026)
+
+The owner asked for free odds "without the prices" and a best-guess price from the line, then for "a
+refresh odds button that will pull the live lines on demand ... rather than like a constant job". So the
+page reads DraftKings' lines from ESPN's free feed in the visitor's browser, only when **Refresh odds** is
+pressed (the Parlay Builder's controls and the Props tab's game list read every game of the week still
+to come; a game's page reads that game alone), and nothing reads ESPN on a schedule: the props job's only
+part is `PAY.espn_ids`, the ESPN athlete id of every player the page can project (this season's stat rows,
+the payload's players and the depth chart) from the nflverse roster it already downloads (`weekly.py`
+`espn_ids`, held by `build/test_espn_ids.py`); an athlete it lacks is placed by name within his game, on
+a player no ESPN id names. The reader, the formula and the precedence are in
+`build/patch_espn_prices.py` (its docstring says how). A press is held in memory only, so a reload
+returns to the published data, the builder's legs too (a leg a press priced goes back to DraftKings' own
+price on its line, else the model's estimate), and the suggestions record (`build/suggest_ledger.js`)
+never presses it.
+
+A player leg's price after a press: the paid pull's real price while its line is still DraftKings' line;
+the read's line where DraftKings has moved it since, or where the pull has no price, priced by the formula
+and marked est.; the model's estimate where there is no line at all. The game lines a press reads are
+DraftKings' real prices. A leg priced from the read counts like a book price in the suggestions on the
+kinds the formula has been checked on (main lines on passing, rushing and receiving yards, receptions
+and passing TDs, the anytime TD, yards rungs DraftKings lists); every other kind is shown, est., and
+never suggested.
+
+The formula was fitted on DraftKings' own prices only (2026 weeks 2-3, and its DET at BUF ladders of
+week 2), never on a result. Held out on weeks 4-5, the gap in implied-chance points between the guess and
+DraftKings' real price (median / mean / share within 3 / within 5), against what the page showed for the
+same leg with no paid price:
+
+| Bet type | Held-out set | Before (model only) | DraftKings' line + formula |
+|---|---|---|---|
+| Passing, rushing, receiving yards, main line | 605 lines, 1,210 sides | 7.8 / 9.5 / 21% / 36% | 0.4 / 0.5 / 100% / 100% |
+| Receptions, main line | 360 lines | 7.4 / 9.6 / 22% / 35% | 2.8 / 3.3 / 52% / 77% |
+| Passing TDs, main line | 62 lines | 5.4 / 7.7 / 24% / 44% | 1.6 / 2.1 / 74% / 94% |
+| Anytime TD | 804 prices | 6.7 / 7.2 / 20% / 36% | 2.0 / 2.8 / 66% / 86% |
+| Yards ladder rungs (k+) | 248 rungs, leave one ladder out | 3.4 / 5.5 / 49% / 62% | 1.5 / 1.8 / 80% / 97% |
+
+Completions, attempts, carries, rush + rec yards, interceptions, field goals, kicking points and the
+receptions and passing-TD ladders have no DraftKings price on file to test against. The audit's M8 holds
+the reader (on ESPN's recorded answers in `build/fixtures/espn/`, through a fetch stub) and every price
+from a press to `build/espn_rule.js`, the checks' own copy of the formula.
+
 ## Manual fallback
 
 Run the props workflow by hand (workflow_dispatch; tick `no_odds` to spend nothing).

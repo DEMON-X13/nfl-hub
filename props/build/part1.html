@@ -391,6 +391,13 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
 .pb-legs .pr em{display:block;font-style:normal;font-size:11px;font-weight:500;color:var(--muted)}
 .pb-thinmark{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:0 6px;border-radius:999px;border:1px solid var(--gold);color:var(--ink-2);white-space:nowrap}
 .pb-thin{margin:0;font-size:11.5px;color:var(--ink-2)}
+.pb-legs .pr .est{font-style:normal;font-size:10.5px;font-weight:500;color:var(--ink-2);margin-left:2px}
+.espn-read{color:var(--ink-2)}
+.espn-ctl{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;margin:0 0 12px}
+.pb-row .espn-ctl{margin:0;flex:1 1 auto;min-width:0}
+.espn-btn{min-height:44px;white-space:nowrap}
+.espn-st{font-size:12px;color:var(--ink-2);flex:1 1 220px;min-width:0;overflow-wrap:anywhere}
+.mline .was{font-weight:400;color:var(--muted)}
 .pb-why{margin:0;font-size:13px;color:var(--ink-2)}
 .pb-tier.none{border-top-style:dashed}
 .pb-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
@@ -513,6 +520,7 @@ p.faroff{margin:4px 0 0;font-size:11.5px;line-height:1.4}
       <button class="btn quiet" id="slateNow" title="Read the scoreboard from ESPN now. Free: no odds-API credits, no job.">Refresh scores</button>
     </div>
     <p id="lineNote" class="muted" style="margin:-6px 0 12px;font-size:12px" hidden></p>
+    <div id="slateOdds" hidden></div>
     <div class="gamehead">
       <div>Kickoff</div><div>Matchup</div><div class="c">Biggest projections</div>
       <div class="c">Expected score</div><div class="c">Total pt</div><div class="c">Vegas pick</div><div></div>

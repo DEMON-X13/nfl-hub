@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v106 \u00b7 2026-10-14';
+const APP_BUILD='app v107 \u00b7 2026-10-15';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -63,7 +63,9 @@ let S=null, saveTimer=null;
    each player (ACT; DEV the practice squad; RES a reserve list; CUT released ...) and this week's
    injury report beyond the ruled out (Questionable, not practising, limited) */
 let RSTAT={}, INJ={};
-function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(S);
+/* (app v107) a Refresh odds press puts DraftKings' game lines into S.sched in memory: espnSavable (part3.js)
+   writes the published ones in their place, so nothing a press read is ever saved */
+function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(typeof espnSavable==='function'?espnSavable(S):S);
   $('saveState').textContent = r==='saved'?'Autosaved':'Not saved: export a backup'; },300); }
 
 /* ---------- ewma accumulator (matches pandas adjust=True) ----------
@@ -638,6 +640,175 @@ function rungView(pl,stat,mu,k,week){
   return {pModel,pMkt,est:bookPrice(pMkt)};
 }
 
+/* ---------- DraftKings' line read on ESPN, priced by a best guess (app v107) ----------
+   The owner, 15 October 2026: "if we can get free odd pulls without the prices and have you come up
+   with a formula that gives the closest of what your best guess would be of that money price, that
+   would be fine." A Refresh odds press reads DraftKings' player lines from ESPN's free feed in the
+   visitor's browser (part3.js espnRefresh: the line, never a price); a player leg the paid pull has no
+   price for, or whose line DraftKings has moved since the pull, is priced from DraftKings' line by these
+   formulas and marked est. A real DraftKings price on DraftKings' current line always wins. Nothing in
+   the model changes, and the formulas were fitted
+   on DraftKings' own prices alone (2026 weeks 2-3, and its DET at BUF ladders of week 2), never on a
+   game's result.
+
+   On weeks they were not fitted on (4-5) the guess lands within half a point of DraftKings' real price
+   on every yards line, and within about 1.5 to 3 points on receptions, passing touchdowns, the anytime
+   touchdown and the yards ladder rungs, against 5 to 8 for the model's own estimate on the same legs.
+   Completions, attempts, carries, rush + rec yards, interceptions, field goals, kicking points and the
+   receptions and passing-TD rungs have no DraftKings price on file to test against: priced by reasoning
+   alone, shown est. on the game pages, and never suggested (ESPN_TESTED in part3.js).
+
+   DK_EST and the functions below are the research's est_price.js (October 2026, on DraftKings' own
+   prices: the held-out table is in props/README.md, "Refresh odds"), with three changes: a rung also returns its fair chance (before the hold, for legFair); a
+   ladder of any count (not receptions and passing touchdowns alone) is the Poisson set by the main
+   line, where the yards curve would price a carries ladder far too flat; and a ladder is priced only
+   on a market whose main line the formula prices. All three touch untested ladders only. The audit
+   holds every price to its own copy of these constants (props/build/espn_rule.js). */
+const DK_EST={
+  /* DraftKings' margin, each side's fair chance times (1 + m): weeks 2-3, per stat */
+  margin:{yards:0.0566,receptions:0.0599,passing_tds:0.0590,count:0.0599},
+  /* the fair chance is held inside the range DraftKings itself priced (it moves a line rather than go past it) */
+  clamp:{receptions:[1/3,2/3],passing_tds:[0.31,0.69],count:[0.31,0.69]},
+  /* a 0.5 line is the lowest DraftKings can post, so its over is never the underdog */
+  floor05:0.55,
+  /* logit(fair over) = b0 + b1*ln(recYdsLine) + b2*ln(muRec) + b3*ln(muRecYds) + b4*ln(line+0.5) + b5*TE + b6*RB */
+  rec:[-0.8043,0.9832,0.5807,-0.3849,-1.5382,0.1087,0.3277],
+  /* no projection: b0 + b1*ln(recYdsLine) + b2*ln(line+0.5) + b3*TE + b4*RB; no yards line: b0 + b1*ln(muRec) + ... */
+  recNoModel:[-1.6857,0.9139,-1.2604,0.1956,0.5013],
+  recNoYds:[-0.0014,0.3610,-0.3505,-0.0211,0.0289],
+  /* logit(fair over) = b0 + b1*teamImplied + b2*passYdsLine/100 + b3*line + b4*(line is 0.5); no yards line: b0 + b1*T + b2*line */
+  ptd:[-2.1748,0.08940,0.6796,-1.0848,0.4490],
+  ptdNoYds:[-0.8108,0.11039,-1.2846],
+  /* weeks 2-3's median fair chance by line, when nothing else is known */
+  recByLine:{0.5:0.650,1.5:0.476,2.5:0.501,3.5:0.480,4.5:0.485,default:0.488},
+  ptdByLine:{0.5:0.627,1.5:0.432,2.5:0.356,default:0.464},
+  /* a k+ rung: yards on a power curve about DraftKings' line (lam, sig), the counts a Poisson set by it;
+     the price's hold on the logit, and the shortest and longest price DraftKings posts */
+  rung:{lam:0.565,sig:3.50,hold:0.129,shortest:-1000,longest:2000},
+  /* the anytime touchdown: lined (a, b, yd by position, pts), no line as a backup (a0, b0), the model alone (a1, b1) */
+  td:{a:-3.5915,b:0.2459,yd:{QB:0.8897,RB:0.8807,WR:0.7962,TE:0.8213},pts:0.8324,a0:-1.1839,b0:0.7768,a1:0.5961,b1:1.4369},
+  /* a one-sided price's overround where the week has no two-sided real line (weeks 2-5's median) */
+  tdVig:1.0566,
+  /* a club's lines are complete once the read is within 36 hours of kickoff with 4 receiving lines for it */
+  complete:{hours:36,rec:4},
+  /* a leg in the builder priced from a read older than this many hours says so */
+  staleHours:24
+};
+const DK_YARDS=new Set(['passing_yards','rushing_yards','receiving_yards','scrim_yards']);
+/* a main line's over and under, from DraftKings' line and the page's own inputs: {over, under, fair, how} */
+function dkGuessPrice(o){
+  const C=DK_EST, ln=Math.log, ok=v=>v!=null&&isFinite(v);
+  const sig=z=>1/(1+Math.exp(-z));
+  const toAm=q=>q>=0.5?-Math.round(100*q/(1-q)):Math.round(100*(1-q)/q);
+  const out=(p,m,how)=>({over:toAm(p*(1+m)),under:toAm((1-p)*(1+m)),fair:p,how});
+  const L=+o.line, s=o.stat;
+  const hold=(p,[lo,hi])=>Math.min(hi,Math.max(L===0.5?Math.max(lo,C.floor05):lo,p));
+  if(!ok(L)) return null;
+  /* yards lines sit at DraftKings' own median: 50/50, -112 each way */
+  if(DK_YARDS.has(s)) return out(0.5,C.margin.yards,'yards: 50/50');
+  /* the other volume counts near their median (untested on DraftKings), at the count margin */
+  if(s==='completions'||s==='attempts'||s==='carries'||s==='kick_pts') return out(0.5,C.margin.count,s==='kick_pts'?'untested: 50/50':'count: 50/50');
+  if(s==='receptions'){
+    const te=o.grp==='TE'?1:0, rb=o.grp==='RB'?1:0, Y=o.recYdsLine;
+    const haveY=ok(Y)&&Y>0, haveM=ok(o.muRec)&&o.muRec>0&&ok(o.muRecYds)&&o.muRecYds>0;
+    let z, how;
+    if(haveY&&haveM){ const b=C.rec; z=b[0]+b[1]*ln(Y)+b[2]*ln(o.muRec)+b[3]*ln(o.muRecYds)+b[4]*ln(L+0.5)+b[5]*te+b[6]*rb; how='receptions: yards line + model'; }
+    else if(haveY){ const b=C.recNoModel; z=b[0]+b[1]*ln(Y)+b[2]*ln(L+0.5)+b[3]*te+b[4]*rb; how='receptions: yards line only'; }
+    else if(ok(o.muRec)&&o.muRec>0){ const b=C.recNoYds; z=b[0]+b[1]*ln(o.muRec)+b[2]*ln(L+0.5)+b[3]*te+b[4]*rb; how='receptions: model only'; }
+    else return out(C.recByLine[L]??C.recByLine.default,C.margin.receptions,'receptions: line only');
+    return out(hold(sig(z),C.clamp.receptions),C.margin.receptions,how);
+  }
+  if(s==='passing_tds'){
+    if(ok(o.teamImplied)&&ok(o.passYdsLine)){ const b=C.ptd;
+      return out(hold(sig(b[0]+b[1]*o.teamImplied+b[2]*o.passYdsLine/100+b[3]*L+b[4]*(L===0.5?1:0)),C.clamp.passing_tds),C.margin.passing_tds,'passing TDs: implied + yards line'); }
+    if(ok(o.teamImplied)){ const b=C.ptdNoYds;
+      return out(hold(sig(b[0]+b[1]*o.teamImplied+b[2]*L),C.clamp.passing_tds),C.margin.passing_tds,'passing TDs: implied only'); }
+    return out(C.ptdByLine[L]??C.ptdByLine.default,C.margin.passing_tds,'passing TDs: line only');
+  }
+  /* no DraftKings price on file for these: a Poisson on the model's projection, held to the count range. UNTESTED */
+  if(s==='passing_interceptions'||s==='fg_made'){
+    if(!(ok(o.mu)&&o.mu>0)) return out(0.5,C.margin.count,'untested: 50/50');
+    let t=Math.exp(-o.mu), cdf=0; for(let i=0;i<=Math.floor(L);i++){ cdf+=t; t*=o.mu/(i+1); }
+    return out(hold(1-cdf,C.clamp.count),C.margin.count,'untested: Poisson on the projection');
+  }
+  return null;
+}
+/* a k+ rung's fair chance from DraftKings' line: on yards a power curve about the line, anchored at
+   fair (50/50 on yards); stat 'receptions' (every count) a Poisson whose chance of the line's over is fair */
+function rungFairGuess(stat,line,k,fair){
+  const R=DK_EST.rung, f0=(fair>0&&fair<1)?fair:0.5;
+  const Phi=z=>{                       /* standard normal cdf, Abramowitz-Stegun 7.1.26 (|err| < 1.5e-7) */
+    const x=Math.abs(z)/Math.SQRT2, t=1/(1+0.3275911*x);
+    const e=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);
+    return z>=0?0.5*(1+e):0.5*(1-e);
+  };
+  const PhiInv=p=>{                    /* by bisection: only used when fair is not 0.5 */
+    if(p===0.5) return 0; let lo=-8, hi=8;
+    for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(Phi(m)<p) lo=m; else hi=m; }
+    return (lo+hi)/2;
+  };
+  let p;
+  if(stat==='receptions'){
+    const sf=(m,n)=>{ let s=0, t=Math.exp(-m); for(let i=0;i<n;i++){ s+=t; t*=m/(i+1); } return Math.max(1e-9,1-s); };
+    const n0=Math.floor(line)+1; let lo=0.01, hi=40;
+    for(let i=0;i<80;i++){ const m=(lo+hi)/2; if(sf(m,n0)<f0) lo=m; else hi=m; }
+    p=sf((lo+hi)/2,Math.ceil(k-1e-9));
+  } else {
+    const t=v=>Math.pow(Math.max(v,0),R.lam);
+    p=1-Phi((t(k-0.5)-t(line))/R.sig+PhiInv(1-f0));
+  }
+  return Math.min(Math.max(p,1e-6),1-1e-6);
+}
+/* a rung's price from its fair chance: the hold on the logit, capped to what DraftKings posts */
+function rungPriceOf(p){
+  const R=DK_EST.rung, q=1/(1+Math.exp(-(Math.log(p/(1-p))+R.hold)));
+  const am=q>=0.5?-Math.round(100*q/(1-q)):Math.round(100*(1-q)/q);
+  return am<0?Math.max(am,R.shortest):Math.min(am,R.longest);
+}
+function rungPriceGuess(stat,line,k,fair){ return rungPriceOf(rungFairGuess(stat,line,k,fair)); }
+/* the anytime touchdown: the touches that score his touchdown (a QB's runs, a back's runs and catches,
+   a receiver's or tight end's catches) where DraftKings lines them; else, his club's lines complete
+   and he no charted starter, DraftKings treats him as a backup; else the model alone */
+function guessTdPrice({p,grp,rushLine=null,recLine=null,teamImplied=null,gameLined=true,starter=false}){
+  if(!(p>0&&p<1)) return null;
+  const C=DK_EST.td, logit=x=>Math.log(x/(1-x)), ok=v=>v!=null&&isFinite(v);
+  const parts=grp==='QB'?[rushLine]:grp==='RB'?[rushLine,recLine]:[recLine];
+  const have=parts.filter(ok);
+  let z;
+  if(have.length&&C.yd[grp]!=null){
+    const yards=Math.max(0.5,have.reduce((s,v)=>s+v,0));
+    const pts=Math.min(40,Math.max(10,ok(teamImplied)?teamImplied:22));
+    z=C.a+C.b*logit(p)+C.yd[grp]*Math.log(yards)+C.pts*Math.log(pts/22);
+  } else if(gameLined&&!starter){
+    z=C.a0+C.b0*logit(p);
+  } else {
+    z=C.a1+C.b1*logit(p);
+  }
+  const q=Math.min(1000/1100,Math.max(100/2100,1/(1+Math.exp(-z))));
+  return q>=0.5?-Math.round(100*q/(1-q)):Math.round(100*(1-q)/q);
+}
+/* one entry point. leg.kind: 'main' (side 'over'|'under'), 'rung' (k), 'td'. Returns {price, fair, how}
+   or null; fair is the side's own chance before the margin (a rung's before the hold; none for the
+   touchdown, whose fair chance legFair takes from its price). The k = line + 0.5 rung is the main
+   line's over, so it is priced as the main line (-112 on yards), never as a rung. leg.mainFair, where
+   the paid pull has the main line at this number, anchors a count ladder on DraftKings' own fair chance */
+function estPrice(leg){
+  if(!leg) return null;
+  if(leg.kind==='td'){ const price=guessTdPrice(leg); return price==null?null:{price,fair:null,how:'anytime TD'}; }
+  const main=dkGuessPrice(leg);
+  if(leg.kind==='main') return main&&{price:leg.side==='under'?main.under:main.over,fair:leg.side==='under'?1-main.fair:main.fair,how:main.how};
+  if(leg.kind==='rung'){
+    /* a ladder only on a market the formula prices (DraftKings posts no field goal attempts) */
+    if(!main||!(leg.line>0)||!(leg.k>0)) return null;
+    if(Math.abs(leg.k-0.5-leg.line)<1e-9) return main&&{price:main.over,fair:main.fair,how:main.how+' (the main line)'};
+    const yards=DK_YARDS.has(leg.stat);
+    const f=yards?0.5:((leg.mainFair>0&&leg.mainFair<1)?leg.mainFair:(main?main.fair:0.5));
+    const p=rungFairGuess(yards?leg.stat:'receptions',leg.line,leg.k,f);
+    return {price:rungPriceOf(p),fair:p,how:'rung from the main line'};
+  }
+  return null;
+}
+
 /* ---------- kickoff lock ---------- */
 /* schedule times are US Eastern: daylight time from the second Sunday of March to the first
    Sunday of November (the change is at 2am, when no game is played), for the date's own year */
@@ -918,7 +1089,10 @@ function seasonOver(){ return !!(S&&S.sched&&S.sched.length)&&S.sched.every(g=>g
    posted line (the Pick'ems board's) after that. null for a payload that does not say. */
 function lineSource(g){
   if(!g||!g.ls) return null;
-  if(g.ls==='dk'){ const t=g.lat?new Date(g.lat):null;
+  /* (app v107) DraftKings' lines a Refresh odds press read on ESPN, dated as the press's status line dates them */
+  if(g.ls==='dk'){ let gl=null; try{ gl=typeof ESPN_GL==='object'&&ESPN_GL?ESPN_GL[g.id]:null; }catch(e){}
+    if(gl&&gl.at) return 'DraftKings’, read from ESPN by Refresh odds '+espnWhen(gl.at);
+    const t=g.lat?new Date(g.lat):null;
     return 'DraftKings'+(t&&isFinite(t)?', pulled '+t.toLocaleString(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}):''); }
   return "nflverse's posted line, as on the Pick'ems board";
 }
