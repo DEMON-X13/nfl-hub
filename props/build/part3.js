@@ -1659,7 +1659,7 @@ function parlayFair(legs,memo,sims){
   const m=memo||{}, f=legs.map(l=>legFair(l,m)), miss=f.filter(x=>!x).length;
   if(miss) return {p:null,est:false,miss};
   const pr=parlayProb(legs.map((l,i)=>({...l,side:l.side||'over',p:f[i].p})),sims);
-  return {p:pr.corr,est:f.some(x=>x.est),miss:0};
+  return {p:pr.corr,est:f.some(x=>x.est),miss:0,dk:legs.some(l=>l&&l.src==='dkline')};
 }
 /* the side switch on a game page's suggested parlays: Any, or player overs only, or player
    unders only. A touchdown leg is an over; a game bet has no side and drops out. */
@@ -2260,7 +2260,7 @@ function pbThinLine(legs,form){
    picks' "Elo says"); with no fair chance, that chance alone, saying why */
 function pbChanceHtml(F,chance,o){
   const pc=v=>(v*100).toFixed(0)+'%', by=(o&&o.by)||'model';
-  if(F&&F.p!=null) return `<div class="pb-chance"><b data-pb-fair="${F.p}">${pc(F.p)}</b><span${F.est?' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"':''}>fair chance${F.est?', est.':''}</span><small class="pb-model" data-pb-model="${chance}">${esc(by)} says ${pc(chance)}</small></div>`;
+  if(F&&F.p!=null) return `<div class="pb-chance"><b data-pb-fair="${F.p}">${pc(F.p)}</b><span${F.est?(F.dk?' title="Estimated: a leg is priced from DraftKings’ line read on ESPN by our estimate, and its fair chance with it"':' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"'):''}>fair chance${F.est?', est.':''}</span><small class="pb-model" data-pb-model="${chance}">${esc(by)} says ${pc(chance)}</small></div>`;
   return `<div class="pb-chance"><b data-pb-model="${chance}">${pc(chance)}</b><span>${(o&&o.chanceBy)||'model’s chance'}</span><small class="pb-model">no fair chance: a leg has no book price</small></div>`;
 }
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
@@ -2461,7 +2461,7 @@ function renderParlay(o){
       ${(()=>{ const on=fair&&fair.p!=null, cp=on?fair.p:pr.corr, [c,l]=confTier(cp);
         return `<div class="box tier ${c}" data-conf="${cp}"><b>${l}</b><span>confidence all ${legs.length} land, on the ${on?'fair':'model\u2019s'} chance</span></div>`; })()}
     </div>
-    <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)':''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
+    <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?(fair.dk?' (estimated: a leg is priced from DraftKings\u2019 line read on ESPN by our estimate, and its fair chance with it)':' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)'):''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
       :`The fair chance needs a book price on every leg; ${fair&&fair.miss===1?'one leg has':(fair?fair.miss:0)+' legs have'} none, so this is the model's chance alone.`}</p>
     ${sg&&override==null?`<p class="muted" style="margin:10px 0 0;font-size:12px">Legs here share a game, so they are priced together rather than multiplied: multiplying them would say <b>$${(stake*multDec).toFixed(2)}</b>, which is what a book pays only when the legs are in different games. The estimate carries a same-game cut fitted to real DraftKings tickets; type your book's own parlay price above to override it.</p>`:''}`;
   const canSave=wks.length===1&&(realPrice||estPrice);

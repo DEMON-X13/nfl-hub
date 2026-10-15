@@ -964,6 +964,14 @@ sub1('p3', """  if(wks.length>1) html+=`<p class="delta down" style="margin:10px
      """  if(prices.some(p=>p.src==='dkline')) html+=`<p class="muted espn-read" style="margin:10px 0 0;font-size:12px" data-espn-read>${esc(espnReadLine(legs.filter((l,i)=>prices[i].src==='dkline').map(l=>l.espn&&l.espn.at).filter(Boolean).sort()[0]||null))} A leg marked est. is priced from DraftKings’ line read on ESPN: the line is DraftKings’, the price and its fair chance our estimate.</p>`;
   if(wks.length>1) html+=`<p class="delta down" style="margin:10px 0 0">These legs are in different weeks""")
 
+# --- an estimated fair chance says what it is estimated from: one side's price, or DraftKings' line ---
+sub1('p3', """  return {p:pr.corr,est:f.some(x=>x.est),miss:0};""",
+     """  return {p:pr.corr,est:f.some(x=>x.est),miss:0,dk:legs.some(l=>l&&l.src==='dkline')};""")
+sub1('p3', """<span${F.est?' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"':''}>""",
+     """<span${F.est?(F.dk?' title="Estimated: a leg is priced from DraftKings’ line read on ESPN by our estimate, and its fair chance with it"':' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"'):''}>""")
+sub1('p3', """${fair.est?' (estimated, since a leg is priced on one side only: the week\\u2019s typical margin is taken out of its price)':''}""",
+     """${fair.est?(fair.dk?' (estimated: a leg is priced from DraftKings\\u2019 line read on ESPN by our estimate, and its fair chance with it)':' (estimated, since a leg is priced on one side only: the week\\u2019s typical margin is taken out of its price)'):''}""")
+
 for k, p in FILES.items():
     p.write_text(T[k], encoding='utf-8')
 print("patched: app v107, Refresh odds reads DraftKings' lines from ESPN on a press, priced by the formula and marked est.")

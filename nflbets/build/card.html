@@ -268,6 +268,8 @@ window.PARLAY_CARD=(function(){
       legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
       chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
       fair:fair&&fair.p!=null&&isFinite(fair.p)?pct(fair.p):null,fairEst:!!(fair&&fair.p!=null&&fair.est),
+      /* a leg priced from DraftKings' line read by Refresh odds (app v107): its fair chance is the estimate's */
+      fairDk:legs.some(x=>x&&x.src==='dkline'),
       made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
       file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png',
       dk:dkPlan(legs)};
@@ -321,7 +323,7 @@ window.PARLAY_CARD=(function(){
         <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
         <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
       ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
-      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.</small>`:''}</div>
+      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>${m.fairDk?'Est.: a leg is priced from DraftKings\u2019 line read on ESPN by our estimate, and its fair chance with it.':'Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.'}</small>`:''}</div>
       <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
     </div>`;
   }

@@ -4576,7 +4576,7 @@ function parlayFair(legs,memo,sims){
   const m=memo||{}, f=legs.map(l=>legFair(l,m)), miss=f.filter(x=>!x).length;
   if(miss) return {p:null,est:false,miss};
   const pr=parlayProb(legs.map((l,i)=>({...l,side:l.side||'over',p:f[i].p})),sims);
-  return {p:pr.corr,est:f.some(x=>x.est),miss:0};
+  return {p:pr.corr,est:f.some(x=>x.est),miss:0,dk:legs.some(l=>l&&l.src==='dkline')};
 }
 /* the side switch on a game page's suggested parlays: Any, or player overs only, or player
    unders only. A touchdown leg is an over; a game bet has no side and drops out. */
@@ -5177,7 +5177,7 @@ function pbThinLine(legs,form){
    picks' "Elo says"); with no fair chance, that chance alone, saying why */
 function pbChanceHtml(F,chance,o){
   const pc=v=>(v*100).toFixed(0)+'%', by=(o&&o.by)||'model';
-  if(F&&F.p!=null) return `<div class="pb-chance"><b data-pb-fair="${F.p}">${pc(F.p)}</b><span${F.est?' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"':''}>fair chance${F.est?', est.':''}</span><small class="pb-model" data-pb-model="${chance}">${esc(by)} says ${pc(chance)}</small></div>`;
+  if(F&&F.p!=null) return `<div class="pb-chance"><b data-pb-fair="${F.p}">${pc(F.p)}</b><span${F.est?(F.dk?' title="Estimated: a leg is priced from DraftKings’ line read on ESPN by our estimate, and its fair chance with it"':' title="Estimated: a leg is priced on one side only, so the week’s typical margin is taken out of its price"'):''}>fair chance${F.est?', est.':''}</span><small class="pb-model" data-pb-model="${chance}">${esc(by)} says ${pc(chance)}</small></div>`;
   return `<div class="pb-chance"><b data-pb-model="${chance}">${pc(chance)}</b><span>${(o&&o.chanceBy)||'model’s chance'}</span><small class="pb-model">no fair chance: a leg has no book price</small></div>`;
 }
 /* one tier's card, or why it has none. The Elo picks draw theirs with it (window.pbTierCard) */
@@ -5378,7 +5378,7 @@ function renderParlay(o){
       ${(()=>{ const on=fair&&fair.p!=null, cp=on?fair.p:pr.corr, [c,l]=confTier(cp);
         return `<div class="box tier ${c}" data-conf="${cp}"><b>${l}</b><span>confidence all ${legs.length} land, on the ${on?'fair':'model\u2019s'} chance</span></div>`; })()}
     </div>
-    <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)':''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
+    <p class="muted fair-note">${fair&&fair.p!=null?`The fair chance is the book's: DraftKings' prices with the margin taken out${fair.est?(fair.dk?' (estimated: a leg is priced from DraftKings\u2019 line read on ESPN by our estimate, and its fair chance with it)':' (estimated, since a leg is priced on one side only: the week\u2019s typical margin is taken out of its price)'):''}, the legs moving together as the model's do. The model's own chance has run higher than the book's this season.`
       :`The fair chance needs a book price on every leg; ${fair&&fair.miss===1?'one leg has':(fair?fair.miss:0)+' legs have'} none, so this is the model's chance alone.`}</p>
     ${sg&&override==null?`<p class="muted" style="margin:10px 0 0;font-size:12px">Legs here share a game, so they are priced together rather than multiplied: multiplying them would say <b>$${(stake*multDec).toFixed(2)}</b>, which is what a book pays only when the legs are in different games. The estimate carries a same-game cut fitted to real DraftKings tickets; type your book's own parlay price above to override it.</p>`:''}`;
   const canSave=wks.length===1&&(realPrice||estPrice);
@@ -5742,7 +5742,7 @@ function applyBaked(){
    SHA-256 (taken with this placeholder in it), so a change to any source -- the Pick'ems tab,
    the X Parlays section, the parlay card, the storage layer, the X Bet Log, the betting app -- shows
    as a new tag. */
-const PAGE_HASH='fc9b352';
+const PAGE_HASH='0f1d11b';
 document.addEventListener('app-ready',()=>{ const bt=document.getElementById('buildTag');
   if(bt&&typeof APP_BUILD!=='undefined') bt.textContent=APP_BUILD+' \u00b7 '+PAGE_HASH; });
 (function(){
@@ -6483,6 +6483,8 @@ window.PARLAY_CARD=(function(){
       legs:legs.map(x=>x.card),stake:stake>0?stake:0,payout:stake>0?stake*dec:0,profit:stake>0?stake*dec-stake:0,
       chance:chance!=null&&isFinite(chance)?pct(chance):null,chanceBy,
       fair:fair&&fair.p!=null&&isFinite(fair.p)?pct(fair.p):null,fairEst:!!(fair&&fair.p!=null&&fair.est),
+      /* a leg priced from DraftKings' line read by Refresh odds (app v107): its fair chance is the estimate's */
+      fairDk:legs.some(x=>x&&x.src==='dkline'),
       made:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),site:SITE,
       file:'parlay-'+(w==null?'':(w<=18?'week'+w:'playoffs-week'+w)+'-')+n+(n===1?'leg':'legs')+'.png',
       dk:dkPlan(legs)};
@@ -6536,7 +6538,7 @@ window.PARLAY_CARD=(function(){
         <span><span class="pc-who">${h(l.who)}</span><span class="pc-what">${h(l.what)}</span>${l.meta?`<span class="pc-meta">${h(l.meta)}</span>`:''}</span>
         <span class="pc-lp">${h(l.price)}<small>${h(l.tag)}</small></span></li>`).join('')}</ol>
       ${m.stake?`<div class="pc-money"><div><span>Stake</span><b>${money(m.stake)}</b></div><div><span>Pays</span><b>${money(m.payout)}</b></div><div class="pc-win"><span>Profit</span><b>+${money(m.profit)}</b></div></div>`:''}
-      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.</small>`:''}</div>
+      <div class="pc-chance">${chanceLines(m).map(l=>`<div>${l.map(([t,b])=>b?`<b>${h(t)}</b>`:h(t)).join('')}</div>`).join(' ')}${m.fair&&m.fairEst?`<small>${m.fairDk?'Est.: a leg is priced from DraftKings\u2019 line read on ESPN by our estimate, and its fair chance with it.':'Est.: a leg is priced on one side only, so the week\u2019s typical margin is taken out of its price.'}</small>`:''}</div>
       <div class="pc-foot"><b>${h(m.site)}</b><span>Made ${h(m.made)}</span></div>
     </div>`;
   }
