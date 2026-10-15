@@ -18,6 +18,12 @@ without narrating the steps:
 - Reverting is easy and the owner knows it. Prefer shipping to asking permission.
 - A change is not done until the audit or smoke test for that site passes and the
   built pages are regenerated and committed.
+- A PR the props gate covers (`.github/workflows/props-gate.yml`: anything the props job or the
+  Bets and Stats page runs) is merged once its `props-gate` check is green: `gh pr checks <n>
+  --watch`, then merge. A failure that is the PR's (it fails on the PR and passes on main) is fixed
+  in the PR; one that fails on main too is said in the report and does not hold the merge. After
+  merging the fix to a refused props run, dispatch it: `gh workflow run props.yml -f no_odds=true`
+  (the kept prices publish a few minutes later, no credit spent).
 
 ## The sites and their parts
 
@@ -210,7 +216,20 @@ together, `clock_now.js`), and `python3 test_audit_phases.py` (about nine minute
 `props/data` (a Saturday before the pull, a Sunday priced, mid-slate, 3pm and night, a Monday before
 and during its game, a week with no player prices, paid ids to come, the season played out with and
 without late lines), and the page smoke on two with `SMOKE_NOW`: a change to the audit, the smoke or
-the props parts comes with a run of it. Its section V
+the props parts comes with a run of it. **The props gate** (`.github/workflows/props-gate.yml`, its
+logic in `.github/scripts/props_gate.py`) runs both on every PR, on a push to main that touches what it
+covers, and by dispatch, and spends nothing (`weekly.py --no-odds`, no secret mapped, nothing
+committed). Its first job sorts the changed paths into AUDIT (what the props job runs: `props/build/`,
+the `props/data` scripts and model files but not the job's outputs, the research files `weekly.py`
+runs, `lib/`, `props.yml`, the gate) and PAGE (`nflbets/`, the betting app and `betting/tools`' build
+parts, the props parts, `liveparlays/build/`); with neither it passes at once, and a push or a dispatch
+runs everything. Job A runs `weekly.py --no-odds` on the PR's code and today's nflverse files, then the
+page smoke on the payload it baked; job B runs each case of `test_audit_phases.py` on a runner of its
+own (the smoke cases alone when only PAGE changed). Each is differential: a failure is run again on
+the base's code in a second checkout (`weekly.py --offline` over the same downloads), and fails the
+gate only when the base passes; a failure on both is a warning, a download refusal named as
+infrastructure, to re-run. `python3 .github/scripts/props_gate.py dry-run 30` shows which of the last
+30 PRs would have run which job, and `files <paths>` how paths are sorted. The audit's section V
 checks the page a browser builds against the raw nflverse files (roster status, the
 injury report, the stats, the schedule) when `PROPS_AUDIT_RAW=1`, which `weekly.py` sets;
 by hand those comparisons are skipped and the rest run. Run by hand against a payload
@@ -337,7 +356,12 @@ prices are DraftKings' Saturday ones to kickoff. A visitor's Refresh odds press 
 DraftKings' current game lines and player lines, read from ESPN, over them in that browser alone. `python3 test_pull_schedule.py` (about a minute,
 no credits) replays the season's schedule through `weekly.py`'s windows and `oddsfetch.py`'s
 `choose()` at every lateness up to 9.4 hours and with pulls dropped, and holds the crons to
-`PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`.
+`PULL_SLOTS`: a change to either comes with a run of it. It commits straight to `main`. A refused
+run (`weekly.py` exit 1) opens an issue labelled `props-refused`, or comments on the open one, with
+`props/build/refused_note.py`'s text: the problems file, the games whose prices were bought and are
+held (`priced_at.json` against the published payload's `baked_at`) with each kickoff in ET and the
+hours left, the run's link, and what to do (merge a fix, then dispatch with `no_odds`); the next clean
+publish closes it with its time. Both steps are continue-on-error and never stand in for the red run.
 
 Sunday's early games, every Sunday kickoff before 4pm Eastern (the 1pm window, London and the other
 games abroad), are never bought player prices (the owner's call, 13 October 2026: he bets props on the
@@ -1376,7 +1400,13 @@ may quietly outrank what the job published:
   the files through market + form and the Elo picks, gate the data). Seven of the ten NFL-job failures from 2 to 13
   October 2026 were live data meeting a presentation case no check had seen, each holding the week's
   data back until a fix landed. A check run only on made-up data stays blocking: only a code change
-  can fail it, and a code change is run through its gate by hand.
+  can fail it, and a code change is run through its gate by hand. That holds only while no check
+  turns on the week or the hour (two did on 15 October 2026, #270 and #271), so a check reads only the
+  page's clock, plants made-up data on a fixture of its own (replaced wholesale, or its expectation
+  worked out from the state before the plant, never planted values expected over a live structure),
+  copies a page rule with the page's fallbacks, and holds in the off-season too (rules (a) to (e) in
+  `audit.js`'s BLOCKING AND WARNINGS note); the props gate replays every check on past payloads at
+  their own moment before a PR merges.
 - **Runners are pinned.** Every workflow runs on `ubuntu-24.04`, not `ubuntu-latest`, which moves to
   Ubuntu 26.04 on 19 October 2026: try `ubuntu-26.04` on purpose, in a dispatched run on a branch,
   before moving the pin.

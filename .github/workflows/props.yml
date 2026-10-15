@@ -56,6 +56,9 @@ on:
 
 permissions:
   contents: write
+  # the props-refused issue: opened (or commented on) when weekly.py refuses a run, closed on the next
+  # clean publish (the two steps below that use it)
+  issues: write
 
 concurrency:
   # one group per workflow: GitHub cancels a pending run whenever a newer one queues
@@ -130,6 +133,21 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      - name: Close the props-refused issue (this run published)
+        # a clean run after a refusal: the issue the refusal opened says when the site caught up, and
+        # closes. Never fails the run (continue-on-error), and does nothing when no issue is open
+        if: success() && steps.weekly.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          open=$(gh issue list --label props-refused --state open --json number --jq '.[].number' 2>/dev/null || true)
+          if [ -z "$open" ]; then echo "no props-refused issue is open"; exit 0; fi
+          at=$(python -c "import json; print(json.load(open('props/data/payload.json'))['baked_at'])")
+          for n in $open; do
+            gh issue close "$n" --comment "Published: the payload baked at $at is on the site, by $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (the kept prices with it)."
+          done
       - name: Keep the prices a refused run bought (nothing is published)
         # The page reads payload.json alone, and a refused run never commits it (weekly.py has put
         # the published one back; the checkout below makes sure). The price files and
@@ -155,6 +173,24 @@ jobs:
             done
             [ "$ok" = 1 ]
           fi
+      - name: Open or update the props-refused issue (what was held, and what to do)
+        # a refusal reaches the owner (an issue in his own repo: email and GitHub Mobile) and a Claude
+        # session can be pointed at it: why it refused, the games whose prices were bought and are held,
+        # each kickoff in ET and the hours left (props/build/refused_note.py), the run, and what to do.
+        # One issue at a time: a second refusal comments on the open one. Never fails the run, and
+        # never stands in for the red run below
+        if: failure() && steps.weekly.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          body="$RUNNER_TEMP/props-refused.md"
+          python props/build/refused_note.py --problems "$RUNNER_TEMP/props-build-problems.txt" --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$body"
+          gh label create props-refused --force --color B60205 --description "The props job refused a run: prices held, nothing published"
+          n=$(gh issue list --label props-refused --state open --limit 1 --json number --jq '.[0].number // empty')
+          if [ -n "$n" ]; then gh issue comment "$n" --body-file "$body"
+          else gh issue create --title "Props job refused: prices held, nothing published" --label props-refused --body-file "$body"; fi
       - name: Fail the run if the build reported problems
         if: always()
         run: |
