@@ -1738,7 +1738,10 @@ setTimeout(async()=>{
           const Q=xs.find(x=>x.gp>=3&&F('suggestable')(x.pl.id)&&![A,B,C].some(o=>o&&o.x===x)&&(!byName||byName.x!==x)&&lineOf(x.pl.id,(F('statLines')(x).find(l=>!l.prob&&ESPN.TESTED.main.includes(l.stat))||{}).stat)!=null);
           if(Q){ injPlant.push([Q.pl.id,F('INJ')[Q.pl.id]]); F('INJ')[Q.pl.id]={k:'q',t:'Q',title:'Questionable (made up by the audit)'}; }
           W.coverage(!!(A&&B&&C&&Dx&&backup&&byName&&Q),`the press's made-up read found no player for every case (paid line kept ${!!A}, moved ${!!B}, real rung ${!!C}, a count ladder on a paid line ${!!Dx}, backup ${!!backup}, by name ${!!byName}, Questionable ${!!Q})`);
-          P().espn_ids={...(keepIds||{}),...ids};
+          /* the made-up read's own id table alone: the payload's real one (which the job bakes) already
+             gives the by-name starter his real ESPN id, so merged in it would leave nobody to place by name
+             and the check would turn on the week's data (it refused the props run of 15 October 2026) */
+          P().espn_ids={...ids};
           net.route=u=>{ if(/\/scoreboard\?/.test(u)) return {code:200,body:{events:evs}};
             const p=props(u); if(p){ const g=games[evs.findIndex(e=>e.id===p.eid)];
               if(g===g0) return page(items,p.q); if(g===gN) return {code:404,body:{error:{message:'No propBets found',code:404}}};
