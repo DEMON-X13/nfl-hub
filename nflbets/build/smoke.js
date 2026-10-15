@@ -302,12 +302,13 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
 
 /* seed: what the browser holds before the page opens; file: the parlay file it reads in place of
    liveparlays/parlays.json; xbets: the X Bet Log's file in place of liveparlays/xbets.json (404:
-   it does not answer); news: the news job's files, stand-ins by name ({ units, stats, notes: {
+   it does not answer); friends: picks/friends.json's stand-in (an object, or a string that is not
+   JSON; none, by default, is a 404: the real file is never read here); news: the news job's files, stand-ins by name ({ units, stats, notes: {
    '2026-w6': ... } }, each an object, a string that is not JSON, or missing for a 404; none at all
    by default). gate: promises by name ({ units, stats, notes, payload }) that hold back that file's
    answer until each resolves, and early: resolve once the board has drawn, not at the prop model's
    app-ready (which a held payload holds back). Every request is in `calls` with its method and cache mode. */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false } = {}) {
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
@@ -334,6 +335,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
           if (s.includes('payload.json')) return held('payload', Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) }));
           if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => file ? JSON.parse(JSON.stringify(file)) : JSON.parse(PARLAYS) });
+          /* friends' picks: the run's stand-in (an object, or a string that is not JSON), else a 404, never the real file */
+          if (s.includes('picks/friends.json')) return Promise.resolve(friends == null ? { ok: false, status: 404 } : { ok: true, status: 200,
+            json: async () => typeof friends === 'string' ? JSON.parse(friends) : JSON.parse(JSON.stringify(friends)) });
           if (s.includes('xbets.json')) return Promise.resolve(xbets === 404 ? { ok: false, status: 404 } : { ok: true, status: 200, json: async () => xbets ? JSON.parse(JSON.stringify(xbets)) : JSON.parse(XBETS_REAL) });
           if (s.includes('elo/data/players.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_P) });
           if (s.includes('elo/data/model.json')) return Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(ELO_M) });
@@ -1111,8 +1115,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   const adminHtml = recFrame.getAttribute('srcdoc') || '';
   chk(adminHtml.length > 100000 && /const MODEL = /.test(adminHtml), 'the Records frame was not filled with the betting app: ' + adminHtml.length + ' chars');
   chk(/^<!DOCTYPE html>/i.test(adminHtml.trim()), 'the framed app does not start with its doctype');
-  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='\.\.\/betting\/state\.json';window\.XBETS=window\.XBETS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.XBETS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);if\(window\.XBETS\)document\.documentElement\.classList\.add\('xbets-ro'\);<\/script>/.test(adminHtml),
-    'the framed app is not told its tab, its season path and the page\'s X Bet Log');
+  chk(/<head>\s*<script>window\.EMBED_TAB="record";window\.STATE_URL='\.\.\/betting\/state\.json';window\.XBETS=window\.XBETS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.XBETS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);if\(window\.XBETS\)document\.documentElement\.classList\.add\('xbets-ro'\);window\.FRIENDS=window\.FRIENDS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.FRIENDS\|\|null;\}catch\(e\)\{return null;\}\}\)\(\);<\/script>/.test(adminHtml),
+    'the framed app is not told its tab, its season path, the page\'s X Bet Log and the friends\' picks');
   /* the frames reach the page's X Bet Log through window.parent: a sandboxed frame could not */
   chk([...d.querySelectorAll('iframe.pk-frame')].every(f => !f.hasAttribute('sandbox')), 'a betting frame is sandboxed, so it cannot reach the X Bet Log');
   chk(/html\.embed header,html\.embed #tabs\{display:none\}/.test(adminHtml) && /classList\.add\('embed'\)/.test(adminHtml),
@@ -1867,6 +1871,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      in it, on stand-in news files ---- */
   await snapshotChecks();
   await newsChecks();
+  await friendsChecks();
 
   /* ---- no page asked the retired store or its sign-in services anything, and nothing any page
      or frame sent was a write ---- */
@@ -3041,4 +3046,118 @@ async function newsChecks() {
     chk(bad.length === 0 && NH.errs.length === 0, `news: the window does not keep the visitor's place as the files come in late: ${NH.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
     NH.w.close(); }
   console.log(`the Season Tracker's games in the Game snapshot: ${checks - c0} checks on stand-in news files (${G.game_id} to come${P1 ? ', ' + P1.game_id + ' played' : ''}), ${fails.length - f0} failures`);
+}
+
+/* =====================================================================================
+   FRIENDS' PICKS ON THE PICK'EM RECORD (the owner's call, 15 October 2026): picks/friends.json,
+   read by the page (nflbets/build/friends.js, window.FRIENDS) no-store, handed to the betting frame
+   and drawn by record_viz.js beside the models. All on stand-ins: the real file is never read here
+   (picks/tools/test_add.js and the betting smoke hold it to its rules). A stand-in state takes the
+   last week the models were graded in and plants four of its games: a home win and an away win,
+   both graded and with a line (the home side favoured), one still to play and a tie. Three friends
+   pick them, one of them a pick saved at its game's kickoff, and their records are worked out here
+   on their own: the grid's rows and cells (pending said), the chart's dashed lines and the legend
+   against Vegas, the pick grid's columns, and a junk name dropped. A missing file, a file that is not
+   JSON, one of another season and one with no list each draw no friend and throw nothing.
+   ===================================================================================== */
+async function friendsChecks() {
+  const c0 = checks, f0 = fails.length;
+  const BET_FRAME = JSON.parse(HTML.match(/\nconst BET_APP=("(?:[^"\\]|\\.)*");\n<\/script>/)[1]);
+  chk(/window\.FRIENDS=window\.FRIENDS\|\|\(function\(\)\{try\{return window\.parent!==window&&window\.parent\.FRIENDS\|\|null;/.test(BET_FRAME), 'the betting frame is not handed the page\'s FRIENDS');
+  /* the stand-in state */
+  const st = JSON.parse(JSON.stringify(STATE));
+  const byWeek = {}; for (const r of Object.values(st.processed)) if (r.correct !== null) byWeek[+r.week] = (byWeek[+r.week] || 0) + 1;
+  const Wk = Math.max(...Object.keys(byWeek).map(Number).filter(w => st.schedule.filter(g => +g.week === w).length >= 4));
+  const games = st.schedule.filter(g => +g.week === Wk).slice(0, 4);
+  const at = [['2026-10-15', '20:15'], ['2026-10-18', '13:00'], ['2026-10-18', '16:25'], ['2026-10-19', '20:15']];
+  const kick = ['2026-10-16T00:15:00.000Z', '2026-10-18T17:00:00.000Z', '2026-10-18T20:25:00.000Z', '2026-10-20T00:15:00.000Z'];
+  const res = [7, -3, null, 0];
+  games.forEach((g, i) => { g.gameday = at[i][0]; g.gametime = at[i][1]; g.spread_line = 3;
+    if (res[i] == null) { g.result = null; g.home_score = null; g.away_score = null; delete st.processed[g.game_id]; return; }
+    Object.assign(g, { result: res[i], home_score: 20 + Math.max(0, res[i]), away_score: 20 - Math.min(0, res[i]) });
+    st.processed[g.game_id] = { week: Wk, home: g.home_team, away: g.away_team, pick: g.home_team, conf: 0.6, margin: 3, pHome: 0.6, blended: false,
+      result: res[i], correct: res[i] === 0 ? null : res[i] > 0, line: 3, news: [] }; });
+  /* every later game unplayed, so this week is the pick grid's own */
+  for (const g of st.schedule) if (+g.week > Wk) { g.result = null; delete st.processed[g.game_id]; }
+  const [g1, g2, g3, g4] = games, H = g => g.home_team, A = g => g.away_team, early = '2026-10-14T12:00:00.000Z';
+  const pk = (pick, saved_at = early) => ({ pick, saved_at });
+  const FIX = { how: 'stand-in', season: BET_SEASON, updated: '2026-10-15T10:00:00Z', friends: [
+    { name: 'Ann', weeks: { ['w' + Wk]: { saved_at: early, tiebreaker: { game_id: g4.game_id, total_points: 41 },
+      picks: { [g1.game_id]: pk(H(g1)), [g2.game_id]: pk(H(g2)), [g3.game_id]: pk(A(g3)), [g4.game_id]: pk(H(g4)) } } } },
+    { name: '<b>Junk</b>', weeks: { ['w' + Wk]: { saved_at: early, picks: { [g1.game_id]: pk(H(g1)) } } } },
+    { name: 'Bo', weeks: { ['w' + Wk]: { saved_at: kick[1], tiebreaker: null,
+      picks: { [g1.game_id]: pk(A(g1)), [g2.game_id]: pk(A(g2), kick[1]), [g3.game_id]: pk(H(g3)) } } } },
+    { name: 'Cy', weeks: { ['w' + Wk]: { saved_at: early, tiebreaker: null, picks: { [g3.game_id]: pk(H(g3)) } } } }] };
+  /* worked out by hand: Vegas picks the home side (line 3) and is right on g1, wrong on g2.
+     Ann: g1 won, g2 lost, g3 pending, g4 a tie (nobody): 1-1, 1 pending, against Vegas 0.
+     Bo: g1 lost, g2 saved at kickoff (not counted), g3 pending: 0-1, 1 pending, against Vegas -1.
+     Cy: g3 pending alone: no line on the chart. */
+  const want = { Ann: { w: 1, l: 1, p: 1, net: '0' }, Bo: { w: 0, l: 1, p: 1, net: '−1' }, Cy: { w: 0, l: 0, p: 1, net: null } };
+  const frame = (X, s2) => new Promise(resolve => {
+    const errs = [];
+    const dom = new JSDOM(BET_FRAME.replace('window.EMBED_TAB=null', 'window.EMBED_TAB="record"'), { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://demon-x13.github.io/nfl-hub/nflbets/',
+      beforeParse(fw) { if (X) fw.FRIENDS = X; fw.Papa = { parse: () => ({ data: [], meta: { fields: [] } }) };
+        fw.confirm = () => true; fw.alert = () => {}; fw.scrollTo = () => {};
+        fw.addEventListener('error', e => errs.push(e.message));
+        fw.fetch = async (u, o) => { const s = String(u), m = String((o && o.method) || 'GET').toUpperCase(); ALL_CALLS.push(m + ' ' + s);
+          if (RETIRED.test(s) || m !== 'GET') { BAD_CALLS.push(m + ' ' + s); throw new TypeError('Failed to fetch'); }
+          if (/elo\/data\/model\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(ELO_M) };
+          if (/state\.json/.test(s)) return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(s2)) };
+          return { ok: false, status: 404, json: async () => null }; }; } });
+    setTimeout(() => resolve({ w: dom.window, d: dom.window.document, errs }), 1500); });
+  const rowsTh = fd => [...fd.querySelectorAll('#recordTable table.rv-grid tbody tr')].map(tr => txt(tr.querySelector('th')));
+  const rowOf = (fd, n) => [...fd.querySelectorAll('#recordTable table.rv-grid tbody tr.rv-friend')].find(tr => txt(tr.querySelector('th')) === n);
+  const pickHead = async F => { F.w.eval(`S.picksOpen=true; S.picksWeek=${Wk}; renderRecord()`); await wait(80);
+    return [...F.d.querySelectorAll('.pickgrid thead th')].map(th => txt(th)); };
+  const base = await frame(null, st); const baseHead = await pickHead(base), baseRows = rowsTh(base.d).join('|'), baseLines = base.d.querySelectorAll('#modelChart polyline').length;
+  chk(base.errs.length === 0 && !/Friends/.test(baseRows) && baseHead.join('|') === 'Game|Alpha Model|The Joker|ELO Model|Vegas', 'friends: a frame with no FRIENDS is not drawn as before: ' + baseRows + ' / ' + baseHead.join('|') + ' ' + base.errs.join('; '));
+  base.w.close();
+
+  /* the page reads the stand-in once, no-store, and cleans it */
+  const P = await run(st, 'https://demon-x13.github.io/nfl-hub/nflbets/#record', null, false, { friends: FIX });
+  await P.w.FRIENDS.ready();
+  { const got = P.w.FRIENDS.get(), fc = P.calls.filter(c => /picks\/friends\.json/.test(c.url));
+    chk(fc.length === 1 && fc[0].method === 'GET' && fc[0].cache === 'no-store' && fc[0].url.replace(/\?.*$/, '') === '../picks/friends.json', 'friends: the page does not read ../picks/friends.json once, no-store: ' + JSON.stringify(fc));
+    chk(got.status.ok === true && got.friends.map(f => f.name).join() === 'Ann,Bo,Cy', 'friends: the page\'s FRIENDS is not the file\'s three friends, the junk name dropped: ' + JSON.stringify(got.friends.map(f => f.name)));
+    chk(!/"D money fresh"|nfl-hub-weekly-picks/.test(HTML), 'friends: the page bakes in friends\' picks'); }
+  const F = await frame(P.w.FRIENDS, st); await wait(200);
+  { const th = rowsTh(F.d), i = th.indexOf('Friends');
+    chk(F.errs.length === 0, 'friends: the frame threw: ' + F.errs.join('; '));
+    chk(i > 0 && th[i - 1] === 'Vegas' && th.slice(i + 1).join() === 'Ann,Bo,Cy', 'friends: the grid does not list Ann, Bo and Cy under a Friends heading after Vegas: ' + th.join('|'));
+    chk(!/Junk/.test(txt(F.d.getElementById('recordTable')) + txt(F.d.getElementById('modelChart'))), 'friends: a name that is not plain text is drawn');
+    const heads = [...F.d.querySelectorAll('#recordTable thead th.rv-c')].map(h => h.childNodes[0] ? h.childNodes[0].textContent.trim() : ''), col = heads.indexOf(Wk > 18 ? 'Playoffs ' + (Wk - 18) : 'Week ' + Wk);
+    for (const [n, t] of Object.entries(want)) { const tr = rowOf(F.d, n), cells = tr ? [...tr.querySelectorAll('td')] : [];
+      const g = t.w + t.l, exp = g ? `${t.w}–${t.l}${Math.round(100 * t.w / g)}%${t.p ? ` · ${t.p} pending` : ''}` : `–${t.p} pending`;
+      const wc = cells[col], sc = cells[cells.length - 1];
+      chk(!!wc && txt(wc).replace(/\s/g, '') === exp.replace(/\s/g, '') && !!sc && txt(sc).replace(/\s/g, '') === exp.replace(/\s/g, ''),
+        `friends: ${n}'s week ${Wk} and season should read ${exp}: ${wc ? txt(wc) : 'no cell'} / ${sc ? txt(sc) : 'no cell'}`);
+      chk(!g ? /rv-pend/.test(wc && wc.className) && /none played yet/.test(wc.getAttribute('title')) : !/rv-pend/.test(wc && wc.className), `friends: ${n}'s pending week is not drawn as pending`);
+      chk(cells.filter((c, j) => j !== col && j !== cells.length - 1).every(c => txt(c) === '–'), `friends: ${n} has a record in a week they did not pick`); }
+    chk(/tiebreaker 41 points/.test(rowOf(F.d, 'Ann').querySelectorAll('td')[col].getAttribute('title')), 'friends: Ann\'s tiebreaker is not kept on her week');
+    /* the chart: a dashed line each for the two with a decided game, none for Cy */
+    const lines = [...F.d.querySelectorAll('#modelChart polyline.rv-friend')];
+    chk(lines.length === 2 && lines.every(l => l.getAttribute('stroke-dasharray')) && F.d.querySelectorAll('#modelChart polyline').length === baseLines + 2,
+      `friends: the chart does not draw two dashed friend lines beside the models' (${lines.length}, ${F.d.querySelectorAll('#modelChart polyline').length} lines against ${baseLines})`);
+    const lg = txt(F.d.querySelector('#modelChart .rv-flg'));
+    chk(/^Friends/.test(lg) && lg.includes('Ann 1–1 0 vs Vegas, 1 pending') && lg.includes('Bo 0–1 −1 vs Vegas, 1 pending') && lg.includes('Cy 1 pending'),
+      'friends: the legend does not give each friend\'s record against Vegas and what is pending: ' + lg);
+    const hit = F.d.querySelector(`#modelChart .rv-hit[data-i="${[...F.d.querySelectorAll('#modelChart .rv-hit')].length - 1}"]`);
+    if (hit) { hit.dispatchEvent(new F.w.Event('mouseenter')); const tip = txt(F.d.querySelector('#modelChart .rv-tip'));
+      chk(tip.includes('Ann 1–1 · season 0 vs Vegas') && tip.includes('Bo 0–1 · season −1 vs Vegas') && !tip.includes('Cy'), 'friends: the tooltip does not give the friends\' week: ' + tip); }
+    /* the pick grid: a column a friend, the pick shown where it counts, a pick saved at kickoff not */
+    const head = await pickHead(F);
+    chk(head.join('|') === 'Game|Alpha Model|The Joker|ELO Model|Vegas|Ann|Bo|Cy', 'friends: the pick grid\'s columns are ' + head.join('|'));
+    const cell = (g, n) => { const tr = [...F.d.querySelectorAll('.pickgrid tbody tr')].find(t => txt(t.querySelector('td')).startsWith(g.away_team + ' at ' + g.home_team)); return tr ? txt(tr.children[head.indexOf(n)]) : null; };
+    chk(cell(g1, 'Ann') && cell(g1, 'Ann').startsWith(H(g1)) && cell(g2, 'Bo') === '–' && cell(g1, 'Bo').startsWith(A(g1)) && cell(g3, 'Cy').startsWith(H(g3)) && cell(g1, 'Cy') === '–',
+      `friends: the pick grid's friend cells are wrong: Ann ${cell(g1, 'Ann')}, Bo's late pick ${cell(g2, 'Bo')}, Cy ${cell(g3, 'Cy')}`); }
+  F.w.close(); P.w.close();
+
+  /* nothing to draw: no file, not JSON, another season, no list */
+  for (const [what, fx] of [['no file', null], ['a file that is not JSON', '{"friends": [oops'], ['another season', Object.assign({}, FIX, { season: BET_SEASON - 1 })], ['no list', { season: BET_SEASON, friends: 'Ann' }]]) {
+    const R = await run(st, 'https://demon-x13.github.io/nfl-hub/nflbets/#record', null, false, { friends: fx }); await R.w.FRIENDS.ready();
+    const got = R.w.FRIENDS.get(), Z = await frame(R.w.FRIENDS, st), head = await pickHead(Z);
+    chk(got.friends.length === 0 && R.errs.length === 0 && Z.errs.length === 0 && rowsTh(Z.d).join('|') === baseRows && !Z.d.querySelector('.rv-flg, polyline.rv-friend') && head.join('|') === baseHead.join('|'),
+      `friends: ${what} draws something, or throws: ${rowsTh(Z.d).join('|')} / ${head.join('|')} ${R.errs.concat(Z.errs).join('; ')}`);
+    Z.w.close(); R.w.close(); }
+  console.log(`friends' picks on the Pick'em Record: ${checks - c0} checks on stand-in files (week ${Wk}), ${fails.length - f0} failures`);
 }

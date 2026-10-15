@@ -81,9 +81,15 @@ for (const need of ['window.storage=', 'function clean(v,d)', "const BAD=/[<>\"`
 const XBETS_JS = sub1(rd('nflbets', 'build', 'xbets.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the X Bet Log's season");
 for (const need of ['window.XBETS=', "URL='../liveparlays/xbets.json'", "{cache:'no-store'}", 'function cleanWeek(', "replace(/[<>]/g,'')", 'function tidy('])
   if (!XBETS_JS.includes(need)) throw new Error('nflbets/build/xbets.js no longer has ' + need);
+/* friends' picks on the Pick'em Record (friends.js, the owner's call of 15 October 2026): read from
+   picks/friends.json, which Claude keeps with picks/tools/add.js, and handed to the betting frames as
+   parent.FRIENDS, read only. A missing file draws no friends; nothing is baked in. */
+const FRIENDS_JS = sub1(rd('nflbets', 'build', 'friends.js'), /\/\*SEASON\*\/\d{4}/, '/*SEASON*/' + BETB.SEASON, "the friends' picks' season");
+for (const need of ['window.FRIENDS=', "URL='../picks/friends.json'", "{cache:'no-store'}", 'function clean('])
+  if (!FRIENDS_JS.includes(need)) throw new Error('nflbets/build/friends.js no longer has ' + need);
 /* nothing on the page writes anywhere but this browser: the two scripts send no request but the
    X Bet Log file's read */
-for (const [name, src] of [['storage.js', STORAGE_JS], ['xbets.js', XBETS_JS]])
+for (const [name, src] of [['storage.js', STORAGE_JS], ['xbets.js', XBETS_JS], ['friends.js', FRIENDS_JS]])
   for (const gone of ["method:'PUT'", "method:'PATCH'", "method:'POST'", 'keepalive', 'write('])
     if (src.includes(gone)) throw new Error(`nflbets/build/${name} has ${gone}: nothing on the page writes anywhere but this browser's storage`);
 if (!part2.includes('if(window.storage){const r=await window.storage.get(KEY,false)')) throw new Error('the prop model no longer reads through window.storage, which the storage layer relies on');
@@ -275,7 +281,8 @@ const { buildApp } = BETB;
    read only from its first paint (xbets-ro): no entry form, Remove, deposit box or backup card. */
 const BET_APP = sub1(buildApp(), '<head>', "<head>\n<script>window.EMBED_TAB=null;window.STATE_URL='../betting/state.json';"
   + "window.XBETS=window.XBETS||(function(){try{return window.parent!==window&&window.parent.XBETS||null;}catch(e){return null;}})();"
-  + "if(window.XBETS)document.documentElement.classList.add('xbets-ro');</script>", 'the head of the betting app');
+  + "if(window.XBETS)document.documentElement.classList.add('xbets-ro');"
+  + "window.FRIENDS=window.FRIENDS||(function(){try{return window.parent!==window&&window.parent.FRIENDS||null;}catch(e){return null;}})();</script>", 'the head of the betting app');
 for (const need of ['html.embed header,html.embed #tabs{display:none}', "classList.add('embed')", 'data-tab="record"', 'data-tab="ratings"', 'data-tab="bets"', 'id="betSave"', 'window.STATE_URL||', 'window.XBETS.get()', 'html.xbets-ro #backupCard', '<h2>X Bet Log</h2>'])
   if (!BET_APP.includes(need)) throw new Error('the built betting app has no ' + need + ', which the framed tabs rely on');
 for (const gone of ['index.html', 'admin.html']) if (fs.existsSync(path.join(ROOT, 'betting', gone)))
@@ -314,7 +321,7 @@ html = sub1(html, '\n</main>', '\n' + CARD_HTML + '\n</main>', "the parlay card'
 if (!html.endsWith('<script>\n')) throw new Error('part1.html no longer ends by opening the app script');
 /* the storage layer runs first: the prop model reads its state through it at boot; the X Bet
    Log's adapter right after it */
-html = html.slice(0, -'<script>\n'.length) + '<script>\n' + STORAGE_JS + '\n</script>\n<script>\n' + XBETS_JS + '\n</script>\n<script>\n';
+html = html.slice(0, -'<script>\n'.length) + '<script>\n' + STORAGE_JS + '\n</script>\n<script>\n' + XBETS_JS + '\n</script>\n<script>\n' + FRIENDS_JS + '\n</script>\n<script>\n';
 
 /* the app, as assemble.py assembles it, one directory further from its payload */
 const APP = "let PAY=null;\nconst DATA_URL='../props/data/payload.json';\n" + part2 + '\n' + part3;

@@ -20,7 +20,7 @@ The pages carry no season data: each fetches what the scheduled jobs commit (`pr
 `betting/state.json`, `elo/data/*.json`, and the news job's `news/data/units.json`,
 `stats.json` and the week's notes, which the Game snapshot fetches as the page loads)
 and what Claude commits from what the owner sends (`liveparlays/parlays.json`,
-`liveparlays/xbets.json`) on every load. Five scheduled GitHub Actions jobs, one per model
+`liveparlays/xbets.json`, `picks/friends.json`) on every load. Five scheduled GitHub Actions jobs, one per model
 or site, rebuild the data from their sources and commit it.
 
 `index.html` at the root is a static landing page linking the sites, and X NHL Bets in
@@ -34,7 +34,8 @@ betting/   X NFL Betting Model       no page: the app source, tools, job and sta
 elo/       Player Elo                no page: build.py, job and data/
 news/      the news job              no page: the Deep Dive, the stat bars and the game notes the Game snapshot reads
 cfb/       a redirect to DEMON-X13/cfb-hub, where X College Football Bets lives now
-picks/     Weekly Picks              a standalone page: pick each game of the board's week, save the picks as a file
+picks/     Weekly Picks              a standalone page: pick each game of the board's week, save the picks as a file;
+                                     friends.json, the friends' picks the Pick'em Record draws (kept by tools/add.js)
 nhl/       a redirect to DEMON-X13/nhl-hub, where X NHL Bets lives now
 ```
 
@@ -314,6 +315,8 @@ nflbets/
                                  retired shared store's leftovers taken out of a browser on load
   build/xbets.js                 the X Bet Log's adapter (window.XBETS), inlined after it: reads
                                  liveparlays/xbets.json for the betting frames, read only
+  build/friends.js               friends' picks (window.FRIENDS), inlined after xbets.js: reads
+                                 picks/friends.json for the Pick'em Record, read only
   build/smoke.js  smoke_live.js  the page, and the X Parlays section, in jsdom: the gates
                                  (smoke.js also: the Parlay Builder's suggested parlays held to
                                  their rules, the Game snapshot on stand-in news files, never the
@@ -930,6 +933,26 @@ Until 10 October 2026 both lived in a Firebase Realtime Database written from th
 25 placed parlays the owner had deleted marked cleared, the corrected line already the file's, the
 three weeks and the $100 deposit of the X Bet Log), and the page no longer asks it anything. The
 owner may delete the database, or set its rules to `{"rules":{".read":false,".write":false}}`.
+
+### Friends' picks on the Pick'em Record
+
+The owner tracks some friends' picks over the season (15 October 2026). A friend picks a week on
+`picks/` and sends the owner its Save file (kind `nfl-hub-weekly-picks`, version 1); Claude merges it
+into `picks/friends.json` with `node picks/tools/add.js <file>...` (`--check` holds the file to its rules
+and `betting/state.json`'s schedule; `test_add.js` is its test). The tool refuses a file whole for a
+wrong kind, version, season, week, name or game id; a pick saved at or after its game's kickoff (the
+schedule's, never the file's) is left out and named; a week sent again replaces that friend's week but
+keeps the earlier pick on a game that had kicked off when the new file was saved. The file is written
+only by the tool, indented one space, a pick a line.
+
+`nflbets/build/friends.js` fetches it no-store on every load, cleans it (a junk entry dropped; a
+missing, non-JSON, other-season or listless file draws no friend) and hands it to the betting frames as
+`parent.FRIENDS`. `betting/tools/record_viz.js`'s `rvFriends()` grades each pick saved before kickoff on
+the finals the models are graded on (a tie for nobody; pending until the final) and draws the friends
+apart from the models: dashed lines with hollow dots against Vegas on the chart, with a Friends legend
+row; Friends rows under the week-by-week grid ("to play", "N pending"); a column each in the pick grid
+(the pick-grid patch in `betting/tools/build.js`). The nflbets smoke holds it on stand-ins; the betting
+smoke holds the real file to the tool's rules as a warning.
 
 ## Props: how it fits together
 

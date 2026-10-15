@@ -832,6 +832,15 @@ async function xbetLog() {
     de.querySelector('#tabs button[data-tab="bets"]').click(); await sleep(50);
     check(!threw && !de.getElementById('tab-bets').hidden, 'embed: switching tabs inside the frame failed: ' + threw); }
   await xbetLog();
+  /* friends' picks (picks/friends.json, kept by Claude with picks/tools/add.js, the owner's call of 15
+     October 2026) against the tool's own rules and this state's schedule: a warning, since a friend's
+     pick is no model's call and no price, and a schedule change (a game moved earlier than a pick
+     was saved) must never hold back the state; the Pick'em Record leaves such a pick uncounted */
+  { const FP = path.join(ROOT, 'picks', 'friends.json');
+    if (fs.existsSync(FP)) { const T = require(path.join(ROOT, 'picks', 'tools', 'add.js'));
+      let bad; try { bad = T.check(JSON.parse(fs.readFileSync(FP, 'utf8')), T.readState(process.env.BETTING_STATE || path.join(ROOT, 'betting', 'state.json'))); } catch (e) { bad = [String(e && e.message || e)]; }
+      warn(bad.length === 0, "picks/friends.json breaks its rules (node picks/tools/add.js --check): " + bad.slice(0, 5).join('; '));
+      if (!bad.length) console.log("  friends' picks: picks/friends.json passes picks/tools/add.js's rules on this schedule"); } }
   await reality();
   const plain = a.window.document.documentElement;
   check(!plain.classList.contains('embed'), 'a page opened normally is not embedded');
