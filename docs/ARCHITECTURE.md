@@ -205,7 +205,9 @@ elo/
                                  stats from the season's play-by-play, weighted, each club
                                  starting the season at 0.42 of its final rating the season
                                  before, THE CARRY), and Run Defense, Pass Defense and Pass
-                                 Rush (the same Elo on two stats each, 16 October 2026),
+                                 Rush and their offense sides, Run Offense, Pass Offense and
+                                 Pass Protection (the same Elo on two stats each, 16 October
+                                 2026),
                                  explained in its docstring; downloads
                                  2012-now nflverse player stats and the play-by-play of the
                                  season and the two before it into cache/ (gitignored) and writes
@@ -223,9 +225,12 @@ elo/
                                  data/: kicked-off games leave the Mismatches, shields agree,
                                  every ranked row has a trend line (week 1 too), a player kept
                                  out is priced by nothing but keeps his past weeks' ratings;
-                                 Overall Offense and Overall Defense, then the file's position
-                                 tables (Run Defense, Pass Defense, Pass Rush, each with its own
-                                 walk-forward note; a file without them draws two pills): the 32
+                                 Overall Offense and Overall Defense with the file's position
+                                 tables, an Offense row and a Defense row (Run, Pass and Pass
+                                 Protection or Pass Rush a side, each paired with its other
+                                 side and with its own walk-forward note, the pair's and its
+                                 own alone; a file with the defense tables and no pair draws
+                                 them as before, one without any draws two pills): the 32
                                  teams, every value and rank the file's, the weights read from
                                  the file, the sort, the team window, each club's line from its
                                  own start, a club yet to play shown on its carried rating and
@@ -243,11 +248,13 @@ elo/
                                  out at a time), the build's weights scored on 2018-2025 with
                                  the carry and without; run by hand, never by the job; says
                                  whether the build carries its numbers
-  tools/def_units_fit.py         the same for Run Defense, Pass Defense and Pass Rush: their
-                                 stats' constants on 2012-2017, each table's weights fitted
+  tools/def_units_fit.py         the same for the six position tables: their stats' constants
+                                 on 2012-2017, each facet's two tables' weights fitted together
                                  there on the next game's measure (EPA a run, EPA a dropback,
-                                 sack rate), tested once on 2018-2025 against the raw numbers
-                                 so far; run by hand; says whether the build carries them
+                                 sack rate; the defense's shares and the offense's), tested once
+                                 on 2018-2025 against the raw numbers so far, as a pair and
+                                 each table alone; run by hand; says whether the build carries
+                                 them
   tools/deepdive_vs_units.py     the Deep Dive's rows against the Overall Offense and Defense
                                  units (and the units with the carry), the same team-games,
                                  2018-2025, by stretch of the season; a test, run by hand
@@ -270,8 +277,9 @@ elo/
                                  Offense and Overall Defense: each team's rating, its start and
                                  line, whether it is carried (no game yet), every key stat with
                                  its league rank, the weights, the carry; and the position
-                                 tables `run_def`, `pass_def` and `pass_rush`, named with
-                                 their walk-forward in `tables`), `phase`, and
+                                 tables `run_def`, `pass_def`, `pass_rush`, `run_off`,
+                                 `pass_off` and `pass_pro`, named with their side, pair and
+                                 walk-forward in `tables`), `phase`, and
                                  `sources` (what each download gave)
   data/matchups.json             generated: the matchup formula per position and stat (its
                                  terms and spread), its walk-forward record, the coming week's
@@ -516,8 +524,8 @@ centred under it; the two overall ratings, `units`, in two boxes
 of one size and shape either side of "vs", `.gs-ubox`, the better rank's tinted and no separate edge
 chip, a unit with no game yet this season shown on its rating carried from last season and marked so;
 then the Deep Dive's four position matchups for that possession under "Position matchups", below,
-a compact centred row each, its unit, the two clubs and ranks, the defense's position it faces (the
-owner's call, 16 October 2026) and its tag; no stats fold (the stats
+a compact centred row each, its unit, the two clubs and their Elo (the higher marked; a side with no Elo its
+rank, below), the defense's position it faces (the owner's call, 16 October 2026) and its tag; no stats fold (the stats
 are the Stat breakdown's) and no note under the card: what the ratings rest on is the boxes' title,
 what the matchups rest on the label's);
 the side of every comparison with the edge wears one mark, `gs-better`; the
@@ -590,9 +598,12 @@ a played game with no note has none. In Offense vs defense each possession's tit
 `deepdive.headTag`'s tag and points ("−0.9 pts") centred under it, and under its two boxes `deepdive.possession`'s four
 rows (the quarterback against the pass defense, the line against the pass rush, the run game against
 the run defense, the receivers against the coverage), each a compact centred row: its unit, the two
-sides' clubs and ranks ("SEA 13th · DEN 3rd", the offense's then the defense's, each titled with what it
-is rated as; the quarterback's and the run game's defense side the pass or run defense's rank) and its
-tag, the edge in the tag's title; no names, no one out and no numbers (the owner's call, 14 October 2026),
+sides' clubs and Elo ("SEA 1532 · DEN 1488", the offense's then the defense's, the owner's call of 16
+October 2026: the quarterback's own season Elo against Pass Defense, Pass Protection against Pass Rush,
+Run Offense against Run Defense, Pass Offense against Pass Defense, `deepdive.eloSides` on the Elo files
+the window already has, the higher marked, each titled with its Elo, rank and tier; a side with no Elo
+its rank from `units.json`), the defense's position it faces and its tag, the Deep Dive's own, the edge
+in the tag's title; no names, no one out and no other numbers (the owner's call, 14 October 2026),
 where `units.json` is for the game's week (`deepdive.applies`), else one line saying why (a
 playoff game says the Deep Dive covers the regular season only); `deepdive.basis` (and when the news
 job built the file) is the title of the "Position matchups" label over them, not a note under the
@@ -626,14 +637,18 @@ rated from a season's first day, starting from 0.42 of its final rating the seas
 share too; a team yet to play is ranked and shown on that carried rating, marked "carried from"
 that season in the table and its window. The weights and the stats are read from the file, a file
 from before them draws the old three columns, and one from before the carry (one start a side)
-draws its lines from that start, with no mark. After the two come the file's position tables
-(`units.tables`, from 16 October 2026: Run Defense, Pass Defense and Pass Rush, each a defense's,
-on two stats of its own), drawn the same way, the text naming their weights (and which way is better in their
-stats' own words) and, under it, the walk-forward test the file carries for each (a forecast of
-the next game's measure from the table with the offense's own ratings on the same stats, beside
-the same forecast from both clubs' raw numbers); a team's window heads its values Allowed, Made
-or Value by its stats and says its opponent's rank is Overall Offense's, there being no offense
-table to set against it; a file without them draws the two pills alone.
+draws its lines from that start, with no mark. With the two come the file's position tables
+(`units.tables`, from 16 October 2026: Run Defense, Pass Defense and Pass Rush, and the offense's
+side of the same facets, Run Offense, Pass Offense and Pass Protection, each on two stats and named
+with its side `of` and its `pair`), the pills in two rows headed Offense and Defense, each facet
+over its other side (two by two under each heading on a phone), drawn the same way, the text
+naming their weights (and which way is better in their stats' own words) and, under it, the
+walk-forward tests the file carries for each (a forecast of the next game's measure from the table
+with its pair's ratings on the same stats, beside the same forecast from both clubs' raw numbers;
+and the table alone against its own side's raw numbers alone); a team's window heads its values
+Allowed, Made or Value by its stats and gives its opponent's rank in the pair; a file with the
+defense tables and no pair says, as it did, that the opponent's rank is Overall Offense's; a file
+without any draws the two pills alone.
 The same script puts the Mismatches card on the Props tab (games still to kick off only) and, on a game's page,
 a MISMATCH tag beside the name of each player with a Solid, Big or Huge mismatch that week (`mmTags`), a ranked player's shield and his
 Elo matchup chance on each leg in the builder, a "market + form" price on each leg with a

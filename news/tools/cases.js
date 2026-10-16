@@ -85,6 +85,22 @@
                           a name or a number drawn in a row, the defense's position left out (the row as it
                           was drawn until 16 October 2026), the wrong one, one drawn twice or on the
                           offense's side, and a file whose constants were changed.
+     deepdive-elo         the rows' figures are Elo against Elo (the owner's call, 16 October 2026): on a
+                          made-up model.json with the six position tables, players.json and matchups.json,
+                          the snapshot's own eloSides() and possession() draw the quarterback's own season
+                          Elo (1580) against Pass Defense (1490), Pass Protection against Pass Rush (a tie,
+                          1450 each, marked neither way), Run Offense against Run Defense (1510 against
+                          1620, the defense marked) and Pass Offense against Pass Defense (1532 against
+                          1490), each side titled with its Elo and rank, the higher marked, the tags the
+                          Deep Dive's own and unchanged, and the checks pass on both possessions and on the
+                          board's LA (the file's LA, units.json's LAR). An older model.json (no tables) draws
+                          the ranks but the quarterback's Elo, and a quarterback unranked or whose lineup is
+                          for another game draws his row's rank; the checks pass on each. The broken versions
+                          fail: a figure off by one, the two sides' figures swapped, the wrong table (Run
+                          Offense on the receivers' row), an Elo on a row whose file lacks the table, a rank
+                          where the file has the Elo, the mark on the lower side, on a tie or left off, a
+                          title without the rank, and the checks as they stood before (ranks only) on the
+                          Elo rows.
      deepdive-headline    the Overall line's tag is this team's Overall Offense against the opponent's
                           Overall Defense from a made-up model.json, tagged by the gap read as points (+3.1
                           Easy one way, -1.8 Tough the other) by the snapshot's own headTag(); a tag from the
@@ -620,6 +636,73 @@ function cases() {
     const fb = DC.checkMeta(changed);
     add('deepdive-weighted', "a file whose constants were changed (the run game weighted 1, the headline's first slope 12.787) fails the checks",
       fb.length === 2 && fb.some(x => /row weight rb/.test(x)) && fb.some(x => /headline slope/.test(x)), fb.join(' | ') || 'passed');
+  }
+  { // deepdive-elo
+    const A = ddTeam({ qb: 0.4, ol: 0.5, rb: 0.9, rec: 0.4, front: 0.2, db: -0.3, passD: 0.1, runD: 0.2 });
+    const O = ddTeam({ qb: 0.1, ol: 1.0, rb: -0.2, rec: 0.4, front: -0.2, db: -1.2, passD: -0.3, runD: -0.8 });
+    const D = ddFile({ MIN: A, NO: O, LAR: A }, DD_META), GID = `${SEASON}_06_MIN_NO`;
+    /* the six position tables (each club ranked by its elo; MIN's offense and NO's defense set by hand,
+       NO's offense and MIN's defense their mirror), named in units.tables as elo/build.py names them */
+    const TAB = { run_def: ['Run Defense', 'def'], pass_def: ['Pass Defense', 'def'], pass_rush: ['Pass Rush', 'def'],
+      run_off: ['Run Offense', 'off'], pass_off: ['Pass Offense', 'off'], pass_pro: ['Pass Protection', 'off'] };
+    const SET = { pass_def: { NO: 1490, MIN: 1555 }, pass_rush: { NO: 1450, MIN: 1470 }, run_def: { NO: 1620, MIN: 1405 },
+      run_off: { MIN: 1510, NO: 1388, LA: 1510 }, pass_off: { MIN: 1532, NO: 1601, LA: 1532 }, pass_pro: { MIN: 1450, NO: 1522, LA: 1450 } };
+    const M = ddModel(); M.units.tables = {};
+    for (const [k, [label, of]] of Object.entries(TAB)) {
+      const elo = {}; CLUBS.forEach((t, i) => { elo[t] = SET[k][t] != null ? SET[k][t] : 1300 + i * 13; });
+      const order = CLUBS.slice().sort((x, y) => elo[y] - elo[x] || (x < y ? -1 : 1));
+      M.units[k] = Object.fromEntries(CLUBS.map(t => [t, { elo: elo[t], rank: order.indexOf(t) + 1, raw: (elo[t] - 1500) / 400, games: 5, carried: false, start: 1500, line: [], stats: {} }]));
+      M.units.tables[k] = { label, of, pair: null, walk_forward: {} };
+    }
+    const qbP = (name, se, rank) => ({ name, group: 'QB', team: 'MIN', elo: 1550, se, rank });
+    const PL = { groups: { QB: { label: 'Quarterbacks', active: 30 } }, players: { 'q-min': qbP('Made Up Passer', 1580, 4), 'q-no': { ...qbP('Other Passer', 1477, 18), team: 'NO' }, 'w-min': { name: 'A Wideout', group: 'WR', team: 'MIN', se: 1600, rank: 2 } } };
+    const MU = { week: 6, lineups: { MIN: { game_id: GID, week: 6, players: ['w-min', 'q-min'] }, NO: { game_id: GID, week: 6, players: ['q-no'] }, LA: { game_id: `${SEASON}_06_LA_NO`, week: 6, players: ['q-min'] } } };
+    let DD = null, mine = null, back = null, E = null, err = '';
+    try { DD = pageDeepDive(); E = DD.eloSides(M, PL, MU, GID, 'MIN', 'NO'); mine = DD.possession(D, 'MIN', 'NO', E); back = DD.possession(D, 'NO', 'MIN', DD.eloSides(M, PL, MU, GID, 'NO', 'MIN')); } catch (e) { err = e.message; }
+    const W = DC.eloWant(M, PL, MU, GID, 'MIN', 'NO'), WB = DC.eloWant(M, PL, MU, GID, 'NO', 'MIN');
+    /* by hand: the figures the rows must show, offense then defense, and which side is marked */
+    const HANDF = ['1580|1490', '1450|1450', '1510|1620', '1532|1490'], MARK = ['o', '-', 'd', 'o'];
+    const P = mine ? DC.parse(mine.html) : { rows: [] };
+    const figs = P.rows.map(r => r.ranks.join('|')), marks = P.rows.map(r => r.sides[0] && r.sides[0].better ? 'o' : r.sides[1] && r.sides[1].better ? 'd' : '-');
+    add('deepdive-elo', "possession() draws Elo against Elo: the quarterback's own 1580 against Pass Defense 1490, Pass Protection against Pass Rush 1450 each, Run Offense 1510 against Run Defense 1620, Pass Offense 1532 against Pass Defense 1490, the higher marked and a tie neither",
+      !err && figs.join() === HANDF.join() && marks.join() === MARK.join(), err || `${figs.join(', ')}; marks ${marks.join('')}`);
+    const plain = mine && DD.possession(D, 'MIN', 'NO');
+    add('deepdive-elo', "the tags are the Deep Dive's own, unchanged by the Elo (Favorable, Even, Favorable, Favorable)",
+      !!plain && DC.parse(mine.html).tags.join('|') === DC.parse(plain.html).tags.join('|') && DC.parse(mine.html).tags.join('|') === 'Favorable|Even|Favorable|Favorable', mine ? DC.parse(mine.html).tags.join(',') : 'none');
+    const f = err ? [err] : [...DC.checkPossession(mine.html, 'MIN', 'NO', A, O, W), ...DC.checkPossession(back.html, 'NO', 'MIN', O, A, WB)];
+    add('deepdive-elo', 'the checks pass on both possessions, figures and marks worked out on their own', !f.length, f.join(' | ') || 'none');
+    /* the board's LA: model.json and the lineups key the Rams LA, units.json LAR */
+    let fl = ['not drawn'];
+    try { const la = DD.possession(D, 'LA', 'NO', DD.eloSides(M, PL, MU, `${SEASON}_06_LA_NO`, 'LA', 'NO')); fl = DC.checkPossession(la.html, 'LA', 'NO', A, O, DC.eloWant(M, PL, MU, `${SEASON}_06_LA_NO`, 'LA', 'NO'));
+      if (!/<b class="ddelo gs-v[^"]*">1532<\/b>/.test(la.html)) fl.push('no Pass Offense 1532 for LA'); } catch (e) { fl = [e.message]; }
+    add('deepdive-elo', "the board's LA reads model.json's LA and units.json's LAR", !fl.length, fl.join(' | ') || 'LA-NO drawn');
+    /* the fallbacks: an older model.json with no tables (the quarterback's Elo still drawn); a quarterback
+       unranked; a lineup for another game */
+    const OLD = clone(M); delete OLD.units.tables; for (const k of Object.keys(TAB)) delete OLD.units[k];
+    const UNR = clone(PL); UNR.players['q-min'].rank = null;
+    const OTHER = clone(MU); OTHER.lineups.MIN.game_id = `${SEASON}_07_MIN_GB`;
+    const fb = [['an older model.json', OLD, PL, MU, ['1580|16th', '16th|16th', '16th|16th', '16th|16th']], ['an unranked quarterback', M, UNR, MU, ['16th|1490', '1450|1450', '1510|1620', '1532|1490']],
+      ["a lineup for another game", M, PL, OTHER, ['16th|1490', '1450|1450', '1510|1620', '1532|1490']]].map(([what, m, pl, mu, want]) => {
+      try { const r = DD.possession(D, 'MIN', 'NO', DD.eloSides(m, pl, mu, GID, 'MIN', 'NO')), got = DC.parse(r.html).rows.map(x => x.ranks.join('|'));
+        const ff = DC.checkPossession(r.html, 'MIN', 'NO', A, O, DC.eloWant(m, pl, mu, GID, 'MIN', 'NO'));
+        if (got.join() !== want.join()) ff.push(`figures ${got.join(', ')} (by hand ${want.join(', ')})`);
+        return ff.length ? `${what}: ${ff.join('; ')}` : null; } catch (e) { return `${what}: threw ${e.message}`; } }).filter(Boolean);
+    add('deepdive-elo', "an older model.json draws ranks but the quarterback's Elo, and an unranked quarterback or a lineup for another game his row's rank, unmarked; the checks pass on each", !fb.length, fb.join(' | ') || 'all three');
+    /* the broken versions, each of which the checks must fail */
+    const OLDW = DC.eloWant(OLD, PL, MU, GID, 'MIN', 'NO');
+    const bent = mine ? [
+      ['a figure off by one', h => h.replace('>1532</b>', '>1533</b>'), W, /figures/],
+      ["the two sides' figures swapped", h => h.replace('>1510</b>', '>SWAP</b>').replace('>1620</b>', '>1510</b>').replace('>SWAP</b>', '>1620</b>'), W, /figures/],
+      ["the wrong table (Run Offense's 1510 on the receivers' row)", h => h.replace('>1532</b>', '>1510</b>'), W, /figures 1510 vs 1490/],
+      ['an Elo on a row whose file lacks the table', h => h, OLDW, /shows an Elo/],
+      ['a rank where the file has the Elo', h => h.replace('<b class="ddelo gs-v gs-better">1532</b>', '<b class="ddrk">16th</b>'), W, /shows a rank/],
+      ['the mark on the lower side', h => h.replace('<b class="ddelo gs-v gs-better">1532</b>', '<b class="ddelo gs-v">1532</b>').replace(/(data-dd="rec"[\s\S]*?)<b class="ddelo gs-v">1490<\/b>/, '$1<b class="ddelo gs-v gs-better">1490</b>'), W, /marked better/],
+      ['a tie marked', h => h.replace('<b class="ddelo gs-v">1450</b>', '<b class="ddelo gs-v gs-better">1450</b>'), W, /marked better \(want the mark on neither/],
+      ['the mark left off', h => h.replace('<b class="ddelo gs-v gs-better">1580</b>', '<b class="ddelo gs-v">1580</b>'), W, /not marked better/],
+      ['a title without the rank', h => h.replace(/(title="MIN Pass Offense: Elo 1532), [^"]*"/, '$1"'), W, /titled/],
+      ['the checks as they stood (ranks only) on the Elo rows', h => h, null, /shows an Elo/],
+    ].map(([what, bend, w, rx]) => { const b = bend(mine.html); return (b !== mine.html || w !== W) && DC.checkPossession(b, 'MIN', 'NO', A, O, w).some(x => rx.test(x)) ? null : what; }).filter(Boolean) : ['no possession'];
+    add('deepdive-elo', "a figure off by one, the sides swapped, the wrong table, an Elo where the file lacks the table, a rank where it has one, the mark wrong, on a tie or left off, a title without the rank, and the ranks-only checks on Elo rows each fail the checks", !bent.length, bent.length ? `passed: ${bent.join(', ')}` : 'all ten fail');
   }
   { // deepdive-headline
     const M = ddModel(), off = M.units.off, def = M.units.def;

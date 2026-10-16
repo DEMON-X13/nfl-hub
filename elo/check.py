@@ -92,7 +92,16 @@ all pass. What each one would have caught is said beside it.
              dropback Pass Defense (each stat's rating, the table's only where it weighs), a stat no
              position table is made of moves none; a game with no designed run leaves the Run
              Defense it faced at 0 with no value or rank and every number finite; and the pending,
-             bye, line, rank, carry and carry-of-0 cases above hold on them too.
+             bye, line, rank, carry and carry-of-0 cases above hold on them too. Run Offense, Pass
+             Offense and Pass Protection (16 October 2026, the owner's call: the offense's side of
+             the same three facets, for Elo against Elo on the Game snapshot's position matchups)
+             are held the same way on the offense's side of the same stats, each table named with
+             its pair, the other side of its facet (PAIR, the gate's own copy), and a walk-forward
+             of the pair and of itself alone; on the fixtures one more hit or sack lowers Pass
+             Protection, a worse run Run Offense and a worse dropback Pass Offense (the offense's
+             own ratings, the table's only where the stat weighs), a stat none is made of moves
+             none, a game with no designed run leaves the offense's own Run Offense at 0 with no
+             value or rank, and Overall's two never move with them.
   POWER      Team Rankings (`teams` in model.json, THE POWER RATINGS) against games.csv, solved
              again with the gate's own code: the results part of every team the fixed point of
              R_t = sum(w * score) / (sum(w) + LAM) over its finals (score its capped margin, home
@@ -339,8 +348,22 @@ def unit_team_checks():
         up = U[name]['B']['stats'][k]['r'] > base[name]['B']['stats'][k]['r']
         chk(up and U[name]['B']['raw'] >= base[name]['B']['raw'] and (U[name]['B']['raw'] > base[name]['B']['raw']) == bool(U['weights'][name][k]),
             f'TEAMS: a worse {k} for the offense did not raise {name} (its weight {U["weights"][name][k]}%)')
+    # the offense tables, the other side of the same games: one more hit or sack lowers A's Pass
+    # Protection, a worse run its Run Offense, a worse dropback its Pass Offense, each stat's own rating
+    # always and the table only where it weighs; Overall Offense moves only on a stat of its own (a
+    # sack), never on a hit or a run
+    for name, k, more in (('pass_pro', 'hit', _sums(hits=6)), ('pass_pro', 'skr', _sums(sacks=3)),
+                          ('run_off', 'repa', _sums(run_epa=-5.0)), ('run_off', 'rsr', _sums(run_succ=7)),
+                          ('pass_off', 'pepa', _sums(db_epa=-3.0)), ('pass_off', 'psr', _sums(db_succ=13))):
+        U = _rate([('g1', 1, 'A', 'B', 20, 20, more, plain, True, 'ok')])
+        down = U[name]['A']['stats'][k]['r'] < base[name]['A']['stats'][k]['r']
+        chk(down and U[name]['A']['raw'] <= base[name]['A']['raw'] and (U[name]['A']['raw'] < base[name]['A']['raw']) == bool(U['weights'][name][k]),
+            f'TEAMS: a worse {k} for the offense did not lower its {name} (its weight {U["weights"][name][k]}%)')
+        chk(k == 'skr' or all(U[s][t]['raw'] == base[s][t]['raw'] for s in ('off', 'def') for t in 'AB'),
+            f'TEAMS: a worse {k}, which Overall is not made of, moved Overall Offense or Overall Defense')
     less = _rate([('g1', 1, 'A', 'B', 20, 20, _sums(to=2, expl=9, third_c=8), plain, True, 'ok')])
-    chk(all(less[n]['B']['raw'] == base[n]['B']['raw'] for n in ('run_def', 'pass_def', 'pass_rush')),
+    chk(all(less[n]['B']['raw'] == base[n]['B']['raw'] for n in ('run_def', 'pass_def', 'pass_rush'))
+        and all(less[n]['A']['raw'] == base[n]['A']['raw'] for n in ('run_off', 'pass_off', 'pass_pro')),
         'TEAMS: a stat no position table is made of moved one')
     # missing data: a game with no red-zone trip leaves every number finite and the red-zone
     # rating where it was; a final with an offense missing from the play-by-play, or whose
@@ -358,6 +381,9 @@ def unit_team_checks():
     rb = norun['run_def']['B']
     chk(finite and rb['raw'] == 0 and all(rb['stats'][k]['v'] is None and rb['stats'][k]['rank'] is None and rb['stats'][k]['r'] == 0 for k in ('repa', 'rsr')),
         'TEAMS: a game with no designed run broke a number or moved the Run Defense it faced')
+    ro = norun['run_off']['A']
+    chk(ro['raw'] == 0 and ro['games'] == 1 and all(ro['stats'][k]['v'] is None and ro['stats'][k]['rank'] is None and ro['stats'][k]['r'] == 0 for k in ('repa', 'rsr')),
+        'TEAMS: a game with no designed run broke a number or moved the offense\'s own Run Offense')
     two = [('g1', 1, 'A', 'B', 24, 17, good, plain, True, 'ok'), ('g2', 2, 'C', 'D', 20, 13, plain, weak, True, 'ok')]
     for kind in ('half', 'oneside'):
         U0, U = _rate(two), _rate(two + [('g3', 3, 'A', 'C', 31, 3, good, weak, False, kind)])
@@ -458,10 +484,15 @@ TEAM_STAT = {'pts': (('pts', None), ('pts', 'g'), 1), 'sr': (('succ', 'plays'), 
              'hit': (('hits', 'db'), ('hits', 'db'), -1)}
 # the tables the units carry, the gate's own copy (a deliberate change edits both): the side of the
 # ball each rates and the stats it shows, in order. Overall's two show the nine; the position tables
-# (RUN DEFENSE, PASS DEFENSE AND PASS RUSH in the build, 16 October 2026) their own two, each a defense
+# their own two: the defenses' (RUN DEFENSE, PASS DEFENSE AND PASS RUSH in the build, 16 October 2026)
+# and then the offenses' side of the same facets (RUN OFFENSE, PASS OFFENSE AND PASS PROTECTION, the same
+# day), each of a pair on the same two stats (PAIR)
 OVERALL = ['pts', 'sr', 'epa', 'tor', 'skr', 'xr', 'third', 'rz', 'ypp']
 TABLE = {'off': ('off', OVERALL), 'def': ('def', OVERALL), 'run_def': ('def', ['repa', 'rsr']),
-         'pass_def': ('def', ['pepa', 'psr']), 'pass_rush': ('def', ['skr', 'hit'])}
+         'pass_def': ('def', ['pepa', 'psr']), 'pass_rush': ('def', ['skr', 'hit']),
+         'run_off': ('off', ['repa', 'rsr']), 'pass_off': ('off', ['pepa', 'psr']), 'pass_pro': ('off', ['skr', 'hit'])}
+PAIR = {'run_def': 'run_off', 'pass_def': 'pass_off', 'pass_rush': 'pass_pro',
+        'run_off': 'run_def', 'pass_off': 'pass_def', 'pass_pro': 'pass_rush'}
 # what a season's value can be: rates in [0, 1], a game's points and giveaways in reason
 RANGE = {'pts': (0, 70), 'tor': (0, 8), 'epa': (-1.5, 1.5), 'ypp': (0, 15), 'repa': (-1.5, 1.5), 'pepa': (-1.5, 1.5)}
 # half the rounding of the published value (points to a tenth, giveaways and yards to a hundredth, the rest to a thousandth)
@@ -574,11 +605,16 @@ def team_files_checks(M, games, cache):
         return
     stats = U['stats']
     whole = True
-    # the position tables are named with the side they rate (every one a defense) and the test behind them
+    # the position tables are named with the side they rate, the table on the other side of their facet
+    # (its pair, on the same two stats) and the test behind them: the pair's, and the table's alone
     tabs = U.get('tables') or {}
-    chk(sorted(tabs) == sorted(n for n in TABLE if n not in ('off', 'def'))
-        and all(tabs[n].get('of') == TABLE[n][0] and tabs[n].get('label') and (tabs[n].get('walk_forward') or {}).get('rmse') for n in tabs),
-        f'TEAMS: the units\' position tables are not the gate\'s, or one has no label, side or walk-forward: {sorted(tabs)}')
+    chk(list(tabs) == [n for n in TABLE if n not in ('off', 'def')]
+        and all(tabs[n].get('of') == TABLE[n][0] and tabs[n].get('label') and tabs[n].get('pair') == PAIR[n]
+                and all((tabs[n].get('walk_forward') or {}).get(k) for k in ('rmse', 'raw', 'alone', 'alone_raw')) for n in tabs),
+        f'TEAMS: the units\' position tables are not the gate\'s, or one has no label, side, pair or walk-forward: {list(tabs)}')
+    chk(all(n in tabs and (tabs[n].get('walk_forward') or {}).get('rmse') == (tabs[PAIR[n]].get('walk_forward') or {}).get('rmse')
+            and (tabs[n].get('walk_forward') or {}).get('measure') == (tabs[PAIR[n]].get('walk_forward') or {}).get('measure') for n in PAIR if n in tabs and PAIR[n] in tabs),
+        'TEAMS: the two tables of a facet do not carry the same test of the pair')
     chk(sorted(s['side'] for s in stats) == sorted(n for n, (_, ks) in TABLE.items() for _ in ks),
         f'TEAMS: the units\' stats are not each table\'s own: {sorted({s["side"] for s in stats})}')
     for side, (ball, keys) in TABLE.items():

@@ -25,11 +25,18 @@
  *     stats that weigh nothing; a column sorts best first and back, # keeping the overall rank; a
  *     team's window lists every stat, its line, and its coming opponent when the file calls one;
  *     Close and Escape shut it; and a model.json from before the stats still draws the old columns;
- *   - Run Defense, Pass Defense and Pass Rush (16 October 2026, the owner's ask), the file's own
- *     position tables (`units.tables`), are pills after those two, in the file's order and named as it
- *     names them, each held to all of the above on its own stats, its window's coming opponent its
- *     Overall Offense rank, and its text giving its own walk-forward test from the file; a file
- *     without the tables (every build before them) draws exactly the two pills;
+ *   - Run Defense, Pass Defense and Pass Rush, and their offense sides Run Offense, Pass Offense and
+ *     Pass Protection (16 October 2026, the owner's asks), the file's own position tables
+ *     (`units.tables`, each with its side `of` and its `pair`, the other side of its facet on the same
+ *     stats), are pills with those two in two rows that read as offense and defense: "Offense", then
+ *     Overall Offense and the offense tables, and "Defense", then Overall Defense and the defense
+ *     tables, each in the file's order and named as it names them; each table held to all of the
+ *     above on its own stats, its window's coming opponent its pair's rank (Run Defense's opponent in
+ *     Run Offense), and its text giving the pair's walk-forward test and its own alone from the file,
+ *     never that a rating alone was scored where the file has no such test; a file with the defense
+ *     tables and no pair (every build of 16 October 2026 before the offense tables) draws them as it
+ *     did, its opponent's Overall Offense rank said so; a file without the tables (every build before
+ *     them) draws exactly the two pills;
  *   - each club's line starts at its own start from the file; a club with no game yet this season
  *     (a copy of the file with one made so) is ranked and shown on its carried rating, marked
  *     "carried from" the season the file names, on the curve, with its window saying so, and the
@@ -249,12 +256,24 @@ function page(MU, opts) {
     const { w, d } = page(MU0); await wait(60);
     const row = d.querySelector('#peBody .pe-pos');
     /* the tables: Overall's two, then each of the file's position tables (Run Defense, Pass Defense
-       and Pass Rush), named as the file names them */
+       and Pass Rush, Run Offense, Pass Offense and Pass Protection), named as the file names them, each
+       a pair with the table on the other side of its facet, on the same stats */
     const POS = Object.keys(U0.tables || {}), TABS = ['off', 'def', ...POS];
     const label = k => k === 'off' ? 'Overall Offense' : k === 'def' ? 'Overall Defense' : U0.tables[k].label;
-    chk(POS.length === 3 && POS.every(k => U0[k] && U0.tables[k].of === 'def'), `the file does not carry the three position tables, each a defense's: ${POS.join()}`);
-    chk(!!row && [...row.querySelectorAll('button[data-unit]')].map(txt).join('|') === TABS.map(label).join('|'),
-      'the position row does not carry the Overall Offense and Overall Defense pills and the file\'s position tables: ' + (row ? [...row.querySelectorAll('button[data-unit]')].map(txt).join('|') : 'no row'));
+    const sideOf = k => k === 'off' || k === 'def' ? k : U0.tables[k].of;
+    const statsOf = k => U0.stats.filter(s => s.side === k).map(s => s.key).sort().join();
+    chk(POS.length === 6 && POS.filter(k => sideOf(k) === 'def').length === 3 && POS.filter(k => sideOf(k) === 'off').length === 3
+      && POS.every(k => U0[k] && U0.tables[U0.tables[k].pair] && U0.tables[U0.tables[k].pair].pair === k && sideOf(U0.tables[k].pair) !== sideOf(k) && statsOf(k) === statsOf(U0.tables[k].pair)),
+      `the file does not carry the six position tables, three a side, each paired with the other side of its facet on the same stats: ${POS.map(k => k + '/' + (U0.tables[k] || {}).pair).join()}`);
+    /* the pills read as offense and defense: a row headed Offense with Overall Offense and the offense
+       tables, then one headed Defense with Overall Defense and the defense tables */
+    const ROWS = ['off', 'def'].map(sd => [sd, ...POS.filter(k => sideOf(k) === sd)]);
+    const units = row && row.querySelector('.pe-units'), seq = units ? [...units.children].map(e => e.matches('button[data-unit]') ? label(e.dataset.unit) : '[' + txt(e) + ']') : [];
+    chk(!!units && seq.join('|') === ['[Offense]', ...ROWS[0].map(label), '[Defense]', ...ROWS[1].map(label)].join('|')
+      && [...units.querySelectorAll('.pe-ulab')].every(e => e.getAttribute('aria-hidden') === 'true'),
+      'the position row does not carry the team pills as an Offense row (Overall Offense and the offense tables) and a Defense row (Overall Defense and the defense tables): ' + seq.join('|'));
+    chk(!!row && [...row.querySelectorAll('button[data-unit]')].length === TABS.length && [...row.querySelectorAll('button[data-unit]')].every(b => b.getAttribute('role') === 'tab'),
+      'the position row does not carry every team table as a tab');
     for (const side of TABS) {
       const card = await open(d, side), T = U0[side], teams = Object.keys(T), stats = U0.stats.filter(s => s.side === side);
       const name = label(side);
@@ -295,18 +314,29 @@ function page(MU, opts) {
       /* a position table's own test, from the file: the measure it is for, its miss beside the raw numbers' */
       if (POS.includes(side)) { const tw = U0.tables[side].walk_forward || {}, wt = txt(card.querySelector('#peTeamsWf'));
         const f = x => (+x).toFixed(x < 0.1 ? 4 : 3);
-        /* the test was a forecast from this rating with the offense's own ratings on the same stats, the
-           raw baseline both teams' raw numbers (def_units_fit.py): the note says so, never that the
-           defense's rating alone was scored */
-        chk(!!tw.rmse && wt.includes(`a forecast of the ${tw.measure} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats, missed by ${f(tw.rmse)}`)
+        /* the pair's test was a forecast from this rating with the other side's own ratings on the same
+           stats (its pair, named), the raw baseline both teams' raw numbers (def_units_fit.py); and the
+           table's own, from this rating alone against its side's raw numbers alone: the note says each
+           so, never that a rating alone was scored beyond the file's `alone` */
+        const dfnT = sideOf(side) === 'def', pl = U0.tables[U0.tables[side].pair].label;
+        const pairSaid = dfnT ? `a forecast of the ${tw.measure} an offense had in its next game against the team, from this rating with the offense's own ratings on the same stats (its ${pl}), missed by ${f(tw.rmse)}`
+          : `a forecast of the ${tw.measure} the team had in its next game, from this rating with the defense's own ratings on the same stats (its ${pl}), missed by ${f(tw.rmse)}`;
+        const level = f(tw.alone) === f(tw.alone_raw);
+        chk(!!tw.rmse && wt.includes(pairSaid)
           && wt.includes(`same forecast from both teams' raw numbers`) && !/this rating missed/.test(wt)
-          && wt.includes(`missed by ${f(tw.raw)}`) && wt.includes(`${tw.fit}`) && wt.includes(`${tw.test}`),
-          `${name}'s text does not give its walk-forward test from the file: ${wt.slice(0, 260)}`);
+          && wt.includes(`missed by ${f(tw.raw)}`) && wt.includes(`${tw.fit}`) && wt.includes(`${tw.test}`)
+          && wt.includes(`, in ${tw.seasons_better} of ${tw.seasons} seasons`)
+          && wt.includes(`On its own, from this rating and nothing of the ${dfnT ? 'offense' : 'defense'} it met, the forecast missed by ${f(tw.alone)}, and from the team's own raw numbers so far alone by ${f(tw.alone_raw)}`)
+          && wt.includes(level ? `level with them at this precision (ahead in ${tw.alone_better} of ${tw.seasons} seasons).` : `better than their raw numbers do, in ${tw.alone_better} of ${tw.seasons} seasons.`)
+          && !/used only for that test/.test(wt),
+          `${name}'s text does not give its walk-forward tests from the file: ${wt.slice(0, 420)}`);
         chk(!/points and EPA|Overall/.test(txt(card.querySelector('#peTeamsZero'))), `${name}'s note borrows Overall's test`);
         /* which way is better, in the table's own words: "less allowed" only with a stat the defense
            allows, "more made" only with one it makes (Pass Rush's both), never Overall's "taken" */
         const lo = stats.some(s => s.better === 'low'), hi = stats.some(s => s.better === 'high');
-        const way = lo && hi ? 'less allowed, more made by the defense' : hi ? 'more made by the defense' : 'less allowed';
+        const way = dfnT ? (lo && hi ? 'less allowed, more made by the defense' : hi ? 'more made by the defense' : 'less allowed')
+          : (lo && hi ? 'more gained, fewer taken' : hi ? 'more gained' : 'fewer taken');
+        chk(why.includes(`what was expected against the ${dfnT ? 'offense' : 'defense'} it faced`), `${name}'s text has its teams facing the wrong side of the ball: ${why.slice(0, 400)}`);
         chk(why.includes(`a standard deviation better (${way})`) && !/more taken/.test(why), `${name}'s text does not say which way is better in its own stats' words (${way}): ${why.slice(-330)}`); }
       /* the old measure's walk-forward on the carried file is the old measure carried the same way,
          which the site never ran: the text says so */
@@ -333,17 +363,18 @@ function page(MU, opts) {
       /* the value column's heading: a position table's in its stats' own words (Allowed, Made or Value),
          so Pass Rush's own sacks are never "Allowed"; Overall's as it always was */
       { const head = txt(view.querySelectorAll('table.pe-t thead th')[1]);
-        const want = side === 'off' ? 'Value' : !POS.includes(side) || stats.every(s => s.better === 'low') ? 'Allowed' : stats.every(s => s.better === 'high') ? 'Made' : 'Value';
+        const want = sideOf(side) === 'off' ? 'Value' : !POS.includes(side) || stats.every(s => s.better === 'low') ? 'Allowed' : stats.every(s => s.better === 'high') ? 'Made' : 'Value';
         chk(head === want, `${t}'s window heads its values "${head}" in ${name}, not "${want}"`); }
       chk(view.querySelector('.pe-tline svg') && view.querySelectorAll('.pe-tline circle').length === T[t].line.length + 1, `${t}'s window has no line game by game`);
       { const want = T[t].start != null ? T[t].start : (U0.start || {})[side];
         chk(txt(view.querySelector('.pe-tline circle title')) === `Season start: ${want}`, `${t}'s line does not start at its own start from the file (${want}): ${txt(view.querySelector('.pe-tline circle title'))}`); }
       const N = M.next || {}, g = +N.season === +U0.season ? (N.games || []).find(x => { const p = String(x.game_id).split('_'); return p[2] === t || p[3] === t; }) : null;
-      if (g) { const p = g.game_id.split('_'), opp = p[3] === t ? p[2] : p[3], other = U0[side === 'off' ? 'def' : 'off'][opp];
-        chk(!!d.getElementById('peTmNext') && txt(d.getElementById('peTmNext')).includes(opp) && txt(d.getElementById('peTmNext')).includes(nth(other.rank)),
-          `${t}'s window does not give its coming opponent ${opp} and that side's rank`);
-        chk(!POS.includes(side) || txt(d.getElementById('peTmNext')).includes(`no offense table to set against ${name}`),
-          `${t}'s window in ${name} sets its opponent's Overall Offense against it without saying so`); }
+      /* the coming opponent on the other side: the other Overall, or a position table's pair */
+      if (g) { const p = g.game_id.split('_'), opp = p[3] === t ? p[2] : p[3], ok = POS.includes(side) ? U0.tables[side].pair : side === 'off' ? 'def' : 'off', other = U0[ok][opp];
+        const nt = txt(d.getElementById('peTmNext'));
+        chk(!!d.getElementById('peTmNext') && nt.includes(opp) && nt.includes(`${nth(other.rank)} of 32 in ${label(ok)} (${other.elo},`),
+          `${t}'s window does not give its coming opponent ${opp} and its rank in ${label(ok)}: ${nt}`);
+        chk(!/no (offense|defense) table/.test(nt), `${t}'s window in ${name} says the site has no table to set against it: ${nt}`); }
       else chk(!d.getElementById('peTmNext'), `${t}'s window names an opponent the file does not call`);
       d.getElementById('peTmClose').click(); await wait(10);
       chk(m.hidden, 'Close does not shut a team\'s window');
@@ -419,6 +450,28 @@ function page(MU, opts) {
       const pc = POS.length && await open(d4, POS[0]), pw = txt(pc && pc.querySelector('#peTeamsWhy'));
       chk(!POS.length || (!!pc && /the way the player rankings are: everyone started at 1500/.test(pw) && !pc.querySelector('.pe-carry')),
         'a position table on a file without the carry does not draw as one: ' + pw.slice(0, 160)); }
+    /* a file with the defense tables and no pair or test alone (every build of 16 October 2026 before
+       the offense tables): the defense tables draw as they did, their note saying the offense's side
+       was used only for the test and never that a rating alone was scored, a window's opponent given
+       its Overall Offense rank, said so; the Offense row Overall Offense alone */
+    { const M8 = JSON.parse(JSON.stringify(M)), offT = POS.filter(k => sideOf(k) === 'off'), defT = POS.filter(k => sideOf(k) === 'def');
+      for (const k of offT) { delete M8.units[k]; delete M8.units.weights[k]; delete M8.units.tables[k]; }
+      M8.units.stats = M8.units.stats.filter(s => !offT.includes(s.side));
+      for (const k of defT) { const tw = M8.units.tables[k]; delete tw.pair; for (const a of ['alone', 'alone_raw', 'alone_se', 'alone_better']) delete tw.walk_forward[a]; }
+      const { d: d8 } = page(MU0, { M: M8 }); await wait(60);
+      const u8 = d8.querySelector('#peBody .pe-pos .pe-units'), s8 = u8 ? [...u8.children].map(e => e.matches('button[data-unit]') ? e.dataset.unit : '[' + txt(e) + ']').join('|') : '';
+      chk(s8 === ['[Offense]', 'off', '[Defense]', 'def', ...defT].join('|'), 'a file with the defense tables alone does not draw Overall Offense alone in the Offense row and the defense tables in the Defense row: ' + s8);
+      const c8 = await open(d8, defT[0]), w8 = txt(c8 && c8.querySelector('#peTeamsWf')), tw = M8.units.tables[defT[0]].walk_forward;
+      chk(!!c8 && w8.includes(`from this rating with the offense's own ratings on the same stats, missed by ${(+tw.rmse).toFixed(tw.rmse < 0.1 ? 4 : 3)}`)
+        && /used only for that test and are not shown/.test(w8) && !/On its own/.test(w8) && !/this rating missed/.test(w8),
+        `a file with the defense tables and no pair does not give their test as it did: ${w8.slice(0, 400)}`);
+      const N = M.next || {}, g8 = +N.season === +U0.season && (N.games || [])[0], r8 = c8 && c8.querySelector('tbody tr.pe-tmrow');
+      if (g8 && r8) { const t8 = String(g8.game_id).split('_')[2];
+        const tr8 = [...c8.querySelectorAll('tbody tr.pe-tmrow')].find(x => x.dataset.team === t8);
+        if (tr8) { tr8.click(); await wait(20);
+          const nt = txt(d8.getElementById('peTmNext'));
+          chk(nt.includes('in Overall Offense') && nt.includes(`no offense table to set against ${label(defT[0])}`), `a file with no pair does not give the opponent's Overall Offense rank, said so: ${nt}`);
+          d8.getElementById('peTmClose').click(); await wait(10); } } }
     /* a file without the position tables (every build before 16 October 2026): exactly the two pills,
        each table as before */
     { const M7 = JSON.parse(JSON.stringify(M));

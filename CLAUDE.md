@@ -136,11 +136,17 @@ run defense, the receivers against the coverage, the pass rush and the coverage 
 line's and the receivers' rows), each tagged on its edge weighted by what that matchup alone has predicted
 (2012-2017: quarterback 1, receivers and coverage 0.8925, line and pass rush 0.5956, run game 0.3792) at 0.5 and
 1.5; the rows overlap and are never added up. Each row is compact and centred, its unit, the two sides' clubs and
-ranks ("SEA 13th · DEN 3rd", the offense's then the defense's, each side titled with what it is rated as, the
-quarterback's and the run game's defense side the pass or run defense's rank), the defense's position it faces
+Elo ("SEA 1532 · DEN 1488", the offense's then the defense's; the owner's call of 16 October 2026, "please add in
+Offense vs defense their ELOs instead of the rankings": the quarterback's own season Elo, the Starters card's QB in
+`matchups.json`'s lineup for that game, against Pass Defense, Pass Protection against Pass Rush, Run Offense against
+Run Defense, Pass Offense against Pass Defense, from `elo/data/model.json`'s units and players.json as the page's one
+read has them, `eloSides`; the higher marked `gs-better`, each side titled with its Elo, rank and tier; a side with
+no Elo, a model.json without the tables or a quarterback unranked or with no lineup for the game, its rank from
+`units.json` as before), the defense's position it faces
 (Pass defense, Pass rush, Run defense, Coverage: the owner's call of 16 October 2026, "for offense vs defense section,
 please put opposing positions for the defense") and its tag, those two together at the row's end, the tag's title giving the
-edge; no names, no one out, no quarterback next and no numbers (the owner's call, 14 October 2026: limited, like the
+edge; the tag stays the Deep Dive's own, never worked from the Elo (the two can point opposite ways); no names, no
+one out, no quarterback next and no other numbers (the owner's call, 14 October 2026: limited, like the
 head; who plays is the Starters card's, the numbers the Stat breakdown's; `units.json` still carries them, and the
 lineup checks still hold them). They are drawn only for
 the units' own week (`applies`); another week's game says why.
@@ -153,15 +159,17 @@ game count in `results.js`; the tag constants their values and every club's Over
 (`checkOverall`: exact on the same build, the board's order a run behind); every game of the units' week (from the
 schedule the lineups were checked on, else `betting/state.json`'s) drawn both ways by `possession()`, four rows in
 order with every tag the weighted edge worked out on its own, each row's two sides the offense's then the
-defense's, each headed by its own club, and the ranks and edges the file's (`checkPossession`), what the rows rest on
+defense's, each headed by its own club, each figure the Elo the Elo files have for it (`eloWant`, the checks' own
+reading; the higher marked) and the rank only where there is none, and the edges the file's (`checkPossession`; the
+smoke prints how often the higher Elo and the tag point opposite ways, never a check), what the rows rest on
 (`basis()`, the snapshot's "Position matchups" label's title) giving each side its own count of this season's
 games, and each overall line's tag, `headTag()` on model.json's units, the rule's (`checkHead`); the
 lineups for the schedule's week (and, in the job, checked on that run's own download); `news/index.html`, run in
 `vm`, sending a visitor to `../nflbets/`; and the fixed cases in `tools/cases.js` (each with the broken version a
 review caught, which the checks must fail; the Deep Dive's run on `deepdive.js` itself). On a checkout whose
 `units2026.js` is older than the report it fails until `node tools/context.js` runs. A change to a rule comes
-with a case there. Each drawn row is its unit, the two clubs and ranks, the defense's position and its tag and nothing else
-(`checkPossession`: no name, no one out, no number; blocking, a code property). The lineup rules (all but the week
+with a case there. Each drawn row is its unit, the two clubs and figures, the defense's position and its tag and nothing else
+(`checkPossession`: no name, no one out, no other number; blocking, a code property). The lineup rules (all but the week
 they are for), a quarterback in doubt with the next one named in the file, nobody both listed and out, and every
 problem in a notes file are warnings (`warn` in `smoke.js`): who the Deep Dive lists and what a note says, never the scores, records, stat
 bars, ranks or tags. They print WARN and never fail the smoke, so a lineup case no rule has seen publishes the
@@ -751,7 +759,7 @@ python3 elo/check.py             # the gate: the files against the roster, injur
 node elo/check_tab.js            # the ELO Ratings tab on the new files (jsdom from props/build); "0 failures"
 node nflbets/build/smoke.js      # the tab reads the files; must end "0 failures"
 python3 elo/tools/units_fit.py   # only for a deliberate change to Overall Offense/Defense: refits its constants on 2012-2017 (the carry's share too); "the build carries these constants"
-python3 elo/tools/def_units_fit.py   # the same for Run Defense, Pass Defense and Pass Rush (their stats' constants and UNIT_TABLES); "the build carries these constants"
+python3 elo/tools/def_units_fit.py   # the same for the six position tables, Run, Pass and Pass Rush/Protection a side (their stats' constants and UNIT_TABLES); "the build carries these constants"
 ```
 
 The build refuses to write anything when a file the season under way needs (its player stats, depth
@@ -840,8 +848,11 @@ weeks 2 on: 9.424 against 9.501 with nothing carried, weeks 2-4 9.325 against 9.
 Dive had 9.403 (`elo/tools/deepdive_vs_units.py`; week 1 9.492, the Deep Dive still better there at 9.293). So every
 club is rated, ranked and on the curve from the season's first day: one yet to play is shown on its carried rating and
 marked "carried from" last season (`carried`, its `start` its line's first point) on the tab, in its window and in the
-Game snapshot, never hidden; `elo/check.py` replays last season with its own copy of the share. After them, three more pills
-(the owner's ask, 16 October 2026: "for ELO ratings, please include a section for run defense, pass defense, and pass rush"),
+Game snapshot, never hidden; `elo/check.py` replays last season with its own copy of the share. With them, six more pills
+(the owner's asks of 16 October 2026: "for ELO ratings, please include a section for run defense, pass defense, and pass rush",
+and then the offense's side of each, for Elo against Elo on the Game snapshot's position matchups), laid out as two rows under
+the positions, Offense (Overall Offense, Run Offense, Pass Offense, Pass Protection) over Defense (Overall Defense, Run Defense,
+Pass Defense, Pass Rush), each facet over its other side, two by two under each heading on a phone. First the defenses,
 Run Defense, Pass Defense and Pass Rush (`units.run_def`, `pass_def`, `pass_rush`, named in `units.tables`; RUN DEFENSE, PASS
 DEFENSE AND PASS RUSH in the build), each a table of the 32 defenses made exactly as Overall's are (the same Elo, K, home
 field and carry, pending finals, curve, ranks and window) on two stats of their own from the play-by-play: Run Defense 55%
@@ -853,11 +864,23 @@ next game's measure (the offense's EPA a run, EPA a dropback or sack rate in it)
 offense's own ratings on the same stats (never published): 0.2188 EPA a run against 0.2216 for the same forecast from both
 clubs' raw numbers so far that season (0.2249 the league average), 0.2968 EPA a dropback against 0.3012 (0.3113), 0.0455 sack rate
 against 0.0458 (0.0470), each better than the raw numbers in all 8 seasons (`UNIT_TABLES`' `wf`, the tab's note under
-each, which says what was forecast from what). The tables say which way is better in their stats' own words (Pass Rush's
-"more made by the defense", never "allowed" or Overall's "taken"), a team's window heads its values Allowed, Made or Value
-by the same rule (Overall Defense keeps Allowed), and its Next line, which gives the opponent's Overall Offense, says there
-is no offense table to set against the position table. Overall's two are byte for byte as before (a stat's Elo is its own). They feed no call; `elo/check.py` replays them
-with its own reading of the play-by-play (`TABLE`, its copy of which stats each shows) and on fixtures. The table scrolls sideways inside its card at
+each, which says what was forecast from what). Then the offenses, Run Offense, Pass Offense and Pass Protection
+(`units.run_off`, `pass_off`, `pass_pro`; RUN OFFENSE, PASS OFFENSE AND PASS PROTECTION in the build), the other side of the
+same facets on the same stats: Run Offense 25% EPA a run and 75% run success rate, Pass Offense 70% EPA a dropback and 30%
+dropback success rate, Pass Protection 95% sack rate and 5% QB-hit rate (fewer taken is better). Their weights are the
+offense's shares of the same fit on 2012-2017 (the defense tables' `opp` until then; no new fit), each table named with its
+`pair` in `units.tables`, and both of a pair carry the pair's test above. Each table was also tested once alone (`alone` in
+its `wf`: the measure from that one table, nothing of the other side, against that side's raw numbers alone, 2018-2025 weeks
+2 on): Run Offense 0.2207 against 0.2227 (all 8 seasons), Pass Offense 0.3009 against 0.3033 (all 8), Pass Protection 0.0457
+against 0.0459 (7 of 8); Run Defense 0.2227 against 0.2237 (7), Pass Defense 0.3080 against 0.3094 (6), Pass Rush 0.0469
+against 0.0469 (5: level at that precision, which the note says). The tables say which way is better in their stats' own
+words (Pass Rush's "more made by the defense", an offense's "more gained" or Pass Protection's "fewer taken", never Overall's
+"taken"), a team's window heads its values Allowed, Made or Value by the same rule (Overall Defense keeps Allowed, an offense
+table Value), and its Next line gives the opponent's rank in the table's pair (Run Defense's opponent in Run Offense); on a
+file without the pair it gives the opponent's Overall rank and says there is no table to set against it. Overall's two, and
+the defense tables' ratings, are byte for byte as before (a stat's Elo is its own). They feed no call; `elo/check.py` replays
+them with its own reading of the play-by-play (`TABLE` and `PAIR`, its copies of which stats each shows and which tables pair)
+and on fixtures. The table scrolls sideways inside its card at
 every width, the team column held, the columns sort, and a click on a team opens
 its window (its rating game by game, every stat ranked raw and with opponents counted, its coming opponent). The page
 reads the weights and the stats from the file and still draws an older file's three columns. A final the
@@ -1252,8 +1275,8 @@ possession under the other, laid out like the head, centred and limited (the own
 title ("Seahawks Possession", the nickname from `TEAM_NAMES`), the Deep Dive's headline tag and its points centred
 under it, the two overall ratings in two boxes of one size and shape (`.gs-ubox`, either side of
 "vs", the better rank's tinted, with no separate edge chip), then the Deep Dive's four position matchups under
-"Position matchups" (below), a compact centred row each (unit, the two clubs and ranks, the defense's position, the
-tag; up to 760px the two positions on a line of their own, "Quarterback vs Pass defense", over the rest), and no stats fold (the stats are the Stat breakdown's); what the ratings
+"Position matchups" (below), a compact centred row each (unit, the two clubs and Elo, the higher marked, the
+defense's position, the tag; up to 760px the two positions on a line of their own, "Quarterback vs Pass defense", over the rest), and no stats fold (the stats are the Stat breakdown's); what the ratings
 rest on is the boxes' title, what the matchups rest on the label's;
 Starters puts the ranked players out first, then Offense, Defense and Kicker tabs (the choice kept
 while the page is open) with the two teams' header under them, directly over the table (the owner's call, 14
@@ -1336,8 +1359,9 @@ news publish must never turn it red): the written preview escaped, its news and 
 marks bold and nothing else markup (a marked "<b>x</b>" shown as its text, an unpaired "**" as typed), the automatic
 line in the head's middle with its records and no news, none on a played game with no note, a 404 and a
 notes file that is not JSON each drawing the automatic line, the Deep Dive's rows
-`possession()`'s own html set in whole, each its unit, two clubs and ranks and tag alone, no name from the units
-file anywhere in the window, and the headline tag
+`possession()`'s own html set in whole, each its unit, the two clubs and their Elo (the higher marked `gs-better`; a
+rank only where the Elo files have none, as on its planted copies without the position tables or with an unranked
+quarterback), the defense's position and its tag alone, no name from the units file anywhere in the window, and the headline tag
 `headTag()`'s, the not-this-week line, the playoff line on a made-up wild-card game, a Rams game read from
 the files' LAR entries, a units file lacking a club or not JSON, a stat file of another season, each part's
 still-loading and did-not-load wording, a started game's written-before-kickoff label, the basis's game counts
