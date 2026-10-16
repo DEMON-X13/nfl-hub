@@ -19,8 +19,8 @@
  * no owner and no shared store, every request a page makes is recorded, and one to the retired
  * store or its sign-in services, or anything but a read, fails the smoke. A browser that still
  * carries what the retired layers left shows exactly the files and loses none of its own data.
- * The news job's files the Game snapshot reads (news/data/units.json, stats.json, the week's notes)
- * are never the real ones here: every run answers them with a 404 unless it is handed stand-ins of
+ * The news job's files the Game snapshot reads (news/data/units.json and the week's notes; stats.json
+ * no more since the Stat breakdown went, 16 October 2026) are never the real ones here: every run answers them with a 404 unless it is handed stand-ins of
  * the smoke's own, since the elo job runs this smoke every morning and a news job publish must never
  * turn it red (the real files are news/tools/smoke.js's to hold, in the news job).
  * jsdom and PapaParse are borrowed from props/build, so this needs no install of its own.
@@ -458,6 +458,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         const bad = [];
         for (const el of box.querySelectorAll('.dtag')) { const bg = val(el, 'background-color'), r = ratio(bg, val(el, 'color'));
           if (!(r >= 4.5)) bad.push(`the ${el.className} tag reads ${r.toFixed(2)}:1 (${bg} under ${val(el, 'color')})`); }
+        /* the Even tag reads as a chip (the owner's call, 16 October 2026: "make 'even' tags more
+           distinguishable, looks like its not a button or color blends in too much"): its edge, the ring of
+           its inset shadow, at 3:1 or more on both card colours, as a control's boundary must be, and its
+           shape the other tags' (no border or padding of its own: the ring is drawn inside). The chip it
+           replaced, #3A4155 with no ring on the #363D52 card, is held to fail the same rule */
+        { const ev = box.querySelector('.dtag.even'), fv = box.querySelector('.dtag.fav'), card = ['--panel', '--panel-2'].map(k => String(pw.getComputedStyle(pd.documentElement).getPropertyValue(k) || '').trim());
+          const ringOf = el => { const m = String(pw.getComputedStyle(el).getPropertyValue('box-shadow') || '').match(/inset\s+0(?:px)?\s+0(?:px)?\s+0(?:px)?\s+[\d.]+px\s+(#[0-9a-f]{3,6}|rgba?\([^)]*\))|(#[0-9a-f]{3,6}|rgba?\([^)]*\))\s+0(?:px)?\s+0(?:px)?\s+0(?:px)?\s+[\d.]+px\s+inset/i); return m ? m[1] || m[2] : null; };
+          const edge = (ring, bg) => Math.min(...card.map(c => Math.max(ring ? ratio(c, ring) : 0, ratio(c, bg))));
+          const ring = ringOf(ev), e = edge(ring, val(ev, 'background-color')), e0 = edge(null, '#3A4155');
+          if (!(e >= 3)) bad.push(`the Even tag's edge reads ${e.toFixed(2)}:1 on the card (ring ${ring || 'none'}, tint ${val(ev, 'background-color')}): it blends into the card`);
+          if (!(e0 < 3)) bad.push(`the smoke's own rule passes the old Even chip (${e0.toFixed(2)}:1)`);
+          for (const k of ['padding-top', 'padding-left', 'border-top-width', 'border-radius', 'font-size', 'font-weight']) if (val(ev, k) !== val(fv, k)) bad.push(`the Even tag's ${k} is ${val(ev, k)}, the others' ${val(fv, k)}: not their shape`); }
         const pv = box.querySelector('.gs-prev'), pbg = val(pv, 'background-color');
         for (const el of [box.querySelector('.gs-pv'), box.querySelector('.gs-pv .gs-lab'), box.querySelector('.gs-pv b.gs-pn'), box.querySelector('.gs-pauto')]) { const r = ratio(pbg, val(el, 'color'));
           if (!(r >= 4.5)) bad.push(`the preview's ${el.className || el.tagName} reads ${r.toFixed(2)}:1 (${pbg} under ${val(el, 'color')})`); }
@@ -1451,12 +1463,12 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   chk(!d.getElementById('tab-tracker') && !d.querySelector('#tabs button[data-tab="tracker"], iframe.nt-frame, #ntTop, #ntNote'), 'the Season Tracker tab is still in the page');
   chk(d.querySelectorAll('iframe').length === 3 && d.querySelectorAll('iframe.pk-frame').length === 3, 'a frame in the page is not one of the three betting tabs');
   { const baked = HTML.match(/const (UNITS26|STATS26|WEEKS|RANKS26|PLAYERS26|RESULTS)\b|\b(UNITS26_META|STATS26_THROUGH|UNITS26_LINEUPS)\s*=|<script[^>]+src=[^>]*news\//), refs = [...new Set(HTML.match(/(['"`])\.\.\/news\/[^'"`]*\1/g) || [])].map(x => x.slice(1, -1)).sort();
-    chk(!baked && refs.join() === ['../news/data/notes/${season}-w${week}.json', '../news/data/stats.json', '../news/data/units.json'].join(),
-      'the page bakes in the news job\'s data or reads a news file other than units.json, stats.json and the week\'s notes: ' + (baked ? baked[0] : refs.join(', '))); }
+    chk(!baked && refs.join() === ['../news/data/notes/${season}-w${week}.json', '../news/data/units.json'].join(),
+      'the page bakes in the news job\'s data or reads a news file other than units.json and the week\'s notes (stats.json went with the Stat breakdown, 16 October 2026): ' + (baked ? baked[0] : refs.join(', '))); }
   { const nc = calls.filter(c => /\/news\/data\//.test(c.url)), n = f => nc.filter(c => c.url.replace(/\?.*$/, '').endsWith(f)).length;
-    chk(nc.length > 0 && nc.every(c => c.method === 'GET' && c.cache === 'no-store') && n('news/data/units.json') === 1 && n('news/data/stats.json') === 1
+    chk(nc.length > 0 && nc.every(c => c.method === 'GET' && c.cache === 'no-store') && n('news/data/units.json') === 1 && n('news/data/stats.json') === 0
       && new Set(nc.map(c => c.url)).size === nc.length,
-      'the Game snapshot does not read the news job\'s files once each, no-store, as the page loads: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
+      'the Game snapshot does not read the news job\'s files once each, no-store, as the page loads, or still reads stats.json: ' + nc.map(c => `${c.method} ${c.url} ${c.cache}`).join(' | ')); }
 
   /* the tabs keep their addresses: #parlay is the Parlay Builder, #xparlays X Parlays, #bets the X Bet Log */
   for (const [hash, id, label] of [['#parlay', 'tab-parlay', 'Parlay Builder'], ['#xparlays', 'tab-xparlays', 'X Parlays'], ['#bets', 'tab-bets', 'X Bet Log']]) {
@@ -3018,7 +3030,8 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
    spread, total and moneylines; Offense vs defense has no note under it, what its ratings rest on
    being the duel boxes' title, its two boxes of a meeting one class and one shape (the better rank's
    tinted, no edge chip; the rules give them one size); the cards run Model Picks, Team strength,
-   Stat breakdown, Offense vs defense, Mismatches, Starters; and there is no Sources card, no
+   Offense vs defense, Mismatches, Starters (the Stat breakdown gone, the owner's call of 16 October
+   2026); and there is no Sources card, no
    publish times and no links away from the window. And the owner's trim of the same day: the
    first card is titled Model Picks; it, Team strength and Offense vs defense carry no summary in
    their title and no note under them (Team strength's star note alone, where a rating predates a
@@ -3032,8 +3045,9 @@ async function snapshotChecks() {
   let st = STATE;
   const eloP = JSON.parse(ELO_P), eloM = JSON.parse(ELO_M), eloMu = JSON.parse(ELO_MU);
   /* the verdict, then a folding card each */
-  /* the Stat breakdown before Offense vs defense, and no Sources card (the owner's calls, 14 October 2026) */
-  const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsStats', 'gsUnits', 'gsMism', 'gsPos'], SNAP_CARDS = SNAP_SECS.slice(1);
+  /* no Sources card (the owner's call, 14 October 2026) and no Stat breakdown (the owner's call, 16 October
+     2026: "get rid of stat breakdown section") */
+  const SNAP_SECS = ['gsMatch', 'gsCalls', 'gsTeams', 'gsUnits', 'gsMism', 'gsPos'], SNAP_CARDS = SNAP_SECS.slice(1);
   /* Every call's rows, in order: Vegas the baseline, then the three models on the site (the Challenger
      Model and the Broly Model came off it in October 2026, the owner's call) */
   const SNAP_MODELS = ['vegas', 'alpha', 'joker', 'elo'];
@@ -3282,8 +3296,7 @@ async function snapshotChecks() {
         for (const [o, d] of [[a, h], [h, a]])
           if (U.off[o] && U.def[d]) { const ro = U.off[o].rank, rd = U.def[d].rank, best = ro === rd ? null : ro < rd ? 'off' : 'def';
             for (const [s, t] of [['off', o], ['def', d]]) if (mark(q(`[data-gs-unit="${s}:${t}"]`)) !== (best === s)) bad.push(`${s}:${t} overall is${best === s ? ' not' : ''} marked`); } }
-      /* the stats behind the ratings are the Stat breakdown's now (the owner's call, 14 October 2026): no
-         stats table and no fold for one under the possessions */
+      /* no stats table and no fold for one under the possessions (the owner's call, 14 October 2026) */
       if (q('#gsUnits [data-gs-stat]') || q('#gsUnits [data-gs-sub]') || q('#gsUnits .gs-more') || q('#gsUnits table')) bad.push('Offense vs defense still draws the stats behind the ratings, or a fold for them');
       chk(bad.length === 0, `snapshot (${label}): an edge mark of Offense vs defense or Team strength is not the files', or a stat is still drawn under the units: ${bad.slice(0, 5).join('; ')}`); }
 
@@ -3651,15 +3664,14 @@ async function snapshotChecks() {
         else if (!keep.isConnected) bad.push('a toggle drew the window again');
         R.d.getElementById('gsClose').click(); await wait(20);
         chk(bad.length === 0 && R.d.activeElement === o.btn, `snapshot: the verdict's answers or the Starters tabs do not work: ${bad.join('; ')}`); }
-      /* Open all opens the cards in their order on the page, the Stat breakdown before Offense vs defense
-         (the owner's call, 14 October 2026), and closes them all again */
+      /* Open all opens the cards in their order on the page, with no Stat breakdown (the owner's call, 16
+         October 2026), and closes them all again */
       { const md = o.md; o.btn.click(); await wait(60);
         const secs = [...md.querySelectorAll('#gsView section.gs-fold[id]')].map(x => x.id), all = md.querySelector('[data-gs-all]');
         all.click(); const opened = SNAP_CARDS.every(id => !R.d.getElementById(id + 'B').hidden);
         all.click(); const shut = SNAP_CARDS.every(id => R.d.getElementById(id + 'B').hidden);
-        const st = R.d.getElementById('gsStats'), un = R.d.getElementById('gsUnits');
-        chk(secs.join() === SNAP_CARDS.join() && opened && shut && !!st && !!un && !!(st.compareDocumentPosition(un) & R.w.Node.DOCUMENT_POSITION_FOLLOWING),
-          `snapshot: the cards are not Model Picks, Team strength, Stat breakdown, Offense vs defense, Mismatches and Starters, in that order, under Open all: ${secs.join()}`);
+        chk(secs.join() === SNAP_CARDS.join() && opened && shut && !R.d.getElementById('gsStats') && !md.querySelector('[data-gs-srow], .gs-sbar, [data-gs-fold="gsStats"]'),
+          `snapshot: the cards are not Model Picks, Team strength, Offense vs defense, Mismatches and Starters, in that order, under Open all, or the Stat breakdown is still drawn: ${secs.join()}`);
         R.d.getElementById('gsClose').click(); await wait(20); }
     }
   }
@@ -3805,30 +3817,31 @@ async function snapshotChecks() {
 /* =====================================================================================
    THE SEASON TRACKER'S GAMES IN THE GAME SNAPSHOT (14 October 2026): the preview in the verdict (its
    sentence alone: a note's news and sources, and the automatic line's starters out, are not shown, the
-   owner's call of the same day), the Deep Dive inside Offense vs defense, and the Stat breakdown, from the news job's
-   files. Every file here is a stand-in written below, never news/data's own: the elo job runs this
+   owner's call of the same day) and the Deep Dive inside Offense vs defense, from the news job's files; the
+   Stat breakdown, which drew stats.json, is gone (the owner's call, 16 October 2026), and the window never
+   reads that file, though the stand-in serves one. Every file here is a stand-in written below, never news/data's own: the elo job runs this
    smoke every morning, and a news job publish must never turn it red (news/tools/smoke.js holds the
    real files to their sources and to deepdive.js). Each number is worked out here on its own: the
    four tags of each possession by the rule (each row's edge, the offense unit's rating less the
    defense's, weighed by its matchup's weight: Easy from 1.5, Favorable from 0.5, the same the other
-   way), the overall tag on the gap read as points, the records, and the stat bars'
-   numbers, marks, split widths and colours; the Deep Dive's rows must be deepdive.js's own html for
+   way), the overall tag on the gap read as points and the records; the Deep Dive's rows must be deepdive.js's own html for
    the stand-in, set in whole (a compact row each: the unit, the two clubs and their figures, the tag, and
    no name, no one out and no number from the file anywhere in the window), each figure the Elo the Elo
-   files have for that side, worked out here on its own (the owner's call, 16 October 2026: the
-   quarterback's own season Elo against Pass Defense, Pass Protection against Pass Rush, Run Offense
-   against Run Defense, Pass Offense against Pass Defense), the higher marked, and on planted copies of
-   the Elo files (no position tables, an unranked quarterback) the ranks in their place, unmarked; and
+   files have for that side, worked out here on its own (the owner's calls, 16 October 2026: the
+   quarterback's own season Elo against the Overall Defense, Pass Protection against Pass Rush, Run
+   Offense against Run Defense, Pass Offense against Pass Defense), the higher marked, each wearing the
+   page's own tier shield for it (pkTierBadge, the ELO Ratings tab's) and a rank none, and on planted
+   copies of the Elo files (no position tables, an unranked quarterback) the ranks in their place,
+   unmarked, but the Overall Defense on the quarterback's rows, which model.json carries without them; and
    the basis, the "Position matchups" label's title, counts each club's games as the file does. A game with no note to come
    draws the automatic line in the head's middle with no news (on a 404 and on a notes file that is not
    JSON too), a played one with none draws nothing, and a written one is its preview alone, escaped,
    the players it marks **so** bold and nothing else markup (a marked "<b>x</b>" is its text, an
    unpaired ** stays as typed), its news and sources not shown, and once the game has started dated as
    written before kickoff; a file that does not
-   load says so in its own part and nothing throws: a units file lacking a club, one that is not JSON,
-   a stat file of another season. The Rams
-   are LA on the board and LAR in the news job's files: a game of theirs draws its stats and its Deep
-   Dive from the LAR entries. A playoff game (the news job stops at week 18) says
+   load says so in its own part and nothing throws: a units file lacking a club, one that is not JSON. The
+   Rams are LA on the board and LAR in the news job's files: a game of theirs draws its Deep Dive from the
+   LAR entries. A playoff game (the news job stops at week 18) says
    the Deep Dive is the regular season's only. And the window keeps the visitor's place while the
    files come in late: with the news files and the prop model held back, each redraw puts the focus
    back on the same control (Close where it has gone) and keeps the card scrolled to where it was on
@@ -3837,31 +3850,41 @@ async function snapshotChecks() {
 async function newsChecks() {
   const c0 = checks, f0 = fails.length;
   const DDM = require('./deepdive.js'), eloM = JSON.parse(ELO_M), eloP = JSON.parse(ELO_P), eloMu = JSON.parse(ELO_MU), now = Date.now() - PAGE_SHIFT_MS, kick = g => etKick({ d: g.gameday, t: g.gametime });
-  /* the position matchups' figures, Elo against Elo (the owner's call, 16 October 2026), worked out here on
+  /* the position matchups' figures, Elo against Elo (the owner's calls, 16 October 2026), worked out here on
      their own from the Elo files: the offense's starting quarterback's season Elo (the first quarterback of
-     its lineup for this very game, ranked) against Pass Defense, Pass Protection against Pass Rush, Run
-     Offense against Run Defense, Pass Offense against Pass Defense, each table only where model.json's
-     units.tables names it; null where the side shows its rank instead */
-  const EROWS = { qb: ['QB', 'pass_def'], ol: ['pass_pro', 'pass_rush'], rb: ['run_off', 'run_def'], rec: ['pass_off', 'pass_def'] };
+     its lineup for this very game, ranked) against the Overall Defense (units.def, wherever model.json has
+     it), Pass Protection against Pass Rush, Run Offense against Run Defense, Pass Offense against Pass
+     Defense, each of those tables only where model.json's units.tables names it; null where the side shows
+     its rank instead */
+  const EROWS = { qb: ['QB', 'def'], ol: ['pass_pro', 'pass_rush'], rb: ['run_off', 'run_def'], rec: ['pass_off', 'pass_def'] };
   const figsWant = (M, PL, MU, gid, o, d) => { const U = (M && M.units) || {}, T = U.tables || {};
-    const tab = (k, t) => T[k] && U[k] && U[k][t] && typeof U[k][t].elo === 'number' ? U[k][t].elo : null;
+    const tab = (k, t) => (k === 'def' || T[k]) && U[k] && U[k][t] && typeof U[k][t].elo === 'number' ? U[k][t].elo : null;
     const lu = MU && MU.lineups && MU.lineups[o]; let qb = null;
     if (lu && lu.game_id === gid) { const pid = (lu.players || []).find(p => PL.players[p] && PL.players[p].group === 'QB'), e = pid && PL.players[pid];
       if (e && e.rank != null && typeof e.se === 'number') qb = e.se; }
     return Object.fromEntries(Object.entries(EROWS).map(([k, [x, y]]) => [k, [x === 'QB' ? qb : tab(x, o), tab(y, d)]])); };
   const anyFig = F => Object.values(F).some(p => p[0] != null || p[1] != null);
-  /* the page's tier name, as the snapshot hands it to eloSides */
+  /* the page's tier name and its tier shield, as the snapshot hands them to eloSides */
   const tierOf = R => e => { const t = R.w.pkEloTier && R.w.pkEloTier(e); return t ? t[0] : ''; };
+  const shieldOf = R => e => R.w.pkTierBadge ? R.w.pkTierBadge(e) : '';
+  /* a row's words, its shields' own (their titles name the tier) taken off */
+  const plain = el => { const c = el.cloneNode(true); for (const x of c.querySelectorAll('svg')) x.remove(); return txt(c); };
   /* each drawn row against the figures: one figure a side, the Elo where figs has one (b.ddelo) and the rank
-     where it has none (b.ddrk), the higher of two Elo marked gs-better and nothing else marked */
-  const figsBad = (md, figsOf) => { const bad = [];
+     where it has none (b.ddrk), the higher of two Elo marked gs-better and nothing else marked; each Elo
+     wearing one shield, the page's pkTierBadge for that very Elo, right before it, and a rank none (the
+     owner's call, 16 October 2026: "elo in offense vs defense pls add elo icon") */
+  const figsBad = (md, figsOf, R) => { const bad = [];
     for (const r of md.querySelectorAll('#gsUnits .ddrow')) {
       const F = figsOf(r.dataset.ddOff, r.dataset.ddDef)[r.dataset.dd], sd = [...r.querySelectorAll('.ddside')];
       const lead = F[0] != null && F[1] != null && F[0] !== F[1] ? (F[0] > F[1] ? 0 : 1) : -1;
       sd.forEach((x, j) => { const f = x.querySelector('.ddrk, .ddelo'), who = `the ${r.dataset.dd} row of ${r.dataset.ddOff}, the ${j ? 'defense' : 'offense'}'s side`;
         if (!f) { bad.push(`${who} shows no figure`); return; }
         if (F[j] != null ? !(f.matches('.ddelo') && txt(f) === String(F[j])) : !f.matches('.ddrk')) bad.push(`${who} shows ${txt(f)} (want ${F[j] != null ? 'its Elo, ' + F[j] : 'its rank: the Elo files have none for it'})`);
-        if (x.querySelectorAll('.gs-better').length !== (lead === j ? 1 : 0) || (lead === j && !f.classList.contains('gs-better'))) bad.push(`${who} is ${lead === j ? 'not ' : ''}marked better (${F.join(' against ')})`); });
+        if (x.querySelectorAll('.gs-better').length !== (lead === j ? 1 : 0) || (lead === j && !f.classList.contains('gs-better'))) bad.push(`${who} is ${lead === j ? 'not ' : ''}marked better (${F.join(' against ')})`);
+        const sh = [...x.querySelectorAll('svg')], tpl = R.d.createElement('template'); tpl.innerHTML = F[j] != null ? shieldOf(R)(F[j]) : '';
+        const want = tpl.content.firstElementChild;
+        if (F[j] != null ? !(want && sh.length === 1 && sh[0].matches('svg.tierbadge') && sh[0].outerHTML === want.outerHTML && sh[0].nextElementSibling === f && /tier/.test(sh[0].getAttribute('aria-label') || ''))
+          : sh.length) bad.push(`${who} wears ${sh.length} shield${sh.length === 1 ? '' : 's'}${F[j] != null && sh.length === 1 ? ' that is not its tier\'s, named, before its Elo' : ''} (want ${F[j] != null ? 'its Elo ' + F[j] + '\'s, once' : 'none beside a rank'})`); });
     }
     return bad; };
   /* a game to come, over a day off by the page's clock: the schedule's first, or one made so in a copy
@@ -3916,8 +3939,8 @@ async function newsChecks() {
   const namesShown = (md, U) => { const t = txt(md); return [...new Set(unitNames(U))].filter(n => t.includes(n)); };
   /* the Deep Dive's basis counts each club's games as the file has them: "SEA 5 games, DEN 4 games" */
   const gamesWant = (U, a, h) => [a, h].map(t => { const n = U.units[DDM.club(t)].g26; return `${t} ${n} game${n === 1 ? '' : 's'}`; }).join(', ');
-  /* the stand-in stats.json: G's two clubs and P1's visitors; P1's home side left out. A tie (sacks), a
-     pair at 0 (red zone), a missing number (explosive plays), a negative (turnovers) */
+  /* the stand-in stats.json, served though the window must never read it (its Stat breakdown went on 16
+     October 2026, the owner's call) */
   const S1 = { ppg: 24.6, pa: 19.2, ypp: 5.9, yppa: 5.1, to: -0.6, sk: 2.4, ska: 2.4, third: 41.5, rz: 0, expl: 3.8, g: 5 };
   const S2 = { ppg: 21.3, pa: 25, ypp: 5.2, yppa: 5.6, to: 0.8, sk: 2.4, ska: 1.6, third: 38, rz: 0, expl: null, g: 4 };
   const STATS = { season, through: 'Oct 12', asof: '2026-10-14', stats: { [A]: S1, [H]: S2 } };
@@ -3941,31 +3964,6 @@ async function newsChecks() {
     card.click(); await wait(200); const md = R.d.getElementById('gsModal'); return md && !md.hidden ? md : null; };
   const closeG = async R => { R.w.gameSnapshotClose(false); await wait(10); };
   const htmlTxt = (R, html) => { const t = R.d.createElement('template'); t.innerHTML = html; return txt(t.content); };
-  /* the Stat breakdown of a game against the stand-in's two lines (SA the away side's, SH the home's): each
-     of the eleven rows' numbers, the better one marked, the bar split and coloured, the summary's counts */
-  const SR = [['pd', s => s.ppg == null || s.pa == null ? null : Math.round((s.ppg - s.pa) * 10) / 10, false, true, false], ['ppg', s => s.ppg, false], ['pa', s => s.pa, true],
-    ['ypp', s => s.ypp, false], ['yppa', s => s.yppa, true], ['to', s => s.to, false, true], ['sk', s => s.sk, false], ['ska', s => s.ska, true],
-    ['third', s => s.third, false, false, true], ['rz', s => s.rz, false, false, true], ['expl', s => s.expl, false]];
-  const split = (x, y, lo) => { if (x == null || y == null || (x === 0 && y === 0)) return [0, 0]; let pa;
-    if (lo) { const ix = 1 / Math.max(x, 0.01), iy = 1 / Math.max(y, 0.01); pa = ix / (ix + iy) * 100; } else { const m = Math.min(x, y, 0); pa = (x - m) + (y - m) === 0 ? 50 : (x - m) / ((x - m) + (y - m)) * 100; }
-    pa = Math.round(pa * 10) / 10; return [pa, Math.round((100 - pa) * 10) / 10]; };
-  const fmt = (v, sign, pct) => v == null ? '–' : (v < 0 ? '−' + Math.abs(v) : (sign && v > 0 ? '+' : '') + v) + (pct ? '%' : '');
-  const statsBad = (R, md, a, h, SA, SH) => {
-    const bad = [], q = sel => md.querySelector(sel); let na = 0, nh = 0;
-    const rows = md.querySelectorAll('#gsStats [data-gs-srow]');
-    if ([...rows].map(r => r.dataset.gsSrow).join() !== SR.map(r => r[0]).join()) bad.push('the rows are ' + [...rows].map(r => r.dataset.gsSrow).join());
-    for (const [k, f, lo, sign, pct] of SR) { const r = q(`#gsStats [data-gs-srow="${k}"]`); if (!r) continue;
-      const x = f(SA), y = f(SH), [pa, ph] = split(x, y, lo), ba = x != null && y != null && x !== y && (lo ? x < y : x > y), bh = x != null && y != null && x !== y && !ba;
-      if (ba) na++; if (bh) nh++;
-      const va = r.querySelector(`[data-gs-sval="${a}"]`), vh = r.querySelector(`[data-gs-sval="${h}"]`), [ia, ih] = [...r.querySelectorAll('.gs-shalf i')];
-      if (txt(va) !== fmt(x, sign, pct) || txt(vh) !== fmt(y, sign, pct)) bad.push(`${k} reads ${txt(va)} and ${txt(vh)}, the file ${fmt(x, sign, pct)} and ${fmt(y, sign, pct)}`);
-      if (!!(va && va.closest('.gs-better')) !== ba || !!(vh && vh.closest('.gs-better')) !== bh || r.querySelectorAll('.gs-better').length !== (ba || bh ? 1 : 0)) bad.push(`${k}: the mark is on the wrong side`);
-      if (!ia || !ih || ia.style.width !== pa + '%' || ih.style.width !== ph + '%') bad.push(`${k}'s bar is ${ia && ia.style.width} and ${ih && ih.style.width}, the numbers split it ${pa}% and ${ph}%`);
-      if (ia && ih && (ia.style.getPropertyValue('--gs-tc') !== R.w.pkTagColor(a) || ih.style.getPropertyValue('--gs-tc') !== R.w.pkTagColor(h))) bad.push(`${k}'s bar is not in the teams' colours`); }
-    if (txt(q(`#gsStats [data-gs-sb="${a}"]`)) !== String(na) || txt(q(`#gsStats [data-gs-sb="${h}"]`)) !== String(nh)) bad.push(`the summary counts ${txt(q(`#gsStats [data-gs-sb="${a}"]`))} and ${txt(q(`#gsStats [data-gs-sb="${h}"]`))}, the marks ${na} and ${nh}`);
-    if (/Not in the file yet/.test(txt(q('#gsStats')))) bad.push('it says a team is not in the file: ' + (txt(q('#gsStats')).match(/Not in the file yet[^;.]*/) || [''])[0]);
-    return bad; };
-
   /* ---- the files as the job writes them ---- */
   const N1 = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes } }); await wait(400);
   chk(!N1.timedOut && N1.errs.length === 0, 'news: the page did not boot with the news files: ' + N1.errs.join('; '));
@@ -3992,7 +3990,7 @@ async function newsChecks() {
     /* the Deep Dive: each possession deepdive.js's own rows for the stand-in, set in whole, its four tags the rule's */
     { const bad = [];
       for (const [o, dd, O, D] of [[a, h, UNITS.units[A], UNITS.units[H]], [h, a, UNITS.units[H], UNITS.units[A]]]) {
-        const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd, DDM.eloSides(eloM, eloP, eloMu, G.game_id, o, dd, tierOf(N1)));
+        const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd, DDM.eloSides(eloM, eloP, eloMu, G.game_id, o, dd, tierOf(N1), shieldOf(N1)));
         const tpl = N1.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
         if (!el) { bad.push(`${o} against ${dd} has no Deep Dive rows`); continue; }
         if (!tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the rows are not deepdive.js's for the file`);
@@ -4001,17 +3999,21 @@ async function newsChecks() {
       if (md.querySelectorAll('#gsUnits [data-gs-ddwhy]').length) bad.push('a possession says why it has no rows: ' + txt(q('#gsUnits [data-gs-ddwhy]')));
       /* each row compact (the owner's call, 14 October 2026): the unit, the two sides (the offense's then the
          defense's, each its club and one rank), then the defense's position it faces (the owner's call, 16
-         October 2026; this smoke's own copy of them) and the tag together, in that order, and its words those
-         alone */
-      const DPOS = { qb: 'Pass defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
+         October 2026; this smoke's own copy of them, the quarterback's the Overall defense since the same
+         day's "QB needs to be vs team defense overall") and the tag together, in that order, and its words
+         those alone, its shields' own taken off */
+      const DPOS = { qb: 'Overall defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
       for (const r of md.querySelectorAll('#gsUnits .ddrow')) { const k = [...r.children], sd = k[1] ? [...k[1].querySelectorAll('.ddside')] : [], e = k[2] ? [...k[2].children] : [];
         const words = `${txt(k[0])} ${r.dataset.ddOff} ${sd[0] ? txt(sd[0].querySelector('.ddrk, .ddelo')) : ''} · ${r.dataset.ddDef} ${sd[1] ? txt(sd[1].querySelector('.ddrk, .ddelo')) : ''} ${DPOS[r.dataset.dd]} ${e[1] ? txt(e[1]) : ''}`;
         if (k.length !== 3 || !k[0].matches('.ddunit') || !k[1].matches('.ddrks') || !k[2].matches('.ddend') || e.length !== 2 || !e[0].matches('.dddu') || !e[1].matches('.dtag')
           || txt(e[0]) !== DPOS[r.dataset.dd] || sd.length !== 2 || !sd[0].matches('.ddoff') || !sd[1].matches('.dddef')
           || sd.some(x => x.querySelectorAll('.ddrk, .ddelo').length !== 1) || txt(sd[0].querySelector('.ddsn')) !== r.dataset.ddOff || txt(sd[1].querySelector('.ddsn')) !== r.dataset.ddDef
-          || txt(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and figures, the defense's position and its tag alone: '${txt(r)}'`); break; } }
+          || plain(r).replace(/\s+/g, ' ') !== words.replace(/\s+/g, ' ')) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff} is not its unit, the two clubs and figures, the defense's position and its tag alone: '${plain(r)}'`); break; }
+        /* the quarterback's defense side is titled its Overall Defense; the receivers' its Pass Defense */
+        if ((r.dataset.dd === 'qb' && !/ Overall Defense: Elo \d+/.test(sd[1].getAttribute('title') || '') && sd[1].querySelector('.ddelo'))
+          || (r.dataset.dd === 'rec' && sd[1].querySelector('.ddelo') && !/ Pass Defense: Elo \d+/.test(sd[1].getAttribute('title') || ''))) { bad.push(`the ${r.dataset.dd} row of ${r.dataset.ddOff}: the defense's side is titled '${sd[1].getAttribute('title')}'`); break; } }
       /* each figure the Elo files' own, worked out above, the higher marked; a rank only where there is no Elo */
-      bad.push(...figsBad(md, (o, d) => figsWant(eloM, eloP, eloMu, G.game_id, o, d)));
+      bad.push(...figsBad(md, (o, d) => figsWant(eloM, eloP, eloMu, G.game_id, o, d), N1));
       const shown = namesShown(md, UNITS);
       if (shown.length) bad.push(`the window shows names from the units file: ${shown.join(', ')}`);
       /* what the rows rest on: the "Position matchups" label's title, never text under the card */
@@ -4031,13 +4033,10 @@ async function newsChecks() {
           || txt(el.previousElementSibling) !== `${nick(o)} Possession`)
           bad.push(`${o}-${dd} reads '${el ? txt(el) : 'nothing'}', the rule '${tag} ${text}'`); }
       chk(bad.length === 0, `news: the Overall line's tag is not the gap read as points: ${bad.join('; ')}`); }
-    /* the Stat breakdown: each of the eleven rows' numbers, the better one marked, the bar split and coloured */
-    { const bad = statsBad(N1, md, a, h, S1, S2);
-      if (!txt(q('#gsStats [data-gs-sbasis]')).startsWith(`${season} season through Oct 12: ${a} 5 games, ${h} 4 games.`)) bad.push(`the basis reads '${txt(q('#gsStats [data-gs-sbasis]'))}'`);
-      chk(bad.length === 0, `news: the Stat breakdown is not the file's: ${bad.slice(0, 6).join('; ')}`); }
-    /* the Stat breakdown before Offense vs defense, and no Sources card (the owner's calls, 14 October 2026) */
-    chk(!q('#gsFiles') && !!q('#gsStats') && !!q('#gsUnits') && !!(q('#gsStats').compareDocumentPosition(q('#gsUnits')) & N1.w.Node.DOCUMENT_POSITION_FOLLOWING),
-      'news: the Stat breakdown is not before Offense vs defense, or the Sources card is still drawn');
+    /* no Stat breakdown (the owner's call, 16 October 2026: "get rid of stat breakdown section") and no
+       Sources card (14 October 2026), with a stat file there to read: none of its numbers drawn */
+    chk(!q('#gsFiles') && !q('#gsStats') && !q('[data-gs-srow], [data-gs-sval], [data-gs-sbasis], .gs-sbar') && !!q('#gsUnits') && !/Stat breakdown|stat breakdown/.test(txt(md)),
+      'news: the Stat breakdown, or the Sources card, is still drawn');
     await closeG(N1);
   }
   /* a note written for a game: its sentence as text, never markup, its news and outlets not shown; labelled
@@ -4071,10 +4070,6 @@ async function newsChecks() {
     /* a game of another week: the Deep Dive says whose week it is for, both ways, and draws no rows */
     const why = [...(m3 ? m3.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
     if (why.length !== 2 || why.some(x => !new RegExp(`are for week ${wk}: this game's ${+P1.week < wk ? 'week has gone' : 'come with its week'}`).test(x)) || q3('#gsUnits .dd')) bad.push(`its Deep Dive reads '${why.join(' / ')}'`);
-    /* a team missing from the stat file: dashes, no mark, no bar, and said */
-    const hv = [...(m3 ? m3.querySelectorAll(`#gsStats [data-gs-sval="${P1.home_team}"]`) : [])];
-    if (hv.length !== 11 || hv.some(x => txt(x) !== '–') || q3('#gsStats .gs-better') || [...(m3 ? m3.querySelectorAll('#gsStats .gs-shalf i') : [])].some(i => i.style.width !== '0%') || !new RegExp(`Not in the file yet: ${P1.home_team}`).test(txt(q3('#gsStats'))))
-      bad.push(`the stat breakdown of a team the file lacks reads ${hv.map(txt).join(' ')}`);
     chk(bad.length === 0, `news: a played game with a note (${P1.game_id}) is not drawn as the files have it: ${bad.join('; ')}`);
     await closeG(N1); }
   if (P2) { const m4 = await openG(N1, P2);
@@ -4085,9 +4080,9 @@ async function newsChecks() {
   /* each file read once a page load (the notes once a week), no-store, however often the window opened */
   await openG(N1, G); await closeG(N1);
   { const nc = N1.calls.filter(c => /\/news\/data\//.test(c.url)), urls = nc.map(c => c.url.replace(/\?.*$/, ''));
-    chk(nc.every(c => c.cache === 'no-store' && c.method === 'GET') && new Set(urls).size === urls.length && urls.some(u => u.endsWith('news/data/units.json')) && urls.some(u => u.endsWith('news/data/stats.json'))
+    chk(nc.every(c => c.cache === 'no-store' && c.method === 'GET') && new Set(urls).size === urls.length && urls.some(u => u.endsWith('news/data/units.json')) && !urls.some(u => u.endsWith('news/data/stats.json'))
       && urls.some(u => u.endsWith(`news/data/notes/${season}-w${wk}.json`)) && (!P1 || urls.some(u => u.endsWith(`news/data/notes/${season}-w${+P1.week}.json`))),
-      'news: the news files are not each read once, no-store, at their addresses: ' + urls.join(', ')); }
+      'news: the news files are not each read once, no-store, at their addresses, or stats.json is read: ' + urls.join(', ')); }
   N1.w.close();
 
   /* ---- every news file missing: the automatic line with no news, each part saying it did not load, nothing thrown ---- */
@@ -4095,15 +4090,14 @@ async function newsChecks() {
     const m = await openG(N2, G), b = m && m.querySelector('.gs-prev');
     chk(!!m && N2.errs.length === 0 && !/could not be drawn/.test(txt(m)) && !!b && b.dataset.gsNote === 'auto' && !b.querySelector('[data-gs-news]')
       && [...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].length === 2 && [...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].every(x => /Deep Dive did not load/.test(txt(x)))
-      && !m.querySelector('[data-gs-head]') && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && txt(m.querySelector('#gsStats .gs-sum')) === 'did not load'
-      && !m.querySelector('#gsFiles'),
-      'news: with every news file missing the window does not draw the automatic line and say each part did not load: ' + N2.errs.join('; ') + ' ' + (m ? txt(m.querySelector('#gsStats')).slice(0, 80) : 'no window'));
+      && !m.querySelector('[data-gs-head]') && !m.querySelector('#gsStats') && !m.querySelector('#gsFiles'),
+      'news: with every news file missing the window does not draw the automatic line and say each part did not load: ' + N2.errs.join('; ') + ' ' + (m ? txt(m.querySelector('#gsUnits')).slice(0, 80) : 'no window'));
     N2.w.close(); }
-  /* ---- a notes file that is not JSON and a stat file of the wrong shape: the automatic line (its news from the units), the stats said not loaded ---- */
+  /* ---- a notes file that is not JSON (and a stat file of the wrong shape beside it, never read): the automatic line, the Deep Dive drawn ---- */
   { const N3 = await run(st, undefined, null, false, { news: { units: UNITS, stats: { season, stats: [1, 2] }, notes: { [`${season}-w${wk}`]: 'this is not { json' } } }); await wait(400);
     const m = await openG(N3, G), b = m && m.querySelector('.gs-prev');
-    chk(!!m && N3.errs.length === 0 && !!b && b.dataset.gsNote === 'auto' && !b.querySelector('[data-gs-news]') && /stat breakdown did not load/.test(txt(m.querySelector('#gsStats'))) && !!m.querySelector('#gsUnits .dd'),
-      'news: a notes file that is not JSON does not draw the automatic line, or a stat file of the wrong shape is drawn: ' + N3.errs.join('; ') + ' ' + (b ? txt(b) : 'no preview'));
+    chk(!!m && N3.errs.length === 0 && !!b && b.dataset.gsNote === 'auto' && !b.querySelector('[data-gs-news]') && !m.querySelector('#gsStats') && !!m.querySelector('#gsUnits .dd'),
+      'news: a notes file that is not JSON does not draw the automatic line, or the Deep Dive is not drawn beside it: ' + N3.errs.join('; ') + ' ' + (b ? txt(b) : 'no preview'));
     N3.w.close(); }
   /* ---- a units file lacking one of the game's clubs: each possession says which, no rows, nothing thrown ---- */
   { const U4 = Object.assign({}, UNITS, { units: { [A]: UNITS.units[A] } });
@@ -4113,20 +4107,21 @@ async function newsChecks() {
       && !!b && !b.querySelector('[data-gs-news]') && !namesShown(m, U4).length,
       `news: a units file lacking ${h} does not say it has no matchups for it, or names a player from the file: ${N4.errs.join('; ')} '${why.join(' / ')}' ${b ? txt(b) : 'no preview'}`);
     N4.w.close(); }
-  /* ---- a units file that is not JSON, and a stat file of another season: each says so in its own card and in
-     Sources, nothing thrown ---- */
+  /* ---- a units file that is not JSON (beside a stat file of another season, never read): each possession
+     says so, nothing thrown ---- */
   { const N5 = await run(st, undefined, null, false, { news: { units: 'not { json', stats: Object.assign({}, STATS, { season: season - 1 }), notes } }); await wait(400);
     const m = await openG(N5, G), why = [...(m ? m.querySelectorAll('#gsUnits [data-gs-ddwhy]') : [])].map(txt);
     chk(!!m && N5.errs.length === 0 && !/could not be drawn/.test(txt(m)) && why.length === 2 && why.every(x => /^The Deep Dive did not load\b/.test(x)) && !m.querySelector('#gsUnits .dd')
-      && txt(m.querySelector('#gsStats .gs-msg')) === `The stat breakdown is ${season - 1}'s season; this game is ${season}'s.` && txt(m.querySelector('#gsStats .gs-sum')) === `${season - 1}'s numbers` && !m.querySelector('#gsStats [data-gs-srow]'),
-      `news: a units file that is not JSON or a stat file of another season is not said so: ${N5.errs.join('; ')} '${why.join(' / ')}' '${m ? txt(m.querySelector('#gsStats .gs-secbody')) : 'no window'}'`);
+      && !m.querySelector('#gsStats'),
+      `news: a units file that is not JSON is not said so: ${N5.errs.join('; ')} '${why.join(' / ')}'`);
     N5.w.close(); }
 
   /* ---- the figures' fallbacks (the owner's call, 16 October 2026: Elo against Elo where the files have it):
      an older model.json with none of the six position tables draws each side's rank from the units file,
-     but the quarterback's own season Elo where his lineup is for this game; a quarterback unranked draws
-     his row's rank; nothing is marked beside a rank. Planted on copies of the Elo files: the away side's
-     lineup for G a ranked quarterback alone, the home side's one made unranked ---- */
+     but the quarterback's own season Elo where his lineup is for this game and, against him, the Overall
+     Defense, which model.json has without the tables; a quarterback unranked draws his row's rank, with no
+     shield; nothing is marked beside a rank. Planted on copies of the Elo files: the away side's lineup for
+     G a ranked quarterback alone, the home side's one made unranked ---- */
   { const M6 = JSON.parse(ELO_M), P6 = JSON.parse(ELO_P), MU6 = JSON.parse(ELO_MU);
     delete M6.units.tables; for (const k of ['run_def', 'pass_def', 'pass_rush', 'run_off', 'pass_off', 'pass_pro']) delete M6.units[k];
     const qbs = Object.entries(P6.players).filter(([, e]) => e.group === 'QB' && e.rank != null && typeof e.se === 'number');
@@ -4137,22 +4132,28 @@ async function newsChecks() {
     const m = await openG(N6, G), bad = [];
     if (!m) bad.push('the game opens no window');
     else {
-      for (const [o, dd] of [[a, h], [h, a]]) { const el = m.querySelector(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd, DDM.eloSides(M6, P6, MU6, G.game_id, o, dd, tierOf(N6)));
+      for (const [o, dd] of [[a, h], [h, a]]) { const el = m.querySelector(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UNITS, o, dd, DDM.eloSides(M6, P6, MU6, G.game_id, o, dd, tierOf(N6), shieldOf(N6)));
         const tpl = N6.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
         if (!el || !tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the rows are not deepdive.js's for the files`); }
-      bad.push(...figsBad(m, (o, d) => figsWant(M6, P6, MU6, G.game_id, o, d)));
-      /* by hand: one Elo in the card, the away quarterback's, and every other side a rank, nothing marked */
+      bad.push(...figsBad(m, (o, d) => figsWant(M6, P6, MU6, G.game_id, o, d), N6));
+      /* by hand: three Elo in the card, the away quarterback's against the home side's Overall Defense and,
+         the other way, the away side's Overall Defense against the unranked home quarterback's rank, each
+         with its shield; every other side a rank with none, and a mark only on the one row of two Elo */
       const elos = [...m.querySelectorAll('#gsUnits .ddelo')].map(x => `${x.closest('.ddrow').dataset.ddOff}:${x.closest('.ddrow').dataset.dd}:${txt(x)}`);
-      if (elos.join() !== `${a}:qb:${P6.players[qa].se}`) bad.push(`the Elo drawn are ${elos.join(', ') || 'none'} (want ${a}'s quarterback's ${P6.players[qa].se} alone)`);
-      if (m.querySelectorAll('#gsUnits .ddrk').length !== 15 || m.querySelector('#gsUnits .ddrow .gs-better')) bad.push(`${m.querySelectorAll('#gsUnits .ddrk').length} ranks drawn (want 15), or a side marked beside a rank`);
+      const want3 = [`${a}:qb:${P6.players[qa].se}`, `${a}:qb:${M6.units.def[h].elo}`, `${h}:qb:${M6.units.def[a].elo}`];
+      if (elos.join() !== want3.join()) bad.push(`the Elo drawn are ${elos.join(', ') || 'none'} (want ${want3.join(', ')})`);
+      if (m.querySelectorAll('#gsUnits .ddrk').length !== 13 || m.querySelectorAll('#gsUnits .ddrow svg.tierbadge').length !== 3
+        || [...m.querySelectorAll('#gsUnits .ddrow .gs-better')].some(x => x.closest('.ddrow').dataset.ddOff !== a || x.closest('.ddrow').dataset.dd !== 'qb'))
+        bad.push(`${m.querySelectorAll('#gsUnits .ddrk').length} ranks and ${m.querySelectorAll('#gsUnits .ddrow svg.tierbadge').length} shields drawn (want 13 and 3), or a side marked beside a rank`);
       const labs = [...m.querySelectorAll('#gsUnits [data-gs-basis]')].map(l => l.getAttribute('title') || '');
-      if (labs.length !== 2 || !/^The figures are each side's Elo/.test(labs[0]) || !/^League ranks from team stats/.test(labs[1])) bad.push(`the labels' titles do not say what the figures are: ${labs.map(t => t.slice(0, 40)).join(' | ')}`); }
+      /* both possessions have an Elo now (the Overall Defense against each quarterback), so both say what the figures are */
+      if (labs.length !== 2 || !labs.every(t => /^The figures are each side's Elo/.test(t))) bad.push(`the labels' titles do not say what the figures are: ${labs.map(t => t.slice(0, 40)).join(' | ')}`); }
     chk(bad.length === 0 && N6.errs.length === 0, `news: the matchup rows' fallbacks (no position tables, an unranked quarterback) are not drawn as the files say: ${N6.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
     N6.w.close(); }
 
   /* ---- the Rams: LA on the board, LAR in the news job's files. A copy of G with LA at home (unless a side
-     already is), the stand-ins keyed by deepdive.js's club codes as the job keys them: the Stat breakdown
-     and the Deep Dive read LA's entries from LAR. And a made-up wild-card game
+     already is), the stand-ins keyed by deepdive.js's club codes as the job keys them: the Deep Dive reads
+     LA's entries from LAR. And a made-up wild-card game
      (week 19): the news job stops at week 18, so the Deep Dive says it is the regular season's only ---- */
   { const lst = JSON.parse(JSON.stringify(st)), LG = lst.schedule.find(x => x.game_id === G.game_id);
     if (![LG.away_team, LG.home_team].includes('LA')) { LG.home_team = 'LA'; LG.game_id = LG.game_id.replace(/_[A-Z]+$/, '_LA'); }
@@ -4165,14 +4166,13 @@ async function newsChecks() {
     if (!m) bad.push('the game opens no window');
     else {
       const q = sel => m.querySelector(sel);
-      if (!Object.keys(UL.units).includes('LAR') || Object.keys(UL.units).includes('LA') || !Object.keys(SL.stats).includes('LAR')) bad.push('the stand-ins are not keyed LAR');
-      bad.push(...statsBad(NL, m, la, lh, S1, S2).map(x => 'the Stat breakdown: ' + x));
-      for (const [o, dd] of [[la, lh], [lh, la]]) { const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UL, o, dd, DDM.eloSides(eloM, eloP, eloMu, LG.game_id, o, dd, tierOf(NL)));
+      if (!Object.keys(UL.units).includes('LAR') || Object.keys(UL.units).includes('LA')) bad.push('the stand-ins are not keyed LAR');
+      for (const [o, dd] of [[la, lh], [lh, la]]) { const el = q(`#gsUnits [data-gs-poss="${o}-${dd}"] .dd[data-dd-pos="${o}-${dd}"]`), want = DDM.possession(UL, o, dd, DDM.eloSides(eloM, eloP, eloMu, LG.game_id, o, dd, tierOf(NL), shieldOf(NL)));
         const tpl = NL.d.createElement('template'); tpl.innerHTML = want ? want.html : '';
         if (!el || !tpl.content.firstElementChild || el.outerHTML !== tpl.content.firstElementChild.outerHTML) bad.push(`${o} against ${dd}: the Deep Dive is not deepdive.js's rows from LAR's entry: ${el ? 'other rows' : txt(q(`#gsUnits [data-gs-poss="${o}-${dd}"] [data-gs-ddwhy]`)) || 'none'}`); }
       if (![...m.querySelectorAll('#gsUnits [data-gs-basis]')].map(l => l.getAttribute('title') || '').some(t => t.includes(`, plus this season's ${gamesWant(UL, la, lh)}.`))) bad.push(`the Deep Dive's basis does not count LA's games from LAR's entry`);
       /* the Rams' Elo is model.json's LA, as the board names them */
-      bad.push(...figsBad(m, (o, d) => figsWant(eloM, eloP, eloMu, LG.game_id, o, d)));
+      bad.push(...figsBad(m, (o, d) => figsWant(eloM, eloP, eloMu, LG.game_id, o, d), NL));
       if (eloM.units && eloM.units.tables && eloM.units.tables.pass_off && !m.querySelector(`#gsUnits .ddrow[data-dd="rec"][data-dd-off="LA"] .ddoff .ddelo`)) bad.push("the Rams' receivers row shows no Pass Offense Elo"); }
     chk(bad.length === 0 && NL.errs.length === 0, `news: a Rams game (${la} at ${lh}) does not read LA's entries from the files' LAR: ${NL.errs.join('; ')} ${bad.slice(0, 6).join('; ')}`);
     await closeG(NL);
@@ -4186,19 +4186,19 @@ async function newsChecks() {
   /* ---- the files coming in late: the news files and the prop model held back, released one by one. Each
      redraw keeps the focus on the same control (found again, a new element) or puts it on Close where that
      control has gone, never on the page's body; and the card scrolled to (Offense vs defense) stays where it
-     was on the screen as the preview, the Stat breakdown's rows and the props button are drawn in above it.
+     was on the screen as the preview and the props button are drawn in above it and the Deep Dive inside it.
      jsdom lays nothing out, so the layout is planted: every element in the window 40px tall in the page's
      order, the header 64px, Offense vs defense 120px from the top of the screen; the arithmetic is then
      held. Each part says it is loading while its file is read, and draws once it is in ---- */
-  { const gate = () => { let go; const p = new Promise(r => { go = r; }); return { p, go }; }, gU = gate(), gS = gate(), gP = gate();
-    const NH = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes }, gate: { units: gU.p, notes: gU.p, stats: gS.p, payload: gP.p }, early: true });
+  { const gate = () => { let go; const p = new Promise(r => { go = r; }); return { p, go }; }, gU = gate(), gN = gate(), gP = gate();
+    const NH = await run(st, undefined, null, false, { news: { units: UNITS, stats: STATS, notes }, gate: { units: gU.p, notes: gN.p, payload: gP.p }, early: true });
     const m = await openG(NH, G), bad = [];
     if (!m) bad.push('the game opens no window while the files are held');
     else {
       const q = sel => m.querySelector(sel), view = NH.d.getElementById('gsView'), PX = 40, tgt = () => NH.d.getElementById('gsUnits');
       if (NH.timedOut || NH.w.pkBoard.canProps(G.game_id) || q('[data-gs-props]')) bad.push('the prop model was up before its payload was let through');
       if (q('[data-gs-player]')) bad.push('a starter\'s name opens the Props tab before the prop model is up');
-      if ([...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].map(txt).join('|') !== 'Loading the Deep Dive…|Loading the Deep Dive…' || txt(q('#gsStats .gs-sum')) !== 'loading…' || !/Loading the stat breakdown/.test(txt(q('#gsStats')))) bad.push('the Deep Dive or the Stat breakdown does not say it is loading');
+      if ([...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].map(txt).join('|') !== 'Loading the Deep Dive…|Loading the Deep Dive…' || q('#gsStats')) bad.push('the Deep Dive does not say it is loading, or a Stat breakdown is drawn');
       const idx = el => [...view.querySelectorAll('*')].indexOf(el);
       NH.w.Element.prototype.getBoundingClientRect = function () { const r = (t, hh) => ({ top: t, bottom: t + hh, height: hh, left: 0, right: 320, width: 320, x: 0, y: t });
         if (this.id === 'gsTop') return r(0, 64); if (this.id === 'gsModal') return r(0, 800);
@@ -4215,19 +4215,19 @@ async function newsChecks() {
       const keep = (what, r, key, val) => { if (!r) return;
         if (r.at === r.f || !r.at || !m.contains(r.at) || r.at.dataset[key] !== val) bad.push(`${what}: the focus is on ${r.at === r.f ? 'the old, removed control' : r.at && r.at.id ? '#' + r.at.id : r.at ? r.at.tagName : 'nothing'}, not ${key} ${val} drawn again`);
         if (top() !== 120 || m.scrollTop !== r.y0 + PX * (r.i1 - r.i0)) bad.push(`${what}: Offense vs defense moved to ${top()}px from 120 (scrolled ${m.scrollTop}, ${r.i1 - r.i0} blocks drawn in above it)`); };
-      /* the units and the week's notes: the automatic preview drawn in above, the Deep Dive's rows inside */
-      const r1 = await step('the units and the notes coming in', () => q('[data-gs-fold="gsStats"]'), () => gU.go(), () => wait(150));
-      keep('the units and the notes coming in', r1, 'gsFold', 'gsStats');
-      if (r1 && !(r1.i1 > r1.i0)) bad.push('nothing was drawn in above Offense vs defense as the units and the notes came in');
-      if (!q('#gsUnits .dd') || !q('.gs-prev')) bad.push('the Deep Dive or the preview was not drawn once its file came in');
-      if (txt(q('#gsStats .gs-sum')) !== 'loading…') bad.push(`the Stat breakdown reads '${txt(q('#gsStats .gs-sum'))}' while its file is still read`);
-      /* a control that is not drawn again: the focus goes to Close; the Stat breakdown's rows drawn in above */
+      /* the week's notes: the automatic preview drawn in above, the Deep Dive still loading */
+      const r1 = await step('the notes coming in', () => q('[data-gs-fold="gsMism"]'), () => gN.go(), () => wait(150));
+      keep('the notes coming in', r1, 'gsFold', 'gsMism');
+      if (r1 && !(r1.i1 > r1.i0)) bad.push('nothing was drawn in above Offense vs defense as the notes came in');
+      if (!q('.gs-prev')) bad.push('the preview was not drawn once its file came in');
+      if (q('#gsUnits .dd') || ![...m.querySelectorAll('#gsUnits [data-gs-ddwhy]')].every(x => txt(x) === 'Loading the Deep Dive…')) bad.push('the Deep Dive does not say it is loading while its file is still read');
+      /* the units, with a control that is not drawn again: the focus goes to Close; the Deep Dive's rows and
+         headline tags drawn in inside Offense vs defense, which stays where it was */
       const gone = NH.d.createElement('button'); gone.type = 'button'; gone.dataset.gsFold = 'gone'; view.appendChild(gone);
-      const r2 = await step('the stats coming in', () => gone, () => gS.go(), () => wait(150));
-      if (r2 && r2.at !== NH.d.getElementById('gsClose')) bad.push(`the stats coming in: a control not drawn again leaves the focus on ${r2.at ? r2.at.tagName : 'nothing'}, not Close`);
-      if (r2 && (top() !== 120 || m.scrollTop !== r2.y0 + PX * (r2.i1 - r2.i0))) bad.push(`the stats coming in: Offense vs defense moved to ${top()}px`);
-      if (r2 && !(r2.i1 > r2.i0)) bad.push('the Stat breakdown\'s rows were not drawn in above Offense vs defense');
-      if (!q('#gsStats [data-gs-srow]') || /loading/.test(txt(q('#gsStats .gs-sum')))) bad.push(`the Stat breakdown is not drawn with every file in: '${txt(q('#gsStats .gs-sum'))}'`);
+      const r2 = await step('the units coming in', () => gone, () => gU.go(), () => wait(150));
+      if (r2 && r2.at !== NH.d.getElementById('gsClose')) bad.push(`the units coming in: a control not drawn again leaves the focus on ${r2.at ? r2.at.tagName : 'nothing'}, not Close`);
+      if (r2 && (top() !== 120 || m.scrollTop !== r2.y0 + PX * (r2.i1 - r2.i0))) bad.push(`the units coming in: Offense vs defense moved to ${top()}px`);
+      if (!q('#gsUnits .dd') || q('#gsUnits [data-gs-ddwhy]')) bad.push('the Deep Dive was not drawn once its file came in');
       /* the prop model coming up: the props button drawn in first in the window */
       const r3 = await step('the prop model coming up', () => q('[data-gs-goto="gsUnits"]'), () => gP.go(), async () => { for (let i = 0; i < 200 && !NH.w.eval("typeof S==='object'&&!!S&&Array.isArray(S.sched)"); i++) await wait(50); await wait(400); });
       keep('the prop model coming up', r3, 'gsGoto', 'gsUnits');

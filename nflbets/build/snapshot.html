@@ -43,8 +43,6 @@
          team strength each team's Power Rating (elo/data/model.json `teams`): rating, shield,
                        rank, change since its last game, chance against an average team (a rating
                        from before a team's latest final starred, and said under the table)
-         stat          the season's eleven team stats side by side (news/data/stats.json), each a
-         breakdown     bar split between the two teams in their colours, the better number marked
          offense vs    Overall Offense against Overall Defense, both ways (`units`), one possession
          defense       under the other, laid out like the head, centred and limited (the owner's
                        call, 14 October 2026): its title ("Seahawks Possession"), the Deep Dive's tag
@@ -52,17 +50,19 @@
                        boxes of one size, the better rank's tinted; then the Deep Dive itself,
                        "Position matchups": that offense's four position matchups against that
                        defense, a compact row each, the unit, the two sides' clubs and Elo (the
-                       owner's call, 16 October 2026: the quarterback's own season Elo against Pass
-                       Defense, Pass Protection against Pass Rush, Run Offense against Run Defense,
-                       Pass Offense against Pass Defense, from the Elo files the window already
-                       has, deepdive.js eloSides; the higher marked; a side with no Elo its rank as
-                       before), the defense's position it faces (Pass defense, Pass rush, Run
-                       defense, Coverage: the owner's call, 16 October 2026) and the tag (deepdive.js
-                       possession, on news/data/units.json, where it is for this game's week; the
-                       tag is the Deep Dive's own, never worked from the Elo), no names, no one out
-                       and no other numbers (who plays is the Starters card's, the numbers the Stat
-                       breakdown's); a unit with no game yet this season
-                       on its rating carried from last season, marked so. What the ratings and the
+                       owner's calls, 16 October 2026: the quarterback's own season Elo against the
+                       Overall Defense, Pass Protection against Pass Rush, Run Offense against Run
+                       Defense, Pass Offense against Pass Defense, from the Elo files the window
+                       already has, deepdive.js eloSides; each Elo with its tier's shield before
+                       it, the ELO Ratings tab's own; the higher marked; a side with no Elo its rank
+                       as before, with no shield), the defense's position it faces (Overall defense,
+                       Pass rush, Run defense, Coverage: the owner's call, 16 October 2026) and the
+                       tag (deepdive.js possession, on news/data/units.json, where it is for this
+                       game's week; the tag is the Deep Dive's own, never worked from the Elo, the
+                       quarterback's still his passing against the pass defense), no names, no one
+                       out and no other numbers (who plays is the Starters card's); a unit with no
+                       game yet this season on its rating carried from last season, marked so.
+                       What the ratings and the
                        Deep Dive rest on is said on hover (the boxes' title, deepdive.js basis as the
                        matchups' label's title, each side's title and the tag's, which gives the edge)
          mismatches    the Props tab's Mismatches (window.eloMismatches) in this game, each with
@@ -76,7 +76,9 @@
                        where the report has him questionable, the higher Elo of each pair marked
                        and each defensive unit's league rank at either end of its group's header
        (the Sources card, with the files' publish times and links to the full tabs, went on 14 October
-       2026, the owner's call; a news file still loading or that did not load is said in its own part)
+       2026, the owner's call, and the Stat breakdown, the season's eleven team stats from
+       news/data/stats.json as bars, on 16 October 2026, the owner's call: "get rid of stat breakdown
+       section"; a news file still loading or that did not load is said in its own part)
 
      The side of a comparison with the edge wears one mark everywhere (gs-better): the higher
      rating, Elo and chance, the better rank. Nothing here is computed afresh: every number is a
@@ -84,9 +86,10 @@
      window.eloMismatches); the verdict's tallies and the Elo gap are counts and a difference of
      the numbers shown beneath them, and smoke.js holds each to the files (every element marked
      data-gs-n). The Elo files are the ones the ELO Ratings tab read on load (window.eloFiles):
-     nothing is fetched a second time. The news job's files (news/data/units.json, stats.json and
-     the week's notes) are fetched here with no-store as the page loads (the notes of the board's
-     week once the board has its schedule, another week's the first time one of its games opens):
+     nothing is fetched a second time. The news job's files (news/data/units.json and the week's
+     notes; stats.json is not read here since the Stat breakdown went) are fetched here with no-store
+     as the page loads (the notes of the board's week once the board has its schedule, another week's
+     the first time one of its games opens):
      each once a page load, the notes once a week, never baked into the page, so a news job publish
      is on the next load. A file that did not load, or has nothing for the game, says so in its card
      and its summary (the preview draws its automatic line); one still loading says that; the rest
@@ -318,11 +321,14 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
 .gs-utier{white-space:nowrap;color:var(--ink-2)}
 
 /* the Deep Dive's tags, on each possession's overall meeting and each of its four rows: five steps from
-   Easy to Very tough, each its own tint with its text at 4.5:1 or more (the preview's look sets its own) */
+   Easy to Very tough, each its own tint with its text at 4.5:1 or more (the hub look sets its own). Even
+   wears a ring as well as its grey (the owner's call, 16 October 2026: "make 'even' tags more
+   distinguishable, looks like its not a button or color blends in too much"): an inset shadow, so its
+   shape and size are the others' to the pixel, the ring at 3:1 or more on the card */
 #gsModal .dtag{display:inline-flex;align-items:center;font-size:var(--gs-t1);font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:999px;white-space:nowrap;line-height:1.2}
 #gsModal .dtag.easy{background:#DDF3E6;color:#17603D}
 #gsModal .dtag.fav{background:#EEF8F2;color:#1B6E47}
-#gsModal .dtag.even{background:#E9EEF4;color:#4F607A}
+#gsModal .dtag.even{background:#E9EEF4;color:#3F4D63;box-shadow:inset 0 0 0 1.5px #6F7E96}
 #gsModal .dtag.tough{background:#FBEFD3;color:#7A5205}
 #gsModal .dtag.vtough{background:#FAE1DE;color:#A93226}
 #gsModal .gs-hpts{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -344,25 +350,13 @@ table.gs-vs small{font-size:var(--gs-t2);color:var(--muted);font-weight:600}
    as every comparison in the window is (gs-better) */
 #gsModal .ddelo{font-family:var(--display);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;padding:1px 7px}
 #gsModal .ddelo.gs-better{color:var(--pick)}
+/* each Elo's tier shield (the owner's call, 16 October 2026: "elo in offense vs defense pls add elo icon"),
+   the ELO Ratings tab's own, sized to the row's text and sat on its line */
+#gsModal .ddside .tierbadge{width:15px;height:17px;flex:none;vertical-align:-3px;margin-left:2px}
 #gsModal .ddend{justify-self:start;display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left}
 #gsModal .dddu{font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
 #gsModal .ddrow .dtag{cursor:help}
 #gsModal .gs-ddwhy{margin:14px 0 0;font-size:var(--gs-t2);color:var(--ink-2);line-height:1.5}
-
-/* the stat breakdown: a row a stat, each team's number at its side, the bar split between them */
-#gsModal .gs-steams{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 10px}
-#gsModal .gs-steams .gs-thn{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:var(--gs-t3);font-weight:600;color:var(--ink);min-width:0}
-#gsModal .gs-sbar{display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
-#gsModal .gs-sbar:last-child{border-bottom:0}
-#gsModal .gs-sva{justify-self:start} #gsModal .gs-svh{justify-self:end}
-#gsModal .gs-sbar .gs-v b{font-family:var(--display);font-size:var(--gs-t3);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
-#gsModal .gs-smid{min-width:0;text-align:center}
-#gsModal .gs-slb{display:block;margin:0 0 6px;font-size:var(--gs-t2);font-weight:600;color:var(--ink-2);line-height:1.3}
-#gsModal .gs-slb small{margin-left:6px;font-size:var(--gs-t1);font-weight:600;color:var(--ink-2)}
-#gsModal .gs-strack{display:flex;gap:8px}
-#gsModal .gs-shalf{display:flex;flex:1 1 0;height:8px;border-radius:4px;background:var(--line);overflow:hidden}
-#gsModal .gs-shl{justify-content:flex-end}
-#gsModal .gs-shalf i{display:block;height:100%;border-radius:4px;background:var(--gs-tc,var(--ink-2))}
 
 /* position by position */
 .gs-outs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px}
@@ -500,8 +494,6 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   .gs-units{gap:28px}
   .gs-uhd h4{font-size:var(--gs-t3)}
   #gsModal .ddrow{gap:10px}
-  #gsModal .gs-sbar{grid-template-columns:58px minmax(0,1fr) 58px;gap:8px}
-  #gsModal .gs-steams .gs-tnm{display:none}
   #gsModal .gs-prev{padding:10px 12px}
   .gs-duel{gap:8px}
   .gs-ubox{padding:12px 8px}
@@ -547,6 +539,19 @@ ul.gs-mm li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;
   #gsModal .ddrks{order:4}
   #gsModal .ddrow .dtag{order:5}
 }
+/* the narrowest phones: with a shield beside each Elo (16 October 2026) the clubs, figures and tag of a row
+   came to 30px past a 360px card's line and the tag fell to a line of its own on 30 of week 6's 112 rows;
+   a smaller shield, tighter value boxes and gaps and a tag a touch narrower keep them on one line, the
+   widest a row can be (WAS 1888 · WAS 1888, Very tough) with a pixel or two to spare, the dot 2px from
+   each side */
+@media(max-width:400px){
+  #gsModal .ddrow{column-gap:5px}
+  #gsModal .ddrks{gap:3px}
+  #gsModal .ddsep{margin:0 -1px}
+  #gsModal .ddelo{padding:1px 4px}
+  #gsModal .ddside .tierbadge{width:13px;height:15px;margin-left:0;vertical-align:-2px}
+  #gsModal .ddrow .dtag{padding:4px 5px;letter-spacing:.03em}
+}
 @media(prefers-reduced-motion:reduce){ .gs-chev{transition:none} }
 </style>
 <script>
@@ -566,9 +571,6 @@ const tierName=e=>{ const t=e!=null&&window.pkEloTier?window.pkEloTier(e):null; 
 const teamName=t=>(typeof TEAM_NAMES==='object'&&TEAM_NAMES&&TEAM_NAMES[t])||t;
 const stamp=s=>{ if(!s) return ''; const d=new Date(String(s).length<=16?s+'Z':s);
   return isNaN(d)?'':d.toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); };
-/* a day the news job writes as a date alone (2026-10-14), or a time as stamp() reads one */
-const day0=s=>{ if(!s) return ''; if(/^\d{4}-\d{2}-\d{2}$/.test(String(s))){ const d=new Date(s+'T12:00:00Z');
-  return isNaN(d)?'':d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',timeZone:'UTC'}); } return stamp(s); };
 /* the day alone ("Wed, Oct 14"), from a date or a time */
 const dayOnly=s=>{ if(!s) return ''; const x=/^\d{4}-\d{2}-\d{2}$/.test(String(s)), d=new Date(x?s+'T12:00:00Z':String(s).length<=16?s+'Z':s);
   return isNaN(d)?'':d.toLocaleDateString(undefined,Object.assign({weekday:'short',month:'short',day:'numeric'},x?{timeZone:'UTC'}:{})); };
@@ -593,9 +595,10 @@ function eloFiles(){
   }
   return FILES;
 }
-/* the news job's files (news/data/): the Deep Dive's units and the stat breakdown, each read once a
-   page load as it loads, and a week's notes once for that week (the board's as the board draws,
-   another's the first time a window wants them); never baked into the page, always no-store, so a
+/* the news job's files (news/data/): the Deep Dive's units, read once a page load as it loads, and a
+   week's notes once for that week (the board's as the board draws, another's the first time a window
+   wants them); stats.json, the Stat breakdown's, is not read since that card went (16 October 2026, the
+   owner's call). Never baked into the page, always no-store, so a
    news job publish is on the next load. Each that does not load -- a 404, a body that is not JSON,
    the wrong shape -- is "did not load" for its own part alone, never a throw; the window draws again
    when each answers, as it does for the Elo files */
@@ -613,7 +616,6 @@ function newsFile(key,url,shape){
 }
 const isObj=x=>!!x&&typeof x==='object'&&!Array.isArray(x);
 const unitsFile=()=>newsFile('units','../news/data/units.json',j=>isObj(j)&&isObj(j.units)&&isObj(j.meta)?null:'not the Deep Dive\'s file');
-const statsFile=()=>newsFile('stats','../news/data/stats.json',j=>isObj(j)&&isObj(j.stats)?null:'not the stat file');
 /* a game's season: its id's, as the notes and the news files name it */
 const seasonOf=(P,g)=>+String(g.game_id).slice(0,4)||+P.ST.season||null;
 const notesFile=(season,week)=>newsFile(`notes:${season}-${week}`,`../news/data/notes/${season}-w${week}.json`,
@@ -636,7 +638,7 @@ let cur=null, opener=null;
 /* which cards and folds are open, and which Starters tab is chosen, as the visitor leaves them
    while the window is open; nothing of it is saved. On a wide screen Every call and Team strength
    open, the rest folded; on a phone every card folded (the verdict is always shown) */
-const CARDS=['gsCalls','gsTeams','gsStats','gsUnits','gsMism','gsPos'], WIDE_OPEN=['gsCalls','gsTeams'];
+const CARDS=['gsCalls','gsTeams','gsUnits','gsMism','gsPos'], WIDE_OPEN=['gsCalls','gsTeams'];
 let OPEN={}, PTAB='off';
 const phone=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:760px)').matches); }catch(e){ return false; } };
 const gameOf=gid=>{ const P=B(); return P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched.find(x=>x.game_id===gid)||null:null; };
@@ -806,7 +808,7 @@ function matchup(P,g,F){
       <div class="gs-rec"><b data-gs-rec="${esc(t)}"${r.fromFile?' title="The Elo file\'s count: it has a final the results have not taken in yet"':''}>${wl(r.reg)}</b>${po?` <span data-gs-po="${esc(t)}">playoffs ${wl(r.po)}</span>`:''}</div></div>`; };
   const score=o?`<div class="gs-sc"><span class="gs-score" data-gs-score>${o.as}–${o.hs}</span><small>${o.final?'Final':esc(o.clock||'On now')}</small></div>`:'';
   const where=neu?`${g.stadium?esc(g.stadium)+', ':''}a neutral site`:(g.stadium?esc(g.stadium):'');
-  const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups, units and stats are the files as they stand now, after the game.</p>`:'';
+  const past=st.fin?`<p class="gs-past" id="gsPast"><b>Played.</b> The calls were made before kickoff and are graded on the result; the ratings, lineups and units are the files as they stand now, after the game.</p>`:'';
   /* first in the window, the game's own page on the Props tab, where its game bets and every player
      line are, where the Props tab can open it */
   const props=typeof P.canProps==='function'&&P.canProps(g.game_id)
@@ -986,7 +988,7 @@ function deepDive(P,g,o,d,F){
     const fs=+m.season, fw=+m.week, later=season>fs||(season===fs&&wk>fw);
     const of=`week ${isFinite(fw)?fw:'?'}${fs!==season&&isFinite(fs)?' of '+fs:''}`;
     return why(`The Deep Dive's matchups are for ${of}: ${later?'this game\'s come with its week':'this game\'s week has gone, and its matchups with it'}.`); }
-  const E=F&&F.model?dd.eloSides(F.model,F.players,F.mu,g.game_id,o,d,tierName):null;
+  const E=F&&F.model?dd.eloSides(F.model,F.players,F.mu,g.game_id,o,d,tierName,shield):null;
   const x=dd.possession(D,o,d,E);
   if(!x) return why(`The Deep Dive has no matchups for ${esc(!D.units[dd.club(o)]?o:d)}.`);
   const anyElo=!!E&&Object.values(E).some(p=>p[0]||p[1]);
@@ -1021,64 +1023,10 @@ function unitsSec(P,g,F){
  }
     return `<div class="gs-unit" data-gs-poss="${esc(o)}-${esc(d)}"><div class="gs-uhd"><h4>${possTitle(o)}</h4>${head}</div>${duel}${deepDive(P,g,o,d,F)}</div>`; };
   /* no summary in the title, no note under the card and no stats fold (the owner's call, 14 October 2026):
-     what the ratings and the rows rest on is the boxes' title and the matchups' label's; the season's
-     stats are the Stat breakdown's */
+     what the ratings and the rows rest on is the boxes' title and the matchups' label's */
   return fold('gsUnits',T0,'',`${eloWhy?`<p class="gs-msg" style="margin:0 0 12px">${eloWhy}</p>`:''}<div class="gs-units">${pair(a,h)}${pair(h,a)}</div>`);
 }
 
-/* ---- the stat breakdown: the season's eleven team stats side by side (news/data/stats.json) ---- */
-/* [key, label, note, value, lower is better, signed, a percentage]; per game, as the file has them */
-const SROWS=[
-  ['pd','Point differential','per game',s=>s.ppg==null||s.pa==null?null:Math.round((s.ppg-s.pa)*10)/10,false,true,false],
-  ['ppg','Points per game','',s=>s.ppg,false,false,false],
-  ['pa','Points allowed','',s=>s.pa,true,false,false],
-  ['ypp','Yards per play','',s=>s.ypp,false,false,false],
-  ['yppa','Yards per play allowed','',s=>s.yppa,true,false,false],
-  ['to','Turnover margin','per game',s=>s.to,false,true,false],
-  ['sk','Sacks','',s=>s.sk,false,false,false],
-  ['ska','Sacks allowed','',s=>s.ska,true,false,false],
-  ['third','Third down rate','',s=>s.third,false,false,true],
-  ['rz','Red zone TD rate','',s=>s.rz,false,false,true],
-  ['expl','Explosive plays','20+ yards',s=>s.expl,false,false,false]];
-/* the bar's split, as the Season Tracker drew it: where lower is better each side by the inverse of
-   its number, else both shifted up by the lower of the two (and 0) so a negative still splits;
-   nothing drawn where either is missing or both are 0. Tenths of a percent */
-function statSplit(x,y,lo){
-  if(x==null||y==null||(x===0&&y===0)) return [0,0];
-  let pa;
-  if(lo){ const ix=1/Math.max(x,.01), iy=1/Math.max(y,.01); pa=ix/(ix+iy)*100; }
-  else{ const m=Math.min(x,y,0), sx=x-m, sy=y-m; pa=(sx+sy)===0?50:sx/(sx+sy)*100; }
-  pa=Math.round(pa*10)/10; return [pa,Math.round((100-pa)*10)/10];
-}
-const statNum=v=>v==null||v===''||!isFinite(+v)?null:+v;
-function statsSec(P,g,F){
-  const T0='Stat breakdown', rec=NEWS.stats, a=g.away_team, h=g.home_team, dd=DD(), club=t=>dd?dd.club(t):t;
-  if(!rec||!rec.done) return fold('gsStats',T0,'loading…','<p class="gs-msg">Loading the stat breakdown…</p>');
-  const J=rec.data;
-  if(!J) return fold('gsStats',T0,'did not load',`<p class="gs-msg">The stat breakdown did not load${rec.err?' ('+esc(rec.err)+')':''}.</p>`);
-  const season=seasonOf(P,g);
-  if(J.season!=null&&+J.season!==season) return fold('gsStats',T0,`${esc(J.season)}'s numbers`,`<p class="gs-msg">The stat breakdown is ${esc(J.season)}'s season; this game is ${esc(season)}'s.</p>`);
-  const sOf=t=>isObj(J.stats[club(t)])?J.stats[club(t)]:null, SA=sOf(a), SH=sOf(h), none={};
-  const fmt=(v,sign,pc)=>v==null?'–':(v<0?'−'+Math.abs(v):(sign&&v>0?'+':'')+v)+(pc?'%':'');
-  let na=0, nh=0;
-  const rows=SROWS.map(([k,lab,note,f,lo,sign,pc])=>{
-    const x=statNum(f(SA||none)), y=statNum(f(SH||none)), [pa,ph]=statSplit(x,y,lo);
-    const ba=x!=null&&y!=null&&x!==y&&(lo?x<y:x>y), bh=x!=null&&y!=null&&x!==y&&!ba;
-    if(ba) na++; if(bh) nh++;
-    return `<div class="gs-sbar" data-gs-srow="${k}"><span class="gs-sva">${V(`<b data-gs-sval="${esc(a)}">${fmt(x,sign,pc)}</b>`,ba)}</span>
-      <div class="gs-smid"><span class="gs-slb">${lab}${note?`<small>${note}</small>`:''}</span><span class="gs-strack" aria-hidden="true"><span class="gs-shalf gs-shl"><i style="width:${pa}%;--gs-tc:${tcol(a)}"></i></span><span class="gs-shalf gs-shr"><i style="width:${ph}%;--gs-tc:${tcol(h)}"></i></span></span></div>
-      <span class="gs-svh">${V(`<b data-gs-sval="${esc(h)}">${fmt(y,sign,pc)}</b>`,bh)}</span></div>`; }).join('');
-  const g1=n=>`${n} game${n===1?'':'s'}`;
-  const counts=[[a,SA],[h,SH]].filter(([,x])=>x&&statNum(x.g)!=null).map(([t,x])=>`${esc(t)} ${g1(+x.g)}`).join(', ');
-  const missing=[[a,SA],[h,SH]].filter(([,x])=>!x).map(([t])=>esc(t));
-  const basis=`${esc(J.season||season)} season${J.through?' through '+esc(J.through):''}${counts?': '+counts:''}`;
-  const sum=missing.length===2?'neither team in the file yet'
-    :`<span class="gs-nw">${esc(a)} better on <b data-gs-sb="${esc(a)}">${na}</b></span>, <span class="gs-nw">${esc(h)} on <b data-gs-sb="${esc(h)}">${nh}</b></span>`;
-  return fold('gsStats',T0,sum,`<div class="gs-steams" aria-hidden="true"><span class="gs-thn">${tg(a,true)}<span class="gs-tnm">${esc(teamName(a))}</span></span><span class="gs-thn"><span class="gs-tnm">${esc(teamName(h))}</span>${tg(h,true)}</span></div>
-    <div class="gs-sbars">${rows}</div>
-    ${missing.length?`<p class="gs-note">Not in the file yet: ${missing.join(' and ')}; ${missing.length===1?'its':'their'} numbers show as dashes.</p>`:''}
-    <p class="gs-note" data-gs-sbasis>${basis}. Each bar splits the pair between the two teams, in their colours, and the better number of each pair is marked; per game, from TeamRankings' season tables as the news job pulls them${J.asof?`, as of ${esc(day0(J.asof))}`:''}, so a game played shows the numbers as they stand now.</p>`);
-}
 /* ---- position by position: each team's expected starters, as the ELO Ratings tab rates them ---- */
 const PTABS=[['off','Offense'],['def','Defense'],['k','Kicker']];
 const ptabOf=grp=>grp==='K'?'k':UNIT_NAME[grp]?'def':'off';
@@ -1192,7 +1140,7 @@ function draw(gid){
   view.innerHTML=part(matchup,'gsMatch','The matchup')
     +`<div class="gs-dbar"><span class="gs-lab">The details</span><button type="button" class="btn quiet" data-gs-all="${allOpen?'close':'open'}">${allOpen?'Close all':'Open all'}</button></div>`
     +`<div class="gs-pair">${part(callsSec,'gsCalls','Model Picks')}${part(teamElo,'gsTeams','Team strength')}</div>`
-    +part(statsSec,'gsStats','Stat breakdown')+part(unitsSec,'gsUnits','Offense vs defense')+part(mismatchSec,'gsMism','Mismatches')
+    +part(unitsSec,'gsUnits','Offense vs defense')+part(mismatchSec,'gsMism','Mismatches')
     +part(positions,'gsPos','Starters');
   if(!$('peDefs')&&window.pkTierDefs){ const box=document.createElement('div'); box.id='peDefs'; box.innerHTML=window.pkTierDefs; document.body.appendChild(box); }
   stuck();
@@ -1306,7 +1254,7 @@ function open(gid,from){
   cur=gid; opener=from||document.activeElement||null;
   /* on a wide screen Every call and Team strength open; on a phone the verdict alone, every card folded */
   const wide=!phone(); OPEN={}; for(const id of CARDS) OPEN[id]=wide&&WIDE_OPEN.includes(id);
-  eloFiles(); unitsFile(); statsFile(); notesFile(seasonOf(P,g),+g.week);
+  eloFiles(); unitsFile(); notesFile(seasonOf(P,g),+g.week);
   md.hidden=false; document.body.classList.add('modal-open');
   draw(gid);
   md.scrollTop=0;
@@ -1331,7 +1279,7 @@ window.gameSnapshotClose=close;
    once rather than drawing again under the visitor as each answers; and the notes of the board's week
    as soon as the board has its schedule (it opens on the first week with a game still to play, else
    the last) */
-eloFiles(); unitsFile(); statsFile();
+eloFiles(); unitsFile();
 function boardNotes(){
   const P=B(), s=P&&P.ST&&Array.isArray(P.ST.sched)?P.ST.sched:null; if(!s||!s.length) return false;
   const to=s.filter(g=>g.result==null), ws=(to.length?to:s).map(g=>+g.week), w=to.length?Math.min(...ws):Math.max(...ws);

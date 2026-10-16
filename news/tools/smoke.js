@@ -1,7 +1,8 @@
 /* Smoke test for the news job's data. There is no page here any more: the Season Tracker's page was retired
-   on 14 October 2026 and its games went into X NFL Bets and Stats' Game snapshot, which fetches
-   data/units.json, data/stats.json and data/notes/ at runtime and draws the Deep Dive with
-   nflbets/build/deepdive.js. This holds the files the job writes to the sources they come from, and to what
+   on 14 October 2026 and its games went into NFL Hub's Game snapshot, which fetches data/units.json and
+   data/notes/ at runtime and draws the Deep Dive with nflbets/build/deepdive.js (data/stats.json, which
+   its Stat breakdown read, is still written and held here, though no page reads it since that card went
+   on 16 October 2026, the owner's call). This holds the files the job writes to the sources they come from, and to what
    that module draws from them:
      - the twins: units.json and stats.json are exactly the consts of units2026.js and stats2026.js;
      - each team's stat line against its own game count in results.js;
@@ -11,9 +12,11 @@
        each tag the weighted edge worked out on its own, each row's two sides the offense's then the
        defense's, each its own club, its figure the Elo ../elo/data has for it (the owner's call, 16 October
        2026: the quarterback's own season Elo from players.json through matchups.json's lineup for the game,
-       against Pass Defense; Pass Protection against Pass Rush, Run Offense against Run Defense, Pass Offense
-       against Pass Defense, from model.json's units), worked out by tools/deepdive-checks.js on its own,
-       the higher marked, and the rank from units.json only where there is no Elo, the edge shown the
+       against the Overall Defense; Pass Protection against Pass Rush, Run Offense against Run Defense, Pass
+       Offense against Pass Defense, from model.json's units), worked out by tools/deepdive-checks.js on its
+       own, the higher marked, each Elo wearing the shield eloSides() was handed for it (a stand-in here:
+       the page's own pkTierBadge is held by nflbets/build/smoke.js), and the rank from units.json only
+       where there is no Elo, with no shield, the edge shown the
        file's, the defense's position it faces named (the owner's call, 16 October 2026), and no name, no
        one out and no other number in a row (the owner's call, 14 October 2026: a row is its unit, the
        clubs and figures, the defense's position and its tag; who plays is the snapshot's Starters card's);
@@ -137,22 +140,25 @@ async function run() {
   /* every game of the week as the Game snapshot draws it, both ways: the four rows, their tags, figures
      and edges, and the Overall line's tag on model.json's units. The figures are Elo from ../elo/data (the
      owner's call, 16 October 2026), handed to possession() by deepdive.js eloSides() as the snapshot hands
-     them, and held to deepdive-checks.js's own reading of the same files */
+     them, and held to deepdive-checks.js's own reading of the same files. The tier shield each Elo wears is
+     the page's pkTierBadge there; here a stand-in naming its Elo, so the plumbing is held (one shield beside
+     each Elo, its own, none beside a rank) */
+  const BADGE = e => `<svg class="tierbadge" data-elo="${e}" role="img" aria-label="stand-in tier"><title>stand-in tier</title></svg>`;
   const sides = games.flatMap(([a, h, gid]) => [[a, h, gid], [h, a, gid]]);
   const PL = readJSON(path.resolve(ROOT, '..', 'elo', 'data', 'players.json')), MU = readJSON(path.resolve(ROOT, '..', 'elo', 'data', 'matchups.json'));
   { const bad = [], seen = { elo: 0, rank: 0 }, split = { rows: 0, opposite: 0, even: 0, at: [] };
     for (const [off, def, gid] of sides) {
-      let r = null; try { r = DD.possession(D, off, def, DD.eloSides(M, PL, MU, gid, off, def)); } catch (e) { bad.push(`${off} v ${def}: threw ${e.message}`); continue; }
+      let r = null; try { r = DD.possession(D, off, def, DD.eloSides(M, PL, MU, gid, off, def, null, BADGE)); } catch (e) { bad.push(`${off} v ${def}: threw ${e.message}`); continue; }
       if (!r) { bad.push(`${off} v ${def}: no units for one side`); continue; }
       const W = DC.eloWant(M, PL, MU, gid, off, def);
-      bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)], W));
+      bad.push(...DC.checkPossession(r.html, off, def, U[DD.club(off)], U[DD.club(def)], W, BADGE));
       for (const row of r.rows) { const [o, d] = W[row.key]; for (const x of [o, d]) seen[x ? 'elo' : 'rank']++;
         /* the higher Elo against the tag's side: Favorable or Easy is the offense's, Tough or Very tough the defense's */
         if (!o || !d || o.elo === d.elo) continue; split.rows++;
         if (row.tag === 'Even') { split.even++; continue; }
         const tagO = /Favorable|Easy/.test(row.tag); if (tagO !== (o.elo > d.elo)) { split.opposite++; split.at.push(`${off} ${row.key} ${o.elo}-${d.elo} ${row.tag}`); } }
     }
-    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, each figure the Elo ../elo/data has for it (the rank only where it has none), the higher marked, the edges the file\'s, the defense\'s position named, no name or other number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions, ${seen.elo} sides on Elo and ${seen.rank} on a rank`);
+    check('deep dive: every game of the week drawn both ways, four rows each, every tag the weighted edge, each row\'s two sides headed by their own clubs, each figure the Elo ../elo/data has for it with its shield (the rank only where it has none), the quarterback\'s against the Overall Defense, the higher marked, the edges the file\'s, the defense\'s position named, no name or other number in a row', sides.length > 0 && bad.length === 0, brief(bad) || `${sides.length} possessions, ${seen.elo} sides on Elo and ${seen.rank} on a rank`);
     console.log(`     (the higher Elo and the row's tag: of ${split.rows} rows with two different Elo, ${split.even} tagged Even and ${split.opposite} tagged the other way${split.at.length ? ': ' + split.at.slice(0, 12).join(', ') + (split.at.length > 12 ? ', ...' : '') : ''})`); }
   /* what the rows rest on (deepdive.js basis(), the title of the snapshot's "Position matchups" label): each
      side named with its own count of this season's games,

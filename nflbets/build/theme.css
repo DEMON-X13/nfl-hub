@@ -169,13 +169,14 @@ line[stroke="#E6EAEF"]{stroke:#4A5269}
 #gsModal{--gs-miss-ink:#FFA2B8}
 /* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
 #gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
-/* the stat breakdown's bars the same way, on the same track */
-#gsModal .gs-shalf{background:var(--panel-3)} #gsModal .gs-shalf i{background:color-mix(in srgb,var(--gs-tc) 62%,#fff)}
 /* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own
-   with its text at 6:1 or more */
+   with its text at 6:1 or more. Even, the neutral step, is a slate a step lighter than the card with a
+   light ring (an inset shadow, so its shape is the others'), the ring 3.8:1 or more on either card
+   colour: its old grey (#3A4155) was the card's own and read as plain text (the owner's call, 16 October
+   2026: "make 'even' tags more distinguishable") */
 #gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}
 #gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}
-#gsModal .dtag.even{background:#3A4155;color:#DDE1EA}
+#gsModal .dtag.even{background:#525C78;color:#F6F7FB;box-shadow:inset 0 0 0 1.5px #9AA4BF}
 #gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}
 #gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}
 /* the preview block a step off the card, its text the look's own ink */

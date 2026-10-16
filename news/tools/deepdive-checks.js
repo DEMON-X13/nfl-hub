@@ -11,13 +11,18 @@
                receivers'. The snapshot draws one possession's four rows (quarterback, line, run game,
                receivers), the pass rush and the coverage as the defense's side of the line's and the
                receivers' rows: rowTags()'s first four.
-     figures   each row's two sides show Elo against Elo (the owner's call, 16 October 2026): the
-               offense's starting quarterback's own season Elo against the defense's Pass Defense, Pass
-               Protection against Pass Rush, Run Offense against Run Defense, Pass Offense against Pass
-               Defense, each the number elo/data/model.json's units (or players.json) has, the higher of
-               two marked; a side with no Elo (a model.json without the table, a quarterback unranked or
-               with no lineup for the game) shows its rank from units.json, as every side did before.
-               eloWant() is this file's own reading of the Elo files; the tag stays the rows' rule above.
+     figures   each row's two sides show Elo against Elo (the owner's calls, 16 October 2026): the
+               offense's starting quarterback's own season Elo against the defense's Overall Defense
+               ("QB needs to be vs team defense overall"; units.def, the row naming it Overall defense),
+               Pass Protection against Pass Rush, Run Offense against Run Defense, Pass Offense against
+               Pass Defense (named Coverage), each the number elo/data/model.json's units (or
+               players.json) has, the higher of two marked, each wearing its tier's shield ("pls add elo
+               icon": the badge the caller hands in, the page's pkTierBadge) and no shield beside a
+               rank; a side with no Elo (a model.json without the table, a quarterback unranked or with
+               no lineup for the game) shows its rank from units.json, as every side did before (the
+               quarterback row's defense side the rank of units.json's Overall Defense, overall.def).
+               eloWant() is this file's own reading of the Elo files; the tag stays the rows' rule above,
+               the quarterback's on the pass defense still.
      headline  the Overall line's tag: this team's Overall Offense against the opponent's Overall Defense
                (elo/data/model.json `units`, as the ELO Ratings tab and the snapshot show them), tagged by
                points = 11.9126 x (off.raw - def.raw) at 0.9645 and 2.8935 points, those points shown
@@ -58,12 +63,13 @@ function headlineWant(off, def) {
    model.json, PL players.json, MU matchups.json; any may be null) for the offense off with the ball
    against def in the game gameId: { qb|ol|rb|rec: [offense, defense] }, each { elo, rank, of } or null
    where that side shows its rank instead. A table counts only where model.json's units.tables names it
-   and the club has a finite elo; the quarterback is the first of the offense's expected lineup for this
-   very game whom players.json has at QB, and only where he is ranked with a season Elo (se) */
-const ELO_TABLES = { qb: ['QB', 'pass_def'], ol: ['pass_pro', 'pass_rush'], rb: ['run_off', 'run_def'], rec: ['pass_off', 'pass_def'] };
+   and the club has a finite elo, but the Overall Defense (units.def) wherever model.json has it; the
+   quarterback is the first of the offense's expected lineup for this very game whom players.json has at
+   QB, and only where he is ranked with a season Elo (se) */
+const ELO_TABLES = { qb: ['QB', 'def'], ol: ['pass_pro', 'pass_rush'], rb: ['run_off', 'run_def'], rec: ['pass_off', 'pass_def'] };
 function eloWant(M, PL, MU, gameId, off, def) {
   const U = M && M.units, T = U && U.tables || {};
-  const team = (k, t) => { const tab = T[k] ? U[k] : null, v = tab && tab[t];
+  const team = (k, t) => { const tab = k === 'def' ? (U && U.def) || null : T[k] ? U[k] : null, v = tab && tab[t];
     return v && typeof v.elo === 'number' && isFinite(v.elo) ? { elo: v.elo, rank: v.rank, of: Object.keys(tab).length } : null; };
   const qb = () => { const lu = MU && MU.lineups && MU.lineups[off], P = PL && PL.players || {};
     if (!lu || lu.game_id !== gameId) return null;
@@ -77,9 +83,9 @@ function eloWant(M, PL, MU, gameId, off, def) {
 
 /* one possession's html as deepdive.js possession() writes it: the block's teams (data-dd-pos) and each
    row's key, its tags, the edge its tag's title gives, and its two sides in the order drawn (ddoff,
-   dddef), each with the club, its title and the figures it shows (figs: { cls, v }, a rank b.ddrk or an
-   Elo b.ddelo); ranks are the two sides' single figures in that order; text is what the row shows, its
-   markup and titles taken off (its unit, the two clubs and figures, the defense's position and its tag:
+   dddef), each with the club, its title, the figures it shows (figs: { cls, v }, a rank b.ddrk or an
+   Elo b.ddelo) and the shields it wears (each svg.tierbadge whole); ranks are the two sides' single
+   figures in that order; text is what the row shows, its markup, titles and shields taken off (its unit, the two clubs and figures, the defense's position and its tag:
    since 14 October 2026 a row names nobody and shows no other number, since 16 October 2026 it names the
    defense's position it faces and shows Elo); dpos is each .dddu the row draws */
 function parse(html) {
@@ -92,9 +98,9 @@ function parse(html) {
       const lab = /^[a-z]+"[^>]*><span class="ddsn">([^<]*)<\/span>/.exec(x), own = x.split(/class="ddside |class="dtag /)[0];
       const figs = [...own.matchAll(/<b class="(dd(?:rk|elo)[^"]*)">([^<]*)<\/b>/g)].map(m => ({ cls: m[1], v: m[2] }));
       return { side: (/^([a-z]+)"/.exec(x) || [])[1] || null, label: lab ? lab[1] : null, title: (/^[a-z]+" title="([^"]*)"/.exec(x) || [])[1] || null,
-        figs, ranks: figs.map(f => f.v), better: (own.match(/gs-better/g) || []).length };
+        figs, ranks: figs.map(f => f.v), better: (own.match(/gs-better/g) || []).length, shields: own.match(/<svg\b[\s\S]*?<\/svg>/g) || [] };
     });
-    const text = seg.replace(/<div\s*$/, '').replace(/^[^>]*>/, '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const text = seg.replace(/<div\s*$/, '').replace(/^[^>]*>/, '').replace(/<svg\b[\s\S]*?<\/svg>/g, ' ').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const dpos = [...seg.matchAll(/<span class="dddu">([^<]*)<\/span>/g)].map(m => m[1]);
     return { key: key ? key[1] : null, tags, tag: tags.length ? tags[0] : null, sides, text, dpos,
       ranks: sides.map(x => x.ranks.length === 1 ? x.ranks[0] : `${x.ranks.length} ranks`), edge: edges.length ? 'edge ' + edges[0] : null,
@@ -122,13 +128,19 @@ function checkMeta(META) {
    and nothing else drawn: the row's text is its unit, the two clubs and figures, the defense's position and
    its tag, so no name, no one out and no other number (the owner's call, 14 October 2026). W is eloWant()
    for this possession (or null, every side a rank): a side W has shows exactly its Elo (b.ddelo), its
-   title giving that Elo and its rank, the higher of two Elo marked gs-better and nothing else marked; a
-   side W has not shows its rank from the file (b.ddrk), as before. DPOS is this file's own copy of the
-   positions, never deepdive.js's */
+   title giving that Elo and its rank, the higher of two Elo marked gs-better and nothing else marked, and
+   wears exactly one shield, badge(its Elo) (badge is what the caller handed eloSides(); with none, no
+   shield at all); a side W has not shows its rank from the file (b.ddrk), as before, with no shield. On
+   the quarterback's row the defense's side is the Overall Defense (the owner's call, 16 October 2026),
+   its title naming it so, its rank with no Elo units.json's overall.def, while the tag and its edge stay
+   the pass defense's. DPOS is this file's own copy of the positions, never deepdive.js's */
 const UNIT = { qb: 'Quarterback', ol: 'Offensive line', rb: 'Running backs', rec: 'Receivers' };
-const DPOS = { qb: 'Pass defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
+const DPOS = { qb: 'Overall defense', ol: 'Pass rush', rb: 'Run defense', rec: 'Coverage' };
+/* the defense's side a row shows, where it has no Elo: the tag's unit, or on the quarterback's row the
+   club's Overall Defense from units.json */
+const shown = (O, u, i) => u === 'qb' ? (O.overall && O.overall.def) || null : faced(O, ROWS[i][1]);
 const ESC = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-function checkPossession(html, off, def, A, O, W) {
+function checkPossession(html, off, def, A, O, W, badge) {
   const P = parse(html), f = [], at = `${off} v ${def}`;
   if (P.pos !== `${off}-${def}`) f.push(`${at}: the block is for ${P.pos} (want ${off}-${def})`);
   if (P.preHasRank) f.push(`${at}: a rank or an edge before the first row`);
@@ -139,8 +151,9 @@ function checkPossession(html, off, def, A, O, W) {
   if (P.tags.join('|') !== want.join('|')) f.push(`${at} rows: ${P.tags.join(',')} (want the weighted ${want.join(',')})`);
   KEYS.forEach((u, i) => {
     const mine = A[u], theirs = faced(O, ROWS[i][1]), r = P.rows[i], E = (W && W[u]) || [null, null];
-    /* each side's figure: its Elo where W has one, else its rank from the file */
-    const ranks = [mine, theirs].map((x, j) => E[j] ? String(E[j].elo) : x && x.rank != null ? ord(x.rank) : '–');
+    /* each side's figure: its Elo where W has one, else its rank from the file (the quarterback row's
+       defense side, the Overall Defense's) */
+    const ranks = [mine, shown(O, u, i)].map((x, j) => E[j] ? String(E[j].elo) : x && x.rank != null ? ord(x.rank) : '–');
     const kinds = E.map(e => e ? 'ddelo' : 'ddrk');
     const lead = E[0] && E[1] && E[0].elo !== E[1].elo ? (E[0].elo > E[1].elo ? 0 : 1) : -1;
     r.sides.forEach((x, j) => {
@@ -153,6 +166,11 @@ function checkPossession(html, off, def, A, O, W) {
         const t = x.title || '', rk = E[j].rank != null ? `${ord(E[j].rank)}${E[j].of ? ` of ${E[j].of}` : ''}` : null;
         if (!t.includes(`: Elo ${E[j].elo}`) || (rk && !t.includes(`, ${rk}`))) f.push(`${at} ${u}: the ${nm}'s side is titled '${t}' (want its Elo ${E[j].elo}${rk ? ` and its rank, ${rk}` : ''})`);
       }
+      /* the quarterback's row: the defense's side is its Overall Defense, said in its title, Elo or rank */
+      if (u === 'qb' && j === 1 && !/\boverall defense\b/i.test(x.title || '')) f.push(`${at} qb: the defense's side is titled '${x.title}' (want its Overall Defense, not its pass defense)`);
+      /* the tier's shield: one beside an Elo, badge(that Elo) exactly; none beside a rank */
+      const sh = E[j] ? (badge ? badge(E[j].elo) || '' : '') : '';
+      if (x.shields.length !== (sh ? 1 : 0) || (sh && x.shields[0] !== sh)) f.push(`${at} ${u}: the ${nm}'s side wears ${x.shields.length} shield${x.shields.length === 1 ? '' : 's'}${x.shields.length === 1 && sh ? ' not its tier\'s' : ''} (want ${sh ? `its Elo ${E[j].elo}'s shield, once` : E[j] ? 'none: no badge was handed in' : 'none beside a rank'})`);
     });
     if (r.sides.map(x => x.side).join('|') !== 'ddoff|dddef') f.push(`${at} ${u}: sides ${r.sides.map(x => x.side).join(',') || 'none'} (want the offense's, then the defense's)`);
     else if (!r.sides.every((x, j) => x.label === ESC([off, def][j]))) f.push(`${at} ${u}: sides headed '${r.sides.map(x => x.label).join("' | '")}' (want ${off}'s, then ${def}'s)`);

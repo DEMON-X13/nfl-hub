@@ -14,13 +14,19 @@ the tracker's per-game content now lives there:
   `data/notes/<season>-w<N>.json`, every player named in bold (`**Bo Nix**`); the snapshot shows the
   preview alone (the owner's call, 14 October 2026: the news and its sources stay in the file, unshown, and
   are still written); until a game has one, the snapshot shows an automatic line;
-- the **Deep Dive** (the four position matchups each way, a compact row each: the unit, the two clubs'
-  ranks, the defense's position it faces (since 16 October 2026) and the tag; who plays and who is out stay in the file, unshown since 14 October 2026) inside its
-  Offense vs defense card, from `data/units.json`, drawn by `../nflbets/build/deepdive.js`;
-- the **Stat breakdown** (the eleven stat bars), from `data/stats.json`.
+- the **Deep Dive** (the four position matchups each way, a compact row each: the unit, the two clubs and
+  their Elo from `../elo/data` (the quarterback's own against the Overall Defense, Pass Protection against
+  Pass Rush, Run Offense against Run Defense, Pass Offense against Pass Defense, each Elo with its tier's
+  shield; the owner's calls of 16 October 2026), the rank from this file only where there is no Elo, the
+  defense's position it faces (Overall defense, Pass rush, Run defense, Coverage) and the tag, this file's
+  own, the quarterback's still on the pass defense; who plays and who is out stay in the file, unshown since
+  14 October 2026) inside its Offense vs defense card, from `data/units.json`, drawn by
+  `../nflbets/build/deepdive.js`.
 
-The page reads all three at runtime (`cache: 'no-store'`), so nothing here ever needs X NFL Bets and Stats
-rebuilt. The tracker's page, its week files, the matchup, positives, negatives and keys paragraphs, the
+The **Stat breakdown** (the eleven stat bars from `data/stats.json`) went on 16 October 2026 (the owner's
+call, "get rid of stat breakdown section"): the job still writes `stats2026.js` and `stats.json` and the
+smoke still holds them, but no page reads them. The page reads the notes and `units.json` at runtime
+(`cache: 'no-store'`), so nothing here ever needs NFL Hub rebuilt. The tracker's page, its week files, the matchup, positives, negatives and keys paragraphs, the
 rank chip and the player positions were dropped; they are in git history before that day. `index.html` is
 now a tiny page that sends a visitor (and any old bookmark) to `../nflbets/`.
 
@@ -73,7 +79,7 @@ routine runs `--strict`, which refuses both.
 | `data/units2026.js` | `const UNITS26`, the Deep Dive: six units per team (passing offense, pass protection, run game, receivers, pass rush, coverage), each a rating in league standard deviations with its rank, the numbers behind it, who plays and who is out, from nflverse team and player stats with 2025 counted as 4 games plus the team's own 2026 games (`g26`), and each team's Overall Offense and Defense from `../elo/data/model.json`. `UNITS26_META` says which week, season and report the lineups are for and carries the tag constants; `UNITS26_BASIS` and `UNITS26_LINEUPS` the lines under the rows. Written by `tools/context.js`, which says how. |
 | `data/units.json` | Its twin, what the Game snapshot fetches: `{ season, week, built_at, meta, basis, lineups, units }`, exactly the consts of `units2026.js` (`writeTwin` in `tools/lib.js`), written with it and whenever it is missing or differs. |
 | `data/stats2026.js` | `const STATS26`, season to date team stats for the stat bars (TeamRankings and ESPN), each team with `g`, the games its numbers cover (verified against `results.js`), `STATS26_THROUGH` the last game day included and `STATS26_ASOF` the pull's day. After week 18 the tables are asked for as of the day after the last regular-season game. Written by `tools/pull-week.js`. |
-| `data/stats.json` | Its twin: `{ season, through, asof, stats }`, exactly the consts of `stats2026.js`. |
+| `data/stats.json` | Its twin: `{ season, through, asof, stats }`, exactly the consts of `stats2026.js`. Read by no page since the snapshot's Stat breakdown went (16 October 2026). |
 | `data/results.js` | `const RESULTS`, final scores keyed `wk<n>:AWAY-HOME`, which the smoke test holds each stat line to; `LINES` beside it is each game's line from the nflverse schedule, kept for reference (no page reads it). |
 | `data/teams.js` | `const TEAMS`, the 32 teams' names and colours. `../picks/` reads it, so it stays. |
 | `data/notes/<season>-w<N>.json` | The game notes, written by hand (above). Never written by the job. |
@@ -118,7 +124,8 @@ Game snapshot draws from them. Blocking: the twins are exactly their `.js` const
 its own game count in `results.js`; the tag constants are their values and every club's Overall ratings are
 `../elo/data/model.json`'s; every game of the units' week, drawn both ways by `deepdive.js`, has its four
 rows in order with each tag the weighted edge worked out on its own, each figure the Elo the Elo files have for
-it (`eloWant`, the checks' own reading of `../elo/data`; the rank only where there is none), the higher marked,
+it (`eloWant`, the checks' own reading of `../elo/data`: the quarterback's against the Overall Defense; the
+rank only where there is none; each Elo with the shield `eloSides` was handed, a stand-in here), the higher marked,
 and the edges the file's, each row its unit, the two clubs and figures, the defense's position and its tag alone
 (no name, no one out, no other number: the owner's calls of 14 and 16 October 2026; the smoke prints, without
 checking, how often the higher Elo and the tag point opposite ways, since the tag is the Deep Dive's own), and

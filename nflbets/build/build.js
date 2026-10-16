@@ -23,8 +23,8 @@
  *
  * Nothing is baked in. The page fetches props/data/payload.json, betting/state.json,
  * liveparlays/parlays.json, liveparlays/xbets.json and elo/data/*.json when it opens, and the news
- * job's news/data/units.json, stats.json and the week's notes when a Game snapshot first opens, so it
- * is rebuilt when a source changes, never when the data does. Neither site is touched. This page
+ * job's news/data/units.json and the week's notes when a Game snapshot first opens (stats.json no
+ * longer: the Stat breakdown went on 16 October 2026, the owner's call), so it is rebuilt when a source changes, never when the data does. Neither site is touched. This page
  * reads what they publish, and writes nothing anywhere but the visitor's own browser storage.
  */
 'use strict';
@@ -373,12 +373,18 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
     if (/(^|[\s,>+~])\.(dd|dtag)/.test(rule) && rule.split(',').some(sel => /\.(dd|dtag)/.test(sel) && !/#gsModal\b/.test(sel)))
       throw new Error('a Deep Dive rule in the snapshot styles is not scoped to #gsModal: ' + rule.trim());
   for (const need of ['window.gameSnapshot=', 'window.pkBoard', 'window.eloFiles', 'window.eloMismatches', "'Escape'", 'window.gsDeepDive',
-    "'../news/data/units.json'", "'../news/data/stats.json'", '`../news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
+    "'../news/data/units.json'", '`../news/data/notes/${season}-w${week}.json`', "fetch(url,{cache:'no-store'})", 'data-gs-props=', 'P.openOnProps(id)', 'P.canProps(g.game_id)'])
     if (!SNAP_JS.includes(need)) throw new Error('nflbets/build/snapshot.html no longer has ' + need);
+  /* the Stat breakdown went on 16 October 2026 (the owner's call: "get rid of stat breakdown section"), and
+     with it the window's read of the news job's stats.json */
+  for (const gone of ["news/data/stats.json'", 'statsFile', 'gsStats', 'statSplit'])
+    if (SNAP_JS.includes(gone)) throw new Error('nflbets/build/snapshot.html draws the Stat breakdown again, or reads its file (' + gone + ')');
   for (const need of ['window.gameSnapshot(card.dataset.game,card)', 'tabindex="0" aria-haspopup="dialog"', 'window.pkBoard={', 'canProps,openOnProps};', 'ST.state=st;', "history.replaceState(null,'','#matchups')"])
     if (!js.includes(need)) throw new Error("the Matchups tab no longer opens the Game snapshot from a game's row, hands it the way to the Props tab, or lands #tracker and #pickems on the board as #matchups (" + need + ')');
   for (const gone of ['data-snap=', 'pk-gbody', 'aria-expanded'])
     if (js.includes(gone)) throw new Error("the Matchups tab still opens a game's row on buttons (" + gone + '): a tap on a game opens its Game snapshot');
+  /* the board's foot says what a game's snapshot holds, so it must not name the card that went (16 October 2026) */
+  if (/stat breakdown/i.test(js)) throw new Error("the Matchups tab still says a game's Game snapshot has a stat breakdown, which went on 16 October 2026");
   if (!ELO_JS.includes('window.eloFiles=()=>FILES;') || !ELO_JS.includes('window.eloMismatches=mismatches;')) throw new Error('the Player Elo tab no longer hands its files or its Mismatches to the Game snapshot');
   const DD_JS = rd('nflbets', 'build', 'deepdive.js');
   for (const need of ['root.gsDeepDive = API', 'function possession(', 'function headTag(', 'function applies(', 'function basis(', 'module.exports = API'])
