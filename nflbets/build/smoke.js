@@ -329,8 +329,9 @@ const XBFIX = { season: BET_SEASON, updated: '2026-10-10T17:28:44Z', deposit: 10
    '2026-w6': ... } }, each an object, a string that is not JSON, or missing for a 404; none at all
    by default). gate: promises by name ({ units, stats, notes, payload }) that hold back that file's
    answer until each resolves, and early: resolve once the board has drawn, not at the prop model's
-   app-ready (which a held payload holds back). Every request is in `calls` with its method and cache mode. */
-function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null } = {}) {
+   app-ready (which a held payload holds back). pay: the payload's text in place of the published one
+   (a copy a check has made of its own). Every request is in `calls` with its method and cache mode. */
+function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn = null, noState = false, { seed = null, file = null, xbets = null, ledger = null, news = null, gate = null, early = false, friends = null, pay = null } = {}) {
   return new Promise(resolve => {
     const errs = [], fetched = [], urls = [], calls = [];
     const vc = new VirtualConsole(); vc.sendTo(console, { omitJSDOMErrors: true });
@@ -355,7 +356,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           if (s.includes('state.json')) return noState
             ? Promise.resolve({ ok: false, status: 404 })
             : Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(state)) });
-          if (s.includes('payload.json')) return held('payload', Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(PAYLOAD) }));
+          if (s.includes('payload.json')) return held('payload', Promise.resolve({ ok: true, status: 200, json: async () => JSON.parse(pay != null ? pay : PAYLOAD) }));
           if (s.includes('parlays.json')) return Promise.resolve({ ok: true, status: 200, json: async () => file ? JSON.parse(JSON.stringify(file)) : JSON.parse(PARLAYS) });
           /* friends' picks: the run's stand-in (an object, or a string that is not JSON), else a 404, never the real file */
           if (s.includes('picks/friends.json')) return Promise.resolve(friends == null ? { ok: false, status: 404 } : { ok: true, status: 200,
@@ -1692,7 +1693,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
      suggested parlays and never an untested one, and the parlay card names such a leg to add by hand. A
      failing ESPN and a 404 are worded as the status line says them, and a game's page reads that game
      alone. The stand-in takes the game's own player prices out whatever the payload holds, so it holds
-     on any payload: the week's own, a lean week, one baked before PAY.espn_ids.
+     on any payload: the week's own, a lean week, one baked before PAY.espn_ids. The press's read kept in
+     this browser (app v108) is held on real reloads of the page, each a window of its own on this one's
+     storage and a payload copy of the check's own (below the game page's est. prices).
      The rules every check here keeps, as the props audit's do (its BLOCKING AND WARNINGS note): read the
      page's clock (w.Date.now(); the smoke's own shift, PAGE_SHIFT_MS, moves the page's alone, so a time
      built from Node's lands up to two days in the page's future); pick a game, a row or a player only from those the check can
@@ -1702,7 +1705,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   { const S = w.eval('S'), ko0 = x => w.eval('kickoff')(x).getTime(), g = hasPb ? (w.eval('pbGames()').slice().sort((a, b) => ko0(b) - ko0(a))[0] || null) : null, ESR = ESPN_RULE.make(w), has = w.eval('typeof espnRefresh') === 'function' && w.eval('typeof espnWhen') === 'function';
     chk(has, 'the page has no Refresh odds reader (espnRefresh, espnWhen)');
     chk(!calls.some(c => /sports\.core\.api\.espn\.com|propBets/.test(c.url)), 'the page asked ESPN\'s core host for something on load, with no press: ' + calls.filter(c => /sports\.core|propBets/.test(c.url)).map(c => c.url).slice(0, 3).join(' '));
-    if (!g || !hasPb || !has) console.log('  (no game left to kick off: Refresh odds is not pressed)');
+    if (!g || !hasPb || !has) console.log('  (no game left to kick off: Refresh odds is not pressed, and no kept read is reloaded)');
     else { const P = w.eval('PAY'), wk = String(g.w), clone = v => v === undefined ? undefined : JSON.parse(JSON.stringify(v)), fmt = w.eval('fmtML'), when = w.eval('espnWhen'), clk = w.eval('espnClock');
       const games = w.eval('pbGames()').filter(x => String(x.w) === wk), others = games.filter(x => x.id !== g.id), gN = others[0] || null, gF = others[1] || null;
       const KEYS = w.eval('ESPN_GL_KEYS'), before = Object.fromEntries(games.map(x => [x.id, Object.fromEntries(KEYS.map(k => [k, x[k]]))]));
@@ -1718,7 +1721,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
       const unapply = () => { const GL = w.eval('ESPN_GL'); for (const id of Object.keys(GL)) { const x = S.sched.find(y => y.id === id); if (!x) continue;
         for (const k of KEYS) { if (GL[id].orig[k] === undefined) delete x[k]; else x[k] = GL[id].orig[k]; } } w.eval('ESPN_GL={}'); };
       const reset = () => { unapply(); w.eval('ESPN_LIVE={}; ESPN_OUT={}; ESPN_NAMES={}; ESPN_SEQ++; PB_CACHE=new Map(); GAME_TIER_CACHE={}; PB_VIEW={sig:null,key:null,t:{}}'); };
-      const press = async b => { if (b) { b.focus(); b.click(); } for (let i = 0; i < 400 && w.eval('ESPN_RUN.busy'); i++) await wait(25); await wait(30); };
+      const pressIn = async (ww, b) => { if (b) { b.focus(); b.click(); } for (let i = 0; i < 400 && ww.eval('ESPN_RUN.busy'); i++) await wait(25); await wait(30); }, press = b => pressIn(w, b);
       try {
         /* the buttons and their status lines before a press */
         { const pub = `Prices as published ${when(P.baked_at)}.`, b = d.querySelector('#pbPanel [data-espn-refresh="week"]'), st = d.querySelector('#pbPanel [data-espn-status="week"]');
@@ -1753,26 +1756,47 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         /* the stand-in's own id table alone: merged into the payload's real one (the job bakes it), a check
            would turn on which players the week's ids already name (the props audit's #270) */
         P.espn_ids = { ...ids };
-        /* the week's scoreboard: DraftKings' game lines on every game, g's moved from the published */
+        /* the week's scoreboard: DraftKings' game lines on every game, g's moved from the published, and gP's
+           spread with no prices beside its number: gP is a game other than g (gN and gF last) whose published
+           lines are older than the page's clock, so the press's read is put on it. On this scoreboard its
+           number is moved off the published one, so the page drops the spread's prices, as a read does (the
+           kept read's nulls); on boot 1's of the reload checks (spBare 'same') it is the published number,
+           and the page keeps them (noTot: a scoreboard with no total for the game, boot 1's for gT). pubT: the published game lines' time, the page's rule with its fallbacks
+           (espnApplyGame): the DraftKings pull's own (lat, which the bake writes only beside ls 'dk'), else
+           baked_at */
+        const pubT = x => Date.parse(before[x.id].lat || '') || Date.parse(P.baked_at || '') || 0;
+        const gP = (c => c.find(x => x !== gN && x !== gF) || c[0] || null)(others.filter(x => pubT(x) < w.Date.now()));
         const toE = { WAS: 'WSH', LA: 'LAR' }, eab = t => toE[t] || t, fa = v => (v > 0 ? '+' : '') + v;
-        const evOf = (x, i) => { const lk = oc => ({ href: `https://sportsbook.draftkings.com/gateway?preurl=${encodeURIComponent(`https://sportsbook.draftkings.com/event/${80000 + i}?outcomes=0SM${i}${oc}`)}` });
-          const spA = -(2.5 + i % 2), mlA = -140 - i, mlH = 118 + i, tot = 43.5 + i;
+        const evOf = (x, i, spBare = 'moved', noTot = false) => { const lk = oc => ({ href: `https://sportsbook.draftkings.com/gateway?preurl=${encodeURIComponent(`https://sportsbook.draftkings.com/event/${80000 + i}?outcomes=0SM${i}${oc}`)}` });
+          const bare = !!gP && x.id === gP.id, b0 = before[x.id].sp, mlA = -140 - i, mlH = 118 + i, tot = 43.5 + i;
+          let spA = -(2.5 + i % 2); if (bare && spBare === 'same' && typeof b0 === 'number') spA = b0; else if (bare && b0 === spA) spA -= 1;
+          const pr = o => bare ? {} : { odds: o };
           return { id: String(9300 + i), date: w.eval('kickoff')(x).toISOString(), competitions: [{ competitors: [{ homeAway: 'home', team: { abbreviation: eab(x.h) } }, { homeAway: 'away', team: { abbreviation: eab(x.a) } }],
             odds: [{ provider: { id: '100' }, moneyline: { home: { close: { odds: fa(mlH), link: lk('MH') } }, away: { close: { odds: fa(mlA), link: lk('MA') } } },
-              pointSpread: { home: { close: { line: fa(-spA), odds: '-106', link: lk('SH') } }, away: { close: { line: fa(spA), odds: '-114', link: lk('SA') } } },
-              total: { over: { close: { line: 'o' + tot, odds: '-108', link: lk('TO') } }, under: { close: { line: 'u' + tot, odds: '-112', link: lk('TU') } } } }] }] }; };
-        const evs = games.map(evOf), evId = x => evs[games.indexOf(x)].id;
+              pointSpread: { home: { close: { line: fa(-spA), ...pr('-106'), link: lk('SH') } }, away: { close: { line: fa(spA), ...pr('-114'), link: lk('SA') } } },
+              ...(noTot ? {} : { total: { over: { close: { line: 'o' + tot, odds: '-108', link: lk('TO') } }, under: { close: { line: 'u' + tot, odds: '-112', link: lk('TU') } } } }) }] }] }; };
+        const evs = games.map((x, i) => evOf(x, i)), evId = x => evs[games.indexOf(x)].id;
         const props = u => { const m = /\/events\/(\d+)\/competitions\/\d+\/odds\/100\/propBets\?(.*)$/.exec(u); return m ? { eid: m[1], q: new URLSearchParams(m[2]) } : null; };
         const pageOf = (its, q) => { const pg = +q.get('page') || 1; return { code: 200, body: { count: its.length, pageIndex: pg, pageSize: 1000, pageCount: Math.ceil(its.length / 1000), items: its.slice((pg - 1) * 1000, pg * 1000) } }; };
-        const full = u => { if (/\/scoreboard\?/.test(u)) return { code: 200, body: { events: evs } };
+        const fullOf = E => u => { if (/\/scoreboard\?/.test(u)) return { code: 200, body: { events: E } };
           const p = props(u); if (p) { if (p.eid === evId(g)) return pageOf(items, p.q); if (gN && p.eid === evId(gN)) return { code: 404, body: { error: { message: 'No propBets found', code: 404 } } };
             if (gF && p.eid === evId(gF)) return { reject: true }; return pageOf([], p.q); }
-          return { code: 404, body: {} }; };
+          return { code: 404, body: {} }; }, full = fullOf(evs);
         w.fetch = (u, o) => { const s2 = String(u); if (!esp(s2)) return f0(u, o); net.log.push({ url: s2, cache: o && o.cache, headers: o && o.headers }); ALL_CALLS.push('GET ' + s2); return ans(net.route(s2)); };
         net.route = full; reset(); w.eval('renderParlay()'); await wait(30);
-        /* the press, from the Parlay Builder */
+        /* the press, from the Parlay Builder: the payload's DraftKings ids as the press found them (dk0), and
+           the page's clock either side of it, between which its one scoreboard read must be dated (T0: every
+           game line and DraftKings id the press set) */
+        const dk0 = clone(P.dk || {}), tP0 = w.Date.now();
         await press(d.querySelector('#pbPanel [data-espn-refresh="week"]'));
-        const LV = w.eval('ESPN_LIVE'), blk = (LV[wk] || {})[g.id];
+        const tP1 = w.Date.now(), LV = w.eval('ESPN_LIVE'), blk = (LV[wk] || {})[g.id];
+        const T0 = (() => { const s = new Set([...Object.values(w.eval('ESPN_GL')).map(v => v.at), ...Object.values(w.eval('ESPN_IDAT')).flatMap(v => Object.values(v))]); return s.size === 1 ? [...s][0] : null; })();
+        chk(T0 != null && T0 >= tP0 && T0 <= tP1, `the press's game lines and DraftKings ids are not dated by its one scoreboard read, between ${tP0} and ${tP1}: ${JSON.stringify(Object.values(w.eval('ESPN_GL')).map(v => v.at))} ${JSON.stringify(w.eval('ESPN_IDAT')).slice(0, 160)}`);
+        /* a read's game lines are put on the page only where the read is later than the published lines' time
+           (pubT, above): on a Monday night under way the smoke's shift sets the page two days back, before that
+           Monday's pull (or a bake after the page's clock), and the press rightly leaves the published lines
+           (test_audit_phases.py's smoke_mon5) */
+        const readOn = x => T0 != null && T0 > pubT(x);
         chk(!!blk && net.log.filter(x => /\/scoreboard\?/.test(x.url)).length === 1 && net.log.every(x => x.cache === 'no-store' && !x.headers),
           `the press did not read ${g.id}'s stand-in lines on one scoreboard and plain no-store requests: ${net.log.map(x => x.url.replace(/https:\/\/[^/]+/, '')).slice(0, 4).join(' ')}`);
         { const st = txt(d.querySelector('#pbPanel [data-espn-status="week"]')), exp = `DraftKings’ lines from ESPN, read ${clk(Date.parse(blk && blk.at))}: player prices estimated from the line` + (gN ? '; 1 game has no player lines posted yet' : '') + (gF ? '; couldn’t read DraftKings’ player lines for 1 game: its published player prices stand' : '') + '.';
@@ -1802,10 +1826,18 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
             chk(sig(rNow) === sig(rNew) && drawn === nDk, `right after the press the Parlay Builder shows levels from before it (${drawn} legs marked est. drawn where a build on the read gives ${nDk}): ${sig(rNow).slice(0, 160)}`);
           } finally { if (pl) pl.remove(); }
           w.eval('renderParlay()'); await wait(20); }
-        /* DraftKings' game lines, real, from the press */
-        { const o = ESPN_RULE.oddsOf(evs[games.indexOf(g)], g), tl = w.eval('pricedLegs')([g]).filter(l => l.grp === 'TEAM');
-          chk(Object.entries(o.lines).every(([k, v]) => g[k] === v) && g.ls === 'dk' && tl.length > 0 && tl.every(l => l.src === 'real' && l.price === (l.stat === 'ml' ? (l.team === g.h ? o.lines.mlh : o.lines.mla) : (l.team === g.h ? o.lines.sph : o.lines.spa))),
-            `${g.id}'s game lines are not DraftKings' as the press read them, real: ${JSON.stringify(KEYS.map(k => g[k]))} / ${tl.map(l => l.label + ' ' + l.price + ' ' + l.src).join(', ')}`); }
+        /* DraftKings' game lines, real, from the press, on each game whose published lines are older than the
+           read (dated by it, ESPN_GL set); the published ones, untouched, on each whose lines are newer; and the
+           team bets on g at whichever stand */
+        { const GL = w.eval('ESPN_GL'), iso = T0 != null ? new Date(T0).toISOString() : null, eq = (x, k) => JSON.stringify(x[k]) === JSON.stringify(before[x.id][k]);
+          const bad = games.filter(x => { const o = ESPN_RULE.oddsOf(evs[games.indexOf(x)], x);
+            return readOn(x) ? !(o && Object.entries(o.lines).every(([k, v]) => x[k] === v) && x.ls === 'dk' && x.lat === iso && !!GL[x.id] && GL[x.id].at === T0)
+              : !(!GL[x.id] && KEYS.every(k => eq(x, k))); });
+          chk(!bad.length, `the press did not put DraftKings' game lines on exactly the games whose published lines are older than its read (${games.filter(readOn).length} of ${games.length}), the rest left as published: `
+            + bad.slice(0, 3).map(x => `${x.id} ${readOn(x) ? 'read' : 'published'} ${JSON.stringify(KEYS.map(k => x[k]))} (published ${new Date(pubT(x)).toISOString()})`).join(', '));
+          const on = readOn(g), src = on ? ESPN_RULE.oddsOf(evs[games.indexOf(g)], g).lines : before[g.id], tl = w.eval('pricedLegs')([g]).filter(l => l.grp === 'TEAM');
+          chk((!on || tl.length > 0) && tl.every(l => l.src === 'real' && l.price === (l.stat === 'ml' ? (l.team === g.h ? src.mlh : src.mla) : (l.team === g.h ? src.sph : src.spa))),
+            `${g.id}'s team bets are not at ${on ? 'DraftKings\' game lines as the press read them' : 'the published game lines, which are newer than the read'}, real: ${JSON.stringify(KEYS.map(k => g[k]))} / ${tl.map(l => l.label + ' ' + l.price + ' ' + l.src).join(', ')}`); }
         /* the game's page: each est. price the rule's, marked est. with what it is priced from */
         S.ui.showRungs = true; S.ui.showAll = false; S.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S.ui.open[x.pl.id] = true; S.ui.game = g.id;
         w.eval('renderGame()'); await wait(30);
@@ -1835,6 +1867,411 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
                 `${x.pl.n}'s ${r.k}+ ${l.stat} from DraftKings' line is not ${fmt(own.price)} est.${own.listed ? '' : ', marked not on DraftKings'}: "${txt(c)}" "${c ? c.title : ''}"`);
               if (!own.listed) unlSeen = true; } } }
         chk(mainSeen && untSeen && unlSeen && tdSeen, `the stand-in read drew no ${[!mainSeen && 'tested main line', !untSeen && 'untested main line', !unlSeen && 'rung DraftKings does not list', !tdSeen && 'touchdown'].filter(Boolean).join(', ')} from DraftKings' line`);
+        /* ---- the read kept across a reload (app v108). The week's press above wrote what it read to this
+           browser's own key (props_press_v1), and a real reload of the page (a new window on this one's
+           storage, served this window's payload: a copy of the published one with g's player prices out as
+           above, its S.odds rows with them, and the stand-in id table in) puts it back before the first
+           draw, asking ESPN for nothing: g's player lines, every game's DraftKings game lines and ids, the
+           status lines, each est. price on g's page and a builder leg the read priced. Each half gives way only
+           to a publish newer than the read (app v108, round 4): a publish since whose player prices for g were
+           pulled after the read (PAY.dk's at for g later than it) sets those alone aside: its game lines
+           stand, nothing says the read gave way, and the builder leg goes back to the model's estimate; one
+           whose pull for g came before the read leaves all of it standing; one that moved its game lines too,
+           pulled after the read, sets the whole game aside and says so. Junk, another season or another
+           version under the key draws the published prices and empties it, and a game kicked off since has
+           nothing put back while the rest stand. And a tab left open across a publish, on two real boots: a
+           read made in a window loaded before a publish whose pulls came before the read stands over it,
+           replayed field by field. Round 5: each kept game-line field beside the time of the read that set
+           it, so a publish between two reads takes the earlier read's fields alone, and a number read without
+           its prices keeps a publish's own prices on that number; a kept player line or rung off ESPN's
+           half-point steps, past 1000 or past 40 rungs is dropped, and a read that found no player lines is
+           said for a day at most; another tab's read is carried as it stands by a tab whose schedule no longer
+           offers its game, and its player lines lent to a later read that found none only over the same
+           publish. Every plant is on a payload copy (or a key copy) of the check's own, each expectation
+           worked out from this window (or boot 1's) before the plant ---- */
+        { const KK = 'props_press_v1', SEAS = w.eval('SEASON'), GL1 = w.eval('ESPN_GL'), LV1 = clone(LV[wk] || {}), OUT1 = clone(w.eval('ESPN_OUT'));
+          const canon = v => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canon(v[k])])) : v;
+          const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
+          const IDS = w.eval('pbGames()').map(x => x.id), kept = games.filter(x => GL1[x.id]), keptIds = kept.map(x => x.id), others1 = games.filter(x => x.id !== g.id);
+          const READ1 = IDS.filter(id => LV1[id]), NONE = IDS.filter(id => !LV1[id] && OUT1[id] && OUT1[id].st === 'none');
+          /* the games whose game lines a reload puts back are those the press put on the page (LINED), each
+             dated by its read: a game whose published lines are newer than the read by the page's clock (the
+             smoke's clock set back on a Monday night) keeps them through the press and so through a reload.
+             sameGl: a game's lines, and whether a read stands on them, as this window has them */
+          const LINED = IDS.filter(id => GL1[id]), glAt = id => GL1[id] ? GL1[id].at : 0;
+          const sameGl = (ww, GL, x) => same(linesOf(ww, x.id), lines1[x.id]) && !!GL[x.id] === !!GL1[x.id] && (!GL1[x.id] || GL[x.id].at === GL1[x.id].at);
+          const linesOf = (ww, id) => { const y = ww.eval('S').sched.find(z => z.id === id); return y ? KEYS.map(k => y[k] === undefined ? null : y[k]) : null; };
+          const pressCalls = r => r.calls.filter(c => esp(c.url) || /propBets/.test(c.url)).map(c => c.url.replace(/https:\/\/[^/]+/, '').slice(0, 80));
+          const estCells = dd => { const o = {}; for (const c of dd.querySelectorAll('#gameView td.num.est[data-est="dkline"]')) { const tr = c.closest('tr'), i = tr && !tr.closest('.gsugg') ? tr.querySelector('input[data-leg]') : null;
+              if (i) o[[i.dataset.leg, i.dataset.k, i.dataset.side || '', i.dataset.main || ''].join('|')] = txt(c) + ' | ' + c.title; } return o; };
+          const openG = async ww => { const S2 = ww.eval('S'); S2.ui.showRungs = true; S2.ui.showAll = false; S2.ui.open = {}; for (const tm in ro) for (const x of ro[tm].players) S2.ui.open[x.pl.id] = true;
+            S2.ui.game = g.id; ww.eval('renderGame()'); await wait(30); return txt(ww.document.querySelector(`#gameView [data-espn-status="${g.id}"]`)); };
+          const nm = id => { const x = S.sched.find(y => y.id === id); return x ? `${x.a} at ${x.h}` : id; };
+          /* the status lines as a reload should word them, worked out here from what a window read (c: this
+             one's by default; boot 1's in check 5): a failure to read is the press's moment and is not kept, so
+             it is not said after a reload */
+          const C1 = { lv: LV1, gat: glAt, none: NONE };
+          const expWeek = ({ read, lined, gave = 0, pubAt }, c = C1) => {
+            const asked = IDS.filter(id => read.includes(id) || lined.includes(id) || c.none.includes(id));
+            const gaveS = gave ? `your earlier Refresh odds read of ${gave} game${gave === 1 ? '' : 's'} gave way to prices published since` : '';
+            if (!asked.length) return `Prices as published ${when(pubAt)}` + (gaveS ? '; ' + gaveS : '') + '.';
+            const t = Math.max(0, ...read.map(id => Date.parse(c.lv[id].at)), ...lined.map(c.gat));
+            const of = asked.length < IDS.length ? ` for ${asked.length} of ${IDS.length} games${asked.length <= 3 ? ' (' + asked.map(nm).join(', ') + ')' : ''}` : '';
+            const parts = [read.length ? `DraftKings’ lines from ESPN${of}, read ${clk(t)}: player prices estimated from the line` : `DraftKings’ game lines from ESPN${of}, read ${clk(t)}`];
+            if (c.none.length) parts.push(`${c.none.length} game${c.none.length === 1 ? ' has' : 's have'} no player lines posted yet`);
+            if (gaveS) parts.push(gaveS); if (of) parts.push('press Refresh odds here for the rest');
+            return parts.join('; ') + '.'; };
+          const expGame = ({ read, lined, gave = false, pubAt }, c = C1) => { const gaveS = gave ? '; your earlier Refresh odds read gave way to prices published since' : '';
+            if (!read && !lined) return `Prices as published ${when(pubAt)}${gaveS}.`;
+            const t = Math.max(read ? Date.parse(c.lv[g.id].at) : 0, lined ? c.gat(g.id) : 0);
+            return (read ? `DraftKings’ lines from ESPN, read ${clk(t)}: player prices estimated from the line` : `DraftKings’ game lines from ESPN, read ${clk(t)}`) + gaveS + '.'; };
+          /* this window, as the press left it: g's page (open, every player and rung shown), the game lines
+             and ids each game's read set, and a builder leg priced from the read */
+          const cells1 = estCells(d), lines1 = Object.fromEntries(games.map(x => [x.id, linesOf(w, x.id)])), dk1 = clone((P.dk || {})[wk] || {}), idat1 = clone(w.eval('ESPN_IDAT'));
+          /* what a read at time at did to a game's lines (the page's ESPN_GL d, which the key keeps), worked out
+             here on its own from the stand-in scoreboard E and the published lines: each field the scoreboard
+             gave as [its value, at], a spread's or total's prices only beside their number, [null, at] for both
+             where a number came without them and moved off the published one (none where it came at the
+             published number: the page keeps those); {} where the page left the read off (on, false: its
+             published lines are newer) */
+          const dOf = (E, x, on, at) => { if (!on) return {}; const o = ESPN_RULE.oddsOf(E[games.indexOf(x)], x), L = (o && o.lines) || {}, b = before[x.id], dd = {}, p = v => [v, at];
+            for (const k of ['mla', 'mlh']) if (L[k] != null) dd[k] = p(L[k]);
+            for (const [n, a, c] of [['sp', 'spa', 'sph'], ['tot', 'tov', 'tou']]) if (L[n] != null) { dd[n] = p(L[n]);
+              if (L[a] != null && L[c] != null) { dd[a] = p(L[a]); dd[c] = p(L[c]); } else if (b[n] !== L[n]) { dd[a] = p(null); dd[c] = p(null); } }
+            return dd; };
+          /* a kept read's lines (dd, as dOf gives them, read at gat) replayed over a publish's row r, as linesOf
+             gives them, with the time the page then holds them at (the smoke's own working of the round-5 rule,
+             espnKeepLines): the publish's own time for its lines (since) is the DraftKings pull's (lat beside ls
+             'dk'), else 0 over the publish the read was read over (sameSig) and the bake's over another; nothing
+             goes back unless the read is later than that. Over the same publish every field as the read left
+             it, literally (a value set, a null dropped). Over a newer one only the fields whose own read is
+             later than since, as a read would put them: a money line set; a spread or total number with its
+             two prices set beside it, or without them dropping the row's prices only where the row has another
+             number (a kept null price on the row's own number leaves the row's prices); DraftKings', dated by
+             the latest of those fields' reads. at null: the row as published */
+          const replay = (r, dd, gat, sameSig, bake) => { const o = Object.fromEntries(KEYS.map(k => [k, r[k]])), out = at => ({ row: KEYS.map(k => o[k] === undefined ? null : o[k]), at });
+            const lat = r.ls === 'dk' ? Date.parse(r.lat || '') : NaN, since = isFinite(lat) ? lat : sameSig ? 0 : (Date.parse(bake || '') || 0);
+            const on = Object.keys(dd).filter(k => sameSig || dd[k][1] > since), has = k => on.includes(k), put = k => { o[k] = dd[k][0] === null ? undefined : dd[k][0]; };
+            if (!on.length || !(gat > since)) return out(null);
+            if (sameSig) on.forEach(put);
+            else { for (const k of ['mla', 'mlh']) if (has(k) && dd[k][0] !== null) put(k);
+              for (const [n, a, c] of [['sp', 'spa', 'sph'], ['tot', 'tov', 'tou']]) { if (!has(n) || dd[n][0] === null) continue;
+                if (has(a) && has(c) && dd[a][0] !== null && dd[c][0] !== null) { put(a); put(c); } else if (o[n] !== dd[n][0]) { o[a] = undefined; o[c] = undefined; }
+                put(n); } }
+            const t = Math.max(...on.map(k => dd[k][1])); o.ls = 'dk'; o.lat = new Date(t).toISOString(); return out(t); };
+          const pick = Object.values(ro).flatMap(t2 => t2.players).filter(x => x.starter)
+            .flatMap(x => ['receiving_yards', 'rushing_yards', 'passing_yards', 'receptions'].filter(st => (lines[x.pl.id] || {})[st] != null).map(st => ({ x, st })))[0] || null;
+          const par0 = clone(S.parlay); let bk = null;
+          if (pick) { const key = `${g.id}|${pick.x.pl.id}|${pick.st}`, L = lines[pick.x.pl.id][pick.st]; S.parlay = {}; w.eval('toggleLeg')(key, L, g, 'over', true); await wait(20);
+            const leg = S.parlay[key], r1 = d.querySelector('#parlayBody tr.legrow');
+            bk = { key, L, st: pick.st, pid: pick.x.pl.id, leg: leg ? clone(leg) : null, price: leg ? clone(w.eval('legPrice')(leg)) : null, row: txt(r1 && r1.querySelectorAll('td')[4]) }; }
+          chk(!!bk && !!bk.leg && bk.leg.src === 'dkline' && bk.price.src === 'dkline' && bk.price.ml === bk.leg.price,
+            `no builder leg on ${g.id} priced from the read, to carry through a reload: ${JSON.stringify(bk && { leg: bk.leg && [bk.leg.label, bk.leg.price, bk.leg.src], price: bk.price })}`);
+          w.eval('save()'); await wait(600);
+          const SNAP = {}; for (let i = 0; i < w.localStorage.length; i++) { const k = w.localStorage.key(i); SNAP[k] = w.localStorage.getItem(k); }
+          S.parlay = par0; w.eval('save(); renderParlay()'); await wait(20);
+          /* the key holds the page as the press left it (app v108): version 1, this season's, an entry for each
+             game the scoreboard gave odds for (every game here) and no other, under its week, each worked out
+             here from the stand-in answers, the payload's ids as the press found them (dk0) and this window:
+             gl, what the read did to the game's lines where the page put them on (it is later than the published
+             lines' time: dOf, every field the stand-in gave, gP's spread prices null beside a number moved
+             without them, each field beside the time of the read that set or dropped it, T0) and nothing where
+             the page left them off, dated by the read (T0); every DraftKings id the
+             read gave where the pull had none at that key or the same one (a paid id the read did not see is
+             never taken for the read's), each with the read's time; the pull's glat, or the read's where the
+             game had none and the read placed an id; the event, the pull's where it had one, else the read's;
+             a signature of what it was read over;
+             pl, the player lines' block the read kept (g's the stand-in's), with a signature of the published
+             player prices, and what the read found ('ok' or 'none': a failure to read is the press's moment and
+             is not kept) */
+          const K1 = (() => { try { return JSON.parse(SNAP[KK]); } catch (e) { return null; } })(), e1 = K1 && K1.games ? K1.games[g.id] : null;
+          const wantOf = x => { const o = ESPN_RULE.oddsOf(evs[games.indexOf(x)], x), d0 = (dk0[wk] || {})[x.id] || {}, ids = {}, idat = {};
+            for (const k of Object.keys((o && o.ids) || {})) if (d0[k] == null || d0[k] === o.ids[k]) { ids[k] = o.ids[k]; idat[k] = T0; }
+            const glat = Object.keys(ids).length && !isFinite(Date.parse(d0.glat)) ? new Date(T0).toISOString() : typeof d0.glat === 'string' ? d0.glat : null;
+            /* the event as the page holds it after the press: the paid pull's where it had one (a read sets
+               PAY.dk's event only where it is missing), else the read's; kept where it is a string */
+            const ev = d0.event ? d0.event : (o && o.event) ? o.event : d0.event;
+            const u = OUT1[x.id], out = u && (u.st === 'ok' || u.st === 'none') ? { st: u.st, why: u.why || '', sb: false, when: u.when || 0 } : undefined;
+            return { w: wk, gl: { at: T0, lines: dOf(evs, x, readOn(x), T0), ids, idat, glat, event: typeof ev === 'string' ? ev : null }, pl: u && u.st === 'ok' ? LV1[x.id] : undefined, out }; };
+          const keyBad = x => { const k = K1 && K1.games && K1.games[x.id], e = wantOf(x), why = [];
+            if (!k) return ['no entry'];
+            if (k.w !== e.w) why.push('week ' + k.w);
+            if (!k.gl) why.push('no game lines');
+            else { for (const f of ['at', 'lines', 'ids', 'idat', 'glat', 'event']) if (!same(k.gl[f], e.gl[f])) why.push(`gl.${f} ${JSON.stringify(k.gl[f])} want ${JSON.stringify(e.gl[f])}`);
+              if (typeof k.gl.sig !== 'string') why.push('no gl.sig'); }
+            if (!same(k.pl, e.pl)) why.push(`pl ${k.pl ? 'not the read\'s' : 'missing'}`);
+            if (typeof k.plsig !== 'string') why.push('no plsig');
+            if (!same(k.out, e.out)) why.push(`out ${JSON.stringify(k.out)} want ${JSON.stringify(e.out)}`);
+            return why; };
+          const badK = games.map(x => [x.id, keyBad(x)]).filter(([, b]) => b.length);
+          chk(!!K1 && K1.v === 1 && K1.season === SEAS && !!e1 && same(e1.pl, blk) && T0 != null && !badK.length && same(Object.keys(K1.games || {}).sort(), games.map(x => x.id).sort()),
+            `after the week's press this browser's ${KK} does not hold the page as the press left it (version 1, season ${SEAS}, an entry for each of the week's ${games.length} games and no other: what the read did to the game lines where they stand, null beside a number read without its prices, every id it gave or found with its time, the pull's glat, the pull's event else the read's, ${g.id}'s player lines): `
+            + (SNAP[KK] == null ? 'no such key' : JSON.stringify(K1 && { v: K1.v, season: K1.season, games: Object.keys(K1.games || {}).length, bad: badK.slice(0, 3) }).slice(0, 1200)));
+          const strip = c => { if (c.prices && Array.isArray(c.prices[wk])) c.prices[wk] = c.prices[wk].filter(r => String(r.game_id || '').trim() !== g.id);
+            for (const pid of Object.keys((c.mkt || {})[wk] || {})) for (const st of Object.keys(c.mkt[wk][pid] || {})) if (c.mkt[wk][pid][st] && c.mkt[wk][pid][st].g === g.id) delete c.mkt[wk][pid][st];
+            if (c.dk && c.dk[wk]) delete c.dk[wk][g.id]; c.espn_ids = { ...ids }; return c; };
+          const copyOf = f => { const c = strip(JSON.parse(PAYLOAD_TXT)); if (f) f(c); return JSON.stringify(c); };
+          const reboot = (seedV, pay) => run(state, undefined, null, false, { pay, seed: w2 => { for (const [k, v] of Object.entries(seedV)) w2.localStorage.setItem(k, v); } });
+          const keyOf = ww => { try { return JSON.parse(ww.localStorage.getItem(KK)); } catch (e) { return null; } };
+          /* 1. the reload: everything the read set, put back, and nothing asked of ESPN */
+          { const R = await reboot(SNAP, copyOf()), w2 = R.w, d2 = R.d, S2 = w2.eval('S'), LV2 = w2.eval('ESPN_LIVE'), GL2 = w2.eval('ESPN_GL');
+            chk(!R.timedOut && !R.errs.length, `the page broke on a reload with a kept read: ${R.errs.join('; ')}`);
+            chk(!pressCalls(R).length, `a reload with a kept read asked ESPN for its lines, with no press: ${pressCalls(R).slice(0, 3).join(' ')}`);
+            chk(!(S2.odds[g.id] && Object.keys(S2.odds[g.id]).length), `the reload's payload copy still prices ${g.id}'s players: the check stands on nothing`);
+            chk(same((LV2[wk] || {})[g.id], blk), `after a reload ${g.id}'s player lines are not the read's: ${JSON.stringify((LV2[wk] || {})[g.id] || null).slice(0, 160)}`);
+            { const bad = games.filter(x => !sameGl(w2, GL2, x));
+              chk(!bad.length, `after a reload the game lines are not those the press left (${kept.length} of ${games.length} games on DraftKings' read): ${bad.map(x => x.id + ' ' + JSON.stringify(linesOf(w2, x.id)) + ' want ' + JSON.stringify(lines1[x.id])).slice(0, 3).join(', ')}`); }
+            { const P2 = w2.eval('PAY'), bad = games.filter(x => !same(((P2.dk || {})[wk] || {})[x.id], dk1[x.id])), I2 = w2.eval('ESPN_IDAT');
+              chk(!bad.length && same(I2, idat1), `after a reload the DraftKings ids the read gave (and when each was read) are not back: ${bad.map(x => x.id).slice(0, 3).join(', ')} ${same(I2, idat1) ? '' : 'ESPN_IDAT ' + JSON.stringify(I2).slice(0, 120)}`); }
+            { const st = txt(d2.querySelector('#pbPanel [data-espn-status="week"]')), exp = expWeek({ read: READ1, lined: LINED });
+              chk(st === exp, `after a reload the Parlay Builder's status line reads "${st}", not "${exp}"`); }
+            const gst = await openG(w2), cells2 = estCells(d2), expG = expGame({ read: true, lined: !!GL1[g.id] });
+            chk(gst === expG, `after a reload ${g.id}'s page's status line reads "${gst}", not "${expG}"`);
+            { const k1 = Object.keys(cells1), miss = k1.filter(k => cells2[k] !== cells1[k]), extra = Object.keys(cells2).filter(k => !(k in cells1));
+              chk(k1.length > 0 && !miss.length && !extra.length, `after a reload ${g.id}'s page does not price the read's lines as before it (${k1.length} est. prices from DraftKings' line): ${miss.concat(extra).slice(0, 2).map(k => k + ': "' + (cells2[k] || 'none') + '" was "' + (cells1[k] || 'none') + '"').join('; ')}`); }
+            if (bk && bk.leg) { const l2 = S2.parlay[bk.key], p2 = l2 ? w2.eval('legPrice')(l2) : null, r2 = d2.querySelector('#parlayBody tr.legrow'), row2 = txt(r2 && r2.querySelectorAll('td')[4]);
+              chk(!!p2 && p2.src === 'dkline' && p2.ml === bk.price.ml && row2 === bk.row,
+                `after a reload the builder's ${bk.leg.name} ${bk.leg.label}, priced from the read at ${bk.price.ml}, is not: ${p2 ? p2.ml + ' ' + p2.src : 'no leg'} "${row2}" (was "${bk.row}")`); }
+            { const K2 = keyOf(w2); chk(!!K2 && !!K2.games[g.id] && same(K2.games[g.id].pl, blk) && games.every(x => K2.games[x.id] && K2.games[x.id].gl), `after a reload the key no longer holds the read that stands: ${JSON.stringify(K2 && Object.keys(K2.games))}`); }
+            w2.close(); }
+          /* 3. junk, another season and another version under the key: the published prices, nothing asked of ESPN, the key gone */
+          let pubLines = null;
+          for (const [what, val] of [['a value that is not JSON', 'not json'], ['last season\'s read', JSON.stringify({ ...K1, season: SEAS - 1 })], ['a read of another version', JSON.stringify({ ...K1, v: 2 })]]) {
+            const R = await reboot({ [KK]: val }, copyOf()), w2 = R.w, st = txt(R.d.querySelector('#pbPanel [data-espn-status="week"]')), gst = await openG(w2), pub = `Prices as published ${when(P.baked_at)}.`;
+            const live = Object.keys(w2.eval('ESPN_LIVE')).length + Object.keys(w2.eval('ESPN_GL')).length + Object.keys(w2.eval('ESPN_OUT')).length;
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && !live && w2.localStorage.getItem(KK) === null && st === pub && gst === pub && !R.d.querySelector('#gameView [data-est="dkline"]'),
+              `a load with ${what} under ${KK} does not draw the published prices, ask ESPN for nothing and empty the key: ${JSON.stringify({ errs: R.errs.length, calls: pressCalls(R).length, live, key: w2.localStorage.getItem(KK) != null, st, gst })}`);
+            if (!pubLines) pubLines = linesOf(w2, g.id);
+            w2.close(); }
+          /* 2. a later publish with new player prices for g pulled after the read (PAY.dk's at for g and the bake
+             both the page's clock now, later than every read time): its game lines stand, its player lines give
+             way, nothing says the read gave way (some of it stands), and the builder leg goes back to the model's
+             estimate; its mirror, the same publish with g's player prices pulled a minute before the read: the
+             read is the newer, so all of it stands; then one that moves g's game lines too, pulled after the read:
+             nothing of g, and the status lines say so */
+          const bk2 = new w.Date(w.Date.now()).toISOString(), mvPl = c => { c.baked_at = bk2; ((c.dk ??= {})[wk] ??= {})[g.id] = { at: bk2 }; };
+          { const R = await reboot(SNAP, copyOf(mvPl)), w2 = R.w, d2 = R.d, S2 = w2.eval('S'), LV2 = w2.eval('ESPN_LIVE'), GL2 = w2.eval('ESPN_GL'), AS = w2.eval('ESPN_ASIDE');
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length, `a reload after newer player prices for ${g.id} broke or asked ESPN for its lines: ${R.errs.concat(pressCalls(R)).slice(0, 3).join('; ')}`);
+            chk(!(LV2[wk] || {})[g.id] && !!AS[g.id] && AS[g.id].pl != null && AS[g.id].gl == null && games.every(x => sameGl(w2, GL2, x))
+              && others1.every(x => same((LV2[wk] || {})[x.id], LV1[x.id])),
+              `after newer player prices were published for ${g.id}, a reload does not keep its game lines (and the other games' reads) and set its player lines aside: ${JSON.stringify({ pl: !!(LV2[wk] || {})[g.id], aside: AS[g.id] || null, gl: !!GL2[g.id], lines: linesOf(w2, g.id) })}`);
+            { const st = txt(d2.querySelector('#pbPanel [data-espn-status="week"]')), exp = expWeek({ read: READ1.filter(id => id !== g.id), lined: LINED, gave: GL1[g.id] ? 0 : 1, pubAt: bk2 });
+              chk(st === exp, `after newer player prices for ${g.id}, the Parlay Builder's status line reads "${st}", not "${exp}" (the read gave way ${GL1[g.id] ? 'only in part' : 'wholly: its game lines were not on the page'})`); }
+            const gst = await openG(w2), expG = expGame({ read: false, lined: !!GL1[g.id], gave: !GL1[g.id], pubAt: bk2 });
+            chk(gst === expG && !Object.keys(estCells(d2)).length, `after newer player prices for ${g.id}, its page's status line reads "${gst}", not "${expG}", or a price from the read is still drawn`);
+            if (bk && bk.leg) { const l2 = S2.parlay[bk.key], p2 = l2 ? w2.eval('legPrice')(l2) : null, est = l2 ? w2.eval('rungView')(S2.players[bk.pid], bk.st, l2.mu, bk.L + 0.5, g.w).est : null;
+              chk(!!p2 && p2.src === 'est' && p2.ml === est, `after newer player prices for ${g.id}, the builder's ${bk.leg.name} ${bk.leg.label} is not back on the model's estimate: ${p2 ? p2.ml + ' ' + p2.src : 'no leg'}, want ${est}`); }
+            { const K2 = keyOf(w2), k = K2 && K2.games[g.id]; chk(!!k && !!k.gl && !k.pl, `after newer player prices for ${g.id}, the key does not hold its game lines alone: ${JSON.stringify(k && Object.keys(k))}`); }
+            w2.close(); }
+          /* the mirror: g's player prices in the later publish pulled a minute before every read time of g's
+             (the scoreboard's, its player lines', what that read found), the bake still after the read: the
+             pull's own time decides, never the bake's. Everything stands as on the plain reload (1), the read's
+             ids beside the pull's time in PAY.dk */
+          { const tE = Math.min(T0, Date.parse(blk.at), (OUT1[g.id] || {}).when || Infinity) - 60e3, isoE = new Date(tE).toISOString();
+            const R = await reboot(SNAP, copyOf(c => { c.baked_at = bk2; ((c.dk ??= {})[wk] ??= {})[g.id] = { at: isoE }; })), w2 = R.w, d2 = R.d, S2 = w2.eval('S'), LV2 = w2.eval('ESPN_LIVE'), GL2 = w2.eval('ESPN_GL'), AS = w2.eval('ESPN_ASIDE');
+            const dkG = ((w2.eval('PAY').dk || {})[wk] || {})[g.id];
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && same((LV2[wk] || {})[g.id], blk) && !AS[g.id] && games.every(x => sameGl(w2, GL2, x))
+              && others1.every(x => same((LV2[wk] || {})[x.id], LV1[x.id])) && same(dkG, { ...dk1[g.id], at: isoE }) && same(w2.eval('ESPN_IDAT'), idat1),
+              `after a publish whose player prices for ${g.id} were pulled before the read (${isoE}), a reload does not keep all of the read (its player lines, the game lines, the other games' reads, the read's ids beside the pull's time): ${JSON.stringify({ errs: R.errs.slice(0, 2), calls: pressCalls(R).length, pl: !!(LV2[wk] || {})[g.id], aside: AS[g.id] || null, dk: dkG || null })}`);
+            { const st = txt(d2.querySelector('#pbPanel [data-espn-status="week"]')), exp = expWeek({ read: READ1, lined: LINED, pubAt: bk2 });
+              chk(st === exp && !/gave way/.test(st), `after a publish whose player prices for ${g.id} were pulled before the read, the Parlay Builder's status line reads "${st}", not "${exp}"`); }
+            const gst = await openG(w2), expG = expGame({ read: true, lined: !!GL1[g.id], pubAt: bk2 }), cells2 = estCells(d2), k1 = Object.keys(cells1);
+            chk(gst === expG && k1.length > 0 && k1.every(k => cells2[k] === cells1[k]) && Object.keys(cells2).length === k1.length,
+              `after a publish whose player prices for ${g.id} were pulled before the read, its page's status line reads "${gst}", not "${expG}", or it does not price the read's lines as before the reload (${Object.keys(cells2).length} of ${k1.length} est. prices)`);
+            if (bk && bk.leg) { const l2 = S2.parlay[bk.key], p2 = l2 ? w2.eval('legPrice')(l2) : null, r2 = d2.querySelector('#parlayBody tr.legrow'), row2 = txt(r2 && r2.querySelectorAll('td')[4]);
+              chk(!!p2 && p2.src === 'dkline' && p2.ml === bk.price.ml && row2 === bk.row,
+                `after a publish whose player prices for ${g.id} were pulled before the read, the builder's ${bk.leg.name} ${bk.leg.label}, priced from the read at ${bk.price.ml}, is not: ${p2 ? p2.ml + ' ' + p2.src : 'no leg'} "${row2}" (was "${bk.row}")`); }
+            { const K2 = keyOf(w2), k = K2 && K2.games[g.id]; chk(!!k && !!k.gl && same(k.pl, blk), `after a publish whose player prices for ${g.id} were pulled before the read, the key does not hold its read whole: ${JSON.stringify(k && Object.keys(k))}`); }
+            w2.close(); }
+          { const mvGl = c => { mvPl(c); const r = c.sched.find(y => y.id === g.id); r.mla = r.mla == null ? -150 : r.mla < 0 ? r.mla - 10 : r.mla + 10;
+              /* pulled after the read: the DraftKings pull's own time where the payload's lines are DraftKings'
+                 (lat beside ls 'dk'), else the bake's, bk2 either way (the page's fallbacks) */
+              if (r.ls === 'dk') r.lat = bk2; };
+            const pub2 = JSON.parse(copyOf(mvGl)).sched.find(y => y.id === g.id), want = pub2.mla;
+            const R = await reboot(SNAP, copyOf(mvGl)), w2 = R.w, d2 = R.d, LV2 = w2.eval('ESPN_LIVE'), GL2 = w2.eval('ESPN_GL'), AS = w2.eval('ESPN_ASIDE');
+            const pubG = pubLines ? pubLines.map((v, i) => KEYS[i] === 'mla' ? want : KEYS[i] === 'lat' ? (pub2.lat === undefined ? null : pub2.lat) : v) : null;
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && !(LV2[wk] || {})[g.id] && !GL2[g.id] && !!AS[g.id] && AS[g.id].pl != null && AS[g.id].gl != null
+              && same(linesOf(w2, g.id), pubG) && others1.every(x => sameGl(w2, GL2, x)),
+              `after newer game lines and player prices for ${g.id}, a reload puts something of its read back, or not the other games': ${JSON.stringify({ pl: !!(LV2[wk] || {})[g.id], gl: !!GL2[g.id], aside: AS[g.id] || null, lines: linesOf(w2, g.id), want: pubG })}`);
+            { const st = txt(d2.querySelector('#pbPanel [data-espn-status="week"]')), exp = expWeek({ read: READ1.filter(id => id !== g.id), lined: LINED.filter(id => id !== g.id), gave: 1, pubAt: bk2 });
+              chk(st === exp, `with nothing of ${g.id}'s read standing, the Parlay Builder's status line reads "${st}", not "${exp}"`); }
+            const gst = await openG(w2), expG = expGame({ read: false, lined: false, gave: true, pubAt: bk2 });
+            chk(gst === expG, `with nothing of its read standing, ${g.id}'s page's status line reads "${gst}", not "${expG}"`);
+            { const K2 = keyOf(w2); chk(!(K2 && K2.games[g.id]) && others1.every(x => K2 && K2.games[x.id]), `with nothing of ${g.id}'s read standing, the key still holds it, or not the rest: ${JSON.stringify(K2 && Object.keys(K2.games))}`); }
+            w2.close(); }
+          /* 4. g kicked off since the read (its kickoff two hours before the page's clock, on the copy): nothing
+             of it put back and the key without it; the other games' reads stand */
+          { const t0 = w.Date.now() - 2 * 3600e3, pt = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t0)).map(x => [x.type, x.value]));
+            const R = await reboot(SNAP, copyOf(c => { const r = c.sched.find(y => y.id === g.id); r.d = `${pt.year}-${pt.month}-${pt.day}`; r.t = `${pt.hour}:${pt.minute}`; }));
+            const w2 = R.w, S2 = w2.eval('S'), g2 = S2.sched.find(y => y.id === g.id), LV2 = w2.eval('ESPN_LIVE'), GL2 = w2.eval('ESPN_GL'), K2 = keyOf(w2);
+            chk(!!g2 && w2.eval('gameStarted')(g2), `the copy's kickoff for ${g.id} two hours before the page's clock did not start it: ${g2 && g2.d} ${g2 && g2.t}`);
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && !(LV2[wk] || {})[g.id] && !GL2[g.id] && same(linesOf(w2, g.id), pubLines) && !(K2 && K2.games[g.id])
+              && others1.every(x => sameGl(w2, GL2, x) && same((LV2[wk] || {})[x.id], LV1[x.id]) && K2 && K2.games[x.id]),
+              `a reload after ${g.id} kicked off puts something of its read back, keeps it under the key, or drops the other games': ${JSON.stringify({ pl: !!(LV2[wk] || {})[g.id], gl: !!GL2[g.id], lines: linesOf(w2, g.id), want: pubLines, key: K2 && Object.keys(K2.games) })}`);
+            w2.close(); }
+          /* 5. a tab left open across a publish, on two real boots. Boot 1, a fresh window on the payload copy
+             (P1) with nothing in its storage, presses the week's Refresh odds on a scoreboard of its own (evs1:
+             gP's spread at its published number with no prices, which the page keeps, so the read keeps that
+             number without its prices; no total for gT, so the read sets nothing of it); boot 2 loads boot 1's
+             storage on a copy (P2) published since: new DraftKings game lines for g, for gP (its spread on
+             another number, with its prices) and for gT (its total and its prices), each pulled a minute before
+             boot 1's read (lat beside ls 'dk'), new player prices for g pulled then too (PAY.dk's at), baked once
+             before the read and once after it (a rebake of those pulls: their own times decide, never the
+             bake's). Every field the read set is later than those pulls (app v108, round 5: each field by the
+             time of its own read), so each half of every game's read stands over P2: its lines the read's,
+             replayed over P2's and dated by the read (replay: gP's spread number the read's and P2's prices for
+             it dropped, since the read had that number without its prices and P2 has another; gT's total, which
+             the read did not set, P2's), g's player lines, every game's DraftKings ids beside P2's with their
+             read times, nothing set aside and no status line saying the read gave way. Every expectation is
+             worked out from boot 1's stand-in answers and the copies' rows. gT: a game other than gP whose
+             published lines are older than the page's clock (so the read is put on it), g where it can be */
+          let nB = 0, bareSame = false, totP2 = false;
+          const gT = [g, ...others].find(x => x !== gP && pubT(x) < w.Date.now()) || null, IX = k => KEYS.indexOf(k);
+          { const R1 = await reboot({}, copyOf()), w1 = R1.w, d1 = R1.d, f1 = w1.fetch, evs1 = games.map((x, i) => evOf(x, i, 'same', x === gT)), route1 = fullOf(evs1);
+            w1.fetch = (u, o) => { const s2 = String(u); if (!esp(s2)) return f1(u, o); ALL_CALLS.push('GET ' + s2); return ans(route1(s2)); };
+            await pressIn(w1, d1.querySelector('#pbPanel [data-espn-refresh="week"]'));
+            const GLb = clone(w1.eval('ESPN_GL')), LVb = clone(w1.eval('ESPN_LIVE')[wk] || {}), OUTb = clone(w1.eval('ESPN_OUT')), IDATb = clone(w1.eval('ESPN_IDAT')), dkB = clone((w1.eval('PAY').dk || {})[wk] || {});
+            const Tb = (() => { const t = new Set([...Object.values(GLb).map(v => v.at), ...Object.values(IDATb).flatMap(v => Object.values(v))]); return t.size === 1 ? [...t][0] : null; })();
+            const SNAPB = {}; for (let i = 0; i < w1.localStorage.length; i++) { const k = w1.localStorage.key(i); SNAPB[k] = w1.localStorage.getItem(k); }
+            const KB = (() => { try { return JSON.parse(SNAPB[KK]); } catch (e) { return null; } })(), dB = x => dOf(evs1, x, Tb != null && Tb > pubT(x), Tb), glB = id => KB && KB.games && KB.games[id] && KB.games[id].gl;
+            const badB = games.filter(x => !(glB(x.id) && same(glB(x.id).lines, dB(x))));
+            bareSame = !!gP && !!glB(gP.id) && 'sp' in dB(gP) && !('spa' in dB(gP));
+            chk(!R1.timedOut && !R1.errs.length && Tb != null && !!LVb[g.id] && !badB.length,
+              `boot 1's press did not read the week on its own scoreboard, dated by its one read, or its ${KK} does not hold what the read did to each game's lines, each field beside its read's time (${gP ? gP.id + '\'s spread number with no prices' : 'no game for a spread without its prices'}${gT ? ', no total for ' + gT.id : ''}): ${JSON.stringify({ errs: R1.errs.slice(0, 2), Tb, pl: !!LVb[g.id], bad: badB.slice(0, 3).map(x => [x.id, glB(x.id) ? glB(x.id).lines : null, dB(x)]) })}`);
+            const tE = Math.min(Tb == null ? w1.Date.now() : Tb, Date.parse((LVb[g.id] || {}).at) || Infinity, (OUTb[g.id] || {}).when || Infinity) - 60e3, isoE = new Date(tE).toISOString();
+            w1.close();
+            const Cb = { lv: LVb, gat: id => GLb[id] ? GLb[id].at : 0, none: IDS.filter(id => !LVb[id] && OUTb[id] && OUTb[id].st === 'none') };
+            const READb = IDS.filter(id => LVb[id]), LINEDb = IDS.filter(id => GLb[id]), mv = v => v == null ? -150 : v < 0 ? v - 15 : v + 15;
+            const P2of = bake => copyOf(c => { c.baked_at = bake; ((c.dk ??= {})[wk] ??= {})[g.id] = { at: isoE };
+              const r = c.sched.find(y => y.id === g.id); r.mla = mv(r.mla); r.mlh = mv(r.mlh); r.sp = (typeof r.sp === 'number' ? r.sp : 0) + 1; r.spa = -125; r.sph = 105;
+              r.tot = (typeof r.tot === 'number' ? r.tot : 44) + 1; r.tov = -118; r.tou = -102; r.ls = 'dk'; r.lat = isoE;
+              if (gP) { const q = c.sched.find(y => y.id === gP.id); q.sp = (typeof q.sp === 'number' ? q.sp : 0) + 1; q.spa = -125; q.sph = 105; q.ls = 'dk'; q.lat = isoE; }
+              if (gT && gT !== g) { const q = c.sched.find(y => y.id === gT.id); q.tot = (typeof q.tot === 'number' ? q.tot : 44) + 1; q.tov = -118; q.tou = -102; q.ls = 'dk'; q.lat = isoE; } });
+            /* whether P2 publishes a game's lines as P1 did (the page's signature reads the same fields, a
+               missing one as an empty one) */
+            const P1j = JSON.parse(copyOf()), sv = v => v == null ? '' : String(v), sameRow = (a, b) => !!a && !!b && KEYS.every(k => sv(a[k]) === sv(b[k]));
+            for (const [what, bake] of [['baked before the read', new Date(tE + 30e3).toISOString()], ['baked after the read', new w.Date(w.Date.now()).toISOString()]]) {
+              const P2t = P2of(bake), P2j = JSON.parse(P2t), R = await reboot(SNAPB, P2t), w2 = R.w, d2 = R.d, LV2 = w2.eval('ESPN_LIVE'), AS = w2.eval('ESPN_ASIDE'), P2p = w2.eval('PAY'), GL2 = w2.eval('ESPN_GL');
+              const row2 = x => P2j.sched.find(y => y.id === x.id), wantL = x => replay(row2(x), dB(x), Tb, sameRow(P1j.sched.find(y => y.id === x.id), row2(x)), bake);
+              const badL = games.filter(x => !same(linesOf(w2, x.id), wantL(x).row) || (GL2[x.id] ? GL2[x.id].at : null) !== wantL(x).at);
+              const badD = games.filter(x => !same(((P2p.dk || {})[wk] || {})[x.id], x.id === g.id ? { ...dkB[g.id], at: isoE } : dkB[x.id]));
+              chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && !Object.keys(AS).length && !badL.length && !badD.length && same(w2.eval('ESPN_IDAT'), IDATb)
+                && games.every(x => same((LV2[wk] || {})[x.id], LVb[x.id])),
+                `a read made in a tab left open across a publish (${what}, its pulls for ${g.id}${gP ? ', ' + gP.id : ''}${gT && gT !== g ? ', ' + gT.id : ''} a minute before the read) does not stand whole over it on a reload, each field the read set put back and dated by its read: ${JSON.stringify({ errs: R.errs.slice(0, 2), calls: pressCalls(R).slice(0, 2), aside: AS, lines: badL.slice(0, 2).map(x => [x.id, linesOf(w2, x.id), GL2[x.id] ? GL2[x.id].at : null, wantL(x)]), dk: badD.slice(0, 3).map(x => x.id), idat: same(w2.eval('ESPN_IDAT'), IDATb), pl: !!(LV2[wk] || {})[g.id] })}`);
+              /* the field the read did not set, which P2 changed: P2's, on its own (badL holds it with the rest) */
+              if (gT && Object.keys(dB(gT)).length && !('tot' in dB(gT))) { const r1 = P1j.sched.find(y => y.id === gT.id), r2 = row2(gT), L2 = linesOf(w2, gT.id);
+                chk(sv(r1.tot) !== sv(r2.tot) && ['tot', 'tov', 'tou'].every(k => L2[IX(k)] === (r2[k] == null ? null : r2[k])) && L2[IX('ls')] === 'dk' && L2[IX('lat')] === new Date(Tb).toISOString(),
+                  `after a publish (${what}) that moved ${gT.id}'s total, which the kept read did not set, a reload does not show P2's total beside the read's other lines: ${JSON.stringify({ tot: ['tot', 'tov', 'tou', 'ls', 'lat'].map(k => L2[IX(k)]), want: ['tot', 'tov', 'tou'].map(k => r2[k]), was: r1.tot })}`);
+                totP2 = true; }
+              { const st = txt(d2.querySelector('#pbPanel [data-espn-status="week"]')), exp = expWeek({ read: READb, lined: LINEDb, pubAt: bake }, Cb);
+                chk(st === exp && !/gave way/.test(st), `after a publish whose pulls came before the read (${what}), the Parlay Builder's status line reads "${st}", not "${exp}"`); }
+              const gst = await openG(w2), expG = expGame({ read: !!LVb[g.id], lined: !!GLb[g.id], pubAt: bake }, Cb);
+              chk(gst === expG && !/gave way/.test(gst) && Object.keys(estCells(d2)).length > 0, `after a publish whose pulls came before the read (${what}), ${g.id}'s page's status line reads "${gst}", not "${expG}", or it draws no price from the read`);
+              { const K2 = keyOf(w2), k = K2 && K2.games[g.id]; chk(!!k && !!k.gl && same(k.pl, LVb[g.id]) && games.every(x => K2.games[x.id]), `after a publish whose pulls came before the read (${what}), the key does not hold the read that stands: ${JSON.stringify(K2 && Object.keys(K2.games))}`); }
+              w2.close(); nB++; } }
+          /* 6. what a kept read may not bring back, planted on a copy of this window's key (K1) and reloaded on
+             the payload copy (app v108, round 5): under a made-up player in g's player lines, a line off ESPN's
+             half-point steps, one past 1000 and one of 0 are dropped, and a rung list keeps only its half points
+             over 0 and to 1000, once each, the 40 lowest, while the rest of g's block stands and its page prices
+             the read's lines as before; and a read that found no player lines posted says so for a day at most
+             by the page's clock: gN's, dated 25 hours back, is not put back (or said), while one dated 23 hours
+             back, planted on another game (gH, its player lines taken out of the copy: a read that found none
+             keeps none), is. Each expectation is that rule worked out here on K1 */
+          let nBound = 0, noneDay = '';
+          if (K1 && e1 && e1.pl) { const K6 = clone(K1), PID = '00-SMOKE-KEEP', ok = v => typeof v === 'number' && isFinite(v) && v > 0 && v <= 1000 && Number.isInteger(v * 2), now6 = w.Date.now();
+            const pl6 = { receptions: 3.3, receiving_yards: 1000.5, passing_yards: 0, rushing_yards: 45.5 }, rg6 = Array.from({ length: 45 }, (_, i) => 10 * (45 - i)).concat([2.25, 1000.5, 0, -5, 2.5, 10]);
+            K6.games[g.id].pl = { ...K6.games[g.id].pl, lines: { ...(K6.games[g.id].pl.lines || {}), [PID]: pl6 }, rungs: { ...(K6.games[g.id].pl.rungs || {}), [PID]: { receiving_yards: rg6 } } };
+            const wantPl = { ...e1.pl, lines: { ...(e1.pl.lines || {}), [PID]: Object.fromEntries(Object.entries(pl6).filter(([, v]) => ok(v))) },
+              rungs: { ...(e1.pl.rungs || {}), [PID]: { receiving_yards: [...new Set(rg6.filter(ok))].sort((a, b) => a - b).slice(0, 40) } } };
+            nBound = Object.values(pl6).filter(v => !ok(v)).length + rg6.length - wantPl.rungs[PID].receiving_yards.length;
+            const old = gN && NONE.includes(gN.id) && K6.games[gN.id] && K6.games[gN.id].out ? gN : null, gH = others1.find(x => x !== gN && x !== gF && K6.games[x.id]) || null;
+            if (old) K6.games[old.id].out = { ...K6.games[old.id].out, when: now6 - 25 * 3600e3 };
+            const outH = gH ? { st: 'none', why: '', sb: false, when: now6 - 23 * 3600e3 } : null; if (gH) { delete K6.games[gH.id].pl; K6.games[gH.id].out = outH; }
+            const R = await reboot({ ...SNAP, [KK]: JSON.stringify(K6) }, copyOf()), w2 = R.w, d2 = R.d, LV2 = w2.eval('ESPN_LIVE'), OUT2 = w2.eval('ESPN_OUT'), K2 = keyOf(w2);
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && same((LV2[wk] || {})[g.id], wantPl) && !!K2 && !!K2.games[g.id] && same(K2.games[g.id].pl, wantPl),
+              `a kept read with a player line off ESPN's half-point steps, past 1000 or of 0, or a rung list of ${rg6.length} with such rungs in it, does not come back with those dropped and the 40 lowest rungs left (the rest of ${g.id}'s block as read), on the page and under the key: ${JSON.stringify({ errs: R.errs.slice(0, 2), lines: (((LV2[wk] || {})[g.id] || {}).lines || {})[PID] || null, rungs: ((((LV2[wk] || {})[g.id] || {}).rungs || {})[PID] || {}).receiving_yards || null })}`);
+            const gst = await openG(w2), cells2 = estCells(d2), k1 = Object.keys(cells1);
+            chk(k1.length > 0 && k1.every(k => cells2[k] === cells1[k]) && Object.keys(cells2).length === k1.length,
+              `with a kept line or rung out of bounds dropped, ${g.id}'s page does not price the read's lines as before the reload (${Object.keys(cells2).length} of ${k1.length} est. prices; "${gst}")`);
+            if (old || gH) { const none6 = NONE.filter(id => !old || id !== old.id).concat(gH && !NONE.includes(gH.id) ? [gH.id] : []), st = txt(d2.querySelector('#pbPanel [data-espn-status="week"]')), exp = expWeek({ read: READ1.filter(id => !gH || id !== gH.id), lined: LINED }, { ...C1, none: IDS.filter(id => none6.includes(id)) });
+              chk((!old || !OUT2[old.id]) && (!gH || (same(OUT2[gH.id], outH) && !(LV2[wk] || {})[gH.id])) && st === exp,
+                `a kept read that found no player lines posted is not said for a day at most on a reload (${old ? old.id + '\'s, 25 hours old, not put back' : ''}${old && gH ? '; ' : ''}${gH ? gH.id + '\'s, 23 hours old, put back' : ''}): ${JSON.stringify({ old: old ? OUT2[old.id] || null : undefined, fresh: gH ? OUT2[gH.id] || null : undefined })} "${st}", want "${exp}"`);
+              noneDay = [old && 'one 25 hours old not said', gH && 'one 23 hours old said'].filter(Boolean).join(', '); }
+            w2.close(); }
+          /* 7. another tab's read, written to this browser after a tab loaded, through that tab's own press (app
+             v108, round 5: espnKeepWrite judges only the games this tab has its own entry for, on its own
+             schedule). (a) A tab on a copy where g has kicked off (its schedule no longer offers g) presses the
+             week: g's entry is carried as the other tab left it, every game it read is its own read's. (b) A
+             tab on the payload copy reads g's page, where DraftKings has posted no player lines now: over the
+             same publish its entry keeps the other tab's player lines beside what its own read found; (c) over
+             a publish with g's player prices pulled since the other tab's read, never. Each expectation is
+             worked out here from K1 and the tab's own read */
+          let carried = false, lent = 0;
+          { const t0 = w.Date.now() - 2 * 3600e3, pt = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t0)).map(x => [x.type, x.value]));
+            const tab = async (pay, route, which) => { const R = await reboot({}, pay), w2 = R.w, f2 = w2.fetch;
+              w2.fetch = (u, o) => { const s2 = String(u); if (!esp(s2)) return f2(u, o); ALL_CALLS.push('GET ' + s2); return ans(route(s2)); };
+              w2.localStorage.setItem(KK, SNAP[KK]);
+              if (which === 'week') await pressIn(w2, R.d.querySelector('#pbPanel [data-espn-refresh="week"]'));
+              else { await openG(w2); await pressIn(w2, R.d.querySelector(`#gameView [data-espn-refresh="${g.id}"]`)); }
+              const T = (() => { const s = new Set([...Object.values(w2.eval('ESPN_GL')).map(v => v.at), ...Object.values(w2.eval('ESPN_IDAT')).flatMap(v => Object.values(v))]); return s.size === 1 ? [...s][0] : null; })();
+              return { R, w2, T, K: keyOf(w2) }; };
+            if (others1.length) { const { R, w2, T, K } = await tab(copyOf(c => { const r = c.sched.find(y => y.id === g.id); r.d = `${pt.year}-${pt.month}-${pt.day}`; r.t = `${pt.hour}:${pt.minute}`; }), full, 'week');
+              /* each other game's game lines from whichever read gave it something (its lines put on, or an id it
+                 dated): this tab's, later, else the other tab's where that one did, else this tab's */
+              const GLw = w2.eval('ESPN_GL'), IDw = w2.eval('ESPN_IDAT'), gave = (GLx, IDx, id) => !!GLx[id] || Object.keys(IDx[id] || {}).length > 0;
+              const k1Gave = id => { const e = K1.games[id] && K1.games[id].gl; return !!e && (Object.keys(e.lines || {}).length > 0 || Object.keys(e.ids || {}).length > 0); };
+              const off = others1.filter(x => !(K && K.games[x.id] && K.games[x.id].gl && K.games[x.id].gl.at === (gave(GLw, IDw, x.id) || !k1Gave(x.id) ? T : K1.games[x.id].gl.at)));
+              chk(!R.timedOut && !R.errs.length && T != null && T > T0 && !!K && same(K.games[g.id], K1.games[g.id]) && !off.length,
+                `a tab whose schedule has ${g.id} kicked off, pressing the week after another tab kept its read of ${g.id}, does not carry that read as it stands with its own read of every other game: ${JSON.stringify({ errs: R.errs.slice(0, 2), T, T0, g: K && K.games[g.id] ? Object.keys(K.games[g.id]) : null, same: !!K && same(K.games[g.id], K1.games[g.id]), off: off.slice(0, 3).map(x => x.id) })}`);
+              carried = true; w2.close(); }
+            if (e1 && e1.pl) { const none = u => { if (/\/scoreboard\?/.test(u)) return { code: 200, body: { events: evs } }; if (props(u)) return { code: 404, body: { error: { message: 'No propBets found', code: 404 } } }; return { code: 404, body: {} }; };
+              for (const [what, f, lend] of [['the same publish', null, true], ['a publish with its player prices pulled since', mvPl, false]]) {
+                const { R, w2, T, K } = await tab(copyOf(f), none, 'game'), k = K && K.games[g.id], o2 = w2.eval('ESPN_OUT')[g.id], ps = w2.eval('espnPlSig')(w2.eval('S').sched.find(y => y.id === g.id));
+                chk(!R.timedOut && !R.errs.length && !!o2 && o2.st === 'none' && !!k && !!k.out && k.out.st === 'none' && k.out.when === o2.when && k.plsig === ps && (lend ? same(k.pl, e1.pl) : !k.pl) && (lend ? k.plsig === e1.plsig : k.plsig !== e1.plsig),
+                  `a tab on ${what}, reading ${g.id}'s page where DraftKings has no player lines posted after another tab kept its lines, ${lend ? 'does not keep those lines beside its own read' : 'keeps the other tab\'s lines, read over another publish'}: ${JSON.stringify({ errs: R.errs.slice(0, 2), out: o2 || null, key: k ? { pl: !!k.pl, out: k.out || null, plsig: k.plsig, mine: ps, theirs: e1.plsig } : null })}`);
+                lent++; w2.close(); } } }
+          const bareMoved = !!gP && readOn(gP) && (dOf(evs, gP, true, T0).spa || [])[0] === null;
+          /* 8. a number the read had without its prices, over a publish since that has that same number with
+             prices of its own (app v108, round 5): the week's press read gP's spread off its published number
+             with no prices, so the read dropped them (dOf's nulls); on a copy whose gP spread is DraftKings' at
+             the read's number with prices of its own, pulled a minute before the read (and baked since, as every
+             publish is: a bake of its own, so the page builds its schedule from it), a reload keeps those
+             prices beside the read's other lines, which stand (replay: a kept null price never deletes a
+             publish's real prices on the read's own number) */
+          let keptPx = false;
+          if (bareMoved) { const dP = dOf(evs, gP, true, T0), isoM = new Date(T0 - 60e3).toISOString();
+            const pay8 = copyOf(c => { c.baked_at = new w.Date(w.Date.now()).toISOString(); const q = c.sched.find(y => y.id === gP.id); q.sp = dP.sp[0]; q.spa = -121; q.sph = 101; q.ls = 'dk'; q.lat = isoM; }), r8 = JSON.parse(pay8).sched.find(y => y.id === gP.id);
+            const R = await reboot(SNAP, pay8), w2 = R.w, GL2 = w2.eval('ESPN_GL'), AS = w2.eval('ESPN_ASIDE'), want = replay(r8, dP, T0, false, JSON.parse(pay8).baked_at), L2 = linesOf(w2, gP.id);
+            chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && !AS[gP.id] && same(L2, want.row) && !!GL2[gP.id] && GL2[gP.id].at === want.at && L2[IX('sp')] === dP.sp[0] && L2[IX('spa')] === -121 && L2[IX('sph')] === 101,
+              `a kept read of ${gP.id}'s spread number without its prices, over a publish since with that same number and prices of its own, does not keep those prices beside the read's lines on a reload: ${JSON.stringify({ errs: R.errs.slice(0, 2), aside: AS[gP.id] || null, lines: L2, want: want.row, at: GL2[gP.id] ? GL2[gP.id].at : null })}`);
+            keptPx = true; w2.close(); }
+          /* 9. two reads of a game with a publish between them (app v108, round 5: each field by the time of the
+             read that set it). Boot A, a fresh window on the payload copy, presses the week twice: first on the
+             stand-in scoreboard (tA), then on one with no total for gT (tB), so its key holds gT's total from the
+             first read and the rest of its lines from the second; boot B loads A's storage on a copy whose gT
+             lines are DraftKings' (money lines, spread and total all moved) pulled between the two reads and
+             baked after them: the second read's fields stand over it, the first read's total gives way to the
+             copy's, and the lines are dated by the second read. Each expectation is worked out from the two
+             stand-in scoreboards and the copy's row */
+          let twoReads = false;
+          if (gT) { const R1 = await reboot({}, copyOf()), w1 = R1.w, d1 = R1.d, f1 = w1.fetch, evsB = games.map((x, i) => evOf(x, i, 'moved', x === gT)); let route = full;
+            w1.fetch = (u, o) => { const s2 = String(u); if (!esp(s2)) return f1(u, o); ALL_CALLS.push('GET ' + s2); return ans(route(s2)); };
+            const btn = () => d1.querySelector('#pbPanel [data-espn-refresh="week"]'), atOf = () => { const G = w1.eval('ESPN_GL')[gT.id]; return G ? G.at : null; };
+            await pressIn(w1, btn()); const tA = atOf(); await wait(20); route = fullOf(evsB); await pressIn(w1, btn()); const tB = atOf();
+            const SN = {}; for (let i = 0; i < w1.localStorage.length; i++) { const k = w1.localStorage.key(i); SN[k] = w1.localStorage.getItem(k); }
+            const KA = (() => { try { return JSON.parse(SN[KK]); } catch (e) { return null; } })(), dd = { ...dOf(evs, gT, true, tA), ...dOf(evsB, gT, true, tB) };
+            w1.close();
+            chk(!R1.timedOut && !R1.errs.length && tA != null && tB != null && tB > tA + 1 && !!KA && !!KA.games[gT.id] && !!KA.games[gT.id].gl && KA.games[gT.id].gl.at === tB && same(KA.games[gT.id].gl.lines, dd),
+              `two presses of the week (the second with no total for ${gT.id}) do not keep each of ${gT.id}'s line fields beside the time of the read that set it: ${JSON.stringify({ errs: R1.errs.slice(0, 2), tA, tB, kept: KA && KA.games[gT.id] && KA.games[gT.id].gl ? KA.games[gT.id].gl.lines : null, want: dd })}`);
+            if (tA != null && tB != null && tB > tA + 1) { const tM = Math.floor((tA + tB) / 2), o = ESPN_RULE.oddsOf(evsB[games.indexOf(gT)], gT).lines, oA = ESPN_RULE.oddsOf(evs[games.indexOf(gT)], gT).lines, m = v => v < 0 ? v - 15 : v + 15;
+              const pay9 = copyOf(c => { c.baked_at = new w.Date(w.Date.now()).toISOString(); const q = c.sched.find(y => y.id === gT.id); q.mla = m(o.mla); q.mlh = m(o.mlh); q.sp = o.sp + 1; q.spa = -125; q.sph = 105; q.tot = oA.tot + 2; q.tov = -118; q.tou = -102; q.ls = 'dk'; q.lat = new Date(tM).toISOString(); });
+              const r9 = JSON.parse(pay9).sched.find(y => y.id === gT.id), want = replay(r9, dd, tB, false, JSON.parse(pay9).baked_at);
+              const R = await reboot(SN, pay9), w2 = R.w, GL2 = w2.eval('ESPN_GL'), AS = w2.eval('ESPN_ASIDE'), L2 = linesOf(w2, gT.id);
+              chk(!R.timedOut && !R.errs.length && !pressCalls(R).length && !AS[gT.id] && same(L2, want.row) && !!GL2[gT.id] && GL2[gT.id].at === tB && want.at === tB
+                && ['tot', 'tov', 'tou'].every(k => L2[IX(k)] === r9[k]) && L2[IX('mla')] === o.mla && L2[IX('sp')] === o.sp && L2[IX('lat')] === new Date(tB).toISOString(),
+                `over a publish of ${gT.id}'s lines pulled between two reads of them, a reload does not keep the later read's fields and give the earlier read's total way to the publish's, dated by the later read: ${JSON.stringify({ errs: R.errs.slice(0, 2), aside: AS[gT.id] || null, lines: L2, want: want.row, at: GL2[gT.id] ? GL2[gT.id].at : null, tA, tM, tB })}`);
+              twoReads = true; w2.close(); } }
+          console.log(`Refresh odds kept across a reload: ${keptIds.length} games' game lines (${bareMoved ? gP.id + '\'s spread prices dropped by a number read without them' : 'no spread read without its prices'}), ${g.id}'s player lines and ${Object.keys(cells1).length} est. prices from them put back with no request; player prices or game lines pulled after the read set their half aside, pulled before it stand; junk, last season's, another version and a kickoff each set it aside; a tab left open across a publish stands field by field over it on ${nB} bakes${bareSame ? ` (${gP.id}'s spread number read without its prices, P2's prices for it dropped)` : ''}${totP2 ? `, ${gT.id}'s total the read did not set P2's` : ''}; ${nBound} kept values off ESPN's steps, out of bounds or past 40 rungs dropped${noneDay ? ', no player lines posted said for a day: ' + noneDay : ''}; another tab's read ${carried ? 'carried by a tab whose schedule no longer offers it, ' : ''}lent over the same publish and not over another (${lent} of 2)${keptPx ? `; a number read without its prices keeps a publish's own prices on it (${gP.id})` : ''}${twoReads ? `; a publish between two reads of ${gT.id} takes the earlier read's total alone` : ''}`); }
         S.ui.game = null; w.eval('closeGameModal()');
         /* the suggested parlays on that game alone, players only: a tested leg from the read counts as a
            book price (here a level holds one), an untested one never, each marked est. on its card */
@@ -1917,9 +2354,15 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
           chk(st === `Prices as published ${when(P.baked_at)}; couldn’t reach ESPN for ${n0} game${n0 === 1 ? '' : 's'}: ${n0 === 1 ? 'its' : 'their'} published prices stand.` && !Object.keys(w.eval('ESPN_LIVE')).length && games.every(x => KEYS.every(k => JSON.stringify(x[k]) === JSON.stringify(before[x.id][k]))),
             `with ESPN not answering, the status line reads "${st}", or a read or a game line changed`); }
         reset(); net.route = u => /\/scoreboard\?/.test(u) ? { code: 200, body: { events: evs } } : { code: 404, body: { error: { message: 'No propBets found', code: 404 } } }; w.eval('renderParlay()'); await wait(20);
-        await press(d.querySelector('#pbPanel [data-espn-refresh="week"]'));
+        const tA = w.Date.now(); await press(d.querySelector('#pbPanel [data-espn-refresh="week"]')); const tB = w.Date.now();
+        /* the game lines the read put on the page, as on the first press: only over published lines older than
+           it (none at all, on a Monday night under way with the page set back, when the line says the
+           published prices), every one dated by the one read */
         { const ids0 = w.eval('pbGames()').map(x => x.id), n0 = ids0.filter(id => evs.some((e, i) => games[i].id === id)).length, rest = ids0.length - n0, st = txt(d.querySelector('#pbPanel [data-espn-status="week"]'));
-          const exp = `DraftKings’ game lines from ESPN, read ${clk(w.eval('ESPN_GL')[g.id].at)}; ${n0} game${n0 === 1 ? ' has' : 's have'} no player lines posted yet` + (rest ? `; couldn’t reach ESPN for ${rest} game${rest === 1 ? '' : 's'}: ${rest === 1 ? 'its' : 'their'} published prices stand` : '') + '.';
+          const GLn = w.eval('ESPN_GL'), ats = [...new Set(ids0.filter(id => GLn[id]).map(id => GLn[id].at))], t2 = ats.length === 1 ? ats[0] : null;
+          const off = games.filter(x => GLn[x.id] ? !(t2 != null && t2 >= tA && t2 <= tB && t2 > pubT(x)) : !(pubT(x) >= tA));
+          chk(ats.length <= 1 && !off.length, `with no player lines posted, the press's game lines are not on exactly the games whose published lines are older than its read, dated by it: ${JSON.stringify(ats)} ${off.slice(0, 3).map(x => x.id + (GLn[x.id] ? ' read' : ' published') + ' ' + new Date(pubT(x)).toISOString()).join(', ')}`);
+          const exp = (ats.length ? `DraftKings’ game lines from ESPN, read ${clk(Math.max(...ats))}` : `Prices as published ${when(P.baked_at)}`) + `; ${n0} game${n0 === 1 ? ' has' : 's have'} no player lines posted yet` + (rest ? `; couldn’t reach ESPN for ${rest} game${rest === 1 ? '' : 's'}: ${rest === 1 ? 'its' : 'their'} published prices stand` : '') + '.';
           chk(st === exp, `with no player lines posted, the status line reads "${st}", not "${exp}"`); }
       } finally {
         w.fetch = f0; reset(); w.__plStub = plStub; w.eval('pricedLegs=window.__plStub'); delete w.__plStub;
