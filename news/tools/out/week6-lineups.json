@@ -524,7 +524,7 @@
   },
   "ATL": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-14T22:08:11.163Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -596,10 +596,10 @@
       "pos": "DE"
      },
      {
-      "id": "00-0031576",
-      "n": "Za'Darius Smith",
-      "pos": "OLB",
-      "q": "questionable: concussion"
+      "id": "00-0037815",
+      "n": "Cameron Thomas",
+      "pos": "DE",
+      "q": "questionable: groin"
      },
      {
       "id": "00-0039070",
@@ -628,7 +628,7 @@
   },
   "BAL": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -647,7 +647,7 @@
       "id": "00-0036369",
       "n": "John Simpson",
       "pos": "G",
-      "q": "questionable: groin"
+      "q": "questionable: groin, not practising"
      },
      {
       "id": "00-0038112",
@@ -663,8 +663,7 @@
      {
       "id": "00-0039233",
       "n": "Roger Rosengarten",
-      "pos": "T",
-      "q": "questionable: knee"
+      "pos": "T"
      }
     ],
     "rb": [
@@ -683,7 +682,8 @@
      {
       "id": "00-0039064",
       "n": "Zay Flowers",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: toe"
      },
      {
       "id": "00-0034753",
@@ -694,7 +694,7 @@
       "id": "00-0036550",
       "n": "Rashod Bateman",
       "pos": "WR",
-      "q": "questionable: shoulder"
+      "q": "questionable: shoulder, not practising"
      }
     ],
     "front": [
@@ -736,7 +736,7 @@
   },
   "CLE": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -759,8 +759,7 @@
      {
       "id": "00-0035526",
       "n": "Elgton Jenkins",
-      "pos": "C",
-      "q": "questionable: knee"
+      "pos": "C"
      },
      {
       "id": "00-0041049",
@@ -771,7 +770,7 @@
       "id": "00-0035234",
       "n": "Tytus Howard",
       "pos": "T",
-      "q": "questionable: knee, not practising"
+      "q": "questionable: knee"
      }
     ],
     "rb": [
@@ -811,7 +810,7 @@
       "id": "00-0033131",
       "n": "Maliek Collins",
       "pos": "DT",
-      "q": "questionable: foot, not practising"
+      "q": "questionable: foot"
      },
      {
       "id": "00-0038574",
@@ -847,7 +846,7 @@
   },
   "TEN": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -893,7 +892,7 @@
       "id": "00-0039032",
       "n": "Tyjae Spears",
       "pos": "RB",
-      "q": "questionable: knee"
+      "q": "questionable: knee, not practising"
      }
     ],
     "rec": [
@@ -952,7 +951,7 @@
   },
   "IND": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -980,14 +979,13 @@
      {
       "id": "00-0039736",
       "n": "Matt Goncalves",
-      "pos": "G",
-      "q": "questionable: concussion evaluation"
+      "pos": "G"
      },
      {
       "id": "00-0040163",
       "n": "Jalen Travis",
       "pos": "T",
-      "q": "questionable: ankle, not practising"
+      "q": "questionable: ankle"
      }
     ],
     "rb": [
@@ -1011,8 +1009,7 @@
      {
       "id": "00-0038997",
       "n": "Josh Downs",
-      "pos": "WR",
-      "q": "questionable: not injury related - resting player"
+      "pos": "WR"
      },
      {
       "id": "00-0030279",
@@ -1486,7 +1483,7 @@
   },
   "CAR": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -1502,9 +1499,10 @@
       "pos": "T"
      },
      {
-      "id": "00-0039242",
-      "n": "Corey Bullock",
-      "pos": "G"
+      "id": "00-0036417",
+      "n": "Damien Lewis",
+      "pos": "G",
+      "q": "questionable: elbow"
      },
      {
       "id": "00-0037814",
@@ -1520,7 +1518,7 @@
       "id": "00-0041034",
       "n": "Monroe Freeling",
       "pos": "T",
-      "q": "questionable: knee, not practising"
+      "q": "questionable: knee"
      }
     ],
     "rb": [
@@ -1593,7 +1591,7 @@
   },
   "PHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T18:41:51.142Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -1614,9 +1612,10 @@
       "pos": "C"
      },
      {
-      "id": "00-0040422",
-      "n": "Jake Majors",
-      "pos": "C"
+      "id": "00-0040587",
+      "n": "Drew Kendall",
+      "pos": "C",
+      "q": "questionable: knee"
      },
      {
       "id": "00-0039001",
@@ -1647,17 +1646,18 @@
       "id": "00-0038393",
       "n": "Dontayvion Wicks",
       "pos": "WR",
+      "q": "questionable: hamstring, not practising"
+     },
+     {
+      "id": "00-0036912",
+      "n": "DeVonta Smith",
+      "pos": "WR",
       "q": "questionable: hamstring"
      },
      {
       "id": "00-0040867",
       "n": "Makai Lemon",
       "pos": "WR"
-     },
-     {
-      "id": "00-0034351",
-      "n": "Dallas Goedert",
-      "pos": "TE"
      }
     ],
     "front": [
@@ -1698,7 +1698,7 @@
   },
   "PIT": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -1743,8 +1743,7 @@
      {
       "id": "00-0036139",
       "n": "Rico Dowdle",
-      "pos": "RB",
-      "q": "questionable: toe"
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -1791,7 +1790,7 @@
       "id": "00-0033055",
       "n": "Jalen Ramsey",
       "pos": "CB",
-      "q": "questionable: wrist, not practising"
+      "q": "questionable: wrist"
      },
      {
       "id": "00-0036617",
@@ -2010,7 +2009,7 @@
   },
   "LAR": {
    "kick": "2026-10-18T20:05Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -2108,7 +2107,8 @@
      {
       "id": "00-0036349",
       "n": "Kam Curl",
-      "pos": "SS"
+      "pos": "SS",
+      "q": "questionable: ankle"
      }
     ]
    }
@@ -2327,7 +2327,7 @@
   },
   "BUF": {
    "kick": "2026-10-18T20:25Z",
-   "built_at": "2026-10-14T23:47:06.106Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -2360,8 +2360,7 @@
      {
       "id": "00-0036976",
       "n": "Spencer Brown",
-      "pos": "T",
-      "q": "questionable: back"
+      "pos": "T"
      }
     ],
     "rb": [
@@ -2392,7 +2391,7 @@
       "id": "00-0034827",
       "n": "DJ Moore",
       "pos": "WR",
-      "q": "questionable: shoulder - ac joint, not practising"
+      "q": "questionable: shoulder, not practising"
      }
     ],
     "front": [
@@ -2433,7 +2432,7 @@
   },
   "LV": {
    "kick": "2026-10-18T20:25Z",
-   "built_at": "2026-10-14T23:52:10.800Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -2485,8 +2484,7 @@
      {
       "id": "00-0039338",
       "n": "Brock Bowers",
-      "pos": "TE",
-      "q": "questionable: knee"
+      "pos": "TE"
      },
      {
       "id": "00-0038563",
@@ -2640,7 +2638,7 @@
   },
   "GB": {
    "kick": "2026-10-19T00:20Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -2728,8 +2726,7 @@
      {
       "id": "00-0039813",
       "n": "Evan Williams",
-      "pos": "FS",
-      "q": "questionable: illness"
+      "pos": "FS"
      },
      {
       "id": "00-0036388",
@@ -2740,14 +2737,14 @@
       "id": "00-0035133",
       "n": "Keisean Nixon",
       "pos": "CB",
-      "q": "questionable: groin, not practising"
+      "q": "questionable: groin"
      }
     ]
    }
   },
   "WAS": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-15T18:41:51.142Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -2788,7 +2785,7 @@
       "id": "00-0040242",
       "n": "Jacory Croskey-Merritt",
       "pos": "RB",
-      "q": "not practising"
+      "q": "questionable: groin, not practising"
      },
      {
       "id": "00-0037256",
@@ -2800,7 +2797,8 @@
      {
       "id": "00-0035659",
       "n": "Terry McLaurin",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: hamstring"
      },
      {
       "id": "00-0041040",
@@ -2839,7 +2837,8 @@
      {
       "id": "00-0034465",
       "n": "Jeremy Reaves",
-      "pos": "FS"
+      "pos": "FS",
+      "q": "questionable: rib"
      },
      {
       "id": "00-0033551",
@@ -2851,7 +2850,7 @@
   },
   "SF": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-13T14:27:42.658Z",
+   "built_at": "2026-10-16T11:42:56.609Z",
    "units": {
     "qb": [
      {
@@ -2884,7 +2883,8 @@
      {
       "id": "00-0036256",
       "n": "Colton McKivitz",
-      "pos": "T"
+      "pos": "T",
+      "q": "questionable: illness"
      }
     ],
     "rb": [
@@ -2903,7 +2903,8 @@
      {
       "id": "00-0031408",
       "n": "Mike Evans",
-      "pos": "WR"
+      "pos": "WR",
+      "q": "questionable: ribs, not practising"
      },
      {
       "id": "00-0033288",
@@ -2930,7 +2931,8 @@
      {
       "id": "00-0041557",
       "n": "Gracen Halton",
-      "pos": "DT"
+      "pos": "DT",
+      "q": "questionable: quadriceps"
      }
     ],
     "db": [
