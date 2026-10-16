@@ -834,7 +834,7 @@
   },
   "TEN": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -880,7 +880,7 @@
       "id": "00-0039032",
       "n": "Tyjae Spears",
       "pos": "RB",
-      "q": "questionable: knee, not practising"
+      "q": "questionable: knee"
      }
     ],
     "rec": [
@@ -1359,7 +1359,7 @@
   },
   "NYG": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-15T08:12:02.112Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -1453,8 +1453,7 @@
      {
       "id": "00-0036996",
       "n": "Greg Newsome II",
-      "pos": "CB",
-      "q": "questionable: groin"
+      "pos": "CB"
      },
      {
       "id": "00-0039821",
@@ -1566,7 +1565,7 @@
   },
   "PHI": {
    "kick": "2026-10-18T17:00Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -1595,8 +1594,7 @@
      {
       "id": "00-0039001",
       "n": "Tyler Steen",
-      "pos": "G",
-      "q": "questionable: shoulder"
+      "pos": "G"
      },
      {
       "id": "00-0041554",
@@ -1881,7 +1879,7 @@
   },
   "ARI": {
    "kick": "2026-10-18T20:05Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -1967,7 +1965,8 @@
      {
       "id": "00-0033890",
       "n": "Budda Baker",
-      "pos": "SS"
+      "pos": "SS",
+      "q": "questionable: not injury related - resting player"
      },
      {
       "id": "00-0040195",
@@ -1984,7 +1983,7 @@
   },
   "LAR": {
    "kick": "2026-10-18T20:05Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -2046,8 +2045,7 @@
      {
       "id": "00-0036244",
       "n": "Colby Parkinson",
-      "pos": "TE",
-      "q": "questionable: shoulder"
+      "pos": "TE"
      }
     ],
     "front": [
@@ -2064,8 +2062,7 @@
      {
       "id": "00-0037587",
       "n": "Nate Landman",
-      "pos": "ILB",
-      "q": "questionable: wrist"
+      "pos": "ILB"
      }
     ],
     "db": [
@@ -2195,7 +2192,7 @@
   },
   "KC": {
    "kick": "2026-10-18T20:25Z",
-   "built_at": "2026-10-16T20:47:31.810Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -2206,10 +2203,9 @@
     ],
     "ol": [
      {
-      "id": "00-0040116",
-      "n": "Josh Simmons",
-      "pos": "T",
-      "q": "questionable: back"
+      "id": "00-0041019",
+      "n": "Kahlil Benson",
+      "pos": "T"
      },
      {
       "id": "00-0039844",
@@ -2227,8 +2223,8 @@
       "pos": "G"
      },
      {
-      "id": "00-0041019",
-      "n": "Kahlil Benson",
+      "id": "00-0036557",
+      "n": "Jaylon Moore",
       "pos": "T"
      }
     ],
@@ -2300,7 +2296,7 @@
   },
   "BUF": {
    "kick": "2026-10-18T20:25Z",
-   "built_at": "2026-10-16T11:42:56.609Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -2345,8 +2341,7 @@
      {
       "id": "00-0035537",
       "n": "Ty Johnson",
-      "pos": "RB",
-      "q": "questionable: hamstring"
+      "pos": "RB"
      }
     ],
     "rec": [
@@ -2611,7 +2606,7 @@
   },
   "GB": {
    "kick": "2026-10-19T00:20Z",
-   "built_at": "2026-10-16T11:42:56.609Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -2686,8 +2681,7 @@
      {
       "id": "00-0037075",
       "n": "Devonte Wyatt",
-      "pos": "DT",
-      "q": "questionable: ankle"
+      "pos": "DT"
      },
      {
       "id": "00-0034431",
@@ -2709,15 +2703,14 @@
      {
       "id": "00-0035133",
       "n": "Keisean Nixon",
-      "pos": "CB",
-      "q": "questionable: groin"
+      "pos": "CB"
      }
     ]
    }
   },
   "WAS": {
    "kick": "2026-10-20T00:15Z",
-   "built_at": "2026-10-16T11:42:56.609Z",
+   "built_at": "2026-10-16T22:22:13.738Z",
    "units": {
     "qb": [
      {
@@ -2763,7 +2756,8 @@
      {
       "id": "00-0037256",
       "n": "Rachaad White",
-      "pos": "RB"
+      "pos": "RB",
+      "q": "questionable: shoulder"
      }
     ],
     "rec": [
