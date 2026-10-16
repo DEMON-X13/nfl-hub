@@ -533,13 +533,16 @@ the page's shape (the key is then emptied). A rebake with the same lines never s
 publish newer than the read always wins, a read made after a publish in a tab loaded before it stands,
 and a game whose player prices are never bought (Sunday's early games) keeps its read to kickoff. What gave way is said on the status line for that load ("your earlier Refresh odds read gave way
 to prices published since"). What is kept is what the load's reads did: each game-line field a read
-set, with its value, or dropped (a number read without its prices; `ESPN_GL`'s `d`, which a read the page
-left off leaves empty), replayed on a reload (`espnKeepLines`: over the publish it was read over exactly
-what the page showed), every DraftKings id a read gave or found with that read's time (`espnKeepIds`), the
+set, with its value and that read's time, or dropped (a number read without its prices; `ESPN_GL`'s `d`,
+which a read the page left off leaves empty), replayed on a reload (`espnKeepLines`: over the publish it
+was read over exactly what the page showed, over a newer one only the fields read after it), every DraftKings id a read gave or found with that read's time (`espnKeepIds`), the
 event the page uses, and the player lines' block with what the last read of them found; a half dated after
 the page's clock is dropped, and a game id not of the schedule's shape is skipped. Writes merge with what the browser holds half by half, each game's game lines and its player
 lines from whichever tab read them later (a read that found nothing never displacing one that found
-lines), never bringing back what a load set aside; a save of `S` that
+lines, and player lines lent only over the same publish), never bringing back what a load set aside, and
+a tab open on an older publish carries another tab's read of a game it no longer offers as it stands
+(each load's restore prunes the copy on the publish it loads); a kept player line off ESPN's half-point
+steps or past 1000 is dropped, and a read that found no player lines posted says so for a day at most; a save of `S` that
 fails for room empties the key and tries again (`espnKeepDrop`), so a kept read never costs a visitor their
 builder. Where a read
 gives way, the builder's legs go back with it (`espnLegBack`: a leg a press priced goes back to
