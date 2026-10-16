@@ -32,12 +32,13 @@ read of them found. A reload replays that over the publish (espnKeepLines, espnK
 it was read over, exactly what the page showed; over a newer one, only the fields read after it, on their
 numbers. A time after the page's clock is not one the page wrote, and that half is dropped; nor is a
 player line off ESPN's half-point steps or past 1000. A read that found no player lines posted says so for
-a day at most. What gave way to a publish is said once on the status line ("your earlier Refresh odds read
+a day at most. A builder leg a read priced keeps the price it was added at while its own field of that read stands
+(espnLegBack: a game leg's money line, spread or total price among what the reads did), and goes to the
+publish's price, or the estimate, where it does not. What gave way to a publish is said once on the status line ("your earlier Refresh odds read
 gave way to prices published since"), for that page load. A press reads again over what stands, as
 before, and every write is merged with what the browser holds half by half, each game's game lines and
 its player half from whichever tab read them later (a read that found nothing never displacing one that
-found lines, and player lines lent only over the same publish), never bringing back what a load set
-aside; a tab open on an older publish carries another tab's read of a game it no longer offers as it
+found lines, and the later block of the same publish kept), never bringing back what a load set aside; a tab open on an older publish carries another tab's read of a game it no longer offers as it
 stands, and each load's restore prunes the copy on the publish it loads. A save of the visitor's own
 state that fails for room empties the key first and tries again (espnKeepDrop), so a kept read never
 costs anyone their builder; the reads are then held in memory only for the rest of that load.
@@ -166,7 +167,7 @@ let ESPN_KEPT={}, ESPN_ASIDE={}, ESPN_KEEP_GONE={}, ESPN_KEEP_OFF=false;
 const ESPN_KEEP_GID=/^\d{4}_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}$/, ESPN_KEEP_ID=/^[A-Za-z0-9#_.\-]{1,160}$/, ESPN_KEEP_PID=/^(?!__proto__$)[A-Za-z0-9_.:\-]{1,40}$/;
 const ESPN_KEEP_IDKEY=/^(team:[A-Z]{2,3}\|(ml|ats\|-?\d+(\.\d+)?)|game\|total\|(over|under)\|\d+(\.\d+)?)$/;
 const ESPN_KEEP_STATS=new Set([...Object.values(ESPN_MAIN),...Object.values(ESPN_MILE)]);
-const ESPN_KEEP_LINES=['mla','mlh','sp','spa','sph','tot','tov','tou'];
+const ESPN_KEEP_LINES=['mla','mlh','sp','spa','sph','tot','tov','tou'], ESPN_KEEP_PRICE=new Set(['spa','sph','tov','tou']);
 const espnOwn=(x,k)=>!!x&&Object.prototype.hasOwnProperty.call(x,k);
 function espnHash(s){ let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h.toString(16); }
 /* the game lines the page publishes for g (a press's own are kept aside in ESPN_GL) */
@@ -190,7 +191,8 @@ function espnKeptGame(e){
   if(gl&&typeof gl==='object'&&when(gl.at)&&typeof gl.sig==='string'&&gl.lines&&typeof gl.lines==='object'){
     const lines={}, ids={}, idat={};
     for(const k of ESPN_KEEP_LINES){ const x=espnOwn(gl.lines,k)?gl.lines[k]:undefined;
-      if(Array.isArray(x)&&x.length===2&&(x[0]===null||espnKeepNum(x[0]))&&when(x[1])&&x[1]<=gl.at) lines[k]=[x[0],x[1]]; }
+      /* a read drops only a price (a number read without its prices): never a money line, spread or total */
+      if(Array.isArray(x)&&x.length===2&&(x[0]===null?ESPN_KEEP_PRICE.has(k):espnKeepNum(x[0]))&&when(x[1])&&x[1]<=gl.at) lines[k]=[x[0],x[1]]; }
     if(gl.ids&&typeof gl.ids==='object') for(const k of Object.keys(gl.ids)) if(ESPN_KEEP_IDKEY.test(k)&&typeof gl.ids[k]==='string'&&ESPN_KEEP_ID.test(gl.ids[k])){
       ids[k]=gl.ids[k]; if(gl.idat&&typeof gl.idat==='object'&&when(gl.idat[k])) idat[k]=gl.idat[k]; }
     const event=typeof gl.event==='string'&&/^\d{1,15}$/.test(gl.event)?gl.event:null;
@@ -247,8 +249,12 @@ function espnKeepWrite(){
       const e={w}, mG=mine&&mine.gl?mine:null, mP=mine&&(mine.pl||mine.out)?mine:null;
       const gs=cG2&&(!mG||tg(cG2)>tg(mG))?cG2:mG; if(gs) e.gl=gs.gl;
       const ps=cP2&&(!mP||espnKeptPl(cP2)>espnKeptPl(mP))?cP2:mP;
-      if(ps){ if(ps.pl) e.pl=ps.pl; if(typeof ps.plsig==='string') e.plsig=ps.plsig; if(ps.out) e.out=ps.out;
-        const other=ps===mP?cP2:mP; if(!e.pl&&other&&other.pl&&other.plsig===e.plsig) e.pl=other.pl; }
+      if(ps){ if(typeof ps.plsig==='string') e.plsig=ps.plsig; if(ps.out) e.out=ps.out;
+        /* the block: the later of the two sides' read over the same publish (a press that found none, or
+           failed, keeps its tab's older block, which must not displace a newer one the other tab read) */
+        const other=ps===mP?cP2:mP, bt=x=>x&&x.pl?Date.parse(x.pl.at)||0:0;
+        const blk=other&&other.pl&&other.plsig===e.plsig&&bt(other)>bt(ps)?other:ps;
+        if(blk.pl) e.pl=blk.pl; }
       else if(mine&&typeof mine.plsig==='string') e.plsig=mine.plsig;
       if(e.gl||e.pl||(e.out&&e.out.st==='none'&&e.plsig)) games[gid]=e; }
     if(!Object.keys(games).length){ localStorage.removeItem(ESPN_KEEP_KEY); return true; }
@@ -287,7 +293,7 @@ function espnKeepLines(g,gl,since,same){
   const has=k=>espnOwn(d,k), on=Object.keys(d);
   if(!on.length||!(gl.at>(ESPN_GL[g.id]?ESPN_GL[g.id].at:since))) return false;
   if(!ESPN_GL[g.id]) ESPN_GL[g.id]={orig:Object.fromEntries(ESPN_GL_KEYS.map(k=>[k,g[k]])),at:0,d:{}};
-  const D=ESPN_GL[g.id].d||(ESPN_GL[g.id].d={}), put=(k,x)=>{ D[k]=x; if(x[0]===null){ if(g[k]!==undefined) delete g[k]; } else g[k]=x[0]; };
+  let t=0; const D=ESPN_GL[g.id].d||(ESPN_GL[g.id].d={}), put=(k,x)=>{ D[k]=x; if(x[1]>t) t=x[1]; if(x[0]===null){ if(g[k]!==undefined) delete g[k]; } else g[k]=x[0]; };
   if(same) for(const k of on) put(k,d[k]);
   else {
     for(const k of ['mla','mlh']) if(has(k)&&d[k][0]!==null) put(k,d[k]);
@@ -295,7 +301,7 @@ function espnKeepLines(g,gl,since,same){
       const priced=has(a)&&has(b)&&d[a][0]!==null&&d[b][0]!==null;
       if(priced){ put(a,d[a]); put(b,d[b]); } else if(g[n]!==d[n][0]) for(const x of [a,b]) put(x,[null,d[n][1]]);
       put(n,d[n]); } }
-  const t=Math.max(...on.map(k=>d[k][1]));
+  if(!t){ if(!ESPN_GL[g.id].at) delete ESPN_GL[g.id]; return false; }
   g.ls='dk'; g.lat=espnIso(t); ESPN_GL[g.id].at=Math.max(ESPN_GL[g.id].at,t); return true;
 }
 /* a kept read's DraftKings ids and event put back as its reads put them: beside the paid pull's, never
@@ -336,7 +342,9 @@ function espnRestore(){
     /* what the read found goes back with the half it describes: 'ok' only with its player lines */
     /* a read that found none says so for a day at most: DraftKings posts a game's player lines in the week */
     if(e.out){ const fresh=e.out.st==='ok'?!!k.pl:Date.now()-e.out.when<DK_EST.staleHours*3600e3;
-      if(plOk(e.out.when)&&fresh){ ESPN_OUT[gid]=e.out; k.out=e.out; } else if(!e.pl&&!plOk(e.out.when)) aside('pl'); }
+      if(plOk(e.out.when)&&fresh){ ESPN_OUT[gid]=e.out; k.out=e.out; }
+      else if(!e.pl&&!plOk(e.out.when)) aside('pl');
+      else gone('pl'); }
     if(!k.gl&&!k.pl&&!k.out) continue;
     if(k.pl||k.out) k.plsig=espnPlSig(g);
     ESPN_KEPT[gid]=k; n++;
@@ -369,6 +377,19 @@ sub('p3', "/* the press's state: never in S, never saved */",
     "/* the press's state: never in S; kept under its own key until it gives way (app v108, below) */")
 sub('p3', "   has one, else the model's estimate. So a reload returns the builder to the published prices too */",
     "   has one, else the model's estimate. So a reload that sets a read aside returns the builder to the published prices too */")
+
+# espnLegBack: a game leg keeps its add-time price while its own field of the read stands
+sub('p3', """  if(isGameLeg(l)){
+    if(!l.gl||ESPN_GL[l.gid]) return null;
+    const g=((S&&S.sched)||[]).find(x=>x.id===l.gid); if(!g) return null;""",
+    """  if(isGameLeg(l)){
+    if(!l.gl) return null;
+    const g=((S&&S.sched)||[]).find(x=>x.id===l.gid); if(!g) return null;
+    /* (app v108) its own price field among what the load's reads did (ESPN_GL's d), not merely a read of its
+       game: a reload over a newer publish puts back only the fields read after it, and a leg whose field is
+       the publish's again goes to the publish's price */
+    { const G=ESPN_GL[l.gid], f=l.stat==='ml'?(l.team===g.h?'mlh':'mla'):(l.stat==='ats'?(l.team===g.h?'sph':'spa'):(l.side==='under'?'tou':'tov'));
+      if(G&&(!G.d||(Array.isArray(G.d[f])&&G.d[f][0]!=null))) return null; }""")
 
 # toggleLeg: a paid main line's leg takes that line's number
 sub('p3', """    if(M.src==='real'){ const L=M.L, pO=pOver(pl.grp,stat,pr.mu,L.line);
