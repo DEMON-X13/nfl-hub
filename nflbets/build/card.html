@@ -153,9 +153,9 @@ window.PARLAY_CARD=(function(){
      <pid>|any_td (his touchdown), team:<ABBR>|ml, team:<ABBR>|ats|<the team's own line>,
      game|total|over|<point> (or under) and event (the game's page), with at (when the game's player
      prices, and so their ids, were read) and glat (when its game lines were). DraftKings opens several
-     outcomes on its betslip at ?outcomes=<id>+<id>, each '#' written %23; a leg it cannot open is
-     named with why, and where the line DraftKings had when last read is not the leg's, that line and
-     when. An id names one outcome at one number, so a line DraftKings has moved (or pulled) since the
+     outcomes on its betslip at ?outcomes=<id>+<id>, each '#' written %23; a leg DraftKings has only at
+     another number goes on at DraftKings' number, and the note says so (dkLeg, app v109); a leg it
+     cannot open at all is named with why. An id names one outcome at one number, so a line DraftKings has moved (or pulled) since the
      read is not on the slip, and DraftKings drops it without a word: the note dates the read (the
      oldest of the legs it opens) and says the link opens the legs as DraftKings had them then, never
      that every leg will land. Until October 2026 it promised every leg for a day after the read (the
@@ -166,8 +166,12 @@ window.PARLAY_CARD=(function(){
      to open: then the button and Share link take the visitor to the game's DraftKings page, or to
      DraftKings' NFL page, to add the legs by hand, and each leg says why. A player's leg priced from
      DraftKings' line that Refresh odds read on ESPN (src 'dkline', app v107) is DraftKings' own line, but
-     ESPN carries no outcome id for a player's line, so it is always one to add by hand, and says so
-     (DKLINE_WHY); a team's line or the total a press read comes with DraftKings' own id (PAY.dk). */
+     ESPN carries no outcome id for a player's line, so it goes on the slip only where the pull's ids have
+     the same bet, at its line or another (app v109), and is otherwise one to add by hand, and says so
+     (DKLINE_WHY); a team's line or the total a press read comes with DraftKings' own id (PAY.dk). Since
+     app v109 the Parlay Builder suggests only legs with an id at their own line (dkIdOf in the props
+     parts), and the builder shows under each of its own legs what this card will do with it (dkPlan's
+     each, read by renderParlay). */
   const DKS='https://sportsbook.draftkings.com/', DKNFL=DKS+'leagues/football/nfl';
   /* when the pull reads a game's prices, as the Parlay Builder panel says it (PB_NO_PL in part3.js) */
   const PULLED='they are pulled on game day or the day before, Sunday\u2019s afternoon and night games on Saturday morning, and never for Sunday\u2019s early games (before 4pm ET)';
@@ -200,57 +204,105 @@ window.PARLAY_CARD=(function(){
   /* the leg carries a book price on the card (the builder's own reading of it, else the leg's) */
   const dkBooked=l=>l.card?l.card.tag==='book':l.src==='real';
   const statLbl=s=>{ try{ if(typeof MKT==='object'&&MKT&&MKT[s]&&MKT[s].lbl) return MKT[s].lbl.toLowerCase(); }catch(e){} return String(s||'').replace(/_/g,' '); };
-  /* one leg: {id, at} where DraftKings has it, else {why, brief} (brief: the same in a few words, for
-     the text Share link sends) */
+  /* one leg: {id, at} where DraftKings has it at the leg's own line; {id, at, swap, now} where DraftKings
+     has the same bet only at another number, and the leg goes on the slip at DraftKings' (swap: what goes
+     on, in the page's words); else {why, brief} (brief: the same in a few words, for the text Share link
+     sends).
+
+     Converting instead of splitting (app v109, the owner's call of 16 October 2026: every leg on the slip,
+     never "add by hand" where it can be helped). An id names one outcome at one number, and the builder's
+     leg can stand on a number DraftKings no longer has (a spread or total the press or nflverse moved, a
+     player's line the pull read at another number, a ladder rung, 2+ touchdowns). Where DraftKings has the
+     same bet at another number the leg goes on there, and the note says so, and that DraftKings prices it
+     at its own line, so the slip can pay other than the card: a spread the same team's at DraftKings'
+     number, a total the same side, a player's main line the same player, stat and side (the newest read
+     among its numbers, espnIdAt over the pull's; else the main line the page has for him where DraftKings
+     has it, else the closest number); a rung k+ with no Over k-0.5 or k-1 the player's Over at DraftKings'
+     closest number; 2+ touchdowns the anytime touchdown. A moneyline and an anytime touchdown have no
+     number: exact or nothing. An exact id at the leg's own line is preferred, unless a newer read shows
+     DraftKings has moved that market to another number since, when the newest is taken. A leg priced from
+     DraftKings' line read on ESPN (src 'dkline') is looked up like any other: ESPN gives no id for a
+     player's line, but the pull's ids may have the same bet, at its line or at another. */
   function dkLeg(l){
     if(kickedOff(l)) return {why:'its game has kicked off',brief:'its game has kicked off'};
     const D=dkGame(l), team=l.stat==='ml'||l.stat==='ats', player=!team&&l.stat!=='total', at=dkRead(l,D);
-    /* priced from DraftKings' line read on ESPN: no outcome id came with it */
-    if(player&&l.src==='dkline'&&!dkBooked(l)) return {why:DKLINE_WHY,brief:'price estimated from DraftKings\u2019 line read on ESPN, id not read'};
+    /* priced from DraftKings' line read on ESPN: where nothing below turns up an id, that is why */
+    const dkl=player&&l.src==='dkline'&&!dkBooked(l);
+    const miss=r=>dkl?{why:DKLINE_WHY,brief:'price estimated from DraftKings’ line read on ESPN, id not read'}:r;
     /* a payload baked before ids says only that */
-    if(!D&&!dkBaked()) return {why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'};
+    if(!D&&!dkBaked()) return miss({why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'});
     /* a market the pull does not read: where no id turns up for it, that is why, and no pull will
        bring one (an id the payload does have for it is opened all the same) */
     const unread=!(player&&!DK_READ.includes(l.stat))?null:{why:`DraftKings’ ${statLbl(l.stat)} lines are not read here (the price pull reads passing, rushing and receiving yards, receptions, passing touchdowns and anytime touchdowns)`,brief:'its market is not read here'};
-    if(l.stat==='any_td'&&(+l.k||1)>=2) return {why:(+l.k)+'+ touchdowns is not among the DraftKings lines this page reads',brief:(+l.k)+'+ touchdowns is not a line read here'};
+    /* 2+ touchdowns: the slip takes DraftKings' anytime touchdown in its place; with none of his, the
+       anytime touchdown's own reasons, below (his game not pulled yet, or DraftKings not offering it) */
+    const td2=l.stat==='any_td'&&(+l.k||1)>=2;
+    if(td2&&D&&D[l.pid+'|any_td']){ const key=l.pid+'|any_td'; return {id:D[key],at:dkIdAt(l,key,at),swap:'anytime touchdown'}; }
     const rung=player&&!l.main&&l.stat!=='any_td';
     if(player){
-      /* no player price read for its game, and none on the leg: the pull has not reached it yet (a
-         rung opens even then only where it turns out to be DraftKings' main line) */
+      /* no player price read for its game, and none on the leg: the pull has not reached it yet. Once it
+         has, a rung goes on as his Over at DraftKings' line (DraftKings' Over k-0.5 where that is its line)
+         and 2+ touchdowns as his anytime touchdown, each priced by DraftKings there */
       if(!dkBooked(l)&&!dkPlayerPriced(l)&&!(D&&(D.at||dkHasPlayer(D)))){
-        if(unread) return unread;
+        if(unread) return miss(unread);
         const head=(D||dkLinesPriced(l))?'DraftKings’ player prices for its game have not been pulled yet':'its game’s DraftKings prices have not been pulled yet';
-        const tail=rung?`; only DraftKings’ main lines are read, so ${pt(l.k)}+ opens only if ${pt(+l.k-0.5)} is its main line then`:'';
-        return {why:head+': '+PULLED+tail,brief:(D||dkLinesPriced(l)?'player prices for its game are not pulled yet':'its game’s prices are not pulled yet')+(rung?', and only main lines are read':'')}; }
+        const tail=rung?`; once they are, it goes on as his Over at DraftKings’ ${statLbl(l.stat)} line, priced by DraftKings there`
+          :td2?'; once they are, it goes on as his anytime touchdown, priced by DraftKings there':'';
+        return miss({why:head+': '+PULLED+tail,brief:D||dkLinesPriced(l)?'player prices for its game are not pulled yet':'its game’s prices are not pulled yet'}); }
     }else if(!D&&!dkLinesPriced(l)&&!dkPlayerPriced(l))
       return {why:'its game’s DraftKings prices have not been pulled yet: '+PULLED,brief:'its game’s prices are not pulled yet'};
     /* prices read for its game, and no id for it */
-    if(!D) return unread||{why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'};
-    let key=null, near=null, show=pt;
+    if(!D) return miss(unread||{why:'no DraftKings ids were read for its game',brief:'no DraftKings ids read for its game'});
+    const side=s=>s==='under'?'Under':'Over';
+    let key=null, near=null, say=null;
     if(l.stat==='ml') key=l.pid+'|ml';
-    else if(l.stat==='ats'){ key=l.pid+'|ats|'+pt(l.k); near=l.pid+'|ats|'; show=signed; }
-    else if(l.stat==='total'){ key='game|total|'+l.side+'|'+pt(l.k); near='game|total|'+l.side+'|'; }
+    else if(l.stat==='ats'){ key=l.pid+'|ats|'+pt(l.k); near=l.pid+'|ats|'; say=signed; }
+    else if(l.stat==='total'){ key='game|total|'+l.side+'|'+pt(l.k); near='game|total|'+l.side+'|'; say=p=>side(l.side)+' '+pt(p); }
     else if(l.stat==='any_td') key=l.pid+'|any_td';
-    else if(l.main){ key=[l.pid,l.stat,l.side,pt(l.k)].join('|'); near=[l.pid,l.stat,l.side,''].join('|'); }
+    else if(l.main){ key=[l.pid,l.stat,l.side,pt(l.k)].join('|'); near=[l.pid,l.stat,l.side,''].join('|'); say=p=>side(l.side)+' '+pt(p)+' '+statLbl(l.stat); }
     else {
       /* a rung, k or more: DraftKings' Over k-0.5 is the same bet (an Over on a whole k-1 is the
          line the price file read it from, as oddsfetch's threshold() does) */
-      for(const p of [+l.k-0.5,+l.k-1]){ const id=D[[l.pid,l.stat,'over',pt(p)].join('|')]; if(id) return {id,at}; }
-      return unread||{why:'DraftKings’ alternate lines are not read here',brief:'alternate lines are not read here'}; }
-    if(D[key]) return {id:D[key],at:dkIdAt(l,key,at)};
-    if(near){
-      const pts=Object.keys(D).filter(k=>k.startsWith(near)).map(k=>k.slice(near.length)).filter(x=>x!==''&&isFinite(+x)).map(Number);
-      if(pts.length){
-        /* the main line the page has for him where DraftKings has it, else DraftKings' nearest */
-        let M=null; try{ M=(!team&&l.stat!=='total'&&typeof marketLine==='function')?marketLine(l.week,l.pid,l.stat):null; }catch(e){}
-        const p=(M&&pts.includes(+M.line))?+M.line:pts.sort((a,b)=>Math.abs(a-l.k)-Math.abs(b-l.k))[0], pa=dkIdAt(l,near+pt(p),at);
-        /* DraftKings' line as the pull last read it, never "now": the read can be a day or more old */
-        return {why:`DraftKings had it at ${show(p)} when its lines were last read`+(pa?` (${readOf(pa)})`:''),brief:`DraftKings had it at ${show(p)}`,now:p}; } }
+      for(const p of [+l.k-0.5,+l.k-1]){ const k=[l.pid,l.stat,'over',pt(p)].join('|'), id=D[k]; if(id) return {id,at:dkIdAt(l,k,at)}; }
+      /* else the player's Over at DraftKings' closest number for that stat */
+      const c=dkNear(l,D,[l.pid,l.stat,'over',''].join('|'),+l.k-0.5,null,false);
+      if(c) return {id:c.id,at:dkIdAt(l,c.key,at),swap:'Over '+pt(c.p)+' '+statLbl(l.stat),now:c.p};
+      /* his prices read and no line of his on the stat: DraftKings had none then (a rung the card prices
+         from the book has an id unless it was dropped: neutral) */
+      return miss(unread||(dkBooked(l)?{why:'not among the DraftKings lines read for its game',brief:'not among the lines read'}
+        :{why:`DraftKings had no ${statLbl(l.stat)} line of his when its prices were read`+(at?` (${readOf(at)})`:''),brief:`no ${statLbl(l.stat)} line of his read`})); }
+    if(!near){ if(D[key]) return {id:D[key],at:dkIdAt(l,key,at)}; }
+    else{
+      const c=dkNear(l,D,near,+l.k,key,!team&&l.stat!=='total');
+      if(c&&c.key===key) return {id:c.id,at:dkIdAt(l,key,at)};
+      if(c) return {id:c.id,at:dkIdAt(l,c.key,at),swap:say(c.p),now:c.p}; }
     /* a player's leg on no book price, on a game whose player prices were read: DraftKings did not
        offer it then (a leg the card prices from the book has an id unless it was dropped: neutral) */
-    if(unread) return unread;
-    if(player&&D.at&&!dkBooked(l)) return {why:'DraftKings did not offer this line when its prices were read'+(at?` (${readOf(at)})`:''),brief:'DraftKings did not offer it when read'};
-    return {why:'not among the DraftKings lines read for its game',brief:'not among the lines read'};
+    if(unread) return miss(unread);
+    /* 2+ touchdowns, his game's prices read and no anytime touchdown of his among them */
+    if(td2&&!dkBooked(l)&&(D.at||dkHasPlayer(D))) return miss({why:'DraftKings did not offer his anytime touchdown when its prices were read'+(at?` (${readOf(at)})`:'')+`, and ${+l.k}+ touchdowns goes on the slip only as that`,brief:'no anytime TD of his read'});
+    if(player&&D.at&&!dkBooked(l)) return miss({why:'DraftKings did not offer this line when its prices were read'+(at?` (${readOf(at)})`:''),brief:'DraftKings did not offer it when read'});
+    return miss({why:'not among the DraftKings lines read for its game',brief:'not among the lines read'});
+  }
+  /* which of DraftKings' numbers for one bet (the ids under near, keyed near+number) the leg goes on at:
+     the exact one (key) unless a newer read has DraftKings at another number since (a Refresh odds press
+     dates each id it gave or found, espnIdAt; the pull's own share its read), else the newest a press
+     read, else (a player's main line, mkt) the main line the page has for him where DraftKings has it,
+     else the closest number to want (ties to the lower). Null where DraftKings has none */
+  function dkNear(l,D,near,want,key,mkt){
+    const c=Object.keys(D).filter(k=>k.startsWith(near)&&k.length>near.length).map(k=>({key:k,p:+k.slice(near.length),id:D[k]}))
+      .filter(x=>isFinite(x.p)&&x.id&&typeof x.id==='string');
+    if(!c.length) return null;
+    const pressT=x=>{ try{ const t=typeof espnIdAt==='function'?espnIdAt(l.gid,x.key):null; return t||0; }catch(e){ return 0; } };
+    c.forEach(x=>{ x.t=pressT(x); });
+    const byNear=(a,b)=>(Math.abs(a.p-want)-Math.abs(b.p-want))||(a.p-b.p);
+    const pressed=c.filter(x=>x.t).sort((a,b)=>(b.t-a.t)||byNear(a,b))[0]||null;
+    const exact=key?c.find(x=>x.key===key):null;
+    if(exact){ const r=dkRead(l,D), et=exact.t||(r?+r:0); return pressed&&pressed!==exact&&pressed.t>et?pressed:exact; }
+    if(pressed) return pressed;
+    if(mkt){ let M=null; try{ M=typeof marketLine==='function'?marketLine(l.week,l.pid,l.stat):null; }catch(e){}
+      const m=M&&c.find(x=>x.p===+M.line); if(m) return m; }
+    return c.sort(byNear)[0];
   }
   /* the parlay: the betslip link for every leg DraftKings has, in the card's order, the legs it
      cannot open, and the game's own page where every leg is in one game */
@@ -263,7 +315,8 @@ window.PARLAY_CARD=(function(){
        dates what the link opens; however recent, it promises nothing (see above) */
     const undated=ok.some(x=>!x.at), read=ok.length&&!undated?new Date(Math.min(...ok.map(x=>+x.at))):null;
     /* where the visitor adds by hand what the slip cannot take: the game's page, else DraftKings' NFL page */
-    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,event,home:event||DKNFL,n:legs.length,read};
+    /* swaps: the legs that go on at DraftKings' number rather than the card's (see dkLeg) */
+    return {url:ok.length?dkUrl(ok.map(x=>x.id)):null,ok,miss,swaps:ok.filter(x=>x.swap),each,event,home:event||DKNFL,n:legs.length,read};
   }
   function kickedOff(l){ try{ const g=game(l.gid); return !!g&&typeof gameStarted==='function'&&gameStarted(g); }catch(e){ return false; } }
   /* the card: everything it shows, worked out once, drawn twice (the window, and the image) */
@@ -348,7 +401,14 @@ window.PARLAY_CARD=(function(){
        read, and a line moved or pulled since is not on the slip */
     const when=`<span data-pc-dkread="${dk.read?h(dk.read.toISOString()):''}">${dk.read?'DraftKings\u2019 lines as read '+h(readOf(dk.read)):'When DraftKings\u2019 lines were read is not recorded'}</span>: `;
     const opens=`Open in DraftKings opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'} ${dk.read?'then':'when last read'}; a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet.`;
-    return `<p>${when}${opens}${one}${dk.miss.length?' Add by hand:':''}</p>${hand}`;
+    return `<p>${when}${opens}${one}${dk.miss.length?' Add by hand:':''}</p>${hand}${dkSwapHtml(dk)}`;
+  }
+  /* the legs that go on the slip at DraftKings' own line, and that DraftKings prices them there */
+  function dkSwapHtml(dk){
+    const sw=dk&&dk.swaps||[]; if(!sw.length) return '';
+    const name=x=>`${x.n}. ${h(x.who)}${x.what?', '+h(x.what):''}`;
+    return `<p>On DraftKings’ slip at its own line:</p><ul>${sw.map(x=>`<li data-pc-dkswap="${x.n}">${name(x)}: goes on as ${h(x.swap)}</li>`).join('')}</ul>`
+      +`<p>DraftKings prices ${sw.length===1?'a changed leg at its own line':'changed legs at its own lines'}, so its slip’s payout can differ from this card’s.</p>`;
   }
   /* the legs the link opens: "2 of the 3 legs", "the leg", "the 3 legs" (never "all": see above) */
   const dkWhich=dk=>dk.miss.length?dk.ok.length+' of the '+dk.n+' legs':(dk.n===1?'the leg':'the '+dk.n+' legs');
@@ -374,7 +434,7 @@ window.PARLAY_CARD=(function(){
        the game's page (or DraftKings' NFL page) to add the legs by hand */
     { const dk=m.dk||{}, a=$('pcDk'), them=dk.n===1?'the leg':'the legs';
       a.hidden=!dk.n; a.href=dk.url||dk.home||DKNFL;
-      a.textContent=dk.url?'Open in DraftKings':dk.event?'Open game in DraftKings':'Open DraftKings';
+      a.textContent=dk.url?(dk.miss&&dk.miss.length?`Open ${dk.ok.length} of ${dk.n} legs in DraftKings`:'Open in DraftKings'):dk.event?'Open game in DraftKings':'Open DraftKings';
       a.title=!dk.url?(dk.event?`Opens the game\u2019s page in DraftKings, in a new tab, to add ${them} by hand`:`Opens DraftKings\u2019 NFL page, in a new tab, to add ${them} by hand`)
         :`Opens ${dkWhich(dk)} on DraftKings\u2019 betslip, in a new tab, as DraftKings\u2019 lines were ${dk.read?'read '+readOf(dk.read):'last read'}: a line moved or pulled since will not be on it, so check each leg is there`;
       $('pcDkNote').innerHTML=dkHtml(dk); }
@@ -568,7 +628,10 @@ window.PARLAY_CARD=(function(){
     if(dk.url){
       /* what the link holds, in the note's own words (dkWhich): never "all", since a line moved since drops off */
       lines.push(`DraftKings betslip (opens ${dkWhich(dk)} as DraftKings had ${dk.ok.length===1?'it':'them'}${miss.length?`; add ${legNums(miss)} by hand`:''}):`, dk.url);
-      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`); }
+      lines.push(`DraftKings lines as ${dk.read?'read '+readOf(dk.read):'last read'}: a leg whose line DraftKings has moved or pulled since will not be on the slip, so check it before you bet`);
+      /* a leg that goes on at DraftKings' number, and that DraftKings prices it there */
+      const sw=dk.swaps||[];
+      if(sw.length) lines.push(`On DraftKings’ slip at its own line: ${sw.map(x=>`leg ${x.n} as ${x.swap}`).join('; ')} (DraftKings prices ${sw.length===1?'it':'them'} at its own line, so its payout can differ)`); }
     else if(url) lines.push(dk.event?`DraftKings, the game’s page (add ${them} by hand):`:`DraftKings’ NFL page (add ${them} by hand):`, url);
     /* the legs the slip cannot take, each with why in a few words, and where to add them */
     if(miss.length){

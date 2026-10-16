@@ -340,10 +340,18 @@ never presses it.
 A player leg's price after a press: the paid pull's real price while its line is still DraftKings' line;
 the read's line where DraftKings has moved it since, or where the pull has no price, priced by the formula
 and marked est.; the model's estimate where there is no line at all. The game lines a press reads are
-DraftKings' real prices. A leg priced from the read counts like a book price in the suggestions on the
-kinds the formula has been checked on (main lines on passing, rushing and receiving yards, receptions
-and passing TDs, the anytime TD, yards rungs DraftKings lists); every other kind is shown, est., and
-never suggested.
+DraftKings' real prices. A leg priced from the read counts like a book price on the kinds the formula has
+been checked on (main lines on passing, rushing and receiving yards, receptions and passing TDs, the
+anytime TD, yards rungs DraftKings lists); every other kind is shown, est., and never suggested. Since
+app v109 (`build/patch_dk_slip.py`, the owner's call of 16 October 2026) a suggestion takes only a leg
+with DraftKings' own outcome id at its line wherever the payload carries ids for its game, so that Open in DraftKings
+puts every suggested leg on the betslip (his parlay had opened only its first leg, the others having no
+id; ids come only with the prices the pull buys, and DraftKings' own odds feed answers neither other
+sites nor cloud or GitHub runners). ESPN gives no id for a player's line, so a player leg priced from the
+read is suggested only on a payload baked before ids (or on a game it has none for, such as every game
+between Monday night's final and the next week's first pull); the game-line ids a press reads do count, so a team
+leg it re-priced can be. The parlay card looks a leg priced from the read up in the pull's ids like any
+other, and puts a leg DraftKings has only at another number on the slip at DraftKings' number, saying so.
 
 The formula was fitted on DraftKings' own prices only (2026 weeks 2-3, and its DET at BUF ladders of
 week 2), never on a result. Held out on weeks 4-5, the gap in implied-chance points between the guess and

@@ -82,6 +82,72 @@ setTimeout(async()=>{
   const ESPN=require('./espn_rule.js'), ESR=ESPN.make(w);
   const takenPrice=c=>(c.src==='real'&&(F('isGameLeg')(c)||!c.main||ESR.paidStands(c)))
     ||(c.src==='dkline'&&!F('isGameLeg')(c)&&(()=>{ const x=ESR.price(c); return ESR.takeable(x)&&x.price===c.price&&!ESR.real(c); })());
+  /* DraftKings' betslip (app v109): a suggestion takes only legs DraftKings' betslip can take, by
+     DraftKings' own outcome id at the leg's own line, wherever the payload carries ids (PAY.dk, baked by
+     weekly.py's dk_ids from the paid pull; a payload baked before them suggests as before). The rule is
+     worked here on its own from the keys CLAUDE.md gives for PAY.dk, never by the page's dkIdOf: a team's
+     money line 'team:X|ml'; its spread at its own number 'team:X|ats|<line>'; the total
+     'game|total|<over|under>|<points>'; the anytime touchdown '<pid>|any_td' (one touchdown only: no id
+     is read for two or more); a player's main line '<pid>|<stat>|<over|under>|<line>'; a rung k or more
+     as DraftKings' Over k-0.5, else the whole Over k-1 its price was read from. Each number is written as
+     the page writes one (String(+x): 79.5, 80, -3). None once the game has kicked off. "Carries ids" is
+     the payload's own dk (the one it booted on, or a table this audit plants in its place as the paid
+     pull's); one a Refresh odds press makes on a payload without (to hold the game-line ids it read) is not.
+     And per game: a game the table has no entry for in its week is taken as a payload without ids is
+     (weekly.py bakes PAY.dk {} from Monday night's final until the next week's first pull, and nothing may
+     go empty for want of ids no pull has read) */
+  const BOOT_DK=!!PAY.dk&&typeof PAY.dk==='object', AUD_DK=new Set();
+  const dkCarried=()=>{ const D=F('PAY').dk; return !!D&&typeof D==='object'&&(BOOT_DK||AUD_DK.has(D)); };
+  const dkPt=x=>String(+x);
+  const dkKeysOf=l=>{ const s=l.stat;
+    if(s==='ml') return [l.pid+'|ml'];
+    if(s==='ats') return [l.pid+'|ats|'+dkPt(l.k)];
+    if(s==='total') return ['game|total|'+l.side+'|'+dkPt(l.k)];
+    if(s==='any_td') return (l.k==null?1:+l.k)===1?[l.pid+'|any_td']:[];
+    if(l.main) return [[l.pid,s,l.side,dkPt(l.k)].join('|')];
+    return [[l.pid,s,'over',dkPt(+l.k-0.5)].join('|'),[l.pid,s,'over',dkPt(+l.k-1)].join('|')]; };
+  const dkEntryAud=(l,D=F('PAY').dk)=>{ const W0=D&&typeof D==='object'?D[String(l.week)]:null, E=W0&&typeof W0==='object'?W0[l.gid]:null;
+    return E&&typeof E==='object'?E:null; };
+  const dkIdAud=(l,D=F('PAY').dk)=>{ const E=dkEntryAud(l,D);
+    if(!E) return null;
+    const g=S.sched.find(x=>x.id===l.gid); if(g&&F('gameStarted')(g)) return null;
+    for(const k of dkKeysOf(l)){ const v=Object.prototype.hasOwnProperty.call(E,k)?E[k]:null; if(typeof v==='string'&&v) return v; }
+    return null; };
+  /* a leg a suggestion may take, as far as DraftKings' ids go */
+  const dkOk=l=>!dkCarried()||!dkEntryAud(l)||!!dkIdAud(l);
+  /* DraftKings has the same bet at another number, with no id at the leg's own (the panel counts these
+     apart: the parlay card would put them on at DraftKings' number): a spread under the team's
+     'team:X|ats|', a total under 'game|total|<side>|', a player's main line under '<pid>|<stat>|<side>|',
+     a rung under '<pid>|<stat>|over|', 2+ touchdowns his '<pid>|any_td'; a money line and the anytime
+     touchdown have no number */
+  const dkElseAud=(l,D=F('PAY').dk)=>{ const E=dkEntryAud(l,D); if(!E||dkIdAud(l,D)) return false;
+    const g=S.sched.find(x=>x.id===l.gid); if(g&&F('gameStarted')(g)) return false;
+    const str=v=>typeof v==='string'&&!!v;
+    if(l.stat==='ml') return false;
+    if(l.stat==='any_td') return (l.k==null?1:+l.k)>=2&&str(E[l.pid+'|any_td']);
+    const near=l.stat==='ats'?l.pid+'|ats|':l.stat==='total'?'game|total|'+l.side+'|':[l.pid,l.stat,l.main?l.side:'over',''].join('|');
+    return Object.keys(E).some(k=>k.startsWith(near)&&k.length>near.length&&isFinite(+k.slice(near.length))&&str(E[k])); };
+  /* a made-up id table standing in for the paid pull's, put in place of PAY.dk wholesale (rule (c)): an id
+     for every line of the week with a real price on file, as the pull reads one with each price it buys
+     (both money lines, each side's spread at its own number, the total's over and under, a player's main
+     line over and under, a rung k+ priced as Over k-0.5, the anytime touchdown). keep(key) leaves an id
+     out where it says no, for a table that gives some legs an id and not others. Registered as the
+     pull's, so the page and these checks both read it as ids the payload carries */
+  const dkFixture=(wk,tag,keep)=>{ let n=0; const D={}, at=new w.Date(w.Date.now()).toISOString(), pr=v=>v!=null&&isFinite(v)&&v!==0;
+    const put=(E,k)=>{ if(k&&(!keep||keep(k))) E[k]=`0AUD${tag}${++n}`; };
+    for(const g of S.sched.filter(g=>String(g.w)===String(wk))){ const E=D[g.id]={at,glat:at};
+      if(pr(g.mla)) put(E,`team:${g.a}|ml`); if(pr(g.mlh)) put(E,`team:${g.h}|ml`);
+      if(g.sp!=null&&isFinite(g.sp)){ if(pr(g.spa)) put(E,`team:${g.a}|ats|${dkPt(+g.sp)}`); if(pr(g.sph)) put(E,`team:${g.h}|ats|${dkPt(-g.sp)}`); }
+      if(g.tot!=null&&isFinite(g.tot)){ if(pr(g.tov)) put(E,`game|total|over|${dkPt(g.tot)}`); if(pr(g.tou)) put(E,`game|total|under|${dkPt(g.tot)}`); }
+      const O=(S.odds||{})[g.id]||{};
+      for(const pid in O) for(const st in O[pid]) for(const k in (O[pid][st]||{})) if(pr(O[pid][st][k]))
+        put(E,st==='any_td'?(+k===1?pid+'|any_td':null):[pid,st,'over',dkPt(+k-0.5)].join('|')); }
+    const M=((F('PAY').mkt||{})[String(wk)])||{};
+    for(const pid in M) for(const st in M[pid]){ const L=M[pid][st], E=L&&D[L.g]; if(!E) continue;
+      if(pr(L.over)) put(E,[pid,st,'over',dkPt(L.line)].join('|')); if(pr(L.under)) put(E,[pid,st,'under',dkPt(L.line)].join('|')); }
+    const T={[String(wk)]:D}; AUD_DK.add(T); return T; };
+  /* put a table in place of PAY.dk (undefined: none, as a payload baked before ids), and back */
+  const dkSet=v=>{ const P0=F('PAY'); if(v===undefined) delete P0.dk; else P0.dk=v; w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}'); };
   /* the checks open games that have not kicked off; between the week's last kickoff and its
      final reaching the data (a Monday night) there are none, so the page's clock goes back to
      an hour before that kickoff rather than the audit depending on the hour it runs */
@@ -715,10 +781,13 @@ setTimeout(async()=>{
      and a pick that leaves fewer legs than a tier needs gets the reason, not a smaller parlay; and
      a game total (priced at the book's own chance, it has no edge) is in a tier only as the last
      fill, a market leg marked so, where the same level from the legs with an edge is empty, with
-     one line saying so whenever Game total is ticked. Run on the week as it is, and again on made-up
-     lines (each starter's main line set off his own projection, a price on every total: -105/-115
-     on half, +100/+100 with no margin and +110/+105 with less than none on the rest) so the player
-     legs and the totals are always tried. */
+     one line saying so whenever Game total is ticked; and (app v109) wherever the payload carries
+     DraftKings' ids, every leg a tier may take or holds has DraftKings' id at its own line, by the
+     audit's own rule (dkOk), so it goes on DraftKings' betslip. Run on the week as it is, and again on
+     made-up lines (each starter's main line set off his own projection, a price on every total: -105/-115
+     on half, +100/+100 with no margin and +110/+105 with less than none on the rest, and a made-up id
+     table giving every priced line its id, as the pull reads one with each price) so the player legs and
+     the totals are always tried. M9 holds the id rule itself, on made-up games with ids for some legs. */
   { const tab=d.getElementById('tab-parlay'), panel=d.getElementById('pbPanel');
     d.querySelector('#tabs button[data-tab="parlay"]').click();
     chk(!!panel&&tab.firstElementChild===panel&&panel.nextElementSibling===d.getElementById('parlayBody'),'the suggested parlays are not at the top of the Parlay Builder tab, over the builder');
@@ -757,6 +826,9 @@ setTimeout(async()=>{
     /* the reason a tier gives with no player price on file: when they really come (PR #213: the
        Sunday slate on Saturday morning, every other game on its day or the day before) */
     const NO_PL='No player prices yet: they are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).', noPlLow=NO_PL[0].toLowerCase()+NO_PL.slice(1);
+    /* (app v109) the reason with player prices on file and none DraftKings' betslip can take: a line read
+       by Refresh odds carries no id, and DraftKings' own come with the prices the pull buys, and when */
+    const NO_ID='No player legs DraftKings’ betslip can take yet: a player’s line read by Refresh odds carries no DraftKings id (ESPN gives none for it), and DraftKings’ own ids come with its prices, which are pulled on game day or the day before, Sunday’s afternoon and night games on Saturday morning, and never for Sunday’s early games (before 4pm ET).';
     /* a card's own words, beyond its legs: the rule beside its name says what the parlay is, and
        nothing else on it speaks of the floor (the owner wants the chance and the price, no note):
        no paragraph but the thin-edge line, and no word of a floor outside the rule and the legs */
@@ -791,20 +863,27 @@ setTimeout(async()=>{
       chk(pool.pref.every(c=>c.p-mlP(c.price)>=0.03&&F('formAgrees')(c)),`${lab}: a preferred leg does not clear the 3-point bar and market + form`);
       /* a game total is priced at the book's own chance, so it is never among the legs a tier may take */
       chk([...pool.pref,...pool.thin].every(c=>c.stat!=='total'),`${lab}: a game total is among the legs a tier may take`);
+      /* (app v109) wherever the payload carries DraftKings' ids, every leg a tier may take, the totals
+         among them, and every leg on a tier has DraftKings' id at its own line, by the rule worked here */
+      { const noId=[...pool.pref,...pool.thin,...mkt,...r.tiers.flatMap(t=>t.legs||[])].filter(l=>!dkOk(l));
+        chk(!noId.length,`${lab}: ${noId.length} legs a level may take or holds have no DraftKings id at their line, so DraftKings' betslip cannot take them: ${noId.slice(0,4).map(l=>`${l.name} ${l.label} (${l.src})`).join(', ')}`); }
       /* no player prices on file for the ticked games, with player bets ticked: the reason a tier
-         is empty, said as such (and never "tick more" under Players only, where no tick helps) */
+         is empty, said as such (and never "tick more" under Players only, where no tick helps); where
+         the payload carries ids, a game counts as priced for players only with a player leg DraftKings'
+         betslip can take, and with player prices and none of those the reason is the ids (noId) */
       const pooled=pool.plGames!=null, plOn=!!(u.k.over||u.k.under), tmOn=!!(u.k.ml||u.k.ats);
-      const noPl=pooled&&plOn&&!F('pricedLegs')(games.filter(g=>!u.off.includes(g.id)),true).some(l=>!isG(l));
+      const plPriced=F('pricedLegs')(games.filter(g=>!u.off.includes(g.id))).filter(l=>!isG(l));
+      const noPl=pooled&&plOn&&!plPriced.some(dkOk), noId=noPl&&plPriced.length>0;
       W.wording(!pooled||!!r.noPlayerPrices===noPl,`${lab}: the tiers say there are${r.noPlayerPrices?'':' not'} no player prices on file, and that is not so`);
       for(const t of r.tiers){ const [,,n,floor]=SPEC.find(s=>s[0]===t.id);
         if(!t.legs){ said++;
           W.wording(typeof t.why==='string'&&t.why.length>10,`${lab}: the ${t.id} tier is empty and does not say why`);
-          if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
+          if(maxLegs<n) W.wording(/^(Only \d+ legs?|No legs|No games|No bet types|No player prices|No player legs DraftKings’ betslip can take)/.test(t.why),`${lab}: ${maxLegs} legs on the picks and the ${n}-leg tier does not say there are too few: ${t.why}`);
           /* every level shows a parlay whenever the picks make that many legs: empty only when they do not */
           W.compose(maxLegs<n,`${lab}: the ${t.id} tier is empty though the picks make ${maxLegs} legs, enough for ${n}: ${t.why}`);
           W.wording(!/of the time or more|lands \d+%/.test(t.why),`${lab}: the empty ${t.id} tier speaks of its floor, which every level now falls back from: ${t.why}`);
-          if(pooled) W.wording(/no player prices yet/i.test(t.why)===noPl&&(!noPl||tmOn||(t.why===NO_PL&&!/tick more/.test(t.why))),
-            `${lab}: the empty ${t.id} tier ${noPl?'does not say plainly that no player prices are on file yet':'says no player prices are on file, and some are'}: ${t.why}`);
+          if(pooled) W.wording(/no player prices yet/i.test(t.why)===(noPl&&!noId)&&/no player legs DraftKings’ betslip can take yet/i.test(t.why)===noId&&(!noPl||tmOn||(t.why===(noId?NO_ID:NO_PL)&&!/tick more/.test(t.why))),
+            `${lab}: the empty ${t.id} tier ${noPl?(noId?'does not say plainly that no player leg on file has a DraftKings id yet':'does not say plainly that no player prices are on file yet'):'says no player prices are on file, and some are'}: ${t.why}`);
           continue; }
         built++; legsSeen+=t.legs.length;
         W.compose(t.legs.length===n,`${lab}: the ${t.id} tier has ${t.legs.length} legs, not ${n}`);
@@ -945,7 +1024,10 @@ setTimeout(async()=>{
             /* every other starter's line well under his projection (an over the model likes), the rest well over it (an under) */
             const ln=(i%2?Math.floor(l.mu*1.25):Math.floor(l.mu*0.8))+0.5;
             ((M[x.pl.id]??={})[l.stat])={line:ln,over:-112,under:-108,n:x.pl.n,g:g.id}; nL++; } }); });
-      w.eval('PB_CACHE=new Map()');
+      /* (app v109) the pull reads DraftKings' id with each price it buys: a made-up table of them, an id
+         for every priced line of the week (the made-up ones among them), in place of the payload's own,
+         so every rule below still meets player legs and totals a suggestion may take */
+      const keepDk=F('PAY').dk; dkSet(dkFixture(cw,'M'));
       for(const [m,ks] of [['all',KINDS],['teams',['ml','ats','total']],['players',['over','under']],['overs',['over']],['unders',['under']],['totals',['total']]]){ setKinds(ks); hold('made-up lines, '+m); }
       /* one game, players only: every leg of a tier shares that game, so the tier's chance and
          price are worked by the copula's draws and hold() holds them to parlayProb and parlayDec
@@ -1132,7 +1214,7 @@ setTimeout(async()=>{
         chk(!!d.querySelector(`#pbPanel [data-pb-game="${g0.id}"]`),'the game did not come back with the clock'); }
       if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM);
       S.sched.forEach((g,i)=>{ g.tov=keepT[i][0]; g.tou=keepT[i][1]; if(g.tov==null) delete g.tov; if(g.tou==null) delete g.tou; });
-      w.eval('PB_CACHE=new Map()');
+      dkSet(keepDk);
       console.log(`M. suggested parlays: ${built} tiers built and ${said} that said why, ${legsSeen} legs, ${thinSeen} thin, ${corrTiers} of one game's tiers on legs that move together, over this week's ${games.length} games and ${nL} made-up player lines`); }
     /* the thin-edge line says, for each kind of leg it is on, what it lacked: a team bet has no
        market + form (a player leg's second price), so it never reads as wanting it (a game total
@@ -1187,7 +1269,8 @@ setTimeout(async()=>{
       w.eval('PB_CACHE=new Map()'); F('renderPb')();
       console.log(`M3. no player prices yet: Players only says so on all 4 tiers; All ${rA.tiers.filter(t=>t.legs).length} built on team bets, ${rA.tiers.filter(t=>!t.legs).length} saying why; All on one game gives both reasons on all 4`); }
     /* M4. every level shows a parlay of its size whenever the picks make that many legs. Held on
-       made-up games standing in for the week's (pbGames and pricedLegs stood in for), so it holds
+       made-up games standing in for the week's (pbGames and pricedLegs stood in for, and PAY.dk by a
+       made-up id table giving every leg its id, so the levels are built as before ids), so it holds
        on any day of the week, a lone Monday game included: ten games to come with only Spread
        ticked, as the owner had it. Eight have a preferred cover, priced so that the likeliest legs
        and the best-paying ones are not the same: four the model rates 57% to 58.5% at -115 (3.5 to
@@ -1217,6 +1300,11 @@ setTimeout(async()=>{
       w.__m4Games=G;
       w.__m4Legs=[...G.map((g,i)=>leg(g,g.h,'ats',COVER[i][0],COVER[i][1])),...G.map(g=>leg(g,g.a,'ml',0.75,-150)),leg(G[1],G[1].a,'ats',0.50,-150)];
       w.eval('pbGames=function(){ return window.__m4Games; }; pricedLegs=function(games){ return window.__m4Legs.filter(l=>(games||[]).some(g=>g.id===l.gid)).map(l=>({...l})); };');
+      /* (app v109) DraftKings' ids for every made-up leg, at its own line, in place of the payload's own
+         table (rule (c)), so the levels below are built as they were before ids: M9 takes some away */
+      const dkKeep4=F('PAY').dk;
+      { const D={}; let n=0; for(const l of w.__m4Legs) for(const k of dkKeysOf(l)) ((D[l.gid]??={at:'2099-01-01T00:00Z'})[k]=`0AUDM4${++n}`);
+        const T={[String(cw)]:D}; AUD_DK.add(T); dkSet(T); }
       const fits=F('pbFits'), order=F('pbOrder');
       const combos=(list,n)=>{ const out=[], rec=(i0,cur)=>{ if(cur.length===n){ out.push(cur.slice()); return; }
         for(let i=i0;i<list.length;i++){ if(!fits(cur,list[i])) continue; cur.push(list[i]); rec(i+1,cur); cur.pop(); } }; rec(0,[]); return out; };
@@ -1264,6 +1352,115 @@ setTimeout(async()=>{
       run4('three made-up games, Spread only',[3,4,5,6,7,8,9],{safe:'pair',med:'likeliest',aggr:'empty',xtrm:'empty'});
       const C=run4('two preferred and two thin, Spread only',[2,3,4,5,6,7],{safe:'pair',med:'likeliest',aggr:'likeliest',xtrm:'empty'});
       chk(C.r.tiers.filter(t=>t.legs).map(t=>t.thin).join()==='0,1,2','two preferred and two thin: the likeliest take more thin legs than fill them: '+C.r.tiers.filter(t=>t.legs).map(t=>t.id+' '+t.thin).join(', '));
+      /* M9. DraftKings' betslip (app v109): wherever the payload carries ids, a level takes only legs
+         DraftKings has an id for at their own line, so every leg it suggests goes on DraftKings' betslip.
+         On the made-up games, with a made-up id table of their own in place of PAY.dk (rule (c)): ids for
+         some legs and not others, and decoys under the keys a wrong rule would read (a cover at another
+         number and the other team's, the other team's money line, a main line's other side and another
+         number, a rung at its own number, the anytime touchdown for a 2+ rung). Worked here on its own:
+         each leg's id by the audit's key rule (dkIdAud, each case's answer written out beside it), and what
+         the panel takes with no ids at all (PAY.dk taken away, a payload baked before them, which suggests
+         as before) as the reference: the pool is that pool less the legs with no id, the count the panel
+         gives of those left out is theirs, and the levels are what the reference builds from the legs with
+         an id alone. Then no player id at all: no level has a player leg, and the reason says so. Made-up
+         data, so blocking (the wording warns) */
+      { const keepU9=JSON.stringify(U()), imp9=a=>a>0?100/(a+100):-a/(-a+100), at9=(price,edge)=>({price,p:+(imp9(price)+edge).toFixed(4)});
+        const pl=(g,pid,stat,o)=>({gid:g.id,pid,stat,side:'over',main:false,src:'real',mu:50,name:'Made-up '+pid,pos:'WR',grp:'WR',team:g.h,opp:g.a,week:cw,key:`${g.id}|${pid}|${stat}`,...o});
+        const team9=[...G.map((g,i)=>[leg(g,g.h,'ats',COVER[i][0],COVER[i][1]),i%2===0]),...G.map((g,i)=>[{...leg(g,g.a,'ml',0.66,-150)},i<5])];
+        const play9=[
+          [pl(G[0],'aud-p1','receiving_yards',{k:64.5,main:true,...at9(-115,0.04),label:'Over 64.5 receiving yards'}),true],
+          [pl(G[1],'aud-p1b','receiving_yards',{k:64.5,main:true,side:'under',...at9(-105,0.04),label:'Under 64.5 receiving yards'}),false],
+          [pl(G[2],'aud-p2','receptions',{k:4.5,main:true,...at9(-110,0.04),label:'Over 4.5 receptions'}),false],
+          [pl(G[3],'aud-p3','receiving_yards',{k:50,...at9(-150,0.04),label:'50+ receiving yards'}),true],
+          [pl(G[4],'aud-p4','rushing_yards',{k:40,...at9(-130,0.04),label:'40+ rushing yards'}),true],
+          [pl(G[5],'aud-p5','receiving_yards',{k:75,...at9(-120,0.04),label:'75+ receiving yards'}),false],
+          [pl(G[6],'aud-p6','any_td',{k:1,mu:null,...at9(-110,0.04),label:'Scores a touchdown'}),true],
+          [pl(G[7],'aud-p7','any_td',{k:2,mu:null,...at9(-110,0.04),label:'Scores 2+ touchdowns'}),false]];
+        const L9=[...team9,...play9].map(x=>x[0]), want9=new Map([...team9,...play9].map(([l,y])=>[pbIdOf(l),y]));
+        /* two totals, each with only one side's id */
+        const tg=[G[8],G[9]], keepTg=tg.map(g=>[g.tot,g.tov,g.tou]); tg.forEach(g=>{ g.tot=44.5; g.tov=-110; g.tou=-110; });
+        let nI=0; const T9={}, E=g=>(T9[g.id]??={at:'2099-01-01T00:00Z',glat:'2099-01-01T00:00Z'}), id=()=>'0AUDM9'+(++nI);
+        G.forEach((g,i)=>{ if(i%2===0) E(g)[`team:${g.h}|ats|-3.5`]=id(); else { E(g)[`team:${g.h}|ats|-4.5`]=id(); E(g)[`team:${g.a}|ats|3.5`]=id(); }
+          if(i<5) E(g)[`team:${g.a}|ml`]=id(); else E(g)[`team:${g.h}|ml`]=id(); });
+        E(G[8])['game|total|over|44.5']=id(); E(G[9])['game|total|under|44.5']=id(); E(G[8])['game|total|under|45.5']=id();
+        E(G[0])['aud-p1|receiving_yards|over|64.5']=id();
+        E(G[1])['aud-p1b|receiving_yards|over|64.5']=id();
+        E(G[2])['aud-p2|receptions|over|5.5']=id(); E(G[2])['aud-p2|receptions|under|4.5']=id();
+        E(G[3])['aud-p3|receiving_yards|over|49.5']=id();
+        E(G[4])['aud-p4|rushing_yards|over|39']=id();
+        E(G[5])['aud-p5|receiving_yards|over|75']=id(); E(G[5])['aud-p5|receiving_yards|under|74.5']=id();
+        E(G[6])['aud-p6|any_td']=id();
+        E(G[7])['aud-p7|any_td']=id();
+        const FIX9={[String(cw)]:T9}, FIX9t={[String(cw)]:Object.fromEntries(Object.entries(T9).map(([gid,e])=>[gid,Object.fromEntries(Object.entries(e).filter(([k])=>/^(team:|game\||at$|glat$)/.test(k)))]))};
+        AUD_DK.add(FIX9); AUD_DK.add(FIX9t);
+        const ids9=list=>list.map(pbIdOf).sort().join(), sig9=r=>r.tiers.map(t=>t.legs?t.legs.map(pbIdOf).join()+'@'+t.corr+'@'+t.dec:'empty').join('~');
+        let nIn=0, nOut=0, nNone=0, nMoved=0, tiersSaid='';
+        try{
+          w.__m4Legs=L9; setKinds(KINDS); U().off=[];
+          dkSet(FIX9); const has=l=>!!dkIdAud(l,FIX9);
+          /* the audit's key rule against each case's answer: the cases are what they say */
+          const wrong=L9.filter(l=>has(l)!==want9.get(pbIdOf(l)));
+          chk(!wrong.length,`DraftKings' ids on the made-up legs: the audit's own rule reads ${wrong.map(l=>l.name+' '+l.label+(has(l)?' with':' without')+' an id').join(', ')}, against the case`);
+          const tot9=side=>F('totalLeg')(G[8],side), tot9b=side=>F('totalLeg')(G[9],side);
+          chk(has(tot9('over'))&&!has(tot9('under'))&&has(tot9b('under'))&&!has(tot9b('over')),'DraftKings\' ids on the made-up totals: the audit\'s own rule does not read one side of each');
+          /* the reference: no ids at all, as a payload baked before them */
+          dkSet(undefined); const pool0=F('pbPool')(G); setKinds(['over','under']); const rOld=F('getPbTiers')(); setKinds(KINDS);
+          dkSet(FIX9); const pool1=F('pbPool')(G);
+          const all0=[...pool0.pref,...pool0.thin];
+          nIn=all0.filter(has).length; nOut=all0.length-nIn;
+          /* the legs the panel counts as left out for want of an id: these and the totals with none, apart
+             where DraftKings has the bet at another number (each case's answer: G[odd]'s home cover, held at
+             -3.5 with an id at -4.5; aud-p2's Over 4.5 at 5.5; aud-p5's 75+ at Over 75; aud-p7's 2+ at his
+             anytime touchdown; G[8]'s Under 44.5 at 45.5) */
+          { const out0=[...all0,...pool0.mkt].filter(l=>!has(l)); nMoved=out0.filter(l=>dkElseAud(l,FIX9)).length; nNone=out0.length-nMoved;
+            const mvKeys=out0.filter(l=>dkElseAud(l,FIX9)).map(l=>l.stat==='ats'||l.stat==='total'||l.stat==='ml'?l.gid+'|'+l.stat+'|'+l.side:l.pid).sort().join(), wantMv=[...new Set(out0.filter(l=>(l.stat==='ats'&&G.indexOf(G.find(g=>g.id===l.gid))%2===1)||(l.stat==='total'&&l.gid===G[8].id&&l.side==='under')).map(l=>l.gid+'|'+l.stat+'|'+l.side)
+              .concat(out0.filter(l=>['aud-p2','aud-p5','aud-p7'].includes(l.pid)).map(l=>l.pid)))].sort().join();
+            chk(nMoved>0&&nNone>0&&mvKeys===wantMv,`DraftKings' ids at another number on the made-up legs: the audit's own rule reads ${mvKeys} as moved, against the cases' ${wantMv} (${nNone} with none)`); }
+          chk(nOut>0&&all0.some(l=>!isG(l)&&has(l))&&all0.some(l=>!isG(l)&&!has(l))&&pool0.mkt.some(has)&&pool0.mkt.some(l=>!has(l))&&rOld.tiers.some(t=>t.legs&&t.legs.some(l=>!has(l))),
+            `the made-up legs do not put legs with and without a DraftKings id, players and totals among them, in the pool and on a level with no ids carried, so the case cannot tell the rule (${nIn} with, ${nOut} without)`);
+          chk(ids9(pool1.pref)===ids9(pool0.pref.filter(has))&&ids9(pool1.thin)===ids9(pool0.thin.filter(has))&&ids9(pool1.mkt)===ids9(pool0.mkt.filter(has)),
+            `with ids for some made-up legs, the legs a level may take are not those it takes with no ids carried less the ones DraftKings has no id for: ${ids9([...pool1.pref,...pool1.thin,...pool1.mkt]).slice(0,300)}`);
+          /* a game the table has no entry for is taken as a payload without ids is (weekly.py bakes PAY.dk {}
+             between Monday night's final and the next week's first pull): G[1]'s entry taken out, its legs are
+             back as with none carried and the rest as before; and an empty table takes every leg */
+          { const FIX9g={[String(cw)]:Object.fromEntries(Object.entries(T9).filter(([gid])=>gid!==G[1].id))}, E0={}; AUD_DK.add(FIX9g); AUD_DK.add(E0);
+            const take=l=>l.gid===G[1].id||has(l);
+            dkSet(FIX9g); const pg=F('pbPool')(G); dkSet(E0); const pe=F('pbPool')(G); dkSet(FIX9);
+            chk([...pool0.pref,...pool0.thin,...pool0.mkt].some(l=>l.gid===G[1].id&&!has(l))
+              &&ids9(pg.pref)===ids9(pool0.pref.filter(take))&&ids9(pg.thin)===ids9(pool0.thin.filter(take))&&ids9(pg.mkt)===ids9(pool0.mkt.filter(take)),
+              `with no ids for one made-up game in the table, its legs are not taken as with no ids carried, or the rest not as before: ${ids9([...pg.pref,...pg.thin,...pg.mkt]).slice(0,300)}`);
+            chk(ids9([...pe.pref,...pe.thin,...pe.mkt])===ids9([...pool0.pref,...pool0.thin,...pool0.mkt])&&!pe.noId,`with an empty id table (the week's first pull still to come), the levels' lines are not those with no ids carried: ${pe.noId} left out`); }
+          /* the levels, under team and player bets and under Players only: what the reference builds from the
+             legs with an id alone (game totals left out, as a total's chance is its two prices', which the
+             reference could not keep with one side gone) */
+          for(const ks of [['ml','ats','over','under'],['over','under']]){ setKinds(ks);
+            const r1=F('getPbTiers')(), lab9=ks.length===2?'Players only':'team and player bets';
+            chk(r1.tiers.every(t=>!t.legs||t.legs.every(has)),`${lab9}: a made-up level holds a leg DraftKings has no id for at its line: `+r1.tiers.filter(t=>t.legs).map(t=>t.legs.filter(l=>!has(l)).map(l=>l.name+' '+l.label).join(', ')).join(' / '));
+            w.__m4Legs=L9.filter(has); dkSet(undefined); const r0=F('getPbTiers')(); w.__m4Legs=L9; dkSet(FIX9);
+            chk(sig9(r1)===sig9(r0),`${lab9}: with ids for some made-up legs, the levels are not what a payload with no ids builds from the legs with an id alone: ${sig9(r1).slice(0,240)} against ${sig9(r0).slice(0,240)}`);
+            if(ks.length===2){ chk(r1.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l))),'with ids for some made-up player legs, no level takes one');
+              tiersSaid=r1.tiers.map(t=>t.legs?`${t.id} ${t.legs.length}`:`${t.id} empty`).join(', '); } }
+          /* the panel says how many legs it left out for want of an id, and why: the count is a number on the page */
+          setKinds(KINDS); F('renderPb')();
+          { const pn=d.getElementById('pbPanel').cloneNode(true), el=pn.querySelector('#pbElo'); if(el) el.remove();
+            const tx=pn.textContent.replace(/\s+/g,' '), m=/(\d+) legs? (?:is|are) left out: a suggested parlay takes only legs DraftKings’ betslip can take/.exec(tx), mv=/(\d+) legs? (?:is|are) left out: DraftKings had (?:it|them) only at another number when its lines were last read/.exec(tx);
+            W.wording(!!m&&!!mv&&/A player’s line read by Refresh odds carries no id/.test(tx)&&/still on the game pages, where you can add/.test(tx)&&/Refresh odds reads DraftKings’ current spreads and totals/.test(tx)&&/goes on DraftKings’ slip at DraftKings’ number/.test(tx)&&!/to add by hand/.test(tx),
+              `with ids for some made-up legs, the panel does not say legs are left out for want of a DraftKings id, at another number and with none, and why: ${(tx.match(/\d+ legs? (is|are) left out[^.]*\./g)||['nothing']).join(' ')}`);
+            chk((m?+m[1]:0)===nNone&&(mv?+mv[1]:0)===nMoved,`the panel says ${m?m[1]:0} legs are left out for want of a DraftKings id and ${mv?mv[1]:0} for DraftKings having them at another number, where ${nNone} and ${nMoved} are`); }
+          /* no player id at all: the levels are built from team bets, and say why there is no player leg */
+          dkSet(FIX9t); setKinds(['over','under']);
+          const rP=F('getPbTiers')();
+          chk(rP.tiers.every(t=>!t.legs),'with no DraftKings id on any made-up player leg, Players only built a level: '+rP.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+          W.wording(!!rP.noPlayerPrices&&rP.tiers.every(t=>t.why===NO_ID),'with no DraftKings id on any made-up player leg, Players only does not say so on every level: '+rP.tiers.map(t=>t.why).join(' / '));
+          setKinds(['ml','ats','over','under']); const rT=F('getPbTiers')(); F('renderPb')();
+          chk(rT.tiers.some(t=>t.legs)&&rT.tiers.every(t=>!t.legs||t.legs.every(l=>isG(l)&&has(l))),'with no DraftKings id on any made-up player leg, a level holds a player leg or a team leg with no id, or none is built: '+rT.tiers.map(t=>t.why||t.legs.map(l=>l.label).join('+')).join(' / '));
+          W.wording(d.getElementById('pbPanel').textContent.replace(/\s+/g,' ').includes('No player leg on your picks can go on DraftKings’ betslip yet, so the tiers below are built without player legs'),'with no DraftKings id on any made-up player leg, the panel does not say the levels are built without player legs, and why');
+          /* and with no ids carried, the same legs suggest as before: player legs DraftKings has no id for among them */
+          dkSet(undefined); setKinds(['over','under']); const rN=F('getPbTiers')();
+          chk(rN.tiers.some(t=>t.legs&&t.legs.some(l=>!isG(l)&&!has(l))),'with no DraftKings ids carried, Players only does not suggest as before ids: no level takes a made-up player leg the partial table has no id for');
+        } finally { tg.forEach((g,i)=>{ [g.tot,g.tov,g.tou]=keepTg[i]; }); S.ui.pb=JSON.parse(keepU9); dkSet(dkKeep4); F('renderPb')(); }
+        console.log(`M9. DraftKings' betslip: on made-up games with ids for some legs (${nIn} of the ${nIn+nOut} legs a level could take with none carried), the pool is the rest less those, the levels are what the legs with an id alone build (Players only: ${tiersSaid}), the count left out is said (${nNone} with none, ${nMoved} at another number); a game with no ids, and an empty table, taken as before ids; no player id leaves Players only empty and says why; with no ids carried the levels suggest as before`); }
+      dkSet(dkKeep4);
       w.eval('pbGames=window.__m4Keep[0]; pricedLegs=window.__m4Keep[1]; PB_CACHE=new Map();'); delete w.__m4Keep; delete w.__m4Games; delete w.__m4Legs;
       S.ui.pb=JSON.parse(keepU4); F('renderPb')();
       console.log(`M4. every level a parlay: ten made-up games, Spread only: ${seen.slice(0,4).join(', ')}; three games: Aggressive and Extreme empty for too few legs; two preferred and two thin: the likeliest take 1 and 2 thin legs; ${likeliestSeen} tiers of the week's own picks fell back to the likeliest; ${likeliestWorked} likeliest tiers (Safe's pair included) worked out in full against ${combosWorked} parlays of their size`); }
@@ -1314,7 +1511,8 @@ setTimeout(async()=>{
     const gap=l=>{ const f=fairOf(l); return f?l.p-f.p:null; }, isFar=l=>{ const x=gap(l); return x!=null&&x>=FAR-1e-9; };
     const g0=S.sched.filter(g=>+g.w===cw).sort((a,b)=>String(a.id).localeCompare(String(b.id)))[0];
     const keepM=JSON.stringify(PAY.mkt[String(cw)]||null), keepO=JSON.stringify(S.odds||{}), KF=['sp','tot','mla','mlh','spa','sph','tov','tou'], keepG=S.sched.map(g=>KF.map(k=>g[k]));
-    const restore=()=>{ if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM); S.odds=JSON.parse(keepO);
+    const keepDk7=F('PAY').dk;
+    const restore=()=>{ if(keepM==='null') delete PAY.mkt[String(cw)]; else PAY.mkt[String(cw)]=JSON.parse(keepM); S.odds=JSON.parse(keepO); dkSet(keepDk7);
       S.sched.forEach((g,i)=>KF.forEach((k,j)=>{ if(keepG[i][j]===undefined) delete g[k]; else g[k]=keepG[i][j]; })); w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}'); };
     let ruleCases=0;
     try{
@@ -1377,6 +1575,9 @@ setTimeout(async()=>{
               let over=-112, under=-108;
               if(kind<2){ const fs=Math.max(0.05,Math.min(0.9,ps-(kind===0?0.25:0.06))), fo=ov?fs:1-fs; over=toML(fo*1.03); under=toML((1-fo)*1.03); }
               ((MM[x.pl.id]??={})[l.stat])={line:ln,over,under,n:x.pl.n,g:g.id}; } }); }
+        /* (app v109) DraftKings' ids for the made-up lines, as the pull reads one with each price, in place
+           of the payload's table: the far-off rule is held on legs a suggestion could otherwise take */
+        dkSet(dkFixture(cw,'M7'));
         const U=S.ui.pb, keepU=JSON.stringify(U), keepSide=S.ui.suggestSide;
         for(const k of ['ml','ats','total','over','under']) U.k[k]=true; U.off=[]; S.ui.suggestSide='any'; w.eval('PB_CACHE=new Map(); GAME_TIER_CACHE={}');
         /* the pool: no leg far off, and the count the panel gives is the legs left out for it alone */
@@ -1406,6 +1607,20 @@ setTimeout(async()=>{
             const fs=t.legs.map(l=>LF(l));
             chk(t.legs.every(l=>!isFar(l)),`the ${id} hand of ${g.id} holds a leg far off the market`);
             chk(fs.every(Boolean)?(!!t.fair&&t.fair.p===pp(t.legs.map((l,i)=>({...l,p:fs[i].p})),20000).corr):(!!t.fair&&t.fair.p===null),`the ${id} hand of ${g.id}: its fair chance is not parlayProb on its legs at theirs`); } }
+        /* (app v109) a game page's hands take only legs DraftKings has an id for at their own line, where the
+           payload carries ids: with every other id of the made-up table taken away, the first game's pool
+           is the pool it has with no ids carried (a payload baked before them) less the legs the table has
+           no id for, by the audit's own rule, and no hand holds one of those */
+        let handsIds='';
+        { const gH=games[0], full=F('PAY').dk; let i=0; const half=dkFixture(cw,'M7h',()=>i++%2===0), hasH=l=>!!dkIdAud(l,half);
+          const idsH=list=>list.map(l=>l.key+'|'+l.side+'|'+l.k+(l.main?'|m':'')).sort().join();
+          try{ dkSet(undefined); const p0=F('gameLegPool')(gH);
+            dkSet(half); const p1=F('gameLegPool')(gH), T=F('gameTiers')(gH);
+            W.coverage(p0.some(hasH)&&p0.some(l=>!hasH(l)),`the made-up lines gave ${gH.id}'s hands no legs both with a DraftKings id and without one, so the hands' id rule went untested`);
+            chk(idsH(p1)===idsH(p0.filter(hasH)),`${gH.id}'s hands' pool, with ids for some of its legs, is not its pool with no ids carried less the legs DraftKings has none for: ${p1.length} legs against ${p0.filter(hasH).length}`);
+            chk(['high','med','low'].every(id=>!T[id]||T[id].legs.every(hasH)),`a hand of ${gH.id} holds a leg DraftKings has no id for at its line`);
+            handsIds=`; ${gH.id}'s hands' pool ${p1.length} of ${p0.length} legs with ids for half the lines`; }
+          finally{ dkSet(full); } }
         /* flagged on the game page: a far-off main line of a starter, his game opened on him */
         const farL=F('pricedLegs')(games).filter(l=>l.main&&!isG(l)&&isFar(l)).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)))[0];
         const nearL=[...pool.pref,...pool.thin].filter(l=>!isG(l)&&l.main).sort((a,b)=>String(a.key+a.side).localeCompare(String(b.key+b.side)))[0];
@@ -1509,7 +1724,7 @@ setTimeout(async()=>{
               'with no fair chance the builder\'s confidence tile does not rate the model\'s chance and say so: '+(t2?t2.textContent:'no tile')); }
           S.parlay=JSON.parse(keepP); S.bookPrice=keepB; F('save')(); F('renderParlay')(); }
         S.ui.pb=JSON.parse(keepU); S.ui.suggestSide=keepSide;
-        console.log(`M7. fair chance: ${ruleCases} cases of the rule, and on made-up lines ${nFar} legs far off the market left out (${nNear} player legs kept), none on a level or on ${hands} game hands; ${flagged}; the builder flags it and leads with the fair chance`); }
+        console.log(`M7. fair chance: ${ruleCases} cases of the rule, and on made-up lines ${nFar} legs far off the market left out (${nNear} player legs kept), none on a level or on ${hands} game hands; ${flagged}; the builder flags it and leads with the fair chance${handsIds}`); }
     } finally { restore(); F('renderParlay')(); } }
 
   /* ---- M8. Refresh odds: DraftKings' lines read from ESPN in the browser, on a press (app v107) ----
@@ -1543,7 +1758,10 @@ setTimeout(async()=>{
      real, the game lines real at the read's prices); where the page chooses legs a dkline leg only of a
      tested kind, at the rule's price and fair chance, under the panel's own band, edge and far-off rules
      (a game page's hands under the far-off rule too) and V6's (pickOk, takenPrice), never an untested one
-     or a model-only estimate but in a game page's hands; a leg ticked takes the same price; a read in play
+     or a model-only estimate but in a game page's hands, and (app v109) wherever the payload carries
+     DraftKings' ids only a leg with DraftKings' id at its own line (dkOk, the audit's own rule), so never
+     one from the read, which ESPN gives no id; held again with PAY.dk taken away, a payload baked before
+     ids, where the read's legs are suggested as before; a leg ticked takes the same price; a read in play
      never used and a game kicked off offering nothing. And (app v108, M8g) the read kept in this browser
      under its own key (props_press_v1): the press writes v 1 and the page's season with an entry for each
      game it read, each with what a reload must put back (what its reads did to the game lines, d: each field
@@ -1836,6 +2054,8 @@ setTimeout(async()=>{
           const Dx=xs.map(x=>({x,l:F('statLines')(x).find(l=>!l.prob&&l.stat==='receptions'&&l.rungs.length>1)})).find(o=>o.l&&lineOf(o.x.pl.id,'receptions')!=null&&![A,B,C].some(z=>z&&z.x===o.x)&&(!byName||byName.x!==o.x));
           if(Dx) (M[Dx.x.pl.id]??={}).receptions={line:lineOf(Dx.x.pl.id,'receptions'),over:-140,under:115,n:Dx.x.pl.n,g:g0.id};
           const paidKey=`team:${g0.a}|ml`, D0=((P().dk??={})[wk]??={}); (D0[g0.id]??={})[paidKey]='PAIDID';
+          /* planted as the paid pull's ids, so the payload carries ids from here, whatever it was baked with */
+          AUD_DK.add(P().dk);
           /* and two more paid-pull shapes, whatever the week's pulls hold: one paid id the read finds as the
              pull had it (g0's home money line: kept, and dated by the read), and one game the read covers
              with no paid ids at all (its event and glat are the press's). Any game but g0 and the one
@@ -1901,7 +2121,12 @@ setTimeout(async()=>{
               chk(lvSig(rNow)===lvSig(rNew)&&drawn===nDk,`right after the press, the Parlay Builder's levels are not what a build on the read gives (stale from before it), or the panel drawn shows ${drawn} legs marked est. where the read gives ${nDk}: ${lvSig(rNow).slice(0,160)} against ${lvSig(rNew).slice(0,160)}`); }
             finally{ if(el) el.innerHTML=keepE; }
             chk(hdSig(hNow)===hdSig(hNew),`right after the press, ${g0.id}'s hands (its lines unmoved by the read) are not what a build on the read gives, but the published ones: ${hdSig(hNow).slice(0,160)} against ${hdSig(hNew).slice(0,160)}`);
-            W.coverage(lvSig(rNew)!==levels0&&hdSig(hNew)!==hands0&&['high','med','low'].some(id=>hNew[id]&&hNew[id].legs.some(l=>l.src==='dkline')),`the press left the levels or ${g0.id}'s hands as they were before it, or no hand took a leg from the read: whether either goes stale went untested`); }
+            /* (app v109) where the payload carries DraftKings' ids, a leg priced from the read has none (ESPN
+               gives none for a player's line) and suggests nowhere, and g0's own lines are held where the read
+               has them: its hands cannot move on the read, so only the levels' staleness is looked for (the
+               hands' is held, blocking, above all the same, and looked for on a payload baked before ids) */
+            const dkNow=dkCarried();
+            W.coverage(lvSig(rNew)!==levels0&&(dkNow||(hdSig(hNew)!==hands0&&['high','med','low'].some(id=>hNew[id]&&hNew[id].legs.some(l=>l.src==='dkline')))),`the press left the levels${dkNow?'':` or ${g0.id}'s hands`} as they were before it${dkNow?'':', or no hand took a leg from the read'}: whether ${dkNow?'they go':'either goes'} stale went untested`); }
           chk(sbN===1&&urls.some(u=>/\/scoreboard\?dates=\d{4}&seasontype=[23]&week=\d+&_=\d+$/.test(u)),`a press asked for the scoreboard ${sbN} times (a second press while one runs must do nothing), or not in ESPN's numbering of the week: ${urls.filter(u=>/scoreboard/.test(u)).join(' ')}`);
           chk(net.log.every(x=>x.cache==='no-store'&&!x.headers),'a press made a request that is not a plain no-store GET');
           const want={[g0.id]:'ok'}; if(gN) want[gN.id]='none'; if(gF) want[gF.id]='failed'; if(gJ) want[gJ.id]='failed'; if(gK) want[gK.id]='kicked';
@@ -3214,15 +3439,18 @@ setTimeout(async()=>{
           const holdPicks=(lab,gs)=>{ let n=0; const bad=(what,l)=>`${lab}: ${what} holds ${l.name} ${l.label} at ${l.price} (${l.src})${ESR.price(l)?', which DraftKings\' line on ESPN prices at '+ESR.price(l).price+(ESR.takeable(ESR.price(l))?'':', a kind never suggested'):''}${ESR.real(l)?', and the pull has '+ESR.real(l).price:''}`;
             /* V6's rule for a leg from the read: never on a player the suggestions may not build on */
             for(const l of F('pricedLegs')(gs)){ n++; chk(pickOk(l,false)&&(l.src!=='dkline'||F('suggestable')(l.pid)),bad('the lines the suggestions are built from',l)+(F('suggestable')(l.pid)?'':', a player who may not play')); }
-            const pool=F('pbPool')(gs); for(const l of [...pool.pref,...pool.thin]){ n++; chk(pickOk(l,false),bad('the panel\'s pool',l));
+            /* (app v109) wherever the payload carries ids, DraftKings' id at the leg's own line, by the
+               audit's own rule: a leg priced from the read has none, so it is never suggested there */
+            const idTxt=l=>dkOk(l)?'':', with no DraftKings id at its line for the betslip';
+            const pool=F('pbPool')(gs); for(const l of [...pool.pref,...pool.thin,...(pool.mkt||[])]){ n++; chk(pickOk(l,false)&&dkOk(l),bad('the panel\'s pool',l)+idTxt(l));
               if(l.src==='dkline'){ const f=F('legFair')(l); chk(l.p>=PB_BAND[0]&&l.p<PB_BAND[1]&&l.p>=imp(l.price)&&!!f&&l.p-f.p<FAR-1e-9&&F('suggestable')(l.pid),
                 `${lab}: the panel's pool holds ${l.name} ${l.label}, priced from DraftKings' line, outside the panel's rules (model ${(l.p*100).toFixed(1)}%, price ${l.price}, fair ${f?(f.p*100).toFixed(1):'none'}%, ${F('suggestable')(l.pid)?'':'a player who may not play'})`); } }
             /* a game page's hands keep off a leg from the read the model rates FAR_OFF or more above its estimated fair chance, as the panel does */
             const farOk=l=>{ if(l.src!=='dkline') return true; const f=F('legFair')(l); return !!f&&l.p-f.p<FAR-1e-9; }, farTxt=l=>{ const f=F('legFair')(l); return farOk(l)?'':`, far off its fair chance (model ${(l.p*100).toFixed(1)}%, fair ${f?(f.p*100).toFixed(1):'none'}%)`; };
-            for(const g of gs){ for(const l of F('gameLegPool')(g)){ n++; chk(pickOk(l,true)&&farOk(l)&&(l.src!=='dkline'||F('suggestable')(l.pid)),bad(`${g.id}'s hands' pool`,l)+farTxt(l)); }
-              const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T[id]) for(const l of T[id].legs){ n++; chk(pickOk(l,true)&&farOk(l),bad(`${g.id}'s ${id} hand`,l)+farTxt(l)); } }
+            for(const g of gs){ for(const l of F('gameLegPool')(g)){ n++; chk(pickOk(l,true)&&farOk(l)&&dkOk(l)&&(l.src!=='dkline'||F('suggestable')(l.pid)),bad(`${g.id}'s hands' pool`,l)+farTxt(l)+idTxt(l)); }
+              const T=F('gameTiers')(g); for(const id of ['high','med','low']) if(T[id]) for(const l of T[id].legs){ n++; chk(pickOk(l,true)&&farOk(l)&&dkOk(l),bad(`${g.id}'s ${id} hand`,l)+farTxt(l)+idTxt(l)); } }
             const r=F('getPbTiers')();
-            for(const t of r.tiers) if(t.legs) for(const l of t.legs){ n++; chk(pickOk(l,false),bad(`the ${t.id} level`,l));
+            for(const t of r.tiers) if(t.legs) for(const l of t.legs){ n++; chk(pickOk(l,false)&&dkOk(l),bad(`the ${t.id} level`,l)+idTxt(l));
               if(l.src==='dkline'){ const f=F('legFair')(l); chk(l.p>=0.45&&l.p<0.97&&l.p>=imp(l.price)&&!!f&&l.p-f.p<FAR-1e-9&&F('suggestable')(l.pid)&&(l.p-imp(l.price)>=0.03&&F('formAgrees')(l))===!l.thin,
                 `${lab}: the ${t.id} level holds ${l.name} ${l.label}, priced from DraftKings' line, outside the panel's rules (model ${(l.p*100).toFixed(1)}%, price ${l.price}, fair ${f?(f.p*100).toFixed(1):'none'}%, thin ${l.thin})`); } }
             return {n,r}; };
@@ -3270,12 +3498,17 @@ setTimeout(async()=>{
             return n; };
 
           nPx+=holdGame(g0,'a press'); nDom+=domGame(g0,'a press');
-          { const keepU=JSON.stringify(S.ui.pb);
+          /* (app v109) twice: on the ids the payload carries (the paid pull's and the press's own game-line
+             ids), where no leg priced from the read is suggested, having no id; and with PAY.dk taken away,
+             as a payload baked before ids, which takes them as before, under the panel's rules */
+          for(const pass of ['ids','none']){ const keepU=JSON.stringify(S.ui.pb), dkP=P().dk, nl=pass==='none'?', no ids carried':'';
+            if(pass==='none') dkSet(undefined);
             try{ for(const [m,ks] of [['all',['ml','ats','total','over','under']],['players',['over','under']],['g0',['over','under']]]){ for(const k of ['ml','ats','total','over','under']) S.ui.pb.k[k]=ks.includes(k);
                 S.ui.pb.off=m==='g0'?games.filter(g=>g!==g0).map(g=>g.id):[]; w.eval('PB_CACHE=new Map()');
-                const {n,r}=holdPicks(`a press, ${m==='g0'?'players only on '+g0.id:m}`,m==='g0'?[g0]:games); nPick+=n; if(m!=='players') nPick+=holdMarks(`a press, ${m}`,r);
-                if(m==='g0') W.coverage(r.tiers.some(t=>t.legs&&t.legs.some(l=>l.src==='dkline')),`with the press's read on ${g0.id} alone, no level holds a leg priced from it: ${r.tiers.map(t=>t.why||t.legs.map(l=>l.src).join('+')).join(' / ')}`); } }
-            finally{ S.ui.pb=JSON.parse(keepU); w.eval('PB_CACHE=new Map()'); F('renderPb')(); } }
+                const {n,r}=holdPicks(`a press${nl}, ${m==='g0'?'players only on '+g0.id:m}`,m==='g0'?[g0]:games); nPick+=n; if(m!=='players') nPick+=holdMarks(`a press${nl}, ${m}`,r);
+                if(m==='g0'&&!dkCarried()) W.coverage(r.tiers.some(t=>t.legs&&t.legs.some(l=>l.src==='dkline')),`with the press's read on ${g0.id} alone, no level holds a leg priced from it: ${r.tiers.map(t=>t.why||t.legs.map(l=>l.src).join('+')).join(' / ')}`);
+                if(m==='g0'&&dkCarried()) chk(r.tiers.every(t=>!t.legs||t.legs.every(l=>l.src!=='dkline')),`with ids carried, a level takes a leg priced from the press's read, which has no DraftKings id`); } }
+            finally{ if(pass==='none') dkSet(dkP); S.ui.pb=JSON.parse(keepU); w.eval('PB_CACHE=new Map()'); F('renderPb')(); } }
           nTog+=holdToggle(g0,'a press');
           /* a game's page reads that game alone; the backup's touchdown 2 hours out (his club's lines
              complete: the backup branch) and 40 hours out (the model alone) */
@@ -3623,8 +3856,17 @@ setTimeout(async()=>{
       S.ui.suggestSide=was; d.querySelector('[data-game="'+g.id+'"]').click(); }
     w.eval('GAME_TIER_CACHE={}');
     const T=F('gameTiers')(g), MIN=w.eval('GAME_LEG_MIN'), spec=w.eval('GAME_TIERS');
-    /* always there while the game has lines, the right size, and to the rules */
-    W.compose(T.pool>=4?spec.every(([id])=>!!T[id]):true,`a game with ${T.pool} lines left a tier empty`);
+    /* always there while the game has lines, the right size, and to the rules. A hand takes one team leg
+       and two lines a player at most, so the lines it can stand on are counted so: where the payload
+       carries DraftKings' ids (app v109) a game whose player prices are not pulled yet, or never are
+       (Sunday's early games), has its team legs alone, and no hand */
+    { const P0=F('gameLegPool')(g), byP={}; for(const c of P0) if(c.grp!=='TEAM') byP[c.pid]=(byP[c.pid]||0)+1;
+      const eff=Object.values(byP).reduce((a,n)=>a+Math.min(2,n),0)+(P0.some(c=>c.grp==='TEAM')?1:0);
+      W.compose(eff>=4?spec.every(([id])=>!!T[id]):true,`a game with ${T.pool} lines (${eff} a hand can stand on) left a tier empty`);
+      /* blocking: every leg a hand may take, and every leg on one, has DraftKings' id at its line where the
+         payload carries ids, by the audit's own rule */
+      const bad=[...P0,...spec.flatMap(([id])=>T[id]?T[id].legs:[])].filter(l=>!dkOk(l));
+      chk(!bad.length,`${g.id}'s hands take ${bad.length} legs DraftKings has no id for at their line: ${bad.slice(0,4).map(l=>`${l.name} ${l.label} (${l.src})`).join(', ')}`); }
     /* the card states the floors (every leg 40%+ and no shorter than GAME_LEG_MIN; High +100 and 35%,
        Medium +250 and 20%, Low +500 and 10%, unless it says the lines cannot reach them): numbers on the
        page, so those are blocking; which hand is chosen, and its size, are warnings */
@@ -3643,7 +3885,10 @@ setTimeout(async()=>{
     /* the pool: book prices where they exist, the model's estimate on the rest, ladders included */
     { const pool=F('gameLegPool')(g);
       chk(pool.every(c=>c.gid===g.id&&c.price>=MIN&&(c.src==='real'||c.src==='est'||c.src==='dkline')),'the leg pool has a line from another game, too short a price or no source');
-      W.compose(pool.some(c=>!c.main&&c.grp!=='TEAM'&&c.stat!=='any_td'),'the leg pool has no threshold ladders'); }
+      /* a ladder rung goes on DraftKings' slip only by an id the pull read for it, so where the payload
+         carries ids one is looked for only in a game with player ids */
+      const Eg=dkEntryAud({week:g.w,gid:g.id}), plIds=!dkCarried()||!Eg||Object.keys(Eg).some(k=>!/^(team:|game\||event$|at$|glat$)/.test(k));
+      W.compose(!plIds||pool.some(c=>!c.main&&c.grp!=='TEAM'&&c.stat!=='any_td'),'the leg pool has no threshold ladders'); }
     /* the high pair is the best payout for its chance among its seeds, not a safe nothing */
     if(T.high){ const one=c=>c.p*F('mlToDec')(c.price), pool=F('gameLegPool')(g).sort((a,b)=>one(b)-one(a));
       const a=pool[0], b=pool.find(c=>c.key!==a.key&&!(c.grp==='TEAM'&&a.grp==='TEAM'));
