@@ -36,7 +36,7 @@ props/     Prop Model                no page: the parts, build, job and payload.
 betting/   X NFL Betting Model       no page: the app source, tools, job and state.json; framed into nflbets/
 elo/       Player Elo                no page: build.py, job and data/
 news/      the news job              no page: the Deep Dive and the game notes the Game snapshot reads, and the stat bars
-cfb/       a redirect to DEMON-X13/cfb-hub, where X College Football Bets lives now
+cfb/       a redirect to DEMON-X13/cfb-hub, where CFB Hub lives now
 picks/     Weekly Picks              a standalone page: pick each game of the board's week, save the picks as a file;
                                      friends.json, the friends' picks the Pick'em Record draws (kept by tools/add.js)
 nhl/       a redirect to DEMON-X13/nhl-hub, where X NHL Bets lives now
@@ -1416,7 +1416,7 @@ Bet Log, read only (the page hands the frames `window.XBETS`; see "X's parlays a
 
 ## College
 
-X College Football Bets moved whole to `DEMON-X13/cfb-hub` on 2026-10-14 with its history (page at
+CFB Hub (then X College Football Bets) moved whole to `DEMON-X13/cfb-hub` on 2026-10-14 with its history (page at
 the root, `tools/`, `data/`, `.github/workflows/update.yml`); `cfb/index.html` here redirects to it.
 
 ## Hockey
