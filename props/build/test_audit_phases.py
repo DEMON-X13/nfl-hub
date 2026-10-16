@@ -9,7 +9,9 @@ earlier section, unticked by the next click, then a crash), a week with no game'
 (the audit's copy of the fair-chance rule without the page's fallback), and an Elo pick taking a leg
 priced from a Refresh odds read (counted with the levels' est. marks); and in the page smoke, a Monday
 night under way (its shift sets the page's clock two days back, and a press check dated a made-up pull
-by Node's, about a day in the page's future). audit.js's BLOCKING AND WARNINGS
+by Node's, about a day in the page's future), and a Monday night under way on a payload baked that Monday
+(the page set back before that Monday's DraftKings pull, so a press rightly left the published game lines,
+which the smoke took for the read's and then crashed on). audit.js's BLOCKING AND WARNINGS
 note gives the rules each check keeps since; this replays the audit where each of those broke, so a
 change to the audit, the smoke or the props parts is held to every shape the job has published:
 
@@ -65,6 +67,7 @@ CASES = [
     ('smoke_paid',   'page smoke, paid ids on a game to come',       '417be84', '2026-10-15T19:05Z', 'smoke'),
     ('smoke_noprices', 'page smoke, no player prices yet',           'd4e07d2', '2026-10-15T08:16Z', 'smoke'),
     ('smoke_mon6',   'page smoke, Monday night under way, week 6 (the page set back)', '417be84', '2026-10-20T01:30Z', 'smoke'),
+    ('smoke_mon5',   'page smoke, Monday night under way, the payload baked that Monday', '4b2468c', '2026-10-13T01:30Z', 'smoke'),
 ]
 QUICK = ['sun_3pm', 'mon_live6', 'season_over']
 LINE_KEYS = ['sp', 'tot', 'mla', 'mlh', 'spa', 'sph', 'tov', 'tou']

@@ -8,7 +8,7 @@ let DATA_BUILD='baseline';   /* set by boot() once the payload is in; see loadPa
    only when rosters or depth charts do; this is the moment the payload was baked, so it
    moves on every run of the job and a published change always reaches every device. */
 let DATA_STAMP='baseline';
-const APP_BUILD='app v107 \u00b7 2026-10-15';
+const APP_BUILD='app v108 \u00b7 2026-10-16';
 const GAMES_URL='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 
 /* market catalogue */
@@ -64,8 +64,11 @@ let S=null, saveTimer=null;
    injury report beyond the ruled out (Questionable, not practising, limited) */
 let RSTAT={}, INJ={};
 /* (app v107) a Refresh odds press puts DraftKings' game lines into S.sched in memory: espnSavable (part3.js)
-   writes the published ones in their place, so nothing a press read is ever saved */
-function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const r=await store.set(typeof espnSavable==='function'?espnSavable(S):S);
+   writes the published ones in their place, so nothing a press read is ever saved with S. (app v108) The
+   read is kept under its own key (espnKeepWrite); where S cannot be saved for room, that key is emptied
+   and S saved again, so a kept read never costs the visitor their own state */
+function save(){ clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{ const v=typeof espnSavable==='function'?espnSavable(S):S; let r=await store.set(v);
+  if(r!=='saved'&&typeof espnKeepDrop==='function'&&espnKeepDrop()) r=await store.set(v);
   $('saveState').textContent = r==='saved'?'Autosaved':'Not saved: export a backup'; },300); }
 
 /* ---------- ewma accumulator (matches pandas adjust=True) ----------
