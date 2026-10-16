@@ -1065,9 +1065,11 @@ plsig, out}}}`, the scoreboard's odds, the `ESPN_LIVE` block and what the read f
 back before the first draw with no request (`espnRestore`): a game's game lines while `espnGlSig` (the
 published `ESPN_GL_KEYS` fields) is the one they were read over, its player lines while `espnPlSig` (its
 `PAY.dk` `at` and `PAY.mkt` rows) is, neither once it has kicked off or has a score; junk or another
-season's value empties the key; what gave way is in `ESPN_ASIDE` for the status line; a write merges game
-by game with the browser's copy, the later read winning, never what this load set aside
-(`ESPN_KEEP_GONE`); a failed save of `S` empties the key and retries (`espnKeepDrop`). Where legs
+season's value empties the key; what gave way is in `ESPN_ASIDE` for the status line; a reload writes a
+game's kept lines back exactly (`espnKeepLines`) and its ids with their read times (`espnKeepIds`); a half
+dated after the page's clock is dropped; a write merges half by half with the browser's copy, each half
+from whichever tab read it later, never one this load set aside (`ESPN_KEEP_GONE`, `{gl, pl}`); a failed
+save of `S` empties the key and retries (`espnKeepDrop`). Where legs
 are chosen (`pricedLegs`, `pbPool`, `gameLegPool`, the Elo picks) a `dkline` leg counts as a book price on
 a tested kind only (`ESPN_TESTED`).
 

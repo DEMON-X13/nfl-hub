@@ -25,9 +25,10 @@ What is kept is what the page shows after every read of the load: a game's lines
 found with the time of that read, and the player lines' block; a time after the page's clock is not one
 the page wrote, and that half is dropped. What gave way to a publish is said once on the status line ("your
 earlier Refresh odds read gave way to prices published since"), for that page load. A press reads again
-over what stands, as before, and every write is merged with what the browser holds game by game, the
-later read winning (two tabs) and a half it lacks taken from the other, never bringing back what a load
-set aside. A save of the visitor's own state that fails for room empties the
+over what stands, as before, and every write is merged with what the browser holds half by half, each
+game's game lines and its player lines from whichever tab read them later, never bringing back what a load
+set aside. A reload writes the kept game lines back exactly as they were shown (a price the page had
+dropped stays dropped), and keeps the DraftKings event id the page was using. A save of the visitor's own state that fails for room empties the
 key first and tries again (espnKeepDrop), so a kept read never costs anyone their builder; the reads are
 then held in memory only for the rest of that load.
 
@@ -134,7 +135,8 @@ function espnOn(week){""",
    plsig espnPlSig then, out what the read found ('ok' or 'none' only: a failure is the press's moment,
    not the read's). A time after the page's clock is not one the page wrote: that half is dropped. A load puts each half back while what
    it was read over is still what the page publishes (espnRestore); ESPN_ASIDE says, for that load, what
-   gave way; ESPN_KEEP_GONE keeps a write from bringing it back from another tab's copy */
+   gave way; ESPN_KEEP_GONE ({gl, pl}: the times of the halves this load set aside) keeps a write from
+   bringing one back from another tab's copy */
 const ESPN_KEEP_KEY='props_press_v1';
 let ESPN_KEPT={}, ESPN_ASIDE={}, ESPN_KEEP_GONE={}, ESPN_KEEP_OFF=false;
 const ESPN_KEEP_ID=/^[A-Za-z0-9#_.\-]{1,160}$/, ESPN_KEEP_PID=/^(?!__proto__$)[A-Za-z0-9_.:\-]{1,40}$/;
@@ -192,19 +194,22 @@ function espnKeepWrite(){
   if(ESPN_KEEP_OFF) return false;
   try{
     let cur=null; try{ cur=espnKeepParse(localStorage.getItem(ESPN_KEEP_KEY)); }catch(e){}
-    const on=gid=>{ const g=((S&&S.sched)||[]).find(x=>x.id===gid); return !!g&&!gameStarted(g)&&!hasScore(g); }, games={}, theirs={};
-    /* where one side's entry wins, a half it lacks is taken from the other (a press in one tab that read a
-       game's lines and not its player lines never erases the player lines another tab read) */
-    const fill=(to,from)=>{ if(!from||from.w!==to.w) return to; const r={...to};
-      if(!r.gl&&from.gl) r.gl=from.gl;
-      if(!r.pl&&from.pl){ r.pl=from.pl; r.plsig=from.plsig; if(from.out) r.out=from.out; else delete r.out; }
-      return r; };
-    if(cur) for(const gid of Object.keys(cur.games)){ const c=espnKeptGame(cur.games[gid]); if(!c||!on(gid)) continue;
-      const mine=ESPN_KEPT[gid], t=espnKeptAt(c);
-      if(t<=(ESPN_KEEP_GONE[gid]||0)) continue;
-      theirs[gid]=c;
-      if(t>(mine?espnKeptAt(mine):0)) games[gid]=fill(c,mine); }
-    for(const gid of Object.keys(ESPN_KEPT)) if(!games[gid]&&on(gid)) games[gid]=fill(ESPN_KEPT[gid],theirs[gid]);
+    const games={}, tp=x=>x&&x.pl?Date.parse(x.pl.at)||0:0;
+    /* half by half: each game's game lines from whichever side (this tab's, or the browser's copy another tab
+       may have written) read them later, its player lines with their plsig and what the read found the same,
+       so a press that read one half and not the other never puts this tab's older copy of the other over a
+       newer one; a half this load set aside (ESPN_KEEP_GONE, by half) is never taken back from the copy */
+    for(const gid of new Set([...Object.keys(ESPN_KEPT),...(cur?Object.keys(cur.games):[])])){
+      const g=((S&&S.sched)||[]).find(x=>x.id===gid); if(!g||gameStarted(g)||hasScore(g)) continue;
+      const w=String(g.w), gone=ESPN_KEEP_GONE[gid]||{}, mine=ESPN_KEPT[gid]&&ESPN_KEPT[gid].w===w?ESPN_KEPT[gid]:null;
+      let c=cur&&cur.games[gid]?espnKeptGame(cur.games[gid]):null; if(c&&c.w!==w) c=null;
+      const cg=c&&c.gl&&c.gl.at>(gone.gl||0)?c.gl:null, mg=mine&&mine.gl||null, cp=c&&c.pl&&tp(c)>(gone.pl||0)?c:null, mp=mine&&mine.pl?mine:null;
+      const e={w}, gl=cg&&(!mg||cg.at>mg.at)?cg:mg, pside=cp&&(!mp||tp(cp)>tp(mp))?cp:mp, sside=pside||mine||(c&&!c.pl?c:null);
+      if(gl) e.gl=gl;
+      if(pside) e.pl=pside.pl;
+      if(sside&&typeof sside.plsig==='string') e.plsig=sside.plsig;
+      if(sside&&sside.out) e.out=sside.out;
+      if(e.gl||e.pl) games[gid]=e; }
     if(!Object.keys(games).length){ localStorage.removeItem(ESPN_KEEP_KEY); return true; }
     localStorage.setItem(ESPN_KEEP_KEY,JSON.stringify({v:1,season:SEASON,saved:Date.now(),games}));
     return true;
@@ -220,7 +225,7 @@ function espnKeepPut(w,games,gls){
     if(r){ const G=ESPN_GL[g.id], T=ESPN_IDAT[g.id]||{}, W=PAY&&PAY.dk&&typeof PAY.dk==='object'?PAY.dk[String(g.w)]:null, D=(W&&W[g.id])||{};
       const lines={}; if(G) for(const k of ['mla','mlh','sp','spa','sph','tot','tov','tou']) if(espnKeepNum(g[k])) lines[k]=g[k];
       const ids={}, idat={}; for(const k of Object.keys(T)) if(typeof D[k]==='string'&&espnKeepNum(T[k])){ ids[k]=D[k]; idat[k]=T[k]; }
-      e.gl={at:G?G.at:r.at,lines,ids,idat,glat:typeof D.glat==='string'?D.glat:null,event:r.od.event||(prev&&prev.gl&&prev.gl.event)||null,sig:espnGlSig(g)}; }
+      e.gl={at:G?G.at:r.at,lines,ids,idat,glat:typeof D.glat==='string'?D.glat:null,event:typeof D.event==='string'?D.event:null,sig:espnGlSig(g)}; }
     const b=o&&o.st==='ok'?(ESPN_LIVE[String(w)]||{})[g.id]:null;
     e.plsig=espnPlSig(g);
     if(b) e.pl=b;
@@ -232,6 +237,17 @@ function espnKeepPut(w,games,gls){
 /* no room for the visitor's own state: the kept read gives way, for the rest of this load */
 function espnKeepDrop(){
   try{ if(localStorage.getItem(ESPN_KEEP_KEY)==null) return false; localStorage.removeItem(ESPN_KEEP_KEY); ESPN_KEEP_OFF=true; return true; }catch(e){ return false; }
+}
+/* a kept read's game lines put back exactly as the page showed them, where the read is newer than the
+   published lines (since): each of the eight fields as kept, and one the page had dropped (a number read
+   without its prices) dropped again; espnApplyGame's merge would keep a published price where the number
+   came back to the published one */
+function espnKeepLines(g,gl,since){
+  const ks=['mla','mlh','sp','spa','sph','tot','tov','tou'];
+  if(!ks.some(k=>gl.lines[k]!=null)||!(gl.at>(ESPN_GL[g.id]?ESPN_GL[g.id].at:since))) return false;
+  if(!ESPN_GL[g.id]) ESPN_GL[g.id]={orig:Object.fromEntries(ESPN_GL_KEYS.map(k=>[k,g[k]])),at:0};
+  for(const k of ks){ if(gl.lines[k]!=null) g[k]=gl.lines[k]; else if(g[k]!=null) delete g[k]; }
+  g.ls='dk'; g.lat=espnIso(gl.at); ESPN_GL[g.id].at=gl.at; return true;
 }
 /* a kept read's DraftKings ids and event put back as its reads put them: beside the paid pull's, never
    replacing one, each dated by the read that gave or found it */
@@ -253,17 +269,19 @@ function espnRestore(){
   if(!v){ try{ localStorage.removeItem(ESPN_KEEP_KEY); }catch(e){} return 0; }
   let n=0;
   for(const gid of Object.keys(v.games)){
-    const e=espnKeptGame(v.games[gid]), g=S.sched.find(x=>x.id===gid), t=e?espnKeptAt(e):0;
-    const gone=()=>{ ESPN_KEEP_GONE[gid]=Math.max(ESPN_KEEP_GONE[gid]||0,t); };
-    if(!e||!g||String(g.w)!==e.w||gameStarted(g)||hasScore(g)){ gone(); continue; }
-    const k={w:e.w}, aside=(h,at)=>{ (ESPN_ASIDE[gid]||(ESPN_ASIDE[gid]={}))[h]=at; gone(); };
+    const e=espnKeptGame(v.games[gid]), g=S.sched.find(x=>x.id===gid); if(!e) continue;
+    const at={gl:e.gl?e.gl.at:0,pl:e.pl?Date.parse(e.pl.at)||0:0};
+    const gone=h=>{ const G=ESPN_KEEP_GONE[gid]||(ESPN_KEEP_GONE[gid]={}); G[h]=Math.max(G[h]||0,at[h]); };
+    if(!g||String(g.w)!==e.w||gameStarted(g)||hasScore(g)){ gone('gl'); gone('pl'); continue; }
+    const k={w:e.w}, aside=h=>{ (ESPN_ASIDE[gid]||(ESPN_ASIDE[gid]={}))[h]=at[h]; gone(h); };
     if(e.gl){ if(e.gl.sig===espnGlSig(g)){ const lat=g.ls==='dk'?Date.parse(g.lat||''):NaN;
-        espnApplyGame(g,{lines:e.gl.lines,ids:{},event:null},e.gl.at,isFinite(lat)?lat:0); espnKeepIds(g,e.gl); k.gl=e.gl; }
-      else aside('gl',e.gl.at); }
+        espnKeepLines(g,e.gl,isFinite(lat)?lat:0); espnKeepIds(g,e.gl); k.gl=e.gl; }
+      else aside('gl'); }
     const plOk=e.plsig===espnPlSig(g);
-    if(e.pl){ if(plOk){ (ESPN_LIVE[e.w]||(ESPN_LIVE[e.w]={}))[gid]=e.pl; k.pl=e.pl; } else aside('pl',Date.parse(e.pl.at)); }
+    if(e.pl){ if(plOk){ (ESPN_LIVE[e.w]||(ESPN_LIVE[e.w]={}))[gid]=e.pl; k.pl=e.pl; } else aside('pl'); }
     if(!k.gl&&!k.pl) continue;
-    if(plOk){ k.plsig=e.plsig; if(e.out){ ESPN_OUT[gid]=e.out; k.out=e.out; } }
+    /* what the read found goes back with the half it describes: 'ok' only with its player lines */
+    if(plOk){ k.plsig=e.plsig; if(e.out&&(e.out.st!=='ok'||k.pl)){ ESPN_OUT[gid]=e.out; k.out=e.out; } }
     ESPN_KEPT[gid]=k; n++;
   }
   espnKeepWrite();

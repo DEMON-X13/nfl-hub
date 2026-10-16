@@ -215,8 +215,9 @@ together, `clock_now.js`), and `python3 test_audit_phases.py` (about nine minute
 `--quick` three cases) replays it on past payloads at their own moment, each beside its own commit's
 `props/data` (a Saturday before the pull, a Sunday priced, mid-slate, 3pm and night, a Monday before
 and during its game, a week with no player prices, paid ids to come, the season played out with and
-without late lines), and the page smoke on three with `SMOKE_NOW` (a Monday night under way among them, when
-the smoke sets the page's clock back): a change to the audit, the smoke or
+without late lines), and the page smoke on four with `SMOKE_NOW` (two Monday nights under way among them,
+when the smoke sets the page's clock back, one on a payload baked that Monday, its DraftKings lines then
+newer than a press there): a change to the audit, the smoke or
 the props parts comes with a run of it. **The props gate** (`.github/workflows/props-gate.yml`, its
 logic in `.github/scripts/props_gate.py`) runs both on every PR, on a push to main that touches what it
 covers, and by dispatch, and spends nothing (`weekly.py --no-odds`, no secret mapped, nothing
@@ -530,9 +531,14 @@ schedule in that week, nor from a value of another season or not the page's shap
 emptied); `baked_at` is never compared, since the job rebakes with the same prices. So a newer publish
 always wins, and a game whose player prices are never bought (Sunday's early games) keeps its read to
 kickoff. What gave way is said on the status line for that load ("your earlier Refresh odds read gave way
-to prices published since"). Writes merge with what the browser holds game by game, the later read
-winning (two tabs), never bringing back what a load set aside; a save of `S` that fails for room empties
-the key and tries again (`espnKeepDrop`), so a kept read never costs a visitor their builder. Where a read
+to prices published since"). What is kept is what the page shows after every read of the load: a game's
+lines only where a read's stand (a read older than the published lines keeps none), written back exactly
+on a reload (`espnKeepLines`), every DraftKings id a read gave or found with that read's time
+(`espnKeepIds`), the event the page uses, and the player lines' block; a half dated after the page's clock
+is dropped. Writes merge with what the browser holds half by half, each game's game lines and its player
+lines from whichever tab read them later, never bringing back what a load set aside; a save of `S` that
+fails for room empties the key and tries again (`espnKeepDrop`), so a kept read never costs a visitor their
+builder. Where a read
 gives way, the builder's legs go back with it (`espnLegBack`: a leg a press priced goes back to
 DraftKings' own price on its line, else the model's estimate; any other builder leg keeps the price it was
 added at, as before). The game lines are DraftKings' real prices and replace the published ones where newer
