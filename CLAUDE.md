@@ -42,7 +42,7 @@ by hand when a source changes, and reads the models' data on every load.
 | `props/` | Prop Model: no pages any more, only the parts, the build, the job and its data (`props/data/payload.json` is what `nflbets/` reads) | `props/build/part1.html`, `part2.js`, `part3.js` |
 | `betting/` | X NFL Betting Model: no pages any more, only the app source, the tools, the job and its data (`betting/state.json` is what `nflbets/` reads); the app itself lives inside `nflbets/index.html` | `betting/app/x_nfl_betting_model.html` (copied in from `nfl-model-lab`) |
 | `news/` | The news job, no page of its own since 14 October 2026 (`index.html` sends a visitor to `nflbets/`): the Deep Dive (`data/units2026.js` and its twin `units.json`), the stat bars (`data/stats2026.js` and `stats.json`), the results and the week's reading pack, and each game's preview and news (`data/notes/<season>-w<N>.json`, written each Wednesday by Claude), which the Game snapshot fetches | `news/tools/` (the job); `news/data/notes/` (hand-written, `news/HANDOFF.md`); `news/data/teams.js` (hand-written, read by `picks/`) |
-| `nflbets/` | X NFL Bets and Stats: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Pick'ems board (with the news job's preview, news, Deep Dive and stat breakdown) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
+| `nflbets/` | NFL Hub (X NFL Bets and Stats until 16 October 2026), in the NBA Hub's and the NHL Hub's look: the two models on one page, built one tab at a time, with the Parlay Builder (suggested parlays built from the bet types and games a visitor ticks, over the builder, which finishes a parlay as a downloadable card, saved nowhere), X Parlays (X's placed parlays from `liveparlays/parlays.json`) and the X Bet Log (`liveparlays/xbets.json`) as tabs, and a Game snapshot of every game on the Pick'ems board (with the news job's preview, news, Deep Dive and stat breakdown) | `nflbets/build/tab_pickems.html` + `snapshot.html` and `deepdive.js` + `liveparlays/build/page.html` + the props parts + the betting app + `nflbets/build/card.html`, `storage.js` and `xbets.js` |
 | `picks/` | Weekly Picks: a visitor picks the winner of each game of the Pick'ems board's week (`betting/state.json`'s schedule, the first week with a game still to play) and saves them as a JSON file to send to X; picks are kept in that browser only, a game locks at kickoff, nothing is sent anywhere. The files friends send the owner go in `picks/friends.json`, which the Pick'em Record draws beside the models (below) | `picks/index.html` (hand-written, no build; team names and colours from `news/data/teams.js`); `picks/friends.json`, kept by Claude with `picks/tools/add.js` |
 | `cfb/` | retired: X College Football Bets moved whole to `DEMON-X13/cfb-hub` on 2026-10-14, with its history; `index.html` redirects there | `cfb-hub` |
 | `nhl/` | retired: X NHL Bets moved whole to `DEMON-X13/nhl-hub` on 2026-10-13; `index.html` redirects there | `nhl-hub` |
@@ -56,7 +56,7 @@ at the next refresh:
 
 - `props/app/prop_model_2026.html` (gitignored: the audit's subject, never published)
 - `betting/state.json`
-- `nflbets/index.html`, `nflbets/preview.html` (both by `nflbets/build/build.js`)
+- `nflbets/index.html` (by `nflbets/build/build.js`)
 - `props/data/payload.json`, `props/data/priced_at.json`
 - `props/data/suggest_ledger.json` (by `props/build/suggest_ledger.js` in the props job: the suggested
   parlays frozen at each wave's kickoff and graded after, so a hand edit there rewrites the record and
@@ -1138,8 +1138,8 @@ October 2026), each defensive unit's league rank at either end of its group's he
 side of every comparison with the edge wears one mark (`gs-better`): the higher rating, Elo and
 chance, the better rank, the higher season Elo of each pair of starters, the better stat of each pair. One type scale (11, 13, 15,
 18, 22, 30px; a phone takes the top two to 20 and 26), every control at least 44px tall, and every
-text at least 4.5:1 on its own background in both looks (red on the red tint is a darker red,
-`--gs-miss-ink`; the preview lifts the window's red and quiet text, and the Deep Dive's tags, the stat bars,
+text at least 4.5:1 on its own background in the hub look (red on the red tint is a lighter red,
+`--gs-miss-ink`; the theme lifts the window's red and quiet text, and the Deep Dive's tags, the stat bars,
 the preview block and the names it bolds, a position matchup row's words on the card and the better rank's tinted
 box). Opening a card, a fold or a tab never redraws
 the window, and nothing of it is saved.
@@ -1250,7 +1250,7 @@ where the payload has ids for a game still to come, a builder parlay of its mone
 Under to the payload's own ids (skipped, and said, on a payload baked before `dk`). Both smokes record every request a page makes: one to the retired
 Firebase store or its sign-in services, or anything but a read, fails them.
 `smoke.js` runs the build in memory (`require('./build.js')` writes nothing) and fails unless
-`nflbets/index.html` and `preview.html` match it byte for byte, so a source committed without the
+`nflbets/index.html` matches it byte for byte (and that `preview.html` is gone), so a source committed without the
 rebuild fails the gate, and the elo job, which runs this smoke every morning after its commit, goes red on it. It
 also runs the betting job's `reference_models.json` gate on the copy of the betting app inside the
 page (`BET_APP`). The prop model's storage key is read from part2's `SEASON`/`KEY` line at build
@@ -1261,10 +1261,25 @@ season from `state.json` and the X Parlays section from each game id, both askin
 week in its own numbering (weeks 19-22 are the playoffs, seasontype 3), so nothing in
 `nflbets/build/` or `liveparlays/` names a season.
 
-The build also writes `nflbets/preview.html`: the same page with `nflbets/build/preview_theme.css`
-(the NBA Hub's look) laid over it and passed into the betting frames. It is a look to try, not a
-second site; delete the file, the stylesheet and the build's preview block to drop it, or fold the
-stylesheet into the parts to adopt it.
+**The hub look** (the owner's call of 16 October 2026: "make it match the color scheme and overall feel
+of the nba and nhl hub so it's consistent across the board", and the title NFL Hub "to match the others").
+The page is headed NFL Hub as the NBA Hub and the NHL Hub are: the wordmark (`NFL <em>Hub</em>`, a
+football beside it where the NBA has its ball and the NHL its puck) and a tagline on the left, when the
+data was built and the build tag in `.hub-stamp` on the right, then pill tabs. Its colours and type are
+`nflbets/build/theme.css`, which the build lays over every other style, last (`<style id="hubTheme">`,
+with the hubs' fonts, Unbounded and Manrope, in place of the prop model's), and hands to the framed
+betting tabs (`window.THEME_FRAME_HEAD`, set in by `frames()` in `tab_pickems.html`): the NBA Hub's
+lightened graphite exactly, as the NHL took it, with the NFL's gold (#FFD166, the NBA's own `--gold`) as
+its accent where the NBA has orange and the NHL ice blue, yard lines behind the header where they have
+court and rink lines, quiet text at the NHL's #B3B9CB and red text at its #FFA2B8 (the NBA's own fail
+4.5:1 on a panel), the favourite's win-probability bar in the pick's lime. The parts keep their light
+tokens underneath; a new hard-coded light colour in a part needs a rule in `theme.css`. Every text
+holds 4.5:1 (3:1 large) on every tab, a game's page, the Game snapshot, the builder and the parlay
+card, at 1280 and 390, checked in a real browser (jsdom computes no cascade). The parlay card and its
+image carry the same palette written out in `card.html`, since the image must not depend on the page.
+The root `index.html` (the landing page, which links the other hubs), `picks/` and the redirect pages
+wear it too. `nflbets/preview.html` and `preview_theme.css`, the look on trial, are gone; the smoke fails
+if `preview.html` comes back.
 
 A parlay X placed at the book goes in `liveparlays/parlays.json`, and a week of the X Bet Log in
 `liveparlays/xbets.json`, by Claude from what the owner sends, as each file's `how` field

@@ -413,8 +413,8 @@ function frames(){
       if(window.ResizeObserver&&doc.body) new ResizeObserver(fit).observe(doc.body); else setInterval(fit,800);
     });
     let doc=BET_APP.replace('window.EMBED_TAB=null','window.EMBED_TAB='+JSON.stringify(f.dataset.embed));
-    /* nflbets/preview.html sets a theme for the frames too; the live page sets none */
-    if(typeof window.PREVIEW_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.PREVIEW_FRAME_HEAD+doc.slice(i); }
+    /* the hub look, laid over the app's own styles as it is over the page's (theme.css, by the build) */
+    if(typeof window.THEME_FRAME_HEAD==='string'){ const i=doc.indexOf('</head>'); if(i>0) doc=doc.slice(0,i)+window.THEME_FRAME_HEAD+doc.slice(i); }
     f.setAttribute('srcdoc',doc);
   };
   const show=()=>document.querySelectorAll('main section:not([hidden]) iframe.pk-frame').forEach(load);

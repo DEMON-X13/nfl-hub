@@ -1,0 +1,190 @@
+/* The hub look: NFL Hub in the NBA Hub's and the NHL Hub's colours and type (demon-x13/nba-hub,
+   demon-x13/nhl-hub), the owner's call of 16 October 2026 ("make it match the color scheme and overall
+   feel of the nba and nhl hub so it's consistent across the board"). build.js lays this over every
+   other style of nflbets/index.html, last, so it wins by order, and hands it to the framed betting tabs
+   (window.THEME_FRAME_HEAD). The parts keep their own light tokens; nothing here changes a number.
+
+   The surfaces, inks and lines are the NBA Hub's lightened graphite exactly, as the NHL took them; each
+   hub keeps an accent of its own where the NBA has orange and the NHL ice blue, and the NFL's is gold,
+   the colour its light look always had (the NBA's own --gold). Quiet text is the NHL's --muted-ink
+   (#B3B9CB), since the NBA's #A0A7BB reads 4.49:1 on a panel; red text is the NHL's --rose-ink, since
+   the NBA's rose is 2.8:1 on a panel. Every text holds 4.5:1 (3:1 large) on every tab, the Game snapshot,
+   a game's page, the builder and the parlay card, at 1280 and 390. */
+:root{
+  --bg:#2A3043; --bg-2:#30374B; --panel:#363D52; --panel-2:#3D455B; --panel-3:#475068;
+  --ink:#F6F7FB; --ink-2:#CDD2DF; --muted:#B3B9CB; --line:#4A5269; --line-2:#59627B;
+  --gold:#FFD166; --gold-2:#FFE08F; --gold-soft:rgba(255,209,102,.14);
+  --pick:#CDFF4F; --pick-soft:rgba(205,255,79,.14);
+  --miss:#FFA2B8; --miss-soft:rgba(255,61,107,.16); --rose:#FF3D6B;
+  --ice:#5FD4FF; --ice-2:#8EE3FF; --ice-soft:rgba(95,212,255,.14);
+  --away:#5FD4FF; --home:#CDFF4F;
+  --r-lg:18px; --r-md:14px; --r-sm:11px;
+  --sh-xs:none; --sh-sm:none; --sh-md:0 18px 40px -24px rgba(0,0,0,.6);
+  --ring:0 0 0 3px rgba(255,209,102,.4);
+  --display:"Unbounded",ui-sans-serif,system-ui,sans-serif;
+  --body:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+html{background:var(--bg)}
+body{background:
+  radial-gradient(900px 520px at 12% -8%,rgba(255,209,102,.13),transparent 60%),
+  radial-gradient(700px 420px at 92% 0%,rgba(95,212,255,.10),transparent 60%),
+  linear-gradient(180deg,#333A4F 0%,var(--bg) 40%);background-attachment:fixed;color:var(--ink);font-size:14.5px}
+/* yard lines and hash marks, where the NBA has court lines and the NHL rink lines */
+html:not(.embed) body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.06;
+  background:linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px) 0 0/64px 64px,
+    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 150px/100% 9px no-repeat,
+    repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 1px,transparent 1px 12.8px) 0 310px/100% 9px no-repeat;
+  mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(800px 500px at 50% 0%,#000 20%,transparent 75%)}
+::selection{background:var(--gold);color:#000}
+a{color:var(--ice)}
+
+/* header: no slab, the page's own glow behind the hub's two-tone wordmark, a tagline and the stamp,
+   then pill tabs */
+header{background:transparent;color:var(--ink);padding:26px 22px 0;max-width:1240px;margin:0 auto;position:relative}
+header::after{display:none}
+.brand{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,54px);letter-spacing:-.02em;line-height:.95;margin:0;text-transform:uppercase}
+.brand h1 em{font-style:normal;color:var(--gold)}
+/* the football, where the NBA has its ball and the NHL its puck: leather, a seam and laces */
+.brand h1::after{width:.62em;height:.38em;border-radius:50%;margin-left:.16em;vertical-align:.1em;transform:rotate(-24deg);
+  background:linear-gradient(#fff,#fff) center/38% 2px no-repeat,repeating-linear-gradient(90deg,#fff 0 2px,transparent 2px 5px) center/30% 7px no-repeat,
+    radial-gradient(ellipse at 35% 30%,#E9A66B,#B2581F 55%,#6E2F0D);box-shadow:0 0 22px rgba(255,209,102,.45)}
+.tagline{color:var(--ink-2);font-size:13px;margin:8px 0 0;max-width:560px;font-weight:500;letter-spacing:0}
+.hub-stamp{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;line-height:1.5}
+.brand .sub{color:var(--ink-2);font-size:12px}
+.hub-stamp #saveState{color:var(--ink-2);font-weight:600;margin-left:0!important}
+.hub-stamp #buildTag{color:var(--ink-2)}
+nav{background:transparent;border:0;border-radius:0;padding:4px 0 10px;gap:6px;margin-top:22px;width:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);padding:10px 16px;border-radius:999px;font-family:var(--body);font-weight:700;font-size:13px;letter-spacing:.02em}
+nav button:hover{color:var(--ink);border-color:var(--line-2);background:var(--panel);transform:translateY(-1px)}
+nav button[aria-selected=true]{background:var(--ink);color:#1E2230;border-color:var(--ink);box-shadow:none}
+main{max-width:1240px;padding:18px 22px 90px}
+
+/* surfaces */
+.card{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r-lg);position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent);pointer-events:none}
+.card h2,h2{font-family:var(--display);font-weight:700;letter-spacing:-.01em}
+h2 .pill{font-family:var(--body);font-size:12px;font-weight:700;vertical-align:middle;letter-spacing:.02em}
+table{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:none}
+th{background:var(--panel-2);color:var(--muted)}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+.empty{background:var(--panel);border:1px dashed var(--line-2);border-radius:var(--r-lg);color:var(--ink-2)}
+.modal-panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line-2);color:var(--ink)}
+
+/* controls: a grey button as the NBA's and the NHL's, gold where the NFL's was its dark primary */
+select,input[type=number],input[type=text]{background:var(--panel);color:var(--ink);border-color:var(--line-2);box-shadow:none}
+select:hover,input[type=number]:hover,input[type=text]:hover{border-color:var(--ink-2)}
+::placeholder{color:var(--ink-2);opacity:1}
+input[type=checkbox],input[type=radio]{accent-color:var(--gold)}
+.btn{background:var(--gold);color:#1E2230;font-weight:700;box-shadow:none;border:1px solid var(--gold)}
+.btn:hover{background:var(--gold-2);border-color:var(--gold-2);box-shadow:none}
+.btn.quiet{background:var(--panel-3);color:var(--ink);border:1px solid var(--line-2)}
+.btn.quiet:hover{background:var(--panel-3);border-color:var(--ink-2)}
+.btn.go{background:var(--pick);border-color:var(--pick);color:#1E2230}
+.btn.danger{background:var(--rose);border-color:var(--rose);color:#1E2230}
+.bar .rec,.pill,.conf,.conf.low,.pays .box.tier.low,.side-res.push,.bres.push{background:var(--panel-3);color:var(--ink-2)}
+.bar .rec b{color:var(--ink)}
+.pill.warn,.log .warn,.inj,.plrbtn .who .inj,.when .cl,.tot .lv,.totpts .lv,.conf.med,.pays .box.tier.med b,.pays .box.tier.med span,.pe-q,.xb-status.bad{color:var(--gold)}
+.conf.med{background:var(--gold-soft)}
+.inj.inj-lim,.plrbtn .who .inj.inj-lim{background:var(--panel-3);color:var(--ink-2)}
+.inj.inj-dnp,.plrbtn .who .inj.inj-dnp{color:var(--gold)}
+.side-res.under{background:var(--ice-soft);color:var(--ice)}
+.game.final .pill.ok{background:var(--ice-soft);color:var(--ice)}
+.finchip{background:var(--ice-soft);color:var(--ice-2);border-color:rgba(95,212,255,.45)}
+.finchip.live{background:var(--gold-soft);color:var(--gold);border-color:rgba(255,209,102,.5)}
+.lead .va.exact,.tile .tv.exact,.tile .td.exact{color:#C9B6FF}
+.bar-track,.pk-prob{background:var(--panel-3);box-shadow:none}
+.bar-fill.low{background:var(--muted)}
+.rungs tr.on td{background:var(--gold-soft)}
+.rungs tr.hit td{background:var(--pick-soft)}
+.rungs tr.miss td{background:var(--miss-soft)}
+.pays .box.tier.med{border-color:rgba(255,209,102,.5)}
+.bigp .hero{background:linear-gradient(135deg,var(--panel-3),var(--bg-2));border-color:var(--line-2)}
+.bigp .hero span{color:var(--ink-2)} .bigp .hero small{color:var(--gold)}
+.sugg-side button.on,.stake-chips button.on,.tbtn.on{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+.pb-amt:hover{border-color:var(--ink-2)}
+.pb-lock.on{background:var(--gold-soft)}
+.pb-tier.xtrm{border-top-color:#B49CFF}
+.faroff{color:var(--gold)}
+.pb-chip.on small{color:var(--ink)}
+.elomv.flat{color:var(--muted)}
+.x-btn:hover{color:var(--miss)}
+
+/* the Pick'ems board */
+.pk-game{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);box-shadow:none;position:relative;overflow:hidden}
+.pk-game::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold),transparent)}
+.pk-game.pk-played::before{background:linear-gradient(180deg,var(--muted),transparent)}
+.pk-game:hover{border-color:var(--line-2);box-shadow:var(--sh-md)}
+.pk-tier{background:var(--panel-3);color:var(--ink-2)}
+.pk-tier.pk-high{background:var(--pick-soft);color:var(--pick)} .pk-tier.pk-med{background:var(--gold-soft);color:var(--gold)} .pk-tier.pk-coin{background:var(--miss-soft);color:var(--miss)}
+.pk-sc{font-weight:900}
+.pk-matchup .pk-res{background:var(--panel)}
+.pk-note{background:var(--gold-soft);color:var(--gold)}
+.pk-result .pk-mwin.pk-ok{color:var(--pick)}
+/* the win-probability bars: the favourite's side in the pick's lime, the other on the track, where the
+   light look had a mint and a sky blue (the betting app's PROB_HI and PROB_LO, set inline) */
+[style*="background:#AAE5CF"]{background:var(--pick)!important;color:#1E2230!important}
+[style*="background:#A1BDE5"]{background:var(--panel-3)!important;color:var(--ink)!important}
+.pk-prob .pk-a{border-right-color:rgba(0,0,0,.25)}
+.pe-pos button[aria-selected="true"]{background:var(--ink);color:#1E2230;border-color:var(--ink)}
+/* the ELO Ratings tab and the Mismatches */
+.pe-mm-n{background:var(--ink);color:#1E2230}
+.pe-g3{color:#7BD88F!important} .pe-g2{color:#F2B84B!important}
+
+/* X Parlays */
+#lpCard .pill,#myCard .pill{background:var(--panel-3);color:var(--ink-2)}
+#lpCard .note{background:var(--gold-soft);color:var(--gold)}
+#lpCard .pill.ok,#myCard .pill.ok{background:var(--pick-soft);color:var(--pick)} #lpCard .pill.bad,#myCard .pill.bad{background:var(--miss-soft);color:var(--miss)}
+#lpCard .fill{background:linear-gradient(90deg,rgba(255,209,102,.35),var(--gold))}
+#lpCard .fill.win{background:linear-gradient(90deg,rgba(205,255,79,.35),var(--pick))}
+#lpCard .fill.lose{background:linear-gradient(90deg,rgba(255,61,107,.35),var(--rose))}
+#lpCard .gm.tie,#lpCard .gm.tie em,#lpCard .stamp.bad{color:var(--gold)}
+#lpCard .src{border-left-color:#B49CFF}
+.xp-own,.xp-mark{background:var(--gold-soft);color:var(--gold)}
+.card h2 .btn{font-family:var(--body);font-size:13px;font-weight:700}
+
+/* inside the framed betting tabs (html.embed): the page's glow shows through */
+html.embed,html.embed body{background:transparent}
+.seg button.on,.wk-chip{background:var(--ink);color:#1E2230}
+.bk-in,.bres.won{background:var(--pick-soft);color:var(--pick)}
+.bres.lost{background:var(--miss-soft);color:var(--miss)}
+.prob{background:var(--panel-3);box-shadow:none}
+.tier{background:var(--panel-3);color:var(--ink-2)}
+.tier.high{background:var(--pick-soft);color:var(--pick)} .tier.med{background:var(--gold-soft);color:var(--gold)}
+.tier.coin,.tier.doubt{background:var(--miss-soft);color:var(--miss)}
+.mycard.played .myhead{background:var(--panel-3);border-bottom-color:var(--line-2)}
+.vg.differs{background:var(--miss-soft);box-shadow:inset 0 0 0 1.5px var(--rose)}
+/* the Pick'em Record chart: Vegas is drawn in the old ink, which vanishes on dark */
+polyline[stroke="#0F1B2D"]{stroke:#F6F7FB} circle[fill="#0F1B2D"]{fill:#F6F7FB}
+[style*="background:#0F1B2D"]{background:#F6F7FB!important}
+line[stroke="#E6EAEF"]{stroke:#4A5269}
+/* the models' own colours (record_viz.js: Alpha Model's green, the Joker's red, the ELO Model's orange)
+   and the bankroll's up and down (bets_viz.js), each lifted a step so a line reads on the dark card */
+[stroke="#1F6F4A"]{stroke:#5FD49A} [fill="#1F6F4A"]{fill:#5FD49A} [style*="background:#1F6F4A"]{background:#5FD49A!important}
+[stroke="#C0392B"]{stroke:#FF6B6B} [fill="#C0392B"]{fill:#FF6B6B} [style*="background:#C0392B"]{background:#FF6B6B!important}
+[stroke="#E8730A"]{stroke:#FF9F43} [fill="#E8730A"]{fill:#FF9F43} [style*="background:#E8730A"]{background:#FF9F43!important}
+[fill="#B23A32"]{fill:#FF5C7A}
+
+/* the Game snapshot: its red lifted for the tint it sits on */
+#gsModal{--gs-miss-ink:#FFA2B8}
+/* a lean bar in a dark team colour (Dallas's navy) vanishes on the dark track: lifted toward white */
+#gsModal .gs-track{background:var(--panel-3)} #gsModal .gs-track em{background:color-mix(in srgb,var(--gs-tc) 62%,#fff);box-shadow:none}
+/* the stat breakdown's bars the same way, on the same track */
+#gsModal .gs-shalf{background:var(--panel-3)} #gsModal .gs-shalf i{background:color-mix(in srgb,var(--gs-tc) 62%,#fff)}
+/* the Deep Dive's tags: the light look's tints are glare here, so each step has a dark tint of its own
+   with its text at 6:1 or more */
+#gsModal .dtag.easy{background:#2E4426;color:#CDFF4F}
+#gsModal .dtag.fav{background:#2C3E34;color:#9BE3B0}
+#gsModal .dtag.even{background:#3A4155;color:#DDE1EA}
+#gsModal .dtag.tough{background:#4A3A26;color:#FFC08A}
+#gsModal .dtag.vtough{background:#4D2833;color:#FF9DB2}
+/* the preview block a step off the card, its text the look's own ink */
+#gsModal .gs-prev{background:var(--panel-3);border-color:var(--line-2)}
+/* the better rank's box: its words in the full ink on the lime tint */
+#gsModal .gs-ubox.gs-better .gs-lab,#gsModal .gs-ubox.gs-better .gs-utier{color:var(--ink)}
+#gsModal .pe-g3{color:#7BD88F!important}
+
+@media(max-width:900px){ header{padding:20px 16px 0} main{padding:14px 16px 80px} }
+@media(max-width:620px){ .hub-stamp{align-items:flex-start;text-align:left} }

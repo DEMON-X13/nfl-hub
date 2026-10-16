@@ -1,7 +1,7 @@
-/* Build the X NFL Bets and Stats page (nflbets/).
+/* Build the NFL Hub page (nflbets/), once X NFL Bets and Stats.
  *
  *   node nflbets/build/build.js        (from the hub root)
- *   require('./build.js')              the same build in memory, {out, pv, hash}, written
+ *   require('./build.js')              the same build in memory, {out, hash}, written
  *                                      nowhere: the smoke compares it with the published page
  *
  *   nflbets/index.html   the prop model's page with the Pick'ems board in front of it, its Parlay
@@ -261,10 +261,14 @@ renderBetParlays=function(){ return ''; };
 document.addEventListener('app-ready',()=>{ if(window.lpDraw) window.lpDraw(); });
 </script>`;
 
-/* the prop model's page, re-headed */
+/* the prop model's page, re-headed as NFL Hub, the way the NBA Hub and the NHL Hub are headed: the
+   wordmark and a tagline on the left, when the data was built and which build it is on the right */
 let html = part1;
-html = sub1(html, '<title>X NFL Prop Model</title>', '<title>X NFL Bets and Stats</title>', 'title');
-html = sub1(html, '<h1>X NFL Prop Model</h1>', '<h1>X NFL Bets and Stats</h1>', 'heading');
+html = sub1(html, '<title>X NFL Prop Model</title>', '<title>NFL Hub</title>', 'title');
+html = sub1(html, '<h1>X NFL Prop Model</h1>\n    <span class="sub" id="buildTag"></span>\n    <span class="sub grow" id="saveState" style="margin-left:auto"></span>',
+  '<div><h1>NFL <em>Hub</em></h1><p class="tagline">Every game called by three models against Vegas, player props priced against DraftKings, '
+  + 'a parlay builder and X\'s own bets, frozen at kickoff and graded in public.</p></div>\n'
+  + '    <div class="hub-stamp"><span class="sub grow" id="saveState"></span><span class="sub" id="buildTag"></span></div>', 'heading');
 html = sub1(html, '</style>\n</head>', '</style>\n<style>' + TAB_CSS + '</style>\n<style>' + ELO_CSS + '</style>\n<style>\n' + LIVE_SCOPED + '</style>\n<style>' + CARD_CSS + '</style>\n</head>', 'style block');
 /* the tab bar: the prop model's tabs keep their sections and their ids, and get this page's
    names. One tab at a time: a section with no button here stays in the page, unshown. */
@@ -383,32 +387,28 @@ for (const gone of ['firebaseio', 'identitytoolkit', 'securetoken', 'ownerHash',
   out = sub1(out, '</script>\n</body>\n</html>\n', '</script>\n<script>\n' + DD_JS + '</script>\n<script>' + SNAP_JS + '</script>\n</body>\n</html>\n', "the Deep Dive's and the snapshot's scripts");
   if (out.split('root.gsDeepDive = API').length !== 2) throw new Error('the Deep Dive is not in the page exactly once'); }
 if (out.includes('id="tab-tracker"') || /nt-frame|data-tab="tracker"/.test(out)) throw new Error('the page still carries the Season Tracker tab');
+/* the hub look (theme.css, the NBA Hub's and the NHL Hub's colours and type with the NFL's gold): laid
+   over every other style, last, so it wins by order, with the hubs' two fonts, and handed to the
+   framed betting tabs (window.THEME_FRAME_HEAD, set in front of each frame's own </head> by frames()
+   in tab_pickems.html) */
+{ const THEME = rd('nflbets', 'build', 'theme.css');
+  if (/<\/style|<\/script|<!--/i.test(THEME)) throw new Error('nflbets/build/theme.css has a closing tag or a comment opener, which would end its block in the page');
+  const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
+  /* the hubs' fonts in place of the prop model's own, which nothing on the page draws in any more */
+  out = sub1(out, '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">',
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n' + FONTS, 'the fonts');
+  const head = out.indexOf('</head>');
+  if (head < 0 || head > out.indexOf('<body')) throw new Error('the page has no head of its own');
+  out = out.slice(0, head) + '<style id="hubTheme">\n' + THEME + '</style>\n'
+    + '<script>window.THEME_FRAME_HEAD=' + JSON.stringify(FONTS + '<style>' + THEME + '</style>').replace(/</g, '\\u003c') + ';</script>\n' + out.slice(head); }
 /* the hash of the page with the slot still in it, then set into the slot: the smoke takes it
    out again and checks the page is what was hashed */
 const HASH = crypto.createHash('sha256').update(out).digest('hex').slice(0, 7);
 out = sub1(out, `const PAGE_HASH='${HASH_SLOT}';`, `const PAGE_HASH='${HASH}';`, 'the page hash');
 
-/* the preview: the same page in the NBA Hub's look, beside the real one so every relative
-   address still works. Only preview_theme.css (laid over everything, last) and the wordmark's
-   markup differ, so the preview is the live page and nothing else. */
-let pv;
-{
-  const THEME = fs.readFileSync(path.join(__dirname, 'preview_theme.css'), 'utf8');
-  const once = (s, a, b, what) => { if (s.split(a).length !== 2) throw new Error('preview: ' + what + ' is not in the page once'); return s.replace(a, b); };
-  pv = out;
-  const head = pv.indexOf('</head>');
-  if (head < 0 || head > pv.indexOf('<body')) throw new Error('preview: the page has no head of its own');
-  const FONTS = '<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">';
-  pv = pv.slice(0, head) + FONTS + '\n<style id="previewTheme">\n' + THEME + '</style>\n'
-    + '<script>window.PREVIEW_FRAME_HEAD=' + JSON.stringify(FONTS + '<style>' + THEME + '</style>').replace(/</g, '\\u003c') + ';</script>\n' + pv.slice(head);
-  pv = once(pv, '<h1>X NFL Bets and Stats</h1>', '<h1>X NFL <em>Bets and Stats</em></h1>', 'the heading');
-  pv = once(pv, '<span class="sub" id="buildTag"></span>', '<span class="sub" id="buildTag"></span><span class="pv-flag">Preview</span>', 'the build tag');
-  pv = once(pv, '<title>X NFL Bets and Stats</title>', '<title>X NFL Bets and Stats (preview)</title>', 'the title');
-}
-module.exports = { out, pv, hash: HASH, HASH_SLOT, PROP_KEY, SEASON: +SEASON_KEY[1] };
+module.exports = { out, hash: HASH, HASH_SLOT, PROP_KEY, SEASON: +SEASON_KEY[1] };
 if (require.main === module) {
   fs.writeFileSync(path.join(ROOT, 'nflbets', 'index.html'), out);
-  fs.writeFileSync(path.join(ROOT, 'nflbets', 'preview.html'), pv);
   console.log(`nflbets/index.html written: ${(out.length / 1024).toFixed(1)} KB, build ${HASH} `
     + `(the prop model's page, ${BET.split('\n').length} lines lifted from the betting app for the board)`);
 }

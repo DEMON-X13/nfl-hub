@@ -1,4 +1,4 @@
-/* Check the built X NFL Bets and Stats page (nflbets/).
+/* Check the built NFL Hub page (nflbets/), once X NFL Bets and Stats.
  *
  *   node nflbets/build/smoke.js                  (from the hub root)
  *   node nflbets/build/smoke.js --season-over    the same, on this season with every game played
@@ -131,7 +131,7 @@ process.on('beforeExit', () => finish('the smoke stopped before it finished: its
   try { B = require('./build.js'); } catch (e) { chk(false, 'the sources do not build: ' + e.message); }
   if (B) {
     chk(B.out === HTML, 'nflbets/index.html is not a fresh build of its sources: run node nflbets/build/build.js and commit the page');
-    chk(B.pv === fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), 'nflbets/preview.html is not a fresh build of its sources: run node nflbets/build/build.js');
+    chk(!fs.existsSync(path.join(ROOT, 'nflbets', 'preview.html')), 'nflbets/preview.html is back: the hub look is the page itself since 16 October 2026, and the preview is gone');
     chk(!/PROP_KEY=\/\*PROP_KEY\*\/'/.test(HTML) && (HTML.match(/PROP_KEY=\/\*PROP_KEY\*\/"([^"]+)"/g) || []).length === 1 && HTML.split(`PROP_KEY=/*PROP_KEY*/${JSON.stringify(B.PROP_KEY)}`).length === 2,
       "the storage layer is not on part2's storage key " + B.PROP_KEY); }
 }
@@ -388,12 +388,14 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
   await wait(700);                                  /* the scoreboard is read once on load, after the prop model is up */
 
   chk(!timedOut, 'the prop model never said app-ready');
-  /* the preview is the same page with the NBA Hub theme laid over it, and the live page has none of it */
-  { const PV = fs.readFileSync(path.join(ROOT, 'nflbets', 'preview.html'), 'utf8'), LIVE = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
-    chk(/id="previewTheme"/.test(PV) && /<script>window\.PREVIEW_FRAME_HEAD=/.test(PV) && /<em>Bets and Stats<\/em>/.test(PV), 'nflbets/preview.html is missing its theme');
-    chk(!/id="previewTheme"/.test(LIVE) && !/<script>window\.PREVIEW_FRAME_HEAD=/.test(LIVE), 'the preview theme leaked into the live page');
-    /* the Game snapshot's Deep Dive tags and its preview block in both looks, from their styles (the
-       preview is never booted here): each tag's text on its own opaque tint, the preview's text and the
+  /* the page wears the hub look (theme.css, the NBA Hub's and the NHL Hub's colours with the NFL's gold),
+     laid over every other style and handed to the framed betting tabs, and nothing of the retired preview */
+  { const LIVE = fs.readFileSync(path.join(ROOT, 'nflbets', 'index.html'), 'utf8');
+    const HEAD = LIVE.slice(0, LIVE.indexOf('</head>'));
+    chk(HEAD.includes('<style id="hubTheme">') && HEAD.lastIndexOf('<style') === HEAD.indexOf('<style id="hubTheme">')
+      && /<script>window\.THEME_FRAME_HEAD=/.test(LIVE) && /family=Unbounded/.test(LIVE) && !/PREVIEW_FRAME_HEAD|id="previewTheme"|pv-flag/.test(LIVE),
+      'the page does not wear the hub look laid over its other styles and its frames, or still carries the preview');
+    /* the Game snapshot's Deep Dive tags and its preview block, from their styles (each tag's text on its own opaque tint, the preview's text and the
        names it bolds on its block, each side of a position matchup on its box, and the better rank of a
        meeting on its tinted box (a tint that lets the card through is laid over the card's panel-2, the
        lighter of the two it runs between), at 4.5:1 or more. jsdom resolves no var(), so one is looked
@@ -402,7 +404,7 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         if (m) { const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1]; return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)).concat(1); }
         m = v.match(/^rgba?\(([^)]*)\)$/); if (!m) return null; const p = m[1].split(',').map(x => parseFloat(x)); return p.length >= 3 && p.every(x => !isNaN(x)) ? [p[0], p[1], p[2], p.length > 3 ? p[3] : 1] : null; };
       const lum = c => { const f = x => (x /= 255) <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
-      for (const [name, h] of [['the page', LIVE], ['the preview', PV]]) {
+      for (const [name, h] of [['the page', LIVE]]) {
         const pw = new JSDOM(h, { virtualConsole: new VirtualConsole() }).window, pd = pw.document, box = pd.createElement('div');
         box.id = 'gsModal'; box.innerHTML = '<div class="gs-prev"><p class="gs-pv"><span class="gs-lab">Preview</span><span>x <b class="gs-pn">Name</b></span></p><p class="gs-pauto">x</p></div>'
           + ['easy', 'fav', 'even', 'tough', 'vtough'].map(c => `<span class="dtag ${c}">x</span>`).join('')
@@ -433,7 +435,9 @@ function run(state, url = 'https://demon-x13.github.io/nfl-hub/nflbets/', espn =
         chk(bad.length === 0, `${name}: a Game snapshot tag, the preview's text, a matchup side or the better rank's box is under 4.5:1 on its own background: ${bad.join('; ')}`);
         pw.close(); } } }
   chk(errs.length === 0, 'the page threw: ' + errs.join('; '));
-  chk(d.title === 'X NFL Bets and Stats' && /X NFL Bets and Stats/.test(txt(d.querySelector('h1'))), 'the page is not headed X NFL Bets and Stats');
+  chk(d.title === 'NFL Hub' && txt(d.querySelector('h1')) === 'NFL Hub' && !!d.querySelector('h1 em') && !!d.querySelector('header .tagline')
+    && !!d.querySelector('header .hub-stamp #saveState') && !!d.querySelector('header .hub-stamp #buildTag'),
+    'the page is not headed NFL Hub, as the NBA Hub and the NHL Hub are: the wordmark and a tagline, and the stamp with the build');
 
   /* the tab bar: Pick'ems open, the prop model's other sections in the page but not on the
      bar */

@@ -8,7 +8,7 @@ GitHub Pages serves the repo root:
 
 | Path | What | Source |
 |---|---|---|
-| `nflbets/` | X NFL Bets and Stats, the one NFL site: both models on one page, and a Game snapshot of every game on the Pick'ems board | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the Player Elo tab and the Game snapshot (with `nflbets/build/deepdive.js`); rebuilt by hand when a source changes, never by a job |
+| `nflbets/` | NFL Hub (once X NFL Bets and Stats), the one NFL site, in the NBA Hub's and the NHL Hub's look: both models on one page, and a Game snapshot of every game on the Pick'ems board | built by `nflbets/build/build.js` from the props parts, the betting app, the X Parlays section, the storage layer, the Player Elo tab and the Game snapshot (with `nflbets/build/deepdive.js`); rebuilt by hand when a source changes, never by a job |
 | `betting/` | X NFL Betting Model: no pages, only the app source, tools, job and data; the app runs inside `nflbets/` | `betting/app/x_nfl_betting_model.html`, copied from `nfl-model-lab` when a version ships |
 | `props/` | Prop Model: no pages, only the parts, build, job and data | `props/` is the prop model package; its own `weekly.py` does the refresh |
 | `news/` | the news job: no page since 14 October 2026 (`news/` sends a visitor to `nflbets/`); the Deep Dive, the stat bars and each game's preview and news, which the Game snapshot reads | moved from `DEMON-X13/nfl-news-tracker`; `tools/run-auto.js` does the scripted half, and the game notes in `data/notes/` are written each Wednesday by Claude |
